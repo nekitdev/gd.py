@@ -14,7 +14,7 @@ class Coder:
         type0 = kwargs.get('type')
         string = kwargs.get('string')
         ciphered = XOR.cipher(key=self.keys[type0], string=string)
-        encoded = base64.b64encode(ciphered.encode())
+        encoded = base64.b64encode(ciphered.encode()).decode() #we need a string, not bytes tbh
         return encoded
     
     def decode0(self, **kwargs):

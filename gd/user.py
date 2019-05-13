@@ -90,5 +90,5 @@ class User:
         return self._icon_setup
 
 # client = gd.client()
-# user = client.get_user(71) //returns gd.User() object
+# user = client.get_user(71) //returns gd.User() object, for instance, RobTop
 # print(user.is_mod('elder'), user.has_cp(), user.cp) //returns (True, False, 0)

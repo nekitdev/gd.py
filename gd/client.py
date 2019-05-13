@@ -5,6 +5,7 @@ from .utils.errors import error
 from .utils.gdpaginator import paginate
 from .utils.routes import Route
 from .utils.params import Parameters as Params
+from .utils.indexer import Index as i
 #initializing other things here
 class client:
     def __init__(self):
@@ -15,7 +16,6 @@ class client:
             raise error.IDNotSpecified('Song')
         else:
             parameters = Params().create_new().put_definer('song', str(songid)).finish()
-            print(parameters)
             resp = http.SendHTTPRequest(Route.GET_SONG_INFO, parameters)
             if resp == self.error_code:
                 raise error.MissingAccess(type='Song', id=songid)
@@ -37,6 +37,16 @@ class client:
                 raise error.MissingAccess(type='User', id=accountid)
             resp = resp.split(':')
             mapped = mapper_util.map(resp)
+            another_params = Params().create_new().put_definer('search', str(mapped[i.USER_PLAYER_ID])).put_page(0).finish()
+            new_resp = http.SendHTTPRequest(Route.USER_SEARCH, another_params)
+            new_resp = mapper_util.map(new_resp.split(':'))
+            new_dict = {
+                i.USER_GLOW_OUTLINE: new_resp[i.USER_GLOW_OUTLINE],
+                i.USER_ICON: new_resp[i.USER_ICON],
+                i.USER_ICON_TYPE: new_resp[i.USER_ICON_TYPE]
+            }
+            for key in list(new_dict.keys()):
+                mapped[key] = new_dict[key]
             user = class_converter.UserConvert(mapped)
             return user
     
@@ -45,7 +55,7 @@ class client:
             raise error.IDNotSpecified('Level')
         else:
             to_map = []
-            parameters = Params().create_new().put_definer('level', str(levelid)).finish()
+            parameters = Params().create_new().put_definer('search', str(levelid)).finish()
             resp = http.SendHTTPRequest(Route.LEVEL_SEARCH, parameters)
             resp = resp.split('#')
             levelinfo = resp[0].split()[0]

@@ -4,10 +4,8 @@ from .utils.http_request import http
 from .utils.routes import Route
 from .utils.mapper import mapper_util
 from .utils.indexer import Index as i
-from .client import *
 from .utils.errors import error
 from .utils.converter import Converter
-from .classconverter import class_converter
 
 class AuthClient:
     def __init__(self, **options):
@@ -16,10 +14,11 @@ class AuthClient:
         self._accountid = options.get('accountid')
         self._userid = options.get('userid')
         self._encodedpass = options.get('encodedpass')
+        from .client import client
         self._as_user = client().get_user(str(options.get('accountid')))
 
     def __str__(self):
-        ret = f"[gd.AuthClient]\n[Name:{self.name}]\n[Password:{self.password}]\n[AccountID:{self.accountid}]\n[UserID:{self.userid}]\n<'{self.encodedpass}'>"
+        ret = f"[gd.AuthClient]\n[Name:{self.name}]\n[Password:{self.password}]\n[AccountID:{self.account_id}]\n[UserID:{self.id}]\n<'{self.encodedpass}'>"
         return ret
 
     @property
@@ -42,6 +41,7 @@ class AuthClient:
         return self._as_user
     
     def get_comments(self, **kwargs):
+        from .classconverter import class_converter
         _paginate = kwargs.get('paginate') if kwargs.get('paginate') is not None else False
         per_page = Converter.write_per_page(**kwargs)
         route = Route.GET_COMMENTS 
@@ -52,7 +52,7 @@ class AuthClient:
         if (len(to_map[0])==0):
             raise error.NothingFound('comments')
         else:
-            to_map = to_map[0].split('|')
+            to_map = to_map[0].replace('-', '+').split('|') #I don't know why but this one is actually intended
             for element in to_map:
                 mapped = mapper_util.map(element.split('~'))
                 comments.append(class_converter.CommentConvert(mapped, self.as_user()))
@@ -83,9 +83,13 @@ class AuthClient:
         if id_mode:
             return ids
         else:
-            for accid in ids:
-                temp = client().get_user(str(accid))
-                objects.append(temp)
+            for element in to_map:
+                temp = (mapper_util.map(element.split(':')))
+                temp_accid = int(temp[i.USER_ACCOUNT_ID])
+                temp_id = int(temp[i.USER_PLAYER_ID])
+                temp_name = str(temp[i.USER_NAME])
+                some_tuple = (temp_name, temp_accid, temp_id)
+                objects.append(some_tuple)
             if not _paginate:
                 return objects
             else:

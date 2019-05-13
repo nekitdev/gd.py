@@ -41,13 +41,7 @@ class Song:
         return self._links[1]
     
     def get_all_info(self):
-        return f"""[gd.Song]
-        [ID][{self.id}]
-        [Name][{self.name}]
-        [Author][{self.author}]
-        [Links]
-        [Basic][{self.link}]
-        [Download][{self.dl_link}]"""
+        return f"[gd.Song]\n[ID][{self.id}]\n[Name][{self.name}]\n[Author][{self.author}]\n[Links]\n[Basic][{self.link}]\n[Download][{self.dl_link}]"
 
     def download(self, **kwargs):
         link = self._links[1]

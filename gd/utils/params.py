@@ -33,7 +33,7 @@ class Parameters:
         params_dict = {
             "song": "songID",
             "user": "targetAccountID",
-            "level": "str",
+            "search": "str",
             "leveldata": "levelID",
             "accountid": "accountID"
         }

@@ -18,7 +18,7 @@ class class_converter:
             size = float(s[i.SONG_SIZE]),
             size_mb = f'{s[i.SONG_SIZE]} MB',
             links = [
-                f'https://www.newgrounds.com/audio/listen{s[i.SONG_ID]}',
+                f'https://www.newgrounds.com/audio/listen/{s[i.SONG_ID]}',
                 dl_link
             ]
         )
@@ -84,7 +84,7 @@ class class_converter:
                 'color_1': int(s[i.USER_COLOR_1]),
                 'color_2': int(s[i.USER_COLOR_2]),
                 'icon_type': int(s[i.USER_ICON_TYPE]),
-                'glow_outline': int(s[i.USER_GLOW_OUTLINE]),
+                'has_glow_outline': int(s[i.USER_GLOW_OUTLINE]),
                 'glow_outline_2': int(s[i.USER_GLOW_OUTLINE_2]),
                 'icon_cube': int(s[i.USER_ICON_CUBE]),
                 'icon_ship': int(s[i.USER_ICON_SHIP]),
@@ -92,8 +92,7 @@ class class_converter:
                 'icon_ufo': int(s[i.USER_ICON_UFO]),
                 'icon_wave': int(s[i.USER_ICON_WAVE]),
                 'icon_robot': int(s[i.USER_ICON_ROBOT]), 
-                'icon_spider': int(s[i.USER_ICON_SPIDER]),
-                'death_effect': int(s[i.USER_DEATH_EFFECT])
+                'icon_spider': int(s[i.USER_ICON_SPIDER])
             }
         )
     
