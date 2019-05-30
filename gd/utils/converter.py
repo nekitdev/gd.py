@@ -12,13 +12,3 @@ class Converter:
         }
         length = some_dict[lengthint]
         return length
-    
-    def write_per_page(**kwargs):
-        if kwargs.get('paginate') is None:
-            per_page = None
-        else:
-            if kwargs.get('per_page') is None:
-                per_page = 10
-            else:
-                per_page = int(kwargs.get('per_page'))
-        return per_page

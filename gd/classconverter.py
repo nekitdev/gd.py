@@ -3,7 +3,11 @@ from .song import Song
 from .user import User
 from .comment import Comment
 from .authclient import AuthClient
+from .abstractuser import AbstractUser
+from .level import Level
+from .message import Message
 from .utils.crypto.coders import Coder
+from .utils.mapper import mapper_util
 import base64 as b64
 
 class class_converter:
@@ -41,7 +45,7 @@ class class_converter:
         if youtube == '':
             yt = None
         if youtube != '':
-            yt = f'https://www.youtube.com/channel/{youtube}' #TO DO: Check if it should be channel/id
+            yt = f'https://www.youtube.com/channel/{youtube}'
         r = s[i.USER_ROLE]
         rdict = {
             '0': 'User',
@@ -70,8 +74,9 @@ class class_converter:
             twch_link = f'https://twitch.tv/{twch}'
         comment_policy = s[i.USER_COMMENT_HISTORY_POLICY]
         comment = pcmdict[comment_policy]
+        #redo a bit (for easier interaction, and not all elements are yet implemented)
         return User(
-            name = s[i.USER_NAME], _id = int(s[i.USER_PLAYER_ID]),
+            name = s[i.USER_NAME], id = int(s[i.USER_PLAYER_ID]),
             stars = int(s[i.USER_STARS]), demons = int(s[i.USER_DEMONS]),
             secret_coins = int(s[i.USER_SECRET_COINS]), user_coins = int(s[i.USER_USER_COINS]),
             cp = int(s[i.USER_CREATOR_POINTS]), diamonds = int(s[i.USER_DIAMONDS]),
@@ -97,8 +102,29 @@ class class_converter:
         )
     
     def LevelConvert(to_parse):
-        s = to_parse #mhm
+        s = to_parse
         pass #I'll finish soon
+    
+    def MessageConvert(to_parse, to_parse_2, auth_client):
+        s = to_parse
+        cases = {0: 'normal', 1: 'sent'}
+        type_of = cases.get(int(s[i.MESSAGE_INDICATOR]))
+        useful_dict = {
+            'name': s[i.MESSAGE_SENDER_NAME],
+            'id': int(s[i.MESSAGE_SENDER_ID]),
+            'account_id': int(s[i.MESSAGE_SENDER_ACCOUNT_ID])
+        }
+        user_1, user_2 = [class_converter.AbstractUserConvert(elem) for elem in [useful_dict, to_parse_2]]
+        return Message(
+            id = int(s[i.MESSAGE_ID]),
+            timestamp = s[i.MESSAGE_TIMESTAMP],
+            subject = b64.b64decode(mapper_util.normalize(s[i.MESSAGE_SUBJECT])).decode(),
+            is_read = True if (s[i.MESSAGE_IS_READ] is '1') else False,
+            author = user_1 if (type_of is 'normal') else user_2,
+            recipient = user_2 if (type_of is 'normal') else user_1,
+            type = type_of,
+            retrieved_from = auth_client
+        )
 
     def AuthClientConvert(to_parse):
         s = to_parse
@@ -107,17 +133,28 @@ class class_converter:
             password = s['password'],
             encodedpass = Coder().encode0(type='accountpass', string=s['password']),
             accountid = int(s['accountid']),
-            userid = int(s['userid'])
+            id = int(s['userid'])
         )
     
-    def CommentConvert(to_parse, author):
+    def CommentConvert(to_parse, auth_client, to_parse_2 = None):
         s = to_parse
+        if to_parse_2 is None:
+            pass #handling level comments
         return Comment(
-            body = b64.b64decode(s[i.COMMENT_BODY]).decode(),
+            body = b64.b64decode(mapper_util.normalize(s[i.COMMENT_BODY])).decode(),
             rating = int(s[i.COMMENT_RATING]),
             timestamp = s[i.COMMENT_TIMESTAMP],
-            commentid = int(s[i.COMMENT_ID]),
-            author = author
+            id = int(s[i.COMMENT_ID]),
+            type = int(s[i.COMMENT_TYPE]),
+            level_id = int(s[i.COMMENT_LEVEL_ID]),
+            author = class_converter.AbstractUserConvert(to_parse_2),
+            retrieved_from = auth_client
+        )
+    
+    def AbstractUserConvert(to_parse):
+        s = to_parse
+        return AbstractUser(
+            name = s['name'], id = s['id'], account_id = s['account_id']
         )
 
 #woop >.>

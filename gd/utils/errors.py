@@ -1,7 +1,7 @@
 class error:
     class IDNotSpecified(Exception):
         def __init__(self, _type):
-            self.reply = f"ID for '{_type}' was not specified."
+            self.reply = f"ID for '{_type}' was not specified. ID should be an integer higher than zero."
             Exception.__init__(self, self.reply)
 
     class MissingAccess(Exception):

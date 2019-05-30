@@ -1,7 +1,7 @@
 from .errors import error
 
-def paginate(**kwargs):
-    return Paginator(**kwargs)
+def paginate(iterable, **kwargs):
+    return Paginator(to_paginate=iterable, per_page=kwargs.get('per_page'))
 
 class Paginator:
     def __init__(self, **options):
@@ -34,6 +34,33 @@ class Paginator:
     @property
     def list(self):
         return self._list
+    
+    def reload(self):
+        self._length = len(self._list)
+        if (self._length // self._elements_per_page < self._length / self._elements_per_page):
+            self._pages = self._length // self._elements_per_page + 1
+        else:
+            self._pages = self._length // self._elements_per_page
+
+    def append(self, item_or_iterable):
+        self._list.append(item_or_iterable)
+        self.reload()
+    
+    def pop(self, index):
+        if index is None:
+            popped_val = self._list.pop()
+            self.reload()
+            if self._length < 1:
+                raise error.PaginatorIsEmpty()
+            return popped_val
+        else:
+            if abs(index) > index:
+                raise error.InvalidArgument()
+            else:
+                del self._list[index]
+                self.reload()
+                if self._length < 1:
+                    raise error.PaginatorIsEmpty()
 
     def get_pages_count(self):
         return self._pages
@@ -87,7 +114,7 @@ class Paginator:
         else:
             self._current_page = page
 
-    def get_page_elements(self, page: int = None):
+    def view_page(self, page: int = None):
         if page is None:
             page_to_view = self.get_current_page() - 1
             to_pass = page_to_view * self.per_page
@@ -113,18 +140,12 @@ class Paginator:
     def get_current_state(self):
         p = self.get_current_page()
         per_page = self.per_page
-        return f"""[gd.Paginator]
-        [Can Run][{self.can_run()}]
-        [Length][{self.length}]
-        [Pages][{self.get_pages_count()}]
-        [Current State]
-        [Page][{self.get_current_page()}]
-        [Showing][{((p - 1)*per_page)}/{(p*per_page)} of {self.length}]"""
+        return f'[gd.Paginator]\n[Can Run][{self.can_run()}]\n[Length][{self.length}]\n[Pages][{self.get_pages_count()}]\n[Current State]\n[Page][{self.get_current_page()}]\n[Showing][{((p - 1)*per_page)}/{(p*per_page)} of {self.length}]'
 
     def get_everything(self):
         some_dict = {}
         for i in range(self.get_pages_count()):
-            some_dict[f'[Page {(i+1)}]'] = self.get_page_elements(i+1)
+            some_dict[f'[Page {(i+1)}]'] = self.view_page(i+1)
         return some_dict
 
 #example:
@@ -134,5 +155,5 @@ class Paginator:
 #paginator.move_to(page=2)
 #paginator.get_current_page() //returns '2'
 #paginator.has_next_page() //returns 'False'
-#paginator.get_page_elements() //returns ['214536']
+#paginator.view_page() //returns ['214536']
 # (._.')/

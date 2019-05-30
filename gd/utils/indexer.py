@@ -67,14 +67,18 @@ class Index:
 	USER_COMMENT_HISTORY_POLICY = '50'
 	#all indexes for messages
 	MESSAGE_ID = '1'
-	MESSAGE_SENDER_ID = '2'
-	MESSAGE_SENDER_NAME = '6'
+	MESSAGE_SENDER_ACCOUNT_ID = '2'
+	MESSAGE_SENDER_ID = '3'
 	MESSAGE_SUBJECT = '4'
 	MESSAGE_BODY = '5'
+	MESSAGE_SENDER_NAME = '6'
 	MESSAGE_TIMESTAMP = '7'
 	MESSAGE_IS_READ = '8'
+	MESSAGE_INDICATOR = '9' #like, when it's "1" - the message is sent TO MESSAGE_SENDER (if that makes sense)
 	#all indexes for comments
 	COMMENT_BODY = '2'
 	COMMENT_RATING = '4'
 	COMMENT_ID = '6'
 	COMMENT_TIMESTAMP = '9'
+	COMMENT_TYPE = 'TYPE'
+	COMMENT_LEVEL_ID = 'LEVEL_ID'

@@ -1,4 +1,8 @@
 from .errors import error
+from .mapper import mapper_util
+from .crypto.coders import Coder
+import base64
+import random
 
 class Parameters:
 
@@ -35,7 +39,9 @@ class Parameters:
             "user": "targetAccountID",
             "search": "str",
             "leveldata": "levelID",
-            "accountid": "accountID"
+            "accountid": "accountID",
+            "messageid": "messageID",
+            "commentid": "commentID"
         }
         try:
             self.dict[params_dict[for_what]] = item
@@ -43,8 +49,28 @@ class Parameters:
             raise error.InvalidArgument()
         return self
     
+    def put_recipient(self, account_id:str):
+        self.dict['toAccountID'] = account_id
+        return self
+        
+    def put_is_sender(self, t: str):
+        if t is 'normal':
+            pass
+        if t is 'sent':
+            self.dict['isSender'] = "1"
+        return self
+    
+    def put_message(self, subject:str, body:str):
+        self.dict['subject'] = base64.b64encode(subject.encode()).decode()
+        self.dict['body'] = mapper_util.prepare_sending(Coder().encode0(type='message', string=body))
+        return self
+
     def put_password(self, item: str):
         self.dict['gjp'] = item
+        return self
+    
+    def put_username(self, item: str):
+        self.dict['userName'] = item
         return self
         
     def put_type(self, number: int):
@@ -55,15 +81,33 @@ class Parameters:
         self.dict['page'] = str(number)
         return self
     
+    def put_comment(self, content: str, values: list):
+        comment = base64.b64encode(content.encode()).decode()
+        self.dict['comment'] = comment
+        values.insert(1, comment)
+        self.dict['chk'] = Coder().gen_chk(type='comment', values=values)
+        return self
+    
+    def comment_for(self, type0: str, number: int = None):
+        supported = ['client', 'level']
+        if type0 not in supported:
+            raise error.InvalidArgument()
+        else:
+            if (type0 == 'client'):
+                self.dict['cType'] = "1"
+            else:
+                self.dict['levelID'] = str(number)
+            return self
+
     def put_total(self, number: int):
         self.dict['total'] = str(number)
         return self
         
     def put_login_definer(self, username: str, password: str):
         del self.dict["gdw"] # it is not needed in login request
-        self.dict["udid"] = "Hello, Lord RubRub, it is a request from library [gd.py]"
-        self.dict["userName"] = username
+        self.dict["udid"] = f"[{random.randint(100000, 999999)}][gd.py]"
         self.dict["password"] = password
+        self.put_username(username)
         return self
     
     def put_for_level(self, **kwargs):
@@ -96,6 +140,13 @@ class Parameters:
     
     def put_for_user(self, page: int = 0):
         self.dict["page"] = '{}'.format(page)
+        return self
+    
+    def get_sent(self, indicator: int):
+        if (indicator==1):
+            self.dict["getSent"] = '1'
+        else:
+            pass
         return self
 
     def check(self, filters):
