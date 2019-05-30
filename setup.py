@@ -5,7 +5,7 @@ long_desc = 'A Geometry Dash API Wrapper Written In Python, Supports Everything 
 setup(
     name = 'gd.py',
     packages = ['gd', 'gd.utils', 'gd.utils.crypto'],
-    version = '0.0.6',
+    version = '0.0.6.1',
     description = 'A Geometry Dash API wrapper for Python',
     long_description = long_desc,
     author = 'NeKitDSS',

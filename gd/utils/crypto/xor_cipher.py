@@ -1,7 +1,5 @@
 class XORCipher:
-    def cipher(**kwargs):
-        key = kwargs.get('key')
-        string = kwargs.get('string')
+    def cipher(key, string):
         keyB = list(map(ord, key))
         stringB = list(map(ord, string))
         result = ''
