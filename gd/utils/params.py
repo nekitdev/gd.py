@@ -17,11 +17,14 @@ class Parameters:
         self.dict = {}
 
     def create_new(self, type0: str = None):
-        self.dict = {
-            "gameVersion": self.gameVersion,
-            "binaryVersion": self.binaryVersion,
-            "gdw": "0"
-        }
+        if type0 is None:
+            self.dict = {
+                "gameVersion": self.gameVersion,
+                "binaryVersion": self.binaryVersion,
+                "gdw": "0"
+            }
+        if type0 == 'web':
+            self.dict = {}
         return self
     
     def finish(self):
@@ -32,6 +35,42 @@ class Parameters:
         self.dict["secret"] = self.login_secret
         return self.dict
     
+    def close(self):
+        return self.dict
+    
+    def put_for_management(self, login, password, code):
+        to_put = {
+            'username': login,
+            'password': password,
+            'vercode': code,
+            'cmdlogin': 'Login'
+        }
+        for key in list(to_put.keys()):
+            self.dict[key] = to_put[key]
+        return self
+    
+    def put_for_username(self, name, newname):
+        to_put = {
+            "username": name,
+            "newusername": newname,
+            "changeusername": 'Change Username'
+        }
+        for key in list(to_put.keys()):
+            self.dict[key] = to_put[key]
+        return self
+    
+    def put_for_password(self, name, password, newpass):
+        to_put = {
+            "username": name,
+            "oldpassword": password,
+            "password": newpass,
+            "password2": newpass,
+            "change": 'Change Password'
+        }
+        for key in list(to_put.keys()):
+            self.dict[key] = to_put[key]
+        return self        
+
     def put_definer(self, for_what: str, item: str):
         for_what = for_what.lower()
         params_dict = {
@@ -41,7 +80,9 @@ class Parameters:
             "leveldata": "levelID",
             "accountid": "accountID",
             "messageid": "messageID",
-            "commentid": "commentID"
+            "commentid": "commentID",
+            "requestid": "requestID",
+            "userid": "userID"
         }
         try:
             self.dict[params_dict[for_what]] = item
@@ -102,6 +143,10 @@ class Parameters:
     def put_total(self, number: int):
         self.dict['total'] = str(number)
         return self
+    
+    def put_mode(self, number: int):
+        self.dict['mode'] = str(number)
+        return self
         
     def put_login_definer(self, username: str, password: str):
         del self.dict["gdw"] # it is not needed in login request
@@ -154,4 +199,3 @@ class Parameters:
             return True
         else:
             return False
-    

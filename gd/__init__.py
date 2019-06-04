@@ -11,3 +11,4 @@ from .utils.gdpaginator import Paginator
 from .utils.crypto.coders import Coder
 from .utils.crypto.xor_cipher import XORCipher as xor
 from .client import client
+client = client()

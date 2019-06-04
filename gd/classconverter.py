@@ -6,8 +6,12 @@ from .authclient import AuthClient
 from .abstractuser import AbstractUser
 from .level import Level
 from .message import Message
+from .iconset import IconSet
+from .friend_request import FriendRequest
+from .utils.converter import Converter
 from .utils.crypto.coders import Coder
 from .utils.mapper import mapper_util
+from .utils.types import MessagePrivacyType, FriendRequestPrivacyType, CommentPrivacyType, StatusLevelType
 import base64 as b64
 
 class class_converter:
@@ -29,30 +33,16 @@ class class_converter:
     def UserConvert(to_parse):
         s = to_parse #as I said, shorter variables are more comfortable
         pm_policy = s[i.USER_PRIVATE_MESSAGE_POLICY]
-        pcmdict = {
-            '0': 'Opened to all',
-            '1': 'Opened to friends only',
-            '2': 'Closed'
-        }
-        dm = pcmdict[pm_policy]
+        dm = MessagePrivacyType(int(pm_policy))
         friend_req_policy = s[i.USER_FRIEND_REQUEST_POLICY]
-        friend_reqdict = {
-            '0': 'Opened',
-            '1': 'Closed'
-        }
-        fr_rq = friend_reqdict[friend_req_policy]
+        fr_rq = FriendRequestPrivacyType(int(friend_req_policy))
         youtube = s[i.USER_YOUTUBE]
         if youtube == '':
             yt = None
         if youtube != '':
             yt = f'https://www.youtube.com/channel/{youtube}'
         r = s[i.USER_ROLE]
-        rdict = {
-            '0': 'User',
-            '1': 'Moderator',
-            '2': 'Elder Moderator'
-        }
-        stat = rdict[r]
+        stat = StatusLevelType(int(r))
         rnk = s[i.USER_GLOBAL_RANK]
         if rnk == '': #check if it works like that
             rank = None
@@ -73,32 +63,31 @@ class class_converter:
             twch = twitch
             twch_link = f'https://twitch.tv/{twch}'
         comment_policy = s[i.USER_COMMENT_HISTORY_POLICY]
-        comment = pcmdict[comment_policy]
+        comment = CommentPrivacyType(int(comment_policy))
         #redo a bit (for easier interaction, and not all elements are yet implemented)
         return User(
             name = s[i.USER_NAME], id = int(s[i.USER_PLAYER_ID]),
             stars = int(s[i.USER_STARS]), demons = int(s[i.USER_DEMONS]),
             secret_coins = int(s[i.USER_SECRET_COINS]), user_coins = int(s[i.USER_USER_COINS]),
             cp = int(s[i.USER_CREATOR_POINTS]), diamonds = int(s[i.USER_DIAMONDS]),
-            role = int(s[i.USER_ROLE]), status = stat, global_rank = rank,
+            role = stat, global_rank = rank,
             account_id = int(s[i.USER_ACCOUNT_ID]), youtube = yt, 
             twitter = [twt, twt_link], twitch = [twch, twch_link],
             messages = dm, friend_requests = fr_rq, comments = comment,
-            icon_setup = {
-                'icon': int(s[i.USER_ICON]),
-                'color_1': int(s[i.USER_COLOR_1]),
-                'color_2': int(s[i.USER_COLOR_2]),
-                'icon_type': int(s[i.USER_ICON_TYPE]),
-                'has_glow_outline': int(s[i.USER_GLOW_OUTLINE]),
-                'glow_outline_2': int(s[i.USER_GLOW_OUTLINE_2]),
-                'icon_cube': int(s[i.USER_ICON_CUBE]),
-                'icon_ship': int(s[i.USER_ICON_SHIP]),
-                'icon_ball': int(s[i.USER_ICON_BALL]),
-                'icon_ufo': int(s[i.USER_ICON_UFO]),
-                'icon_wave': int(s[i.USER_ICON_WAVE]),
-                'icon_robot': int(s[i.USER_ICON_ROBOT]), 
-                'icon_spider': int(s[i.USER_ICON_SPIDER])
-            }
+            icon_setup = IconSet(
+                main_icon = int(s[i.USER_ICON]),
+                color_1 = int(s[i.USER_COLOR_1]),
+                color_2 = int(s[i.USER_COLOR_2]),
+                main_icon_type = int(s[i.USER_ICON_TYPE]),
+                has_glow_outline = bool(int(s[i.USER_GLOW_OUTLINE])^1),
+                icon_cube = int(s[i.USER_ICON_CUBE]),
+                icon_ship = int(s[i.USER_ICON_SHIP]),
+                icon_ball = int(s[i.USER_ICON_BALL]),
+                icon_ufo = int(s[i.USER_ICON_UFO]),
+                icon_wave = int(s[i.USER_ICON_WAVE]),
+                icon_robot = int(s[i.USER_ICON_ROBOT]), 
+                icon_spider = int(s[i.USER_ICON_SPIDER])
+            )
         )
     
     def LevelConvert(to_parse):
@@ -125,6 +114,26 @@ class class_converter:
             type = type_of,
             retrieved_from = auth_client
         )
+    def RequestConvert(to_parse, to_parse_2, auth_client):
+        s = to_parse
+        cases = {0: 'normal', 1: 'sent'}
+        type_of = cases.get(int(s[i.REQUEST_INDICATOR]))
+        useful_dict = {
+            'name': s[i.REQUEST_SENDER_NAME],
+            'id': int(s[i.REQUEST_SENDER_ID]),
+            'account_id': int(s[i.REQUEST_SENDER_ACCOUNT_ID])
+        }
+        user_1, user_2 = [class_converter.AbstractUserConvert(elem) for elem in [useful_dict, to_parse_2]]
+        return FriendRequest(
+            id = int(s[i.REQUEST_ID]),
+            timestamp = s[i.REQUEST_TIMESTAMP],
+            body = b64.b64decode(mapper_util.normalize(s[i.REQUEST_BODY])).decode(),
+            is_read = False if (s[i.REQUEST_STATUS] is '1') else True,
+            author = user_1 if (type_of is 'normal') else user_2,
+            recipient = user_2 if (type_of is 'normal') else user_1,
+            type = type_of,
+            retrieved_from = auth_client
+        )
 
     def AuthClientConvert(to_parse):
         s = to_parse
@@ -136,7 +145,7 @@ class class_converter:
             id = int(s['userid'])
         )
     
-    def CommentConvert(to_parse, auth_client, to_parse_2 = None):
+    def CommentConvert(to_parse, ret_from, to_parse_2 = None):
         s = to_parse
         if to_parse_2 is None:
             pass #handling level comments
@@ -146,9 +155,10 @@ class class_converter:
             timestamp = s[i.COMMENT_TIMESTAMP],
             id = int(s[i.COMMENT_ID]),
             type = int(s[i.COMMENT_TYPE]),
-            level_id = int(s[i.COMMENT_LEVEL_ID]),
+            level_id = int(s.get(i.COMMENT_LEVEL_ID, 0)),
+            level_percentage = int(s.get(i.COMMENT_LEVEL_PERCENTAGE, -1)),
             author = class_converter.AbstractUserConvert(to_parse_2),
-            retrieved_from = auth_client
+            retrieved_from = ret_from #!
         )
     
     def AbstractUserConvert(to_parse):

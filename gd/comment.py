@@ -1,6 +1,7 @@
 from .utils.routes import Route
 from .utils.params import Parameters as Params
 from .utils.http_request import http
+from .utils.errors import error
 from .abstractentity import AbstractEntity
 
 class Comment(AbstractEntity):
@@ -30,9 +31,18 @@ class Comment(AbstractEntity):
     @property
     def level_id(self):
         return self.options.get('level_id')
+    @property
+    def level_percentage(self):
+        return self.options.get('level_percentage')
 
     def delete(self):
+        from .authclient import AuthClient
         c = self.retrieved_from()
+        if type(c) is not AuthClient:
+            if c.attached() is None:
+                raise error.InvalidArgument()
+            else:
+                c = c.attached()
         cases = {
             self.typeof is 0: Route.DELETE_LEVEL_COMMENT,
             self.typeof is 1: Route.DELETE_ACC_COMMENT

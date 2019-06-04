@@ -76,9 +76,19 @@ class Index:
 	MESSAGE_IS_READ = '8'
 	MESSAGE_INDICATOR = '9' #like, when it's "1" - the message is sent TO MESSAGE_SENDER (if that makes sense)
 	#all indexes for comments
+	COMMENT_LEVEL_ID = '1'
 	COMMENT_BODY = '2'
 	COMMENT_RATING = '4'
 	COMMENT_ID = '6'
 	COMMENT_TIMESTAMP = '9'
+	COMMENT_LEVEL_PERCENTAGE = '10'
 	COMMENT_TYPE = 'TYPE'
-	COMMENT_LEVEL_ID = 'LEVEL_ID'
+	#all indexes for friend requests (at least all I need lol)
+	REQUEST_SENDER_NAME = '1'
+	REQUEST_SENDER_ID = '2'
+	REQUEST_SENDER_ACCOUNT_ID = '16'
+	REQUEST_ID = '32'
+	REQUEST_BODY = '35'
+	REQUEST_TIMESTAMP = '37'
+	REQUEST_STATUS = '41'
+	REQUEST_INDICATOR = 'TYPE'

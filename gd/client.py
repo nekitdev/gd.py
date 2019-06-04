@@ -7,6 +7,7 @@ from .utils.routes import Route
 from .utils.params import Parameters as Params
 from .utils.indexer import Index as i
 from .unreguser import UnregisteredUser
+from .authclient import AuthClient
 #initializing other things here
 class client:
     def __init__(self):
@@ -28,7 +29,7 @@ class client:
                 song = class_converter.SongConvert(mapped)
                 return song
     
-    def get_user(self, accountid: int = None):
+    def get_user(self, accountid: int = None, attached: AuthClient = None):
         if accountid is None:
             raise error.MissingArguments()
         if accountid is 0:
@@ -51,6 +52,8 @@ class client:
             for key in list(new_dict.keys()):
                 mapped[key] = new_dict[key]
             user = class_converter.UserConvert(mapped)
+            if attached is not None:
+                user.options["attached"] = attached
             return user
     
     def get_level(self, levelid: int = 0):
