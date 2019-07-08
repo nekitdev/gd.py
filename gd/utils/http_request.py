@@ -1,9 +1,10 @@
 import urllib.request
 from urllib.request import urlopen
 from urllib.request import Request
+from .errors import error
 
 class http:
-    def StructParams(params):
+    def struct_params(params):
         FinalParams = ""
         for value in params:
             if value == "secret":
@@ -13,11 +14,11 @@ class http:
         FinalParams = FinalParams.encode()
         return FinalParams
     
-    def SendHTTPRequest(php, params = None, cookies: str = None, cookie: str = None):
+    def send_request(php, params = None, cookies: str = None, cookie: str = None):
         base_url = "http://www.boomlings.com/database/"
         url = base_url + php + ".php"; url_parameters = None
         if params is not None:
-            url_parameters = http.StructParams(params)
+            url_parameters = http.struct_params(params)
         req = Request(url) if url_parameters is None else Request(url, url_parameters)
         if cookies is 'add':
             req.add_header('Cookie', cookie)
@@ -29,4 +30,4 @@ class http:
         if cookies is 'get':
             c = r.info().get('Set-Cookie').split('; ')[0]
             return res, c
-        return res 
+        return res

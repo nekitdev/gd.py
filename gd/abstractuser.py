@@ -8,6 +8,10 @@ class AbstractUser(AbstractEntity):
     def __str__(self):
         ret = f"[gd.AbstractUser]\n[Name:{self.name}]\n[ID:{self.id}]\n[AccountID:{self.account_id}]"
         return ret
+    
+    def __repr__(self):
+        ret = f"<gd.AbstractUser: name={repr(self.name)}, id={self.id}, account_id={self.account_id}>"
+        return ret
         
     @property
     def name(self):

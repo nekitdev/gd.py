@@ -1,6 +1,6 @@
 from PIL import Image, ImageOps
 from io import BytesIO
-from .for_testing import benchmark
+from .decorators import benchmark
 
 border = (5, 8, 16, 7) #borders to crop
 #why borders? well, let's do some quick math:
@@ -9,16 +9,29 @@ border = (5, 8, 16, 7) #borders to crop
 #so, amount of iterations is 3.693(18) times lower ;)
 
 class Captcha:
-    def solve(self, buffer):
+    def __init__(self):
+        self.status = 'empty'
+    
+    def __str__(self):
+        res = f'[gd.Captcha]\n[Status:{self.status}]'
+        return res
+        
+    def __repr__(self):
+        res = f'<gd.Captcha: status={repr(self.status)}>'
+        return res
+
+    def solve(self, buffer, with_image=False): #if with_image is True, image of the captcha will be shown
         io_stuff = BytesIO(buffer)
         image = Image.open(io_stuff); img = ImageOps.crop(image, border) #get image from BytesIO, then crop the borders
         pixels = img.load() #size: (44, 10)
         predict = self.walk_through(pixels, img.size)
         connected = self.connect_result(predict)
+        self.status = 'solved'
+        if with_image: image.show()
         return connected
     
     def walk_through(self, pixel_map, size):
-        a, b, c, d, e = [[] for i in range(5)] #five empty lists
+        a, b, c, d, e = [[] for _ in range(5)] #five empty lists (I don't like to work with five lists in one)
         g = 1 #digit index checker
         final_res = [] #we append here our predicted digits
         for i in range(size[0]): #for every column
@@ -58,7 +71,4 @@ class Captcha:
         return setup
 
     def connect_result(self, res):
-        result = ''
-        for elem in res:
-            result += str(elem)
-        return int(result)
+        return int(str().join(map(str, res)))

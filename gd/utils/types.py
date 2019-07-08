@@ -1,7 +1,29 @@
 from .errors import error
 
-class AbstractPrivacy1Type:
+class BaseType: # let's assume we don't call repr() of this one
+    """This type is not meant to be used as a type, but more as a helper for str() and repr() to other types"""
+    def __init__(self):
+        self._level = -1
+        self._name = type(self).__name__
+
+    def __repr__(self):
+        res = f'<gd.types.{type(self).__name__}: level={self.level}, name={repr(self.name)}>'
+        return res
+    
+    def __str__(self):
+        res = f'[gd.types.{type(self).__name__}]\n[Level:{self.level}]\n[Name:{self.name}]'
+        return res
+    
+    @property
+    def name(self):
+        return self._name
+    @property
+    def level(self):
+        return self._level
+    
+class AbstractPrivacy1Type(BaseType):
     def __init__(self, level):
+        super().__init__()
         if type(level) is str:
             try:
                 self._level = privacy_1.index(level)
@@ -19,8 +41,9 @@ class AbstractPrivacy1Type:
     def name(self):
         return privacy_1[self.level]
 
-class AbstractPrivacy2Type:
+class AbstractPrivacy2Type(BaseType):
     def __init__(self, level):
+        super().__init__()
         if type(level) is str:
             try:
                 self._level = privacy_2.index(level)
@@ -31,6 +54,7 @@ class AbstractPrivacy2Type:
                 raise error.InvalidArgument()
             else:
                 self._level = level
+
     @property
     def level(self):
         return self._level
@@ -38,8 +62,9 @@ class AbstractPrivacy2Type:
     def name(self):
         return privacy_2[self.level]
 
-class StatusLevelType:
+class StatusLevelType(BaseType):
     def __init__(self, level):
+        super().__init__()
         if type(level) is str:
             try:
                 self._level = mod.index(level)
@@ -50,6 +75,7 @@ class StatusLevelType:
                 raise error.InvalidArgument()
             else:
                 self._level = level
+
     @property
     def level(self):
         return self._level

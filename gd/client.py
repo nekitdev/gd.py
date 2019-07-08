@@ -10,18 +10,28 @@ from .unreguser import UnregisteredUser
 from .authclient import AuthClient
 #initializing other things here
 class client:
+    def __repr__(self):
+        ret = f'<gd.client: error_count={self.error_count}>'
+        return ret
+
     def __init__(self):
         self.error_code = '-1'
+        self.error_count = 0
+    
+    def emit_counter(self):
+        self.error_count += 1
 
     def get_song(self, songid: int = 0):
         if (songid == 0):
             raise error.IDNotSpecified('Song')
         else:
             parameters = Params().create_new().put_definer('song', str(songid)).finish()
-            resp = http.SendHTTPRequest(Route.GET_SONG_INFO, parameters)
+            resp = http.send_request(Route.GET_SONG_INFO, parameters)
             if resp == self.error_code:
+                self.emit_counter()
                 raise error.MissingAccess(type='Song', id=songid)
             if resp == '-2':
+                self.emit_counter()
                 raise error.SongRestrictedForUsage(songid) 
             else:
                 resp = resp.split("~|~")
@@ -36,13 +46,14 @@ class client:
             return UnregisteredUser()
         else:
             parameters = Params().create_new().put_definer('user', str(accountid)).finish()
-            resp = http.SendHTTPRequest(Route.GET_USER_INFO, parameters)
-            if resp == self.error_code:          
+            resp = http.send_request(Route.GET_USER_INFO, parameters)
+            if resp == self.error_code:
+                self.emit_counter()
                 raise error.MissingAccess(type='User', id=accountid)
             resp = resp.split(':')
             mapped = mapper_util.map(resp)
             another_params = Params().create_new().put_definer('search', str(mapped[i.USER_PLAYER_ID])).put_page(0).finish()
-            new_resp = http.SendHTTPRequest(Route.USER_SEARCH, another_params)
+            new_resp = http.send_request(Route.USER_SEARCH, another_params)
             new_resp = mapper_util.map(new_resp.split(':'))
             new_dict = {
                 i.USER_GLOW_OUTLINE: new_resp[i.USER_GLOW_OUTLINE],
@@ -62,8 +73,9 @@ class client:
         else:
             to_map = []
             parameters = Params().create_new().put_definer('search', str(levelid)).put_for_level().finish()
-            resp = http.SendHTTPRequest(Route.LEVEL_SEARCH, parameters)
+            resp = http.send_request(Route.LEVEL_SEARCH, parameters)
             if resp == self.error_code:
+                self.emit_counter()
                 raise error.NothingFound('levels')
             resp = resp.split('#')
             levelinfo = resp[0].split(':')
@@ -74,7 +86,7 @@ class client:
                 resp[2].split('~|~')
             ) if (len(resp[2]) > 0) else ('Normal Song')
             data = Params().create_new().put_definer('leveldata', str(levelid)).finish()
-            lvldata = http.SendHTTPRequest(Route.DOWNLOAD_LEVEL, data)
+            lvldata = http.send_request(Route.DOWNLOAD_LEVEL, data)
             lvldata = lvldata.split(':')
             mapped1 = mapper_util.map(lvldata)
             mapped2 = mapper_util.map(levelinfo)
@@ -89,8 +101,9 @@ class client:
             raise error.MissingArguments()
         else:
             parameters = Params().create_new().put_login_definer(username=user, password=password).finish_login()
-            resp = http.SendHTTPRequest(Route.LOGIN, parameters)
+            resp = http.send_request(Route.LOGIN, parameters)
             if resp == self.error_code:
+                self.emit_counter()
                 raise error.FailedLogin(login=user, password=password)
             else:
                 resp = resp.split(',')

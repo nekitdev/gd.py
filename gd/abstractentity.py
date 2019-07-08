@@ -6,7 +6,10 @@ class AbstractEntity:
         res = f'[AbstractEntity]\n[ID:{self.id}]'
         return res
     
+    def __repr__(self):
+        ret = f'<gd.AbstractEntity: id={self.id}>'
+        return ret
+    
     @property
     def id(self):
         return self._id
-    

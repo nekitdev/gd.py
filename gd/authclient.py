@@ -11,7 +11,7 @@ from .message import Message
 from .abstractuser import AbstractUser
 from .user import User
 from .utils.gdpaginator import paginate as pagin
-# like_item types:
+# like_item types: //to_be_implemented
 # 1 - level
 # 2 - level comment
 # 3 - profile comment
@@ -29,6 +29,10 @@ class AuthClient(AbstractEntity):
 
     def __str__(self):
         ret = f"[gd.AuthClient]\n[Name:{self.name}]\n[Password:{self.password}]\n[AccountID:{self.account_id}]\n[UserID:{self.id}]\n[Encoded_Password:{self.encodedpass}]"
+        return ret
+    
+    def __repr__(self):
+        ret = f"<gd.AuthClient: name={repr(self.name)}, password={repr(self.password)} id={self.id}, account_id={self.account_id}>"
         return ret
 
     @property
@@ -50,7 +54,7 @@ class AuthClient(AbstractEntity):
     def req_mod(self):
         route = Route.REQUEST_MODERATOR
         params = Params().create_new().put_definer('accountid', str(self.account_id)).put_password(self.encodedpass).finish()
-        resp = http.SendHTTPRequest(route, params)
+        resp = http.send_request(route, params)
         return int(resp)
     
     def get_friend_requests(self, sent_or_inbox: str = None, paginate = False, per_page = 10):
@@ -58,7 +62,7 @@ class AuthClient(AbstractEntity):
         route = Route.GET_FRIEND_REQUESTS
         inbox = check_inbox(sent_or_inbox)
         params = Params().create_new().put_definer('accountid', str(self.account_id)).put_password(self.encodedpass).put_page(0).put_total(0).get_sent(inbox).finish()
-        resp = http.SendHTTPRequest(route, params)
+        resp = http.send_request(route, params)
         final_res = []
         if resp == '-1':
             raise error.MissingAccess()
@@ -82,18 +86,13 @@ class AuthClient(AbstractEntity):
         route = Route.GET_FRIENDS
         parameters = Params().create_new().put_definer('accountid', str(self.account_id)).put_password(self.encodedpass).put_type(0).finish()
         ids, objects = [], []
-        resp = http.SendHTTPRequest(route, parameters)
+        resp = http.send_request(route, parameters)
         if resp == '-1':
             raise error.MissingAccess()
         if resp == '-2':
             raise error.NothingFound('friends')
         else:
             to_map = resp.split('|')
-        for element in to_map:
-            ids.append(int(mapper_util.map(element.split(':')).get(i.USER_ACCOUNT_ID))) #you say '()'? lol
-        if id_mode:
-            return ids
-        else:
             for element in to_map:
                 temp = (mapper_util.map(element.split(':')))
                 temp_accid = int(temp[i.USER_ACCOUNT_ID])
@@ -104,9 +103,14 @@ class AuthClient(AbstractEntity):
                     'id': temp_id,
                     'account_id': temp_accid
                 }
-                converted = class_converter.AbstractUserConvert(some_dict)
-                objects.append(converted)
-            if not paginate:
+                if id_mode:
+                    ids.append(temp_accid)
+                else:
+                    converted = class_converter.AbstractUserConvert(some_dict)
+                    objects.append(converted)
+            if id_mode:
+                return ids
+            elif not paginate:
                 return objects
             else:
                 paginated = pagin(objects, per_page=per_page)
@@ -118,7 +122,7 @@ class AuthClient(AbstractEntity):
         inbox = check_inbox(sent_or_inbox)
         route = Route.GET_PRIVATE_MESSAGES
         parameters = Params().create_new().put_definer('accountid', str(self.account_id)).put_password(self.encodedpass).put_page(0).put_total(0).get_sent(inbox).finish()
-        resp = http.SendHTTPRequest(route, parameters)
+        resp = http.send_request(route, parameters)
         if resp == '-1':
             raise error.MissingAccess()
         if resp == '-2':
@@ -142,7 +146,7 @@ class AuthClient(AbstractEntity):
             route = Route.UPLOAD_ACC_COMMENT
             to_gen = [self.name, 0, 0, 1]
             parameters = Params().create_new().put_definer('accountid', str(self.account_id)).put_username(self.name).put_password(self.encodedpass).put_comment(content, to_gen).comment_for('client').finish()
-            resp = http.SendHTTPRequest(route, parameters)
+            resp = http.send_request(route, parameters)
             if resp == '-1':
                 raise error.MissingAccess()
             return self.get_comments()[0]
@@ -163,7 +167,7 @@ class AuthClient(AbstractEntity):
             raise error.InvalidArgument()
         route = Route.SEND_PRIVATE_MESSAGE
         parameters = Params().create_new().put_definer('accountid', str(self.account_id)).put_message(subject, body).put_recipient(str(recipient_id)).put_password(str(self.encodedpass)).finish()
-        resp = http.SendHTTPRequest(route, parameters)
+        resp = http.send_request(route, parameters)
         if resp == '-1':
             raise error.MissingAccess()
         if resp == '1':
@@ -175,48 +179,46 @@ class AuthClient(AbstractEntity):
             raise error.MissingArguments()
         else:
             first_route = Route.MANAGE_ACCOUNT
-            cookie = http.SendHTTPRequest(first_route, cookies='get')[1]
+            cookie = http.send_request(first_route, cookies='get')[1]
             second_route = Route.CAPTCHA
-            captcha = http.SendHTTPRequest(second_route, cookies='add', cookie=cookie)
+            captcha = http.send_request(second_route, cookies='add', cookie=cookie)
             number = Captcha().solve(captcha)
             params = Params().create_new('web').put_for_management(self.name, self.password, str(number)).close()
-            http.SendHTTPRequest(first_route, params, cookies='add', cookie=cookie)
+            http.send_request(first_route, params, cookies='add', cookie=cookie)
             if name is not None:
                 route = Route.CHANGE_USERNAME
-                test = http.SendHTTPRequest(route, cookies='add', cookie=cookie)
+                test = http.send_request(route, cookies='add', cookie=cookie)
                 if ('Username has already been changed once.' in test):
                     raise error.MissingAccess()
                 else:
                     params = Params().create_new('web').put_for_username(self.name, name).close()
-                    resp = http.SendHTTPRequest(route, params, cookies='add', cookie=cookie)
+                    resp = http.send_request(route, params, cookies='add', cookie=cookie)
                     if ('Your username has been changed to' in resp):
                         print(f'Changed username to: {name}'); self.options["name"] = name
-                        return None
                     else:
                         raise error.MissingAccess()
             if password is not None:
                 route = Route.CHANGE_PASSWORD
-                http.SendHTTPRequest(route, cookies='add', cookie=cookie)
+                http.send_request(route, cookies='add', cookie=cookie)
                 params = Params().create_new('web').put_for_password(self.name, self.password, password).close()
-                resp = http.SendHTTPRequest(route, params, cookies='add', cookie=cookie)
+                resp = http.send_request(route, params, cookies='add', cookie=cookie)
                 if ('Password change failed' in resp):
                     raise error.MissingAccess()
                 else:
                     print(f'Changed password to: {password}'); self.options["password"] = password
                     from .utils.crypto.coders import Coder
                     self.options["encodedpass"] = Coder().encode0(type='accountpass', string=self.password)
-                    return None
 
-    def get_comments(self):
-        return self.as_user().get_comments()
+    def get_comments(self, pages = 1, paginate = False, per_page = 10):
+        return self.as_user().get_comments(pages, paginate, per_page)
     
-    def get_comment_history(self):
-        return self.as_user().get_comment_history()
+    def get_comment_history(self, pages = 1, paginate = False, per_page = 10):
+        return self.as_user().get_comment_history(pages, paginate, per_page)
 
-    def test_captcha(self): #FOR TESTS ONLY
+    def test_captcha(self): #It is just for testing
         route = Route.CAPTCHA; params = str()
-        resp = http.SendHTTPRequest(route, params)
-        c = Captcha(); res = c.solve(resp)
+        resp = http.send_request(route, params)
+        c = Captcha(); res = c.solve(resp, with_image=True)
         return res
 
 def check_inbox(sent_or_inbox):

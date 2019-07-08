@@ -12,6 +12,10 @@ class Comment(AbstractEntity):
     def __str__(self):
         ret = f'[gd.Comment]\n[ID:{self.id}]\n[Rating:{self.rating}]\n[Timestamp:{self.timestamp}]\n[Body:{self.body}]\n[Author:{self.author.name}]'
         return ret
+    
+    def __repr__(self):
+        ret = f'<gd.Comment: author={self.author}, body={repr(self.body)}, id={self.id}, rating={self.rating}>'
+        return ret
 
     @property
     def body(self):
@@ -50,7 +54,7 @@ class Comment(AbstractEntity):
         route = cases.get(True)
         config_type = 'client' if self.typeof is 1 else 'level'
         parameters = Params().create_new().put_definer('commentid', str(self.id)).put_definer('accountid', str(c.account_id)).put_password(c.encodedpass).comment_for(config_type, self.level_id).finish()
-        resp = http.SendHTTPRequest(route, parameters)
+        resp = http.send_request(route, parameters)
         if resp is '1':
             return None
         raise error.MissingAccess()

@@ -12,7 +12,7 @@ class Converter:
             "3": "Long",
             "4": "XL"
         }
-        length = some_dict.get(value, '(?)')
+        length = some_dict.get(value)
         return length
 
     def to_ordinal(number):

@@ -17,6 +17,10 @@ class Message(AbstractEntity):
     def __str__(self):
         res = f'[gd.Message]\n[Author:{self.author.name}]\n[Recipient:{self.recipient.name}]\n[ID:{self.id}]\n[Subject:{self.subject}]\n[Body:{self.body}]\n[Is_Read:{self.is_read()}]\n[Type:{self.typeof.capitalize()}]\n[Timestamp:{self.timestamp}]'
         return res
+    
+    def __repr__(self):
+        ret = f'<gd.Message: author={self.author}, body={repr(self.body)}, id={self.id}, is_read={self.is_read}>'
+        return ret
 
     @property
     def author(self):
@@ -45,7 +49,7 @@ class Message(AbstractEntity):
         c = self.retrieved_from()
         route = Route.READ_PRIVATE_MESSAGE
         params = Params().create_new().put_definer('accountid', str(c.account_id)).put_definer('messageid', str(self.id)).put_password(str(c.encodedpass)).put_is_sender(self.typeof).finish()
-        resp = http.SendHTTPRequest(route, params)
+        resp = http.send_request(route, params)
         body = mapper_util.map(resp.split(':')).get(i.MESSAGE_BODY)
         ret = coder.decode0(type='message', string=mapper_util.normalize(body))
         self._body = ret
@@ -55,7 +59,7 @@ class Message(AbstractEntity):
         c = self.retrieved_from()
         route = Route.DELETE_PRIVATE_MESSAGE
         params = Params().create_new().put_definer('accountid', str(c.account_id)).put_definer('messageid', str(self.id)).put_password(str(c.encodedpass)).put_is_sender(self.typeof).finish()
-        resp = http.SendHTTPRequest(route, params)
+        resp = http.send_request(route, params)
         if resp is '1':
             return None
         else:

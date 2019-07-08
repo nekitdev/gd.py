@@ -9,7 +9,12 @@ class Song(AbstractEntity):
         self.options = options
     
     def __str__(self):
-        return self.get_all_info()
+        res = f"[gd.Song]\n[ID:{self.id}]\n[Name:{self.name}]\n[Author:{self.author}]\n[Links]\n[Basic:{self.link}]\n[Download:{self.dl_link}]"
+        return res
+    
+    def __repr__(self):
+        ret = f'<gd.Song: id={self.id}, name={repr(self.name)}, author={repr(self.author)}>'
+        return ret
 
     @property
     def name(self):
@@ -34,9 +39,6 @@ class Song(AbstractEntity):
     @property
     def dl_link(self):
         return self.options.get('links')[1]
-    
-    def get_all_info(self):
-        return f"[gd.Song]\n[ID][{self.id}]\n[Name][{self.name}]\n[Author][{self.author}]\n[Links]\n[Basic][{self.link}]\n[Download][{self.dl_link}]"
 
     def download(self, path=None):
         link = self.dl_link

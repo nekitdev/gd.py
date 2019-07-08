@@ -5,9 +5,9 @@ def indexall(iterable, item):
     data = []
     item = item.lower() if (type(item) is str) else item
     res = list(iterable)
-    if any(type(e).__name__ not in dir(builtins) for e in res):
+    if any(type(e).__name__ not in dir(builtins) for e in res): # if object is an instance of not built-in class
         attr = {
-            type(item) is int: 'id',
+            type(item) is int: 'account_id',
             type(item) is str: 'name'
         }.get(True)
         res = [getattr(elem, attr) for elem in res]
@@ -24,7 +24,6 @@ def run_thing(data, res, elem, item):
             data.append(res.index(elem))
 
 def search(iterable, **kwargs):
-    #1st-user's name, 2nd-user's account id, 3rd-user's player id
     _strategy = list(kwargs.keys())[0]
     _search = list(kwargs.values())[0]
     if (_strategy is None) or (_search is None):

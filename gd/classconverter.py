@@ -30,6 +30,7 @@ class class_converter:
                 dl_link
             ]
         )
+        
     def UserConvert(to_parse):
         s = to_parse #as I said, shorter variables are more comfortable
         pm_policy = s[i.USER_PRIVATE_MESSAGE_POLICY]
@@ -114,6 +115,7 @@ class class_converter:
             type = type_of,
             retrieved_from = auth_client
         )
+
     def RequestConvert(to_parse, to_parse_2, auth_client):
         s = to_parse
         cases = {0: 'normal', 1: 'sent'}
@@ -145,10 +147,8 @@ class class_converter:
             id = int(s['userid'])
         )
     
-    def CommentConvert(to_parse, ret_from, to_parse_2 = None):
+    def CommentConvert(to_parse, ret_from, to_parse_2):
         s = to_parse
-        if to_parse_2 is None:
-            pass #handling level comments
         return Comment(
             body = b64.b64decode(mapper_util.normalize(s[i.COMMENT_BODY])).decode(),
             rating = int(s[i.COMMENT_RATING]),

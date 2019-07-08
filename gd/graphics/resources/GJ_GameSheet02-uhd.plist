@@ -16069,21 +16069,6 @@
                 <key>textureRotated</key>
                 <false/>
             </dict>
-            <key>ship_27_extra_001.png</key>
-            <dict>
-                <key>aliases</key>
-                <array/>
-                <key>spriteOffset</key>
-                <string>{1,0}</string>
-                <key>spriteSize</key>
-                <string>{82,22}</string>
-                <key>spriteSourceSize</key>
-                <string>{84,22}</string>
-                <key>textureRect</key>
-                <string>{{149,625},{82,22}}</string>
-                <key>textureRotated</key>
-                <true/>
-            </dict>
             <key>ship_28_001.png</key>
             <dict>
                 <key>aliases</key>
@@ -16119,13 +16104,13 @@
                 <key>aliases</key>
                 <array/>
                 <key>spriteOffset</key>
-                <string>{-398.5,398.5}</string>
+                <string>{0,0}</string>
                 <key>spriteSize</key>
                 <string>{3,3}</string>
                 <key>spriteSourceSize</key>
                 <string>{800,800}</string>
                 <key>textureRect</key>
-                <string>{{3558,108},{3,3}}</string>
+                <string>{{3160,506},{3,3}}</string>
                 <key>textureRotated</key>
                 <false/>
             </dict>

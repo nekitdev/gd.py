@@ -1,4 +1,4 @@
-class Filters:
+class Filters: # I still need to have fun with Wireshark lol
     def __init__(self, **options):
         self.diff = {
             'N/A': '-1',

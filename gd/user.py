@@ -5,7 +5,8 @@ from .utils.params import Parameters as Params
 from .utils.mapper import mapper_util
 from .utils.gdpaginator import paginate as pagin
 from .abstractentity import AbstractEntity
-
+import urllib
+#TO_DO: add __str__ and __repr__ funcs
 class User(AbstractEntity):
     def __init__(self, **options):
         super().__init__(**options)
@@ -76,57 +77,57 @@ class User(AbstractEntity):
     
     def attached(self):
         return self.options.get('attached')
-    
-    #MAKE UNION OF TWO FUNCTIONS BELOW
-    #ALSO, GET A L L COMMENTS AVAILABLE
-    def get_comment_history(self, paginate = False, per_page = 10):
-        from .classconverter import class_converter
-        route = Route.GET_COMMENT_HISTORY
-        params = Params().create_new().put_definer('userid', str(self.id)).put_page(0).put_total(0).put_mode(0).finish()
-        resp = http.SendHTTPRequest(route, params)
-        to_map = resp.split('#')
-        comments = []; D = {'name': self.name, 'id': self.id, 'account_id': self.account_id}
-        if (len(to_map[0])==0):
-            raise error.NothingFound('comments')
-        else:
-            to_map = mapper_util.normalize(to_map[0]).split('|')
-            for element in to_map:
-                temp = element.split(':')[0].split('~')
-                to_put = ['TYPE', '0']; temp.extend(to_put)
-                mapped = mapper_util.map(temp)
-                comments.append(class_converter.CommentConvert(mapped, self, D))
-            if not paginate:
-                return comments
-            else:
-                paginated = pagin(comments, per_page=per_page)
-                return paginated
 
-    def get_comments(self, paginate = False, per_page = 10):
-        from .classconverter import class_converter
-        route = Route.GET_COMMENTS
-        parameters = Params().create_new().put_definer('accountid', str(self.account_id)).put_page(0).put_total(0).finish()
-        resp = http.SendHTTPRequest(route, parameters)
-        to_map = resp.split('#')
-        comments = []; D = {'name': self.name, 'id': self.id, 'account_id': self.account_id}
-        if (len(to_map[0])==0):
-            raise error.NothingFound('comments')
-        else:
-            to_map = mapper_util.normalize(to_map[0]).split('|') #I don't know why but this one is actually intended
-            for element in to_map:
-                temp = element.split('~')
-                to_put = ['TYPE', '1']; temp.extend(to_put)
-                mapped = mapper_util.map(temp)
-                comments.append(class_converter.CommentConvert(mapped, self, D))
-            if not paginate:
-                return comments
-            else:
-                paginated = pagin(comments, per_page=per_page)
-                return paginated
+    def get_comment_history(self, pages = 1, paginate = False, per_page = 10):
+        final = []
+        for i in range(pages):
+            try:
+                temp = retrieve_comments(
+                    obj = self, route = Route.GET_COMMENT_HISTORY, type_num = 0, paginate = paginate, per_page = per_page,
+                    params = Params().create_new().put_definer('userid', str(self.id)).put_page(i).put_total(0).put_mode(0).finish()
+                )
+                final.extend(temp)
+            except (urllib.error.URLError, error.NothingFound):
+                break
+        return final    
+
+    def get_comments(self, pages = 1, paginate = False, per_page = 10):
+        final = []
+        for i in range(pages):
+            try:
+                temp = retrieve_comments(
+                    obj = self, route = Route.GET_COMMENTS, type_num = 1, paginate = paginate, per_page = per_page,
+                    params = Params().create_new().put_definer('accountid', str(self.account_id)).put_page(i).put_total(0).finish()
+                )
+                final.extend(temp)
+            except (urllib.error.URLError, error.NothingFound):
+                break
+        return final
 
     def update(self):
         from .client import client
         self.options = client().get_user(self.account_id, attached=self.attached()).options
         return None
+
+def retrieve_comments(obj, route: str, params: dict, type_num: int, paginate: bool, per_page: int):
+    from .classconverter import class_converter
+    resp = http.send_request(route, params)
+    to_map = resp.split('#')
+    comments = []; D = {'name': obj.name, 'id': obj.id, 'account_id': obj.account_id}
+    if (len(to_map[0]) == 0):
+        raise error.NothingFound('comments')
+    else:
+        to_map = mapper_util.normalize(to_map[0]).split('|')
+        for element in to_map:
+            temp = (element.split(':')[0].split('~')) if (type_num == 0) else (element.split('~'))
+            to_put = ['TYPE', str(type_num)]; temp.extend(to_put)
+            mapped = mapper_util.map(temp)
+            comments.append(class_converter.CommentConvert(mapped, obj, D))
+        if not paginate:
+            return comments
+        else:
+            paginated = pagin(comments, per_page=per_page)
+            return paginated
 
 # client = gd.client()
 # user = client.get_user(71) //returns gd.User() object, for instance, RobTop

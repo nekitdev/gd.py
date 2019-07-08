@@ -123,7 +123,7 @@ class Parameters:
         return self
     
     def put_comment(self, content: str, values: list):
-        comment = base64.b64encode(content.encode()).decode()
+        comment = mapper_util.prepare_sending(base64.b64encode(content.encode()).decode())
         self.dict['comment'] = comment
         values.insert(1, comment)
         self.dict['chk'] = Coder().gen_chk(type='comment', values=values)
@@ -150,7 +150,7 @@ class Parameters:
         
     def put_login_definer(self, username: str, password: str):
         del self.dict["gdw"] # it is not needed in login request
-        self.dict["udid"] = f"[{random.randint(100000, 999999)}][gd.py]"
+        self.dict["udid"] = f"[{random.randint(100000, 999999)}][gd.py]" # for fun
         self.dict["password"] = password
         self.put_username(username)
         return self
