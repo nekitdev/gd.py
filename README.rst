@@ -66,6 +66,6 @@ You can find more examples in examples directory.
 Links
 -----
 
-- `Documentation <https://gdpy.readthedocs.io/en/latest/index.html>`_
-- `Official Discord Server <https://discord.gg/KjehjaC>`_
+- `Documentation [Empty] <https://gdpy.readthedocs.io/en/latest/index.html>`_
+- `Official Discord Server [Not ready yet] <https://discord.gg/KjehjaC>`_
 - `Geometry Dash Discord Server <https://discord.gg/xkgrP29>`_
