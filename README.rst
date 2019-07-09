@@ -7,8 +7,7 @@ Key Features
 ------------
 
 - Modern Pythonic API
-- 100% coverage of the supported Geometry Dash API
-- Optimised in both speed and memory
+- [Future] 100% coverage of the supported Geometry Dash API
 - [Future] using ``async`` and ``await``
 
 Installing
@@ -27,6 +26,7 @@ To install the library with without full image support, you can just run the fol
     py -3 -m pip install -U gd.py
 
 Otherwise to get image support you should run the following command:
+[Not supported on PyPI yet]
 
 .. code:: sh
 
