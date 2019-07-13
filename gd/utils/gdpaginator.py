@@ -1,7 +1,7 @@
 from .errors import error
 
-def paginate(iterable, **kwargs):
-    return Paginator(to_paginate=iterable, per_page=kwargs.get('per_page'))
+def paginate(iterable, per_page: int = None):
+    return Paginator(to_paginate=iterable, per_page=per_page)
 
 class Paginator:
     def __init__(self, **options):
@@ -145,12 +145,4 @@ class Paginator:
             some_dict[f'[Page {(i+1)}]'] = self.view_page(i+1)
         return some_dict
 
-#example:
-#paginator = gd.Paginator(to_paginate=['15316', '214536'], per_page=1)
-#paginator.get_pages_count() //returns '2'
-#paginator.get_current_page() //returns '1'
-#paginator.move_to(page=2)
-#paginator.get_current_page() //returns '2'
-#paginator.has_next_page() //returns 'False'
-#paginator.view_page() //returns ['214536']
-# (._.')/
+# TO_DO: rewrite a bit
