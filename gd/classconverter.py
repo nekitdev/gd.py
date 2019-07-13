@@ -1,4 +1,5 @@
-from .utils.indexer import Index as i
+import base64 as b64
+
 from .song import Song
 from .user import User
 from .comment import Comment
@@ -8,11 +9,12 @@ from .level import Level
 from .message import Message
 from .iconset import IconSet
 from .friend_request import FriendRequest
+from .graphics.colors import colors
+from .utils.indexer import Index as i
 from .utils.converter import Converter
 from .utils.crypto.coders import Coder
 from .utils.mapper import mapper_util
 from .utils.types import MessagePrivacyType, FriendRequestPrivacyType, CommentPrivacyType, StatusLevelType
-import base64 as b64
 
 class class_converter:
 
@@ -77,8 +79,8 @@ class class_converter:
             messages = dm, friend_requests = fr_rq, comments = comment,
             icon_setup = IconSet(
                 main_icon = int(s[i.USER_ICON]),
-                color_1 = int(s[i.USER_COLOR_1]),
-                color_2 = int(s[i.USER_COLOR_2]),
+                color_1 = colors[int(s[i.USER_COLOR_1])],
+                color_2 = colors[int(s[i.USER_COLOR_2])],
                 main_icon_type = int(s[i.USER_ICON_TYPE]),
                 has_glow_outline = bool(int(s[i.USER_GLOW_OUTLINE])^1),
                 icon_cube = int(s[i.USER_ICON_CUBE]),
@@ -167,4 +169,4 @@ class class_converter:
             name = s['name'], id = s['id'], account_id = s['account_id']
         )
 
-#woop >.>
+# TO_DO: refactor this to bring a nicer look
