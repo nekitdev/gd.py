@@ -1,5 +1,3 @@
-from .graphics.colors import colors
-
 class IconSet:
     def __init__(self, **options):
         self.options = options
@@ -52,9 +50,3 @@ class IconSet:
     
     def get_colors(self):
         return self.color_1, self.color_2
-
-def get_color(obj: IconSet, strcolor: str):
-    try:
-        return colors[obj.options.get(strcolor)]
-    except ValueError:
-        return None
