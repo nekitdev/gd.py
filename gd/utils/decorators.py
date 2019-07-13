@@ -13,12 +13,11 @@ def benchmark(func):
     return decorator
 
 class Abstract:
-    """Brings subclasses different useful attributes."""
     def __init__(self):
         if not hasattr(self, '__to_repr__'):
-            raise AttributeError("Any class subclassed from 'Abstract' should have attribute '__to_repr__' defined.")
+            self.__to_repr__ = []
         if not isinstance(self.__to_repr__, list):
-            raise AttributeError("'Abstract' class expected '__to_repr__' as instance of 'list'. (Recieved '%s')" % type(self.__to_repr__).__name__)
+            raise AttributeError("'Abstract' class expected '__to_repr__' as instance of 'list'. (recieved '%s')" % type(self.__to_repr__).__name__)
 
     @property
     def __rmodule__(self):
@@ -30,8 +29,9 @@ class Abstract:
         return self.__class__.__name__
 
     def __repr__(self):
-        mapped = ', '.join(map(lambda a: f'{a}={getattr(self, a)}', self.__to_repr__))
-        c = ': ' if len(mapped) > 0 else ''
-        return '<{0.__rmodule__}.{0.__name__}'.format(self) + c + mapped + '>'
+        to_repr = [(name, getattr(self, name)) for name in self.__to_repr__]
+        str_repr = ', '.join('%s=%s' % t for t in to_repr)
+        additional = ': ' if len(str_repr) > 0 else ''
+        return '<{0.__rmodule__}.{0.__name__}{1}{2}>'.format(self, additional, str_repr)
 
 # TO_DO: Rename 'decorators.py' to 'wrap_tools.py'
