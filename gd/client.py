@@ -1,3 +1,5 @@
+import asyncio
+
 from .utils.http_request import http
 from .classconverter import class_converter
 from .utils.mapper import mapper_util
@@ -11,15 +13,21 @@ from .authclient import AuthClient
 #initializing other things here
 class client:
     def __repr__(self):
-        ret = f'<gd.client: error_count={self.error_count}>'
+        ret = '<gd.client>'
         return ret
 
     def __init__(self):
         self.error_code = '-1'
-        self.error_count = 0
-    
-    def emit_counter(self):
-        self.error_count += 1
+
+    def event(self, coro):
+        """A decorator that registers an event to listen to."""
+
+        if not asyncio.iscoroutinefunction(coro):
+            raise TypeError("event registered must be a coroutine function.")
+
+        setattr(self, coro.__name__, coro)
+        # log here
+        return coro
 
     def get_song(self, songid: int = 0):
         if (songid == 0):
@@ -28,10 +36,8 @@ class client:
             parameters = Params().create_new().put_definer('song', str(songid)).finish()
             resp = http.send_request(Route.GET_SONG_INFO, parameters)
             if resp == self.error_code:
-                self.emit_counter()
                 raise error.MissingAccess(type='Song', id=songid)
             if resp == '-2':
-                self.emit_counter()
                 raise error.SongRestrictedForUsage(songid) 
             else:
                 resp = resp.split("~|~")
@@ -48,7 +54,6 @@ class client:
             parameters = Params().create_new().put_definer('user', str(accountid)).finish()
             resp = http.send_request(Route.GET_USER_INFO, parameters)
             if resp == self.error_code:
-                self.emit_counter()
                 raise error.MissingAccess(type='User', id=accountid)
             resp = resp.split(':')
             mapped = mapper_util.map(resp)
@@ -103,11 +108,11 @@ class client:
             parameters = Params().create_new().put_login_definer(username=user, password=password).finish_login()
             resp = http.send_request(Route.LOGIN, parameters)
             if resp == self.error_code:
-                self.emit_counter()
                 raise error.FailedLogin(login=user, password=password)
             else:
                 resp = resp.split(',')
                 to_convert = {'username': user, 'password': password, 'accountid': resp[0], 'userid': resp[1]}
                 authclient = class_converter.AuthClientConvert(to_convert)
                 return authclient
-            
+
+# TO_DO: Make everything less messy...
