@@ -1,6 +1,10 @@
 import urllib.request
 from urllib.request import urlopen
 from urllib.request import Request
+# NEW
+import asyncio
+import aiohttp
+
 from .errors import error
 
 class http:
@@ -31,3 +35,5 @@ class http:
             c = r.info().get('Set-Cookie').split('; ')[0]
             return res, c
         return res
+
+# TO_DO: add asynchronous requests, rewrite 'struct_params' and rename this to 'http.py'
