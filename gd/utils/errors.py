@@ -1,53 +1,70 @@
-class error:
-    class IDNotSpecified(Exception):
-        def __init__(self, _type):
-            self.reply = f"ID for '{_type}' was not specified. ID should be an integer higher than zero."
-            Exception.__init__(self, self.reply)
+class GDException(Exception):
+    """Base exception class for gd.py
 
-    class MissingAccess(Exception):
-        def __init__(self, **params):
-            _type = params.get('type')
-            _id = params.get('id')
-            self.reply = f"No access to '{_type}' with ID: '{_id}'."
-            Exception.__init__(self, self.reply)
-    
-    class SongRestrictedForUsage(Exception):
-        def __init__(self, _id):
-            self.reply = f"Song with id '{_id}' is not allowed for use."
-            Exception.__init__(self, self.reply)
-            
-    class PagesOutOfRange(Exception):
-        def __init__(self, **params):
-            _page_num = params.get('page')
-            _info = params.get('info')
-            if str(_info).isdigit():
-                self.reply = f"Pages are out of range. Requested page: '{_page_num}', Pages existing: '{_info}'"
-            else:
-                self.reply = f"{_info} Requested page: '{_page_num}'"
-            Exception.__init__(self, self.reply)
-    
-    class PaginatorIsEmpty(Exception):
-        def __init__(self):
-            self.reply = "<'gd.Paginator' object> has no elements to operate with..."
-            Exception.__init__(self, self.reply)
+    This could be caught to handle any exceptions thrown from this library.
+    """
+    pass
 
-    class FailedLogin(Exception):
-        def __init__(self, **params):
-            _login = params.get('login')
-            _password = params.get('password')
-            self.reply = f"Failed to login with <login='{_login}', password='{_password}'>."
-            Exception.__init__(self, self.reply)
-    
-    class NothingFound(Exception):
-        def __init__(self, _type):
-            self.reply = f'No {_type} were found.'
-            Exception.__init__(self, self.reply)
-            
-    class InvalidArgument(Exception):
-        pass #finish this one
 
-    class TooManyArguments(Exception):
-        pass #yeah oof
+class ClientException(GDException):
+    """Base exception class for errors that are thrown,
 
-    class MissingArguments(Exception):
-        pass #Oly is lit
+    when operation in :class:`Client` fails.
+    """
+    pass
+
+
+class PaginatorException(GDException):
+    """Base exception class for errors that are thrown,
+
+    when operating with :class:`Paginator`.
+    """
+    pass
+
+
+class MissingAccess(ClientException):
+    def __init__(self, **params):
+        _type = params.get('type')
+        _id = params.get('id')
+        message = f"Missing access to '{_type}' with id: '{_id}'."
+        super().__init__(message)
+
+
+class SongRestrictedForUsage(ClientException):
+    def __init__(self, _id):
+        message = f"Song with id '{_id}' is not allowed for use."
+        super().__init__(message)
+
+
+class LoginFailure(ClientException):
+    def __init__(self, **params):
+        self.login = params.get('login')
+        self.password = params.get('password')
+        message = f"Failed to login with parameters:\n<login='{self.login}', password='{self.password}'>."
+        super().__init__(message)
+
+
+class NothingFound(ClientException):
+    def __init__(self, cls):
+        self.type = cls.__name__.lower()
+        message = f"No <{self.type}>'s were found."
+        super().__init__(message)
+
+
+class PagesOutOfRange(PaginatorException):
+    def __init__(self, **params):
+        _page_num = params.get('page')
+        _info = params.get('info')
+        if str(_info).isdigit():
+            message = f"Pages are out of range.\nRequested page: '{_page_num}', Pages existing: '{_info}'"
+        else:
+            message = f"{_info}\nRequested page: '{_page_num}'"
+        super().__init__(message)
+
+
+class PaginatorIsEmpty(PaginatorException):
+    def __init__(self):
+        message = "'gd.Paginator' object has no elements to operate with."
+        super().__init__(message)
+
+# TO_DO: finish documenting, work with logic and refactor code in core
