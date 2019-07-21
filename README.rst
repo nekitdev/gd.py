@@ -15,7 +15,7 @@ Installing
 
 **Python 3.5.3 or higher is required**
 
-To install the library with without full image support, you can just run the following command:
+To install the library, you can just run the following command:
 
 .. code:: sh
 
@@ -25,29 +25,12 @@ To install the library with without full image support, you can just run the fol
     # Windows
     py -3 -m pip install -U gd.py
 
-Otherwise to get image support you should run the following command:
-[Not supported on PyPI yet]
-
-.. code:: sh
-
-    # Linux/OS X
-    python3 -m pip install -U gd.py[image]
-
-    # Windows
-    py -3 -m pip install -U gd.py[image]
-
-To install the development version, do the following:
+To install the developer version, run these commands:
 
 .. code:: sh
     $ git clone https://github.com/NeKitDSS/gd.py
     $ cd gd.py
-    $ python3 -m pip install -U .[image]
-
-Optional packages:
-~~~~~~~~~~~~~~~~~~
-
-* Pillow (for image support)
-* aiohttp [required soon]
+    $ python3 -m pip install -U .
 
 Quick example
 -------------
