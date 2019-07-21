@@ -9,7 +9,6 @@ import logging
 
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser
-from .authclient import AuthClient
 from .comment import Comment
 from .errors import *
 #from .level import Level
@@ -18,11 +17,12 @@ from .song import Song
 from .unreguser import UnregisteredUser
 from .user import User
 from .graphics.colors import Color, colors
+from .utils import run, wait
 from .utils.captcha_solver import Captcha
 from .utils.gdpaginator import Paginator
 from .utils.crypto.coders import Coder
 from .utils.crypto.xor_cipher import XORCipher as xor
-from .client import client
+from .client import Client
 
 def _gen_version_details():
     ver = __version__
