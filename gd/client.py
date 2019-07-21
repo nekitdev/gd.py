@@ -115,4 +115,19 @@ class client:
                 authclient = class_converter.AuthClientConvert(to_convert)
                 return authclient
 
+
+# async def fetch(
+#     route: str, parameters: dict = {}, 
+#     splitter: str = None, error_codes: dict = [],  # error_codes is a dict: {code: error_to_raise}
+#     cookies: str = None, cookie: str = None
+# ):
+#     resp = await http.send_request(route, parameters, cookies, cookie)
+#     if resp.error_code in error_codes:
+#         raise error_codes.get(resp.error_code)
+#     if splitter is not None:
+#         resp = resp.split(splitter)
+#     return resp
+#
+#
+
 # TO_DO: Make everything less messy...
