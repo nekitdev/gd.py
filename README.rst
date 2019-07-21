@@ -56,8 +56,13 @@ Quick example
 
     import gd
 
-    song = gd.client.get_song(633206)
-    print(song.name)
+    client = gd.client()
+    
+    async def test():
+        song = await client.get_song(633206)
+        print(song.name)
+
+    gd.run(test())
 
     # OUTPUT: Random Song 01
 
