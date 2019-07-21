@@ -24,10 +24,6 @@ from .utils.crypto.coders import Coder
 from .utils.crypto.xor_cipher import XORCipher as xor
 from .client import client
 
-def setup_basic_logging():
-    """Set all logs to be outputted in the console."""
-    logging.basicConfig(level=logging.INFO)
-
 def _gen_version_details():
     ver = __version__
     cases = {
@@ -49,3 +45,27 @@ def _gen_version_details():
     )
     
 version_info = _gen_version_details()
+
+
+def setup_basic_logging():
+    """Function that sets up logs of the module,
+    with the following format:
+    [INFO] {gd.some_module}: Some info message.
+    """
+    log = logging.getLogger(__name__)
+    hdlr = logging.StreamHandler()
+    hdlr.setFormatter(
+        logging.Formatter('[%(levelname)s] {%(name)s}: %(message)s')
+    )
+    log.setLevel(logging.INFO)
+    log.addHandler(hdlr)
+
+# setting up the NullHandler here
+try:
+    from logging import NullHandler
+except ImportError:
+    class NullHandler(logging.Handler):
+        def emit(self, record):
+            pass
+
+logging.getLogger(__name__).addHandler(NullHandler())
