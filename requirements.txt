@@ -1,1 +1,2 @@
-aiohttp>=3.3.0,<3.6.0
+aiohttp>=3.3.0
+Pillow>=6.1.0
