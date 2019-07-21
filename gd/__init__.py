@@ -24,6 +24,10 @@ from .utils.crypto.coders import Coder
 from .utils.crypto.xor_cipher import XORCipher as xor
 from .client import client
 
+def setup_basic_logging():
+    """Set all logs to be outputted in the console."""
+    logging.basicConfig(level=logging.INFO)
+
 def _gen_version_details():
     ver = __version__
     cases = {
