@@ -40,7 +40,7 @@ Quick example
 
     import gd
 
-    client = gd.client()
+    client = gd.Client()
     
     async def test():
         song = await client.get_song(633206)
