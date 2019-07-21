@@ -7,7 +7,9 @@ with open('requirements.txt') as f:
 
 version = ''
 with open('gd/__init__.py') as f:
-    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE).group(1)
+    ver = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE)
+    if ver is not None:
+        version = ver.group(1)
 
 if not version:
     raise RuntimeError('version is not set')
@@ -16,11 +18,10 @@ readme = ''
 with open('README.rst') as f:
     readme = f.read()
 
-extras_require = {
-    'image': ['Pillow>=6.0.0'],
+extras_require = {  # gotta work on that soon
     'docs': [
-        'sphinx==1.8.5',
-        'sphinxcontrib_trio==1.1.0',
+        'sphinx',
+        'sphinxcontrib_trio',
         'sphinxcontrib-websupport'
     ]
 }
