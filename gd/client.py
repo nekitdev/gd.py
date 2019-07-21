@@ -1,5 +1,9 @@
 import asyncio
 
+import logging
+
+from .utils.wrap_utils import _make_repr
+from .utils.context import ctx
 from .utils.http_request import http
 from .classconverter import class_converter
 from .utils.mapper import mapper_util
@@ -10,14 +14,73 @@ from .utils.params import Parameters as Params
 from .utils.indexer import Index as i
 from .unreguser import UnregisteredUser
 from .authclient import AuthClient
-#initializing other things here
-class client:
-    def __repr__(self):
-        ret = '<gd.client>'
-        return ret
 
+log = logging.getLogger(__name__)
+
+
+class Client:
     def __init__(self):
-        self.error_code = '-1'
+        self._logged = False
+
+    def __repr__(self):
+        info = {
+            'is_logged': self._logged
+        }
+        return _make_repr(self, info)
+
+    def is_logged(self):
+        return self._logged
+
+    async def on_error(self, event_method, *args, **kwargs):
+        print('Ignoring exception in {}'.format(event_method), file=sys.stderr)
+        traceback.print_exc()
+
+    async def get_song(self, songid: int = 0):
+        if (songid == 0):
+            raise error.IDNotSpecified('Song')
+        parameters = Params().create_new().put_definer('song', str(songid)).finish()
+        codes = {
+            -1: MissingAccess(type='Song', id=songid),
+            -2: SongRestrictedForUsage(songid)
+        }
+        resp = await http.fetch(Route.GET_SONG_INFO, parameters, splitter="~|~", error_codes=codes, should_map=True)
+        return class_converter.SongConvert(resp)
+    
+    async def get_user(self, accountid: int = 0):
+        if accountid == 0:
+            raise error.IDNotSpecified('User')
+        if accountid == -1:
+            return UnregisteredUser()
+        parameters = Params().create_new().put_definer('user', str(accountid)).finish()
+        codes = {
+            -1: MissingAccess(type='User', id=accountid)
+        }
+        resp = await http.fetch(Route.GET_USER_INFO, parameters, splitter=':', error_codes=codes, should_map=True)
+
+        another = Params().create_new().put_definer('search', str(mapped.get(i.USER_PLAYER_ID))).put_page(0).finish()
+        new_resp = http.send_request(Route.USER_SEARCH, another, splitter=':', error_codes=codes, should_map=True)
+        new_dict = {
+            i.USER_GLOW_OUTLINE: new_resp.get(i.USER_GLOW_OUTLINE),
+            i.USER_ICON: new_resp.get(i.USER_ICON),
+            i.USER_ICON_TYPE: new_resp.get(i.USER_ICON_TYPE)
+        }
+        for key in list(new_dict.keys()):
+            mapped[key] = new_dict[key]
+        return class_converter.UserConvert(mapped)
+    
+    async def login(self, user: str, password: str)
+        parameters = Params().create_new().put_login_definer(username=user, password=password).finish_login()
+        codes = {
+            -1: FailedLogin(login=user, password=password)
+        }
+        resp = await http.fetch(Route.LOGIN, parameters, splitter=',', error_codes=codes)
+        prepared = {
+            'username': user, 'password': password,
+            'account_id': int(resp[0]), 'id': int(resp[1])
+        }
+        for attr, value in prepared.items():
+            ctx.upd(attr, value)
+        log.info("Logged in as %s, with password %s", repr(user), repr(password))
 
     def event(self, coro):
         """A decorator that registers an event to listen to."""
@@ -26,99 +89,15 @@ class client:
             raise TypeError("event registered must be a coroutine function.")
 
         setattr(self, coro.__name__, coro)
-        # log here
-        return coro
+        log.debug("%s has been successfully registered as an event.", coro.__name__)
 
-    def get_song(self, songid: int = 0):
-        if (songid == 0):
-            raise error.IDNotSpecified('Song')
-        else:
-            parameters = Params().create_new().put_definer('song', str(songid)).finish()
-            resp = http.send_request(Route.GET_SONG_INFO, parameters)
-            if resp == self.error_code:
-                raise error.MissingAccess(type='Song', id=songid)
-            if resp == '-2':
-                raise error.SongRestrictedForUsage(songid) 
-            else:
-                resp = resp.split("~|~")
-                mapped = mapper_util.map(resp)
-                song = class_converter.SongConvert(mapped)
-                return song
-    
-    def get_user(self, accountid: int = None, attached: AuthClient = None):
-        if accountid is None:
-            raise error.MissingArguments()
-        if accountid is 0:
-            return UnregisteredUser()
-        else:
-            parameters = Params().create_new().put_definer('user', str(accountid)).finish()
-            resp = http.send_request(Route.GET_USER_INFO, parameters)
-            if resp == self.error_code:
-                raise error.MissingAccess(type='User', id=accountid)
-            resp = resp.split(':')
-            mapped = mapper_util.map(resp)
-            another_params = Params().create_new().put_definer('search', str(mapped[i.USER_PLAYER_ID])).put_page(0).finish()
-            new_resp = http.send_request(Route.USER_SEARCH, another_params)
-            new_resp = mapper_util.map(new_resp.split(':'))
-            new_dict = {
-                i.USER_GLOW_OUTLINE: new_resp[i.USER_GLOW_OUTLINE],
-                i.USER_ICON: new_resp[i.USER_ICON],
-                i.USER_ICON_TYPE: new_resp[i.USER_ICON_TYPE]
-            }
-            for key in list(new_dict.keys()):
-                mapped[key] = new_dict[key]
-            user = class_converter.UserConvert(mapped)
-            if attached is not None:
-                user.options["attached"] = attached
-            return user
-    
-    def get_level(self, levelid: int = 0):
-        if levelid == 0:
-            raise error.IDNotSpecified('Level')
-        else:
-            to_map = []
-            parameters = Params().create_new().put_definer('search', str(levelid)).put_for_level().finish()
-            resp = http.send_request(Route.LEVEL_SEARCH, parameters)
-            if resp == self.error_code:
-                self.emit_counter()
-                raise error.NothingFound('levels')
-            resp = resp.split('#')
-            levelinfo = resp[0].split(':')
-            creatorinfo = mapper_util.map(
-                resp[1].split(':')
-            ) if (len(resp[1]) > 0) else UnregisteredUser()
-            songinfo = mapper_util.map(
-                resp[2].split('~|~')
-            ) if (len(resp[2]) > 0) else ('Normal Song')
-            data = Params().create_new().put_definer('leveldata', str(levelid)).finish()
-            lvldata = http.send_request(Route.DOWNLOAD_LEVEL, data)
-            lvldata = lvldata.split(':')
-            mapped1 = mapper_util.map(lvldata)
-            mapped2 = mapper_util.map(levelinfo)
-            creator = class_converter.AbstractUserConvert(
-                creatorinfo
-            ) if type(creatorinfo) is dict else creatorinfo
-            print(f'{resp}\n{levelinfo}\n{songinfo}\n{creatorinfo}\n{lvldata}') #THIS IS NOT READY AT ALL
-            #level = class_converter.LevelConvert(mapped)
-    
-    def login(self, user: str = None, password: str = None):
-        if (password is None) or (user is None):
-            raise error.MissingArguments()
-        else:
-            parameters = Params().create_new().put_login_definer(username=user, password=password).finish_login()
-            resp = http.send_request(Route.LOGIN, parameters)
-            if resp == self.error_code:
-                raise error.FailedLogin(login=user, password=password)
-            else:
-                resp = resp.split(',')
-                to_convert = {'username': user, 'password': password, 'accountid': resp[0], 'userid': resp[1]}
-                authclient = class_converter.AuthClientConvert(to_convert)
-                return authclient
+        return coro
 
 
 # async def fetch(
 #     route: str, parameters: dict = {}, 
-#     splitter: str = None, error_codes: dict = [],  # error_codes is a dict: {code: error_to_raise}
+#     splitter: str = None, error_codes: dict = {},  # error_codes is a dict: {code: error_to_raise}
+#     should_map: bool = False  # whether response should be mapped 'enum -> value'
 #     cookies: str = None, cookie: str = None
 # ):
 #     resp = await http.send_request(route, parameters, cookies, cookie)
@@ -126,6 +105,8 @@ class client:
 #         raise error_codes.get(resp.error_code)
 #     if splitter is not None:
 #         resp = resp.split(splitter)
+#     if should_map:
+#         resp = mapper_util.map(resp)
 #     return resp
 #
 #
