@@ -7,7 +7,7 @@ from .utils.context import ctx
 from .utils.http_request import http
 from .classconverter import class_converter
 from .utils.mapper import mapper_util
-from .utils.errors import error
+from .utils.errors import *
 from .utils.gdpaginator import paginate
 from .utils.routes import Route
 from .utils.params import Parameters as Params
