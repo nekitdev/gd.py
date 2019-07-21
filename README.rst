@@ -28,6 +28,7 @@ To install the library, you can just run the following command:
 To install the developer version, run these commands:
 
 .. code:: sh
+
     $ git clone https://github.com/NeKitDSS/gd.py
     $ cd gd.py
     $ python3 -m pip install -U .
