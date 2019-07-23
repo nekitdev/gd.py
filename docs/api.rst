@@ -30,3 +30,4 @@ There are two main ways to get version information about the library.
     off of :pep:`440`.
 
 .. autoclass:: Client
+    :members:
