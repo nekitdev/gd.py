@@ -29,7 +29,7 @@ def _gen_version_details():
     cases = {
         'a' in ver: ('a', 'alpha'),
         'b' in ver: ('b', 'beta'),
-        'rc' in ver: ('rc', 'release_candidate')
+        'rc' in ver: ('rc', 'candidate')
     }
     # we should not care about the separator if the releaselevel is 'final'
     splitter, releaselevel = cases.get(True, (' ', 'final'))
