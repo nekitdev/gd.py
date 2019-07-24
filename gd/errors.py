@@ -27,7 +27,10 @@ class MissingAccess(ClientException):
     def __init__(self, **params):
         _type = params.get('type')
         _id = params.get('id')
+        _message = params.get('message')
         message = f"Missing access to '{_type}' with id: '{_id}'."
+        if _message is not None:
+            message = _message
         super().__init__(message)
 
 

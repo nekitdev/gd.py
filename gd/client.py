@@ -14,7 +14,6 @@ from .utils.routes import Route
 from .utils.params import Parameters as Params
 from .utils.indexer import Index as i
 from .unreguser import UnregisteredUser
-from .authclient import AuthClient
 
 log = logging.getLogger(__name__)
 
@@ -27,14 +26,14 @@ class Client:
         }
         return _make_repr(self, info)
 
-    async def get_song(self, songid: int = 0):
+    async def get_song(self, song_id: int = 0):
         """|coro|
 
         Fetches a song from Geometry Dash server.
 
         Parameters
         ----------
-        songid: :class:`int`
+        song_id: :class:`int`
             An ID of the song to fetch.
 
         Raises
@@ -49,22 +48,22 @@ class Client:
         :class:`.Song`
             The song from the ID.
         """
-        parameters = Params().create_new().put_definer('song', str(songid)).finish()
+        parameters = Params().create_new().put_definer('song', str(song_id)).finish()
         codes = {
-            -1: MissingAccess(type='Song', id=songid),
-            -2: SongRestrictedForUsage(songid)
+            -1: MissingAccess(type='Song', id=song_id),
+            -2: SongRestrictedForUsage(song_id)
         }
         resp = await http.fetch(Route.GET_SONG_INFO, parameters, splitter="~|~", error_codes=codes, should_map=True)
         return class_converter.SongConvert(resp)
     
-    async def get_user(self, accountid: int = 0):
+    async def get_user(self, account_id: int = 0):
         """|coro|
 
         Fetches a user from Geometry Dash server.
 
         Parameters
         ----------
-        accountid: :class:`int`
+        account_id: :class:`int`
             An account ID of the user to fetch.
 
             .. note::
@@ -81,24 +80,24 @@ class Client:
         :class:`.User`
             The user from the ID. (if ID != -1)
         """
-        if accountid == -1:
+        if account_id == -1:
             return UnregisteredUser()
-        parameters = Params().create_new().put_definer('user', str(accountid)).finish()
+        parameters = Params().create_new().put_definer('user', str(account_id)).finish()
         codes = {
-            -1: MissingAccess(type='User', id=accountid)
+            -1: MissingAccess(type='User', id=account_id)
         }
         resp = await http.fetch(Route.GET_USER_INFO, parameters, splitter=':', error_codes=codes, should_map=True)
 
-        another = Params().create_new().put_definer('search', str(mapped.get(i.USER_PLAYER_ID))).put_page(0).finish()
-        new_resp = http.send_request(Route.USER_SEARCH, another, splitter=':', error_codes=codes, should_map=True)
+        another = Params().create_new().put_definer('search', str(resp.get(i.USER_PLAYER_ID))).put_page(0).finish()
+        new_resp = await http.fetch(Route.USER_SEARCH, another, splitter=':', error_codes=codes, should_map=True)
         new_dict = {
             i.USER_GLOW_OUTLINE: new_resp.get(i.USER_GLOW_OUTLINE),
             i.USER_ICON: new_resp.get(i.USER_ICON),
             i.USER_ICON_TYPE: new_resp.get(i.USER_ICON_TYPE)
         }
         for key in list(new_dict.keys()):
-            mapped[key] = new_dict[key]
-        return class_converter.UserConvert(mapped)
+            resp[key] = new_dict[key]
+        return class_converter.UserConvert(resp)
     
     def login(self, user: str, password: str):
         """Tries to log in with given parameters.
@@ -106,7 +105,6 @@ class Client:
         .. note::
 
             This function is not a coroutine, and it is recommended
-
             to run it before anything asynchronous.
 
         Parameters
@@ -140,18 +138,42 @@ class Client:
         log.info("Logged in as %s, with password %s", repr(user), repr(password))
 
     @check.is_logged(ctx)
+    async def post_comment(self, content: str):
+        """|coro|
+
+        Post a profile comment.
+
+        Parameters
+        ----------
+        content: :class:`str`
+            The content of a comment.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to post a comment.
+        """
+        to_gen = [ctx.name, 0, 0, 1]
+        parameters = Params().create_new().put_definer('accountid', str(ctx.account_id)).put_username(ctx.name).put_password(ctx.encodedpass).put_comment(content, to_gen).comment_for('client').finish()
+        codes = {
+            -1: MissingAccess(message='Failed to post a comment.')
+        }
+        await http.fetch(Route.UPLOAD_ACC_COMMENT, parameters, error_codes=codes)
+        log.debug("Posted a comment. Content: %s", content)
+
+    @check.is_logged(ctx)
     async def edit(self, name = None, password = None):
         """|coro|
 
-        Tries to edit credentials of a logged in client.
+        Tries to edit credentials of a client, if logged in.
 
         Parameters
         ----------
         name: :class:`str`
-            A name to change logged account's username to. Defaults to `None`.
+            A name to change logged account's username to. Defaults to ``None``.
 
         password: :class:`str`
-            A password to change logged account's username to. Defaults to `None`.
+            A password to change logged account's username to. Defaults to ``None``.
 
         Raises
         ------
@@ -182,7 +204,24 @@ class Client:
                 ctx.upd('password', password)
 
     def event(self, coro):
-        """A decorator that registers an event to listen to."""
+        """A decorator that registers an event to listen to.
+
+        Events must be a |coroutine_link|_, if not, :exc:`TypeError` is raised.
+
+        Example
+        -------
+
+        .. code-block:: python3
+
+            @client.event
+            async def on_level_rated(level):
+                print(level.name)
+
+        Raises
+        ------
+        TypeError
+            The coroutine passed is not actually a coroutine.
+        """
 
         if not asyncio.iscoroutinefunction(coro):
             raise TypeError("event registered must be a coroutine function.")
