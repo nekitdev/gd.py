@@ -1,8 +1,11 @@
+import functools
+
 from ..errors import NotLoggedError
 
 class check:
     def is_logged(context):
         def decorator(func):
+            @functools.wraps(func)
             def wrapper(*args, **kwargs):
                 if not context.is_logged():
                     raise NotLoggedError(func.__name__)
