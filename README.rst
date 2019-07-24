@@ -38,6 +38,7 @@ Quick example
 
 .. code:: python
 
+    import asyncio
     import gd
 
     client = gd.Client()
@@ -46,7 +47,8 @@ Quick example
         song = await client.get_song(633206)
         print(song.name)
 
-    gd.run(test())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(test())
 
     # OUTPUT: Random Song 01
 
