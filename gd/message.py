@@ -5,7 +5,7 @@ from .utils.indexer import Index as i
 from .utils.mapper import mapper_util
 from .utils.crypto.coders import Coder
 from .utils.params import Parameters as Params
-from .utils.errors import error
+# from .errors import error
 import base64
 
 class Message(AbstractEntity):

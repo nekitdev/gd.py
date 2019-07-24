@@ -1,7 +1,7 @@
 from .utils.routes import Route
 from .utils.params import Parameters as Params
 from .utils.http_request import http
-from .utils.errors import error
+# from .errors import error
 from .abstractentity import AbstractEntity
 
 class Comment(AbstractEntity):

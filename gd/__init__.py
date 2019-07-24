@@ -17,7 +17,6 @@ from .song import Song
 from .unreguser import UnregisteredUser
 from .user import User
 from .graphics.colors import Color, colors
-from .utils import run, wait
 from .utils.captcha_solver import Captcha
 from .utils.gdpaginator import Paginator
 from .utils.crypto.coders import Coder

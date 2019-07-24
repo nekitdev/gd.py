@@ -58,7 +58,7 @@ project = u'gd.py'
 copyright = u'2019, NeKitDSS'
 
 version = ''
-with open('../gd/__init__.py') as f:
+with open('../gd/__init__.py') as f:  # version should be set at this point
     version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE).group(1)
 
 release = version

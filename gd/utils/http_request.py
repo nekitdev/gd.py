@@ -1,39 +1,49 @@
-import urllib.request
-from urllib.request import urlopen
-from urllib.request import Request
-# NEW
-import asyncio
 import aiohttp
 
-from .errors import error
+from .mapper import mapper_util
 
-class http:
-    def struct_params(params):
-        FinalParams = ""
-        for value in params:
-            if value == "secret":
-                FinalParams += value + "=" + params[value]
-            else:
-                FinalParams += value + "=" + params[value] + "&"
-        FinalParams = FinalParams.encode()
-        return FinalParams
-    
-    def send_request(php, params = None, cookies: str = None, cookie: str = None):
-        base_url = "http://www.boomlings.com/database/"
-        url = base_url + php + ".php"; url_parameters = None
-        if params is not None:
-            url_parameters = http.struct_params(params)
-        req = Request(url) if url_parameters is None else Request(url, url_parameters)
-        if cookies is 'add':
-            req.add_header('Cookie', cookie)
-        r = urlopen(req); data = r.read()
-        try:
-            res = data.decode()
-        except UnicodeDecodeError:
-            res = data
-        if cookies is 'get':
-            c = r.info().get('Set-Cookie').split('; ')[0]
-            return res, c
-        return res
+class HTTPClient:
+    """Class that handles the main part of the entire gd.py - sending requests."""
+    BASE_URL = "http://www.boomlings.com/database/"
 
-# TO_DO: add asynchronous requests, rewrite 'struct_params' and rename this to 'http.py'
+    async def request(self, php, params = None, get_cookies: bool = False, cookie: str = None):
+        url = http.BASE_URL + php + ".php"
+        method = "GET" if params is None else "POST"
+        headers = None
+        if cookie is not None:
+            headers = {'Cookie': cookie}
+        async with aiohttp.ClientSession() as client:
+            resp = await client.request(method, url, data=params, headers=headers)
+            data = await resp.content.read()
+            try:
+                res = data.decode()
+                try:
+                    if int(res) in range(-2, 0):  # needs checking
+                        return int(res)
+                except ValueError:
+                    pass
+            except UnicodeDecodeError:
+                res = data
+            if get_cookies:
+                c = str(resp.cookies).split(' ')[1]  # kinda tricky way
+                return res, c
+            return res
+
+    async def fetch(
+        self, route: str, parameters: dict = {}, 
+        splitter: str = None, error_codes: dict = {},  # error_codes is a dict: {code: error_to_raise}
+        should_map: bool = False,  # whether response should be mapped 'enum -> value'
+        get_cookies: bool = False, cookie: str = None
+    ):
+        resp = await self.request(route, parameters, get_cookies, cookie)
+        if resp in error_codes:
+            raise error_codes.get(resp)
+        if splitter is not None:
+            resp = resp.split(splitter)
+        if should_map:
+            resp = mapper_util.map(resp)
+        return resp
+
+http = HTTPClient()
+
+# TO_DO: rename this to 'http.py'

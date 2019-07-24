@@ -1,6 +1,6 @@
 from PIL import Image, ImageOps
 from io import BytesIO
-from .decorators import benchmark
+from .wrap_tools import benchmark, _make_repr
 
 border = (5, 8, 16, 7) #borders to crop
 #why borders? well, let's do some quick math:
@@ -11,44 +11,42 @@ border = (5, 8, 16, 7) #borders to crop
 class Captcha:
     def __init__(self):
         self.status = 'empty'
-    
-    def __str__(self):
-        res = f'[gd.Captcha]\n[Status:{self.status}]'
-        return res
         
     def __repr__(self):
-        res = f'<gd.Captcha: status={repr(self.status)}>'
-        return res
+        info = {
+            'status': repr(self.status)
+        }
+        return _make_repr(self, info)
 
-    def solve(self, buffer, with_image=False): #if with_image is True, image of the captcha will be shown
-        io_stuff = BytesIO(buffer)
-        image = Image.open(io_stuff); img = ImageOps.crop(image, border) #get image from BytesIO, then crop the borders
+    def solve(self, buffer):
+        io_bytes = BytesIO(buffer)
+        img = ImageOps.crop(Image.open(io_bytes), border) #get image from BytesIO, then crop the borders
         pixels = img.load() #size: (44, 10)
         predict = self.walk_through(pixels, img.size)
         connected = self.connect_result(predict)
         self.status = 'solved'
-        if with_image: image.show()
         return connected
     
     def walk_through(self, pixel_map, size):
-        a, b, c, d, e = [[] for _ in range(5)] #five empty lists (I don't like to work with five lists in one)
-        g = 1 #digit index checker
-        final_res = [] #we append here our predicted digits
-        for i in range(size[0]): #for every column
+        lst = [[] for _ in range(5)]
+        g = 0  # digit index checker
+        final_res = []
+        x, y = size
+        for i in range(x):  # for every column
             temp = []
-            for j in range(size[1]): #for every row
+            for j in range(y):  # for every row
                 rgb = pixel_map[i, j]
                 if all(rgb[i] > 200 for i in range(3)): #if pixel is white
                     temp.append(j) #append 'index' in column of pixel
-            cases = {g==1:a, g==2:b, g==3:c, g==4:d, g==5:e}
-            if not temp or (i+1 is size[0]):
-                if cases.get(True): #if we actually have something to predict
-                    predicted = self.predict_digit(cases.get(True))
+            if not temp or (i+1 == x):
+                if lst[g]: #if we actually have something to predict
+                    predicted = self.predict_digit(lst[g])
                     final_res.append(predicted)
                     g += 1
             else:
-                s = cases.get(True)
-                if len(s) < 2: s.append(temp)
+                s = lst[g]
+                if len(s) < 2:
+                    s.append(temp)
         return final_res
     
     def predict_digit(self, res):

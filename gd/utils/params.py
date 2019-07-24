@@ -1,4 +1,3 @@
-from .errors import error
 from .mapper import mapper_util
 from .crypto.coders import Coder
 import base64
@@ -87,7 +86,7 @@ class Parameters:
         try:
             self.dict[params_dict[for_what]] = item
         except KeyError:
-            raise error.InvalidArgument()
+            pass
         return self
     
     def put_recipient(self, account_id:str):
@@ -130,15 +129,12 @@ class Parameters:
         return self
     
     def comment_for(self, type0: str, number: int = None):
-        supported = ['client', 'level']
-        if type0 not in supported:
-            raise error.InvalidArgument()
-        else:
+        if type0 in ('client', 'level'):
             if (type0 == 'client'):
                 self.dict['cType'] = "1"
             else:
                 self.dict['levelID'] = str(number)
-            return self
+        return self
 
     def put_total(self, number: int):
         self.dict['total'] = str(number)

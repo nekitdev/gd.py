@@ -29,5 +29,8 @@ There are two main ways to get version information about the library.
     A string representation of the version. e.g. ``'1.1.2rc1'``. This is based
     off of :pep:`440`.
 
+Client
+------
+
 .. autoclass:: Client
     :members:

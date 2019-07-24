@@ -1,0 +1,105 @@
+class GDException(Exception):
+    """Base exception class for gd.py
+
+    This could be caught to handle any exceptions thrown from this library.
+    """
+    pass
+
+
+class ClientException(GDException):
+    """Base exception class for errors that are thrown,
+
+    when operation in :class:`Client` fails.
+    """
+    pass
+
+
+class PaginatorException(GDException):
+    """Base exception class for errors that are thrown,
+
+    when operating with :class:`Paginator`.
+    """
+    pass
+
+
+class MissingAccess(ClientException):
+    """Exception that is raised when server responses with -1."""
+    def __init__(self, **params):
+        _type = params.get('type')
+        _id = params.get('id')
+        message = f"Missing access to '{_type}' with id: '{_id}'."
+        super().__init__(message)
+
+
+class SongRestrictedForUsage(ClientException):
+    """Exception that is raised when server returns -2
+
+    when looking for a song.
+    """
+    def __init__(self, _id):
+        message = f"Song with id '{_id}' is not allowed for use."
+        super().__init__(message)
+
+
+class LoginFailure(ClientException):
+    """Exception that is raised when server returns -1
+
+    when trying to log in.
+    """
+    def __init__(self, login, password):
+        self.login = login
+        self.password = password
+        message = f"Failed to login with parameters:\n<login='{self.login}', password='{self.password}'>."
+        super().__init__(message)
+
+
+class FailedToChange(ClientException):
+    """Exception that is raised when logged in :class:`Client`
+
+    fails to change its password or username.
+    """
+    def __init__(self, typeof):
+        message = f"Failed to change {typeof}. Reason: Unspecified"  # [Future]
+        super().__init__(message)
+
+
+class NothingFound(ClientException):
+    """Exception that is raised when server returns nothing
+
+    that can be converted to object of 'cls'.
+    """
+    def __init__(self, cls):
+        self.type = cls.__name__.lower()
+        message = f"No <{self.type}>'s were found."
+        super().__init__(message)
+
+
+class NotLoggedError(ClientException):
+    """Exception that is raised when a function that requires logged in user is called,
+
+    while :class:`Client` is not logged.
+    """
+    def __init__(self, func_name):
+        message = f"'{func_name}' requires client to be logged."
+        super().__init__(message)
+
+
+class PagesOutOfRange(PaginatorException):
+    """Exception that is raised if a non-existing page
+
+    is requested in :class:`Paginator`.
+    """
+    def __init__(self, page, info):
+        if str(info).isdigit():
+            message = f"Pages are out of range.\nRequested page: '{page}', Pages existing: '{info}'"
+        else:
+            message = f"{info}\nRequested page: '{page_num}'"
+        super().__init__(message)
+
+
+class PaginatorIsEmpty(PaginatorException):
+    """Exception that is raised if :class:`Paginator` is empty."""
+    # might be deprecated soon
+    def __init__(self):
+        message = "'gd.Paginator' object has no elements to operate with."
+        super().__init__(message)

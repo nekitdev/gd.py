@@ -2,12 +2,13 @@ import asyncio
 
 import logging
 
-from .utils.wrap_utils import _make_repr
+from .utils.captcha_solver import Captcha
+from .utils.wrap_tools import _make_repr, check
 from .utils.context import ctx
 from .utils.http_request import http
 from .classconverter import class_converter
 from .utils.mapper import mapper_util
-from .utils.errors import *
+from .errors import *
 from .utils.gdpaginator import paginate
 from .utils.routes import Route
 from .utils.params import Parameters as Params
@@ -19,25 +20,35 @@ log = logging.getLogger(__name__)
 
 
 class Client:
-    def __init__(self):
-        self._logged = False
-
+    """A main class in the gd.py library, used for interacting with the servers of Geometry Dash."""
     def __repr__(self):
         info = {
-            'is_logged': self._logged
+            'is_logged': ctx.is_logged()
         }
         return _make_repr(self, info)
 
-    def is_logged(self):
-        return self._logged
-
-    async def on_error(self, event_method, *args, **kwargs):
-        print('Ignoring exception in {}'.format(event_method), file=sys.stderr)
-        traceback.print_exc()
-
     async def get_song(self, songid: int = 0):
-        if (songid == 0):
-            raise error.IDNotSpecified('Song')
+        """|coro|
+
+        Fetches a song from Geometry Dash server.
+
+        Parameters
+        ----------
+        songid: :class:`int`
+            An ID of the song to fetch.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Song under given ID was not found or does not exist.
+        :exc:`.SongRestrictedForUsage`
+            Song was not allowed to use. (Might be deprecated soon)
+
+        Returns
+        -------
+        :class:`.Song`
+            The song from the ID.
+        """
         parameters = Params().create_new().put_definer('song', str(songid)).finish()
         codes = {
             -1: MissingAccess(type='Song', id=songid),
@@ -47,8 +58,29 @@ class Client:
         return class_converter.SongConvert(resp)
     
     async def get_user(self, accountid: int = 0):
-        if accountid == 0:
-            raise error.IDNotSpecified('User')
+        """|coro|
+
+        Fetches a user from Geometry Dash server.
+
+        Parameters
+        ----------
+        accountid: :class:`int`
+            An account ID of the user to fetch.
+
+            .. note::
+
+                If the given ID is equal to -1, a :class:`.UnregisteredUser` will be returned.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Song under given ID was not found or does not exist.
+
+        Returns
+        -------
+        :class:`.User`
+            The user from the ID. (if ID != -1)
+        """
         if accountid == -1:
             return UnregisteredUser()
         parameters = Params().create_new().put_definer('user', str(accountid)).finish()
@@ -68,19 +100,86 @@ class Client:
             mapped[key] = new_dict[key]
         return class_converter.UserConvert(mapped)
     
-    async def login(self, user: str, password: str)
+    def login(self, user: str, password: str):
+        """Tries to log in with given parameters.
+
+        .. note::
+
+            This function is not a coroutine, and it is recommended
+
+            to run it before anything asynchronous.
+
+        Parameters
+        ----------
+        user: :class:`str`
+            A username of the account to log into.
+
+        password: :class:`str`
+            A password of the account to log into.
+
+        Raises
+        ------
+        :exc:`.LoginFailure`
+            Given account credentials are not correct.
+        """
         parameters = Params().create_new().put_login_definer(username=user, password=password).finish_login()
         codes = {
-            -1: FailedLogin(login=user, password=password)
+            -1: LoginFailure(login=user, password=password)
         }
-        resp = await http.fetch(Route.LOGIN, parameters, splitter=',', error_codes=codes)
+        loop = asyncio.new_event_loop()
+        resp = loop.run_until_complete(
+            http.fetch(Route.LOGIN, parameters, splitter=',', error_codes=codes)
+        )
+        loop.close()
         prepared = {
-            'username': user, 'password': password,
+            'name': user, 'password': password,
             'account_id': int(resp[0]), 'id': int(resp[1])
         }
         for attr, value in prepared.items():
             ctx.upd(attr, value)
         log.info("Logged in as %s, with password %s", repr(user), repr(password))
+
+    @check.is_logged(ctx)
+    async def edit(self, name = None, password = None):
+        """|coro|
+
+        Tries to edit credentials of a logged in client.
+
+        Parameters
+        ----------
+        name: :class:`str`
+            A name to change logged account's username to. Defaults to `None`.
+
+        password: :class:`str`
+            A password to change logged account's username to. Defaults to `None`.
+
+        Raises
+        ------
+        :exc:`.FailedToChange`
+            Failed to change the credentials.
+        """
+        _, cookie = await http.request(Route.MANAGE_ACCOUNT, get_cookies=True)
+        captcha = await http.request(Route.CAPTCHA, cookie=cookie)
+        number = Captcha().solve(captcha)
+        params = Params().create_new('web').put_for_management(ctx.name, ctx.password, str(number)).close()
+        await http.request(Route.MANAGE_ACCOUNT, params, cookie=cookie)
+        if name is not None:
+            params = Params().create_new('web').put_for_username(ctx.name, name).close()
+            resp = await http.request(Route.CHANGE_USERNAME, params, cookie=cookie)
+            if ('Your username has been changed to' in resp):
+                log.debug('Changed username to: %s', name)
+                ctx.upd('name', name)
+            else:
+                raise FailedToChange('name')
+        if password is not None:
+            await http.request(Route.CHANGE_PASSWORD, cookie=cookie)
+            params = Params().create_new('web').put_for_password(ctx.name, ctx.password, password).close()
+            resp = await http.request(Route.CHANGE_PASSWORD, params, cookie=cookie)
+            if ('Password change failed' in resp):
+                raise FailedToChange('password')
+            else:
+                log.debug('Changed password to: %s', password)
+                ctx.upd('password', password)
 
     def event(self, coro):
         """A decorator that registers an event to listen to."""
@@ -92,23 +191,3 @@ class Client:
         log.debug("%s has been successfully registered as an event.", coro.__name__)
 
         return coro
-
-
-# async def fetch(
-#     route: str, parameters: dict = {}, 
-#     splitter: str = None, error_codes: dict = {},  # error_codes is a dict: {code: error_to_raise}
-#     should_map: bool = False  # whether response should be mapped 'enum -> value'
-#     cookies: str = None, cookie: str = None
-# ):
-#     resp = await http.send_request(route, parameters, cookies, cookie)
-#     if resp.error_code in error_codes:
-#         raise error_codes.get(resp.error_code)
-#     if splitter is not None:
-#         resp = resp.split(splitter)
-#     if should_map:
-#         resp = mapper_util.map(resp)
-#     return resp
-#
-#
-
-# TO_DO: Make everything less messy...

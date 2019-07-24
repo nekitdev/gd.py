@@ -2,7 +2,7 @@ from .abstractentity import AbstractEntity
 from .utils.params import Parameters as Params
 from .utils.routes import Route
 from .utils.http_request import http
-from .utils.errors import error
+# from .errors import error
 # TO_DO: Add __str__ and __repr__ functions here
 class FriendRequest(AbstractEntity):
     def __init__(self, **options):

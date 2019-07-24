@@ -1,3 +1,15 @@
+from ..errors import NotLoggedError
+
+class check:
+    def is_logged(context):
+        def decorator(func):
+            def wrapper(*args, **kwargs):
+                if not context.is_logged():
+                    raise NotLoggedError(func.__name__)
+                return func(*args, **kwargs)
+            return wrapper
+        return decorator
+
 def benchmark(func):
     def decorator(*args, **kwargs):
         import time

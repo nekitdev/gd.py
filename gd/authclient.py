@@ -3,7 +3,7 @@ from .utils.http_request import http
 from .utils.routes import Route
 from .utils.mapper import mapper_util
 from .utils.indexer import Index as i
-from .utils.errors import error
+# from .errors import error
 from .utils.converter import Converter
 from .utils.captcha_solver import Captcha
 from .abstractentity import AbstractEntity

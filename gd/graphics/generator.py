@@ -1,7 +1,7 @@
 from .sprite import Sprite
 from ..iconset import IconSet
 from .colors import colors
-from ..utils.errors import error
+from ..errors import error
 from PIL import Image, ImageOps
 from xml.etree import ElementTree
 import pkg_resources

@@ -1,7 +1,5 @@
-from .utils.errors import error
+# from .errors import error
 from .abstractentity import AbstractEntity
-import urllib.request
-from urllib.request import urlopen
 
 class Song(AbstractEntity):
     def __init__(self, **options):
