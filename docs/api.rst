@@ -119,9 +119,8 @@ Exceptions
 Exception Hierarchy
 -------------------
 
-:exc:`Exception`
-    - :exc:`GDException`
-        - :exc:`ClientException`
+- :exc:`GDException` (:exc:`Exception`)
+    - :exc:`ClientException`
         - :exc:`MissingAccess`
         - :exc:`SongRestrictedForUsage`
         - :exc:`LoginFailure`
