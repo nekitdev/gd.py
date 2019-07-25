@@ -6,6 +6,7 @@ from .utils.gdpaginator import paginate as pagin
 from .abstractentity import AbstractEntity
 from .errors import MissingAccess, NothingFound
 from .comment import Comment
+from .utils.context import ctx
 from .utils.wrap_tools import _make_repr, check
 
 #TO_DO: add __repr__ func
