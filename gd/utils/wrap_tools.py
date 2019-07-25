@@ -1,5 +1,4 @@
 import functools
-
 from ..errors import NotLoggedError
 
 class check:
@@ -12,6 +11,7 @@ class check:
                 return func(*args, **kwargs)
             return wrapper
         return decorator
+
 
 def benchmark(func):
     def decorator(*args, **kwargs):
@@ -26,6 +26,7 @@ def benchmark(func):
         print(thing)
         return res
     return decorator
+
 
 def _make_repr(obj, info = {}):
     module = obj.__module__.split('.')[0]

@@ -157,7 +157,7 @@ class Parameters:
         none = self.check(filters)
         to_put = { #all filters will be passed through 'filters.py' formatter
             "len": "-" if none else filters.get('length'),
-            "page": "0" if (page is None) else '{}'.format(page),
+            "page": "0" if (page is None) else str(page),
             "type": "0" if none else filters.get('type'),
             "diff": "-" if none else filters.get('difficulty'),
             "featured": "0" if none else filters.get('featured'),

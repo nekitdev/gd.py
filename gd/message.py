@@ -1,12 +1,14 @@
+import base64
+
 from .abstractentity import AbstractEntity
+from .errors import MissingAccess
 from .utils.http_request import http
 from .utils.routes import Route
 from .utils.indexer import Index as i
-from .utils.mapper import mapper_util
 from .utils.crypto.coders import Coder
 from .utils.params import Parameters as Params
-# from .errors import error
-import base64
+from .utils.wrap_tools import _make_repr, check
+from .utils.context import ctx
 
 class Message(AbstractEntity):
     def __init__(self, **options):
@@ -14,56 +16,73 @@ class Message(AbstractEntity):
         self.options = options
         self._body = None
     
-    def __str__(self):
-        res = f'[gd.Message]\n[Author:{self.author.name}]\n[Recipient:{self.recipient.name}]\n[ID:{self.id}]\n[Subject:{self.subject}]\n[Body:{self.body}]\n[Is_Read:{self.is_read()}]\n[Type:{self.typeof.capitalize()}]\n[Timestamp:{self.timestamp}]'
-        return res
-    
     def __repr__(self):
-        ret = f'<gd.Message: author={self.author}, body={repr(self.body)}, id={self.id}, is_read={self.is_read}>'
-        return ret
+        info = {
+            'author': self.author,
+            'body': repr(self.body),
+            'id': self.id,
+            'is_read': self.is_read()
+        }
+        return _make_repr(self, info)
 
     @property
     def author(self):
         return self.options.get('author')
+
     @property
     def recipient(self):
         return self.options.get('recipient')
+
     @property
     def subject(self):
         return self.options.get('subject')
+
     @property
     def timestamp(self):
         return self.options.get('timestamp')
+
     @property
     def typeof(self):
         return self.options.get('type')
+
     @property
     def body(self):
         return self._body
-    
-    def retrieved_from(self):
-        return self.options.get('retrieved_from')
-
-    def read(self):
-        coder = Coder()
-        c = self.retrieved_from()
-        route = Route.READ_PRIVATE_MESSAGE
-        params = Params().create_new().put_definer('accountid', str(c.account_id)).put_definer('messageid', str(self.id)).put_password(str(c.encodedpass)).put_is_sender(self.typeof).finish()
-        resp = http.send_request(route, params)
-        body = mapper_util.map(resp.split(':')).get(i.MESSAGE_BODY)
-        ret = coder.decode0(type='message', string=mapper_util.normalize(body))
-        self._body = ret
-        return self.body
-
-    def delete(self):
-        c = self.retrieved_from()
-        route = Route.DELETE_PRIVATE_MESSAGE
-        params = Params().create_new().put_definer('accountid', str(c.account_id)).put_definer('messageid', str(self.id)).put_password(str(c.encodedpass)).put_is_sender(self.typeof).finish()
-        resp = http.send_request(route, params)
-        if resp is '1':
-            return None
-        else:
-            raise error.MissingAccess()
 
     def is_read(self):
         return self.options.get('is_read')
+
+    @check.is_logged(ctx)
+    async def read(self):
+        """|coro|
+
+        Read a message. Set the body of the message to the content.
+
+        Returns
+        -------
+        :class:`str`
+            The content of the message.
+        """
+        params = Params().create_new().put_definer('accountid', str(ctx.account_id)).put_definer('messageid', str(self.id)).put_password(ctx.encodedpass).put_is_sender(self.typeof).finish()
+        resp = await http.fetch(Route.READ_PRIVATE_MESSAGE, params, splitter=':', should_map=True)
+        ret = Coder().decode0(
+            type='message', string=mapper_util.normalize(resp.get(i.MESSAGE_BODY))
+        )
+        self._body = ret
+        return self.body
+
+    @check.is_logged(ctx)
+    async def delete(self):
+        """|coro|
+
+        Delete a message.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to delete a message.
+        """
+        params = Params().create_new().put_definer('accountid', str(ctx.account_id)).put_definer('messageid', str(self.id)).put_password(ctx.encodedpass).put_is_sender(self.typeof).finish()
+        resp = await http.fetch(Route.DELETE_PRIVATE_MESSAGE, params)
+        if resp != 1:
+            raise MissingAccess(message=f"Failed to delete a message: {self!r}.")

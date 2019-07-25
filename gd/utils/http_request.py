@@ -17,11 +17,8 @@ class HTTPClient:
             data = await resp.content.read()
             try:
                 res = data.decode()
-                try:
-                    if int(res) in range(-2, 0):  # needs checking
-                        return int(res)
-                except ValueError:
-                    pass
+                if res.isdigit():
+                    return int(res)
             except UnicodeDecodeError:
                 res = data
             if get_cookies:

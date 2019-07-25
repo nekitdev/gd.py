@@ -34,3 +34,95 @@ Client
 
 .. autoclass:: Client
     :members:
+
+Level
+-----
+
+.. autoclass:: Level
+    :members:
+
+Song
+----
+
+.. autoclass:: Song
+    :members:
+
+AbstractUser
+------------
+
+.. autoclass:: AbstractUser
+    :members:
+
+User
+----
+
+.. autoclass:: User
+    :members:
+
+Icon Set
+--------
+
+.. autoclass:: IconSet
+    :members:
+
+Comment
+-------
+
+.. autoclass:: Comment
+    :members:
+
+Friend Request
+--------------
+
+.. autoclass:: FriendRequest
+    :members:
+
+Message
+-------
+
+.. autoclass:: Message
+    :members:
+
+Exceptions
+----------
+
+.. autoexception:: GDException
+
+.. autoexception:: ClientException
+
+.. autoexception:: PaginatorException
+
+.. autoexception:: MissingAccess
+
+.. autoexception:: SongRestrictedForUsage
+
+.. autoexception:: LoginFailure
+    :members:
+
+.. autoexception:: FailedToChange
+
+.. autoexception:: NothingFound
+    :members:
+
+.. autoexception:: NotLoggedError
+
+.. autoexception:: PagesOutOfRange
+
+.. autoexception:: PaginatorIsEmpty
+
+Exception Hierarchy
+-------------------
+
+.. exception_hierarchy::
+    - :exc:`Exception`
+        - :exc:`GDException`
+            - :exc:`ClientException`
+                - :exc:`MissingAccess`
+                - :exc:`SongRestrictedForUsage`
+                - :exc:`LoginFailure`
+                - :exc:`FailedToChange`
+                - :exc:`NothingFound`
+                - :exc:`NotLoggedError`
+            - :exc: `PaginatorException`
+                - :exc:`PagesOutOfRange`
+                - :exc:`PaginatorIsEmpty`

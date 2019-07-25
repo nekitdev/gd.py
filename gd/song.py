@@ -1,18 +1,19 @@
 # from .errors import error
 from .abstractentity import AbstractEntity
+from .utils.wrap_tools import _make_repr
 
 class Song(AbstractEntity):
     def __init__(self, **options):
         super().__init__(**options)
         self.options = options
     
-    def __str__(self):
-        res = f"[gd.Song]\n[ID:{self.id}]\n[Name:{self.name}]\n[Author:{self.author}]\n[Links]\n[Basic:{self.link}]\n[Download:{self.dl_link}]"
-        return res
-    
     def __repr__(self):
-        ret = f'<gd.Song: id={self.id}, name={repr(self.name)}, author={repr(self.author)}>'
-        return ret
+        info = {
+            'id': self.id,
+            'name': repr(self.name),
+            'author': self.author
+        }
+        return _make_repr(self, info)
 
     @property
     def name(self):
@@ -38,9 +39,20 @@ class Song(AbstractEntity):
     def dl_link(self):
         return self.options.get('links')[1]
 
-    def download(self, path=None):
+    async def download(self, path=None):
+        """|coro|
+
+        Download a song from Newgrounds.
+
+        Parameters
+        ----------
+        path: Any
+            A path to save a song to. Defaults to ``None``.
+        
+        Returns
+        -------
+        :class:`bytes`
+            A song as bytes. Returned if path is ``None``.
+        """
         link = self.dl_link
-        if path is None:
-            pass
-        else:
-            pass
+        pass  # TO_DO: Finish

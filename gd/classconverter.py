@@ -97,7 +97,7 @@ class class_converter:
         s = to_parse
         pass #I'll finish soon
     
-    def MessageConvert(to_parse, to_parse_2, auth_client):
+    def MessageConvert(to_parse, to_parse_2):
         s = to_parse
         cases = {0: 'normal', 1: 'sent'}
         type_of = cases.get(int(s[i.MESSAGE_INDICATOR]))
@@ -114,11 +114,10 @@ class class_converter:
             is_read = True if (s[i.MESSAGE_IS_READ] is '1') else False,
             author = user_1 if (type_of is 'normal') else user_2,
             recipient = user_2 if (type_of is 'normal') else user_1,
-            type = type_of,
-            retrieved_from = auth_client
+            type = type_of
         )
 
-    def RequestConvert(to_parse, to_parse_2, auth_client):
+    def RequestConvert(to_parse, to_parse_2):
         s = to_parse
         cases = {0: 'normal', 1: 'sent'}
         type_of = cases.get(int(s[i.REQUEST_INDICATOR]))
@@ -135,8 +134,7 @@ class class_converter:
             is_read = False if (s[i.REQUEST_STATUS] is '1') else True,
             author = user_1 if (type_of is 'normal') else user_2,
             recipient = user_2 if (type_of is 'normal') else user_1,
-            type = type_of,
-            retrieved_from = auth_client
+            type = type_of
         )
 
     def AuthClientConvert(to_parse):
@@ -149,7 +147,7 @@ class class_converter:
             id = int(s['userid'])
         )
     
-    def CommentConvert(to_parse, ret_from, to_parse_2):
+    def CommentConvert(to_parse, to_parse_2):
         s = to_parse
         return Comment(
             body = b64.b64decode(mapper_util.normalize(s[i.COMMENT_BODY])).decode(),
@@ -159,8 +157,7 @@ class class_converter:
             type = int(s[i.COMMENT_TYPE]),
             level_id = int(s.get(i.COMMENT_LEVEL_ID, 0)),
             level_percentage = int(s.get(i.COMMENT_LEVEL_PERCENTAGE, -1)),
-            author = class_converter.AbstractUserConvert(to_parse_2),
-            retrieved_from = ret_from #!
+            author = class_converter.AbstractUserConvert(to_parse_2)
         )
     
     def AbstractUserConvert(to_parse):

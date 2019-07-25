@@ -1,17 +1,20 @@
+import asyncio
+
 from .abstractentity import AbstractEntity
+from .utils.wrap_tools import _make_repr
 
 class AbstractUser(AbstractEntity):
     def __init__(self, **options):
         super().__init__(**options)
         self.options = options
     
-    def __str__(self):
-        ret = f"[gd.AbstractUser]\n[Name:{self.name}]\n[ID:{self.id}]\n[AccountID:{self.account_id}]"
-        return ret
-    
     def __repr__(self):
-        ret = f"<gd.AbstractUser: name={repr(self.name)}, id={self.id}, account_id={self.account_id}>"
-        return ret
+        info = {
+            'name': repr(self.name),
+            'id': self.id,
+            'account_id': self.account_id
+        }
+        return _make_repr(self, info)
         
     @property
     def name(self):
@@ -21,7 +24,15 @@ class AbstractUser(AbstractEntity):
     def account_id(self):
         return self.options.get('account_id')
     
-    def to_user(self):
-        from .client import client
-        user = client().get_user(self.account_id)
-        return user
+    async def to_user(self):
+        """|coro|
+
+        Convert ``self`` to :class:`.User` object.
+
+        Returns
+        -------
+        :class:`.User`
+            An user object corresponding to the abstract one.
+        """
+        from .client import Client
+        return await Client().get_user(self.account_id)

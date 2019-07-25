@@ -28,18 +28,18 @@ class Captcha:
         return connected
     
     def walk_through(self, pixel_map, size):
-        lst = [[] for _ in range(5)]
-        g = 0  # digit index checker
+        lst = [[] for _ in range(5)]  # store
+        g = 0
         final_res = []
         x, y = size
         for i in range(x):  # for every column
             temp = []
             for j in range(y):  # for every row
                 rgb = pixel_map[i, j]
-                if all(rgb[i] > 200 for i in range(3)): #if pixel is white
-                    temp.append(j) #append 'index' in column of pixel
+                if all(rgb[i] > 200 for i in range(3)):  # if pixel is white
+                    temp.append(j)  # append 'index' in column of pixel
             if not temp or (i+1 == x):
-                if lst[g]: #if we actually have something to predict
+                if lst[g]:  # if we actually have something to predict
                     predicted = self.predict_digit(lst[g])
                     final_res.append(predicted)
                     g += 1

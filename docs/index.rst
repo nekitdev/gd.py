@@ -19,11 +19,12 @@ Documentation Contents
 -----------------------
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   intro
-   quickstart
-   api
+    api
+    logging
+    intro
+    quickstart
 
 Additional Information
 -----------------------

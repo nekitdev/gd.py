@@ -2,7 +2,7 @@ __title__ = 'gd'
 __author__ = 'NeKitDSS'
 __copyright__ = 'Copyright 2019 NeKitDSS'
 __license__ = 'MIT'
-__version__ = '0.7.0b0'
+__version__ = '0.7.0b1'
 
 from collections import namedtuple
 import logging
@@ -49,12 +49,12 @@ version_info = _gen_version_details()
 def setup_basic_logging():
     """Function that sets up logs of the module,
     with the following format:
-    [INFO] {gd.some_module}: Some info message.
+    [INFO] (time) {gd.some_module}: Some info message.
     """
     log = logging.getLogger(__name__)
     hdlr = logging.StreamHandler()
     hdlr.setFormatter(
-        logging.Formatter('[%(levelname)s] {%(name)s}: %(message)s')
+        logging.Formatter('[%(levelname)s] (%(asctime)s) {%(name)s}: %(message)s')
     )
     log.setLevel(logging.INFO)
     log.addHandler(hdlr)
