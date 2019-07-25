@@ -5,6 +5,17 @@ def paginate(iterable, per_page: int = 10):
     return Paginator(to_paginate=iterable, per_page=per_page)
 
 class Paginator:
+    """A class that implements a pagination system.
+
+    Parameters
+    ----------
+    to_paginate: Sequence
+        A sequence to paginate, such that list(to_paginate) can be performed.
+
+    per_page: :class:`int`
+        Number of elements each page can have.
+    """
+
     def __init__(self, to_paginate, per_page):
         self._list = list(to_paginate)
         self._per_page = per_page
@@ -36,9 +47,11 @@ class Paginator:
     @property
     def length(self):
         return self._length
+
     @property
     def per_page(self):
         return self._per_page
+
     @property
     def list(self):
         return self._list
@@ -141,4 +154,4 @@ class Paginator:
         for i in range(self.get_pages_count()):
             yield self.view_page(i+1)
 
-# TO_DO: rewrite a bit
+# TO_DO: make documentation

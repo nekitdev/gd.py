@@ -32,7 +32,7 @@ class AbstractUser(AbstractEntity):
         Returns
         -------
         :class:`.User`
-            An user object corresponding to the abstract one.
+            A user object corresponding to the abstract one.
         """
         from .client import Client
         return await Client().get_user(self.account_id)

@@ -35,6 +35,12 @@ Client
 .. autoclass:: Client
     :members:
 
+Paginator
+---------
+
+.. autoclass:: Paginator
+    :members:
+
 Level
 -----
 
@@ -113,16 +119,15 @@ Exceptions
 Exception Hierarchy
 -------------------
 
-.. exception_hierarchy::
-    - :exc:`Exception`
-        - :exc:`GDException`
-            - :exc:`ClientException`
-                - :exc:`MissingAccess`
-                - :exc:`SongRestrictedForUsage`
-                - :exc:`LoginFailure`
-                - :exc:`FailedToChange`
-                - :exc:`NothingFound`
-                - :exc:`NotLoggedError`
-            - :exc: `PaginatorException`
-                - :exc:`PagesOutOfRange`
-                - :exc:`PaginatorIsEmpty`
+- :exc:`Exception`
+    - :exc:`GDException`
+        - :exc:`ClientException`
+            - :exc:`MissingAccess`
+            - :exc:`SongRestrictedForUsage`
+            - :exc:`LoginFailure`
+            - :exc:`FailedToChange`
+            - :exc:`NothingFound`
+            - :exc:`NotLoggedError`
+        - :exc: `PaginatorException`
+            - :exc:`PagesOutOfRange`
+            - :exc:`PaginatorIsEmpty`
