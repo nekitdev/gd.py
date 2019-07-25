@@ -119,15 +119,15 @@ Exceptions
 Exception Hierarchy
 -------------------
 
-- :exc:`Exception`
-  - :exc:`GDException`
-    - :exc:`ClientException`
-      - :exc:`MissingAccess`
-      - :exc:`SongRestrictedForUsage`
-      - :exc:`LoginFailure`
-      - :exc:`FailedToChange`
-      - :exc:`NothingFound`
-      - :exc:`NotLoggedError`
+:exc:`Exception`
+    - :exc:`GDException`
+        - :exc:`ClientException`
+        - :exc:`MissingAccess`
+        - :exc:`SongRestrictedForUsage`
+        - :exc:`LoginFailure`
+        - :exc:`FailedToChange`
+        - :exc:`NothingFound`
+        - :exc:`NotLoggedError`
     - :exc:`PaginatorException`
-      - :exc:`PagesOutOfRange`
-      - :exc:`PaginatorIsEmpty`
+        - :exc:`PagesOutOfRange`
+        - :exc:`PaginatorIsEmpty`
