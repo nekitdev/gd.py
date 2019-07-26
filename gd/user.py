@@ -117,6 +117,7 @@ class User(AbstractEntity):
             List of all comments retrieved, if found.
 
         Raises
+        —--—--
         :exc:`.NothingFound`
             No comments were found.
         """
