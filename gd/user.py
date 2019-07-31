@@ -113,7 +113,7 @@ class User(AbstractEntity):
 
         Gets user's profile comments on a specific page.
 
-        This is equivalent to::
+        This is equivalent to:
             await self.retrieve_page_comments('profile', page)
         """
         return await self.retrieve_page_comments('profile', page)
@@ -123,7 +123,7 @@ class User(AbstractEntity):
 
         Gets user's level (history) comments on a specific page.
 
-        This is equivalent to::
+        This is equivalent to:
             await self.retrieve_page_comments('level', page)
         """
         return await self.retrieve_page_comments('level', page)
@@ -136,7 +136,7 @@ class User(AbstractEntity):
         """|coro|
         Gets user's profile comments on specific pages.
         
-        This is equivalent to the following::
+        This is equivalent to the following:
             await self.retrieve_comments(
                 'profile', pages, sort_by_page=sort_by_page, timeout=timeout
             )
@@ -153,7 +153,7 @@ class User(AbstractEntity):
         """|coro|
         Gets user's level (history) comments on specific pages.
         
-        This is equivalent to the following::
+        This is equivalent to the following:
             await self.retrieve_comments(
                 'level', pages, sort_by_page=sort_by_page, timeout=timeout
             )
@@ -190,7 +190,7 @@ class User(AbstractEntity):
             List of all comments retrieved, if comments were found.
 
         Raises
-        —--—--
+        ------
         :exc:`.NothingFound`
             No comments were found.        
         """
