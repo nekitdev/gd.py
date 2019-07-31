@@ -1,10 +1,12 @@
-from .sprite import Sprite
+import pkg_resources
+from xml.etree import ElementTree
+
+from PIL import Image, ImageOps
+
+from .sprite import Sprite, Rectangle
 from ..iconset import IconSet
 from .colors import colors
 from ..errors import error
-from PIL import Image, ImageOps
-from xml.etree import ElementTree
-import pkg_resources
 
 main_path = 'resources/GJ_GameSheet02-uhd'
 
@@ -13,15 +15,17 @@ test_path = pkg_resources.resource_filename(__name__, 'resources/result.png')
 def make_path(form):
     return pkg_resources.resource_filename(__name__, main_path + form)
 
+
 class SpriteGenUtil:
     def __init__(self):
         self.plist_path = make_path('.plist')
         self.icon_types = ['cube', 'ship', 'ball', 'ufo', 'wave', 'robot', 'spider']
 
-    def parse_xml(self): # parsing xml into nice python dict
-        parsed = ElementTree.parse(self.plist_path); load_dict = {}
+    def parse_xml(self):  # parsing xml into nice python dict
+        parsed = ElementTree.parse(self.plist_path)
+        load_dict = {}
         something = parsed.getroot()
-        for i in range(2): # going deeper into the tree
+        for i in range(2):  # going deeper into the tree
             something = something.getchildren()[i]
         for j in range(0, len(something.getchildren()), 2):
             temp = something[j].text
@@ -31,12 +35,12 @@ class SpriteGenUtil:
                 'spriteSize': parse_array(start[5]),
                 'spriteSourceSize': parse_array(start[7]),
                 'spriteUpLeftCorner': parse_array(start[9], deep=0),
-                'spriteRect': parse_array(start[9], deep=1),
+                'spriteRect': Rectangle(*parse_array(start[9], deep=1)),
                 'isRotated': parse_bool(start[11])
             }
             load_dict[temp] = formatted
         return load_dict
-    
+
     def find_bases(self, iconset: IconSet): #finding bases for further creating
         final = []
         for icon in self.icon_types:
@@ -47,7 +51,7 @@ class SpriteGenUtil:
             final.append(base)
         return final
     
-    def format_related(self, parsed_xml, base_list): #getting all sprites related to bases
+    def format_related(self, parsed_xml, base_list):  # getting all sprites related to bases
         final = {}; keys = list(parsed_xml.keys())
         for base in base_list:
             start = base.split('...')[0]
@@ -56,11 +60,11 @@ class SpriteGenUtil:
             final[icon_type] = temp
         return final
     
-    def to_sprite_object(self, name, info_dict): #converting dict to gd.graphics.Sprite
+    def to_sprite_object(self, name, info_dict):  # converting dict to gd.graphics.Sprite
         sprite = None; id_index = (1 if 'ball' not in name else 2)
         if info_dict:
             sprite = Sprite(
-                name = name, id = int(name.split('_')[id_index]), #I like slicing xd
+                name = name, id = int(name.split('_')[id_index]),
                 offset = info_dict.get('spriteOffset'),
                 size = info_dict.get('spriteSize'),
                 source_size = info_dict.get('spriteSourceSize'),
@@ -96,7 +100,7 @@ class SpriteGen:
     
     def make_blank(self):
         gen = (0 for i in range(4))
-        image = Image.new("RGBA", (250, 250), tuple(gen)) #making blank image, with alpha composite = 0
+        image = Image.new("RGBA", (250, 250), tuple(gen))  # making blank image, with alpha composite = 0
         return image
     
     def get_sprite_image(self, sheet, sprite):
@@ -104,12 +108,12 @@ class SpriteGen:
         if 'robot' in sprite.name: fix_robot_offset(sprite)
         realX, realY = (
             sprite.size if not sprite.is_rotated() else sprite.size[::-1]
-        ) #realX is sizeX if sprite is not rotated, else it is sizeY
+        )  # realX is sizeX if sprite is not rotated, else it is sizeY
         border = (ulcX, ulcY, (shX-(ulcX+realX)), (shY-(ulcY+realY)))
         image = ImageOps.crop(sheet, border)
         if sprite.is_rotated():
             deg = fix_degree(90)
-            image = image.rotate(deg, expand=True) #fix translation
+            image = image.rotate(deg, expand=True)  # fix translation
         if hasattr(sprite, 'fix_rotation_deg'):
             deg = fix_degree(sprite.fix_rotation_deg)
             image = image.rotate(deg, expand=True)
@@ -136,14 +140,14 @@ class SpriteGen:
         return cases.get(typeof)(sprite_list, iconset)
 
 def gen_center_offset(main, to_paste, additional=(0,0)):
-    mX, mY, pX, pY, aX, aY = main.size + to_paste.size + additional #'+' here is concatenation of tuples
+    mX, mY, pX, pY, aX, aY = main.size + to_paste.size + additional  # '+' here is concatenation of tuples
     baseX, baseY = (mX-pX)//2, (mY-pY)//2
     return baseX + aX, baseY - aY
 
 def fix_glow_color(colors):
     color1, color2 = colors
-    if color2.index is 15:
-        color2 = colors[12] if color1.index is 15 else color1
+    if color2.index == 15:
+        color2 = colors[12] if color1.index == 15 else color1
     return color2
 
 def predict_color(sprite, colors):
@@ -165,13 +169,13 @@ def fix_robot_offset(sprite) -> None:
         offY -= 20
         if '_2_' in name:
             cases = {
-                id in (2,5,6,8,9,11,12,15,17,24): (15,-5),
-                id in (7,10,19,20): (0,7),
-                id is 13: (10,-4), id is 18: (-1,-1),
-                id in (21,25): (12,0), id is 22: (0,-5),
-                id in (3,26): (1,0), id is 23: (-3,-2)
+                id in (2, 5, 6, 8, 9, 11, 12, 15, 17, 24): (15, -5),
+                id in (7, 10, 19, 20): (0, 7),
+                id is 13: (10, -4), id == 18: (-1, -1),
+                id in (21, 25): (12, 0), id == 22: (0, -5),
+                id in (3, 26): (1, 0), id == 23: (-3, -2)
             }
-            offTX, offTY = cases.get(True, (0,0))
+            offTX, offTY = cases.get(True, (0, 0))
             offX += offTX; offY += offTY
     elif str(id) + '_03_' in name:
         sprite.fix_rotation_deg = 45
@@ -183,6 +187,9 @@ def fix_robot_offset(sprite) -> None:
     sprite.options['offset'] = (sX+offX, sY+offY)
 
 def fix_spider_offset(sprite):
+    pass
+
+def reorder(splist):
     pass
 
 def sign(number):

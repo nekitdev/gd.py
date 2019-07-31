@@ -2,6 +2,7 @@ import functools
 from ..errors import NotLoggedError
 
 class check:
+    
     def is_logged(context):
         def decorator(func):
             @functools.wraps(func)

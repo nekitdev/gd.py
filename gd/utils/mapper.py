@@ -2,7 +2,9 @@ class mapper_util:
     def map(item):
         res = {}
         for i in range(0, len(item), 2):
-            res[int(item[i])] = item[i+1]
+            new = item[i+1]
+            new = new if not new.replace('-', '').isdigit() else int(new)
+            res[int(item[i])] = new
         return res
         
     def normalize(item):

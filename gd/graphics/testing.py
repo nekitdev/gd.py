@@ -1,6 +1,5 @@
-from .generator import SpriteGenUtil, SpriteGen, test_path, gen_center_offset, fix_glow_color, predict_color
+from .generator import SpriteGenUtil, SpriteGen, test_path, gen_center_offset, fix_glow_color, predict_color, reorder
 from ..iconset import IconSet
-from ntools import nlist
 
 gco = gen_center_offset
 sg = SpriteGen(); sgu = SpriteGenUtil()
@@ -19,7 +18,7 @@ full_sprites = [
     sgu.retrieve_sprites(parsed, 'robot', elem) for elem in full_related
 ]
 def make_sprite(typeof, splist, iconset) -> None:
-    s = nlist(splist); s.swap(0,1) #swap (0,2) for ufo
+    s = reorder(splist)
     ret = sg.make_blank()
     colors = iconset.get_colors()
     for sprite in s:

@@ -1,12 +1,17 @@
-from PIL import Image, ImageOps
+import logging
 from io import BytesIO
+
+from PIL import Image, ImageOps
+
 from .wrap_tools import benchmark, _make_repr
 
-border = (5, 8, 16, 7) #borders to crop
-#why borders? well, let's do some quick math:
-#we recieve picture 65x25 from gd server (65*25=1625 pixels to iterate through)
-#and then we cut borders, getting 44x10 image (44*10=440 pixels to iterate through)
-#so, amount of iterations is 3.693(18) times lower ;)
+border = (5, 8, 16, 7)  # borders to crop
+# why borders? well, let's do some quick math:
+# we recieve picture 65x25 from gd server (65*25=1625 pixels to iterate through)
+# and then we cut borders, getting 44x10 image (44*10=440 pixels to iterate through)
+# so, amount of iterations is 3.693(18) times lower.
+
+log = logging.getLogger(__name__)
 
 class Captcha:
     def __init__(self):
@@ -18,14 +23,16 @@ class Captcha:
         }
         return _make_repr(self, info)
 
-    def solve(self, buffer):
+    def solve(self, buffer, should_log: bool = False):
         io_bytes = BytesIO(buffer)
-        img = ImageOps.crop(Image.open(io_bytes), border) #get image from BytesIO, then crop the borders
-        pixels = img.load() #size: (44, 10)
+        img = ImageOps.crop(Image.open(io_bytes), border)  # get image from BytesIO, then crop the borders
+        pixels = img.load()
         predict = self.walk_through(pixels, img.size)
-        connected = self.connect_result(predict)
+        code = self.connect_result(predict)
         self.status = 'solved'
-        return connected
+        if should_log:
+            log.debug("Solved a Captcha. The code was %s.", code)
+        return code
     
     def walk_through(self, pixel_map, size):
         lst = [[] for _ in range(5)]  # store
@@ -55,16 +62,16 @@ class Captcha:
     
     def init_numbers(self):
         setup = [
-            [[3,4,5,6],[2,3,4,5,6,7]],
-            [[2,9],[1,2,9]],
-            [[2,9],[1,2,8,9]],
-            [[1,8],[0,1,8,9]],
-            [[5,6],[4,5,6]],
-            [[0,1,2,3,4,7],[0,1,2,3,4,7,8]],
-            [[2,3,4,5,6,7],[1,2,3,4,5,6,7,8]],
-            [[0,8,9],[0,7,8,9]],
-            [[2,6,7],[1,2,3,5,6,7,8]],
-            [[2,3],[1,2,3,4,7,8]]
+            [[3, 4, 5, 6], [2, 3, 4, 5, 6, 7]],
+            [[2, 9], [1, 2, 9]],
+            [[2, 9], [1, 2, 8, 9]],
+            [[1, 8], [0, 1, 8, 9]],
+            [[5, 6], [4, 5, 6]],
+            [[0, 1, 2, 3, 4, 7], [0, 1, 2, 3, 4, 7, 8]],
+            [[2, 3, 4, 5, 6, 7], [1, 2, 3, 4, 5, 6, 7, 8]],
+            [[0, 8, 9], [0, 7, 8, 9]],
+            [[2, 6, 7], [1, 2, 3, 5, 6, 7, 8]],
+            [[2, 3], [1, 2, 3, 4, 7, 8]]
         ]
         return setup
 

@@ -16,6 +16,10 @@ class Song(AbstractEntity):
         return _make_repr(self, info)
 
     @property
+    def id(self):
+        return self.options.get('id')
+
+    @property
     def name(self):
         return self.options.get('name')
 

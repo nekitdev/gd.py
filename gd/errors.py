@@ -63,11 +63,11 @@ class FailedToChange(ClientException):
 
 class NothingFound(ClientException):
     """Exception that is raised when server returns nothing
-    that can be converted to object of *cls*.
+    that can be converted to object of name *cls_name*.
     """
-    def __init__(self, cls):
-        self.type = cls.__name__.lower()
-        message = f"No <{self.type}>'s were found."
+    def __init__(self, cls_name):
+        name = cls_name
+        message = f"No <{name}>'s were found."
         super().__init__(message)
 
 

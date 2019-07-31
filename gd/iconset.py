@@ -1,3 +1,4 @@
+from .graphics.colors import colors
 from .utils.wrap_tools import _make_repr
 
 class IconSet:
@@ -19,11 +20,11 @@ class IconSet:
 
     @property
     def color_1(self):
-        return get_color(self, 'color_1')
+        return self.options.get('color_1')
 
     @property
     def color_2(self):
-        return get_color(self, 'color_2')
+        return self.options.get('color_2')
 
     @property
     def main_type(self):

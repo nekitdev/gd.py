@@ -1,5 +1,6 @@
 import asyncio
 
+from . import client
 from .abstractentity import AbstractEntity
 from .utils.wrap_tools import _make_repr
 
@@ -34,5 +35,4 @@ class AbstractUser(AbstractEntity):
         :class:`.User`
             A user object corresponding to the abstract one.
         """
-        from .client import Client
-        return await Client().get_user(self.account_id)
+        return await client.Client().get_user(self.account_id)

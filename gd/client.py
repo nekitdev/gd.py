@@ -2,18 +2,19 @@ import asyncio
 
 import logging
 
+from .classconverter import ClassConverter
+from .errors import *
+from .unreguser import UnregisteredUser
+from .utils import run as _run
 from .utils.captcha_solver import Captcha
 from .utils.wrap_tools import _make_repr, check
 from .utils.context import ctx
 from .utils.http_request import http
-from .classconverter import class_converter
 from .utils.mapper import mapper_util
-from .errors import *
 from .utils.gdpaginator import paginate
 from .utils.routes import Route
 from .utils.params import Parameters as Params
 from .utils.indexer import Index as i
-from .unreguser import UnregisteredUser
 
 log = logging.getLogger(__name__)
 
@@ -53,8 +54,9 @@ class Client:
             -1: MissingAccess(type='Song', id=song_id),
             -2: SongRestrictedForUsage(song_id)
         }
+
         resp = await http.fetch(Route.GET_SONG_INFO, parameters, splitter="~|~", error_codes=codes, should_map=True)
-        return class_converter.SongConvert(resp)
+        return ClassConverter.song_convert(resp)
     
     async def get_user(self, account_id: int = 0):
         """|coro|
@@ -82,14 +84,16 @@ class Client:
         """
         if account_id == -1:
             return UnregisteredUser()
+
         parameters = Params().create_new().put_definer('user', str(account_id)).finish()
         codes = {
             -1: MissingAccess(type='User', id=account_id)
         }
-        resp = await http.fetch(Route.GET_USER_INFO, parameters, splitter=':', error_codes=codes, should_map=True)
 
+        resp = await http.fetch(Route.GET_USER_INFO, parameters, splitter=':', error_codes=codes, should_map=True)
         another = Params().create_new().put_definer('search', str(resp.get(i.USER_PLAYER_ID))).put_page(0).finish()
         new_resp = await http.fetch(Route.USER_SEARCH, another, splitter=':', error_codes=codes, should_map=True)
+
         new_dict = {
             i.USER_GLOW_OUTLINE: new_resp.get(i.USER_GLOW_OUTLINE),
             i.USER_ICON: new_resp.get(i.USER_ICON),
@@ -97,8 +101,18 @@ class Client:
         }
         for key in list(new_dict.keys()):
             resp[key] = new_dict[key]
-        return class_converter.UserConvert(resp)
-    
+
+        return ClassConverter.user_convert(resp)
+
+    async def test_captcha(self):
+        """|coro|
+
+        Tests a Captcha solving, and prints the result.
+        """
+        resp = await http.request(Route.CAPTCHA)
+        res = Captcha().solve(resp, should_log=True)
+        print(res)
+
     def login(self, user: str, password: str):
         """Tries to log in with given parameters.
 
@@ -124,18 +138,57 @@ class Client:
         codes = {
             -1: LoginFailure(login=user, password=password)
         }
-        loop = asyncio.new_event_loop()
-        resp = loop.run_until_complete(
+
+        resp = _run(
             http.fetch(Route.LOGIN, parameters, splitter=',', error_codes=codes)
         )
-        loop.close()
+
         prepared = {
             'name': user, 'password': password,
             'account_id': int(resp[0]), 'id': int(resp[1])
         }
         for attr, value in prepared.items():
             ctx.upd(attr, value)
-        log.info("Logged in as %s, with password %s", repr(user), repr(password))
+
+        log.info("Logged in as %s, with password %s.", repr(user), repr(password))
+
+    @check.is_logged(ctx)
+    async def as_user(self):
+        return await self.get_user(ctx.account_id)
+
+    @check.is_logged(ctx)
+    async def get_page_messages(
+        self, sent_or_inbox: str = 'inbox', page: int = 0, *, raise_errors: bool = True
+    ):
+        assert sent_or_inbox in ('inbox', 'sent')
+        inbox = 0 if sent_or_inbox != 'sent' else 1
+
+        params = Params().create_new().put_definer('accountid', str(ctx.account_id)).put_password(ctx.encodedpass).put_page(page).put_total(0).get_sent(inbox).finish()
+        codes = {
+            -1: MissingAccess(message='Failed to get messages.'),
+            -2: NothingFound('gd.Message')
+        }
+
+        resp = await http.fetch(
+            Route.GET_PRIVATE_MESSAGES, params, error_codes=codes, splitter='#', raise_errors=raise_errors
+        )
+        if resp is None:
+            return []
+
+        to_map = resp[0].split('|')
+
+        res = []
+        for elem in to_map:
+            mapped = mapper_util.map(elem.split(':'))
+            res.append(
+                ClassConverter.message_convert(mapped, self._get_parse_dict())
+            )
+
+        return res
+
+    @check.is_logged(ctx)
+    def _get_parse_dict(self):
+        return {k: getattr(ctx, k) for k in ('name', 'id', 'account_id')}
 
     @check.is_logged(ctx)
     async def post_comment(self, content: str):
@@ -154,11 +207,14 @@ class Client:
             Failed to post a comment.
         """
         to_gen = [ctx.name, 0, 0, 1]
+
         parameters = Params().create_new().put_definer('accountid', str(ctx.account_id)).put_username(ctx.name).put_password(ctx.encodedpass).put_comment(content, to_gen).comment_for('client').finish()
         codes = {
             -1: MissingAccess(message='Failed to post a comment.')
         }
+
         await http.fetch(Route.UPLOAD_ACC_COMMENT, parameters, error_codes=codes)
+
         log.debug("Posted a comment. Content: %s", content)
 
     @check.is_logged(ctx)
@@ -185,6 +241,7 @@ class Client:
         number = Captcha().solve(captcha)
         params = Params().create_new('web').put_for_management(ctx.name, ctx.password, str(number)).close()
         await http.request(Route.MANAGE_ACCOUNT, params, cookie=cookie)
+
         if name is not None:
             params = Params().create_new('web').put_for_username(ctx.name, name).close()
             resp = await http.request(Route.CHANGE_USERNAME, params, cookie=cookie)
@@ -193,6 +250,7 @@ class Client:
                 ctx.upd('name', name)
             else:
                 raise FailedToChange('name')
+
         if password is not None:
             await http.request(Route.CHANGE_PASSWORD, cookie=cookie)
             params = Params().create_new('web').put_for_password(ctx.name, ctx.password, password).close()

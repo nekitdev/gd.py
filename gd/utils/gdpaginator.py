@@ -9,14 +9,14 @@ class Paginator:
 
     Parameters
     ----------
-    to_paginate: Sequence
+    to_paginate: Sequence[Any]
         A sequence to paginate, such that list(to_paginate) can be performed.
 
     per_page: :class:`int`
         Number of elements each page can have.
     """
 
-    def __init__(self, to_paginate, per_page):
+    def __init__(self, to_paginate, per_page: int = 10):
         self._list = list(to_paginate)
         self._per_page = per_page
         self._length = len(self._list)

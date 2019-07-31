@@ -41,50 +41,29 @@ Paginator
 .. autoclass:: Paginator
     :members:
 
-Level
------
+Other Objects
+-------------
 
 .. autoclass:: Level
     :members:
 
-Song
-----
-
 .. autoclass:: Song
     :members:
-
-AbstractUser
-------------
 
 .. autoclass:: AbstractUser
     :members:
 
-User
-----
-
 .. autoclass:: User
     :members:
-
-Icon Set
---------
 
 .. autoclass:: IconSet
     :members:
 
-Comment
--------
-
 .. autoclass:: Comment
     :members:
 
-Friend Request
---------------
-
 .. autoclass:: FriendRequest
     :members:
-
-Message
--------
 
 .. autoclass:: Message
     :members:

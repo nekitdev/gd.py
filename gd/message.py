@@ -6,6 +6,7 @@ from .utils.http_request import http
 from .utils.routes import Route
 from .utils.indexer import Index as i
 from .utils.crypto.coders import Coder
+from .utils.mapper import mapper_util
 from .utils.params import Parameters as Params
 from .utils.wrap_tools import _make_repr, check
 from .utils.context import ctx

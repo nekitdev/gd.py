@@ -2,7 +2,7 @@ __title__ = 'gd'
 __author__ = 'NeKitDSS'
 __copyright__ = 'Copyright 2019 NeKitDSS'
 __license__ = 'MIT'
-__version__ = '0.7.0b1'
+__version__ = '0.7.0b2'
 
 from collections import namedtuple
 import logging
@@ -24,6 +24,10 @@ from .utils.captcha_solver import Captcha
 from .utils.gdpaginator import Paginator
 from .utils.crypto.coders import Coder
 from .utils.crypto.xor_cipher import XORCipher as xor
+from .utils.context import context
+from .utils import run  # since asyncio.run() was introduced in 3.7, we have a run-like function.
+
+log = logging.getLogger(__name__)
 
 def _gen_version_details():
     ver = __version__
@@ -53,12 +57,11 @@ def setup_basic_logging():
     with the following format:
     [INFO] (time) {gd.some_module}: Some info message.
     """
-    log = logging.getLogger(__name__)
     hdlr = logging.StreamHandler()
     hdlr.setFormatter(
         logging.Formatter('[%(levelname)s] (%(asctime)s) {%(name)s}: %(message)s')
     )
-    log.setLevel(logging.INFO)
+    log.setLevel(logging.DEBUG)
     log.addHandler(hdlr)
 
 # setting up the NullHandler here

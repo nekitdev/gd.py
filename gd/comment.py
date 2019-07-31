@@ -1,10 +1,11 @@
+from .abstractentity import AbstractEntity
+from .errors import MissingAccess
+
 from .utils.routes import Route
 from .utils.params import Parameters as Params
 from .utils.http_request import http
 from .utils.context import ctx
 from .utils.wrap_tools import _make_repr, check
-from .errors import MissingAccess
-from .abstractentity import AbstractEntity
 
 class Comment(AbstractEntity):
     def __init__(self, **options):
@@ -47,6 +48,10 @@ class Comment(AbstractEntity):
     @property
     def level_percentage(self):
         return self.options.get('level_percentage')
+
+    @property
+    def page(self):
+        return self.options.get('page')
 
     def is_disliked(self):
         return abs(self.rating) != self.rating

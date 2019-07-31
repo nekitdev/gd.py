@@ -1,6 +1,11 @@
+import logging
+from typing import Sequence
+
 import aiohttp
 
 from .mapper import mapper_util
+
+log = logging.getLogger(__name__)
 
 class HTTPClient:
     """Class that handles the main part of the entire gd.py - sending requests."""
@@ -17,7 +22,7 @@ class HTTPClient:
             data = await resp.content.read()
             try:
                 res = data.decode()
-                if res.isdigit():
+                if res.replace('-', '').isdigit():  # support for negative integers
                     return int(res)
             except UnicodeDecodeError:
                 res = data
@@ -29,12 +34,14 @@ class HTTPClient:
     async def fetch(
         self, route: str, parameters: dict = {}, 
         splitter: str = None, error_codes: dict = {},  # error_codes is a dict: {code: error_to_raise}
-        should_map: bool = False,  # whether response should be mapped 'enum -> value'
+        raise_errors: bool = True, should_map: bool = False,  # whether response should be mapped 'enum -> value'
         get_cookies: bool = False, cookie: str = None
     ):
         resp = await self.request(route, parameters, get_cookies, cookie)
         if resp in error_codes:
-            raise error_codes.get(resp)
+            if raise_errors:
+                raise error_codes.get(resp)
+            return
         if splitter is not None:
             resp = resp.split(splitter)
         if should_map:

@@ -83,6 +83,7 @@ class Index:
 	COMMENT_TIMESTAMP = 9
 	COMMENT_LEVEL_PERCENTAGE = 10
 	COMMENT_TYPE = 101
+	COMMENT_PAGE = 102
 	#all indexes for friend requests (at least all I need lol)
 	REQUEST_SENDER_NAME = 1
 	REQUEST_SENDER_ID = 2
@@ -92,3 +93,5 @@ class Index:
 	REQUEST_TIMESTAMP = 37
 	REQUEST_STATUS = 41
 	REQUEST_INDICATOR = 101
+
+# Indexes '10X' are custom made by this library, and have nothing to do with the servers.
