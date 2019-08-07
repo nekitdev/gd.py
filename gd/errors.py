@@ -19,15 +19,50 @@ class PaginatorException(GDException):
     pass
 
 
+class FailedConversion(GDException):
+    """Exception that is raised when Enum converter
+    fails to turn given value into requested Enum.
+    """
+    def __init__(self, enum, value):
+        self._enum = enum
+        self._value = value
+        message = f'Failed to convert value {value!r} to enum: {enum!r}.'
+        super().__init__(message)
+
+    @property
+    def enum(self):
+        return self._enum
+
+    @property
+    def value(self):
+        return self._value
+    
+
+class HTTPNotConnected(ClientException):
+    """Exception that is raised when exception
+    in :class:`.utils.http.HTTPClient` occurs.
+    """
+    def __init__(self):
+        message = 'Internet connection failed.'
+        super().__init__(message)
+
+
+class FailedCaptcha(ClientException):
+    """Exception that is raised when unknown results
+    when solving GD Captcha are recieved.
+    """
+    def __init__(self, msg):
+        message = f'Solving Captcha failed. {msg}'
+        super().__init__(message)
+
+
 class MissingAccess(ClientException):
     """Exception that is raised when server responses with -1."""
-    def __init__(self, **params):
-        _type = params.get('type')
-        _id = params.get('id')
-        _message = params.get('message')
-        message = f"Missing access to '{_type}' with id: '{_id}'."
-        if _message is not None:
-            message = _message
+    def __init__(self, *, type: str = None, id: int = None, message: str = None):
+        message = (
+            f"Missing access to {type!r} with id: {id!r}."
+            if message is None else message
+        )
         super().__init__(message)
 
 
@@ -35,8 +70,8 @@ class SongRestrictedForUsage(ClientException):
     """Exception that is raised when server returns -2
     when looking for a song.
     """
-    def __init__(self, _id):
-        message = f"Song with id '{_id}' is not allowed for use."
+    def __init__(self, id):
+        message = f"Song with id {id!r} is not allowed for use."
         super().__init__(message)
 
 
@@ -45,11 +80,21 @@ class LoginFailure(ClientException):
     when trying to log in.
     """
     def __init__(self, login, password):
-        self.login = login
-        self.password = password
+        self._login = login
+        self._password = password
         message = "Failed to login with parameters:\n" \
             f"<login='{self.login}', password='{self.password}'>."
         super().__init__(message)
+
+    @property
+    def login(self):
+        """Username that was wrong or password did not match."""
+        return self._login
+
+    @property
+    def password(self):
+        """Password that login was failed with."""
+        return self._password
 
 
 class FailedToChange(ClientException):
@@ -66,9 +111,14 @@ class NothingFound(ClientException):
     that can be converted to object of name *cls_name*.
     """
     def __init__(self, cls_name):
-        name = cls_name
-        message = f"No <{name}>'s were found."
+        self._cls_name = cls_name
+        message = f"No <{cls_name}>'s were found."
         super().__init__(message)
+
+    @property
+    def cls_name(self):
+        """Name of the class instances of which were not found."""
+        return self._cls_name
 
 
 class NotLoggedError(ClientException):
@@ -89,14 +139,4 @@ class PagesOutOfRange(PaginatorException):
             message = f"Pages are out of range.\nRequested page: '{page}', Pages existing: '{info}'"
         else:
             message = f"{info}\nRequested page: '{page_num}'"
-        super().__init__(message)
-
-
-class PaginatorIsEmpty(PaginatorException):
-    """Exception that is raised if :class:`Paginator` is empty.
-    Might be deprecated soon.
-    """
-    # might be deprecated soon
-    def __init__(self):
-        message = "<gd.Paginator> object has no elements to operate with."
         super().__init__(message)

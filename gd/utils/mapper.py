@@ -8,9 +8,9 @@ class mapper_util:
         return res
         
     def normalize(item):
-        res = str(item).replace('-', '+').replace('_', '=')
+        res = str(item).replace('-', '+').replace('_', '/')
         return res
     
     def prepare_sending(item):
-        res = str(item).replace('+', '-')
+        res = str(item).replace('+', '-').replace('/', '_')
         return res

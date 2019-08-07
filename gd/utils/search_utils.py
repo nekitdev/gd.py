@@ -28,7 +28,7 @@ def get(iterable, **attrs):
     # return element if it matches requirements and '_all' is False;
     # append it to 'res' otherwise.
     for elem in iterable:
-        if all(pred(elem) == value for pred, elem in converted):
+        if all(pred(elem) == value for pred, value in converted):
             if not _all:
                 return elem
             res.append(elem)

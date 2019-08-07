@@ -1,8 +1,8 @@
 __title__ = 'gd'
-__author__ = 'NeKitDSS'
-__copyright__ = 'Copyright 2019 NeKitDSS'
+__author__ = 'NeKitDS'
+__copyright__ = 'Copyright 2019 NeKitDS'
 __license__ = 'MIT'
-__version__ = '0.7.0b2'
+__version__ = '0.7.0rc1'
 
 from collections import namedtuple
 import logging
@@ -16,14 +16,19 @@ from .friend_request import FriendRequest
 from .iconset import IconSet
 from .level import Level
 from .message import Message
+from .session import GDSession
 from .song import Song
 from .unreguser import UnregisteredUser
 from .user import User
-from .graphics.colors import Color, colors
+from .graphics.colors import Colour, Color, colors
 from .utils.captcha_solver import Captcha
-from .utils.gdpaginator import Paginator
+from .utils.context import context
+from .utils.enums import *
+from .utils.gdpaginator import paginate, Paginator
+from .utils.http_request import HTTPClient
+from .utils.params import Parameters
 from .utils.crypto.coders import Coder
-from .utils.crypto.xor_cipher import XORCipher as xor
+from .utils.crypto.xor_cipher import XORCipher
 from .utils.context import context
 from .utils import run  # since asyncio.run() was introduced in 3.7, we have a run-like function.
 

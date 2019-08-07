@@ -9,7 +9,7 @@ The following section outlines the API of gd.py.
 
     This module uses the Python logging module to log debug and error messages
     in an output independent way. If the logging is not configured,
-    these logs will not be output anywhere. See :ref:`setup_logging` for 
+    these logs will not be output anywhere. See :ref:`_setup_logging` for 
     more information on how to set up the logging module with gd.py.
 
 Version Related Info
@@ -32,23 +32,39 @@ There are two main ways to get version information about the library.
 Client
 ------
 
+.. note:: Multilogins are restricted in this version. They may be allowed soon.
 .. autoclass:: Client
     :members:
 
 Paginator
 ---------
 
+.. autofunction:: paginate
+
 .. autoclass:: Paginator
     :members:
 
-Other Objects
--------------
+AbstractEntity
+--------------
+
+.. note:: :class:`.AbstractEntity` is a main class, and all objects in this section are derived from it.
+.. autoclass:: AbstractEntity
+    :members:
+
+Level
+-----
 
 .. autoclass:: Level
     :members:
 
+Song
+----
+
 .. autoclass:: Song
     :members:
+
+User
+----
 
 .. autoclass:: AbstractUser
     :members:
@@ -56,17 +72,59 @@ Other Objects
 .. autoclass:: User
     :members:
 
+Icon Set and Colour
+-------------------
+
 .. autoclass:: IconSet
     :members:
+
+.. autoclass:: Colour
+    :members:
+
+Comment
+-------
 
 .. autoclass:: Comment
     :members:
 
+Friend Request
+--------------
+
 .. autoclass:: FriendRequest
     :members:
 
+Message
+-------
+
 .. autoclass:: Message
     :members:
+
+Enums
+-----
+
+.. autoclass:: MessagePolicyType
+
+.. autoclass:: CommentPolicyType
+
+.. autoclass:: FriendRequestPolicyType
+
+.. autoclass:: StatusLevel
+
+.. autoclass:: IconType
+
+.. autoclass:: LevelLength
+
+.. autoclass:: LevelDifficulty
+
+.. autoclass:: DemonDifficulty
+
+.. autoclass:: TimelyType
+
+.. autoclass:: DifficultyFilter
+
+.. autoclass:: DemonFilter
+
+.. autoclass:: SearchStrategy
 
 Exceptions
 ----------
@@ -76,6 +134,13 @@ Exceptions
 .. autoexception:: ClientException
 
 .. autoexception:: PaginatorException
+
+.. autoexception:: FailedConversion
+    :members:
+
+.. autoexception:: HTTPNotConnected
+
+.. autoexception:: FailedCaptcha
 
 .. autoexception:: MissingAccess
 
@@ -87,19 +152,19 @@ Exceptions
 .. autoexception:: FailedToChange
 
 .. autoexception:: NothingFound
-    :members:
 
 .. autoexception:: NotLoggedError
 
 .. autoexception:: PagesOutOfRange
 
-.. autoexception:: PaginatorIsEmpty
-
 Exception Hierarchy
 -------------------
 
 - :exc:`GDException` (:exc:`Exception`)
+    - :exc:`FailedConversion`
     - :exc:`ClientException`
+        - :exc:`HTTPNotConnected`
+        - :exc:`FailedCaptcha`
         - :exc:`MissingAccess`
         - :exc:`SongRestrictedForUsage`
         - :exc:`LoginFailure`
@@ -108,4 +173,3 @@ Exception Hierarchy
         - :exc:`NotLoggedError`
     - :exc:`PaginatorException`
         - :exc:`PagesOutOfRange`
-        - :exc:`PaginatorIsEmpty`

@@ -1,6 +1,7 @@
 from .utils.wrap_tools import _make_repr
 
 class AbstractEntity:
+    """Class that represents Abstract Entity. This is a base for many gd.py objects."""
     def __init__(self, **options):
         self._id = options.get('id', 0)
     
@@ -10,4 +11,5 @@ class AbstractEntity:
     
     @property
     def id(self):
+        """:class:`int`: ID of the Entity."""
         return self._id

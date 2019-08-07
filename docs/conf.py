@@ -55,7 +55,7 @@ master_doc = 'index'
 
 # General information about the project
 project = u'gd.py'
-copyright = u'2019, NeKitDSS'
+copyright = u'2019, NeKitDS'
 
 version = ''
 with open('../gd/__init__.py') as f:  # version should be set at this point
@@ -77,7 +77,7 @@ pygments_style = 'friendly'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 
-html_theme = 'classic'
+html_theme = 'alabaster'  # this one is beautiful <3
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

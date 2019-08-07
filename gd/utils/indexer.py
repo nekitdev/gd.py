@@ -1,5 +1,7 @@
 class Index:
-	#All indexes for gd levels
+	"""Class that contains all indexes required for operating on GD Server responses."""
+	# Indexes '10X' are custom made by this library, and have nothing to do with the servers.
+	# All indexes for gd levels
 	LEVEL_ID = 1
 	LEVEL_NAME = 2
 	LEVEL_DESCRIPTION = 3
@@ -27,13 +29,16 @@ class Index:
 	LEVEL_IS_EPIC = 42
 	LEVEL_DEMON_DIFFICULTY = 43
 	LEVEL_OBJECT_COUNT = 45
-    #all indexes for songs
+	LEVEL_TIMELY_TYPE = 101
+	LEVEL_TIMELY_INDEX = 102
+	LEVEL_TIMELY_COOLDOWN = 103
+    # all indexes for songs
 	SONG_ID = 1
 	SONG_TITLE = 2
 	SONG_AUTHOR = 4
 	SONG_SIZE = 5
 	SONG_URL = 10
-    #all indexes for users
+    # all indexes for users
 	USER_NAME = 1
 	USER_PLAYER_ID = 2
 	USER_STARS = 3
@@ -65,7 +70,7 @@ class Index:
 	USER_DEATH_EFFECT = 47
 	USER_ROLE = 49
 	USER_COMMENT_HISTORY_POLICY = 50
-	#all indexes for messages
+	# all indexes for messages
 	MESSAGE_ID = 1
 	MESSAGE_SENDER_ACCOUNT_ID = 2
 	MESSAGE_SENDER_ID = 3
@@ -74,8 +79,8 @@ class Index:
 	MESSAGE_SENDER_NAME = 6
 	MESSAGE_TIMESTAMP = 7
 	MESSAGE_IS_READ = 8
-	MESSAGE_INDICATOR = 9 #like, when its "1" - the message is sent TO MESSAGE_SENDER (if that makes sense)
-	#all indexes for comments
+	MESSAGE_INDICATOR = 9  # when == 1 - the message is sent TO MESSAGE_SENDER
+	# all indexes for comments
 	COMMENT_LEVEL_ID = 1
 	COMMENT_BODY = 2
 	COMMENT_RATING = 4
@@ -84,7 +89,7 @@ class Index:
 	COMMENT_LEVEL_PERCENTAGE = 10
 	COMMENT_TYPE = 101
 	COMMENT_PAGE = 102
-	#all indexes for friend requests (at least all I need lol)
+	# all indexes for friend requests (at least all I need lol)
 	REQUEST_SENDER_NAME = 1
 	REQUEST_SENDER_ID = 2
 	REQUEST_SENDER_ACCOUNT_ID = 16
@@ -93,5 +98,3 @@ class Index:
 	REQUEST_TIMESTAMP = 37
 	REQUEST_STATUS = 41
 	REQUEST_INDICATOR = 101
-
-# Indexes '10X' are custom made by this library, and have nothing to do with the servers.

@@ -1,4 +1,4 @@
 include README.rst
 include LICENSE
 include requirements.txt
-include gd/resources/*
+include gd/graphics/resources/*

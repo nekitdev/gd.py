@@ -139,7 +139,7 @@ class SpriteGen:
             raise error.InvalidArgument()
         return cases.get(typeof)(sprite_list, iconset)
 
-def gen_center_offset(main, to_paste, additional=(0,0)):
+def gen_center_offset(main, to_paste, additional=(0,s0)):
     mX, mY, pX, pY, aX, aY = main.size + to_paste.size + additional  # '+' here is concatenation of tuples
     baseX, baseY = (mX-pX)//2, (mY-pY)//2
     return baseX + aX, baseY - aY
@@ -200,7 +200,7 @@ def fix_degree(deg):
     return new_deg
     
 def parse_array(element, deep=-1):
-    ret = eval(
+    ret = eval(  # I couldn't find a better solution...
         element.text.replace('{', '(').replace('}', ')')
     )
     if deep > -1:
@@ -208,7 +208,7 @@ def parse_array(element, deep=-1):
     return ret
 
 def parse_bool(element):
-    return bool(element.tag.replace('false', str())) #this will eventually give us real bools from strings
+    return bool(element.tag.replace('false', str()))  # this will eventually give us real bools from strings
 
 def fix_prefix(prefix):
     cases = {

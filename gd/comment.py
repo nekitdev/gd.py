@@ -1,13 +1,13 @@
 from .abstractentity import AbstractEntity
-from .errors import MissingAccess
+from .session import GDSession
 
-from .utils.routes import Route
-from .utils.params import Parameters as Params
-from .utils.http_request import http
 from .utils.context import ctx
 from .utils.wrap_tools import _make_repr, check
 
+_session = GDSession()
+
 class Comment(AbstractEntity):
+    """Class that represents a Profile/Level comment in Geometry Dash."""
     def __init__(self, **options):
         super().__init__(**options)
         self.options = options
@@ -72,15 +72,6 @@ class Comment(AbstractEntity):
         :exc:`.MissingAccess`
             Server did not return 1, which means comment was not deleted.
         """
-        cases = {
-            0: Route.DELETE_LEVEL_COMMENT,
-            1: Route.DELETE_ACC_COMMENT
-        }
-        route = cases.get(self.typeof)
-        config_type = 'client' if self.typeof == 1 else 'level'
-        parameters = Params().create_new().put_definer('commentid', str(self.id)).put_definer('accountid', str(ctx.account_id)).put_password(ctx.encodedpass).comment_for(config_type, self.level_id).finish()
-        resp = await http.request(route, parameters)
-        if resp != 1:
-            raise MissingAccess(message=f'Failed to delete a comment: {self!r}.')
+        await _session.delete_comment(self)
 
 # TO_DO: add docs here if needed

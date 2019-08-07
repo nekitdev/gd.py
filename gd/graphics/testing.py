@@ -5,7 +5,7 @@ gco = gen_center_offset
 sg = SpriteGen(); sgu = SpriteGenUtil()
 img = sg.load_image()
 full_test = [
-    IconSet(color_1 = 10, color_2 = 3, icon_robot = i) for i in range(1,27)
+    IconSet(color_1 = colors[10], color_2 = colors[3], icon_robot = i) for i in range(1,27)
 ]
 parsed = sgu.parse_xml()
 full_bases = [
@@ -38,4 +38,4 @@ for i in range(26):
     make_sprite('robot', full_sprites[i], full_test[i])
     time.sleep(1.5)
 
-#make_sprite('wave', full_sprites[34], full_test[34])
+# make_sprite('wave', full_sprites[34], full_test[34])

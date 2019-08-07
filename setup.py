@@ -28,11 +28,12 @@ extras_require = {  # gotta work on that soon
 
 setup(
     name = 'gd.py',
-    author = 'NeKitDSS',
-    url = 'https://github.com/NeKitDSS/gd.py',
+    author = 'NeKitDS',
+    author_email = 'gdpy13@gmail.com',
+    url = 'https://github.com/NeKitDS/gd.py',
     project_urls = {
         "Documentation": "https://gdpy.readthedocs.io/en/latest",
-        "Issue tracker": "https://github.com/NeKitDSS/gd.py/issues",
+        "Issue tracker": "https://github.com/NeKitDS/gd.py/issues",
     },
     version = version,
     packages = ['gd', 'gd.utils', 'gd.utils.crypto', 'gd.graphics'],

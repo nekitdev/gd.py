@@ -1,10 +1,11 @@
-import asyncio
-
-from . import client
 from .abstractentity import AbstractEntity
+from .session import GDSession
 from .utils.wrap_tools import _make_repr
 
+_session = GDSession()
+
 class AbstractUser(AbstractEntity):
+    """Class that represents an Abstract Geometry Dash User."""
     def __init__(self, **options):
         super().__init__(**options)
         self.options = options
@@ -19,10 +20,12 @@ class AbstractUser(AbstractEntity):
         
     @property
     def name(self):
+        """:class:`str`: String representing name of the user."""
         return self.options.get('name')
     
     @property
     def account_id(self):
+        """:class:`int`: Account ID of the user."""
         return self.options.get('account_id')
     
     async def to_user(self):
@@ -35,4 +38,4 @@ class AbstractUser(AbstractEntity):
         :class:`.User`
             A user object corresponding to the abstract one.
         """
-        return await client.Client().get_user(self.account_id)
+        return await _session.get_user(self.account_id)

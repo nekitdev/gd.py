@@ -1,91 +1,77 @@
 import base64 as b64
 
-from . import song
-from . import user
-from . import comment
-from . import abstractuser
-from . import level
-from . import message
-from . import iconset
-from . import friend_request
+from .song import Song
+from .user import User
+from .comment import Comment
+from .abstractuser import AbstractUser
+from .level import Level
+from .message import Message
+from .iconset import IconSet
+from .friend_request import FriendRequest
 
 from .graphics.colors import colors
 
-from .utils.indexer import Index as i
 from .utils.converter import Converter
+from .utils.indexer import Index as i
 from .utils.crypto.coders import Coder
 from .utils.mapper import mapper_util
-from .utils.types import (
-    MessagePrivacyType, FriendRequestPrivacyType, 
-    CommentPrivacyType, StatusLevelType
+from .utils.enums import (
+    MessagePolicyType, FriendRequestPolicyType, 
+    CommentPolicyType, StatusLevel,
+    LevelLength, TimelyType, IconType
 )
 
 class ClassConverter:
 
-    def song_convert(to_parse):
-        s = to_parse #I feel more confident with shorter variables
+    def song_convert(s):
         dl_link = (s[i.SONG_URL]).replace('%3A', ':').replace('%2F', '/')
-        return song.Song(
+        return Song(
             name = s[i.SONG_TITLE],
             author = s[i.SONG_AUTHOR],
             id = s[i.SONG_ID],
             size = float(s[i.SONG_SIZE]),
-            size_mb = f'{s[i.SONG_SIZE]} MB',
-            links = [
+            links = (
                 f'https://www.newgrounds.com/audio/listen/{s[i.SONG_ID]}',
                 dl_link
-            ]
+            ),
+            custom = True
         )
+
+    def song_from_kwargs(**kwargs):
+        return Song(**kwargs)
         
-    def user_convert(to_parse):
-        s = to_parse #as I said, shorter variables are more comfortable
-        pm_policy = s[i.USER_PRIVATE_MESSAGE_POLICY]
-        dm = MessagePrivacyType(pm_policy)
-        friend_req_policy = s[i.USER_FRIEND_REQUEST_POLICY]
-        fr_rq = FriendRequestPrivacyType(friend_req_policy)
-        youtube = s[i.USER_YOUTUBE]
-        if youtube == '':
-            yt = None
-        if youtube != '':
-            yt = f'https://www.youtube.com/channel/{youtube}'
-        r = s[i.USER_ROLE]
-        stat = StatusLevelType(r)
+    def user_convert(s):
+        dm = MessagePolicyType(s[i.USER_PRIVATE_MESSAGE_POLICY])
+        fr_rq = FriendRequestPolicyType(s[i.USER_FRIEND_REQUEST_POLICY])
+        comment = CommentPolicyType(s[i.USER_COMMENT_HISTORY_POLICY])
+
+        stat = StatusLevel(s[i.USER_ROLE])
         rnk = s[i.USER_GLOBAL_RANK]
-        if rnk == '': #check if it works like that
-            rank = None
-        if rnk != '':
-            rank = rnk
+        rank = rnk if rnk else None
+
+        youtube = s[i.USER_YOUTUBE]
+        yt = (youtube, f'https://www.youtube.com/channel/{youtube}') if youtube else (None, None)
+
         twitter = s[i.USER_TWITTER]
-        if twitter == '':
-            twt = None
-            twt_link = None
-        if twitter != '':
-            twt = '@' + twitter
-            twt_link = f'https://twitter.com/{twt}'
+        twt = (twitter, f'https://twitter.com/{twitter}') if twitter else (None, None)
+
         twitch = s[i.USER_TWITCH]
-        if twitch == '':
-            twch = None
-            twch_link = None
-        if twitch != '':
-            twch = twitch
-            twch_link = f'https://twitch.tv/{twch}'
-        comment_policy = s[i.USER_COMMENT_HISTORY_POLICY]
-        comment = CommentPrivacyType(comment_policy)
-        #redo a bit (for easier interaction, and not all elements are yet implemented)
-        return user.User(
+        twch = (twitch, f'https://twitch.tv/{twitch}') if twitch else (None, None)
+
+        return User(
             name = s[i.USER_NAME], id = s[i.USER_PLAYER_ID],
             stars = s[i.USER_STARS], demons = s[i.USER_DEMONS],
             secret_coins = s[i.USER_SECRET_COINS], user_coins = s[i.USER_USER_COINS],
             cp = s[i.USER_CREATOR_POINTS], diamonds = s[i.USER_DIAMONDS],
             role = stat, global_rank = rank,
             account_id = s[i.USER_ACCOUNT_ID], youtube = yt, 
-            twitter = [twt, twt_link], twitch = [twch, twch_link],
+            twitter = twt, twitch = twch,
             messages = dm, friend_requests = fr_rq, comments = comment,
-            icon_setup = iconset.IconSet(
+            icon_setup = IconSet(
                 main_icon = s[i.USER_ICON],
                 color_1 = colors[s[i.USER_COLOR_1]],
                 color_2 = colors[s[i.USER_COLOR_2]],
-                main_icon_type = s[i.USER_ICON_TYPE],
+                main_icon_type = IconType(s[i.USER_ICON_TYPE]),
                 has_glow_outline = bool(s[i.USER_GLOW_OUTLINE]^1),
                 icon_cube = s[i.USER_ICON_CUBE],
                 icon_ship = s[i.USER_ICON_SHIP],
@@ -96,13 +82,61 @@ class ClassConverter:
                 icon_spider = s[i.USER_ICON_SPIDER]
             )
         )
+
+    # ok style
+    def level_convert(s, song, creator):
+        try:  # decode password
+            password = Coder.decode(type='levelpass', string=s[i.LEVEL_PASS])
+        except TypeError:
+            password = None
+        if password == '1':
+            password = ''
+
+        desc = b64.b64decode(s[i.LEVEL_DESCRIPTION]).decode()
+        length = LevelLength(s[i.LEVEL_LENGTH])
+        typeof = TimelyType(s[i.LEVEL_TIMELY_TYPE])
+        game_version = s[i.LEVEL_GAME_VERSION]  # needs to be converted to represent real version.
+        leveldata = Coder.unzip(s[i.LEVEL_DATA])
+
+        diff = s[i.LEVEL_DIFFICULTY]
+        demon_diff = s[i.LEVEL_DEMON_DIFFICULTY]
+        is_demon = bool(s[i.LEVEL_IS_DEMON])
+        is_auto = bool(s[i.LEVEL_IS_AUTO])
+        difficulty = Converter.convert_level_difficulty(
+            diff=diff, demon_diff=demon_diff, is_demon=is_demon, is_auto=is_auto)
+
+        return Level(
+            id = s[i.LEVEL_ID],
+            name = s[i.LEVEL_NAME],
+            description = desc,
+            version = s[i.LEVEL_VERSION],
+            creator = creator,
+            song = song,
+            data = leveldata,
+            is_demon = is_demon,
+            is_auto = is_auto,
+            difficulty = difficulty,
+            stars = s[i.LEVEL_STARS],
+            coins = s[i.LEVEL_COIN_COUNT],
+            verified_coins = bool(s[i.LEVEL_COIN_VERIFIED]),
+            is_epic = bool(s[i.LEVEL_IS_EPIC]),
+            original = s[i.LEVEL_ORIGINAL],
+            downloads = s[i.LEVEL_DOWNLOADS],
+            likes = s[i.LEVEL_LIKES],
+            score = s[i.LEVEL_FEATURED_SCORE],
+            uploaded_timestamp = s[i.LEVEL_UPLOADED_TIMESTAMP],
+            last_updated_timestamp = s[i.LEVEL_LAST_UPDATED_TIMESTAMP],
+            length = length,
+            game_version = game_version,
+            stars_requested = s[i.LEVEL_REQUESTED_STARS],
+            object_count = s[i.LEVEL_OBJECT_COUNT],
+            typeof = typeof,
+            time_n = s[i.LEVEL_TIMELY_INDEX],
+            cooldown = s[i.LEVEL_TIMELY_COOLDOWN]
+        )
+        
     
-    def level_convert(to_parse):
-        s = to_parse
-        pass #I'll finish soon
-    
-    def message_convert(to_parse, to_parse_2):
-        s = to_parse
+    def message_convert(s, s_2):
         cases = {0: 'normal', 1: 'sent'}
         type_of = cases.get(s[i.MESSAGE_INDICATOR])
         useful_dict = {
@@ -111,20 +145,22 @@ class ClassConverter:
             'account_id': s[i.MESSAGE_SENDER_ACCOUNT_ID]
         }
         user_1, user_2 = [
-            ClassConverter.abstractuser_convert(elem) for elem in (useful_dict, to_parse_2)
+            ClassConverter.abstractuser_convert(elem) for elem in (useful_dict, s_2)
         ]
-        return message.Message(
+        is_normal = (type_of == 'normal')
+
+        subject = b64.b64decode(mapper_util.normalize(s[i.MESSAGE_SUBJECT])).decode()
+        return Message(
             id = s[i.MESSAGE_ID],
             timestamp = s[i.MESSAGE_TIMESTAMP],
-            subject = b64.b64decode(mapper_util.normalize(s[i.MESSAGE_SUBJECT])).decode(),
+            subject = subject,
             is_read = bool(s[i.MESSAGE_IS_READ]),
-            author = user_1 if (type_of == 'normal') else user_2,
-            recipient = user_2 if (type_of == 'normal') else user_1,
+            author = user_1 if is_normal else user_2,
+            recipient = user_2 if is_normal else user_1,
             type = type_of
         )
 
-    def request_convert(to_parse, to_parse_2):
-        s = to_parse
+    def request_convert(s, s_2):
         cases = {0: 'normal', 1: 'sent'}
         type_of = cases.get(s[i.REQUEST_INDICATOR])
         useful_dict = {
@@ -132,8 +168,8 @@ class ClassConverter:
             'id': s[i.REQUEST_SENDER_ID],
             'account_id': s[i.REQUEST_SENDER_ACCOUNT_ID]
         }
-        user_1, user_2 = [ClassConverter.abstractuser_convert(elem) for elem in [useful_dict, to_parse_2]]
-        return friend_request.FriendRequest(
+        user_1, user_2 = [ClassConverter.abstractuser_convert(elem) for elem in [useful_dict, s_2]]
+        return FriendRequest(
             id = s[i.REQUEST_ID],
             timestamp = s[i.REQUEST_TIMESTAMP],
             body = b64.b64decode(mapper_util.normalize(s[i.REQUEST_BODY])).decode(),
@@ -143,24 +179,22 @@ class ClassConverter:
             type = type_of
         )
     
-    def comment_convert(to_parse, to_parse_2):
-        s = to_parse
-        return comment.Comment(
+    def comment_convert(s, s_2):
+        cases = {0: 'level', 1: 'client'}
+        typeof = cases.get(s[i.COMMENT_TYPE])
+        return Comment(
             body = b64.b64decode(mapper_util.normalize(s[i.COMMENT_BODY])).decode(),
             rating = s[i.COMMENT_RATING],
             timestamp = s[i.COMMENT_TIMESTAMP],
             id = s[i.COMMENT_ID],
-            type = s[i.COMMENT_TYPE],
+            type = typeof,
             level_id = s.get(i.COMMENT_LEVEL_ID, 0),
             level_percentage = s.get(i.COMMENT_LEVEL_PERCENTAGE, -1),
-            author = ClassConverter.abstractuser_convert(to_parse_2),
+            author = ClassConverter.abstractuser_convert(s_2),
             page = s[i.COMMENT_PAGE]
         )
     
-    def abstractuser_convert(to_parse):
-        s = to_parse
-        return abstractuser.AbstractUser(
-            name = s['name'], id = s['id'], account_id = s['account_id']
+    def abstractuser_convert(d):
+        return AbstractUser(
+            **{k: (v if k == 'name' else int(v)) for k, v in d.items()}
         )
-
-# TO_DO: refactor this to bring a nicer look

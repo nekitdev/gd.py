@@ -1,26 +1,23 @@
 import asyncio
 
 import logging
+from typing import Sequence, Union
 
-from .classconverter import ClassConverter
-from .errors import *
-from .unreguser import UnregisteredUser
-from .utils import run as _run
-from .utils.captcha_solver import Captcha
+from .session import GDSession
+
 from .utils.wrap_tools import _make_repr, check
 from .utils.context import ctx
-from .utils.http_request import http
-from .utils.mapper import mapper_util
-from .utils.gdpaginator import paginate
-from .utils.routes import Route
-from .utils.params import Parameters as Params
-from .utils.indexer import Index as i
 
 log = logging.getLogger(__name__)
 
+# The theme for debates: should ctx be used or gd.Client passed on object __init__ instead?
+# Your opinion in /issues section!
 
 class Client:
     """A main class in the gd.py library, used for interacting with the servers of Geometry Dash."""
+    def __init__(self):
+        self.session = GDSession()
+
     def __repr__(self):
         info = {
             'is_logged': ctx.is_logged()
@@ -41,6 +38,7 @@ class Client:
         ------
         :exc:`.MissingAccess`
             Song under given ID was not found or does not exist.
+
         :exc:`.SongRestrictedForUsage`
             Song was not allowed to use. (Might be deprecated soon)
 
@@ -49,15 +47,33 @@ class Client:
         :class:`.Song`
             The song from the ID.
         """
-        parameters = Params().create_new().put_definer('song', str(song_id)).finish()
-        codes = {
-            -1: MissingAccess(type='Song', id=song_id),
-            -2: SongRestrictedForUsage(song_id)
-        }
+        return await self.session.get_song(song_id)
 
-        resp = await http.fetch(Route.GET_SONG_INFO, parameters, splitter="~|~", error_codes=codes, should_map=True)
-        return ClassConverter.song_convert(resp)
-    
+    async def get_ng_song(self, song_id: int = 0):
+        """|coro|
+
+        Fetches a song from Newgrounds.
+
+        This function is in most cases faster than :meth:`.Client.get_song`,
+        and it does not raise errors if a song is banned on GD Server.
+
+        Parameters
+        ----------
+        song_id: :class:`int`
+            An ID of the song to fetch.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Requested song is deleted from Newgrounds or does not exist.
+
+        Returns
+        -------
+        :class:`.Song`
+            The song found under given ID.
+        """
+        return await self.session.get_ng_song(song_id)
+
     async def get_user(self, account_id: int = 0):
         """|coro|
 
@@ -75,51 +91,104 @@ class Client:
         Raises
         ------
         :exc:`.MissingAccess`
-            Song under given ID was not found or does not exist.
+            User with given account ID was not found.
 
         Returns
         -------
         :class:`.User`
             The user from the ID. (if ID != -1)
         """
-        if account_id == -1:
-            return UnregisteredUser()
+        return await self.session.get_user(account_id)
 
-        parameters = Params().create_new().put_definer('user', str(account_id)).finish()
-        codes = {
-            -1: MissingAccess(type='User', id=account_id)
-        }
+    async def search_user(self, query: Union[int, str] = None):
+        """|coro|
 
-        resp = await http.fetch(Route.GET_USER_INFO, parameters, splitter=':', error_codes=codes, should_map=True)
-        another = Params().create_new().put_definer('search', str(resp.get(i.USER_PLAYER_ID))).put_page(0).finish()
-        new_resp = await http.fetch(Route.USER_SEARCH, another, splitter=':', error_codes=codes, should_map=True)
+        Searches for a user on Geometry Dash servers.
 
-        new_dict = {
-            i.USER_GLOW_OUTLINE: new_resp.get(i.USER_GLOW_OUTLINE),
-            i.USER_ICON: new_resp.get(i.USER_ICON),
-            i.USER_ICON_TYPE: new_resp.get(i.USER_ICON_TYPE)
-        }
-        for key in list(new_dict.keys()):
-            resp[key] = new_dict[key]
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Nothing was found.
 
-        return ClassConverter.user_convert(resp)
+        Returns
+        -------
+        :class:`.AbstractUser`
+            An AbstractUser found when searching with the query.
+        """
+        return await self.session.search_user(query)
+
+    async def get_daily(self):
+        """|coro|
+
+        Gets current daily level.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Nothing found or invalid response was recieved.
+        Returns
+        -------
+        :class:`.Level`
+            Current daily level.
+        """
+        return await self.session.get_timely('daily')
+
+    async def get_weekly(self):
+        """|coro|
+
+        Gets current weekly demon.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Nothing found or invalid response was recieved.
+        Returns
+        -------
+        :class:`.Level`
+            Current weekly demon.
+        """
+        return await self.session.get_timely('weekly')
+
+    async def get_level(self, level_id: int = 0):
+        """|coro|
+
+        Fetches a level from Geometry Dash servers.
+
+        Parameters
+        ----------
+        level_id: :class:`int`
+            An ID of the level to fetch.
+
+            .. note::
+
+                If the given ID is *n*, and ``0 > n >= -2`` is ``True``,
+                this function will search for daily/weekly levels, however,
+                it is not recommended to use since it can cause confusion.
+                Use :meth:`.Client.get_timely` instead.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Level with given ID was not found.
+
+        Returns
+        -------
+        :class:`.Level`
+            The level corresponding to given id.
+        """
+        return await self.session.get_level(level_id)
 
     async def test_captcha(self):
         """|coro|
 
-        Tests a Captcha solving, and prints the result.
+        Tests Captcha solving, and prints the result.
         """
-        resp = await http.request(Route.CAPTCHA)
-        res = Captcha().solve(resp, should_log=True)
-        print(res)
+        return await self.session.test_captcha()
 
-    def login(self, user: str, password: str):
-        """Tries to log in with given parameters.
+    async def login(self, user: str, password: str):
+        """|coro|
 
-        .. note::
-
-            This function is not a coroutine, and it is recommended
-            to run it before anything asynchronous.
+        Tries to login with given parameters.
 
         Parameters
         ----------
@@ -134,57 +203,61 @@ class Client:
         :exc:`.LoginFailure`
             Given account credentials are not correct.
         """
-        parameters = Params().create_new().put_login_definer(username=user, password=password).finish_login()
-        codes = {
-            -1: LoginFailure(login=user, password=password)
-        }
-
-        resp = _run(
-            http.fetch(Route.LOGIN, parameters, splitter=',', error_codes=codes)
-        )
-
-        prepared = {
-            'name': user, 'password': password,
-            'account_id': int(resp[0]), 'id': int(resp[1])
-        }
-        for attr, value in prepared.items():
-            ctx.upd(attr, value)
-
+        await self.session.login(user=user, password=password)
         log.info("Logged in as %s, with password %s.", repr(user), repr(password))
 
     @check.is_logged(ctx)
     async def as_user(self):
+        """|coro|
+
+        Gets user with ``account_id`` defined in context,
+        which means that client should be logged in.
+
+        Returns
+        -------
+        :class:`.User`
+            User corresponding to ``ctx.account_id``
+        """
         return await self.get_user(ctx.account_id)
 
     @check.is_logged(ctx)
     async def get_page_messages(
         self, sent_or_inbox: str = 'inbox', page: int = 0, *, raise_errors: bool = True
     ):
-        assert sent_or_inbox in ('inbox', 'sent')
-        inbox = 0 if sent_or_inbox != 'sent' else 1
+        """|coro|
 
-        params = Params().create_new().put_definer('accountid', str(ctx.account_id)).put_password(ctx.encodedpass).put_page(page).put_total(0).get_sent(inbox).finish()
-        codes = {
-            -1: MissingAccess(message='Failed to get messages.'),
-            -2: NothingFound('gd.Message')
-        }
+        Gets messages on a specified page.
 
-        resp = await http.fetch(
-            Route.GET_PRIVATE_MESSAGES, params, error_codes=codes, splitter='#', raise_errors=raise_errors
+        Requires logged in client.
+
+        Parameters
+        ----------
+        sent_or_inbox: :class:`str`
+            The type of messages to look for. Either *inbox* or *sent*.
+
+        page: :class:`int`
+            Number of page to look at.
+
+        raise_errors: :class:`bool`
+            Indicates whether errors should be raised.
+
+        Returns
+        -------
+        List[:class:`.Message`]
+            List of messages found. Can be empty.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to get messages. Raised if ``raise_errors`` is ``True``.
+
+        :exc:`.NothingFound`
+            No messages were found. Raised if ``raise_errors`` is ``True``.
+        """
+        return await self.session.get_page_messages(
+            sent_or_inbox=sent_or_inbox, page=page,
+            raise_errors=raise_errors, udict=self._gen_parse_dict()
         )
-        if resp is None:
-            return []
-
-        to_map = resp[0].split('|')
-
-        res = []
-        for elem in to_map:
-            mapped = mapper_util.map(elem.split(':'))
-            res.append(
-                ClassConverter.message_convert(mapped, self._get_parse_dict())
-            )
-
-        return res
 
     @check.is_logged(ctx)
     def _get_parse_dict(self):
@@ -206,14 +279,7 @@ class Client:
         :exc:`.MissingAccess`
             Failed to post a comment.
         """
-        to_gen = [ctx.name, 0, 0, 1]
-
-        parameters = Params().create_new().put_definer('accountid', str(ctx.account_id)).put_username(ctx.name).put_password(ctx.encodedpass).put_comment(content, to_gen).comment_for('client').finish()
-        codes = {
-            -1: MissingAccess(message='Failed to post a comment.')
-        }
-
-        await http.fetch(Route.UPLOAD_ACC_COMMENT, parameters, error_codes=codes)
+        await self.session.post_comment(content)
 
         log.debug("Posted a comment. Content: %s", content)
 
@@ -236,30 +302,14 @@ class Client:
         :exc:`.FailedToChange`
             Failed to change the credentials.
         """
-        _, cookie = await http.request(Route.MANAGE_ACCOUNT, get_cookies=True)
-        captcha = await http.request(Route.CAPTCHA, cookie=cookie)
-        number = Captcha().solve(captcha)
-        params = Params().create_new('web').put_for_management(ctx.name, ctx.password, str(number)).close()
-        await http.request(Route.MANAGE_ACCOUNT, params, cookie=cookie)
+        await self.session.edit(name=name, password=password)
 
+        # if no errors occured, log changes.
         if name is not None:
-            params = Params().create_new('web').put_for_username(ctx.name, name).close()
-            resp = await http.request(Route.CHANGE_USERNAME, params, cookie=cookie)
-            if ('Your username has been changed to' in resp):
-                log.debug('Changed username to: %s', name)
-                ctx.upd('name', name)
-            else:
-                raise FailedToChange('name')
+            log.debug('Changed username to: %s', name)
 
         if password is not None:
-            await http.request(Route.CHANGE_PASSWORD, cookie=cookie)
-            params = Params().create_new('web').put_for_password(ctx.name, ctx.password, password).close()
-            resp = await http.request(Route.CHANGE_PASSWORD, params, cookie=cookie)
-            if ('Password change failed' in resp):
-                raise FailedToChange('password')
-            else:
-                log.debug('Changed password to: %s', password)
-                ctx.upd('password', password)
+            log.debug('Changed password to: %s', password)
 
     def event(self, coro):
         """A decorator that registers an event to listen to.

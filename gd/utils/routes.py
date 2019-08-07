@@ -26,4 +26,5 @@ class Route:
     ACCEPT_REQUEST = 'acceptGJFriendRequest20'
     REQUEST_MODERATOR = 'requestUserAccess'
     GET_COMMENT_HISTORY = 'getGJCommentHistory'
-    #LIKE_LEVELS and stuff go here
+    # LIKE_LEVELS and stuff goes here
+    NEWGROUNDS_SONG_LISTEN = 'https://www.newgrounds.com/audio/listen/'

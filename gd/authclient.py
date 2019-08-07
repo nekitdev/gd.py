@@ -182,7 +182,7 @@ class AuthClient(AbstractEntity):
             cookie = http.send_request(first_route, cookies='get')[1]
             second_route = Route.CAPTCHA
             captcha = http.send_request(second_route, cookies='add', cookie=cookie)
-            number = Captcha().solve(captcha)
+            number = Captcha.solve(captcha)
             params = Params().create_new('web').put_for_management(self.name, self.password, str(number)).close()
             http.send_request(first_route, params, cookies='add', cookie=cookie)
             if name is not None:
@@ -207,7 +207,7 @@ class AuthClient(AbstractEntity):
                 else:
                     print(f'Changed password to: {password}'); self.options["password"] = password
                     from .utils.crypto.coders import Coder
-                    self.options["encodedpass"] = Coder().encode0(type='accountpass', string=self.password)
+                    self.options["encodedpass"] = Coder.encode(type='accountpass', string=self.password)
 
     def get_comments(self, pages = 1, paginate = False, per_page = 10):
         return self.as_user().get_comments(pages, paginate, per_page)
@@ -218,7 +218,7 @@ class AuthClient(AbstractEntity):
     def test_captcha(self): #It is just for testing
         route = Route.CAPTCHA; params = str()
         resp = http.send_request(route, params)
-        c = Captcha(); res = c.solve(resp, with_image=True)
+        c = Captcha; res = c.solve(resp, with_image=True)
         return res
 
 def check_inbox(sent_or_inbox):

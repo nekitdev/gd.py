@@ -1,3 +1,5 @@
+import collections
+
 from .wrap_tools import _make_repr
 from .crypto.coders import Coder
 
@@ -25,9 +27,12 @@ class Context:
         setattr(self, attr, value)
         # update encodedpass if password was updated
         if attr == 'password':
-            self.encodedpass = Coder().encode0(type='accountpass', string=self.password)
+            self.encodedpass = Coder().encode(type='accountpass', string=self.password)
 
     def is_logged(self):
         return (self.name is not None) and (self.password is not None)
 
 ctx = context = Context()
+
+# for multilogging (soon)
+_multidict = collections.defaultdict(None)
