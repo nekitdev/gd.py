@@ -2,8 +2,8 @@ gd.py
 =====
 
 .. image:: https://readthedocs.org/projects/gdpy/badge/?version=latest
-:target: https://gdpy.readthedocs.io/en/latest/?badge=latest
-:alt: Documentation Status
+    :target: https://gdpy.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
 
 gd.py is a library that provides its users ability to interact with servers of Geometry Dash.
 
