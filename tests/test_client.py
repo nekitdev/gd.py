@@ -10,6 +10,8 @@ async def test_coro():
     print('search_user() ->', abstract, 'to_user() ->', rob)
     level = await client.get_level(44622744)
     print('get_level() ->', level)
+    daily = await client.get_daily()
+    print('get_daily() ->', daily)
     # ...
 
 gd.utils.run(test_coro())

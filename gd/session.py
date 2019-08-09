@@ -157,7 +157,7 @@ class GDSession:
         return ClassConverter.level_convert(level_data, song=song, creator=creator)
 
     async def get_timely(self, typeof: str = 'daily'):
-        w = ('daily', 'weekly').index(typeof) + 1
+        w = ('daily', 'weekly').index(typeof)
         params = Params().create_new().put_weekly(w).finish()
         codes = {
             -1: MissingAccess(message=f'Failed to fetch a {typeof!r} level.')
@@ -168,7 +168,8 @@ class GDSession:
 
         num, cooldown = map(int, resp)
         num %= 100_000
-        # TODO: fix num?
+        w += 1
+
         return await self.get_level(-w, (w, num, cooldown))        
 
     async def test_captcha(self):
