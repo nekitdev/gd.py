@@ -93,7 +93,7 @@ class HTTPClient:
     ):
         """|coro|
 
-        A handy shortcut for :meth:`HTTPClient.fetch` and formatting it.
+        A handy shortcut for fetching response from a server and formatting it.
         Basically does :meth:`HTTPClient.fetch` and operates on its result.
 
         Parameters
@@ -109,7 +109,8 @@ class HTTPClient:
 
             .. note::
 
-                Either ``splitter`` can be specified, or ``splitter_func``. Not both.
+                Either *splitter* can be specified, or *splitter_func*. Not both.
+
         error_codes: Dict[:class:`int`, :exc:`Exception`]
             A dictionary that response is checked against. ``Exception`` can be any Exception.
         raise_errors: :class:`bool`
@@ -173,7 +174,7 @@ class HTTPClient:
     async def normal_request(self, url: str, data = None, **kwargs):
         """|coro|
 
-        Same as doing :aio:`ClientSession.request`, where ``method`` is
+        Same as doing :meth:`aiohttp.ClientSession.request`, where ``method`` is
         ``"GET"`` if ``data`` is None or omitted, and ``"POST"`` otherwise.
         """
         method = "GET" if data is None else "POST"

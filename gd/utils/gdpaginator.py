@@ -8,7 +8,7 @@ def paginate(iterable, per_page: int = 10):
 
     Parameters
     ----------
-    iterable: Sequence[Any]
+    iterable: Sequence[`Any`]
         A finite sequence to paginate.
 
     per_page: :class:`int`
@@ -71,7 +71,7 @@ class Paginator:
 
     @property
     def list(self):
-        """`List[Any]` Paginated sequence, represented as list."""
+        """List[`Any`] Paginated sequence, represented as list."""
         return self._list
 
     @property
@@ -164,6 +164,11 @@ class Paginator:
     def move_to(self, page: int):
         """Moves to the ``page`` given.
 
+        Parameters
+        ----------
+        page: :class:`int`
+            A page to move to.
+
         Raises
         ------
         :exc:`.PagesOutOfRange`
@@ -185,9 +190,17 @@ class Paginator:
     def view_page(self, page: int = None):
         """View elements on a page.
 
-        If ``page`` is ``None``, returns elements on a current page.
-        Otherwise, tries to go to the ``page``, and returns its elements.
-        (without switching to that page)
+        Parameters
+        ----------
+        page: :class:`int`
+            If ``page`` is ``None``, returns elements on a current page.
+            Otherwise, tries to go to the ``page``, and returns its elements.
+            (without switching to that page)
+
+        Raises
+        ------
+        :exc:`.PagesOutOfRange`
+            Raised when given page is out of range.
         """
         if page is None:
             page_to_view = self.get_curr_page()
@@ -211,7 +224,7 @@ class Paginator:
                 return res
 
     def get_all(self):
-        """Pretty similar to self.list, but returns `List[List[Any]]`, where each
+        """Pretty similar to self.list, but returns List[List[`Any`]], where each
         inner list represents one page.
         """
         return [self.view_page(i) for i in range(self.get_pages_count())]

@@ -61,7 +61,7 @@ class Captcha:
         pixel_map: :class:`PIL.PixelAccess`
             A map of pixels to walk through.
 
-        size: Tuple[int, int]
+        size: Tuple[:class:`int`, :class:`int`]
             A tuple representing width and height of the image.
 
         Returns

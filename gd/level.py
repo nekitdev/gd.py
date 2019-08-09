@@ -68,7 +68,7 @@ class Level(AbstractEntity):
 
     @property
     def song(self):
-        """:class:`.Song` Song used in the level."""
+        """:class:`.Song`: Song used in the level."""
         return self.options.get('song')
 
     @property
@@ -207,7 +207,7 @@ class Level(AbstractEntity):
             A newly fetched version. ``None`` if failed to fetch.
         """
         try:
-            new_ver = await self.session.get_level(level_id)
+            new_ver = await _session.get_level(level_id)
         except MissingAccess:
             return log.warning('Failed to refresh level: %r. Most likely it was deleted.', self)
 

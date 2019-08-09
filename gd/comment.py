@@ -10,6 +10,7 @@ class Comment(AbstractEntity):
     """Class that represents a Profile/Level comment in Geometry Dash."""
     def __init__(self, **options):
         super().__init__(**options)
+        # self._client = client
         self.options = options
     
     def __repr__(self):

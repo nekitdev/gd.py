@@ -1,4 +1,4 @@
-.. setup_logging
+.. _setup_logging:
 
 Setting Up Logging
 ==================
@@ -8,15 +8,28 @@ gd.py uses :mod:`logging` module to log different information.
 By default, it is required to setup the logging by hand,
 however, gd.py provides a simple way to set up logging all
 messages into the console::
+
     import gd
     gd.setup_basic_logging()
 
 As it can be seen, nothing is too hard.
 
+Although, here is a snippet of how this funcion works::
+
+    import logging
+    def setup_basic_logging():
+        handler = logging.StreamHandler()
+        handler.setFormatter(  # gd.py exclusive formatter '~')/
+            logging.Formatter('[%(levelname)s] (%(asctime)s) {%(name)s}: %(message)s')
+        )
+        log.addHandler(handler)
+        log.setLevel(logging.DEBUG)
+
 If something more specific is required, things can get a bit harder.
 
 Let's suppose it is required to write all the warnings/errors and critical
 messages into a file, for instance, ``geometry_dash.log``::
+
     import logging
     import gd
     log = gd.log  # choose log we need to set handler to

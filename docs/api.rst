@@ -9,7 +9,7 @@ The following section outlines the API of gd.py.
 
     This module uses the Python logging module to log debug and error messages
     in an output independent way. If the logging is not configured,
-    these logs will not be output anywhere. See :ref:`_setup_logging` for 
+    these logs will not be output anywhere. See :ref:`setup_logging` for 
     more information on how to set up the logging module with gd.py.
 
 Version Related Info

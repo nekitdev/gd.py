@@ -4,7 +4,8 @@ from ..song import Song
 
 class Converter:
     """Some weird class where NeKit holds his converters for everything"""
-    def to_normal_song(song_id: int):
+    @classmethod
+    def to_normal_song(cls, song_id: int):
         cases = {
             0: ("ForeverBound", "Stereo Madness"),
             1: ("DJVI", "Back On Track"),
@@ -34,7 +35,8 @@ class Converter:
             size = None, links = (None, None), custom = False
         )
 
-    def to_ordinal(n: int):
+    @classmethod
+    def to_ordinal(cls, n: int):
         x = str(n)
         sn = int(x[-1])
         cases = {
@@ -45,7 +47,8 @@ class Converter:
         res = x + cases.get(sn, 'th')
         return res
 
-    def value_to_difficulty(value: int):
+    @classmethod
+    def value_to_difficulty(cls, value: int):
         cases = {
             10: LevelDifficulty.EASY,
             20: LevelDifficulty.NORMAL,
@@ -55,7 +58,8 @@ class Converter:
         }
         return cases.get(value, LevelDifficulty.NA)
 
-    def value_to_demon(value: int):
+    @classmethod
+    def value_to_demon(cls, value: int):
         cases = {
             3: DemonDifficulty.EASY_DEMON,
             4: DemonDifficulty.MEDIUM_DEMON,
@@ -64,9 +68,10 @@ class Converter:
         }
         return cases.get(value, DemonDifficulty.HARD_DEMON)
 
-    def convert_level_difficulty(diff: int, demon_diff: int, is_demon: bool, is_auto: bool):
+    @classmethod
+    def convert_level_difficulty(cls, diff: int, demon_diff: int, is_demon: bool, is_auto: bool):
         if is_auto:
             return LevelDifficulty.AUTO
         if is_demon:
-            return value_to_demon(demon_diff)
-        return value_to_difficulty(diff)
+            return cls.value_to_demon(demon_diff)
+        return cls.value_to_difficulty(diff)

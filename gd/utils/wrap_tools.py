@@ -18,6 +18,13 @@ class check:
             return wrapper
         return decorator
 
+#    def is_logged(func):
+#        @functools.wraps(func)
+#        def wrapper(obj, client, *args, **kwargs):
+#            if not client.is_logged():
+#                raise NotLoggedError(func.__name__)
+#            return func(obj, client, *args, **kwargs)
+#        return wrapper
 
 def benchmark(func):
     @functools.wraps(func)

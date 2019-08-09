@@ -103,7 +103,7 @@ class User(AbstractEntity):
 
     @property
     def msg_policy(self):
-        """:class:`.MessagePolicyType` A type indicating user's message inbox policy."""
+        """:class:`.MessagePolicyType`: A type indicating user's message inbox policy."""
         return self.options.get('messages')
 
     @property
@@ -118,7 +118,7 @@ class User(AbstractEntity):
 
     @property
     def icon_set(self):
-        """:class:`.IconSet` An iconset of the user."""
+        """:class:`.IconSet`: An iconset of the user."""
         return self.options.get('icon_setup')
 
     @property

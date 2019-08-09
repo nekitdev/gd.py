@@ -4,12 +4,26 @@ class XORCipher:
     def cipher(cls, key: str, string: str):
         """Ciphers a string with XOR using key given.
 
-        Because of using XOR to cipher, the following is true:
+        Due to the fact that *XOR* ``^`` operation is being used,
+        the following is true:
 
         .. code-block:: python3
 
             xor = XORCipher
-            xor.cipher(xor.cipher('91385', 'NeKit')) == 'NeKit'  # True
+            xor.cipher('93582', xor.cipher('93582', 'NeKit')) == 'NeKit'  # True
+
+        Parameters
+        ----------
+        key: :class:`str`
+            A key to XOR cipher with, e.g. ``'59361'``.
+
+        string: :class:`str`
+            A string to apply XOR on.
+
+        Returns
+        -------
+        :class:`str`
+            A string after XOR operation.
         """
         keyB = list(map(ord, key))
         stringB = list(map(ord, string))

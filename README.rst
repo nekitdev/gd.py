@@ -1,6 +1,14 @@
 gd.py
 =====
 
+.. image:: https://img.shields.io/pypi/v/gd.py.svg
+    :target: https://pypi.python.org/pypi/gd.py
+    :alt: PyPI Library Version
+
+.. image:: https://img.shields.io/pypi/pyversions/gd.py.svg
+    :target: https://pypi.python.org/pypi/gd.py
+    :alt: Required Python Versions
+
 .. image:: https://readthedocs.org/projects/gdpy/badge/?version=latest
     :target: https://gdpy.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
@@ -33,7 +41,7 @@ To install the developer version, run these commands:
 
 .. code:: sh
 
-    $ git clone https://github.com/NeKitDSS/gd.py
+    $ git clone https://github.com/NeKitDS/gd.py
     $ cd gd.py
     $ python3 -m pip install -U .
 

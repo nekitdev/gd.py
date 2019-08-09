@@ -58,16 +58,16 @@ class Coder:
 
         .. note::
             Due to the fact that decode and encode work almost the same,
-            The following is true:
+            the following is true:
 
             .. code-block:: python3
 
-                Coder.decode(Coder.encode('NeKit')) == 'NeKit'  # True
+                Coder.decode('message', Coder.encode('message', NeKit')) == 'NeKit'  # True
 
         Parameters
         ----------
         type: :class:`str`
-            String representation of type, e.g. ``'level'``.
+            String representation of a type, e.g. ``'level'``.
             Used to define a XOR key.
 
         string: :class:`str`
@@ -101,7 +101,7 @@ class Coder:
         Returns
         -------
         :class:`str`
-            Generated "chk", represented as string.
+            Generated ``'chk'``, represented as string.
         """
         values = list(map(str, values))
         salt = cls.salts.get(type, '')  # get salt

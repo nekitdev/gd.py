@@ -10,13 +10,16 @@ from .utils.context import ctx
 
 log = logging.getLogger(__name__)
 
-# The theme for debates: should ctx be used or gd.Client passed on object __init__ instead?
-# Your opinion in /issues section!
 
 class Client:
     """A main class in the gd.py library, used for interacting with the servers of Geometry Dash."""
     def __init__(self):
         self.session = GDSession()
+        self.account_id = 0
+        self.id = 0
+        self.name = None
+        self.password = None
+        self.encodedpass = None
 
     def __repr__(self):
         info = {
@@ -104,6 +107,11 @@ class Client:
         """|coro|
 
         Searches for a user on Geometry Dash servers.
+
+        Parameters
+        ----------
+        query: Union[:class:`int`, :class:`str`]
+            A query to search for user with.
 
         Raises
         ------
@@ -204,7 +212,7 @@ class Client:
             Given account credentials are not correct.
         """
         await self.session.login(user=user, password=password)
-        log.info("Logged in as %s, with password %s.", repr(user), repr(password))
+        log.info("Logged in as %r, with password %r.", user, password)
 
     @check.is_logged(ctx)
     async def as_user(self):
@@ -284,7 +292,7 @@ class Client:
         log.debug("Posted a comment. Content: %s", content)
 
     @check.is_logged(ctx)
-    async def edit(self, name = None, password = None):
+    async def edit(self, name: str = None, password: str = None):
         """|coro|
 
         Tries to edit credentials of a client, if logged in.

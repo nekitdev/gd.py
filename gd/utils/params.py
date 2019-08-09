@@ -79,7 +79,7 @@ class Parameters:
         return self.dict
     
     def finish_login(self):
-        """Same as `.Parameters.finish`, but adds ``login_secret`` instead.
+        """Same as :meth:`.Parameters.finish`, but adds ``login_secret`` instead.
 
         Returns
         -------
@@ -327,22 +327,22 @@ class Parameters:
         return self
     
     def put_page(self, number: int = 0):
-        """Same as `.Parameters.put_type`, but for `'page'`."""
+        """Same as :meth:`.Parameters.put_type`, but for `'page'`."""
         self.dict['page'] = str(number)
         return self
 
     def put_weekly(self, number: int):
-        """Same as `.Parameters.put_type`, but for `'weekly'`."""
+        """Same as :meth:`.Parameters.put_type`, but for `'weekly'`."""
         self.dict['weekly'] = str(number)
         return self
 
     def put_total(self, number: int):
-        """Same as `.Parameters.put_type`, but for `'total'`."""
+        """Same as :meth:`.Parameters.put_type`, but for `'total'`."""
         self.dict['total'] = str(number)
         return self
     
     def put_mode(self, number: int):
-        """Same as `.Parameters.put_type`, but for `'mode'`."""
+        """Same as :meth:`.Parameters.put_type`, but for `'mode'`."""
         self.dict['mode'] = str(number)
         return self
 

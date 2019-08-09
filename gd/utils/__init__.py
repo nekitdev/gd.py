@@ -50,7 +50,7 @@ def run(coro, *, debug: bool = False, raise_exceptions: bool = False):
         raise RuntimeError('Can not perform gd.utils.run() in a running event loop.')
 
     if not asyncio.iscoroutine(coro):
-        raise ValueError(f"A coroutine was expected, got {coro!r}.")
+        raise ValueError(f'A coroutine was expected, got {coro!r}.')
 
     loop = asyncio.new_event_loop()
     try:

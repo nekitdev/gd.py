@@ -1,5 +1,5 @@
-# from .errors import error
 from .abstractentity import AbstractEntity
+from .utils.http_request import http
 from .utils.wrap_tools import _make_repr
 
 class Song(AbstractEntity):
@@ -38,7 +38,7 @@ class Song(AbstractEntity):
     
     @property
     def link(self):
-        """:class:`str` A link to the song on Newgrounds, e.g. ``.../audio/listen/id``."""
+        """:class:`str`: A link to the song on Newgrounds, e.g. ``.../audio/listen/id``."""
         return self.options.get('links')[0]
 
     @property
@@ -65,5 +65,7 @@ class Song(AbstractEntity):
         :class:`bytes`
             A song as bytes. Returned if path is ``None``.
         """
-        link = self.dl_link
-        pass  # TO_DO: Finish
+        data = await http.normal_request(self.dl_link)
+
+        if path is None:
+            return data

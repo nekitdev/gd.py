@@ -78,7 +78,7 @@ class Colour:
         return (self.r, self.g, self.b)
 
     def to_rgba(self):
-        """Tuple[:class:`int`, :class:`int`, :class:`int`, :class:`int`]: Same as ``to_rgb``, but contains alpha component. (always 255)"""
+        """Tuple[:class:`int`, :class:`int`, :class:`int`, :class:`int`]: Same as :meth:`.Colour.to_rgb`, but contains alpha component. (always 255)"""
         return (*self.to_rgb(), 255)
 
     @classmethod

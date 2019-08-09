@@ -16,7 +16,7 @@ class IconSet:
 
     @property
     def main(self):
-        """:class:`int` ID of the main icon of the iconset. (see :meth:`.IconSet.main_type`)"""
+        """:class:`int`: ID of the main icon of the iconset. (see :meth:`.IconSet.main_type`)"""
         return self.options.get('main_icon')
 
     @property
@@ -70,7 +70,7 @@ class IconSet:
         return self.options.get('icon_spider')
     
     def has_glow_outline(self):
-        """:class:`bool` Indicates whether an iconset has glow outline."""
+        """:class:`bool`: Indicates whether an iconset has glow outline."""
         return self.options.get('has_glow_outline')
     
     def get_colors(self):
