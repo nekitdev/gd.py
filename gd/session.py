@@ -58,7 +58,7 @@ class GDSession:
             size_mb = round(size_b/1024/1024, 2)  # in MB (rounded)
             name = re.search(RE[2], html).group(1)
             author = re.search(RE[3], html).group(1)
-        except AttributeError:  # if re.search returned None -> Song not found
+        except AttributeError:  # if re.search returned None => Song not found
             raise MissingAccess(message=f'No song found under ID: {song_id}.')
 
         return ClassConverter.song_from_kwargs(
@@ -77,17 +77,17 @@ class GDSession:
         }
 
         resp = await http.request(Route.GET_USER_INFO, parameters, splitter=':', error_codes=codes, should_map=True)
+
         another = Params().create_new().put_definer('search', str(resp.get(i.USER_PLAYER_ID))).put_total(0).put_page(0).finish()
         some_resp = await http.request(Route.USER_SEARCH, another, splitter='#')
-        new_resp = some_resp[0]
-        if not new_resp:
+
+        item = some_resp[0]
+        if not item:
             return
 
-        new_dict = {
-            i.USER_GLOW_OUTLINE: new_resp.get(i.USER_GLOW_OUTLINE),
-            i.USER_ICON: new_resp.get(i.USER_ICON),
-            i.USER_ICON_TYPE: new_resp.get(i.USER_ICON_TYPE)
-        }
+        new_resp = mapper_util.map(item.split(':'))
+        to_add = (i.USER_GLOW_OUTLINE, i.USER_ICON, i.USER_ICON_TYPE)
+        new_dict = {k: new_resp.get(k) for k in to_add}
         resp.update(new_dict)
 
         return ClassConverter.user_convert(resp)
