@@ -2,7 +2,7 @@ __title__ = 'gd'
 __author__ = 'NeKitDS'
 __copyright__ = 'Copyright 2019 NeKitDS'
 __license__ = 'MIT'
-__version__ = '0.7.1'
+__version__ = '0.8.0'
 
 from collections import namedtuple
 import logging
@@ -10,27 +10,27 @@ import logging
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser
 from .client import Client
+from .colors import Colour, Color
+from .colors import colors
 from .comment import Comment
 from .errors import *
 from .friend_request import FriendRequest
 from .iconset import IconSet
 from .level import Level
 from .message import Message
-from .session import GDSession
+from .session import _session
 from .song import Song
 from .unreguser import UnregisteredUser
 from .user import User
-from .graphics.colors import Colour, Color, colors
 from .utils.captcha_solver import Captcha
-from .utils.context import context
 from .utils.enums import *
 from .utils.gdpaginator import paginate, Paginator
 from .utils.http_request import HTTPClient
 from .utils.params import Parameters
 from .utils.crypto.coders import Coder
 from .utils.crypto.xor_cipher import XORCipher
-from .utils.context import context
-from .utils import run  # since asyncio.run() was introduced in 3.7, we have a run-like function.
+
+from . import utils  # since asyncio.run() was introduced in 3.7, we have utils.run() function.
 
 log = logging.getLogger(__name__)
 
@@ -62,12 +62,12 @@ def setup_basic_logging():
     with the following format:
     [INFO] (time) {gd.some_module}: Some info message.
     """
-    hdlr = logging.StreamHandler()
-    hdlr.setFormatter(
+    handler = logging.StreamHandler()
+    handler.setFormatter(
         logging.Formatter('[%(levelname)s] (%(asctime)s) {%(name)s}: %(message)s')
     )
     log.setLevel(logging.DEBUG)
-    log.addHandler(hdlr)
+    log.addHandler(handler)
 
 # setting up the NullHandler here
 try:
@@ -77,4 +77,4 @@ except ImportError:
         def emit(self, record):
             pass
 
-logging.getLogger(__name__).addHandler(NullHandler())
+log.addHandler(NullHandler())

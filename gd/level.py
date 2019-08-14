@@ -3,7 +3,7 @@ import logging
 from typing import Sequence, Union
 
 from .abstractentity import AbstractEntity
-from .session import GDSession
+from .session import _session
 
 from .errors import MissingAccess
 from .utils.wrap_tools import _make_repr
@@ -12,10 +12,10 @@ from . import utils
 
 log = logging.getLogger(__name__)
 
-_session = GDSession()
-
 class Level(AbstractEntity):
-    """Class that represents a Geometry Dash Level."""
+    """Class that represents a Geometry Dash Level.
+    This class is derived from :class:`.AbstractEntity`.
+    """
     def __init__(self, **options):
         super().__init__(**options)
         self._data = options.pop('data')
@@ -180,7 +180,15 @@ class Level(AbstractEntity):
         return self._data
 
     def is_deleted(self):
-        """:class:`bool`: A blocking version of :meth:`.Level.is_alive`."""
+        """:class:`bool`: An opposite and blocking version of :meth:`.Level.is_alive`.
+
+        .. note::
+
+            This function simply calls :meth:`.Level.is_alive` with ``gd.utils.run()``.
+
+            Because of using *run()* function, this method can not be called when another
+            loop is already running in the current thread.
+        """
         return not utils.run(self.is_alive())
 
     async def is_alive(self):
@@ -201,13 +209,18 @@ class Level(AbstractEntity):
 
         Refreshes a level. Returns ``None`` on fail.
 
+        .. note::
+
+            This function actually refreshes a level and its stats.
+            No need to do funky stuff with its return.
+
         Returns
         -------
         :class:`.Level`
             A newly fetched version. ``None`` if failed to fetch.
         """
         try:
-            new_ver = await _session.get_level(level_id)
+            new_ver = await _session.get_level(self.id, client=self._client)
         except MissingAccess:
             return log.warning('Failed to refresh level: %r. Most likely it was deleted.', self)
 
@@ -215,6 +228,7 @@ class Level(AbstractEntity):
         return self
 
     async def get_page_comments(self, page: int = 0):  # [FUTURE]
+        # I think we should attach level._client here tbh
         return await _session.get_level_page_comments(self, page)
 
     async def get_comments(  # [FUTURE]

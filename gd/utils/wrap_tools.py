@@ -1,30 +1,39 @@
 import functools
 import logging
-import time
+import time  # not for time.sleep() :)
 
-from ..errors import NotLoggedError
+from ..errors import NotLoggedError, MissingAccess
 
 log = logging.getLogger(__name__)
 
 class check:
-    
-    def is_logged(context):
+
+    def is_logged():
+        # decorator that checks if passed client is logged in
         def decorator(func):
+            # wrap func so its docstring will be passed accurately
             @functools.wraps(func)
-            def wrapper(*args, **kwargs):
-                if not context.is_logged():
+            def wrapper(obj, *args, **kwargs):
+                # get client out of object
+                client = obj if hasattr(obj, 'login') else obj._client
+                if client is None:
+                    raise MissingAccess(
+                        message=(
+                            f'Attempt to check if client is logged for {obj} returned None. '
+                            'Have you made this object by hand?')
+                    )
+                # check if is logged in
+                if not client.is_logged():
                     raise NotLoggedError(func.__name__)
-                return func(*args, **kwargs)
+                # run function normally
+                return func(obj, *args, **kwargs)
             return wrapper
         return decorator
 
-#    def is_logged(func):
-#        @functools.wraps(func)
-#        def wrapper(obj, client, *args, **kwargs):
-#            if not client.is_logged():
-#                raise NotLoggedError(func.__name__)
-#            return func(obj, client, *args, **kwargs)
-#        return wrapper
+    def is_logged_obj(obj, func_name):
+        client = obj if hasattr(obj, 'login') else obj._client
+        if not client.is_logged():
+            raise NotLoggedError(func_name)
 
 def benchmark(func):
     @functools.wraps(func)

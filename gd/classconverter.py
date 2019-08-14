@@ -2,14 +2,13 @@ import base64 as b64
 
 from .song import Song
 from .user import User
+from .colors import colors
 from .comment import Comment
 from .abstractuser import AbstractUser
 from .level import Level
 from .message import Message
 from .iconset import IconSet
 from .friend_request import FriendRequest
-
-from .graphics.colors import colors
 
 from .utils.converter import Converter
 from .utils.indexer import Index as i

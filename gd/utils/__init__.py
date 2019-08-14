@@ -3,11 +3,66 @@ import asyncio
 from .search_utils import find, get
 from .wrap_tools import benchmark, check
 
-wait = asyncio.wait  # for less imports outside library
+def convert_to_type(obj: object, try_type: type, on_fail_type: type = None):
+    """A function that tries to convert the given object to a provided type
+
+    Parameters
+    ----------
+    obj: :class:`object`
+        Any object to convert into given type.
+
+    try_type: :class:`type`
+        Type to convert an object to.
+
+    on_fail_type: :class:`type`
+        Type to convert an object on fail.
+        If ``None`` or omitted, returns an ``obj``.
+        On fail returns ``obj`` as well.
+
+    Returns
+    -------
+    `Any`
+        Object of given ``try_type``, on fail of type ``on_fail_type``, and
+        ``obj`` if ``on_fail_type`` is ``None`` or failed to convert.
+    """
+    try:
+        return try_type(obj)
+    except Exception as error:  # failed to convert
+        try:
+            return on_fail_type(obj)
+        except Exception as error:
+            return obj
+
+
+async def wait(fs, *, loop=None, timeout=None, return_when='ALL_COMPLETED'):
+    """A function that is calling :func:`asyncio.wait`.
+
+    Used for less imports inside and outside of this library.
+
+    Wait for the Futures and coroutines given by fs to complete.
+
+    The sequence futures must not be empty.
+
+    Coroutines will be wrapped in Tasks.
+
+    Returns two sets of Future: (done, pending).
+
+    Usage:
+
+    .. code-block:: python3
+
+        done, pending = await gd.utils.wait(fs)
+
+    .. note::
+
+        This does not raise TimeoutError! Futures that aren't done
+        when the timeout occurs are returned in the second set.
+    """
+    return await asyncio.wait(fs, loop=loop, timeout=timeout, return_when=return_when)
 
 
 def run(coro, *, debug: bool = False, raise_exceptions: bool = False):
-    """Run a _|coroutine_link|.
+    """Run a *coroutine*.
 
     This function runs the passed coroutine, taking care
     of the event loop and shutting down asynchronous generators.
@@ -18,20 +73,24 @@ def run(coro, *, debug: bool = False, raise_exceptions: bool = False):
     This function cannot be called when another event loop is
     running in the same thread.
 
-    If debug is True, the event loop will be run in debug mode.
+    If ``debug`` is ``True``, the event loop will be run in debug mode.
 
     This function always creates a new event loop and closes it at the end.
     It should be used as a main entry point to asyncio programs, and should
     ideally be called only once.
 
-    Example: ::
+    Example:
+
+    .. code-block:: python3
+
         async def test(pid):
             return pid
+
         one = gd.utils.run(test(1))
 
     Parameters
     ----------
-    coro: _|coroutine_link|
+    coro: *coroutine*
         Coroutine to run.
 
     debug: :class:`bool`
@@ -42,7 +101,7 @@ def run(coro, *, debug: bool = False, raise_exceptions: bool = False):
 
     Returns
     -------
-    Any
+    `Any`
         Anything that ``coro`` returns.
     """
     
@@ -60,7 +119,7 @@ def run(coro, *, debug: bool = False, raise_exceptions: bool = False):
 
     finally:
         try:
-            _cancel_all_tasks(loop, raise_exceptions=raise_exceptions)
+            cancel_all_tasks(loop, raise_exceptions=raise_exceptions)
             loop.run_until_complete(loop.shutdown_asyncgens())
 
         finally:
@@ -68,7 +127,7 @@ def run(coro, *, debug: bool = False, raise_exceptions: bool = False):
             loop.close()
 
 
-def _cancel_all_tasks(loop, raise_exceptions: bool = False):
+def cancel_all_tasks(loop, raise_exceptions: bool = False):
     """Cancels all tasks in a loop.
 
     Returns exceptions if ``raise_exceptions`` is ``True``.

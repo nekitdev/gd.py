@@ -183,6 +183,7 @@ class HTTPClient:
                 resp = await client.request(method, url, data=data, **kwargs)
             except HTTPClient.VALID_ERRORS:
                 raise HTTPNotConnected()
-            return await resp.content.read()
+            if resp.content is not None:
+                return await resp.content.read()
 
 http = HTTPClient()

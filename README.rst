@@ -58,7 +58,7 @@ Quick example
         song = await client.get_song(633206)
         print(song.name)
 
-    gd.run(test())
+    gd.utils.run(test())
 
     # OUTPUT: Random Song 01
 
@@ -68,5 +68,5 @@ Links
 -----
 
 - `Documentation <https://gdpy.readthedocs.io/en/latest/index.html>`_
-- `Official Discord Server <https://discord.gg/sGzKBfb>`_
+- `Official Discord Server <https://discord.gg/KjehjaC>`_
 - `Geometry Dash Discord Server <https://discord.gg/xkgrP29>`_

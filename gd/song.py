@@ -3,7 +3,9 @@ from .utils.http_request import http
 from .utils.wrap_tools import _make_repr
 
 class Song(AbstractEntity):
-    """Class that represents Geometry Dash/Newgrounds songs."""
+    """Class that represents Geometry Dash/Newgrounds songs.
+    This class is derived from :class:`.AbstractEntity`.
+    """
     def __init__(self, **options):
         super().__init__(**options)
         self.options = options
@@ -50,22 +52,14 @@ class Song(AbstractEntity):
         """:class:`bool`: Indicates whether the song is custom or not."""
         return self.options.get('custom')
 
-    async def download(self, path=None):
+    async def download(self):
         """|coro|
 
         Download a song from Newgrounds.
-
-        Parameters
-        ----------
-        path: Any
-            A path to save a song to. Defaults to ``None``.
         
         Returns
         -------
         :class:`bytes`
-            A song as bytes. Returned if path is ``None``.
+            A song as bytes.
         """
-        data = await http.normal_request(self.dl_link)
-
-        if path is None:
-            return data
+        return await http.normal_request(self.dl_link)

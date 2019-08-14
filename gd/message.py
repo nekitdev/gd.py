@@ -1,13 +1,12 @@
 from .abstractentity import AbstractEntity
-from .session import GDSession
+from .session import _session
 
 from .utils.wrap_tools import _make_repr, check
-from .utils.context import ctx
-
-_session = GDSession()
 
 class Message(AbstractEntity):
-    """Class that represents private messages in Geometry Dash."""
+    """Class that represents private messages in Geometry Dash.
+    This class is derived from :class:`.AbstractEntity`.
+    """
     def __init__(self, **options):
         super().__init__(**options)
         self.options = options
@@ -56,7 +55,7 @@ class Message(AbstractEntity):
         """:class:`bool`: Indicates whether message is read or not."""
         return self.options.get('is_read')
 
-    @check.is_logged(ctx)
+    @check.is_logged()
     async def read(self):
         """|coro|
 
@@ -69,7 +68,7 @@ class Message(AbstractEntity):
         """
         return await _session.read_message(self)
 
-    @check.is_logged(ctx)
+    @check.is_logged()
     async def delete(self):
         """|coro|
 
@@ -80,5 +79,5 @@ class Message(AbstractEntity):
         :exc:`.MissingAccess`
             Failed to delete a message.
         """
-        await _session.delete_message(self)
+        return await _session.delete_message(self)
 

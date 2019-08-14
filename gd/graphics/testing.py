@@ -1,5 +1,7 @@
 from .generator import SpriteGenUtil, SpriteGen, test_path, gen_center_offset, fix_glow_color, predict_color, reorder
+from ..colors import colors
 from ..iconset import IconSet
+import time
 
 gco = gen_center_offset
 sg = SpriteGen(); sgu = SpriteGenUtil()
@@ -19,6 +21,8 @@ full_sprites = [
 ]
 def make_sprite(typeof, splist, iconset) -> None:
     s = reorder(splist)
+    if not iconset.has_glow_outline():
+        s = [sp for sp in splist if '_glow_' not in sp.name]
     ret = sg.make_blank()
     colors = iconset.get_colors()
     for sprite in s:
@@ -27,15 +31,9 @@ def make_sprite(typeof, splist, iconset) -> None:
         offset = gco(ret, sp, sprite.offset)
         if color is not None:
             sp = sg.color(sp, color)
-        if s.index(sprite) is 0:
-            ret.paste(sp, offset)
-        else:
-            ret.alpha_composite(sp, offset)
+        ret.alpha_composite(sp, offset)
     ret.save(test_path)
+    time.sleep(1)
 
-import time
 for i in range(26):
     make_sprite('robot', full_sprites[i], full_test[i])
-    time.sleep(1.5)
-
-# make_sprite('wave', full_sprites[34], full_test[34])

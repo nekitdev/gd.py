@@ -2,7 +2,9 @@ from .abstractentity import AbstractEntity
 from .utils.wrap_tools import _make_repr
 
 class UnregisteredUser(AbstractEntity):
-    """Class that represents Unregistered Users in Geometry Dash."""
+    """Class that represents Unregistered Users in Geometry Dash.
+    This class is derived from :class:`.AbstractEntity`.
+    """
     def __init__(self):
         super().__init__()
         self._name = 'UnregisteredUser'

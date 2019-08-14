@@ -19,7 +19,7 @@ Although, here is a snippet of how this funcion works::
     import logging
     def setup_basic_logging():
         handler = logging.StreamHandler()
-        handler.setFormatter(  # gd.py exclusive formatter '~')/
+        handler.setFormatter(  # gd.py formatter '~')/
             logging.Formatter('[%(levelname)s] (%(asctime)s) {%(name)s}: %(message)s')
         )
         log.addHandler(handler)

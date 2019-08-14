@@ -1,12 +1,21 @@
+"""A module for generating Geometry Dash Icon Set images.
+Credits to Alex1304 for making the SpriteFactory in Java,
+which is mostly translated by NeKitDS to Python.
+[NOT WORKING YET]
+"""
+
 import pkg_resources
+import re  # I love this one - NeKitDS
+
+from typing import List, Callable
+
 from xml.etree import ElementTree
 
 from PIL import Image, ImageOps
 
 from .sprite import Sprite, Rectangle
+from ..colors import colors
 from ..iconset import IconSet
-from .colors import colors
-from ..errors import error
 
 main_path = 'resources/GJ_GameSheet02-uhd'
 
@@ -52,19 +61,20 @@ class SpriteGenUtil:
         return final
     
     def format_related(self, parsed_xml, base_list):  # getting all sprites related to bases
-        final = {}; keys = list(parsed_xml.keys())
+        final = {}
         for base in base_list:
             start = base.split('...')[0]
-            temp = [key for key in keys if (key.startswith(start))]
+            temp = [key for key in parsed_xml.keys() if (key.startswith(start))]
             icon_type = self.icon_types[base_list.index(base)]
             final[icon_type] = temp
         return final
     
     def to_sprite_object(self, name, info_dict):  # converting dict to gd.graphics.Sprite
-        sprite = None; id_index = (1 if 'ball' not in name else 2)
+        sprite = None
+        id_index = (1 if 'ball' not in name else 2)
         if info_dict:
             sprite = Sprite(
-                name = name, id = int(name.split('_')[id_index]),
+                name = name.split('.')[0], id = int(name.split('_')[id_index]),
                 offset = info_dict.get('spriteOffset'),
                 size = info_dict.get('spriteSize'),
                 source_size = info_dict.get('spriteSourceSize'),
@@ -75,7 +85,8 @@ class SpriteGenUtil:
         return sprite
 
     def retrieve_sprites(self, parsed_xml, icon_type, related_dict): #getting a list of gd.graphics.Sprite objects
-        related_list = related_dict.get(icon_type); store = []
+        related_list = related_dict.get(icon_type)
+        store = []
         for element in related_list:
             temp = parsed_xml.get(element)
             sprite = self.to_sprite_object(element, temp)
@@ -99,24 +110,25 @@ class SpriteGen:
         return tuple(res)
     
     def make_blank(self):
-        gen = (0 for i in range(4))
-        image = Image.new("RGBA", (250, 250), tuple(gen))  # making blank image, with alpha composite = 0
+        t = (*(255 for _ in range(3)), 0)
+        image = Image.new("RGBA", (250, 250), t)
         return image
     
     def get_sprite_image(self, sheet, sprite):
-        ulcX, ulcY = sprite.upleft_corner; shX, shY = sheet.size
+        ulcX, ulcY = sprite.upleft_corner
+        shX, shY = sheet.size
         if 'robot' in sprite.name: fix_robot_offset(sprite)
         realX, realY = (
             sprite.size if not sprite.is_rotated() else sprite.size[::-1]
         )  # realX is sizeX if sprite is not rotated, else it is sizeY
         border = (ulcX, ulcY, (shX-(ulcX+realX)), (shY-(ulcY+realY)))
         image = ImageOps.crop(sheet, border)
-        if sprite.is_rotated():
-            deg = fix_degree(90)
-            image = image.rotate(deg, expand=True)  # fix translation
         if hasattr(sprite, 'fix_rotation_deg'):
             deg = fix_degree(sprite.fix_rotation_deg)
             image = image.rotate(deg, expand=True)
+        if sprite.is_rotated():
+            deg = fix_degree(90)
+            image = image.rotate(deg, expand=True)  # fix translation
         return image
 
     def color(self, img, color):
@@ -127,19 +139,8 @@ class SpriteGen:
                 pixel = pixels[i,j]
                 pixels[i,j] = self.apply_color(pixel, color)
         return img
-            
-    def make_sprite(self, typeof, sprite_list, iconset):
-        cases = {
-            'cube': self.make_cube, 'ship': self.make_ship,
-            'ball': self.make_ball, 'ufo': self.make_ufo,
-            'wave': self.make_wave, 'robot': self.make_robot,
-            'spider': self.make_spider
-        }
-        if typeof not in cases:
-            raise error.InvalidArgument()
-        return cases.get(typeof)(sprite_list, iconset)
 
-def gen_center_offset(main, to_paste, additional=(0,s0)):
+def gen_center_offset(main, to_paste, additional=(0,0)):
     mX, mY, pX, pY, aX, aY = main.size + to_paste.size + additional  # '+' here is concatenation of tuples
     baseX, baseY = (mX-pX)//2, (mY-pY)//2
     return baseX + aX, baseY - aY
@@ -160,7 +161,8 @@ def predict_color(sprite, colors):
         return color1
         
 def fix_robot_offset(sprite) -> None:
-    id = sprite.id; name = sprite.name
+    id = sprite.id
+    name = sprite.name
     sX, sY = sprite.offset
     offX, offY = (0, 0)
     if str(id) + '_02_' in name:
@@ -171,16 +173,17 @@ def fix_robot_offset(sprite) -> None:
             cases = {
                 id in (2, 5, 6, 8, 9, 11, 12, 15, 17, 24): (15, -5),
                 id in (7, 10, 19, 20): (0, 7),
-                id is 13: (10, -4), id == 18: (-1, -1),
+                id == 13: (10, -4), id == 18: (-1, -1),
                 id in (21, 25): (12, 0), id == 22: (0, -5),
                 id in (3, 26): (1, 0), id == 23: (-3, -2)
             }
             offTX, offTY = cases.get(True, (0, 0))
-            offX += offTX; offY += offTY
+            offX += offTX
+            offY += offTY
     elif str(id) + '_03_' in name:
         sprite.fix_rotation_deg = 45
         offX -= (40 if '001D' in name else 30)
-        offY -= (52 if (id is 21 and '_2_' not in name) else 60)
+        offY -= (52 if (id == 21 and '_2_' not in name) else 60)
     elif str(id) + '_04_' in name:
         offX -= (10 if '001D' in name else 0)
         offY -= 70
@@ -190,7 +193,67 @@ def fix_spider_offset(sprite):
     pass
 
 def reorder(splist):
-    pass
+    splist.reverse()
+    push_sprite_to_back_if(splist, lambda sp: '_2_' in sp.name)
+    pull_sprite_to_front_if(
+        splist, lambda sp: re.match('(robot|spider)_[0-9]{2,3}_(02|03|04)_.*', sp.name) is not None
+    )
+    dupe_sprite_if(
+        splist, lambda sp: re.match('robot_[0-9]{2,3}_(02|03|04)_.*', sp.name) is not None, 1
+    )
+    dupe_sprite_if(
+        splist, lambda sp: re.match(
+            'spider_[0-9]{2,3}_02_.*', sp.name) is not None and not 'extra' in sp.name, 2
+    )
+    pull_sprite_to_front_if(
+        splist, lambda sp: re.match(
+            'robot_[0-9]{2,3}_02_.*', sp.name) is not None and not sp.name.endswith('D')
+    )
+    pull_sprite_to_front_if(
+        splist, lambda sp: re.match(
+            'robot_[0-9]{2,3}_04_.*', sp.name) is not None and not sp.name.endswith('D')
+    )
+    push_sprite_to_back_if(splist, lambda sp: '_2_' not in sp.name and sp.name.endswith('D'))
+    push_sprite_to_back_if(splist, lambda sp: '_2_' in sp.name and sp.name.endswith('D'))
+    push_sprite_to_back_if(
+        splist, lambda sp: re.match('spider_[0-9]{2,3}_04_.*', sp.name) is not None
+    )
+    pull_sprite_to_front_if(splist, lambda sp: 'extra' in sp.name)
+    push_sprite_to_back_if(splist, lambda sp: '_glow_' in sp.name)
+    print(splist)
+
+def pull_sprite_to_front_if(splist: List[Sprite], predicate: Callable[[Sprite], bool]):
+    offset = 0
+    for i in range(len(splist)):
+        sprite = splist[i-offset]
+        if predicate(sprite):
+            splist.pop(i-offset)
+            splist.append(sprite)
+            offset += 1
+
+def push_sprite_to_back_if(splist: List[Sprite], predicate: Callable[[Sprite], bool]):
+    for i in range(len(splist)):
+        sprite = splist[i]
+        if predicate(sprite):
+            splist.pop(i)
+            splist.insert(0, sprite)
+
+def dupe_sprite_if(
+    splist: List[Sprite], predicate: Callable[[Sprite], bool], dupe_n: int, front: bool = False
+):
+    ssize = len(splist)
+    offset = 0
+    for i in range(ssize):
+        sprite = splist[i+offset]
+        if predicate(sprite):
+            dupe = sprite.duplicate()
+            for i in range(dupe_n):
+                if front:
+                    splist.append(dupe)
+                else:
+                    splist.insert(0, dupe)
+                    offset += 1
+                dupe = dupe.duplicate()
 
 def sign(number):
     return (-1 if number < 0 else (1 if number > 0 else 0))

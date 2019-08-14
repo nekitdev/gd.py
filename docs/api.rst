@@ -32,7 +32,6 @@ There are two main ways to get version information about the library.
 Client
 ------
 
-.. note:: Multilogins are restricted in this version. They may be allowed soon.
 .. autoclass:: Client
     :members:
 
@@ -47,7 +46,6 @@ Paginator
 AbstractEntity
 --------------
 
-.. note:: :class:`.AbstractEntity` is a main class, and all objects in this section are derived from it.
 .. autoclass:: AbstractEntity
     :members:
 
@@ -101,6 +99,8 @@ Message
 
 Enums
 -----
+
+.. note:: The following classes are derived from *NEnum*, a subclass of *Enum* in :mod:`enum`.
 
 .. autoclass:: MessagePolicyType
 
@@ -173,3 +173,20 @@ Exception Hierarchy
         - :exc:`NotLoggedError`
     - :exc:`PaginatorException`
         - :exc:`PagesOutOfRange`
+
+.. currentmodule:: gd.utils
+
+Useful Utils
+------------
+
+.. autofunction:: run
+
+.. autofunction:: cancel_all_tasks
+
+.. autofunction:: wait
+
+.. autofunction:: find
+
+.. autofunction:: get
+
+.. autofunction:: convert_to_type

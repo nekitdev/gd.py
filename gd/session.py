@@ -1,6 +1,7 @@
 import asyncio
 import itertools
 import re  # for NG songs
+import time  # for perf_counter in ping
 
 from typing import Union, Sequence, Tuple
 
@@ -8,7 +9,6 @@ from .unreguser import UnregisteredUser
 from .errors import *
 
 from .utils.captcha_solver import Captcha
-from .utils.context import ctx
 from .utils.converter import Converter
 from .utils.http_request import http
 from .utils.indexer import Index as i
@@ -24,6 +24,14 @@ class GDSession:
     They are there to fix circular dependencies.
     - NeKitDS
     """
+    async def ping_server(self, link: str):
+        start = time.perf_counter()
+        await http.normal_request(link)
+        end = time.perf_counter()
+
+        ping = (end-start)*1000
+
+        return round(ping, 2)
 
     async def get_song(self, song_id: int = 0):
         from .classconverter import ClassConverter
@@ -47,10 +55,10 @@ class GDSession:
         html = content.decode().replace('\\', '')
 
         RE = (
-            'https:\/\/audio\.ngfiles\.com\/([^\'"]+)',  # finding link
-            '.filesize.:(\d+)',  # finding size
-            '<title>([^<>]+)<\/title>',  # finding name
-            '.artist.:.([^\'"]+).'  # finding author
+            'https:\/\/audio\.ngfiles\.com\/([^\'"]+)',  # searching for link
+            '.filesize.:(\d+)',  # searching for size
+            '<title>([^<>]+)<\/title>',  # searching for name
+            '.artist.:.([^\'"]+).'  # searching for author
         )
         try:
             dl_link = re.search(RE[0], html).group(0)
@@ -58,14 +66,14 @@ class GDSession:
             size_mb = round(size_b/1024/1024, 2)  # in MB (rounded)
             name = re.search(RE[2], html).group(1)
             author = re.search(RE[3], html).group(1)
-        except AttributeError:  # if re.search returned None => Song not found
+        except AttributeError:  # if re.search returned None -> Song not found
             raise MissingAccess(message=f'No song found under ID: {song_id}.')
 
         return ClassConverter.song_from_kwargs(
             name=name, author=author, id=song_id, size=size_mb, links=[link, dl_link], custom=True
         )
 
-    async def get_user(self, account_id: int = 0):
+    async def get_user(self, account_id: int = 0, *, client=None):
         from .classconverter import ClassConverter
 
         if account_id == -1:
@@ -90,9 +98,14 @@ class GDSession:
         new_dict = {k: new_resp.get(k) for k in to_add}
         resp.update(new_dict)
 
-        return ClassConverter.user_convert(resp)
+        return ClassConverter.user_convert(resp)._attach_client(client)
 
-    async def search_user(self, param: Union[str, int] = None):
+    def to_user(self, conv_dict: dict = {}, *, client=None):
+        from .classconverter import ClassConverter
+
+        return ClassConverter.abstractuser_convert(conv_dict)._attach_client(client)
+
+    async def search_user(self, param: Union[str, int] = None, *, client=None):
         from .classconverter import ClassConverter
 
         assert param is not None
@@ -115,10 +128,10 @@ class GDSession:
         }
         ret = {k: mapped.get(v) for k, v in ret.items()}
 
-        return ClassConverter.abstractuser_convert(ret)
+        return ClassConverter.abstractuser_convert(ret)._attach_client(client)
 
     async def get_level(
-        self, level_id: int = 0, timetuple: Tuple[int, int, int] = (0, -1, -1)
+        self, level_id: int = 0, timetuple: Tuple[int, int, int] = (0, -1, -1), *, client=None
     ):
         from .classconverter import ClassConverter
 
@@ -154,9 +167,10 @@ class GDSession:
             {k: v for k, v in zip(('id', 'name', 'account_id'), creator_data.split(':'))}
         )
 
-        return ClassConverter.level_convert(level_data, song=song, creator=creator)
+        return ClassConverter.level_convert(
+            level_data, song=song, creator=creator)._attach_client(client)
 
-    async def get_timely(self, typeof: str = 'daily'):
+    async def get_timely(self, typeof: str = 'daily', *, client=None):
         w = ('daily', 'weekly').index(typeof)
         params = Params().create_new().put_weekly(w).finish()
         codes = {
@@ -170,14 +184,42 @@ class GDSession:
         num %= 100_000
         w += 1
 
-        return await self.get_level(-w, (w, num, cooldown))        
+        level = await self.get_level(-w, (w, num, cooldown))
+        return level._attach_client(client)
+
+    async def get_friends(self, client):
+        from .classconverter import ClassConverter
+
+        parameters = Params().create_new().put_definer('accountid', str(client.account_id)).put_password(client.encodedpass).put_type(0).finish()
+        codes = {
+            -1: MissingAccess(message='Failed to get friends.'),
+            -2: NothingFound('gd.AbstractUser')
+        }
+
+        resp = await http.request(Route.GET_FRIENDS, parameters, error_codes=codes, splitter='|')
+
+        ret = []
+        for elem in resp:
+            temp = mapper_util.map(elem.split(':'))
+
+            parse_dict = {
+                'name': temp[i.USER_NAME],
+                'id': temp[i.USER_PLAYER_ID],
+                'account_id': temp[i.USER_ACCOUNT_ID]
+            }
+
+            ret.append(
+                ClassConverter.abstractuser_convert(parse_dict)._attach_client(client)
+            )
+
+        return ret
 
     async def test_captcha(self):
         resp = await http.request(Route.CAPTCHA)
         res = Captcha.solve(resp, should_log=True)
         print(res)
 
-    async def login(self, user: str, password: str):
+    async def login(self, client, user: str, password: str):
         parameters = Params().create_new().put_login_definer(username=user, password=password).finish_login()
         codes = {
             -1: LoginFailure(login=user, password=password)
@@ -185,22 +227,24 @@ class GDSession:
 
         resp = await http.request(Route.LOGIN, parameters, splitter=',', error_codes=codes)
 
+        account_id, id = resp
+
         prepared = {
             'name': user, 'password': password,
-            'account_id': int(resp[0]), 'id': int(resp[1])
+            'account_id': account_id, 'id': id
         }
         for attr, value in prepared.items():
-            ctx.upd(attr, value)
+            client._upd(attr, value)
 
     async def get_page_messages(
-        self, sent_or_inbox: str, page: int, *, raise_errors: bool, cdict: dict
+        self, sent_or_inbox: str, page: int, *, raise_errors: bool, client
     ):
         from .classconverter import ClassConverter
 
         assert sent_or_inbox in ('inbox', 'sent')
         inbox = 0 if sent_or_inbox != 'sent' else 1
 
-        params = Params().create_new().put_definer('accountid', str(ctx.account_id)).put_password(ctx.encodedpass).put_page(page).put_total(0).get_sent(inbox).finish()
+        params = Params().create_new().put_definer('accountid', str(client.account_id)).put_password(client.encodedpass).put_page(page).put_total(0).get_sent(inbox).finish()
         codes = {
             -1: MissingAccess(message='Failed to get messages.'),
             -2: NothingFound('gd.Message')
@@ -214,19 +258,21 @@ class GDSession:
             return list()
 
         res = []
-        for elem in to_map:
+        for elem in resp:
             mapped = mapper_util.map(elem.split(':'))
             res.append(
-                ClassConverter.message_convert(mapped, cdict)
+                ClassConverter.message_convert(
+                    mapped, client._get_parse_dict()
+                )._attach_client(client)
             )
 
         return res
 
 
-    async def post_comment(self, comment: str):
-        to_gen = [ctx.name, 0, 0, 1]
+    async def post_comment(self, content: str, *, client=None):
+        to_gen = [client.name, 0, 0, 1]
 
-        parameters = Params().create_new().put_definer('accountid', str(ctx.account_id)).put_username(ctx.name).put_password(ctx.encodedpass).put_comment(content, to_gen).comment_for('client').finish()
+        parameters = Params().create_new().put_definer('accountid', str(client.account_id)).put_username(client.name).put_password(client.encodedpass).put_comment(content, to_gen).comment_for('client').finish()
         codes = {
             -1: MissingAccess(message='Failed to post a comment.')
         }
@@ -234,65 +280,72 @@ class GDSession:
         await http.request(Route.UPLOAD_ACC_COMMENT, parameters, error_codes=codes)
 
 
-    async def edit(self, name: str, password: str):
+    async def edit(self, name: str, password: str, *, client=None):
         _, cookie = await http.request(Route.MANAGE_ACCOUNT, get_cookies=True)
         captcha = await http.request(Route.CAPTCHA, cookie=cookie)
         number = Captcha.solve(captcha)
-        params = Params().create_new('web').put_for_management(ctx.name, ctx.password, str(number)).close()
+        params = Params().create_new('web').put_for_management(client.name, client.password, str(number)).close()
         await http.request(Route.MANAGE_ACCOUNT, params, cookie=cookie)
 
         if name is not None:
-            params = Params().create_new('web').put_for_username(ctx.name, name).close()
+            params = Params().create_new('web').put_for_username(client.name, name).close()
             resp = await http.request(Route.CHANGE_USERNAME, params, cookie=cookie)
             if ('Your username has been changed to' in resp):
-                ctx.upd('name', name)
+                client._upd('name', name)
             else:
                 raise FailedToChange('name')
 
         if password is not None:
             await http.request(Route.CHANGE_PASSWORD, cookie=cookie)
-            params = Params().create_new('web').put_for_password(ctx.name, ctx.password, password).close()
+            params = Params().create_new('web').put_for_password(client.name, client.password, password).close()
             resp = await http.request(Route.CHANGE_PASSWORD, params, cookie=cookie)
             if ('Password change failed' in resp):
                 raise FailedToChange('password')
             else:
-                ctx.upd('password', password)
+                client._upd('password', password)
 
 
-    async def delete_comment(self, comment):
+    async def delete_comment(self, comment, *, client=None):
+        cases = {
+            'level': 0,
+            'client': 1
+        }
+        config_type = cases.get(comment.typeof)
         cases = {
             0: Route.DELETE_LEVEL_COMMENT,
             1: Route.DELETE_ACC_COMMENT
         }
-        route = cases.get(comment.typeof)
-        config_type = comment.typeof
-        parameters = Params().create_new().put_definer('commentid', str(comment.id)).put_definer('accountid', str(ctx.account_id)).put_password(ctx.encodedpass).comment_for(config_type, comment.level_id).finish()
+        route = cases.get(config_type)
+        parameters = Params().create_new().put_definer('commentid', str(comment.id)).put_definer('accountid', str(client.account_id)).put_password(client.encodedpass).comment_for(config_type, comment.level_id).finish()
         resp = await http.request(route, parameters)
         if resp != 1:
             raise MissingAccess(message=f'Failed to delete a comment: {comment!r}.')
 
 
     async def delete_friend_req(self, req):
+        client = req._client
         user = req.author if req.typeof == 'normal' else req.recipient
-        params = Params().create_new().put_definer('accountid', str(ctx.account_id)).put_definer('user', str(user.account_id)).put_password(c.encodedpass).put_is_sender(req.typeof).finish()
+        params = Params().create_new().put_definer('accountid', str(client.account_id)).put_definer('user', str(user.account_id)).put_password(client.encodedpass).put_is_sender(req.typeof).finish()
         resp = await http.request(Route.DELETE_REQUEST, params)
         if resp != 1:
             raise MissingAccess(message=f'Failed to delete a friend request: {req!r}.')
 
 
     async def accept_friend_req(self, req):
+        client = req._client
         if req.typeof == 'sent':
             raise MissingAccess(
                 message="Failed to accept a friend request. Reason: request is sent, not recieved one."
             )
-        params = Params().create_new().put_definer('accountid', str(ctx.account_id)).put_password(ctx.encodedpass).put_definer('user', str(req.author.account_id)).put_definer('requestid', str(req.id)).finish()
+        params = Params().create_new().put_definer('accountid', str(client.account_id)).put_password(client.encodedpass).put_definer('user', str(req.author.account_id)).put_definer('requestid', str(req.id)).finish()
         resp = await http.request(Route.ACCEPT_REQUEST, params)
         if resp != 1:
             raise MissingAccess(message=f"Failed to accept a friend request: {req!r}.")
 
 
     async def read_message(self, msg):
-        params = Params().create_new().put_definer('accountid', str(ctx.account_id)).put_definer('messageid', str(msg.id)).put_password(ctx.encodedpass).put_is_sender(msg.typeof).finish()
+        client = msg._client
+        params = Params().create_new().put_definer('accountid', str(client.account_id)).put_definer('messageid', str(msg.id)).put_password(client.encodedpass).put_is_sender(msg.typeof).finish()
         codes = {
             -1: MissingAccess(message=f"Failed to read a message: {msg!r}.")
         }
@@ -308,7 +361,8 @@ class GDSession:
 
 
     async def delete_message(self, msg):
-        params = Params().create_new().put_definer('accountid', str(ctx.account_id)).put_definer('messageid', str(msg.id)).put_password(ctx.encodedpass).put_is_sender(msg.typeof).finish()
+        client = msg._client
+        params = Params().create_new().put_definer('accountid', str(client.account_id)).put_definer('messageid', str(msg.id)).put_password(client.encodedpass).put_is_sender(msg.typeof).finish()
         resp = await http.request(Route.DELETE_PRIVATE_MESSAGE, params)
         if resp != 1:
             raise MissingAccess(message=f"Failed to delete a message: {msg!r}.")
@@ -357,7 +411,7 @@ class GDSession:
             res.append(
                 ClassConverter.comment_convert(
                     prepared, user._dict_for_parse
-                )
+                )._attach_client(user._client)
             )
 
         return res
@@ -389,17 +443,19 @@ class GDSession:
         return [*itertools.chain.from_iterable(filtered)]
 
 
-    async def send_message(self, target, subject: str, body: str):
-        params = Params().create_new().put_definer('accountid', str(ctx.account_id)).put_message(subject, body).put_recipient(str(target.account_id)).put_password(ctx.encodedpass).finish()
+    async def send_message(self, target, subject: str, body: str, *, client=None):
+        params = Params().create_new().put_definer('accountid', str(client.account_id)).put_message(subject, body).put_recipient(str(target.account_id)).put_password(client.encodedpass).finish()
         resp = await http.request(Route.SEND_PRIVATE_MESSAGE, params)
         if resp != 1:
             raise MissingAccess(message=f"Failed to send a message to a user: {target!r}.")
 
     async def update_profile(
-        self, target, msg: int, friend_req: int, comments: int,
+        self, client, msg: int, friend_req: int, comments: int,
         youtube: str, twitter: str, twitch: str
     ):
-        params = Params().create_new('web').put_definer('accountid', str(target.account_id)).put_password(ctx.encodedpass).put_profile_upd(msg, friend_req, comments, youtube, twitter, twitch).finish_login()
+        params = Params().create_new('web').put_definer('accountid', str(client.account_id)).put_password(client.encodedpass).put_profile_upd(msg, friend_req, comments, youtube, twitter, twitch).finish_login()
         resp = await http.request(Route.UPDATE_ACC_SETTINGS, params)
         if resp != 1:
-            raise MissingAccess(message=f"Failed to update profile settings of a user: {target!r}.")
+            raise MissingAccess(message=f"Failed to update profile settings of a client: {client!r}.")
+
+_session = GDSession()

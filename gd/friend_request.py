@@ -1,13 +1,12 @@
 from .abstractentity import AbstractEntity
-from .session import GDSession
+from .session import _session
 
-from .utils.context import ctx
 from .utils.wrap_tools import _make_repr, check
 
-_session = GDSession()
-
 class FriendRequest(AbstractEntity):
-    """Class that represents a friend request."""
+    """Class that represents a friend request.
+    This class is derived from :class:`.AbstractEntity`.
+    """
     def __init__(self, **options):
         super().__init__(**options)
         self.options = options
@@ -41,7 +40,7 @@ class FriendRequest(AbstractEntity):
         """:class:`bool`: Indicates whether request was already read."""
         return self.options.get('is_read')
 
-    @check.is_logged(ctx)
+    @check.is_logged()
     async def delete(self):
         """|coro|
 
@@ -54,7 +53,7 @@ class FriendRequest(AbstractEntity):
         """
         await _session.delete_friend_req(self)
 
-    @check.is_logged(ctx)
+    @check.is_logged()
     async def accept(self):
         """|coro|
 

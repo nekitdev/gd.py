@@ -1,12 +1,15 @@
 import asyncio
 
 import logging
-from typing import Sequence, Union
+from typing import Union
 
-from .session import GDSession
+from .session import _session
 
 from .utils.wrap_tools import _make_repr, check
-from .utils.context import ctx
+
+from .utils.crypto.coders import Coder
+
+from . import utils
 
 log = logging.getLogger(__name__)
 
@@ -14,18 +17,47 @@ log = logging.getLogger(__name__)
 class Client:
     """A main class in the gd.py library, used for interacting with the servers of Geometry Dash."""
     def __init__(self):
-        self.session = GDSession()
+        self.session = _session
+        self._set_to_defaults()
+
+    def __repr__(self):
+        info = {
+            'is_logged': self.is_logged()
+        }
+        return _make_repr(self, info)
+
+    def _set_to_defaults(self):
         self.account_id = 0
         self.id = 0
         self.name = None
         self.password = None
         self.encodedpass = None
 
-    def __repr__(self):
-        info = {
-            'is_logged': ctx.is_logged()
-        }
-        return _make_repr(self, info)
+    def _upd(self, attr, value):
+        setattr(self, attr, value)
+        # update encodedpass if password was updated
+        if attr == 'password':
+            self.encodedpass = Coder.encode(type='accountpass', string=self.password)
+
+    def is_logged(self):
+        return (self.name is not None) and (self.password is not None)
+
+    async def ping_server(self):
+        """|coro|
+
+        Pings ``boomlings.com/database`` and prints the time taken.
+        Returns the ping as well.
+
+        Returns
+        -------
+        :class:`float`
+            Server ping, in milliseconds.
+        """
+        duration = await self.session.ping_server('http://boomlings.com/database/')
+
+        print(f'ping: {duration}ms')
+
+        return duration
 
     async def get_song(self, song_id: int = 0):
         """|coro|
@@ -101,7 +133,7 @@ class Client:
         :class:`.User`
             The user from the ID. (if ID != -1)
         """
-        return await self.session.get_user(account_id)
+        return await self.session.get_user(account_id, client=self)
 
     async def search_user(self, query: Union[int, str] = None):
         """|coro|
@@ -123,7 +155,7 @@ class Client:
         :class:`.AbstractUser`
             An AbstractUser found when searching with the query.
         """
-        return await self.session.search_user(query)
+        return await self.session.search_user(query, client=self)
 
     async def get_daily(self):
         """|coro|
@@ -139,7 +171,7 @@ class Client:
         :class:`.Level`
             Current daily level.
         """
-        return await self.session.get_timely('daily')
+        return await self.session.get_timely('daily', client=self)
 
     async def get_weekly(self):
         """|coro|
@@ -155,7 +187,7 @@ class Client:
         :class:`.Level`
             Current weekly demon.
         """
-        return await self.session.get_timely('weekly')
+        return await self.session.get_timely('weekly', client=self)
 
     async def get_level(self, level_id: int = 0):
         """|coro|
@@ -184,7 +216,7 @@ class Client:
         :class:`.Level`
             The level corresponding to given id.
         """
-        return await self.session.get_level(level_id)
+        return await self.session.get_level(level_id, client=self)
 
     async def test_captcha(self):
         """|coro|
@@ -211,24 +243,62 @@ class Client:
         :exc:`.LoginFailure`
             Given account credentials are not correct.
         """
-        await self.session.login(user=user, password=password)
+        await self.session.login(client=self, user=user, password=password)
         log.info("Logged in as %r, with password %r.", user, password)
 
-    @check.is_logged(ctx)
-    async def as_user(self):
+    def close(self, message: str = 'Logged out, no additional description.'):
+        """*Closes* client.
+
+        Basically sets its password and username to ``None``, which
+        actually implies that client logs out.
+
+        Parameters
+        ----------
+        message: :class:`str`
+            A message to print after closing.
+        """
+        self._set_to_defaults()
+
+        print(message)
+
+        log.info('Has logged out with message: %r', message)
+
+    @check.is_logged()
+    async def get_friends(self):
         """|coro|
 
-        Gets user with ``account_id`` defined in context,
+        Get all friends of a client.
+
+        Returns
+        -------
+        List[:class:`.AbstractUser`]
+            All friends retrieved, as list.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to fetch friends of a client.
+
+        :exc:`.NothingFound`
+            No friends were found. Sadly...
+        """
+        return await self.session.get_friends(client=self)
+
+    @check.is_logged()
+    async def to_user(self):
+        """|coro|
+
+        Gets user with :meth:`.Client.account_id`,
         which means that client should be logged in.
 
         Returns
         -------
         :class:`.User`
-            User corresponding to ``ctx.account_id``
+            User corresponding to :meth:`.Client.account_id`.
         """
-        return await self.get_user(ctx.account_id)
+        return await self.get_user(self.account_id)
 
-    @check.is_logged(ctx)
+    @check.is_logged()
     async def get_page_messages(
         self, sent_or_inbox: str = 'inbox', page: int = 0, *, raise_errors: bool = True
     ):
@@ -264,14 +334,17 @@ class Client:
         """
         return await self.session.get_page_messages(
             sent_or_inbox=sent_or_inbox, page=page,
-            raise_errors=raise_errors, udict=self._gen_parse_dict()
+            raise_errors=raise_errors, client=self
         )
 
-    @check.is_logged(ctx)
+    @check.is_logged()
     def _get_parse_dict(self):
-        return {k: getattr(ctx, k) for k in ('name', 'id', 'account_id')}
+        return {k: getattr(self, k) for k in ('name', 'id', 'account_id')}
 
-    @check.is_logged(ctx)
+    def as_user(self):
+        return self.session.to_user(self._get_parse_dict(), client=self)
+
+    @check.is_logged()
     async def post_comment(self, content: str):
         """|coro|
 
@@ -287,11 +360,11 @@ class Client:
         :exc:`.MissingAccess`
             Failed to post a comment.
         """
-        await self.session.post_comment(content)
+        await self.session.post_comment(content, client=self)
 
         log.debug("Posted a comment. Content: %s", content)
 
-    @check.is_logged(ctx)
+    @check.is_logged()
     async def edit(self, name: str = None, password: str = None):
         """|coro|
 
@@ -310,7 +383,7 @@ class Client:
         :exc:`.FailedToChange`
             Failed to change the credentials.
         """
-        await self.session.edit(name=name, password=password)
+        await self.session.edit(name=name, password=password, client=self)
 
         # if no errors occured, log changes.
         if name is not None:
@@ -318,6 +391,70 @@ class Client:
 
         if password is not None:
             log.debug('Changed password to: %s', password)
+
+    @check.is_logged()
+    async def update_profile(
+        self, *, msg: int = None, friend_req: int = None, comments: int = None,
+        youtube: str = None, twitter: str = None, twitch: str = None
+    ):
+        """|coro|
+
+        Updates profile settings of a client.
+
+        .. note::
+
+            For parameter in parameters, if parameter is ``None`` or omitted,
+            it will be set to the current policy/link of the user corresponding
+            to this client; that implies that running the following:
+
+            .. code-block:: python3
+
+                await client.update_profile()
+
+            will cause no effect on profile settings.
+
+        Parameters
+        ----------
+        msg: Union[:class:`int`, :class:`.MessagePolicyType`]
+            New message policy.
+        friend_req: Union[:class:`int`, :class:`.FriendRequestPolicyType`]
+            New friend request policy.
+        comments: Union[:class:`int`, :class:`.CommentPolicyType`]
+            New comment history policy.
+        youtube: :class:`str`
+            New youtube channel string. (not link)
+        twitter: :class:`str`
+            New twitter profile name.
+        twitch: :class:`str`
+            New twitch profile name.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to update profile.
+        """
+        profile_dict = {
+            'msg_policy': msg,
+            'friend_req_policy': friend_req,
+            'comments_policy': comments,
+            'youtube': youtube,
+            'twitter': twitter,
+            'twitch': twitch
+        }
+
+        self_user = await self.to_user()
+
+        args = []
+
+        for attr, value in profile_dict.items():
+            tmp = getattr(self_user, attr) if value is None else value
+            s = utils.convert_to_type(tmp, int, str)
+
+            args.append(s)
+
+        return print(args)
+
+        ### await self.session.update_profile(client=self, *args)
 
     def event(self, coro):
         """A decorator that registers an event to listen to.
