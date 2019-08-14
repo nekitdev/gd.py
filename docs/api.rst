@@ -12,6 +12,10 @@ The following section outlines the API of gd.py.
     these logs will not be output anywhere. See :ref:`setup_logging` for 
     more information on how to set up the logging module with gd.py.
 
+.. note::
+
+    See :ref:`development_api` for gd.py Developers API.
+
 Version Related Info
 --------------------
 

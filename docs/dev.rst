@@ -1,3 +1,5 @@
+.. _development_api:
+
 .. currentmodule:: gd
 
 Development API Reference

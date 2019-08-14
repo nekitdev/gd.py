@@ -450,8 +450,8 @@ class GDSession:
             raise MissingAccess(message=f"Failed to send a message to a user: {target!r}.")
 
     async def update_profile(
-        self, client, msg: int, friend_req: int, comments: int,
-        youtube: str, twitter: str, twitch: str
+        self, msg: int, friend_req: int, comments: int,
+        youtube: str, twitter: str, twitch: str, *, client
     ):
         params = Params().create_new('web').put_definer('accountid', str(client.account_id)).put_password(client.encodedpass).put_profile_upd(msg, friend_req, comments, youtube, twitter, twitch).finish_login()
         resp = await http.request(Route.UPDATE_ACC_SETTINGS, params)

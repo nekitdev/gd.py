@@ -448,13 +448,14 @@ class Client:
 
         for attr, value in profile_dict.items():
             tmp = getattr(self_user, attr) if value is None else value
-            s = utils.convert_to_type(tmp, int, str)
+            if tmp is None:
+                s = ''
+            else:
+                s = utils.convert_to_type(tmp, int, str)
 
             args.append(s)
 
-        return print(args)
-
-        ### await self.session.update_profile(client=self, *args)
+        await self.session.update_profile(*args, client=self)
 
     def event(self, coro):
         """A decorator that registers an event to listen to.

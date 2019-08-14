@@ -1,7 +1,7 @@
 .. currentmodule:: gd
 
-0.8.0 - What's new?
-===================
+0.8.(0/1) - What's new?
+=======================
 
 0.8.0 is indeed a big update, which is as well breaking.
 That means all versions below are not compatible with the
@@ -27,6 +27,12 @@ where they are required.
 -------------
 
 Many functions were adapted to the new client-passing paradigm.
+
+3.1 Fixes
+---------
+
+0.8.1 - Fixed :meth:`.Client.update_profile` method to make it work as expected.
+Sorry for inconveniece, updating to 0.8.1 and higher is recommended.
 
 4. Additional changes
 ---------------------
