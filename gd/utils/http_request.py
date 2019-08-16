@@ -80,7 +80,6 @@ class HTTPClient:
                     return int(res)
             except UnicodeDecodeError:
                 res = data
-            print(res)
             if get_cookies:
                 c = str(resp.cookies).split(' ')[1]  # kinda tricky way
                 return res, c

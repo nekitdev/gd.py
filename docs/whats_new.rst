@@ -1,6 +1,6 @@
 .. currentmodule:: gd
 
-0.8.2 - What's new?
+0.8.(2/3) - What's new?
 =======================
 
 0.8.0 is indeed a big update, which is as well breaking.
@@ -26,8 +26,10 @@ where they are required.
 3. Actually new things
 ----------------------
 
-We added several cool functions, such as :meth:`.Client.get_messages`,
+0.8.2 - We added several cool functions, such as :meth:`.Client.get_messages`,
 :meth:`.Level.get_comments`, :meth:`.Level.comment`, and some additional
 changes were made as well.
+
+0.8.3 - Fixed not removed server response printing. Sorry for inconvenience.
 
 - NeKitDS
