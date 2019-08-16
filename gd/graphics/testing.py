@@ -7,7 +7,7 @@ gco = gen_center_offset
 sg = SpriteGen(); sgu = SpriteGenUtil()
 img = sg.load_image()
 full_test = [
-    IconSet(color_1 = colors[10], color_2 = colors[3], icon_robot = i) for i in range(1,27)
+    IconSet(color_1 = colors[10], color_2 = colors[3], icon_cube = i) for i in range(1,100)
 ]
 parsed = sgu.parse_xml()
 full_bases = [
@@ -17,10 +17,11 @@ full_related = [
     sgu.format_related(parsed, base_list) for base_list in full_bases
 ]
 full_sprites = [
-    sgu.retrieve_sprites(parsed, 'robot', elem) for elem in full_related
+    sgu.retrieve_sprites(parsed, 'cube', elem) for elem in full_related
 ]
 def make_sprite(typeof, splist, iconset) -> None:
-    s = reorder(splist)
+    reorder(splist)
+    s = splist
     if not iconset.has_glow_outline():
         s = [sp for sp in splist if '_glow_' not in sp.name]
     ret = sg.make_blank()
@@ -35,5 +36,5 @@ def make_sprite(typeof, splist, iconset) -> None:
     ret.save(test_path)
     time.sleep(1)
 
-for i in range(26):
-    make_sprite('robot', full_sprites[i], full_test[i])
+for i in range(100):
+    make_sprite('cube', full_sprites[i], full_test[i])

@@ -1,5 +1,6 @@
 import asyncio
 
+from .enums import value_to_enum
 from .search_utils import find, get
 from .wrap_tools import benchmark, check
 
@@ -55,14 +56,14 @@ async def wait(fs, *, loop=None, timeout=None, return_when='ALL_COMPLETED'):
 
     .. note::
 
-        This does not raise TimeoutError! Futures that aren't done
+        This does not raise :exc:`TimeoutError`! Futures that aren't done
         when the timeout occurs are returned in the second set.
     """
     return await asyncio.wait(fs, loop=loop, timeout=timeout, return_when=return_when)
 
 
-def run(coro, *, debug: bool = False, raise_exceptions: bool = False):
-    """Run a *coroutine*.
+def run(coro, *, loop=None, debug: bool = False, raise_exceptions: bool = False):
+    """Run a |coroutine_link|_.
 
     This function runs the passed coroutine, taking care
     of the event loop and shutting down asynchronous generators.
@@ -75,7 +76,10 @@ def run(coro, *, debug: bool = False, raise_exceptions: bool = False):
 
     If ``debug`` is ``True``, the event loop will be run in debug mode.
 
-    This function always creates a new event loop and closes it at the end.
+    This function creates a new event loop and closes it at the end if a ``loop`` is ``None``.
+
+    If a loop is given, this function basically calls :meth:`asyncio.AbstractEventLoop.run_until_complete`.
+
     It should be used as a main entry point to asyncio programs, and should
     ideally be called only once.
 
@@ -90,8 +94,11 @@ def run(coro, *, debug: bool = False, raise_exceptions: bool = False):
 
     Parameters
     ----------
-    coro: *coroutine*
+    coro: |coroutine_link|_
         Coroutine to run.
+
+    loop: Optional[:class:`asyncio.AbstractEventLoop`]
+        A loop to run ``coro`` with. If ``None`` or omitted, a new event loop is created.
 
     debug: :class:`bool`
         Whether or not to run event loop in debug mode.
@@ -110,6 +117,9 @@ def run(coro, *, debug: bool = False, raise_exceptions: bool = False):
 
     if not asyncio.iscoroutine(coro):
         raise ValueError(f'A coroutine was expected, got {coro!r}.')
+
+    if loop is not None:
+        return loop.run_until_complete(coro)
 
     loop = asyncio.new_event_loop()
     try:
@@ -134,7 +144,7 @@ def cancel_all_tasks(loop, raise_exceptions: bool = False):
 
     Parameters
     ----------
-    loop: :class:`asyncio.BaseSelectorEventLoop`
+    loop: :class:`asyncio.AbstractEventLoop`
         Event loop to cancel tasks in.
 
     raise_exceptions: :class:`bool`

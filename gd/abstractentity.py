@@ -1,4 +1,4 @@
-from .utils.wrap_tools import _make_repr
+from .utils.wrap_tools import make_repr
 
 class AbstractEntity:
     """Class that represents Abstract Entity. This is a base for many gd.py objects."""
@@ -8,7 +8,7 @@ class AbstractEntity:
 
     def __repr__(self):
         info = {'id': self.id}
-        return _make_repr(self, info)
+        return make_repr(self, info)
     
     @property
     def id(self):

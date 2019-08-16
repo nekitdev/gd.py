@@ -3,8 +3,8 @@ from io import BytesIO
 
 from PIL import Image, ImageOps
 
-from ..errors import FailedCaptcha
 from .wrap_tools import benchmark
+from ..errors import FailedCaptcha
 
 border = (5, 8, 16, 7)  # borders to crop
 # we recieve picture 65x25 from gd server (65*25=1625 pixels to iterate through)
@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 class Captcha:
     @classmethod
     @benchmark
-    def solve(cls, buffer, should_log: bool = False):
+    def solve(cls, image_bytes: bytes, should_log: bool = False):
         """Solves GD Captcha from given buffer/bytes.
 
         Method: get_image -> crop -> walk through pixels
@@ -27,7 +27,7 @@ class Captcha:
 
         Parameters
         ----------
-        buffer: :class:`bytes`
+        image_bytes: :class:`bytes`
             Bytes to get the Captcha image from.
             Converted to BytesIO to make initialization of image
             a little bit faster.
@@ -41,13 +41,33 @@ class Captcha:
             Code that is shown in Captcha.
         """
         # get image from BytesIO, then crop the borders
-        img = ImageOps.crop(Image.open(BytesIO(buffer)), border)
-        pixels = img.load()  # load as pixel map
+        img = ImageOps.crop(Image.open(BytesIO(image_bytes)), border)
+        pixels = img.load()
         predict = cls.walk_through(pixels, img.size)
         code = cls.connect_result(predict)
         if should_log:
             log.debug("Solved a Captcha. The code was %s.", code)
         return code
+
+    @classmethod
+    async def aio_solve(cls, image_bytes: bytes, should_log: bool = False, loop=None):
+        """|coro|
+
+        Solves a Captcha asynchronously if loop is given, and solves synchronously otherwise.
+
+        Basically runs :meth:`.Captcha.solve` with :meth:`asyncio.AbstractEventLoop.run_in_executor`.
+
+        Passes ``None`` to that method as a first argument.
+        """
+        if loop is None:
+            log.warning(
+                'Captcha.aio_solve() needs a loop to run Captcha.solve() in executor. '
+                'Running synchronously now...')
+
+            # let's run synchronously then...
+            return cls.solve(image_bytes, should_log=should_log)
+
+        return await loop.run_in_executor(None, cls.solve, image_bytes, should_log)
 
     @classmethod
     def walk_through(cls, pixel_map, size):

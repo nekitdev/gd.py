@@ -187,7 +187,7 @@ def fix_robot_offset(sprite) -> None:
     elif str(id) + '_04_' in name:
         offX -= (10 if '001D' in name else 0)
         offY -= 70
-    sprite.options['offset'] = (sX+offX, sY+offY)
+    sprite.options['offset'] = (sX + offX, sY + offY)
 
 def fix_spider_offset(sprite):
     pass
@@ -220,7 +220,7 @@ def reorder(splist):
     )
     pull_sprite_to_front_if(splist, lambda sp: 'extra' in sp.name)
     push_sprite_to_back_if(splist, lambda sp: '_glow_' in sp.name)
-    print(splist)
+    push_sprite_to_back_if(splist, lambda sp: '_3_' in sp.name and 'bird' in sp.name)
 
 def pull_sprite_to_front_if(splist: List[Sprite], predicate: Callable[[Sprite], bool]):
     offset = 0

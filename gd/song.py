@@ -1,6 +1,6 @@
 from .abstractentity import AbstractEntity
 from .utils.http_request import http
-from .utils.wrap_tools import _make_repr
+from .utils.wrap_tools import make_repr
 
 class Song(AbstractEntity):
     """Class that represents Geometry Dash/Newgrounds songs.
@@ -16,7 +16,7 @@ class Song(AbstractEntity):
             'name': repr(self.name),
             'author': self.author
         }
-        return _make_repr(self, info)
+        return make_repr(self, info)
 
     @property
     def id(self):

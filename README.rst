@@ -64,6 +64,12 @@ Quick example
 
 You can find more examples in examples directory.
 
+Authors
+-------
+
+- `NeKit[DS]#1110 <https://github.com/NeKitDS>`_ (the Coroutine Destroyer)
+- blue#0002 (the IDA Disassembler)
+
 Links
 -----
 

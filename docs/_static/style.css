@@ -1,5 +1,5 @@
 /*
-  pretty much a copy from discord.py '~')/
+  pretty much a copy from discord.py, with some additions '~')/
 */
 
 @import url('basic.css');
@@ -414,6 +414,11 @@ dd {
   background-color: #f8f8f8;
 }
 
+/* override viewcode */
+.viewcode-link {
+  color: #44aa44;
+}
+
 table.docutils {
   width: 100%;
 }
@@ -480,7 +485,7 @@ div.viewcode-block:target {
 }
 
 /* hide the welcome text */
-div#welcome-to-discord-py > h1 {
+div#welcome-to-gd-py > h1 {
   display: none;
 }
 

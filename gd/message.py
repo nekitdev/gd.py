@@ -1,7 +1,7 @@
 from .abstractentity import AbstractEntity
 from .session import _session
 
-from .utils.wrap_tools import _make_repr, check
+from .utils.wrap_tools import make_repr, check
 
 class Message(AbstractEntity):
     """Class that represents private messages in Geometry Dash.
@@ -19,7 +19,7 @@ class Message(AbstractEntity):
             'id': self.id,
             'is_read': self.is_read()
         }
-        return _make_repr(self, info)
+        return make_repr(self, info)
 
     @property
     def author(self):
@@ -45,6 +45,11 @@ class Message(AbstractEntity):
     def typeof(self):
         """:class:`str`: Whether a message is sent or inbox. ('sent' or 'normal')"""
         return self.options.get('type')
+
+    @property
+    def page(self):
+        """:class:`int`: A number of page the message was retrieved from."""
+        return self.options.get('page')
 
     @property
     def body(self):

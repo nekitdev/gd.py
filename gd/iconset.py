@@ -1,4 +1,4 @@
-from .utils.wrap_tools import _make_repr
+from .utils.wrap_tools import make_repr
 
 class IconSet:
     """Class that represents an Icon Set."""
@@ -12,11 +12,11 @@ class IconSet:
             'color_1': self.color_1,
             'color_2': self.color_2
         }
-        return _make_repr(self, info)
+        return make_repr(self, info)
 
     @property
     def main(self):
-        """:class:`int`: ID of the main icon of the iconset. (see :meth:`.IconSet.main_type`)"""
+        """:class:`int`: ID of the main icon of the iconset. (see :attr:`.IconSet.main_type`)"""
         return self.options.get('main_icon')
 
     @property

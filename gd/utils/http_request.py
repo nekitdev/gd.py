@@ -16,7 +16,10 @@ class HTTPClient:
         aiohttp.ClientError
     )
 
-    async def fetch(self, php: str, params: dict = None, get_cookies: bool = False, cookie: str = None):
+    async def fetch(
+        self, php: str, params: dict = None,
+        get_cookies: bool = False, cookie: str = None
+    ):
         """|coro|
 
         Sends an HTTP Request to a Geometry Dash server and returns the response.
@@ -77,6 +80,7 @@ class HTTPClient:
                     return int(res)
             except UnicodeDecodeError:
                 res = data
+            print(res)
             if get_cookies:
                 c = str(resp.cookies).split(' ')[1]  # kinda tricky way
                 return res, c

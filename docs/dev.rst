@@ -18,6 +18,10 @@ HTTP Requests Module
 .. autoclass:: HTTPClient
     :members:
 
+.. autoclass:: GDSession
+
+.. note:: See source of the session.
+
 Parameters Creating
 -------------------
 

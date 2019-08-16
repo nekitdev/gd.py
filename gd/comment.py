@@ -1,7 +1,7 @@
 from .abstractentity import AbstractEntity
 from .session import _session
 
-from .utils.wrap_tools import _make_repr, check
+from .utils.wrap_tools import make_repr, check
 
 class Comment(AbstractEntity):
     """Class that represents a Profile/Level comment in Geometry Dash.
@@ -19,7 +19,7 @@ class Comment(AbstractEntity):
             'id': self.id,
             'rating': self.rating
         }
-        return _make_repr(self, info)
+        return make_repr(self, info)
 
     @property
     def body(self):
@@ -61,11 +61,19 @@ class Comment(AbstractEntity):
         """:class:`int`: A page the comment was retrieved from."""
         return self.options.get('page')
 
+    @property
+    def color(self):
+        """:class:`.Colour`: A colour of the comment. White (``#ffffff``) by default."""
+        return self.options.get('color')
+
+    def is_spam(self):
+        """:class:`bool`: Indicates whether a comment is marked as spam. ``False`` if profile comment."""
+        return self.options.get('is_spam')
+
     def is_disliked(self):
         """:class:`bool`: Indicates whether a comment is disliked or not."""
         return abs(self.rating) != self.rating
 
-    @check.is_logged()
     async def delete(self, from_client=None):
         """|coro|
 

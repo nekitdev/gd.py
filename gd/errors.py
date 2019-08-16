@@ -31,10 +31,12 @@ class FailedConversion(GDException):
 
     @property
     def enum(self):
+        """:class:`enum.Enum`: Enum to which ``value`` was failed to convert."""
         return self._enum
 
     @property
     def value(self):
+        """`Any`: Value that was failed to be converted to ``enum``."""
         return self._value
     
 

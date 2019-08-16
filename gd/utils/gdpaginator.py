@@ -1,5 +1,5 @@
 from ..errors import PagesOutOfRange
-from .wrap_tools import _make_repr
+from .wrap_tools import make_repr
 
 def paginate(iterable, per_page: int = 10):
     """A function that paginates the given iterable.
@@ -57,7 +57,7 @@ class Paginator:
             'pages': self.get_pages_count(),
             'current': self.get_curr_page()
         }
-        return _make_repr(self, info)
+        return make_repr(self, info)
 
     @property
     def length(self):

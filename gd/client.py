@@ -1,11 +1,11 @@
 import asyncio
 
 import logging
-from typing import Union
+from typing import Union, Sequence
 
 from .session import _session
 
-from .utils.wrap_tools import _make_repr, check
+from .utils.wrap_tools import make_repr, check
 
 from .utils.crypto.coders import Coder
 
@@ -15,16 +15,25 @@ log = logging.getLogger(__name__)
 
 
 class Client:
-    """A main class in the gd.py library, used for interacting with the servers of Geometry Dash."""
-    def __init__(self):
+    """A main class in the gd.py library, used for interacting with the servers of Geometry Dash.
+
+    Parameters
+    ----------
+    loop: Optional[:class:`asyncio.AbstractEventLoop`]
+        The :class:`asyncio.AbstractEventLoop` to use for asynchronous operations.
+        Defaults to ``None``, in which case the default event loop is used via
+        :func:`asyncio.get_event_loop()`.
+    """
+    def __init__(self, *, loop=None):
         self.session = _session
+        self.loop = asyncio.get_event_loop() if loop is None else loop
         self._set_to_defaults()
 
     def __repr__(self):
         info = {
             'is_logged': self.is_logged()
         }
-        return _make_repr(self, info)
+        return make_repr(self, info)
 
     def _set_to_defaults(self):
         self.account_id = 0
@@ -55,7 +64,7 @@ class Client:
         """
         duration = await self.session.ping_server('http://boomlings.com/database/')
 
-        print(f'ping: {duration}ms')
+        print(f'gd server ping: {duration}ms')
 
         return duration
 
@@ -204,7 +213,7 @@ class Client:
                 If the given ID is *n*, and ``0 > n >= -2`` is ``True``,
                 this function will search for daily/weekly levels, however,
                 it is not recommended to use since it can cause confusion.
-                Use :meth:`.Client.get_timely` instead.
+                Use :meth:`.Client.get_daily` and :meth:`.Client.get_weekly` instead.
 
         Raises
         ------
@@ -222,8 +231,29 @@ class Client:
         """|coro|
 
         Tests Captcha solving, and prints the result.
+
+        .. note::
+
+            Captcha is being solved asynchronously.
+            It uses :meth:`asyncio.AbstractEventLoop.run_in_executor` method of ``self.loop``,
+            which means the following:
+
+            .. code-block:: python3
+
+                import asyncio  # 3.7 and higher
+                asyncio.run(client.test_captcha())  # ERROR!
+
+                import gd
+                gd.utils.run(client.test_captcha())  # ERROR!
+
+                import gd
+                gd.utils.run(client.test_captcha(), loop=client.loop)  # OK
+
+            Please consider what has been said above when writing your programs.
         """
-        return await self.session.test_captcha()
+        code = await self.session.test_captcha(client=self)
+
+        print(code)
 
     async def login(self, user: str, password: str):
         """|coro|
@@ -288,13 +318,13 @@ class Client:
     async def to_user(self):
         """|coro|
 
-        Gets user with :meth:`.Client.account_id`,
+        Gets user with :attr:`.Client.account_id`,
         which means that client should be logged in.
 
         Returns
         -------
         :class:`.User`
-            User corresponding to :meth:`.Client.account_id`.
+            User corresponding to :attr:`.Client.account_id`.
         """
         return await self.get_user(self.account_id)
 
@@ -338,6 +368,41 @@ class Client:
         )
 
     @check.is_logged()
+    async def get_messages(
+        self, sent_or_inbox: str = 'inbox', pages: Sequence[int] = [],
+        *, sort_by_page: bool = True, timeout: Union[int, float] = 5.0
+    ):
+        """|coro|
+
+        Retrieves messages from given ``pages``.
+
+        Parameters
+        ----------
+        sent_or_inbox: :class:`str`
+            Type of messages to retrieve. Either `'sent'` or `'inbox'`.
+            Defaults to the latter.
+
+        pages: Sequence[:class:`int`]
+            Pages to look at, represented as a finite sequence, so iterations can be performed.
+
+        sort_by_page: :class:`bool`
+            Indicates whether returned comments should be sorted by page.
+
+        timeout: Union[:class:`int`, :class:`float`]
+            Timeout to stop requesting after it occurs.
+            Used to prevent insanely long responses.
+
+        Returns
+        -------
+        List[:class:`.Comment`]
+            List of comments found. Can be an empty list.
+        """
+        return await self.session.get_messages(
+            sent_or_inbox=sent_or_inbox, pages=pages, sort_by_page=sort_by_page,
+            timeout=timeout, client=self
+        )
+
+    @check.is_logged()
     def _get_parse_dict(self):
         return {k: getattr(self, k) for k in ('name', 'id', 'account_id')}
 
@@ -369,6 +434,10 @@ class Client:
         """|coro|
 
         Tries to edit credentials of a client, if logged in.
+
+        .. note::
+
+            See :meth:`.Client.test_captcha` to see information about how to treat this function.
 
         Parameters
         ----------

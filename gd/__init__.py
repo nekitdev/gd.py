@@ -2,7 +2,7 @@ __title__ = 'gd'
 __author__ = 'NeKitDS'
 __copyright__ = 'Copyright 2019 NeKitDS'
 __license__ = 'MIT'
-__version__ = '0.8.1'
+__version__ = '0.8.2'
 
 from collections import namedtuple
 import logging
@@ -18,7 +18,7 @@ from .friend_request import FriendRequest
 from .iconset import IconSet
 from .level import Level
 from .message import Message
-from .session import _session
+from .session import GDSession, _session
 from .song import Song
 from .unreguser import UnregisteredUser
 from .user import User
@@ -78,3 +78,7 @@ except ImportError:
             pass
 
 log.addHandler(NullHandler())
+
+# delete not required stuff
+del NullHandler
+del namedtuple, _gen_version_details

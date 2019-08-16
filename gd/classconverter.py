@@ -2,7 +2,7 @@ import base64 as b64
 
 from .song import Song
 from .user import User
-from .colors import colors
+from .colors import Colour, colors
 from .comment import Comment
 from .abstractuser import AbstractUser
 from .level import Level
@@ -151,6 +151,7 @@ class ClassConverter:
         subject = b64.b64decode(mapper_util.normalize(s[i.MESSAGE_SUBJECT])).decode()
         return Message(
             id = s[i.MESSAGE_ID],
+            page = s[i.MESSAGE_PAGE],
             timestamp = s[i.MESSAGE_TIMESTAMP],
             subject = subject,
             is_read = bool(s[i.MESSAGE_IS_READ]),
@@ -181,18 +182,26 @@ class ClassConverter:
     def comment_convert(s, s_2):
         cases = {0: 'level', 1: 'client'}
         typeof = cases.get(s[i.COMMENT_TYPE])
+
+        color_string = s.get(i.COMMENT_COLOR, '255,255,255')
+        color = Colour.from_rgb(*map(int, color_string.split(',')))
+
         return Comment(
             body = b64.b64decode(mapper_util.normalize(s[i.COMMENT_BODY])).decode(),
             rating = s[i.COMMENT_RATING],
             timestamp = s[i.COMMENT_TIMESTAMP],
             id = s[i.COMMENT_ID],
+            is_spam = bool(s.get(i.COMMENT_IS_SPAM, 0)),
             type = typeof,
+            color = color,
             level_id = s.get(i.COMMENT_LEVEL_ID, 0),
             level_percentage = s.get(i.COMMENT_LEVEL_PERCENTAGE, -1),
             author = ClassConverter.abstractuser_convert(s_2),
             page = s[i.COMMENT_PAGE]
         )
-    
+
+    COMMENT_COLOR = 12
+
     def abstractuser_convert(d):
         return AbstractUser(
             **{k: (v if k == 'name' else int(v)) for k, v in d.items()}

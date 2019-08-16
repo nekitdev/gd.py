@@ -68,6 +68,9 @@ Song
 User
 ----
 
+.. autoclass:: UnregisteredUser
+    :members:
+
 .. autoclass:: AbstractUser
     :members:
 
@@ -104,7 +107,12 @@ Message
 Enums
 -----
 
-.. note:: The following classes are derived from *NEnum*, a subclass of *Enum* in :mod:`enum`.
+.. autoclass:: NEnum
+    :members:
+
+    .. automethod:: NEnum.from_value
+
+.. note:: The following classes are derived from :class:`NEnum`.
 
 .. autoclass:: MessagePolicyType
 
@@ -127,6 +135,8 @@ Enums
 .. autoclass:: DifficultyFilter
 
 .. autoclass:: DemonFilter
+
+.. autoclass:: CommentStrategy
 
 .. autoclass:: SearchStrategy
 
@@ -192,5 +202,7 @@ Useful Utils
 .. autofunction:: find
 
 .. autofunction:: get
+
+.. autofunction:: value_to_enum
 
 .. autofunction:: convert_to_type

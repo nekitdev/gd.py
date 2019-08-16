@@ -1,6 +1,6 @@
 from .abstractuser import AbstractUser
 from .session import _session
-from .utils.wrap_tools import _make_repr, check
+from .utils.wrap_tools import make_repr, check
 
 class User(AbstractUser):
     """Class that represents a Geometry Dash User.
@@ -18,7 +18,7 @@ class User(AbstractUser):
             'role': self.role,
             'cp': self.cp
         }
-        return _make_repr(self, info)
+        return make_repr(self, info)
 
     @property
     def name(self):

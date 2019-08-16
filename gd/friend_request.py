@@ -1,7 +1,7 @@
 from .abstractentity import AbstractEntity
 from .session import _session
 
-from .utils.wrap_tools import _make_repr, check
+from .utils.wrap_tools import make_repr, check
 
 class FriendRequest(AbstractEntity):
     """Class that represents a friend request.

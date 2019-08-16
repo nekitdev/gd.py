@@ -1,6 +1,6 @@
 import colorsys
 
-from .utils.wrap_tools import _make_repr
+from .utils.wrap_tools import make_repr
 from .utils.converter import Converter
 
 class Colour:
@@ -15,7 +15,7 @@ class Colour:
         The raw integer colour value.
     """
 
-    def __init__(self, value):
+    def __init__(self, value: int):
         if not isinstance(value, int):
             raise TypeError(f'Expected int parameter, but received {value.__class__.__name__}.')
 
@@ -40,7 +40,7 @@ class Colour:
             'value': self.value,
             'index': idx if idx is None else Converter.to_ordinal(idx)
         }
-        return _make_repr(self, info)
+        return make_repr(self, info)
 
     def __hash__(self):
         return hash(self.value)

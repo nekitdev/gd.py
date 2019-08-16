@@ -1,4 +1,4 @@
-from ..utils.wrap_tools import _make_repr
+from ..utils.wrap_tools import make_repr
 
 class Rectangle:
     def __init__(self, x, y):
@@ -16,7 +16,7 @@ class Sprite:
             'size': 'x'.join(map(str, self.size)),
             'is_rotated': self.is_rotated()
         }
-        return _make_repr(self, info)
+        return make_repr(self, info)
         
     @property
     def name(self):

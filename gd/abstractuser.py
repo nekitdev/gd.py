@@ -5,7 +5,7 @@ from typing import Sequence, Union
 
 from .abstractentity import AbstractEntity
 from .session import _session
-from .utils.wrap_tools import _make_repr, check
+from .utils.wrap_tools import make_repr, check
 
 class AbstractUser(AbstractEntity):
     """Class that represents an Abstract Geometry Dash User.
@@ -21,7 +21,7 @@ class AbstractUser(AbstractEntity):
             'id': self.id,
             'account_id': self.account_id
         }
-        return _make_repr(self, info)
+        return make_repr(self, info)
         
     @property
     def name(self):
@@ -51,7 +51,6 @@ class AbstractUser(AbstractEntity):
         """
         return await _session.get_user(self.account_id, client=self._client)
 
-    @check.is_logged()
     async def send(self, subject: str, body: str, *, from_client=None):
         """|coro|
 

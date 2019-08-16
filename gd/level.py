@@ -6,7 +6,9 @@ from .abstractentity import AbstractEntity
 from .session import _session
 
 from .errors import MissingAccess
-from .utils.wrap_tools import _make_repr
+
+from .utils.enums import CommentStrategy, value_to_enum
+from .utils.wrap_tools import make_repr, check
 
 from . import utils
 
@@ -29,7 +31,7 @@ class Level(AbstractEntity):
             'version': self.version,
             'difficulty': self.difficulty
         }
-        return _make_repr(self, info)
+        return make_repr(self, info)
 
     @property
     def name(self):
@@ -227,15 +229,69 @@ class Level(AbstractEntity):
         self.options = new_ver.options
         return self
 
-    async def get_page_comments(self, page: int = 0):  # [FUTURE]
-        # I think we should attach level._client here tbh
-        return await _session.get_level_page_comments(self, page)
+    async def comment(self, content: str, percentage: int = 0, *, from_client=None):
+        """|coro|
 
-    async def get_comments(  # [FUTURE]
-        self, pages: Sequence[int] = [],
-        *, sort_by_page: bool = True,
-        timeout: Union[int, float] = 5.0
-    ):
-        return await _session.get_level_comments(
-            level=self, pages=pages, sort_by_page=sort_by_page, timeout=timeout
-        )
+        Posts a comment on a level.
+
+        Parameters
+        ----------
+        content: :class:`str`
+            Body of the comment to post.
+
+        percentage: :class:`int`
+            Percentage to display. Default is ``0``.
+
+            .. note::
+
+                gd.py developers are not responsible for effects that changing this may cause.
+                Set this parameter higher than 0 on your own risk.
+
+        from_client: :class:`.Client`
+            A logged in client to delete comments of. If ``None`` or omitted,
+            defaults to the one attached to this comment.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to post a level comment.
+        """
+        client = from_client if from_client is not None else self._client
+
+        check.is_logged_obj(client, 'comment')
+
+        await _session.comment_level(self, content, percentage, client=client)
+
+    async def get_comments(self, strategy: Union[int, str, CommentStrategy] = 0, amount: int = 20):
+        """|coro|
+
+        Retrieves level comments.
+
+        Parameters
+        ----------
+        strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]
+            A strategy to apply when searching. This is converted to :class:`.CommentStrategy`
+            using :func:`.utils.value_to_enum`.
+
+        amount: :class:`int`
+            Amount of comments to retrieve. Default is ``20``. (no limits)
+
+        Returns
+        -------
+        List[:class:`.Comment`]
+            List of comments retrieved.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to fetch comments.
+
+        :exc:`.NothingFound`
+            No comments were found.
+
+        :exc:`.FailedConversion`
+            Raised if ``strategy`` can not be converted to :class`.CommentStrategy`.
+        """
+        strategy = value_to_enum(CommentStrategy, strategy)
+
+        return await _session.get_level_comments(level=self, strategy=strategy, amount=amount)

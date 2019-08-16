@@ -1,6 +1,6 @@
 .. currentmodule:: gd
 
-0.8.(0/1) - What's new?
+0.8.2 - What's new?
 =======================
 
 0.8.0 is indeed a big update, which is as well breaking.
@@ -23,29 +23,11 @@ the multilogins were restricted.
 We decided to rewrite the library and pass :class:`.Client` objects
 where they are required.
 
-3. Side notes
--------------
+3. Actually new things
+----------------------
 
-Many functions were adapted to the new client-passing paradigm.
+We added several cool functions, such as :meth:`.Client.get_messages`,
+:meth:`.Level.get_comments`, :meth:`.Level.comment`, and some additional
+changes were made as well.
 
-3.1 Fixes
----------
-
-0.8.1 - Fixed :meth:`.Client.update_profile` method to make it work as expected.
-Sorry for inconveniece, updating to 0.8.1 and higher is recommended.
-
-4. Additional changes
----------------------
-
-gd.py has got somewhat useful console implementation:
-
-.. code-block:: sh
-
-    # show help
-    python -m gd --help
-
-    # show versions
-    python -m gd --version
-
-    # show docs link
-    python -m gd --docs
+- NeKitDS

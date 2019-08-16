@@ -99,7 +99,7 @@ class Parameters:
         """
         return self.dict
     
-    def put_for_management(self, login: str, password: str, code: str):
+    def put_for_management(self, login: str, password: str, code: int):
         """Puts parameters for account management.
 
         Parameters
@@ -108,7 +108,7 @@ class Parameters:
             A username of an account.
         password: :class:`str`
             A password of an account.
-        code: :class:`str`
+        code: :class:`int`
             A solved RobTop's Captcha code.
 
         Returns
@@ -119,7 +119,7 @@ class Parameters:
         to_put = {
             'username': login,
             'password': password,
-            'vercode': code,
+            'vercode': str(code),
             'cmdlogin': 'Login'
         }
         self.dict.update(to_put)
@@ -175,7 +175,7 @@ class Parameters:
         self.dict.update(to_put)
         return self        
 
-    def put_definer(self, for_what: str, item: str):
+    def put_definer(self, for_what: str, item):
         """Puts a definer.
 
         Parameters
@@ -197,7 +197,7 @@ class Parameters:
                 'requestid' -> 'requestID'
                 'userid'    -> 'userID'
 
-        item: :class:`str`
+        item: `Any`
             Parameter to put.
 
         Returns
@@ -218,17 +218,17 @@ class Parameters:
             'userid': 'userID'
         }
         try:
-            self.dict[params_dict[for_what]] = item
+            self.dict[params_dict[for_what]] = str(item)
         except KeyError:
             pass
         return self
     
-    def put_recipient(self, account_id: str):
+    def put_recipient(self, account_id: int):
         """Puts recipient of a message/friend request/...
 
         Parameters
         ----------
-        account_id: :class:`str`
+        account_id: :class:`int`
             An account ID of the recipient.
 
         Returns
@@ -236,9 +236,9 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        self.dict['toAccountID'] = account_id
+        self.dict['toAccountID'] = str(account_id)
         return self
-        
+
     def put_is_sender(self, t: str):
         """Puts `'isSender'` parameter.
 
@@ -309,8 +309,8 @@ class Parameters:
         """
         self.dict['userName'] = item
         return self
-        
-    def put_type(self, number: int):
+
+    def put_type(self, number: int = 0):
         """Sets `'type'` parameter to a given number.
 
         Parameters
@@ -325,25 +325,35 @@ class Parameters:
         """
         self.dict['type'] = str(number)
         return self
-    
+
+    def put_percent(self, number: int = 0):
+        """Same as :meth:`.Parameters.put_type`, but for `'percent'`."""
+        self.dict['percent'] = str(number)
+        return self
+
     def put_page(self, number: int = 0):
         """Same as :meth:`.Parameters.put_type`, but for `'page'`."""
         self.dict['page'] = str(number)
         return self
 
-    def put_weekly(self, number: int):
+    def put_weekly(self, number: int = 0):
         """Same as :meth:`.Parameters.put_type`, but for `'weekly'`."""
         self.dict['weekly'] = str(number)
         return self
 
-    def put_total(self, number: int):
+    def put_total(self, number: int = 0):
         """Same as :meth:`.Parameters.put_type`, but for `'total'`."""
         self.dict['total'] = str(number)
         return self
     
-    def put_mode(self, number: int):
+    def put_mode(self, number: int = 0):
         """Same as :meth:`.Parameters.put_type`, but for `'mode'`."""
         self.dict['mode'] = str(number)
+        return self
+
+    def put_count(self, number: int = 0):
+        """Same as :meth:`.Parameters.put_type`, but for `'count'`."""
+        self.dict['count'] = str(number)
         return self
 
     def put_comment(self, content: str, values: list):
