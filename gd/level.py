@@ -290,7 +290,7 @@ class Level(AbstractEntity):
             No comments were found.
 
         :exc:`.FailedConversion`
-            Raised if ``strategy`` can not be converted to :class`.CommentStrategy`.
+            Raised if ``strategy`` can not be converted to :class:`.CommentStrategy`.
         """
         strategy = value_to_enum(CommentStrategy, strategy)
 
