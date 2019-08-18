@@ -9,7 +9,9 @@ from .level import Level
 from .message import Message
 from .iconset import IconSet
 from .friend_request import FriendRequest
+from .unreguser import UnregisteredUser
 
+from .utils import convert_to_type
 from .utils.converter import Converter
 from .utils.indexer import Index as i
 from .utils.crypto.coders import Coder
@@ -17,7 +19,8 @@ from .utils.mapper import mapper_util
 from .utils.enums import (
     MessagePolicyType, FriendRequestPolicyType, 
     CommentPolicyType, StatusLevel,
-    LevelLength, TimelyType, IconType
+    LevelLength, TimelyType, CommentType,
+    MessageOrRequestType, IconType
 )
 
 class ClassConverter:
@@ -40,11 +43,11 @@ class ClassConverter:
         return Song(**kwargs)
         
     def user_convert(s):
-        dm = MessagePolicyType(s[i.USER_PRIVATE_MESSAGE_POLICY])
-        fr_rq = FriendRequestPolicyType(s[i.USER_FRIEND_REQUEST_POLICY])
-        comment = CommentPolicyType(s[i.USER_COMMENT_HISTORY_POLICY])
+        dm = MessagePolicyType.from_value(s[i.USER_PRIVATE_MESSAGE_POLICY])
+        fr_rq = FriendRequestPolicyType.from_value(s[i.USER_FRIEND_REQUEST_POLICY])
+        comment = CommentPolicyType.from_value(s[i.USER_COMMENT_HISTORY_POLICY])
 
-        stat = StatusLevel(s[i.USER_ROLE])
+        stat = StatusLevel.from_value(s[i.USER_ROLE])
         rnk = s[i.USER_GLOBAL_RANK]
         rank = rnk if rnk else None
 
@@ -70,7 +73,7 @@ class ClassConverter:
                 main_icon = s[i.USER_ICON],
                 color_1 = colors[s[i.USER_COLOR_1]],
                 color_2 = colors[s[i.USER_COLOR_2]],
-                main_icon_type = IconType(s[i.USER_ICON_TYPE]),
+                main_icon_type = IconType.from_value(s[i.USER_ICON_TYPE]),
                 has_glow_outline = bool(s[i.USER_GLOW_OUTLINE]^1),
                 icon_cube = s[i.USER_ICON_CUBE],
                 icon_ship = s[i.USER_ICON_SHIP],
@@ -92,8 +95,8 @@ class ClassConverter:
             password = ''
 
         desc = b64.b64decode(s[i.LEVEL_DESCRIPTION]).decode()
-        length = LevelLength(s[i.LEVEL_LENGTH])
-        typeof = TimelyType(s[i.LEVEL_TIMELY_TYPE])
+        length = LevelLength.from_value(s[i.LEVEL_LENGTH])
+        type = TimelyType.from_value(s[i.LEVEL_TIMELY_TYPE])
         game_version = s[i.LEVEL_GAME_VERSION]  # needs to be converted to represent real version.
         leveldata = Coder.unzip(s[i.LEVEL_DATA])
 
@@ -129,15 +132,15 @@ class ClassConverter:
             game_version = game_version,
             stars_requested = s[i.LEVEL_REQUESTED_STARS],
             object_count = s[i.LEVEL_OBJECT_COUNT],
-            typeof = typeof,
+            type = type,
             time_n = s[i.LEVEL_TIMELY_INDEX],
             cooldown = s[i.LEVEL_TIMELY_COOLDOWN]
         )
         
     
     def message_convert(s, s_2):
-        cases = {0: 'normal', 1: 'sent'}
-        type_of = cases.get(s[i.MESSAGE_INDICATOR])
+        _type = MessageOrRequestType.from_value(s[i.MESSAGE_INDICATOR])
+
         useful_dict = {
             'name': s[i.MESSAGE_SENDER_NAME],
             'id': s[i.MESSAGE_SENDER_ID],
@@ -146,7 +149,8 @@ class ClassConverter:
         user_1, user_2 = [
             ClassConverter.abstractuser_convert(elem) for elem in (useful_dict, s_2)
         ]
-        is_normal = (type_of == 'normal')
+
+        is_normal = _type.value ^ 1
 
         subject = b64.b64decode(mapper_util.normalize(s[i.MESSAGE_SUBJECT])).decode()
         return Message(
@@ -157,31 +161,34 @@ class ClassConverter:
             is_read = bool(s[i.MESSAGE_IS_READ]),
             author = user_1 if is_normal else user_2,
             recipient = user_2 if is_normal else user_1,
-            type = type_of
+            type = _type
         )
 
     def request_convert(s, s_2):
-        cases = {0: 'normal', 1: 'sent'}
-        type_of = cases.get(s[i.REQUEST_INDICATOR])
+        _type = MessageOrRequestType.from_value(s[i.REQUEST_INDICATOR])
         useful_dict = {
             'name': s[i.REQUEST_SENDER_NAME],
             'id': s[i.REQUEST_SENDER_ID],
             'account_id': s[i.REQUEST_SENDER_ACCOUNT_ID]
         }
-        user_1, user_2 = [ClassConverter.abstractuser_convert(elem) for elem in [useful_dict, s_2]]
+
+        is_normal = _type.value ^ 1
+        user_1, user_2 = (ClassConverter.abstractuser_convert(elem) for elem in (useful_dict, s_2))
+
         return FriendRequest(
             id = s[i.REQUEST_ID],
             timestamp = s[i.REQUEST_TIMESTAMP],
             body = b64.b64decode(mapper_util.normalize(s[i.REQUEST_BODY])).decode(),
-            is_read = False if (s[i.REQUEST_STATUS] is '1') else True,
-            author = user_1 if (type_of is 'normal') else user_2,
-            recipient = user_2 if (type_of is 'normal') else user_1,
-            type = type_of
+            is_read = True if bool((not s[i.REQUEST_STATUS]) ^ 1) else False,
+            author = user_1 if is_normal else user_2,
+            recipient = user_2 if is_normal else user_1,
+            type = _type,
+            page = s[i.REQUEST_PAGE]
         )
     
     def comment_convert(s, s_2):
         cases = {0: 'level', 1: 'client'}
-        typeof = cases.get(s[i.COMMENT_TYPE])
+        type = cases.get(s[i.COMMENT_TYPE])
 
         color_string = s.get(i.COMMENT_COLOR, '255,255,255')
         color = Colour.from_rgb(*map(int, color_string.split(',')))
@@ -192,7 +199,7 @@ class ClassConverter:
             timestamp = s[i.COMMENT_TIMESTAMP],
             id = s[i.COMMENT_ID],
             is_spam = bool(s.get(i.COMMENT_IS_SPAM, 0)),
-            type = typeof,
+            type = type,
             color = color,
             level_id = s.get(i.COMMENT_LEVEL_ID, 0),
             level_percentage = s.get(i.COMMENT_LEVEL_PERCENTAGE, -1),
@@ -203,6 +210,5 @@ class ClassConverter:
     COMMENT_COLOR = 12
 
     def abstractuser_convert(d):
-        return AbstractUser(
-            **{k: (v if k == 'name' else int(v)) for k, v in d.items()}
-        )
+        from_dict = {k: convert_to_type(v, int) for k, v in d.items()}
+        return AbstractUser(**from_dict)

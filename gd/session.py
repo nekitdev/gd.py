@@ -11,11 +11,14 @@ from .errors import *
 
 from .utils.captcha_solver import Captcha
 from .utils.converter import Converter
+from .utils.enums import SearchStrategy
+from .utils.filters import Filters
 from .utils.http_request import http
 from .utils.indexer import Index as i
 from .utils.mapper import mapper_util
 from .utils.params import Parameters as Params
 from .utils.routes import Route
+from .utils.wrap_tools import check
 from .utils.crypto.coders import Coder
 
 class GDSession:
@@ -33,6 +36,7 @@ class GDSession:
 
         return round(ping, 2)
 
+
     async def get_song(self, song_id: int = 0):
         from .classconverter import ClassConverter
 
@@ -44,6 +48,7 @@ class GDSession:
         resp = await http.request(
             Route.GET_SONG_INFO, parameters, splitter="~|~", error_codes=codes, should_map=True)
         return ClassConverter.song_convert(resp)
+
 
     async def get_ng_song(self, song_id: int = 0):
         # just like get_song(), but gets anything available on NG.
@@ -73,6 +78,7 @@ class GDSession:
         return ClassConverter.song_from_kwargs(
             name=name, author=author, id=song_id, size=size_mb, links=[link, dl_link], custom=True
         )
+
 
     async def get_user(self, account_id: int = 0, *, client=None):
         from .classconverter import ClassConverter
@@ -105,10 +111,12 @@ class GDSession:
 
         return ClassConverter.user_convert(resp)._attach_client(client)
 
+
     def to_user(self, conv_dict: dict = {}, *, client=None):
         from .classconverter import ClassConverter
 
         return ClassConverter.abstractuser_convert(conv_dict)._attach_client(client)
+
 
     async def search_user(self, param: Union[str, int] = None, *, client=None):
         from .classconverter import ClassConverter
@@ -138,6 +146,7 @@ class GDSession:
 
         return ClassConverter.abstractuser_convert(ret)._attach_client(client)
 
+
     async def get_level(
         self, level_id: int = 0, timetuple: Tuple[int, int, int] = (0, -1, -1), *, client=None
     ):
@@ -145,8 +154,8 @@ class GDSession:
 
         assert level_id >= -2
 
-        typeof, number, cooldown = map(str, timetuple)
-        ext = ['101', typeof, '102', number, '103', cooldown]
+        type, number, cooldown = map(str, timetuple)
+        ext = ['101', type, '102', number, '103', cooldown]
 
         codes = {
             -1: MissingAccess(message=f'Failed to get a level. Given ID: {level_id}')
@@ -161,7 +170,7 @@ class GDSession:
 
         parameters = (
             Params().create_new().put_definer('search', real_id)
-            .put_for_level().finish()
+            .put_filters(Filters.setup_empty()).finish()
         )
         resp = await http.request(Route.LEVEL_SEARCH, parameters, error_codes=codes, splitter='#')
 
@@ -181,11 +190,12 @@ class GDSession:
         return ClassConverter.level_convert(
             level_data, song=song, creator=creator)._attach_client(client)
 
-    async def get_timely(self, typeof: str = 'daily', *, client=None):
-        w = ('daily', 'weekly').index(typeof)
+
+    async def get_timely(self, type: str = 'daily', *, client=None):
+        w = ('daily', 'weekly').index(type)
         parameters = Params().create_new().put_weekly(w).finish()
         codes = {
-            -1: MissingAccess(message=f'Failed to fetch a {typeof!r} level.')
+            -1: MissingAccess(message=f'Failed to fetch a {type!r} level.')
         }
         resp = await http.request(Route.GET_TIMELY, parameters, error_codes=codes, splitter='|')
         if len(resp) != 2:
@@ -197,6 +207,7 @@ class GDSession:
 
         level = await self.get_level(-w, (w, num, cooldown))
         return level._attach_client(client)
+
 
     async def get_friends(self, client):
         from .classconverter import ClassConverter
@@ -228,10 +239,12 @@ class GDSession:
 
         return ret
 
+
     async def test_captcha(self, client):
         resp = await http.request(Route.CAPTCHA)
         res = await Captcha.aio_solve(resp, should_log=True, loop=client.loop)
         return res
+
 
     async def login(self, client, user: str, password: str):
         parameters = (
@@ -253,8 +266,41 @@ class GDSession:
         for attr, value in prepared.items():
             client._upd(attr, value)
 
+
+    async def search_levels_on_page(
+        self, page: int = 0, query: str = '', filters: Filters = None, user=None,
+        *, raise_errors: bool = True, client
+    ):
+        if filters is None:
+            filters = Filters.setup_empty()
+
+        params = (
+            Params().create_new().put_definer('search', query)
+            .put_page(page).put_total(0).put_filters(filters)
+        )
+
+        if filters.strategy == SearchStrategy.BY_USER:
+
+            if user is None:
+                check.is_logged_obj(client, 'search_levels_on_page(...)')
+                id = client.id
+            else:
+                id = user if isinstance(user, int) else user.id
+
+            params.put_definer('search', id)  # override the 'str' parameter in request
+
+        elif filters.strategy == SearchStrategy.FRIENDS:
+            check.is_logged_obj(client, 'search_levels_on_page(..., client=client)')
+            params.put_definer('accountid', client.account_id).put_password(client.encodedpass)
+
+        parameters = params.finish()
+
+        resp = await http.request(Route.LEVEL_SEARCH, parameters)
+
+        return resp  # NOT FINISHED YET
+
     async def get_page_messages(
-        self, sent_or_inbox: str, page: int, *, raise_errors: bool, client
+        self, sent_or_inbox: str, page: int, *, raise_errors: bool = True, client
     ):
         from .classconverter import ClassConverter
 
@@ -288,19 +334,19 @@ class GDSession:
 
         return res
 
+
     async def get_messages(
-        self, sent_or_inbox: str, pages: Sequence[int] = [], *,
+        self, sent_or_inbox: str, pages: Sequence[int] = [0], *,
         sort_by_page: bool = True, timeout: Union[int, float] = 10.0, client
     ):
         assert sent_or_inbox in ('inbox', 'sent')
 
         assert 0 < len(pages) <= 1024
 
-        real_pages = filter(lambda n: isinstance(n, int), pages)
         to_run = [
             self.get_page_messages(
                 sent_or_inbox=sent_or_inbox, page=page, raise_errors=False, client=client
-            ) for page in real_pages
+            ) for page in pages
         ]
 
         finished, _ = await asyncio.wait(to_run, timeout=timeout)
@@ -312,7 +358,9 @@ class GDSession:
         if sort_by_page:
             # sort the lists according to the page of the first comment in each list.
             filtered.sort(key=lambda s: s[0].page)
+
         return [*itertools.chain.from_iterable(filtered)]
+
 
     async def post_comment(self, content: str, *, client=None):
         to_gen = [client.name, 0, 0, 1]
@@ -320,7 +368,7 @@ class GDSession:
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
             .put_username(client.name).put_password(client.encodedpass)
-            .put_comment(content, to_gen).comment_for('client').finish()
+            .put_comment(content, to_gen).comment_for('profile').finish()
         )
         codes = {
             -1: MissingAccess(message='Failed to post a comment.')
@@ -346,6 +394,7 @@ class GDSession:
         }
 
         await http.request(Route.UPLOAD_COMMENT, parameters, error_codes=codes)
+
 
     async def edit(self, name: str, password: str, *, client=None):
         _, cookie = await http.request(Route.MANAGE_ACCOUNT, get_cookies=True)
@@ -380,19 +429,14 @@ class GDSession:
 
     async def delete_comment(self, comment, *, client=None):
         cases = {
-            'level': 0,
-            'client': 1
-        }
-        config_type = cases.get(comment.typeof)
-        cases = {
             0: Route.DELETE_LEVEL_COMMENT,
             1: Route.DELETE_ACC_COMMENT
         }
-        route = cases.get(config_type)
+        route = cases.get(comment.type.value)
         parameters = (
             Params().create_new().put_definer('commentid', comment.id)
             .put_definer('accountid', client.account_id).put_password(client.encodedpass)
-            .comment_for(config_type, comment.level_id).finish()
+            .comment_for(comment.type.name.lower(), comment.level_id).finish()
         )
         resp = await http.request(route, parameters)
         if resp != 1:
@@ -401,11 +445,11 @@ class GDSession:
 
     async def delete_friend_req(self, req):
         client = req._client
-        user = req.author if req.typeof == 'normal' else req.recipient
+        user = req.author if not req.type.value else req.recipient
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
             .put_definer('user', user.account_id).put_password(client.encodedpass)
-            .put_is_sender(req.typeof).finish()
+            .put_is_sender(req.type.name.lower()).finish()
         )
         resp = await http.request(Route.DELETE_REQUEST, parameters)
         if resp != 1:
@@ -414,7 +458,7 @@ class GDSession:
 
     async def accept_friend_req(self, req):
         client = req._client
-        if req.typeof == 'sent':
+        if req.type.value:  # is gd.MessageOrRequestType.SENT
             raise MissingAccess(
                 message="Failed to accept a friend request. Reason: request is sent, not recieved one."
             )
@@ -433,7 +477,7 @@ class GDSession:
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
             .put_definer('messageid', msg.id).put_password(client.encodedpass)
-            .put_is_sender(msg.typeof).finish()
+            .put_is_sender(msg.type.name.lower()).finish()
         )
         codes = {
             -1: MissingAccess(message=f"Failed to read a message: {msg!r}.")
@@ -442,11 +486,12 @@ class GDSession:
             Route.READ_PRIVATE_MESSAGE, parameters, error_codes=codes,
             splitter=':', should_map=True
         )
+
         ret = Coder.decode(
             type='message', string=mapper_util.normalize(resp.get(i.MESSAGE_BODY))
         )
         msg._body = ret
-        return msg.body
+        return ret
 
 
     async def delete_message(self, msg):
@@ -454,22 +499,86 @@ class GDSession:
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
             .put_definer('messageid', msg.id).put_password(client.encodedpass)
-            .put_is_sender(msg.typeof).finish()
+            .put_is_sender(msg.type.name.lower()).finish()
         )
         resp = await http.request(Route.DELETE_PRIVATE_MESSAGE, parameters)
         if resp != 1:
             raise MissingAccess(message=f"Failed to delete a message: {msg!r}.")
 
 
+    async def get_page_friend_requests(self, sent_or_inbox: str = 'inbox',
+        page: int = 0, *, raise_errors: bool = True, client=None):
+        from .classconverter import ClassConverter
+
+        inbox = 1 if sent_or_inbox == 'sent' else 0
+
+        parameters = (
+            Params().create_new().put_definer('accountid', str(client.account_id))
+            .put_password(client.encodedpass).put_page(page).put_total(0).get_sent(inbox).finish()
+        )
+        codes = {
+            -1: MissingAccess(message=f'Failed to get friend requests on page {page}.'),
+            -2: NothingFound('gd.FriendRequest')
+        }
+
+        resp = await http.request(
+            Route.GET_FRIEND_REQUESTS, parameters, error_codes=codes, raise_errors=raise_errors,
+            splitter_func=lambda s: s.split('#')[0].split('|')
+        )
+
+        if not resp:
+            return list()
+
+        res = []
+        for elem in resp:
+            mapped = mapper_util.map(
+                elem.split(':') + ['101', str(inbox), '102', str(page)]
+            )
+            res.append(
+                ClassConverter.request_convert(
+                    mapped, client._get_parse_dict()
+                )._attach_client(client)
+            )
+
+        return res
+
+
+    async def get_friend_requests(
+        self, sent_or_inbox: str = 'inbox', pages: Sequence[int] = [0], *,
+        sort_by_page: bool = True, timeout: Union[int, float] = 10.0, client
+    ):
+        assert sent_or_inbox in ('sent', 'inbox')
+
+        assert 0 < len(pages) <= 1024
+
+        to_run = [
+            self.get_page_friend_requests(
+                sent_or_inbox=sent_or_inbox, page=page, raise_errors=False, client=client
+            ) for page in pages
+        ]
+
+        finished, _ = await asyncio.wait(to_run, timeout=timeout)
+
+        filtered = [
+            fut.result() for fut in finished if fut.result()
+        ]
+
+        if sort_by_page:
+            # sort the lists according to the page of the first comment in each list.
+            filtered.sort(key=lambda s: s[0].page)
+
+        return [*itertools.chain.from_iterable(filtered)]
+
+
     async def retrieve_page_comments(
-        self, user, typeof: str = 'profile', page: int = 0, *, raise_errors: bool = True
+        self, user, type: str = 'profile', page: int = 0, *, raise_errors: bool = True, strategy
     ):
         from .classconverter import ClassConverter
 
         assert isinstance(page, int) and page >= 0
-        assert typeof in ("profile", "level")
+        assert type in ("profile", "level")
 
-        is_level = (typeof == "level")
+        is_level = (type == "level")
 
         typeid = 0 if is_level else 1
         definer = "userid" if is_level else "accountid"
@@ -483,7 +592,7 @@ class GDSession:
 
         param_obj = Params().create_new().put_definer(definer, selfid).put_page(page).put_total(0)
         if is_level:
-            param_obj.put_mode(0)
+            param_obj.put_mode(strategy.value)
         parameters = param_obj.finish()
 
         resp = await http.request(route, parameters, splitter='#')
@@ -509,19 +618,19 @@ class GDSession:
 
         return res
 
+
     async def retrieve_comments(
-        self, user, typeof: str = 'profile', pages: Sequence[int] = [],
-        *, sort_by_page: bool = True, timeout: Union[int, float] = 10.0
+        self, user, type: str = 'profile', pages: Sequence[int] = [0], *,
+        sort_by_page: bool = True, timeout: Union[int, float] = 10.0, strategy
     ):
-        assert typeof in ('profile', 'level')
+        assert type in ('profile', 'level')
         # this is the limit? can break before
         assert 0 < len(pages) <= 1024
 
-        real_pages = filter(lambda n: isinstance(n, int), pages)
         to_run = [
             self.retrieve_page_comments(
-                typeof=typeof, user=user, page=page, raise_errors=False
-            ) for page in real_pages
+                type=type, user=user, page=page, raise_errors=False, strategy=strategy
+            ) for page in pages
         ]
 
         finished, _ = await asyncio.wait(to_run, timeout=timeout)
@@ -533,7 +642,9 @@ class GDSession:
         if sort_by_page:
             # sort the lists according to the page of the first comment in each list.
             filtered.sort(key=lambda s: s[0].page)
+
         return [*itertools.chain.from_iterable(filtered)]
+
 
     async def get_level_comments(self, level, strategy, amount: int):
         from .classconverter import ClassConverter
@@ -564,6 +675,7 @@ class GDSession:
                 'id': com_data[i.COMMENT_AUTHOR_ID],
                 'name': user_data[i.USER_NAME]
             }
+
             res.append(
                 ClassConverter.comment_convert(
                     com_data, user_dict
@@ -571,6 +683,7 @@ class GDSession:
             )
 
         return res
+
 
     async def send_message(self, target, subject: str, body: str, *, client=None):
         parameters = (
@@ -581,6 +694,7 @@ class GDSession:
         resp = await http.request(Route.SEND_PRIVATE_MESSAGE, parameters)
         if resp != 1:
             raise MissingAccess(message=f"Failed to send a message to a user: {target!r}.")
+
 
     async def update_profile(
         self, msg: int, friend_req: int, comments: int,
@@ -594,5 +708,6 @@ class GDSession:
         resp = await http.request(Route.UPDATE_ACC_SETTINGS, parameters)
         if resp != 1:
             raise MissingAccess(message=f"Failed to update profile settings of a client: {client!r}.")
+
 
 _session = GDSession()

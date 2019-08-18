@@ -10,7 +10,15 @@ class FriendRequest(AbstractEntity):
     def __init__(self, **options):
         super().__init__(**options)
         self.options = options
-        
+
+    def __repr__(self):
+        info = {
+            'id': self.id,
+            'author': self.author,
+            'type': self.type
+        }
+        return make_repr(self, info)
+
     @property
     def author(self):
         """:class:`.AbstractUser`: An author of the friend request."""
@@ -22,8 +30,8 @@ class FriendRequest(AbstractEntity):
         return self.options.get('recipient')
 
     @property
-    def typeof(self):
-        """:class:`str`: Whether request is incoming or sent. ('sent' or 'normal')"""
+    def type(self):
+        """:class:`.MessageOrRequestType`: Whether request is incoming or sent."""
         return self.options.get('type')
 
     @property
@@ -35,6 +43,11 @@ class FriendRequest(AbstractEntity):
     def timestamp(self):
         """:class:`str`: A human-readable string representing how long ago request was created."""
         return self.options.get('timestamp')
+
+    @property
+    def page(self):
+        """:class:`int`: A page this friend request was retrieved from."""
+        return self.options.get('page')
 
     def is_read(self):
         """:class:`bool`: Indicates whether request was already read."""

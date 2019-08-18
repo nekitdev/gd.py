@@ -126,7 +126,7 @@ class Level(AbstractEntity):
     @property
     def type(self):
         """:class:`.TimelyType`: A type that shows whether a level is Daily/Weekly."""
-        return self.options.get('typeof')
+        return self.options.get('type')
 
     @property
     def timely_index(self):
@@ -146,12 +146,12 @@ class Level(AbstractEntity):
         ``level.is_timely() -> True`` and ``level.is_timely('daily') -> True`` but
         ``level.is_timely('weekly') -> False``."""
         if daily_or_weekly is None:
-            return self.type > 0
+            return self.type.value > 0
 
         t = ('daily', 'weekly')
         assert daily_or_weekly in t, f'parameter not in {t}.'
 
-        return self.type == t.index(daily_or_weekly)+1
+        return self.type.value == t.index(daily_or_weekly)+1
 
     def is_featured(self):
         """:class:`bool`: Indicates whether a level is featured."""
@@ -222,7 +222,15 @@ class Level(AbstractEntity):
             A newly fetched version. ``None`` if failed to fetch.
         """
         try:
-            new_ver = await _session.get_level(self.id, client=self._client)
+            if self.is_timely():
+                new_ver = await _session.get_timely(self.type.name.lower())
+
+                if new_ver.name != self.name:
+                    log.warning(f'There is a new {self.type}: {new_ver}. Updating to it...')
+
+            else:
+                new_ver = await _session.get_level(self.id, client=self._client)
+
         except MissingAccess:
             return log.warning('Failed to refresh level: %r. Most likely it was deleted.', self)
 

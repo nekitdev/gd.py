@@ -58,7 +58,7 @@ Quick example
         song = await client.get_song(633206)
         print(song.name)
 
-    gd.utils.run(test())
+    client.run(test())
 
     # OUTPUT: Random Song 01
 

@@ -16,8 +16,8 @@ __all__ = (
     'LevelDifficulty',
     'DemonDifficulty',
     'TimelyType',
-    'DifficultyFilter',
-    'DemonFilter',
+    'CommentType',
+    'MessageOrRequestType',
     'CommentStrategy',
     'SearchStrategy'
 )
@@ -243,13 +243,13 @@ class LevelLength(NEnum):
 class LevelDifficulty(NEnum):
     """An enumeration for level difficulties."""
     NA = -1
-    AUTO = -2
+    AUTO = -3
     EASY = 1
     NORMAL = 2
     HARD = 3
     HARDER = 4
     INSANE = 5
-    DEMON = -3
+    DEMON = -2
 
 
 class DemonDifficulty(NEnum):
@@ -260,33 +260,28 @@ class DemonDifficulty(NEnum):
     INSANE_DEMON = 4
     EXTREME_DEMON = 5
 
+
 class TimelyType(NEnum):
     """An enumeration for timely types."""
     NOT_TIMELY = 0
     DAILY = 1
     WEEKLY = 2
 
-class DifficultyFilter(NEnum):
-    """An enumeration for difficulty filters."""
-    EASY = 1
-    NORMAL = 2
-    HARD = 3
-    HARDER = 4
-    INSANE = 5
-    DEMON = -1
-    NA = -1  # NA is overriden, but it does not matter in our case.
 
-class DemonFilter(NEnum):
-    """An enumeration for demon difficulty filters."""
-    EASY = 1
-    MEDIUM = 2
-    HARD = 3
-    INSANE = 4
-    EXTREME = 5
+class CommentType(NEnum):
+    """An enumeration for comment objects."""
+    LEVEL = 0
+    PROFILE = 1
+
+
+class MessageOrRequestType(NEnum):
+    """An enumeration for message and friend request objects."""
+    NORMAL = 0
+    SENT = 1
 
 
 class CommentStrategy(NEnum):
-    """An enumeration for level comment getting."""
+    """An enumeration for comment searching."""
     RECENT = 0
     MOST_LIKED = 1
 
@@ -303,4 +298,5 @@ class SearchStrategy(NEnum):
     MAGIC = 7
     AWARDED = 11
     FOLLOWED = 12
+    FRIENDS = 13
     HALL_OF_FAME = 16

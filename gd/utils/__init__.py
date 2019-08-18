@@ -118,6 +118,7 @@ def run(coro, *, loop=None, debug: bool = False, raise_exceptions: bool = False)
     if not asyncio.iscoroutine(coro):
         raise ValueError(f'A coroutine was expected, got {coro!r}.')
 
+    # if a loop is given, let's just run our coro in it
     if loop is not None:
         return loop.run_until_complete(coro)
 

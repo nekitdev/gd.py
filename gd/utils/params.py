@@ -42,12 +42,12 @@ class Parameters:
         self.login_secret = 'Wmfv3899gc9'
         self.dict = {}
 
-    def create_new(self, type0: str = None):
+    def create_new(self, type: str = None):
         """Start forming a new dictionary.
 
         Parameters
         ----------
-        type0: :class:`str`
+        type: :class:`str`
             Type of start, use `'web'` to start with an empty dictionary.
             When omitted or ``None``, adds *gameVersion*, *binaryVersion*
             and *gdw* to a dict.
@@ -57,13 +57,13 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        if type0 is None:
+        if type is None:
             self.dict = {
                 'gameVersion': self.gameVersion,
                 'binaryVersion': self.binaryVersion,
                 'gdw': '0'
             }
-        if type0 == 'web':
+        if type == 'web':
             self.dict = {}
         return self
     
@@ -253,10 +253,9 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        if t == 'normal':
-            pass
         if t == 'sent':
             self.dict['isSender'] = '1'
+
         return self
     
     def put_message(self, subject: str, body: str):
@@ -377,14 +376,14 @@ class Parameters:
         self.dict['chk'] = Coder.gen_chk(type='comment', values=values)
         return self
     
-    def comment_for(self, type0: str, number: int = None):
+    def comment_for(self, type: str, number: int = None):
         """Defines type of a comment, and puts parameters required for it.
 
         Parameters
         ----------
-        type0: :class:`str`
-            A type of the comment, either ``'client'`` or ``'level'``.
-            ``'client'`` sets ``cType=1``, while ``'level'`` sets ``levelID=str(number)``.
+        type: :class:`str`
+            A type of the comment, either ``'profile'`` or ``'level'``.
+            ``'profile'`` sets ``cType=1``, while ``'level'`` sets ``levelID=str(number)``.
         number: :class:`int`
             A number to put. Used as mentioned above.
 
@@ -393,11 +392,12 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        if type0 in ('client', 'level'):
-            if (type0 == 'client'):
-                self.dict['cType'] = '1'
-            else:
-                self.dict['levelID'] = str(number)
+        if type == 'profile':
+            self.dict['cType'] = '1'
+
+        elif type == 'level':
+            self.dict['levelID'] = str(number)
+
         return self
         
     def put_login_definer(self, username: str, password: str):
@@ -454,41 +454,22 @@ class Parameters:
         self.dict.update(to_put)
         return self
 
-    def put_for_level(self, filters: dict = None):
+    def put_filters(self, filters: dict):
         """Appends level filters.
 
         Parameters
         ----------
-        filters: :class:`dict`
-            All filters as a dictionary.
+        filters: Union[:class:`dict`, :class:`.Filters`]
+            All filters as a dictionary or as a :class:`.Filters` object.
 
         Returns
         -------
         :class:`.Parameters`
             ``self``
         """
-        is_none = (filters is None)
-        if not is_none:
-            get = filters.get
-        to_put = { #all filters will be passed through 'filters.py' formatter
-            'len': '-' if is_none else get('length'),
-            'type': '0' if is_none else get('type'),
-            'diff': '-' if is_none else get('difficulty'),
-            'featured': '0' if is_none else get('featured'),
-            'original': '0' if is_none else get('original'),
-            'twoPlayer': '0' if is_none else get('twoPlayer'),
-            'coins': '0' if is_none else get('coins'),
-            'star': '0' if is_none else get('starred')
-        }
-        if not is_none:
-            if filters['noStar']:
-                to_put['noStar'] = '1'
-            if ('song' in filters.keys()):
-                to_put['song'] = filters['song']
-                to_put['customSong'] = filters['customSong']
-            if ('demonFilter' in filters.keys()):
-                to_put['demonFilter'] = filters['demonFilter']
-        self.dict.update(to_put)
+        if hasattr(filters, 'to_parameters'):
+            filters = filters.to_parameters()
+        self.dict.update(filters)
         return self
     
     def get_sent(self, indicator: int):

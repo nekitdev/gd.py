@@ -15,7 +15,6 @@ class Comment(AbstractEntity):
     def __repr__(self):
         info = {
             'author': self.author,
-            'body': repr(self.body),
             'id': self.id,
             'rating': self.rating
         }
@@ -42,8 +41,8 @@ class Comment(AbstractEntity):
         return self.options.get('author')
 
     @property
-    def typeof(self):
-        """:class:`str`: Whether comment is on profile or on a level. ('level' or 'client')"""
+    def type(self):
+        """:class:`.CommentType`: Whether comment is on profile or on a level."""
         return self.options.get('type')
 
     @property
@@ -62,8 +61,13 @@ class Comment(AbstractEntity):
         return self.options.get('page')
 
     @property
-    def color(self):
+    def colour(self):
         """:class:`.Colour`: A colour of the comment. White (``#ffffff``) by default."""
+        return self.options.get('color')
+
+    @property
+    def color(self):
+        """:class:`.Colour`: Alias for :attr:`.Comment.colour`."""
         return self.options.get('color')
 
     def is_spam(self):

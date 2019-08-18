@@ -39,6 +39,11 @@ Client
 .. autoclass:: Client
     :members:
 
+Filters
+-------
+.. autoclass:: Filters
+    :members
+
 Paginator
 ---------
 
@@ -132,9 +137,9 @@ Enums
 
 .. autoclass:: TimelyType
 
-.. autoclass:: DifficultyFilter
+.. autoclass:: CommentType
 
-.. autoclass:: DemonFilter
+.. autoclass:: MessageOrRequestType
 
 .. autoclass:: CommentStrategy
 

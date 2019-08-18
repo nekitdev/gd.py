@@ -2,7 +2,7 @@ __title__ = 'gd'
 __author__ = 'NeKitDS'
 __copyright__ = 'Copyright 2019 NeKitDS'
 __license__ = 'MIT'
-__version__ = '0.8.3'
+__version__ = '0.9.0a1'
 
 from collections import namedtuple
 import logging
@@ -24,6 +24,7 @@ from .unreguser import UnregisteredUser
 from .user import User
 from .utils.captcha_solver import Captcha
 from .utils.enums import *
+from .utils.filters import Filters
 from .utils.gdpaginator import paginate, Paginator
 from .utils.http_request import HTTPClient
 from .utils.params import Parameters

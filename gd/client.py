@@ -5,6 +5,7 @@ from typing import Union, Sequence
 
 from .session import _session
 
+from .utils.filters import Filters
 from .utils.wrap_tools import make_repr, check
 
 from .utils.crypto.coders import Coder
@@ -21,8 +22,9 @@ class Client:
     ----------
     loop: Optional[:class:`asyncio.AbstractEventLoop`]
         The :class:`asyncio.AbstractEventLoop` to use for asynchronous operations.
-        Defaults to ``None``, in which case the default event loop is used via
-        :func:`asyncio.get_event_loop()`.
+        Defaults to ``None``, in which case the default event loop is used
+        via :func:`asyncio.get_event_loop()`, meaning that
+        :exc:`RuntimeError` can be raised if there is no current loop.
     """
     def __init__(self, *, loop=None):
         self.session = _session
@@ -31,7 +33,11 @@ class Client:
 
     def __repr__(self):
         info = {
-            'is_logged': self.is_logged()
+            'is_logged': self.is_logged(),
+            'account_id': self.account_id,
+            'id': self.id,
+            'name': self.name,
+            'password': self.password
         }
         return make_repr(self, info)
 
@@ -525,6 +531,57 @@ class Client:
             args.append(s)
 
         await self.session.update_profile(*args, client=self)
+
+    async def search_levels_on_page(
+        self, page: int = 0, query: str = '', filters: Filters = None, user=None,
+        *, raise_errors: bool = True
+    ):
+        """|coro|
+
+        Searches levels on given page by given query, applying filters as well.
+
+        Parameters
+        ----------
+        page: :class:`int`
+            A page to search levels on.
+
+        query: :class:`int`
+            A query to search with.
+
+        filters: :class:`.Filters`
+            Filters to apply, as an object.
+
+        user: Union[:class:`int`, :class:`.AbstractUser`, :class:`.User`]
+            A user to search levels by. (if :class:`.Filters` has parameter ``strategy``
+            equal to :class:`.SearchStrategy` ``BY_USER``. Can be omitted, then
+            logged in client is required.)
+
+        raise_errors: :class:`bool`
+            Whether or not to raise errors.
+
+        Returns
+        -------
+        List[`.Level`]
+            Levels found on given page. [YET RETURNS ONLY THE RESPONSE FROM A SERVER]
+
+        Raises
+        ------
+        ``None`` [yet]
+        """
+        return await self.session.search_levels_on_page(
+            page=page, query=query, filters=filters, user=user, raise_errors=raise_errors
+        )
+
+    def run(self, coro, *, debug: bool = False, raise_exceptions: bool = False):
+        """A handy shortcut for :func:`.utils.run`.
+        This is equivalent to:
+
+        .. code-block:: python3
+
+            gd.utils.run(coro, loop=self.loop,
+                debug=debug, raise_exceptions=raise_exceptions)
+        """
+        return utils.run(coro, loop=self.loop, debug=debug, raise_exceptions=raise_exceptions)
 
     def event(self, coro):
         """A decorator that registers an event to listen to.

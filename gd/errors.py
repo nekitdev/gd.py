@@ -60,11 +60,7 @@ class FailedCaptcha(ClientException):
 
 class MissingAccess(ClientException):
     """Exception that is raised when server responses with -1."""
-    def __init__(self, *, type: str = None, id: int = None, message: str = None):
-        message = (
-            f"Missing access to {type!r} with id: {id!r}."
-            if message is None else message
-        )
+    def __init__(self, *, message: str = None):
         super().__init__(message)
 
 
@@ -103,8 +99,8 @@ class FailedToChange(ClientException):
     """Exception that is raised when logged in :class:`Client`
     fails to change its password or username.
     """
-    def __init__(self, typeof):
-        message = f"Failed to change {typeof}. Reason: Unspecified"  # [Future]
+    def __init__(self, type):
+        message = f"Failed to change {type}. Reason: Unspecified"  # [Future]
         super().__init__(message)
 
 

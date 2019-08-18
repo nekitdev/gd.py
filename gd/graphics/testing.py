@@ -19,7 +19,7 @@ full_related = [
 full_sprites = [
     sgu.retrieve_sprites(parsed, 'cube', elem) for elem in full_related
 ]
-def make_sprite(typeof, splist, iconset) -> None:
+def make_sprite(type, splist, iconset) -> None:
     reorder(splist)
     s = splist
     if not iconset.has_glow_outline():

@@ -5,6 +5,8 @@ from typing import Sequence, Union
 
 from .abstractentity import AbstractEntity
 from .session import _session
+
+from .utils.enums import CommentStrategy, value_to_enum
 from .utils.wrap_tools import make_repr, check
 
 class AbstractUser(AbstractEntity):
@@ -90,18 +92,19 @@ class AbstractUser(AbstractEntity):
         """
         return await self.retrieve_page_comments('profile', page)
 
-    async def get_page_comment_history(self, page: int = 0):
+    async def get_page_comment_history(self,
+        strategy: Union[int, str, CommentStrategy] = 0, page: int = 0):
         """|coro|
 
-        Gets user's level (history) comments on a specific page.
+        Retrieves user's level comments. (history)
 
-        This is equivalent to:
+        Equivalent to calling:
 
         .. code-block:: python3
 
-            await self.retrieve_page_comments('level', page)
+            await self.retrieve_page_comments('profile', page, strategy=strategy)
         """
-        return await self.retrieve_page_comments('level', page)
+        return await self.retrieve_page_comments('level', page, strategy=strategy)
 
     async def get_comments(
         self, pages: Sequence[int] = [],
@@ -125,9 +128,8 @@ class AbstractUser(AbstractEntity):
         )
 
     async def get_comment_history(
-        self, pages: Sequence[int] = [],
-        *, sort_by_page: bool = True,
-        timeout: Union[int, float] = 5.0
+        self, strategy: Union[int, str, CommentStrategy] = 0, pages: Sequence[int] = [],
+        *, sort_by_page: bool = True, timeout: Union[int, float] = 5.0
     ):
         """|coro|
 
@@ -138,15 +140,16 @@ class AbstractUser(AbstractEntity):
         .. code-block:: python3
 
             await self.retrieve_comments(
-                'level', pages, sort_by_page=sort_by_page, timeout=timeout
+                'level', pages, sort_by_page=sort_by_page, timeout=timeout, strategy=strategy
             )
         """
         return await self.retrieve_comments(
-            'level', pages, sort_by_page=sort_by_page, timeout=timeout
+            'level', pages, sort_by_page=sort_by_page, timeout=timeout, strategy=strategy
         )
 
     async def retrieve_page_comments(
-        self, typeof: str = 'profile', page: int = 0, *, raise_errors: bool = True
+        self, type: str = 'profile', page: int = 0, *, raise_errors: bool = True,
+        strategy: Union[int, str, CommentStrategy] = 0
     ):
         """|coro|
 
@@ -155,7 +158,7 @@ class AbstractUser(AbstractEntity):
 
         Parameters
         ----------
-        typeof: :class:`str`
+        type: :class:`str`
             Type of comments to retrieve. Either `'profile'` or `'level'`.
             Defaults to `'profile'`.
 
@@ -167,6 +170,10 @@ class AbstractUser(AbstractEntity):
             Should be set to false when getting several pages of comments,
             like in :meth:`.User.retrieve_comments`.
 
+        strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]
+            A strategy to apply when searching. This is converted to :class:`.CommentStrategy`
+            using :func:`.utils.value_to_enum`.
+
         Returns
         -------
         List[:class:`.Comment`]
@@ -177,13 +184,15 @@ class AbstractUser(AbstractEntity):
         :exc:`.NothingFound`
             No comments were found.        
         """
+        strategy = value_to_enum(CommentStrategy, strategy)
         return await _session.retrieve_page_comments(
-            typeof=typeof, user=self, page=page, raise_errors=raise_errors
+            type=type, user=self, page=page, raise_errors=raise_errors, strategy=strategy
         )
 
     async def retrieve_comments(
-        self, typeof: str = 'profile', pages: Sequence[int] = [],
-        *, sort_by_page: bool = True, timeout: Union[int, float] = 10.0
+        self, type: str = 'profile', pages: Sequence[int] = [],
+        *, sort_by_page: bool = True, timeout: Union[int, float] = 10.0,
+        strategy: Union[int, str, CommentStrategy] = 0
     ):
         """|coro|
 
@@ -191,7 +200,7 @@ class AbstractUser(AbstractEntity):
 
         Parameters
         ----------
-        typeof: :class:`str`
+        type: :class:`str`
             Type of comments to retrieve. Either `'profile'` or `'level'`.
             Defaults to `'profile'`.
 
@@ -205,11 +214,17 @@ class AbstractUser(AbstractEntity):
             Timeout to stop requesting after it occurs.
             Used to prevent insanely long responses.
 
+        strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]
+            A strategy to apply when searching. This is converted to :class:`.CommentStrategy`
+            using :func:`.utils.value_to_enum`.
+
         Returns
         -------
         List[:class:`.Comment`]
             List of comments found. Can be an empty list.
         """
+        strategy = value_to_enum(CommentStrategy, strategy)
         return await _session.retrieve_comments(
-            typeof=typeof, user=self, pages=pages, sort_by_page=sort_by_page, timeout=timeout
+            type=type, user=self, pages=pages, sort_by_page=sort_by_page,
+            timeout=timeout, strategy=strategy
         )

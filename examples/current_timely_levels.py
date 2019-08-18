@@ -7,7 +7,7 @@ import gd
 client = gd.Client()  # an entry point to gd API
 
 # let's create one coroutine to use
-# gd.run() only once.
+# run() only once.
 
 async def coro():
     # getting daily...
@@ -21,4 +21,4 @@ async def coro():
     print(info)
 
 # run a coroutine
-gd.utils.run(coro())
+client.run(coro())

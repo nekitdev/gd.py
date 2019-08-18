@@ -7,9 +7,8 @@ import random  # for fun
 
 client = gd.Client()  # initialize client
 
-gd.utils.run(
-    client.login(user='Username', password='YourP4ssw0rd')
-)  # login with given credentials
+# login with given credentials
+client.run(client.login(user='Username', password='YourP4ssw0rd'))
 
 # a coro to make things simplier
 async def coro():
@@ -28,4 +27,4 @@ async def coro():
         print(f'Failed to send a message to {target!r}...')
 
 # run a program
-gd.utils.run(coro())
+client.run(coro())

@@ -15,7 +15,6 @@ class Message(AbstractEntity):
     def __repr__(self):
         info = {
             'author': self.author,
-            'body': repr(self.body),
             'id': self.id,
             'is_read': self.is_read()
         }
@@ -42,8 +41,8 @@ class Message(AbstractEntity):
         return self.options.get('timestamp')
 
     @property
-    def typeof(self):
-        """:class:`str`: Whether a message is sent or inbox. ('sent' or 'normal')"""
+    def type(self):
+        """:class:`.MessageOrRequestType`: Whether a message is sent or inbox."""
         return self.options.get('type')
 
     @property
@@ -71,7 +70,7 @@ class Message(AbstractEntity):
         :class:`str`
             The content of the message.
         """
-        return await _session.read_message(self)
+        await _session.read_message(self)
 
     @check.is_logged()
     async def delete(self):
