@@ -2,7 +2,7 @@ __title__ = 'gd'
 __author__ = 'NeKitDS'
 __copyright__ = 'Copyright 2019 NeKitDS'
 __license__ = 'MIT'
-__version__ = '0.9.0a1'
+__version__ = '0.9.0a2'
 
 from collections import namedtuple
 import logging
@@ -48,7 +48,7 @@ def _gen_version_details():
     serial = 0
     if len(splitted) > 1:  # if there's a serial
         _, s = splitted
-        serial = int(s)
+        serial = serial if not s else int(s)
     major, minor, micro = map(int, splitted[0].split('.'))
     VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
     return VersionInfo(

@@ -49,7 +49,7 @@ class Filters:
         self, strategy=0, difficulty=None, demon_difficulty=None, length=None,
         uncompleted=False, only_completed=False, completed_levels=[],
         require_coins=False, featured=False, epic=False, rated=None,
-        require_two_player=False, Ssong_id=None, use_custom_song=False,
+        require_two_player=False, song_id=None, use_custom_song=False,
         followed=[], require_original=False
     ):
         if isinstance(difficulty, (int, str, NEnum)):

@@ -1,7 +1,7 @@
 .. currentmodule:: gd
 
 [0.8.x | 0.9.x] - What's new?
-=======================
+=============================
 
 0.8.0 is indeed a big update, which is as well breaking.
 That means all versions below are not compatible with the
@@ -33,5 +33,7 @@ changes were made as well.
 0.8.3 - Fixed not removed server response printing. Sorry for inconvenience.
 
 0.9.0a1 - Fixed a lot of things, added quite a decent amount as well. No details yet.
+
+0.9.0a2 - Fixed stupid typos, everything should be fine now.
 
 - NeKitDS

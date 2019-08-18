@@ -561,7 +561,7 @@ class Client:
 
         Returns
         -------
-        List[`.Level`]
+        List[:class:`.Level`]
             Levels found on given page. [YET RETURNS ONLY THE RESPONSE FROM A SERVER]
 
         Raises

@@ -42,7 +42,7 @@ Client
 Filters
 -------
 .. autoclass:: Filters
-    :members
+    :members:
 
 Paginator
 ---------
