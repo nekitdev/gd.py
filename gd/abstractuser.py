@@ -101,7 +101,7 @@ class AbstractUser(AbstractEntity):
     async def unblock(self, *, from_client=None):
         """|coro|
 
-        **Un**block a user. Requires logged in client.
+        Unblock a user. Requires logged in client.
 
         Parameters
         ----------
