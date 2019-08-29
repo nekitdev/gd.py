@@ -1,11 +1,14 @@
 import base64
-import gzip
 import hashlib
+import random
+import string
+import zlib
 
 from typing import Sequence, Union
 
 from ..mapper import mapper_util
 from .xor_cipher import XORCipher as XOR
+
 
 class Coder:
     keys = {
@@ -27,6 +30,54 @@ class Coder:
         'userscore': 'xI35fsAapCRg',
         'levelscore': 'yPg6pUrtWn0J'
     }
+
+    @classmethod
+    def normal_xor(cls, data: bytes, key: int):
+        """Applies simple XOR on an array of bytes.
+
+        Parameters
+        ----------
+        data: :class:`bytes`
+            Data to apply XOR on.
+
+        key: :class:`int`
+            A key to XOR data with.
+
+        Returns
+        -------
+        :class:`str`
+            Decoded data as a string.
+        """
+        return bytearray(i^key for i in data).decode()
+
+    @classmethod
+    def decode_gamesave(cls, save: str, needs_xor: bool = True):
+        if needs_xor:
+            save = cls.normal_xor(save.encode(), 11)
+        data = mapper_util.normalize(save).encode()
+        from_b64 = base64.b64decode(data)[10:]
+        return zlib.decompress(from_b64, -zlib.MAX_WBITS)
+
+    @classmethod
+    def gen_rs(cls, length: int = 10):
+        """Generates a random string of required length.
+
+        Uses [A-Z][a-z][0-9] character set.
+
+        Parameters
+        ----------
+        length: :class:`int`
+            Amount of characters for a string to have.
+
+        Returns
+        -------
+        :class:`str`
+            Generated string.
+        """
+        sset = string.ascii_letters + string.digits
+        rand = random.choices(sset, k=length)
+        final = ''.join(rand)
+        return final
 
     @classmethod
     def encode(cls, type: str, string: str):
@@ -62,7 +113,7 @@ class Coder:
 
             .. code-block:: python3
 
-                Coder.decode('message', Coder.encode('message', NeKit')) == 'NeKit'  # True
+                Coder.decode('message', Coder.encode('message', 'NeKit')) == 'NeKit'  # True
 
         Parameters
         ----------
@@ -129,7 +180,7 @@ class Coder:
 
     @classmethod
     def unzip(cls, string: str):
-        """Gzip decompresses a string.
+        """zlib decompresses a level string.
 
         Used to unzip level data.
 
@@ -143,35 +194,16 @@ class Coder:
         :class:`bytes`
             Unzipped level data, as bytes.
         """
-        # TODO: LEVEL DATA UNION -> 1.0 == 1.5 == 2.1
         decoded = base64.b64decode(mapper_util.normalize(string).encode())
         try:
-            unzipped = gzip.decompress(decoded)
-        except OSError:  # failed to unzip (for older game versions)
-            unzipped = decoded
-        return unzipped
+            unzipped = zlib.decompress(decoded, zlib.MAX_WBITS)
+        except zlib.error:
+            unzipped = zlib.decompress(decoded[10:], -zlib.MAX_WBITS)
+        final = (
+            ';'.join(unzipped.decode().split(';')[:-1])  # slice out the last element (empty string)
+        )
+        return final
 
     @classmethod
-    def zip(cls, bytes: bytes):
-        """Gzip compresses bytes.
-
-        Used to compress level data.
-
-        Parameters
-        ----------
-        bytes: :class:`bytes`
-            Bytes to zip.
-
-        Returns
-        -------
-        :class:`str`
-            Zipped string, encoded in Base64
-        """
-        zipped = gzip.compress(bytes)
-        encoded = mappet_util.prepare_sending(base64.b64encode(zipped).decode())
-        return encoded
-
-    @classmethod
-    def gen_level_lb_seed(cls, jumps: int, percentage: int, seconds: int):
-        res = 1482 + (jumps + 3991) * (percentage + 8354) + ((seconds + 4085)**2) - 50028039
-        return res
+    def gen_level_lb_seed(cls, jumps: int = 0, percentage: int = 0, seconds: int = 0):
+        return 1482 + (jumps + 3991) * (percentage + 8354) + ((seconds + 4085)**2) - 50028039

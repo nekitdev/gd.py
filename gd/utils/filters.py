@@ -1,4 +1,4 @@
-from typing import Any, Sequence, Union
+from typing import Any, Sequence
 
 from .enums import (
     NEnum, LevelDifficulty, DemonDifficulty,
@@ -24,7 +24,7 @@ class Filters:
     only_completed: Optional[:class:`bool`]
         Opposite of ``uncompleted``.
     completed_levels: Optional[Sequence[Union[:class:`int`, :class:`.Level`]]]
-        A sequence of completed levels. [FUTURE : WILL BE GATHERABLE AS A METHOD]
+        A sequence of completed levels.
     require_coins: Optional[:class:`bool`]
         Whether levels must have coins in them.
     featured: Optional[:class:`bool`]
@@ -76,6 +76,9 @@ class Filters:
             ) else value_to_enum(DemonDifficulty, demon_difficulty)
         )
 
+        if self.demon_difficulty is not None:
+            self.diffculty = LevelDifficulty.DEMON
+
         self.uncompleted = uncompleted if completed_levels else False
         self.only_completed = only_completed if completed_levels else False
         self.completed_levels = list(completed_levels)
@@ -101,28 +104,36 @@ class Filters:
         return make_repr(self, info)
 
     @classmethod
-    def setup_empty(cls):
-        return cls()
+    def setup_empty(cls, *args, **kwargs):
+        return cls(*args, **kwargs)
 
     @classmethod
-    def setup_simple(cls):
+    def setup_simple(cls, *args, **kwargs):
         return cls(strategy=2)
 
     @classmethod
-    def setup_by_user(cls):
-        return cls(strategy=5)
+    def setup_by_user(cls, *args, **kwargs):
+        return cls(strategy=5, *args, **kwargs)
 
     @classmethod
-    def setup_with_song(cls, song_id: int, is_custom: bool = True):
-        return cls(strategy=2, song_id=song_id, use_custom_song=is_custom)
+    def setup_with_song(cls, song_id: int, is_custom: bool = True, *args, **kwargs):
+        return cls(strategy=2, song_id=song_id, use_custom_song=is_custom, *args, **kwargs)
 
     @classmethod
-    def setup_with_followed(cls, followed: Sequence[int]):
-        return cls(strategy=12, followed=followed)
+    def setup_with_followed(cls, followed: Sequence[int], *args, **kwargs):
+        return cls(strategy=12, followed=followed, *args, **kwargs)
 
     @classmethod
-    def setup_by_friends(cls):
-        return cls(strategy=13)
+    def setup_by_friends(cls, *args, **kwargs):
+        return cls(strategy=13, *args, **kwargs)
+
+    @classmethod
+    def setup_client_followed(cls, client, *args, **kwargs):
+        return cls(strategy=12, followed=client.save.followed, *args, **kwargs)
+
+    @classmethod
+    def setup_client_completed(cls, client, *args, **kwargs):
+        return cls(strategy=2, completed_levels=client.save.completed, *args, **kwargs)
 
     def to_parameters(self):
         main = {
@@ -142,6 +153,7 @@ class Filters:
             main.update(
                 {'demonFilter': self.demon_difficulty.value}
             )
+
         if self.uncompleted or self.only_completed:  # adds only if completed_levels not empty
             main.update(
                 {'completedLevels': _join(',', self.completed_levels, wrap_with='({})')}

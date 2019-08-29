@@ -31,7 +31,7 @@ class Converter:
         }
         author, name = cases.get(song_id, (None, None))
         return Song(
-            name = name, author = author, id = id,
+            name = name, author = author, id = song_id,
             size = None, links = (None, None), custom = False
         )
 

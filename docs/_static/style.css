@@ -343,7 +343,7 @@ div.helpful > p.admonition-title:after {
 }
 
 .exception-hierarchy-content ul {
-  list-style: '»' !important;
+  list-style: 'Â»' !important;
 }
 
 pre {

@@ -28,10 +28,10 @@ def convert_to_type(obj: object, try_type: type, on_fail_type: type = None):
     """
     try:
         return try_type(obj)
-    except Exception as error:  # failed to convert
+    except Exception:  # failed to convert
         try:
             return on_fail_type(obj)
-        except Exception as error:
+        except Exception:
             return obj
 
 
@@ -111,7 +111,7 @@ def run(coro, *, loop=None, debug: bool = False, raise_exceptions: bool = False)
     `Any`
         Anything that ``coro`` returns.
     """
-    
+
     if asyncio._get_running_loop() is not None:
         raise RuntimeError('Can not perform gd.utils.run() in a running event loop.')
 

@@ -1,6 +1,18 @@
 gd.py
 =====
 
+.. image:: https://img.shields.io/pypi/l/gd.py.svg
+    :target: https://opensource.org/licenses/MIT
+    :alt: Project License
+
+.. image:: https://img.shields.io/pypi/status/gd.py.svg
+    :target: https://github.com/NeKitDS/gd.py/blob/master/gd
+    :alt: Project Development Status
+
+.. image:: https://img.shields.io/pypi/dd/gd.py.svg
+    :target: https://pypi.python.org/pypi/gd.py
+    :alt: Library Downloads/Month
+
 .. image:: https://img.shields.io/pypi/v/gd.py.svg
     :target: https://pypi.python.org/pypi/gd.py
     :alt: PyPI Library Version
@@ -64,11 +76,25 @@ Quick example
 
 You can find more examples in examples directory.
 
+NOTICE
+------
+
+Developers of this library do not own any images in `resources <https://github.com/NeKitDS/gd.py/blob/master/gd/graphics/resources>`_ package. All of them were created and are owned by the Developer of Geometry Dash - Robert Topala (aka `RobTop <http://robtopgames.com/>`_).
+
+Credits
+-------
+
+Thanks to `Alex1304 <https://github.com/Alex1304>`_ for creating SpriteFactory in Java, which was ported to Python by `NeKitDS <https://github.com/NeKitDS>`_.
+
+Credits to `Rapptz <https://github.com/Rapptz>`_ and `discord.py <https://github.com/Rapptz/discord.py>`_ library developers. Style of discord.py documentation was used as a base to gd.py docs. Also, `tasks <https://github.com/Rapptz/discord.py/blob/master/discord/ext/tasks>`_, which is a base for `tasks.py <https://github.com/NeKitDS/gd.py/blob/master/gd/utils/tasks.py>`_ file.
+
 Authors
 -------
 
-- `NeKit[DS]#1110 <https://github.com/NeKitDS>`_ (the Coroutine Destroyer)
-- blue#0002 (the IDA Disassembler)
+This project is mainly developed by `NeKitDS <https://github.com/NeKitDS>`_,
+with help of blue#0002. Big thanks to `cos8o <https://github.com/cos8o>`_ for helping
+to make several requests and developing `GDCrypto <https://github.com/cos8o/GDCrypto>`_ library,
+which was used as a base for `crypto <https://github.com/NeKitDS/gd.py/blob/master/gd/utils/crypto>`_ package.
 
 Links
 -----

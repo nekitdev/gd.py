@@ -38,7 +38,7 @@ class FailedConversion(GDException):
     def value(self):
         """`Any`: Value that was failed to be converted to ``enum``."""
         return self._value
-    
+
 
 class HTTPNotConnected(ClientException):
     """Exception that is raised when exception

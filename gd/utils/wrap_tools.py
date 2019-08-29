@@ -21,9 +21,9 @@ def _get_class_dict(cls):
 # |======================================|
 
 class check:
-
-    def is_logged():
-        # decorator that checks if passed client is logged in
+    @classmethod
+    def is_logged(cls):
+        # decorator that checks if passed client is logged in.
         def decorator(func):
             @functools.wraps(func)
             def wrapper(obj, *args, **kwargs):
@@ -35,7 +35,7 @@ class check:
                         message=(
                             f'Attempt to check if client is logged for {obj} returned None. '
                             'Have you made this object by hand?')
-                    )
+                        )
 
                 if not client.is_logged():
                     raise NotLoggedError(func.__name__)
@@ -45,8 +45,16 @@ class check:
             return wrapper
         return decorator
 
-    def is_logged_obj(obj, func_name):
-        client = obj if hasattr(obj, 'login') else obj._client
+    @classmethod
+    def is_logged_obj(cls, obj, func_name):
+        try:
+            client = obj if hasattr(obj, 'login') else obj._client
+
+        except AttributeError:
+            raise MissingAccess(
+                message='None was recieved as an <obj> arg.'
+            ) from None
+
         if not client.is_logged():
             raise NotLoggedError(func_name)
 
@@ -61,7 +69,7 @@ def benchmark(func):
         time_taken = (end-start)*1000
 
         thing = f'Executed "{func.__name__}(*args, **kwargs)"\n' \
-            f'Estimated time: {round(time_taken, 2)}ms.'
+            f'Estimated time: {round(time_taken,2):,}ms.'
 
         log.debug(thing)
 

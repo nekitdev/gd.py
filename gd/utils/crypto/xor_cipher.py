@@ -25,12 +25,12 @@ class XORCipher:
         :class:`str`
             A string after XOR operation.
         """
-        keyB = list(map(ord, key))
-        stringB = list(map(ord, string))
+        keyB = tuple(map(ord, key))  # we need an index
+        stringB = map(ord, string)
         result = ''
 
-        for i in range(len(stringB)):
+        for i, byte in enumerate(stringB):
             key_i = i % len(key)
-            result += chr(stringB[i] ^ keyB[key_i])
+            result += chr(byte ^ keyB[key_i])
 
         return result

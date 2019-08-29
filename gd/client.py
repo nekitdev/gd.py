@@ -6,6 +6,7 @@ from typing import Union, Sequence
 from .session import _session
 
 from .utils.filters import Filters
+from .utils.save_parser import Save
 from .utils.wrap_tools import make_repr, check
 
 from .utils.crypto.coders import Coder
@@ -25,10 +26,28 @@ class Client:
         Defaults to ``None``, in which case the default event loop is used
         via :func:`asyncio.get_event_loop()`, meaning that
         :exc:`RuntimeError` can be raised if there is no current loop.
+
+    Attributes
+    ----------
+    account_id: :class:`int`
+        Account ID of the client. If not logged in, defaults to ``0``.
+    id: :class:`int`
+        ID (Player ID) of the client. If not logged in, defaults to ``0``.
+    name: :class:`str`
+        Name of the client. If not logged in, default is ``None``.
+    password: :class:`str`
+        Password of the client. ``None`` if not logged in.
+    encodedpass: :class:`str`
+        Encoded Password of the client. ``None`` on init as well.
+    raw_save: :class:`bytes`
+        Raw decoded save. If not loaded, defaults to ``b''``.
+    save: :class:`.Save`
+        :class:`collections.namedtuple` with format ``(completed, followed)``.
+        Contains empty lists if not loaded.
     """
     def __init__(self, *, loop=None):
         self.session = _session
-        self.loop = asyncio.get_event_loop() if loop is None else loop
+        self.loop = loop or asyncio.get_event_loop()
         self._set_to_defaults()
 
     def __repr__(self):
@@ -42,6 +61,8 @@ class Client:
         return make_repr(self, info)
 
     def _set_to_defaults(self):
+        self.save = Save(completed=[], followed=[])
+        self.raw_save = bytes()
         self.account_id = 0
         self.id = 0
         self.name = None
@@ -127,7 +148,7 @@ class Client:
     async def get_user(self, account_id: int = 0):
         """|coro|
 
-        Fetches a user from Geometry Dash server.
+        Gets a user from Geometry Dash server.
 
         Parameters
         ----------
@@ -148,7 +169,33 @@ class Client:
         :class:`.User`
             The user from the ID. (if ID != -1)
         """
-        return await self.session.get_user(account_id, client=self)
+        return await self.session.get_user(account_id, return_only_stats=False, client=self)
+
+    async def get_user_stats(self, account_id: int = 0):
+        """|coro|
+
+        This is almost like :meth:`.Client.get_user`, except that it returns `.UserStats` object.
+
+        Parameters
+        ----------
+        account_id: :class:`int`
+            An account ID of the user to fetch stats of.
+
+            .. note::
+
+                If the given ID is equal to -1, a :class:`.UnregisteredUser` will be returned.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            User with given account ID was not found, so fetching stats failed.
+
+        Returns
+        -------
+        :class:`.UserStats`
+            UserStats from the ID. (if ID != -1)
+        """
+        return await self.session.get_user(account_id, return_only_stats=True, client=self)
 
     async def search_user(self, query: Union[int, str] = None):
         """|coro|
@@ -158,7 +205,7 @@ class Client:
         Parameters
         ----------
         query: Union[:class:`int`, :class:`str`]
-            A query to search for user with.
+            A query to search for user with. Either Player ID or Name.
 
         Raises
         ------
@@ -167,10 +214,35 @@ class Client:
 
         Returns
         -------
-        :class:`.AbstractUser`
-            An AbstractUser found when searching with the query.
+        :class:`.User`
+            A User found when searching with the query.
         """
-        return await self.session.search_user(query, client=self)
+        return await self.session.search_user(query, return_abstract=False, client=self)
+
+    async def fetch_user(self, query: Union[int, str] = None):
+        """|coro|
+
+        Fetches a user on Geometry Dash servers by given query.
+
+        Works almost like :meth:`.Client.search_user`, except the fact that
+        it returns :class:`.AbstractUser`.
+
+        Parameters
+        ----------
+        query: Union[:class:`int`, :class:`str`]
+            A query to search for user with.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            No user was found.
+
+        Returns
+        -------
+        :class:`.AbstractUser`
+            An AbstractUser corresponding to the query.
+        """
+        return await self.session.search_user(query, return_abstract=True, client=self)
 
     async def get_daily(self):
         """|coro|
@@ -255,11 +327,16 @@ class Client:
                 import gd
                 gd.utils.run(client.test_captcha(), loop=client.loop)  # OK
 
+                # new in 0.9.x
+                client.run(client.test_captcha())  # OK
+
             Please consider what has been said above when writing your programs.
         """
         code = await self.session.test_captcha(client=self)
 
         print(code)
+
+        return code
 
     async def login(self, user: str, password: str):
         """|coro|
@@ -281,6 +358,20 @@ class Client:
         """
         await self.session.login(client=self, user=user, password=password)
         log.info("Logged in as %r, with password %r.", user, password)
+
+    @check.is_logged()
+    async def load(self):
+        """|coro|
+
+        Loads save from a server and parses it.
+        Sets :attr:`.Client.save` to :class:`.Save` namedtuple ``(completed, followed)``.
+        """
+        success = await self.session.load_save(client=self)
+
+        if success:
+            log.info('Successfully loaded a save.')
+        else:
+            log.warning('Failed to load a save.')
 
     def close(self, message: str = 'Logged out, no additional description.'):
         """*Closes* client.
@@ -375,8 +466,8 @@ class Client:
 
     @check.is_logged()
     async def get_messages(
-        self, sent_or_inbox: str = 'inbox', pages: Sequence[int] = [],
-        *, sort_by_page: bool = True, timeout: Union[int, float] = 5.0
+        self, sent_or_inbox: str = 'inbox', pages: Sequence[int] = None,
+        *, sort_by_page: bool = True, timeout: Union[int, float] = 10.0
     ):
         """|coro|
 
@@ -392,7 +483,7 @@ class Client:
             Pages to look at, represented as a finite sequence, so iterations can be performed.
 
         sort_by_page: :class:`bool`
-            Indicates whether returned comments should be sorted by page.
+            Indicates whether returned messages should be sorted by page.
 
         timeout: Union[:class:`int`, :class:`float`]
             Timeout to stop requesting after it occurs.
@@ -400,20 +491,100 @@ class Client:
 
         Returns
         -------
-        List[:class:`.Comment`]
-            List of comments found. Can be an empty list.
+        List[:class:`.Message`]
+            List of messages found. Can be an empty list.
         """
+        if pages is None:
+            pages = range(10)
+
         return await self.session.get_messages(
             sent_or_inbox=sent_or_inbox, pages=pages, sort_by_page=sort_by_page,
             timeout=timeout, client=self
         )
 
     @check.is_logged()
-    def _get_parse_dict(self):
+    async def get_page_friend_requests(
+        self, sent_or_inbox: str = 'inbox', page: int = 0, *, raise_errors: bool = True
+    ):
+        """|coro|
+
+        Gets friend requests on a specified page.
+
+        Requires logged in client.
+
+        Parameters
+        ----------
+        sent_or_inbox: :class:`str`
+            The type of friend requests to look for. Either *inbox* or *sent*.
+
+        page: :class:`int`
+            Number of page to look at.
+
+        raise_errors: :class:`bool`
+            Indicates whether errors should be raised.
+
+        Returns
+        -------
+        List[:class:`.FriendRequest`]
+            List of friend requests found. Can be empty.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to get friend requests. Raised if ``raise_errors`` is ``True``.
+
+        :exc:`.NothingFound`
+            No friend requests were found. Raised if ``raise_errors`` is ``True``.
+        """
+        return await self.session.get_page_friend_requests(
+            sent_or_inbox=sent_or_inbox, page=page,
+            raise_errors=raise_errors, client=self
+        )
+
+    @check.is_logged()
+    async def get_friend_requests(
+        self, sent_or_inbox: str = 'inbox', pages: Sequence[int] = None,
+        *, sort_by_page: bool = True, timeout: Union[int, float] = 10.0
+    ):
+        """|coro|
+
+        Retrieves friend requests from given ``pages``.
+
+        Parameters
+        ----------
+        sent_or_inbox: :class:`str`
+            Type of friend requests to retrieve. Either `'sent'` or `'inbox'`.
+            Defaults to the latter.
+
+        pages: Sequence[:class:`int`]
+            Pages to look at, represented as a finite sequence, so iterations can be performed.
+
+        sort_by_page: :class:`bool`
+            Indicates whether returned friend requests should be sorted by page.
+
+        timeout: Union[:class:`int`, :class:`float`]
+            Timeout to stop requesting after it occurs.
+            Used to prevent insanely long responses.
+
+        Returns
+        -------
+        List[:class:`.FriendRequests`]
+            List of friend requests found. Can be an empty list.
+        """
+        if pages is None:
+            pages = range(10)
+
+        return await self.session.get_friend_requests(
+            sent_or_inbox=sent_or_inbox, pages=pages, sort_by_page=sort_by_page,
+            timeout=timeout, client=self
+        )
+
+    @check.is_logged()
+    def get_parse_dict(self):
         return {k: getattr(self, k) for k in ('name', 'id', 'account_id')}
 
     def as_user(self):
-        return self.session.to_user(self._get_parse_dict(), client=self)
+        return self.session.to_user(self.get_parse_dict(), client=self)
 
     @check.is_logged()
     async def post_comment(self, content: str):
@@ -562,14 +733,59 @@ class Client:
         Returns
         -------
         List[:class:`.Level`]
-            Levels found on given page. [YET RETURNS ONLY THE RESPONSE FROM A SERVER]
+            Levels found on given page.
 
         Raises
         ------
         ``None`` [yet]
         """
         return await self.session.search_levels_on_page(
-            page=page, query=query, filters=filters, user=user, raise_errors=raise_errors
+            page=page, query=query, filters=filters, user=user, raise_errors=raise_errors, client=self
+        )
+
+    async def search_levels(
+        self, query: str = '', filters: Filters = None, user=None,
+        pages: Sequence[int] = None, *, sort_by_page: bool = True,
+        timeout: Union[int, float] = 10.0
+    ):
+        """|coro|
+
+        Searches levels on given pages.
+
+        Parameters
+        ----------
+        query: :class:`int`
+            A query to search with.
+
+        filters: :class:`.Filters`
+            Filters to apply, as an object.
+
+        user: Union[:class:`int`, :class:`.AbstractUser`, :class:`.User`]
+            A user to search levels by. (if :class:`.Filters` has parameter ``strategy``
+            equal to :class:`.SearchStrategy` ``BY_USER``. Can be omitted, then
+            logged in client is required.)
+
+        pages: Sequence[:class:`int`]
+            Pages to look at, represented as a finite sequence, so iterations can be performed.
+
+        sort_by_page: :class:`bool`
+            Indicates whether returned friend requests should be sorted by page.
+
+        timeout: Union[:class:`int`, :class:`float`]
+            Timeout to stop requesting after it occurs.
+            Used to prevent insanely long responses.
+
+        Returns
+        -------
+        List[:class:`.Level`]
+            List of levels found. Can be an empty list.
+        """
+        if pages is None:
+            pages = range(10)
+
+        return await self.session.search_levels(
+            query=query, filters=filters, user=user, pages=pages,
+            sort_by_page=sort_by_page, timeout=timeout, client=self
         )
 
     def run(self, coro, *, debug: bool = False, raise_exceptions: bool = False):

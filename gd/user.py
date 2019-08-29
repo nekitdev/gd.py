@@ -1,10 +1,10 @@
 from .abstractuser import AbstractUser
 from .session import _session
-from .utils.wrap_tools import make_repr, check
+from .utils.wrap_tools import make_repr
 
-class User(AbstractUser):
-    """Class that represents a Geometry Dash User.
-    This class is derived from :class:`.AbstractUser`.
+class UserStats(AbstractUser):
+    """Class that extends :class:`.AbstractUser`, adding
+    user's statistics to it.
     """
     def __init__(self, **options):
         super().__init__(**options)
@@ -13,22 +13,13 @@ class User(AbstractUser):
     def __repr__(self):
         info = {
             'account_id': self.account_id,
-            'id': self.id,
             'name': self.name,
-            'role': self.role,
+            'id': self.id,
+            'stars': self.stars,
+            'demons': self.demons,
             'cp': self.cp
         }
         return make_repr(self, info)
-
-    @property
-    def name(self):
-        """:class:`str`: A name of the user."""
-        return self.options.get('name')
-
-    @property
-    def account_id(self):
-        """:class:`int`: An account ID of the user."""
-        return self.options.get('account_id')
 
     @property
     def stars(self):
@@ -49,6 +40,35 @@ class User(AbstractUser):
     def diamonds(self):
         """:class:`int`: Amount of diamonds the user has."""
         return self.options.get('diamonds')
+
+    @property
+    def coins(self):
+        """:class:`int`: Number of coins the user has."""
+        return self.options.get('coins')
+
+    @property
+    def user_coins(self):
+        """:class:`int`: Amount of User Coins user has."""
+        return self.options.get('user_coins')
+    
+    
+class User(UserStats):
+    """Class that represents a Geometry Dash User.
+    This class is derived from :class:`.UserStats`.
+    """
+    def __init__(self, **options):
+        super().__init__(**options)
+        self.options = options
+
+    def __repr__(self):
+        info = {
+            'account_id': self.account_id,
+            'id': self.id,
+            'name': self.name,
+            'role': self.role,
+            'cp': self.cp
+        }
+        return make_repr(self, info)
 
     @property
     def role(self):
@@ -114,7 +134,7 @@ class User(AbstractUser):
 
     def is_mod(self, elder: str = None):
         """:class:`bool`: Indicates if a user is Geometry Dash (Elder) Moderator.
-        For instance, *RobTop* is an Elder Moderator, that means: 
+        For instance, *RobTop* is an Elder Moderator, that means:
         ``robtop.is_mod() -> True`` and ``robtop.is_mod('elder') -> True``.
         """
         if elder == None:
@@ -122,7 +142,7 @@ class User(AbstractUser):
         if elder == 'elder':
             return self.role.value == 2
         raise TypeError("is_mod(elder) expected elder=='elder', or None.")
-    
+
     def has_cp(self):
         """:class:`bool`: Indicates if a user has Creator Points."""
         return self.cp > 0

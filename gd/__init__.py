@@ -2,7 +2,7 @@ __title__ = 'gd'
 __author__ = 'NeKitDS'
 __copyright__ = 'Copyright 2019 NeKitDS'
 __license__ = 'MIT'
-__version__ = '0.9.0a2'
+__version__ = '0.9.0'
 
 from collections import namedtuple
 import logging
@@ -26,8 +26,9 @@ from .utils.captcha_solver import Captcha
 from .utils.enums import *
 from .utils.filters import Filters
 from .utils.gdpaginator import paginate, Paginator
-from .utils.http_request import HTTPClient
+from .utils.http_request import http, HTTPClient
 from .utils.params import Parameters
+from .utils.save_parser import Save, SaveParser
 from .utils.crypto.coders import Coder
 from .utils.crypto.xor_cipher import XORCipher
 
@@ -54,9 +55,8 @@ def _gen_version_details():
     return VersionInfo(
         major=major, minor=minor, micro=micro, releaselevel=releaselevel, serial=serial
     )
-    
-version_info = _gen_version_details()
 
+version_info = _gen_version_details()
 
 def setup_basic_logging():
     """Function that sets up logs of the module,

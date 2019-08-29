@@ -1,5 +1,6 @@
+import asyncio
 import logging
-from typing import Callable, Sequence, Dict
+from typing import Callable, Dict
 
 import aiohttp
 
@@ -9,16 +10,31 @@ from .mapper import mapper_util
 log = logging.getLogger(__name__)
 
 class HTTPClient:
-    """Class that handles the main part of the entire gd.py - sending HTTP requests."""
+    """Class that handles the main part of the entire gd.py - sending HTTP requests.
+
+    Attributes
+    ----------
+    semaphore: Optional[:class:`asyncio.Semaphore`]
+        A semaphore to use when doing requests. Defaults to ``asyncio.Semaphore(200)``.
+    """
     BASE_URL = "http://www.boomlings.com/database/"
     VALID_ERRORS = (
         OSError,
         aiohttp.ClientError
     )
 
+    def __init__(self, *, semaphore=None):
+        self.semaphore = semaphore or asyncio.Semaphore(200)
+
+    def set_default_semaphore(self, *, value: int = 200, loop=None):
+        self.semaphore = asyncio.Semaphore(value, loop=loop)
+
+    def set_semaphore(self, semaphore):
+        self.semaphore = semaphore
+
     async def fetch(
-        self, php: str, params: dict = None,
-        get_cookies: bool = False, cookie: str = None
+        self, php: str, params: dict = None, get_cookies: bool = False,
+        cookie: str = None, custom_base: str = None
     ):
         """|coro|
 
@@ -48,6 +64,10 @@ class HTTPClient:
             Cookie, represented as string. Technically should be
             catched with ``get_cookies`` set to ``True``.
 
+        custom_base: :class:`str`
+            Custom base using different Geometry Dash IP.
+            By default ``http://boomlings.com/database/`` is used.
+
         Returns
         -------
         Union[:class:`bytes`, :class:`str`, :class:`int`, `None`]
@@ -63,33 +83,43 @@ class HTTPClient:
 
             If a cookie is requested, returns a pair (``res``, ``c``) where c is a :class:`str` cookie.
         """
-        url = HTTPClient.BASE_URL + php + ".php"
+        base = HTTPClient.BASE_URL if custom_base is None else custom_base
+        url = base + php + ".php"
+
         method = "GET" if params is None else "POST"
         headers = None
+
         if cookie is not None:
             headers = {'Cookie': cookie}
+
         async with aiohttp.ClientSession() as client:
-            try:
-                resp = await client.request(method, url, data=params, headers=headers)
-            except HTTPClient.VALID_ERRORS:
-                return
-            data = await resp.content.read()
-            try:
-                res = data.decode()
-                if res.replace('-', '').isdigit():  # support for negative integers
-                    return int(res)
-            except UnicodeDecodeError:
-                res = data
-            if get_cookies:
-                c = str(resp.cookies).split(' ')[1]  # kinda tricky way
-                return res, c
-            return res
+            async with self.semaphore:
+                try:
+                    resp = await client.request(method, url, data=params, headers=headers)
+                except HTTPClient.VALID_ERRORS:
+                    return
+
+                data = await resp.content.read()
+
+                try:
+                    res = data.decode()
+                    if res.replace('-', '').isdigit():  # support for negative integers
+                        return int(res)
+
+                except UnicodeDecodeError:
+                    res = data
+
+                if get_cookies:
+                    c = str(resp.cookies).split(' ')[1]  # kinda tricky way
+                    return res, c
+
+                return res
 
     async def request(
-        self, route: str, parameters: dict = {}, 
+        self, route: str, parameters: dict = None, custom_base: str = None,
         splitter: str = None, splitter_func: Callable[[str], list] = None,
         # 'error_codes' is a dict: {code: error_to_raise}
-        error_codes: Dict[int, Exception] = {},
+        error_codes: Dict[int, Exception] = None,
         # 'should_map': whether response should be mapped 'enum -> value' (dict)
         raise_errors: bool = True, should_map: bool = False,
         get_cookies: bool = False, cookie: str = None
@@ -104,7 +134,9 @@ class HTTPClient:
         route: :class:`str`
             Same as ``php`` in :meth:`HTTPClient.fetch`.
         parameters: :class:`dict`
-            Same as ``params`` in :meth:`HTTPClient.fetch`
+            Same as ``params`` in :meth:`HTTPClient.fetch`.
+        custom_base: :class:`str`
+            Same as ``custom_base`` in :meth:`HTTPClient.fetch`.
         splitter: :class:`str`
             A string to split the response with. If ``None``, splitting is passed.
         splitter_func: Callable[[:class:`str`], :class:`list`]
@@ -153,7 +185,13 @@ class HTTPClient:
 
             If ``should_map`` is ``True``, returns :class:`dict`.
         """
-        resp = await self.fetch(route, parameters, get_cookies, cookie)
+        if parameters is None:
+            parameters = {}
+
+        if error_codes is None:
+            error_codes = {}
+
+        resp = await self.fetch(route, parameters, get_cookies, cookie, custom_base)
 
         if resp is None and raise_errors:
             raise HTTPNotConnected()
@@ -181,11 +219,14 @@ class HTTPClient:
         ``"GET"`` if ``data`` is None or omitted, and ``"POST"`` otherwise.
         """
         method = "GET" if data is None else "POST"
+
         async with aiohttp.ClientSession() as client:
             try:
                 resp = await client.request(method, url, data=data, **kwargs)
+
             except HTTPClient.VALID_ERRORS:
-                raise HTTPNotConnected()
+                raise HTTPNotConnected() from None
+
             if resp.content is not None:
                 return await resp.content.read()
 

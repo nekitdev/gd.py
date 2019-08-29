@@ -1,9 +1,16 @@
 from ..utils.wrap_tools import make_repr
 
 class Rectangle:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+    def __init__(self, x, y, w, h):
+        self.x, self.y = x, y
+        self.width, self.height = w, h
+
+    @property
+    def size(self):
+        return self.width, self.height
+
+    def get_coords(self):
+        return self.x, self.y
 
 class Sprite:
     def __init__(self, **options):
@@ -38,10 +45,12 @@ class Sprite:
     def source_size(self):  
         return self.options.get('source_size')
 
-    @property
-    def upleft_corner(self):
-        return self.options.get('upleft_corner')
-    
+    def update_offset(self, x1, y1):
+        x, y = self.offset
+        x += x1
+        y += y1
+        self.options['offset'] = (x, y)
+
     def is_rotated(self):
         return self.options.get('is_rotated')
     
@@ -55,7 +64,6 @@ class Sprite:
             offset = self.offset,
             size = self.size,
             source_size = self.source_size,
-            upleft_corner = self.upleft_corner,
             is_rotated = self.is_rotated(),
             rectangle = self.get_rectangle()
         )

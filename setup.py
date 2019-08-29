@@ -33,7 +33,7 @@ setup(
         "Issue tracker": "https://github.com/NeKitDS/gd.py/issues",
     },
     version=version,
-    packages=['gd', 'gd.utils', 'gd.utils.crypto', 'gd.graphics'],
+    packages=['gd', 'gd.utils', 'gd.utils.crypto', 'gd.graphics', 'gd.api'],
     license='MIT',
     description='A Geometry Dash API wrapper for Python',
     long_description=readme,
@@ -43,12 +43,17 @@ setup(
     extras_require=extras_require,
     python_requires='>=3.5.3',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Natural Language :: English',
         'Operating System :: OS Independent'
-    ]
+    ],
+    entry_points={
+        'console_scripts': [
+            'gd = gd.__main__:main',
+        ]
+    }
 )

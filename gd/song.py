@@ -56,7 +56,7 @@ class Song(AbstractEntity):
         """|coro|
 
         Download a song from Newgrounds.
-        
+
         Returns
         -------
         :class:`bytes`

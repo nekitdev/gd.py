@@ -132,7 +132,7 @@ class NEnum(Enum):
         return '<gd.{0}.{1}: {2} ({3})>'.format(
             self.__class__.__name__, self.name, self.value, self.desc
         )
-    
+
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.value == other.value
 
@@ -143,7 +143,7 @@ class NEnum(Enum):
         return isinstance(other, type(self)) and self.value > other.value
 
     def __hash__(self):
-        return hash(self.name) ^ hash(str(self.value))
+        return hash(self.__repr__())
 
     @property
     def desc(self):

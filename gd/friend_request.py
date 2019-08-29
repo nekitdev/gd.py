@@ -54,6 +54,19 @@ class FriendRequest(AbstractEntity):
         return self.options.get('is_read')
 
     @check.is_logged()
+    async def read(self):
+        """|coro|
+
+        Read a friend request. Sets ``is_read`` to ``True`` on success.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to read a message.
+        """
+        await _session.read_friend_req(self)
+
+    @check.is_logged()
     async def delete(self):
         """|coro|
 

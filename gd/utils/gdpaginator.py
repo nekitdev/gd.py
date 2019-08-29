@@ -41,10 +41,10 @@ class Paginator:
         self._current_page = 0
 
     def _configure_pages(self):
-        if (self._length // self._per_page < self._length / self._per_page):
-            self._pages = self._length // self._per_page + 1
-        else:
-            self._pages = self._length // self._per_page
+        y = self._length / self._per_page
+        x = round(y)
+
+        self._pages = x+1 if x < y else x
     
     def __str__(self):
         return self.get_state()
@@ -82,10 +82,16 @@ class Paginator:
         """
         p = self.get_curr_page()
         per_page = self.per_page
-        return f'[gd.Paginator]\n[Can_Run:{self.can_run()}]\n' \
-            f'[Length:{self.length}]\n[Pages:{self.get_pages_count()}]\n' \
-            f'[Current_State]\n[Page:{self.get_curr_page()}]\n' \
-            f'[Showing:{(p*per_page)}/{((p+1)*per_page)} of {self.length}]'
+
+        _from, _to = (p*per_page, (p+1)*per_page)
+
+        return (
+            f'[gd.Paginator]\n'
+            f'[Can_Run: {self.can_run()}]\n'
+            f'[Length: {self.length}]\n[Pages: {self.get_pages_count()}]\n'
+            f'[Current_State]\n[Page: {self.get_curr_page()}]\n'
+            f'[Showing: {_from} to {_to} of {self.length}]'
+        )
 
     def reload(self):
         """Reconfigure length and configure pages amount."""
@@ -160,7 +166,7 @@ class Paginator:
                 info = 'Page does not support negative integers.'
             )
         self._current_page -= 1
-    
+
     def move_to(self, page: int):
         """Moves to the ``page`` given.
 
@@ -219,7 +225,7 @@ class Paginator:
                     info = self.get_pages_count()
                 )
             else:
-                to_pass = page * self.per_page 
+                to_pass = page * self.per_page
                 res = self.list[to_pass:(to_pass + self.per_page)]
                 return res
 

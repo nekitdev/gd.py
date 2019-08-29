@@ -72,7 +72,7 @@ class IconSet:
     def has_glow_outline(self):
         """:class:`bool`: Indicates whether an iconset has glow outline."""
         return self.options.get('has_glow_outline')
-    
+
     def get_colors(self):
         """Tuple[:class:`.Colour`, :class:`.Colour`]: A shorthand for *color_1* and *color_2*."""
         return self.color_1, self.color_2

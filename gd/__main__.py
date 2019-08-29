@@ -52,10 +52,12 @@ def main():
         action='store_true', default=False)
     # parse args
     args = parser.parse_args()
+    # run functions
     if args.version:
         show_version()
     if args.docs:
         show_docs()
 
 # run main
-main()
+if __name__ == '__main__':
+    main()

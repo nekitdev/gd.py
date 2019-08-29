@@ -54,7 +54,7 @@ class Colour:
             return colors.index(self)
         except ValueError:
             pass
-    
+
     @property
     def r(self):
         """:class:`int`: Returns the red component of the colour."""

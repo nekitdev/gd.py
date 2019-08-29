@@ -11,7 +11,7 @@ class Comment(AbstractEntity):
         super().__init__(**options)
         # self._client = client
         self.options = options
-    
+
     def __repr__(self):
         info = {
             'author': self.author,
@@ -77,6 +77,46 @@ class Comment(AbstractEntity):
     def is_disliked(self):
         """:class:`bool`: Indicates whether a comment is disliked or not."""
         return abs(self.rating) != self.rating
+
+    async def like(self, from_client=None):
+        """|coro|
+
+        Likes a comment.
+
+        Parameters
+        ----------
+        from_client: :class:`.Client`
+            A logged in client to like with. If ``None`` or omitted,
+            defaults to the one attached to this comment.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to like a comment.
+        """
+        client = from_client if from_client is not None else self._client
+        check.is_logged_obj(client, 'like')
+        await _session.like(self, dislike=False, client=client)
+
+    async def dislike(self, from_client=None):
+        """|coro|
+
+        Dislikes a comment.
+
+        Parameters
+        ----------
+        from_client: :class:`.Client`
+            A logged in client to dislike comment with. If ``None`` or omitted,
+            defaults to the one attached to this comment.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to dislike a comment.
+        """
+        client = from_client if from_client is not None else self._client
+        check.is_logged_obj(client, 'dislike')
+        await _session.like(self, dislike=True, client=client)
 
     async def delete(self, from_client=None):
         """|coro|

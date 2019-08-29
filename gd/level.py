@@ -1,16 +1,14 @@
 import logging
 
-from typing import Sequence, Union
+from typing import Union
 
 from .abstractentity import AbstractEntity
 from .session import _session
 
 from .errors import MissingAccess
 
-from .utils.enums import CommentStrategy, value_to_enum
+from .utils.enums import DemonDifficulty, CommentStrategy, value_to_enum
 from .utils.wrap_tools import make_repr, check
-
-from . import utils
 
 log = logging.getLogger(__name__)
 
@@ -42,7 +40,7 @@ class Level(AbstractEntity):
     def description(self):
         """:class:`str`: Description of the level."""
         return self.options.get('description')
-    
+
     @property
     def version(self):
         """:class:`int`: Version of the level."""
@@ -91,7 +89,7 @@ class Level(AbstractEntity):
     @property
     def original_id(self):
         """:class:`int`: ID of the original level. (``0`` if is not a copy)"""
-        return self.options.get('original')    
+        return self.options.get('original')
 
     @property
     def uploaded_timestamp(self):
@@ -123,6 +121,11 @@ class Level(AbstractEntity):
         """:class:`int`: Amount of objects the level has."""
         return self.options.get('object_count')
 
+    @property
+    def page(self):
+        """:class:`int`: Page a level was retrieved from. Can be ``None``."""
+        return self.options.get('page')
+    
     @property
     def type(self):
         """:class:`.TimelyType`: A type that shows whether a level is Daily/Weekly."""
@@ -181,17 +184,90 @@ class Level(AbstractEntity):
         """:class:`bytes`: Returns level data, represented as bytes."""
         return self._data
 
-    def is_deleted(self):
-        """:class:`bool`: An opposite and blocking version of :meth:`.Level.is_alive`.
+    async def rate(self, stars: int = 1, *, from_client=None):
+        """|coro|
 
-        .. note::
+        Sends level rating.
 
-            This function simply calls :meth:`.Level.is_alive` with ``gd.utils.run()``.
+        Parameters
+        ----------
+        stars: :class:`int`
+            Amount of stars to rate with.
 
-            Because of using *run()* function, this method can not be called when another
-            loop is already running in the current thread.
+        from_client: :class:`.Client`
+            A logged in client to rate level with. If ``None`` or omitted,
+            defaults to the one attached to this comment.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to rate a level.
         """
-        return not utils.run(self.is_alive())
+        client = from_client if from_client is not None else self._client
+        check.is_logged_obj(client, 'rate')
+        await _session.rate_level(self, stars, client=client)
+
+    async def rate_demon(
+        self, demon_difficulty: Union[int, str, DemonDifficulty] = 1, 
+        as_mod: bool = False, *, from_client=None
+    ):
+        """|coro|
+
+        Sends level demon rating.
+
+        Parameters
+        ----------
+        demon_difficulty: Union[:class:`int`, :class:`str`, :class:`.DemonDifficulty`]
+            Demon difficulty to rate a level with.
+
+        as_mod: :class:`bool`
+            Whether to send a demon rating as moderator.
+
+        from_client: :class:`.Client`
+            A logged in client to rate demon difficulty with. If ``None`` or omitted,
+            defaults to the one attached to this comment.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            If attempted to rate a level as moderator without required permissions.
+        """
+        client = from_client if from_client is not None else self._client
+        check.is_logged_obj(client, 'rate_demon')
+        demon_difficulty = value_to_enum(DemonDifficulty, demon_difficulty)
+
+        success = await _session.rate_demon(self, demon_difficulty, mod=as_mod, client=client)
+
+        if success:
+            log.info('Successfully demon-rated level: %s.', self)
+        else:
+            log.warning('Failed to rate demon difficulty for level: %s.', self)
+
+    async def send(self, stars: int = 1, featured: bool = True, *, from_client=None):
+        """|coro|
+
+        Sends a level to Geometry Dash Developer and Administrator, *RobTop*.
+
+        Parameters
+        ----------
+        stars: :class:`int`
+            Amount of stars to send with.
+
+        featured: :class:`bool`
+            Whether to send to feature, or to simply rate.
+
+        from_client: :class:`.Client`
+            A logged in client to send a level from. If ``None`` or omitted,
+            defaults to the one attached to this comment.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Missing required moderator permissions.
+        """
+        client = from_client if from_client is not None else self._client
+        check.is_logged_obj(client, 'rate_demon')
+        await _session.send_level(self, stars, featured=featured, client=client)
 
     async def is_alive(self):
         """|coro|
@@ -235,6 +311,8 @@ class Level(AbstractEntity):
             return log.warning('Failed to refresh level: %r. Most likely it was deleted.', self)
 
         self.options = new_ver.options
+        self._data = new_ver._data
+
         return self
 
     async def comment(self, content: str, percentage: int = 0, *, from_client=None):
@@ -256,7 +334,7 @@ class Level(AbstractEntity):
                 Set this parameter higher than 0 on your own risk.
 
         from_client: :class:`.Client`
-            A logged in client to delete comments of. If ``None`` or omitted,
+            A logged in client to post a comment from. If ``None`` or omitted,
             defaults to the one attached to this comment.
 
         Raises
@@ -265,10 +343,48 @@ class Level(AbstractEntity):
             Failed to post a level comment.
         """
         client = from_client if from_client is not None else self._client
-
         check.is_logged_obj(client, 'comment')
-
         await _session.comment_level(self, content, percentage, client=client)
+
+    async def like(self, from_client=None):
+        """|coro|
+
+        Likes a level.
+
+        Parameters
+        ----------
+        from_client: :class:`.Client`
+            A logged in client to like a level with. If ``None`` or omitted,
+            defaults to the one attached to this comment.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to like a level.
+        """
+        client = from_client if from_client is not None else self._client
+        check.is_logged_obj(client, 'like')
+        await _session.like(self, dislike=False, client=client)
+
+    async def dislike(self, from_client=None):
+        """|coro|
+
+        Dislikes a level.
+
+        Parameters
+        ----------
+        from_client: :class:`.Client`
+            A logged in client to dislike a level with. If ``None`` or omitted,
+            defaults to the one attached to this comment.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to dislike a level.
+        """
+        client = from_client if from_client is not None else self._client
+        check.is_logged_obj(client, 'dislike')
+        await _session.like(self, dislike=True, client=client)
 
     async def get_comments(self, strategy: Union[int, str, CommentStrategy] = 0, amount: int = 20):
         """|coro|

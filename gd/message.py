@@ -84,4 +84,3 @@ class Message(AbstractEntity):
             Failed to delete a message.
         """
         return await _session.delete_message(self)
-

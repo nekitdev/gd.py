@@ -10,14 +10,14 @@ class UnregisteredUser(AbstractEntity):
         ID of :class:`.UnregisteredUser` objects always equals ``0``.
 
     """
-    def __init__(self, id=0):
+    def __init__(self, id: int = 0):
         super().__init__(id=id)
         self._name = 'UnregisteredUser'
-    
+
     def __repr__(self):
         info = {'id': self.id}
         return make_repr(self, info)
-        
+
     @property
     def name(self):
         """:class:`str`: A name of the user. (*'UnregisteredUser'*)"""

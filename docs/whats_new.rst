@@ -36,4 +36,8 @@ changes were made as well.
 
 0.9.0a2 - Fixed stupid typos, everything should be fine now.
 
-- NeKitDS
+0.9.0 - Final version, added :class:`asyncio.Semaphore` for :class:`.HTTPClient`.
+
+It is planned to make a change log.
+
+~ NeKitDS
