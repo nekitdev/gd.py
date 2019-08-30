@@ -346,7 +346,7 @@ class Level(AbstractEntity):
         """
         try:
             if self.is_timely():
-                new_ver = await _session.get_timely(self.type.name.lower(), client=self.client)
+                new_ver = await _session.get_timely(self.type.name.lower(), client=self._client)
 
                 if new_ver.name != self.name:
                     log.warning(f'There is a new {self.type}: {new_ver}. Updating to it...')
