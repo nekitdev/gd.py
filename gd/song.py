@@ -37,7 +37,7 @@ class Song(AbstractEntity):
     def author(self):
         """:class:`str`: An author of the song."""
         return self.options.get('author')
-    
+
     @property
     def link(self):
         """:class:`str`: A link to the song on Newgrounds, e.g. ``.../audio/listen/id``."""

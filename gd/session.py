@@ -323,7 +323,7 @@ class GDSession:
             -11: MissingAccess(message=f'Failed to load data for user: {client!r}.')
         }
 
-        resp = await http.request(Route.LOAD_DATA, parameters, custom_base=link)
+        resp = await http.request(Route.LOAD_DATA, parameters, error_codes=codes, custom_base=link)
 
         try:
             raw_save = Coder.decode_gamesave(resp, needs_xor=False)
@@ -425,6 +425,40 @@ class GDSession:
         return await self.run_many(to_run, sort_by_page=sort_by_page, timeout=timeout)
 
 
+    async def delete_level(self, level, *, client):
+        parameters = (
+            Params().create_new().put_definer('accountid', client.account_id)
+            .put_definer('leveldata', level.id).put_password(client.encodedpass).finish_level()
+        )
+
+        resp = await http.request(Route.DELETE_LEVEL, parameters)
+
+        if resp != 1:
+            raise MissingAccess(message=f'Failed to delete a level: {level}.')
+
+        # update level's is_alive coroutine to return False only.
+        async def is_alive(*args):
+            return False
+
+        level.is_alive = is_alive
+
+
+    async def update_level_desc(self, level, content, *, client):
+        parameters = (
+            Params().create_new().put_definer('accountid', client.account_id)
+            .put_password(client.encodedpass).put_definer('leveldata', level.id)
+            .put_level_desc(content).finish()
+        )
+
+        resp = await http.request(Route.UPDATE_LEVEL_DESC, parameters)
+
+        if resp != 1:
+            raise MissingAccess(message=f'Failed to update description of the level: {level}.')
+
+        # update level's description on success
+        level.options['description'] = content
+
+
     async def rate_level(self, level, rating: int, *, client):
         assert 0 < rating <= 10, 'Invalid star value given.'
 
@@ -514,8 +548,6 @@ class GDSession:
 
         if resp != 1:
             raise MissingAccess(message=f'Failed to like an item: {item}.')
-
-        item.rating += (-1 if dislike else 1)
 
 
     async def get_page_messages(
@@ -713,8 +745,8 @@ class GDSession:
         client = msg._client
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
-            .put_definer('messageid', msg.id)
-            .put_password(client.encodedpass).put_is_sender(msg.type.name.lower()).finish()
+            .put_definer('messageid', msg.id).put_is_sender(msg.type.name.lower())
+            .put_password(client.encodedpass).finish()
         )
         codes = {
             -1: MissingAccess(message=f"Failed to read a message: {msg!r}.")

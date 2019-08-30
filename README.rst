@@ -9,7 +9,7 @@ gd.py
     :target: https://github.com/NeKitDS/gd.py/blob/master/gd
     :alt: Project Development Status
 
-.. image:: https://img.shields.io/pypi/dd/gd.py.svg
+.. image:: https://img.shields.io/pypi/dm/gd.py.svg
     :target: https://pypi.python.org/pypi/gd.py
     :alt: Library Downloads/Month
 
@@ -24,6 +24,10 @@ gd.py
 .. image:: https://readthedocs.org/projects/gdpy/badge/?version=latest
     :target: https://gdpy.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
+
+.. image:: https://api.codacy.com/project/badge/Grade/4bd8cfe7a66e4250bc23b21c4e0626b6
+    :target: https://app.codacy.com/project/NeKitDS/gd.py/dashboard
+    :alt: Code Quality [Codacy]
 
 gd.py is a library that provides its users ability to interact with servers of Geometry Dash.
 
@@ -86,7 +90,7 @@ Credits
 
 Thanks to `Alex1304 <https://github.com/Alex1304>`_ for creating SpriteFactory in Java, which was ported to Python by `NeKitDS <https://github.com/NeKitDS>`_.
 
-Credits to `Rapptz <https://github.com/Rapptz>`_ and `discord.py <https://github.com/Rapptz/discord.py>`_ library developers. Style of discord.py documentation was used as a base to gd.py docs. Also, `tasks <https://github.com/Rapptz/discord.py/blob/master/discord/ext/tasks>`_, which is a base for `tasks.py <https://github.com/NeKitDS/gd.py/blob/master/gd/utils/tasks.py>`_ file.
+Credits to `Rapptz <https://github.com/Rapptz>`_ and `discord.py <https://github.com/Rapptz/discord.py>`_ library developers; `tasks <https://github.com/Rapptz/discord.py/blob/master/discord/ext/tasks>`_ package in discord.py is a base for `tasks.py <https://github.com/NeKitDS/gd.py/blob/master/gd/utils/tasks.py>`_ file.
 
 Authors
 -------

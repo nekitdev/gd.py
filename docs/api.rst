@@ -79,6 +79,9 @@ User
 .. autoclass:: AbstractUser
     :members:
 
+.. autoclass:: UserStats
+    :members:
+
 .. autoclass:: User
     :members:
 
@@ -179,19 +182,21 @@ Exceptions
 Exception Hierarchy
 -------------------
 
-- :exc:`GDException` (:exc:`Exception`)
-    - :exc:`FailedConversion`
-    - :exc:`ClientException`
-        - :exc:`HTTPNotConnected`
-        - :exc:`FailedCaptcha`
-        - :exc:`MissingAccess`
-        - :exc:`SongRestrictedForUsage`
-        - :exc:`LoginFailure`
-        - :exc:`FailedToChange`
-        - :exc:`NothingFound`
-        - :exc:`NotLoggedError`
-    - :exc:`PaginatorException`
-        - :exc:`PagesOutOfRange`
+.. code-block:: python3
+
+    GDException (Exception)
+        FailedConversion
+        ClientException
+            HTTPNotConnected
+            FailedCaptcha
+            MissingAccess
+            SongRestrictedForUsage
+            LoginFailure
+            FailedToChange
+            NothingFound
+            NotLoggedError
+        PaginatorException
+            PagesOutOfRange
 
 .. currentmodule:: gd.utils
 

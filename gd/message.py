@@ -11,7 +11,7 @@ class Message(AbstractEntity):
         super().__init__(**options)
         self.options = options
         self._body = None
-    
+
     def __repr__(self):
         info = {
             'author': self.author,

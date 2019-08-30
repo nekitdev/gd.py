@@ -121,7 +121,7 @@ class Loop:
             while True:
                 try:
                     await self.coro(*args, **kwargs)
-                except self._valid_exception as exc:
+                except self._valid_exception:
                     if not self.reconnect:
                         raise
                     await asyncio.sleep(backoff.delay())

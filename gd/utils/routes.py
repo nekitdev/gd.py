@@ -8,6 +8,8 @@ class Route:
     USER_SEARCH = 'getGJUsers20'
     DOWNLOAD_LEVEL = 'downloadGJLevel22'
     LEVEL_SEARCH = 'getGJLevels21'
+    UPDATE_LEVEL_DESC = 'updateGJDesc20'
+    DELETE_LEVEL = 'deleteGJLevelUser20'
     GET_SONG_INFO = 'getGJSongInfo'
     GET_FRIENDS = 'getGJUserList20'
     GET_ACC_COMMENTS = 'getGJAccountComments20'

@@ -22,7 +22,7 @@ class AbstractUser(AbstractEntity):
             'account_id': self.account_id
         }
         return make_repr(self, info)
-        
+
     @property
     def name(self):
         """:class:`str`: String representing name of the user."""
@@ -38,6 +38,18 @@ class AbstractUser(AbstractEntity):
         return {
             k: getattr(self, k) for k in ('name', 'id', 'account_id')
         }
+
+    def as_user(self):
+        """Returns `.AbstractUser` object.
+
+        This is used mainly in subclasses.
+
+        Returns
+        -------
+        :class:`.AbstractUser`
+            Abstract User from given object.
+        """
+        return _session.to_user(self._dict_for_parse, client=self._client)
 
     async def to_user(self):
         """|coro|
@@ -275,7 +287,7 @@ class AbstractUser(AbstractEntity):
         """|coro|
 
         Gets user's level (history) comments on specific pages.
-        
+
         This is equivalent to the following:
 
         .. code-block:: python3

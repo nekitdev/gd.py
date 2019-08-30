@@ -51,7 +51,7 @@ class UserStats(AbstractUser):
         """:class:`int`: Amount of User Coins user has."""
         return self.options.get('user_coins')
     
-    
+
 class User(UserStats):
     """Class that represents a Geometry Dash User.
     This class is derived from :class:`.UserStats`.

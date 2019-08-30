@@ -52,9 +52,9 @@ class Level(AbstractEntity):
         return self.options.get('downloads')
 
     @property
-    def likes(self):
-        """:class:`int`: Amount of the level's likes."""
-        return self.options.get('likes')
+    def rating(self):
+        """:class:`int`: Amount of the level's likes or dislikes."""
+        return self.options.get('rating')
 
     @property
     def score(self):
@@ -125,7 +125,7 @@ class Level(AbstractEntity):
     def page(self):
         """:class:`int`: Page a level was retrieved from. Can be ``None``."""
         return self.options.get('page')
-    
+
     @property
     def type(self):
         """:class:`.TimelyType`: A type that shows whether a level is Daily/Weekly."""
@@ -184,6 +184,53 @@ class Level(AbstractEntity):
         """:class:`bytes`: Returns level data, represented as bytes."""
         return self._data
 
+    async def delete(self, *, from_client=None):
+        """|coro|
+
+        Deletes a level.
+
+        Parameters
+        ----------
+        from_client: :class:`.Client`
+            A logged in client to delete a level with. If ``None`` or omitted,
+            defaults to the one attached to this level.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to delete a level.
+        """
+        client = from_client if from_client is not None else self._client
+        check.is_logged_obj(client, 'delete')
+        await _session.delete_level(self, client=client)
+
+    async def update_description(self, content: str = None, *, from_client=None):
+        """|coro|
+
+        Updates level description.
+
+        Parameters
+        ----------
+        content: :class:`str`
+            Content of the new description. If ``None`` or omitted,
+            sets content to :attr:`.Level.description`.
+
+        from_client: :class:`.Client`
+            A logged in client to update level description with. If ``None`` or omitted,
+            defaults to the one attached to this level.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to update level's description.
+        """
+        if content is None:
+            content = self.description
+
+        client = from_client if from_client is not None else self._client
+        check.is_logged_obj(client, 'update_description')
+        await _session.update_level_desc(self, content, client=client)
+
     async def rate(self, stars: int = 1, *, from_client=None):
         """|coro|
 
@@ -196,7 +243,7 @@ class Level(AbstractEntity):
 
         from_client: :class:`.Client`
             A logged in client to rate level with. If ``None`` or omitted,
-            defaults to the one attached to this comment.
+            defaults to the one attached to this level.
 
         Raises
         ------
@@ -208,7 +255,7 @@ class Level(AbstractEntity):
         await _session.rate_level(self, stars, client=client)
 
     async def rate_demon(
-        self, demon_difficulty: Union[int, str, DemonDifficulty] = 1, 
+        self, demon_difficulty: Union[int, str, DemonDifficulty] = 1,
         as_mod: bool = False, *, from_client=None
     ):
         """|coro|
@@ -225,7 +272,7 @@ class Level(AbstractEntity):
 
         from_client: :class:`.Client`
             A logged in client to rate demon difficulty with. If ``None`` or omitted,
-            defaults to the one attached to this comment.
+            defaults to the one attached to this level.
 
         Raises
         ------
@@ -258,7 +305,7 @@ class Level(AbstractEntity):
 
         from_client: :class:`.Client`
             A logged in client to send a level from. If ``None`` or omitted,
-            defaults to the one attached to this comment.
+            defaults to the one attached to this level.
 
         Raises
         ------
@@ -299,7 +346,7 @@ class Level(AbstractEntity):
         """
         try:
             if self.is_timely():
-                new_ver = await _session.get_timely(self.type.name.lower())
+                new_ver = await _session.get_timely(self.type.name.lower(), client=self.client)
 
                 if new_ver.name != self.name:
                     log.warning(f'There is a new {self.type}: {new_ver}. Updating to it...')
@@ -335,7 +382,7 @@ class Level(AbstractEntity):
 
         from_client: :class:`.Client`
             A logged in client to post a comment from. If ``None`` or omitted,
-            defaults to the one attached to this comment.
+            defaults to the one attached to this level.
 
         Raises
         ------
@@ -355,7 +402,7 @@ class Level(AbstractEntity):
         ----------
         from_client: :class:`.Client`
             A logged in client to like a level with. If ``None`` or omitted,
-            defaults to the one attached to this comment.
+            defaults to the one attached to this level.
 
         Raises
         ------
@@ -375,7 +422,7 @@ class Level(AbstractEntity):
         ----------
         from_client: :class:`.Client`
             A logged in client to dislike a level with. If ``None`` or omitted,
-            defaults to the one attached to this comment.
+            defaults to the one attached to this level.
 
         Raises
         ------

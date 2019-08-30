@@ -2,7 +2,7 @@ __title__ = 'gd'
 __author__ = 'NeKitDS'
 __copyright__ = 'Copyright 2019 NeKitDS'
 __license__ = 'MIT'
-__version__ = '0.9.0'
+__version__ = '0.9.1'
 
 from collections import namedtuple
 import logging
@@ -21,7 +21,7 @@ from .message import Message
 from .session import GDSession, _session
 from .song import Song
 from .unreguser import UnregisteredUser
-from .user import User
+from .user import UserStats, User
 from .utils.captcha_solver import Captcha
 from .utils.enums import *
 from .utils.filters import Filters

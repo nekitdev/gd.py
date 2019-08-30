@@ -102,7 +102,7 @@ class Paginator:
         """Append ``obj`` to a paginated sequence, then reload."""
         self._list.append(obj)
         self.reload()
-    
+
     def pop(self, index: int = None):
         """Pops out an element.
 

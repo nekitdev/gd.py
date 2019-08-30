@@ -29,6 +29,8 @@ class Parameters:
         Current binary version.
     secret: :class:`str`
         Secret used in requests.
+    level_secret: :class:`str`
+        Secret used in level operations (e.g. :meth:`.Level.delete`)
     login_secret: :class:`str`
         Secret used in login requests.
     mod_secret: :class:`str`
@@ -41,6 +43,7 @@ class Parameters:
         self.gameVersion = '21'
         self.binaryVersion = '35'
         self.secret = 'Wmfd2893gb7'
+        self.level_secret = 'Wmfv2898gc9'
         self.login_secret = 'Wmfv3899gc9'
         self.mod_secret = 'Wmfp3879gc3'
         self.dict = {}
@@ -82,7 +85,18 @@ class Parameters:
         """
         self.dict['secret'] = self.secret
         return self.dict
-    
+
+    def finish_level(self):
+        """Same as :meth:`.Parameters.finish`, but adds :attr:`.Parameters.level_secret` instead.
+
+        Returns
+        -------
+        :class:`dict`
+            Fully formatted dictionary.
+        """
+        self.dict['secret'] = self.level_secret
+        return self.dict
+
     def finish_login(self):
         """Same as :meth:`.Parameters.finish`, but adds :attr:`.Parameters.login_secret` instead.
 
@@ -463,7 +477,7 @@ class Parameters:
         values.insert(1, comment)
         self.put_chk(Coder.gen_chk(type='comment', values=values))
         return self
-    
+
     def comment_for(self, type: str, number: int = None):
         """Defines type of a comment, and puts parameters required for it.
 
@@ -555,6 +569,27 @@ class Parameters:
             id = random.randint(100_000, 100_000_000)
 
         self.dict['uuid'] = str(id)
+        return self
+
+    def put_level_desc(self, content: str):
+        """Encodes given content and puts ``'levelDesc'``.
+
+        Parameters
+        ----------
+        content: :class:`str`
+            Content of the new description, NOT encoded in Base64.
+
+        Returns
+        -------
+        :class:`.Parameters`
+            ``self``
+        """
+        if content is None:
+            content = ''
+
+        desc = mapper_util.prepare_sending(base64.b64encode(content.encode()).decode())
+
+        self.dict['levelDesc'] = desc
         return self
 
     def put_profile_upd(

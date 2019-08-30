@@ -42,7 +42,7 @@ class Client:
     raw_save: :class:`bytes`
         Raw decoded save. If not loaded, defaults to ``b''``.
     save: :class:`.Save`
-        :class:`collections.namedtuple` with format ``(completed, followed)``.
+        This is a namedtuple with format ``(completed, followed)``.
         Contains empty lists if not loaded.
     """
     def __init__(self, *, loop=None):
@@ -111,7 +111,7 @@ class Client:
             Song under given ID was not found or does not exist.
 
         :exc:`.SongRestrictedForUsage`
-            Song was not allowed to use. (Might be deprecated soon)
+            Song was not allowed to use.
 
         Returns
         -------

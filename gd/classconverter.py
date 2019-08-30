@@ -16,7 +16,7 @@ from .utils.indexer import Index as i
 from .utils.crypto.coders import Coder
 from .utils.mapper import mapper_util
 from .utils.enums import (
-    MessagePolicyType, FriendRequestPolicyType, 
+    MessagePolicyType, FriendRequestPolicyType,
     CommentPolicyType, StatusLevel,
     LevelLength, TimelyType, CommentType,
     MessageOrRequestType, IconType
@@ -140,7 +140,7 @@ class ClassConverter:
             is_epic = bool(s[i.LEVEL_IS_EPIC]),
             original = s[i.LEVEL_ORIGINAL],
             downloads = s[i.LEVEL_DOWNLOADS],
-            likes = s[i.LEVEL_LIKES],
+            rating = s[i.LEVEL_LIKES],
             score = s[i.LEVEL_FEATURED_SCORE],
             uploaded_timestamp = s.get(i.LEVEL_UPLOADED_TIMESTAMP),
             last_updated_timestamp = s.get(i.LEVEL_LAST_UPDATED_TIMESTAMP),
