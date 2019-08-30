@@ -15,7 +15,7 @@ class HTTPClient:
     Attributes
     ----------
     semaphore: Optional[:class:`asyncio.Semaphore`]
-        A semaphore to use when doing requests. Defaults to ``asyncio.Semaphore(200)``.
+        A semaphore to use when doing requests. Defaults to :class:`asyncio.Semaphore` with value ``200``.
     """
     BASE_URL = "http://www.boomlings.com/database/"
     VALID_ERRORS = (
@@ -27,9 +27,26 @@ class HTTPClient:
         self.semaphore = semaphore or asyncio.Semaphore(200)
 
     def set_default_semaphore(self, *, value: int = 200, loop=None):
+        """Sets semaphore to :class:`asyncio.Semaphore` with given value and loop.
+
+        Parameters
+        ----------
+        value: :class:`int`
+            Value to set semaphore to. Default is ``200``.
+
+        loop: :class:`asyncio.AbstractEventLoop`
+            Event loop to pass to semaphore's constructor.
+        """
         self.semaphore = asyncio.Semaphore(value, loop=loop)
 
     def set_semaphore(self, semaphore):
+        """Sets semaphore of ``self`` to a given ``semaphore``.
+
+        Parameters
+        ----------
+        semaphore: `Any`
+            Semaphore to set. Preferably from ``asyncio`` module or subclasses of asyncio semaphores.
+        """
         self.semaphore = semaphore
 
     async def fetch(
