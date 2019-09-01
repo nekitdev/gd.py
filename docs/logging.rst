@@ -17,13 +17,16 @@ As it can be seen, nothing is too hard.
 Although, here is a snippet of how this funcion works::
 
     import logging
-    def setup_basic_logging():
-        handler = logging.StreamHandler()
-        handler.setFormatter(  # gd.py formatter '~')/
+    def setup_basic_logging(*, file=None):
+        handler = (
+            logging.StreamHandler() if file is None
+            else logging.FileHandler(file)
+        )
+        handler.setFormatter(
             logging.Formatter('[%(levelname)s] (%(asctime)s) {%(name)s}: %(message)s')
         )
-        log.addHandler(handler)
         log.setLevel(logging.DEBUG)
+        log.addHandler(handler)
 
 If something more specific is required, things can get a bit harder.
 

@@ -6,6 +6,7 @@ class Route:
     SUGGEST_LEVEL_STARS = 'suggestGJStars20'
     GET_USER_INFO = 'getGJUserInfo20'
     USER_SEARCH = 'getGJUsers20'
+    GET_USER_TOP = 'getGJScores20'
     DOWNLOAD_LEVEL = 'downloadGJLevel22'
     LEVEL_SEARCH = 'getGJLevels21'
     UPDATE_LEVEL_DESC = 'updateGJDesc20'

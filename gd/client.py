@@ -5,6 +5,7 @@ from typing import Union, Sequence
 
 from .session import _session
 
+from .utils.enums import value_to_enum, LeaderboardStrategy
 from .utils.filters import Filters
 from .utils.save_parser import Save
 from .utils.wrap_tools import make_repr, check
@@ -171,10 +172,11 @@ class Client:
         """
         return await self.session.get_user(account_id, return_only_stats=False, client=self)
 
-    async def get_user_stats(self, account_id: int = 0):
+    async def fetch_user(self, account_id: int = 0, *, stats: bool = False):
         """|coro|
 
-        This is almost like :meth:`.Client.get_user`, except that it returns `.UserStats` object.
+        This is almost like :meth:`.Client.get_user`, except that it returns
+        either :class:`.UserStats` or :class:`.AbstractUser` object.
 
         Parameters
         ----------
@@ -185,17 +187,23 @@ class Client:
 
                 If the given ID is equal to -1, a :class:`.UnregisteredUser` will be returned.
 
+        stats: :class:`bool`
+            Whether to return :class:`.UserStats` or :class:`.AbstractUser`.
+            By default returns :class:`.AbstractUser`.
+
         Raises
         ------
         :exc:`.MissingAccess`
-            User with given account ID was not found, so fetching stats failed.
+            User with given account ID was not found, so fetching stats failed or user can not be returned.
 
         Returns
         -------
-        :class:`.UserStats`
-            UserStats from the ID. (if ID != -1)
+        Union[:class:`.UserStats`, :class:`.AbstractUser`]
+            Abstract user or User stats from the ID. (if ID != -1)
         """
-        return await self.session.get_user(account_id, return_only_stats=True, client=self)
+        user_stats = await self.session.get_user(account_id, return_only_stats=True, client=self)
+        # return UserStats if needed, and AbstractUser otherwise.
+        return user_stats if stats else user_stats.as_user()
 
     async def search_user(self, query: Union[int, str] = None):
         """|coro|
@@ -219,7 +227,7 @@ class Client:
         """
         return await self.session.search_user(query, return_abstract=False, client=self)
 
-    async def fetch_user(self, query: Union[int, str] = None):
+    async def find_user(self, query: Union[int, str] = None):
         """|coro|
 
         Fetches a user on Geometry Dash servers by given query.
@@ -585,6 +593,45 @@ class Client:
 
     def as_user(self):
         return self.session.to_user(self.get_parse_dict(), client=self)
+
+    async def get_top(self, strategy: Union[int, str, LeaderboardStrategy] = 0, *, count: int = 100):
+        """|coro|
+
+        Fetches user top by given strategy.
+
+        Example:
+
+        .. code-block:: python3
+
+            # getting top 10 creators
+            top10_creators = await client.get_top('creators', count=10)
+
+        .. note::
+
+            Players Top 100 has stopped refreshing in 2.1 version of Geometry Dash.
+            However, you can fetch it by searching using ``'relative'`` strategy
+            and giving huge ``count`` argument.
+
+            Also, please note that searching with ``'friends'`` and ``'relative'`` strategies
+            requires logged in client.
+
+        Parameters
+        ----------
+        strategy: Union[:class:`int`, :class:`str`, :class:`.LeaderboardStrategy`]
+            Strategy to apply when searching.
+
+
+        """
+        strategy = value_to_enum(LeaderboardStrategy, strategy)
+        return await self.session.get_top(strategy=strategy, count=count, client=self)
+
+    async def get_leaderboard(
+        self, strategy: Union[int, str, LeaderboardStrategy] = 0, *, count: int = 100):
+        """|coro|
+
+        This is an alias for :meth:`.Client.get_top`.
+        """
+        return await self.get_top(strategy, count=count)
 
     @check.is_logged()
     async def post_comment(self, content: str):

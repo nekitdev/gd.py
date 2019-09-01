@@ -1,5 +1,6 @@
 from .abstractuser import AbstractUser
 from .session import _session
+from .utils.converter import Converter
 from .utils.wrap_tools import make_repr
 
 class UserStats(AbstractUser):
@@ -15,6 +16,7 @@ class UserStats(AbstractUser):
             'account_id': self.account_id,
             'name': self.name,
             'id': self.id,
+            'lb_place': Converter.to_ordinal(self.lb_place),
             'stars': self.stars,
             'demons': self.demons,
             'cp': self.cp
@@ -50,7 +52,11 @@ class UserStats(AbstractUser):
     def user_coins(self):
         """:class:`int`: Amount of User Coins user has."""
         return self.options.get('user_coins')
-    
+
+    @property
+    def lb_place(self):
+        """:class:`int`: User's place in leaderboard. ``-1`` if not set."""
+        return self.options.get('lb_place', -1)
 
 class User(UserStats):
     """Class that represents a Geometry Dash User.
@@ -137,10 +143,15 @@ class User(UserStats):
         For instance, *RobTop* is an Elder Moderator, that means:
         ``robtop.is_mod() -> True`` and ``robtop.is_mod('elder') -> True``.
         """
-        if elder == None:
+        if self.role is None:
+            return False
+
+        elif elder == None:
             return self.role.value >= 1
-        if elder == 'elder':
+
+        elif elder == 'elder':
             return self.role.value == 2
+
         raise TypeError("is_mod(elder) expected elder=='elder', or None.")
 
     def has_cp(self):

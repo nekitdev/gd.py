@@ -24,12 +24,14 @@ async def test():
         ('get_song',           [810215],                           {}),
         ('get_ng_song',        [655284],                           {}),
         ('get_user',           [71],                               {}),
-        ('get_user_stats',     [71],                               {}),
+        ('fetch_user',         [71],                  {'stats': True}),
         ('search_user',        ['NeKitDS'],                        {}),
-        ('fetch_user',         ['RobTop'],                         {}),
+        ('find_user',          ['RobTop'],                         {}),
         ('get_daily',          [],                                 {}),
         ('get_weekly',         [],                                 {}),
         ('get_level',          [30029017],                         {}),
+        ('get_leaderboard',    ['creators'],             {'count': 1}),
+        ('get_top',            ['creators'],             {'count': 3}),
         ('test_captcha',       [],                                 {}),
         ('search_levels',      [],         {'query': 'AdventureGame'})
     )

@@ -9,7 +9,7 @@ class Song(AbstractEntity):
     def __init__(self, **options):
         super().__init__(**options)
         self.options = options
-    
+
     def __repr__(self):
         info = {
             'id': self.id,

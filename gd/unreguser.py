@@ -20,5 +20,5 @@ class UnregisteredUser(AbstractEntity):
 
     @property
     def name(self):
-        """:class:`str`: A name of the user. (*'UnregisteredUser'*)"""
+        """:class:`str`: A name of the user. (``'UnregisteredUser'``)"""
         return self._name

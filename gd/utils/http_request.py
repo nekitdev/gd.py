@@ -6,6 +6,7 @@ import aiohttp
 
 from ..errors import HTTPNotConnected
 from .mapper import mapper_util
+from .wrap_tools import make_repr
 
 log = logging.getLogger(__name__)
 
@@ -25,6 +26,13 @@ class HTTPClient:
 
     def __init__(self, *, semaphore=None):
         self.semaphore = semaphore or asyncio.Semaphore(200)
+
+    def __repr__(self):
+        info = {
+            'semaphore': repr(self.semaphore),
+            'url': HTTPClient.BASE_URL
+        }
+        return make_repr(self, info)
 
     def set_default_semaphore(self, *, value: int = 200, loop=None):
         """Sets semaphore to :class:`asyncio.Semaphore` with given value and loop.

@@ -4,7 +4,7 @@ class IconSet:
     """Class that represents an Icon Set."""
     def __init__(self, **options):
         self.options = options
-    
+
     def __repr__(self):
         info = {
             'main_icon': self.main,

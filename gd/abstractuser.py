@@ -14,7 +14,7 @@ class AbstractUser(AbstractEntity):
     def __init__(self, **options):
         super().__init__(**options)
         self.options = options
-    
+
     def __repr__(self):
         info = {
             'name': repr(self.name),
@@ -27,7 +27,7 @@ class AbstractUser(AbstractEntity):
     def name(self):
         """:class:`str`: String representing name of the user."""
         return self.options.get('name')
-    
+
     @property
     def account_id(self):
         """:class:`int`: Account ID of the user."""
@@ -40,7 +40,7 @@ class AbstractUser(AbstractEntity):
         }
 
     def as_user(self):
-        """Returns `.AbstractUser` object.
+        """Returns :class:`.AbstractUser` object.
 
         This is used mainly in subclasses.
 

@@ -266,9 +266,38 @@ class GDSession:
         return ret
 
 
+    async def get_top(self, strategy, count: int, *, client):
+        from .classconverter import ClassConverter
+
+        needs_login = (strategy.value in (1, 2))
+
+        # special case: map 'players' -> 'top'
+        strategy = strategy.name.lower() if strategy.value else 'top'
+
+        params = Params().create_new().put_type(strategy).put_count(count)
+        codes = {
+            -1: MissingAccess(message=f'Failed to fetch leaderboard for strategy: {strategy!r}.')
+        }
+
+        if needs_login:
+            check.is_logged_obj(client, 'get_top')
+            params.put_definer('accountid', client.account_id).put_password(client.encodedpass)
+
+        parameters = params.finish()
+
+        resp = await http.request(Route.GET_USER_TOP, parameters, error_codes=codes, splitter='|')
+
+        res = []
+        for data in filter(_is_not_empty, resp):
+            mapped = mapper_util.map(data.split(':'))
+            stats = ClassConverter.user_stats_convert(mapped)._attach_client(client)
+            res.append(stats)
+
+        return res
+
     async def test_captcha(self, client):
-        resp = await http.request(Route.CAPTCHA)
-        res = await Captcha.aio_solve(resp, should_log=True, loop=client.loop)
+        image_bytes = await http.request(Route.CAPTCHA)
+        res = await Captcha.aio_solve(image_bytes, should_log=True, loop=client.loop)
         return res
 
 
@@ -380,12 +409,12 @@ class GDSession:
         lvdata, cdata, sdata = resp[:3]
 
         songs = []
-        for s in sdata.split('~:~'):
+        for s in filter(_is_not_empty, sdata.split('~:~')):
             song = ClassConverter.song_convert(mapper_util.map(s.split('~|~')))
             songs.append(song)
 
         creators = []
-        for c in cdata.split('|'):
+        for c in filter(_is_not_empty, cdata.split('|')):
             creator = ClassConverter.abstractuser_convert(
                 {k: v for k, v in zip(('id', 'name', 'account_id'), c.split(':'))}
             )._attach_client(client)
@@ -394,7 +423,7 @@ class GDSession:
         levels = []
         ext = list(map(str, (101, 0, 102, -1, 103, -1, 104, page)))
 
-        for lv in lvdata.split('|'):
+        for lv in filter(_is_not_empty, lvdata.split('|')):
             data = mapper_util.map(lv.split(':') + ext)
 
             song_id = data.get(i.LEVEL_SONG_ID)
@@ -979,6 +1008,10 @@ class GDSession:
             filtered.sort(key=lambda s: s[0].page)
 
         return list(itertools.chain.from_iterable(filtered))
+
+
+def _is_not_empty(sequence):
+    return bool(len(sequence))
 
 
 _session = GDSession()

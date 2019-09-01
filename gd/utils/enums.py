@@ -19,6 +19,7 @@ __all__ = (
     'CommentType',
     'MessageOrRequestType',
     'CommentStrategy',
+    'LeaderboardStrategy',
     'SearchStrategy'
 )
 
@@ -284,6 +285,14 @@ class CommentStrategy(NEnum):
     """An enumeration for comment searching."""
     RECENT = 0
     MOST_LIKED = 1
+
+
+class LeaderboardStrategy(NEnum):
+    """An enumeration for getting leaderboard users."""
+    PLAYERS = 0
+    FRIENDS = 1
+    RELATIVE = 2
+    CREATORS = 3
 
 
 class SearchStrategy(NEnum):

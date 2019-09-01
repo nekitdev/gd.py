@@ -15,7 +15,7 @@ class Rectangle:
 class Sprite:
     def __init__(self, **options):
         self.options = options
-    
+
     def __repr__(self):
         info = {
             'name': repr(self.name),
@@ -24,7 +24,7 @@ class Sprite:
             'is_rotated': self.is_rotated()
         }
         return make_repr(self, info)
-        
+
     @property
     def name(self):
         return self.options.get('name')
@@ -42,7 +42,7 @@ class Sprite:
         return self.options.get('size')
 
     @property
-    def source_size(self):  
+    def source_size(self):
         return self.options.get('source_size')
 
     def update_offset(self, x1, y1):
@@ -53,10 +53,10 @@ class Sprite:
 
     def is_rotated(self):
         return self.options.get('is_rotated')
-    
+
     def get_rectangle(self):
         return self.options.get('rectangle')
-    
+
     def duplicate(self):
         return Sprite(
             name = self.name + 'D',

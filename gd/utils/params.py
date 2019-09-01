@@ -1,6 +1,8 @@
 import base64
 import random
 
+from typing import Union
+
 from .mapper import mapper_util
 from .crypto.coders import Coder
 
@@ -72,7 +74,7 @@ class Parameters:
         if type == 'web':
             self.dict = {}
         return self
-    
+
     def finish(self):
         """Finishes creating parameters dictionary, and adds ``secret`` parameter.
 
@@ -128,7 +130,7 @@ class Parameters:
             Fully formatted parameters dictionary.
         """
         return self.dict
-    
+
     def put_for_management(self, login: str, password: str, code: int):
         """Puts parameters for account management.
 
@@ -154,7 +156,7 @@ class Parameters:
         }
         self.dict.update(to_put)
         return self
-    
+
     def put_for_username(self, name: str, newname: str):
         """Adds parameters for username management.
 
@@ -177,7 +179,7 @@ class Parameters:
         }
         self.dict.update(to_put)
         return self
-    
+
     def put_for_password(self, name: str, password: str, newpass: str):
         """Puts parameters for password management.
 
@@ -260,7 +262,7 @@ class Parameters:
         except KeyError:
             pass
         return self
-    
+
     def put_recipient(self, account_id: int):
         """Puts recipient of a message/friend request/...
 
@@ -295,7 +297,7 @@ class Parameters:
             self.dict['isSender'] = '1'
 
         return self
-    
+
     def put_message(self, subject: str, body: str):
         """Puts message's subject and body.
 
@@ -330,7 +332,7 @@ class Parameters:
         """
         self.dict['gjp'] = item
         return self
-    
+
     def put_username(self, item: str):
         """Self explanatory. Puts `'userName'` parameter.
 
@@ -364,13 +366,13 @@ class Parameters:
             base64.b64encode(item.encode()).decode())
         return self
 
-    def put_type(self, number: int = 0):
-        """Sets `'type'` parameter to a given number.
+    def put_type(self, number: Union[int, str] = 0):
+        """Sets `'type'` parameter to a given number or string.
 
         Parameters
         ----------
-        number: :class:`int`
-            A number to set type to.
+        number: Union[:class:`int`, :class:`str`]
+            A number or string to set type to.
 
         Returns
         -------
@@ -399,7 +401,7 @@ class Parameters:
         """Same as :meth:`.Parameters.put_type`, but for `'total'`."""
         self.dict['total'] = str(number)
         return self
-    
+
     def put_mode(self, number: int = 0):
         """Same as :meth:`.Parameters.put_type`, but for `'mode'`."""
         self.dict['mode'] = str(number)

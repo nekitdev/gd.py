@@ -4,7 +4,7 @@ class AbstractEntity:
     """Class that represents Abstract Entity. This is a base for many gd.py objects."""
     def __init__(self, **options):
         self._id = options.get('id', 0)
-        self._client = None  # let's leave it like this on init
+        self._client = options.get('client')  # None if not provided
 
     def __repr__(self):
         info = {'id': self.id}

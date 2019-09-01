@@ -18,7 +18,7 @@ class Level(AbstractEntity):
     """
     def __init__(self, **options):
         super().__init__(**options)
-        self._data = options.pop('data')
+        self._data = options.pop('data', '')
         self.options = options
 
     def __repr__(self):
@@ -148,13 +148,15 @@ class Level(AbstractEntity):
         For instance, let's suppose a *level* is daily. Then, the behavior of this method is:
         ``level.is_timely() -> True`` and ``level.is_timely('daily') -> True`` but
         ``level.is_timely('weekly') -> False``."""
+        if self.type is None:
+            return False
+
         if daily_or_weekly is None:
             return self.type.value > 0
 
-        t = ('daily', 'weekly')
-        assert daily_or_weekly in t, f'parameter not in {t}.'
+        assert daily_or_weekly in ('daily', 'weekly')
 
-        return self.type.value == t.index(daily_or_weekly)+1
+        return self.type.name.lower() == daily_or_weekly
 
     def is_featured(self):
         """:class:`bool`: Indicates whether a level is featured."""
@@ -313,7 +315,7 @@ class Level(AbstractEntity):
             Missing required moderator permissions.
         """
         client = from_client if from_client is not None else self._client
-        check.is_logged_obj(client, 'rate_demon')
+        check.is_logged_obj(client, 'send')
         await _session.send_level(self, stars, featured=featured, client=client)
 
     async def is_alive(self):

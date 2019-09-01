@@ -45,10 +45,10 @@ class Paginator:
         x = round(y)
 
         self._pages = x+1 if x < y else x
-    
+
     def __str__(self):
         return self.get_state()
-    
+
     def __repr__(self):
         info = {
             'can_run': self.can_run(),

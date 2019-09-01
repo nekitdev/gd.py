@@ -65,7 +65,7 @@ class SpriteGenUtil:
             base = f'{prefix}_{temp}_..._001.png'
             final.append(base)
         return final
-    
+
     def format_related(self, parsed_xml, base_list):  # getting all sprites related to bases
         final = {}
         for base in base_list:
@@ -74,7 +74,7 @@ class SpriteGenUtil:
             icon_type = self.icon_types[base_list.index(base)]
             final[icon_type] = temp
         return final
-    
+
     def to_sprite_object(self, name, info_dict):  # converting dict to gd.graphics.Sprite
         sprite = None
         id_idx = (1 if 'ball' not in name else 2)
@@ -141,7 +141,7 @@ class SpriteGen:
         t = (255, 255, 255, 0)
         image = Image.new('RGBA', (250, 250), t)
         return image
-    
+
     def get_sprite_image(self, sheet, sprite):
         rect = sprite.get_rectangle()
         x, y = rect.get_coords()
@@ -315,7 +315,7 @@ def dupe_sprite_if(
 
 def sign(number):
     return (-1 if number < 0 else (1 if number > 0 else 0))
-    
+
 def parse_array(element, deep=-1):
     ret = ast.literal_eval(
         element.text.replace('{', '(').replace('}', ')')

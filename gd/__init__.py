@@ -2,7 +2,7 @@ __title__ = 'gd'
 __author__ = 'NeKitDS'
 __copyright__ = 'Copyright 2019 NeKitDS'
 __license__ = 'MIT'
-__version__ = '0.9.1'
+__version__ = '0.9.2'
 
 from collections import namedtuple
 import logging
@@ -58,12 +58,15 @@ def _gen_version_details():
 
 version_info = _gen_version_details()
 
-def setup_basic_logging():
+def setup_basic_logging(*, file=None):
     """Function that sets up logs of the module,
     with the following format:
     [INFO] (time) {gd.some_module}: Some info message.
     """
-    handler = logging.StreamHandler()
+    handler = (
+        logging.StreamHandler() if file is None
+        else logging.FileHandler(file)
+    )
     handler.setFormatter(
         logging.Formatter('[%(levelname)s] (%(asctime)s) {%(name)s}: %(message)s')
     )
