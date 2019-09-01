@@ -609,10 +609,12 @@ class Client:
         .. note::
 
             Players Top 100 has stopped refreshing in 2.1 version of Geometry Dash.
-            However, you can fetch it by searching using ``'relative'`` strategy
-            and giving huge ``count`` argument.
+            Also, searching with ``'relative'`` strategy makes Geometry Dash
+            servers ignore your ``count`` argument.
 
-            Also, please note that searching with ``'friends'`` and ``'relative'`` strategies
+            Notice that stats fetched may be very old.
+
+            Finally, please note that searching with ``'friends'`` and ``'relative'`` strategies
             requires logged in client.
 
         Parameters
