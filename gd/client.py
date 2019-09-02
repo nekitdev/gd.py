@@ -837,16 +837,15 @@ class Client:
             sort_by_page=sort_by_page, timeout=timeout, client=self
         )
 
-    def run(self, coro, *, debug: bool = False, raise_exceptions: bool = False):
+    def run(self, coro, *, debug: bool = False):
         """A handy shortcut for :func:`.utils.run`.
         This is equivalent to:
 
         .. code-block:: python3
 
-            gd.utils.run(coro, loop=self.loop,
-                debug=debug, raise_exceptions=raise_exceptions)
+            gd.utils.run(coro, loop=self.loop, debug=debug)
         """
-        return utils.run(coro, loop=self.loop, debug=debug, raise_exceptions=raise_exceptions)
+        return utils.run(coro, loop=self.loop, debug=debug)
 
     def event(self, coro):
         """A decorator that registers an event to listen to.
