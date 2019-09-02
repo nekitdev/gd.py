@@ -62,7 +62,7 @@ async def wait(fs, *, loop=None, timeout=None, return_when='ALL_COMPLETED'):
     return await asyncio.wait(fs, loop=loop, timeout=timeout, return_when=return_when)
 
 
-def run(coro, *, loop=None, debug: bool = False, raise_exceptions: bool = False):
+def run(coro, *, loop=None, debug: bool = False):
     """Run a |coroutine_link|_.
 
     This function runs the passed coroutine, taking care
@@ -103,9 +103,6 @@ def run(coro, *, loop=None, debug: bool = False, raise_exceptions: bool = False)
     debug: :class:`bool`
         Whether or not to run event loop in debug mode.
 
-    raise_exceptions: :class:`bool`
-        Whether to raise errors when shutting down function.
-
     Returns
     -------
     `Any`
@@ -130,7 +127,7 @@ def run(coro, *, loop=None, debug: bool = False, raise_exceptions: bool = False)
 
     finally:
         try:
-            cancel_all_tasks(loop, raise_exceptions=raise_exceptions)
+            cancel_all_tasks(loop)
             loop.run_until_complete(loop.shutdown_asyncgens())
 
         finally:
@@ -138,18 +135,13 @@ def run(coro, *, loop=None, debug: bool = False, raise_exceptions: bool = False)
             loop.close()
 
 
-def cancel_all_tasks(loop, raise_exceptions: bool = False):
+def cancel_all_tasks(loop):
     """Cancels all tasks in a loop.
-
-    Returns exceptions if ``raise_exceptions`` is ``True``.
 
     Parameters
     ----------
     loop: :class:`asyncio.AbstractEventLoop`
         Event loop to cancel tasks in.
-
-    raise_exceptions: :class:`bool`
-        Indicates if exceptions should be raised.
     """
     try:
         to_cancel = asyncio.all_tasks(loop)
@@ -163,7 +155,7 @@ def cancel_all_tasks(loop, raise_exceptions: bool = False):
         task.cancel()
 
     loop.run_until_complete(
-        asyncio.gather(*to_cancel, loop=loop, return_exceptions=raise_exceptions)
+        asyncio.gather(*to_cancel, loop=loop, return_exceptions=True)
     )
 
     for task in to_cancel:
@@ -174,5 +166,5 @@ def cancel_all_tasks(loop, raise_exceptions: bool = False):
             loop.call_exception_handler({
                 'message': 'Unhandled exception during gd.utils.run() shutdown',
                 'exception': task.exception(),
-                'task': task,
+                'task': task
             })
