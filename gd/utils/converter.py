@@ -48,6 +48,18 @@ class Converter:
         return res
 
     @classmethod
+    def value_to_pack_difficulty(cls, value: int):
+        cases = {
+            1: LevelDifficulty.EASY,
+            2: LevelDifficulty.NORMAL,
+            3: LevelDifficulty.HARD,
+            4: LevelDifficulty.HARDER,
+            5: LevelDifficulty.INSANE,
+            6: LevelDifficulty.DEMON
+        }
+        return cases.get(value, LevelDifficulty.NA)
+
+    @classmethod
     def value_to_difficulty(cls, value: int):
         cases = {
             10: LevelDifficulty.EASY,

@@ -14,26 +14,6 @@ The following section outlines the API of gd.py.
 
     You can find gd.py Developers API here: :ref:`development_api`.
 
-.. note::
-
-    If you ever need to initialize any object by hand, please follow this:
-
-    .. code-block:: python3
-
-        level = gd.Level(id=30029017)
-
-        # Now let us do something, supposing that you have logged in client.
-        await level.comment('Here is some comment.')  # ERROR!
-
-        # the point is, there is no client attached to this level.
-
-        # you can attach a client to an instance of AbstractEntity like that:
-        level._attach_client(client)
-        # or like that:
-        level = gd.Level(id=30029017, client=client)
-
-    Do not forget this when writing your programs.
-
 Version Related Info
 --------------------
 
@@ -53,6 +33,26 @@ There are two main ways to get version information about the library.
 
 Client
 ------
+
+.. warning::
+
+    If you ever need to initialize any object by hand, please follow this:
+
+    .. code-block:: python3
+
+        level = gd.Level(id=30029017)
+
+        # Now let us do something, supposing that you have logged in client.
+        await level.comment('Here is some comment.')  # ERROR!
+
+        # the point is, there is no client attached to this level.
+
+        # you can attach a client to an instance of AbstractEntity like that:
+        level._attach_client(client)
+        # or like that:
+        level = gd.Level(id=30029017, client=client)
+
+    Do not forget this when writing your programs.
 
 .. autoclass:: Client
     :members:

@@ -218,15 +218,17 @@ class HTTPClient:
 
         resp = await self.fetch(route, parameters, get_cookies, cookie, custom_base)
 
-        if resp is None and raise_errors:
-            raise HTTPNotConnected()
-
-        assert not (splitter is not None and splitter_func is not None)
+        if resp is None:
+            if raise_errors:
+                raise HTTPNotConnected()
+            return
 
         if resp in error_codes:
             if raise_errors:
                 raise error_codes.get(resp)
             return
+
+        assert not (splitter is not None and splitter_func is not None)
 
         if not isinstance(resp, int):
             if splitter is not None:

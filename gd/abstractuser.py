@@ -61,7 +61,15 @@ class AbstractUser(AbstractEntity):
         :class:`.User`
             A user object corresponding to the abstract one.
         """
-        return await _session.get_user(self.account_id, client=self._client)
+        return await self._client.get_user(self.account_id)
+
+    async def update(self):
+        """|coro|
+
+        Update ``self``.
+        """
+        new = await self._client.fetch_user(self.account_id)
+        self.options = new.options
 
     async def send(self, subject: str, body: str, *, from_client=None):
         """|coro|
@@ -189,11 +197,7 @@ class AbstractUser(AbstractEntity):
         return await self._client.search_levels_on_page(
             page=page, filters=filters, user=self, raise_errors=raise_errors)
 
-    async def get_levels(
-        self, pages: Sequence[int] = None,
-        *, sort_by_page: bool = True,
-        timeout: Union[int, float] = 10.0
-    ):
+    async def get_levels(self, pages: Sequence[int] = None):
         """|coro|
 
         Gets levels on specified pages.
@@ -203,8 +207,7 @@ class AbstractUser(AbstractEntity):
         .. code-block:: python3
 
             return await self._client.search_levels(
-                pages=pages, filters=gd.Filters.setup_by_user(),
-                user=self, sort_by_page=sort_by_page, timeout=timeout
+                pages=pages, filters=gd.Filters.setup_by_user(), user=self
             )
             # where 'self' is an AbstractUser instance.
 
@@ -213,21 +216,13 @@ class AbstractUser(AbstractEntity):
         pages: Sequence[:class:`int`]
             Pages to look at, represented as a finite sequence, so iterations can be performed.
 
-        sort_by_page: :class:`bool`
-            Indicates whether returned levels should be sorted by page.
-
-        timeout: Union[:class:`int`, :class:`float`]
-            Timeout to stop requesting after it occurs.
-            Used to prevent insanely long responses.
-
         Returns
         -------
         List[:class:`.Level`]
             List of levels found. Can be an empty list.
         """
         filters = Filters.setup_by_user()
-        return await self._client.search_levels(
-            pages=pages, filters=filters, user=self, sort_by_page=sort_by_page, timeout=timeout)
+        return await self._client.search_levels(pages=pages, filters=filters, user=self)
 
     async def get_page_comments(self, page: int = 0):
         """|coro|
@@ -256,11 +251,7 @@ class AbstractUser(AbstractEntity):
         """
         return await self.retrieve_page_comments('level', page, strategy=strategy)
 
-    async def get_comments(
-        self, pages: Sequence[int] = None,
-        *, sort_by_page: bool = True,
-        timeout: Union[int, float] = 10.0
-    ):
+    async def get_comments(self, pages: Sequence[int] = None):
         """|coro|
 
         Gets user's profile comments on specific pages.
@@ -269,20 +260,15 @@ class AbstractUser(AbstractEntity):
 
         .. code-block:: python3
 
-            await self.retrieve_comments(
-                'profile', pages, sort_by_page=sort_by_page, timeout=timeout
-            )
+            await self.retrieve_comments('profile', pages)
         """
         if pages is None:
             pages = range(10)
 
-        return await self.retrieve_comments(
-            'profile', pages, sort_by_page=sort_by_page, timeout=timeout
-        )
+        return await self.retrieve_comments('profile', pages)
 
     async def get_comment_history(
-        self, strategy: Union[int, str, CommentStrategy] = 0, pages: Sequence[int] = None,
-        *, sort_by_page: bool = True, timeout: Union[int, float] = 10.0
+        self, strategy: Union[int, str, CommentStrategy] = 0, pages: Sequence[int] = None
     ):
         """|coro|
 
@@ -292,16 +278,12 @@ class AbstractUser(AbstractEntity):
 
         .. code-block:: python3
 
-            await self.retrieve_comments(
-                'level', pages, sort_by_page=sort_by_page, timeout=timeout, strategy=strategy
-            )
+            await self.retrieve_comments('level', pages, strategy=strategy)
         """
         if pages is None:
             pages = range(10)
 
-        return await self.retrieve_comments(
-            'level', pages, sort_by_page=sort_by_page, timeout=timeout, strategy=strategy
-        )
+        return await self.retrieve_comments('level', pages, strategy=strategy)
 
     async def retrieve_page_comments(
         self, type: str = 'profile', page: int = 0, *, raise_errors: bool = True,
@@ -347,7 +329,6 @@ class AbstractUser(AbstractEntity):
 
     async def retrieve_comments(
         self, type: str = 'profile', pages: Sequence[int] = None,
-        *, sort_by_page: bool = True, timeout: Union[int, float] = 10.0,
         strategy: Union[int, str, CommentStrategy] = 0
     ):
         """|coro|
@@ -363,13 +344,6 @@ class AbstractUser(AbstractEntity):
         pages: Sequence[:class:`int`]
             Pages to look at, represented as a finite sequence, so iterations can be performed.
 
-        sort_by_page: :class:`bool`
-            Indicates whether returned comments should be sorted by page.
-
-        timeout: Union[:class:`int`, :class:`float`]
-            Timeout to stop requesting after it occurs.
-            Used to prevent insanely long responses.
-
         strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]
             A strategy to apply when searching. This is converted to :class:`.CommentStrategy`
             using :func:`.utils.value_to_enum`.
@@ -384,7 +358,4 @@ class AbstractUser(AbstractEntity):
 
         strategy = value_to_enum(CommentStrategy, strategy)
 
-        return await _session.retrieve_comments(
-            type=type, user=self, pages=pages, sort_by_page=sort_by_page,
-            timeout=timeout, strategy=strategy
-        )
+        return await _session.retrieve_comments(type=type, user=self, pages=pages)

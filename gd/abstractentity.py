@@ -1,7 +1,22 @@
 from .utils.wrap_tools import make_repr
 
 class AbstractEntity:
-    """Class that represents Abstract Entity. This is a base for many gd.py objects."""
+    """Class that represents Abstract Entity. This is a base for many gd.py objects.
+
+    .. container:: operations
+
+        .. describe:: x == y
+
+            Check if two objects are equal. Compared by hash and type.
+
+        .. describe:: x != y
+
+            Check if two objects are not equal
+
+        .. describe:: hash(x)
+
+            Returns ``hash(self.to_hash_string())``.
+    """
     def __init__(self, **options):
         self._id = options.get('id', 0)
         self._client = options.get('client')  # None if not provided

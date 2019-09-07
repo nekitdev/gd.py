@@ -120,6 +120,10 @@ class Filters:
         return cls(strategy=2, song_id=song_id, use_custom_song=is_custom, *args, **kwargs)
 
     @classmethod
+    def setup_level_pack(cls):
+        return cls(strategy=10)
+
+    @classmethod
     def setup_with_followed(cls, followed: Sequence[int], *args, **kwargs):
         return cls(strategy=12, followed=followed, *args, **kwargs)
 

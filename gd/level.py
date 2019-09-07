@@ -122,11 +122,6 @@ class Level(AbstractEntity):
         return self.options.get('object_count')
 
     @property
-    def page(self):
-        """:class:`int`: Page a level was retrieved from. Can be ``None``."""
-        return self.options.get('page')
-
-    @property
     def type(self):
         """:class:`.TimelyType`: A type that shows whether a level is Daily/Weekly."""
         return self.options.get('type')

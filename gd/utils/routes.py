@@ -10,6 +10,8 @@ class Route:
     DOWNLOAD_LEVEL = 'downloadGJLevel22'
     LEVEL_SEARCH = 'getGJLevels21'
     UPDATE_LEVEL_DESC = 'updateGJDesc20'
+    GET_MAP_PACKS = 'getGJMapPacks21'
+    GET_GAUNTLETS = 'getGJGauntlets21'
     DELETE_LEVEL = 'deleteGJLevelUser20'
     GET_SONG_INFO = 'getGJSongInfo'
     GET_FRIENDS = 'getGJUserList20'

@@ -36,9 +36,8 @@ class Paginator:
     def __init__(self, to_paginate, per_page: int = 10):
         self._list = list(to_paginate)
         self._per_page = per_page
-        self._length = len(self._list)
-        self._configure_pages()
         self._current_page = 0
+        self.reload()
 
     def _configure_pages(self):
         y = self._length / self._per_page
@@ -47,7 +46,7 @@ class Paginator:
         self._pages = x+1 if x < y else x
 
     def __str__(self):
-        return self.get_state()
+        return self.current_state
 
     def __repr__(self):
         info = {
@@ -58,6 +57,14 @@ class Paginator:
             'current': self.get_curr_page()
         }
         return make_repr(self, info)
+
+    def __getitem__(self, index: int):
+        return self._list[index]
+        self.reload()
+
+    def __setitem__(self, index: int, item):
+        self._list[index] = item
+        self.reload()
 
     @property
     def length(self):
@@ -93,6 +100,22 @@ class Paginator:
             f'[Showing: {_from} to {_to} of {self.length}]'
         )
 
+    def load_from(self, iterable):
+        """A function that paginates the given iterable.
+
+        Basically reloads already created paginator with given iterable.
+
+        Parameters
+        ----------
+        iterable: Sequence[`Any`]
+            A finite sequence to paginate.
+
+        per_page: :class:`int`
+            Amount of elements in iterable to present on each page.
+        """
+        self._list = list(iterable)
+        self.reload()
+
     def reload(self):
         """Reconfigure length and configure pages amount."""
         self._length = len(self._list)
@@ -103,19 +126,20 @@ class Paginator:
         self._list.append(obj)
         self.reload()
 
-    def pop(self, index: int = None):
+    def pop(self, index: int = -1):
         """Pops out an element.
 
-        If ``index`` is ``None``, pops the last element and returns it.
-        Otherwise, deletes an element with given index, then reloads.
+        Deletes element with given ``index``, and returns it.
+        Reloads paginator as well.
         """
-        popped_val = None
-        if index is None:
-            popped_val = self._list.pop()
-        else:
-            del self._list[index]
+        value = self._list.pop(index)
         self.reload()
-        return popped_val
+        return value
+
+    def clear(self):
+        """Clears :attr:`Paginator.list`, then reloads."""
+        self._list.clear()
+        self.reload()
 
     def get_pages_count(self):
         """:class:`int`: Get current amount of pages."""
@@ -145,7 +169,7 @@ class Paginator:
         :exc:`.PagesOutOfRange`
             The next page does not exist.
         """
-        if not self.has_next_page():
+        if not self.has_next():
             raise PagesOutOfRange(
                 page = self.get_curr_page() + 1,
                 info = self.get_pages_count()
@@ -160,7 +184,7 @@ class Paginator:
         :exc:`.PagesOutOfRange`
             The previous page does not exist.
         """
-        if not self.has_prev_page():
+        if not self.has_prev():
             raise PagesOutOfRange(
                 page = self.get_curr_page() - 1,
                 info = 'Page does not support negative integers.'
@@ -213,7 +237,9 @@ class Paginator:
             to_pass = page_to_view * self.per_page
             res = self.list[to_pass:(to_pass + self.per_page)]
             return res
+
         else:
+            page = int(page)
             if abs(page) > page:
                 raise PagesOutOfRange(
                     page = page,

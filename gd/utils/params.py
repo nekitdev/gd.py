@@ -427,6 +427,11 @@ class Parameters:
         self.dict['special'] = str(number)
         return self
 
+    def put_local(self, number: int = 0):
+        """Same as :meth:`.Parameters.put_type`, but for `'local'`."""
+        self.dict['local'] = str(number)
+        return self
+
     def put_rs(self, rs: str):
         """Self explanatory. Puts ``'rs'`` parameter.
 
@@ -559,7 +564,7 @@ class Parameters:
 
         Parameters
         ----------
-        id :class:`int`
+        id: :class:`int`
             UUID to put.
 
         Returns

@@ -58,6 +58,18 @@ class UserStats(AbstractUser):
         """:class:`int`: User's place in leaderboard. ``-1`` if not set."""
         return self.options.get('lb_place', -1)
 
+    def has_cp(self):
+        """:class:`bool`: Indicates if a user has Creator Points."""
+        return self.cp > 0
+
+    async def update(self):
+        """|coro|
+
+        Update ``self``.
+        """
+        new = await self._client.fetch_user(self.account_id, stats=True)
+        self.options = new.options
+
 class User(UserStats):
     """Class that represents a Geometry Dash User.
     This class is derived from :class:`.UserStats`.
@@ -154,14 +166,10 @@ class User(UserStats):
 
         raise TypeError("is_mod(elder) expected elder=='elder', or None.")
 
-    def has_cp(self):
-        """:class:`bool`: Indicates if a user has Creator Points."""
-        return self.cp > 0
-
     async def update(self):
         """|coro|
 
         Update the user's statistics and other parameters.
         """
-        new = await _session.get_user(self.account_id, client=self._client)
+        new = await self._client.get_user(self.account_id)
         self.options = new.options

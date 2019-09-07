@@ -17,8 +17,8 @@ Documentation Contents
 
     intro
     quickstart
-    api
     logging
+    api
     dev
 
 Additional Information
@@ -30,7 +30,6 @@ Additional Information
     whats_new
     faq
 
-If you still can't find what you're looking for, try in one of the following pages:
+If you still can't find what you're looking for, try in this page:
 
 * :ref:`genindex`
-* :ref:`search`

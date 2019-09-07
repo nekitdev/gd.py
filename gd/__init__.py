@@ -2,7 +2,7 @@ __title__ = 'gd'
 __author__ = 'NeKitDS'
 __copyright__ = 'Copyright 2019 NeKitDS'
 __license__ = 'MIT'
-__version__ = '0.9.2'
+__version__ = '0.9.3'
 
 from collections import namedtuple
 import logging
@@ -17,6 +17,7 @@ from .errors import *
 from .friend_request import FriendRequest
 from .iconset import IconSet
 from .level import Level
+from .level_packs import Gauntlet, MapPack
 from .message import Message
 from .session import GDSession, _session
 from .song import Song

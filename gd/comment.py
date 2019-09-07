@@ -56,11 +56,6 @@ class Comment(AbstractEntity):
         return self.options.get('level_percentage')
 
     @property
-    def page(self):
-        """:class:`int`: A page the comment was retrieved from."""
-        return self.options.get('page')
-
-    @property
     def colour(self):
         """:class:`.Colour`: A colour of the comment. White (``#ffffff``) by default."""
         return self.options.get('color')

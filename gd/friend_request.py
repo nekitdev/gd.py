@@ -44,11 +44,6 @@ class FriendRequest(AbstractEntity):
         """:class:`str`: A human-readable string representing how long ago request was created."""
         return self.options.get('timestamp')
 
-    @property
-    def page(self):
-        """:class:`int`: A page this friend request was retrieved from."""
-        return self.options.get('page')
-
     def is_read(self):
         """:class:`bool`: Indicates whether request was already read."""
         return self.options.get('is_read')

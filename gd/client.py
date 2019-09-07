@@ -313,6 +313,63 @@ class Client:
         """
         return await self.session.get_level(level_id, client=self)
 
+    async def get_gauntlets(self):
+        """|coro|
+
+        Fetches *The Lost Gauntlets*.
+
+        Returns
+        -------
+        List[`.Gauntlet`]
+            All gauntlets retrieved, as list.
+        """
+        return await self.session.get_gauntlets(client=self)
+
+    async def get_page_map_packs(self, page: int = 0, *, raise_errors: bool = True):
+        """|coro|
+
+        Fetches map packs on given page.
+
+        Parameters
+        ----------
+        page: :class:`int`
+            Page to look for map packs on.
+
+        raise_errors: :class:`bool`
+            Indicates whether :exc:`.NothingFound` should be raised. ``True`` by default.
+
+        Returns
+        -------
+        List[`.MapPack`]
+            List of map packs retrieved.
+
+        Raises
+        ------
+        :exc:`.NothingFound`
+            No map packs were found at the given page.
+        """
+        return await self.session.get_page_map_packs(page=page, client=self)
+
+    async def get_map_packs(self, pages: Sequence[int] = None):
+        """|coro|
+
+        Gets map packs on given ``pages``.
+
+        Parameters
+        ----------
+        pages: Sequence[:class:`int`]
+            Pages to search map packs on.
+
+        Returns
+        -------
+        List[`.MapPack`]
+            List of map packs found.
+        """
+        if pages is None:
+            pages = range(10)
+
+        return await self.session.get_map_packs(pages=pages, client=self)
+
     async def test_captcha(self):
         """|coro|
 
@@ -366,6 +423,60 @@ class Client:
         """
         await self.session.login(client=self, user=user, password=password)
         log.info("Logged in as %r, with password %r.", user, password)
+
+    @check.is_logged()
+    async def get_page_levels(self, page: int = 0, *, raise_errors: bool = True):
+        """|coro|
+
+        Gets levels of a client from a server.
+
+        .. note::
+
+            This method requires client to be logged in.
+
+        Parameters
+        ----------
+        page: :class:`int`
+            Page to look levels at.
+
+        raise_errors: :class:`bool`
+            Indicates whether :exc:`.MissingAccess` should be raised. ``True`` by default.
+
+        Returns
+        -------
+        List[`.Level`]
+            All levels found, as list. Might be an empty list.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            No levels were found.
+        """
+        filters = Filters.setup_by_user()
+        return await self.search_levels_on_page(filters=filters, raise_errors=raise_errors)
+
+    @check.is_logged()
+    async def get_levels(self, pages: Sequence[int] = None):
+        """|coro|
+
+        Searches for levels on given pages.
+
+        .. note::
+
+            This method requires authorised client.
+
+        Parameters
+        ----------
+        pages: Sequence[:class:`int`]
+            Pages to look for levels at.
+
+        Returns
+        -------
+        List[`.Level`]
+            All levels found, as list, which might be empty.
+        """
+        filters = Filters.setup_by_user()
+        return await self.search_levels(pages=pages, filters=filters)
 
     @check.is_logged()
     async def load(self):
@@ -474,8 +585,7 @@ class Client:
 
     @check.is_logged()
     async def get_messages(
-        self, sent_or_inbox: str = 'inbox', pages: Sequence[int] = None,
-        *, sort_by_page: bool = True, timeout: Union[int, float] = 10.0
+        self, sent_or_inbox: str = 'inbox', pages: Sequence[int] = None
     ):
         """|coro|
 
@@ -490,13 +600,6 @@ class Client:
         pages: Sequence[:class:`int`]
             Pages to look at, represented as a finite sequence, so iterations can be performed.
 
-        sort_by_page: :class:`bool`
-            Indicates whether returned messages should be sorted by page.
-
-        timeout: Union[:class:`int`, :class:`float`]
-            Timeout to stop requesting after it occurs.
-            Used to prevent insanely long responses.
-
         Returns
         -------
         List[:class:`.Message`]
@@ -506,8 +609,7 @@ class Client:
             pages = range(10)
 
         return await self.session.get_messages(
-            sent_or_inbox=sent_or_inbox, pages=pages, sort_by_page=sort_by_page,
-            timeout=timeout, client=self
+            sent_or_inbox=sent_or_inbox, pages=pages, client=self
         )
 
     @check.is_logged()
@@ -551,8 +653,7 @@ class Client:
 
     @check.is_logged()
     async def get_friend_requests(
-        self, sent_or_inbox: str = 'inbox', pages: Sequence[int] = None,
-        *, sort_by_page: bool = True, timeout: Union[int, float] = 10.0
+        self, sent_or_inbox: str = 'inbox', pages: Sequence[int] = None
     ):
         """|coro|
 
@@ -567,13 +668,6 @@ class Client:
         pages: Sequence[:class:`int`]
             Pages to look at, represented as a finite sequence, so iterations can be performed.
 
-        sort_by_page: :class:`bool`
-            Indicates whether returned friend requests should be sorted by page.
-
-        timeout: Union[:class:`int`, :class:`float`]
-            Timeout to stop requesting after it occurs.
-            Used to prevent insanely long responses.
-
         Returns
         -------
         List[:class:`.FriendRequests`]
@@ -583,8 +677,7 @@ class Client:
             pages = range(10)
 
         return await self.session.get_friend_requests(
-            sent_or_inbox=sent_or_inbox, pages=pages, sort_by_page=sort_by_page,
-            timeout=timeout, client=self
+            sent_or_inbox=sent_or_inbox, pages=pages, client=self
         )
 
     @check.is_logged()
@@ -609,12 +702,10 @@ class Client:
         .. note::
 
             Players Top 100 has stopped refreshing in 2.1 version of Geometry Dash.
-            Also, searching with ``'relative'`` strategy makes Geometry Dash
-            servers ignore your ``count`` argument.
+            However, you can fetch it by searching using ``'relative'`` strategy
+            and giving huge ``count`` argument.
 
-            Notice that stats fetched may be very old.
-
-            Finally, please note that searching with ``'friends'`` and ``'relative'`` strategies
+            Also, please note that searching with ``'friends'`` and ``'relative'`` strategies
             requires logged in client.
 
         Parameters
@@ -794,8 +885,7 @@ class Client:
 
     async def search_levels(
         self, query: str = '', filters: Filters = None, user=None,
-        pages: Sequence[int] = None, *, sort_by_page: bool = True,
-        timeout: Union[int, float] = 10.0
+        pages: Sequence[int] = None
     ):
         """|coro|
 
@@ -817,13 +907,6 @@ class Client:
         pages: Sequence[:class:`int`]
             Pages to look at, represented as a finite sequence, so iterations can be performed.
 
-        sort_by_page: :class:`bool`
-            Indicates whether returned friend requests should be sorted by page.
-
-        timeout: Union[:class:`int`, :class:`float`]
-            Timeout to stop requesting after it occurs.
-            Used to prevent insanely long responses.
-
         Returns
         -------
         List[:class:`.Level`]
@@ -833,12 +916,12 @@ class Client:
             pages = range(10)
 
         return await self.session.search_levels(
-            query=query, filters=filters, user=user, pages=pages,
-            sort_by_page=sort_by_page, timeout=timeout, client=self
+            query=query, filters=filters, user=user, pages=pages, client=self
         )
 
     def run(self, coro, *, debug: bool = False):
         """A handy shortcut for :func:`.utils.run`.
+
         This is equivalent to:
 
         .. code-block:: python3

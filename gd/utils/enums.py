@@ -295,6 +295,25 @@ class LeaderboardStrategy(NEnum):
     CREATORS = 3
 
 
+class GauntletEnum(NEnum):
+    """An enumeration for gauntlets."""
+    FIRE = 1
+    ICE = 2
+    POISON = 3
+    SHADOW = 4
+    LAVA = 5
+    BONUS = 6
+    CHAOS = 7
+    DEMON = 8
+    TIME = 9
+    CRYSTAL = 10
+    MAGIC = 11
+    SPIKE = 12
+    MONSTER = 13
+    DOOM = 14
+    DEATH = 15
+
+
 class SearchStrategy(NEnum):
     """An enumeration for search strategy."""
     REGULAR = 0
@@ -305,6 +324,7 @@ class SearchStrategy(NEnum):
     BY_USER = 5
     FEATURED = 6
     MAGIC = 7
+    MAP_PACKS = 10
     AWARDED = 11
     FOLLOWED = 12
     FRIENDS = 13

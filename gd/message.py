@@ -46,11 +46,6 @@ class Message(AbstractEntity):
         return self.options.get('type')
 
     @property
-    def page(self):
-        """:class:`int`: A number of page the message was retrieved from."""
-        return self.options.get('page')
-
-    @property
     def body(self):
         """Union[:class:`str`, ``None``]: A body of the message. Requires :meth:`.Message.read`."""
         return self._body

@@ -48,7 +48,7 @@ class GDSession:
             -2: SongRestrictedForUsage(song_id)
         }
         resp = await http.request(
-            Route.GET_SONG_INFO, parameters, splitter="~|~", error_codes=codes, should_map=True)
+            Route.GET_SONG_INFO, parameters, splitter='~|~', error_codes=codes, should_map=True)
         return ClassConverter.song_convert(resp)
 
 
@@ -368,8 +368,8 @@ class GDSession:
 
 
     async def search_levels_on_page(
-        self, page: int = 0, query: str = '', filters: Filters = None, user=None,
-        *, raise_errors: bool = True, client
+        self, page: int = 0, query: str = '', filters: Filters = None,
+        user=None, gauntlet: int = None, *, raise_errors: bool = True, client
     ):
         from .classconverter import ClassConverter
 
@@ -387,7 +387,12 @@ class GDSession:
 
             if user is None:
                 check.is_logged_obj(client, 'search_levels_on_page(...)')
+
                 id = client.id
+
+                params.put_definer('accountid', client.account_id).put_password(client.encodedpass)
+                params.put_local(1)
+
             else:
                 id = user if isinstance(user, int) else user.id
 
@@ -397,6 +402,9 @@ class GDSession:
             check.is_logged_obj(client, 'search_levels_on_page(..., client=client)')
             params.put_definer('accountid', client.account_id).put_password(client.encodedpass)
 
+        if gauntlet is not None:
+            params.put_definer('gauntlet', gauntlet)
+
         parameters = params.finish()
 
         resp = await http.request(
@@ -404,7 +412,7 @@ class GDSession:
             error_codes=codes, splitter='#')
 
         if not resp:
-            return
+            return list()
 
         lvdata, cdata, sdata = resp[:3]
 
@@ -421,7 +429,7 @@ class GDSession:
             creators.append(creator)
 
         levels = []
-        ext = list(map(str, (101, 0, 102, -1, 103, -1, 104, page)))
+        ext = ['101', '0', '102', '-1', '103', '-1']
 
         for lv in filter(_is_not_empty, lvdata.split('|')):
             data = mapper_util.map(lv.split(':') + ext)
@@ -442,8 +450,7 @@ class GDSession:
 
 
     async def search_levels(self, query: str = '', filters: Filters = None, user=None,
-        pages: Sequence[int] = None, *, sort_by_page: bool = True,
-        timeout: Union[int, float] = 10.0, client
+        pages: Sequence[int] = None, *, client
     ):
         to_run = [
             self.search_levels_on_page(
@@ -451,7 +458,7 @@ class GDSession:
             ) for page in pages
         ]
 
-        return await self.run_many(to_run, sort_by_page=sort_by_page, timeout=timeout)
+        return await self.run_many(to_run)
 
 
     async def delete_level(self, level, *, client):
@@ -605,7 +612,7 @@ class GDSession:
 
         res = []
         for elem in resp:
-            mapped = mapper_util.map(elem.split(':') + ['101', str(page)])
+            mapped = mapper_util.map(elem.split(':'))
             res.append(
                 ClassConverter.message_convert(
                     mapped, client.get_parse_dict()
@@ -615,10 +622,7 @@ class GDSession:
         return res
 
 
-    async def get_messages(
-        self, sent_or_inbox: str, pages: Sequence[int] = None, *,
-        sort_by_page: bool = True, timeout: Union[int, float] = 10.0, client
-    ):
+    async def get_messages(self, sent_or_inbox: str, pages: Sequence[int] = None, *, client):
         assert sent_or_inbox in ('inbox', 'sent')
 
         to_run = [
@@ -627,7 +631,7 @@ class GDSession:
             ) for page in pages
         ]
 
-        return await self.run_many(to_run, sort_by_page=sort_by_page, timeout=timeout)
+        return await self.run_many(to_run)
 
 
     async def post_comment(self, content: str, *, client):
@@ -804,6 +808,59 @@ class GDSession:
             raise MissingAccess(message=f"Failed to delete a message: {msg!r}.")
 
 
+    async def get_gauntlets(self, *, client):
+        from .classconverter import ClassConverter
+
+        parameters = Params().create_new().finish()
+
+        resp = await http.request(
+            Route.GET_GAUNTLETS, parameters, splitter_func=lambda s: s.split('#')[0].split('|')
+        )
+
+        res = []
+        for gdata in filter(_is_not_empty, resp):
+            mapped = mapper_util.map(gdata.split(':'))
+            res.append(
+                ClassConverter.gauntlet_convert(mapped)._attach_client(client)
+            )
+
+        return res
+
+
+    async def get_page_map_packs(self, page: int = 0, *, raise_errors: bool = True, client):
+        from .classconverter import ClassConverter
+
+        parameters = Params().create_new().put_page(page).finish()
+
+        resp = await http.request(
+            Route.GET_MAP_PACKS, parameters, splitter_func=lambda s: s.split('#')[0].split('|')
+        )
+
+        if resp and not resp[0]:
+            if raise_errors:
+                raise NothingFound('gd.MapPack')
+            return list()
+
+        res = []
+        for elem in resp:
+            mapped = mapper_util.map(elem.split(':'))
+            res.append(
+                ClassConverter.map_pack_convert(mapped)._attach_client(client)
+            )
+
+        return res
+
+
+    async def get_map_packs(self, pages: Sequence[int] = None, *, client):
+        to_run = [
+            self.get_page_map_packs(
+                page=page, raise_errors=False, client=client
+            ) for page in pages
+        ]
+
+        return await self.run_many(to_run)
+
+
     async def get_page_friend_requests(self, sent_or_inbox: str = 'inbox',
         page: int = 0, *, raise_errors: bool = True, client):
         from .classconverter import ClassConverter
@@ -830,7 +887,7 @@ class GDSession:
         res = []
         for elem in resp:
             mapped = mapper_util.map(
-                elem.split(':') + ['101', str(inbox), '102', str(page)]
+                elem.split(':') + ['101', str(inbox)]
             )
             res.append(
                 ClassConverter.request_convert(
@@ -842,8 +899,7 @@ class GDSession:
 
 
     async def get_friend_requests(
-        self, sent_or_inbox: str = 'inbox', pages: Sequence[int] = None, *,
-        sort_by_page: bool = True, timeout: Union[int, float] = 10.0, client
+        self, sent_or_inbox: str = 'inbox', pages: Sequence[int] = None, *, client
     ):
         assert sent_or_inbox in ('sent', 'inbox')
 
@@ -853,7 +909,7 @@ class GDSession:
             ) for page in pages
         ]
 
-        return await self.run_many(to_run, sort_by_page=sort_by_page, timeout=timeout)
+        return await self.run_many(to_run)
 
 
     async def retrieve_page_comments(
@@ -884,7 +940,7 @@ class GDSession:
         resp = await http.request(route, parameters, splitter='#')
         thing = resp[0]
 
-        if not len(thing):
+        if not thing:
             if raise_errors:
                 raise NothingFound('gd.Comment')
             return list()
@@ -894,7 +950,7 @@ class GDSession:
         res = []
         for elem in to_map:
             prepared = mapper_util.map(
-                func(elem) + ['101', str(typeid), '102', str(page)]
+                func(elem) + ['101', str(typeid)]
             )
             res.append(
                 ClassConverter.comment_convert(
@@ -906,8 +962,7 @@ class GDSession:
 
 
     async def retrieve_comments(
-        self, user, type: str = 'profile', pages: Sequence[int] = None, *,
-        sort_by_page: bool = True, timeout: Union[int, float] = 10.0, strategy
+        self, user, type: str = 'profile', pages: Sequence[int] = None, *, strategy
     ):
         assert type in ('profile', 'level')
 
@@ -917,7 +972,7 @@ class GDSession:
             ) for page in pages
         ]
 
-        return await self.run_many(to_run, sort_by_page=sort_by_page, timeout=timeout)
+        return await self.run_many(to_run)
 
 
     async def get_level_comments(self, level, strategy, amount: int):
@@ -996,22 +1051,18 @@ class GDSession:
             raise MissingAccess(message=f"Failed to update profile settings of a client: {client!r}.")
 
 
-    async def run_many(self, tasks, sort_by_page, timeout):
-        finished, _ = await asyncio.wait(tasks, timeout=timeout)
+    async def run_many(self, tasks):
+        res = await asyncio.gather(*tasks)
 
-        filtered = [
-            fut.result() for fut in finished if fut.result()
-        ]
+        res = [elem for elem in res if elem]
 
-        if sort_by_page:
-            # sort the lists according to the page of the first element in each list.
-            filtered.sort(key=lambda s: s[0].page)
+        if all(isinstance(elem, list) for elem in res):
+            res = list(itertools.chain.from_iterable(res))
 
-        return list(itertools.chain.from_iterable(filtered))
+        return res
 
 
 def _is_not_empty(sequence):
     return bool(len(sequence))
-
 
 _session = GDSession()

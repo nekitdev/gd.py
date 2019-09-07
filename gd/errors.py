@@ -134,7 +134,7 @@ class PagesOutOfRange(PaginatorException):
     """
     def __init__(self, page, info):
         if str(info).isdigit():
-            message = f"Pages are out of range.\nRequested page: '{page}', Pages existing: '{info}'"
+            message = f"Pages are out of range. Requested page: {page!r}, Pages existing: {info}"
         else:
-            message = f"{info}\nRequested page: '{page_num}'"
+            message = f"{info} Requested page: {page}"
         super().__init__(message)

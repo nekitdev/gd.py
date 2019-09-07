@@ -9,6 +9,7 @@ from .level import Level
 from .message import Message
 from .iconset import IconSet
 from .friend_request import FriendRequest
+from .level_packs import MapPack, Gauntlet
 
 from .utils import convert_to_type
 from .utils.converter import Converter
@@ -19,7 +20,7 @@ from .utils.enums import (
     MessagePolicyType, FriendRequestPolicyType,
     CommentPolicyType, StatusLevel,
     LevelLength, TimelyType, CommentType,
-    MessageOrRequestType, IconType
+    MessageOrRequestType, IconType, GauntletEnum
 )
 
 class ClassConverter:
@@ -148,10 +149,42 @@ class ClassConverter:
             game_version = game_version,
             stars_requested = s[i.LEVEL_REQUESTED_STARS],
             object_count = s[i.LEVEL_OBJECT_COUNT],
-            page = s[i.LEVEL_PAGE],
             type = type,
             time_n = s[i.LEVEL_TIMELY_INDEX],
             cooldown = s[i.LEVEL_TIMELY_COOLDOWN]
+        )
+
+    @classmethod
+    def map_pack_convert(cls, s):
+        level_id_string = s.get(i.MAP_PACK_LEVEL_IDS, '0,0,0')
+        level_ids = tuple(map(int, level_id_string.split(',')))
+
+        color_string = s.get(i.MAP_PACK_COLOR, '255,255,255')
+        color = Colour.from_rgb(*map(int, color_string.split(',')))
+
+        difficulty = Converter.value_to_pack_difficulty(s.get(i.MAP_PACK_DIFFICULTY))
+
+        return MapPack(
+            id = s[i.MAP_PACK_ID],
+            name = s[i.MAP_PACK_NAME],
+            level_ids = level_ids,
+            stars = s[i.MAP_PACK_STARS],
+            coins = s[i.MAP_PACK_COINS],
+            difficulty = difficulty,
+            color = color
+        )
+
+    @classmethod
+    def gauntlet_convert(cls, s):
+        level_id_string = s.get(i.GAUNTLET_LEVEL_IDS, '0,0,0,0,0')
+        level_ids = tuple(map(int, level_id_string.split(',')))
+
+        typeid = s[i.GAUNTLET_ID]
+
+        name = GauntletEnum.from_value(typeid).desc + ' Gauntlet'
+
+        return Gauntlet(
+            id = typeid, name = name, level_ids = level_ids
         )
 
     @classmethod
@@ -172,7 +205,6 @@ class ClassConverter:
         subject = b64.b64decode(mapper_util.normalize(s[i.MESSAGE_SUBJECT])).decode()
         return Message(
             id = s[i.MESSAGE_ID],
-            page = s[i.MESSAGE_PAGE],
             timestamp = s[i.MESSAGE_TIMESTAMP],
             subject = subject,
             is_read = bool(s[i.MESSAGE_IS_READ]),
@@ -200,8 +232,7 @@ class ClassConverter:
             is_read = True if bool(s[i.REQUEST_STATUS]) ^ 1 else False,
             author = user_1 if is_normal else user_2,
             recipient = user_2 if is_normal else user_1,
-            type = _type,
-            page = s[i.REQUEST_PAGE]
+            type = _type
         )
 
     @classmethod
@@ -221,8 +252,7 @@ class ClassConverter:
             color = color,
             level_id = s.get(i.COMMENT_LEVEL_ID, 0),
             level_percentage = s.get(i.COMMENT_LEVEL_PERCENTAGE, -1),
-            author = ClassConverter.abstractuser_convert(s_2),
-            page = s[i.COMMENT_PAGE]
+            author = ClassConverter.abstractuser_convert(s_2)
         )
 
     @classmethod
