@@ -40,7 +40,7 @@ class Gauntlet(AbstractEntity):
         Can be retrieved with :meth:`.Gauntlet.get_levels`.
         """
         return self._levels
-    
+
     async def get_levels(self):
         """|coro|
 

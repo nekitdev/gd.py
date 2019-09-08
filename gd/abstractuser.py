@@ -358,4 +358,6 @@ class AbstractUser(AbstractEntity):
 
         strategy = value_to_enum(CommentStrategy, strategy)
 
-        return await _session.retrieve_comments(type=type, user=self, pages=pages)
+        return await _session.retrieve_comments(
+            type=type, user=self, pages=pages, strategy=strategy
+        )

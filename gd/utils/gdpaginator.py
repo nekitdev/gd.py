@@ -60,7 +60,6 @@ class Paginator:
 
     def __getitem__(self, index: int):
         return self._list[index]
-        self.reload()
 
     def __setitem__(self, index: int, item):
         self._list[index] = item

@@ -1,5 +1,4 @@
 from .abstractuser import AbstractUser
-from .session import _session
 from .utils.converter import Converter
 from .utils.wrap_tools import make_repr
 
