@@ -1,4 +1,5 @@
 import base64 as b64
+import urllib.parse
 
 from .song import Song
 from .user import UserStats, User
@@ -27,7 +28,8 @@ class ClassConverter:
 
     @classmethod
     def song_convert(cls, s):
-        dl_link = (s[i.SONG_URL]).replace('%3A', ':').replace('%2F', '/')
+        quoted_url = s[i.SONG_URL]
+        dl_link = urllib.parse.unquote(quoted_url)
         return Song(
             name = s[i.SONG_TITLE],
             author = s[i.SONG_AUTHOR],
