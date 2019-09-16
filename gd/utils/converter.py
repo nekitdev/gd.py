@@ -38,13 +38,19 @@ class Converter:
     @classmethod
     def to_ordinal(cls, n: int):
         x = str(n)
-        sn = int(x[-1])
+
+        pn = x[-2:-1]
+        sn = x[-1:]
+
         cases = {
-            1: 'st',
-            2: 'nd',
-            3: 'rd'
+            '1': 'st',
+            '2': 'nd',
+            '3': 'rd'
         }
-        res = x + cases.get(sn, 'th')
+
+        res = x + (
+            cases.get(sn, 'th') if pn != '1' else 'th'
+        )
         return res
 
     @classmethod

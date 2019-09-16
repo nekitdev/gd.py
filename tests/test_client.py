@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 import gd
 
-gd.setup_basic_logging()
+gd.setup_logging()
 
 client = gd.Client()
 

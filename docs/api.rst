@@ -7,11 +7,6 @@ The following section outlines the API of gd.py.
 
 .. note::
 
-    This module uses the Python logging module to log debug and error messages
-    in an output independent way. If the logging is not configured,
-    these logs will not be output anywhere. See :ref:`setup_logging` for 
-    more information on how to set up the logging module with gd.py.
-
     You can find gd.py Developers API here: :ref:`development_api`.
 
 Version Related Info
@@ -31,6 +26,18 @@ There are two main ways to get version information about the library.
     A string representation of the version. e.g. ``'1.1.2rc1'``. This is based
     off of :pep:`440`.
 
+Logging
+-------
+
+.. note::
+
+    This module uses the Python logging module to log debug and error messages
+    in an output independent way. If the logging is not configured,
+    these logs will not be output anywhere. See :ref:`setup_logging` for 
+    more information on how to set up the logging module with gd.py.
+
+.. autofunction:: setup_logging
+
 Client
 ------
 
@@ -48,7 +55,7 @@ Client
         # the point is, there is no client attached to this level.
 
         # you can attach a client to an instance of AbstractEntity like that:
-        level._attach_client(client)
+        level.attach_client(client)
         # or like that:
         level = gd.Level(id=30029017, client=client)
 

@@ -62,4 +62,5 @@ class Song(AbstractEntity):
         :class:`bytes`
             A song as bytes.
         """
-        return await http.normal_request(self.dl_link)
+        resp = await http.normal_request(self.dl_link)
+        return await resp.content.read()

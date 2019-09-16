@@ -223,7 +223,7 @@ class Parameters:
                 'user'      -> 'targetAccountID'
                 'search'    -> 'str'
                 'password'  -> 'password'
-                'leveldata' -> 'levelID'
+                'levelid' -> 'levelID'
                 'accountid' -> 'accountID'
                 'itemid'    -> 'itemID'
                 'messageid' -> 'messageID'
@@ -247,7 +247,7 @@ class Parameters:
             'user': 'targetAccountID',
             'search': 'str',
             'password': 'password',
-            'leveldata': 'levelID',
+            'levelid': 'levelID',
             'accountid': 'accountID',
             'itemid': 'itemID',
             'messageid': 'messageID',

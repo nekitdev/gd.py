@@ -18,23 +18,41 @@ class HTTPClient:
     semaphore: Optional[:class:`asyncio.Semaphore`]
         A semaphore to use when doing requests. Defaults to :class:`asyncio.Semaphore` with value ``200``.
     """
-    BASE_URL = "http://www.boomlings.com/database/"
+    BASE = 'http://www.boomlings.com/database/'
     VALID_ERRORS = (
         OSError,
         aiohttp.ClientError
     )
 
     def __init__(self, *, semaphore=None):
-        self.semaphore = semaphore or asyncio.Semaphore(200)
+        self.semaphore = semaphore or asyncio.Semaphore(250)
+        self.debug = False
 
     def __repr__(self):
         info = {
-            'semaphore': repr(self.semaphore),
-            'url': HTTPClient.BASE_URL
+            'debug': self.debug,
+            'semaphore': self.semaphore,
+            'url': HTTPClient.BASE
         }
         return make_repr(self, info)
 
-    def set_default_semaphore(self, *, value: int = 200, loop=None):
+    @classmethod
+    def change_base(cls, base: str = None):
+        """Change base for requests.
+
+        Default base is ``http://www.boomlings.com/database/``,
+        but it can be changed.
+
+        Parameters
+        ----------
+        base: :class:`str`
+            Base to change HTTPClient base to. If ``None`` or omitted, current base is preserved.
+        """
+        if base is None:
+            return
+        cls.BASE = base
+
+    def set_default_semaphore(self, value: int = 250, *, loop=None):
         """Sets semaphore to :class:`asyncio.Semaphore` with given value and loop.
 
         Parameters
@@ -57,6 +75,16 @@ class HTTPClient:
         """
         self.semaphore = semaphore
 
+    def set_debug(self, debug: bool = False):
+        """Set http client debugging.
+
+        Parameters
+        ----------
+        debug: :class:`bool`
+            Whether to set debug on or off.
+        """
+        self.debug = bool(debug)
+
     async def fetch(
         self, php: str, params: dict = None, get_cookies: bool = False,
         cookie: str = None, custom_base: str = None
@@ -76,7 +104,7 @@ class HTTPClient:
 
             .. code-block:: python3
 
-                url = "http://www.boomlings.com/database/" + php + ".php"
+                url = 'http://www.boomlings.com/database/' + php + '.php'
 
         params: Union[:class:`dict`, :class:`str`]
             Parameters to send with the request. Type ``dict`` is prefered.
@@ -108,10 +136,10 @@ class HTTPClient:
 
             If a cookie is requested, returns a pair (``res``, ``c``) where c is a :class:`str` cookie.
         """
-        base = HTTPClient.BASE_URL if custom_base is None else custom_base
-        url = base + php + ".php"
+        base = HTTPClient.BASE if custom_base is None else custom_base
+        url = base + php + '.php'
 
-        method = "GET" if params is None else "POST"
+        method = 'GET' if params is None else 'POST'
         headers = None
 
         if cookie is not None:
@@ -133,6 +161,9 @@ class HTTPClient:
 
                 except UnicodeDecodeError:
                     res = data
+
+                if self.debug:
+                    print(res)
 
                 if get_cookies:
                     c = str(resp.cookies).split(' ')[1]  # kinda tricky way
@@ -239,22 +270,22 @@ class HTTPClient:
                 resp = mapper_util.map(resp)
         return resp
 
-    async def normal_request(self, url: str, data = None, **kwargs):
+    async def normal_request(self, url: str, data = None, method: str = None, **kwargs):
         """|coro|
 
         Same as doing :meth:`aiohttp.ClientSession.request`, where ``method`` is
-        ``"GET"`` if ``data`` is None or omitted, and ``"POST"`` otherwise.
+        either given one or ``"GET"`` if ``data`` is None or omitted, and ``"POST"`` otherwise.
         """
-        method = "GET" if data is None else "POST"
+        if method is None:
+            method = 'GET' if data is None else 'POST'
 
         async with aiohttp.ClientSession() as client:
             try:
                 resp = await client.request(method, url, data=data, **kwargs)
 
             except HTTPClient.VALID_ERRORS:
-                raise HTTPNotConnected() from None
+                raise HTTPNotConnected()
 
-            if resp.content is not None:
-                return await resp.content.read()
+        return resp
 
 http = HTTPClient()

@@ -138,6 +138,26 @@ class AbstractUser(AbstractEntity):
         check.is_logged_obj(client, 'unblock')
         await _session.block_user(self, unblock=True, client=client)
 
+    async def unfriend(self, *, from_client=None):
+        """|coro|
+
+        Try to unfriend a user. Requires logged in client.
+
+        Parameters
+        ----------
+        from_client: :class:`.Client`
+            A logged in client to unfriend a user from. If ``None``,
+            defaults to a client attached to this user.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to unfriend a user.
+        """
+        client = from_client if from_client is not None else self._client
+        check.is_logged_obj(client, 'unfriend')
+        await _session.unfriend_user(self, client=client)
+
     async def send_friend_request(self, message: str = None, *, from_client=None):
         """|coro|
 

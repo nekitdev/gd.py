@@ -59,7 +59,8 @@ class GDSession:
         song_id = int(song_id)  # ensure type
 
         link = Route.NEWGROUNDS_SONG_LISTEN + str(song_id)
-        content = await http.normal_request(link)
+        resp = await http.normal_request(link)
+        content = await resp.content.read()
         html = content.decode().replace('\\', '')
 
         RE = (
@@ -97,7 +98,7 @@ class GDSession:
             Route.GET_USER_INFO, parameters, splitter=':', error_codes=codes, should_map=True)
 
         if return_only_stats:
-            return ClassConverter.user_stats_convert(resp)._attach_client(client)
+            return ClassConverter.user_stats_convert(resp, client)
 
         another = (
             Params().create_new().put_definer('search', resp.get(i.USER_PLAYER_ID))
@@ -114,7 +115,7 @@ class GDSession:
         new_dict = {k: new_resp.get(k) for k in to_add}
         resp.update(new_dict)
 
-        return ClassConverter.user_convert(resp)._attach_client(client)
+        return ClassConverter.user_convert(resp, client)
 
 
     def to_user(self, conv_dict: dict = None, *, client):
@@ -123,7 +124,7 @@ class GDSession:
         if conv_dict is None:
             conv_dict = {}
 
-        return ClassConverter.abstractuser_convert(conv_dict)._attach_client(client)
+        return ClassConverter.abstractuser_convert(conv_dict, client)
 
 
     async def search_user(self, param: Union[str, int] = None, return_abstract: bool = False, *, client):
@@ -146,15 +147,16 @@ class GDSession:
 
         mapped = mapper_util.map(item.split(':'))
 
-        if return_abstract:
-            ret = {
-                'name': i.USER_NAME,
-                'id': i.USER_PLAYER_ID,
-                'account_id': i.USER_ACCOUNT_ID
-            }
-            ret = {k: mapped.get(v) for k, v in ret.items()}
+        name = mapped.get(i.USER_NAME, '') or 'UnregisteredUser'
+        id = mapped.get(i.USER_PLAYER_ID, 0) or 0
+        account_id = mapped.get(i.USER_ACCOUNT_ID, 0) or 0
 
-            return ClassConverter.abstractuser_convert(ret)._attach_client(client)
+        if not id or not account_id:
+            return UnregisteredUser(name=name, id=id)
+
+        if return_abstract:
+            ret = dict(name=name, id=id, account_id=account_id)
+            return ClassConverter.abstractuser_convert(ret, client)
 
         # ok if we should not return abstract, let's find all other parameters
         parameters = Params().create_new().put_definer('user', mapped.get(i.USER_ACCOUNT_ID, 0)).finish()
@@ -167,7 +169,7 @@ class GDSession:
             {k: mapped.get(k) for k in (i.USER_NAME, i.USER_ICON, i.USER_ICON_TYPE)}
         )
 
-        return ClassConverter.user_convert(resp)._attach_client(client)
+        return ClassConverter.user_convert(resp, client)
 
 
     async def get_level(
@@ -184,7 +186,7 @@ class GDSession:
             -1: MissingAccess(message=f'Failed to get a level. Given ID: {level_id}')
         }
 
-        parameters = Params().create_new().put_definer('leveldata', level_id).finish()
+        parameters = Params().create_new().put_definer('levelid', level_id).finish()
         resp = await http.request(Route.DOWNLOAD_LEVEL, parameters, error_codes=codes, splitter='#')
 
         level_data = mapper_util.map(resp[0].split(':') + ext)
@@ -202,7 +204,7 @@ class GDSession:
         song = (
             Converter.to_normal_song(level_data.get(i.LEVEL_AUDIO_TRACK)) if not song_data
             else ClassConverter.song_convert(mapper_util.map(song_data.split('~|~')))
-        )
+        ).attach_client(client)
 
         # getting creator
         creator_data = resp[1]
@@ -211,10 +213,10 @@ class GDSession:
             else ClassConverter.abstractuser_convert(
                 {k: v for k, v in zip(('id', 'name', 'account_id'), creator_data.split(':'))}
             )
-        )
+        ).attach_client(client)
 
         return ClassConverter.level_convert(
-            level_data, song=song, creator=creator)._attach_client(client)
+            level_data, song=song, creator=creator, client=client)
 
 
     async def get_timely(self, type: str = 'daily', *, client):
@@ -232,7 +234,7 @@ class GDSession:
         w += 1
 
         level = await self.get_level(-w, (w, num, cooldown), client=client)
-        return level._attach_client(client)
+        return level.attach_client(client)
 
 
     async def get_friends(self, client):
@@ -260,7 +262,7 @@ class GDSession:
             }
 
             ret.append(
-                ClassConverter.abstractuser_convert(parse_dict)._attach_client(client)
+                ClassConverter.abstractuser_convert(parse_dict, client)
             )
 
         return ret
@@ -290,7 +292,7 @@ class GDSession:
         res = []
         for data in filter(_is_not_empty, resp):
             mapped = mapper_util.map(data.split(':'))
-            stats = ClassConverter.user_stats_convert(mapped)._attach_client(client)
+            stats = ClassConverter.user_stats_convert(mapped, client)
             res.append(stats)
 
         return res
@@ -342,7 +344,7 @@ class GDSession:
         return link
 
     async def load_save(self, client):
-        link = await self.get_account_url(client)
+        link = await client.get_account_url()
 
         parameters = (
             Params().create_new().put_username(client.name).put_definer('password', client.password)
@@ -424,8 +426,8 @@ class GDSession:
         creators = []
         for c in filter(_is_not_empty, cdata.split('|')):
             creator = ClassConverter.abstractuser_convert(
-                {k: v for k, v in zip(('id', 'name', 'account_id'), c.split(':'))}
-            )._attach_client(client)
+                {k: v for k, v in zip(('id', 'name', 'account_id'), c.split(':'))}, client=client
+            )
             creators.append(creator)
 
         levels = []
@@ -444,7 +446,7 @@ class GDSession:
             if creator is None:
                 creator = UnregisteredUser(creator_id)
 
-            levels.append(ClassConverter.level_convert(data, song, creator)._attach_client(client))
+            levels.append(ClassConverter.level_convert(data, song, creator, client))
 
         return levels
 
@@ -461,10 +463,18 @@ class GDSession:
         return await self.run_many(to_run)
 
 
+    async def report_level(self, level):
+        parameters = Params().create_new('web').put_definer('levelid', level.id).finish()
+        codes = {
+            -1: MissingAccess(message=f'Failed to report a level: {level!r}.')
+        }
+
+        await http.request(Route.REPORT_LEVEL, parameters, error_codes=codes)
+
     async def delete_level(self, level, *, client):
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
-            .put_definer('leveldata', level.id).put_password(client.encodedpass).finish_level()
+            .put_definer('levelid', level.id).put_password(client.encodedpass).finish_level()
         )
 
         resp = await http.request(Route.DELETE_LEVEL, parameters)
@@ -482,7 +492,7 @@ class GDSession:
     async def update_level_desc(self, level, content, *, client):
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
-            .put_password(client.encodedpass).put_definer('leveldata', level.id)
+            .put_password(client.encodedpass).put_definer('levelid', level.id)
             .put_level_desc(content).finish()
         )
 
@@ -503,7 +513,7 @@ class GDSession:
         chk = Coder.gen_chk(type='like_rate', values=values)
 
         parameters = (
-            Params().create_new().put_definer('leveldata', level.id)
+            Params().create_new().put_definer('levelid', level.id)
             .put_definer('accountid', client.account_id).put_password(client.encodedpass)
             .put_udid(0).put_uuid(0).put_definer('stars', rating).put_rs(rs).put_chk(chk).finish()
         )
@@ -519,7 +529,7 @@ class GDSession:
 
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
-            .put_password(client.encodedpass).put_definer('leveldata', level.id)
+            .put_password(client.encodedpass).put_definer('levelid', level.id)
             .put_definer('rating', rating_level).put_mode(int(mod)).finish_mod()
         )
         codes = {
@@ -537,7 +547,7 @@ class GDSession:
     async def send_level(self, level, rating: int, featured: bool, *, client):
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
-            .put_password(client.encodedpass).put_definer('leveldata', level.id)
+            .put_password(client.encodedpass).put_definer('levelid', level.id)
             .put_definer('stars', rating).put_feature(int(featured)).finish_mod()
         )
         codes = {
@@ -615,8 +625,8 @@ class GDSession:
             mapped = mapper_util.map(elem.split(':'))
             res.append(
                 ClassConverter.message_convert(
-                    mapped, client.get_parse_dict()
-                )._attach_client(client)
+                    mapped, client.get_parse_dict(), client
+                )
             )
 
         return res
@@ -821,7 +831,7 @@ class GDSession:
         for gdata in filter(_is_not_empty, resp):
             mapped = mapper_util.map(gdata.split(':'))
             res.append(
-                ClassConverter.gauntlet_convert(mapped)._attach_client(client)
+                ClassConverter.gauntlet_convert(mapped, client)
             )
 
         return res
@@ -845,7 +855,7 @@ class GDSession:
         for elem in resp:
             mapped = mapper_util.map(elem.split(':'))
             res.append(
-                ClassConverter.map_pack_convert(mapped)._attach_client(client)
+                ClassConverter.map_pack_convert(mapped, client)
             )
 
         return res
@@ -891,8 +901,8 @@ class GDSession:
             )
             res.append(
                 ClassConverter.request_convert(
-                    mapped, client.get_parse_dict()
-                )._attach_client(client)
+                    mapped, client.get_parse_dict(), client
+                )
             )
 
         return res
@@ -945,7 +955,7 @@ class GDSession:
                 raise NothingFound('gd.Comment')
             return list()
 
-        to_map = mapper_util.normalize(thing).split('|')
+        to_map = thing.split('|')
 
         res = []
         for elem in to_map:
@@ -954,8 +964,8 @@ class GDSession:
             )
             res.append(
                 ClassConverter.comment_convert(
-                    prepared, user._dict_for_parse
-                )._attach_client(user._client)
+                    prepared, user._dict_for_parse, user._client
+                )
             )
 
         return res
@@ -981,7 +991,7 @@ class GDSession:
         st_value = strategy.value
 
         parameters = (
-            Params().create_new().put_definer('leveldata', level.id).put_page(0)
+            Params().create_new().put_definer('levelid', level.id).put_page(0)
             .put_total(0).put_mode(st_value).put_count(amount).finish()
         )
         codes = {
@@ -1007,8 +1017,8 @@ class GDSession:
 
             res.append(
                 ClassConverter.comment_convert(
-                    com_data, user_dict
-                )._attach_client(level._client)
+                    com_data, user_dict, level._client
+                )
             )
 
         return res
@@ -1026,6 +1036,16 @@ class GDSession:
             raise MissingAccess(message=f'Failed to (un)block a user: {user!r}.')
 
 
+    async def unfriend_user(self, user, *, client):
+        parameters = (
+            Params().create_new().put_definer('accountid', client.account_id)
+            .put_password(client.encodedpass).put_definer('user', user.account_id).finish()
+        )
+        resp = await http.request(Route.REMOVE_FRIEND, parameters)
+        if resp != 1:
+            raise MissingAccess(message=f'Failed to unfriend a user: {user!r}.')
+
+
     async def send_message(self, target, subject: str, body: str, *, client):
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
@@ -1037,7 +1057,7 @@ class GDSession:
             raise MissingAccess(message=f"Failed to send a message to a user: {target!r}.")
 
 
-    async def update_profile(
+    async def update_settings(
         self, msg: int, friend_req: int, comments: int,
         youtube: str, twitter: str, twitch: str, *, client
     ):

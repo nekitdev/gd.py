@@ -33,7 +33,10 @@ setup(
         "Issue tracker": "https://github.com/NeKitDS/gd.py/issues",
     },
     version=version,
-    packages=['gd', 'gd.utils', 'gd.utils.crypto', 'gd.graphics', 'gd.api'],
+    packages=[
+        'gd', 'gd.utils', 'gd.utils.crypto',
+        'gd.graphics', 'gd.events', 'gd.api'
+    ],
     license='MIT',
     description='A Geometry Dash API wrapper for Python',
     long_description=readme,

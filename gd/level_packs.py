@@ -48,7 +48,7 @@ class Gauntlet(AbstractEntity):
 
         Returns
         -------
-        List[`.Level`]
+        List[:class:`.Level`]
             List of levels that are found.
         """
         filters, query = Filters.setup_level_pack(), ','.join(map(str, self.level_ids))

@@ -40,8 +40,8 @@ class Client:
         Password of the client. ``None`` if not logged in.
     encodedpass: :class:`str`
         Encoded Password of the client. ``None`` on init as well.
-    raw_save: :class:`bytes`
-        Raw decoded save. If not loaded, defaults to ``b''``.
+    raw_save: :class:`str`
+        Raw decoded save. If not loaded, defaults to ``''``.
     save: :class:`.Save`
         This is a namedtuple with format ``(completed, followed)``.
         Contains empty lists if not loaded.
@@ -63,7 +63,7 @@ class Client:
 
     def _set_to_defaults(self):
         self.save = Save(completed=[], followed=[])
-        self.raw_save = bytes()
+        self.raw_save = str()
         self.account_id = 0
         self.id = 0
         self.name = None
@@ -222,7 +222,7 @@ class Client:
 
         Returns
         -------
-        :class:`.User`
+        Union[:class:`.User`, :class:`.UnregisteredUser`]
             A User found when searching with the query.
         """
         return await self.session.search_user(query, return_abstract=False, client=self)
@@ -233,7 +233,7 @@ class Client:
         Fetches a user on Geometry Dash servers by given query.
 
         Works almost like :meth:`.Client.search_user`, except the fact that
-        it returns :class:`.AbstractUser`.
+        it returns :class:`.AbstractUser` or :class:`.UnregisteredUser`.
 
         Parameters
         ----------
@@ -247,8 +247,8 @@ class Client:
 
         Returns
         -------
-        :class:`.AbstractUser`
-            An AbstractUser corresponding to the query.
+        Union[:class:`.AbstractUser`, :class:`.UnregisteredUser`]
+            An AbstractUser or UnregisteredUser corresponding to the query.
         """
         return await self.session.search_user(query, return_abstract=True, client=self)
 
@@ -320,7 +320,7 @@ class Client:
 
         Returns
         -------
-        List[`.Gauntlet`]
+        List[:class:`.Gauntlet`]
             All gauntlets retrieved, as list.
         """
         return await self.session.get_gauntlets(client=self)
@@ -340,7 +340,7 @@ class Client:
 
         Returns
         -------
-        List[`.MapPack`]
+        List[:class:`.MapPack`]
             List of map packs retrieved.
 
         Raises
@@ -362,7 +362,7 @@ class Client:
 
         Returns
         -------
-        List[`.MapPack`]
+        List[:class:`.MapPack`]
             List of map packs found.
         """
         if pages is None:
@@ -444,7 +444,7 @@ class Client:
 
         Returns
         -------
-        List[`.Level`]
+        List[:class:`.Level`]
             All levels found, as list. Might be an empty list.
 
         Raises
@@ -472,7 +472,7 @@ class Client:
 
         Returns
         -------
-        List[`.Level`]
+        List[:class:`.Level`]
             All levels found, as list, which might be empty.
         """
         filters = Filters.setup_by_user()
@@ -727,6 +727,19 @@ class Client:
         return await self.get_top(strategy, count=count)
 
     @check.is_logged()
+    async def get_account_url(self):
+        """|coro|
+
+        Fetches account URL. It is used in Save retrieving.
+
+        Returns
+        -------
+        :class:`str`
+            Link of format ``http://<ip>/database/``.
+        """
+        return await self.session.get_account_url(self)
+
+    @check.is_logged()
     async def post_comment(self, content: str):
         """|coro|
 
@@ -779,7 +792,7 @@ class Client:
             log.debug('Changed password to: %s', password)
 
     @check.is_logged()
-    async def update_profile(
+    async def update_settings(
         self, *, msg: int = None, friend_req: int = None, comments: int = None,
         youtube: str = None, twitter: str = None, twitch: str = None
     ):
@@ -795,7 +808,7 @@ class Client:
 
             .. code-block:: python3
 
-                await client.update_profile()
+                await client.update_settings()
 
             will cause no effect on profile settings.
 
@@ -841,7 +854,7 @@ class Client:
 
             args.append(s)
 
-        await self.session.update_profile(*args, client=self)
+        await self.session.update_settings(*args, client=self)
 
     async def search_levels_on_page(
         self, page: int = 0, query: str = '', filters: Filters = None, user=None,

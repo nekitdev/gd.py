@@ -12,13 +12,15 @@ client = gd.Client()  # an entry point to gd API
 async def coro():
     # getting daily...
     daily = await client.get_daily()
+
     # getting weekly...
     weekly = await client.get_weekly()
+
     # now let's print...
-    info = f"""Current daily level: {daily!r};
-    Current weekly demon: {weekly!r}.
-    """
-    print(info)
+    info = (f'Current daily level: {daily!r}.', f'Current weekly demon: {weekly!r}.')
+
+    for piece in info:
+        print(piece)
 
 # run a coroutine
 client.run(coro())

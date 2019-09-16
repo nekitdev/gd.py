@@ -49,6 +49,6 @@ class AbstractEntity:
 
         return hash_string
 
-    def _attach_client(self, client):
+    def attach_client(self, client):
         self._client = client
         return self

@@ -56,13 +56,8 @@ class Comment(AbstractEntity):
         return self.options.get('level_percentage')
 
     @property
-    def colour(self):
-        """:class:`.Colour`: A colour of the comment. White (``#ffffff``) by default."""
-        return self.options.get('color')
-
-    @property
     def color(self):
-        """:class:`.Colour`: Alias for :attr:`.Comment.colour`."""
+        """:class:`.Colour`: Color of the comment. Oftenly equals ``gd.Color(0xffffff)``."""
         return self.options.get('color')
 
     def is_spam(self):
@@ -137,5 +132,3 @@ class Comment(AbstractEntity):
         client = from_client if from_client is not None else self._client
         check.is_logged_obj(client, 'delete')
         await _session.delete_comment(self, client=client)
-
-# TO_DO: add docs here if needed

@@ -178,8 +178,20 @@ class Level(AbstractEntity):
         return self.options.get('verified_coins')
 
     def download(self):
-        """:class:`bytes`: Returns level data, represented as bytes."""
+        """:class:`str`: Returns level data, represented as string."""
         return self._data
+
+    async def report(self):
+        """|coro|
+
+        Reports a level.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to report a level.
+        """
+        await _session.report_level(self)
 
     async def delete(self, *, from_client=None):
         """|coro|

@@ -7,6 +7,7 @@ import zlib
 from typing import Sequence, Union
 
 from ..mapper import mapper_util
+from ..wrap_tools import new_method
 from .xor_cipher import XORCipher as XOR
 
 
@@ -56,7 +57,7 @@ class Coder:
             save = cls.normal_xor(save.encode(), 11)
         data = mapper_util.normalize(save).encode()
         from_b64 = base64.b64decode(data)[10:]
-        return zlib.decompress(from_b64, -zlib.MAX_WBITS)
+        return zlib.decompress(from_b64, -zlib.MAX_WBITS).decode_failsafe()
 
     @classmethod
     def gen_rs(cls, length: int = 10):
@@ -191,19 +192,31 @@ class Coder:
 
         Returns
         -------
-        :class:`bytes`
-            Unzipped level data, as bytes.
+        :class:`str`
+            Unzipped level data, as string.
         """
         decoded = base64.b64decode(mapper_util.normalize(string).encode())
+
         try:
             unzipped = zlib.decompress(decoded, zlib.MAX_WBITS)
         except zlib.error:
             unzipped = zlib.decompress(decoded[10:], -zlib.MAX_WBITS)
-        final = (
-            ';'.join(unzipped.decode().split(';')[:-1])  # slice out the last element (empty string)
-        )
+
+        final = unzipped.decode_failsafe()
+        final = final if not final.endswith(';') else final[:-1]
+
         return final
 
     @classmethod
     def gen_level_lb_seed(cls, jumps: int = 0, percentage: int = 0, seconds: int = 0):
         return 1482 + (jumps + 3991) * (percentage + 8354) + ((seconds + 4085)**2) - 50028039
+
+@new_method(bytes)
+def decode_failsafe(self):
+    final = ''
+    for byte in self:
+        try:
+            final += chr(byte)
+        except Exception:
+            pass
+    return final

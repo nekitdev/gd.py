@@ -157,7 +157,7 @@ class User(UserStats):
         if self.role is None:
             return False
 
-        elif elder == None:
+        elif elder is None:
             return self.role.value >= 1
 
         elif elder == 'elder':

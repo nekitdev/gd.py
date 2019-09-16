@@ -39,7 +39,7 @@ class ClassConverter:
                 f'https://www.newgrounds.com/audio/listen/{s[i.SONG_ID]}',
                 dl_link
             ),
-            custom = True
+            custom = True,
         )
 
     @classmethod
@@ -47,16 +47,16 @@ class ClassConverter:
         return Song(**kwargs)
 
     @classmethod
-    def user_stats_convert(cls, s):
+    def user_stats_convert(cls, s, client=None):
         return UserStats(
             account_id = s[i.USER_ACCOUNT_ID], name = s[i.USER_NAME], id = s[i.USER_PLAYER_ID],
             stars = s[i.USER_STARS], demons = s[i.USER_DEMONS], cp = s[i.USER_CREATOR_POINTS],
-            diamonds = s[i.USER_DIAMONDS], coins = s[i.USER_COINS],
+            diamonds = s[i.USER_DIAMONDS], coins = s[i.USER_COINS], client = client,
             secret_coins = s[i.USER_SECRET_COINS], lb_place = s.get(i.USER_TOP_PLACE, -1)
         )
 
     @classmethod
-    def user_convert(cls, s):
+    def user_convert(cls, s, client=None):
         dm = MessagePolicyType.from_value(s[i.USER_PRIVATE_MESSAGE_POLICY])
         fr_rq = FriendRequestPolicyType.from_value(s[i.USER_FRIEND_REQUEST_POLICY])
         comment = CommentPolicyType.from_value(s[i.USER_COMMENT_HISTORY_POLICY])
@@ -96,12 +96,13 @@ class ClassConverter:
                 icon_wave = s[i.USER_ICON_WAVE],
                 icon_robot = s[i.USER_ICON_ROBOT],
                 icon_spider = s[i.USER_ICON_SPIDER]
-            )
+            ),
+            client = client
         )
 
 
     @classmethod
-    def level_convert(cls, s, song, creator):
+    def level_convert(cls, s, song, creator, client=None):
         try:  # decode password
             password = Coder.decode(type='levelpass', string=s.get(i.LEVEL_PASS))
         except TypeError:
@@ -153,11 +154,12 @@ class ClassConverter:
             object_count = s[i.LEVEL_OBJECT_COUNT],
             type = type,
             time_n = s[i.LEVEL_TIMELY_INDEX],
-            cooldown = s[i.LEVEL_TIMELY_COOLDOWN]
+            cooldown = s[i.LEVEL_TIMELY_COOLDOWN],
+            client = client
         )
 
     @classmethod
-    def map_pack_convert(cls, s):
+    def map_pack_convert(cls, s, client=None):
         level_id_string = s.get(i.MAP_PACK_LEVEL_IDS, '0,0,0')
         level_ids = tuple(map(int, level_id_string.split(',')))
 
@@ -173,11 +175,12 @@ class ClassConverter:
             stars = s[i.MAP_PACK_STARS],
             coins = s[i.MAP_PACK_COINS],
             difficulty = difficulty,
-            color = color
+            color = color,
+            client = client
         )
 
     @classmethod
-    def gauntlet_convert(cls, s):
+    def gauntlet_convert(cls, s, client=None):
         level_id_string = s.get(i.GAUNTLET_LEVEL_IDS, '0,0,0,0,0')
         level_ids = tuple(map(int, level_id_string.split(',')))
 
@@ -186,11 +189,11 @@ class ClassConverter:
         name = GauntletEnum.from_value(typeid).desc + ' Gauntlet'
 
         return Gauntlet(
-            id = typeid, name = name, level_ids = level_ids
+            id = typeid, name = name, level_ids = level_ids, client = client
         )
 
     @classmethod
-    def message_convert(cls, s, s_2):
+    def message_convert(cls, s, s_2, client=None):
         _type = MessageOrRequestType.from_value(s[i.MESSAGE_INDICATOR])
 
         useful_dict = {
@@ -199,7 +202,7 @@ class ClassConverter:
             'account_id': s[i.MESSAGE_SENDER_ACCOUNT_ID]
         }
         user_1, user_2 = [
-            ClassConverter.abstractuser_convert(elem) for elem in (useful_dict, s_2)
+            ClassConverter.abstractuser_convert(elem, client) for elem in (useful_dict, s_2)
         ]
 
         is_normal = _type.value ^ 1
@@ -212,11 +215,12 @@ class ClassConverter:
             is_read = bool(s[i.MESSAGE_IS_READ]),
             author = user_1 if is_normal else user_2,
             recipient = user_2 if is_normal else user_1,
-            type = _type
+            type = _type,
+            client = client
         )
 
     @classmethod
-    def request_convert(cls, s, s_2):
+    def request_convert(cls, s, s_2, client=None):
         _type = MessageOrRequestType.from_value(s[i.REQUEST_INDICATOR])
         useful_dict = {
             'name': s[i.REQUEST_SENDER_NAME],
@@ -225,7 +229,7 @@ class ClassConverter:
         }
 
         is_normal = _type.value ^ 1
-        user_1, user_2 = (ClassConverter.abstractuser_convert(elem) for elem in (useful_dict, s_2))
+        user_1, user_2 = (ClassConverter.abstractuser_convert(elem, client) for elem in (useful_dict, s_2))
 
         return FriendRequest(
             id = s[i.REQUEST_ID],
@@ -234,11 +238,12 @@ class ClassConverter:
             is_read = True if bool(s[i.REQUEST_STATUS]) ^ 1 else False,
             author = user_1 if is_normal else user_2,
             recipient = user_2 if is_normal else user_1,
-            type = _type
+            type = _type,
+            client = client
         )
 
     @classmethod
-    def comment_convert(cls, s, s_2):
+    def comment_convert(cls, s, s_2, client=None):
         type = CommentType.from_value(s[i.COMMENT_TYPE])
 
         color_string = s.get(i.COMMENT_COLOR, '255,255,255')
@@ -254,10 +259,11 @@ class ClassConverter:
             color = color,
             level_id = s.get(i.COMMENT_LEVEL_ID, 0),
             level_percentage = s.get(i.COMMENT_LEVEL_PERCENTAGE, -1),
-            author = ClassConverter.abstractuser_convert(s_2)
+            author = ClassConverter.abstractuser_convert(s_2, client),
+            client = client
         )
 
     @classmethod
-    def abstractuser_convert(cls, d):
+    def abstractuser_convert(cls, d, client=None):
         from_dict = {k: convert_to_type(v, int) for k, v in d.items()}
-        return AbstractUser(**from_dict)
+        return AbstractUser(**from_dict).attach_client(client)

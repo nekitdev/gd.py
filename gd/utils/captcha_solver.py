@@ -7,9 +7,9 @@ from .wrap_tools import benchmark
 from ..errors import FailedCaptcha
 
 border = (5, 8, 16, 7)  # borders to crop
-# we recieve picture 65x25 from gd server (65*25=1625 pixels to iterate through)
-# and then we can cut borders, getting 44x10 image (44*10=440 pixels to iterate through)
-# so, amount of iterations is 3.693(18) times lower.
+# we recieve picture 65x25 from gd server (1625 pixels to iterate through)
+# and then we can cut borders, getting 44x10 image (440 pixels to iterate through)
+# so, amount of iterations is ~3.693 times lower.
 
 log = logging.getLogger(__name__)
 
@@ -99,15 +99,15 @@ class Captcha:
                 rgb = pixel_map[i, j]
                 if all(rgb[i] > 200 for i in range(3)):  # if pixel is white
                     temp.append(j)  # append 'index' in column of pixel
-            if not temp or (i+1 == x):
+            if not temp or (i == x-1):  # if temp is empty or index is last
                 if lst[g]:  # if we actually have something to predict
-                    predicted = cls.predict_digit(lst[g])
+                    predicted = cls.predict_digit(lst[g])  # predict from list
                     final_res.append(predicted)
-                    g += 1
-            else:
+                    g += 1  # move to next list element
+            else:  # otherwise
                 s = lst[g]
-                if len(s) < 2:
-                    s.append(temp)
+                if len(s) < 2:  # if less than two rows
+                    s.append(temp)  # append
         return final_res
 
     @classmethod
@@ -116,7 +116,7 @@ class Captcha:
         try:
             return cases.index(res)
         except ValueError:
-            raise FailedCaptcha(f'Unknown result for digit was recieved: {res}.')
+            raise FailedCaptcha(f'Unknown result for digit was recieved: {res}.') from None
 
     @classmethod
     def init_numbers(cls):

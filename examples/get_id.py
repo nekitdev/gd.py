@@ -1,6 +1,7 @@
 """Simple example showing user searching.
 Author: NeKitDS
 """
+
 import asyncio
 import gd
 

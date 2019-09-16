@@ -15,7 +15,7 @@ class SaveParser:
     @classmethod
     def parse_completed_levels(cls, xml):
         pattern = '<k>c_(\d+)</k><s>1</s>'
-        found = re.findall(pattern.encode(), xml)
+        found = re.findall(pattern, xml)
 
         return map_to_int(found)
 
@@ -27,7 +27,7 @@ class SaveParser:
             section = slice_between(xml, 'GLM', 6, 7)
 
         pattern = '<k>(\d+)</k><s>1</s>'
-        found = re.findall(pattern.encode(), section)
+        found = re.findall(pattern, section)
 
         return map_to_int(found)
 
@@ -38,7 +38,7 @@ def slice_between(sequence, section_name, x, y):
     fix = len(section_name) + 3
 
     x, y = (f'{section_name}_{z:02}' for z in (x, y))
-    i, j = (sequence.index(z.encode()) for z in (x, y))
+    i, j = (sequence.index(z) for z in (x, y))
     i += fix
 
     return sequence[i:j]
