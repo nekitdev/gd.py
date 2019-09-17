@@ -217,6 +217,6 @@ def decode_failsafe(self):
     for byte in self:
         try:
             final += chr(byte)
-        except Exception:
+        except (ValueError, TypeError):
             continue
     return final
