@@ -22,7 +22,8 @@ def find(predicate, seq, *, _all: bool = False):
                 return elem
             res.append(elem)
 
-    return None if not res else res
+    if _all:
+        return res
 
 
 def get(iterable, **attrs):
@@ -55,4 +56,5 @@ def get(iterable, **attrs):
                 return elem
             res.append(elem)
 
-    return None if not res else res
+    if _all:
+        return res
