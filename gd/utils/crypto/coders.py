@@ -218,5 +218,5 @@ def decode_failsafe(self):
         try:
             final += chr(byte)
         except Exception:
-            pass
+            continue
     return final
