@@ -64,6 +64,8 @@ To install the developer version, run these commands:
 Quick example
 -------------
 
+Please note: gd.py writes the new method for coroutines, called 'run'.
+
 .. code:: python
 
     import gd
@@ -74,7 +76,7 @@ Quick example
         song = await client.get_song(633206)
         print(song.name)
 
-    client.run(test())
+    test().run()
 
     # OUTPUT: Random Song 01
 
@@ -96,7 +98,7 @@ Authors
 -------
 
 This project is mainly developed by `NeKitDS <https://github.com/NeKitDS>`_,
-with help of blue#0002. Big thanks to `cos8o <https://github.com/cos8o>`_ for helping
+with help of `blue <https://github.com/d3vblue>`_. Big thanks to `cos8o <https://github.com/cos8o>`_ for helping
 to make several requests and developing `GDCrypto <https://github.com/cos8o/GDCrypto>`_ library,
 which was used as a base for `crypto <https://github.com/NeKitDS/gd.py/blob/master/gd/utils/crypto>`_ package.
 

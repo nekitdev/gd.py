@@ -17,6 +17,7 @@ from .utils.converter import Converter
 from .utils.indexer import Index as i
 from .utils.crypto.coders import Coder
 from .utils.mapper import mapper_util
+from .utils.routes import Route
 from .utils.enums import (
     MessagePolicyType, FriendRequestPolicyType,
     CommentPolicyType, StatusLevel,
@@ -31,12 +32,12 @@ class ClassConverter:
         quoted_url = s[i.SONG_URL]
         dl_link = urllib.parse.unquote(quoted_url)
         return Song(
-            name = s[i.SONG_TITLE],
-            author = s[i.SONG_AUTHOR],
+            name = str(s[i.SONG_TITLE]),
+            author = str(s[i.SONG_AUTHOR]),
             id = s[i.SONG_ID],
             size = float(s[i.SONG_SIZE]),
             links = (
-                f'https://www.newgrounds.com/audio/listen/{s[i.SONG_ID]}',
+                Route.NEWGROUNDS_SONG_LISTEN + str(s[i.SONG_ID]),
                 dl_link
             ),
             custom = True,
@@ -49,7 +50,7 @@ class ClassConverter:
     @classmethod
     def user_stats_convert(cls, s, client=None):
         return UserStats(
-            account_id = s[i.USER_ACCOUNT_ID], name = s[i.USER_NAME], id = s[i.USER_PLAYER_ID],
+            account_id = s[i.USER_ACCOUNT_ID], name = str(s[i.USER_NAME]), id = s[i.USER_PLAYER_ID],
             stars = s[i.USER_STARS], demons = s[i.USER_DEMONS], cp = s[i.USER_CREATOR_POINTS],
             diamonds = s[i.USER_DIAMONDS], coins = s[i.USER_COINS], client = client,
             secret_coins = s[i.USER_SECRET_COINS], lb_place = s.get(i.USER_TOP_PLACE, -1)
@@ -65,17 +66,17 @@ class ClassConverter:
         rnk = s[i.USER_GLOBAL_RANK]
         rank = rnk if rnk else None
 
-        youtube = s[i.USER_YOUTUBE]
-        yt = (youtube, f'https://www.youtube.com/channel/{youtube}') if youtube else (None, None)
+        youtube = str(s[i.USER_YOUTUBE])
+        yt = (youtube, 'https://www.youtube.com/channel/' + youtube) if youtube else (None, None)
 
-        twitter = s[i.USER_TWITTER]
-        twt = (twitter, f'https://twitter.com/{twitter}') if twitter else (None, None)
+        twitter = str(s[i.USER_TWITTER])
+        twt = (twitter, 'https://twitter.com/' + twitter) if twitter else (None, None)
 
-        twitch = s[i.USER_TWITCH]
-        twch = (twitch, f'https://twitch.tv/{twitch}') if twitch else (None, None)
+        twitch = str(s[i.USER_TWITCH])
+        twch = (twitch, 'https://twitch.tv/' + twitch) if twitch else (None, None)
 
         return User(
-            name = s[i.USER_NAME], id = s[i.USER_PLAYER_ID],
+            name = str(s[i.USER_NAME]), id = s[i.USER_PLAYER_ID],
             stars = s[i.USER_STARS], demons = s[i.USER_DEMONS],
             secret_coins = s[i.USER_SECRET_COINS], coins = s[i.USER_COINS],
             cp = s[i.USER_CREATOR_POINTS], diamonds = s[i.USER_DIAMONDS],
@@ -129,7 +130,7 @@ class ClassConverter:
 
         return Level(
             id = s[i.LEVEL_ID],
-            name = s[i.LEVEL_NAME],
+            name = str(s[i.LEVEL_NAME]),
             description = desc,
             version = s[i.LEVEL_VERSION],
             creator = creator,
@@ -170,7 +171,7 @@ class ClassConverter:
 
         return MapPack(
             id = s[i.MAP_PACK_ID],
-            name = s[i.MAP_PACK_NAME],
+            name = str(s[i.MAP_PACK_NAME]),
             level_ids = level_ids,
             stars = s[i.MAP_PACK_STARS],
             coins = s[i.MAP_PACK_COINS],

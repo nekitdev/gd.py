@@ -17,10 +17,10 @@ async def coro():
     weekly = await client.get_weekly()
 
     # now let's print...
-    info = (f'Current daily level: {daily!r}.', f'Current weekly demon: {weekly!r}.')
+    info = ('Current daily level: {!r}.'.format(daily), 'Current weekly demon: {!r}.'.format(weekly))
 
     for piece in info:
         print(piece)
 
 # run a coroutine
-client.run(coro())
+coro().run()

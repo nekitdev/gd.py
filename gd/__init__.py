@@ -4,7 +4,7 @@ __title__ = 'gd'
 __author__ = 'NeKitDS'
 __copyright__ = 'Copyright 2019 NeKitDS'
 __license__ = 'MIT'
-__version__ = '0.9.5'
+__version__ = '0.9.6'
 
 from collections import namedtuple
 import logging
@@ -37,9 +37,16 @@ from .utils.crypto.xor_cipher import XORCipher
 
 from ._jokes import jokes  # why not?...
 
+from .utils._async import (
+    enable_run_method as synchronise, coroutine
+)
+synchronize = synchronise
+
 from . import utils  # since asyncio.run() was introduced in 3.7, we have utils.run() function.
 
+
 log = logging.getLogger(__name__)
+
 
 VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
 

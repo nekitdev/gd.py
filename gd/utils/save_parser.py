@@ -1,6 +1,6 @@
 from collections import namedtuple
 import re
-
+from xml.etree import ElementTree as ETree
 # more things soon <3
 
 Save = namedtuple('Save', 'completed followed')
@@ -37,7 +37,7 @@ def map_to_int(seq):
 def slice_between(sequence, section_name, x, y):
     fix = len(section_name) + 3
 
-    x, y = (f'{section_name}_{z:02}' for z in (x, y))
+    x, y = ('{}_{:02}'.format(section_name, z) for z in (x, y))
     i, j = (sequence.index(z) for z in (x, y))
     i += fix
 

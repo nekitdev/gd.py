@@ -92,11 +92,15 @@ class Paginator:
         _from, _to = (p*per_page, (p+1)*per_page)
 
         return (
-            f'[gd.Paginator]\n'
-            f'[Can_Run: {self.can_run()}]\n'
-            f'[Length: {self.length}]\n[Pages: {self.get_pages_count()}]\n'
-            f'[Current_State]\n[Page: {self.get_curr_page()}]\n'
-            f'[Showing: {_from} to {_to} of {self.length}]'
+            '[gd.Paginator]\n'
+            '[Can_Run: {can_run}]\n'
+            '[Length: {length}]\n[Pages: {pages_count}]\n'
+            '[Current_State]\n[Page: {page}]\n'
+            '[Showing: {_from} to {_to} of {length}]'
+        ).format(
+            can_run=self.can_run(), length=self.length,
+            pages_count=self.get_pages_count(),
+            page=self.get_curr_page(), _from=_from, _to=_to
         )
 
     def load_from(self, iterable):

@@ -9,7 +9,7 @@ import aiohttp
 import PIL
 import platform
 
-con_v = '0.1.3'  # gd_console version
+con_v = '0.2.0'  # gd_console version
 
 def show_version():
     entries = []

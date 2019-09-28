@@ -26,7 +26,7 @@ class FailedConversion(GDException):
     def __init__(self, enum, value):
         self._enum = enum
         self._value = value
-        message = f'Failed to convert value {value!r} to enum: {enum!r}.'
+        message = 'Failed to convert value {!r} to enum: {!r}.'.format(value, enum)
         super().__init__(message)
 
     @property
@@ -54,7 +54,7 @@ class FailedCaptcha(ClientException):
     when solving GD Captcha are recieved.
     """
     def __init__(self, msg):
-        message = f'Solving Captcha failed. {msg}'
+        message = 'Solving Captcha failed. {}'.format(msg)
         super().__init__(message)
 
 
@@ -69,7 +69,7 @@ class SongRestrictedForUsage(ClientException):
     when looking for a song.
     """
     def __init__(self, id):
-        message = f"Song with id {id!r} is not allowed for use."
+        message = 'Song with id {!r} is not allowed to use.'.format(id)
         super().__init__(message)
 
 
@@ -80,8 +80,12 @@ class LoginFailure(ClientException):
     def __init__(self, login, password):
         self._login = login
         self._password = password
-        message = "Failed to login with parameters:\n" \
-            f"<login='{self.login}', password='{self.password}'>."
+
+        message = (
+            'Failed to login with parameters: '
+            '<login={0.login!r}, password={0.password!r}>.'
+        ).format(self)
+
         super().__init__(message)
 
     @property
@@ -100,7 +104,7 @@ class FailedToChange(ClientException):
     fails to change its password or username.
     """
     def __init__(self, type):
-        message = f"Failed to change {type}. Reason: Unspecified"  # [Future]
+        message = 'Failed to change {}. Reason: Unspecified'.format(type)  # [Future]
         super().__init__(message)
 
 
@@ -110,7 +114,7 @@ class NothingFound(ClientException):
     """
     def __init__(self, cls_name):
         self._cls_name = cls_name
-        message = f"No <{cls_name}>'s were found."
+        message = 'No <{}> instances were found.'.format(self.cls_name)
         super().__init__(message)
 
     @property
@@ -124,7 +128,7 @@ class NotLoggedError(ClientException):
     while :class:`Client` is not logged.
     """
     def __init__(self, func_name):
-        message = f"'{func_name}' requires client to be logged."
+        message = '{!r} requires client to be logged.'.format(func_name)
         super().__init__(message)
 
 
@@ -133,8 +137,10 @@ class PagesOutOfRange(PaginatorException):
     is requested in :class:`Paginator`.
     """
     def __init__(self, page, info):
+
         if str(info).isdigit():
-            message = f"Pages are out of range. Requested page: {page!r}, Pages existing: {info}"
+            message = 'Pages are out of range. Requested page: {!r}, Pages existing: {}'.format(page, info)
         else:
-            message = f"{info} Requested page: {page}"
+            message = '{} Requested page: {}'.format(info, page)
+
         super().__init__(message)

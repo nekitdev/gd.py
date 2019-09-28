@@ -17,7 +17,7 @@ class Colour:
 
     def __init__(self, value: int):
         if not isinstance(value, int):
-            raise TypeError(f'Expected int parameter, but received {value.__class__.__name__}.')
+            raise TypeError('Expected int parameter, but received {!r}.'.format(value.__class__.__name__))
 
         self.value = value
 
@@ -72,7 +72,7 @@ class Colour:
 
     def to_hex(self):
         """:class:`str`: Returns the colour in hex format."""
-        return f'#{self.value:0>6x}'
+        return '#{:0>6x}'.format(self.value)
 
     def to_rgb(self):
         """Tuple[:class:`int`, :class:`int`, :class:`int`]: Returns an (r, g, b) tuple representing the colour."""

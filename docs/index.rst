@@ -19,6 +19,7 @@ Documentation Contents
     quickstart
     logging
     api
+    synchronisation
     dev
 
 Additional Information

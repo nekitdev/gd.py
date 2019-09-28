@@ -45,7 +45,7 @@ class AbstractEntity:
         id = self._id
         r = self.__repr__().replace(' ', '_').lower()
 
-        hash_string = f'<GDEntity<{cls}>[id={id};repr={r}]>'
+        hash_string = '<GDEntity<{cls}>[id={id};repr={r}]>'.format(cls=cls, id=id, r=r)
 
         return hash_string
 

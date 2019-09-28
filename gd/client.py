@@ -92,7 +92,7 @@ class Client:
         """
         duration = await self.session.ping_server('http://boomlings.com/database/')
 
-        print(f'gd server ping: {duration}ms')
+        print('GD Server ping: {}ms'.format(duration))
 
         return duration
 
@@ -375,29 +375,12 @@ class Client:
 
         Tests Captcha solving, and prints the result.
 
-        .. note::
-
-            Captcha is being solved asynchronously.
-            It uses :meth:`asyncio.AbstractEventLoop.run_in_executor` method of ``self.loop``,
-            which means the following:
-
-            .. code-block:: python3
-
-                import asyncio  # 3.7 and higher
-                asyncio.run(client.test_captcha())  # ERROR!
-
-                import gd
-                gd.utils.run(client.test_captcha())  # ERROR!
-
-                import gd
-                gd.utils.run(client.test_captcha(), loop=client.loop)  # OK
-
-                # new in 0.9.x
-                client.run(client.test_captcha())  # OK
-
-            Please consider what has been said above when writing your programs.
+        Returns
+        -------
+        :class:`int`
+            The code of the Captcha.
         """
-        code = await self.session.test_captcha(client=self)
+        code = await self.session.test_captcha()
 
         print(code)
 

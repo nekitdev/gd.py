@@ -57,7 +57,7 @@ class Comment(AbstractEntity):
 
     @property
     def color(self):
-        """:class:`.Colour`: Color of the comment. Oftenly equals ``gd.Color(0xffffff)``."""
+        """:class:`.Colour`: Colour of the comment. Oftenly equals ``gd.Colour(0xffffff)``."""
         return self.options.get('color')
 
     def is_spam(self):

@@ -42,7 +42,7 @@ async def test():
 
         res = await coro(*args, **kwargs)
 
-        print(f'{f_name}() -> {res}')
+        print('{}() -> {}'.format(f_name, res))
 
     print('End Of Test Suite')
 
@@ -52,7 +52,7 @@ async def test():
 @gd.utils.benchmark
 def main():
     """Runs gd.Client tests."""
-    client.run(test())
+    test().run()
 
 
 if __name__ == '__main__':

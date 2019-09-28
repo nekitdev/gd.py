@@ -102,7 +102,7 @@ class Loop:
         self.change_interval(seconds=seconds, minutes=minutes, hours=hours)
 
         if not inspect.iscoroutinefunction(self.coro):
-            raise TypeError(f'Expected coroutine function, not {type(self.coro).__name__!r}.')
+            raise TypeError('Expected coroutine function, not {!r}.'.format(type(self.coro).__name__))
 
     async def _call_loop_function(self, name):
         coro = getattr(self, '_' + name)

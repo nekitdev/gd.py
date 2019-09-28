@@ -33,8 +33,8 @@ class check:
                 if client is None:
                     raise MissingAccess(
                         message=(
-                            f'Attempt to check if client is logged for {obj} returned None. '
-                            'Have you made this object by hand?')
+                            'Attempt to check if client is logged for {} returned None. '
+                            'Have you made this object by hand?').format(obj)
                         )
 
                 if not client.is_logged():
@@ -68,8 +68,10 @@ def benchmark(func):
 
         time_taken = (end-start)*1000
 
-        thing = f'Executed "{func.__name__}(*args, **kwargs)"\n' \
-            f'Estimated time: {round(time_taken,2):,}ms.'
+        thing = (
+            'Executed "{}(*args, **kwargs)"\n'
+            'Estimated time: {:,.2f}ms.'
+        ).format(func.__name__, time_taken)
 
         log.debug(thing)
 
@@ -78,7 +80,7 @@ def benchmark(func):
 
 
 def new_method(cls):
-    # decorator that adds new methods to a 'cls'
+    # decorator that adds new methods to a 'cls'.
     def decorator(func):
         cls_d = _get_class_dict(cls)
         cls_d[func.__name__] = func
@@ -102,11 +104,23 @@ def make_repr(obj, info = {}):
     name = obj.__class__.__name__
 
     if not info:
-        return f'<{module}.{name}>'
+        return '<{}.{}>'.format(module, name)
 
     info = (' '.join('%s=%s' % t for t in info.items()))
 
-    return f'<{module}.{name} {info}>'
+    return '<{}.{} {}>'.format(module, name, info)
+
+
+def find_subclass(string_name, superclass=object):
+    """Fetches subclass of 'superclass' by 'string_name'."""
+    subclasses = {cls.__name__: cls for cls in superclass.__subclasses__()}
+    return subclasses.get(string_name, superclass)
+
+
+def del_method(cls, method_name):
+    """Delete a method of a 'cls'."""
+    cls_d = _get_class_dict(cls)
+    cls_d.pop(method_name, None)
 
 
 def add_method(cls, func, *, name: str = None):

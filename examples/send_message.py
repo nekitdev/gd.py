@@ -24,12 +24,12 @@ async def coro():
             message='This is a message sent using gd.py library! :)')
 
         # print that message was successfully sent
-        print(f'Successfully sent a message to {target!r}! :)')
+        print('Successfully sent a message to {!r}! :)'.format(target))
 
     # check if an error occured
     except gd.ClientException:  # if a user has their messages closed or other error occured
-        print(f'Failed to send a message to {target!r}...')
+        print('Failed to send a message to {!r}...'.format(target))
 
 
 # run a program
-client.run(coro())
+coro().run()

@@ -16,17 +16,17 @@ async def main():
         user = await client.find_user(name)
 
         if isinstance(user, gd.UnregisteredUser):
-            print(f'Hey there, {user.name}! Seems like you are unregistered...')
+            print('Hey there, {0.name}! Seems like you are unregistered...'.format(user))
 
         else:
-            print(f'Hello, {user.name}! Your AccountID is {user.account_id} and PlayerID is {user.id}.')
+            print('Hello, {0.name}! Your AccountID is {0.account_id} and PlayerID is {0.id}.'.format(user))
 
     # could not find
     except gd.MissingAccess:
-        print(f'Sorry, could not find user with name {name}...')
+        print('Sorry, could not find user with name {}...'.format(name))
 
     # let us wait a bit before exiting
     await asyncio.sleep(3)
 
 # run a program
-client.run(main())
+main().run()

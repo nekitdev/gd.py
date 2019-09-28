@@ -44,7 +44,7 @@ class GDSession:
 
         parameters = Params().create_new().put_definer('song', song_id).finish()
         codes = {
-            -1: MissingAccess(message=f'No songs were found with ID: {song_id}.'),
+            -1: MissingAccess(message='No songs were found with ID: {}.'.format(song_id)),
             -2: SongRestrictedForUsage(song_id)
         }
         resp = await http.request(
@@ -76,7 +76,7 @@ class GDSession:
             name = re.search(RE[2], html).group(1)
             author = re.search(RE[3], html).group(1)
         except AttributeError:  # if re.search returned None -> Song not found
-            raise MissingAccess(message=f'No song found under ID: {song_id}.')
+            raise MissingAccess(message='No song found under ID: {}.'.format(song_id))
 
         return ClassConverter.song_from_kwargs(
             name=name, author=author, id=song_id, size=size_mb, links=[link, dl_link], custom=True
@@ -91,7 +91,7 @@ class GDSession:
 
         parameters = Params().create_new().put_definer('user', account_id).finish()
         codes = {
-            -1: MissingAccess(message=f'No users were found with ID: {account_id}.')
+            -1: MissingAccess(message='No users were found with ID: {}.'.format(account_id))
         }
 
         resp = await http.request(
@@ -137,7 +137,7 @@ class GDSession:
             .put_total(0).put_page(0).finish()
         )
         codes = {
-            -1: MissingAccess(message=f'Searching for {param} returned -1.')
+            -1: MissingAccess(message='Searching for {} returned -1.'.format(param))
         }
 
         resp = await http.request(Route.USER_SEARCH, parameters, splitter='#', error_codes=codes)
@@ -183,7 +183,7 @@ class GDSession:
         ext = ['101', type, '102', number, '103', cooldown, '104', '0']
 
         codes = {
-            -1: MissingAccess(message=f'Failed to get a level. Given ID: {level_id}')
+            -1: MissingAccess(message='Failed to get a level. Given ID: {}'.format(level_id))
         }
 
         parameters = Params().create_new().put_definer('levelid', level_id).finish()
@@ -223,11 +223,11 @@ class GDSession:
         w = ('daily', 'weekly').index(type)
         parameters = Params().create_new().put_weekly(w).finish()
         codes = {
-            -1: MissingAccess(message=f'Failed to fetch a {type!r} level.')
+            -1: MissingAccess(message='Failed to fetch a {!r} level.'.format(type))
         }
         resp = await http.request(Route.GET_TIMELY, parameters, error_codes=codes, splitter='|')
         if len(resp) != 2:
-            raise MissingAccess(message=f'Unknown response: {resp}.')
+            raise MissingAccess(message='Unknown response: {}.'.format(resp))
 
         num, cooldown = map(int, resp)
         num %= 100_000
@@ -278,7 +278,7 @@ class GDSession:
 
         params = Params().create_new().put_type(strategy).put_count(count)
         codes = {
-            -1: MissingAccess(message=f'Failed to fetch leaderboard for strategy: {strategy!r}.')
+            -1: MissingAccess(message='Failed to fetch leaderboard for strategy: {!r}.'.format(strategy))
         }
 
         if needs_login:
@@ -297,9 +297,9 @@ class GDSession:
 
         return res
 
-    async def test_captcha(self, client):
+    async def test_captcha(self):
         image_bytes = await http.request(Route.CAPTCHA)
-        res = await Captcha.aio_solve(image_bytes, should_log=True, loop=client.loop)
+        res = await Captcha.aio_solve(image_bytes, should_log=True)
         return res
 
 
@@ -338,7 +338,7 @@ class GDSession:
         resp = await http.request(Route.GET_ACCOUNT_URL, parameters)
 
         if not isinstance(resp, str):  # not link?
-            raise MissingAccess(message=f'Unknown response when searching for account url: {resp!r}')
+            raise MissingAccess(message='Unknown response when searching for account url: {!r}'.format(resp))
 
         link = resp + '/database/'  # http://ip/database/
         return link
@@ -351,7 +351,7 @@ class GDSession:
             .finish_login()
         )
         codes = {
-            -11: MissingAccess(message=f'Failed to load data for user: {client!r}.')
+            -11: MissingAccess(message='Failed to load data for user: {!r}.'.format(client))
         }
 
         resp = await http.request(Route.LOAD_DATA, parameters, error_codes=codes, custom_base=link)
@@ -466,7 +466,7 @@ class GDSession:
     async def report_level(self, level):
         parameters = Params().create_new('web').put_definer('levelid', level.id).finish()
         codes = {
-            -1: MissingAccess(message=f'Failed to report a level: {level!r}.')
+            -1: MissingAccess(message='Failed to report a level: {!r}.'.format(level))
         }
 
         await http.request(Route.REPORT_LEVEL, parameters, error_codes=codes)
@@ -480,7 +480,7 @@ class GDSession:
         resp = await http.request(Route.DELETE_LEVEL, parameters)
 
         if resp != 1:
-            raise MissingAccess(message=f'Failed to delete a level: {level}.')
+            raise MissingAccess(message='Failed to delete a level: {}.'.format(level))
 
         # update level's is_alive coroutine to return False only.
         async def is_alive(*args):
@@ -499,7 +499,7 @@ class GDSession:
         resp = await http.request(Route.UPDATE_LEVEL_DESC, parameters)
 
         if resp != 1:
-            raise MissingAccess(message=f'Failed to update description of the level: {level}.')
+            raise MissingAccess(message='Failed to update description of the level: {}.'.format(level))
 
         # update level's description on success
         level.options['description'] = content
@@ -521,7 +521,7 @@ class GDSession:
         resp = await http.request(Route.RATE_LEVEL_STARS, parameters)
 
         if resp != 1:
-            raise MissingAccess(message=f'Failed to rate level: {level}.')
+            raise MissingAccess(message='Failed to rate level: {}.'.format(level))
 
 
     async def rate_demon(self, level, demon_rating, mod: bool, *, client):
@@ -551,13 +551,13 @@ class GDSession:
             .put_definer('stars', rating).put_feature(int(featured)).finish_mod()
         )
         codes = {
-            -2: MissingAccess(message=f'Missing moderator permissions to send a level: {level!r}.')
+            -2: MissingAccess(message='Missing moderator permissions to send a level: {!r}.'.format(level))
         }
 
         resp = await http.request(Route.SUGGEST_LEVEL_STARS, parameters, error_codes=codes)
 
         if resp != 1:
-            raise MissingAccess(message=f'Failed to send a level: {level!r}.')
+            raise MissingAccess(message='Failed to send a level: {!r}.'.format(level))
 
 
     async def like(self, item, dislike: bool = False, *, client):
@@ -593,7 +593,7 @@ class GDSession:
         resp = await http.request(Route.LIKE_ITEM, parameters)
 
         if resp != 1:
-            raise MissingAccess(message=f'Failed to like an item: {item}.')
+            raise MissingAccess(message='Failed to like an item: {}.'.format(item))
 
 
     async def get_page_messages(
@@ -660,7 +660,7 @@ class GDSession:
 
 
     async def comment_level(self, level, content: str, percentage: int, *, client):
-        assert percentage <= 100, f'{percentage}%>100% percentage arg was recieved.'
+        assert percentage <= 100, '{}% > 100% percentage arg was recieved.'.format(percentage)
 
         percentage = round(percentage)  # just in case
         to_gen = [client.name, level.id, percentage, 0]
@@ -672,7 +672,7 @@ class GDSession:
             .put_percent(percentage).finish()
         )
         codes = {
-            -1: MissingAccess(message=f'Failed to post a comment on a level: {level!r}.')
+            -1: MissingAccess(message='Failed to post a comment on a level: {!r}.'.format(level))
         }
 
         await http.request(Route.UPLOAD_COMMENT, parameters, error_codes=codes)
@@ -681,7 +681,7 @@ class GDSession:
     async def edit(self, name: str, password: str, *, client):
         _, cookie = await http.request(Route.MANAGE_ACCOUNT, get_cookies=True)
         captcha = await http.request(Route.CAPTCHA, cookie=cookie)
-        number = await Captcha.aio_solve(captcha, loop=client.loop)
+        number = await Captcha.aio_solve(captcha, should_log=True)
         parameters = (
             Params().create_new('web').put_for_management(
                 client.name, client.password, number).close()
@@ -722,7 +722,7 @@ class GDSession:
         )
         resp = await http.request(route, parameters)
         if resp != 1:
-            raise MissingAccess(message=f'Failed to delete a comment: {comment!r}.')
+            raise MissingAccess(message='Failed to delete a comment: {!r}.'.format(comment))
 
 
     async def send_friend_request(self, target, message, client):
@@ -740,7 +740,7 @@ class GDSession:
             return
 
         elif resp != 1:
-            raise MissingAccess(message=f'Failed to send a friend request to user: {target!r}.')
+            raise MissingAccess(message='Failed to send a friend request to user: {!r}.'.format(target))
 
 
     async def delete_friend_req(self, req):
@@ -753,7 +753,7 @@ class GDSession:
         )
         resp = await http.request(Route.DELETE_REQUEST, parameters)
         if resp != 1:
-            raise MissingAccess(message=f'Failed to delete a friend request: {req!r}.')
+            raise MissingAccess(message='Failed to delete a friend request: {!r}.'.format(req))
 
 
     async def accept_friend_req(self, req):
@@ -769,7 +769,7 @@ class GDSession:
         )
         resp = await http.request(Route.ACCEPT_REQUEST, parameters)
         if resp != 1:
-            raise MissingAccess(message=f'Failed to accept a friend request: {req!r}.')
+            raise MissingAccess(message='Failed to accept a friend request: {!r}.'.format(req))
 
 
     async def read_friend_req(self, req):
@@ -780,7 +780,7 @@ class GDSession:
         )
         resp = await http.request(Route.READ_REQUEST, parameters)
         if resp != 1:
-            raise MissingAccess(message=f'Failed to read a friend request: {req!r}.')
+            raise MissingAccess(message='Failed to read a friend request: {!r}.'.format(req))
         req.options.update({'is_read': True})
 
 
@@ -792,7 +792,7 @@ class GDSession:
             .put_password(client.encodedpass).finish()
         )
         codes = {
-            -1: MissingAccess(message=f"Failed to read a message: {msg!r}.")
+            -1: MissingAccess(message='Failed to read a message: {!r}.'.format(msg))
         }
         resp = await http.request(
             Route.READ_PRIVATE_MESSAGE, parameters, error_codes=codes,
@@ -815,7 +815,7 @@ class GDSession:
         )
         resp = await http.request(Route.DELETE_PRIVATE_MESSAGE, parameters)
         if resp != 1:
-            raise MissingAccess(message=f"Failed to delete a message: {msg!r}.")
+            raise MissingAccess(message='Failed to delete a message: {!r}.'.format(msg))
 
 
     async def get_gauntlets(self, *, client):
@@ -882,7 +882,7 @@ class GDSession:
             .put_password(client.encodedpass).put_page(page).put_total(0).get_sent(inbox).finish()
         )
         codes = {
-            -1: MissingAccess(message=f'Failed to get friend requests on page {page}.'),
+            -1: MissingAccess(message='Failed to get friend requests on page {}.'.format(page)),
             -2: NothingFound('gd.FriendRequest')
         }
 
@@ -995,7 +995,7 @@ class GDSession:
             .put_total(0).put_mode(st_value).put_count(amount).finish()
         )
         codes = {
-            -1: MissingAccess(message=f'Failed to get comments of a level: {level!r}.'),
+            -1: MissingAccess(message='Failed to get comments of a level: {!r}.'.format(level)),
             -2: NothingFound('gd.Comment')
         }
 
@@ -1033,7 +1033,7 @@ class GDSession:
         )
         resp = await http.request(route, parameters)
         if resp != 1:
-            raise MissingAccess(message=f'Failed to (un)block a user: {user!r}.')
+            raise MissingAccess(message='Failed to (un)block a user: {!r}.'.format(user))
 
 
     async def unfriend_user(self, user, *, client):
@@ -1043,7 +1043,7 @@ class GDSession:
         )
         resp = await http.request(Route.REMOVE_FRIEND, parameters)
         if resp != 1:
-            raise MissingAccess(message=f'Failed to unfriend a user: {user!r}.')
+            raise MissingAccess(message='Failed to unfriend a user: {!r}.'.format(user))
 
 
     async def send_message(self, target, subject: str, body: str, *, client):
@@ -1054,7 +1054,7 @@ class GDSession:
         )
         resp = await http.request(Route.SEND_PRIVATE_MESSAGE, parameters)
         if resp != 1:
-            raise MissingAccess(message=f"Failed to send a message to a user: {target!r}.")
+            raise MissingAccess(message='Failed to send a message to a user: {!r}.'.format(target))
 
 
     async def update_settings(
@@ -1068,7 +1068,7 @@ class GDSession:
         )
         resp = await http.request(Route.UPDATE_ACC_SETTINGS, parameters)
         if resp != 1:
-            raise MissingAccess(message=f"Failed to update profile settings of a client: {client!r}.")
+            raise MissingAccess(message='Failed to update profile settings of a client: {!r}.'.format(client))
 
 
     async def run_many(self, tasks):

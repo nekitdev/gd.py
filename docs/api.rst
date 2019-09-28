@@ -7,6 +7,8 @@ The following section outlines the API of gd.py.
 
 .. note::
 
+    See :ref:`sync` for better understanding about ways to run coroutines synchronously.
+
     You can find gd.py Developers API here: :ref:`development_api`.
 
 Version Related Info

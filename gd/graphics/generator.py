@@ -62,7 +62,7 @@ class SpriteGenUtil:
         for icon in self.icon_types:
             temp = fix_int(getattr(iconset, icon))
             prefix = fix_prefix(icon)
-            base = f'{prefix}_{temp}_..._001.png'
+            base = '{}_{}_..._001.png'.format(prefix, temp)
             final.append(base)
         return final
 
@@ -337,4 +337,4 @@ def fix_prefix(prefix):
     return cases.get(prefix, prefix)
 
 def fix_int(n):
-    return f'{n:02}' if n else n
+    return '{:02}'.format(n) if n else n

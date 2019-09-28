@@ -1,12 +1,11 @@
 """Module that implements some Geometry Dash jokes..."""
 
-from .errors import GDException
 from .utils.wrap_tools import make_repr
 
 
-class JokeNotFoundError(GDException):
+class JokeNotFoundError(AttributeError):
     def __init__(self, name):
-        message = f'No joke was found under name: {name!r}.'
+        message = 'No joke was found under name: {!r}.'.format(name)
         super().__init__(message)
 
 
@@ -15,10 +14,10 @@ class JokeHandler:
         self.jokes = {
             'anime': 'I see, you are a person of culture.',
             'blaze': 'What if we would send all levels?',
-            'colon': 'Did you use the right pusab? 8)',
-            'etzer': 'Have you sent it to RobTop yet?',
+            'colon': 'Did you use the right pusab?',
+            'etzer': 'Have you sent it to RobTop yet? 8)',
             'michigun': 'Every level needs a triple... ΔΔΔ',
-            'nekit': '... I dunno what to put here :sad:',
+            'nekit': '<sarcasm> HTML is a programming language. </sarcasm>',
             'owo': 'Hewwo, my fwiend! owo',
             'serponge': 'New AlterGame in progress :pog:',
             'viprin': '[Ctrl+D] | [Ctrl+C & Ctrl+V]'

@@ -1,8 +1,13 @@
+import asyncio
 import logging
 from io import BytesIO
 
-from PIL import Image, ImageOps
+try:
+    from PIL import Image, ImageOps
+except (ModuleNotFoundError, ImportError):
+    print('Failed to import PIL (Pillow). Captcha solving will not be functioning.')
 
+from ._async import run_blocking_io
 from .wrap_tools import benchmark
 from ..errors import FailedCaptcha
 
@@ -50,24 +55,16 @@ class Captcha:
         return code
 
     @classmethod
-    async def aio_solve(cls, image_bytes: bytes, should_log: bool = False, loop=None):
+    async def aio_solve(cls, image_bytes: bytes, should_log: bool = False):
         """|coro|
 
-        Solves a Captcha asynchronously if loop is given, and solves synchronously otherwise.
+        Solves a Captcha asynchronously in a new event loop.
 
         Basically runs :meth:`.Captcha.solve` with :meth:`asyncio.AbstractEventLoop.run_in_executor`.
 
         Passes ``None`` to that method as a first argument.
         """
-        if loop is None:
-            log.warning(
-                'Captcha.aio_solve() needs a loop to run Captcha.solve() in executor. '
-                'Running synchronously now...')
-
-            # let's run synchronously then...
-            return cls.solve(image_bytes, should_log=should_log)
-
-        return await loop.run_in_executor(None, cls.solve, image_bytes, should_log)
+        return await run_blocking_io(cls.solve, image_bytes, should_log)
 
     @classmethod
     def walk_through(cls, pixel_map, size):
@@ -116,7 +113,7 @@ class Captcha:
         try:
             return cases.index(res)
         except ValueError:
-            raise FailedCaptcha(f'Unknown result for digit was recieved: {res}.') from None
+            raise FailedCaptcha('Unknown result for digit was recieved: {}.'.format(res)) from None
 
     @classmethod
     def init_numbers(cls):
