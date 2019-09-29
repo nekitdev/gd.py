@@ -1,11 +1,7 @@
-import asyncio
 import logging
 from io import BytesIO
 
-try:
-    from PIL import Image, ImageOps
-except (ModuleNotFoundError, ImportError):
-    print('Failed to import PIL (Pillow). Captcha solving will not be functioning.')
+from PIL import Image, ImageOps
 
 from ._async import run_blocking_io
 from .wrap_tools import benchmark

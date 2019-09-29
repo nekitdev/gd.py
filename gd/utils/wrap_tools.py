@@ -1,8 +1,14 @@
 import functools
+import gc
 import logging
 import time  # not for time.sleep() :)
 
 from ..errors import NotLoggedError, MissingAccess
+
+__all__ = (
+    'check', 'benchmark', 'new_method', 'add_method',
+    'del_method', 'make_repr', 'find_subclass', 'get_instances_of'
+)
 
 log = logging.getLogger(__name__)
 
@@ -12,7 +18,7 @@ log = logging.getLogger(__name__)
 
 import ctypes
 
-def _get_class_dict(cls):
+def get_class_dict(cls):
     """Gets 'cls.__dict__' that can be edited."""
     return ctypes.py_object.from_address(id(cls.__dict__) + 16).value
 
@@ -82,7 +88,7 @@ def benchmark(func):
 def new_method(cls):
     # decorator that adds new methods to a 'cls'.
     def decorator(func):
-        cls_d = _get_class_dict(cls)
+        cls_d = get_class_dict(cls)
         cls_d[func.__name__] = func
 
         @functools.wraps(func)
@@ -117,15 +123,20 @@ def find_subclass(string_name, superclass=object):
     return subclasses.get(string_name, superclass)
 
 
+def get_instances_of(obj_class=object):
+    objects = gc.get_objects()
+    return [obj for obj in objects if isinstance(obj, obj_class)]
+
+
 def del_method(cls, method_name):
     """Delete a method of a 'cls'."""
-    cls_d = _get_class_dict(cls)
+    cls_d = get_class_dict(cls)
     cls_d.pop(method_name, None)
 
 
 def add_method(cls, func, *, name: str = None):
     """Adds a new method to a 'cls'."""
-    cls_d = _get_class_dict(cls)
+    cls_d = get_class_dict(cls)
 
     if name is None:
         name = func.__name__

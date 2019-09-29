@@ -145,6 +145,9 @@ class HTTPClient:
         if cookie is not None:
             headers = {'Cookie': cookie}
 
+        if self.debug:
+            print('URL: {}, Data: {}'.format(url, params))
+
         async with aiohttp.ClientSession() as client:
             async with self.semaphore:
                 try:

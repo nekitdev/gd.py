@@ -20,7 +20,8 @@ __all__ = (
     'MessageOrRequestType',
     'CommentStrategy',
     'LeaderboardStrategy',
-    'SearchStrategy'
+    'SearchStrategy',
+    'GauntletEnum'
 )
 
 def _name_to_enum(x: str):

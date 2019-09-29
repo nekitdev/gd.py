@@ -230,6 +230,8 @@ Exception Hierarchy
 Useful Utils
 ------------
 
+.. autofunction:: run_blocking_io
+
 .. autofunction:: run
 
 .. autofunction:: cancel_all_tasks

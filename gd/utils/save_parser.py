@@ -1,6 +1,5 @@
 from collections import namedtuple
 import re
-from xml.etree import ElementTree as ETree
 # more things soon <3
 
 Save = namedtuple('Save', 'completed followed')

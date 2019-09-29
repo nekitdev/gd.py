@@ -3,6 +3,12 @@ import functools
 
 from .wrap_tools import find_subclass, add_method, del_method
 
+__all__ = (
+    'run_blocking_io', 'wait', 'run',
+    'cancel_all_tasks', 'shutdown_loop',
+    'coroutine'
+)
+
 coroutine = find_subclass('coroutine')
 
 

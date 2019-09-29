@@ -19,12 +19,12 @@ def show_version():
     version_info = gd.version_info
     entries.append('- gd.py v{0.major}.{0.minor}.{0.micro}-{0.releaselevel}'.format(version_info))
 
-    entries.append('- [gd_console] v{0}'.format(con_v))
-
     if version_info.releaselevel != 'final':
         pkg = pkg_resources.get_distribution('gd.py')
         if pkg:
             entries.append('    - gd.py pkg_resources: v{0}'.format(pkg.version))
+
+    entries.append('- [gd_console] v{0}'.format(con_v))
 
     entries.append('- aiohttp v{0.__version__}'.format(aiohttp))
 

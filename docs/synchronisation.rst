@@ -44,6 +44,8 @@ will raise the RuntimeError.
 3. coroutine.run
 ----------------
 
+.. automethod:: coroutine.run
+
 .. code-block:: python3
 
     test().run() -> 13
@@ -59,5 +61,3 @@ You can disable it by doing:
 
     import gd
     gd.synchronise(False)
-
-.. automethod:: coroutine.run
