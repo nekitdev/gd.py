@@ -71,7 +71,7 @@ async def wait(fs, *, loop=None, timeout=None, return_when='ALL_COMPLETED'):
         This does not raise :exc:`TimeoutError`! Futures that aren't done
         when the timeout occurs are returned in the second set.
     """
-    return await asyncio.wait(fs, loop=loop, timeout=timeout, return_when=return_when)
+    return await asyncio.wait([*fs], loop=loop, timeout=timeout, return_when=return_when)
 
 
 def run(coro, *, loop=None, debug: bool = False):
@@ -132,6 +132,7 @@ def run(coro, *, loop=None, debug: bool = False):
         return loop.run_until_complete(coro)
 
     loop = asyncio.new_event_loop()
+
     try:
         asyncio.set_event_loop(loop)
         loop.set_debug(debug)
@@ -194,12 +195,10 @@ def _run(self):
     loop = asyncio.new_event_loop()
 
     try:
-        ret = loop.run_until_complete(self)
+        return loop.run_until_complete(self)
 
     finally:
         loop.close()
-
-    return ret
 
 
 def enable_run_method(on: bool = True):
