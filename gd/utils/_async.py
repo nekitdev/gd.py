@@ -73,8 +73,9 @@ async def wait(fs, *, loop=None, timeout=None, return_when='ALL_COMPLETED'):
     """
     try:
         fs = [*fs]
-    finally:
-        return await asyncio.wait(fs, loop=loop, timeout=timeout, return_when=return_when)
+    except TypeError:  # not iterable
+        pass
+    return await asyncio.wait(fs, loop=loop, timeout=timeout, return_when=return_when)
 
 
 def run(coro, *, loop=None, debug: bool = False):
