@@ -42,7 +42,7 @@ async def test():
 
         res = await coro(*args, **kwargs)
 
-        print('{}() -> {}'.format(f_name, res))
+        print('{}() -> {}'.format(f_name, res), end='\n\n')
 
     print('End Of Test Suite')
 

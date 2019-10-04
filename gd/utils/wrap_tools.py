@@ -1,3 +1,4 @@
+import ctypes
 import functools
 import gc
 import logging
@@ -12,19 +13,11 @@ __all__ = (
 
 log = logging.getLogger(__name__)
 
-# |========================================|
-# |============= ctypes magic =============|
-# |========================================|
-
-import ctypes
 
 def get_class_dict(cls):
     """Gets 'cls.__dict__' that can be edited."""
     return ctypes.py_object.from_address(id(cls.__dict__) + 16).value
 
-# |======================================|
-# |============= Decorators =============|
-# |======================================|
 
 class check:
     @classmethod
@@ -39,7 +32,7 @@ class check:
                 if client is None:
                     raise MissingAccess(
                         message=(
-                            'Attempt to check if client is logged for {} returned None. '
+                            'Attempt to check if client is logged for {!r} returned None. '
                             'Have you made this object by hand?').format(obj)
                         )
 
@@ -58,11 +51,12 @@ class check:
 
         except AttributeError:
             raise MissingAccess(
-                message='None was recieved as an <obj> arg.'
+                message='None was recieved as an <obj> arg when checking in {!r}.'.format(func_name)
             ) from None
 
         if not client.is_logged():
             raise NotLoggedError(func_name)
+
 
 def benchmark(func):
     @functools.wraps(func)
@@ -97,11 +91,6 @@ def new_method(cls):
 
         return wrapper
     return decorator
-
-
-# |=======================================|
-# |============= Other Utils =============|
-# |=======================================|
 
 
 def make_repr(obj, info = {}):

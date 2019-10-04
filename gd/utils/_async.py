@@ -72,7 +72,7 @@ async def wait(fs, *, loop=None, timeout=None, return_when='ALL_COMPLETED'):
         when the timeout occurs are returned in the second set.
     """
     try:
-        fs = [*fs]
+        fs = list(fs)
     except TypeError:  # not iterable
         pass
     return await asyncio.wait(fs, loop=loop, timeout=timeout, return_when=return_when)

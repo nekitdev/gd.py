@@ -774,6 +774,17 @@ class Client:
         if password is not None:
             log.debug('Changed password to: %s', password)
 
+
+    @check.is_logged()
+    async def update_profile(
+        self, stars: int = 0, demons: int = 0, diamonds: int = 0, main_icon: int = 1,
+        main_icon_type: int = 0, color_1: int = 0, color_2: int = 3, coins: int = 0,
+        user_coins: int = 0, cube: int = 1, ship: int = 1, ball: int = 1, ufo: int = 1,
+        wave: int = 1, robot: int = 1, spider: int = 1, explosion: int = 1,
+        has_glow: bool = False, like_user=None
+    ):
+        pass
+
     @check.is_logged()
     async def update_settings(
         self, *, msg: int = None, friend_req: int = None, comments: int = None,
