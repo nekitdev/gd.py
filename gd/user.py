@@ -45,12 +45,12 @@ class UserStats(AbstractUser):
     @property
     def coins(self):
         """:class:`int`: Number of coins the user has."""
-        return self.options.get('coins')
+        return self.options.get('secret_coins')
 
     @property
     def user_coins(self):
         """:class:`int`: Amount of User Coins user has."""
-        return self.options.get('user_coins')
+        return self.options.get('coins')
 
     @property
     def lb_place(self):

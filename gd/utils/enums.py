@@ -158,6 +158,10 @@ class NEnum(Enum):
         return _enum_to_name(self)
 
     @classmethod
+    def as_dict(cls):
+        return {enum.value: enum.name.lower() for enum in iter(cls)}
+
+    @classmethod
     def from_value(cls, value: Union[int, str]):
         """Returns *Enum* with given value.
 

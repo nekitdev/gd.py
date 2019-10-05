@@ -357,7 +357,7 @@ class GDSession:
         resp = await http.request(Route.LOAD_DATA, parameters, error_codes=codes, custom_base=link)
 
         try:
-            raw_save = Coder.decode_gamesave(resp, needs_xor=False)
+            raw_save = Coder.decode_save(resp, needs_xor=False)
             save = SaveParser.parse(raw_save)
 
             client._upd('raw_save', raw_save)

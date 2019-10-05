@@ -1,5 +1,13 @@
 from operator import attrgetter as attrget
 
+__all__ = ('find', 'get', 'unique')
+
+def unique(iterable):
+    seen = set()
+    add = seen.add
+    return [x for x in iterable if not (x in seen or add(x))]
+
+
 def find(predicate, seq, *, _all: bool = False):
     """For each element in sequence, return first element if predicate
     returns ``True`` and ``'_all'`` is ``False``.

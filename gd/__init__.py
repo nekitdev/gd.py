@@ -4,7 +4,7 @@ __title__ = 'gd'
 __author__ = 'NeKitDS'
 __copyright__ = 'Copyright 2019 NeKitDS'
 __license__ = 'MIT'
-__version__ = '0.9.6'
+__version__ = '0.10.0a0'
 
 from collections import namedtuple
 import logging
@@ -37,9 +37,9 @@ from .utils.crypto.xor_cipher import XORCipher
 
 from ._jokes import jokes  # why not?...
 
-from .utils._async import enable_run_method as synchronise
-synchronize = synchronise
+from .utils._async import enable_run_method as synchronize
 
+from . import api  # this package contains actual non-server gd API
 from . import utils  # since asyncio.run() was introduced in 3.7, we have utils.run() function.
 
 

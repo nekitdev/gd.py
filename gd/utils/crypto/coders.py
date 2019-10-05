@@ -2,6 +2,7 @@ import base64
 import hashlib
 import random
 import string
+import struct
 import zlib
 
 from typing import Sequence, Union
@@ -23,6 +24,7 @@ class Coder:
         'like_rate': '58281',
         'userscore': '85271'
     }
+
     salts = {
         'level': 'xI25fpAapCQg',
         'comment': 'xPT6iUrtws0J',
@@ -30,6 +32,8 @@ class Coder:
         'userscore': 'xI35fsAapCRg',
         'levelscore': 'yPg6pUrtWn0J'
     }
+
+    additional = (0x1f, 0x8b, 0x8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xb)
 
     @classmethod
     def normal_xor(cls, data: bytes, key: int):
@@ -51,12 +55,31 @@ class Coder:
         return bytearray(i^key for i in data).decode()
 
     @classmethod
-    def decode_gamesave(cls, save: str, needs_xor: bool = True):
+    def decode_save(cls, save: str, needs_xor: bool = True):
         if needs_xor:
             save = cls.normal_xor(save.encode(), 11)
+
         data = mapper_util.normalize(save).encode()
+
         from_b64 = base64.b64decode(data)[10:]
+
         return zlib.decompress(from_b64, -zlib.MAX_WBITS).decode(errors='replace')
+
+    @classmethod
+    def encode_save(cls, save: Union[bytes, str], needs_xor: bool = True):
+        if isinstance(save, str):
+            save = save.encode(errors='replace')
+
+        compressed = zlib.compress(save)
+
+        crc32 = struct.pack('I', zlib.crc32(save))
+        save_size = struct.pack('I', len(save))
+
+        encrypted = bytes(cls.additional) + compressed[2:-4] + crc32 + save_size
+
+        encoded = mapper_util.prepare_sending(base64.b64encode(encrypted).decode()).encode()
+
+        return encoded if not needs_xor else cls.normal_xor(encoded, 11).encode()
 
     @classmethod
     def gen_rs(cls, length: int = 10):
@@ -206,6 +229,12 @@ class Coder:
             final = final[:-1]
 
         return final
+
+    @classmethod
+    def zip(cls, string: str):
+        zipped = bytes(cls.additional) + zlib.compress(string.encode())[2:-4]
+        encoded = mapper_util.prepare_sending(base64.b64encode(zipped).decode())
+        return encoded
 
     @classmethod
     def gen_level_lb_seed(cls, jumps: int = 0, percentage: int = 0, seconds: int = 0):

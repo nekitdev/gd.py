@@ -35,7 +35,7 @@ setup(
     version=version,
     packages=[
         'gd', 'gd.utils', 'gd.utils.crypto',
-        'gd.graphics', 'gd.events', 'gd.api'
+        'gd.events', 'gd.api'
     ],
     license='MIT',
     description='A Geometry Dash API wrapper for Python',

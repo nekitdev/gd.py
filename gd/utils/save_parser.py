@@ -1,5 +1,6 @@
 from collections import namedtuple
 import re
+from xml.etree import ElementTree as ETree
 # more things soon <3
 
 Save = namedtuple('Save', 'completed followed')
@@ -12,11 +13,15 @@ class SaveParser:
         return Save(completed=completed, followed=followed)
 
     @classmethod
+    def to_xml(cls, xml):
+        return ETree.fromstring(xml)
+
+    @classmethod
     def parse_completed_levels(cls, xml):
         pattern = '<k>c_(\d+)</k><s>1</s>'
         found = re.findall(pattern, xml)
 
-        return map_to_int(found)
+        return list(map(int, found))
 
     @classmethod
     def parse_followed(cls, xml):
@@ -28,10 +33,7 @@ class SaveParser:
         pattern = '<k>(\d+)</k><s>1</s>'
         found = re.findall(pattern, section)
 
-        return map_to_int(found)
-
-def map_to_int(seq):
-    return [int(x) for x in seq]
+        return list(map(int, found))
 
 def slice_between(sequence, section_name, x, y):
     fix = len(section_name) + 3

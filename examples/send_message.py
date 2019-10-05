@@ -10,10 +10,17 @@ client = gd.Client()  # initialize client
 # a coro to make things simplier
 async def coro():
     # login
-    await client.login(user='Username', password='YourP4ssw0rd')
+    username, password = (
+        input('Please enter your GD username: '),
+        input('Enter corresponding password: ')
+    )
+    await client.login(user=username, password=password)
 
     # get all friends...
     friends = await client.get_friends()
+
+    if not friends:
+        print('Oh... Seems like you have no friends in GD...')
 
     # choose one target
     target = random.choice(friends)
@@ -21,7 +28,7 @@ async def coro():
     # send a message to them
     try:
         await target.send(subject='Hello!',
-            message='This is a message sent using gd.py library! :)')
+            body='This is a message sent using gd.py library! :)')
 
         # print that message was successfully sent
         print('Successfully sent a message to {!r}! :)'.format(target))

@@ -1,7 +1,7 @@
 class XORCipher:
 
-    @classmethod
-    def cipher(cls, key: str, string: str):
+    @staticmethod
+    def cipher(key: str, string: str):
         """Ciphers a string with XOR using key given.
 
         Due to the fact that *XOR* ``^`` operation is being used,

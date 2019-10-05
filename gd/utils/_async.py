@@ -192,7 +192,7 @@ def shutdown_loop(loop, set_event_loop_to_none: bool = False):
         loop.close()
 
 
-def _run(self):
+def _run(self, *, loop=None):
     """Run the coroutine in a new event loop,
     closing the loop after execution.
     """
