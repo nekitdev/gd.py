@@ -74,7 +74,7 @@ class Coder:
         crc32 = struct.pack('I', zlib.crc32(save))
         save_size = struct.pack('I', len(save))
 
-        encrypted = bytes(cls.additional) + compressed[2:-4]  # + crc32 + save_size
+        encrypted = bytes(cls.additional) + compressed[2:-4] + crc32 + save_size
 
         encoded = mapper_util.prepare_sending(base64.b64encode(encrypted).decode()).encode()
 
