@@ -8,6 +8,8 @@ from .save import SaveAPI
 __all__ = ('SaveLoader', 'path')
 
 
+path = Path.cwd()
+
 try:
     local_path = Path(os.getenv('localappdata'))
     path = local_path / 'GeometryDash'
