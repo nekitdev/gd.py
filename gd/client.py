@@ -40,8 +40,8 @@ class Client:
         Password of the client. ``None`` if not logged in.
     encodedpass: :class:`str`
         Encoded Password of the client. ``None`` on init as well.
-    raw_save: :class:`str`
-        Raw decoded save. If not loaded, defaults to ``''``.
+    raw_save: :class:`bytes`
+        Raw decoded save. If not loaded, defaults to ``bytes()``.
     save: :class:`.Save`
         This is a namedtuple with format ``(completed, followed)``.
         Contains empty lists if not loaded.
@@ -63,7 +63,7 @@ class Client:
 
     def _set_to_defaults(self):
         self.save = Save(completed=[], followed=[])
-        self.raw_save = str()
+        self.raw_save = bytes()
         self.account_id = 0
         self.id = 0
         self.name = None
@@ -475,6 +475,16 @@ class Client:
         else:
             log.warning('Failed to load a save.')
 
+    @check.is_logged()
+    async def backup(self, save_data: Union[bytes, str] = None):
+        if save_data is None and not self.raw_save:
+
+            return log.warning('No data was provided.')
+
+        data = save_data if save_data else self.raw_save
+
+        await self.session.do_save(client=self, data=data)
+
     def close(self, message: str = 'Logged out, no additional description.'):
         """*Closes* client.
 
@@ -710,17 +720,22 @@ class Client:
         return await self.get_top(strategy, count=count)
 
     @check.is_logged()
-    async def get_account_url(self):
+    async def get_account_url(self, type: str = 'load'):
         """|coro|
 
-        Fetches account URL. It is used in Save retrieving.
+        Fetches account URL. It is used in loading or saving data.
+
+        Parameters
+        ----------
+        type: :class:`str`
+            Type of url to fetch. Either ``'save'`` or ``'load'``.
 
         Returns
         -------
         :class:`str`
             Link of format ``http://<ip>/database/``.
         """
-        return await self.session.get_account_url(self)
+        return await self.session.get_account_url(self, type=type)
 
     @check.is_logged()
     async def post_comment(self, content: str):

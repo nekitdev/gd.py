@@ -55,27 +55,26 @@ class Coder:
         return bytearray(i^key for i in data).decode()
 
     @classmethod
-    def decode_save(cls, save: str, needs_xor: bool = True):
+    def decode_save(cls, save: bytes, needs_xor: bool = True):
         if needs_xor:
-            save = cls.normal_xor(save.encode(), 11)
+            save = cls.normal_xor(save, 11)
+        elif isinstance(save, bytes):
+            save = save.decode(errors='ignore')
 
         data = mapper_util.normalize(save).encode()
 
         from_b64 = base64.b64decode(data)[10:]
 
-        return zlib.decompress(from_b64, -zlib.MAX_WBITS).decode(errors='replace')
+        return zlib.decompress(from_b64, -zlib.MAX_WBITS)
 
     @classmethod
-    def encode_save(cls, save: Union[bytes, str], needs_xor: bool = True):
-        if isinstance(save, str):
-            save = save.encode(errors='replace')
-
+    def encode_save(cls, save: bytes, needs_xor: bool = True):
         compressed = zlib.compress(save)
 
         crc32 = struct.pack('I', zlib.crc32(save))
         save_size = struct.pack('I', len(save))
 
-        encrypted = bytes(cls.additional) + compressed[2:-4] + crc32 + save_size
+        encrypted = bytes(cls.additional) + compressed[2:-4]  # + crc32 + save_size
 
         encoded = mapper_util.prepare_sending(base64.b64encode(encrypted).decode()).encode()
 
@@ -224,7 +223,7 @@ class Coder:
         except zlib.error:
             unzipped = zlib.decompress(decoded[10:], -zlib.MAX_WBITS)
 
-        final = unzipped.decode(errors='replace')
+        final = unzipped.decode(errors='ignore')
         if final.endswith(';'):
             final = final[:-1]
 

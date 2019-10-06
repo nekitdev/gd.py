@@ -26,6 +26,7 @@ class Route:
     DELETE_PRIVATE_MESSAGE = 'deleteGJMessages20'
     GET_TIMELY = 'getGJDailyLevel'
     LOGIN = 'accounts/loginGJAccount'
+    SAVE_DATA = 'accounts/backupGJAccountNew'
     LOAD_DATA = 'accounts/syncGJAccountNew'
     CAPTCHA = 'accounts/captcha'
     MANAGE_ACCOUNT = 'accounts/accountManagement'

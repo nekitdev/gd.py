@@ -33,10 +33,12 @@ async def run_blocking_io(func, *args, **kwargs):
         await run_blocking_io(make_image)
     """
     loop = asyncio._get_running_loop()
+
     should_close = False
 
     if loop is None:
         loop = asyncio.new_event_loop()
+
         should_close = True
 
     try:
@@ -192,17 +194,23 @@ def shutdown_loop(loop, set_event_loop_to_none: bool = False):
         loop.close()
 
 
-def _run(self, *, loop=None):
+def _run(self, loop=None):
     """Run the coroutine in a new event loop,
-    closing the loop after execution.
+    closing the loop after execution (if not given).
     """
-    loop = asyncio.new_event_loop()
+    should_close = False
+
+    if loop is None:
+        loop = asyncio.new_event_loop()
+
+        should_close = True
 
     try:
         return loop.run_until_complete(self)
 
     finally:
-        loop.close()
+        if should_close:
+            loop.close()
 
 
 def enable_run_method(on: bool = True):

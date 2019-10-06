@@ -366,6 +366,28 @@ class Parameters:
             base64.b64encode(item.encode()).decode())
         return self
 
+    def put_save_data(self, data: Union[bytes, str]):
+        """Self explanatory. Puts `'saveData'` parameter.
+
+        Parameters
+        ----------
+        data: Union[:class:`bytes`, :class:`str`]
+            Data to put.
+
+        Returns
+        -------
+        :class:`.Parameters`
+            ``self``
+        """
+        if isinstance(data, str):
+            data = data.encode()
+
+        if b'?xml' in data:  # not encoded
+            data = Coder.encode_save(data, needs_xor=False).decode(errors='ignore')
+
+        self.dict['saveData'] = data
+        return self
+
     def put_type(self, number: Union[int, str] = 0):
         """Sets `'type'` parameter to a given number or string.
 

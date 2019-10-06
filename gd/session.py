@@ -344,17 +344,17 @@ class GDSession:
         return link
 
     async def load_save(self, client):
-        link = await client.get_account_url()
+        link = await client.get_account_url(type='load')
 
         parameters = (
             Params().create_new().put_username(client.name).put_definer('password', client.password)
             .finish_login()
         )
         codes = {
-            -11: MissingAccess(message='Failed to load data for user: {!r}.'.format(client))
+            -11: MissingAccess(message='Failed to load data for client: {!r}.'.format(client))
         }
 
-        resp = await http.request(Route.LOAD_DATA, parameters, error_codes=codes, custom_base=link)
+        resp = await http.request(Route.LOAD_DATA, parameters, error_codes=codes, custom_base=link, run_decoding=False)
 
         try:
             raw_save = Coder.decode_save(resp, needs_xor=False)
@@ -367,6 +367,22 @@ class GDSession:
 
         except Exception:
             return False
+
+
+    async def do_save(self, client, data):
+        link = await client.get_account_url(type='save')
+
+        parameters = (
+            Params().create_new().put_username(client.name).put_definer('password', client.password)
+            .put_save_data(data).finish_login()
+        )
+
+        resp = await http.request(Route.SAVE_DATA, parameters, custom_base=link)
+
+        if resp != 1:
+            raise MissingAccess(
+                message='Failed to do backup for client: {!r}. [ERROR: {}]'.format(client, resp)
+            )
 
 
     async def search_levels_on_page(

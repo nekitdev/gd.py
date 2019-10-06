@@ -133,6 +133,7 @@ class LevelDataEnum(NEnum):
     LENGTH = 'k23'
     STARS = 'k26'
     PASSWORD = 'k41'
+    ORIGINAL = 'k42'
     CUSTOM_SONG = 'k45'
     REVISION = 'k46'
     OBJECTS = 'k48'

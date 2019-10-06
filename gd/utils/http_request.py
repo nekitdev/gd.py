@@ -27,6 +27,7 @@ class HTTPClient:
     def __init__(self, *, semaphore=None):
         self.semaphore = semaphore or asyncio.Semaphore(250)
         self.debug = False
+        self._last_result = None  # for testing purposes
 
     def __repr__(self):
         info = {
@@ -87,7 +88,7 @@ class HTTPClient:
 
     async def fetch(
         self, php: str, params: dict = None, get_cookies: bool = False,
-        cookie: str = None, custom_base: str = None
+        cookie: str = None, custom_base: str = None, run_decoding: bool = True
     ):
         """|coro|
 
@@ -120,6 +121,9 @@ class HTTPClient:
         custom_base: :class:`str`
             Custom base using different Geometry Dash IP.
             By default ``http://boomlings.com/database/`` is used.
+
+        run_decoding: :class:`bool`
+            Indicates whether to decode recieved response text.
 
         Returns
         -------
@@ -156,11 +160,19 @@ class HTTPClient:
                     return
 
                 data = await resp.content.read()
+                self._last_result = data
 
                 try:
-                    res = data.decode()
-                    if res.replace('-', '').isdigit():  # support for negative integers
-                        return int(res)
+                    if run_decoding:
+                        res = data.decode()
+
+                        try:
+                            return int(res)
+                        except ValueError:
+                            pass
+
+                    else:
+                        res = data
 
                 except UnicodeDecodeError:
                     res = data
@@ -169,7 +181,7 @@ class HTTPClient:
                     print(res)
 
                 if get_cookies:
-                    c = str(resp.cookies).split(' ')[1]  # kinda tricky way
+                    c = str(resp.cookies).split(' ')[1]
                     return res, c
 
                 return res
@@ -181,7 +193,7 @@ class HTTPClient:
         error_codes: Dict[int, Exception] = None,
         # 'should_map': whether response should be mapped 'enum -> value' (dict)
         raise_errors: bool = True, should_map: bool = False,
-        get_cookies: bool = False, cookie: str = None
+        get_cookies: bool = False, cookie: str = None, run_decoding: bool = True
     ):
         """|coro|
 
@@ -217,6 +229,8 @@ class HTTPClient:
             Same as ``get_cookies`` in :meth:`HTTPClient.fetch`
         cookie: :class:`str`
             Same as ``cookie`` in :meth:`HTTPClient.fetch`
+        run_decoding: :class:`bool`
+            Same as ``run_decoding`` in :meth:`HTTPClient.fetch`
 
         Raises
         ------
@@ -250,7 +264,7 @@ class HTTPClient:
         if error_codes is None:
             error_codes = {}
 
-        resp = await self.fetch(route, parameters, get_cookies, cookie, custom_base)
+        resp = await self.fetch(route, parameters, get_cookies, cookie, custom_base, run_decoding)
 
         if resp is None:
             if raise_errors:
