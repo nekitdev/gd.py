@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import traceback
 
 from ..utils._async import run_blocking_io
 
@@ -18,8 +19,8 @@ try:
 
 except Exception as error:
     print(
-        'Failed to load local Geometry Dash path. '
-        'Error: [{0.__class__.__name__}: {0}]'.format(error)
+        'Failed to load local Geometry Dash path.\n'
+        + traceback.format_exc()
     )
 
 

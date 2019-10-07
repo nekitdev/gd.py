@@ -34,6 +34,7 @@ from .utils.params import Parameters
 from .utils.save_parser import Save, SaveParser
 from .utils.crypto.coders import Coder
 from .utils.crypto.xor_cipher import XORCipher
+from .utils import tasks
 
 from ._jokes import jokes  # why not?...
 

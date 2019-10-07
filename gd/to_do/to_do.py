@@ -1,11 +1,5 @@
 stuff = """
 /*
-	CHK values: Seed
-	(generated with gen_level_lb_seed())
-*/
-LEVEL
-
-/*
 	CHK values: Random[5], Random Number
 */
 CHALLENGES

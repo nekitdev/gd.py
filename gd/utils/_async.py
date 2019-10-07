@@ -37,7 +37,7 @@ async def run_blocking_io(func, *args, **kwargs):
     if loop is None:
         loop = asyncio.new_event_loop()
 
-        asyncio.set_event_loop(loop)
+    asyncio.set_event_loop(loop)
 
     return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
 

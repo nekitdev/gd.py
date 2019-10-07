@@ -10,7 +10,7 @@ class Message(AbstractEntity):
     def __init__(self, **options):
         super().__init__(**options)
         self.options = options
-        self._body = None
+        self._body = options.pop('body', None)
 
     def __repr__(self):
         info = {
