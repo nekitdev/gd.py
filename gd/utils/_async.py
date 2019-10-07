@@ -34,19 +34,12 @@ async def run_blocking_io(func, *args, **kwargs):
     """
     loop = asyncio._get_running_loop()
 
-    should_close = False
-
     if loop is None:
-        loop = asyncio.new_event_loop()
+        loop = asyncio.get_event_loop()
 
-        should_close = True
+        asyncio.set_event_loop(loop)
 
-    try:
-        return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
-
-    finally:
-        if should_close:
-            shutdown_loop(loop)
+    return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
 
 
 async def wait(fs, *, loop=None, timeout=None, return_when='ALL_COMPLETED'):
@@ -198,19 +191,13 @@ def _run(self, loop=None):
     """Run the coroutine in a new event loop,
     closing the loop after execution (if not given).
     """
-    should_close = False
 
     if loop is None:
-        loop = asyncio.new_event_loop()
+        loop = asyncio.get_event_loop()
 
-        should_close = True
+    asyncio.set_event_loop(loop)
 
-    try:
-        return loop.run_until_complete(self)
-
-    finally:
-        if should_close:
-            loop.close()
+    return loop.run_until_complete(self)
 
 
 def enable_run_method(on: bool = True):
