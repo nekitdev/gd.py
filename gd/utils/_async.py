@@ -35,7 +35,7 @@ async def run_blocking_io(func, *args, **kwargs):
     loop = asyncio._get_running_loop()
 
     if loop is None:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
 
         asyncio.set_event_loop(loop)
 
@@ -193,7 +193,7 @@ def _run(self, loop=None):
     """
 
     if loop is None:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
 
     asyncio.set_event_loop(loop)
 
