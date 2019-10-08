@@ -93,7 +93,7 @@ Another way to write an implementation for ``on_event`` task is to subclass :cla
 
     class MyClient(gd.Client):
         def __init__(self, *args, **kwargs):
-            super().__init__(*arsg, **kwargs)
+            super().__init__(*args, **kwargs)
 
         async def on_new_daily(level):
             print(level)
@@ -105,4 +105,4 @@ Another way to write an implementation for ``on_event`` task is to subclass :cla
 
 Important Note
 --------------
-It is recommended to call ``gd.exit()`` close the interpreter, or at least all scanners should be closed via ``gd.events.disable()``.
+It is recommended to call ``gd.exit()`` to close the interpreter, or at least all scanners should be closed via ``gd.events.disable()``.
