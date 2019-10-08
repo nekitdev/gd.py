@@ -2,7 +2,6 @@ import asyncio
 import threading
 import signal
 import logging
-import traceback
 
 from ..client import Client
 
@@ -66,8 +65,8 @@ class AbstractScanner:
         loop = self.loop
 
         try:
-            loop.add_signal_handler(signal.SIGINT, lambda: self.close())
-            loop.add_signal_handler(signal.SIGTERM, lambda: self.close())
+            loop.add_signal_handler(signal.SIGINT, self.close)
+            loop.add_signal_handler(signal.SIGTERM, self.close)
         except NotImplementedError:
             pass
 
@@ -77,7 +76,7 @@ class AbstractScanner:
             self._running = True
             self.thread.start()
 
-    def close(self):
+    def close(self, *args):
         """Accurately shutdown a scanner."""
         if not self.is_closed():
             self._closed = True
@@ -105,7 +104,7 @@ class AbstractScanner:
 
         shutdown(loop)
 
-    async def scan(self) -> None:
+    async def scan(self):
         """This function should contain main code of the scanner."""
         pass
 
@@ -136,7 +135,7 @@ class TimelyLevelScanner(AbstractScanner):
         self.method = getattr(scanner_client, 'get_' + t_type)
         self.call_method = 'on_new_' + t_type
 
-    async def scan(self) -> None:
+    async def scan(self):
         """Scan for either daily or weekly levels."""
         timely = await self.method()
 
