@@ -8,20 +8,23 @@ from ..utils.crypto.coders import Coder
 
 from .save import SaveAPI
 
-__all__ = ('SaveLoader', 'path')
+__all__ = ('SaveLoader', 'path', 'load_error')
 
 
 path = Path.cwd()
+
+load_error = 'No loading errors occured.'
 
 try:
     local_path = Path(os.getenv('localappdata'))
     path = local_path / 'GeometryDash'
 
-except Exception as error:
+except Exception:
     print(
         'Failed to load local Geometry Dash path.\n'
-        + traceback.format_exc()
+        'Do print(gd.api.load_error) to see the traceback.'
     )
+    load_error = traceback.format_exc()
 
 
 class SaveLoader:
