@@ -126,8 +126,8 @@ class Client:
 
         Fetches a song from Newgrounds.
 
-        This function is in most cases faster than :meth:`.Client.get_song`,
-        and it does not raise errors if a song is banned on GD Server.
+        This function is in most cases might be slower than :meth:`.Client.get_song`,
+        but it does not raise errors if a song is banned on GD Server.
 
         Parameters
         ----------
@@ -940,6 +940,24 @@ class Client:
         return await self.session.search_levels(
             query=query, filters=filters, user=user, pages=pages, client=self
         )
+
+    async def on_new_daily(level):
+        """|coro|
+
+        This is an event that is fired when a new daily level is set.
+
+        See :ref:`events` for more info.
+        """
+        pass
+
+    async def on_new_weekly(level):
+        """|coro|
+
+        This is an event that is fired when a new weekly demon is assigned.
+
+        See :ref:`events` for more info.
+        """
+        pass
 
     def run(self, coro, *, debug: bool = False):
         """A handy shortcut for :func:`.utils.run`.

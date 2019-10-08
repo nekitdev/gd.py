@@ -184,6 +184,7 @@ def shutdown_loop(loop, set_event_loop_to_none: bool = False):
     finally:
         if set_event_loop_to_none:
             asyncio.set_event_loop(None)
+
         loop.close()
 
 

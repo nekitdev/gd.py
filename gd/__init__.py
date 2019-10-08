@@ -4,7 +4,7 @@ __title__ = 'gd'
 __author__ = 'NeKitDS'
 __copyright__ = 'Copyright 2019 NeKitDS'
 __license__ = 'MIT'
-__version__ = '0.10.0a1'
+__version__ = '0.10.0a2'
 
 from collections import namedtuple
 import logging
@@ -25,6 +25,7 @@ from .session import GDSession
 from .song import Song
 from .unreguser import UnregisteredUser
 from .user import UserStats, User
+from .events import exit
 from .utils.captcha_solver import Captcha
 from .utils.enums import *
 from .utils.filters import Filters
@@ -34,13 +35,13 @@ from .utils.params import Parameters
 from .utils.save_parser import Save, SaveParser
 from .utils.crypto.coders import Coder
 from .utils.crypto.xor_cipher import XORCipher
-from .utils import tasks
 
 from ._jokes import jokes  # why not?...
 
 from .utils._async import enable_run_method as synchronize
 
-from . import api  # this package contains actual non-server gd API
+from . import api  # this package contains actual non-server gd API.
+from . import events  # this package contains event-related functions and classes.
 from . import utils  # since asyncio.run() was introduced in 3.7, we have utils.run() function.
 
 

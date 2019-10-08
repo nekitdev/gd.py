@@ -20,6 +20,7 @@ Documentation Contents
     logging
     api
     synchronization
+    events
     dev
 
 Additional Information

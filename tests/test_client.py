@@ -1,14 +1,13 @@
 # Test suite for gd.Client object.
 # Will be wrapped with unittest soon.
 
+import asyncio
 import os
 import sys
 
 sys.path.insert(0, os.path.abspath('..'))
 
 import gd
-
-gd.setup_logging()
 
 client = gd.Client()
 
@@ -36,11 +35,17 @@ async def test():
         ('search_levels',      [],         {'query': 'AdventureGame'})
     )
 
+    r = []
+
     for f_name, args, kwargs in cases:
 
         coro = getattr(client, f_name)
 
-        res = await coro(*args, **kwargs)
+        r.append(coro(*args, **kwargs))
+
+    results = await asyncio.gather(*r)
+
+    for (f_name, args, kwargs), res in zip(cases, results):
 
         print('{}() -> {}'.format(f_name, res), end='\n\n')
 
@@ -49,11 +54,5 @@ async def test():
     print('-' * 20)
 
 
-@gd.utils.benchmark
-def main():
-    """Runs gd.Client tests."""
-    test().run()
-
-
 if __name__ == '__main__':
-    main()
+    test().run()
