@@ -77,6 +77,15 @@ class Level(AbstractEntity):
         return self.options.get('difficulty')
 
     @property
+    def password(self):
+        """:class:`str`: The password to copy the level.
+        Empty string if the level is free to copy,
+        ``None`` if not copyable,
+        and a string containing password otherwise.
+        """
+        return self.options.get('password')
+
+    @property
     def stars(self):
         """:class:`int`: Amount of stars the level has."""
         return self.options.get('stars')
