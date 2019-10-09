@@ -106,7 +106,7 @@ class Level(AbstractEntity):
         return self.options.get('uploaded_timestamp')
 
     @property
-    def last_uploaded_timestamp(self):
+    def last_updated_timestamp(self):
         """:class:`str`: A human-readable string showing how much time ago the last update was."""
         return self.options.get('last_updated_timestamp')
 
