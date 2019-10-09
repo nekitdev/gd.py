@@ -36,13 +36,13 @@ class AbstractEntity:
     @property
     def id(self):
         """:class:`int`: ID of the Entity."""
-        return self.options.get('id')
+        return self.options.get('id', 0)
 
     def to_hash_string(self):
         """:class:`str`: Converts to a string which is used in ``hash(self)``."""
         cls = self.__class__.__name__
         id = self.id
-        r = self.__repr__().replace(' ', '_').lower()
+        r = self.__repr__()
 
         hash_string = '<GDEntity<{cls}>[id={id};repr={r}]>'.format(cls=cls, id=id, r=r)
 
