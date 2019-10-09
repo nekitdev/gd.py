@@ -136,6 +136,7 @@ class ClassConverter:
             creator = creator,
             song = song,
             data = leveldata,
+            password = password,
             is_demon = is_demon,
             is_auto = is_auto,
             difficulty = difficulty,
