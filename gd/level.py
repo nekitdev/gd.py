@@ -367,7 +367,7 @@ class Level(AbstractEntity):
                 new_ver = await _session.get_timely(self.type.name.lower(), client=self._client)
 
                 if new_ver.id != self.id:
-                    log.warning('There is a new %s.type: %s. Updating to it...', self, new_ver)
+                    log.warning('There is a new {0.type.desc} Level: {1!r}. Updating to it...'.format(self, new_ver))
 
             else:
                 new_ver = await _session.get_level(self.id, client=self._client)
