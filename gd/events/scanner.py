@@ -21,44 +21,33 @@ class AbstractScanner:
     def __init__(self, delay: float = 10.0):
         self.thread = threading.Thread(target=self.run, name=self.__class__.__name__+'Thread')
         self.loop = asyncio.new_event_loop()
-        self._closed = False
-        self._running = False
-        self.delay = delay
-        self.future = None
+        self.runner.change_interval(seconds=delay)
         self.cache = None
         self.clients = []
         self.init_loop()
-
-    def is_closed(self):
-        return self._closed
 
     def add_client(self, client):
         """Add a client to fire events for."""
         if client not in self.clients:
             self.clients.append(client)
 
+    @utils.run_once
     def run(self):
         """Run a scanner. In idea, this should be called from another thread."""
-        loop = self.loop
+        self.runner.loop = self.loop
 
-        asyncio.set_event_loop(loop)
+        self.runner.start()
 
-        def stop_loop_on_completion(future):
-            self.close()
-
-        self.future = asyncio.ensure_future(self.main(), loop=loop)
-        self.future.add_done_callback(stop_loop_on_completion)
+        asyncio.set_event_loop(self.loop)
 
         try:
-            loop.run_forever()
+            self.loop.run_forever()
 
         except KeyboardInterrupt:
             log.info('Received the signal to terminate the event loop.')
 
         finally:
-            self.future.remove_done_callback(stop_loop_on_completion)
             log.info('Cleaning up tasks.')
-
             self.close()
 
     def init_loop(self):
@@ -70,24 +59,27 @@ class AbstractScanner:
         except NotImplementedError:
             pass
 
+    @utils.run_once
     def start(self):
         """Start a scanner."""
-        if not self._running:
-            self._running = True
-            self.thread.start()
+        self.thread.start()
 
-    def close(self, *args):
-        """Accurately shutdown a scanner."""
-        if not self.is_closed():
-            self._closed = True
+    @utils.run_once
+    def close(self, *args, force: bool = True):
+        """Accurately shutdown a scanner.
+        If force is true, cancel the runner, and wait until it finishes otherwise.
+        """
+        if force:
+            self.runner.cancel()
+        else:
+            self.runner.stop()
 
-            if self.future is not None:
-                self.future.cancel()
+        self.shutdown_loop(self.loop)
 
-            self.shutdown_loop(self.loop)
-
-            if self.thread.is_alive():
-                self.thread.join()
+        try:
+            self.thread.join()
+        except RuntimeError:
+            pass
 
     def shutdown_loop(self, loop):
         """Shutdown a loop."""
@@ -108,24 +100,10 @@ class AbstractScanner:
         """This function should contain main code of the scanner."""
         pass
 
-    async def on_error(self):
-        """An event that is called if an error occurs while scanning."""
-        pass
-
-    async def main(self):
+    @utils.tasks.loop(seconds=10.0)
+    async def runner(self):
         """Main function, that is basically doing all the job."""
-        while not self.is_closed():
-
-            try:
-                await self.scan()
-
-            except asyncio.CancelledError:
-                pass
-
-            except Exception:
-                await self.on_error()
-
-            await asyncio.sleep(self.delay)
+        await self.scan()
 
 
 class TimelyLevelScanner(AbstractScanner):

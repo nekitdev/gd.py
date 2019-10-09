@@ -2,12 +2,12 @@ import ctypes
 import functools
 import gc
 import logging
-import time  # not for time.sleep() :)
+import time
 
 from ..errors import NotLoggedError, MissingAccess
 
 __all__ = (
-    'check', 'benchmark', 'new_method', 'add_method',
+    'check', 'benchmark', 'new_method', 'add_method', 'run_once',
     'del_method', 'make_repr', 'find_subclass', 'get_instances_of'
 )
 
@@ -16,7 +16,8 @@ log = logging.getLogger(__name__)
 
 def get_class_dict(cls):
     """Gets 'cls.__dict__' that can be edited."""
-    return ctypes.py_object.from_address(id(cls.__dict__) + 16).value
+    return ctypes.py_object.from_address(
+        id(cls.__dict__) + ctypes.sizeof(ctypes.c_size_t)*2).value
 
 
 class check:
@@ -93,8 +94,24 @@ def new_method(cls):
     return decorator
 
 
-def make_repr(obj, info = {}):
+def run_once(func):
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+
+        if not hasattr(func, '_res'):
+            func._res = func(*args, **kwargs)
+
+        return func._res
+
+    return wrapper
+
+
+def make_repr(obj, info: dict = None):
     """Creates a nice __repr__ for the object."""
+    if info is None:
+        info = {}
+
     module = obj.__module__.split('.')[0]
     name = obj.__class__.__name__
 

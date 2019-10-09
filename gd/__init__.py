@@ -4,7 +4,7 @@ __title__ = 'gd'
 __author__ = 'NeKitDS'
 __copyright__ = 'Copyright 2019 NeKitDS'
 __license__ = 'MIT'
-__version__ = '0.10.0a2'
+__version__ = '0.10.0a3'
 
 from collections import namedtuple
 import logging
