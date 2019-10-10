@@ -108,8 +108,8 @@ class ClassConverter:
             password = Coder.decode(type='levelpass', string=s.get(i.LEVEL_PASS))
         except TypeError:
             password = None
-        if password == '1':
-            password = ''
+        if password:  # password has format '1XXXXXX'
+            password = password[1:]
 
         desc = b64.b64decode(mapper_util.normalize(s[i.LEVEL_DESCRIPTION])).decode()
         length = LevelLength.from_value(s[i.LEVEL_LENGTH])
