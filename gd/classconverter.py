@@ -96,7 +96,8 @@ class ClassConverter:
                 icon_ufo = s[i.USER_ICON_UFO],
                 icon_wave = s[i.USER_ICON_WAVE],
                 icon_robot = s[i.USER_ICON_ROBOT],
-                icon_spider = s[i.USER_ICON_SPIDER]
+                icon_spider = s[i.USER_ICON_SPIDER],
+                icon_explosion = s[i.USER_EXPLOSION]
             ),
             client = client
         )

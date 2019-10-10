@@ -454,6 +454,25 @@ class Parameters:
         self.dict['local'] = str(number)
         return self
 
+    def put_seed(self, seed: str, suffix: str = ''):
+        """Puts ``'seed{suffix}'`` parameter.
+
+        Parameters
+        ----------
+        seed: :class:`str`
+            The seed to put, as string.
+
+        suffix: :class:`str`
+            The suffix to append to ``seed``.
+
+        Returns
+        -------
+        :class:`.Parameters`
+            ``self``
+        """
+        self.dict['seed'+suffix] = str(seed)
+        return self
+
     def put_rs(self, rs: str):
         """Self explanatory. Puts ``'rs'`` parameter.
 

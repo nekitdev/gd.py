@@ -5,7 +5,7 @@ from typing import Union, Sequence
 
 from .session import _session
 
-from .utils.enums import value_to_enum, LeaderboardStrategy
+from .utils.enums import value_to_enum, LeaderboardStrategy, IconType
 from .utils.filters import Filters
 from .utils.save_parser import Save
 from .utils.wrap_tools import make_repr, check
@@ -789,16 +789,43 @@ class Client:
         if password is not None:
             log.debug('Changed password to: %s', password)
 
-
     @check.is_logged()
     async def update_profile(
-        self, stars: int = 0, demons: int = 0, diamonds: int = 0, main_icon: int = 1,
-        main_icon_type: int = 0, color_1: int = 0, color_2: int = 3, coins: int = 0,
+        self, stars: int = 0, demons: int = 0, diamonds: int = 0, has_glow: bool = False,
+        icon_type: int = 0, color_1: int = 0, color_2: int = 3, coins: int = 0,
         user_coins: int = 0, cube: int = 1, ship: int = 1, ball: int = 1, ufo: int = 1,
-        wave: int = 1, robot: int = 1, spider: int = 1, explosion: int = 1,
-        has_glow: bool = False, like_user=None
+        wave: int = 1, robot: int = 1, spider: int = 1, explosion: int = 1, special: int = 0,
+        set_as_user=None
     ):
-        pass
+        if set_as_user is None:
+            stats_dict = {
+                'stars': stars, 'demons': demons, 'diamonds': diamonds,
+                'color1': color_1, 'color2': color_2,
+                'coins': coins, 'user_coins': user_coins, 'special': special,
+                'acc_icon': cube, 'acc_ship': ship, 'acc_ball': ball,
+                'acc_bird': ufo, 'acc_dart': wave, 'acc_robot': robot,
+                'acc_spider': spider, 'acc_explosion': explosion, 'acc_glow': int(has_glow)
+            }
+
+            icon_type = IconType.from_value(icon_type).value
+            icon = (cube, ship, ball, ufo, wave, robot, spider)[icon_type]
+
+            stats_dict.update(icon_type=icon_type, icon=icon)
+
+        else:
+            user, iconset = set_as_user, set_as_user.icon_set
+            stats_dict = {
+                'stars': user.stars, 'demons': user.demons, 'diamonds': user.diamonds,
+                'color1': iconset.color_1.index, 'color2': iconset.color_2.index,
+                'coins': user.coins, 'user_coins': user.user_coins, 'special': special,
+                'icon': iconset.main, 'icon_type': iconset.main_type.value,
+                'acc_icon': iconset.cube, 'acc_ship': iconset.ship, 'acc_ball': iconset.ball,
+                'acc_bird': iconset.ufo, 'acc_dart': iconset.wave, 'acc_robot': iconset.robot,
+                'acc_spider': iconset.spider, 'acc_explosion': iconset.explosion,
+                'acc_glow': int(iconset.has_glow_outline())
+            }
+
+        await self.session.update_profile(stats_dict, client=self)
 
     @check.is_logged()
     async def update_settings(

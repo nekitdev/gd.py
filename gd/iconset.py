@@ -69,6 +69,11 @@ class IconSet:
         """:class:`int`: Spider ID of the iconset."""
         return self.options.get('icon_spider')
 
+    @property
+    def explosion(self):
+        """:class:`int`: Explosion ID of the iconset."""
+        return self.options.get('icon_explosion')
+
     def has_glow_outline(self):
         """:class:`bool`: Indicates whether an iconset has glow outline."""
         return self.options.get('has_glow_outline')

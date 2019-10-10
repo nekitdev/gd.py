@@ -208,7 +208,7 @@ class Paginator:
             Given ``page`` does not exist.
         """
         page = int(page)
-        if abs(page) > page:
+        if page < 0:
             raise PagesOutOfRange(
                 page = page,
                 info = 'Page does not support negative integers.'
@@ -243,7 +243,7 @@ class Paginator:
 
         else:
             page = int(page)
-            if abs(page) > page:
+            if page < 0:
                 raise PagesOutOfRange(
                     page = page,
                     info = "Page does not support negative integers."

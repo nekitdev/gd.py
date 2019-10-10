@@ -3,7 +3,7 @@ import itertools
 import re  # for NG songs
 import time  # for perf_counter in ping
 
-from typing import Union, Sequence, Tuple
+from typing import Union, Sequence, Tuple, Dict
 
 from .unreguser import UnregisteredUser
 from .errors import *
@@ -1071,6 +1071,36 @@ class GDSession:
         resp = await http.request(Route.SEND_PRIVATE_MESSAGE, parameters)
         if resp != 1:
             raise MissingAccess(message='Failed to send a message to a user: {!r}.'.format(target))
+
+
+    async def update_profile(self, settings: Dict[str, int], *, client):
+        settings_cased = {Converter.snake_to_camel(name): value for name, value in settings.items()}
+
+        rs = Coder.gen_rs()
+
+        req_chk_params = [client.account_id]
+        for param in (
+            'user_coins', 'demons', 'stars', 'coins', 'icon_type',
+            'icon', 'diamonds', 'acc_icon', 'acc_ship', 'acc_ball',
+            'acc_bird', 'acc_dart', 'acc_robot', 'acc_glow',
+            'acc_spider', 'acc_explosion'
+        ):
+            req_chk_params.append(settings[param])
+
+        chk = Coder.gen_chk(type='userscore', values=req_chk_params)
+
+        parameters = (
+            Params().create_new().put_definer('accountid', client.account_id)
+            .put_password(client.encodedpass).put_username(client.name)
+            .put_seed(rs).put_seed(chk, suffix=str(2)).finish()
+        )
+
+        parameters.update(settings_cased)
+
+        resp = await http.request(Route.UPDATE_USER_SCORE, parameters)
+
+        if not resp > 0:
+            raise MissingAccess(message='Failed to update profile of a client: {!r}'.format(client))
 
 
     async def update_settings(

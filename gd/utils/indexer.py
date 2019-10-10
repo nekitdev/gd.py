@@ -69,6 +69,7 @@ class Index:
     USER_TWITCH = 45
     USER_DIAMONDS = 46
     USER_DEATH_EFFECT = 47
+    USER_EXPLOSION = 48
     USER_ROLE = 49
     USER_COMMENT_HISTORY_POLICY = 50
     # all indexes for messages

@@ -1,3 +1,5 @@
+import re
+
 from .enums import DemonDifficulty, LevelDifficulty
 
 from ..song import Song
@@ -52,6 +54,10 @@ class Converter:
             cases.get(sn, 'th') if pn != '1' else 'th'
         )
         return res
+
+    @classmethod
+    def snake_to_camel(cls, string: str):  # not perfect but still...
+        return re.sub('_([a-z])', lambda match: match.group(1).upper(), string)
 
     @classmethod
     def value_to_pack_difficulty(cls, value: int):

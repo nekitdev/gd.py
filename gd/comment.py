@@ -66,7 +66,7 @@ class Comment(AbstractEntity):
 
     def is_disliked(self):
         """:class:`bool`: Indicates whether a comment is disliked or not."""
-        return abs(self.rating) != self.rating
+        return self.rating < 0
 
     async def like(self, from_client=None):
         """|coro|

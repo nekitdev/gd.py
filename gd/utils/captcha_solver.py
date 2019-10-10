@@ -14,6 +14,7 @@ border = (5, 8, 16, 7)  # borders to crop
 
 log = logging.getLogger(__name__)
 
+
 class Captcha:
     @classmethod
     @benchmark
