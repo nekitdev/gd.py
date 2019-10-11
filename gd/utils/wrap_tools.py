@@ -7,8 +7,8 @@ import time
 from ..errors import NotLoggedError, MissingAccess
 
 __all__ = (
-    'check', 'benchmark', 'new_method', 'add_method', 'run_once',
-    'del_method', 'make_repr', 'find_subclass', 'get_instances_of'
+    'check', 'benchmark', 'new_method', 'add_method', 'run_once', 'del_method',
+    'make_repr', 'find_subclass', 'get_instances_of', 'find_objects'
 )
 
 log = logging.getLogger(__name__)
@@ -130,8 +130,18 @@ def find_subclass(string_name, superclass=object):
 
 
 def get_instances_of(obj_class=object):
+    predicate = lambda obj: isinstance(obj, obj_class)
+
+    return find_objects(predicate)
+
+
+def find_objects(predicate=None):
+    if predicate is None:
+        predicate = lambda obj: True
+
     objects = gc.get_objects()
-    return [obj for obj in objects if isinstance(obj, obj_class)]
+
+    return list(filter(predicate, objects))
 
 
 def del_method(cls, method_name):
