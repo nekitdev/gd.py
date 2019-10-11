@@ -121,8 +121,9 @@ class TimelyLevelScanner(AbstractScanner):
             self.cache = timely
             return
 
-        if timely.id != self.cache.id and self.clients:
-            await utils.wait(getattr(client, self.call_method)(timely) for client in self.clients)
+        if (timely.id != self.cache.id) and self.clients:
+            fs = [getattr(client, self.call_method)(timely) for client in self.clients]
+            await utils.wait(fs)
 
         self.cache = timely
 
