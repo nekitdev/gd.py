@@ -15,6 +15,8 @@ class Colour:
         The raw integer colour value.
     """
 
+    sys_name = __import__('platform').system().lower()
+
     def __init__(self, value: int):
         if not isinstance(value, int):
             raise TypeError('Expected int parameter, but received {!r}.'.format(value.__class__.__name__))
@@ -70,6 +72,13 @@ class Colour:
         """:class:`int`: Returns the blue component of the colour."""
         return self._get_byte(0)
 
+    def print(self):
+        if 'win' in self.sys_name and 'darwin' not in self.sys_name:  # windows
+            print(self.to_hex())
+
+        else:
+            print(self.ansi_escape())
+
     def to_hex(self):
         """:class:`str`: Returns the colour in hex format."""
         return '#{:0>6x}'.format(self.value)
@@ -81,6 +90,9 @@ class Colour:
     def to_rgba(self):
         """Tuple[:class:`int`, :class:`int`, :class:`int`, :class:`int`]: Same as :meth:`.Colour.to_rgb`, but contains alpha component. (always 255)"""
         return (*self.to_rgb(), 255)
+
+    def ansi_escape(self):
+        return '\x1b[38;2;{};{};{}m{}\x1b[0m'.format(*self.to_rgb(), self.to_hex())
 
     @classmethod
     def from_rgb(cls, r, g, b):

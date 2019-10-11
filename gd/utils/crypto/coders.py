@@ -237,4 +237,4 @@ class Coder:
 
     @classmethod
     def gen_level_lb_seed(cls, jumps: int = 0, percentage: int = 0, seconds: int = 0):
-        return 1482 + (jumps + 3991) * (percentage + 8354) + ((seconds + 4085)**2) - 50_028_039
+        return 1482 + (jumps + 3991) * (percentage + 8354) + ((seconds + 4085)**2) - 50028039

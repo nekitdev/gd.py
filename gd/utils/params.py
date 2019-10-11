@@ -590,7 +590,7 @@ class Parameters:
             ``self``
         """
         if not (id + 1):  # if -1
-            id = random.randint(100_000, 100_000_000_000)
+            id = random.randint(100000, 100000000000)
 
         self.dict['udid'] = str(id)
         return self
@@ -614,7 +614,7 @@ class Parameters:
             ``self``
         """
         if not (id + 1):
-            id = random.randint(100_000, 100_000_000)
+            id = random.randint(100000, 100000000)
 
         self.dict['uuid'] = str(id)
         return self

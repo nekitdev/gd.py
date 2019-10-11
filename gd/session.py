@@ -230,7 +230,7 @@ class GDSession:
             raise MissingAccess(message='Unknown response: {}.'.format(resp))
 
         num, cooldown = map(int, resp)
-        num %= 100_000
+        num %= 100000
         w += 1
 
         level = await self.get_level(-w, (w, num, cooldown), client=client)

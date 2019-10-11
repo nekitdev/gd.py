@@ -20,7 +20,7 @@ def find(predicate, seq, *, _all: bool = False):
 
         ...
         friends = await client.get_friends()
-        old_users = gd.utils.find(lambda x: x.account_id < 500_000, friends, _all=True)
+        old_users = gd.utils.find(lambda x: x.account_id < 500000, friends, _all=True)
 
     """
     res = []
