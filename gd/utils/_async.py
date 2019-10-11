@@ -1,12 +1,13 @@
 import asyncio
 import functools
+import inspect
 
 from .wrap_tools import find_subclass, add_method, del_method
 
 __all__ = (
     'run_blocking_io', 'wait', 'run',
     'cancel_all_tasks', 'shutdown_loop',
-    'coroutine'
+    'coroutine', 'maybe_coroutine'
 )
 
 coroutine = find_subclass('coroutine')
@@ -126,11 +127,11 @@ def run(coro, *, loop=None, debug: bool = False):
     if not asyncio.iscoroutine(coro):
         raise ValueError('A coroutine was expected, got {!r}.'.format(coro))
 
-    # if a loop is given, let's just run our coro in it
-    if loop is not None:
-        return loop.run_until_complete(coro)
+    shutdown = False
 
-    loop = asyncio.new_event_loop()
+    if loop is None:
+        loop = asyncio.new_event_loop()
+        shutdown = True
 
     try:
         asyncio.set_event_loop(loop)
@@ -138,7 +139,8 @@ def run(coro, *, loop=None, debug: bool = False):
         return loop.run_until_complete(coro)
 
     finally:
-        shutdown_loop(loop, True)
+        if shutdown:
+            shutdown_loop(loop, True)
 
 
 def cancel_all_tasks(loop, f_name: str = 'gd.utils.run'):
@@ -186,6 +188,14 @@ def shutdown_loop(loop, set_event_loop_to_none: bool = False):
             asyncio.set_event_loop(None)
 
         loop.close()
+
+
+async def maybe_coroutine(func, *args, **kwargs):
+    value = func(*args, **kwargs)
+    if inspect.isawaitable(value):
+        return await value
+    else:
+        return value
 
 
 def _run(self, loop=None):
