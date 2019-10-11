@@ -18,6 +18,7 @@ class AbstractEntity:
             Returns ``hash(self.to_hash_string())``.
     """
     def __init__(self, **options):
+        self.options = options
         self._client = options.get('client')  # None if not provided
 
     def __repr__(self):
