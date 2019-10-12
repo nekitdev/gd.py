@@ -2,6 +2,7 @@ import asyncio
 import threading
 import signal
 import logging
+import traceback
 
 from ..client import Client
 
@@ -21,6 +22,7 @@ class AbstractScanner:
     def __init__(self, delay: float = 10.0):
         self.thread = threading.Thread(target=self.run, name=self.__class__.__name__+'Thread')
         self.loop = asyncio.new_event_loop()
+        self.runner = utils.tasks.loop(seconds=10.0)(self.main)
         self.runner.change_interval(seconds=delay)
         self.cache = None
         self.clients = []
@@ -31,12 +33,18 @@ class AbstractScanner:
         if client not in self.clients:
             self.clients.append(client)
 
+    def attach_to_loop(self, loop):
+        """Attach the runner to another event loop."""
+        self.runner.loop = loop
+        try:
+            self.runner.start()
+        except RuntimeError:
+            pass
+
     @utils.run_once
     def run(self):
         """Run a scanner. In idea, this should be called from another thread."""
-        self.runner.loop = self.loop
-
-        self.runner.start()
+        self.attach_to_loop(self.loop)
 
         asyncio.set_event_loop(self.loop)
 
@@ -96,14 +104,21 @@ class AbstractScanner:
 
         shutdown(loop)
 
+    async def on_error(self, exc):
+        """Basic event handler to print the errors if any occur."""
+        traceback.print_exc()
+
     async def scan(self):
         """This function should contain main code of the scanner."""
         pass
 
-    @utils.tasks.loop(seconds=10.0)
-    async def runner(self):
+    async def main(self):
         """Main function, that is basically doing all the job."""
-        await self.scan()
+        try:
+            await self.scan()
+
+        except Exception as exc:
+            await self.on_error(exc)
 
 
 class TimelyLevelScanner(AbstractScanner):
@@ -117,6 +132,7 @@ class TimelyLevelScanner(AbstractScanner):
         """Scan for either daily or weekly levels."""
         timely = await self.method()
 
+
         if self.cache is None:
             self.cache = timely
             return
@@ -124,6 +140,7 @@ class TimelyLevelScanner(AbstractScanner):
         if (timely.id != self.cache.id) and self.clients:
             fs = [getattr(client, self.call_method)(timely) for client in self.clients]
             await utils.wait(fs)
+                    
 
         self.cache = timely
 
