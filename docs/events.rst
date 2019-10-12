@@ -76,6 +76,27 @@ If you wish to run the scanner normally, blocking the main thread, you can do th
 
 .. warning:: Here we MUST run the listener after defining event implementation, since ``daily_listener.run()`` blocks the thread and defining the event implementation after it would happen only after it finishes. (which, theoretically, should not happen unless a user interrupts)
 
+In 0.10.0, a new method was created. Now, you can attach runners to another loop:
+
+.. code-block:: python3
+
+    import asyncio
+    import gd
+
+    client = gd.Client()
+
+    @client.event
+    async def on_new_daily(level):
+        print(level.creator.name)
+
+    loop = asyncio.get_event_loop()
+
+    gd.events.attach_to_loop(loop)
+
+    # tasks are now attached to the 'loop'
+
+    loop.run_forever()
+
 There are two main ways to write an implementation for ``on_event`` task.
 
 1. Using @client.event
@@ -105,4 +126,4 @@ Another way to write an implementation for ``on_event`` task is to subclass :cla
 
 Important Note
 --------------
-It is recommended to call ``gd.exit()`` to close the interpreter, or at least all scanners should be closed via ``gd.events.disable()``.
+It is recommended to call ``gd.exit()`` to normally close the interpreter, or at least all scanners should be closed via ``gd.events.disable()``.
