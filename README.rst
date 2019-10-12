@@ -29,7 +29,7 @@ gd.py
     :target: https://app.codacy.com/project/NeKitDS/gd.py/dashboard
     :alt: Code Quality [Codacy]
 
-.. image:: https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.herokuapp.com%2Fnekit%2Fpledges&style=for-the-badge
+.. image:: https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.herokuapp.com%2Fnekit%2Fpledges
     :target: https://patreon.com/nekit
     :alt: Patreon Page [Support]
 
