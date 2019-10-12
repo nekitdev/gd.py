@@ -28,7 +28,7 @@ This code snippet will print a message every time a new level is getting daily.
 
 Example Explanation
 -------------------
-The last two lines of an example are necessary. Here is the explanation on what they are doing.
+The last two lines of an example are important. Here is the explanation on what they are doing.
 
 ``gd.events.add_client(client)`` appends a ``client`` to a scanner, which calls the ``on_event`` method.
 
@@ -56,7 +56,7 @@ There is a way to run any of the default listeners manually:
 
 .. note:: It is recommended to start a scanner after defining event implementation.
 
-If you wish to run the scanner normally, blocking the main thread, you can do the following:
+If you wish to run the scanner normally (blocking the main thread), you can do the following:
 
 .. code-block:: python3
 
@@ -74,34 +74,34 @@ If you wish to run the scanner normally, blocking the main thread, you can do th
 
     daily_listener.run()
 
-.. warning:: Here we MUST run the listener after defining event implementation, since ``daily_listener.run()`` blocks the thread and defining the event implementation after it would happen only after it finishes. (which, theoretically, should not happen unless a user interrupts)
+.. warning:: Here we MUST run the listener after defining event implementation, since ``daily_listener.run()`` blocks the thread and defining the event implementation after it would happen only after it finishes. (runner will not stop until interrupting, though)
 
-In 0.10.0, a new method was created. Now, you can attach runners to another loop:
+.. note:: In 0.10.0, a new method was created. With gd.py 0.10.0 and higher, you can attach runners to another event loop:
 
-.. code-block:: python3
+    .. code-block:: python3
 
-    import asyncio
-    import gd
+        import asyncio
+        import gd
 
-    client = gd.Client()
+        client = gd.Client()
 
-    @client.event
-    async def on_new_daily(level):
-        print(level.creator.name)
+        @client.event
+        async def on_new_daily(level):
+            print(level.creator.name)
 
-    loop = asyncio.get_event_loop()
+        loop = asyncio.get_event_loop()
 
-    gd.events.attach_to_loop(loop)
+        gd.events.attach_to_loop(loop)
 
-    # tasks are now attached to the 'loop'
+        # tasks are now attached to the 'loop'
 
-    loop.run_forever()
+        loop.run_forever()
 
 There are two main ways to write an implementation for ``on_event`` task.
 
 1. Using @client.event
 ----------------------
-As shown in the example above, new implementation for an event can be registered
+As shown in examples above, new implementation for an event can be registered
 with ``@client.event`` decorator. See :meth:`.Client.event` for more info.
 
 2. Subclassing gd.Client
@@ -126,4 +126,4 @@ Another way to write an implementation for ``on_event`` task is to subclass :cla
 
 Important Note
 --------------
-It is recommended to call ``gd.exit()`` to normally close the interpreter, or at least all scanners should be closed via ``gd.events.disable()``.
+If ``gd.events.enable()`` was called, it is recommended to call ``gd.exit()`` to normally close the interpreter, or at least all scanners should be closed via ``gd.events.disable()``.
