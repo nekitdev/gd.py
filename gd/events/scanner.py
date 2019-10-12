@@ -22,8 +22,7 @@ class AbstractScanner:
     def __init__(self, delay: float = 10.0):
         self.thread = threading.Thread(target=self.run, name=self.__class__.__name__+'Thread')
         self.loop = asyncio.new_event_loop()
-        self.runner = utils.tasks.loop(seconds=10.0)(self.main)
-        self.runner.change_interval(seconds=delay)
+        self.runner = utils.tasks.loop(seconds=delay)(self.main)
         self.cache = None
         self.clients = []
         self.init_loop()
@@ -36,6 +35,7 @@ class AbstractScanner:
     def attach_to_loop(self, loop):
         """Attach the runner to another event loop."""
         self.runner.loop = loop
+
         try:
             self.runner.start()
         except RuntimeError:
