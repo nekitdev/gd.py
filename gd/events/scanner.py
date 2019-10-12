@@ -132,7 +132,6 @@ class TimelyLevelScanner(AbstractScanner):
         """Scan for either daily or weekly levels."""
         timely = await self.method()
 
-
         if self.cache is None:
             self.cache = timely
             return
@@ -140,7 +139,6 @@ class TimelyLevelScanner(AbstractScanner):
         if (timely.id != self.cache.id) and self.clients:
             fs = [getattr(client, self.call_method)(timely) for client in self.clients]
             await utils.wait(fs)
-                    
 
         self.cache = timely
 
