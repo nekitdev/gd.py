@@ -512,6 +512,7 @@ class Parameters:
         ----------
         content: :class:`str`
             The content of the comment.
+
         values: :class:`list`
             A list of values to generate a ``chk`` parameter with.
 
@@ -652,7 +653,7 @@ class Parameters:
             Message indicator. Mapped in as `'mS'`.
         friend_req: :class:`int`
             Friend request indicator. Mapped in as `'frS'`.
-        msg: :class:`int`
+        comments: :class:`int`
             Comment history indicator. Mapped in as `'cS'`.
         youtube: :class:`str`
             Youtube username. Mapped in as `'yt'`.
