@@ -9,10 +9,6 @@ gd.py
     :target: https://github.com/NeKitDS/gd.py/blob/master/gd
     :alt: Project Development Status
 
-.. image:: https://img.shields.io/pypi/dm/gd.py.svg
-    :target: https://pypi.python.org/pypi/gd.py
-    :alt: Library Downloads/Month
-
 .. image:: https://img.shields.io/pypi/v/gd.py.svg
     :target: https://pypi.python.org/pypi/gd.py
     :alt: PyPI Library Version
@@ -20,6 +16,10 @@ gd.py
 .. image:: https://img.shields.io/pypi/pyversions/gd.py.svg
     :target: https://pypi.python.org/pypi/gd.py
     :alt: Required Python Versions
+
+.. image:: https://img.shields.io/pypi/dm/gd.py.svg
+    :target: https://pypi.python.org/pypi/gd.py
+    :alt: Library Downloads/Month
 
 .. image:: https://readthedocs.org/projects/gdpy/badge/?version=latest
     :target: https://gdpy.readthedocs.io/en/latest/?badge=latest
