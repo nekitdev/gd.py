@@ -7,8 +7,9 @@ import time
 from ..errors import NotLoggedError, MissingAccess
 
 __all__ = (
-    'check', 'benchmark', 'new_method', 'add_method', 'run_once', 'del_method',
-    'make_repr', 'find_subclass', 'get_instances_of', 'find_objects'
+    'check', 'benchmark', 'new_method', 'add_method', 'del_method',
+    'make_repr', 'find_subclass', 'get_instances_of', 'find_objects',
+    'run_once', 'convert_to_type',
 )
 
 log = logging.getLogger(__name__)
@@ -121,6 +122,37 @@ def make_repr(obj, info: dict = None):
     info = (' '.join('%s=%s' % t for t in info.items()))
 
     return '<{}.{} {}>'.format(module, name, info)
+
+
+def convert_to_type(obj: object, try_type: type, on_fail_type: type = None):
+    """A function that tries to convert the given object to a provided type
+
+    Parameters
+    ----------
+    obj: :class:`object`
+        Any object to convert into given type.
+
+    try_type: :class:`type`
+        Type to convert an object to.
+
+    on_fail_type: :class:`type`
+        Type to convert an object on fail.
+        If ``None`` or omitted, returns an ``obj``.
+        On fail returns ``obj`` as well.
+
+    Returns
+    -------
+    `Any`
+        Object of given ``try_type``, on fail of type ``on_fail_type``, and
+        ``obj`` if ``on_fail_type`` is ``None`` or failed to convert.
+    """
+    try:
+        return try_type(obj)
+    except Exception:  # failed to convert
+        try:
+            return on_fail_type(obj)
+        except Exception:
+            return obj
 
 
 def find_subclass(string_name, superclass=object):
