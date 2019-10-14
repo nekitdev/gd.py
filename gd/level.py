@@ -18,7 +18,6 @@ class Level(AbstractEntity):
     """
     def __init__(self, **options):
         super().__init__(**options)
-        self._data = options.pop('data', '')
         self.options = options
 
     def __repr__(self):
@@ -126,6 +125,12 @@ class Level(AbstractEntity):
         return self.options.get('stars_requested')
 
     @property
+    def objects(self):
+        """List[:class:`str`]: A list of objects, represented as strings."""
+        if not self.data:
+            
+
+    @property
     def object_count(self):
         """:class:`int`: Amount of objects the level has."""
         return self.options.get('object_count')
@@ -146,6 +151,11 @@ class Level(AbstractEntity):
     def cooldown(self):
         """:class:`int`: Represents a cooldown until next timely. If not timely, equals ``-1``."""
         return self.options.get('cooldown')
+
+    @property
+    def data(self):
+        """:class:`str`: Level data, represented as a string."""
+        return self.options.get('data', '')
 
     def is_timely(self, daily_or_weekly: str = None):
         """:class:`bool`: Indicates whether a level is timely/daily/weekly.
@@ -188,7 +198,7 @@ class Level(AbstractEntity):
 
     def download(self):
         """:class:`str`: Returns level data, represented as string."""
-        return self._data
+        return self.data
 
     async def report(self):
         """|coro|
@@ -376,7 +386,6 @@ class Level(AbstractEntity):
             return log.warning('Failed to refresh level: %r. Most likely it was deleted.', self)
 
         self.options = new_ver.options
-        self._data = new_ver._data
 
         return self
 
