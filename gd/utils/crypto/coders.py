@@ -84,7 +84,7 @@ class Coder:
     def gen_rs(cls, length: int = 10):
         """Generates a random string of required length.
 
-        Uses [A-Z][a-z][0-9] character set.
+        Uses [A-Za-z0-9] character set.
 
         Parameters
         ----------
@@ -223,16 +223,19 @@ class Coder:
         except zlib.error:
             unzipped = zlib.decompress(decoded[10:], -zlib.MAX_WBITS)
 
-        final = unzipped.decode(errors='ignore')
-        if final.endswith(';'):
-            final = final[:-1]
+        final = unzipped.decode(errors='ignore').rstrip(';')
 
         return final
 
     @classmethod
-    def zip(cls, string: str):
+    def zip(cls, string: str, append_semicolon: bool = True):
+        if append_semicolon and not string.endswith(';'):
+            string += ';'
+
         zipped = bytes(cls.additional) + zlib.compress(string.encode())[2:-4]
+
         encoded = mapper_util.prepare_sending(base64.b64encode(zipped).decode())
+
         return encoded
 
     @classmethod
