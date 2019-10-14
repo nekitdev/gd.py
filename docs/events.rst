@@ -116,7 +116,7 @@ Another way to write an implementation for ``on_event`` task is to subclass :cla
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
 
-        async def on_new_daily(level):
+        async def on_new_daily(self, level):
             print(level)
 
     client = MyClient()
