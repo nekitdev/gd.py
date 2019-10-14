@@ -29,4 +29,4 @@ async def main():
     await asyncio.sleep(3)
 
 # run a program
-main().run()
+client.run(main())
