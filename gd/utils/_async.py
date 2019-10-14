@@ -213,9 +213,14 @@ def _run(self, loop=None):
 
 def enable_run_method(on: bool = True):
     """Add or delete 'run' method of a coroutine."""
-    if on:
-        add_method(coroutine, _run, name='run')
-    else:
-        del_method(coroutine, 'run')
+    try:
+        if on:
+            add_method(coroutine, _run, name='run')
+        else:
+            del_method(coroutine, 'run')
+
+    except Exception:
+        print('Not CPython implementation.')
+
 
 enable_run_method()
