@@ -23,4 +23,4 @@ async def coro():
         print(piece)
 
 # run a coroutine
-coro().run()
+client.run(coro())
