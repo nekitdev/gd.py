@@ -128,7 +128,7 @@ class Level(AbstractEntity):
     def objects(self):
         """List[:class:`str`]: A list of objects, represented as strings."""
         data = self.data.split(';')
-        data.pop()
+        data.pop(0)
         return data
 
     @property
