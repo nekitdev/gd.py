@@ -39,4 +39,4 @@ async def coro():
 
 
 # run a program
-coro().run()
+client.run(coro())
