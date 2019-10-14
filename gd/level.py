@@ -127,8 +127,9 @@ class Level(AbstractEntity):
     @property
     def objects(self):
         """List[:class:`str`]: A list of objects, represented as strings."""
-        if not self.data:
-            
+        data = self.data.split(';')
+        data.pop()
+        return data
 
     @property
     def object_count(self):
