@@ -6,6 +6,16 @@ from typing import Union
 from .mapper import mapper_util
 from .crypto.coders import Coder
 
+__all__ = ('Parameters', 'enter_gdworld', 'leave_gdworld')
+
+
+def enter_gdworld():
+    Parameters.GDW = 1
+
+def leave_gdworld():
+    Parameters.GDW = 0
+
+
 class Parameters:
     """Class that allows step-by-step parameter creation.
     Used in almost all HTTP Requests.
@@ -40,6 +50,7 @@ class Parameters:
     dict: :class:`dict`
         Dictionary where parameters are stored.
     """
+    GDW = 0
 
     def __init__(self):
         self.gameVersion = '21'
@@ -69,7 +80,7 @@ class Parameters:
             self.dict = {
                 'gameVersion': self.gameVersion,
                 'binaryVersion': self.binaryVersion,
-                'gdw': '0'
+                'gdw': str(self.GDW)
             }
         if type == 'web':
             self.dict = {}
