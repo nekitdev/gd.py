@@ -41,7 +41,7 @@ This method sets event loop to None after execution;
 that means, calling :func:`asyncio.get_event_loop`
 will raise the RuntimeError.
 
-3. coroutine.run [CPython]
+3. coroutine.run
 --------------------------
 
 .. automethod:: coroutine.run
@@ -50,7 +50,7 @@ will raise the RuntimeError.
 
     test().run() -> 13
 
-This method is created by gd.py. Only CPython is supported.
+This method is created by gd.py.
 Every time it is called, a new event loop is created,
 and a coroutine is being run in it.
 This method does not change event loop in a thread, though.

@@ -220,7 +220,6 @@ def enable_run_method(on: bool = True):
             del_method(coroutine, 'run')
 
     except Exception:
-        print('Not CPython implementation.')
-
+        print('Failed to edit the "run" method.')
 
 enable_run_method()

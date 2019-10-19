@@ -1,4 +1,3 @@
-import ctypes
 import functools
 import gc
 import logging
@@ -17,8 +16,10 @@ log = logging.getLogger(__name__)
 
 def get_class_dict(cls):
     """Gets 'cls.__dict__' that can be edited."""
-    return ctypes.py_object.from_address(
-        id(cls.__dict__) + ctypes.sizeof(ctypes.c_size_t)*2).value
+    try:
+        return next(obj for obj in gc.get_objects() if obj == dict(cls.__dict__))
+    except StopIteration:
+        raise ValueError('Failed to find editable __dict__ for {}.'.format(cls))
 
 
 class check:
