@@ -31,7 +31,7 @@ from .utils.enums import *
 from .utils.filters import Filters
 from .utils.gdpaginator import paginate, Paginator
 from .utils.http_request import http, HTTPClient
-from .utils.params import Parameters
+from .utils.params import *
 from .utils.save_parser import Save, SaveParser
 from .utils.crypto.coders import Coder
 from .utils.crypto.xor_cipher import XORCipher
