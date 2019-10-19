@@ -334,3 +334,4 @@ class SearchStrategy(NEnum):
     FOLLOWED = 12
     FRIENDS = 13
     HALL_OF_FAME = 16
+    WORLD = 17
