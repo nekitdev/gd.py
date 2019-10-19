@@ -19,7 +19,9 @@ def get_class_dict(cls):
     try:
         return next(obj for obj in gc.get_objects() if obj == dict(cls.__dict__))
     except StopIteration:
-        raise ValueError('Failed to find editable __dict__ for {}.'.format(cls))
+        raise ValueError(
+            'Failed to find editable __dict__ for {}.'.format(cls)
+        ) from None
 
 
 class check:
@@ -170,7 +172,7 @@ def get_instances_of(obj_class=object):
 
 def find_objects(predicate=None):
     if predicate is None:
-        predicate = lambda obj: True
+        return list()
 
     objects = gc.get_objects()
 
