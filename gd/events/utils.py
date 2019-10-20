@@ -22,3 +22,7 @@ def enable():
 def add_client(client):
     for listener in all_listeners:
         listener.add_client(client)
+
+def attach_to_loop(loop):
+    for listener in all_listeners:
+        listener.attach_to_loop(loop)
