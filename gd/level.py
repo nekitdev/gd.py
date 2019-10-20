@@ -183,15 +183,15 @@ class Level(AbstractEntity):
 
     def is_epic(self):
         """:class:`bool`: Indicates whether a level is epic."""
-        return self.options.get('is_epic')
+        return self.options.get('is_epic', False)
 
     def is_demon(self):
         """:class:`bool`: Indicates whether a level is demon."""
-        return options.get('is_demon')
+        return self.options.get('is_demon', False)
 
     def is_auto(self):
         """:class:`bool`: Indicates whether a level is auto."""
-        return options.get('is_auto')
+        return self.options.get('is_auto', False)
 
     def is_original(self):
         """:class:`bool`: Indicates whether a level is original."""
