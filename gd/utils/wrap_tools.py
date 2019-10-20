@@ -8,7 +8,7 @@ from ..errors import NotLoggedError, MissingAccess
 __all__ = (
     'check', 'benchmark', 'new_method', 'add_method', 'del_method',
     'make_repr', 'find_subclass', 'get_instances_of', 'find_objects',
-    'run_once', 'convert_to_type',
+    'run_once', 'convert_to_type', 'get_class_dict',
 )
 
 log = logging.getLogger(__name__)
@@ -16,16 +16,18 @@ log = logging.getLogger(__name__)
 
 def get_class_dict(cls):
     """Gets 'cls.__dict__' that can be edited."""
-    try:
-        return next(
-            obj for obj in gc.get_objects()
-            if obj == dict(cls.__dict__)
-            and type(obj) is dict
-        )  # using type(...) on purpose
-    except StopIteration:
-        raise ValueError(
-            'Failed to find editable __dict__ for {}.'.format(cls)
-        ) from None
+    for obj in gc.get_objects():
+
+        try:
+            if obj == dict(cls.__dict__) and type(obj) is dict:
+                return obj
+
+        except Exception:
+            continue
+
+    raise ValueError(
+        'Failed to find editable __dict__ for {}.'.format(cls)
+    )
 
 
 class check:
