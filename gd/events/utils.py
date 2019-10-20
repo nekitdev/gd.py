@@ -4,7 +4,7 @@ from .scanner import AbstractScanner, all_listeners
 
 from .. import utils
 
-__all__ = ('exit', 'disable', 'enable', 'add_client')
+__all__ = ('exit', 'disable', 'enable', 'add_client', 'attach_to_loop')
 
 
 def exit(status: int = 0):
