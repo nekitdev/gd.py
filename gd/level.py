@@ -58,7 +58,7 @@ class Level(AbstractEntity):
     @property
     def score(self):
         """:class:`int`: Level's featured score."""
-        return self.options.get('score')
+        return self.options.get('score', 0)
 
     @property
     def creator(self):
@@ -87,7 +87,7 @@ class Level(AbstractEntity):
     @property
     def stars(self):
         """:class:`int`: Amount of stars the level has."""
-        return self.options.get('stars')
+        return self.options.get('stars', 0)
 
     @property
     def coins(self):
@@ -172,6 +172,10 @@ class Level(AbstractEntity):
         assert daily_or_weekly in ('daily', 'weekly')
 
         return self.type.name.lower() == daily_or_weekly
+
+    def is_rated(self):
+        """:class:`bool`: Indicates if a level is rated (has stars)."""
+        return self.stars > 0
 
     def is_featured(self):
         """:class:`bool`: Indicates whether a level is featured."""
