@@ -80,7 +80,7 @@ Please note: gd.py writes the new method for coroutines, called 'run'.
         song = await client.get_song(633206)
         print(song.name)
 
-    test().run()
+    client.run(test())  # or test().run()
 
     # OUTPUT: Random Song 01
 
