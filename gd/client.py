@@ -720,24 +720,6 @@ class Client:
         return await self.get_top(strategy, count=count)
 
     @check.is_logged()
-    async def get_account_url(self, type: str = 'load'):
-        """|coro|
-
-        Fetches account URL. It is used in loading or saving data.
-
-        Parameters
-        ----------
-        type: :class:`str`
-            Type of url to fetch. Either ``'save'`` or ``'load'``.
-
-        Returns
-        -------
-        :class:`str`
-            Link of format ``http://<ip>/database/``.
-        """
-        return await self.session.get_account_url(self, type=type)
-
-    @check.is_logged()
     async def post_comment(self, content: str):
         """|coro|
 
