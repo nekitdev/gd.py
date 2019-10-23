@@ -324,27 +324,8 @@ class GDSession:
             client._upd(attr, value)
 
 
-    async def get_account_url(self, user_or_id, *, type: str = 'load'):
-        cases = {
-            'save': 1, 'load': 2
-        }
-        type = cases.get(type)
-
-        # add both int and user-objects support
-        id = user_or_id if not hasattr(user_or_id, 'account_id') else user_or_id.account_id
-
-        parameters = Params().create_new('web').put_definer('accountid', id).put_type(type).finish()
-
-        resp = await http.request(Route.GET_ACCOUNT_URL, parameters)
-
-        if not isinstance(resp, str):  # not link?
-            raise MissingAccess(message='Unknown response when searching for account url: {!r}'.format(resp))
-
-        link = resp + '/database/'  # http://ip/database/
-        return link
-
     async def load_save(self, client):
-        link = await client.get_account_url(type='load')
+        link = Route.GD_URL
 
         parameters = (
             Params().create_new().put_username(client.name).put_definer('password', client.password)
@@ -370,7 +351,7 @@ class GDSession:
 
 
     async def do_save(self, client, data):
-        link = await client.get_account_url(type='save')
+        link = Route.GD_URL
 
         parameters = (
             Params().create_new().put_username(client.name).put_definer('password', client.password)
