@@ -90,11 +90,13 @@ def benchmark(func):
     return decorator
 
 
-def new_method(cls):
+def new_method(cls, *, name: str = None):
     # decorator that adds new methods to a 'cls'.
     def decorator(func):
+        f_name = name or _get_name(func)
+
         cls_d = get_class_dict(cls)
-        cls_d[func.__name__] = func
+        cls_d[f_name] = func
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -196,6 +198,18 @@ def add_method(cls, func, *, name: str = None):
     cls_d = get_class_dict(cls)
 
     if name is None:
-        name = func.__name__
+        name = _get_name(func) 
 
     cls_d[name] = func
+
+
+def _get_name(func):
+    try:
+        if isinstance(func, property):
+            return func.fget.__name__
+        elif isinstance(func, (staticmethod, classmethod)):
+            return func.__func__.__name__
+        else:
+            return func.__name__
+    except AttributeError:
+        raise RuntimeError('Failed to find the name of given function. Please provide the name explicitly.') from None
