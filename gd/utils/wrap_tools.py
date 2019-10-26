@@ -198,7 +198,7 @@ def add_method(cls, func, *, name: str = None):
     cls_d = get_class_dict(cls)
 
     if name is None:
-        name = _get_name(func) 
+        name = _get_name(func)
 
     cls_d[name] = func
 
