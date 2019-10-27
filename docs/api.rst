@@ -234,6 +234,8 @@ Useful Utils
 
 .. autofunction:: run
 
+.. autofunction:: acquire_loop
+
 .. autofunction:: cancel_all_tasks
 
 .. autofunction:: wait
