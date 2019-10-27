@@ -25,8 +25,7 @@ class Client:
     loop: Optional[:class:`asyncio.AbstractEventLoop`]
         The :class:`asyncio.AbstractEventLoop` to use for asynchronous operations.
         Defaults to ``None``, in which case the default event loop is used
-        via :func:`asyncio.get_event_loop()`, meaning that
-        :exc:`RuntimeError` can be raised if there is no current loop.
+        via :func:`.utils.acquire_loop`.
 
     Attributes
     ----------
@@ -48,7 +47,7 @@ class Client:
     """
     def __init__(self, *, loop=None):
         self.session = _session
-        self.loop = loop or asyncio.get_event_loop()
+        self.loop = loop or utils.acquire_loop()
         self._set_to_defaults()
 
     def __repr__(self):
