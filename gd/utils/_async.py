@@ -7,7 +7,7 @@ from .wrap_tools import find_subclass, add_method, del_method
 __all__ = (
     'run_blocking_io', 'wait', 'run',
     'cancel_all_tasks', 'shutdown_loop',
-    'coroutine', 'maybe_coroutine'
+    'coroutine', 'maybe_coroutine', 'acquire_loop'
 )
 
 coroutine = find_subclass('coroutine')
@@ -33,10 +33,7 @@ async def run_blocking_io(func, *args, **kwargs):
 
         await run_blocking_io(make_image)
     """
-    loop = asyncio._get_running_loop()
-
-    if loop is None:
-        loop = asyncio.new_event_loop()
+    loop = acquire_loop()
 
     asyncio.set_event_loop(loop)
 
@@ -143,7 +140,7 @@ def run(coro, *, loop=None, debug: bool = False):
             shutdown_loop(loop, True)
 
 
-def cancel_all_tasks(loop, f_name: str = 'gd.utils.run'):
+def cancel_all_tasks(loop):
     """Cancels all tasks in a loop.
 
     Parameters
@@ -172,7 +169,7 @@ def cancel_all_tasks(loop, f_name: str = 'gd.utils.run'):
 
         if task.exception() is not None:
             loop.call_exception_handler({
-                'message': 'Unhandled exception during {}() shutdown'.format(f_name),
+                'message': 'Unhandled exception during runner shutdown',
                 'exception': task.exception(),
                 'task': task
             })
@@ -196,6 +193,24 @@ async def maybe_coroutine(func, *args, **kwargs):
         return await value
     else:
         return value
+
+
+def acquire_loop():
+    """Gracefully acquire a loop.
+
+    This function searches for a running loop. If none is found, the function tries to get an event loop via :func:`asyncio.get_event_loop`. On fail, returns a new loop using :func:`asyncio.new_event_loop`.
+    """
+    loop = asyncio._get_running_loop()
+
+    if loop is None:
+
+        try:
+            loop = asyncio.get_event_loop()
+
+        except Exception:
+            loop = asyncio.new_event_loop()
+
+    return loop
 
 
 def _run(self, loop=None):
