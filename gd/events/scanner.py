@@ -35,6 +35,8 @@ def shutdown_loop(loop):
 
     shutdown(loop)
 
+    loop.call_soon_threadsafe(loop.close)
+
 
 def run():
     asyncio.set_event_loop(loop)
@@ -69,7 +71,10 @@ class AbstractScanner:
         self.runner.loop = loop
 
     def enable(self):
-        self.runner.start()
+        try:
+            self.runner.start()
+        except RuntimeError:
+            pass
 
     @utils.run_once
     def close(self, *args, force: bool = True):
