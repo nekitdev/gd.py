@@ -23,16 +23,19 @@ Here is a simple usage example:
 
     gd.events.add_client(client)
     gd.events.enable()
+    gd.events.run()
 
 This code snippet will print a message every time a new level is getting daily.
 
 Example Explanation
 -------------------
-The last two lines of an example are important. Here is the explanation on what they are doing.
+The last three lines of an example are important. Here is the explanation on what they are doing.
 
 ``gd.events.add_client(client)`` appends a ``client`` to a scanner, which calls the ``on_event`` method.
 
-``gd.events.enable()`` runs all default listeners (in new threads).
+``gd.events.enable()`` schedules tasks in all default listeners.
+
+And, finally, ``gd.events.run()`` runs all the scheduled tasks in another thread.
 
 Running Manually
 ----------------
@@ -52,31 +55,13 @@ There is a way to run any of the default listeners manually:
     async def on_new_daily(level):
         print('New daily was set!')
 
-    daily_listener.start()
+    daily_listener.enable()
+
+    gd.events.run()
 
 .. note:: It is recommended to start a scanner after defining event implementation.
 
 If you wish to run the scanner normally (blocking the main thread), you can do the following:
-
-.. code-block:: python3
-
-    import gd
-
-    daily_listener = gd.events.daily_listener
-
-    client = gd.Client()
-
-    daily_listener.add_client(client)
-
-    @client.event
-    async def on_new_daily(level):
-        print(level)
-
-    daily_listener.run()
-
-.. warning:: Here we MUST run the listener after defining event implementation, since ``daily_listener.run()`` blocks the thread and defining the event implementation after it would happen only after it finishes. (runner will not stop until interrupting, though)
-
-.. note:: In 0.10.0, a new method was created. With gd.py 0.10.0 and higher, you can attach runners to another event loop:
 
     .. code-block:: python3
 
@@ -94,6 +79,8 @@ If you wish to run the scanner normally (blocking the main thread), you can do t
         gd.events.attach_to_loop(loop)
 
         # tasks are now attached to the 'loop'
+
+        gd.events.enable()
 
         loop.run_forever()
 
@@ -123,6 +110,7 @@ Another way to write an implementation for ``on_event`` task is to subclass :cla
 
     gd.events.add_client(client)
     gd.events.enable()
+    gd.events.run()
 
 Important Note
 --------------
