@@ -13,19 +13,51 @@ __all__ = (
     'daily_listener', 'weekly_listener'
 )
 
-scanner_client = Client(loop=asyncio.new_event_loop())
+loop = asyncio.new_event_loop()
+
+scanner_client = Client(loop=loop)
 
 log = logging.getLogger(__name__)
 
 
+def shutdown_loop(loop):
+    """Shutdown a loop."""
+    def shutdown(loop):
+        loop.call_soon_threadsafe(loop.stop)
+
+        try:
+            tasks = asyncio.all_tasks(loop)
+        except AttributeError:
+            tasks = asyncio.Task.all_tasks(loop)
+
+        for task in tasks:
+            task.cancel()
+
+    shutdown(loop)
+
+
+def run():
+    asyncio.set_event_loop(loop)
+
+    try:
+        loop.run_forever()
+
+    except KeyboardInterrupt:
+        log.info('Received the signal to terminate the event loop.')
+
+    finally:
+        log.info('Cleaning up tasks.')
+        shutdown_loop(loop)
+
+
+thread = threading.Thread(target=run, name='ScannerThread')
+
+
 class AbstractScanner:
     def __init__(self, delay: float = 10.0):
-        self.thread = threading.Thread(target=self.run, name=self.__class__.__name__+'Thread')
-        self.loop = asyncio.new_event_loop()
-        self.runner = utils.tasks.loop(seconds=delay)(self.main)
+        self.runner = utils.tasks.loop(seconds=delay, loop=loop)(self.main)
         self.cache = None
         self.clients = []
-        self.init_loop()
 
     def add_client(self, client):
         """Add a client to fire events for."""
@@ -36,41 +68,8 @@ class AbstractScanner:
         """Attach the runner to another event loop."""
         self.runner.loop = loop
 
-        try:
-            self.runner.start()
-        except RuntimeError:
-            pass
-
-    @utils.run_once
-    def run(self):
-        """Run a scanner. In idea, this should be called from another thread."""
-        self.attach_to_loop(self.loop)
-
-        asyncio.set_event_loop(self.loop)
-
-        try:
-            self.loop.run_forever()
-
-        except KeyboardInterrupt:
-            log.info('Received the signal to terminate the event loop.')
-
-        finally:
-            log.info('Cleaning up tasks.')
-            self.close()
-
-    def init_loop(self):
-        loop = self.loop
-
-        try:
-            loop.add_signal_handler(signal.SIGINT, self.close)
-            loop.add_signal_handler(signal.SIGTERM, self.close)
-        except NotImplementedError:
-            pass
-
-    @utils.run_once
-    def start(self):
-        """Start a scanner."""
-        self.thread.start()
+    def enable(self):
+        self.runner.start()
 
     @utils.run_once
     def close(self, *args, force: bool = True):
@@ -81,28 +80,6 @@ class AbstractScanner:
             self.runner.cancel()
         else:
             self.runner.stop()
-
-        self.shutdown_loop(self.loop)
-
-        try:
-            self.thread.join()
-        except RuntimeError:
-            pass
-
-    def shutdown_loop(self, loop):
-        """Shutdown a loop."""
-        def shutdown(loop):
-            loop.call_soon_threadsafe(loop.stop)
-
-            try:
-                tasks = asyncio.all_tasks(loop)
-            except AttributeError:
-                tasks = asyncio.Task.all_tasks(loop)
-
-            for task in tasks:
-                task.cancel()
-
-        shutdown(loop)
 
     async def on_error(self, exc):
         """Basic event handler to print the errors if any occur."""
