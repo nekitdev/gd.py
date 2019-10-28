@@ -80,6 +80,8 @@ If you wish to run the scanner normally (blocking the main thread), you can do t
 
         # tasks are now attached to the 'loop'
 
+        gd.events.add_client(client)
+
         gd.events.enable()
 
         loop.run_forever()
