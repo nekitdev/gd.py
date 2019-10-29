@@ -10,7 +10,7 @@ from .. import utils
 
 __all__ = (
     'AbstractScanner', 'TimelyLevelScanner',
-    'daily_listener', 'weekly_listener'
+    'daily_listener', 'weekly_listener', 'run'
 )
 
 loop = asyncio.new_event_loop()
@@ -38,7 +38,7 @@ def shutdown_loop(loop):
     loop.call_soon_threadsafe(loop.close)
 
 
-def run():
+def run(loop):
     asyncio.set_event_loop(loop)
 
     try:
@@ -52,7 +52,7 @@ def run():
         shutdown_loop(loop)
 
 
-thread = threading.Thread(target=run, name='ScannerThread')
+thread = threading.Thread(target=run, args=(loop,), name='ScannerThread')
 
 
 class AbstractScanner:
