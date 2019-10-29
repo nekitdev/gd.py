@@ -1,6 +1,8 @@
 from os import _exit
 
-from .scanner import AbstractScanner as scanner, run as run_loop, all_listeners, thread
+from .scanner import (
+    AbstractScanner as scanner, run as run_loop,
+    shutdown_loop, all_listeners, thread, loop as _loop
 
 from .. import utils
 
@@ -13,6 +15,7 @@ def exit(status: int = 0):
 
 def disable():
     try:
+        shutdown_loop(_loop)
         thread.join()
     except RuntimeError:
         pass
