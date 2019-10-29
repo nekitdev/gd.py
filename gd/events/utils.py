@@ -3,6 +3,7 @@ from os import _exit
 from .scanner import (
     AbstractScanner as scanner, run as run_loop,
     shutdown_loop, all_listeners, thread, loop as _loop
+)
 
 from .. import utils
 
