@@ -23,7 +23,7 @@ Here is a simple usage example:
 
     gd.events.add_client(client)
     gd.events.enable()
-    gd.events.run()
+    gd.events.start()
 
 This code snippet will print a message every time a new level is getting daily.
 
@@ -35,7 +35,7 @@ The last three lines of an example are important. Here is the explanation on wha
 
 ``gd.events.enable()`` schedules tasks in all default listeners.
 
-And, finally, ``gd.events.run()`` runs all the scheduled tasks in another thread.
+And, finally, ``gd.events.start()`` runs all the scheduled tasks in another thread.
 
 Running Manually
 ----------------
@@ -57,7 +57,7 @@ There is a way to run any of the default listeners manually:
 
     daily_listener.enable()
 
-    gd.events.run()
+    gd.events.start()
 
 .. note:: It is recommended to start a scanner after defining event implementation.
 
@@ -84,7 +84,7 @@ If you wish to run the scanner normally (blocking the main thread), you can do t
 
         gd.events.enable()
 
-        loop.run_forever()
+        gd.events.run(loop)  # or, simplier, loop.run_forever()
 
 There are two main ways to write an implementation for ``on_event`` task.
 
@@ -116,4 +116,4 @@ Another way to write an implementation for ``on_event`` task is to subclass :cla
 
 Important Note
 --------------
-If ``gd.events.enable()`` was called, it is recommended to call ``gd.exit()`` to normally close the interpreter, or at least all scanners should be closed via ``gd.events.disable()``.
+If ``gd.events.start()`` was called, it is recommended to call ``gd.exit()`` to normally close the interpreter, or at least all scanners should be closed via ``gd.events.disable()``.
