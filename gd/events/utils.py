@@ -1,10 +1,10 @@
 from os import _exit
 
-from .scanner import AbstractScanner, all_listeners, thread
+from .scanner import AbstractScanner as scanner, run as run_loop, all_listeners, thread
 
 from .. import utils
 
-__all__ = ('exit', 'disable', 'enable', 'add_client', 'run', 'attach_to_loop')
+__all__ = ('exit', 'disable', 'enable', 'add_client', 'start', 'run', 'attach_to_loop')
 
 
 def exit(status: int = 0):
@@ -17,8 +17,8 @@ def disable():
     except RuntimeError:
         pass
 
-    for scanner in utils.get_instances_of(AbstractScanner):
-        scanner.close()
+    for scan in utils.get_instances_of(scanner):
+        scan.close()
 
 def enable():
     for listener in all_listeners:
@@ -32,5 +32,8 @@ def attach_to_loop(loop):
     for listener in all_listeners:
         listener.attach_to_loop(loop)
 
-def run():
+def run(loop):
+    run_loop(loop)
+
+def start():
     thread.start()
