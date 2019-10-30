@@ -1,4 +1,7 @@
 from .abstractentity import AbstractEntity
+from .colors import Colour
+
+from .utils.enums import LevelDifficulty
 from .utils.filters import Filters
 from .utils.wrap_tools import make_repr
 
@@ -26,12 +29,12 @@ class Gauntlet(AbstractEntity):
     @property
     def name(self):
         """:class:`str`: Name of the Gauntlet."""
-        return self.options.get('name')
+        return self.options.get('name', 'Unknown Gauntlet')
 
     @property
     def level_ids(self):
         """Tuple[:class:`int`]: Tuple of level IDs that are contained in the gauntlet."""
-        return self.options.get('level_ids')
+        return self.options.get('level_ids', ())
 
     @property
     def levels(self):
@@ -83,19 +86,19 @@ class MapPack(Gauntlet):
     @property
     def stars(self):
         """:class:`int`: Amount of stars this map pack has."""
-        return self.options.get('stars')
+        return self.options.get('stars', 0)
 
     @property
     def coins(self):
         """:class:`int`: Number of coins this map pack grants on completion."""
-        return self.options.get('coins')
+        return self.options.get('coins', 0)
 
     @property
     def difficulty(self):
         """:class:`.LevelDifficulty`: Average difficulty of a map pack."""
-        return self.options.get('difficulty')
+        return self.options.get('difficulty', LevelDifficulty(-1))
 
     @property
     def color(self):
         """:class:`.Colour`: Colour of a map pack."""
-        return self.options.get('color')
+        return self.options.get('color', Colour(0xffffff))

@@ -239,6 +239,7 @@ class StatusLevel(NEnum):
 
 class LevelLength(NEnum):
     """An enumeration for level lengths."""
+    NA = -1
     TINY = 0
     SHORT = 1
     MEDIUM = 2

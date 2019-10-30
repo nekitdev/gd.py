@@ -239,5 +239,14 @@ class Coder:
         return encoded
 
     @classmethod
+    def gen_level_upload_seed(cls, data_string: str, chars_required: int = 50):
+        if len(data_string) < 50:
+            return data_string
+
+        seed = data_string[0::len(data_string)//chars_required]
+
+        return seed
+
+    @classmethod
     def gen_level_lb_seed(cls, jumps: int = 0, percentage: int = 0, seconds: int = 0):
         return 1482 + (jumps + 3991) * (percentage + 8354) + ((seconds + 4085)**2) - 50028039

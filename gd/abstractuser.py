@@ -26,12 +26,12 @@ class AbstractUser(AbstractEntity):
     @property
     def name(self):
         """:class:`str`: String representing name of the user."""
-        return self.options.get('name')
+        return self.options.get('name', '')
 
     @property
     def account_id(self):
         """:class:`int`: Account ID of the user."""
-        return self.options.get('account_id')
+        return self.options.get('account_id', 0)
 
     @property
     def _dict_for_parse(self):

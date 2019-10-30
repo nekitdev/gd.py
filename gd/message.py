@@ -1,6 +1,8 @@
 from .abstractentity import AbstractEntity
+from .abstractuser import AbstractUser
 from .session import _session
 
+from .utils.enums import MessageOrRequestType
 from .utils.wrap_tools import make_repr, check
 
 class Message(AbstractEntity):
@@ -10,7 +12,7 @@ class Message(AbstractEntity):
     def __init__(self, **options):
         super().__init__(**options)
         self.options = options
-        self._body = options.pop('body', None)
+        self._body = options.pop('body', '')
 
     def __repr__(self):
         info = {
@@ -23,27 +25,27 @@ class Message(AbstractEntity):
     @property
     def author(self):
         """:class:`.AbstractUser`: An author of the message."""
-        return self.options.get('author')
+        return self.options.get('author', AbstractUser())
 
     @property
     def recipient(self):
         """:class:`.AbstractUser`: A recipient of the message."""
-        return self.options.get('recipient')
+        return self.options.get('recipient', AbstractUser())
 
     @property
     def subject(self):
         """:class:`str`: A subject of the message, as string."""
-        return self.options.get('subject')
+        return self.options.get('subject', '')
 
     @property
     def timestamp(self):
         """:class:`str`: A human-readable string representing how long ago message was created."""
-        return self.options.get('timestamp')
+        return self.options.get('timestamp', 'unknown')
 
     @property
     def type(self):
         """:class:`.MessageOrRequestType`: Whether a message is sent or inbox."""
-        return self.options.get('type')
+        return self.options.get('type', MessageOrRequestType(0))
 
     @property
     def body(self):
@@ -52,7 +54,7 @@ class Message(AbstractEntity):
 
     def is_read(self):
         """:class:`bool`: Indicates whether message is read or not."""
-        return self.options.get('is_read')
+        return self.options.get('is_read', False)
 
     @check.is_logged()
     async def read(self):
@@ -65,7 +67,7 @@ class Message(AbstractEntity):
         :class:`str`
             The content of the message.
         """
-        await _session.read_message(self)
+        return await _session.read_message(self)
 
     @check.is_logged()
     async def delete(self):
@@ -78,4 +80,4 @@ class Message(AbstractEntity):
         :exc:`.MissingAccess`
             Failed to delete a message.
         """
-        return await _session.delete_message(self)
+        await _session.delete_message(self)

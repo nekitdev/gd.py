@@ -36,10 +36,10 @@ class ClassConverter:
             author = str(s[i.SONG_AUTHOR]),
             id = s[i.SONG_ID],
             size = float(s[i.SONG_SIZE]),
-            links = (
-                Route.NEWGROUNDS_SONG_LISTEN + str(s[i.SONG_ID]),
-                dl_link
-            ),
+            links = {
+                'normal': Route.NEWGROUNDS_SONG_LISTEN + str(s[i.SONG_ID]),
+                'download': dl_link
+            },
             custom = True,
         )
 
@@ -67,13 +67,22 @@ class ClassConverter:
         rank = rnk if rnk else None
 
         youtube = str(s[i.USER_YOUTUBE])
-        yt = (youtube, 'https://www.youtube.com/channel/' + youtube) if youtube else (None, None)
+        yt = {
+            'normal': youtube,
+            'link': 'https://www.youtube.com/channel/' + youtube
+        }
 
         twitter = str(s[i.USER_TWITTER])
-        twt = (twitter, 'https://twitter.com/' + twitter) if twitter else (None, None)
+        twt = {
+            'normal': twitter,
+            'link': 'https://twitter.com/' + twitter
+        }
 
         twitch = str(s[i.USER_TWITCH])
-        twch = (twitch, 'https://twitch.tv/' + twitch) if twitch else (None, None)
+        twch = {
+            'normal': twitch,
+            'link': 'https://twitch.tv/' + twitch
+        }
 
         return User(
             name = str(s[i.USER_NAME]), id = s[i.USER_PLAYER_ID],

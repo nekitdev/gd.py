@@ -1,6 +1,10 @@
 from .abstractentity import AbstractEntity
+from .abstractuser import AbstractUser
+
+from .colors import Colour
 from .session import _session
 
+from .utils.enums import CommentType
 from .utils.wrap_tools import make_repr, check
 
 class Comment(AbstractEntity):
@@ -23,46 +27,46 @@ class Comment(AbstractEntity):
     @property
     def body(self):
         """:class:`str`: Returns body of the comment."""
-        return self.options.get('body')
+        return self.options.get('body', '')
 
     @property
     def rating(self):
         """:class:`int`: Rating of the comment."""
-        return self.options.get('rating')
+        return self.options.get('rating', 0)
 
     @property
     def timestamp(self):
         """:class:`str`: A human-readable timestamp representing how long ago the comment was created."""
-        return self.options.get('timestamp')
+        return self.options.get('timestamp', 'unknown')
 
     @property
     def author(self):
         """:class:`.AbstractUser`: An author of the comment."""
-        return self.options.get('author')
+        return self.options.get('author', AbstractUser())
 
     @property
     def type(self):
         """:class:`.CommentType`: Whether comment is on profile or on a level."""
-        return self.options.get('type')
+        return self.options.get('type', CommentType(0))
 
     @property
     def level_id(self):
         """:class:`int`: Level ID of a level the comment is on, if present. ``0`` if profile comment."""
-        return self.options.get('level_id')
+        return self.options.get('level_id', 0)
 
     @property
     def level_percentage(self):
         """:class:`int`: Level highscore linked to a comment, if present. ``-1`` if profile comment."""
-        return self.options.get('level_percentage')
+        return self.options.get('level_percentage', -1)
 
     @property
     def color(self):
         """:class:`.Colour`: Colour of the comment. Oftenly equals ``gd.Colour(0xffffff)``."""
-        return self.options.get('color')
+        return self.options.get('color', Colour(0xffffff))
 
     def is_spam(self):
         """:class:`bool`: Indicates whether a comment is marked as spam. ``False`` if profile comment."""
-        return self.options.get('is_spam')
+        return self.options.get('is_spam', False)
 
     def is_disliked(self):
         """:class:`bool`: Indicates whether a comment is disliked or not."""

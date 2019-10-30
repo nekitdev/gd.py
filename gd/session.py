@@ -79,7 +79,7 @@ class GDSession:
             raise MissingAccess(message='No song found under ID: {}.'.format(song_id))
 
         return ClassConverter.song_from_kwargs(
-            name=name, author=author, id=song_id, size=size_mb, links=[link, dl_link], custom=True
+            name=name, author=author, id=song_id, size=size_mb, links=(link, dl_link), custom=True
         )
 
 

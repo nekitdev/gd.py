@@ -3,11 +3,17 @@ import logging
 from typing import Union
 
 from .abstractentity import AbstractEntity
+from .abstractuser import AbstractUser
+from .song import Song
+
 from .session import _session
 
 from .errors import MissingAccess
 
-from .utils.enums import DemonDifficulty, CommentStrategy, value_to_enum
+from .utils.enums import (
+    DemonDifficulty, LevelDifficulty, CommentStrategy,
+    LevelLength, TimelyType, value_to_enum
+)
 from .utils.wrap_tools import make_repr, check
 
 log = logging.getLogger(__name__)
@@ -33,27 +39,27 @@ class Level(AbstractEntity):
     @property
     def name(self):
         """:class:`str`: The name of the level."""
-        return self.options.get('name')
+        return self.options.get('name', '')
 
     @property
     def description(self):
         """:class:`str`: Description of the level."""
-        return self.options.get('description')
+        return self.options.get('description', '')
 
     @property
     def version(self):
         """:class:`int`: Version of the level."""
-        return self.options.get('version')
+        return self.options.get('version', 0)
 
     @property
     def downloads(self):
         """:class:`int`: Amount of the level's downloads."""
-        return self.options.get('downloads')
+        return self.options.get('downloads', 0)
 
     @property
     def rating(self):
         """:class:`int`: Amount of the level's likes or dislikes."""
-        return self.options.get('rating')
+        return self.options.get('rating', 0)
 
     @property
     def score(self):
@@ -63,17 +69,17 @@ class Level(AbstractEntity):
     @property
     def creator(self):
         """:class:`.AbstractUser`: Creator of the level."""
-        return self.options.get('creator')
+        return self.options.get('creator', AbstractUser())
 
     @property
     def song(self):
         """:class:`.Song`: Song used in the level."""
-        return self.options.get('song')
+        return self.options.get('song', Song())
 
     @property
     def difficulty(self):
         """:class:`.LevelDifficulty`: Difficulty of the level."""
-        return self.options.get('difficulty')
+        return self.options.get('difficulty', LevelDifficulty(-1))
 
     @property
     def password(self):
@@ -92,37 +98,37 @@ class Level(AbstractEntity):
     @property
     def coins(self):
         """:class:`int`: Amount of coins in the level."""
-        return self.options.get('coins')
+        return self.options.get('coins', 0)
 
     @property
     def original_id(self):
         """:class:`int`: ID of the original level. (``0`` if is not a copy)"""
-        return self.options.get('original')
+        return self.options.get('original', 0)
 
     @property
     def uploaded_timestamp(self):
         """:class:`str`: A human-readable string representing how much time ago level was uploaded."""
-        return self.options.get('uploaded_timestamp')
+        return self.options.get('uploaded_timestamp', 'unknown')
 
     @property
     def last_updated_timestamp(self):
         """:class:`str`: A human-readable string showing how much time ago the last update was."""
-        return self.options.get('last_updated_timestamp')
+        return self.options.get('last_updated_timestamp', 'unknown')
 
     @property
     def length(self):
         """:class:`.LevelLength`: A type that represents length of the level."""
-        return self.options.get('length')
+        return self.options.get('length', LevelLength(-1))
 
     @property
     def game_version(self):
         """:class:`int`: A version of the game required to play the level."""
-        return self.options.get('game_version')
+        return self.options.get('game_version', 0)
 
     @property
     def requested_stars(self):
         """:class:`int`: Amount of stars creator of the level has requested."""
-        return self.options.get('stars_requested')
+        return self.options.get('stars_requested', 0)
 
     @property
     def objects(self):
@@ -134,24 +140,24 @@ class Level(AbstractEntity):
     @property
     def object_count(self):
         """:class:`int`: Amount of objects the level has."""
-        return self.options.get('object_count')
+        return self.options.get('object_count', 0)
 
     @property
     def type(self):
         """:class:`.TimelyType`: A type that shows whether a level is Daily/Weekly."""
-        return self.options.get('type')
+        return self.options.get('type', TimelyType(0))
 
     @property
     def timely_index(self):
         """:class:`int`: A number that represents current index of the timely.
         Increments on new dailies/weeklies. If not timely, equals ``-1``.
         """
-        return self.options.get('time_n')
+        return self.options.get('time_n', -1)
 
     @property
     def cooldown(self):
         """:class:`int`: Represents a cooldown until next timely. If not timely, equals ``-1``."""
-        return self.options.get('cooldown')
+        return self.options.get('cooldown', -1)
 
     @property
     def data(self):
@@ -199,7 +205,7 @@ class Level(AbstractEntity):
 
     def has_coins_verified(self):
         """:class:`bool`: Indicates whether level's coins are verified."""
-        return self.options.get('verified_coins')
+        return self.options.get('verified_coins', False)
 
     def download(self):
         """:class:`str`: Returns level data, represented as string."""
@@ -216,6 +222,16 @@ class Level(AbstractEntity):
             Failed to report a level.
         """
         await _session.report_level(self)
+
+    async def upload(self, data: str = None, *, from_client=None):
+        if data is None:
+            data = self.data
+
+        client = from_client if from_client is not None else self._client
+
+        check.is_logged_obj(client, 'upload')
+
+        await _session.upload_level(self, data=data, client=client)
 
     async def delete(self, *, from_client=None):
         """|coro|

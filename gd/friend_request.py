@@ -1,6 +1,9 @@
 from .abstractentity import AbstractEntity
+from .abstractuser import AbstractUser
+
 from .session import _session
 
+from .utils.enums import MessageOrRequestType
 from .utils.wrap_tools import make_repr, check
 
 class FriendRequest(AbstractEntity):
@@ -22,31 +25,31 @@ class FriendRequest(AbstractEntity):
     @property
     def author(self):
         """:class:`.AbstractUser`: An author of the friend request."""
-        return self.options.get('author')
+        return self.options.get('author', AbstractUser())
 
     @property
     def recipient(self):
         """:class:`.AbstractUser`: A recipient of the friend request."""
-        return self.options.get('recipient')
+        return self.options.get('recipient', AbstractUser())
 
     @property
     def type(self):
         """:class:`.MessageOrRequestType`: Whether request is incoming or sent."""
-        return self.options.get('type')
+        return self.options.get('type', MessageOrRequestType(0))
 
     @property
     def body(self):
         """:class:`str`: A string representing a message request was sent with."""
-        return self.options.get('body')
+        return self.options.get('body', '')
 
     @property
     def timestamp(self):
         """:class:`str`: A human-readable string representing how long ago request was created."""
-        return self.options.get('timestamp')
+        return self.options.get('timestamp', 'unknown')
 
     def is_read(self):
         """:class:`bool`: Indicates whether request was already read."""
-        return self.options.get('is_read')
+        return self.options.get('is_read', False)
 
     @check.is_logged()
     async def read(self):

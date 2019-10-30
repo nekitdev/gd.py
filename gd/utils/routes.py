@@ -3,6 +3,7 @@ class Route:
     UNBLOCK_USER = 'unblockGJUser20'
     RATE_LEVEL_STARS = 'rateGJStars211'
     RATE_LEVEL_DEMON = 'rateGJDemon21'
+    UPLOAD_LEVEL = 'uploadGJLevel21'
     SUGGEST_LEVEL_STARS = 'suggestGJStars20'
     GET_USER_INFO = 'getGJUserInfo20'
     USER_SEARCH = 'getGJUsers20'
