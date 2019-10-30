@@ -29,7 +29,7 @@ class Gauntlet(AbstractEntity):
     @property
     def name(self):
         """:class:`str`: Name of the Gauntlet."""
-        return self.options.get('name', 'Unknown Gauntlet')
+        return self.options.get('name', 'Unknown')
 
     @property
     def level_ids(self):
