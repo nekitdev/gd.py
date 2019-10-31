@@ -22,23 +22,27 @@ log = logging.getLogger(__name__)
 
 def shutdown_loop(loop):
     """Shutdown a loop."""
-    def shutdown(loop):
-        loop.call_soon_threadsafe(loop.stop)
+    loop.call_soon_threadsafe(loop.stop)
 
-        try:
-            tasks = asyncio.all_tasks(loop)
-        except AttributeError:
-            tasks = asyncio.Task.all_tasks(loop)
+    try:
+        tasks = asyncio.all_tasks(loop)
+    except AttributeError:
+        tasks = asyncio.Task.all_tasks(loop)
 
-        for task in tasks:
-            task.cancel()
-
-    shutdown(loop)
+    for task in tasks:
+        task.cancel()
 
     loop.call_soon_threadsafe(loop.close)
 
 
 def run(loop):
+    try:
+        loop.add_signal_handler(signal.SIGINT, loop.stop)
+        loop.add_signal_handler(signal.SIGTERM, loop.stop)
+
+    except NotImplementedError:
+        pass
+
     asyncio.set_event_loop(loop)
 
     try:
