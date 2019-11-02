@@ -21,7 +21,6 @@ async def test():
     cases = (
         ('ping_server',        [],                                 {}),
         ('get_song',           [810215],                           {}),
-        ('get_ng_song',        [655284],                           {}),
         ('get_user',           [71],                               {}),
         ('fetch_user',         [71],                  {'stats': True}),
         ('search_user',        ['NeKitDS'],                        {}),
@@ -35,17 +34,11 @@ async def test():
         ('search_levels',      [],         {'query': 'AdventureGame'})
     )
 
-    r = []
-
     for f_name, args, kwargs in cases:
 
         coro = getattr(client, f_name)
 
-        r.append(coro(*args, **kwargs))
-
-    results = await asyncio.gather(*r)
-
-    for (f_name, args, kwargs), res in zip(cases, results):
+        res = await coro(*args, **kwargs)
 
         print('{}() -> {}'.format(f_name, res), end='\n\n')
 

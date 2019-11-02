@@ -230,19 +230,19 @@ class Parameters:
 
             .. code-block:: python3
 
-                'song'      -> 'songID'
-                'user'      -> 'targetAccountID'
-                'search'    -> 'str'
-                'password'  -> 'password'
-                'levelid' -> 'levelID'
-                'accountid' -> 'accountID'
-                'itemid'    -> 'itemID'
-                'messageid' -> 'messageID'
-                'commentid' -> 'commentID'
-                'requestid' -> 'requestID'
-                'userid'    -> 'userID'
-                'stars'     -> 'stars'
-                'rating'    -> 'rating'
+                'song'       -> 'songID'
+                'user'       -> 'targetAccountID'
+                'search'     -> 'str'
+                'password'   -> 'password'
+                'levelid'    -> 'levelID'
+                'accountid'  -> 'accountID'
+                'itemid'     -> 'itemID'
+                'messageid'  -> 'messageID'
+                'commentid'  -> 'commentID'
+                'requestid'  -> 'requestID'
+                'userid'     -> 'userID'
+                'stars'      -> 'stars'
+                'rating'     -> 'rating'
 
         item: `Any`
             Parameter to put.
@@ -465,23 +465,26 @@ class Parameters:
         self.dict['local'] = str(number)
         return self
 
-    def put_seed(self, seed: str, suffix: str = ''):
-        """Puts ``'seed{suffix}'`` parameter.
+    def put_seed(self, seed: str, prefix: str = 'seed', suffix: str = ''):
+        """Puts ``'{prefix}{suffix}'`` parameter.
 
         Parameters
         ----------
         seed: :class:`str`
             The seed to put, as string.
 
-        suffix: :class:`str`
-            The suffix to append to ``seed``.
+        prefix: `Any`
+            The prefix to use as a parameter.
+
+        suffix: `Any`
+            The suffix to append to ``prefix``.
 
         Returns
         -------
         :class:`.Parameters`
             ``self``
         """
-        self.dict['seed'+suffix] = str(seed)
+        self.dict[str(prefix)+str(suffix)] = str(seed)
         return self
 
     def put_rs(self, rs: str):

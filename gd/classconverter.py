@@ -129,7 +129,7 @@ class ClassConverter:
         try:
             leveldata = Coder.unzip(s[i.LEVEL_DATA])
         except KeyError:  # level data not present
-            leveldata = None
+            leveldata = str()
 
         diff = s[i.LEVEL_DIFFICULTY]
         demon_diff = s[i.LEVEL_DEMON_DIFFICULTY]

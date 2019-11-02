@@ -81,6 +81,13 @@ class Coder:
         return encoded if not needs_xor else cls.normal_xor(encoded, 11).encode()
 
     @classmethod
+    def do_base64(cls, data: str, encode: bool = True):
+        if encode:
+            return mapper_util.prepare_sending(base64.b64encode(data.encode()).decode())
+        else:
+            return mapper_util.normalize(base64.b64decode(data.encode()).decode())
+
+    @classmethod
     def gen_rs(cls, length: int = 10):
         """Generates a random string of required length.
 
@@ -232,20 +239,16 @@ class Coder:
         if append_semicolon and not string.endswith(';'):
             string += ';'
 
-        zipped = bytes(cls.additional) + zlib.compress(string.encode())[2:-4]
-
-        encoded = mapper_util.prepare_sending(base64.b64encode(zipped).decode())
-
-        return encoded
+        return cls.encode_save(string.encode(), needs_xor=False).decode()
 
     @classmethod
     def gen_level_upload_seed(cls, data_string: str, chars_required: int = 50):
         if len(data_string) < 50:
             return data_string
 
-        seed = data_string[0::len(data_string)//chars_required]
+        space = len(data_string) // chars_required
 
-        return seed
+        return data_string[::space][:chars_required]
 
     @classmethod
     def gen_level_lb_seed(cls, jumps: int = 0, percentage: int = 0, seconds: int = 0):

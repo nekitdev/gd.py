@@ -32,7 +32,10 @@ def shutdown_loop(loop):
     for task in tasks:
         task.cancel()
 
-    loop.call_soon_threadsafe(loop.close)
+    try:
+        loop.call_soon_threadsafe(loop.close)
+    except RuntimeError:
+        pass
 
 
 def run(loop):

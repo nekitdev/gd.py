@@ -223,15 +223,47 @@ class Level(AbstractEntity):
         """
         await _session.report_level(self)
 
-    async def upload(self, data: str = None, *, from_client=None):
+    async def upload(
+        self, name: str = 'Unnamed', id: int = 0, version: int = 1, length: int = 1,
+        track: int = 0, song_id: int = 0, is_auto: bool = False, original: int = 0,
+        two_player: bool = False, objects: int = None, coins: int = 0, star_amount: int = 0,
+        unlist: bool = False, ldm: bool = False, password: int = 0, copyable: bool = False,
+        data: str = None, description: str = '', *, load: bool = True, from_client=None
+    ):
         if data is None:
             data = self.data
+
+        if objects is None:
+            objects = len(data.split(';')) - 2
+            objects = 0 if objects < 0 else objects
 
         client = from_client if from_client is not None else self._client
 
         check.is_logged_obj(client, 'upload')
 
-        await _session.upload_level(self, data=data, client=client)
+        await _session.upload_level(
+            level=self, data=data, name=name, level_id=id, version=version, length=length,
+            audio_track=track, song_id=song_id, is_auto=is_auto, original=original,
+            two_player=two_player, objects=objects, coins=coins, stars=star_amount,
+            unlisted=unlist, ldm=ldm, password=password, copyable=copyable,
+            desc=description, load_after=load, client=client)
+
+    async def upload_from_options(
+        self, load: bool = False, unlist: bool = False, ldm: bool = False, copyable: bool = False,
+        star_amount: int = 0, *, from_client=None
+    ):
+        track, song_id = (self.song.id, 0)
+
+        if self.song.is_custom():
+            track, song_id = song_id, track
+
+        await self.upload(
+            name=self.name, id=self.id, version=self.version, length=abs(self.length.value),
+            track=track, song_id=song_id, two_player=True, is_auto=self.is_auto(), data=self.data,
+            original=self.original_id, objects=len(self.objects), coins=self.coins,
+            star_amount=star_amount, unlist=unlist, ldm=ldm, password=self.password,
+            copyable=copyable, description=self.description, from_client=from_client
+        )
 
     async def delete(self, *, from_client=None):
         """|coro|

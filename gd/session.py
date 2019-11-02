@@ -237,6 +237,64 @@ class GDSession:
         return level.attach_client(client)
 
 
+    async def upload_level(
+        self, level, data: str, name: str, level_id: int, version: int, length: int, audio_track: int,
+        desc: str, song_id: int, is_auto: bool, original: int, two_player: bool, objects: int, coins: int,
+        stars: int, unlisted: bool, ldm: bool, password: int, copyable: bool, *, load_after: bool, client
+    ):
+        data = Coder.zip(data)
+        extra_string = ('_'.join(map(str, (0 for _ in range(55)))))
+        desc = Coder.do_base64(desc)
+
+        upload_seed = Coder.gen_level_upload_seed(data)
+        seed2 = Coder.gen_chk(type='level', values=[upload_seed])
+        seed = Coder.gen_rs()
+
+        if not copyable:
+            password = 0
+
+        elif not password:
+            password = 1
+
+        else:
+            password = '1{:06}'.format(password)
+
+        parameters = (
+            Params().create_new().put_definer('accountid', client.account_id)
+            .put_definer('levelid', level_id).put_definer('song', song_id)
+            .put_seed(seed).put_seed(seed2, suffix=2).put_seed(0, prefix='wt')
+            .put_seed(0, prefix='wt', suffix=2).put_password(client.encodedpass)
+            .put_username(client.name).finish()
+        )
+
+        payload = {
+            'level_name': name, 'level_desc': desc, 'level_version': version,
+            'level_length': length, 'audio_track': audio_track, 'auto': int(is_auto),
+            'original': int(original), 'two_player': int(two_player), 'objects': objects,
+            'coins': coins, 'requested_stars': stars, 'unlisted': int(unlisted), 'ldm': int(ldm),
+            'password': password, 'level_string': data, 'extra_string': extra_string,
+            'level_info': 'H4sIAAAAAAAAC8tLzc4sUShPLFbISC1K1dPTswYA5G9QUhIAAAA='
+        }
+
+        payload_cased = {
+            Converter.snake_to_camel(key): str(value) for key, value in payload.items()
+        }
+
+        parameters.update(payload_cased)
+
+        level_id = await http.request(Route.UPLOAD_LEVEL, parameters)
+
+        if level_id == -1:
+            raise MissingAccess(message='Failed to upload a level.')
+
+        elif load_after:
+            new = await client.get_level(level_id)
+            level.options.update(new.options)
+
+        else:
+            level.options.update({'id': level_id})
+
+
     async def get_friends(self, client):
         from .classconverter import ClassConverter
 
@@ -537,7 +595,7 @@ class GDSession:
 
         if not resp:
             return False
-        elif isinstance(resp, int) and resp >= 0:
+        elif isinstance(resp, int) and resp > 0:
             return True
 
 
