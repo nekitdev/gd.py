@@ -1,7 +1,6 @@
 # Test suite for gd.Client object.
 # Will be wrapped with unittest soon.
 
-import asyncio
 import os
 import sys
 
