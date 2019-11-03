@@ -42,10 +42,10 @@ class SaveLoader:
     def _local(cls):
         try:
             with open(path / cls.main_data, 'rb') as main_file:
-                main = Coder.decode_save(main_file.read())
+                main = Coder.decode_save(main_file.read()).decode()
 
             with open(path / cls.level_data, 'rb') as level_file:
-                levels = Coder.decode_save(level_file.read())
+                levels = Coder.decode_save(level_file.read()).decode()
 
             return SaveAPI(main, levels)
 

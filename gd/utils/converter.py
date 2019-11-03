@@ -57,7 +57,7 @@ class Converter:
 
     @classmethod
     def snake_to_camel(cls, string: str):  # not perfect but still...
-        return re.sub('_([a-z])', lambda match: match.group(1).upper(), string)
+        return re.sub('_([a-zA-Z0-9])', lambda match: match.group(1).upper(), string)
 
     @classmethod
     def value_to_pack_difficulty(cls, value: int):

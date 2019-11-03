@@ -17,10 +17,11 @@ class JokeHandler:
             'colon': 'Did you use the right pusab?',
             'etzer': 'Have you sent it to RobTop yet? 8)',
             'michigun': 'Every level needs a triple... ΔΔΔ',
-            'nekit': '<sarcasm> HTML is a programming language. </sarcasm>',
+            'html': '<sarcasm> HTML is a programming language. </sarcasm>',
             'owo': 'Hewwo, my fwiend! owo',
             'serponge': 'New AlterGame in progress :pog:',
-            'viprin': '[Ctrl+D] | [Ctrl+C & Ctrl+V]'
+            'viprin': '[Ctrl+D] | [Ctrl+C & Ctrl+V]',
+            'nekit': 'NeKit likes to code instead of school. )/'
         }
 
     def __repr__(self):

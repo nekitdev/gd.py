@@ -8,8 +8,8 @@ Save = namedtuple('Save', 'completed followed')
 class SaveParser:
     @classmethod
     def parse(cls, xml):
-        completed = cls.parse_completed_levels(xml.decode(errors='replace'))
-        followed = cls.parse_followed(xml.decode(errors='replace'))
+        completed = cls.parse_completed_levels(xml)
+        followed = cls.parse_followed(xml)
         return Save(completed=completed, followed=followed)
 
     @classmethod

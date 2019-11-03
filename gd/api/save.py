@@ -18,7 +18,7 @@ class SavePart:
         return self.data
 
     def encode(self):
-        return Coder.encode_save(self.data)
+        return Coder.encode_save(self.data.encode())
 
 
 class SaveAPI:

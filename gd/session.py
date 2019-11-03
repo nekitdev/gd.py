@@ -238,7 +238,7 @@ class GDSession:
 
 
     async def upload_level(
-        self, level, data: str, name: str, level_id: int, version: int, length: int, audio_track: int,
+        self, data: str, name: str, level_id: int, version: int, length: int, audio_track: int,
         desc: str, song_id: int, is_auto: bool, original: int, two_player: bool, objects: int, coins: int,
         stars: int, unlisted: bool, ldm: bool, password: int, copyable: bool, *, load_after: bool, client
     ):
@@ -288,11 +288,11 @@ class GDSession:
             raise MissingAccess(message='Failed to upload a level.')
 
         elif load_after:
-            new = await client.get_level(level_id)
-            level.options.update(new.options)
+            return await client.get_level(level_id)
 
         else:
-            level.options.update({'id': level_id})
+            from .classconverter import Level
+            return Level(id=level_id).attach_client(client)
 
 
     async def get_friends(self, client):
@@ -396,10 +396,14 @@ class GDSession:
         resp = await http.request(Route.LOAD_DATA, parameters, error_codes=codes, custom_base=link, run_decoding=False)
 
         try:
-            raw_save = Coder.decode_save(resp, needs_xor=False)
-            save = SaveParser.parse(raw_save)
+            main, levels, *_ = resp.split(b';')
+            main_save, level_save = (
+                Coder.decode_save(save, needs_xor=False).decode(errors='replace')
+                for save in (main, levels)
+            )
+            save = SaveParser.parse(main_save)
 
-            client._upd('raw_save', raw_save)
+            client._upd('raw_save', (main_save, level_save))
             client._upd('save', save)
 
             return True

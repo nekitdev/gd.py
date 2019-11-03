@@ -94,7 +94,7 @@ Developers of this library do not own any images in `resources <https://github.c
 Credits
 -------
 
-Thanks to `Alex1304 <https://github.com/Alex1304>`_ for creating SpriteFactory in Java, which was ported to Python by `NeKitDS <https://github.com/NeKitDS>`_.
+Thanks to `Alex1304 <https://github.com/Alex1304>`_ for inspiring the creation of this library.
 
 Credits to `Rapptz <https://github.com/Rapptz>`_ and `discord.py <https://github.com/Rapptz/discord.py>`_ library developers; `tasks <https://github.com/Rapptz/discord.py/blob/master/discord/ext/tasks>`_ package in discord.py is a base for `tasks.py <https://github.com/NeKitDS/gd.py/blob/master/gd/utils/tasks.py>`_ file.
 

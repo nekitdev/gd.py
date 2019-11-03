@@ -56,7 +56,7 @@ class Client:
             'account_id': self.account_id,
             'id': self.id,
             'name': self.name,
-            'password': self.password
+            'password': repr('...')
         }
         return make_repr(self, info)
 
@@ -406,6 +406,27 @@ class Client:
         await self.session.login(client=self, user=user, password=password)
         log.info("Logged in as %r, with password %r.", user, password)
 
+
+    @check.is_logged()
+    async def upload_level(
+        self, name: str = 'Unnamed', id: int = 0, version: int = 1, length: int = 0,
+        track: int = 0, song_id: int = 0, is_auto: bool = False, original: int = 0,
+        two_player: bool = False, objects: int = None, coins: int = 0, star_amount: int = 0,
+        unlist: bool = False, ldm: bool = False, password: int = 0, copyable: bool = False,
+        data: str = '', description: str = '', *, load: bool = True, from_client=None
+    ):
+        if objects is None:
+            objects = len(data.split(';')) - 2
+            objects = 0 if objects < 0 else objects
+
+        return await self.session.upload_level(
+            data=data, name=name, level_id=id, version=version, length=length,
+            audio_track=track, song_id=song_id, is_auto=is_auto, original=original,
+            two_player=two_player, objects=objects, coins=coins, stars=star_amount,
+            unlisted=unlist, ldm=ldm, password=password, copyable=copyable,
+            desc=description, load_after=load, client=self
+        )
+
     @check.is_logged()
     async def get_page_levels(self, page: int = 0, *, raise_errors: bool = True):
         """|coro|
@@ -475,9 +496,8 @@ class Client:
             log.warning('Failed to load a save.')
 
     @check.is_logged()
-    async def backup(self, save_data: Union[bytes, str] = None):
+    async def backup(self, save_data: Sequence[Union[bytes, str]] = None):
         if save_data is None and not self.raw_save:
-
             return log.warning('No data was provided.')
 
         data = save_data if save_data else self.raw_save

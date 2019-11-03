@@ -198,7 +198,9 @@ async def maybe_coroutine(func, *args, **kwargs):
 def acquire_loop():
     """Gracefully acquire a loop.
 
-    This function searches for a running loop. If none is found, the function tries to get an event loop via :func:`asyncio.get_event_loop`. On fail, returns a new loop using :func:`asyncio.new_event_loop`.
+    This function searches for a running loop. If none is found, the function
+    tries to get an event loop via :func:`asyncio.get_event_loop`.
+    On fail, returns a new loop using :func:`asyncio.new_event_loop`.
     """
     loop = asyncio._get_running_loop()
 
