@@ -39,8 +39,8 @@ class Client:
         Password of the client. ``None`` if not logged in.
     encodedpass: :class:`str`
         Encoded Password of the client. ``None`` on init as well.
-    raw_save: :class:`bytes`
-        Raw decoded save. If not loaded, defaults to ``bytes()``.
+    raw_save: Sequence[Union[:class:`bytes`, :class:`str`]]
+        Raw decoded save. If not loaded, defaults to ``()``.
     save: :class:`.Save`
         This is a namedtuple with format ``(completed, followed)``.
         Contains empty lists if not loaded.
@@ -62,7 +62,7 @@ class Client:
 
     def _set_to_defaults(self):
         self.save = Save(completed=[], followed=[])
-        self.raw_save = bytes()
+        self.raw_save = ()
         self.account_id = 0
         self.id = 0
         self.name = None
