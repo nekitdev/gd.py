@@ -39,7 +39,7 @@ class Level(AbstractEntity):
     @property
     def name(self):
         """:class:`str`: The name of the level."""
-        return self.options.get('name', '')
+        return self.options.get('name', 'Unnamed')
 
     @property
     def description(self):
@@ -223,10 +223,7 @@ class Level(AbstractEntity):
         """
         await _session.report_level(self)
 
-    async def upload(
-        self, load: bool = False, unlist: bool = False, ldm: bool = False, copyable: bool = False,
-        two_player: bool = True, star_amount: int = 0, *, from_client=None
-    ):
+    async def upload(self, **kwargs):
         track, song_id = (self.song.id, 0)
 
         if self.song.is_custom():
@@ -235,13 +232,17 @@ class Level(AbstractEntity):
         if self._client is None:
             raise AttributeError('This gd.Level instance is not attached to the client.')
 
-        uploaded = await self._client.upload_level(
+        args = dict(
             name=self.name, id=self.id, version=self.version, length=abs(self.length.value),
-            track=track, song_id=song_id, two_player=two_player, is_auto=self.is_auto(),
+            track=track, song_id=song_id, two_player=False, is_auto=self.is_auto(),
             original=self.original_id, objects=len(self.objects), coins=self.coins,
-            star_amount=star_amount, unlist=unlist, ldm=ldm, password=self.password,
-            copyable=copyable, description=self.description, data=self.data
+            star_amount=self.stars, unlist=False, ldm=False, password=self.password,
+            copyable=False, description=self.description, data=self.data
         )
+
+        args.update(kwargs)
+
+        uploaded = await self._client.upload_level(**args)
 
         self.options = uploaded.options
 
