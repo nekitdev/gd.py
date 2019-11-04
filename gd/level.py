@@ -237,7 +237,7 @@ class Level(AbstractEntity):
             track=track, song_id=song_id, two_player=False, is_auto=self.is_auto(),
             original=self.original_id, objects=len(self.objects), coins=self.coins,
             star_amount=self.stars, unlist=False, ldm=False, password=self.password,
-            copyable=False, description=self.description, data=self.data
+            copyable=(self.password is not None), description=self.description, data=self.data
         )
 
         args.update(kwargs)
