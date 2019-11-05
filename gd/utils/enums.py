@@ -330,7 +330,7 @@ class SearchStrategy(NEnum):
     BY_USER = 5
     FEATURED = 6
     MAGIC = 7
-    MAP_PACKS = 10
+    SEARCH_MANY = 10
     AWARDED = 11
     FOLLOWED = 12
     FRIENDS = 13
