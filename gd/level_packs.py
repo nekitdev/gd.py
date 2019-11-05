@@ -54,7 +54,7 @@ class Gauntlet(AbstractEntity):
         List[:class:`.Level`]
             List of levels that are found.
         """
-        filters, query = Filters.setup_level_pack(), ','.join(map(str, self.level_ids))
+        filters, query = Filters.setup_search_many(), ','.join(map(str, self.level_ids))
 
         levels = await self._client.search_levels_on_page(query=query, filters=filters)
 
