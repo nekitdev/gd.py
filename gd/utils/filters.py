@@ -60,7 +60,7 @@ class Filters:
 
         self.strategy = value_to_enum(SearchStrategy, strategy)
 
-        ss = (self.strategy in (5, 6, 16))
+        ss = (self.strategy.value in (5, 6, 16))
 
         self.difficulty = None if ((difficulty is None) or ss) else tuple(
             map(lambda diff: value_to_enum(LevelDifficulty, diff), difficulty)
@@ -109,35 +109,35 @@ class Filters:
 
     @classmethod
     def setup_simple(cls, *args, **kwargs):
-        return cls(strategy=2)
+        return cls(strategy=SearchStrategy.MOST_LIKED, *args, **kwargs)
 
     @classmethod
     def setup_by_user(cls, *args, **kwargs):
-        return cls(strategy=5, *args, **kwargs)
+        return cls(strategy=SearchStrategy.BY_USER, *args, **kwargs)
 
     @classmethod
     def setup_with_song(cls, song_id: int, is_custom: bool = True, *args, **kwargs):
-        return cls(strategy=2, song_id=song_id, use_custom_song=is_custom, *args, **kwargs)
+        return cls(strategy=SearchStrategy.MOST_LIKED, song_id=song_id, use_custom_song=is_custom, *args, **kwargs)
 
     @classmethod
-    def setup_level_pack(cls):
-        return cls(strategy=10)
+    def setup_search_many(cls):
+        return cls(strategy=SearchStrategy.SEARCH_MANY)
 
     @classmethod
     def setup_with_followed(cls, followed: Sequence[int], *args, **kwargs):
-        return cls(strategy=12, followed=followed, *args, **kwargs)
+        return cls(strategy=SearchStrategy.FOLLOWED, followed=followed, *args, **kwargs)
 
     @classmethod
     def setup_by_friends(cls, *args, **kwargs):
-        return cls(strategy=13, *args, **kwargs)
+        return cls(strategy=SearchStrategy.FRIENDS, *args, **kwargs)
 
     @classmethod
     def setup_client_followed(cls, client, *args, **kwargs):
-        return cls(strategy=12, followed=client.save.followed, *args, **kwargs)
+        return cls(strategy=SearchStrategy.FOLLOWED, followed=client.save.followed, *args, **kwargs)
 
     @classmethod
     def setup_client_completed(cls, client, *args, **kwargs):
-        return cls(strategy=2, completed_levels=client.save.completed, *args, **kwargs)
+        return cls(strategy=SearchStrategy.MOST_LIKED, completed_levels=client.save.completed, *args, **kwargs)
 
     def to_parameters(self):
         main = {
