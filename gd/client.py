@@ -312,6 +312,12 @@ class Client:
         """
         return await self.session.get_level(level_id, client=self)
 
+    async def get_many_levels(self, *level_ids: Sequence[int]):
+        filters = Filters.setup_search_many()
+        query = ','.join(map(str, level_ids))
+
+        return await self.search_levels_on_page(query=query, filters=filters)
+
     async def get_gauntlets(self):
         """|coro|
 
