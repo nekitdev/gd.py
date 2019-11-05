@@ -232,12 +232,14 @@ class Level(AbstractEntity):
         if self._client is None:
             raise AttributeError('This gd.Level instance is not attached to the client.')
 
+        password = kwargs.pop('password', self.password)
+
         args = dict(
             name=self.name, id=self.id, version=self.version, length=abs(self.length.value),
             track=track, song_id=song_id, two_player=False, is_auto=self.is_auto(),
             original=self.original_id, objects=len(self.objects), coins=self.coins,
-            star_amount=self.stars, unlist=False, ldm=False, password=self.password,
-            copyable=(self.password is not None), description=self.description, data=self.data
+            star_amount=self.stars, unlist=False, ldm=False, password=password,
+            copyable=(password is not None), description=self.description, data=self.data
         )
 
         args.update(kwargs)
