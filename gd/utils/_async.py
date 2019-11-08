@@ -5,7 +5,7 @@ import inspect
 from .wrap_tools import find_subclass, add_method, del_method
 
 __all__ = (
-    'run_blocking_io', 'wait', 'run', 'sync'
+    'run_blocking_io', 'wait', 'run', 'sync',
     'cancel_all_tasks', 'shutdown_loop',
     'coroutine', 'maybe_coroutine', 'acquire_loop'
 )
