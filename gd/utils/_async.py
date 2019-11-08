@@ -195,17 +195,23 @@ async def maybe_coroutine(func, *args, **kwargs):
         return value
 
 
-def acquire_loop():
+def acquire_loop(running: bool = False):
     """Gracefully acquire a loop.
 
-    This function searches for a running loop. If none is found, the function
-    tries to get an event loop via :func:`asyncio.get_event_loop`.
+    The function tries to get an event loop via :func:`asyncio.get_event_loop`.
     On fail, returns a new loop using :func:`asyncio.new_event_loop`.
-    """
+
+    Parameters
+    ----------
+    running: :class:`bool`
+        Indicates if the function should get a loop that is already running. (on fail, the main get process is being executed.)
+    """.
     loop = asyncio._get_running_loop()
 
-    if loop is None:
+    if running and loop is not None:
+        return loop
 
+    else:
         try:
             loop = asyncio.get_event_loop()
 
@@ -213,6 +219,27 @@ def acquire_loop():
             loop = asyncio.new_event_loop()
 
     return loop
+
+
+def sync(loop=None):
+    if loop is None:
+        loop = acquire_loop()
+
+    def decorator(func):
+        f_name = func.__name__
+
+        def wrapper(*args, **kwargs):
+            coro = maybe_coroutine(func, *args, **kwargs)
+            return loop.run_until_complete(coro)
+
+        env = {'wrapper': wrapper}
+
+        exec('def {}(*args, **kwargs): return wrapper(*args, **kwargs)'.format(f_name), env)
+
+        inner = env.get(f_name)
+
+        return inner
+    return decorator
 
 
 def _run(self, loop=None):
