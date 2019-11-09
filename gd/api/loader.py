@@ -1,7 +1,6 @@
 from pathlib import Path
 import functools
 import os
-import traceback
 
 from ..utils._async import run_blocking_io
 
@@ -14,19 +13,17 @@ from .save import SaveAPI
 __all__ = ('SaveLoader', 'path')
 
 
-path = Path()
-
 try:
-    local_path = Path(os.getenv('localappdata'))
-    path = local_path / 'GeometryDash'
+    local_env = os.getenv('localappdata')
+    path = Path(local_env) / 'GeometryDash'
 
 except Exception:
-    pass
+    path = Path()
 
 
 class SaveLoader:
-    main_data_file = 'CCGameManager.dat'
-    level_data_file = 'CCLocalLevels.dat'
+    main_data_file = path/'CCGameManager.dat'
+    level_data_file = path/'CCLocalLevels.dat'
 
     def __repr__(self):
         info = {
@@ -72,7 +69,7 @@ class SaveLoader:
 
             for file in (cls.main_data_file, cls.level_data_file):
 
-                with open(path/file, 'rb') as data_file:
+                with open(file, 'rb') as data_file:
                     parts.append(data_file.read())
 
             return cls._load(*parts)
