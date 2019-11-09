@@ -102,8 +102,8 @@ Authors
 -------
 
 This project is mainly developed by `NeKitDS <https://github.com/NeKitDS>`_,
-with help of `blue <https://github.com/d3vblue>`_. Big thanks to `cos8o <https://github.com/cos8o>`_ for helping
-to make several requests and developing `GDCrypto <https://github.com/cos8o/GDCrypto>`_ library,
+with help of `blue <https://github.com/d3vblue>`_. Big thanks to `cos8o <https://github.com/cos8o>`_ and `SMJS <https://github.com/SMJSGaming>`_ for helping
+to make several requests. Also thanks to `cos8o <https://github.com/cos8o>`_ again for developing `GDCrypto <https://github.com/cos8o/GDCrypto>`_ library,
 which was used as a base for `crypto <https://github.com/NeKitDS/gd.py/blob/master/gd/utils/crypto>`_ package.
 
 Links

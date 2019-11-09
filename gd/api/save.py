@@ -1,24 +1,25 @@
+from ..utils._async import run_blocking_io
 from ..utils.wrap_tools import make_repr
 from ..utils.crypto.coders import Coder
 
 __all__ = ('SavePart', 'SaveAPI')
 
 
-class SavePart:
-    def __init__(self, data):
-        self.data = data
-
+class SavePart(str):
     def __repr__(self):
         info = {
-            'data': repr('... (len: {})'.format(len(self.data)))
+            'data': repr('... (len: {})'.format(len(self)))
         }
         return make_repr(self, info)
 
-    def __str__(self):
-        return self.data
+    async def parse(self):
+        return await run_blocking_io(self._parse)
 
-    def encode(self):
-        return Coder.encode_save(self.data.encode())
+    def _parse(self):
+        pass
+
+    def _encode(self, xor: bool = True):
+        return Coder.encode_save(self.encode(), needs_xor=xor)
 
 
 class SaveAPI:

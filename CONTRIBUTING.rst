@@ -8,19 +8,17 @@ Guidelines
 
 Here are some simple guidelines for creating good issues and pull requests:
 
-    1. When deciding to contribute, please check if there is already a solution for the problem;
+1. When deciding to contribute, please check if there is already a solution for the problem;
 
-    2. We appreciate any contribution, whether it is a typo fix or huge addition to the project;
+2. We appreciate any contribution, whether it is a typo fix or huge addition to the project;
 
-    3. When creating any code changes, remember that code style really matters;
+3. When creating any code changes, remember that code style really matters;
+3.1. We are trying to follow PEP 8 within our code;
+3.2. Though, our line length limit is 120 characters, and we tend to use more space to bring the readability;
 
-        3.1. We are trying to follow PEP 8 within our code;
+4. If you have created a new function or method, please document it; that really helps end-users of our library;
 
-        3.2. Though, our line length limit is 120 characters, and we tend to use more space to bring the readability;
-
-    4. If you have created a new function or method, please document it; that really helps end-users of our library;
-
-    5. Lastly, see some examples below related to the code style.
+5. Lastly, see some examples below related to the code style.
 
 Code Style
 ----------
@@ -28,11 +26,14 @@ Code Style
 .. code-block:: python3
 
     # bad
-    from some_module import *  # really makes reading code confusing
+    # really makes reading code confusing
+    from some_module import *
 
-    var=my_function()  # use more spaces, as PEP 8 suggests
+    # use more spaces, as PEP 8 suggests
+    var=my_function()
 
-    if condition: do_something()  # never do one-line if statements
+    # never do one-line if statements
+    if condition: do_something()
 
     # good
     from some_module import (

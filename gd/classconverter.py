@@ -121,7 +121,10 @@ class ClassConverter:
         if password:  # password has format '1XXXXXX'
             password = password[1:]
 
-        desc = b64.b64decode(mapper_util.normalize(s[i.LEVEL_DESCRIPTION])).decode()
+        desc = b64.b64decode(
+            mapper_util.normalize(s[i.LEVEL_DESCRIPTION])
+        ).decode(errors='replace')
+
         length = LevelLength.from_value(s[i.LEVEL_LENGTH])
         type = TimelyType.from_value(s[i.LEVEL_TIMELY_TYPE])
         game_version = s[i.LEVEL_GAME_VERSION]  # needs to be converted to represent real version.
