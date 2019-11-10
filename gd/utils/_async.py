@@ -65,13 +65,19 @@ async def wait(fs, *, loop=None, timeout=None, return_when='ALL_COMPLETED'):
         when the timeout occurs are returned in the second set.
     """
     try:
-        fs = list(fs)
-    except TypeError:  # not iterable
-        pass
+        if loop is None:
+            loop = acquire_loop()
+        fs = set(fs)
+
+    except TypeError:  # not iterable 'fs'
+        fs = {fs}
+
+    fs = {asyncio.ensure_future(f, loop=loop) for f in fs}
+
     return await asyncio.wait(fs, loop=loop, timeout=timeout, return_when=return_when)
 
 
-def run(coro, *, loop=None, debug: bool = False):
+def run(coro, *, loop=None, debug: bool = False, set_to_none: bool = False):
     """Run a |coroutine_link|_.
 
     This function runs the passed coroutine, taking care
@@ -112,6 +118,9 @@ def run(coro, *, loop=None, debug: bool = False):
     debug: :class:`bool`
         Whether or not to run event loop in debug mode.
 
+    set_to_none: :class:`bool`
+        Indicates if the loop should be set to None after execution.
+
     Returns
     -------
     `Any`
@@ -137,7 +146,15 @@ def run(coro, *, loop=None, debug: bool = False):
 
     finally:
         if shutdown:
-            shutdown_loop(loop, True)
+            shutdown_loop(loop)
+
+        if set_to_none:
+            loop = None
+
+        else:
+            loop = asyncio.new_event_loop()
+
+        asyncio.set_event_loop(loop)
 
 
 def cancel_all_tasks(loop):
