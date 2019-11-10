@@ -228,6 +228,7 @@ def sync(loop=None):
     def decorator(func):
         f_name = func.__name__
 
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
             coro = maybe_coroutine(func, *args, **kwargs)
             return loop.run_until_complete(coro)

@@ -44,8 +44,9 @@ class check:
                     raise MissingAccess(
                         message=(
                             'Attempt to check if client is logged for {!r} returned None. '
-                            'Have you made this object by hand?').format(obj)
-                        )
+                            'Have you made this object by hand?'
+                        ).format(obj)
+                    )
 
                 if not client.is_logged():
                     raise NotLoggedError(func.__name__)
