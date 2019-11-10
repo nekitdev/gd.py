@@ -283,9 +283,9 @@ def _asyncwrap(self):
     return _async_wrapper(self)
 
 try:
-    add_method(object, _asyncwrap, name='asyncwrap')
+    add_method(object, _asyncwrap, name='__asyncwrap__')
 except Exception:
-    print('Failed to edit "asyncwrap" method.')
+    print('Failed to edit the "__asyncwrap__" method.')
 
 
 def enable_run_method(on: bool = True):
