@@ -33,7 +33,7 @@ async def run_blocking_io(func, *args, **kwargs):
 
         await run_blocking_io(make_image)
     """
-    loop = acquire_loop()
+    loop = acquire_loop(running=True)
 
     asyncio.set_event_loop(loop)
 
@@ -266,11 +266,26 @@ def _run(self, loop=None):
     """
 
     if loop is None:
-        loop = asyncio.new_event_loop()
+        loop = acquire_loop()
 
     asyncio.set_event_loop(loop)
 
     return loop.run_until_complete(self)
+
+
+async def _async_wrapper(var):
+    try:
+        return await var
+    except Exception:
+        return var
+
+def _asyncwrap(self):
+    return _async_wrapper(self)
+
+try:
+    add_method(object, _asyncwrap, name='asyncwrap')
+except Exception:
+    print('Failed to edit "asyncwrap" method.')
 
 
 def enable_run_method(on: bool = True):
