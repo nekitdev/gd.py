@@ -233,8 +233,8 @@ class Level(AbstractEntity):
 
         if client is None:
             raise MissingAccess(
-                'Could not find the client to upload level from. '
-                'Either attach a client to this level or provide "from_client" parameter.'
+                message=('Could not find the client to upload level from. '
+                'Either attach a client to this level or provide "from_client" parameter.')
             )
 
         password = kwargs.pop('password', self.password)
