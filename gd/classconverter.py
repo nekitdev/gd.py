@@ -53,7 +53,7 @@ class ClassConverter:
             account_id = s[i.USER_ACCOUNT_ID], name = str(s[i.USER_NAME]), id = s[i.USER_PLAYER_ID],
             stars = s[i.USER_STARS], demons = s[i.USER_DEMONS], cp = s[i.USER_CREATOR_POINTS],
             diamonds = s[i.USER_DIAMONDS], coins = s[i.USER_COINS], client = client,
-            secret_coins = s[i.USER_SECRET_COINS], lb_place = s.get(i.USER_TOP_PLACE, -1)
+            secret_coins = s[i.USER_SECRET_COINS], lb_place = s.get(i.USER_TOP_PLACE, 0)
         )
 
     @classmethod
