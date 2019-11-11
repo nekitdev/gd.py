@@ -60,12 +60,16 @@ class UserStats(AbstractUser):
 
     @property
     def lb_place(self):
-        """:class:`int`: User's place in leaderboard. ``-1`` if not set."""
-        return self.options.get('lb_place', -1)
+        """:class:`int`: User's place in leaderboard. ``0`` if not set."""
+        return self.options.get('lb_place', 0)
 
     def has_cp(self):
         """:class:`bool`: Indicates if a user has Creator Points."""
         return self.cp > 0
+
+    def set_place(self, place: int = 0):
+        """Set the ``self.lb_place`` to ``place`` argument."""
+        self.options['lb_place'] = place
 
     async def update(self):
         """|coro|
@@ -73,6 +77,9 @@ class UserStats(AbstractUser):
         Update ``self``.
         """
         new = await self._client.fetch_user(self.account_id, stats=True)
+
+        new.set_place(self.lb_place)
+
         self.options = new.options
 
 class User(UserStats):
