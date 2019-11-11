@@ -229,8 +229,13 @@ class Level(AbstractEntity):
         if self.song.is_custom():
             track, song_id = song_id, track
 
-        if self._client is None:
-            raise AttributeError('This gd.Level instance is not attached to the client.')
+        client = kwargs.pop('from_client', self._client)
+
+        if client is None:
+            raise MissingAccess(
+                'Could not find the client to upload level from. '
+                'Either attach a client to this level or provide "from_client" parameter.'
+            )
 
         password = kwargs.pop('password', self.password)
 
@@ -244,7 +249,7 @@ class Level(AbstractEntity):
 
         args.update(kwargs)
 
-        uploaded = await self._client.upload_level(**args)
+        uploaded = await client.upload_level(**args)
 
         self.options = uploaded.options
 
