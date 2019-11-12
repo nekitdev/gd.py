@@ -223,7 +223,11 @@ def acquire_loop(running: bool = False):
     running: :class:`bool`
         Indicates if the function should get a loop that is already running. (on fail, the main get process is being executed.)
     """
-    loop = asyncio._get_running_loop()
+    try:
+        loop = asyncio._get_running_loop()
+
+    except Exception:  # an error might occur actually
+        loop = None
 
     if running and loop is not None:
         return loop
