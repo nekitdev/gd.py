@@ -43,7 +43,7 @@ def run(loop):
         loop.add_signal_handler(signal.SIGINT, loop.stop)
         loop.add_signal_handler(signal.SIGTERM, loop.stop)
 
-    except NotImplementedError:
+    except (NotImplementedError, RuntimeError):
         pass
 
     asyncio.set_event_loop(loop)
