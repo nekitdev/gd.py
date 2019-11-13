@@ -59,4 +59,5 @@ You can enable it by doing:
 
     import gd
     gd.synchronize()
-    # use gd.synchronize(False) to disable
+
+Theoretically, it is possible to disable this method by doing ``gd.synchronize(False)``, however, when creating a coroutine between activating those functions, the behaviour becomes hard to predict. That is why gd.py developers recommend to either have this method either turned on or off.
