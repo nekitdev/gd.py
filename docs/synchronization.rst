@@ -44,8 +44,6 @@ will raise the RuntimeError.
 3. coroutine.run
 --------------------------
 
-.. automethod:: coroutine.run
-
 .. code-block:: python3
 
     test().run() -> 13
@@ -55,9 +53,10 @@ Every time it is called, a new event loop is created,
 and a coroutine is being run in it.
 This method does not change event loop in a thread, though.
 
-You can disable it by doing:
+You can enable it by doing:
 
 .. code-block:: python3
 
     import gd
-    gd.synchronize(False)
+    gd.synchronize()
+    # use gd.synchronize(False) to disable

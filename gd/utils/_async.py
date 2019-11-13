@@ -7,7 +7,8 @@ from .wrap_tools import find_subclass, add_method, del_method
 __all__ = (
     'run_blocking_io', 'wait', 'run', 'sync',
     'cancel_all_tasks', 'shutdown_loop',
-    'coroutine', 'maybe_coroutine', 'acquire_loop'
+    'coroutine', 'maybe_coroutine', 'acquire_loop',
+    'enable_asyncwrap', 'enable_run_method', 'synchronize'
 )
 
 coroutine = find_subclass('coroutine')
@@ -286,21 +287,27 @@ async def _async_wrapper(var):
 def _asyncwrap(self):
     return _async_wrapper(self)
 
-try:
-    add_method(object, _asyncwrap, name='__asyncwrap__')
-except Exception:
-    print('Failed to edit the "__asyncwrap__" method.')
+
+def _enable_method(obj: type, name: str, on: bool = True, func=None):
+    try:
+        if on:
+            add_method(obj, func, name=name)
+        else:
+            del_method(obj, name)
+
+    except Exception:
+        print('Failed to edit the {!r} method.'.format(name))
+
+def enable_asyncwrap(on: bool = True):
+    """Add or delete '__asyncwrap__' method of objects."""
+    _enable_method(object, '__asyncwrap__', on, _asyncwrap)
 
 
 def enable_run_method(on: bool = True):
     """Add or delete 'run' method of a coroutine."""
-    try:
-        if on:
-            add_method(coroutine, _run, name='run')
-        else:
-            del_method(coroutine, 'run')
+    _enable_method(coroutine, 'run', on, _run)
 
-    except Exception:
-        print('Failed to edit the "run" method.')
 
-enable_run_method()
+def synchronize(on: bool = True):
+    enable_asyncwrap(on)
+    enable_run_method(on)
