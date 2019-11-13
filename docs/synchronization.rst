@@ -60,4 +60,6 @@ You can enable it by doing:
     import gd
     gd.synchronize()
 
-Theoretically, it is possible to disable this method by doing ``gd.synchronize(False)``, however, when creating a coroutine between activating those functions, the behaviour becomes hard to predict. That is why gd.py developers recommend to either have this method either turned on or off.
+Theoretically, it is possible to disable this method by doing ``gd.synchronize(False)``.
+However, when creating a coroutine between activating those functions, the behaviour becomes hard to predict.
+That is why gd.py developers recommend to either have this method either turned on or off.
