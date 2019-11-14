@@ -57,13 +57,24 @@ To install the library, you can just run the following command:
     # Windows
     py -3 -m pip install -U gd.py
 
+You can also install optional **aioconsole** package,
+which can be used to run async functions in repl:
+
+.. code:: sh
+
+    # Linux/OS X
+    python3 -m pip install -U gd.py[console]
+
+    # Windows
+    py -3 -m pip install -U gd.py[console]
+
 To install the developer version, run these commands:
 
 .. code:: sh
 
     $ git clone https://github.com/NeKitDS/gd.py
     $ cd gd.py
-    $ python3 -m pip install -U .
+    $ python3 -m pip install -U .[console]
 
 Quick example
 -------------
