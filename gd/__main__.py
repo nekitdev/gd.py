@@ -59,9 +59,17 @@ def main():
     args = parser.parse_args()
     # run functions
     if args.console:
-        # _run()
-        print('Not supported yet.')
-        exit()
+
+        try:
+            import aioconsole
+            aioconsole.run_apython()
+
+        except ImportError:
+            print(
+                'Failed to import aioconsole. You can install it manually',
+                'or via "pip install gd.py[console]".'
+            )
+            exit()
 
     if args.version:
         show_version()
