@@ -62,7 +62,7 @@ def main():
 
         try:
             import aioconsole
-            aioconsole.run_apython()
+            aioconsole.run_apython(())
 
         except ImportError:
             print(
