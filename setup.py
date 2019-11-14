@@ -15,7 +15,10 @@ readme = ''
 with open('README.rst') as f:
     readme = f.read()
 
-extras_require = {  # gotta work on that soon
+extras_require = {
+    'console': [
+        'aioconsole'
+    ],
     'docs': [
         'sphinx',
         'sphinxcontrib_trio',
