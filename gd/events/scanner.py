@@ -9,7 +9,7 @@ from ..client import Client
 from .. import utils
 
 __all__ = (
-    'AbstractScanner', 'TimelyLevelScanner',
+    'AbstractScanner', 'TimelyLevelScanner', 'thread',
     'daily_listener', 'weekly_listener', 'run'
 )
 
@@ -58,6 +58,9 @@ def run(loop):
         log.info('Cleaning up tasks.')
         shutdown_loop(loop)
 
+
+def update_thread_loop(thread, loop):  # only for the 'thread' below
+    thread.args = (loop,)
 
 thread = threading.Thread(target=run, args=(loop,), name='ScannerThread')
 
@@ -125,9 +128,10 @@ class TimelyLevelScanner(AbstractScanner):
             self.cache = timely
             return
 
-        if (timely.id != self.cache.id) and self.clients:
-            fs = [getattr(client, self.call_method)(timely) for client in self.clients]
-            await utils.wait(fs)
+        if timely.id != self.cache.id:
+            for client in self.clients:
+                cr = getattr(client, self.call_method)(timely)
+                loop.create_task(cr)  # schedule the execution
 
         self.cache = timely
 
