@@ -106,6 +106,9 @@ User
 .. autoclass:: AbstractUser
     :members:
 
+.. autoclass:: LevelRecord
+    :members:
+
 .. autoclass:: UserStats
     :members:
 
@@ -172,6 +175,8 @@ Enums
 .. autoclass:: MessageOrRequestType
 
 .. autoclass:: CommentStrategy
+
+.. autoclass:: LevelLeaderboardStrategy
 
 .. autoclass:: SearchStrategy
 

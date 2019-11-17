@@ -3,9 +3,7 @@ import functools
 import os
 
 from ..utils._async import run_blocking_io
-
 from ..utils.crypto.coders import Coder
-
 from ..utils.wrap_tools import make_repr
 
 from .save import SaveAPI
@@ -22,8 +20,12 @@ except Exception:
 
 
 class SaveLoader:
-    main_data_file = path/'CCGameManager.dat'
-    level_data_file = path/'CCLocalLevels.dat'
+    def __init__(
+        self, path: Path = path, main_file_name: str = 'CCGameManager.dat',
+        level_file_name: str = 'CCLocalLevels.dat'
+    ):
+        self.main_data_file = path / main_file_name
+        self.level_data_file = path / level_file_name
 
     def __repr__(self):
         info = {
@@ -35,44 +37,38 @@ class SaveLoader:
     def __call__(self, *args, **kwargs):
         return self.local()
 
-    @classmethod
-    async def local(cls):
-        return await run_blocking_io(cls._local)
+    async def local(self):
+        return await run_blocking_io(self._local)
 
-    @classmethod
-    async def from_string(cls, main_stream, level_stream, xor: bool = True):
+    async def from_string(self, main_stream, level_stream, xor: bool = True):
         return await run_blocking_io(
-            functools.partial(cls._load, main_stream, level_stream, xor=xor)
+            functools.partial(self._load, main_stream, level_stream, xor=xor)
         )
 
-    @classmethod
-    def make_api(cls, main, levels):
+    def make_api(self, main, levels):
         return SaveAPI(main, levels)
 
-    @classmethod
-    def _decode(cls, stream, xor: bool = True):
+    def _decode(self, stream, xor: bool = True):
         if isinstance(stream, str):
             stream = stream.encode()
 
         return Coder.decode_save(stream, needs_xor=xor).decode(errors='replace')
 
-    @classmethod
-    def _load(cls, main_stream, level_stream, xor: bool = True):
-        main = cls._decode(main_stream, xor=xor)
-        levels = cls._decode(level_stream, xor=xor)
+    def _load(self, main_stream, level_stream, xor: bool = True):
+        main = self._decode(main_stream, xor=xor)
+        levels = self._decode(level_stream, xor=xor)
         return SaveAPI(main, levels)
 
-    @classmethod
-    def _local(cls):
+    def _local(self):
         try:
             parts = []
 
-            for file in (cls.main_data_file, cls.level_data_file):
+            for file in (self.main_data_file, self.level_data_file):
 
                 with open(file, 'rb') as data_file:
                     parts.append(data_file.read())
 
-            return cls._load(*parts)
+            return self._load(*parts)
 
         except FileNotFoundError:
             print('Failed to find save files in the path: {!r}.'.format(str(path)))

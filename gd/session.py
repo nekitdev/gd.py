@@ -326,6 +326,36 @@ class GDSession:
         return ret
 
 
+    async def get_leaderboard(self, level, strategy, *, client):
+        from .classconverter import ClassConverter
+
+        parameters = (
+            Params().create_new().put_definer('accountid', client.account_id)
+            .put_definer('levelid', level.id)
+            .put_password(client.encodedpass).put_type(strategy.value).finish()
+        )
+
+        codes = {
+            -1: MissingAccess(message='Failed to get leaderboard of the level: {!r}.'.format(level))
+        }
+
+        resp = await http.request(Route.GET_LEVEL_SCORES, parameters, error_codes=codes, splitter='|')
+
+        if not resp:
+            return list()
+
+        ext = ['101', str(level.id)]
+
+        res = []
+
+        for data in filter(_is_not_empty, resp):
+            mapped = mapper_util.map(data.split(':') + ext)
+            record = ClassConverter.level_record_convert(mapped, strategy, client)
+            res.append(record)
+
+        return res
+
+
     async def get_top(self, strategy, count: int, *, client):
         from .classconverter import ClassConverter
 

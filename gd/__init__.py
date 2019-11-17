@@ -10,7 +10,7 @@ from collections import namedtuple
 import logging
 
 from .abstractentity import AbstractEntity
-from .abstractuser import AbstractUser
+from .abstractuser import AbstractUser, LevelRecord
 from .client import Client
 from .colors import Colour, Color
 from .colors import colors

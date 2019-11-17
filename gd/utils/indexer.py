@@ -42,6 +42,7 @@ class Index:
     USER_NAME = 1
     USER_PLAYER_ID = 2
     USER_STARS = 3
+    USER_PERCENT = 3
     USER_DEMONS = 4
     USER_TOP_PLACE = 6
     USER_CREATOR_POINTS = 8
@@ -64,6 +65,7 @@ class Index:
     USER_ICON_ROBOT = 26
     USER_GLOW_OUTLINE_2 = 28
     USER_GLOBAL_RANK = 30
+    USER_RECORD_TIMESTAMP = 42
     USER_ICON_SPIDER = 43
     USER_TWITTER = 44
     USER_TWITCH = 45
@@ -72,6 +74,7 @@ class Index:
     USER_EXPLOSION = 48
     USER_ROLE = 49
     USER_COMMENT_HISTORY_POLICY = 50
+    USER_LEVEL_ID = 101
     # all indexes for messages
     MESSAGE_ID = 1
     MESSAGE_SENDER_ACCOUNT_ID = 2

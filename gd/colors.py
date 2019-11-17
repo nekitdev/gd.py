@@ -54,6 +54,7 @@ class Colour:
         """
         try:
             return colors.index(self)
+
         except ValueError:
             pass
 
@@ -73,7 +74,9 @@ class Colour:
         return self._get_byte(0)
 
     def print(self):
-        if 'win' in self.sys_name and 'darwin' not in self.sys_name:  # windows
+        if ('win' in self.sys_name and
+            'darwin' not in self.sys_name):  # windows
+
             print(self.to_hex())
 
         else:

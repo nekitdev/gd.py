@@ -20,6 +20,7 @@ __all__ = (
     'MessageOrRequestType',
     'CommentStrategy',
     'LeaderboardStrategy',
+    'LevelLeaderboardStrategy',
     'SearchStrategy',
     'GauntletEnum'
 )
@@ -299,6 +300,13 @@ class LeaderboardStrategy(NEnum):
     FRIENDS = 1
     RELATIVE = 2
     CREATORS = 3
+
+
+class LevelLeaderboardStrategy(NEnum):
+    """An enumeration for getting level leaderboard."""
+    FRIENDS = 0
+    ALL = 1
+    WEEKLY = 2
 
 
 class GauntletEnum(NEnum):

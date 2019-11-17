@@ -12,7 +12,8 @@ from .errors import MissingAccess
 
 from .utils.enums import (
     DemonDifficulty, LevelDifficulty, CommentStrategy,
-    LevelLength, TimelyType, value_to_enum
+    LevelLength, TimelyType, LevelLeaderboardStrategy,
+    value_to_enum
 )
 from .utils.wrap_tools import make_repr, check
 
@@ -224,6 +225,16 @@ class Level(AbstractEntity):
         await _session.report_level(self)
 
     async def upload(self, **kwargs):
+        """|coro|
+
+        Upload ``self``.
+
+        Parameters
+        ----------
+        \*\*kwargs
+            Arguments that :meth:`.Client.upload_level` accepts.
+            Defaults are properties of the level.
+        """
         track, song_id = (self.song.id, 0)
 
         if self.song.is_custom():
@@ -500,6 +511,31 @@ class Level(AbstractEntity):
         client = from_client if from_client is not None else self._client
         check.is_logged_obj(client, 'dislike')
         await _session.like(self, dislike=True, client=client)
+
+    async def get_leaderboard(
+        self, strategy: Union[int, str, LevelLeaderboardStrategy] = 0, *, from_client=None
+    ):
+        """|coro|
+
+        Retrieves the leaderboard of a level.
+
+        Parameters
+        ----------
+        strategy: Union[:class:`int`, :class:`str`, :class:`.LevelLeaderboardStrategy`]
+            A strategy to apply. This is converted to :class:`.LevelLeaderboardStrategy`
+            using :func:`.utils.value_to_enum`.
+
+        Returns
+        -------
+        List[:class:`.LevelRecord`]
+            A list of user-like objects.
+        """
+        client = from_client if from_client is not None else self._client
+        check.is_logged_obj(client, 'get_leaderboard')
+
+        strategy = value_to_enum(LevelLeaderboardStrategy, strategy)
+
+        return await _session.get_leaderboard(self, strategy=strategy, client=client)
 
     async def get_comments(self, strategy: Union[int, str, CommentStrategy] = 0, amount: int = 20):
         """|coro|

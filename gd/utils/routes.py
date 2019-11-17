@@ -9,6 +9,7 @@ class Route:
     USER_SEARCH = 'getGJUsers20'
     GET_USER_TOP = 'getGJScores20'
     UPDATE_USER_SCORE = 'updateGJUserScore22'
+    GET_LEVEL_SCORES = 'getGJLevelScores211'
     REPORT_LEVEL = 'reportGJLevel'
     DOWNLOAD_LEVEL = 'downloadGJLevel22'
     LEVEL_SEARCH = 'getGJLevels21'

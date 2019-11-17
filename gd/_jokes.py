@@ -3,12 +3,6 @@
 from .utils.wrap_tools import make_repr
 
 
-class JokeNotFoundError(AttributeError):
-    def __init__(self, name):
-        message = 'No joke was found under name: {!r}.'.format(name)
-        super().__init__(message)
-
-
 class JokeHandler:
     def __init__(self):
         self.jokes = {
@@ -34,10 +28,15 @@ class JokeHandler:
         name = attr.lower()
 
         if name not in self.jokes:
-            raise JokeNotFoundError(attr)
+            return print('No joke was found under name: {!r}.'.format(attr))
 
         joke = str(self.jokes.get(name))
         print(joke)
+
+
+    def add_joke(self, name, joke):
+        new_joke = {name: joke}
+        self.jokes.update(new_joke)
 
 
 jokes = JokeHandler()

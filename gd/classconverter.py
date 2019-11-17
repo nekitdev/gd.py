@@ -5,7 +5,7 @@ from .song import Song
 from .user import UserStats, User
 from .colors import Colour, colors
 from .comment import Comment
-from .abstractuser import AbstractUser
+from .abstractuser import AbstractUser, LevelRecord
 from .level import Level
 from .message import Message
 from .iconset import IconSet
@@ -275,6 +275,21 @@ class ClassConverter:
             level_id = s.get(i.COMMENT_LEVEL_ID, 0),
             level_percentage = s.get(i.COMMENT_LEVEL_PERCENTAGE, -1),
             author = ClassConverter.abstractuser_convert(s_2, client),
+            client = client
+        )
+
+    @classmethod
+    def level_record_convert(cls, s, strategy, client=None):
+        return LevelRecord(
+            account_id = s[i.USER_ACCOUNT_ID],
+            name = str(s[i.USER_NAME]),
+            id = s[i.USER_PLAYER_ID],
+            level_id = s[i.USER_LEVEL_ID],
+            lb_place = s[i.USER_TOP_PLACE],
+            percentage = s[i.USER_PERCENT],
+            coins = s[i.USER_SECRET_COINS],
+            timestamp = str(s[i.USER_RECORD_TIMESTAMP]),
+            type = strategy,
             client = client
         )
 

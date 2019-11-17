@@ -23,7 +23,7 @@ class ObjectDataEnum(NEnum):
     BLENDING = 17
     # ??? = 18
     # ??? = 19
-    EL1 = 20  # ???
+    EDITOR_LAYER_1 = 20
     COLOR_1 = 21
     COLOR_2 = 22
     TARGET_COLOR_ID = 23
@@ -65,7 +65,7 @@ class ObjectDataEnum(NEnum):
     LOCK_TO_PLAYER_X = 58  # Move Trigger
     LOCK_TO_PLAYER_Y = 59  # Move Trigger
     COPY_OPACITY = 60  # Trigger
-    EL2 = 61  # ???
+    EDITOR_LAYER_2 = 61  # ???
     SPAWN_TRIGGERED = 62  # Trigger
     SPAWN_DURATION = 63  # Spawn Trigger Delay
     DO_NOT_FADE = 64

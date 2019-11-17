@@ -3,8 +3,9 @@ from typing import Sequence, Union
 from .abstractentity import AbstractEntity
 from .session import _session
 
-from .utils.enums import CommentStrategy, value_to_enum
+from .utils.enums import CommentStrategy, LevelLeaderboardStrategy, value_to_enum
 from .utils.filters import Filters
+from .utils.search_utils import get as _get
 from .utils.wrap_tools import make_repr, check
 
 class AbstractUser(AbstractEntity):
@@ -381,3 +382,60 @@ class AbstractUser(AbstractEntity):
         return await _session.retrieve_comments(
             type=type, user=self, pages=pages, strategy=strategy
         )
+
+
+class LevelRecord(AbstractUser):
+    """Class that represents Geometry Dash User's Level Record.
+    This class is derived from :class:`.AbstractUser`.
+    """
+    def __init__(self, **options):
+        super().__init__(**options)
+        self.options = options
+
+    def __repr__(self):
+        info = self.options.copy()
+        info.pop('client', None)
+        return make_repr(self, info)
+
+    async def update(self):
+        """|coro|
+
+        Update ``self``.
+        """
+        from .level import Level  # this is a hack because *circular imports*
+
+        records = await Level(id=self.level_id, client=self._client).get_leaderboard(self.type.value)
+        record = _get(records, account_id=self.account_id)
+
+        if record is not None:
+            self.options = record.options
+
+    @property
+    def level_id(self):
+        """:class:`int`: An integer representing ID of the level the record was retrieved from."""
+        return self.options.get('level_id', 0)
+
+    @property
+    def percentage(self):
+        """:class:`int`: Percentage of the record."""
+        return self.options.get('percentage', 0)
+
+    @property
+    def coins(self):
+        """:class:`int`: Amount of coins collected."""
+        return self.options.get('coins', 0)
+
+    @property
+    def timestamp(self):
+        """:class:`str`: Human-readable string representation of a timestamp."""
+        return self.options.get('timestamp', 'unknown')
+
+    @property
+    def lb_place(self):
+        """:class:`int`: User's place in leaderboard. ``0`` if not set."""
+        return self.options.get('lb_place', 0)
+
+    @property
+    def type(self):
+        return self.options.get('type', LevelLeaderboardStrategy(0))
+    

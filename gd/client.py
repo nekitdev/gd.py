@@ -313,6 +313,31 @@ class Client:
         return await self.session.get_level(level_id, client=self)
 
     async def get_many_levels(self, *level_ids: Sequence[int]):
+        """|coro|
+
+        Fetches many levels.
+
+        Parameters
+        ----------
+        \*level_ids: Sequence[:class:`int`]
+            IDs of levels to fetch. This function returns all the levels that it is able to find.
+
+            Example:
+
+            .. code-block:: python3
+
+                await client.get_many_levels(30029017, 44622744)
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Levels were not found.
+
+        Returns
+        -------
+        List[:class:`.Level`]
+            A list of all levels found.
+        """
         filters = Filters.setup_search_many()
         query = ','.join(map(str, level_ids))
 
@@ -378,18 +403,14 @@ class Client:
     async def test_captcha(self):
         """|coro|
 
-        Tests Captcha solving, and prints the result.
+        Tests Captcha solving.
 
         Returns
         -------
         :class:`int`
             The code of the Captcha.
         """
-        code = await self.session.test_captcha()
-
-        print(code)
-
-        return code
+        return await self.session.test_captcha()
 
     async def login(self, user: str, password: str):
         """|coro|
@@ -421,6 +442,64 @@ class Client:
         unlist: bool = False, ldm: bool = False, password: int = 0, copyable: bool = False,
         data: str = '', description: str = '', *, load: bool = True
     ):
+        """|coro|
+
+        Upload a level.
+
+        Parameters
+        ----------
+        name: :class:`str`
+            A name of the level.
+        id: :class:`int`
+            An ID of the level. ``0`` if uploading a new level,
+            non-zero when attempting to update already existing level.
+        version: :class:`int`
+            A version of the level.
+        length: :class:`int`
+            A length of the level. See :class:`.LevelLength` for more info.
+        track: :class:`int`
+            A normal track to set, e.g. ``0 - Stereo Madness, 1 - Back on Track, ...``.
+        song_id: :class:`int`
+            An ID of the custom song to set.
+        is_auto: :class:`bool`
+            Indicates if the level is auto.
+        original: :class:`int`
+            An ID of the original level.
+        two_player: :class:`bool`
+            Indicates whether the level has enabled Two Player mode.
+        objects: :class:`int`
+            The amount of objects in the level. If not provided, the amount
+            is being calculated from the ``data`` parameter.
+        coins: :class:`int`
+            An amount of coins the level has.
+        star_amount: :class:`int`
+            The amount of stars to request.
+        unlist: :class:`bool`
+            Indicates whether the level should be unlisted.
+        ldm: :class:`bool`
+            Indicates if the level has LDM mode.
+        password: :class:`int`
+            The password to apply.
+        copyable: :class:`bool`
+            Indicates whether the level should be copyable.
+        data: :class:`str`
+            The data of the level, as a string.
+        description: :class:`str`
+            The description of the level.
+        load: :class:`bool`
+            Indicates whether the newly uploaded level should be loaded and returned.
+            If false, the ``gd.Level(id=id, client=self)`` is returned.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to upload a level.
+
+        Returns
+        -------
+        :class:`.Level`
+            Newly uploaded level.
+        """
         if objects is None:
             objects = len(data.split(';')) - 2
             objects = 0 if objects < 0 else objects
@@ -503,6 +582,20 @@ class Client:
 
     @check.is_logged()
     async def backup(self, save_data: Sequence[Union[bytes, str]] = None):
+        """|coro|
+
+        Back up the data of the client.
+
+        Parameters
+        ----------
+        save_data: Union[:class:`bytes`, :class:`str`]
+            Save data to backup.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to do a backup.
+        """
         if save_data is None and not self.raw_save:
             return log.warning('No data was provided.')
 
@@ -804,6 +897,56 @@ class Client:
         wave: int = 1, robot: int = 1, spider: int = 1, explosion: int = 1, special: int = 0,
         set_as_user=None
     ):
+        """|coro|
+
+        Updates the profile of a client.
+
+        .. note::
+
+            gd.py developers are not responsible for any effects that calling this function
+            may cause. Use this method on your own risk.
+
+        Parameters
+        ----------
+        stars: :class:`int`
+            An amount of stars to set.
+        demons: :class:`int`
+            An amount of completed demons to set.
+        diamonds: :class:`int`
+            An amount of diamonds to set.
+        has_glow: :class:`bool`
+            Indicates whether a user should have the glow outline.
+        icon_type: :class:`int`
+            Icon type that should be used. See :class:`.IconType` for info.
+        color_1: :class:`int`
+            Index of a color to use as the main color.
+        color_2: :class:`int`
+            Index of a color to use as the secodary color.
+        coins: :class:`int`
+            An amount of secret coins to set.
+        user_coins: :class:`int`
+            An amount of user coins to set.
+        cube: :class:`int`
+            An index of a cube icon to apply.
+        ship: :class:`int`
+            An index of a ship icon to apply.
+        ball: :class:`int`
+            An index of a ball icon to apply.
+        ufo: :class:`int`
+            An index of a ufo icon to apply.
+        wave: :class:`int`
+            An index of a wave icon to apply.
+        robot: :class:`int`
+            An index of a robot icon to apply.
+        spider: :class:`int`
+            An index of a spider icon to apply.
+        explosion: :class:`int`
+            An index of a explosion to apply.
+        special: :class:`int`
+            The purpose of this parameter is unknown.
+        set_as_user: :class:`.User`
+            Passing this parameter allows to copy user's profile.
+        """
         if set_as_user is None:
             stats_dict = {
                 'stars': stars, 'demons': demons, 'diamonds': diamonds,
@@ -975,7 +1118,7 @@ class Client:
             query=query, filters=filters, user=user, pages=pages, client=self
         )
 
-    async def on_new_daily(level):
+    async def on_new_daily(self, level):
         """|coro|
 
         This is an event that is fired when a new daily level is set.
@@ -984,7 +1127,7 @@ class Client:
         """
         pass
 
-    async def on_new_weekly(level):
+    async def on_new_weekly(self, level):
         """|coro|
 
         This is an event that is fired when a new weekly demon is assigned.
