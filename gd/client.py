@@ -1136,6 +1136,19 @@ class Client:
         """
         pass
 
+    async def dispatch(self, event_name: str, *args, **kwargs):
+        name = 'on_' + event_name
+
+        log.info('Dispatching event {!r}, client: {!r}'.format(name, self))
+
+        try:
+            method = getattr(self, name)
+
+        except AttributeError:
+            return
+
+        return await utils.maybe_coroutine(method, *args, **kwargs)
+
     def run(self, coro, *, debug: bool = False):
         """A handy shortcut for :func:`.utils.run`.
 
