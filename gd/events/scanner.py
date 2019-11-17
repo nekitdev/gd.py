@@ -118,7 +118,7 @@ class TimelyLevelScanner(AbstractScanner):
         super().__init__()
         self.type = t_type
         self.method = getattr(scanner_client, 'get_' + t_type)
-        self.call_method = 'on_new_' + t_type
+        self.call_method = 'new_' + t_type
 
     async def scan(self):
         """Scan for either daily or weekly levels."""
@@ -130,8 +130,8 @@ class TimelyLevelScanner(AbstractScanner):
 
         if timely.id != self.cache.id:
             for client in self.clients:
-                cr = getattr(client, self.call_method)(timely)
-                loop.create_task(cr)  # schedule the execution
+                dispatcher = client.dispatch(self.call_method, timely)
+                loop.create_task(dispatcher)  # schedule the execution
 
         self.cache = timely
 
