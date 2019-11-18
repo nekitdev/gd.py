@@ -295,19 +295,19 @@ class GDSession:
             return Level(id=level_id).attach_client(client)
 
 
-    async def get_friends(self, client):
+    async def get_user_list(self, type: int = 0, *, client):
         from .classconverter import ClassConverter
 
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
-            .put_password(client.encodedpass).put_type(0).finish()
+            .put_password(client.encodedpass).put_type(type).finish()
         )
         codes = {
             -1: MissingAccess(message='Failed to get friends.'),
             -2: NothingFound('gd.AbstractUser')
         }
 
-        resp = await http.request(Route.GET_FRIENDS, parameters, error_codes=codes, splitter='|')
+        resp = await http.request(Route.GET_USER_LIST, parameters, error_codes=codes, splitter='|')
 
         ret = []
         for elem in resp:

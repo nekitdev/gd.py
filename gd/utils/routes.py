@@ -18,7 +18,7 @@ class Route:
     GET_GAUNTLETS = 'getGJGauntlets21'
     DELETE_LEVEL = 'deleteGJLevelUser20'
     GET_SONG_INFO = 'getGJSongInfo'
-    GET_FRIENDS = 'getGJUserList20'
+    GET_USER_LIST = 'getGJUserList20'
     REMOVE_FRIEND = 'removeGJFriend20'
     GET_ACC_COMMENTS = 'getGJAccountComments20'
     GET_COMMENTS = 'getGJComments21'

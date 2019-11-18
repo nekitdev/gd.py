@@ -621,6 +621,27 @@ class Client:
         log.info('Has logged out with message: %r', message)
 
     @check.is_logged()
+    async def get_blocked_users(self):
+        """|coro|
+
+        Get all users blocked by a client.
+
+        Returns
+        -------
+        List[:class:`.AbstractUser`]
+            All blocked users retrieved, as list.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to fetch blocked users of a client.
+
+        :exc:`.NothingFound`
+            No blocked users were found. Cool.
+        """
+        return await self.session.get_user_list(type=1, client=self)
+
+    @check.is_logged()
     async def get_friends(self):
         """|coro|
 
@@ -639,7 +660,7 @@ class Client:
         :exc:`.NothingFound`
             No friends were found. Sadly...
         """
-        return await self.session.get_friends(client=self)
+        return await self.session.get_user_list(type=0, client=self)
 
     @check.is_logged()
     async def to_user(self):
