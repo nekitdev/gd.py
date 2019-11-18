@@ -66,7 +66,8 @@ thread = threading.Thread(target=run, args=(loop,), name='ScannerThread')
 
 
 class AbstractScanner:
-    def __init__(self, delay: float = 10.0):
+    def __init__(self, delay: float = 10.0, *, loop=loop):
+        self.loop = loop
         self.runner = utils.tasks.loop(seconds=delay, loop=loop)(self.main)
         self.cache = None
         self.clients = []
@@ -79,6 +80,7 @@ class AbstractScanner:
     def attach_to_loop(self, loop):
         """Attach the runner to another event loop."""
         self.runner.loop = loop
+        self.loop = loop
 
     def enable(self):
         try:
@@ -114,7 +116,7 @@ class AbstractScanner:
 
 
 class TimelyLevelScanner(AbstractScanner):
-    def __init__(self, t_type: str):
+    def __init__(self, t_type: str, delay: int = 10.0, *, loop=loop):
         super().__init__()
         self.type = t_type
         self.method = getattr(scanner_client, 'get_' + t_type)
@@ -131,7 +133,7 @@ class TimelyLevelScanner(AbstractScanner):
         if timely.id != self.cache.id:
             for client in self.clients:
                 dispatcher = client.dispatch(self.call_method, timely)
-                loop.create_task(dispatcher)  # schedule the execution
+                self.loop.create_task(dispatcher)  # schedule the execution
 
         self.cache = timely
 

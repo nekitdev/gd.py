@@ -10,35 +10,35 @@ from .wrap_tools import make_repr
 
 log = logging.getLogger(__name__)
 
+BASE = 'http://www.boomlings.com/database/'
+VALID_ERRORS = (
+    OSError,
+    aiohttp.ClientError
+)
+
 class HTTPClient:
     """Class that handles the main part of the entire gd.py - sending HTTP requests.
 
     Attributes
     ----------
     semaphore: Optional[:class:`asyncio.Semaphore`]
-        A semaphore to use when doing requests. Defaults to :class:`asyncio.Semaphore` with value ``200``.
+        A semaphore to use when doing requests. Defaults to :class:`asyncio.Semaphore` with value ``250``.
     """
-    BASE = 'http://www.boomlings.com/database/'
-    VALID_ERRORS = (
-        OSError,
-        aiohttp.ClientError
-    )
-
-    def __init__(self, *, semaphore=None):
+    def __init__(self, base: str = BASE, *, semaphore=None):
         self.semaphore = semaphore or asyncio.Semaphore(250)
         self.debug = False
+        self.base = base
         self._last_result = None  # for testing purposes
 
     def __repr__(self):
         info = {
             'debug': self.debug,
             'semaphore': self.semaphore,
-            'url': HTTPClient.BASE
+            'url': repr(self.base)
         }
         return make_repr(self, info)
 
-    @classmethod
-    def change_base(cls, base: str = None):
+    def change_base(self, base: str = None):
         """Change base for requests.
 
         Default base is ``http://www.boomlings.com/database/``,
@@ -51,7 +51,11 @@ class HTTPClient:
         """
         if base is None:
             return
-        cls.BASE = base
+
+        if not base.endswith('/'):
+            base += '/'
+
+        self.base = base
 
     def set_default_semaphore(self, value: int = 250, *, loop=None):
         """Sets semaphore to :class:`asyncio.Semaphore` with given value and loop.
@@ -140,7 +144,7 @@ class HTTPClient:
 
             If a cookie is requested, returns a pair (``res``, ``c``) where c is a :class:`str` cookie.
         """
-        base = HTTPClient.BASE if custom_base is None else custom_base
+        base = self.base if custom_base is None else custom_base
         url = base + php + '.php'
 
         method = 'GET' if params is None else 'POST'
@@ -150,13 +154,13 @@ class HTTPClient:
             headers = {'Cookie': cookie}
 
         if self.debug:
-            print('URL: {}, Data: {}'.format(url, params))
+            log.debug('URL: {}, Data: {}'.format(url, params))
 
         async with aiohttp.ClientSession() as client:
             async with self.semaphore:
                 try:
                     resp = await client.request(method, url, data=params, headers=headers)
-                except HTTPClient.VALID_ERRORS:
+                except VALID_ERRORS:
                     return
 
                 data = await resp.content.read()
@@ -176,9 +180,6 @@ class HTTPClient:
 
                 except UnicodeDecodeError:
                     res = data
-
-                if self.debug:
-                    print(res)
 
                 if get_cookies:
                     c = str(resp.cookies).split(' ')[1]
@@ -304,5 +305,6 @@ class HTTPClient:
                 raise HTTPNotConnected()
 
         return resp
+
 
 http = HTTPClient()
