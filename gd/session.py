@@ -669,7 +669,7 @@ class GDSession:
         like = dislike ^ 1
 
         rs = Coder.gen_rs()
-        values = [special, item.id, typeid, like, rs, client.account_id, 0, 0]
+        values = [special, item.id, like, typeid, rs, client.account_id, 0, 0]
         chk = Coder.gen_chk(type='like_rate', values=values)
 
         parameters = (
