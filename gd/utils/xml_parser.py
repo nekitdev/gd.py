@@ -2,6 +2,8 @@ import xml.etree.ElementTree as xml
 
 from ._async import run_blocking_io
 
+__all__ = ('xml', 'XMLParser', 'AioXMLParser')
+
 PLIST_VERSION = '1.0'
 GJ_VERSION = '2.0'
 DECLARATION = '<?xml version="1.0"?>'
