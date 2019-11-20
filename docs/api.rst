@@ -91,6 +91,15 @@ Level
 .. autoclass:: Level
     :members:
 
+Level Packs
+-----------
+
+.. autoclass:: MapPack
+    :members:
+
+.. autoclass:: Gauntlet
+    :members:
+
 Song
 ----
 
