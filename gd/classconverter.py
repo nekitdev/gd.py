@@ -131,8 +131,12 @@ class ClassConverter:
 
         try:
             leveldata = Coder.unzip(s[i.LEVEL_DATA])
+
         except KeyError:  # level data not present
             leveldata = str()
+
+        except Exception:  # conversion failed
+            leveldata = s[i.LEVEL_DATA]
 
         diff = s[i.LEVEL_DIFFICULTY]
         demon_diff = s[i.LEVEL_DEMON_DIFFICULTY]
