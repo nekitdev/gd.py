@@ -17,6 +17,9 @@ from .utils.enums import (
 )
 from .utils.wrap_tools import make_repr, check
 
+from .utils.text_tools import object_split
+
+
 log = logging.getLogger(__name__)
 
 class Level(AbstractEntity):
@@ -134,10 +137,7 @@ class Level(AbstractEntity):
     @property
     def objects(self):
         """List[Union[:class:`bytes`, :class:`str`]]: A list of objects, represented as streams."""
-        semicolon = ';' if isinstance(self.data, str) else b';'
-        data = self.data.split(semicolon)
-        data.pop(0)
-        return data
+        return object_split(self.data)
 
     @property
     def object_count(self):

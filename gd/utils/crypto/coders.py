@@ -233,12 +233,10 @@ class Coder:
         except zlib.error:
             unzipped = zlib.decompress(decoded[10:], -zlib.MAX_WBITS)
 
-        final = unzipped.rstrip(b';')
-
         try:
-            final = final.decode()
+            final = unzipped.decode()
         except UnicodeDecodeError:
-            pass
+            final = unzipped
 
         return final
 

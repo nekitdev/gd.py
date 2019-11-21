@@ -501,10 +501,7 @@ class Client:
             Newly uploaded level.
         """
         if objects is None:
-            sc = ';' if isinstance(data, str) else b';'
-            s = data.rstrip(sc).split(sc)
-            s.pop(0)
-            objects = len(s)
+            objects = len(utils.object_split(data))
 
         return await self.session.upload_level(
             data=data, name=name, level_id=id, version=version, length=length,
