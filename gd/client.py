@@ -440,7 +440,7 @@ class Client:
         track: int = 0, song_id: int = 0, is_auto: bool = False, original: int = 0,
         two_player: bool = False, objects: int = None, coins: int = 0, star_amount: int = 0,
         unlist: bool = False, ldm: bool = False, password: int = 0, copyable: bool = False,
-        data: str = '', description: str = '', *, load: bool = True
+        data: Union[bytes, str] = '', description: str = '', *, load: bool = True
     ):
         """|coro|
 
@@ -482,8 +482,8 @@ class Client:
             The password to apply.
         copyable: :class:`bool`
             Indicates whether the level should be copyable.
-        data: :class:`str`
-            The data of the level, as a string.
+        data: Union[:class:`bytes`, :class:`str`]
+            The data of the level, as a stream.
         description: :class:`str`
             The description of the level.
         load: :class:`bool`
