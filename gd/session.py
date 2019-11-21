@@ -431,7 +431,7 @@ class GDSession:
                 Coder.decode_save(save, needs_xor=False).decode(errors='replace')
                 for save in (main, levels)
             )
-            save = SaveParser.parse(main_save)
+            save = await SaveParser.aio_parse(main_save)
 
             client._upd('raw_save', (main_save, level_save))
             client._upd('save', save)

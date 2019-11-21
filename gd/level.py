@@ -133,8 +133,9 @@ class Level(AbstractEntity):
 
     @property
     def objects(self):
-        """List[:class:`str`]: A list of objects, represented as strings."""
-        data = self.data.split(';')
+        """List[Union[:class:`bytes`, :class:`str`]]: A list of objects, represented as streams."""
+        semicolon = ';' if isinstance(self.data, str) else b';'
+        data = self.data.split(semicolon)
         data.pop(0)
         return data
 
@@ -162,7 +163,7 @@ class Level(AbstractEntity):
 
     @property
     def data(self):
-        """:class:`str`: Level data, represented as a string."""
+        """Union[:class:`str`, :class:`bytes`]: Level data, represented as a stream."""
         return self.options.get('data', '')
 
     def is_timely(self, daily_or_weekly: str = None):

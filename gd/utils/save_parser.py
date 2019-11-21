@@ -1,39 +1,52 @@
 from collections import namedtuple
-import re
+
+from .xml_parser import XMLParser, AioXMLParser
 
 Save = namedtuple('Save', 'completed followed')
 
+
 class SaveParser:
-    @classmethod
-    def parse(cls, xml):
-        completed = cls.parse_completed_levels(xml)
-        followed = cls.parse_followed(xml)
+    @staticmethod
+    def parse(xml):
+        parser = XMLParser()
+        _dict = parser.load(xml)
+
+        return SaveParser._parse(_dict)
+
+    @staticmethod
+    async def aio_parse(xml):
+        parser = AioXMLParser()
+        _dict = await parser.load(xml)
+
+        return SaveParser._parse(_dict)
+
+    @staticmethod
+    def _parse(d):
+        completed = _get_completed(d)
+        followed = _get_followed(d)
+
         return Save(completed=completed, followed=followed)
 
-    @classmethod
-    def parse_completed_levels(cls, xml):
-        pattern = '<k>c_(\d+)</k><s>1</s>'
-        found = re.findall(pattern, xml)
 
-        return list(map(int, found))
+def _get_completed(d):
+    inner = d['GS_completed']
 
-    @classmethod
-    def parse_followed(cls, xml):
-        try:
-            section = _slice_between(xml, 'GLM', 6, 8)
-        except Exception:
-            section = _slice_between(xml, 'GLM', 6, 7)
+    final = []
 
-        pattern = '<k>(\d+)</k><s>1</s>'
-        found = re.findall(pattern, section)
+    for entry, _ in inner.items():
 
-        return list(map(int, found))
+        if entry.startswith('c_'):
+            _id = int(entry.lstrip('c_'))
 
-def _slice_between(sequence, section_name, x, y):
-    fix = len(section_name) + 3
+            final.append(_id)
 
-    x, y = ('{}_{:02}'.format(section_name, z) for z in (x, y))
-    i, j = (sequence.index(z) for z in (x, y))
-    i += fix
+    return final
 
-    return sequence[i:j]
+def _get_followed(d):
+    inner = d['GLM_06']
+
+    final = [
+        int(entry) for entry, _ in inner.items()
+    ]
+
+    return final

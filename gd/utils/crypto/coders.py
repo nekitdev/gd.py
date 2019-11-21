@@ -208,14 +208,14 @@ class Coder:
         return final
 
     @classmethod
-    def unzip(cls, string: str):
+    def unzip(cls, string: Union[bytes, str]):
         """zlib decompresses a level string.
 
         Used to unzip level data.
 
         Parameters
         ----------
-        string: :class:`str`
+        string: Union[:class:`bytes`, :class:`str`]
             String to unzip, encoded in Base64.
 
         Returns
@@ -223,6 +223,9 @@ class Coder:
         :class:`str`
             Unzipped level data, as string.
         """
+        if isinstance(string, bytes):
+            string = string.decode(errors='replace')
+
         decoded = base64.b64decode(mapper_util.normalize(string).encode())
 
         try:
@@ -235,11 +238,14 @@ class Coder:
         return final
 
     @classmethod
-    def zip(cls, string: str, append_semicolon: bool = True):
-        if append_semicolon and not string.endswith(';'):
-            string += ';'
+    def zip(cls, string: Union[bytes, str], append_semicolon: bool = True):
+        if isinstance(string, str):
+            string = string.encode()
 
-        return cls.encode_save(string.encode(), needs_xor=False).decode()
+        if append_semicolon and not string.endswith(b';'):
+            string += b';'
+
+        return cls.encode_save(string, needs_xor=False).decode()
 
     @classmethod
     def gen_level_upload_seed(cls, data_string: str, chars_required: int = 50):
