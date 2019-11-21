@@ -220,8 +220,8 @@ class Coder:
 
         Returns
         -------
-        :class:`str`
-            Unzipped level data, as string.
+        Union[:class:`bytes`, :class:`str`]
+            Unzipped level data, as a stream.
         """
         if isinstance(string, bytes):
             string = string.decode(errors='replace')
@@ -233,7 +233,12 @@ class Coder:
         except zlib.error:
             unzipped = zlib.decompress(decoded[10:], -zlib.MAX_WBITS)
 
-        final = unzipped.decode(errors='ignore').rstrip(';')
+        final = unzipped.rstrip(b';')
+
+        try:
+            final = final.decode()
+        except UnicodeDecodeError:
+            pass
 
         return final
 
