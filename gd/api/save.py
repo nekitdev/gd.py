@@ -1,25 +1,36 @@
+import json
+
 from ..utils._async import run_blocking_io
 from ..utils.wrap_tools import make_repr
+from ..utils.xml_parser import *
+
 from ..utils.crypto.coders import Coder
 
 __all__ = ('SavePart', 'SaveAPI')
 
 
-class SavePart(str):
+class SavePart(dict):
+    def __init__(self, string: str):
+        self.parser = XMLParser()  # from utils.xml_parser
+        loaded = self.parser.load(string)
+
+        super().__init__(loaded)
+
+    def __str__(self):
+        return json.dumps(self, indent=4)
+
     def __repr__(self):
+        string = super().__repr__()
         info = {
-            'data': repr('... (len: {})'.format(len(self)))
+            'len': len(string)
         }
         return make_repr(self, info)
 
-    async def parse(self):
-        return await run_blocking_io(self._parse)
+    def dump(self):
+        return self.parser.dump(self)
 
-    def _parse(self):
-        pass
-
-    def _encode(self, xor: bool = True):
-        return Coder.encode_save(self.encode(), needs_xor=xor)
+    def encode(self, xor: bool = True):
+        return Coder.encode_save(self.dump().encode(), needs_xor=xor)
 
 
 class SaveAPI:
@@ -33,3 +44,6 @@ class SaveAPI:
             'levels': repr(self.levels)
         }
         return make_repr(self, info)
+
+    def as_tuple(self):
+        return self.main, self.levels

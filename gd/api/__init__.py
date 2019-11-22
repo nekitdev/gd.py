@@ -3,4 +3,7 @@ from .loader import *
 from .object import *
 from .save import *
 
-load_save = SaveLoader
+from . import loader
+
+def change_path(path):
+    loader.path = path

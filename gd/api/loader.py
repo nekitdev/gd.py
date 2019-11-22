@@ -8,7 +8,9 @@ from ..utils.wrap_tools import make_repr
 
 from .save import SaveAPI
 
-__all__ = ('SaveLoader', 'path')
+__all__ = (
+    'SaveUtil', 'path', 'util', 'load_save', 'dump_save',
+    'from_string', 'to_string', 'make_api')
 
 
 try:
@@ -19,13 +21,13 @@ except Exception:
     path = Path()
 
 
-class SaveLoader:
+class SaveUtil:
     def __init__(
         self, path: Path = path, main_file_name: str = 'CCGameManager.dat',
         level_file_name: str = 'CCLocalLevels.dat'
     ):
-        self.main_data_file = path / main_file_name
-        self.level_data_file = path / level_file_name
+        self.main = main_file_name
+        self.level = level_file_name
 
     def __repr__(self):
         info = {
@@ -34,13 +36,26 @@ class SaveLoader:
         }
         return make_repr(self, info)
 
-    def __call__(self, *args, **kwargs):
-        return self.local()
+    @property
+    def main_data_file(self):
+        return path / self.main
 
-    async def local(self):
-        return await run_blocking_io(self._local)
+    @property
+    def level_data_file(self):
+        return path / self.level
 
-    async def from_string(self, main_stream, level_stream, xor: bool = True):
+    async def local_load(self):
+        return await run_blocking_io(self._local_load)
+
+    async def local_dump(self, api: SaveAPI):
+        await run_blocking_io(self._local_dump, api)
+
+    async def to_string(self, api: SaveAPI, connect: bool = True, xor: bool = False):
+        return await run_blocking_io(
+            functools.partial(self._dump, api, connect=connect, xor=xor)
+        )
+
+    async def from_string(self, main_stream, level_stream, xor: bool = False):
         return await run_blocking_io(
             functools.partial(self._load, main_stream, level_stream, xor=xor)
         )
@@ -59,7 +74,20 @@ class SaveLoader:
         levels = self._decode(level_stream, xor=xor)
         return SaveAPI(main, levels)
 
-    def _local(self):
+    def _dump(self, api, connect: bool = True, xor: bool = False):
+        parts = []
+
+        for part in api.as_tuple():
+            parts.append(part.encode(xor=xor).decode())
+
+        main, levels, *_ = parts
+
+        if connect:
+            return main + ';' + levels
+        else:
+            return main, levels
+
+    def _local_load(self):
         try:
             parts = []
 
@@ -73,5 +101,18 @@ class SaveLoader:
         except FileNotFoundError:
             print('Failed to find save files in the path: {!r}.'.format(str(path)))
 
+    def _local_dump(self, api: SaveAPI):
+        files = (self.main_data_file, self.level_data_file)
 
-SaveLoader = SaveLoader()
+        for file, part in zip(files, api.as_tuple()):
+
+            with open(file, 'wb') as data_file:
+                data_file.write(part.encode())
+
+
+util = SaveUtil()
+load_save = util.local_load
+dump_save = util.local_dump
+from_string = util.from_string
+to_string = util.to_string
+make_api = util.make_api

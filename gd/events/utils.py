@@ -2,8 +2,7 @@ from os import _exit
 
 from .scanner import (
     AbstractScanner as scanner, run as run_loop,
-    shutdown_loop, all_listeners, thread, loop as _loop,
-    update_thread_loop
+    shutdown_loop, all_listeners, thread, update_thread_loop
 )
 
 from . import scanner
@@ -20,12 +19,17 @@ def exit(status: int = 0):
 
 def disable():
     try:
-        shutdown_loop(_loop)
+        shutdown_loop(scanner.loop)
         thread.join()
     except RuntimeError:
         pass
 
-    for scan in utils.get_instances_of(scanner):
+    try:
+        scanners = utils.get_instances_of(scanner)
+    except Exception:
+        scanners = all_listeners
+
+    for scan in scanners:
         scan.close()
 
 

@@ -12,6 +12,7 @@ from .utils.wrap_tools import make_repr, check
 
 from .utils.crypto.coders import Coder
 
+from . import api
 from . import utils
 
 log = logging.getLogger(__name__)
@@ -39,8 +40,8 @@ class Client:
         Password of the client. ``None`` if not logged in.
     encodedpass: :class:`str`
         Encoded Password of the client. ``None`` on init as well.
-    raw_save: Sequence[Union[:class:`bytes`, :class:`str`]]
-        Raw decoded save. If not loaded, defaults to ``()``.
+    save_api: Optional[:class:`.SaveAPI`]
+        Save API. If not loaded, defaults to ``None``.
     save: :class:`.Save`
         This is a namedtuple with format ``(completed, followed)``.
         Contains empty lists if not loaded.
@@ -62,7 +63,7 @@ class Client:
 
     def _set_to_defaults(self):
         self.save = Save(completed=[], followed=[])
-        self.raw_save = ()
+        self.save_api = None
         self.account_id = 0
         self.id = 0
         self.name = None
@@ -595,10 +596,13 @@ class Client:
         :exc:`.MissingAccess`
             Failed to do a backup.
         """
-        if save_data is None and not self.raw_save:
+        if save_data is None and self.save_api is None:
             return log.warning('No data was provided.')
 
-        data = save_data if save_data else self.raw_save
+        if not save_data:
+            data = await api.to_string(self.save_api, connect=False, xor=False)
+        else:
+            data = save_data
 
         await self.session.do_save(client=self, data=data)
 

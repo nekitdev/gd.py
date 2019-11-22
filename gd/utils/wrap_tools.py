@@ -1,5 +1,10 @@
 import functools
-import gc
+
+try:
+    import gc
+except ImportError:
+    pass
+
 import logging
 import time
 

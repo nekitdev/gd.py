@@ -21,6 +21,7 @@ from .utils.save_parser import SaveParser
 from .utils.wrap_tools import check
 from .utils.crypto.coders import Coder
 
+from . import api
 from . import utils
 
 class GDSession:
@@ -427,13 +428,10 @@ class GDSession:
 
         try:
             main, levels, *_ = resp.split(b';')
-            main_save, level_save = (
-                Coder.decode_save(save, needs_xor=False).decode(errors='replace')
-                for save in (main, levels)
-            )
-            save = await SaveParser.aio_parse(main_save)
+            save_api = await api.from_string(main, levels, xor=False)
+            save = await SaveParser.aio_parse(save_api.main.dump())
 
-            client._upd('raw_save', (main_save, level_save))
+            client._upd('save_api', save_api)
             client._upd('save', save)
 
             return True
