@@ -56,9 +56,13 @@ class Coder:
 
     @classmethod
     def decode_save(cls, save: bytes, needs_xor: bool = True):
+        if isinstance(save, str):
+            save = save.encode()
+
         if needs_xor:
             save = cls.normal_xor(save, 11)
-        elif isinstance(save, bytes):
+
+        else:
             save = save.decode(errors='ignore')
 
         data = mapper_util.normalize(save).encode()
@@ -69,6 +73,9 @@ class Coder:
 
     @classmethod
     def encode_save(cls, save: bytes, needs_xor: bool = True):
+        if isinstance(save, str):
+            save = save.encode()
+
         compressed = zlib.compress(save)
 
         crc32 = struct.pack('I', zlib.crc32(save))
@@ -85,7 +92,7 @@ class Coder:
         if encode:
             return mapper_util.prepare_sending(base64.b64encode(data.encode()).decode())
         else:
-            return mapper_util.normalize(base64.b64decode(data.encode()).decode())
+            return base64.b64decode(mapper_util.normalize(data).encode()).decode()
 
     @classmethod
     def gen_rs(cls, length: int = 10):
