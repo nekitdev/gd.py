@@ -41,7 +41,7 @@ class Client:
     encodedpass: :class:`str`
         Encoded Password of the client. ``None`` on init as well.
     save_api: Optional[:class:`.SaveAPI`]
-        Save API. If not loaded, defaults to ``None``.
+        Save API. Empty if not loaded..
     save: :class:`.Save`
         This is a namedtuple with format ``(completed, followed)``.
         Contains empty lists if not loaded.
@@ -63,7 +63,7 @@ class Client:
 
     def _set_to_defaults(self):
         self.save = Save(completed=[], followed=[])
-        self.save_api = None
+        self.save_api = api.SaveAPI()
         self.account_id = 0
         self.id = 0
         self.name = None
