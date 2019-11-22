@@ -179,7 +179,7 @@ def define_type(n: int):
             2, 3, 6, 10, 28, 29, 30, 32, 35, 45, 46, 47, 54, 63, 68, 69, 72, 73, 75, 84, 85,
             90, 91, 92, 97, 105, 107
         ): float,
-        n == 31: lambda string: _b64_failsafe(string, encode=False)
+        n == 31: lambda string: _b64_failsafe(string, encode=False),
         n == 57: _ints_from_str,
         n in (43, 44, 49): HSV.from_string,
         n == 79: PickupItemMode.from_value,
