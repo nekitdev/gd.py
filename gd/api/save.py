@@ -1,6 +1,5 @@
 import json
 
-from ..utils._async import run_blocking_io
 from ..utils.wrap_tools import make_repr
 from ..utils.xml_parser import *
 
@@ -10,9 +9,13 @@ __all__ = ('SavePart', 'SaveAPI')
 
 
 class SavePart(dict):
-    def __init__(self, string: str):
+    def __init__(self, string: str = ''):
         self.parser = XMLParser()  # from utils.xml_parser
-        loaded = self.parser.load(string)
+        try:
+            loaded = self.parser.load(string)
+
+        except Exception:
+            loaded = {}
 
         super().__init__(loaded)
 
@@ -34,7 +37,7 @@ class SavePart(dict):
 
 
 class SaveAPI:
-    def __init__(self, main, levels):
+    def __init__(self, main: str = '', levels: str = ''):
         self.main = SavePart(main)
         self.levels = SavePart(levels)
 
