@@ -161,7 +161,7 @@ def _ints_from_str(string: str, split: str = '.'):
 
 def _b64_failsafe(string: str, encode: bool = True):
     try:
-        return gd.Coder.do_base64(string, encode=encode)
+        return Coder.do_base64(string, encode=encode)
     except Exception:
         return string
 
