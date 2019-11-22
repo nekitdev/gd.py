@@ -99,10 +99,10 @@ class ObjectDataEnum(NEnum):
     X_MOD = 72  # Follow Trigger
     Y_MOD = 73  # Follow Trigger
     UNKNOWN_74 = 74
-    ENGTH = 75  # Shake Trigger
+    STRENGTH = 75  # Shake Trigger
     ANIMATION_ID = 76  # Animation Trigger
     COUNT = 77  # Count, Instant Count and Pickup Trigger
-    SUBACT_COUNT = 78  # Pickup Item Trigger ("Subtract")
+    SUBTRACT_COUNT = 78  # Pickup Item Trigger ("Subtract")
     PICKUP_MODE = 79  # Pickup Item Trigger (1 = Pickup Item, 2 = Toggle Trigger)
     ITEM_ID = 80  # Pickup Trigger
     BLOCK_ID = 80  # Collision Trigger
@@ -110,7 +110,7 @@ class ObjectDataEnum(NEnum):
     HOLD_MODE = 81  # Touch Trigger
     TOGGLE_MODE = 82  # Touch Trigger (0 = Default, 1 = On, 2 = Off)
     UNKNOWN_83 = 83
-    ERVAL = 84  # Shake Trigger
+    INTERVAL = 84  # Shake Trigger
     EASING_RATE = 85  # Move and Rotate Trigger
     EXCLUSIVE = 86  # Pulse Trigger
     MULTI_TRIGGER = 87  # Trigger
