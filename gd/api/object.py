@@ -1,6 +1,8 @@
 from ..utils.mapper import mapper
 from ..utils.wrap_tools import make_repr
 from ..utils.enums import NEnum
+from ..utils.crypto.coders import Coder
+
 from .enums import *
 
 __all__ = ('Object', 'HSV')
@@ -91,7 +93,13 @@ def _dump(d):
     for name, value in d.items():
         n = _get_id(name)
 
-        final[n] = map_type(value)(value)
+        if n is not None:
+            to_add = map_type(value)(value)
+
+            if n == 31:  # Text
+                to_add = _b64_failsafe(str(to_add), encode=True)
+
+            final[n] = to_add
 
     return final
 
@@ -151,6 +159,13 @@ def _ints_from_str(string: str, split: str = '.'):
     return list(map(int, string.split(split)))
 
 
+def _b64_failsafe(string: str, encode: bool = True):
+    try:
+        return gd.Coder.do_base64(string, encode=encode)
+    except Exception:
+        return string
+
+
 def define_type(n: int):
     cases = {
         n in (
@@ -164,6 +179,7 @@ def define_type(n: int):
             2, 3, 6, 10, 28, 29, 30, 32, 35, 45, 46, 47, 54, 63, 68, 69, 72, 73, 75, 84, 85,
             90, 91, 92, 97, 105, 107
         ): float,
+        n == 31: lambda string: _b64_failsafe(string, encode=False)
         n == 57: _ints_from_str,
         n in (43, 44, 49): HSV.from_string,
         n == 79: PickupItemMode.from_value,
@@ -176,6 +192,9 @@ def define_type(n: int):
 def default_value(n: int):
     if n == 57:
         return list()
+
+    if n == 31:
+        return str()
 
     value = 0
     if n in (43, 44, 49):
