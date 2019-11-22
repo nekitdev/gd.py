@@ -14,7 +14,7 @@ from .utils.enums import SearchStrategy
 from .utils.filters import Filters
 from .utils.http_request import http
 from .utils.indexer import Index as i
-from .utils.mapper import mapper_util
+from .utils.mapper import mapper
 from .utils.params import Parameters as Params
 from .utils.routes import Route
 from .utils.save_parser import SaveParser
@@ -111,7 +111,7 @@ class GDSession:
         if not item:
             return
 
-        new_resp = mapper_util.map(item.split(':'))
+        new_resp = mapper.map(item.split(':'))
         to_add = (i.USER_NAME, i.USER_ICON, i.USER_ICON_TYPE)
         new_dict = {k: new_resp.get(k) for k in to_add}
         resp.update(new_dict)
@@ -146,7 +146,7 @@ class GDSession:
         if not item:
             return
 
-        mapped = mapper_util.map(item.split(':'))
+        mapped = mapper.map(item.split(':'))
 
         name = mapped.get(i.USER_NAME, '') or 'UnregisteredUser'
         id = mapped.get(i.USER_PLAYER_ID, 0) or 0
@@ -190,7 +190,7 @@ class GDSession:
         parameters = Params().create_new().put_definer('levelid', level_id).finish()
         resp = await http.request(Route.DOWNLOAD_LEVEL, parameters, error_codes=codes, splitter='#')
 
-        level_data = mapper_util.map(resp[0].split(':') + ext)
+        level_data = mapper.map(resp[0].split(':') + ext)
 
         real_id = level_data.get(i.LEVEL_ID)
 
@@ -204,7 +204,7 @@ class GDSession:
         song_data = resp[2]
         song = (
             Converter.to_normal_song(level_data.get(i.LEVEL_AUDIO_TRACK)) if not song_data
-            else ClassConverter.song_convert(mapper_util.map(song_data.split('~|~')))
+            else ClassConverter.song_convert(mapper.map(song_data.split('~|~')))
         ).attach_client(client)
 
         # getting creator
@@ -312,7 +312,7 @@ class GDSession:
 
         ret = []
         for elem in resp:
-            temp = mapper_util.map(elem.split(':'))
+            temp = mapper.map(elem.split(':'))
 
             parse_dict = {
                 'name': temp[i.USER_NAME],
@@ -350,7 +350,7 @@ class GDSession:
         res = []
 
         for data in filter(_is_not_empty, resp):
-            mapped = mapper_util.map(data.split(':') + ext)
+            mapped = mapper.map(data.split(':') + ext)
             record = ClassConverter.level_record_convert(mapped, strategy, client)
             res.append(record)
 
@@ -380,7 +380,7 @@ class GDSession:
 
         res = []
         for data in filter(_is_not_empty, resp):
-            mapped = mapper_util.map(data.split(':'))
+            mapped = mapper.map(data.split(':'))
             stats = ClassConverter.user_stats_convert(mapped, client)
             res.append(stats)
 
@@ -507,7 +507,7 @@ class GDSession:
 
         songs = []
         for s in filter(_is_not_empty, sdata.split('~:~')):
-            song = ClassConverter.song_convert(mapper_util.map(s.split('~|~')))
+            song = ClassConverter.song_convert(mapper.map(s.split('~|~')))
             songs.append(song)
 
         creators = []
@@ -521,7 +521,7 @@ class GDSession:
         ext = ['101', '0', '102', '-1', '103', '-1']
 
         for lv in filter(_is_not_empty, lvdata.split('|')):
-            data = mapper_util.map(lv.split(':') + ext)
+            data = mapper.map(lv.split(':') + ext)
 
             song_id = data.get(i.LEVEL_SONG_ID)
             song = Converter.to_normal_song(
@@ -709,7 +709,7 @@ class GDSession:
 
         res = []
         for elem in resp:
-            mapped = mapper_util.map(elem.split(':'))
+            mapped = mapper.map(elem.split(':'))
             res.append(
                 ClassConverter.message_convert(
                     mapped, client.get_parse_dict(), client
@@ -887,7 +887,7 @@ class GDSession:
         )
 
         ret = Coder.decode(
-            type='message', string=mapper_util.normalize(resp.get(i.MESSAGE_BODY))
+            type='message', string=mapper.normalize(resp.get(i.MESSAGE_BODY))
         )
         msg._body = ret
         return ret
@@ -916,7 +916,7 @@ class GDSession:
 
         res = []
         for gdata in filter(_is_not_empty, resp):
-            mapped = mapper_util.map(gdata.split(':'))
+            mapped = mapper.map(gdata.split(':'))
             res.append(
                 ClassConverter.gauntlet_convert(mapped, client)
             )
@@ -940,7 +940,7 @@ class GDSession:
 
         res = []
         for elem in resp:
-            mapped = mapper_util.map(elem.split(':'))
+            mapped = mapper.map(elem.split(':'))
             res.append(
                 ClassConverter.map_pack_convert(mapped, client)
             )
@@ -983,7 +983,7 @@ class GDSession:
 
         res = []
         for elem in resp:
-            mapped = mapper_util.map(
+            mapped = mapper.map(
                 elem.split(':') + ['101', str(inbox)]
             )
             res.append(
@@ -1046,7 +1046,7 @@ class GDSession:
 
         res = []
         for elem in to_map:
-            prepared = mapper_util.map(
+            prepared = mapper.map(
                 func(elem) + ['101', str(typeid)]
             )
             res.append(
@@ -1093,7 +1093,7 @@ class GDSession:
 
         res = []
         for elem in resp:
-            com_data, user_data = (mapper_util.map(part.split('~')) for part in elem.split(':'))
+            com_data, user_data = (mapper.map(part.split('~')) for part in elem.split(':'))
             com_data.update({1: level.id, 101: 0, 102: 0})
 
             user_dict = {

@@ -30,8 +30,8 @@ def _name_to_enum(x: str):
 
 
 def _enum_to_name(x: Enum):
-    name = x.name
-    return name if name == 'XL' else name.replace('_', ' ').title()
+    name = x.name.strip('_')
+    return name if (name == 'XL' or '_' not in name) else name.replace('_', ' ').title()
 
 
 def value_to_enum(enum: Enum, x: Union[int, str, Enum]):

@@ -1,50 +1,70 @@
 from ..utils.enums import NEnum
 
-__all__ = ('ObjectDataEnum', 'LevelDataEnum')
+__all__ = (
+    'ObjectDataEnum',
+    'ColorChannelPlayerColor',
+    'CustomParticleGrouping',
+    'CustomParticleProperty1',
+    'Easing',
+    'PulseMode',
+    'InstantCountComparison',
+    'OrbType',
+    'PadType',
+    'PortalType',
+    'PickupItemMode',
+    'PulseTargetType',
+    'SpecialBlockType',
+    'SpecialColorID',
+    'TargetPosCoordinates',
+    'TouchToggleMode',
+    'TriggerType',
+    'ZLayer',
+    'Speed',
+    'LevelDataEnum'
+)
 
 
 class ObjectDataEnum(NEnum):
-    OBJECT_ID = 1
+    ID = 1
     X = 2  # in Units
     Y = 3  # in Units
-    IS_H_FLIPPED = 4
-    IS_V_FLIPPED = 5
+    H_FLIPPED = 4
+    V_FLIPPED = 5
     ROTATION = 6
     RED = 7  # Color-related Trigger
     GREEN = 8  # Color-related Trigger
     BLUE = 9  # Color-related Trigger
     DURATION = 10
     TOUCH_TRIGGERED = 11
-    # ??? = 12
-    IS_PORTAL_CHECKED = 13  # Portal
-    # ??? = 14
-    PLAYER_COLOR_1 = 15
-    PLAYER_COLOR_2 = 16  # Trigger
+    SECRET_COIN_ID = 12
+    SPECIAL_CHECKED = 13  # Portal
+    T_GROUND = 14
+    SET_TO_PLAYER_COLOR_1 = 15
+    SET_TO_PLAYER_COLOR_2 = 16  # Trigger
     BLENDING = 17
-    # ??? = 18
-    # ??? = 19
+    UNKNOWN_18 = 18
+    UNKNOWN_19 = 19
     EDITOR_LAYER_1 = 20
     COLOR_1 = 21
     COLOR_2 = 22
     TARGET_COLOR_ID = 23
     Z_LAYER = 24
     Z_ORDER = 25
-    # ??? = 26
-    # ??? = 27
+    UNKNOWN_26 = 26
+    UNKNOWN_27 = 27
     MOVE_X = 28  # Move Trigger (in Units)
     MOVE_Y = 29  # Move Trigger (in Units)
     EASING = 30  # Move and Rotate Trigger
-    TEXT_OF_TEXT_OBJECT = 31  # Text Object
-    SCALING = 32
-    # ??? = 33
+    TEXT = 31  # Text Object
+    SCALE = 32
+    UNKNOWN_33 = 33
     GROUP_PARENT = 34
-    OPACITY = 35  # Trigger
-    IS_OR_ACTIVE_TRIGGER_TYPE = 36  # ???
-    # ??? = 37
-    # ??? = 38
-    # ??? = 39
-    # ??? = 40
-    # HSV - Related: HaSaVaS_CHECKEDaV_CHECKED
+    OPACITY = 35  # Alpha/Color Trigger
+    IS_ACTIVE_TRIGGER = 36  # ???
+    UNKNOWN_37 = 37
+    UNKNOWN_38 = 38
+    UNKNOWN_39 = 39
+    UNKNOWN_40 = 40
     COLOR_1_HSV_ENABLED = 41
     COLOR_2_HSV_ENABLED = 42
     COLOR_1_HSV_VALUES = 43
@@ -52,20 +72,20 @@ class ObjectDataEnum(NEnum):
     FADE_IN_TIME = 45  # Pulse Trigger
     HOLD_TIME = 46  # Pulse Trigger
     FADE_OUT_TIME = 47  # Pulse Trigger
-    PULSE_MODE = 48  # Pulse Trigger (0 = Color, 1 = HSV)
+    IS_HSV_PULSE = 48  # Pulse Trigger (0 = Color, 1 = HSV)
     COPIED_COLOR_HSV_VALUES = 49  # Color-related Trigger
     COPIED_COLOR_ID = 50  # Color-related Trigger
     TARGET_GROUP_ID = 51  # Trigger
-    TARGET_TYPE = 52  # Pulse Trigger (0 = Channel, 1 = Group)
-    # ??? = 53
-    YELLOW_TP_PORTAL_DISTANCE = 54  # Blue Teleportation Portal
-    # ??? = 55
+    IS_GROUP_PULSE = 52  # Pulse Trigger (0 = Channel, 1 = Group)
+    UNKNOWN_53 = 53
+    TP_PORTAL_DISTANCE = 54  # Blue Teleportation Portal
+    UNKNOWN_55 = 55
     ACTIVATE_GROUP = 56  # Trigger
-    GROUP_IDS = 57  # Separated with '.'
+    GROUPS = 57  # Separated with '.'
     LOCK_TO_PLAYER_X = 58  # Move Trigger
     LOCK_TO_PLAYER_Y = 59  # Move Trigger
     COPY_OPACITY = 60  # Trigger
-    EDITOR_LAYER_2 = 61  # ???
+    EDITOR_LAYER_2 = 61
     SPAWN_TRIGGERED = 62  # Trigger
     SPAWN_DURATION = 63  # Spawn Trigger Delay
     DO_NOT_FADE = 64
@@ -78,26 +98,28 @@ class ObjectDataEnum(NEnum):
     FOLLOW_TARGET_POS_CENTER_ID = 71  # Follow, Move and Rotate Trigger
     X_MOD = 72  # Follow Trigger
     Y_MOD = 73  # Follow Trigger
-    # ??? = 74
-    STRENGTH = 75  # Shake Trigger
+    UNKNOWN_74 = 74
+    ENGTH = 75  # Shake Trigger
     ANIMATION_ID = 76  # Animation Trigger
     COUNT = 77  # Count, Instant Count and Pickup Trigger
-    SUBSTRACT_COUNT = 78  # Pickup Item Trigger ("Subtract")
+    SUBACT_COUNT = 78  # Pickup Item Trigger ("Subtract")
     PICKUP_MODE = 79  # Pickup Item Trigger (1 = Pickup Item, 2 = Toggle Trigger)
-    ITEM_OR_BLOCK_A_ID = 80  # Collision and Count, Pickup, Instant Count Trigger
+    ITEM_ID = 80  # Pickup Trigger
+    BLOCK_ID = 80  # Collision Trigger
+    BLOCK_A_ID = 80  # Collision Trigger
     HOLD_MODE = 81  # Touch Trigger
-    TOGGLE = 82  # Touch Trigger (0 = Default, 1 = On, 2 = Off)
-    # ??? = 83
-    INTERVAL = 84  # Shake Trigger
+    TOGGLE_MODE = 82  # Touch Trigger (0 = Default, 1 = On, 2 = Off)
+    UNKNOWN_83 = 83
+    ERVAL = 84  # Shake Trigger
     EASING_RATE = 85  # Move and Rotate Trigger
     EXCLUSIVE = 86  # Pulse Trigger
     MULTI_TRIGGER = 87  # Trigger
     COMPARISON = 88  # Instant Count Trigger (0 = Equals, 1 = Larger, 2 = Smaller)
     DUAL_MODE = 89  # Touch Trigger
     SPEED = 90  # Follow Player Y
-    DELAY = 91  # Follow Player Y
+    FOLLOW_DELAY = 91  # Follow Player Y
     OFFSET_Y = 92  # Follow Player Y (In Units)
-    ACTIVATE_ON_EXIT = 93  # Collision Trigger
+    TRIGGER_ON_EXIT = 93  # Collision Trigger
     DYNAMIC_BLOCK = 94  # Collision Trigger
     BLOCK_B_ID = 95  # Collision Trigger
     GLOW_DISABLED = 96
@@ -108,11 +130,314 @@ class ObjectDataEnum(NEnum):
     TARGET_POS_COORDINATES = 101  # Move Trigger (0 = Both, 1 = X Only, 2 = Y Only)
     EDITOR_DISABLE = 102  # Spawn Trigger
     HIGH_DETAIL = 103
-    # ??? = 104
+    UNKNOWN_104 = 104
     MAX_SPEED = 105  # Follow Y Trigger
     RANDOMIZE_START = 106  # Animation Trigger
     ANIMATION_SPEED = 107  # Animation Trigger
     LINKED_GROUP = 108
+
+    # <-- 2.2 -->
+    UNKNOWN_115 = 115
+    SWITCH_PLAYER_DIRECTION = 117
+    NO_EFFECTS = 116
+    ICE_BLOCK = -201
+    NON_STICK = -202
+    UNSTUCKABLE = -203
+    UNREADABLE_PROPERTY_1 = -204
+    UNREADABLE_PROPERTY_2 = -205
+    TRANSFORM_SCALE_X = -206
+    TRANSFORM_SCALE_Y = -207
+    TRANSFORM_SCALE_CENTER_X = -208
+    TRANSFORM_SCALE_CENTER_Y = -209
+
+    EXIT_STATIC = 110
+
+    REVERSED = 118
+    LOCK_Y = 59
+
+    CHANCE = 10
+    CHANCE_LOTS = -300
+    CHANCE_LOT_GROUPS = -301
+
+    ZOOM = 109
+
+    GROUPING = -108
+    PROPERTY_1 = -109
+    MAX_PARTICLES = -110
+    CUSTOM_PARTICLE_DURATION = -111
+    LIFETIME = -112
+    LIFETIME_ADJUSTMENT = -113
+    EMISSION = -114
+    ANGLE = -115
+    ANGLE_ADJUSTMENT = -116
+    CUSTOM_PARTICLE_SPEED = -117
+    SPEED_ADJUSTMENT = -118
+    POS_VAR_X = -119
+    POS_VAR_Y = -120
+    GRAVITY_X = -121
+    GRAVITY_Y = -122
+    ACCEL_RAD = -123
+    ACCEL_RAD_ADJUSTMENT = -124
+    ACCEL_TAN = -125
+    ACCEL_TAN_ADJUSTMENT = -126
+    START_SIZE = -127
+    START_SIZE_ADJUSTMENT = -128
+    END_SIZE = -129
+    END_SIZE_ADJUSTMENT = -130
+    START_SPIN = -131
+    START_SPIN_ADJUSTMENT = -132
+    END_SPIN = -133
+    END_SPIN_ADJUSTMENT = -134
+    START_A = -135
+    START_A_ADJUSTMENT = -136
+    START_R = -137
+    START_R_ADJUSTMENT = -138
+    START_G = -139
+    START_G_ADJUSTMENT = -140
+    START_B = -141
+    START_B_ADJUSTMENT = -142
+    END_A = -143
+    END_A_ADJUSTMENT = -144
+    END_R = -145
+    END_R_ADJUSTEMENT = -146
+    END_G = -147
+    END_G_ADJUSTMENT = -148
+    END_B = -149
+    END_B_ADJUSTMENT = -150
+    CUSTOM_PARTICLE_FADE_IN = -151
+    FADE_IN_ADJUSTMENT = -152
+    CUSTOM_PARTICLE_FADE_OUT_ADJUSTMENT = -153
+    FADE_OUT_ADJUSTMENT = -15
+    ADDICTIVE = -155
+    START_SIZE_EQUALS_END = -156
+    START_SPIN_EQUALS_END = -157
+    START_RADIUS_EQUALS_END = -158
+    IS_START_ROTATION_DIR = -159
+    DYNAMIC_ROTATION = -160
+    USE_OBJECT_COLOR = -161
+    UNIFORM_OBJECT_COLOR = -162
+    TEXTURE = -163
+
+    SCALE_X = -164
+    SCALE_Y = -165
+    LOCK_OBJECT_SCALE = -166
+    ONLY_MOVE_SCALE = -167
+
+    LOCK_TO_CAMERA_X = -302
+    LOCK_TO_CAMERA_Y = -303
+
+
+class ColorChannelPlayerColor(NEnum):
+    NotUsed = -1
+    P1 = 1
+    P2 = 2
+
+
+class CustomParticleGrouping(NEnum):
+    Free = 0
+    Relative = 1
+    Grouped  = 2
+
+
+class CustomParticleProperty1(NEnum):
+    Gravity = 0
+    Radius  = 1
+
+
+class Easing(NEnum):
+    Default = 0
+    EaseInOut = 1
+    EaseIn = 2
+    EaseOut = 3
+    ElasticInOut = 4
+    ElasticIn = 5
+    ElasticOut = 6
+    BounceInOut = 7
+    BounceIn = 8
+    BounceOut = 9
+    ExponentialInOut = 10
+    ExponentialIn = 11
+    ExponentialOut = 12
+    SineInOut = 13
+    SineIn = 14
+    SineOut = 15
+    BackInOut = 16
+    BackIn = 17
+    BackOut = 18
+
+
+class PulseMode(NEnum):
+    Color = 0
+    HSV   = 1
+
+class InstantCountComparison(NEnum):
+    Equals  = 0
+    Larger  = 1
+    Smaller = 2
+
+
+class OrbType(NEnum):
+    Yellow = 36
+    Pink = 141
+    Red = 1333
+    Blue = 84
+    Green = 1022
+    Black = 1330
+    Dash = 1704
+    ReverseDash = 1751
+    Trigger = 1594
+
+
+class PadType(NEnum):
+    Yellow  = 35
+    Pink = 140
+    Red = 1332
+    Blue = 67
+
+
+class PickupItemMode(NEnum):
+    Default = 0
+    Pickup = 1
+    ToggleTrigger = 2
+
+
+class PortalType(NEnum):
+    Cube = 12
+    Ship = 13
+    Ball = 47
+    UFO = 111
+    Wave = 660
+    Robot = 745
+    Spider = 1331
+
+    YellowGravity = 11
+    BlueGravity = 10
+    YellowMirror = 45
+    BlueMirror = 46
+    PinkSize = 101
+    GreenSize = 99
+    YellowDual = 286
+    BlueDual = 287
+    BlueTeleportation = 747
+    YellowTeleportation = 749
+
+    SlowSpeed = 200
+    NormalSpeed = 201
+    FastSpeed = 202
+    FasterSpeed = 203
+    FastestSpeed = 1334
+
+
+class PulseTargetType(NEnum):
+    ColorChannel = 0
+    Group = 1
+
+
+class SpecialBlockType(NEnum):
+    D = 1755
+    J = 1813
+    S = 1829
+    H = 1859
+
+
+class SpecialColorID(NEnum):
+    BG = 1000
+    GRND = 1001
+    Line = 1002
+    Obj = 1003
+    ThreeDL = 1004
+    P1 = 1005
+    P2 = 1006
+    LBG = 1007
+    GRND2 = 1009
+    Black = 1010
+    White = 1011
+    Lighter = 1012
+
+
+class TargetPosCoordinates(NEnum):
+    Both  = 0
+    OnlyX = 1
+    OnlyY = 2
+
+
+class TouchToggleMode(NEnum):
+    Default = 0
+    On = 1
+    Off = 2
+
+
+class TriggerType(NEnum):
+    BG = 29
+    GRND = 30
+    StartPos = 31
+    EnableTrail = 32
+    DisableTrail = 33
+    Line = 104
+    Obj = 105
+    Color1 = 221
+    Color2 = 717
+    Color3 = 718
+    Color4 = 743
+    ThreeDL = 744
+    Color = 899
+    GRND2 = 900
+    Move = 901
+    Line2 = 915
+    Pulse = 1006
+    Alpha = 1007
+    Toggle = 1049
+    Spawn = 1268
+    Rotate = 1346
+    Follow = 1347
+    Shake = 1520
+    Animate = 1585
+    Touch = 1595
+    Count = 1611
+    HidePlayer = 1612
+    ShowPlayer = 1613
+    Stop = 1616
+    InstantCount = 1811
+    OnDeath = 1812
+    FollowPlayerY = 1814
+    Collision = 1815
+    Pickup = 1817
+    BGEffectOn = 1818
+    BGEffectOff = 1819
+
+    Random = 1912
+    Zoom = 1913
+    StaticCamera = 1914
+    CameraOffset = 1916
+    Reverse = 1917
+    End = 1931
+    UnknownSubzero = 1932
+    Scale = -11
+
+
+class ZLayer(NEnum):
+    B4 = -3
+    B3 = -1
+    B2 = 1
+    B1 = 3
+    T1 = 5
+    T2 = 7
+    T3 = 9
+
+    BOTTOM = 1
+    MIDDLE = 3
+    TOP = 5
+    HIGHER_TOP = 7
+    ABS_ZERO = 4
+
+
+class Speed(NEnum):
+    DEFAULT = 0  # -> x 1
+    SLOW = 1 # x 0.5
+    NORMAL = 2   # x 1
+    FAST = 3 # x 2
+    FASTER = 4   # x 3
+    FASTEST = 5  # x 4
 
 
 class LevelDataEnum(NEnum):
@@ -141,7 +466,7 @@ class LevelDataEnum(NEnum):
     SECOND_COIN_ACQUIRED = 'k62'
     THIRD_COIN_ACQUIRED = 'k63'
     REQUESTED_STARS = 'k66'
-    UNLISTED = 'k79'
+    UNED = 'k79'
     SECONDS_SPENT_IN_EDITOR = 'k80'
     FOLDER = 'k84'
 

@@ -16,7 +16,7 @@ from .utils import convert_to_type
 from .utils.converter import Converter
 from .utils.indexer import Index as i
 from .utils.crypto.coders import Coder
-from .utils.mapper import mapper_util
+from .utils.mapper import mapper
 from .utils.routes import Route
 from .utils.enums import (
     MessagePolicyType, FriendRequestPolicyType,
@@ -122,7 +122,7 @@ class ClassConverter:
             password = password[1:]
 
         desc = b64.b64decode(
-            mapper_util.normalize(s[i.LEVEL_DESCRIPTION])
+            mapper.normalize(s[i.LEVEL_DESCRIPTION])
         ).decode(errors='replace')
 
         length = LevelLength.from_value(s[i.LEVEL_LENGTH])
@@ -226,7 +226,7 @@ class ClassConverter:
 
         is_normal = _type.value ^ 1
 
-        subject = b64.b64decode(mapper_util.normalize(s[i.MESSAGE_SUBJECT])).decode()
+        subject = b64.b64decode(mapper.normalize(s[i.MESSAGE_SUBJECT])).decode()
         return Message(
             id = s[i.MESSAGE_ID],
             timestamp = s[i.MESSAGE_TIMESTAMP],
@@ -253,7 +253,7 @@ class ClassConverter:
         return FriendRequest(
             id = s[i.REQUEST_ID],
             timestamp = s[i.REQUEST_TIMESTAMP],
-            body = b64.b64decode(mapper_util.normalize(s[i.REQUEST_BODY])).decode(),
+            body = b64.b64decode(mapper.normalize(s[i.REQUEST_BODY])).decode(),
             is_read = True if bool(s[i.REQUEST_STATUS]) ^ 1 else False,
             author = user_1 if is_normal else user_2,
             recipient = user_2 if is_normal else user_1,
@@ -269,7 +269,7 @@ class ClassConverter:
         color = Colour.from_rgb(*map(int, color_string.split(',')))
 
         return Comment(
-            body = b64.b64decode(mapper_util.normalize(s[i.COMMENT_BODY])).decode(),
+            body = b64.b64decode(mapper.normalize(s[i.COMMENT_BODY])).decode(),
             rating = s[i.COMMENT_RATING],
             timestamp = s[i.COMMENT_TIMESTAMP],
             id = s[i.COMMENT_ID],

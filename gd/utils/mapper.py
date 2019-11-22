@@ -1,6 +1,6 @@
 from .wrap_tools import convert_to_type
 
-__all__ = ('mapper_util', 'MapperUtil', 'pad', 'ceil')
+__all__ = ('mapper', 'MapperUtil', 'pad', 'ceil')
 
 
 class MapperUtil:
@@ -26,7 +26,7 @@ class MapperUtil:
         res = str(item).replace('+', '-').replace('/', '_')
         return pad(res)
 
-mapper_util = MapperUtil()
+mapper = MapperUtil()
 
 
 def pad(res: str):

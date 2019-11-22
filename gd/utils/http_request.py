@@ -5,7 +5,7 @@ from typing import Callable, Dict
 import aiohttp
 
 from ..errors import HTTPNotConnected
-from .mapper import mapper_util
+from .mapper import mapper
 from .wrap_tools import make_repr
 
 log = logging.getLogger(__name__)
@@ -224,7 +224,7 @@ class HTTPClient:
             If ``False``, errors are not raised.
             (technically, just turns on ignoring ``error_codes``)
         should_map: :class:`bool`
-            Whether should operate :meth:`.mapper_util.map` or not,
+            Whether should operate :meth:`.mapper.map` or not,
             considering that current response is converted to a list.
         get_cookies: :class:`bool`
             Same as ``get_cookies`` in :meth:`HTTPClient.fetch`
@@ -285,7 +285,7 @@ class HTTPClient:
             if splitter_func is not None:
                 resp = splitter_func(resp)
             if should_map:
-                resp = mapper_util.map(resp)
+                resp = mapper.map(resp)
         return resp
 
     async def normal_request(self, url: str, data = None, method: str = None, **kwargs):

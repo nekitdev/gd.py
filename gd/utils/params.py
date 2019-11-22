@@ -3,7 +3,7 @@ import random
 
 from typing import Union, Sequence
 
-from .mapper import mapper_util
+from .mapper import mapper
 from .crypto.coders import Coder
 
 __all__ = ('Parameters', 'enter_gdworld', 'leave_gdworld')
@@ -325,7 +325,7 @@ class Parameters:
             ``self``
         """
         self.dict['subject'] = base64.b64encode(subject.encode()).decode()
-        self.dict['body'] = mapper_util.prepare_sending(Coder.encode(type='message', string=body))
+        self.dict['body'] = mapper.prepare_sending(Coder.encode(type='message', string=body))
         return self
 
     def put_password(self, item: str):
@@ -373,7 +373,7 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        self.dict['comment'] = mapper_util.prepare_sending(
+        self.dict['comment'] = mapper.prepare_sending(
             base64.b64encode(item.encode()).decode())
         return self
 
@@ -543,7 +543,7 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        comment = mapper_util.prepare_sending(base64.b64encode(content.encode()).decode())
+        comment = mapper.prepare_sending(base64.b64encode(content.encode()).decode())
         self.dict['comment'] = comment
         values.insert(1, comment)
         self.put_chk(Coder.gen_chk(type='comment', values=values))
@@ -658,7 +658,7 @@ class Parameters:
         if content is None:
             content = ''
 
-        desc = mapper_util.prepare_sending(base64.b64encode(content.encode()).decode())
+        desc = mapper.prepare_sending(base64.b64encode(content.encode()).decode())
 
         self.dict['levelDesc'] = desc
         return self

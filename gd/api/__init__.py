@@ -1,5 +1,6 @@
 from .enums import *
 from .loader import *
+from .editor import *
 from .object import *
 from .save import *
 
