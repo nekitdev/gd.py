@@ -19,10 +19,8 @@ class Object:
     def __setattr__(self, name, attr):
         if name != 'data':
             self.data[name] = attr
-        else:
-            self.__dict__[name] = attr
 
-        self.__dict__.update(self.data)
+        self.__dict__[name] = attr
 
     def __getattr__(self, name):
         n = _get_id(name)
@@ -212,6 +210,7 @@ def map_type(x: type):
         int: int,
         str: str,
         list: lambda x: ('.').join(map(str, x)),
+        HSV: HSV.dump,
         NEnum: lambda enum: enum.value
     }
     c_type = str
