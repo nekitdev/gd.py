@@ -29,9 +29,13 @@ def _name_to_enum(x: str):
     return x.upper().replace(' ', '_')
 
 
+def _is_upper(string: str):
+    return string.upper() == string
+
+
 def _enum_to_name(x: Enum):
     name = x.name.strip('_')
-    return name if (name == 'XL' or '_' not in name) else name.replace('_', ' ').title()
+    return name if (name == 'XL' or not _is_upper(name)) else name.replace('_', ' ').title()
 
 
 def value_to_enum(enum: Enum, x: Union[int, str, Enum]):
