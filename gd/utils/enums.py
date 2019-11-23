@@ -87,7 +87,7 @@ def value_to_enum(enum: Enum, x: Union[int, str, Enum]):
         # let's raise it here, so if it is raised, we can tell that invalid type was given.
         raise ValueError
 
-    except ValueError:
+    except (KeyError, ValueError):
         raise FailedConversion(enum=enum, value=x) from None
 
 

@@ -3,7 +3,7 @@ from typing import Union, Sequence
 from .object import Object
 
 from ..abstractentity import AbstractEntity
-from ..utils.wrap_tools import find_subclass
+from ..utils.wrap_tools import find_subclass, make_repr
 
 __all__ = ('Editor',)
 
@@ -37,6 +37,19 @@ class Editor:
         # actually convert
         self.info = info  # TODO: conversion
         self.objects = list(map(Object.from_string, objects))
+
+    def __repr__(self):
+        info = {
+            'len': len(self.objects),
+            'objects': repr('...')
+        }
+        return make_repr(self, info)
+
+    def __iter__(self):
+        return iter(self.objects)
+
+    def __len__(self):
+        return len(self.objects)
 
     def add_objects(self, *objects: Sequence[Object]):
         objects = list(filter(lambda obj: isinstance(obj, Object), objects))

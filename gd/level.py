@@ -10,6 +10,8 @@ from .session import _session
 
 from .errors import MissingAccess
 
+from .api.editor import Editor
+
 from .utils.enums import (
     DemonDifficulty, LevelDifficulty, CommentStrategy,
     LevelLength, TimelyType, LevelLeaderboardStrategy,
@@ -136,12 +138,12 @@ class Level(AbstractEntity):
 
     @property
     def objects(self):
-        """List[Union[:class:`bytes`, :class:`str`]]: A list of objects, represented as streams."""
-        return object_split(self.data)
+        """:class:`int`: Amount of objects the level has in data."""
+        return len(object_split(self.data))
 
     @property
     def object_count(self):
-        """:class:`int`: Amount of objects the level has."""
+        """:class:`int`: Amount of objects the level according to the servers."""
         return self.options.get('object_count', 0)
 
     @property
@@ -212,6 +214,9 @@ class Level(AbstractEntity):
     def download(self):
         """:class:`str`: Returns level data, represented as string."""
         return self.data
+
+    def open_editor(self):
+        return Editor(self)
 
     async def report(self):
         """|coro|
@@ -406,9 +411,18 @@ class Level(AbstractEntity):
         -------
         :class:`bool`
             ``True`` if a level is still *alive*, and ``False`` otherwise.
+            Also ``False`` if a client is not attached to the level.s
         """
-        new_version = await self.refresh()
-        return not (new_version is None)
+        if self._client is None:
+            return False
+
+        try:
+            await self._client.search_levels_on_page(query=str(self.id))
+
+        except MissingAccess:
+            return False
+
+        return True
 
     async def refresh(self):
         """|coro|
@@ -425,15 +439,20 @@ class Level(AbstractEntity):
         :class:`.Level`
             A newly fetched version. ``None`` if failed to fetch.
         """
+        if self._client is None:
+            return log.warning(
+                'gd.Level instance: {!r} does not have a client attached.'.format(self)
+            )
         try:
             if self.is_timely():
-                new_ver = await _session.get_timely(self.type.name.lower(), client=self._client)
+                async_func = getattr(self._client, 'get_' + self.type.name.lower())
+                new_ver = await async_func()
 
                 if new_ver.id != self.id:
                     log.warning('There is a new {0.type.desc} Level: {1!r}. Updating to it...'.format(self, new_ver))
 
             else:
-                new_ver = await _session.get_level(self.id, client=self._client)
+                new_ver = await self._client.get_level(self.id)
 
         except MissingAccess:
             return log.warning('Failed to refresh level: %r. Most likely it was deleted.', self)

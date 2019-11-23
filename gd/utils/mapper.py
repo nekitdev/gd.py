@@ -5,14 +5,15 @@ __all__ = ('mapper', 'MapperUtil', 'pad', 'ceil')
 
 class MapperUtil:
     @staticmethod
-    def map(item):
-        res = {}
-
+    def map(item, try_convert: bool = True):
         convert = lambda obj: convert_to_type(obj, int)
+        mapping = zip(item[::2], item[1::2])
 
-        for kv_tuple in zip(item[::2], item[1::2]):
-            key, value = map(convert, kv_tuple)
-            res[key] = value
+        if try_convert:
+            res = {convert(key): convert(value) for key, value in mapping}
+
+        else:
+            res = {convert(key): value for key, value in mapping}
 
         return res
 
