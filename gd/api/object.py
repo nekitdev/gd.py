@@ -156,6 +156,7 @@ def _maybefloat(n: float):
 
 
 def _ints_from_str(string: str, split: str = '.'):
+    string = str(string)  # just in case
     return list(map(int, string.split(split)))
 
 
