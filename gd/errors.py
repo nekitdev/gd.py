@@ -40,6 +40,14 @@ class FailedConversion(GDException):
         return self._value
 
 
+class EditorError(GDException):
+    """Exception that is raised when converting string
+    to :class:`.api.Object` or :class:`.api.Editor` failed.
+    """
+    def __init__(self, message):
+        super().__init__(message)
+
+
 class HTTPNotConnected(ClientException):
     """Exception that is raised when exception
     in :class:`.utils.http.HTTPClient` occurs.

@@ -12,7 +12,7 @@ __all__ = (
     'PadType',
     'PortalType',
     'PickupItemMode',
-    'PulseTargetType',
+    'PulseType',
     'SpecialBlockType',
     'SpecialColorID',
     'TargetPosCoordinates',
@@ -72,11 +72,11 @@ class ObjectDataEnum(NEnum):
     FADE_IN_TIME = 45  # Pulse Trigger
     HOLD_TIME = 46  # Pulse Trigger
     FADE_OUT_TIME = 47  # Pulse Trigger
-    IS_HSV_PULSE = 48  # Pulse Trigger (0 = Color, 1 = HSV)
+    PULSE_MODE = 48  # Pulse Trigger (0 = Color, 1 = HSV)
     COPIED_COLOR_HSV_VALUES = 49  # Color-related Trigger
     COPIED_COLOR_ID = 50  # Color-related Trigger
     TARGET_GROUP_ID = 51  # Trigger
-    IS_GROUP_PULSE = 52  # Pulse Trigger (0 = Channel, 1 = Group)
+    PULSE_TYPE = 52  # Pulse Trigger (0 = Channel, 1 = Group)
     UNKNOWN_53 = 53
     TP_PORTAL_DISTANCE = 54  # Blue Teleportation Portal
     UNKNOWN_55 = 55
@@ -329,7 +329,7 @@ class PortalType(NEnum):
     FastestSpeed = 1334
 
 
-class PulseTargetType(NEnum):
+class PulseType(NEnum):
     ColorChannel = 0
     Group = 1
 

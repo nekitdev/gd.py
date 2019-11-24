@@ -39,6 +39,7 @@ from .utils.crypto.xor_cipher import XORCipher
 from ._jokes import jokes  # why not?...
 
 from .utils._async import synchronize
+from .utils import tasks
 
 from . import api  # this package contains actual non-server gd API.
 from . import events  # this package contains event-related functions and classes.

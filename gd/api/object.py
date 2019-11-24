@@ -2,6 +2,8 @@ from ..utils.wrap_tools import make_repr
 from ..utils.enums import NEnum
 from ..utils.crypto.coders import Coder
 
+from ..errors import EditorError
+
 from .hsv import HSV
 
 from .enums import *
@@ -58,8 +60,11 @@ class Object:
 
     @classmethod
     def from_string(cls, string: str):
-        mapping = _convert(string.split(','))
-        return cls.from_mapping(mapping)
+        try:
+            mapping = _convert(string.split(','))
+            return cls.from_mapping(mapping)
+        except Exception:
+            raise EditorError('Invalid data passed to object converter.') from None
 
 
 def _get_name(n):
@@ -158,10 +163,10 @@ def _b64_failsafe(string: str, encode: bool = True):
 def define_type(n: int):
     cases = {
         n in {
-            1, 7, 8, 9, 12, 20, 21, 22, 23, 24, 25, 50, 51, 61, 71, 76, 77, 80, 82, 95, 108
+            1, 7, 8, 9, 12, 20, 21, 22, 23, 24, 25, 50, 51, 61, 71, 76, 77, 80, 95, 108
         }: int,
         n in {
-            4, 5, 11, 13, 14, 15, 16, 17, 34, 36, 41, 42, 48, 52, 56, 58, 59, 60, 62, 64, 65,
+            4, 5, 11, 13, 14, 15, 16, 17, 34, 36, 41, 42, 56, 58, 59, 60, 62, 64, 65,
             66, 67, 70, 78, 81, 86, 87, 89, 93, 94, 96, 98, 99, 100, 102, 103, 106
         }: bool,
         n in {
@@ -171,9 +176,12 @@ def define_type(n: int):
         n == 31: lambda string: _b64_failsafe(string, encode=False),
         n == 57: _ints_from_str,
         n in {43, 44, 49}: HSV.from_string,
-        n == 79: lambda n: PickupItemMode.from_value(int(n)),
-        n == 88: lambda n: InstantCountComparison.from_value(int(n)),
-        n == 101: lambda n: TargetPosCoordinates.from_value(int(n)),
+        n == 48: lambda n: PulseMode(int(n)),
+        n == 52: lambda n: PulseType(int(n)),
+        n == 79: lambda n: PickupItemMode(int(n)),
+        n == 82: lambda n: TouchToggleMode(int(n)),
+        n == 88: lambda n: InstantCountComparison(int(n)),
+        n == 101: lambda n: TargetPosCoordinates(int(n)),
     }
     return cases.get(True, str)
 
