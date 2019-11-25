@@ -78,13 +78,12 @@ class Object:
             raise EditorError('Failed to process object string.') from exc
 
 
-def _get_name(n):
-    try:
-        name = ObjectDataEnum.from_value(n).name.lower()
-    except Exception:
-        name = 'unknown_' + str(n).replace('-', '_')
+_MAP_ID = {entry.value: entry.name.lower() for entry in ObjectDataEnum}
+_MAP_NAME = {v: k for k, v in _MAP_ID.items()}
 
-    return name
+
+def _get_name(n):
+    return _MAP_ID.get(n, 'unknown_' + str(n).replace('-', '_'))
 
 
 def _load(d):
@@ -105,16 +104,16 @@ def _convert(s):
 
     for key, value in zip_map:
         n = _try_convert(key)
-        final[n] = define_type(n)(value)
+        final[n] = from_str(n, value)
 
     return final
 
 
 def _get_id(name: str):
     try:
-        n = ObjectDataEnum.from_value(name).value
+        return _MAP_NAME[name]
 
-    except Exception:
+    except KeyError:
         name = str(name).lstrip('unknown')
 
         if name.startswith('_'):
@@ -123,19 +122,16 @@ def _get_id(name: str):
         name = name.replace('_', '-')
 
         try:
-            n = int(name)
+            return int(name)
 
         except ValueError:
             return 0
-
-    return n
-
 
 def _dump(d):
     final = {}
 
     for n, value in d.items():
-        to_add = map_type(value)(value)
+        to_add = convert_type(value)
 
         if n == _TEXT:
             to_add = _b64_failsafe(to_add, encode=True)
@@ -212,17 +208,16 @@ def _bool(s: str):
     return s == '1'
 
 
-def define_type(n: int):
-    cases = {
+def from_str(n: int, v: str):
+    return {
         n in _INT: int,
         n in _BOOL: _bool,
         n in _FLOAT: _maybefloat,
-        n == _TEXT: lambda string: _b64_failsafe(string, encode=False),
         n == _GROUPS: _ints_from_str,
         n in _HSV: HSV.from_string,
-        n in _ENUMS: _ENUMS.get(n)
-    }
-    return cases.get(True, str)
+        n in _ENUMS: _ENUMS.get(n),
+        n == _TEXT: lambda string: _b64_failsafe(string, encode=False)
+    }.get(1, str)(v)
 
 
 def _iter_to_str(x):
@@ -230,21 +225,18 @@ def _iter_to_str(x):
 
 
 _MAPPING = {
-    float: float,
     int: int,
-    str: str,
+    float: float,
     list: _iter_to_str,
     tuple: _iter_to_str,
     HSV: HSV.dump,
-    NEnum: lambda enum: enum.value
+    NEnum: lambda enum: enum.value,
+    str: str
 }
 
 
-def map_type(x: type):
-    c_type = str
+def convert_type(x: type):
     for type_1, type_2 in _MAPPING.items():
         if isinstance(x, type_1):
-            c_type = type_2
-            break
-
-    return c_type
+            return type_2(x)
+    return str(x)
