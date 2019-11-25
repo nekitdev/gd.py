@@ -55,6 +55,15 @@ class Editor:
         objects = list(filter(lambda obj: isinstance(obj, Object), objects))
         self.objects.extend(objects)
 
+    def copy_objects(self):
+        return [obj.copy() for obj in self.objects]
+
+    def map(self, function):
+        return map(function, self.objects)
+
+    def filter(self, function):
+        return filter(function, self.objects)
+
     def dump(self, append_sc: bool = True):
         seq = [self.info, *(obj.dump() for obj in self.objects)]
 
