@@ -55,8 +55,12 @@ class Object:
 
     def copy(self):
         self_copy = self.__class__()
-        self_copy.__dict__.update(self.__dict__)
+        self_copy.data = self.data.copy()
         return self_copy
+
+    def edit(self, **fields):
+        for field, value in fields.items():
+            setattr(self, field, value)
 
     @classmethod
     def from_mapping(cls, mapping: dict):
