@@ -162,28 +162,56 @@ def _b64_failsafe(string: str, encode: bool = True):
         return string
 
 
+_INT = {
+    1, 7, 8, 9, 12, 20, 21, 22, 23, 24, 25, 50, 51, 61, 71, 
+    76, 77, 80, 95, 108
+}
+
+_BOOL = {
+    4, 5, 11, 13, 14, 15, 16, 17, 34, 36, 41, 42, 56, 58, 59, 60, 62, 64, 65,
+    66, 67, 70, 78, 81, 86, 87, 89, 93, 94, 96, 98, 99, 100, 102, 103, 106
+}
+
+_FLOAT = {
+    2, 3, 6, 10, 28, 29, 30, 32, 35, 45, 46, 47, 54, 63, 68, 69, 72, 73, 75,
+    84, 85, 90, 91, 92, 97, 105, 107
+}
+
+_HSV = {43, 44, 49}
+
+_TEXT = 31
+_GROUPS = 57
+
+_PULSE_MODE = 48
+_PULSE_TYPE = 52
+_PICKUP_MODE = 79
+_TOUCH_TOGGLE = 82
+_COMP = 88
+_TARGET_COORDS = 101
+
+_ENUMS = {
+    _PULSE_MODE: lambda n: PulseMode(int(n)),
+    _PULSE_TYPE: lambda n: PulseType(int(n)),
+    _PICKUP_MODE: lambda n: PickupItemMode(int(n)),
+    _TOUCH_TOGGLE: lambda n: TouchToggleMode(int(n)),
+    _COMP: lambda n: InstantCountComparison(int(n)),
+    _TARGET_COORDS: lambda n: TargetPosCoordinates(int(n))
+}
+
+
+def _bool(s: str):
+    return s == '1'
+
+
 def define_type(n: int):
     cases = {
-        n in {
-            1, 7, 8, 9, 12, 20, 21, 22, 23, 24, 25, 50, 51, 61, 71, 76, 77, 80, 95, 108
-        }: int,
-        n in {
-            4, 5, 11, 13, 14, 15, 16, 17, 34, 36, 41, 42, 56, 58, 59, 60, 62, 64, 65,
-            66, 67, 70, 78, 81, 86, 87, 89, 93, 94, 96, 98, 99, 100, 102, 103, 106
-        }: lambda n: (n == '1'),
-        n in {
-            2, 3, 6, 10, 28, 29, 30, 32, 35, 45, 46, 47, 54, 63, 68, 69, 72, 73, 75, 84, 85,
-            90, 91, 92, 97, 105, 107
-        }: _maybefloat,
-        n == 31: lambda string: _b64_failsafe(string, encode=False),
-        n == 57: _ints_from_str,
-        n in {43, 44, 49}: HSV.from_string,
-        n == 48: lambda n: PulseMode(int(n)),
-        n == 52: lambda n: PulseType(int(n)),
-        n == 79: lambda n: PickupItemMode(int(n)),
-        n == 82: lambda n: TouchToggleMode(int(n)),
-        n == 88: lambda n: InstantCountComparison(int(n)),
-        n == 101: lambda n: TargetPosCoordinates(int(n)),
+        n in _INT: int,
+        n in _BOOL: _bool,
+        n in _FLOAT: _maybefloat,
+        n == _TEXT: lambda string: _b64_failsafe(string, encode=False),
+        n == _GROUPS: _ints_from_str,
+        n in _HSV: HSV.from_string,
+        n in _ENUMS: _ENUMS.get(n)
     }
     return cases.get(True, str)
 
@@ -192,19 +220,20 @@ def _iter_to_str(x):
     return ('.').join(map(str, x))
 
 
-def map_type(x: type):
-    mapping = {
-        float: float,
-        int: int,
-        str: str,
-        list: _iter_to_str,
-        tuple: _iter_to_str,
-        HSV: HSV.dump,
-        NEnum: lambda enum: enum.value
-    }
-    c_type = str
+_MAPPING = {
+    float: float,
+    int: int,
+    str: str,
+    list: _iter_to_str,
+    tuple: _iter_to_str,
+    HSV: HSV.dump,
+    NEnum: lambda enum: enum.value
+}
 
-    for type_1, type_2 in mapping.items():
+
+def map_type(x: type):
+    c_type = str
+    for type_1, type_2 in _MAPPING.items():
         if isinstance(x, type_1):
             c_type = type_2
             break
