@@ -259,7 +259,7 @@ class Level(AbstractEntity):
         args = dict(
             name=self.name, id=self.id, version=self.version, length=abs(self.length.value),
             track=track, song_id=song_id, two_player=False, is_auto=self.is_auto(),
-            original=self.original_id, objects=len(self.objects), coins=self.coins,
+            original=self.original_id, objects=self.objects, coins=self.coins,
             star_amount=self.stars, unlist=False, ldm=False, password=password,
             copyable=(password is not None), description=self.description, data=self.data
         )
