@@ -64,6 +64,9 @@ class Editor:
     def filter(self, function):
         return filter(function, self.objects)
 
+    def dump_to_level(self, level, append_sc: bool = True):
+        level.data = self.dump(append_sc=append_sc)
+
     def dump(self, append_sc: bool = True):
         seq = [self.info, *(obj.dump() for obj in self.objects)]
 
