@@ -251,14 +251,14 @@ class GDSession:
         seed2 = Coder.gen_chk(type='level', values=[upload_seed])
         seed = Coder.gen_rs()
 
-        if not copyable:
-            password = 0
+        pwd = 0
 
-        elif not password:
-            password = 1
+        if copyable or password:
+            if not password:
+                pwd = 1
 
-        else:
-            password = '1{:06}'.format(password)
+            else:
+                pwd = '1{:06}'.format(int(password))
 
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
@@ -273,7 +273,7 @@ class GDSession:
             'level_length': length, 'audio_track': audio_track, 'auto': int(is_auto),
             'original': int(original), 'two_player': int(two_player), 'objects': objects,
             'coins': coins, 'requested_stars': stars, 'unlisted': int(unlisted), 'ldm': int(ldm),
-            'password': password, 'level_string': data, 'extra_string': extra_string,
+            'password': pwd, 'level_string': data, 'extra_string': extra_string,
             'level_info': 'H4sIAAAAAAAAC8tLzc4sUShPLFbISC1K1dPTswYA5G9QUhIAAAA='
         }
 
