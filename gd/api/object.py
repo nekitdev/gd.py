@@ -25,12 +25,13 @@ class Object:
         return make_repr(self, info)
 
     def __getattr__(self, name):
-        n = _get_id(name)
-
-        if n is None:
-            return
-
-        return self.data.get(n, default_value(n))
+        try:
+            return self.data[_get_id(name)]
+        except KeyError:
+            raise AttributeError(
+                '{0.__class__.__name__!r} object '
+                'has no attribute {1!r}.'.format(self, name)
+            ) from None
 
     def __setattr__(self, name, value):
         n = _get_id(name)
@@ -63,8 +64,9 @@ class Object:
         try:
             mapping = _convert(string.split(','))
             return cls.from_mapping(mapping)
-        except Exception:
-            raise EditorError('Invalid data passed to object converter.') from None
+
+        except Exception as exc:
+            raise EditorError('Failed to process object string.') from exc
 
 
 def _get_name(n):
@@ -168,7 +170,7 @@ def define_type(n: int):
         n in {
             4, 5, 11, 13, 14, 15, 16, 17, 34, 36, 41, 42, 56, 58, 59, 60, 62, 64, 65,
             66, 67, 70, 78, 81, 86, 87, 89, 93, 94, 96, 98, 99, 100, 102, 103, 106
-        }: bool,
+        }: lambda n: (n == '1'),
         n in {
             2, 3, 6, 10, 28, 29, 30, 32, 35, 45, 46, 47, 54, 63, 68, 69, 72, 73, 75, 84, 85,
             90, 91, 92, 97, 105, 107
@@ -184,22 +186,6 @@ def define_type(n: int):
         n == 101: lambda n: TargetPosCoordinates(int(n)),
     }
     return cases.get(True, str)
-
-
-def default_value(n: int):
-    if n == 57:
-        return list()
-
-    if n == 31:
-        return str()
-
-    value = 0
-    if n in {43, 44, 49}:
-        value = '0a0a0a0a0'
-
-    func = define_type(n)
-
-    return func(value)
 
 
 def _iter_to_str(x):
