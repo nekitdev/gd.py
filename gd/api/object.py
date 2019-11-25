@@ -53,6 +53,11 @@ class Object:
         data.update(self.data)
         return _dump(data)
 
+    def copy(self):
+        self_copy = self.__class__()
+        self_copy.__dict__.update(self.__dict__)
+        return self_copy
+
     @classmethod
     def from_mapping(cls, mapping: dict):
         self = cls()
@@ -128,7 +133,7 @@ def _dump(d):
     for n, value in d.items():
         to_add = map_type(value)(value)
 
-        if n == 31:  # Text
+        if n == _TEXT:
             to_add = _b64_failsafe(to_add, encode=True)
 
         final[n] = to_add
