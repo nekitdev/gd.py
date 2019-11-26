@@ -10,7 +10,7 @@ from .. import utils
 
 __all__ = (
     'AbstractScanner', 'TimelyLevelScanner', 'thread',
-    'daily_listener', 'weekly_listener', 'run'
+    'daily_listener', 'weekly_listener', 'run', 'all_listeners'
 )
 
 loop = asyncio.new_event_loop()
@@ -18,6 +18,8 @@ loop = asyncio.new_event_loop()
 scanner_client = Client(loop=loop)
 
 log = logging.getLogger(__name__)
+
+all_listeners = []
 
 
 def shutdown_loop(loop):
@@ -71,6 +73,7 @@ class AbstractScanner:
         self.runner = utils.tasks.loop(seconds=delay, loop=loop)(self.main)
         self.cache = None
         self.clients = []
+        all_listeners.append(self)
 
     def add_client(self, client):
         """Add a client to fire events for."""
@@ -140,5 +143,3 @@ class TimelyLevelScanner(AbstractScanner):
 
 daily_listener = TimelyLevelScanner('daily')
 weekly_listener = TimelyLevelScanner('weekly')
-
-all_listeners = [daily_listener, weekly_listener]
