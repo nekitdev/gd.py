@@ -114,6 +114,17 @@ Another way to write an implementation for ``on_event`` task is to subclass :cla
     gd.events.enable()
     gd.events.run()
 
+Creating Custom Listeners
+-------------------------
+
+It is possible to implement your own listeners.
+
+The main idea is subclassing `AbstractScanner`` and creating your own ``scan`` method in there.
+
+.. code-block:: python3
+
+    # soon
+
 Important Note
 --------------
 If ``gd.events.start()`` was called, it is recommended to call ``gd.exit()`` to normally close the interpreter, or at least all scanners should be closed via ``gd.events.disable()``.
