@@ -26,6 +26,11 @@ def get_loop():
     return loop
 
 
+def set_loop(new_loop):
+    global loop
+    loop = new_loop
+
+
 def shutdown_loop(loop):
     """Shutdown a loop."""
     loop.call_soon_threadsafe(loop.stop)
