@@ -2,10 +2,8 @@ from os import _exit
 
 from .scanner import (
     AbstractScanner as scanner, run as run_loop,
-    shutdown_loop, all_listeners, thread, update_thread_loop
+    shutdown_loop, all_listeners, thread, update_thread_loop, set_loop
 )
-
-from . import scanner
 
 from .. import utils
 
@@ -46,7 +44,7 @@ def add_client(client):
 def attach_to_loop(loop):
     update_thread_loop(thread, loop)
 
-    scanner.loop = loop
+    set_loop(loop)
 
     for listener in all_listeners:
         listener.attach_to_loop(loop)
