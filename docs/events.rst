@@ -123,7 +123,26 @@ The main idea is subclassing `AbstractScanner`` and creating your own ``scan`` m
 
 .. code-block:: python3
 
-    # soon
+    import gd
+
+    class CustomScanner(gd.events.AbstractScanner):
+        def __init__(self, delay: float = 10.0, *, loop=None):  # you can add additional arguments here
+            super().__init__(delay, loop=loop)  # this line is required
+
+        async def scan(self):
+            # do something here
+            ...
+            # dispatch event
+            for client in self.clients:
+                dispatcher = client.dispatch('event', *args, **kwargs)
+                # dispatches on_<event> with args and kwargs
+                self.loop.create_task(dispatcher)  # schedule execution
+
+    scanner = CustomScanner(5.0)
+
+    scanner.add_client(your_client)
+    scanner.enable()
+    gd.events.start()
 
 Important Note
 --------------
