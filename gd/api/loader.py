@@ -31,8 +31,8 @@ class SaveUtil:
     def __repr__(self):
         return make_repr(self)
 
-    async def local_load(self):
-        return await run_blocking_io(self._local_load)
+    async def local_load(self, *args, **kwargs):
+        return await run_blocking_io(self._local_load, *args, **kwargs)
 
     async def local_dump(self, *args, **kwargs):
         await run_blocking_io(self._local_dump, *args, **kwargs)
@@ -93,7 +93,7 @@ class SaveUtil:
 
             return self._load(*parts)
 
-        except FileNotFoundError:
+        except OSError:
             print('Failed to find save files in given path.')
 
     def _local_dump(self, db: Database, main_path=None, levels_path=None,
@@ -111,14 +111,18 @@ class SaveUtil:
 
 
 def _config_path(some_path, default):
-    if some_path is None:
-        return path / default
-    return some_path
+    try:
+        p = Path(some_path)
 
+        if p.is_dir():
+            return p / default
 
-util = SaveUtil()
+    except Exception:
+        return path / default   
+
+util = SaveUtil()
 load_save = util.local_load
 dump_save = util.local_dump
 from_string = util.from_string
 to_string = util.to_string
-make_api = util.make_db
+make_db = util.make_db
