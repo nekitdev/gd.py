@@ -10,7 +10,7 @@ from .save import Database
 
 __all__ = (
     'SaveUtil', 'path', 'util', 'load_save', 'dump_save',
-    'from_string', 'to_string', 'make_api', 'set_path')
+    'from_string', 'to_string', 'make_db', 'set_path')
 
 MAIN = 'CCGameManager.dat'
 LEVELS = 'CCLocalLevels.dat'
@@ -47,7 +47,7 @@ class SaveUtil:
             functools.partial(self._load, *args, **kwargs)
         )
 
-    def make_db(self, main, levels):
+    def make_db(self, main: str = '', levels: str = ''):
         return Database(main, levels)
 
     def _decode(self, stream, xor: bool = True):
