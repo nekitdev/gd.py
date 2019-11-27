@@ -1,50 +1,73 @@
-# Test suite for gd.Client object.
-# Will be wrapped with unittest soon.
-
 import os
-import sys
-
-sys.path.insert(0, os.path.abspath('..'))
 
 import gd
+import pytest
+
+pytestmark = pytest.mark.asyncio
+
+user, password = (
+    os.getenv('USER'), os.getenv('PASSWORD')
+)
 
 client = gd.Client()
 
+# MAIN TESTS
 
-async def test():
+async def test_get_song():
+    song = await client.get_song(1)
+    assert isinstance(song, gd.Song)
 
-    print('-' * 20)
+async def test_get_ng_song():
+    song = await client.get_ng_song(1)
+    assert isinstance(song, gd.Song)
 
-    print('gd.Client Test Suite')
+async def test_get_user():
+    user = await client.get_user(71)
+    assert isinstance(user, gd.User)
 
-    cases = (
-        ('ping_server',        [],                                 {}),
-        ('get_song',           [810215],                           {}),
-        ('get_user',           [71],                               {}),
-        ('fetch_user',         [71],                  {'stats': True}),
-        ('search_user',        ['NeKitDS'],                        {}),
-        ('find_user',          ['RobTop'],                         {}),
-        ('get_daily',          [],                                 {}),
-        ('get_weekly',         [],                                 {}),
-        ('get_level',          [30029017],                         {}),
-        ('get_leaderboard',    ['creators'],             {'count': 1}),
-        ('get_top',            ['creators'],             {'count': 3}),
-        ('test_captcha',       [],                                 {}),
-        ('search_levels',      [],         {'query': 'AdventureGame'})
-    )
+async def test_fetch_user():
+    stats = await client.fetch_user(5509312, stats=True)
+    assert isinstance(stats, gd.UserStats)
 
-    for f_name, args, kwargs in cases:
+async def test_search_user():
+    user = await client.search_user('NeKitDS')  # 1
+    a_user = await client.find_user('RobTop')   # 2
+    assert isinstance(user, gd.User) and isinstance(a_user, gd.AbstractUser)
 
-        coro = getattr(client, f_name)
+async def test_get_level():
+    level = await client.get_level(30029017)
+    assert isinstance(level, gd.Level)
 
-        res = await coro(*args, **kwargs)
+async def test_get_timely():
+    # TODO: add check if daily/weekly is being refreshed
+    daily = await client.get_daily()
+    weekly = await client.get_weekly()
+    assert isinstance(daily, gd.Level) and isinstance(weekly, gd.Level)
 
-        print('{}() -> {}'.format(f_name, res), end='\n\n')
+# LOGGED IN CLIENT TESTS
 
-    print('End Of Test Suite')
+@pytest.mark.skipif(user is None or password is None, reason='Environment variables not set.')
+async def test_login():
+    await client.login(user, password)
 
-    print('-' * 20)
+skip_not_logged = pytest.mark.skipif(not client.is_logged(), reason='Test for only logged in client.')
+
+@skip_not_logged
+async def test_levels():
+    await client.get_levels()
+
+@skip_not_logged
+async def test_message():
+    user = await client.find_user('NeKitDS')
+    await user.send('[Test]', 'Testing gd.py now...')
+
+@skip_not_logged
+async def test_load():
+    await client.load()
+
+@skip_not_logged
+async def test_backup():
+    await client.backup()
 
 
-if __name__ == '__main__':
-    test().run()
+# TODO: add more tests (yep, I use todo stuff ._.)

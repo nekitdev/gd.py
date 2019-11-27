@@ -19,6 +19,10 @@ extras_require = {
     'console': [
         'aioconsole'
     ],
+    'dev': [
+        'aioconsole',
+        'pytest-asyncio'
+    ],
     'docs': [
         'sphinx',
         'sphinxcontrib_trio',

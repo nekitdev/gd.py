@@ -5,10 +5,10 @@ from ..utils.xml_parser import *
 
 from ..utils.crypto.coders import Coder
 
-__all__ = ('SavePart', 'SaveAPI')
+__all__ = ('Part', 'Database')
 
 
-class SavePart(dict):
+class Part(dict):
     def __init__(self, string: str = ''):
         self.parser = XMLParser()  # from utils.xml_parser
         try:
@@ -36,10 +36,10 @@ class SavePart(dict):
         return Coder.encode_save(self.dump().encode(), needs_xor=xor)
 
 
-class SaveAPI:
+class Database:
     def __init__(self, main: str = '', levels: str = ''):
-        self.main = SavePart(main)
-        self.levels = SavePart(levels)
+        self.main = Part(main)
+        self.levels = Part(levels)
 
     def __repr__(self):
         info = {
@@ -49,4 +49,4 @@ class SaveAPI:
         return make_repr(self, info)
 
     def as_tuple(self):
-        return self.main, self.levels
+        return (self.main, self.levels)

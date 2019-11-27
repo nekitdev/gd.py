@@ -74,7 +74,7 @@ To install the developer version, run these commands:
 
     $ git clone https://github.com/NeKitDS/gd.py
     $ cd gd.py
-    $ python3 -m pip install -U .[console]
+    $ python3 -m pip install -U .[dev]
 
 Quick example
 -------------
