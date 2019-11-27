@@ -48,5 +48,22 @@ class Database:
         }
         return make_repr(self, info)
 
+    def move_levels_down(self, to: int = 1, *, key: str = 'GLM_01', prefix: str = 'k_'):
+        assert to >= 0
+        try:
+            inner = self.levels[key]
+
+        except KeyError:
+            return
+
+        else:
+            for _ in range(to):
+                for k, v in inner.copy().items():
+                    n = str(int(k.lstrip(prefix))+1)
+                    inner[prefix+n] = v
+
+            for n in range(to):
+                inner[prefix+str(n)] = {}
+
     def as_tuple(self):
         return (self.main, self.levels)
