@@ -117,6 +117,8 @@ def _config_path(some_path, default):
         if p.is_dir():
             return p / default
 
+        return p
+
     except Exception:
         return path / default   
 
