@@ -17,10 +17,6 @@ async def test_get_song():
     song = await client.get_song(1)
     assert isinstance(song, gd.Song)
 
-async def test_get_ng_song():
-    song = await client.get_ng_song(1)
-    assert isinstance(song, gd.Song)
-
 async def test_get_user():
     user = await client.get_user(71)
     assert isinstance(user, gd.User)

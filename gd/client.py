@@ -121,7 +121,7 @@ class Client:
         """
         return await self.session.get_song(song_id)
 
-    async def get_ng_song(self, song_id: int = 0):
+    async def get_ng_song(self, song_id: int = 0):  # pragma: no cover
         """|coro|
 
         Fetches a song from Newgrounds.

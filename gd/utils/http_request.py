@@ -301,7 +301,7 @@ class HTTPClient:
             try:
                 resp = await client.request(method, url, data=data, **kwargs)
 
-            except HTTPClient.VALID_ERRORS:
+            except VALID_ERRORS:
                 raise HTTPNotConnected()
 
         return resp
