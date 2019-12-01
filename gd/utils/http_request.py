@@ -187,7 +187,7 @@ class HTTPClient:
         error_codes: Dict[int, Exception] = None,
         # 'should_map': whether response should be mapped 'enum -> value' (dict)
         raise_errors: bool = True, should_map: bool = False,
-        get_cookies: bool = False, cookie: str = None, run_decoding: bool = True
+        get_cookies: bool = False, cookie: str = None
     ):
         """|coro|
 
@@ -223,8 +223,6 @@ class HTTPClient:
             Same as ``get_cookies`` in :meth:`HTTPClient.fetch`
         cookie: :class:`str`
             Same as ``cookie`` in :meth:`HTTPClient.fetch`
-        run_decoding: :class:`bool`
-            Same as ``run_decoding`` in :meth:`HTTPClient.fetch`
 
         Raises
         ------
@@ -258,7 +256,7 @@ class HTTPClient:
         if error_codes is None:
             error_codes = {}
 
-        resp = await self.fetch(route, parameters, get_cookies, cookie, custom_base, run_decoding)
+        resp = await self.fetch(route, parameters, get_cookies, cookie, custom_base)
 
         if resp is None:
             if raise_errors:
