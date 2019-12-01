@@ -92,7 +92,7 @@ class HTTPClient:
 
     async def fetch(
         self, php: str, params: dict = None, get_cookies: bool = False,
-        cookie: str = None, custom_base: str = None, run_decoding: bool = True
+        cookie: str = None, custom_base: str = None
     ):
         """|coro|
 
@@ -125,9 +125,6 @@ class HTTPClient:
         custom_base: :class:`str`
             Custom base using different Geometry Dash IP.
             By default ``http://boomlings.com/database/`` is used.
-
-        run_decoding: :class:`bool`
-            Indicates whether to decode recieved response text.
 
         Returns
         -------
@@ -167,16 +164,12 @@ class HTTPClient:
                 self._last_result = data
 
                 try:
-                    if run_decoding:
-                        res = data.decode()
+                    res = data.decode()
 
-                        try:
-                            return int(res)
-                        except ValueError:
-                            pass
-
-                    else:
-                        res = data
+                    try:
+                        return int(res)
+                    except ValueError:
+                        pass
 
                 except UnicodeDecodeError:
                     res = data
