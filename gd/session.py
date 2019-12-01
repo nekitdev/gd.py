@@ -424,10 +424,10 @@ class GDSession:
             -11: MissingAccess(message='Failed to load data for client: {!r}.'.format(client))
         }
 
-        resp = await http.request(Route.LOAD_DATA, parameters, error_codes=codes, custom_base=link, run_decoding=False)
+        resp = await http.request(Route.LOAD_DATA, parameters, error_codes=codes, custom_base=link)
 
         try:
-            main, levels, *_ = resp.split(b';')
+            main, levels, *_ = resp.split(';')
             save_api = await api.from_string(main, levels, xor=False)
             save = await SaveParser.aio_parse(save_api.main.dump())
 
