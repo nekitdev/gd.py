@@ -2,6 +2,8 @@ import xml.etree.ElementTree as xml
 
 from ._async import run_blocking_io
 
+from ..errors import ParserError
+
 __all__ = ('xml', 'XMLParser', 'AioXMLParser')
 
 PLIST_VERSION = '1.0'
@@ -14,13 +16,17 @@ class XMLParser:
         self._default({})
 
     def load(self, xml_string):
-        plist = xml.fromstring(xml_string)
+        try:
+            plist = xml.fromstring(xml_string)
 
-        self._default(plist.attrib)
+            self._default(plist.attrib)
 
-        root = plist.getchildren().pop(0)
+            root = plist.getchildren().pop(0)
 
-        return self.iterate_xml(root)
+            return self.iterate_xml(root)
+
+        except Exception as exc:
+            raise ParserError('Failed to parse xml string.') from exc
 
     def iterate_xml(self, element):
         elements = element.getchildren()
