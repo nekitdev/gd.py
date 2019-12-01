@@ -32,16 +32,7 @@ mapper = MapperUtil()
 
 def pad(res: str):
     # pad a string to be divisible by 4
-    ilen = len(res)/4
-
-    if not ilen.is_integer():
-        n = ceil(ilen)*4 - len(res)
-
-        res += '=' * n
+    while len(res) % 4:
+        res += '='
 
     return res
-
-
-def ceil(n: float):
-    x = round(n)
-    return x+1 if x < n else x
