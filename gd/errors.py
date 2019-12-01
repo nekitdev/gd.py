@@ -40,12 +40,15 @@ class FailedConversion(GDException):
         return self._value
 
 
+class ParserError(GDException):
+    """Exception that is raised if conversion in :class:`.XMLParser` fails."""
+    pass
+
 class EditorError(GDException):
     """Exception that is raised when converting string
     to :class:`.api.Object` or :class:`.api.Editor` failed.
     """
-    def __init__(self, message):
-        super().__init__(message)
+    pass
 
 
 class HTTPNotConnected(ClientException):
