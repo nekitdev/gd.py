@@ -1,0 +1,11 @@
+[run]
+source = ./gd
+
+[report]
+exclude_lines =
+    pragma: no cover
+
+    def __repr__
+    if self\.debug
+
+ignore_errors = True
