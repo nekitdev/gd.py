@@ -11,7 +11,7 @@ install:
   # install coveralls
   - pip install coveralls
 
-script: coverage run --source ./gd -m pytest ./tests/* --disable-warnings
+script: coverage run -m pytest ./tests/* --disable-warnings
 
 after_success:
   # report to coveralls
