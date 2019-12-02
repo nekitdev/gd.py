@@ -1,5 +1,9 @@
 [run]
 source = ./gd
+omit = 
+    .gd/__main__.py
+    .gd/utils/_*.py
+    .gd/_*.py
 
 [report]
 exclude_lines =
