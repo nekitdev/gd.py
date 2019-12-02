@@ -1,11 +1,18 @@
 language: python
+
 python:
   - "3.5.3"
   - "3.6"
   - "3.7"
+
 install:
+  # install gd.py with asyncio pytest plugin
   - pip install .[dev]
+  # install coveralls
   - pip install coveralls
-script: pytest ./tests
+
+script: coverage run --source ./gd -m pytest ./tests/* --disable-warnings
+
 after_success:
+  # report to coveralls
   - coveralls
