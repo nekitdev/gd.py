@@ -5,9 +5,9 @@ gd.py
     :target: https://opensource.org/licenses/MIT
     :alt: Project License
 
-.. image:: https://img.shields.io/pypi/status/gd.py.svg
-    :target: https://github.com/NeKitDS/gd.py/blob/master/gd
-    :alt: Project Development Status
+.. image:: https://travis-ci.com/NeKitDS/gd.py.svg?branch=master
+    :target: https://travis-ci.com/NeKitDS/gd.py
+    :alt: Build Status
 
 .. image:: https://img.shields.io/pypi/v/gd.py.svg
     :target: https://pypi.python.org/pypi/gd.py
@@ -17,9 +17,13 @@ gd.py
     :target: https://pypi.python.org/pypi/gd.py
     :alt: Required Python Versions
 
-.. image:: https://img.shields.io/pypi/dm/gd.py.svg
+.. image:: https://img.shields.io/pypi/status/gd.py.svg
+    :target: https://github.com/NeKitDS/gd.py/blob/master/gd
+    :alt: Project Development Status
+
+.. image:: https://img.shields.io/pypi/dw/gd.py.svg
     :target: https://pypi.python.org/pypi/gd.py
-    :alt: Library Downloads/Month
+    :alt: Library Downloads/Week
 
 .. image:: https://readthedocs.org/projects/gdpy/badge/?version=latest
     :target: https://gdpy.readthedocs.io/en/latest/?badge=latest
@@ -28,6 +32,10 @@ gd.py
 .. image:: https://api.codacy.com/project/badge/Grade/4bd8cfe7a66e4250bc23b21c4e0626b6
     :target: https://app.codacy.com/project/NeKitDS/gd.py/dashboard
     :alt: Code Quality [Codacy]
+
+.. image:: https://img.shields.io/coveralls/github/NeKitDS/gd.py
+    :target: https://coveralls.io/github/NeKitDS/gd.py
+    :alt: Code Coverage
 
 .. image:: https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.herokuapp.com%2Fnekit%2Fpledges
     :target: https://patreon.com/nekit
