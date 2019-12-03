@@ -6,7 +6,7 @@ import pytest
 pytestmark = pytest.mark.asyncio
 
 user, password = (
-    os.getenv('USER'), os.getenv('PASSWORD')
+    os.getenv('GD_USER'), os.getenv('GD_PASSWORD')
 )
 
 client = gd.Client()
