@@ -63,16 +63,15 @@ def make_version_details(ver: str):
     splitter, releaselevel = cases.get(True, (' ', 'final'))
     splitted = ver.split(splitter)
 
+    # determine the serial
     serial = 0
-    if len(splitted) > 1:  # if there's a serial
+    if len(splitted) > 1:  # pragma: no cover
         _, s = splitted
         serial = serial if not s else int(s)
 
     major, minor, micro = map(int, splitted[0].split('.'))
 
-    return VersionInfo(
-        major=major, minor=minor, micro=micro, releaselevel=releaselevel, serial=serial
-    )
+    return VersionInfo(major, minor, micro, releaselevel, serial)
 
 version_info = make_version_details(__version__)
 
@@ -112,7 +111,10 @@ def setup_logging(level: int = logging.DEBUG, *, stream=None, file=None, formatt
 # setting up the NullHandler here
 try:
     from logging import NullHandler
-except ImportError:
+
+# in case there is no NullHandler
+except ImportError:  # pragma: no cover
+    # create custom class
     class NullHandler(logging.Handler):
         def emit(self, record):
             pass

@@ -21,6 +21,7 @@ extras_require = {
     ],
     'dev': [
         'aioconsole',
+        'coverage',
         'pytest-asyncio'
     ],
     'docs': [

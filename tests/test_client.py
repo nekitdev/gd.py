@@ -3,6 +3,10 @@ import os
 import gd
 import pytest
 
+# PREPARATIONS
+
+gd.setup_logging()
+
 pytestmark = pytest.mark.asyncio
 
 user, password = (
@@ -14,31 +18,35 @@ client = gd.Client()
 # MAIN TESTS
 
 async def test_get_song():
-    song = await client.get_song(1)
-    assert isinstance(song, gd.Song)
+    await client.get_song(1)
+
+async def test_ng_song():
+    await client.get_ng_song(1)
 
 async def test_get_user():
-    user = await client.get_user(71)
-    assert isinstance(user, gd.User)
+    await client.get_user(71)
 
 async def test_fetch_user():
-    stats = await client.fetch_user(5509312, stats=True)
-    assert isinstance(stats, gd.UserStats)
+    await client.fetch_user(5509312, stats=True)
 
 async def test_search_user():
-    user = await client.search_user('NeKitDS')  # 1
-    a_user = await client.find_user('RobTop')   # 2
-    assert isinstance(user, gd.User) and isinstance(a_user, gd.AbstractUser)
+    await client.search_user('NeKitDS')  # 1
+    await client.find_user('RobTop')     # 2
 
 async def test_get_level():
-    level = await client.get_level(30029017)
-    assert isinstance(level, gd.Level)
+    await client.get_level(30029017)
+
+async def test_many_levels():
+    await client.get_many_levels(30029017, 44622744)
 
 async def test_get_timely():
     # TODO: add check if daily/weekly is being refreshed
-    daily = await client.get_daily()
-    weekly = await client.get_weekly()
-    assert isinstance(daily, gd.Level) and isinstance(weekly, gd.Level)
+    await client.get_daily()
+    await client.get_weekly()
+
+async def test_level_packs():
+    await client.get_gauntlets()
+    await client.get_map_packs()
 
 # LOGGED IN CLIENT TESTS
 

@@ -1,15 +1,19 @@
 [run]
 source = ./gd
 omit = 
-    .gd/__main__.py
-    .gd/utils/_*.py
-    .gd/_*.py
+    .gd/events/utils.py
+
+    */__main__.py
+    */_*.py
 
 [report]
 exclude_lines =
     pragma: no cover
 
-    def __repr__
+    @property
+    @check.is_logged
+
+    def __[^_]+__  # do not check dunders
     if self\.debug
 
 ignore_errors = True

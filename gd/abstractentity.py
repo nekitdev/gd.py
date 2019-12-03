@@ -39,7 +39,7 @@ class AbstractEntity:
         """:class:`int`: ID of the Entity."""
         return self.options.get('id', 0)
 
-    def to_hash_string(self):
+    def to_hash_string(self):  # pragma: no cover
         """:class:`str`: Converts to a string which is used in ``hash(self)``."""
         cls = self.__class__.__name__
         id = self.id
