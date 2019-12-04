@@ -354,7 +354,7 @@ class SearchStrategy(NEnum):
 class ServerError(NEnum):
     """An enumeration for server errors."""
     EMAILS_NOT_MATCHING = -99
-    LINKED_TO_DIFFERENT_STEAM_ACCOUNT = 12
+    LINKED_TO_DIFFERENT_STEAM_ACCOUNT = -12
     ACCOUNT_DISABLED = -11
     LINKED_TO_DIFFERENT_ACCOUNT = -10
     SHORT_USERNAME = -9
