@@ -22,7 +22,8 @@ __all__ = (
     'LeaderboardStrategy',
     'LevelLeaderboardStrategy',
     'SearchStrategy',
-    'GauntletEnum'
+    'GauntletEnum',
+    'ServerError'
 )
 
 def _name_to_enum(x: str):
@@ -348,3 +349,20 @@ class SearchStrategy(NEnum):
     FRIENDS = 13
     HALL_OF_FAME = 16
     WORLD = 17
+
+
+class ServerError(NEnum):
+    """An enumeration for server errors."""
+    EMAILS_NOT_MATCHING = -99
+    LINKED_TO_DIFFERENT_STEAM_ACCOUNT = 12
+    ACCOUNT_DISABLED = -11
+    LINKED_TO_DIFFERENT_ACCOUNT = -10
+    SHORT_USERNAME = -9
+    SHORT_PASSWORD = -8
+    PASSWORDS_NOT_MATCHING = -7
+    INVALID_EMAIL = -6
+    INVALID_PASSWORD = -5
+    INVALID_USERNAME = -4
+    EMAIL_USED = -3
+    USERNAME_USED = -2
+    GENERIC = -1
