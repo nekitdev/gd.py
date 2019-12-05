@@ -12,8 +12,7 @@ exclude_lines =
 
     @property
     @check.is_logged
-
-    def __[^_]+__  # do not check dunders
+    def __(\w+)__
     if self\.debug
 
 ignore_errors = True

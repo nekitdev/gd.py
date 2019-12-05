@@ -70,7 +70,7 @@ class Client:
         self.password = None
         self.encodedpass = None
 
-    def _upd(self, attr, value):
+    def _upd(self, attr, value):  # pragma: no cover
         setattr(self, attr, value)
         # update encodedpass if password was updated
         if attr == 'password':
@@ -413,7 +413,7 @@ class Client:
         """
         return await self.session.test_captcha()
 
-    async def login(self, user: str, password: str):
+    async def login(self, user: str, password: str):  # pragma: no cover
         """|coro|
 
         Tries to login with given parameters.
@@ -819,6 +819,7 @@ class Client:
     def get_parse_dict(self):
         return {k: getattr(self, k) for k in ('name', 'id', 'account_id')}
 
+    @check.is_logged()
     def as_user(self):
         return self.session.to_user(self.get_parse_dict(), client=self)
 

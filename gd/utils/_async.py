@@ -127,7 +127,6 @@ def run(coro, *, loop=None, debug: bool = False, set_to_none: bool = False):
     `Any`
         Anything that ``coro`` returns.
     """
-
     if asyncio._get_running_loop() is not None:
         raise RuntimeError('Can not perform gd.utils.run() in a running event loop.')
 
@@ -193,22 +192,21 @@ def cancel_all_tasks(loop):
             })
 
 
-def shutdown_loop(loop, set_event_loop_to_none: bool = False):
+def shutdown_loop(loop):
     try:
         cancel_all_tasks(loop)
         loop.run_until_complete(loop.shutdown_asyncgens())
 
     finally:
-        if set_event_loop_to_none:
-            asyncio.set_event_loop(None)
-
         loop.close()
 
 
 async def maybe_coroutine(func, *args, **kwargs):
     value = func(*args, **kwargs)
+
     if inspect.isawaitable(value):
         return await value
+
     else:
         return value
 
@@ -222,7 +220,7 @@ def acquire_loop(running: bool = False):
     Parameters
     ----------
     running: :class:`bool`
-        Indicates if the function should get a loop that is already running. (on fail, the main get process is being executed.)
+        Indicates if the function should get a loop that is already running.
     """
     try:
         loop = asyncio._get_running_loop()
@@ -236,6 +234,11 @@ def acquire_loop(running: bool = False):
     else:
         try:
             loop = asyncio.get_event_loop()
+
+            if loop.is_running() and not running:
+                # loop is running while we have to get the non-running one,
+                # let us raise an error to go into <except> clause.
+                raise ValueError('Current event loop is already running.')
 
         except Exception:
             loop = asyncio.new_event_loop()
