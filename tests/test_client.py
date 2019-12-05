@@ -62,7 +62,7 @@ async def test_get_leaderboard():
 async def test_search_levels():
     await client.search_levels(query='VorteX')
 
-def test_close():
+async def test_close():
     client.close()
 
 # LOGGED IN CLIENT TESTS
