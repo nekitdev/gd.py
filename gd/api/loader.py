@@ -1,6 +1,6 @@
 from pathlib import Path
 import functools
-import os
+import os, sys
 
 from ..utils._async import run_blocking_io
 from ..utils.crypto.coders import Coder
@@ -16,8 +16,14 @@ MAIN = 'CCGameManager.dat'
 LEVELS = 'CCLocalLevels.dat'
 
 try:
-    local_env = os.getenv('localappdata')
-    path = Path(local_env) / 'GeometryDash'
+    if sys.platform == 'win32':
+        local_env = os.getenv('localappdata')
+        path = Path(local_env) / 'GeometryDash'
+    elif sys.platform == 'darwin': 
+        local_env = os.getenv('HOME')
+        path = Path(local_env) / 'Library' / 'Caches' # / GeometryDash 
+    else:
+        path = Path()    
 
 except Exception:
     path = Path()
@@ -122,7 +128,8 @@ def _config_path(some_path, default):
     except Exception:
         return path / default   
 
-util = SaveUtil()
+
+util = SaveUtil()
 load_save = util.local_load
 dump_save = util.local_dump
 from_string = util.from_string
