@@ -15,7 +15,7 @@ class Colour:
         The raw integer colour value.
     """
 
-    sys_name = __import__('platform').system().lower()
+    sys_name = __import__('sys').platform
 
     def __init__(self, value: int):
         if not isinstance(value, int):
@@ -74,9 +74,7 @@ class Colour:
         return self._get_byte(0)
 
     def print(self):
-        if ('win' in self.sys_name and
-            'darwin' not in self.sys_name):  # windows
-
+        if 'win32' in self.sys_name:
             print(self.to_hex())
 
         else:
