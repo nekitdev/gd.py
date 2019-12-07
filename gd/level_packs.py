@@ -1,5 +1,5 @@
 from .abstractentity import AbstractEntity
-from .colors import Colour
+from .colors import Color
 
 from .utils.enums import LevelDifficulty
 from .utils.filters import Filters
@@ -100,5 +100,5 @@ class MapPack(Gauntlet):
 
     @property
     def color(self):
-        """:class:`.Colour`: Colour of a map pack."""
-        return self.options.get('color', Colour(0xffffff))
+        """:class:`.Colour`: Color of a map pack."""
+        return self.options.get('color', Color(0xffffff))

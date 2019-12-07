@@ -15,18 +15,22 @@ __all__ = (
 MAIN = 'CCGameManager.dat'
 LEVELS = 'CCLocalLevels.dat'
 
+
 try:
     if sys.platform == 'win32':
         local_env = os.getenv('localappdata')
         path = Path(local_env) / 'GeometryDash'
+
     elif sys.platform == 'darwin': 
         local_env = os.getenv('HOME')
-        path = Path(local_env) / 'Library' / 'Caches' # / GeometryDash 
+        path = Path(local_env) / 'Library' / 'Caches'
+
     else:
         path = Path()    
 
 except Exception:
     path = Path()
+
 
 def set_path(new_path):
     global path

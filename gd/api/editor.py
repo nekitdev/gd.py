@@ -1,6 +1,6 @@
 from typing import Union, Sequence
 
-from .object import Object
+from .struct import Object
 
 from ..abstractentity import AbstractEntity
 from ..utils.wrap_tools import find_subclass, make_repr

@@ -1,4 +1,4 @@
-from .colors import Colour
+from .colors import Color
 
 from .utils.enums import IconType
 from .utils.wrap_tools import make_repr
@@ -25,12 +25,12 @@ class IconSet:
     @property
     def color_1(self):
         """:class:`.Colour`: A first color of the iconset."""
-        return self.options.get('color_1', Colour(0x00ff00))
+        return self.options.get('color_1', Color(0x00ff00))
 
     @property
     def color_2(self):
         """:class:`.Colour`: A second color of the iconset."""
-        return self.options.get('color_2', Colour(0x00ffff))
+        return self.options.get('color_2', Color(0x00ffff))
 
     @property
     def main_type(self):

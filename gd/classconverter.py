@@ -3,7 +3,7 @@ import urllib.parse
 
 from .song import Song
 from .user import UserStats, User
-from .colors import Colour, colors
+from .colors import Color, colors
 from .comment import Comment
 from .abstractuser import AbstractUser, LevelRecord
 from .level import Level
@@ -183,7 +183,7 @@ class ClassConverter:
         level_ids = tuple(map(int, level_id_string.split(',')))
 
         color_string = s.get(i.MAP_PACK_COLOR, '255,255,255')
-        color = Colour.from_rgb(*map(int, color_string.split(',')))
+        color = Color.from_rgb(*map(int, color_string.split(',')))
 
         difficulty = Converter.value_to_pack_difficulty(s.get(i.MAP_PACK_DIFFICULTY))
 
@@ -266,7 +266,7 @@ class ClassConverter:
         type = CommentType.from_value(s[i.COMMENT_TYPE])
 
         color_string = s.get(i.COMMENT_COLOR, '255,255,255')
-        color = Colour.from_rgb(*map(int, color_string.split(',')))
+        color = Color.from_rgb(*map(int, color_string.split(',')))
 
         return Comment(
             body = b64.b64decode(mapper.normalize(s[i.COMMENT_BODY])).decode(),

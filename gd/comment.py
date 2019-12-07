@@ -1,7 +1,7 @@
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser
 
-from .colors import Colour
+from .colors import Color
 from .session import _session
 
 from .utils.enums import CommentType
@@ -61,8 +61,8 @@ class Comment(AbstractEntity):
 
     @property
     def color(self):
-        """:class:`.Colour`: Colour of the comment. Oftenly equals ``gd.Colour(0xffffff)``."""
-        return self.options.get('color', Colour(0xffffff))
+        """:class:`.Colour`: Color of the comment. Oftenly equals ``gd.Color(0xffffff)``."""
+        return self.options.get('color', Color(0xffffff))
 
     def is_spam(self):
         """:class:`bool`: Indicates whether a comment is marked as spam. ``False`` if profile comment."""

@@ -2,7 +2,8 @@ from ..utils.enums import NEnum
 
 __all__ = (
     'ObjectDataEnum',
-    'ColorChannelPlayerColor',
+    'ColorChannelProperties',
+    'PlayerColor',
     'CustomParticleGrouping',
     'CustomParticleProperty1',
     'Easing',
@@ -34,6 +35,7 @@ class ObjectDataEnum(NEnum):
     RED = 7  # Color-related Trigger
     GREEN = 8  # Color-related Trigger
     BLUE = 9  # Color-related Trigger
+    R, G, B = RED, GREEN, BLUE  # aliases
     DURATION = 10
     TOUCH_TRIGGERED = 11
     SECRET_COIN_ID = 12
@@ -227,7 +229,26 @@ class ObjectDataEnum(NEnum):
     LOCK_TO_CAMERA_Y = -303
 
 
-class ColorChannelPlayerColor(NEnum):
+class ColorChannelProperties(NEnum):
+    RED = 1
+    GREEN = 2
+    BLUE = 3
+    R, G, B = RED, GREEN, BLUE
+    PLAYER_COLOR = 4
+    BLENDING = 5
+    OPACITY = 7
+    UNKNOWN_8 = 8  # 1?
+    COPIED_COLOR_ID = 9
+    HSV_VALUES = 10
+    UNKNOWN_RED = 11
+    UNKNOWN_GREEN = 12
+    UNKNOWN_BLUE = 13
+    UNKNOWN_15 = 15  # 1?
+    COPY_OPACITY = 17
+    UNKNOWN_18 = 18  # 0?
+
+
+class PlayerColor(NEnum):
     NotUsed = -1
     P1 = 1
     P2 = 2
@@ -434,9 +455,9 @@ class ZLayer(NEnum):
 
 class Speed(NEnum):
     DEFAULT = 0  # -> x 1
-    SLOW = 1 # x 0.5
+    SLOW = 1     # x 0.5
     NORMAL = 2   # x 1
-    FAST = 3 # x 2
+    FAST = 3     # x 2
     FASTER = 4   # x 3
     FASTEST = 5  # x 4
 
@@ -479,6 +500,7 @@ class LevelDataEnum(NEnum):
     BUILD_TAB_PAGES_DICT = 'kI6'
     EDITOR_LAYER = 'kI7'
 
+    AUDIO_TRACK = 'kA1'
     GAMEMODE = 'kA2'
     MINIMODE = 'kA3'
     SPEED = 'kA4'

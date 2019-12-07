@@ -41,5 +41,5 @@ class HSV:
         return 'a'.join(map(str, value_tuple))
 
 
-def _maybefloat(s: str):
-    return (float if '.' in s else int)(s)
+def _maybefloat(string: str):
+    return (float if '.' in string else int)(string)

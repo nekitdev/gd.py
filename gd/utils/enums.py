@@ -165,7 +165,7 @@ class NEnum(Enum):
 
     @classmethod
     def as_dict(cls):
-        return {enum.value: enum.name.lower() for enum in iter(cls)}
+        return {name.lower(): enum.value for name, enum in cls.__members__.items()}
 
     @classmethod
     def from_value(cls, value: Union[int, str]):
