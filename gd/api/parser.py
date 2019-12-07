@@ -106,7 +106,7 @@ def _bool(s: str):
 
 def _ints_from_str(string: str, split: str = '.'):
     string = str(string)  # just in case
-    return list(map(int, string.split(split)))
+    return set(map(int, string.split(split)))
 
 
 def _iter_to_str(x):
@@ -207,6 +207,7 @@ _MAPPING = {
     float: float,
     list: _iter_to_str,
     tuple: _iter_to_str,
+    set: _iter_to_str,
     HSV: HSV.dump,
     NEnum: lambda enum: enum.value,
     str: str
