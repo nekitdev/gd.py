@@ -106,6 +106,10 @@ def _bool(s: str):
 
 def _ints_from_str(string: str, split: str = '.'):
     string = str(string)  # just in case
+
+    if not string:
+        return set()
+
     return set(map(int, string.split(split)))
 
 
