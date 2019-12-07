@@ -82,7 +82,7 @@ class Struct:
 
 def _define_color(color):
     if hasattr(color, '__iter__'):
-        return Color(*color)
+        return Color.from_rgb(*color)
 
     if hasattr(color, 'value'):
         return Color(color.value)
@@ -100,6 +100,12 @@ class Object(Struct):
 
     def set_color(self, color):
         self.edit(**dict(zip('rgb', _define_color(color).to_rgb())))
+
+    def add_groups(self, *groups: int):
+        if not hasattr(self, 'groups'):
+            self.groups = set(groups)
+        else:
+            self.groups = {*self.groups, *groups}
 
 
 class ColorChannel(Struct):
