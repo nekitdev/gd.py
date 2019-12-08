@@ -64,6 +64,9 @@ def _get_id(name: str, mapping: dict = None, return_name_on_fail: bool = False):
         if name.startswith('unknown'):
             name = name[7:]
 
+            if name.startswith('_'):
+                name = name[1:]
+
         try:
             return int(name.replace('_', '-'))
 
