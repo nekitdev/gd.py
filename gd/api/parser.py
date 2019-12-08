@@ -53,7 +53,7 @@ def _convert(s, delim: str = '_', attempt_conversion: bool = True, *, f=None):
     return final
 
 
-def _get_id(name: str, mapping: dict = None):
+def _get_id(name: str, mapping: dict = None, return_name_on_fail: bool = False):
     try:
         if name.startswith('_'):
             name = name[1:]
@@ -65,11 +65,11 @@ def _get_id(name: str, mapping: dict = None):
             name = name[7:]
 
         try:
-            name = name.replace('_', '-')
-            return int(name)
+            return int(name.replace('_', '-'))
 
         except ValueError:
-            return name
+            if return_name_on_fail:
+                return name
 
 
 def _dump(d, additional: dict = None):
