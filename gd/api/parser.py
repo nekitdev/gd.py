@@ -55,17 +55,17 @@ def _convert(s, delim: str = '_', attempt_conversion: bool = True, *, f=None):
 
 def _get_id(name: str, mapping: dict = None):
     try:
-        return mapping[name]
-
-    except KeyError:
-        name = str(name).lstrip('unknown')
-
         if name.startswith('_'):
             name = name[1:]
 
-        name = name.replace('_', '-')
+        return mapping[name]
+
+    except KeyError:
+        if name.startswith('unknown'):
+            name = name[7:]
 
         try:
+            name = name.replace('_', '-')
             return int(name)
 
         except ValueError:
