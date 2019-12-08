@@ -20,7 +20,7 @@ class Struct:
 
         for name, value in properties.items():
             n = self.__class__.get_id(name)
-            if n:
+            if n != name:
                 self.data[n] = value
 
     def __repr__(self):
