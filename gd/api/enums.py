@@ -1,4 +1,4 @@
-from ..utils.enums import NEnum
+red from ..utils.enums import NEnum
 
 __all__ = (
     'ObjectDataEnum',
@@ -157,7 +157,7 @@ class ObjectDataEnum(NEnum):
     REVERSED = 118
     LOCK_Y = 59
 
-    CHANCE = 10
+    CHANCE = 0  # needs checking
     CHANCE_LOTS = -300
     CHANCE_LOT_GROUPS = -301
 
@@ -460,6 +460,15 @@ class Speed(NEnum):
     FAST = 3     # x 2
     FASTER = 4   # x 3
     FASTEST = 5  # x 4
+
+
+
+class SpeedMagic(NEnum):
+    SLOW = 251.16    # x 0.5
+    NORMAL = 311.58  # x 1
+    FAST = 387.42    # x 2
+    FASTER = 468.0   # x 3
+    FASTEST = 576.0  # x 4
 
 
 class LevelDataEnum(NEnum):
