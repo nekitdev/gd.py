@@ -1,4 +1,4 @@
-red from ..utils.enums import NEnum
+from ..utils.enums import NEnum
 
 __all__ = (
     'ObjectDataEnum',
@@ -21,6 +21,7 @@ __all__ = (
     'TriggerType',
     'ZLayer',
     'Speed',
+    'SpeedMagic',
     'LevelDataEnum'
 )
 
@@ -462,13 +463,13 @@ class Speed(NEnum):
     FASTEST = 5  # x 4
 
 
-
 class SpeedMagic(NEnum):
-    SLOW = 251.16    # x 0.5
-    NORMAL = 311.58  # x 1
-    FAST = 387.42    # x 2
-    FASTER = 468.0   # x 3
-    FASTEST = 576.0  # x 4
+    SLOW = 251.16     # x 0.5
+    NORMAL = 311.58   # x 1
+    FAST = 387.42     # x 2
+    FASTER = 468.0    # x 3
+    FASTEST = 576.0   # x 4
+    DEFAULT = NORMAL  # -> x 1
 
 
 class LevelDataEnum(NEnum):
