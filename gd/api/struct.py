@@ -4,12 +4,11 @@ from ..errors import EditorError
 
 from .hsv import HSV
 from .parser import *
+from ._property import _object_code, _color_code
 
 __all__ = ('Object', 'ColorChannel')
 
 class Struct:
-    get_id = _get_id
-    loader = _load
     dumper = _dump
     convert = _convert
     collect = _collect
@@ -19,34 +18,21 @@ class Struct:
         self.data = {}
 
         for name, value in properties.items():
-            n = self.__class__.get_id(name)
-            if n:
-                self.data[n] = value
+            setattr(self, name, value)
 
     def __repr__(self):
         info = {key: repr(value) for key, value in self.to_dict().items()}
         return make_repr(self, info)
 
-    def __getattr__(self, name):
-        try:
-            return self.data[self.__class__.get_id(name)]
-        except KeyError:
-            raise AttributeError(
-                '{0.__class__.__name__!r} object '
-                'has no attribute {1!r}.'.format(self, name)
-            ) from None
-
-    def __setattr__(self, name, value):
-        n = self.__class__.get_id(name)
-
-        if n:
-            self.data[n] = value
-
-        else:
-            self.__dict__[name] = value
-
     def to_dict(self):
-        return self.__class__.loader(self.data)
+        final = {}
+        for name in self.existing_properties:
+            value = getattr(self, name)
+
+            if value is not None:
+                final[name] = value
+
+        return final
 
     def dump(self):
         return self.__class__.collect(self.to_map())
@@ -92,11 +78,11 @@ def _define_color(color):
 
 class Object(Struct):
     base_data = {1: 1, 2: 0, 3: 0}
-    get_id = _object_get_id
-    loader = _object_load
     dumper = _object_dump
     convert = _object_convert
     collect = _object_collect
+
+    exec(_object_code)
 
     def set_color(self, color):
         self.edit(**dict(zip('rgb', _define_color(color).to_rgb())))
@@ -119,18 +105,14 @@ class ColorChannel(Struct):
         15: True,
         18: False
     }
-    get_id = _color_get_id
-    loader = _color_load
     dumper = _color_dump
     convert = _color_convert
     collect = _color_collect
 
+    exec(_color_code)
+
     def set_color(self, color):
         self.edit(**dict(zip('rgb', _define_color(color).to_rgb())))
-
-
-class LevelAPI:
-    pass
 
 
 class Header:
