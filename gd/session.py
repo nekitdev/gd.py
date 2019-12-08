@@ -227,10 +227,10 @@ class GDSession:
             -1: MissingAccess(message='Failed to fetch a {!r} level.'.format(type))
         }
         resp = await http.request(Route.GET_TIMELY, parameters, error_codes=codes, splitter='|')
-        if len(resp) != 2:
-            raise MissingAccess(message='Unknown response: {}.'.format(resp))
+        if len(resp) < 2:
+            raise MissingAccess(message='Failed to fetch a {} level. Most likely it is being refreshed.'.format(type))
 
-        num, cooldown = map(int, resp)
+        num, cooldown, *_ = map(int, resp)
         num %= 100000
         w += 1
 
