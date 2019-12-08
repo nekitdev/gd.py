@@ -6,18 +6,6 @@ from .enums import *
 
 # MAIN HELPERS
 
-def _get_name(n, mapping: dict = None):
-    try:
-        return mapping[n]
-
-    except Exception:
-        return ('unknown_' + str(n).replace('-', '_'))
-
-
-def _load(d, mapping: dict = None):
-    return {_get_name(n, mapping): value for n, value in d.items()}
-
-
 def _try_convert(obj, cls: type = int):
     try:
         return cls(obj)
@@ -51,28 +39,6 @@ def _convert(s, delim: str = '_', attempt_conversion: bool = True, *, f=None):
         final[key] = f(key, value)
 
     return final
-
-
-def _get_id(name: str, mapping: dict = None, return_name_on_fail: bool = False):
-    try:
-        if name.startswith('_'):
-            name = name[1:]
-
-        return mapping[name]
-
-    except KeyError:
-        if name.startswith('unknown'):
-            name = name[7:]
-
-            if name.startswith('_'):
-                name = name[1:]
-
-        try:
-            return int(name.replace('_', '-'))
-
-        except ValueError:
-            if return_name_on_fail:
-                return name
 
 
 def _dump(d, additional: dict = None):
@@ -126,16 +92,7 @@ def _b64_failsafe(string: str, encode: bool = True):
     except Exception:
         return string
 
-# ENUM HELPER
-
-def _make_dicts(enum: NEnum):
-    name_to_value = enum.as_dict()
-    value_to_name = {v: k for k, v in name_to_value.items()}
-    return value_to_name, name_to_value
-
 # OBJECT PARSING
-
-_MAP_ID, _MAP_NAME = _make_dicts(ObjectDataEnum)
 
 _INT = {
     1, 7, 8, 9, 12, 20, 21, 22, 23, 24, 25, 50, 51, 61, 71, 
@@ -185,15 +142,6 @@ def _object_convert(s):
 def _object_dump(d):
     return _dump(d, _OBJECT_ADDITIONAL)
 
-def _object_get_name(n: int):
-    return _get_name(n, _MAP_ID)
-
-def _object_get_id(name: str):
-    return _get_id(name, _MAP_NAME)
-
-def _object_load(d):
-    return _load(d, _MAP_ID)
-
 def _object_collect(d):
     return _collect(d, ',')
 
@@ -229,8 +177,6 @@ def _convert_type(x: type):
 
 # COLOR PARSING
 
-_MAP_COLOR_PROPERTY, _MAP_COLOR_NAME = _make_dicts(ColorChannelProperties)
-
 _COLOR_INT = {1, 2, 3, 9, 11, 12, 13}
 _COLOR_BOOL = {5, 8, 15, 17, 18}
 _COLOR_PLAYER = 4
@@ -252,21 +198,13 @@ def _color_convert(s):
 def _color_dump(d):
     return _dump(d)
 
-def _color_get_name(n: int):
-    return _get_name(n, _MAP_COLOR_PROPERTY)
-
-def _color_get_id(name: str):
-    return _get_id(name, _MAP_COLOR_NAME)
-
-def _color_load(d):
-    return _load(d, _MAP_COLOR_PROPERTY)
-
 def _color_collect(d):
     return _collect(d, '_')
 
 # HEADER PARSING
 
-_MAP_LEVEL_PROPERTY, _MAP_LEVEL_NAME = _make_dicts(LevelDataEnum)
+def _process_header_colors(d):
+    pass
 
 def _convert_header(s):
     return _convert(s, delim=(','), attempt_conversion=False)
