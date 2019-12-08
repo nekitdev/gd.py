@@ -20,7 +20,7 @@ class Struct:
 
         for name, value in properties.items():
             n = self.__class__.get_id(name)
-            if n != name:
+            if n:
                 self.data[n] = value
 
     def __repr__(self):
@@ -39,7 +39,7 @@ class Struct:
     def __setattr__(self, name, value):
         n = self.__class__.get_id(name)
 
-        if n != name:
+        if n:
             self.data[n] = value
 
         else:
