@@ -40,10 +40,10 @@ async def test_get_level():
 async def test_many_levels():
     await client.get_many_levels(30029017, 44622744)
 
-async def test_get_timely():
-    # TODO: add check if daily/weekly is being refreshed
-    await client.get_daily()
-    await client.get_weekly()
+# async def test_get_timely():
+#     await client.get_daily()
+#     await client.get_weekly()
+# TODO: add check if daily/weekly is being refreshed
 
 async def test_level_packs():
     await client.get_gauntlets()
