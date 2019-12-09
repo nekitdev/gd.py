@@ -151,6 +151,20 @@ Message
 .. autoclass:: Message
     :members:
 
+.. currentmodule:: gd.api
+
+Game API
+--------
+
+.. autoclass:: Editor
+    :members:
+
+.. autoclass:: Object
+    :members:
+
+.. autoclass:: ColorChannel
+    :members:
+
 Enums
 -----
 
@@ -188,6 +202,8 @@ Enums
 .. autoclass:: LevelLeaderboardStrategy
 
 .. autoclass:: SearchStrategy
+
+.. autoclass:: ServerError
 
 Exceptions
 ----------
@@ -257,6 +273,8 @@ Useful Utils
 .. autofunction:: find
 
 .. autofunction:: get
+
+.. autofunction:: unique
 
 .. autofunction:: value_to_enum
 
