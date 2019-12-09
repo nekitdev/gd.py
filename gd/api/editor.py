@@ -3,13 +3,22 @@ from typing import Union, Sequence
 from .struct import Object
 
 from ..abstractentity import AbstractEntity
-from ..utils.wrap_tools import find_subclass, make_repr
+from ..utils.wrap_tools import make_repr
 
 __all__ = ('Editor',)
 
 
 class Editor:
     def __init__(self, data_or_level: Union[bytes, str, AbstractEntity] = ''):
+        """Initialize an Editor.
+
+        Editor can be created either from decoded level's data, or taken from a level itself.
+
+        Parameters
+        ----------
+        data_or_level: Union[:class:`bytes`, :class:`str`, :class:`.Level`]
+            Data or a level, as described above.
+        """
         data = data_or_level
 
         if isinstance(data_or_level, Level):
@@ -50,22 +59,30 @@ class Editor:
         return len(self.objects)
 
     def add_objects(self, *objects: Sequence[Object]):
+        """Add objects to ``self.objects``."""
         objects = list(filter(lambda obj: isinstance(obj, Object), objects))
         self.objects.extend(objects)
 
     def copy_objects(self):
+        """List[`.api.Object`]: Copy objects of ``self``.
+        Note: copies, not references are returned!
+        """
         return [obj.copy() for obj in self.objects]
 
     def map(self, function):
+        """:class:`map`: Same as calling ``map`` on ``self.objects``."""
         return map(function, self.objects)
 
     def filter(self, function):
+        """:class:`filter`: Same as calling ``filter`` on ``self.objects``."""
         return filter(function, self.objects)
 
     def dump_to_level(self, level, append_sc: bool = True):
-        level.data = self.dump(append_sc=append_sc)
+        """Dump ``self`` to a ``level`` object."""
+        level.options['data'] = self.dump(append_sc=append_sc)
 
     def dump(self, append_sc: bool = True):
+        """Dump all objects and header into a level data string."""
         seq = [self.info, *(obj.dump() for obj in self.objects)]
 
         if append_sc:
