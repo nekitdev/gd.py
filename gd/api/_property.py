@@ -18,8 +18,18 @@ def {name}(self, value):
 
 _properties = "existing_properties = {}"
 
+_ENUMS = {
+    _EASING: Easing,
+    _PULSE_MODE: PulseMode,
+    _PULSE_TYPE: PulseType,
+    _PICKUP_MODE: PickupItemMode,
+    _TOUCH_TOGGLE: TouchToggleMode,
+    _COMP: InstantCountComparison,
+    _TARGET_COORDS: TargetPosCoordinates
+}
 
-def _get_type(n, as_string: bool = True, _type: str = 'object'):
+
+def _get_type(n, as_string: bool = True, ts: str = 'object'):
     t = {
         'object': {
             n in _INT: int,
@@ -38,16 +48,16 @@ def _get_type(n, as_string: bool = True, _type: str = 'object'):
         },
         'header': {}
     }
-    r = t.get(_type, {}).get(1, str)
+    r = t.get(ts, {}).get(1, str)
     return r.__name__ if as_string else r
 
 
-def _create(enum, _type: str):
+def _create(enum, ts: str):
     final = []
 
     for name, value in enum.as_dict().items():
         desc = enum(value).desc
-        cls = _get_type(value, _type=_type)
+        cls = _get_type(value, ts=ts)
         final.append(_template.format(name=name, enum=value, desc=desc, cls=cls))
 
     property_container = {}
