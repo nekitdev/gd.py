@@ -4,7 +4,7 @@ __all__ = ('HSV',)
 
 class HSV:
     def __init__(
-        self, h: int = 0, s: float = 0, v: float = 0,
+        self, h: int = 0, s: float = 1, v: float = 1,
         s_checked: bool = False, v_checked: bool = False
     ):
         self.h = h
