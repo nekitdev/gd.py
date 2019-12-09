@@ -21,7 +21,7 @@ class Editor:
     def __init__(self, data_or_level: Union[bytes, str, AbstractEntity] = ''):
         data = data_or_level
 
-        if isinstance(data_or_level, Level):
+        if isinstance(data_or_level, AbstractEntity):
             data = data_or_level.data
 
         if isinstance(data, bytes):
