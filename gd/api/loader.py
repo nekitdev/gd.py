@@ -23,7 +23,8 @@ try:
 
     elif sys.platform == 'darwin': 
         local_env = os.getenv('HOME')
-        path = Path(local_env) / 'Library' / 'Caches'
+        path = Path(local_env) / 'Library' / 'Application Support' / 'Geometry Dash'
+        # TODO: figure out encoding of MacOS GD saves
 
     else:
         path = Path()    
