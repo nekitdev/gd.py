@@ -162,8 +162,13 @@ Game API
 .. autoclass:: Object
     :members:
 
+.. autoclass:: HSV
+    :members:
+
 .. autoclass:: ColorChannel
     :members:
+
+.. currentmodule:: gd
 
 Enums
 -----
