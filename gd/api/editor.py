@@ -7,11 +7,9 @@ from ..utils.wrap_tools import find_subclass, make_repr
 
 __all__ = ('Editor',)
 
-Level = find_subclass('Level', AbstractEntity)
-
 
 class Editor:
-    def __init__(self, data_or_level: Union[bytes, str, Level] = ''):
+    def __init__(self, data_or_level: Union[bytes, str, AbstractEntity] = ''):
         data = data_or_level
 
         if isinstance(data_or_level, Level):
