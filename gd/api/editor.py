@@ -9,16 +9,16 @@ __all__ = ('Editor',)
 
 
 class Editor:
+    """Editor interface of gd.py.
+
+    Editor can be created either from decoded level's data, or taken from a level itself.
+
+    Parameters
+    ----------
+    data_or_level: Union[:class:`bytes`, :class:`str`, :class:`.Level`]
+        Data or a level, as described above.
+    """
     def __init__(self, data_or_level: Union[bytes, str, AbstractEntity] = ''):
-        """Initialize an Editor.
-
-        Editor can be created either from decoded level's data, or taken from a level itself.
-
-        Parameters
-        ----------
-        data_or_level: Union[:class:`bytes`, :class:`str`, :class:`.Level`]
-            Data or a level, as described above.
-        """
         data = data_or_level
 
         if isinstance(data_or_level, Level):
@@ -64,7 +64,7 @@ class Editor:
         self.objects.extend(objects)
 
     def copy_objects(self):
-        """List[`.api.Object`]: Copy objects of ``self``.
+        """List[:class:`.api.Object`]: Copy objects of ``self``.
         Note: copies, not references are returned!
         """
         return [obj.copy() for obj in self.objects]
