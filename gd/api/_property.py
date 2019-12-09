@@ -47,7 +47,7 @@ def _create(enum, _type: str):
 
     for name, value in enum.as_dict().items():
         desc = enum(value).desc
-        cls = _get_type(value, _type)
+        cls = _get_type(value, _type=_type)
         final.append(_template.format(name=name, enum=value, desc=desc, cls=cls))
 
     property_container = {}
