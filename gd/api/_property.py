@@ -37,7 +37,8 @@ def _get_type(n, as_string: bool = True, ts: str = 'object'):
             n in _FLOAT: float,
             n in _HSV: HSV,
             n in _ENUMS: _ENUMS.get(n),
-            n in (_GROUPS, _TEXT): str
+            n == _TEXT: str,
+            n == _GROUPS: set
         },
         'color': {
             n in _COLOR_INT: int,
