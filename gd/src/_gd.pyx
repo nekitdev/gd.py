@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 from types import FunctionType as function
 
 from ..utils.crypto.coders import Coder
