@@ -77,8 +77,6 @@ cpdef bool _bool(str s):
 
 
 cpdef set _ints_from_str(s, str split = '.'):
-    str string = str(s)  # just in case
-
     if not string:
         return set()
 
