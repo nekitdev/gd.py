@@ -56,7 +56,10 @@ def _dump(d, additional: dict = None):
 
 
 def _collect(d, char: str = '_'):
-    return char.join(char.join(map(str, pair)) for pair in d.items())
+    def generator():
+        for pair in d.items():
+            yield from map(str, pair)
+    return char.join(generator())
 
 
 def _maybefloat(s: str):
