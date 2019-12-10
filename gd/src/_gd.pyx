@@ -1,7 +1,5 @@
 # cython: language_level=3
 
-from types import FunctionType as function
-
 from ..utils.crypto.coders import Coder
 from ..utils.enums import NEnum
 from ..api.hsv import HSV
@@ -16,13 +14,13 @@ cpdef object _try_convert(object obj, type cls = int):
         return obj
 
 
-cpdef zip _prepare(str s, str delim):
+cpdef _prepare(str s, str delim):
     cdef list sp = s.split(delim)
     return zip(sp[::2], sp[1::2])
 
 
-cpdef dict _convert(str s, str delim = '_', bool attempt_conversion = True, function f = None):
-    cpdef zip prepared = _prepare(s, delim)
+cpdef dict _convert(str s, str delim = '_', attempt_conversion = True, f = None):
+    cdef prepared = _prepare(s, delim)
 
     if f is None:
         # case: no convert func
@@ -72,7 +70,7 @@ cpdef _maybefloat(str s):
     return int(s)
 
 
-cpdef bool _bool(str s):
+cpdef _bool(str s):
     return s == '1'
 
 
@@ -137,8 +135,8 @@ cpdef dict _OBJECT_ADDITIONAL = {
     _TEXT: lambda x: _b64_failsafe(x, encode=True)
 }
 
-cpdef dict _object_convert(string s):
-    return _convert(s, delim=(','), attempt_conversion=True, f=_from_str)
+cpdef dict _object_convert(str s):
+    return _convert(s, delim=',', attempt_conversion=True, f=_from_str)
 
 cpdef dict _object_dump(dict d):
     return _dump(d, _OBJECT_ADDITIONAL)
@@ -197,7 +195,7 @@ cpdef _parse_color(int n, str v):
     }.get(1, str)(v)
 
 cpdef dict _color_convert(str s):
-    return _convert(s, delim=('_'), attempt_conversion=True, f=_parse_color)
+    return _convert(s, delim='_', attempt_conversion=True, f=_parse_color)
 
 cpdef dict _color_dump(dict d):
     return _dump(d)
@@ -211,7 +209,7 @@ cpdef _process_header_colors(dict d):
     pass
 
 cpdef dict _convert_header(str s):
-    return _convert(s, delim=(','), attempt_conversion=False)
+    return _convert(s, delim=',', attempt_conversion=False)
 
 
 cpdef tuple __all__ = tuple(key for key in locals().keys() if key.startswith('_') and '__' not in key)
