@@ -56,11 +56,7 @@ def _dump(d, additional: dict = None):
 
 
 def _collect(d, char: str = '_'):
-    def generator():
-        for key, value in d.items():
-            yield from map(str, (key, value))
-
-    return char.join(generator())
+    return char.join(char.join(map(str, pair)) for pair in d.items())
 
 
 def _maybefloat(s: str):
@@ -74,8 +70,6 @@ def _bool(s: str):
 
 
 def _ints_from_str(string: str, split: str = '.'):
-    string = str(string)  # just in case
-
     if not string:
         return set()
 
@@ -208,6 +202,15 @@ def _process_header_colors(d):
 
 def _convert_header(s):
     return _convert(s, delim=(','), attempt_conversion=False)
+
+# LOAD ACCELERATOR
+
+try:
+    # attempt to load all functions from acceleator module
+    from _gd import *
+
+except ImportError:
+    pass
 
 
 __all__ = tuple(key for key in locals().keys() if key.startswith('_') and '__' not in key)
