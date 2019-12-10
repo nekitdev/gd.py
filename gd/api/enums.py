@@ -237,6 +237,7 @@ class ColorChannelProperties(NEnum):
     R, G, B = RED, GREEN, BLUE
     PLAYER_COLOR = 4
     BLENDING = 5
+    ID = 6
     OPACITY = 7
     UNKNOWN_8 = 8  # 1?
     COPIED_COLOR_ID = 9
