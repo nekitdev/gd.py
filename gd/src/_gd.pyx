@@ -184,7 +184,7 @@ cpdef _convert_type(x):
 cpdef set _COLOR_INT = {1, 2, 3, 6, 9, 11, 12, 13}
 cpdef set _COLOR_BOOL = {5, 8, 15, 17, 18}
 cpdef int _COLOR_PLAYER = 4
-codef int _COLOR_FLOAT = 7
+cpdef int _COLOR_FLOAT = 7
 cpdef int _COLOR_HSV = 10
 
 cpdef _parse_color(int n, str v):
