@@ -21,7 +21,7 @@ cpdef zip _prepare(str s, str delim):
     return zip(sp[::2], sp[1::2])
 
 
-cpdef dict _convert(str s, str delim = '_', bool attempt_conversion = True, *, function f = None):
+cpdef dict _convert(str s, str delim = '_', bool attempt_conversion = True, function f = None):
     cpdef zip prepared = _prepare(s, delim)
 
     if f is None:
