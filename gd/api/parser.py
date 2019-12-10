@@ -177,7 +177,7 @@ def _convert_type(x: type):
 
 # COLOR PARSING
 
-_COLOR_INT = {1, 2, 3, 9, 11, 12, 13}
+_COLOR_INT = {1, 2, 3, 6, 9, 11, 12, 13}
 _COLOR_BOOL = {5, 8, 15, 17, 18}
 _COLOR_PLAYER = 4
 _COLOR_FLOAT = 7
