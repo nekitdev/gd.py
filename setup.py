@@ -31,6 +31,21 @@ extras_require = {
     ]
 }
 
+def create_ext():
+    extensions = []
+
+    try:
+        from Cython.Build import cythonize as cython_convert
+
+    except ImportError:
+        pass
+
+    else:  # Cython imported, create an extension
+        extensions.append(cython_convert('gd/src/_gd.pyx'))  # accelerator
+
+    return extensions
+
+
 setup(
     name='gd.py',
     author='NeKitDS',
@@ -52,6 +67,7 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require=extras_require,
+    ext_modules=create_ext(),
     python_requires='>=3.5.3',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
