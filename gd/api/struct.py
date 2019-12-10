@@ -15,7 +15,7 @@ class Struct:
     base_data = {}
 
     def __init__(self, **properties):
-        self.data = {}
+        self.data = self.base_data.copy()
 
         for name, value in properties.items():
             setattr(self, name, value)
@@ -38,9 +38,7 @@ class Struct:
         return self.__class__.collect(self.to_map())
 
     def to_map(self):
-        data = self.base_data.copy()
-        data.update(self.data)
-        return self.__class__.dumper(data)
+        return self.__class__.dumper(self.data)
 
     def copy(self):
         self_copy = self.__class__()
@@ -82,23 +80,46 @@ class Object(Struct):
     convert = _object_convert
     collect = _object_collect
 
-    exec(_object_code)
-
     def set_color(self, color):
+        """Set ``rgb`` of ``self`` to ``color``."""
         self.edit(**dict(zip('rgb', _define_color(color).to_rgb())))
 
     def add_groups(self, *groups: int):
+        """Add ``groups`` to ``self.groups``."""
         if not hasattr(self, 'groups'):
             self.groups = set(groups)
-        else:
-            self.groups = {*self.groups, *groups}
 
+        else:
+            self.groups.update(groups)
+
+    def get_pos(self):
+        """Tuple[:class:`int`, :class:`int`]: ``x`` and ``y`` of ``self``."""
+        return (self.x, self.y)
+
+    def set_pos(self, x: float, y: float):
+        """Set ``x`` and ``y`` position of ``self`` to given values."""
+        self.x, self.y = x, y
+
+    def move(self, x: float = 0, y: float = 0):
+        """Add ``x`` and ``y`` to coordinates of ``self``."""
+        self.x += x
+        self.y += y
+
+    def rotate(self, deg: float = 0):
+        """Add ``deg`` to ``rotation`` of ``self``."""
+        if not self.rotation:
+            self.rotation = deg
+        else:
+            self.rotation += deg
+
+    exec(_object_code)
 
 class ColorChannel(Struct):
     base_data = {
         1: 255, 2: 255, 3: 255,
         4: -1,
         5: False,
+        6: 0,
         7: 1,
         8: True,
         11: 255, 12: 255, 13: 255,
@@ -109,10 +130,11 @@ class ColorChannel(Struct):
     convert = _color_convert
     collect = _color_collect
 
-    exec(_color_code)
-
     def set_color(self, color):
+        """Set ``rgb`` of ``self`` to ``color``."""
         self.edit(**dict(zip('rgb', _define_color(color).to_rgb())))
+
+    exec(_color_code)
 
 
 class Header:
