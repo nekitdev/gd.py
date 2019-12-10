@@ -172,7 +172,7 @@ cpdef dict _MAPPING = {
 
 cpdef _convert_type(x):
     cpdef type type_1
-    cpded type type_2
+    cpdef type type_2
 
     for type_1, type_2 in _MAPPING.items():
         if isinstance(x, type_1):
@@ -207,7 +207,7 @@ cpdef str _color_collect(dict d):
 
 # HEADER PARSING
 
-cpdef dict _process_header_colors(dict d):
+cpdef _process_header_colors(dict d):
     pass
 
 cpdef dict _convert_header(str s):
