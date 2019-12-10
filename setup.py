@@ -1,4 +1,4 @@
-from setuptools import Extension, setup
+from setuptools import setup
 import re
 
 requirements = []
@@ -31,12 +31,6 @@ extras_require = {
     ]
 }
 
-def create_ext():
-    gd_ext = Extension(name='_gd', language='c++', sources=['gd/src/gdmodule.cpp'])
-    gd_ext.optional = True
-
-    return [gd_ext]
-
 setup(
     name='gd.py',
     author='NeKitDS',
@@ -58,7 +52,6 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require=extras_require,
-    ext_modules=create_ext(),
     python_requires='>=3.5.3',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
