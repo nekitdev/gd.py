@@ -80,10 +80,5 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Natural Language :: English',
         'Operating System :: OS Independent'
-    ],
-    entry_points={
-        'console_scripts': [
-            'gd = gd.__main__',
-        ]
-    }
+    ]
 )
