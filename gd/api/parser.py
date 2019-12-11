@@ -210,7 +210,8 @@ def _convert_header(s):
 
 try:
     # attempt to load all functions from acceleator module
-    from _gd import *
+    import _gd
+    locals().update(_gd.__dict__)  # hacky insertion
 
 except ImportError:
     pass
