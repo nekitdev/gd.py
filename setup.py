@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import Extension, setup
 import re
 
 requirements = []
@@ -32,6 +32,13 @@ extras_require = {
 }
 
 def create_ext():
+    extensions = []
+
+    accel_ext = Extension(name='_gd', sources=['gd/src/_gd.pyx'], language='c++')
+    accel_ext.optional = True
+
+    extension.append(accel_ext)
+
     # create Cython gd.api extension
     try:
         from Cython.Build import cythonize as cython_convert
@@ -41,10 +48,11 @@ def create_ext():
 
     else:  # Cython imported, create an extension
         try:
-            return cython_convert('gd/src/_gd.pyx', language='c++')
+            return cython_convert(extensions)
         except Exception:
             print('Failed to build Cython extensions.')
-            return list()
+
+    return list()
 
 
 setup(
