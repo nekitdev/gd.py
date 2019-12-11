@@ -78,7 +78,7 @@ setup(
         'Natural Language :: English',
         'Operating System :: OS Independent'
     ],
-    entry_points: {
+    entry_points = {
         'console': [
             'gd = gd.__main__:main',
         ],
