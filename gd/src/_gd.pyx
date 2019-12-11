@@ -1,9 +1,10 @@
+# distutils: language=c++
 # cython: language_level=3
 
-from ..utils.crypto.coders import Coder
-from ..utils.enums import NEnum
-from ..api.hsv import HSV
-from ..api.enums import *
+from gd.utils.crypto.coders import Coder
+from gd.utils.enums import NEnum
+from gd.api.hsv import HSV
+from gd.api.enums import *
 
 from libcpp cimport bool
 
@@ -64,8 +65,13 @@ cpdef dict _dump(dict d, dict additional = {}):
     return final
 
 
+cdef _generator(dict d):
+    for pair in d.items():
+        yield from map(str, pair)
+
+
 def _collect(dict d, str char = '_'):
-    return char.join(char.join(map(str, pair)) for pair in d.items())
+    return char.join(_generator(d))
 
 
 def _maybefloat(str s):
@@ -78,7 +84,7 @@ cpdef bool _bool(str s):
     return s == '1'
 
 
-cpdef set _ints_from_str(s, str split = '.'):
+cpdef set _ints_from_str(str string, str split = '.'):
     if not string:
         return set()
 
@@ -214,6 +220,3 @@ def _process_header_colors(dict d):
 
 cpdef object _convert_header(str s):
     return _convert(s, delim=',', attempt_conversion=False)
-
-
-cpdef tuple __all__ = tuple(key for key in locals().keys() if key.startswith('_') and '__' not in key)
