@@ -32,8 +32,6 @@ extras_require = {
 }
 
 def create_ext():
-    extensions = []
-
     try:
         from Cython.Build import cythonize as cython_convert
 
@@ -42,11 +40,10 @@ def create_ext():
 
     else:  # Cython imported, create an extension
         try:
-            extensions.append(cython_convert('gd/src/_gd.pyx'))  # accelerator
+            return cython_convert('gd/src/_gd.pyx'))  # accelerator
         except Exception:
             print('Failed to build Cython extensions.')
-
-    return extensions
+            return list()
 
 
 setup(
@@ -80,5 +77,10 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Natural Language :: English',
         'Operating System :: OS Independent'
-    ]
+    ],
+    entry_points: {
+        'console': [
+            'gd = gd.__main__:main',
+        ],
+    }
 )
