@@ -40,7 +40,7 @@ def create_ext():
 
     else:  # Cython imported, create an extension
         try:
-            return cython_convert('gd/src/_gd.pyx'))  # accelerator
+            return cython_convert('gd/src/_gd.pyx')  # accelerator
         except Exception:
             print('Failed to build Cython extensions.')
             return list()
