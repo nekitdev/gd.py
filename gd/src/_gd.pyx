@@ -5,6 +5,8 @@ from ..utils.enums import NEnum
 from ..api.hsv import HSV
 from ..api.enums import *
 
+from libcpp cimport bool
+
 # MAIN HELPERS
 
 cpdef object _try_convert(object obj, type cls = int):
@@ -14,12 +16,12 @@ cpdef object _try_convert(object obj, type cls = int):
         return obj
 
 
-cpdef _prepare(str s, str delim):
+def _prepare(str s, str delim):
     cdef list sp = s.split(delim)
     return zip(sp[::2], sp[1::2])
 
 
-cpdef dict _convert(str s, str delim = '_', attempt_conversion = True, f = None):
+cpdef dict _convert(str s, str delim = '_',bool attempt_conversion = True, f = None):
     cdef prepared = _prepare(s, delim)
 
     if f is None:
@@ -33,11 +35,11 @@ cpdef dict _convert(str s, str delim = '_', attempt_conversion = True, f = None)
         # leave the keys untouched
         return {key: f(key, value) for key, value in prepared}
 
-    cpdef dict final = {}
+    cdef dict final = {}
 
-    cpdef str k
-    cpdef str v
-
+    cdef str k
+    cdef str v
+    cdef object key
     for k, v in prepared:
         key = _try_convert(k)
         value = f(key, v)
@@ -46,9 +48,11 @@ cpdef dict _convert(str s, str delim = '_', attempt_conversion = True, f = None)
     return final
 
 
-cpdef dict _dump(dict d, dict additional = None):
-    cpdef dict final = {}
-
+cpdef dict _dump(dict d, dict additional = {}):
+    cdef dict final = {}
+    cdef str n
+    cdef str value
+    cdef object to_add 
     for n, value in d.items():
         to_add = _convert_type(value)
 
@@ -60,17 +64,17 @@ cpdef dict _dump(dict d, dict additional = None):
     return final
 
 
-cpdef str _collect(dict d, str char = '_'):
+def _collect(dict d, str char = '_'):
     return char.join(char.join(map(str, pair)) for pair in d.items())
 
 
-cpdef _maybefloat(str s):
+def _maybefloat(str s):
     if '.' in s:
         return float(s)
     return int(s)
 
 
-cpdef _bool(str s):
+cpdef bool _bool(str s):
     return s == '1'
 
 
@@ -135,7 +139,7 @@ cpdef dict _OBJECT_ADDITIONAL = {
     _TEXT: lambda x: _b64_failsafe(x, encode=True)
 }
 
-cpdef dict _object_convert(str s):
+cpdef object _object_convert(str s):
     return _convert(s, delim=',', attempt_conversion=True, f=_from_str)
 
 cpdef dict _object_dump(dict d):
@@ -144,7 +148,7 @@ cpdef dict _object_dump(dict d):
 cpdef str _object_collect(dict d):
     return _collect(d, ',')
 
-cpdef _from_str(int n, str v):
+def _from_str(int n, str v):
     return {
         n in _INT: int,
         n in _BOOL: _bool,
@@ -168,9 +172,9 @@ cpdef dict _MAPPING = {
 }
 
 
-cpdef _convert_type(x):
-    cpdef type type_1
-    cpdef type type_2
+def _convert_type(x):
+    cdef type type_1
+    cdef type type_2
 
     for type_1, type_2 in _MAPPING.items():
         if isinstance(x, type_1):
@@ -185,7 +189,7 @@ cpdef int _COLOR_PLAYER = 4
 cpdef int _COLOR_FLOAT = 7
 cpdef int _COLOR_HSV = 10
 
-cpdef _parse_color(int n, str v):
+def _parse_color(int n, str v):
     return {
         n in _COLOR_INT: int,
         n in _COLOR_BOOL: _bool,
@@ -194,7 +198,7 @@ cpdef _parse_color(int n, str v):
         n == _COLOR_PLAYER: lambda s: PlayerColor(int(s)),
     }.get(1, str)(v)
 
-cpdef dict _color_convert(str s):
+cpdef object _color_convert(str s):
     return _convert(s, delim='_', attempt_conversion=True, f=_parse_color)
 
 cpdef dict _color_dump(dict d):
@@ -205,10 +209,10 @@ cpdef str _color_collect(dict d):
 
 # HEADER PARSING
 
-cpdef _process_header_colors(dict d):
+def _process_header_colors(dict d):
     pass
 
-cpdef dict _convert_header(str s):
+cpdef object _convert_header(str s):
     return _convert(s, delim=',', attempt_conversion=False)
 
 
