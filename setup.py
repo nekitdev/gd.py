@@ -37,7 +37,7 @@ def create_ext():
     accel_ext = Extension(name='_gd', sources=['gd/src/_gd.pyx'], language='c++')
     accel_ext.optional = True
 
-    extension.append(accel_ext)
+    extensions.append(accel_ext)
 
     # create Cython gd.api extension
     try:
