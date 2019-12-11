@@ -32,6 +32,7 @@ extras_require = {
 }
 
 def create_ext():
+    # create Cython gd.api extension
     try:
         from Cython.Build import cythonize as cython_convert
 
@@ -40,7 +41,7 @@ def create_ext():
 
     else:  # Cython imported, create an extension
         try:
-            return cython_convert('gd/src/_gd.pyx')  # accelerator
+            return cython_convert('gd/src/_gd.pyx', language='c++')
         except Exception:
             print('Failed to build Cython extensions.')
             return list()
@@ -78,7 +79,7 @@ setup(
         'Natural Language :: English',
         'Operating System :: OS Independent'
     ],
-    entry_points = {
+    entry_points={
         'console': [
             'gd = gd.__main__:main',
         ],
