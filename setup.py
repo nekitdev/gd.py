@@ -83,7 +83,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'gd = gd.__main__:main',
+            'gd = gd.__main__',
         ]
     }
 )
