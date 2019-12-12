@@ -435,8 +435,10 @@ class TriggerType(NEnum):
     CameraOffset = 1916
     Reverse = 1917
     End = 1931
-    UnknownSubzero = 1932
+    StopJump = 1932
     Scale = -11
+    Song = -12
+    TimeWarp = -13
 
 
 class ZLayer(NEnum):
