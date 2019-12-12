@@ -65,7 +65,7 @@ cpdef dict _dump(dict d, dict additional = {}):
     return final
 
 
-cdef _generator(dict d):
+def _generator(dict d):
     for pair in d.items():
         yield from map(str, pair)
 
