@@ -142,35 +142,40 @@ def _object_dump(d):
 def _object_collect(d):
     return _collect(d, ',')
 
+
 def _from_str(n: int, v: str):
-    return {
-        n in _INT: int,
-        n in _BOOL: _bool,
-        n in _FLOAT: _maybefloat,
-        n == _GROUPS: _ints_from_str,
-        n in _HSV: HSV.from_string,
-        n in _ENUMS: _ENUMS.get(n),
-        n == _TEXT: lambda string: _b64_failsafe(string, encode=False)
-    }.get(1, str)(v)
+    if n in _INT:
+        return int(v)
+    if n in _BOOL:
+        return _bool(v)
+    if n in _FLOAT:
+        return _maybefloat(v)
+    if n == _GROUPS:
+        return _ints_from_str(v)
+    if n in _HSV:
+        return HSV.from_string(v)
+    if n in _ENUMS:
+        return _ENUMS.get(n)(v)
+    if n == _TEXT:
+        return _b64_failsafe(v, encode=False)
+    return v
 
 
 _MAPPING = {
-    int: int,
-    float: float,
     list: _iter_to_str,
     tuple: _iter_to_str,
     set: _iter_to_str,
     HSV: HSV.dump,
-    NEnum: lambda enum: enum.value,
-    str: str
+    NEnum: lambda enum: enum.value
 }
 
+_KEYS = set(_MAPPING)
 
-def _convert_type(x: type):
-    for type_1, type_2 in _MAPPING.items():
-        if isinstance(x, type_1):
-            return type_2(x)
-    return str(x)
+def _convert_type(x: object):
+    t = type(x)
+    if t in _KEYS:
+        return _MAPPING[t](x)
+    return x
 
 # COLOR PARSING
 
@@ -181,13 +186,17 @@ _COLOR_FLOAT = 7
 _COLOR_HSV = 10
 
 def _parse_color(n: int, v: str):
-    return {
-        n in _COLOR_INT: int,
-        n in _COLOR_BOOL: _bool,
-        n == _COLOR_FLOAT: _maybefloat,
-        n == _COLOR_HSV: HSV.from_string,
-        n == _COLOR_PLAYER: lambda s: PlayerColor(int(s)),
-    }.get(1, str)(v)
+    if n in _COLOR_INT:
+        return int(v)
+    if n in _COLOR_BOOL:
+        return _bool(v)
+    if n == _COLOR_FLOAT:
+        return _maybefloat(v)
+    if n == _COLOR_HSV:
+        return HSV.from_string(v)
+    if n == _COLOR_PLAYER:
+        return PlayerColor(int(v))
+    return v
 
 def _color_convert(s):
     return _convert(s, delim=('_'), attempt_conversion=True, f=_parse_color)
