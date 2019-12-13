@@ -51,9 +51,6 @@ cpdef dict _convert(str s, str delim = '_', bool attempt_conversion = True, f = 
 
 cpdef dict _dump(dict d, dict additional = {}):
     cdef dict final = {}
-    cdef int n
-    cdef str value
-    cdef object to_add 
     for n, value in d.items():
         to_add = _convert_type(value)
 
