@@ -174,7 +174,7 @@ def _from_str(int n, str v):
 
 
 cpdef dict _MAPPING = {
-    bool: int,
+    type(True): int,
     list: _iter_to_str,
     tuple: _iter_to_str,
     set: _iter_to_str,
