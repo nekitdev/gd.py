@@ -47,10 +47,7 @@ def create_ext():
         pass
 
     else:  # Cython imported, create an extension
-        try:
-            return cython_convert(extensions)
-        except Exception:
-            print('Failed to build Cython extensions.')
+        return cython_convert(extensions)
 
     return list()
 

@@ -22,7 +22,7 @@ def _prepare(str s, str delim):
     return zip(sp[::2], sp[1::2])
 
 
-cpdef dict _convert(str s, str delim = '_',bool attempt_conversion = True, f = None):
+cpdef dict _convert(str s, str delim = '_', bool attempt_conversion = True, f = None):
     cdef prepared = _prepare(s, delim)
 
     if f is None:
@@ -51,7 +51,7 @@ cpdef dict _convert(str s, str delim = '_',bool attempt_conversion = True, f = N
 
 cpdef dict _dump(dict d, dict additional = {}):
     cdef dict final = {}
-    cdef str n
+    cdef int n
     cdef str value
     cdef object to_add 
     for n, value in d.items():
@@ -171,7 +171,6 @@ def _from_str(int n, str v):
     if n == _TEXT:
         return _b64_failsafe(v, encode=False)
     return v
-
 
 cpdef dict _MAPPING = {
     type(True): int,
