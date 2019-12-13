@@ -154,38 +154,42 @@ cpdef dict _object_dump(dict d):
 cpdef str _object_collect(dict d):
     return _collect(d, ',')
 
+
 def _from_str(int n, str v):
-    return {
-        n in _INT: int,
-        n in _BOOL: _bool,
-        n in _FLOAT: _maybefloat,
-        n == _GROUPS: _ints_from_str,
-        n in _HSV: HSV.from_string,
-        n in _ENUMS: _ENUMS.get(n),
-        n == _TEXT: lambda string: _b64_failsafe(string, encode=False)
-    }.get(1, str)(v)
+    if n in _INT:
+        return int(v)
+    if n in _BOOL:
+        return _bool(v)
+    if n in _FLOAT:
+        return _maybefloat(v)
+    if n == _GROUPS:
+        return _ints_from_str(v)
+    if n in _HSV:
+        return HSV.from_string(v)
+    if n in _ENUMS:
+        return _ENUMS.get(n)(v)
+    if n == _TEXT:
+        return _b64_failsafe(v, encode=False)
+    return v
 
 
 cpdef dict _MAPPING = {
-    int: int,
-    float: float,
+    bool: int,
     list: _iter_to_str,
     tuple: _iter_to_str,
     set: _iter_to_str,
-    HSV: HSV.dump,
-    NEnum: lambda enum: enum.value,
-    str: str
+    HSV: HSV.dump
 }
 
+cpdef set _KEYS = set(_MAPPING)
 
-def _convert_type(x):
-    cdef type type_1
-    cdef type type_2
-
-    for type_1, type_2 in _MAPPING.items():
-        if isinstance(x, type_1):
-            return type_2(x)
-    return str(x)
+def _convert_type(object x):
+    cdef t = x.__class__
+    if t in _KEYS:
+        return _MAPPING[t](x)
+    elif NEnum in t.__mro__:
+        return x.value
+    return x
 
 # COLOR PARSING
 
@@ -196,13 +200,17 @@ cpdef int _COLOR_FLOAT = 7
 cpdef int _COLOR_HSV = 10
 
 def _parse_color(int n, str v):
-    return {
-        n in _COLOR_INT: int,
-        n in _COLOR_BOOL: _bool,
-        n == _COLOR_FLOAT: _maybefloat,
-        n == _COLOR_HSV: HSV.from_string,
-        n == _COLOR_PLAYER: lambda s: PlayerColor(int(s)),
-    }.get(1, str)(v)
+    if n in _COLOR_INT:
+        return int(v)
+    if n in _COLOR_BOOL:
+        return _bool(v)
+    if n == _COLOR_FLOAT:
+        return _maybefloat(v)
+    if n == _COLOR_HSV:
+        return HSV.from_string(v)
+    if n == _COLOR_PLAYER:
+        return PlayerColor(int(v))
+    return v
 
 cpdef object _color_convert(str s):
     return _convert(s, delim='_', attempt_conversion=True, f=_parse_color)

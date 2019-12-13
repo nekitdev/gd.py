@@ -9,7 +9,7 @@ __all__ = ('_template', '_create', '_object_code', '_color_code')
 _template = """
 @property
 def {name}(self):
-    \"\"\":class:`{cls}`: Property -> {desc}.\"\"\"
+    \"\"\":class:`{cls}`: Property ({desc}).\"\"\"
     return self.data.get({enum})
 @{name}.setter
 def {name}(self, value):

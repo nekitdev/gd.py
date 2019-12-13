@@ -1,3 +1,5 @@
+from enum import EnumMeta as _META
+
 from ..utils.crypto.coders import Coder
 from ..utils.enums import NEnum
 
@@ -162,19 +164,21 @@ def _from_str(n: int, v: str):
 
 
 _MAPPING = {
+    bool: int,
     list: _iter_to_str,
     tuple: _iter_to_str,
     set: _iter_to_str,
-    HSV: HSV.dump,
-    NEnum: lambda enum: enum.value
+    HSV: HSV.dump
 }
 
 _KEYS = set(_MAPPING)
 
 def _convert_type(x: object):
-    t = type(x)
+    t = x.__class__
     if t in _KEYS:
         return _MAPPING[t](x)
+    elif NEnum in t.__mro__:
+        return x.value
     return x
 
 # COLOR PARSING
