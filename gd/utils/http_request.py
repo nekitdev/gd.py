@@ -288,7 +288,10 @@ class HTTPClient:
         if method is None:
             method = 'GET' if data is None else 'POST'
 
-        args = {'params': params} if method == 'GET' else {'data': params}
+        if data is None:
+            data = {}
+        if params is None:
+            params = {}
 
         async with aiohttp.ClientSession() as client:
             try:
