@@ -1187,7 +1187,7 @@ class GDSession:
         endpoint = 'https://gdbrowser.com/icon/icon'
         method = 'GET'
 
-        response = await http.normal_request(endpoint, params=query, method)
+        response = await http.normal_request(url=endpoint, params=query, method=method)
         return await response.read()
 
     async def update_settings(
