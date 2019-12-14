@@ -1176,7 +1176,7 @@ class GDSession:
 
     async def generate_icon(self, form: str, id: int, color_1: int, color_2: int, has_glow: bool):
         # fetch an icon from gdbrowser site
-        payload = {
+        query = {
             'form': form,
             'icon': id,
             'col1': color_1,
@@ -1187,7 +1187,7 @@ class GDSession:
         endpoint = 'https://gdbrowser.com/icon/icon'
         method = 'GET'
 
-        response = await http.normal_request(endpoint, payload, method)
+        response = await http.normal_request(endpoint, params=query, method)
         return await response.read()
 
     async def update_settings(
