@@ -1,8 +1,9 @@
 from typing import Union, Sequence
 
-from .struct import Object
+from .struct import *
 
 from ..abstractentity import AbstractEntity
+from ..errors import EditorError
 from ..utils.wrap_tools import make_repr
 
 __all__ = ('Editor',)
@@ -29,7 +30,7 @@ class Editor:
                 data = data.decode()
 
             except UnicodeDecodeError:
-                raise ValueError('Invalid level data recieved.') from None
+                raise EditorError('Invalid level data recieved.') from None
 
         info, *objects = data.split(';')
 
@@ -41,8 +42,8 @@ class Editor:
         except IndexError:
             pass
 
-        # actually convert
-        self.info = info  # TODO: conversion
+        # self.header = Header.from_string(info)
+        self.header = info
         self.objects = list(map(Object.from_string, objects))
 
     def __repr__(self):
@@ -83,7 +84,7 @@ class Editor:
 
     def dump(self, append_sc: bool = True):
         """Dump all objects and header into a level data string."""
-        seq = [self.info, *(obj.dump() for obj in self.objects)]
+        seq = [self.header.dump(), *(obj.dump() for obj in self.objects)]
 
         if append_sc:
             seq.append(str())

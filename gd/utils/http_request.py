@@ -128,7 +128,7 @@ class HTTPClient:
 
         Returns
         -------
-        Union[:class:`bytes`, :class:`str`, :class:`int`, `None`]
+        Optional[:class:`bytes`, :class:`str`, :class:`int`]
             ``res`` with the following rules:
 
             If Exception occurs while sending request, returns ``None``.
@@ -294,6 +294,9 @@ class HTTPClient:
 
             except VALID_ERRORS:
                 raise HTTPNotConnected()
+
+            if self.debug:
+                log.debug('URL: {}, Data: {}'.format(url, data))
 
         return resp
 

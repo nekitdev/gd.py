@@ -107,7 +107,7 @@ class User(UserStats):
 
     @property
     def rank(self):
-        """Union[:class:`int`, ``None``]: A global rank of the user.
+        """Optional[:class:`int`]: A global rank of the user.
         ``None`` if the user is not on the leaderboard.
         """
         return self.options.get('global_rank')

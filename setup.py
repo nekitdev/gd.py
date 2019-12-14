@@ -47,7 +47,11 @@ def create_ext():
         pass
 
     else:  # Cython imported, create an extension
-        return cython_convert(extensions)
+        try:
+            return cython_convert(extensions)
+        except Exception:
+            import traceback
+            print('Error occured while Cython converting.', traceback.format_exc())
 
     return list()
 

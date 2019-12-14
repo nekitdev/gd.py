@@ -11,7 +11,7 @@ class AbstractEntity:
 
         .. describe:: x != y
 
-            Check if two objects are not equal
+            Check if two objects are not equal.
 
         .. describe:: hash(x)
 
@@ -26,28 +26,25 @@ class AbstractEntity:
         return make_repr(self, info)
 
     def __hash__(self):
-        return hash(self.to_hash_string())
+        return hash(self.hash_str)
 
     def __eq__(self, other):
-        return isinstance(other, type(self)) and hash(self) == hash(other)
+        if not hasattr(other, 'id'):
+            return False
+        return type(self) == type(other) and self.id == other.id
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     @property
+    def hash_str(self):
+        cls = self.__class__.__name__
+        return '<GDEntity<{}(ID->{})>>'.format(cls, self.id)
+
+    @property
     def id(self):
         """:class:`int`: ID of the Entity."""
         return self.options.get('id', 0)
-
-    def to_hash_string(self):  # pragma: no cover
-        """:class:`str`: Converts to a string which is used in ``hash(self)``."""
-        cls = self.__class__.__name__
-        id = self.id
-        r = self.__repr__()
-
-        hash_string = '<GDEntity<{cls}>[id={id};repr={r}]>'.format(cls=cls, id=id, r=r)
-
-        return hash_string
 
     def attach_client(self, client):
         self._client = client

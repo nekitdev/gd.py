@@ -49,7 +49,7 @@ class Message(AbstractEntity):
 
     @property
     def body(self):
-        """Union[:class:`str`, ``None``]: A body of the message. Requires :meth:`.Message.read`."""
+        """Optional[:class:`str`]: A body of the message. Requires :meth:`.Message.read`."""
         return self._body
 
     def is_read(self):

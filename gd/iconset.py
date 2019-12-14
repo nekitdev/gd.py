@@ -1,7 +1,12 @@
-from .colors import Color
+from typing import Union
 
+from .colors import Color
+from .session import _session
+
+from .utils._async import run_blocking_io
 from .utils.enums import IconType
 from .utils.wrap_tools import make_repr
+
 
 class IconSet:
     """Class that represents an Icon Set."""
@@ -84,3 +89,13 @@ class IconSet:
     def get_colors(self):
         """Tuple[:class:`.Colour`, :class:`.Colour`]: A shorthand for *color_1* and *color_2*."""
         return self.color_1, self.color_2
+
+    async def generate(self, type: Union[int, str, IconType] = 'cube'):
+        form = IconType.from_value(type).name.lower()
+
+        icon_bytes = await _session.generate_icon(
+            form=form, id=getattr(self, form), has_glow=self.has_glow_outline(),
+            color_1=self.color_1.index, color_2=self.color_2.index
+        )
+
+        return icon_bytes

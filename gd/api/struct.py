@@ -6,7 +6,7 @@ from .hsv import HSV
 from .parser import *
 from ._property import _object_code, _color_code
 
-__all__ = ('Object', 'ColorChannel')
+__all__ = ('Object', 'ColorChannel', 'Header')
 
 class Struct:
     dumper = _dump

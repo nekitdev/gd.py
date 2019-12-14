@@ -1174,6 +1174,22 @@ class GDSession:
             raise MissingAccess(message='Failed to update profile of a client: {!r}'.format(client))
 
 
+    async def generate_icon(self, form: str, id: int, color_1: int, color_2: int, has_glow: bool):
+        # fetch an icon from gdbrowser site
+        payload = {
+            'form': form,
+            'icon': id,
+            'col1': color_1,
+            'col2': color_2,
+            'glow': int(has_glow),
+            'noUser': int(True)
+        }
+        endpoint = 'https://gdbrowser.com/icon/icon'
+        method = 'GET'
+
+        response = await http.normal_request(endpoint, payload, method)
+        return await response.read()
+
     async def update_settings(
         self, msg: int, friend_req: int, comments: int,
         youtube: str, twitter: str, twitch: str, *, client
