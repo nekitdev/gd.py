@@ -279,7 +279,7 @@ class HTTPClient:
                 resp = mapper.map(resp)
         return resp
 
-    async def normal_request(self, url: str, data = None, method: str = None, **kwargs):
+    async def normal_request(self, url: str, data = None, params = None, method: str = None, **kwargs):
         """|coro|
 
         Same as doing :meth:`aiohttp.ClientSession.request`, where ``method`` is
@@ -288,9 +288,11 @@ class HTTPClient:
         if method is None:
             method = 'GET' if data is None else 'POST'
 
+        args = {'params': params} if method == 'GET' else {'data': params}
+
         async with aiohttp.ClientSession() as client:
             try:
-                resp = await client.request(method, url, data=data, **kwargs)
+                resp = await client.request(method, url, data=data, params=params, **kwargs)
 
             except VALID_ERRORS:
                 raise HTTPNotConnected()
