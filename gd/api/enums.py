@@ -458,12 +458,11 @@ class ZLayer(NEnum):
 
 
 class Speed(NEnum):
-    DEFAULT = 0  # -> x 1
+    NORMAL = 0   # x 1
     SLOW = 1     # x 0.5
-    NORMAL = 2   # x 1
-    FAST = 3     # x 2
-    FASTER = 4   # x 3
-    FASTEST = 5  # x 4
+    FAST = 2     # x 2
+    FASTER = 3   # x 3
+    FASTEST = 4  # x 4
 
 
 class SpeedMagic(NEnum):
