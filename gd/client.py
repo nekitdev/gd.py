@@ -18,6 +18,24 @@ from . import utils
 log = logging.getLogger(__name__)
 
 
+class _LoginSession:
+    """Small wrapper around Client.login method.
+    Allows to temporarily login and execute
+    a block of code in an <async with> statement.
+    """
+    def __init__(self, client, username: str, password: str):
+        self._client = client
+        self._name = username
+        self._pass = password
+
+    async def __aenter__(self):
+        await self._client.login(self._name, self._pass)
+        return self._client
+
+    async def __aexit__(self, *exc):
+        self._client.close()
+
+
 class Client:
     """A main class in the gd.py library, used for interacting with the servers of Geometry Dash.
 
@@ -606,7 +624,7 @@ class Client:
 
         await self.session.do_save(client=self, data=data)
 
-    def close(self, message: str = 'Logged out, no additional description.'):
+    def close(self, message: str = None):
         """*Closes* client.
 
         Basically sets its password and username to ``None``, which
@@ -619,9 +637,19 @@ class Client:
         """
         self._set_to_defaults()
 
-        print(message)
-
         log.info('Has logged out with message: %r', message)
+
+    def temp_login(self, user: str, password: str):
+        """Async context manager, used for temporarily logging in.
+
+        Typical usage can be, as follows:
+
+        .. code-block:: python3
+
+            async with client.temp_login('Name', 'Password'):
+                await client.post_comment('Hey there from gd.py!')
+        """
+        return _LoginSession(self, user, password)
 
     @check.is_logged()
     async def get_blocked_users(self):
