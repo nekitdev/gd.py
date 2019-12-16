@@ -1,5 +1,4 @@
 import asyncio
-import itertools
 import re  # for NG songs
 import time  # for perf_counter in ping
 
@@ -1209,13 +1208,27 @@ class GDSession:
 
         res = [elem for elem in res if elem]
 
-        if all(isinstance(elem, list) for elem in res):
-            res = list(itertools.chain.from_iterable(res))
+        if all(_iterable(elem) for elem in res):
+            res = list(_unpack(res))
 
         return res
 
 
+def _iterable(maybe_iterable):
+    try:
+        iter(maybe_iterable)
+        return True
+    except Exception:
+        return False
+
+
+def _unpack(iterable):
+    for inner in iterable:
+        yield from inner
+
+
 def _is_not_empty(sequence):
     return bool(len(sequence))
+
 
 _session = GDSession()
