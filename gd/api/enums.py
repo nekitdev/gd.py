@@ -369,7 +369,7 @@ class SpecialColorID(NEnum):
     GRND = 1001
     Line = 1002
     Obj = 1003
-    ThreeDL = 1004
+    Line3D = 1004
     P1 = 1005
     P2 = 1006
     LBG = 1007
@@ -450,11 +450,11 @@ class ZLayer(NEnum):
     T2 = 7
     T3 = 9
 
-    BOTTOM = 1
-    MIDDLE = 3
-    TOP = 5
-    HIGHER_TOP = 7
-    ABS_ZERO = 4
+    Bottom = 1
+    Middle = 3
+    Top = 5
+    HigherTop = 7
+    AbsZero = 4
 
 
 class Speed(NEnum):
