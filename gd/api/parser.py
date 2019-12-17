@@ -1,5 +1,3 @@
-from enum import EnumMeta as _META
-
 from ..utils.crypto.coders import Coder
 from ..utils.enums import NEnum
 
@@ -113,6 +111,7 @@ _HSV = {43, 44, 49}
 _TEXT = 31
 _GROUPS = 57
 
+_Z_LAYER = 24
 _EASING = 30
 _PULSE_MODE = 48
 _PULSE_TYPE = 52
@@ -122,6 +121,7 @@ _COMP = 88
 _TARGET_COORDS = 101
 
 _ENUMS = {
+    _Z_LAYER: lambda n: ZLayer(int(n)),
     _EASING: lambda n: Easing(int(n)),
     _PULSE_MODE: lambda n: PulseMode(int(n)),
     _PULSE_TYPE: lambda n: PulseType(int(n)),
@@ -157,7 +157,7 @@ def _from_str(n: int, v: str):
     if n in _HSV:
         return HSV.from_string(v)
     if n in _ENUMS:
-        return _ENUMS.get(n)(v)
+        return _ENUMS[n](v)
     if n == _TEXT:
         return _b64_failsafe(v, encode=False)
     return v
