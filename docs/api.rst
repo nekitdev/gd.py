@@ -178,12 +178,24 @@ And open editor, like the following:
 
     # assume we have our 'obj' from above
 
-    editor = gd.api.Editor()
+    editor = Editor()
 
     editor.add_objects(obj)
 
     string = editor.dump()
     # '<some_data>;1,1,2,150,3,150,57,1;'
+
+There is an option to load the level's editor:
+
+.. code-block:: python3
+
+    import gd
+
+    client = gd.Client()
+
+    level = client.run(client.get_level(30029017))
+
+    editor = level.open_editor()
 
 gd.py also gives some helpers in case user does not know some values:
 
