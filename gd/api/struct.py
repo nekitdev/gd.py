@@ -16,14 +16,19 @@ mapping = {
     'orb': OrbType,
     'pad': PadType,
     'easing': Easing,
-    'layer': ZLayer
+    'layer': ZLayer,
+    'color': SpecialColorID,
 }
 
 supported = {name: enum.as_dict() for name, enum in mapping.items()}
 
-d = supported.get('portal')
+supported.get('color', {}).update({'3dl': 'color:line3d'})  # because variables can not start with digits
+
+d = supported.get('portal', {})
 for i, s in zip(range(5), ('slow', 'normal', 'fast', 'faster', 'fastest')):
     d.update({'speed:x{}'.format(i): 'portal:{}speed'.format(s)})
+
+# do some cleanup
 del i, s, d
 
 
@@ -213,6 +218,16 @@ class ColorChannel(Struct):
     convert = _color_convert
     collect = _color_collect
 
+    def __init__(self, special_directive: str = None, **properties):
+        super().__init__(**properties)
+
+        if special_directive is not None:
+            self.set_id(special_directive)
+
+    def set_id(self, directive: str):
+        """Set ColorID of ``self`` according to the directive, e.g. ``BG`` or ``color:bg``."""
+        self.edit(id=get_id(_get_dir(directive, 'color')))
+
     def set_color(self, color):
         """Set ``rgb`` of ``self`` to ``color``."""
         self.edit(**dict(zip('rgb', _define_color(color).to_rgb())))
@@ -220,5 +235,5 @@ class ColorChannel(Struct):
     exec(_color_code)
 
 
-class Header:
+class Header(Struct):
     pass
