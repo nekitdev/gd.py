@@ -3,6 +3,7 @@ from ..colors import Color
 from ..errors import EditorError
 
 from .hsv import HSV
+from .enums import *
 from .parser import *
 from ._property import _object_code, _color_code
 
@@ -151,7 +152,7 @@ class Object(Struct):
     collect = _object_collect
 
     def set_id(self, directive: str):
-        """Set ``id`` of ``self`` according to the directive, e.g. ``trigger:move``.""
+        """Set ``id`` of ``self`` according to the directive, e.g. ``trigger:move``."""
         self.edit(id=get_id(directive))
 
     def set_z_layer(self, directive: str):
