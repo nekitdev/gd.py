@@ -1,3 +1,6 @@
+Console Usage
+=============
+
 gd.py has some useful console commands.
 
 .. note::
