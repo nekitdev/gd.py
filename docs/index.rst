@@ -21,6 +21,7 @@ Documentation Contents
     api
     synchronization
     events
+    console
     dev
 
 Additional Information
