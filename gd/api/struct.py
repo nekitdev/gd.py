@@ -186,6 +186,9 @@ class ColorCollection(set):
             final = get_id(_get_dir(final, 'color'))
         return search.get(self, id=final)
 
+    def copy(self):
+        return self.__class__(self)
+
     def update(self, colors):
         super().update(
             color for color in map(_process_color, colors)
