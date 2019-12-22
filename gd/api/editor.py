@@ -19,29 +19,50 @@ for s in ('slow', 'normal', 'fast', 'faster', 'fastest'):
     )
     speed_map.update({b.value: a.value, c.value: a.value})
 
-speeds = {enum.value for enum in PortalType if 'Speed' in enum.name}
+_portals = {enum.value for enum in PortalType}
 
 
 def get_length_from_x(dx: float, start_speed: Speed, portals: Sequence[Object]) -> float:
+    """Calculate amount of time (length).
+
+    Computes the time (in seconds) to travel from ``0`` to ``dx`` on x axis,
+    respecting speed portals.
+
+    Parameters
+    ----------
+    dx: :class:`float`
+        Distance to compute time for.
+
+    start_speed: :class:`.api.Speed`
+        Speed at the start (in level header).
+
+    portals: Sequnece[:class:`.api.Object`]
+        Speed portals in the level, ordered by x position.
+
+    Returns
+    -------
+    :class:`float`
+        Calculated time.
+    """
     speed = speed_map.get(start_speed.value)
 
     if not portals:
         return dx / speed
 
-    last_x = 0.0
-    total = 0.0
+    last_x = 0
+    total = 0
 
     for portal in portals:
-        if dx <= last_x:
-            break
-
         x = portal.x
+
+        if dx <= x:
+            break
 
         current = x - last_x
 
         total += current / speed
 
-        speed = speed_map.get(portal.id, 1)
+        speed = speed_map.get(portal.id, speed)
 
         last_x = x
 
@@ -94,9 +115,9 @@ class Editor:
     def __len__(self):
         return len(self.objects)
 
-    def get_speed_portals(self):
+    def get_portals(self):
         def f(obj):
-            return obj.id in speeds and obj.is_checked
+            return obj.id in _portals and obj.is_checked
         def g(obj):
             return obj.x
 
@@ -108,18 +129,27 @@ class Editor:
     def get_speed(self):
         return self.header.speed or Speed(0)
 
-    def get_length(self):
-        x, speed, portals = (
-            self.get_x_length(),
-            self.get_speed(),
-            self.get_speed_portals()
-        )
+    def get_length(self, x: float = None):
+        if x is None:
+            x = self.get_x_length()
+
+        portals = self.get_portals()
+        speed = self.get_speed()
+
         return get_length_from_x(x, speed, portals)
+
+    def get_color(self, directive_or_id):
+        return self.header.colors.get(directive_or_id)
+
+    def copy_colors(self):
+        return ColorCollection(color.copy() for color in self.header.colors)
+
+    def add_colors(self, *colors):
+        self.header.colors.update(colors)
 
     def add_objects(self, *objects: Sequence[Object]):
         """Add objects to ``self.objects``."""
-        objects = list(filter(lambda obj: isinstance(obj, Object), objects))
-        self.objects.extend(objects)
+        self.objects.extend(list(objects))
 
     def copy_objects(self):
         """List[:class:`.api.Object`]: Copy objects of ``self``.
