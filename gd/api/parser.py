@@ -93,7 +93,7 @@ def _iter_to_str(x):
 
         elif t is dict:
             char = '|'
-            x = (_collect(elem) for elem in x)
+            x = (_collect(_dump(elem)) for elem in x)
       
     return char.join(map(str, x))
 
