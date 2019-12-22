@@ -175,12 +175,10 @@ class ColorCollection(set):
     @classmethod
     def create(cls, colors: list):
         if isinstance(colors, cls):
-            return colors
+            return colors.copy()
 
         self = cls()
-
-        for color in colors:
-            self.add(color)
+        self.update(colors)
 
         return self
 
@@ -189,6 +187,11 @@ class ColorCollection(set):
         if isinstance(final, str):
             final = get_id(_get_dir(final, 'color'))
         return search.get(self, id=final)
+
+    def update(self, colors):
+        super().update(
+            color for color in map(_process_color, colors)
+            if color is not None)
 
     def add(self, color):
         color = _process_color(color)
