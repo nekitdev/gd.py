@@ -48,7 +48,7 @@ class OptionalExtension(Extension):
 
 
 extension_list = [
-    Extension(name='_gd', sources=['gd/src/_gd.pyx'], language='c++')
+    OptionalExtension(name='_gd', sources=['gd/src/_gd.pyx'], language='c++')
 ]
 extensions = cythonize(extension_list)
 
