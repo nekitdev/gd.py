@@ -1,19 +1,23 @@
-from setuptools import Extension, setup
+import os
 import re
+import pathlib
+import sys
+from setuptools import Extension, setup
+from Cython.Build import cythonize
 
-requirements = []
-with open('requirements.txt') as f:
-    requirements = f.read().splitlines()
+root = pathlib.Path(__file__).parent
 
-with open('gd/__init__.py') as f:
-    try:
-        version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE).group(1)
-    except AttributeError:
-        raise RuntimeError('Version is not set.') from None
+requirements = (root / 'requirements.txt').read_text('utf-8').splitlines()
 
-readme = ''
-with open('README.rst') as f:
-    readme = f.read()
+txt = (root / 'gd' / '__init__.py').read_text('utf-8')
+
+try:
+    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', txt, re.MULTILINE).group(1)
+
+except AttributeError:
+    raise RuntimeError('Failed to find version.') from None
+
+readme = (root / 'README.rst').read_text('utf-8')
 
 extras_require = {
     'console': [
@@ -31,32 +35,24 @@ extras_require = {
     ]
 }
 
-def create_ext():
-    extensions = []
+NO_EXTENSIONS = bool(os.environ.get('GD_NO_EXTENSIONS'))
 
-    accel_ext = Extension(name='_gd', sources=['gd/src/_gd.pyx'], language='c++')
-    accel_ext.optional = True
-
-    extensions.append(accel_ext)
-
-    # create Cython gd.api extension
-    try:
-        from Cython.Build import cythonize as cython_convert
-
-    except ImportError:
-        pass
-
-    else:  # Cython imported, create an extension
-        try:
-            return cython_convert(extensions)
-        except Exception:
-            import traceback
-            print('Error occured while Cython converting.', traceback.format_exc())
-
-    return list()
+if sys.implementation.name.lower() != 'cpython':
+    NO_EXTENSIONS = True
 
 
-setup(
+class OptionalExtension(Extension):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.optional = True
+
+
+extension_list = [
+    Extension(name='_gd', sources=['gd/src/_gd.pyx'], language='c++')
+]
+extensions = cythonize(extension_list)
+
+args = dict(
     name='gd.py',
     author='NeKitDS',
     author_email='gdpy13@gmail.com',
@@ -77,7 +73,6 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require=extras_require,
-    ext_modules=create_ext(),
     python_requires='>=3.5.3',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -94,3 +89,9 @@ setup(
         ],
     }
 )
+
+if NO_EXTENSIONS:
+    setup(**args)
+
+else:
+    setup(ext_modules=extensions, **args)

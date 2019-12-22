@@ -1,7 +1,8 @@
 import asyncio
 import logging
-from typing import Callable, Dict
+from typing import Callable, Dict, Union
 
+from yarl import URL
 import aiohttp
 
 from ..errors import HTTPNotConnected
@@ -24,10 +25,10 @@ class HTTPClient:
     semaphore: Optional[:class:`asyncio.Semaphore`]
         A semaphore to use when doing requests. Defaults to :class:`asyncio.Semaphore` with value ``250``.
     """
-    def __init__(self, base: str = BASE, *, semaphore=None):
+    def __init__(self, base: Union[str, URL] = BASE, *, semaphore=None):
         self.semaphore = semaphore or asyncio.Semaphore(250)
         self.debug = False
-        self.base = base
+        self.base = URL(base)
         self._last_result = None  # for testing purposes
 
     def __repr__(self):
@@ -38,7 +39,7 @@ class HTTPClient:
         }
         return make_repr(self, info)
 
-    def change_base(self, base: str = None):
+    def change_base(self, base: str):
         """Change base for requests.
 
         Default base is ``http://www.boomlings.com/database/``,
@@ -47,15 +48,9 @@ class HTTPClient:
         Parameters
         ----------
         base: :class:`str`
-            Base to change HTTPClient base to. If ``None`` or omitted, current base is preserved.
+            Base to change HTTPClient base to.
         """
-        if base is None:
-            return
-
-        if not base.endswith('/'):
-            base += '/'
-
-        self.base = base
+        self.base = URL(base)
 
     def set_default_semaphore(self, value: int = 250, *, loop=None):
         """Sets semaphore to :class:`asyncio.Semaphore` with given value and loop.
@@ -122,9 +117,9 @@ class HTTPClient:
             Cookie, represented as string. Technically should be
             catched with ``get_cookies`` set to ``True``.
 
-        custom_base: :class:`str`
+        custom_base: [:class:`str`, :class:`yarl.URL`]
             Custom base using different Geometry Dash IP.
-            By default ``http://boomlings.com/database/`` is used.
+            By default ``self.base`` is used.
 
         Returns
         -------
@@ -141,8 +136,8 @@ class HTTPClient:
 
             If a cookie is requested, returns a pair (``res``, ``c``) where c is a :class:`str` cookie.
         """
-        base = self.base if custom_base is None else custom_base
-        url = base + php + '.php'
+        base = self.base if custom_base is None else URL(custom_base)
+        url = base / (php + '.php')
 
         method = 'GET' if params is None else 'POST'
         headers = None

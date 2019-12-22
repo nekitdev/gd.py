@@ -216,7 +216,7 @@ class Level(AbstractEntity):
         return self.data
 
     def open_editor(self):
-        return Editor(self)
+        return Editor.from_string(self.data)
 
     async def report(self):
         """|coro|

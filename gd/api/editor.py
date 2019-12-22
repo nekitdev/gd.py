@@ -12,19 +12,14 @@ __all__ = ('Editor',)
 class Editor:
     """Editor interface of gd.py.
 
-    Editor can be created either from decoded level's data, or taken from a level itself.
-
-    Parameters
-    ----------
-    data_or_level: Union[:class:`bytes`, :class:`str`, :class:`.Level`]
-        Data or a level, as described above.
+    Editor can be created either by hand, from decoded level's data, or taken from a level itself.
     """
-    def __init__(self, data_or_level: Union[bytes, str, AbstractEntity] = ''):
-        data = data_or_level
+    def __init__(self, header: Header = None, *objects):
+        self.header = header or Header()
+        self.objects = list(objects)
 
-        if isinstance(data_or_level, AbstractEntity):
-            data = data_or_level.data
-
+    @classmethod
+    def from_string(cls, data: Union[bytes, str]):
         if isinstance(data, bytes):
             try:
                 data = data.decode()
@@ -42,9 +37,10 @@ class Editor:
         except IndexError:
             pass
 
-        # self.header = Header.from_string(info)
-        self.header = info
-        self.objects = list(map(Object.from_string, objects))
+        header = Header.from_string(info)
+        objects = list(map(Object.from_string, objects))
+
+        return cls(header, *objects)
 
     def __repr__(self):
         info = {

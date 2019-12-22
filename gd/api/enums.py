@@ -20,9 +20,11 @@ __all__ = (
     'TouchToggleMode',
     'TriggerType',
     'ZLayer',
+    'Gamemode',
     'Speed',
     'SpeedMagic',
-    'LevelDataEnum'
+    'LevelDataEnum',
+    'LevelHeaderEnum'
 )
 
 
@@ -252,6 +254,7 @@ class ColorChannelProperties(NEnum):
 
 class PlayerColor(NEnum):
     NotUsed = -1
+    Default = 0
     P1 = 1
     P2 = 2
 
@@ -323,6 +326,17 @@ class PickupItemMode(NEnum):
     Default = 0
     Pickup = 1
     ToggleTrigger = 2
+
+
+class Gamemode(NEnum):
+    Cube = 0
+    Ship = 1
+    Ball = 2
+    UFO = 3
+    Wave = 4
+    Robot = 5
+    Spider = 6
+    SwingCopter = 7  # ?
 
 
 class PortalType(NEnum):
@@ -512,6 +526,8 @@ class LevelDataEnum(NEnum):
     BUILD_TAB_PAGES_DICT = 'kI6'
     EDITOR_LAYER = 'kI7'
 
+
+class LevelHeaderEnum(NEnum):
     AUDIO_TRACK = 'kA1'
     GAMEMODE = 'kA2'
     MINIMODE = 'kA3'
@@ -530,7 +546,7 @@ class LevelDataEnum(NEnum):
     GROUND_LINE = 'kA17'
     FONT = 'kA18'
     COLORS = 'kS38'
-    COLOR_PAGE = 'kS39'
+    COLOR_PAGES = 'kS39'
 
     # <= 1.9
     BACKGROUND_R = 'kS1'

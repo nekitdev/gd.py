@@ -1,97 +1,24 @@
 from ..utils.wrap_tools import make_repr
-from ..colors import Color
 from ..errors import EditorError
 
-from .hsv import HSV
-from .enums import *
 from .parser import *
-from ._property import _object_code, _color_code
+from .utils import _get_dir, _define_color, get_id
+from ._property import _object_code, _color_code, _header_code
 
-__all__ = ('Object', 'ColorChannel', 'Header', 'supported', 'get_id')
+from . import parser
 
-mapping = {
-    'special': SpecialBlockType,
-    'trigger': TriggerType,
-    'portal': PortalType,
-    'orb': OrbType,
-    'pad': PadType,
-    'easing': Easing,
-    'layer': ZLayer,
-    'color': SpecialColorID,
-}
-
-supported = {name: enum.as_dict() for name, enum in mapping.items()}
-
-supported.get('color', {}).update({'3dl': 'color:line3d'})  # because variables can not start with digits
-
-d = supported.get('portal', {})
-for i, s in zip(range(5), ('slow', 'normal', 'fast', 'faster', 'fastest')):
-    d.update({'speed:x{}'.format(i): 'portal:{}speed'.format(s)})
-
-# do some cleanup
-del i, s, d
-
-
-def _get_dir(directive: str, cls: str, delim: str = ':'):
-    return delim.join((cls, directive.split(delim).pop()))
-
-
-def get_id(x: str, ret_enum: bool = False, delim: str = ':'):
-    """Calculate required value from the given directive ``x``.
-
-    The format is, as follows: ``class:name``, e.g. ``special:h``.
-
-    Parameters
-    ----------
-    x: :class:`str`
-        Directive to get value from.
-
-    ret_enum: :class:`bool`
-        Whether to convert found value to enum. By default, ``False``.
-
-    delim: :class:`str`
-        Character to split given directive string with.
-        It is not recommended to pass this argument to the function.
-
-    Returns
-    -------
-    `Any`
-        The value found, if any.
-
-    Raises
-    ------
-    :exc:`.EditorError`
-        Failed to convert directive to the value.
-    """
-    typeof, name = (
-        string.strip().replace('_', '').lower()
-        for string in x.split(delim, maxsplit=1)
-    )
-
-    try:
-        found = supported[typeof][name]
-
-        if isinstance(found, str) and delim in found:
-            # inner directive
-            return get_id(found)
-
-        elif ret_enum:
-            return mapping[typeof](found)
-
-        return found
-
-    except Exception:
-        raise EditorError('ID by directive {!r} was not found.'.format(x)) from None
+__all__ = ('Object', 'ColorChannel', 'Header')
 
 
 class Struct:
-    dumper = _dump
-    convert = _convert
-    collect = _collect
-    base_data = {}
+    _dump = _dump
+    _convert = _convert
+    _convert = _collect
+    _base_data = {}
+    _existing_properties = []
 
     def __init__(self, **properties):
-        self.data = self.base_data.copy()
+        self.data = self._base_data.copy()
 
         for name, value in properties.items():
             setattr(self, name, value)
@@ -100,9 +27,12 @@ class Struct:
         info = {key: repr(value) for key, value in self.to_dict().items()}
         return make_repr(self, info)
 
+    def __str__(self):
+        return self.dump()
+
     def to_dict(self):
         final = {}
-        for name in self.existing_properties:
+        for name in self._existing_properties:
             value = getattr(self, name)
 
             if value is not None:
@@ -111,10 +41,10 @@ class Struct:
         return final
 
     def dump(self):
-        return self.__class__.collect(self.to_map())
+        return self.__class__._collect(self.to_map())
 
     def to_map(self):
-        return self.__class__.dumper(self.data)
+        return self.__class__._dump(self.data)
 
     def copy(self):
         self_copy = self.__class__()
@@ -134,27 +64,17 @@ class Struct:
     @classmethod
     def from_string(cls, string: str):
         try:
-            return cls.from_mapping(cls.convert(string))
+            return cls.from_mapping(cls._convert(string))
 
         except Exception as exc:
             raise EditorError('Failed to process string.') from exc
 
 
-def _define_color(color):
-    if hasattr(color, '__iter__'):
-        return Color.from_rgb(*color)
-
-    if hasattr(color, 'value'):
-        return Color(color.value)
-
-    return Color(color)
-
-
 class Object(Struct):
-    base_data = {1: 1, 2: 0, 3: 0}
-    dumper = _object_dump
-    convert = _object_convert
-    collect = _object_collect
+    _base_data = {1: 1, 2: 0, 3: 0}
+    _dump = _object_dump
+    _convert = _object_convert
+    _collect = _object_collect
 
     def set_id(self, directive: str):
         """Set ``id`` of ``self`` according to the directive, e.g. ``trigger:move``."""
@@ -203,7 +123,7 @@ class Object(Struct):
     exec(_object_code)
 
 class ColorChannel(Struct):
-    base_data = {
+    _base_data = {
         1: 255, 2: 255, 3: 255,
         4: -1,
         5: False,
@@ -214,9 +134,9 @@ class ColorChannel(Struct):
         15: True,
         18: False
     }
-    dumper = _color_dump
-    convert = _color_convert
-    collect = _color_collect
+    _dump = _color_dump
+    _convert = _color_convert
+    _collect = _color_collect
 
     def __init__(self, special_directive: str = None, **properties):
         super().__init__(**properties)
@@ -236,4 +156,9 @@ class ColorChannel(Struct):
 
 
 class Header(Struct):
-    pass
+    _base_data = {}
+    _dump = _header_dump
+    _convert = _header_convert
+    _collect = _header_collect
+
+    exec(_header_code)

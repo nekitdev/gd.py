@@ -18,34 +18,7 @@ Here are some simple guidelines for creating good issues and pull requests:
 
 3.2. Though, our line length limit is 120 characters, and we tend to use more space to bring the readability;
 
-4. If you have created a new function or method, please document it; that really helps end-users of our library;
-
-5. Lastly, see some examples below related to the code style.
-
-Code Style
-----------
-
-.. code-block:: python3
-
-    # bad
-    # really makes reading code confusing
-    from some_module import *
-
-    # use more spaces, as PEP 8 suggests
-    var=my_function()
-
-    # never do one-line if statements
-    if condition: do_something()
-
-    # good
-    from some_module import (
-        my_function, condition, do_something
-    )
-
-    var = my_function()
-
-    if condition:
-        do_something()
+4. If you have created a new function or method, please document it; that really helps end-users of our library.
 
 Additional Commentary
 ---------------------

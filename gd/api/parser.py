@@ -1,8 +1,15 @@
+from itertools import chain
+
 from ..utils.crypto.coders import Coder
 from ..utils.enums import NEnum
 
 from .hsv import HSV
 from .enums import *
+
+from . import struct
+
+# yikes!
+ColorChannel = struct.ColorChannel
 
 # MAIN HELPERS
 
@@ -56,10 +63,7 @@ def _dump(d, additional: dict = None):
 
 
 def _collect(d, char: str = '_'):
-    def generator():
-        for pair in d.items():
-            yield from map(str, pair)
-    return char.join(generator())
+    return char.join(map(str, chain.from_iterable(d.items())))
 
 
 def _maybefloat(s: str):
@@ -80,7 +84,24 @@ def _ints_from_str(string: str, split: str = '.'):
 
 
 def _iter_to_str(x):
-    return ('.').join(map(str, x))
+    char = '.'
+
+    try:
+        elem = next(iter(x))
+    except StopIteration:
+        pass
+
+    else:
+        t = type(elem)
+
+        if t is float:
+            char = '~0~'
+
+        elif t is ColorChannel:
+            char = '|'
+            x = (cc.dump() for cc in x)
+
+    return char.join(map(str, x))
 
 
 def _b64_failsafe(string: str, encode: bool = True):
@@ -121,14 +142,14 @@ _COMP = 88
 _TARGET_COORDS = 101
 
 _ENUMS = {
-    _Z_LAYER: lambda n: ZLayer(int(n)),
-    _EASING: lambda n: Easing(int(n)),
-    _PULSE_MODE: lambda n: PulseMode(int(n)),
-    _PULSE_TYPE: lambda n: PulseType(int(n)),
-    _PICKUP_MODE: lambda n: PickupItemMode(int(n)),
-    _TOUCH_TOGGLE: lambda n: TouchToggleMode(int(n)),
-    _COMP: lambda n: InstantCountComparison(int(n)),
-    _TARGET_COORDS: lambda n: TargetPosCoordinates(int(n))
+    _Z_LAYER: ZLayer,
+    _EASING: Easing,
+    _PULSE_MODE: PulseMode,
+    _PULSE_TYPE: PulseType,
+    _PICKUP_MODE: PickupItemMode,
+    _TOUCH_TOGGLE: TouchToggleMode,
+    _COMP: InstantCountComparison,
+    _TARGET_COORDS: TargetPosCoordinates
 }
 
 _OBJECT_ADDITIONAL = {
@@ -157,7 +178,7 @@ def _from_str(n: int, v: str):
     if n in _HSV:
         return HSV.from_string(v)
     if n in _ENUMS:
-        return _ENUMS[n](v)
+        return _ENUMS[n](int(v))
     if n == _TEXT:
         return _b64_failsafe(v, encode=False)
     return v
@@ -213,21 +234,78 @@ def _color_collect(d):
 
 # HEADER PARSING
 
-def _process_header_colors(d):
-    pass
+_HEADER_INT = {
+    'kA1',
+    'kA6', 'kA7', 'kA18',  # TODO: add related enums
+    'kS1', 'kS2', 'kS3', 'kS4', 'kS5', 'kS6', 'kS7', 'kS8', 'kS9', 'kS10',
+    'kS11', 'kS12', 'kS13', 'kS14', 'kS15', 'kS16', 'kS17', 'kS18', 'kS19', 'kS20',
+    'kS39',
+}
+_HEADER_BOOL = {
+    'kA3', 'kA5', 'kA8', 'kA9', 'kA10', 'kA11', 'kA15', 'kA16', 'kA17'
+}
+_HEADER_FLOAT = 'kA13'
+_HEADER_COLORS = {
+    'kS29', 'kS30', 'kS31', 'kS32', 'kS33', 'kS34', 'kS35', 'kS36', 'kS37'
+}
 
-def _convert_header(s):
-    return _convert(s, delim=(','), attempt_conversion=False)
+_COLORS = 'kS38'
+_GUIDELINES = 'kA14'
+
+_GAMEMODE = 'kA2'
+_SPEED = 'kA4'
+
+_HEADER_ENUMS = {
+    _GAMEMODE: Gamemode,
+    _SPEED: Speed,
+}
+
+
+def _parse_header(n: str, v: str):
+    if n in _HEADER_INT:
+        return int(v)
+    if n in _HEADER_BOOL:
+        return _bool(v)
+    if n in _HEADER_ENUMS:
+        return _HEADER_ENUMS[n](int(v))
+    if n == _COLORS:
+        return _parse_colors(v)
+    if n == _HEADER_FLOAT:
+        return _maybefloat(v)
+    if n in _HEADER_COLORS:
+        return ColorChannel.from_mapping(_color_convert(v))
+    if n == _GUIDELINES:
+        return _parse_guidelines(v)
+    return v
+
+
+def _parse_colors(s: str, delim: str = '|'):
+    return list(map(
+        ColorChannel.from_mapping, filter(lambda s: s, map(_color_convert, s.split(delim)))
+    ))
+
+
+def _parse_guidelines(s, delim: str = '~0~'):  # wow cool splitter
+    return list() if not s else list(map(float, filter(lambda s: s, s.split(delim))))
+
+
+def _header_convert(s):
+    return _convert(s, delim=(','), attempt_conversion=False, f=_parse_header)
+
+
+def _header_dump(d):
+    return _dump(d)
+
+
+def _header_collect(d):
+    return _collect(d, ',')
 
 # LOAD ACCELERATOR
 
 try:
-    # attempt to load all functions from acceleator module
     import _gd
-    locals().update(_gd.__dict__)  # hacky insertion
-
+    locals().update(_gd.__dict__)  # hacky insertion yay
 except ImportError:
-    pass
-
+    pass  # can not import? kden
 
 __all__ = tuple(key for key in locals().keys() if key.startswith('_') and '__' not in key)

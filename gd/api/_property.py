@@ -10,13 +10,13 @@ _template = """
 @property
 def {name}(self):
     \"\"\":class:`{cls}`: Property ({desc}).\"\"\"
-    return self.data.get({enum})
+    return self.data.get({enum!r})
 @{name}.setter
 def {name}(self, value):
-    self.data[{enum}] = value
+    self.data[{enum!r}] = value
 """.strip('\n')
 
-_properties = "existing_properties = {}"
+_properties = "_existing_properties = {}"
 
 _ENUMS = {
     _EASING: Easing,
@@ -29,7 +29,7 @@ _ENUMS = {
 }
 
 
-def _get_type(n, as_string: bool = True, ts: str = 'object'):
+def _get_type(n, ts: str = 'object'):
     t = {
         'object': {
             n in _INT: int,
@@ -47,10 +47,22 @@ def _get_type(n, as_string: bool = True, ts: str = 'object'):
             n == _COLOR_FLOAT: float,
             n == _COLOR_HSV: HSV
         },
-        'header': {}
+        'header': {
+            n in _HEADER_INT: int,
+            n in _HEADER_BOOL: bool,
+            n == _HEADER_FLOAT: float,
+            n in _HEADER_COLORS: 'ColorChannel',
+            n == _COLORS: list,
+            n == _GUIDELINES: list,
+            n in _HEADER_ENUMS: _HEADER_ENUMS.get(n)
+        }
     }
     r = t.get(ts, {}).get(1, str)
-    return r.__name__ if as_string else r
+
+    try:
+        return r.__name__
+    except AttributeError:
+        return r
 
 
 def _create(enum, ts: str):
@@ -74,3 +86,4 @@ def _create(enum, ts: str):
 
 _object_code = _create(ObjectDataEnum, 'object')
 _color_code = _create(ColorChannelProperties, 'color')
+_header_code = _create(LevelHeaderEnum, 'header')

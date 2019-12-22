@@ -2,6 +2,7 @@ import asyncio
 import re  # for NG songs
 import time  # for perf_counter in ping
 
+from itertools import chain
 from typing import Union, Sequence, Tuple, Dict
 
 from .unreguser import UnregisteredUser
@@ -1209,7 +1210,7 @@ class GDSession:
         res = [elem for elem in res if elem]
 
         if all(_iterable(elem) for elem in res):
-            res = list(_unpack(res))
+            res = list(chain.from_iterable(res))
 
         return res
 
@@ -1220,11 +1221,6 @@ def _iterable(maybe_iterable):
         return True
     except Exception:
         return False
-
-
-def _unpack(iterable):
-    for inner in iterable:
-        yield from inner
 
 
 def _is_not_empty(sequence):
