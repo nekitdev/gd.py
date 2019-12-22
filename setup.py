@@ -54,7 +54,7 @@ try:
     from Cython.Build import cythonize
     extensions = cythonize(extension_list)
 except ImportError:
-    extensions = list()
+    NO_EXTENSIONS = True
 
 args = dict(
     name='gd.py',
