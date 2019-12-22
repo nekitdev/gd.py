@@ -3,7 +3,6 @@ import re
 import pathlib
 import sys
 from setuptools import Extension, setup
-from Cython.Build import cythonize
 
 root = pathlib.Path(__file__).parent
 
@@ -50,7 +49,12 @@ class OptionalExtension(Extension):
 extension_list = [
     OptionalExtension(name='_gd', sources=['gd/src/_gd.pyx'], language='c++')
 ]
-extensions = cythonize(extension_list)
+
+try:
+    from Cython.Build import cythonize
+    extensions = cythonize(extension_list)
+except ImportError:
+    extensions = list()
 
 args = dict(
     name='gd.py',
