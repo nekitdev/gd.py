@@ -1,12 +1,51 @@
 from typing import Union, Sequence
 
+from .enums import *
 from .struct import *
 
 from ..abstractentity import AbstractEntity
 from ..errors import EditorError
 from ..utils.wrap_tools import make_repr
 
-__all__ = ('Editor',)
+__all__ = ('Editor', 'get_length_from_x')
+
+speed_map = {}
+
+for s in ('slow', 'normal', 'fast', 'faster', 'fastest'):
+    a, b, c = (
+        SpeedMagic[s.upper()],
+        Speed[s.upper()],
+        PortalType[s.title()+'Speed']
+    )
+    speed_map.update({b.value: a.value, c.value: a.value})
+
+speeds = {enum.value for enum in PortalType if 'Speed' in enum.name}
+
+
+def get_length_from_x(dx: float, start_speed: Speed, portals: Sequence[Object]) -> float:
+    speed = speed_map.get(start_speed.value)
+
+    if not portals:
+        return dx / speed
+
+    last_x = 0.0
+    total = 0.0
+
+    for portal in portals:
+        if dx <= last_x:
+            break
+
+        x = portal.x
+
+        current = x - last_x
+
+        total += current / speed
+
+        speed = speed_map.get(portal.id, 1)
+
+        last_x = x
+
+    return (dx - last_x) / speed + total
 
 
 class Editor:
@@ -54,6 +93,28 @@ class Editor:
 
     def __len__(self):
         return len(self.objects)
+
+    def get_speed_portals(self):
+        def f(obj):
+            return obj.id in speeds and obj.is_checked
+        def g(obj):
+            return obj.x
+
+        return sorted(filter(f, self.objects), key=g)
+
+    def get_x_length(self):
+        return max((obj.x for obj in self.objects), default=0)
+
+    def get_speed(self):
+        return self.header.speed or Speed(0)
+
+    def get_length(self):
+        x, speed, portals = (
+            self.get_x_length(),
+            self.get_speed(),
+            self.get_speed_portals()
+        )
+        return get_length_from_x(x, speed, portals)
 
     def add_objects(self, *objects: Sequence[Object]):
         """Add objects to ``self.objects``."""
