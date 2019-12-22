@@ -13,7 +13,7 @@ install:
   # install coveralls
   - pip install coveralls
 
-script: coverage run -m pytest ./tests/* --disable-warnings
+script: coverage run -m pytest ./tests/ --maxfail=3 --disable-warnings
 
 after_success:
   # report to coveralls
