@@ -1,12 +1,10 @@
 from ..utils.wrap_tools import make_repr
 from ..errors import EditorError
 
+from .parser import *
+
 from .utils import _get_dir, _define_color, get_id
 from ._property import _object_code, _color_code, _header_code
-
-from . import parser
-
-locals().update(parser.__dict__)
 
 __all__ = ('Object', 'ColorChannel', 'Header')
 
