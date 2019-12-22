@@ -142,14 +142,12 @@ class ColorChannel(Struct):
         if special_directive is not None:
             self.set_id(special_directive)
 
-        self.id = (self.id or 0)
-
     def __hash__(self):
-        return self.id ^ 13
+        return hash(self.id)
 
     def __eq__(self, other):
-        if isinstance(other, type(self)) and hasattr(other, 'id'):
-            return self.id == other.id
+        if isinstance(other, type(self)):
+            return self.data == other.data
 
     def set_id(self, directive: str):
         """Set ColorID of ``self`` according to the directive, e.g. ``BG`` or ``color:bg``."""
