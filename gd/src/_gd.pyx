@@ -96,12 +96,12 @@ cpdef _iter_to_str(x):
         if t is float:
             char = '~0~'
 
-        elif (t.__name__ == 'ColorChannel'):
+        elif t is dict:
             char = '|'
 
             s = []
-            for cc in x:
-                s.append(cc.dump())
+            for d in x:
+                s.append(_collect(_dump(d)))
             x = s
 
     return char.join(map(str, x))
