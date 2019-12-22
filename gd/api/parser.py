@@ -6,11 +6,6 @@ from ..utils.enums import NEnum
 from .hsv import HSV
 from .enums import *
 
-from . import struct
-
-# yikes!
-ColorChannel = struct.ColorChannel
-
 # MAIN HELPERS
 
 def _try_convert(obj, cls: type = int):
@@ -93,14 +88,13 @@ def _iter_to_str(x):
 
     else:
         t = type(elem)
-
         if t is float:
             char = '~0~'
 
-        elif t is ColorChannel:
+        elif t is dict:
             char = '|'
-            x = (cc.dump() for cc in x)
-
+            x = (_collect(elem) for elem in x)
+      
     return char.join(map(str, x))
 
 
@@ -189,6 +183,7 @@ _MAPPING = {
     list: _iter_to_str,
     tuple: _iter_to_str,
     set: _iter_to_str,
+    dict: _iter_to_str,
     HSV: HSV.dump
 }
 
@@ -280,9 +275,7 @@ def _parse_header(n: str, v: str):
 
 
 def _parse_colors(s: str, delim: str = '|'):
-    return list(map(
-        ColorChannel.from_mapping, filter(lambda s: s, map(_color_convert, s.split(delim)))
-    ))
+    return list(filter(lambda s: s, map(_color_convert, s.split(delim))))
 
 
 def _parse_guidelines(s, delim: str = '~0~'):  # wow cool splitter
