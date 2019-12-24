@@ -1,7 +1,7 @@
 from ..errors import PagesOutOfRange
 from .wrap_tools import make_repr
 
-def paginate(iterable, per_page: int = 10):
+def paginate(iterable=(), per_page: int = 10):
     """A function that paginates the given iterable.
 
     Simply wraps iterable in :class:`.Paginator` and returns it.
@@ -50,7 +50,7 @@ class Paginator:
 
     def __repr__(self):
         info = {
-            'can_run': self.can_run(),
+            'empty': self.is_empty(),
             'length': self.length,
             'per_page': self.per_page,
             'pages': self.get_pages_count(),
@@ -93,17 +93,17 @@ class Paginator:
 
         return (
             '[gd.Paginator]\n'
-            '[Can_Run: {can_run}]\n'
+            '[Is_Empty: {is_empty}]\n'
             '[Length: {length}]\n[Pages: {pages_count}]\n'
             '[Current_State]\n[Page: {page}]\n'
             '[Showing: {_from} to {_to} of {length}]'
         ).format(
-            can_run=self.can_run(), length=self.length,
+            is_empty=self.is_empty(), length=self.length,
             pages_count=self.get_pages_count(),
             page=self.get_curr_page(), _from=_from, _to=_to
         )
 
-    def load_from(self, iterable):
+    def load_iterable(self, iterable):
         """A function that paginates the given iterable.
 
         Basically reloads already created paginator with given iterable.
@@ -152,15 +152,7 @@ class Paginator:
         """:class:`int`: Get a number of the current page."""
         return self._current_page
 
-    def has_next(self):
-        """:class:`bool`: Indicates whether does the next page exists."""
-        return True if self.get_curr_page() < self.get_pages_count() else False
-
-    def has_prev(self):
-        """:class:`bool`: Indicates if previous page is existing."""
-        return True if self.get_curr_page() > 0 else False
-
-    def can_run(self):
+    def is_empty(self):
         """:class:`bool`: Indicates whether paginator is empty."""
         return self.length > 0
 
@@ -172,12 +164,7 @@ class Paginator:
         :exc:`.PagesOutOfRange`
             The next page does not exist.
         """
-        if not self.has_next():
-            raise PagesOutOfRange(
-                page = self.get_curr_page() + 1,
-                info = self.get_pages_count()
-            )
-        self._current_page += 1
+        self.move_to(self.get_curr_page() + 1)
 
     def move_to_prev(self):
         """Attempts to go to the previous page.
@@ -187,12 +174,19 @@ class Paginator:
         :exc:`.PagesOutOfRange`
             The previous page does not exist.
         """
-        if not self.has_prev():
+        self.move_to(self.get_curr_page() - 1)
+
+    def _check_page(self, page: int):
+        if page < 0:
             raise PagesOutOfRange(
-                page = self.get_curr_page() - 1,
+                page = page,
                 info = 'Page does not support negative integers.'
             )
-        self._current_page -= 1
+        if (page + 1) > self.get_pages_count():
+            raise PagesOutOfRange(
+                page = page,
+                info = self.get_pages_count()
+            )
 
     def move_to(self, page: int):
         """Moves to the ``page`` given.
@@ -208,16 +202,7 @@ class Paginator:
             Given ``page`` does not exist.
         """
         page = int(page)
-        if page < 0:
-            raise PagesOutOfRange(
-                page = page,
-                info = 'Page does not support negative integers.'
-            )
-        if page > self.get_pages_count():
-            raise PagesOutOfRange(
-                page = page,
-                info = self.get_pages_count()
-            )
+        self._check_page(page)
         self._current_page = page
 
     def view_page(self, page: int = None):
@@ -236,27 +221,15 @@ class Paginator:
             Raised when given page is out of range.
         """
         if page is None:
-            page_to_view = self.get_curr_page()
-            to_pass = page_to_view * self.per_page
-            res = self.list[to_pass:(to_pass + self.per_page)]
-            return res
+            page = self.get_curr_page()
 
         else:
             page = int(page)
-            if page < 0:
-                raise PagesOutOfRange(
-                    page = page,
-                    info = "Page does not support negative integers."
-                )
-            if page > self.get_pages_count():
-                raise PagesOutOfRange(
-                    page = page,
-                    info = self.get_pages_count()
-                )
-            else:
-                to_pass = page * self.per_page
-                res = self.list[to_pass:(to_pass + self.per_page)]
-                return res
+            self._check_page(page)
+
+        to_pass = page * self.per_page
+        res = self.list[to_pass:(to_pass + self.per_page)]
+        return res
 
     def get_all(self):
         """Pretty similar to self.list, but returns List[List[`Any`]], where each
