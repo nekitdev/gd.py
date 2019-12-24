@@ -1,6 +1,7 @@
 from pathlib import Path
 import functools
-import os, sys
+import os
+import sys
 
 from ..utils._async import run_blocking_io
 from ..utils.crypto.coders import Coder
@@ -24,7 +25,7 @@ try:
     elif sys.platform == 'darwin': 
         local_env = os.getenv('HOME')
         path = Path(local_env) / 'Library' / 'Application Support' / 'Geometry Dash'
-        # TODO: figure out encoding of MacOS GD saves
+        # TODO: figure out encoding of MacOS GD saves (if possible)
 
     else:
         path = Path()    
@@ -70,7 +71,7 @@ class SaveUtil:
         except Exception:
             return str()
 
-    def _load(self, main_stream, level_stream, xor: bool = True):
+    def _load(self, main_stream: str = '', level_stream: str = '', xor: bool = True):
         main = self._decode(main_stream, xor=xor)
         levels = self._decode(level_stream, xor=xor)
         return Database(main, levels)
