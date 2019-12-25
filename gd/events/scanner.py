@@ -114,7 +114,7 @@ class AbstractScanner:
 
     async def on_error(self, exc):
         """Basic event handler to print the errors if any occur."""
-        print(traceback.format_exc(exc))
+        traceback.print_exc()
 
     async def scan(self):
         """This function should contain main code of the scanner."""
