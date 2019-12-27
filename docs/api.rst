@@ -284,8 +284,6 @@ Exceptions
 
 .. autoexception:: HTTPNotConnected
 
-.. autoexception:: FailedCaptcha
-
 .. autoexception:: MissingAccess
 
 .. autoexception:: SongRestrictedForUsage
@@ -311,7 +309,6 @@ Exception Hierarchy
         FailedConversion
         ClientException
             HTTPNotConnected
-            FailedCaptcha
             MissingAccess
             SongRestrictedForUsage
             LoginFailure

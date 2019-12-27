@@ -36,9 +36,3 @@ Ciphers and Coders
 
 .. autoclass:: Coder
     :members:
-
-Captcha Solving
----------------
-
-.. autoclass:: Captcha
-    :members:

@@ -50,9 +50,6 @@ async def test_level_packs():
     await client.get_page_map_packs()
     await client.get_map_packs()
 
-async def test_captcha():
-    await client.test_captcha()
-
 async def test_ping():
     await client.ping_server()
 

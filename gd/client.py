@@ -419,18 +419,6 @@ class Client:
 
         return await self.session.get_map_packs(pages=pages, client=self)
 
-    async def test_captcha(self):
-        """|coro|
-
-        Tests Captcha solving.
-
-        Returns
-        -------
-        :class:`int`
-            The code of the Captcha.
-        """
-        return await self.session.test_captcha()
-
     async def login(self, user: str, password: str):  # pragma: no cover
         """|coro|
 
@@ -909,38 +897,6 @@ class Client:
         await self.session.post_comment(content, client=self)
 
         log.debug("Posted a comment. Content: %s", content)
-
-    @check.is_logged()
-    async def edit(self, name: str = None, password: str = None):
-        """|coro|
-
-        Tries to edit credentials of a client, if logged in.
-
-        .. note::
-
-            See :meth:`.Client.test_captcha` to see information about how to treat this function.
-
-        Parameters
-        ----------
-        name: :class:`str`
-            A name to change logged account's username to. Defaults to ``None``.
-
-        password: :class:`str`
-            A password to change logged account's username to. Defaults to ``None``.
-
-        Raises
-        ------
-        :exc:`.FailedToChange`
-            Failed to change the credentials.
-        """
-        await self.session.edit(name=name, password=password, client=self)
-
-        # if no errors occured, log changes.
-        if name is not None:
-            log.debug('Changed username to: %s', name)
-
-        if password is not None:
-            log.debug('Changed password to: %s', password)
 
     @check.is_logged()
     async def update_profile(

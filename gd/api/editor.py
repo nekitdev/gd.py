@@ -141,11 +141,17 @@ class Editor:
     def get_color(self, directive_or_id):
         return self.header.colors.get(directive_or_id)
 
+    def get_colors(self):
+        return self.header.colors
+
     def copy_colors(self):
         return ColorCollection(color.copy() for color in self.header.colors)
 
     def add_colors(self, *colors):
         self.header.colors.update(colors)
+
+    def get_objects(self):
+        return self.objects
 
     def add_objects(self, *objects: Sequence[Object]):
         """Add objects to ``self.objects``."""

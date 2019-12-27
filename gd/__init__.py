@@ -26,7 +26,6 @@ from .song import Song
 from .unreguser import UnregisteredUser
 from .user import UserStats, User
 from .events import exit
-from .utils.captcha_solver import Captcha
 from .utils.enums import *
 from .utils.filters import Filters
 from .utils.gdpaginator import paginate, Paginator

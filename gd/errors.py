@@ -44,6 +44,7 @@ class ParserError(GDException):
     """Exception that is raised if conversion in :class:`.XMLParser` fails."""
     pass
 
+
 class EditorError(GDException):
     """Exception that is raised when converting string
     to :class:`.api.Object` or :class:`.api.Editor` failed.
@@ -57,15 +58,6 @@ class HTTPNotConnected(ClientException):
     """
     def __init__(self):
         message = 'Internet connection failed.'
-        super().__init__(message)
-
-
-class FailedCaptcha(ClientException):
-    """Exception that is raised when unknown results
-    when solving GD Captcha are recieved.
-    """
-    def __init__(self, msg):
-        message = 'Solving Captcha failed. {}'.format(msg)
         super().__init__(message)
 
 

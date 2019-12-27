@@ -8,7 +8,6 @@ from typing import Union, Sequence, Tuple, Dict
 from .unreguser import UnregisteredUser
 from .errors import *
 
-from .utils.captcha_solver import Captcha
 from .utils.converter import Converter
 from .utils.enums import SearchStrategy
 from .utils.filters import Filters
@@ -386,11 +385,6 @@ class GDSession:
 
         return res
 
-    async def test_captcha(self):
-        image_bytes = await http.request(Route.CAPTCHA)
-        res = await Captcha.aio_solve(image_bytes, should_log=True)
-        return res
-
 
     async def login(self, client, user: str, password: str):
         parameters = (
@@ -763,37 +757,6 @@ class GDSession:
         }
 
         await http.request(Route.UPLOAD_COMMENT, parameters, error_codes=codes)
-
-
-    async def edit(self, name: str, password: str, *, client):
-        _, cookie = await http.request(Route.MANAGE_ACCOUNT, get_cookies=True)
-        captcha = await http.request(Route.CAPTCHA, cookie=cookie)
-        number = await Captcha.aio_solve(captcha, should_log=True)
-        parameters = (
-            Params().create_new('web').put_for_management(
-                client.name, client.password, number).close()
-        )
-        await http.request(Route.MANAGE_ACCOUNT, parameters, cookie=cookie)
-
-        if name is not None:
-            parameters = Params().create_new('web').put_for_username(client.name, name).close()
-            resp = await http.request(Route.CHANGE_USERNAME, parameters, cookie=cookie)
-            if ('Your username has been changed to' in resp):
-                client._upd('name', name)
-            else:
-                raise FailedToChange('name')
-
-        if password is not None:
-            await http.request(Route.CHANGE_PASSWORD, cookie=cookie)
-            parameters = (
-                Params().create_new('web').put_for_password(
-                    client.name, client.password, password).close()
-            )
-            resp = await http.request(Route.CHANGE_PASSWORD, parameters, cookie=cookie)
-            if ('Password change failed' in resp):
-                raise FailedToChange('password')
-            else:
-                client._upd('password', password)
 
 
     async def delete_comment(self, comment, *, client):

@@ -30,7 +30,6 @@ class Route:
     LOGIN = 'accounts/loginGJAccount'
     SAVE_DATA = 'accounts/backupGJAccountNew'
     LOAD_DATA = 'accounts/syncGJAccountNew'
-    CAPTCHA = 'accounts/captcha'
     MANAGE_ACCOUNT = 'accounts/accountManagement'
     CHANGE_PASSWORD = 'accounts/changepassword'
     CHANGE_USERNAME = 'accounts/changeusername'

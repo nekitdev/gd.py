@@ -42,7 +42,7 @@ class ObjectDataEnum(NEnum):
     DURATION = 10
     TOUCH_TRIGGERED = 11
     SECRET_COIN_ID = 12
-    SPECIAL_CHECKED = 13  # Portal
+    IS_CHECKED = 13  # Portal
     TINT_GROUND = 14  # deprecated
     SET_TO_PLAYER_COLOR_1 = 15
     SET_TO_PLAYER_COLOR_2 = 16  # Trigger
