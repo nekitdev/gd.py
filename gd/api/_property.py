@@ -4,7 +4,7 @@ from .enums import *
 from .parser import *
 from .hsv import HSV
 
-__all__ = ('_template', '_create', '_object_code', '_color_code')
+__all__ = ('_template', '_create', '_object_code', '_color_code', '_header_code')
 
 _template = """
 @property
@@ -16,7 +16,7 @@ def {name}(self, value):
     self.data[{enum!r}] = value
 """.strip('\n')
 
-_properties = "_existing_properties = {}"
+_container = '_container = {}'
 
 _ENUMS = {
     _EASING: Easing,
@@ -79,10 +79,10 @@ def _create(enum, ts: str):
         if value not in property_container:
             property_container[value] = name
 
-    properties = list(property_container.values())
-    final.append(_properties.format(properties))
+    final.append(_container.format(property_container))
 
-    return ('\n'*2).join(final)
+    return ('\n\n').join(final)
+
 
 _object_code = _create(ObjectDataEnum, 'object')
 _color_code = _create(ColorChannelProperties, 'color')

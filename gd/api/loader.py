@@ -9,9 +9,7 @@ from ..utils.wrap_tools import make_repr
 
 from .save import Database
 
-__all__ = (
-    'SaveUtil', 'path', 'util', 'load_save', 'dump_save',
-    'from_string', 'to_string', 'make_db', 'set_path')
+__all__ = ('SaveUtil', 'get_path', 'save', 'make_db', 'set_path')
 
 MAIN = 'CCGameManager.dat'
 LEVELS = 'CCLocalLevels.dat'
@@ -39,25 +37,41 @@ def set_path(new_path):
     path = new_path
 
 
+def get_path():
+    return path
+
+
 class SaveUtil:
     def __repr__(self):
         return make_repr(self)
 
-    async def local_load(self, *args, **kwargs):
+    async def load_async(self, *args, **kwargs):
         return await run_blocking_io(self._local_load, *args, **kwargs)
 
-    async def local_dump(self, *args, **kwargs):
+    def load(self, *args, **kwargs):
+        return self._local_load(*args, **kwargs)
+
+    async def dump_async(self, *args, **kwargs):
         await run_blocking_io(self._local_dump, *args, **kwargs)
 
-    async def to_string(self, *args, **kwargs):
+    def dump(self, *args, **kwargs):
+        return self._local_dump(*args, **kwargs)
+
+    async def to_string_async(self, *args, **kwargs):
         return await run_blocking_io(
             functools.partial(self._dump, *args, **kwargs)
         )
 
-    async def from_string(self, *args, **kwargs):
+    def to_string(self, *args, **kwargs):
+        return self._dump(*args, **kwargs)
+
+    async def from_string_async(self, *args, **kwargs):
         return await run_blocking_io(
             functools.partial(self._load, *args, **kwargs)
         )
+
+    def from_string(self, *args, **kwargs):
+        return self._load(*args, **kwargs)
 
     def make_db(self, main: str = '', levels: str = ''):
         return Database(main, levels)
@@ -135,9 +149,5 @@ def _config_path(some_path, default):
         return path / default   
 
 
-util = SaveUtil()
-load_save = util.local_load
-dump_save = util.local_dump
-from_string = util.from_string
-to_string = util.to_string
-make_db = util.make_db
+save = SaveUtil()
+make_db = save.make_db

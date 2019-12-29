@@ -66,12 +66,12 @@ async def wait(fs, *, loop=None, timeout=None, return_when='ALL_COMPLETED'):
         when the timeout occurs are returned in the second set.
     """
     try:
-        if loop is None:
-            loop = acquire_loop()
         fs = set(fs)
-
     except TypeError:  # not iterable 'fs'
         fs = {fs}
+
+    if loop is None:
+        loop = acquire_loop()
 
     fs = {asyncio.ensure_future(f, loop=loop) for f in fs}
 

@@ -105,7 +105,7 @@ class Editor:
     def __repr__(self):
         info = {
             'len': len(self.objects),
-            'objects': repr('...')
+            'objects': '[...]'
         }
         return make_repr(self, info)
 
@@ -114,6 +114,16 @@ class Editor:
 
     def __len__(self):
         return len(self.objects)
+
+    def set_header(self, header: Header):
+        if isinstance(header, Header):
+            self.header = header
+
+    def get_header(self):
+        return self.header
+
+    def copy_header(self):
+        return self.header.copy()
 
     def get_portals(self):
         def f(obj):
@@ -145,7 +155,7 @@ class Editor:
         return self.header.colors
 
     def copy_colors(self):
-        return ColorCollection(color.copy() for color in self.header.colors)
+        return self.header.copy_colors()
 
     def add_colors(self, *colors):
         self.header.colors.update(colors)
@@ -161,7 +171,7 @@ class Editor:
         """List[:class:`.api.Object`]: Copy objects of ``self``.
         Note: copies, not references are returned!
         """
-        return [obj.copy() for obj in self.objects]
+        return list(obj.copy() for obj in self.objects)
 
     def map(self, function):
         """:class:`map`: Same as calling ``map`` on ``self.objects``."""
@@ -173,7 +183,7 @@ class Editor:
 
     def dump_to_level(self, level, append_sc: bool = True):
         """Dump ``self`` to a ``level`` object."""
-        level.options['data'] = self.dump(append_sc=append_sc)
+        level.options.edit(data=self.dump(append_sc=append_sc))
 
     def dump(self, append_sc: bool = True):
         """Dump all objects and header into a level data string."""
@@ -184,3 +194,6 @@ class Editor:
 
         data = ';'.join(map(str, seq))
         return data
+
+    def copy(self):
+        return Editor(self.copy_header(), *self.copy_objects())

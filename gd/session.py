@@ -64,10 +64,10 @@ class GDSession:
         html = content.decode().replace('\\', '')
 
         RE = (
-            'https:\/\/audio\.ngfiles\.com\/([^\'"]+)',  # searching for link
-            '.filesize.:(\d+)',  # searching for size
-            '<title>([^<>]+)<\/title>',  # searching for name
-            '.artist.:.([^\'"]+).'  # searching for author
+            r'https://audio\.ngfiles\.com/([^\'"]+)',  # searching for link
+            r'.filesize.:(\d+)',  # searching for size
+            r'<title>([^<>]+)</title>',  # searching for name
+            r'.artist.:.([^\'"]+).'  # searching for author
         )
         try:
             dl_link = re.search(RE[0], html).group(0)
@@ -583,7 +583,7 @@ class GDSession:
             raise MissingAccess(message='Failed to update description of the level: {}.'.format(level))
 
         # update level's description on success
-        level.options['description'] = content
+        level.options.edit(description=content)
 
 
     async def rate_level(self, level, rating: int, *, client):

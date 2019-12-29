@@ -218,4 +218,7 @@ def _get_name(func):
         else:
             return func.__name__
     except AttributeError:
-        raise RuntimeError('Failed to find the name of given function. Please provide the name explicitly.') from None
+        raise RuntimeError(
+            'Failed to find the name of given function. '
+            'Please provide the name explicitly.'
+        ) from None

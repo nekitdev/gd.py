@@ -6,7 +6,7 @@ from ..utils import search_utils as search
 from .parser import *
 
 from .utils import _get_dir, _define_color, get_id
-from ._property import _object_code, _color_code, _header_code
+from ._property import *
 
 __all__ = ('Object', 'ColorChannel', 'Header', 'ColorCollection')
 
@@ -30,11 +30,11 @@ class Struct:
 
     def to_dict(self):
         final = {}
-        for name in self._existing_properties:
-            value = getattr(self, name)
+        for key, value in self.data.items():
+            key = self._container.get(key)
 
-            if value is not None:
-                final[name] = value
+            if key is not None:
+                final[key] = value
 
         return final
 
@@ -234,6 +234,14 @@ class Header(Struct):
         super().__init__(**properties)
         self.colorhook()
 
+    def copy(self):
+        header = super().copy()
+        header.edit(colors=self.copy_colors())
+        return header
+
+    def copy_colors(self):
+        return ColorCollection(color.copy() for color in (self.colors or list()))
+
     def colorhook(self):
         self.edit(colors=ColorCollection.create(self.colors or list()))
 
@@ -244,8 +252,8 @@ class Header(Struct):
         return self
 
     def dump(self):
-        o = self.copy()
-        o.edit(colors=ColorCollection.create(o.colors or list()).dump())
-        return super(type(o), o).dump()
+        header = self.copy()
+        header.edit(colors=header.colors.dump())
+        return super(type(header), header).dump()
 
     exec(_header_code)

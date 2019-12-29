@@ -1,4 +1,5 @@
 import xml.etree.ElementTree as xml
+import re
 
 from ._async import run_blocking_io
 
@@ -9,13 +10,28 @@ __all__ = ('xml', 'XMLParser', 'AioXMLParser')
 PLIST_VERSION = '1.0'
 GJ_VERSION = '2.0'
 DECLARATION = '<?xml version="1.0"?>'
-
+MAPPING = {
+    'dict': 'd',
+    'key': 'k',
+    'true': 't',
+    'false': 'f',
+    'integer': 'i',
+    'real': 'r',
+    'string': 's'
+}
 
 class XMLParser:
     def __init__(self):
         self._default({})
 
+    def preprocess(self, string):
+        for key, value in MAPPING.items():
+            string = string.replace(key, value)
+        string = re.sub(r'[\n\t]', '', string)
+        return string
+
     def load(self, xml_string):
+        xml_string = self.preprocess(xml_string)
         try:
             plist = xml.fromstring(xml_string)
 
@@ -43,7 +59,7 @@ class XMLParser:
                 ret[key.text] = (inner.tag == 't')
 
             else:
-                func = {'i': int, 'r': float, 's': str}.get(inner.tag)
+                func = {'i': int, 'r': float, 's': str}.get(inner.tag, str)
                 ret[key.text] = func(inner.text)
 
         return ret

@@ -4,10 +4,11 @@ __title__ = 'gd'
 __author__ = 'NeKitDS'
 __copyright__ = 'Copyright 2019 NeKitDS'
 __license__ = 'MIT'
-__version__ = '0.10.2'
+__version__ = '0.10.3'
 
 from collections import namedtuple
 import logging
+import re
 
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser, LevelRecord
@@ -25,7 +26,7 @@ from .session import GDSession
 from .song import Song
 from .unreguser import UnregisteredUser
 from .user import UserStats, User
-from .events import exit
+from .events import exit  # idk
 from .utils.enums import *
 from .utils.filters import Filters
 from .utils.gdpaginator import paginate, Paginator
@@ -40,9 +41,11 @@ from ._jokes import jokes  # why not?...
 from .utils._async import synchronize
 from .utils import tasks
 
-from . import api  # this package contains actual non-server gd API.
-from . import events  # this package contains event-related functions and classes.
-from . import utils  # since asyncio.run() was introduced in 3.7, we have utils.run() function.
+from . import (
+    api,     # non-server GD API.
+    events,  # event-related functions and classes.
+    utils    # different useful utils.
+)
 
 
 log = logging.getLogger(__name__)
@@ -50,27 +53,54 @@ log = logging.getLogger(__name__)
 
 VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
 
+RegularExpression = r"""
+^\s*
+(?:
+    (?P<major>\d+)
+    (?P<split>[\.-])?
+    (?P<minor>\d+)?
+    (?P=split)?
+    (?P<micro>\d+)?
+    (?P<releaselevel>a|b|rc|f|dev)?
+    (?P<serial>\d+)?
+)
+\s*$
+"""
+CompiledRE = re.compile(re.sub(r'\s', '', RegularExpression), re.MULTILINE)
+
 def make_version_details(ver: str):
-    cases = {
-        'a' in ver: ('a', 'alpha'),
-        'b' in ver: ('b', 'beta'),
-        'rc' in ver: ('rc', 'candidate'),
-        'f' in ver: ('f', 'final')
-    }
+    match = CompiledRE.match(ver)
 
-    # we should not care about the separator if the releaselevel is 'final'
-    splitter, releaselevel = cases.get(True, (' ', 'final'))
-    splitted = ver.split(splitter)
+    if match is None:
+        return VersionInfo(0, 0, 0, 'final', 0)
 
-    # determine the serial
-    serial = 0
-    if len(splitted) > 1:  # pragma: no cover
-        _, s = splitted
-        serial = serial if not s else int(s)
+    args = {}
 
-    major, minor, micro = map(int, splitted[0].split('.'))
+    for key, value in match.groupdict().items():
+        if key == 'split':
+            continue
 
-    return VersionInfo(major, minor, micro, releaselevel, serial)
+        elif key == 'releaselevel':
+            if value is None:
+                value = 'f'
+
+            value = {
+                'a': 'alpha',
+                'b': 'beta',
+                'rc': 'release_candidate',
+                'f': 'final',
+                'dev': 'developer'
+            }.get(value, 'final')
+
+        elif value is None:
+            value = 0
+
+        else:
+            value = int(value)
+
+        args[key] = value
+
+    return VersionInfo(**args)
 
 version_info = make_version_details(__version__)
 
@@ -122,4 +152,4 @@ log.addHandler(NullHandler())
 
 
 # delete not required stuff
-del NullHandler, namedtuple
+del NullHandler, namedtuple, re
