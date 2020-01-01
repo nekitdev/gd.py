@@ -293,6 +293,57 @@ def _header_dump(d):
 def _header_collect(d):
     return _collect(d, ',')
 
+# LEVEL API
+
+_DESC = 'k3'
+_SPECIAL = 'k67'
+_CRYPTED = {'k4', 'k34'}
+_TAB = 'kI6'
+
+
+def _parse_into_array(s: str, delim: str = '_'):
+    return list(map(int, s.split(delim)))
+
+def _join_into_string(array: list, delim: str = '_'):
+    return delim.join(map(str, array))
+
+def _attempt_zip(s: str):
+    unzip = all(char not in s for char in '|;,.')
+    try:
+        if unzip:
+            return Coder.unzip(s)
+        return Coder.zip(s)
+    except Exception:
+        return s
+
+def _level_dump(d: dict):
+    return {k: _dump_entry(k, value) for k, value in d.items()}
+
+def _dump_entry(n: str, v):
+    if n == _SPECIAL:
+        return _join_into_string(v)
+    if n in _CRYPTED:
+        return _attempt_zip(v)
+    if n == _DESC:
+        return _b64_failsafe(v, encode=True)
+    if n == _TAB:
+        return {str(k): str(i) for k, i in v.items()}
+    return v
+
+def _process_entry(n: str, v):
+    if n == _SPECIAL:
+        return _parse_into_array(v)
+    if n in _CRYPTED:
+        return _attempt_zip(v)
+    if n == _DESC:
+        return _b64_failsafe(v, encode=False)
+    if n == _TAB:
+        return {int(k): int(i) for k, i in v.items()}
+    return v
+
+def _process_level(d: dict):
+    return {k: _process_entry(k, value) for k, value in d.items()}
+
 # LOAD ACCELERATOR
 
 try:

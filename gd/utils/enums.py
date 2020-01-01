@@ -153,6 +153,9 @@ class NEnum(Enum):
     def __hash__(self):
         return hash(self.__repr__())
 
+    def __json__(self):
+        return self.value
+
     @property
     def desc(self):
         """:class:`str`: More readable version of the name, e.g.

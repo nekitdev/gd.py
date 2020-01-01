@@ -13,7 +13,6 @@ class Comment(AbstractEntity):
     """
     def __init__(self, **options):
         super().__init__(**options)
-        # self._client = client
         self.options = options
 
     def __repr__(self):

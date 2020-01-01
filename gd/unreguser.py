@@ -13,6 +13,11 @@ class UnregisteredUser(AbstractEntity):
         info = {'id': self.id, 'name': self.name}
         return make_repr(self, info)
 
+    def __json__(self):
+        final = dict(name=self.name)
+        final.update(super().__json__())
+        return final
+
     @property
     def name(self):
         """:class:`str`: A name of the user. ``'UnregisteredUser'`` if not present."""

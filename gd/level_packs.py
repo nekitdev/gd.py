@@ -26,6 +26,11 @@ class Gauntlet(AbstractEntity):
 
         return make_repr(self, info)
 
+    def __json__(self):
+        final = dict(levels=self.levels)
+        final.update(super().__json__())
+        return final
+
     @property
     def name(self):
         """:class:`str`: Name of the Gauntlet."""

@@ -2,7 +2,7 @@
 
 __title__ = 'gd'
 __author__ = 'NeKitDS'
-__copyright__ = 'Copyright 2019 NeKitDS'
+__copyright__ = 'Copyright 2019-2020 NeKitDS'
 __license__ = 'MIT'
 __version__ = '0.10.3'
 

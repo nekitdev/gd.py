@@ -1,5 +1,6 @@
 from .utils.wrap_tools import make_repr
 
+
 class AbstractEntity:
     """Class that represents Abstract Entity. This is a base for many gd.py objects.
 
@@ -35,6 +36,9 @@ class AbstractEntity:
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __json__(self):
+        return self.options
 
     @property
     def hash_str(self):

@@ -5,10 +5,10 @@ from ..utils import search_utils as search
 
 from .parser import *
 
-from .utils import _get_dir, _define_color, get_id
+from .utils import _make_color, _get_dir, _define_color, get_id, get_default
 from ._property import *
 
-__all__ = ('Object', 'ColorChannel', 'Header', 'ColorCollection')
+__all__ = ('Object', 'ColorChannel', 'Header', 'LevelAPI', 'ColorCollection')
 
 
 class Struct:
@@ -16,7 +16,7 @@ class Struct:
     _convert = _convert
     _convert = _collect
     _base_data = {}
-    _existing_properties = []
+    _container = {}
 
     def __init__(self, **properties):
         self.data = self._base_data.copy()
@@ -27,6 +27,9 @@ class Struct:
     def __repr__(self):
         info = {key: repr(value) for key, value in self.to_dict().items()}
         return make_repr(self, info)
+
+    def __json__(self):
+        return self.to_dict()
 
     def to_dict(self):
         final = {}
@@ -69,7 +72,7 @@ class Struct:
 
 
 class Object(Struct):
-    _base_data = {1: 1, 2: 0, 3: 0}
+    _base_data = get_default('object')
     _dump = _object_dump
     _convert = _object_convert
     _collect = _object_collect
@@ -89,6 +92,9 @@ class Object(Struct):
     def set_color(self, color):
         """Set ``rgb`` of ``self`` to ``color``."""
         self.edit(**dict(zip('rgb', _define_color(color).to_rgb())))
+
+    def get_color(self):
+        return _make_color(self)
 
     def add_groups(self, *groups: int):
         """Add ``groups`` to ``self.groups``."""
@@ -118,20 +124,14 @@ class Object(Struct):
         else:
             self.rotation += deg
 
+    def is_checked(self):
+        """:class:`bool`: indicates if ``self.portal_checked`` is true."""
+        return bool(self.portal_checked)
+
     exec(_object_code)
 
 class ColorChannel(Struct):
-    _base_data = {
-        1: 255, 2: 255, 3: 255,
-        4: -1,
-        5: False,
-        6: 0,
-        7: 1,
-        8: True,
-        11: 255, 12: 255, 13: 255,
-        15: True,
-        18: False
-    }
+    _base_data = get_default('color_channel')
     _dump = _color_dump
     _convert = _color_convert
     _collect = _color_collect
@@ -156,6 +156,9 @@ class ColorChannel(Struct):
     def set_color(self, color):
         """Set ``rgb`` of ``self`` to ``color``."""
         self.edit(**dict(zip('rgb', _define_color(color).to_rgb())))
+
+    def get_color(self):
+        return _make_color(self)
 
     exec(_color_code)
 
@@ -207,25 +210,7 @@ class ColorCollection(set):
 
 
 class Header(Struct):
-    _base_data = {
-        'kA2': 0,
-        'kA3': False,
-        'kA4': 0,
-        'kA6': 0,
-        'kA7': 0,
-        'kA8': False,
-        'kA9': False,
-        'kA10': False,
-        'kA11': False,
-        'kA13': 0,
-        'kA14': [],
-        'kA15': False,
-        'kA16': False,
-        'kA17': False,
-        'kA18': 0,
-        'kS38': ColorCollection(),
-        'kS39': 0,
-    }
+    _base_data = get_default('header')
     _dump = _header_dump
     _convert = _header_convert
     _collect = _header_collect
@@ -257,3 +242,52 @@ class Header(Struct):
         return super(type(header), header).dump()
 
     exec(_header_code)
+
+
+class LevelAPI(Struct):
+    _convert = None
+    _collect = None
+    _dump = _level_dump
+    _base_data = get_default('api')
+
+    def __init__(self, **properties):
+        super().__init__(**properties)
+
+    def __repr__(self):
+        info = {
+            'id': self.id,
+            'version': self.version,
+            'name': self.name,
+        }
+        return make_repr(self, info)
+
+    def dump(self):
+        raise EditorError('Level API can not be dumped.')
+
+    def open_editor(self):
+        from .editor import Editor  # *circular imports*
+        return Editor.launch(self, 'level_string')
+
+    def is_verified(self):
+        return bool(self.verified)
+
+    def is_uploaded(self):
+        return bool(self.uploaded)
+
+    def is_original(self):
+        return bool(self.original)
+
+    def is_unlisted(self):
+        return bool(self.unlisted)
+
+    @classmethod
+    def from_mapping(cls, mapping):
+        self = cls()
+        self.data = _process_level(mapping)
+        return self
+
+    @classmethod
+    def from_string(cls, string: str):
+        raise EditorError('Level API can not be created from string.')
+
+    exec(_level_code)

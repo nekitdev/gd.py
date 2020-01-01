@@ -1,12 +1,15 @@
 from .wrap_tools import convert_to_type
 
-__all__ = ('mapper', 'MapperUtil', 'pad', 'ceil')
+__all__ = ('mapper', 'MapperUtil', 'pad')
+
+
+def convert(obj):
+    return convert_to_type(obj, int)
 
 
 class MapperUtil:
     @staticmethod
     def map(item, try_convert: bool = True):
-        convert = lambda obj: convert_to_type(obj, int)
         mapping = zip(item[::2], item[1::2])
 
         if try_convert:

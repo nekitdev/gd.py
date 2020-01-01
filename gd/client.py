@@ -79,6 +79,14 @@ class Client:
         }
         return make_repr(self, info)
 
+    def __json__(self):
+        return dict(
+            account_id=self.account_id,
+            id=self.id,
+            name=self.name,
+            password=None  # for safety reasons
+        )
+
     def _set_to_defaults(self):
         self.save = Save(completed=[], followed=[])
         self.save_api = api.Database()
@@ -1143,6 +1151,12 @@ class Client:
 
         See :ref:`events` for more info.
         """
+        pass
+
+    async def on_level_rated(self, level):
+        pass
+
+    async def on_level_unrated(self, level):
         pass
 
     async def dispatch(self, event_name: str, *args, **kwargs):

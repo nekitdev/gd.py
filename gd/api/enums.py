@@ -20,6 +20,7 @@ __all__ = (
     'TouchToggleMode',
     'TriggerType',
     'ZLayer',
+    'MiscType',
     'Gamemode',
     'Speed',
     'SpeedMagic',
@@ -42,7 +43,7 @@ class ObjectDataEnum(NEnum):
     DURATION = 10
     TOUCH_TRIGGERED = 11
     SECRET_COIN_ID = 12
-    IS_CHECKED = 13  # Portal
+    PORTAL_CHECKED = 13  # Portal
     TINT_GROUND = 14  # deprecated
     SET_TO_PLAYER_COLOR_1 = 15
     SET_TO_PLAYER_COLOR_2 = 16  # Trigger
@@ -405,6 +406,10 @@ class TouchToggleMode(NEnum):
     Off = 2
 
 
+class MiscType(NEnum):
+    TEXT = 914
+
+
 class TriggerType(NEnum):
     BG = 29
     GRND = 30
@@ -490,9 +495,9 @@ class SpeedMagic(NEnum):
 
 class LevelDataEnum(NEnum):
     ID = 'k1'
-    LEVEL_NAME = 'k2'
+    NAME = 'k2'
     DESCRIPTION = 'k3'
-    DATA = 'k4'
+    LEVEL_STRING = 'k4'
     CREATOR = 'k5'
     OFFICIAL_SONG = 'k8'
     DOWNLOADS = 'k11'
@@ -505,26 +510,32 @@ class LevelDataEnum(NEnum):
     LIKES = 'k22'
     LENGTH = 'k23'
     STARS = 'k26'
+    INFO = 'k34'
+    JUMPS = 'k36'
     PASSWORD = 'k41'
     ORIGINAL = 'k42'
     CUSTOM_SONG = 'k45'
     REVISION = 'k46'
     OBJECTS = 'k48'
+    BINARY_VERSION = 'k50'
     FIRST_COIN_ACQUIRED = 'k61'
     SECOND_COIN_ACQUIRED = 'k62'
     THIRD_COIN_ACQUIRED = 'k63'
     REQUESTED_STARS = 'k66'
+    EXTRA = 'k67'
     UNLISTED = 'k79'
     SECONDS_SPENT_IN_EDITOR = 'k80'
     FOLDER = 'k84'
 
-    X_POSITION_IN_EDITOR = 'kI1'
-    Y_POSITION_IN_EDITOR = 'kI2'
+    X = 'kI1'
+    Y = 'kI2'
     ZOOM = 'kI3'
     BUILD_TAB_PAGE = 'kI4'
     BUILD_TAB = 'kI5'
     BUILD_TAB_PAGES_DICT = 'kI6'
     EDITOR_LAYER = 'kI7'
+
+    UNKNOWN_KCEK = 'kCEK'  # int
 
 
 class LevelHeaderEnum(NEnum):

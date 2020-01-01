@@ -20,6 +20,7 @@ for s in ('slow', 'normal', 'fast', 'faster', 'fastest'):
     speed_map.update({b.value: a.value, c.value: a.value})
 
 _portals = {enum.value for enum in PortalType}
+_speed_protals = {enum.value for enum in PortalType if ('speed' in enum.name.lower())}
 
 
 def get_length_from_x(dx: float, start_speed: Speed, portals: Sequence[Object]) -> float:
@@ -36,7 +37,7 @@ def get_length_from_x(dx: float, start_speed: Speed, portals: Sequence[Object]) 
     start_speed: :class:`.api.Speed`
         Speed at the start (in level header).
 
-    portals: Sequnece[:class:`.api.Object`]
+    portals: Sequence[:class:`.api.Object`]
         Speed portals in the level, ordered by x position.
 
     Returns
@@ -69,6 +70,35 @@ def get_length_from_x(dx: float, start_speed: Speed, portals: Sequence[Object]) 
     return (dx - last_x) / speed + total
 
 
+def _is_portal(obj):
+    return obj.id in _portals and obj.is_checked()
+
+def _is_speed_portal(obj):
+    return obj.id in _speed_protals and obj.is_checked()
+
+def _get_x(obj):
+    return obj.x
+
+
+def launch_editor(caller: object, attribute: str):
+    string = getattr(caller, attribute)
+    editor = Editor.from_string(string)
+    editor._set_callback(caller, attribute)
+    return editor
+
+def dump_editor(editor):
+    if None in (editor._callback, editor._attr):
+        return
+    string = editor.dump()
+    setattr(editor._callback, editor._attr, string)
+
+
+def _find_next(s, rng=range(1, 10000)):  # 2.2 has 1-9999 groups
+    for i in rng:
+        if i not in s:
+            return i
+
+
 class Editor:
     """Editor interface of gd.py.
 
@@ -77,6 +107,21 @@ class Editor:
     def __init__(self, header: Header = None, *objects):
         self.header = header or Header()
         self.objects = list(objects)
+        self._set_callback()
+
+    def __json__(self):
+        return dict(header=self.header, objects=self.objects)
+
+    def _set_callback(self, caller: object = None, attribute: str = None):
+        self._callback = caller
+        self._attr = attribute
+
+    @classmethod
+    def launch(cls, caller: object, attribute: str):
+        return launch_editor(caller, attribute)
+
+    def dump_back(self):
+        dump_editor(self)
 
     @classmethod
     def from_string(cls, data: Union[bytes, str]):
@@ -87,8 +132,11 @@ class Editor:
             except UnicodeDecodeError:
                 raise EditorError('Invalid level data recieved.') from None
 
-        info, *objects = data.split(';')
+        if not data:
+            # nothing interesting...
+            return cls()
 
+        info, *objects = data.split(';')
         # remove last object if none
         try:
             last = objects.pop()
@@ -125,16 +173,27 @@ class Editor:
     def copy_header(self):
         return self.header.copy()
 
-    def get_portals(self):
-        def f(obj):
-            return obj.id in _portals and obj.is_checked
-        def g(obj):
-            return obj.x
+    def get_groups(self):
+        groups = set()
 
-        return sorted(filter(f, self.objects), key=g)
+        for obj in self.objects:
+            g = obj.groups
+            if g is not None:
+                groups.update(g)
+
+        return groups
+
+    def get_free_group(self):
+        return _find_next(self.get_groups())
+
+    def get_portals(self):
+        return sorted(filter(_is_portal, self.objects), key=(_get_x))
+
+    def get_speed_portals(self):
+        return sorted(filter(_is_speed_portal, self.objects), key=(_get_x))
 
     def get_x_length(self):
-        return max((obj.x for obj in self.objects), default=0)
+        return max(map(_get_x, self.objects), default=0)
 
     def get_speed(self):
         return self.header.speed or Speed(0)
@@ -143,7 +202,7 @@ class Editor:
         if x is None:
             x = self.get_x_length()
 
-        portals = self.get_portals()
+        portals = self.get_speed_portals()
         speed = self.get_speed()
 
         return get_length_from_x(x, speed, portals)
@@ -183,7 +242,10 @@ class Editor:
 
     def dump_to_level(self, level, append_sc: bool = True):
         """Dump ``self`` to a ``level`` object."""
-        level.options.edit(data=self.dump(append_sc=append_sc))
+        level.options.update(data=self.dump(append_sc=append_sc))
+
+    def dump_to_api(self, api, append_sc: bool = True):
+        api.edit(level_string=self.dump(append_sc=append_sc))
 
     def dump(self, append_sc: bool = True):
         """Dump all objects and header into a level data string."""

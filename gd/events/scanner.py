@@ -6,11 +6,15 @@ import traceback
 
 from ..client import Client
 
-from .. import utils
+from ..utils import tasks
+from ..utils.filters import Filters
+from ..utils.wrap_tools import run_once
 
 __all__ = (
-    'AbstractScanner', 'TimelyLevelScanner', 'thread', 'get_loop',
-    'daily_listener', 'weekly_listener', 'run', 'all_listeners'
+    'AbstractScanner', 'TimelyLevelScanner', 'RateLevelScanner',
+    'thread', 'get_loop', 'set_loop', 'run', 'differ',
+    'daily_listener', 'weekly_listener', 'rate_listener', 'unrate_listener',
+    'all_listeners'
 )
 
 loop = asyncio.new_event_loop()
@@ -81,7 +85,7 @@ class AbstractScanner:
         if loop is None:
             loop = get_loop()
         self.loop = loop
-        self.runner = utils.tasks.loop(seconds=delay, loop=loop)(self.main)
+        self.runner = tasks.loop(seconds=delay, loop=loop)(self.main)
         self.cache = None
         self.clients = []
         all_listeners.append(self)
@@ -102,7 +106,7 @@ class AbstractScanner:
         except RuntimeError:
             pass
 
-    @utils.run_once
+    @run_once
     def close(self, *args, force: bool = True):
         """Accurately shutdown a scanner.
         If force is true, cancel the runner, and wait until it finishes otherwise.
@@ -132,8 +136,6 @@ class AbstractScanner:
 class TimelyLevelScanner(AbstractScanner):
     def __init__(self, t_type: str, delay: int = 10.0, *, loop=None):
         super().__init__(delay, loop=loop)
-
-        self.type = t_type
         self.method = getattr(scanner_client, 'get_' + t_type)
         self.call_method = 'new_' + t_type
 
@@ -153,5 +155,38 @@ class TimelyLevelScanner(AbstractScanner):
         self.cache = timely
 
 
+class RateLevelScanner(AbstractScanner):
+    def __init__(self, listen_to_rate: bool = True, delay: float = 30.0, *, loop=None):
+        super().__init__(delay, loop=loop)
+        self.call_method = 'level_rated' if listen_to_rate else 'level_unrated'
+        self.filters = Filters(strategy='awarded')
+        self.find_new = listen_to_rate
+        self.cache = []
+
+    async def method(self, pages: int = 100):
+        return await scanner_client.search_levels(filters=self.filters, pages=range(pages))
+
+    async def scan(self):
+        new = await self.method()
+
+        if not self.cache:
+            return
+
+        difference = differ(self.cache, new, self.find_new)
+
+        for client in self.clients:
+            for level in difference:
+                dispatcher = client.dispatch(self.call_method, level)
+                self.loop.create_task(dispatcher)
+
+
+def differ(before: list, after: list, find_new: bool = True):
+    a, b = (before, after) if find_new else (after, before)
+    return filter(lambda elem: (elem not in a), b)
+
+
 daily_listener = TimelyLevelScanner('daily')
 weekly_listener = TimelyLevelScanner('weekly')
+
+rate_listener = RateLevelScanner(listen_to_rate=True)
+unrate_listener = RateLevelScanner(listen_to_rate=False)

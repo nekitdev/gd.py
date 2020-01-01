@@ -4,7 +4,9 @@ from .enums import *
 from .parser import *
 from .hsv import HSV
 
-__all__ = ('_template', '_create', '_object_code', '_color_code', '_header_code')
+__all__ = (
+    '_template', '_create', '_object_code', '_color_code', '_header_code', '_level_code'
+)
 
 _template = """
 @property
@@ -55,6 +57,9 @@ def _get_type(n, ts: str = 'object'):
             n == _COLORS: list,
             n == _GUIDELINES: list,
             n in _HEADER_ENUMS: _HEADER_ENUMS.get(n)
+        },
+        'level': {
+            True: 'soon',  # yikes!
         }
     }
     r = t.get(ts, {}).get(1, str)
@@ -87,3 +92,4 @@ def _create(enum, ts: str):
 _object_code = _create(ObjectDataEnum, 'object')
 _color_code = _create(ColorChannelProperties, 'color')
 _header_code = _create(LevelHeaderEnum, 'header')
+_level_code = _create(LevelDataEnum, 'level')

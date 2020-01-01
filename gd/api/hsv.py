@@ -23,6 +23,12 @@ class HSV:
         }
         return make_repr(self, info)
 
+    def __json__(self):
+        return dict(
+            h=self.h, s=self.s, v=self.v,
+            s_checked=self.s_checked, v_checked=self.v_checked
+        )
+
     @classmethod
     def from_string(cls, string: str):
         h, s, v, s_checked, v_checked = string.split('a')

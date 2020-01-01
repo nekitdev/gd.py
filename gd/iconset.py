@@ -22,6 +22,9 @@ class IconSet:
         }
         return make_repr(self, info)
 
+    def __json__(self):
+        return self.options
+
     @property
     def main(self):
         """:class:`int`: ID of the main icon of the iconset. (see :attr:`.IconSet.main_type`)"""

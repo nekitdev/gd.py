@@ -8,6 +8,7 @@ from .utils.enums import (
 )
 from .utils.wrap_tools import make_repr
 
+
 class UserStats(AbstractUser):
     """Class that extends :class:`.AbstractUser`, adding
     user's statistics to it.

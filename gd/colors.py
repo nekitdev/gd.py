@@ -26,6 +26,10 @@ class Colour:
     def _get_byte(self, byte):
         return (self.value >> (8 * byte)) & 0xff
 
+    def _ord_index(self):
+        if self.index is not None:
+            return Converter.to_ordinal(self.index)
+
     def __eq__(self, other):
         return isinstance(other, Colour) and self.value == other.value
 
@@ -36,16 +40,23 @@ class Colour:
         return self.to_hex()
 
     def __repr__(self):
-        idx = self.index
         info = {
             'hex': self.to_hex(),
             'value': self.value,
-            'index': idx if idx is None else Converter.to_ordinal(idx)
+            'index': self._ord_index(),
         }
         return make_repr(self, info)
 
     def __hash__(self):
         return hash(self.value)
+
+    def __json__(self):
+        return dict(
+            rgb=self.to_rgb(),
+            hex=self.to_hex(),
+            value=self.value,
+            index=self.index
+        )
 
     @property
     def index(self):

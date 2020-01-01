@@ -56,6 +56,7 @@ class XMLParser:
                 ret[key.text] = self.iterate_xml(inner)
 
             elif inner.tag in ('f', 't'):
+                # well, 'f' is not used, but just in case '-')/
                 ret[key.text] = (inner.tag == 't')
 
             else:
@@ -74,6 +75,9 @@ class XMLParser:
         
     def iterate_dict(self, element, py_dict):
         for key, value in py_dict.items():
+            if value is None or value == False:  # exactly bool here
+                continue
+
             k = xml.SubElement(element, 'k')
             k.text = key
 
@@ -82,11 +86,12 @@ class XMLParser:
                 self.iterate_dict(sub, value)
 
             elif isinstance(value, bool):
-                tag = {0: 'f', 1: 't'}.get(value)
-                xml.SubElement(element, tag)
+                # if false -> do not add (though, this can not really happen, but anyways)
+                if value:
+                    xml.SubElement(element, 't')
 
             else:
-                tag = {int: 'i', float: 'r', str: 's'}.get(type(value))
+                tag = {int: 'i', float: 'r', str: 's'}.get(type(value), 's')
                 sub = xml.SubElement(element, tag)
 
                 if isinstance(value, float) and value.is_integer():

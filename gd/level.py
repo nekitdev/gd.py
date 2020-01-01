@@ -42,6 +42,9 @@ class Level(AbstractEntity):
         }
         return make_repr(self, info)
 
+    def __json__(self):
+        return {k: v for k, v in super().__json__().items() if k != 'data'}
+
     @property
     def name(self):
         """:class:`str`: The name of the level."""
@@ -168,6 +171,11 @@ class Level(AbstractEntity):
         """Union[:class:`str`, :class:`bytes`]: Level data, represented as a stream."""
         return self.options.get('data', '')
 
+    @data.setter
+    def data(self, value):
+        """Set ``self.data`` to ``value``."""
+        self.options.update(data=value)
+
     def is_timely(self, daily_or_weekly: str = None):
         """:class:`bool`: Indicates whether a level is timely/daily/weekly.
         For instance, let's suppose a *level* is daily. Then, the behavior of this method is:
@@ -216,7 +224,7 @@ class Level(AbstractEntity):
         return self.data
 
     def open_editor(self):
-        return Editor.from_string(self.data)
+        return Editor.launch(self, 'data')
 
     async def report(self):
         """|coro|
