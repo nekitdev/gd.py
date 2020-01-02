@@ -158,7 +158,7 @@ class GDSession:
             ret = dict(name=name, id=id, account_id=account_id)
             return ClassConverter.abstractuser_convert(ret, client)
 
-        # ok if we should not return abstract, let's find all other parameters
+        # ok, if we should not return abstract, let's find all other parameters
         parameters = Params().create_new().put_definer('user', mapped.get(i.USER_ACCOUNT_ID, 0)).finish()
 
         resp = await http.request(
@@ -230,7 +230,7 @@ class GDSession:
             raise MissingAccess(message='Failed to fetch a {} level. Most likely it is being refreshed.'.format(type))
 
         num, cooldown, *_ = map(int, resp)
-        num %= 100000
+        num %= 100000  # idk what happened to rob when writing this
         w += 1
 
         level = await self.get_level(-w, (w, num, cooldown), client=client)
@@ -422,7 +422,7 @@ class GDSession:
 
         try:
             main, levels, *_ = resp.split(';')
-            save_api = await api.from_string(main, levels, xor=False)
+            save_api = await api.save.from_string_async(main, levels, xor=False)
             save = await SaveParser.aio_parse(save_api.main.dump())
 
             client._upd('save_api', save_api)
