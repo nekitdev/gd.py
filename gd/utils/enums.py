@@ -1,7 +1,7 @@
 import functools
 from enum import Enum
 
-from typing import Union
+from .._typing import Any, Dict, Union
 
 from ..errors import FailedConversion
 
@@ -26,20 +26,23 @@ __all__ = (
     'ServerError'
 )
 
-def _name_to_enum(x: str):
+
+def _name_to_enum(x: str) -> str:
     return x.upper().replace(' ', '_')
 
 
-def _is_upper(string: str):
+def _is_upper(string: str) -> bool:
     return string.upper() == string
 
 
-def _enum_to_name(x: Enum):
+def _enum_to_name(x: Enum) -> str:
     name = x.name.strip('_')
-    return name if (name == 'XL' or not _is_upper(name)) else name.replace('_', ' ').title()
+    return name if (
+        name in ('NA', 'XL') or not _is_upper(name)
+    ) else name.replace('_', ' ').title()
 
 
-def value_to_enum(enum: Enum, x: Union[int, str, Enum]):
+def value_to_enum(enum: Enum, x: Union[int, str, Enum]) -> Enum:
     """Tries to convert given value to Enum object.
 
     Example:
@@ -79,7 +82,10 @@ def value_to_enum(enum: Enum, x: Union[int, str, Enum]):
 
         # if str -> enum of name x (converted)
         elif isinstance(x, str):
-            return enum[_name_to_enum(x)]
+            try:
+                return enum[_name_to_enum(x)]
+            except KeyError:
+                return enum[x]
 
         # if enum -> enum of value x.value
         elif isinstance(x, NEnum):
@@ -133,31 +139,31 @@ class NEnum(Enum):
             Returns :attr:`.NEnum.desc`.
     """
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.desc
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<gd.{0}.{1}: {2} ({3})>'.format(
             self.__class__.__name__, self.name, self.value, self.desc
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return isinstance(other, type(self)) and self.value == other.value
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         return isinstance(other, type(self)) and self.value != other.value
 
-    def __gt__(self, other):
+    def __gt__(self, other) -> bool:
         return isinstance(other, type(self)) and self.value > other.value
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.__repr__())
 
-    def __json__(self):
+    def __json__(self) -> Any:
         return self.value
 
     @property
-    def desc(self):
+    def desc(self) -> str:
         """:class:`str`: More readable version of the name, e.g.
 
         .. code-block:: python3
@@ -167,11 +173,11 @@ class NEnum(Enum):
         return _enum_to_name(self)
 
     @classmethod
-    def as_dict(cls):
+    def as_dict(cls) -> Dict[str, Any]:
         return {name.lower(): enum.value for name, enum in cls.__members__.items()}
 
     @classmethod
-    def from_value(cls, value: Union[int, str]):
+    def from_value(cls, value: Union[int, str]) -> Enum:
         """Returns *Enum* with given value.
 
         .. note::
@@ -207,6 +213,7 @@ class NEnum(Enum):
         """
         assert cls is not NEnum
         return value_to_enum(cls, value)
+
 
 class IconType(NEnum):
     """An enumeration of icon types."""
@@ -270,6 +277,7 @@ class LevelDifficulty(NEnum):
 
 class DemonDifficulty(NEnum):
     """An enumeration for demon difficulties."""
+    NA = -1
     EASY_DEMON = 1
     MEDIUM_DEMON = 2
     HARD_DEMON = 3
@@ -319,6 +327,7 @@ class LevelLeaderboardStrategy(NEnum):
 
 class GauntletEnum(NEnum):
     """An enumeration for gauntlets."""
+    UNKNOWN = 0
     FIRE = 1
     ICE = 2
     POISON = 3

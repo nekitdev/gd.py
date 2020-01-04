@@ -1,12 +1,22 @@
-from ..utils.wrap_tools import make_repr
+from ..utils.text_tools import make_repr
 from ..errors import EditorError
 
 from ..utils import search_utils as search
 
-from .parser import *
+from .parser import (
+    _dump, _convert, _collect, _process_level, _level_dump,
+    _object_dump, _object_convert, _object_collect,
+    _color_dump, _color_convert, _color_collect,
+    _header_dump, _header_convert, _header_collect,
+)
 
 from .utils import _make_color, _get_dir, _define_color, get_id, get_default
-from ._property import *
+from ._property import (
+    _object_code,
+    _color_code,
+    _header_code,
+    _level_code,
+)
 
 __all__ = ('Object', 'ColorChannel', 'Header', 'LevelAPI', 'ColorCollection')
 
@@ -129,6 +139,7 @@ class Object(Struct):
         return bool(self.portal_checked)
 
     exec(_object_code)
+
 
 class ColorChannel(Struct):
     _base_data = get_default('color_channel')

@@ -1,3 +1,5 @@
+from ._typing import Optional
+
 from .abstractuser import AbstractUser
 from .iconset import IconSet
 
@@ -6,18 +8,18 @@ from .utils.enums import (
     StatusLevel, MessagePolicyType,
     FriendRequestPolicyType, CommentPolicyType
 )
-from .utils.wrap_tools import make_repr
+from .utils.text_tools import make_repr
 
 
 class UserStats(AbstractUser):
     """Class that extends :class:`.AbstractUser`, adding
     user's statistics to it.
     """
-    def __init__(self, **options):
+    def __init__(self, **options) -> None:
         super().__init__(**options)
         self.options = options
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = {
             'account_id': self.account_id,
             'name': repr(self.name),
@@ -30,49 +32,49 @@ class UserStats(AbstractUser):
         return make_repr(self, info)
 
     @property
-    def stars(self):
+    def stars(self) -> int:
         """:class:`int`: Amount of stars the user has."""
         return self.options.get('stars', 0)
 
     @property
-    def demons(self):
+    def demons(self) -> int:
         """:class:`int`: Amount of demons the user has beaten."""
         return self.options.get('demons', 0)
 
     @property
-    def cp(self):
+    def cp(self) -> int:
         """:class:`int`: Amount of Creator Points the user has."""
         return self.options.get('cp', 0)
 
     @property
-    def diamonds(self):
+    def diamonds(self) -> int:
         """:class:`int`: Amount of diamonds the user has."""
         return self.options.get('diamonds', 0)
 
     @property
-    def coins(self):
+    def coins(self) -> int:
         """:class:`int`: Number of coins the user has."""
         return self.options.get('secret_coins', 0)
 
     @property
-    def user_coins(self):
+    def user_coins(self) -> int:
         """:class:`int`: Amount of User Coins user has."""
         return self.options.get('coins', 0)
 
     @property
-    def lb_place(self):
+    def lb_place(self) -> int:
         """:class:`int`: User's place in leaderboard. ``0`` if not set."""
         return self.options.get('lb_place', 0)
 
-    def has_cp(self):
+    def has_cp(self) -> bool:
         """:class:`bool`: Indicates if a user has Creator Points."""
         return self.cp > 0
 
-    def set_place(self, place: int = 0):
+    def set_place(self, place: int = 0) -> None:
         """Set the ``self.lb_place`` to ``place`` argument."""
         self.options.edit(lb_place=place)
 
-    async def update(self):
+    async def update(self) -> None:
         """|coro|
 
         Update ``self``.
@@ -83,15 +85,16 @@ class UserStats(AbstractUser):
 
         self.options = new.options
 
+
 class User(UserStats):
     """Class that represents a Geometry Dash User.
     This class is derived from :class:`.UserStats`.
     """
-    def __init__(self, **options):
+    def __init__(self, **options) -> None:
         super().__init__(**options)
         self.options = options
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = {
             'account_id': self.account_id,
             'id': self.id,
@@ -102,68 +105,68 @@ class User(UserStats):
         return make_repr(self, info)
 
     @property
-    def role(self):
+    def role(self) -> StatusLevel:
         """:class:`.StatusLevel`: A status level of the user."""
-        return self.options.get('role', StatusLevel(0))
+        return StatusLevel.from_value(self.options.get('role', 0))
 
     @property
-    def rank(self):
+    def rank(self) -> Optional[int]:
         """Optional[:class:`int`]: A global rank of the user.
         ``None`` if the user is not on the leaderboard.
         """
         return self.options.get('global_rank')
 
     @property
-    def youtube(self):
+    def youtube(self) -> str:
         """:class:`str`: A youtube name of the user."""
         return self.options.get('youtube', {}).get('normal', '')
 
     @property
-    def youtube_link(self):
+    def youtube_link(self) -> str:
         """:class:`str`: A link to the user's youtube channel."""
         return self.options.get('youtube', {}).get('link', '')
 
     @property
-    def twitter(self):
+    def twitter(self) -> str:
         """:class:`str`: A twitter name of the user."""
         return self.options.get('twitter', {}).get('normal', '')
 
     @property
-    def twitter_link(self):
+    def twitter_link(self) -> str:
         """:class:`str`: A link to the user's twitter page."""
         return self.options.get('twitter', {}).get('link', '')
 
     @property
-    def twitch(self):
+    def twitch(self) -> str:
         """:class:`str`: A twitch name of the user."""
         return self.options.get('twitch', {}).get('normal', '')
 
     @property
-    def twitch_link(self):
+    def twitch_link(self) -> str:
         """:class:`str`: A link to the user's twitch channel."""
         return self.options.get('twitch', {}).get('link', '')
 
     @property
-    def msg_policy(self):
+    def msg_policy(self) -> MessagePolicyType:
         """:class:`.MessagePolicyType`: A type indicating user's message inbox policy."""
-        return self.options.get('messages', MessagePolicyType(0))
+        return MessagePolicyType.from_value(self.options.get('messages', 0))
 
     @property
-    def friend_req_policy(self):
+    def friend_req_policy(self) -> FriendRequestPolicyType:
         """:class:`.FriendRequestPolicyType`: A type indicating user's friend requests policy."""
-        return self.options.get('friend_requests', FriendRequestPolicyType(0))
+        return FriendRequestPolicyType.from_value(self.options.get('friend_requests', 0))
 
     @property
-    def comments_policy(self):
+    def comments_policy(self) -> CommentPolicyType:
         """:class:`.CommentPolicyType`: A type indicating user's comment history policy."""
-        return self.options.get('comments', CommentPolicyType(0))
+        return CommentPolicyType.from_value(self.options.get('comments', 0))
 
     @property
-    def icon_set(self):
+    def icon_set(self) -> IconSet:
         """:class:`.IconSet`: An iconset of the user."""
         return self.options.get('icon_setup', IconSet())
 
-    def is_mod(self, elder: str = None):
+    def is_mod(self, elder: str = None) -> bool:
         """:class:`bool`: Indicates if a user is Geometry Dash (Elder) Moderator.
         For instance, *RobTop* is an Elder Moderator, that means:
         ``robtop.is_mod() -> True`` and ``robtop.is_mod('elder') -> True``.
@@ -179,7 +182,7 @@ class User(UserStats):
 
         raise TypeError("is_mod(elder) expected elder=='elder', or None.")
 
-    async def update(self):
+    async def update(self) -> None:
         """|coro|
 
         Update the user's statistics and other parameters.

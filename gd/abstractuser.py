@@ -1,22 +1,21 @@
-from typing import Sequence, Union
+from ._typing import (
+    AbstractUser, Comment, Level, User,
+    List, Sequence, Union
+)
 
 from .abstractentity import AbstractEntity
-from .session import _session
 
-from .utils.enums import CommentStrategy, LevelLeaderboardStrategy, value_to_enum
+from .utils.enums import CommentStrategy, LevelLeaderboardStrategy
 from .utils.filters import Filters
 from .utils.search_utils import get as _get
-from .utils.wrap_tools import make_repr, check
+from .utils.text_tools import make_repr
+
 
 class AbstractUser(AbstractEntity):
     """Class that represents an Abstract Geometry Dash User.
     This class is derived from :class:`.AbstractEntity`.
     """
-    def __init__(self, **options):
-        super().__init__(**options)
-        self.options = options
-
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = {
             'name': repr(self.name),
             'id': self.id,
@@ -25,22 +24,22 @@ class AbstractUser(AbstractEntity):
         return make_repr(self, info)
 
     @property
-    def name(self):
+    def name(self) -> str:
         """:class:`str`: String representing name of the user."""
         return self.options.get('name', '')
 
     @property
-    def account_id(self):
+    def account_id(self) -> int:
         """:class:`int`: Account ID of the user."""
         return self.options.get('account_id', 0)
 
     @property
-    def _dict_for_parse(self):
+    def _dict_for_parse(self) -> dict:
         return {
             k: getattr(self, k) for k in ('name', 'id', 'account_id')
         }
 
-    def as_user(self):
+    def as_user(self) -> AbstractUser:
         """Returns :class:`.AbstractUser` object.
 
         This is used mainly in subclasses.
@@ -50,9 +49,9 @@ class AbstractUser(AbstractEntity):
         :class:`.AbstractUser`
             Abstract User from given object.
         """
-        return _session.to_user(self._dict_for_parse, client=self._client)
+        return self.client.make_user(self)
 
-    async def to_user(self):
+    async def to_user(self) -> User:
         """|coro|
 
         Convert ``self`` to :class:`.User` object.
@@ -62,17 +61,17 @@ class AbstractUser(AbstractEntity):
         :class:`.User`
             A user object corresponding to the abstract one.
         """
-        return await self._client.get_user(self.account_id)
+        return await self.client.get_user(self.account_id)
 
-    async def update(self):
+    async def update(self) -> None:
         """|coro|
 
         Update ``self``.
         """
-        new = await self._client.fetch_user(self.account_id)
+        new = await self.client.fetch_user(self.account_id)
         self.options = new.options
 
-    async def send(self, subject: str, body: str, *, from_client=None):
+    async def send(self, subject: str, body: str) -> None:
         """|coro|
 
         Send the message to ``self``. Requires logged client.
@@ -94,72 +93,45 @@ class AbstractUser(AbstractEntity):
         :exc:`.MissingAccess`
             Failed to send a message.
         """
-        client = from_client if from_client is not None else self._client
-        check.is_logged_obj(client, 'send')
-        await _session.send_message(target=self, subject=subject, body=body, client=client)
+        await self.client.send_message(self, subject, body)
 
-    async def block(self, *, from_client=None):
+    async def block(self) -> None:
         """|coro|
 
         Block a user. Requires logged in client.
-
-        Parameters
-        ----------
-        from_client: :class:`.Client`
-            A logged in client to block a user from. If ``None``,
-            defaults to a client attached to this user.
 
         Raises
         ------
         :exc:`.MissingAccess`
             Failed to block a user.
         """
-        client = from_client if from_client is not None else self._client
-        check.is_logged_obj(client, 'block')
-        await _session.block_user(self, unblock=False, client=client)
+        await self.client.block(self)
 
-
-    async def unblock(self, *, from_client=None):
+    async def unblock(self) -> None:
         """|coro|
 
         Unblock a user. Requires logged in client.
-
-        Parameters
-        ----------
-        from_client: :class:`.Client`
-            A logged in client to unblock a user from. If ``None``,
-            defaults to a client attached to this user.
 
         Raises
         ------
         :exc:`.MissingAccess`
             Failed to unblock a user.
         """
-        client = from_client if from_client is not None else self._client
-        check.is_logged_obj(client, 'unblock')
-        await _session.block_user(self, unblock=True, client=client)
+        await self.client.unblock(self)
 
-    async def unfriend(self, *, from_client=None):
+    async def unfriend(self) -> None:
         """|coro|
 
         Try to unfriend a user. Requires logged in client.
-
-        Parameters
-        ----------
-        from_client: :class:`.Client`
-            A logged in client to unfriend a user from. If ``None``,
-            defaults to a client attached to this user.
 
         Raises
         ------
         :exc:`.MissingAccess`
             Failed to unfriend a user.
         """
-        client = from_client if from_client is not None else self._client
-        check.is_logged_obj(client, 'unfriend')
-        await _session.unfriend_user(self, client=client)
+        await self.client.unfriend(self)
 
-    async def send_friend_request(self, message: str = None, *, from_client=None):
+    async def send_friend_request(self, message: str = None) -> None:
         """|coro|
 
         Send a friend request to a user.
@@ -173,20 +145,14 @@ class AbstractUser(AbstractEntity):
         message: :class:`str`
             A message to attach to a request.
 
-        from_client: :class:`.Client`
-            A logged in client to send request from. If ``None``,
-            defaults to a client attached to this user.
-
         Raises
         ------
         :exc:`.MissingAccess`
             Failed to send a friend request to user.
         """
-        client = from_client if from_client is not None else self._client
-        check.is_logged_obj(client, 'send_friend_request')
-        await _session.send_friend_request(target=self, message=message, client=client)
+        await self.client.send_friend_request(self, message)
 
-    async def get_levels_on_page(self, page: int = 0, *, raise_errors: bool = True):
+    async def get_levels_on_page(self, page: int = 0, *, raise_errors: bool = True) -> List[Level]:
         """|coro|
 
         Fetches user's levels on a given page.
@@ -215,10 +181,10 @@ class AbstractUser(AbstractEntity):
             All levels found. Can be an empty list.
         """
         filters = Filters.setup_by_user()
-        return await self._client.search_levels_on_page(
+        return await self.client.search_levels_on_page(
             page=page, filters=filters, user=self, raise_errors=raise_errors)
 
-    async def get_levels(self, pages: Sequence[int] = None):
+    async def get_levels(self, pages: Sequence[int] = None) -> List[Level]:
         """|coro|
 
         Gets levels on specified pages.
@@ -243,9 +209,9 @@ class AbstractUser(AbstractEntity):
             List of levels found. Can be an empty list.
         """
         filters = Filters.setup_by_user()
-        return await self._client.search_levels(pages=pages, filters=filters, user=self)
+        return await self.client.search_levels(pages=pages, filters=filters, user=self)
 
-    async def get_page_comments(self, page: int = 0):
+    async def get_page_comments(self, page: int = 0) -> List[Comment]:
         """|coro|
 
         Gets user's profile comments on a specific page.
@@ -258,8 +224,9 @@ class AbstractUser(AbstractEntity):
         """
         return await self.retrieve_page_comments('profile', page)
 
-    async def get_page_comment_history(self,
-        strategy: Union[int, str, CommentStrategy] = 0, page: int = 0):
+    async def get_page_comment_history(
+        self, strategy: Union[int, str, CommentStrategy] = 0, page: int = 0
+    ) -> List[Comment]:
         """|coro|
 
         Retrieves user's level comments. (history)
@@ -272,7 +239,7 @@ class AbstractUser(AbstractEntity):
         """
         return await self.retrieve_page_comments('level', page, strategy=strategy)
 
-    async def get_comments(self, pages: Sequence[int] = None):
+    async def get_comments(self, pages: Sequence[int] = None) -> List[Comment]:
         """|coro|
 
         Gets user's profile comments on specific pages.
@@ -290,7 +257,7 @@ class AbstractUser(AbstractEntity):
 
     async def get_comment_history(
         self, strategy: Union[int, str, CommentStrategy] = 0, pages: Sequence[int] = None
-    ):
+    ) -> List[Comment]:
         """|coro|
 
         Gets user's level (history) comments on specific pages.
@@ -309,7 +276,7 @@ class AbstractUser(AbstractEntity):
     async def retrieve_page_comments(
         self, type: str = 'profile', page: int = 0, *, raise_errors: bool = True,
         strategy: Union[int, str, CommentStrategy] = 0
-    ):
+    ) -> List[Comment]:
         """|coro|
 
         Utilizes getting comments. This is used in two other methods,
@@ -343,15 +310,13 @@ class AbstractUser(AbstractEntity):
         :exc:`.NothingFound`
             No comments were found.
         """
-        strategy = value_to_enum(CommentStrategy, strategy)
-        return await _session.retrieve_page_comments(
-            type=type, user=self, page=page, raise_errors=raise_errors, strategy=strategy
-        )
+        return await self.client.retrieve_page_comments(
+            self, type=type, page=page, raise_errors=raise_errors, strategy=strategy)
 
     async def retrieve_comments(
         self, type: str = 'profile', pages: Sequence[int] = None,
         strategy: Union[int, str, CommentStrategy] = 0
-    ):
+    ) -> List[Comment]:
         """|coro|
 
         Utilizes getting comments on specified pages.
@@ -374,30 +339,19 @@ class AbstractUser(AbstractEntity):
         List[:class:`.Comment`]
             List of comments found. Can be an empty list.
         """
-        if pages is None:
-            pages = range(10)
-
-        strategy = value_to_enum(CommentStrategy, strategy)
-
-        return await _session.retrieve_comments(
-            type=type, user=self, pages=pages, strategy=strategy
-        )
+        return await self.client.retrieve_comments(self, type=type, pages=pages, strategy=strategy)
 
 
 class LevelRecord(AbstractUser):
     """Class that represents Geometry Dash User's Level Record.
     This class is derived from :class:`.AbstractUser`.
     """
-    def __init__(self, **options):
-        super().__init__(**options)
-        self.options = options
-
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = self.options.copy()
         info.pop('client', None)
         return make_repr(self, info)
 
-    async def update(self):
+    async def update(self) -> None:
         """|coro|
 
         Update ``self``.
@@ -411,31 +365,30 @@ class LevelRecord(AbstractUser):
             self.options = record.options
 
     @property
-    def level_id(self):
+    def level_id(self) -> int:
         """:class:`int`: An integer representing ID of the level the record was retrieved from."""
         return self.options.get('level_id', 0)
 
     @property
-    def percentage(self):
+    def percentage(self) -> int:
         """:class:`int`: Percentage of the record."""
         return self.options.get('percentage', 0)
 
     @property
-    def coins(self):
+    def coins(self) -> int:
         """:class:`int`: Amount of coins collected."""
         return self.options.get('coins', 0)
 
     @property
-    def timestamp(self):
+    def timestamp(self) -> str:
         """:class:`str`: Human-readable string representation of a timestamp."""
         return self.options.get('timestamp', 'unknown')
 
     @property
-    def lb_place(self):
+    def lb_place(self) -> int:
         """:class:`int`: User's place in leaderboard. ``0`` if not set."""
         return self.options.get('lb_place', 0)
 
     @property
-    def type(self):
-        return self.options.get('type', LevelLeaderboardStrategy(0))
-    
+    def type(self) -> LevelLeaderboardStrategy:
+        return LevelLeaderboardStrategy.from_value(self.options.get('type', 0))

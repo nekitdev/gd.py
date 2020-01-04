@@ -10,10 +10,16 @@ install:
   - pip install Cython
   # install gd.py with asyncio pytest plugin
   - pip install .[dev]
+  # install flake8
+  - pip install flake8
   # install coveralls
   - pip install coveralls
 
-script: coverage run -m pytest ./tests/ --maxfail=3 --disable-warnings
+script:
+  # run lint
+  - flake8 gd
+  # run tests and check coverage
+  - coverage run -m pytest ./tests/ --maxfail=3 --disable-warnings
 
 after_success:
   # report to coveralls

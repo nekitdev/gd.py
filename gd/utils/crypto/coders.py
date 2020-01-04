@@ -5,7 +5,8 @@ import string
 import struct
 import zlib
 
-from typing import Sequence, Union
+# absolute import because we are deep
+from gd._typing import Sequence, Union
 
 from ..mapper import mapper
 from .xor_cipher import XORCipher as XOR
@@ -36,7 +37,7 @@ class Coder:
     additional = (0x1f, 0x8b, 0x8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xb)
 
     @classmethod
-    def normal_xor(cls, data: bytes, key: int):
+    def normal_xor(cls, data: bytes, key: int) -> str:
         """Applies simple XOR on an array of bytes.
 
         Parameters
@@ -52,10 +53,10 @@ class Coder:
         :class:`str`
             Decoded data as a string.
         """
-        return bytearray(i^key for i in data).decode()
+        return bytearray(i ^ key for i in data).decode(errors='replace')
 
     @classmethod
-    def decode_save(cls, save: bytes, needs_xor: bool = True):
+    def decode_save(cls, save: bytes, needs_xor: bool = True) -> bytes:
         if isinstance(save, str):
             save = save.encode()
 
@@ -72,7 +73,7 @@ class Coder:
         return zlib.decompress(from_b64, -zlib.MAX_WBITS)
 
     @classmethod
-    def encode_save(cls, save: bytes, needs_xor: bool = True):
+    def encode_save(cls, save: bytes, needs_xor: bool = True) -> bytes:
         if isinstance(save, str):
             save = save.encode()
 
@@ -88,14 +89,14 @@ class Coder:
         return encoded if not needs_xor else cls.normal_xor(encoded, 11).encode()
 
     @classmethod
-    def do_base64(cls, data: str, encode: bool = True):
+    def do_base64(cls, data: str, encode: bool = True) -> Union[bytes, str]:
         if encode:
             return mapper.prepare_sending(base64.b64encode(data.encode()).decode())
         else:
             return base64.b64decode(mapper.normalize(data).encode()).decode()
 
     @classmethod
-    def gen_rs(cls, length: int = 10):
+    def gen_rs(cls, length: int = 10) -> str:
         """Generates a random string of required length.
 
         Uses [A-Za-z0-9] character set.
@@ -116,7 +117,7 @@ class Coder:
         return final
 
     @classmethod
-    def encode(cls, type: str, string: str):
+    def encode(cls, type: str, string: str) -> str:
         """Encodes a string, combining XOR and Base64 encode methods.
 
         Used in different aspects of gd.py.
@@ -140,7 +141,7 @@ class Coder:
         return encoded
 
     @classmethod
-    def decode(cls, type: str, string: str):
+    def decode(cls, type: str, string: str) -> str:
         """Decodes a XOR -> Base64 ciphered string.
 
         .. note::
@@ -170,7 +171,7 @@ class Coder:
         return decoded
 
     @classmethod
-    def gen_chk(cls, type: str, values: Sequence[Union[int, str]]):
+    def gen_chk(cls, type: str, values: Sequence[Union[int, str]]) -> str:
         """Generates a "chk" value, used in different requests to GD servers.
 
         The method is: combine_values -> add salt -> sha1 hash
@@ -215,7 +216,7 @@ class Coder:
         return final
 
     @classmethod
-    def unzip(cls, string: Union[bytes, str]):
+    def unzip(cls, string: Union[bytes, str]) -> Union[bytes, str]:
         """zlib decompresses a level string.
 
         Used to unzip level data.
@@ -248,7 +249,7 @@ class Coder:
         return final
 
     @classmethod
-    def zip(cls, string: Union[bytes, str], append_semicolon: bool = True):
+    def zip(cls, string: Union[bytes, str], append_semicolon: bool = True) -> str:
         if isinstance(string, str):
             string = string.encode()
 
@@ -258,7 +259,7 @@ class Coder:
         return cls.encode_save(string, needs_xor=False).decode()
 
     @classmethod
-    def gen_level_upload_seed(cls, data_string: str, chars_required: int = 50):
+    def gen_level_upload_seed(cls, data_string: str, chars_required: int = 50) -> str:
         if len(data_string) < 50:
             return data_string
 
@@ -267,5 +268,7 @@ class Coder:
         return data_string[::space][:chars_required]
 
     @classmethod
-    def gen_level_lb_seed(cls, jumps: int = 0, percentage: int = 0, seconds: int = 0):
-        return 1482 + (jumps + 3991) * (percentage + 8354) + ((seconds + 4085)**2) - 50028039
+    def gen_level_lb_seed(cls, jumps: int = 0, percentage: int = 0, seconds: int = 0) -> int:
+        return (
+            1482 + (jumps + 3991) * (percentage + 8354) + ((seconds + 4085)**2) - 50028039
+        )

@@ -1,10 +1,25 @@
+# type: ignore
+# we are going very polymorphic here
 from itertools import chain
 
 from ..utils.crypto.coders import Coder
 from ..utils.enums import NEnum
 
 from .hsv import HSV
-from .enums import *
+from .enums import (
+    ZLayer,
+    Easing,
+    PulseMode,
+    PulseType,
+    PickupItemMode,
+    TouchToggleMode,
+    InstantCountComparison,
+    TargetPosCoordinates,
+    PlayerColor,
+    Gamemode,
+    Speed,
+)
+
 
 # MAIN HELPERS
 
@@ -94,7 +109,7 @@ def _iter_to_str(x):
         elif t is dict:
             char = '|'
             x = (_collect(_dump(elem)) for elem in x)
-      
+
     return char.join(map(str, x))
 
 
@@ -104,10 +119,11 @@ def _b64_failsafe(string: str, encode: bool = True):
     except Exception:
         return string
 
+
 # OBJECT PARSING
 
 _INT = {
-    1, 7, 8, 9, 12, 20, 21, 22, 23, 24, 25, 50, 51, 61, 71, 
+    1, 7, 8, 9, 12, 20, 21, 22, 23, 24, 25, 50, 51, 61, 71,
     76, 77, 80, 95, 108
 }
 
@@ -150,11 +166,14 @@ _OBJECT_ADDITIONAL = {
     _TEXT: lambda x: _b64_failsafe(x, encode=True)
 }
 
+
 def _object_convert(s):
     return _convert(s, delim=(','), attempt_conversion=True, f=_from_str)
 
+
 def _object_dump(d):
     return _dump(d, _OBJECT_ADDITIONAL)
+
 
 def _object_collect(d):
     return _collect(d, ',')
@@ -189,6 +208,7 @@ _MAPPING = {
 
 _KEYS = set(_MAPPING)
 
+
 def _convert_type(x: object):
     t = x.__class__
     if t in _KEYS:
@@ -197,6 +217,7 @@ def _convert_type(x: object):
         return x.value
     return x
 
+
 # COLOR PARSING
 
 _COLOR_INT = {1, 2, 3, 6, 9, 11, 12, 13}
@@ -204,6 +225,7 @@ _COLOR_BOOL = {5, 8, 15, 17, 18}
 _COLOR_PLAYER = 4
 _COLOR_FLOAT = 7
 _COLOR_HSV = 10
+
 
 def _parse_color(n: int, v: str):
     if n in _COLOR_INT:
@@ -218,14 +240,18 @@ def _parse_color(n: int, v: str):
         return PlayerColor(int(v))
     return v
 
+
 def _color_convert(s):
     return _convert(s, delim=('_'), attempt_conversion=True, f=_parse_color)
+
 
 def _color_dump(d):
     return _dump(d)
 
+
 def _color_collect(d):
     return _collect(d, '_')
+
 
 # HEADER PARSING
 
@@ -268,6 +294,7 @@ def _parse_header(n: str, v: str):
     if n == _HEADER_FLOAT:
         return _maybefloat(v)
     if n in _HEADER_COLORS:
+        from .struct import ColorChannel  # HACK: circular imports
         return ColorChannel.from_mapping(_color_convert(v))
     if n == _GUIDELINES:
         return _parse_guidelines(v)
@@ -293,6 +320,7 @@ def _header_dump(d):
 def _header_collect(d):
     return _collect(d, ',')
 
+
 # LEVEL API
 
 _DESC = 'k3'
@@ -304,8 +332,10 @@ _TAB = 'kI6'
 def _parse_into_array(s: str, delim: str = '_'):
     return list(map(int, s.split(delim)))
 
+
 def _join_into_string(array: list, delim: str = '_'):
     return delim.join(map(str, array))
+
 
 def _attempt_zip(s: str):
     unzip = all(char not in s for char in '|;,.')
@@ -316,8 +346,10 @@ def _attempt_zip(s: str):
     except Exception:
         return s
 
+
 def _level_dump(d: dict):
     return {k: _dump_entry(k, value) for k, value in d.items()}
+
 
 def _dump_entry(n: str, v):
     if n == _SPECIAL:
@@ -330,6 +362,7 @@ def _dump_entry(n: str, v):
         return {str(k): str(i) for k, i in v.items()}
     return v
 
+
 def _process_entry(n: str, v):
     if n == _SPECIAL:
         return _parse_into_array(v)
@@ -341,8 +374,10 @@ def _process_entry(n: str, v):
         return {int(k): int(i) for k, i in v.items()}
     return v
 
+
 def _process_level(d: dict):
     return {k: _process_entry(k, value) for k, value in d.items()}
+
 
 # LOAD ACCELERATOR
 

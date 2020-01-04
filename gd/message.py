@@ -1,20 +1,23 @@
+from ._typing import Optional
+
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser
-from .session import _session
 
+from .utils.decorators import check_logged
 from .utils.enums import MessageOrRequestType
-from .utils.wrap_tools import make_repr, check
+from .utils.text_tools import make_repr
+
 
 class Message(AbstractEntity):
     """Class that represents private messages in Geometry Dash.
     This class is derived from :class:`.AbstractEntity`.
     """
-    def __init__(self, **options):
+    def __init__(self, **options) -> None:
         super().__init__(**options)
         self.options = options
         self._body = options.pop('body', '')
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = {
             'author': self.author,
             'id': self.id,
@@ -23,41 +26,41 @@ class Message(AbstractEntity):
         return make_repr(self, info)
 
     @property
-    def author(self):
+    def author(self) -> AbstractUser:
         """:class:`.AbstractUser`: An author of the message."""
         return self.options.get('author', AbstractUser())
 
     @property
-    def recipient(self):
+    def recipient(self) -> AbstractUser:
         """:class:`.AbstractUser`: A recipient of the message."""
         return self.options.get('recipient', AbstractUser())
 
     @property
-    def subject(self):
+    def subject(self) -> str:
         """:class:`str`: A subject of the message, as string."""
         return self.options.get('subject', '')
 
     @property
-    def timestamp(self):
+    def timestamp(self) -> str:
         """:class:`str`: A human-readable string representing how long ago message was created."""
         return self.options.get('timestamp', 'unknown')
 
     @property
-    def type(self):
+    def type(self) -> MessageOrRequestType:
         """:class:`.MessageOrRequestType`: Whether a message is sent or inbox."""
-        return self.options.get('type', MessageOrRequestType(0))
+        return MessageOrRequestType.from_value(self.options.get('type', 0))
 
     @property
-    def body(self):
+    def body(self) -> Optional[str]:
         """Optional[:class:`str`]: A body of the message. Requires :meth:`.Message.read`."""
         return self._body
 
-    def is_read(self):
+    def is_read(self) -> bool:
         """:class:`bool`: Indicates whether message is read or not."""
-        return self.options.get('is_read', False)
+        return bool(self.options.get('is_read'))
 
-    @check.is_logged()
-    async def read(self):
+    @check_logged
+    async def read(self) -> str:
         """|coro|
 
         Read a message. Set the body of the message to the content.
@@ -67,10 +70,10 @@ class Message(AbstractEntity):
         :class:`str`
             The content of the message.
         """
-        return await _session.read_message(self)
+        return await self.client.read_message(self)
 
-    @check.is_logged()
-    async def delete(self):
+    @check_logged
+    async def delete(self) -> None:
         """|coro|
 
         Delete a message.
@@ -80,4 +83,4 @@ class Message(AbstractEntity):
         :exc:`.MissingAccess`
             Failed to delete a message.
         """
-        await _session.delete_message(self)
+        await self.client.delete_message(self)

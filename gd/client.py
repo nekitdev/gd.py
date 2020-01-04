@@ -1,14 +1,27 @@
 import asyncio
 
 import logging
-from typing import Union, Sequence
 
+from ._typing import (
+    Any, AbstractUser, Comment, Coroutine, Dict, FriendRequest, Gauntlet, IconSet, Level, LevelRecord,
+    List, MapPack, Message, Optional, Sequence, Song, Union, UnregisteredUser, User, UserStats
+)
 from .session import _session
 
-from .utils.enums import value_to_enum, LeaderboardStrategy, IconType
+from .utils.decorators import check_logged
+from .utils.enums import (
+    CommentPolicyType,
+    CommentStrategy,
+    DemonDifficulty,
+    FriendRequestPolicyType,
+    IconType,
+    LeaderboardStrategy,
+    LevelLeaderboardStrategy,
+    MessagePolicyType,
+)
 from .utils.filters import Filters
 from .utils.save_parser import Save
-from .utils.wrap_tools import make_repr, check
+from .utils.text_tools import make_repr
 
 from .utils.crypto.coders import Coder
 
@@ -16,24 +29,6 @@ from . import api
 from . import utils
 
 log = logging.getLogger(__name__)
-
-
-class _LoginSession:
-    """Small wrapper around Client.login method.
-    Allows to temporarily login and execute
-    a block of code in an <async with> statement.
-    """
-    def __init__(self, client, username: str, password: str):
-        self._client = client
-        self._name = username
-        self._pass = password
-
-    async def __aenter__(self):
-        await self._client.login(self._name, self._pass)
-        return self._client
-
-    async def __aexit__(self, *exc):
-        self._client.close()
 
 
 class Client:
@@ -64,12 +59,12 @@ class Client:
         This is a namedtuple with format ``(completed, followed)``.
         Contains empty lists if not loaded.
     """
-    def __init__(self, *, loop=None):
+    def __init__(self, *, loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
         self.session = _session
         self.loop = loop or utils.acquire_loop()
         self._set_to_defaults()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = {
             'is_logged': self.is_logged(),
             'account_id': self.account_id,
@@ -79,7 +74,7 @@ class Client:
         }
         return make_repr(self, info)
 
-    def __json__(self):
+    def __json__(self) -> Dict[str, Optional[Union[int, str]]]:
         return dict(
             account_id=self.account_id,
             id=self.id,
@@ -87,7 +82,7 @@ class Client:
             password=None  # for safety reasons
         )
 
-    def _set_to_defaults(self):
+    def _set_to_defaults(self) -> None:
         self.save = Save(completed=[], followed=[])
         self.save_api = api.Database()
         self.account_id = 0
@@ -96,16 +91,16 @@ class Client:
         self.password = None
         self.encodedpass = None
 
-    def _upd(self, attr, value):  # pragma: no cover
+    def _upd(self, attr: str, value: Any) -> None:  # pragma: no cover
         setattr(self, attr, value)
         # update encodedpass if password was updated
         if attr == 'password':
             self.encodedpass = Coder.encode(type='accountpass', string=self.password)
 
-    def is_logged(self):
+    def is_logged(self) -> bool:
         return (self.name is not None) and (self.password is not None)
 
-    async def ping_server(self):
+    async def ping_server(self) -> float:
         """|coro|
 
         Pings ``boomlings.com/database`` and prints the time taken.
@@ -122,7 +117,7 @@ class Client:
 
         return duration
 
-    async def get_song(self, song_id: int = 0):
+    async def get_song(self, song_id: int = 0) -> Song:
         """|coro|
 
         Fetches a song from Geometry Dash server.
@@ -147,7 +142,7 @@ class Client:
         """
         return await self.session.get_song(song_id)
 
-    async def get_ng_song(self, song_id: int = 0):  # pragma: no cover
+    async def get_ng_song(self, song_id: int = 0) -> Song:  # pragma: no cover
         """|coro|
 
         Fetches a song from Newgrounds.
@@ -172,7 +167,7 @@ class Client:
         """
         return await self.session.get_ng_song(song_id)
 
-    async def get_user(self, account_id: int = 0):
+    async def get_user(self, account_id: int = 0) -> User:
         """|coro|
 
         Gets a user from Geometry Dash server.
@@ -198,7 +193,9 @@ class Client:
         """
         return await self.session.get_user(account_id, return_only_stats=False, client=self)
 
-    async def fetch_user(self, account_id: int = 0, *, stats: bool = False):
+    async def fetch_user(
+        self, account_id: int = 0, *, stats: bool = False
+    ) -> Union[AbstractUser, UserStats]:
         """|coro|
 
         This is almost like :meth:`.Client.get_user`, except that it returns
@@ -231,7 +228,7 @@ class Client:
         # return UserStats if needed, and AbstractUser otherwise.
         return user_stats if stats else user_stats.as_user()
 
-    async def search_user(self, query: Union[int, str] = None):
+    async def search_user(self, query: Union[int, str]) -> Union[UnregisteredUser, User]:
         """|coro|
 
         Searches for a user on Geometry Dash servers.
@@ -253,7 +250,7 @@ class Client:
         """
         return await self.session.search_user(query, return_abstract=False, client=self)
 
-    async def find_user(self, query: Union[int, str] = None):
+    async def find_user(self, query: Union[int, str]) -> Union[AbstractUser, UnregisteredUser]:
         """|coro|
 
         Fetches a user on Geometry Dash servers by given query.
@@ -278,7 +275,7 @@ class Client:
         """
         return await self.session.search_user(query, return_abstract=True, client=self)
 
-    async def get_daily(self):
+    async def get_daily(self) -> Level:
         """|coro|
 
         Gets current daily level.
@@ -294,7 +291,7 @@ class Client:
         """
         return await self.session.get_timely('daily', client=self)
 
-    async def get_weekly(self):
+    async def get_weekly(self) -> Level:
         """|coro|
 
         Gets current weekly demon.
@@ -310,7 +307,7 @@ class Client:
         """
         return await self.session.get_timely('weekly', client=self)
 
-    async def get_level(self, level_id: int = 0):
+    async def get_level(self, level_id: int = 0) -> Level:
         """|coro|
 
         Fetches a level from Geometry Dash servers.
@@ -339,8 +336,8 @@ class Client:
         """
         return await self.session.get_level(level_id, client=self)
 
-    async def get_many_levels(self, *level_ids: Sequence[int]):
-        """|coro|
+    async def get_many_levels(self, *level_ids: Sequence[int]) -> List[Level]:
+        r"""|coro|
 
         Fetches many levels.
 
@@ -370,7 +367,7 @@ class Client:
 
         return await self.search_levels_on_page(query=query, filters=filters)
 
-    async def get_gauntlets(self):
+    async def get_gauntlets(self) -> List[Gauntlet]:
         """|coro|
 
         Fetches *The Lost Gauntlets*.
@@ -382,7 +379,7 @@ class Client:
         """
         return await self.session.get_gauntlets(client=self)
 
-    async def get_page_map_packs(self, page: int = 0, *, raise_errors: bool = True):
+    async def get_page_map_packs(self, page: int = 0, *, raise_errors: bool = True) -> List[MapPack]:
         """|coro|
 
         Fetches map packs on given page.
@@ -407,7 +404,7 @@ class Client:
         """
         return await self.session.get_page_map_packs(page=page, client=self)
 
-    async def get_map_packs(self, pages: Sequence[int] = None):
+    async def get_map_packs(self, pages: Optional[Sequence[int]] = None) -> List[MapPack]:
         """|coro|
 
         Gets map packs on given ``pages``.
@@ -427,7 +424,7 @@ class Client:
 
         return await self.session.get_map_packs(pages=pages, client=self)
 
-    async def login(self, user: str, password: str):  # pragma: no cover
+    async def login(self, user: str, password: str) -> None:  # pragma: no cover
         """|coro|
 
         Tries to login with given parameters.
@@ -448,15 +445,14 @@ class Client:
         await self.session.login(client=self, user=user, password=password)
         log.info("Logged in as %r, with password %r.", user, password)
 
-
-    @check.is_logged()
+    @check_logged
     async def upload_level(
         self, name: str = 'Unnamed', id: int = 0, version: int = 1, length: int = 0,
         track: int = 0, song_id: int = 0, is_auto: bool = False, original: int = 0,
         two_player: bool = False, objects: int = None, coins: int = 0, star_amount: int = 0,
         unlist: bool = False, ldm: bool = False, password: int = 0, copyable: bool = False,
         data: Union[bytes, str] = '', description: str = '', *, load: bool = True
-    ):
+    ) -> Level:
         """|coro|
 
         Upload a level.
@@ -526,8 +522,8 @@ class Client:
             desc=description, load_after=load, client=self
         )
 
-    @check.is_logged()
-    async def get_page_levels(self, page: int = 0, *, raise_errors: bool = True):
+    @check_logged
+    async def get_page_levels(self, page: int = 0, *, raise_errors: bool = True) -> List[Level]:
         """|coro|
 
         Gets levels of a client from a server.
@@ -557,8 +553,8 @@ class Client:
         filters = Filters.setup_by_user()
         return await self.search_levels_on_page(filters=filters, raise_errors=raise_errors)
 
-    @check.is_logged()
-    async def get_levels(self, pages: Sequence[int] = None):
+    @check_logged
+    async def get_levels(self, pages: Optional[Sequence[int]] = None) -> List[Level]:
         """|coro|
 
         Searches for levels on given pages.
@@ -580,8 +576,8 @@ class Client:
         filters = Filters.setup_by_user()
         return await self.search_levels(pages=pages, filters=filters)
 
-    @check.is_logged()
-    async def load(self):
+    @check_logged
+    async def load(self) -> None:
         """|coro|
 
         Loads save from a server and parses it.
@@ -594,8 +590,8 @@ class Client:
         else:
             log.warning('Failed to load a save.')
 
-    @check.is_logged()
-    async def backup(self, save_data: Sequence[Union[bytes, str]] = None):
+    @check_logged
+    async def backup(self, save_data: Optional[Sequence[Union[bytes, str]]] = None) -> None:
         """|coro|
 
         Back up the data of the client.
@@ -620,7 +616,7 @@ class Client:
 
         await self.session.do_save(client=self, data=data)
 
-    def close(self, message: str = None):
+    def close(self, message: Optional[str] = None) -> None:
         """*Closes* client.
 
         Basically sets its password and username to ``None``, which
@@ -635,7 +631,7 @@ class Client:
 
         log.info('Has logged out with message: %r', message)
 
-    def temp_login(self, user: str, password: str):
+    def temp_login(self, user: str, password: str) -> Any:
         """Async context manager, used for temporarily logging in.
 
         Typical usage can be, as follows:
@@ -647,8 +643,145 @@ class Client:
         """
         return _LoginSession(self, user, password)
 
-    @check.is_logged()
-    async def get_blocked_users(self):
+    @check_logged
+    async def like(self, entity: Union[Comment, Level]) -> None:
+        await self.session.like(entity, dislike=False, client=self)
+
+    @check_logged
+    async def dislike(self, entity: Union[Comment, Level]) -> None:
+        await self.session.like(entity, dislike=True, client=self)
+
+    @check_logged
+    async def delete_comment(self, comment: Comment) -> None:
+        await self.session.delete_comment(comment, client=self)
+
+    @check_logged
+    async def read_friend_request(self, request: FriendRequest) -> None:
+        await self.session.read_friend_req(request, client=self)
+
+    @check_logged
+    async def delete_friend_request(self, request: FriendRequest) -> None:
+        await self.session.delete_friend_req(request, client=self)
+
+    @check_logged
+    async def accept_friend_request(self, request: FriendRequest) -> None:
+        await self.session.accept_friend_req(request, client=self)
+
+    @check_logged
+    async def read_message(self, message: Message) -> str:
+        return await self.session.read_message(message, client=self)
+
+    @check_logged
+    async def delete_message(self, message: Message) -> None:
+        await self.session.delete_message(message, client=self)
+
+    async def generate_icon(self, type: Union[int, str, IconType], icon_set: IconSet) -> bytes:
+        form = IconType.from_value(type).name.lower()
+        return await self.session.generate_icon(
+            form=form, id=getattr(icon_set, form), has_glow=icon_set.has_glow_outline(),
+            color_1=icon_set.color_1.index, color_2=icon_set.color_2.index
+        )
+
+    def make_user(self, user: AbstractUser) -> AbstractUser:
+        return self.session.to_user(user._dict_for_parse, client=self)
+
+    @check_logged
+    async def send_message(self, user: AbstractUser, subject: str, body: str) -> None:
+        await self.session.send_message(target=user, subject=subject, body=body, client=self)
+
+    @check_logged
+    async def block(self, user: AbstractUser) -> None:
+        await self.session.block_user(user, unblock=False, client=self)
+
+    @check_logged
+    async def unblock(self, user: AbstractUser) -> None:
+        await self.session.block_user(user, unblock=True, client=self)
+
+    @check_logged
+    async def unfriend(self, user: AbstractUser) -> None:
+        await self.session.unfriend_user(user, client=self)
+
+    @check_logged
+    async def send_friend_request(self, user: AbstractUser, message: str) -> None:
+        await self.session.send_friend_request(target=user, message=message, client=self)
+
+    async def retrieve_page_comments(
+        self, user: AbstractUser, type: str = 'profile', page: int = 0, *,
+        raise_errors: bool = True, strategy: Union[int, str, CommentStrategy] = 0
+    ) -> List[Comment]:
+        strategy = CommentStrategy.from_value(strategy)
+        return await self.session.retrieve_page_comments(
+            type=type, user=user, page=page, raise_errors=raise_errors, strategy=strategy, client=self
+        )
+
+    async def retrieve_comments(
+        self, user: AbstractUser, type: str = 'profile', pages: Optional[Sequence[int]] = None,
+        strategy: Union[int, str, CommentStrategy] = 0
+    ) -> List[Comment]:
+        if pages is None:
+            pages = range(10)
+
+        strategy = CommentStrategy.from_value(strategy)
+        return await self.session.retrieve_comments(
+            type=type, user=user, pages=pages, strategy=strategy, client=self
+        )
+
+    async def report_level(self, level: Level) -> None:
+        await self.session.report_level(level)
+
+    @check_logged
+    async def delete_level(self, level: Level) -> None:
+        await self.session.delete_level(level, client=self)
+
+    @check_logged
+    async def update_level_description(self, level: Level, content: str) -> None:
+        await self.session.update_level_desc(level, content, client=self)
+
+    @check_logged
+    async def rate_level(self, level: Level, stars: int = 1) -> None:
+        await self.session.rate_level(level, stars, client=self)
+
+    @check_logged
+    async def rate_demon(
+        self, level: Level, demon_difficulty: Union[int, str, DemonDifficulty] = 1,
+        as_mod: bool = False
+    ) -> None:
+        demon_difficulty = DemonDifficulty.from_value(demon_difficulty)
+
+        success = await self.session.rate_demon(level, demon_difficulty, mod=as_mod, client=self)
+
+        if success:
+            log.info('Successfully demon-rated level: %s.', level)
+        else:
+            log.warning('Failed to rate demon difficulty for level: %s.', level)
+
+    @check_logged
+    async def send_level(
+        self, level: Level, stars: int = 1, featured: bool = True
+    ) -> None:
+        await self.session.send_level(level, stars, featured=featured, client=self)
+
+    @check_logged
+    async def comment_level(
+        self, level: Level, content: str, percentage: int = 0
+    ) -> None:
+        await self.session.comment_level(level, content, percentage, client=self)
+
+    @check_logged
+    async def get_level_leaderboard(
+        self, level: Level, strategy: Union[int, str, LevelLeaderboardStrategy]
+    ) -> List[LevelRecord]:
+        strategy = LevelLeaderboardStrategy.from_value(strategy)
+        return await self.session.get_leaderboard(level, strategy=strategy, client=self)
+
+    async def get_level_comments(
+        self, level: Level, strategy: Union[int, str, CommentStrategy] = 0, amount: int = 20
+    ) -> List[Comment]:
+        return await self.session.get_level_comments(
+            level=level, strategy=CommentStrategy.from_value(strategy), amount=amount, client=self)
+
+    @check_logged
+    async def get_blocked_users(self) -> List[AbstractUser]:
         """|coro|
 
         Get all users blocked by a client.
@@ -668,8 +801,8 @@ class Client:
         """
         return await self.session.get_user_list(type=1, client=self)
 
-    @check.is_logged()
-    async def get_friends(self):
+    @check_logged
+    async def get_friends(self) -> List[AbstractUser]:
         """|coro|
 
         Get all friends of a client.
@@ -689,8 +822,8 @@ class Client:
         """
         return await self.session.get_user_list(type=0, client=self)
 
-    @check.is_logged()
-    async def to_user(self):
+    @check_logged
+    async def to_user(self) -> User:
         """|coro|
 
         Gets user with :attr:`.Client.account_id`,
@@ -703,10 +836,10 @@ class Client:
         """
         return await self.get_user(self.account_id)
 
-    @check.is_logged()
+    @check_logged
     async def get_page_messages(
         self, sent_or_inbox: str = 'inbox', page: int = 0, *, raise_errors: bool = True
-    ):
+    ) -> List[Message]:
         """|coro|
 
         Gets messages on a specified page.
@@ -742,10 +875,10 @@ class Client:
             raise_errors=raise_errors, client=self
         )
 
-    @check.is_logged()
+    @check_logged
     async def get_messages(
-        self, sent_or_inbox: str = 'inbox', pages: Sequence[int] = None
-    ):
+        self, sent_or_inbox: str = 'inbox', pages: Optional[Sequence[int]] = None
+    ) -> List[Message]:
         """|coro|
 
         Retrieves messages from given ``pages``.
@@ -771,10 +904,10 @@ class Client:
             sent_or_inbox=sent_or_inbox, pages=pages, client=self
         )
 
-    @check.is_logged()
+    @check_logged
     async def get_page_friend_requests(
         self, sent_or_inbox: str = 'inbox', page: int = 0, *, raise_errors: bool = True
-    ):
+    ) -> List[FriendRequest]:
         """|coro|
 
         Gets friend requests on a specified page.
@@ -810,10 +943,10 @@ class Client:
             raise_errors=raise_errors, client=self
         )
 
-    @check.is_logged()
+    @check_logged
     async def get_friend_requests(
-        self, sent_or_inbox: str = 'inbox', pages: Sequence[int] = None
-    ):
+        self, sent_or_inbox: str = 'inbox', pages: Optional[Sequence[int]] = None
+    ) -> List[FriendRequest]:
         """|coro|
 
         Retrieves friend requests from given ``pages``.
@@ -839,15 +972,18 @@ class Client:
             sent_or_inbox=sent_or_inbox, pages=pages, client=self
         )
 
-    @check.is_logged()
-    def get_parse_dict(self):
+    @check_logged
+    def get_parse_dict(self) -> Dict[str, Union[int, str]]:
         return {k: getattr(self, k) for k in ('name', 'id', 'account_id')}
 
-    @check.is_logged()
-    def as_user(self):
+    @check_logged
+    def as_user(self) -> AbstractUser:
         return self.session.to_user(self.get_parse_dict(), client=self)
 
-    async def get_top(self, strategy: Union[int, str, LeaderboardStrategy] = 0, *, count: int = 100):
+    async def get_top(
+        self, strategy: Union[int, str, LeaderboardStrategy] = 0,
+        *, count: int = 100
+    ) -> List[UserStats]:
         """|coro|
 
         Fetches user top by given strategy.
@@ -873,21 +1009,24 @@ class Client:
         strategy: Union[:class:`int`, :class:`str`, :class:`.LeaderboardStrategy`]
             Strategy to apply when searching.
 
-
+        Returns
+        -------
+        List[:class:`.]
         """
-        strategy = value_to_enum(LeaderboardStrategy, strategy)
+        strategy = LeaderboardStrategy.from_value(strategy)
         return await self.session.get_top(strategy=strategy, count=count, client=self)
 
     async def get_leaderboard(
-        self, strategy: Union[int, str, LeaderboardStrategy] = 0, *, count: int = 100):
+        self, strategy: Union[int, str, LeaderboardStrategy] = 0, *, count: int = 100
+    ) -> List[UserStats]:
         """|coro|
 
         This is an alias for :meth:`.Client.get_top`.
         """
         return await self.get_top(strategy, count=count)
 
-    @check.is_logged()
-    async def post_comment(self, content: str):
+    @check_logged
+    async def post_comment(self, content: str) -> None:
         """|coro|
 
         Post a profile comment.
@@ -906,14 +1045,14 @@ class Client:
 
         log.debug("Posted a comment. Content: %s", content)
 
-    @check.is_logged()
+    @check_logged
     async def update_profile(
         self, stars: int = 0, demons: int = 0, diamonds: int = 0, has_glow: bool = False,
         icon_type: int = 0, color_1: int = 0, color_2: int = 3, coins: int = 0,
         user_coins: int = 0, cube: int = 1, ship: int = 1, ball: int = 1, ufo: int = 1,
         wave: int = 1, robot: int = 1, spider: int = 1, explosion: int = 1, special: int = 0,
-        set_as_user=None
-    ):
+        set_as_user: Optional[User] = None
+    ) -> None:
         """|coro|
 
         Updates the profile of a client.
@@ -994,11 +1133,13 @@ class Client:
 
         await self.session.update_profile(stats_dict, client=self)
 
-    @check.is_logged()
+    @check_logged
     async def update_settings(
-        self, *, msg: int = None, friend_req: int = None, comments: int = None,
-        youtube: str = None, twitter: str = None, twitch: str = None
-    ):
+        self, *, msg: Optional[Union[int, MessagePolicyType]] = None,
+        friend_req: Optional[Union[int, FriendRequestPolicyType]] = None,
+        comments: Optional[Union[int, CommentPolicyType]] = None,
+        youtube: Optional[str] = None, twitter: Optional[str] = None, twitch: Optional[str] = None
+    ) -> None:
         """|coro|
 
         Updates profile settings of a client.
@@ -1053,16 +1194,19 @@ class Client:
             if tmp is None:
                 s = ''
             else:
-                s = utils.convert_to_type(tmp, int, str)
+                try:
+                    s = int(tmp)
+                except Exception:
+                    s = str(tmp)
 
             args.append(s)
 
         await self.session.update_settings(*args, client=self)
 
     async def search_levels_on_page(
-        self, page: int = 0, query: str = '', filters: Filters = None, user=None,
-        *, raise_errors: bool = True
-    ):
+        self, page: int = 0, query: str = '', filters: Optional[Filters] = None,
+        user: Optional[AbstractUser] = None, *, raise_errors: bool = True
+    ) -> List[Level]:
         """|coro|
 
         Searches levels on given page by given query, applying filters as well.
@@ -1100,9 +1244,9 @@ class Client:
         )
 
     async def search_levels(
-        self, query: str = '', filters: Filters = None, user=None,
-        pages: Sequence[int] = None
-    ):
+        self, query: str = '', filters: Optional[Filters] = None, user: Optional[AbstractUser] = None,
+        pages: Optional[Sequence[int]] = None
+    ) -> List[Level]:
         """|coro|
 
         Searches levels on given pages.
@@ -1135,7 +1279,7 @@ class Client:
             query=query, filters=filters, user=user, pages=pages, client=self
         )
 
-    async def on_new_daily(self, level):
+    async def on_new_daily(self, level: Level) -> Any:
         """|coro|
 
         This is an event that is fired when a new daily level is set.
@@ -1144,7 +1288,7 @@ class Client:
         """
         pass
 
-    async def on_new_weekly(self, level):
+    async def on_new_weekly(self, level: Level) -> Any:
         """|coro|
 
         This is an event that is fired when a new weekly demon is assigned.
@@ -1153,13 +1297,7 @@ class Client:
         """
         pass
 
-    async def on_level_rated(self, level):
-        pass
-
-    async def on_level_unrated(self, level):
-        pass
-
-    async def dispatch(self, event_name: str, *args, **kwargs):
+    async def dispatch(self, event_name: str, *args, **kwargs) -> Any:
         name = 'on_' + event_name
 
         log.info('Dispatching event {!r}, client: {!r}'.format(name, self))
@@ -1172,7 +1310,7 @@ class Client:
 
         return await utils.maybe_coroutine(method, *args, **kwargs)
 
-    def run(self, coro, *, debug: bool = False):
+    def run(self, coro: Coroutine, *, debug: bool = False) -> Any:
         """A handy shortcut for :func:`.utils.run`.
 
         This is equivalent to:
@@ -1183,7 +1321,7 @@ class Client:
         """
         return utils.run(coro, loop=self.loop, debug=debug)
 
-    def event(self, coro):
+    def event(self, coro: Coroutine) -> Coroutine:
         """A decorator that registers an event to listen to.
 
         Events must be a |coroutine_link|_, if not, :exc:`TypeError` is raised.
@@ -1210,3 +1348,21 @@ class Client:
         log.debug("%s has been successfully registered as an event.", coro.__name__)
 
         return coro
+
+
+class _LoginSession:
+    """Small wrapper around Client.login method.
+    Allows to temporarily login and execute
+    a block of code in an <async with> statement.
+    """
+    def __init__(self, client: Client, username: str, password: str) -> None:
+        self._client = client
+        self._name = username
+        self._pass = password
+
+    async def __aenter__(self) -> Client:
+        await self._client.login(self._name, self._pass)
+        return self._client
+
+    async def __aexit__(self, *exc) -> None:
+        self._client.close()

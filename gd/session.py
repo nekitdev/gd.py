@@ -3,33 +3,66 @@ import re  # for NG songs
 import time  # for perf_counter in ping
 
 from itertools import chain
-from typing import Union, Sequence, Tuple, Dict
 
+from ._typing import (
+    AbstractUser,
+    Any,
+    Client,
+    Comment,
+    Dict,
+    FriendRequest,
+    Gauntlet,
+    Iterable,
+    Level,
+    LevelRecord,
+    List,
+    MapPack,
+    Message,
+    Optional,
+    Sequence,
+    Song,
+    Tuple,
+    Union,
+    User,
+    UserStats,
+)
+
+from .classconverter import ClassConverter
 from .unreguser import UnregisteredUser
-from .errors import *
+from .errors import (
+    MissingAccess,
+    SongRestrictedForUsage,
+    NothingFound,
+    LoginFailure,
+)
 
 from .utils.converter import Converter
-from .utils.enums import SearchStrategy
+from .utils.decorators import check_logged_obj
+from .utils.enums import (
+    CommentStrategy,
+    DemonDifficulty,
+    LeaderboardStrategy,
+    LevelLeaderboardStrategy,
+    SearchStrategy,
+)
 from .utils.filters import Filters
 from .utils.http_request import http
-from .utils.indexer import Index as i
+from .utils.indexer import Index
 from .utils.mapper import mapper
 from .utils.params import Parameters as Params
 from .utils.routes import Route
 from .utils.save_parser import SaveParser
-from .utils.wrap_tools import check
 from .utils.crypto.coders import Coder
 
 from . import api
 from . import utils
 
+
 class GDSession:
     """Implements all requests-related functionality.
     No docstrings here yet...
-    I am sorry for all in-def imports.
-    - NeKitDS
     """
-    async def ping_server(self, link: str):
+    async def ping_server(self, link: str) -> float:
         start = time.perf_counter()
         await http.normal_request(link)
         end = time.perf_counter()
@@ -38,10 +71,7 @@ class GDSession:
 
         return round(ping, 2)
 
-
-    async def get_song(self, song_id: int = 0):
-        from .classconverter import ClassConverter
-
+    async def get_song(self, song_id: int = 0) -> Song:
         parameters = Params().create_new().put_definer('song', song_id).finish()
         codes = {
             -1: MissingAccess(message='No songs were found with ID: {}.'.format(song_id)),
@@ -51,11 +81,8 @@ class GDSession:
             Route.GET_SONG_INFO, parameters, splitter='~|~', error_codes=codes, should_map=True)
         return ClassConverter.song_convert(resp)
 
-
-    async def get_ng_song(self, song_id: int = 0):
+    async def get_ng_song(self, song_id: int = 0) -> Song:
         # just like get_song(), but gets anything available on NG.
-        from .classconverter import ClassConverter
-
         song_id = int(song_id)  # ensure type
 
         link = Route.NEWGROUNDS_SONG_LISTEN + str(song_id)
@@ -79,13 +106,13 @@ class GDSession:
             raise MissingAccess(message='No song found under ID: {}.'.format(song_id))
 
         return ClassConverter.song_from_kwargs(
-            name=name, author=author, id=song_id, size=size_mb, links=dict(normal=link, download=dl_link), custom=True
+            name=name, author=author, id=song_id, size=size_mb,
+            links=dict(normal=link, download=dl_link), custom=True
         )
 
-
-    async def get_user(self, account_id: int = 0, return_only_stats: bool = False, *, client):
-        from .classconverter import ClassConverter
-
+    async def get_user(
+        self, account_id: int = 0, return_only_stats: bool = False, *, client: Client
+    ) -> Union[UnregisteredUser, UserStats, User]:
         if account_id == -1:
             return UnregisteredUser()
 
@@ -101,7 +128,7 @@ class GDSession:
             return ClassConverter.user_stats_convert(resp, client)
 
         another = (
-            Params().create_new().put_definer('search', resp.get(i.USER_PLAYER_ID))
+            Params().create_new().put_definer('search', resp.get(Index.USER_PLAYER_ID))
             .put_total(0).put_page(0).finish()
         )
         some_resp = await http.request(Route.USER_SEARCH, another, splitter='#')
@@ -111,26 +138,22 @@ class GDSession:
             return
 
         new_resp = mapper.map(item.split(':'))
-        to_add = (i.USER_NAME, i.USER_ICON, i.USER_ICON_TYPE)
+        to_add = (Index.USER_NAME, Index.USER_ICON, Index.USER_ICON_TYPE)
         new_dict = {k: new_resp.get(k) for k in to_add}
         resp.update(new_dict)
 
         return ClassConverter.user_convert(resp, client)
 
-
-    def to_user(self, conv_dict: dict = None, *, client):
-        from .classconverter import ClassConverter
-
+    def to_user(self, conv_dict: Optional[Dict[str, Any]] = None, *, client: Client) -> AbstractUser:
         if conv_dict is None:
             conv_dict = {}
 
         return ClassConverter.abstractuser_convert(conv_dict, client)
 
-
-    async def search_user(self, param: Union[str, int] = None, return_abstract: bool = False, *, client):
-        from .classconverter import ClassConverter
-
-        assert param is not None
+    async def search_user(
+        self, param: Union[int, str],
+        return_abstract: bool = False, *, client: Client
+    ) -> Union[AbstractUser, User, UnregisteredUser]:
 
         parameters = (
             Params().create_new().put_definer('search', param)
@@ -147,40 +170,38 @@ class GDSession:
 
         mapped = mapper.map(item.split(':'))
 
-        name = mapped.get(i.USER_NAME, '') or 'UnregisteredUser'
-        id = mapped.get(i.USER_PLAYER_ID, 0) or 0
-        account_id = mapped.get(i.USER_ACCOUNT_ID, 0) or 0
+        name = mapped.get(Index.USER_NAME) or 'UnregisteredUser'
+        id = mapped.get(Index.USER_PLAYER_ID) or 0
+        account_id = mapped.get(Index.USER_ACCOUNT_ID) or 0
 
         if not id or not account_id:
             return UnregisteredUser(name=name, id=id)
 
         if return_abstract:
-            ret = dict(name=name, id=id, account_id=account_id)
-            return ClassConverter.abstractuser_convert(ret, client)
+            return ClassConverter.abstractuser_convert(
+                dict(name=name, id=id, account_id=account_id), client
+            )
 
-        # ok, if we should not return abstract, let's find all other parameters
-        parameters = Params().create_new().put_definer('user', mapped.get(i.USER_ACCOUNT_ID, 0)).finish()
+        # ok if we should not return abstract, let's find all other parameters
+        parameters = Params().create_new().put_definer('user', mapped.get(Index.USER_ACCOUNT_ID, 0)).finish()
 
         resp = await http.request(
             Route.GET_USER_INFO, parameters, splitter=':', error_codes=codes, should_map=True
         )
 
         resp.update(
-            {k: mapped.get(k) for k in (i.USER_NAME, i.USER_ICON, i.USER_ICON_TYPE)}
+            {k: mapped.get(k) for k in (Index.USER_NAME, Index.USER_ICON, Index.USER_ICON_TYPE)}
         )
 
         return ClassConverter.user_convert(resp, client)
 
-
     async def get_level(
-        self, level_id: int = 0, timetuple: Tuple[int, int, int] = (0, -1, -1), *, client
-    ):
-        from .classconverter import ClassConverter
-
+        self, level_id: int = 0, timetuple: Tuple[int, int, int] = (0, -1, -1), *, client: Client
+    ) -> Level:
         assert level_id >= -2
 
         type, number, cooldown = map(str, timetuple)
-        ext = ['101', type, '102', number, '103', cooldown, '104', '0']
+        ext = ['101', type, '102', number, '103', cooldown]
 
         codes = {
             -1: MissingAccess(message='Failed to get a level. Given ID: {}'.format(level_id))
@@ -191,7 +212,7 @@ class GDSession:
 
         level_data = mapper.map(resp[0].split(':') + ext)
 
-        real_id = level_data.get(i.LEVEL_ID)
+        real_id = level_data.get(Index.LEVEL_ID)
 
         parameters = (
             Params().create_new().put_definer('search', real_id)
@@ -202,14 +223,14 @@ class GDSession:
         # getting song
         song_data = resp[2]
         song = (
-            Converter.to_normal_song(level_data.get(i.LEVEL_AUDIO_TRACK)) if not song_data
+            Converter.to_normal_song(level_data.get(Index.LEVEL_AUDIO_TRACK)) if not song_data
             else ClassConverter.song_convert(mapper.map(song_data.split('~|~')))
         ).attach_client(client)
 
         # getting creator
         creator_data = resp[1]
         creator = (
-            UnregisteredUser(level_data.get(i.LEVEL_CREATOR_ID)) if not creator_data
+            UnregisteredUser(level_data.get(Index.LEVEL_CREATOR_ID)) if not creator_data
             else ClassConverter.abstractuser_convert(
                 {k: v for k, v in zip(('id', 'name', 'account_id'), creator_data.split(':'))}
             )
@@ -218,8 +239,7 @@ class GDSession:
         return ClassConverter.level_convert(
             level_data, song=song, creator=creator, client=client)
 
-
-    async def get_timely(self, type: str = 'daily', *, client):
+    async def get_timely(self, type: str = 'daily', *, client: Client) -> Level:
         w = ('daily', 'weekly').index(type)
         parameters = Params().create_new().put_weekly(w).finish()
         codes = {
@@ -230,18 +250,17 @@ class GDSession:
             raise MissingAccess(message='Failed to fetch a {} level. Most likely it is being refreshed.'.format(type))
 
         num, cooldown, *_ = map(int, resp)
-        num %= 100000  # idk what happened to rob when writing this
+        num %= 100000
         w += 1
 
         level = await self.get_level(-w, (w, num, cooldown), client=client)
         return level.attach_client(client)
 
-
     async def upload_level(
         self, data: str, name: str, level_id: int, version: int, length: int, audio_track: int,
         desc: str, song_id: int, is_auto: bool, original: int, two_player: bool, objects: int, coins: int,
-        stars: int, unlisted: bool, ldm: bool, password: int, copyable: bool, *, load_after: bool, client
-    ):
+        stars: int, unlisted: bool, ldm: bool, password: int, copyable: bool, *, load_after: bool, client: Client
+    ) -> Level:
         data = Coder.zip(data)
         extra_string = ('_'.join(map(str, (0 for _ in range(55)))))
         desc = Coder.do_base64(desc)
@@ -273,7 +292,7 @@ class GDSession:
             'original': int(original), 'two_player': int(two_player), 'objects': objects,
             'coins': coins, 'requested_stars': stars, 'unlisted': int(unlisted), 'ldm': int(ldm),
             'password': pwd, 'level_string': data, 'extra_string': extra_string,
-            'level_info': 'H4sIAAAAAAAAC8tLzc4sUShPLFbISC1K1dPTswYA5G9QUhIAAAA='
+            'level_info': 'H4sIAAAAAAAAC_NIrVQoyUgtStVRCMpPSi0qUbDStwYAsgpl1RUAAAA='
         }
 
         payload_cased = {
@@ -294,10 +313,7 @@ class GDSession:
             from .classconverter import Level
             return Level(id=level_id).attach_client(client)
 
-
-    async def get_user_list(self, type: int = 0, *, client):
-        from .classconverter import ClassConverter
-
+    async def get_user_list(self, type: int = 0, *, client: Client) -> List[AbstractUser]:
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
             .put_password(client.encodedpass).put_type(type).finish()
@@ -314,9 +330,9 @@ class GDSession:
             temp = mapper.map(elem.split(':'))
 
             parse_dict = {
-                'name': temp[i.USER_NAME],
-                'id': temp[i.USER_PLAYER_ID],
-                'account_id': temp[i.USER_ACCOUNT_ID]
+                'name': temp[Index.USER_NAME],
+                'id': temp[Index.USER_PLAYER_ID],
+                'account_id': temp[Index.USER_ACCOUNT_ID]
             }
 
             ret.append(
@@ -325,10 +341,10 @@ class GDSession:
 
         return ret
 
-
-    async def get_leaderboard(self, level, strategy, *, client):
-        from .classconverter import ClassConverter
-
+    async def get_leaderboard(
+        self, level: Level, strategy: LevelLeaderboardStrategy,
+        *, client: Client
+    ) -> List[LevelRecord]:
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
             .put_definer('levelid', level.id)
@@ -355,10 +371,10 @@ class GDSession:
 
         return res
 
-
-    async def get_top(self, strategy, count: int, *, client):
-        from .classconverter import ClassConverter
-
+    async def get_top(
+        self, strategy: LeaderboardStrategy,
+        count: int, *, client: Client
+    ) -> List[UserStats]:
         needs_login = (strategy.value in (1, 2))
 
         # special case: map 'players' -> 'top'
@@ -370,7 +386,7 @@ class GDSession:
         }
 
         if needs_login:
-            check.is_logged_obj(client, 'get_top')
+            check_logged_obj(client, 'get_top')
             params.put_definer('accountid', client.account_id).put_password(client.encodedpass)
 
         parameters = params.finish()
@@ -385,8 +401,7 @@ class GDSession:
 
         return res
 
-
-    async def login(self, client, user: str, password: str):
+    async def login(self, client: Client, user: str, password: str) -> None:
         parameters = (
             Params().create_new().put_login_definer(username=user, password=password)
             .finish_login()
@@ -406,8 +421,7 @@ class GDSession:
         for attr, value in prepared.items():
             client._upd(attr, value)
 
-
-    async def load_save(self, client):
+    async def load_save(self, client: Client) -> None:
         link = Route.GD_URL
 
         parameters = (
@@ -433,8 +447,7 @@ class GDSession:
         except Exception:
             return False
 
-
-    async def do_save(self, client, data):
+    async def do_save(self, client: Client, data: str) -> None:
         link = Route.GD_URL
 
         parameters = (
@@ -449,13 +462,10 @@ class GDSession:
                 message='Failed to do backup for client: {!r}. [ERROR: {}]'.format(client, resp)
             )
 
-
     async def search_levels_on_page(
-        self, page: int = 0, query: str = '', filters: Filters = None,
-        user=None, gauntlet: int = None, *, raise_errors: bool = True, client
-    ):
-        from .classconverter import ClassConverter
-
+        self, page: int = 0, query: str = '', filters: Optional[Filters] = None, user: Optional[AbstractUser] = None,
+        gauntlet: Optional[int] = None, *, raise_errors: bool = True, client: Client
+    ) -> List[Level]:
         if filters is None:
             filters = Filters.setup_empty()
 
@@ -469,7 +479,7 @@ class GDSession:
         if filters.strategy == SearchStrategy.BY_USER:
 
             if user is None:
-                check.is_logged_obj(client, 'search_levels_on_page(...)')
+                check_logged_obj(client, 'search_levels_on_page(...)')
 
                 id = client.id
 
@@ -482,7 +492,7 @@ class GDSession:
             params.put_definer('search', id)  # override the 'str' parameter in request
 
         elif filters.strategy == SearchStrategy.FRIENDS:
-            check.is_logged_obj(client, 'search_levels_on_page(..., client=client)')
+            check_logged_obj(client, 'search_levels_on_page(..., client=client)')
             params.put_definer('accountid', client.account_id).put_password(client.encodedpass)
 
         if gauntlet is not None:
@@ -517,12 +527,12 @@ class GDSession:
         for lv in filter(_is_not_empty, lvdata.split('|')):
             data = mapper.map(lv.split(':') + ext)
 
-            song_id = data.get(i.LEVEL_SONG_ID)
+            song_id = data.get(Index.LEVEL_SONG_ID)
             song = Converter.to_normal_song(
-                data.get(i.LEVEL_AUDIO_TRACK)
+                data.get(Index.LEVEL_AUDIO_TRACK)
             ) if not song_id else utils.get(songs, id=song_id)
 
-            creator_id = data.get(i.LEVEL_CREATOR_ID)
+            creator_id = data.get(Index.LEVEL_CREATOR_ID)
             creator = utils.get(creators, id=creator_id)
             if creator is None:
                 creator = UnregisteredUser(creator_id)
@@ -531,10 +541,10 @@ class GDSession:
 
         return levels
 
-
-    async def search_levels(self, query: str = '', filters: Filters = None, user=None,
-        pages: Sequence[int] = None, *, client
-    ):
+    async def search_levels(
+        self, query: str = '', filters: Optional[Filters] = None, user: Optional[AbstractUser] = None,
+        pages: Sequence[int] = None, *, client: Client
+    ) -> List[Level]:
         to_run = [
             self.search_levels_on_page(
                 query=query, filters=filters, user=user, page=page, raise_errors=False, client=client
@@ -543,8 +553,7 @@ class GDSession:
 
         return await self.run_many(to_run)
 
-
-    async def report_level(self, level):
+    async def report_level(self, level: Level) -> None:
         parameters = Params().create_new('web').put_definer('levelid', level.id).finish()
         codes = {
             -1: MissingAccess(message='Failed to report a level: {!r}.'.format(level))
@@ -552,7 +561,7 @@ class GDSession:
 
         await http.request(Route.REPORT_LEVEL, parameters, error_codes=codes)
 
-    async def delete_level(self, level, *, client):
+    async def delete_level(self, level: Level, *, client: Client) -> None:
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
             .put_definer('levelid', level.id).put_password(client.encodedpass).finish_level()
@@ -564,13 +573,12 @@ class GDSession:
             raise MissingAccess(message='Failed to delete a level: {}.'.format(level))
 
         # update level's is_alive coroutine to return False only.
-        async def is_alive(*args):
+        async def is_alive(*args) -> bool:
             return False
 
         level.is_alive = is_alive
 
-
-    async def update_level_desc(self, level, content, *, client):
+    async def update_level_desc(self, level: Level, content: str, *, client: Client) -> None:
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
             .put_password(client.encodedpass).put_definer('levelid', level.id)
@@ -585,8 +593,7 @@ class GDSession:
         # update level's description on success
         level.options.edit(description=content)
 
-
-    async def rate_level(self, level, rating: int, *, client):
+    async def rate_level(self, level: Level, rating: int, *, client: Client) -> None:
         assert 0 < rating <= 10, 'Invalid star value given.'
 
         rs = Coder.gen_rs()
@@ -604,8 +611,10 @@ class GDSession:
         if resp != 1:
             raise MissingAccess(message='Failed to rate level: {}.'.format(level))
 
-
-    async def rate_demon(self, level, demon_rating, mod: bool, *, client):
+    async def rate_demon(
+        self, level: Level, demon_rating: DemonDifficulty,
+        mod: bool, *, client: Client
+    ) -> None:
         rating_level = demon_rating.value
 
         parameters = (
@@ -624,8 +633,7 @@ class GDSession:
         elif isinstance(resp, int) and resp > 0:
             return True
 
-
-    async def send_level(self, level, rating: int, featured: bool, *, client):
+    async def send_level(self, level: Level, rating: int, featured: bool, *, client: Client) -> None:
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
             .put_password(client.encodedpass).put_definer('levelid', level.id)
@@ -640,8 +648,7 @@ class GDSession:
         if resp != 1:
             raise MissingAccess(message='Failed to send a level: {!r}.'.format(level))
 
-
-    async def like(self, item, dislike: bool = False, *, client):
+    async def like(self, item: Union[Comment, Level], dislike: bool = False, *, client: Client) -> None:
         if hasattr(item, 'is_featured'):  # level
             typeid = 1
             special = 0
@@ -676,12 +683,9 @@ class GDSession:
         if resp != 1:
             raise MissingAccess(message='Failed to like an item: {}.'.format(item))
 
-
     async def get_page_messages(
-        self, sent_or_inbox: str, page: int, *, raise_errors: bool = True, client
-    ):
-        from .classconverter import ClassConverter
-
+        self, sent_or_inbox: str, page: int, *, raise_errors: bool = True, client: Client
+    ) -> List[Message]:
         assert sent_or_inbox in ('inbox', 'sent')
         inbox = 0 if sent_or_inbox != 'sent' else 1
 
@@ -712,8 +716,10 @@ class GDSession:
 
         return res
 
-
-    async def get_messages(self, sent_or_inbox: str, pages: Sequence[int] = None, *, client):
+    async def get_messages(
+        self, sent_or_inbox: str, pages: Sequence[int] = None,
+        *, client: Client
+    ) -> List[Message]:
         assert sent_or_inbox in ('inbox', 'sent')
 
         to_run = [
@@ -724,8 +730,7 @@ class GDSession:
 
         return await self.run_many(to_run)
 
-
-    async def post_comment(self, content: str, *, client):
+    async def post_comment(self, content: str, *, client: Client) -> None:
         to_gen = [client.name, 0, 0, 1]
 
         parameters = (
@@ -739,8 +744,10 @@ class GDSession:
 
         await http.request(Route.UPLOAD_ACC_COMMENT, parameters, error_codes=codes)
 
-
-    async def comment_level(self, level, content: str, percentage: int, *, client):
+    async def comment_level(
+        self, level: Level, content: str,
+        percentage: int, *, client: Client
+    ) -> None:
         assert percentage <= 100, '{}% > 100% percentage arg was recieved.'.format(percentage)
 
         percentage = round(percentage)  # just in case
@@ -758,8 +765,7 @@ class GDSession:
 
         await http.request(Route.UPLOAD_COMMENT, parameters, error_codes=codes)
 
-
-    async def delete_comment(self, comment, *, client):
+    async def delete_comment(self, comment: Comment, *, client: Client) -> None:
         cases = {
             0: Route.DELETE_LEVEL_COMMENT,
             1: Route.DELETE_ACC_COMMENT
@@ -774,8 +780,7 @@ class GDSession:
         if resp != 1:
             raise MissingAccess(message='Failed to delete a comment: {!r}.'.format(comment))
 
-
-    async def send_friend_request(self, target, message, client):
+    async def send_friend_request(self, target: AbstractUser, message: str, client: Client) -> None:
         if message is None:
             message = ''
 
@@ -792,9 +797,7 @@ class GDSession:
         elif resp != 1:
             raise MissingAccess(message='Failed to send a friend request to user: {!r}.'.format(target))
 
-
-    async def delete_friend_req(self, req):
-        client = req._client
+    async def delete_friend_req(self, req: FriendRequest, client: Client) -> None:
         user = req.author if not req.type.value else req.recipient
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
@@ -805,9 +808,7 @@ class GDSession:
         if resp != 1:
             raise MissingAccess(message='Failed to delete a friend request: {!r}.'.format(req))
 
-
-    async def accept_friend_req(self, req):
-        client = req._client
+    async def accept_friend_req(self, req: FriendRequest, client: Client) -> None:
         if req.type.value:  # is gd.MessageOrRequestType.SENT
             raise MissingAccess(
                 message="Failed to accept a friend request. Reason: request is sent, not recieved one."
@@ -821,9 +822,7 @@ class GDSession:
         if resp != 1:
             raise MissingAccess(message='Failed to accept a friend request: {!r}.'.format(req))
 
-
-    async def read_friend_req(self, req):
-        client = req._client
+    async def read_friend_req(self, req: FriendRequest, client: Client) -> None:
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
             .put_password(client.encodedpass).put_definer('requestid', req.id).finish()
@@ -833,9 +832,7 @@ class GDSession:
             raise MissingAccess(message='Failed to read a friend request: {!r}.'.format(req))
         req.options.update({'is_read': True})
 
-
-    async def read_message(self, msg):
-        client = msg._client
+    async def read_message(self, msg: Message, client: Client) -> str:
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
             .put_definer('messageid', msg.id).put_is_sender(msg.type.name.lower())
@@ -850,14 +847,12 @@ class GDSession:
         )
 
         ret = Coder.decode(
-            type='message', string=mapper.normalize(resp.get(i.MESSAGE_BODY))
+            type='message', string=mapper.normalize(resp.get(Index.MESSAGE_BODY))
         )
         msg._body = ret
         return ret
 
-
-    async def delete_message(self, msg):
-        client = msg._client
+    async def delete_message(self, msg: Message, client: Client) -> None:
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
             .put_definer('messageid', msg.id).put_password(client.encodedpass)
@@ -867,10 +862,7 @@ class GDSession:
         if resp != 1:
             raise MissingAccess(message='Failed to delete a message: {!r}.'.format(msg))
 
-
-    async def get_gauntlets(self, *, client):
-        from .classconverter import ClassConverter
-
+    async def get_gauntlets(self, *, client: Client) -> List[Gauntlet]:
         parameters = Params().create_new().finish()
 
         resp = await http.request(
@@ -886,10 +878,10 @@ class GDSession:
 
         return res
 
-
-    async def get_page_map_packs(self, page: int = 0, *, raise_errors: bool = True, client):
-        from .classconverter import ClassConverter
-
+    async def get_page_map_packs(
+        self, page: int = 0, *, raise_errors: bool = True,
+        client: Client
+    ) -> List[MapPack]:
         parameters = Params().create_new().put_page(page).finish()
 
         resp = await http.request(
@@ -910,8 +902,7 @@ class GDSession:
 
         return res
 
-
-    async def get_map_packs(self, pages: Sequence[int] = None, *, client):
+    async def get_map_packs(self, pages: Sequence[int], *, client: Client) -> List[MapPack]:
         to_run = [
             self.get_page_map_packs(
                 page=page, raise_errors=False, client=client
@@ -920,12 +911,11 @@ class GDSession:
 
         return await self.run_many(to_run)
 
-
-    async def get_page_friend_requests(self, sent_or_inbox: str = 'inbox',
-        page: int = 0, *, raise_errors: bool = True, client):
-        from .classconverter import ClassConverter
-
-        inbox = 1 if sent_or_inbox == 'sent' else 0
+    async def get_page_friend_requests(
+        self, sent_or_inbox: str = 'inbox', page: int = 0,
+        *, raise_errors: bool = True, client: Client
+    ) -> List[FriendRequest]:
+        inbox = int(sent_or_inbox == 'sent')
 
         parameters = (
             Params().create_new().put_definer('accountid', str(client.account_id))
@@ -957,10 +947,9 @@ class GDSession:
 
         return res
 
-
     async def get_friend_requests(
-        self, sent_or_inbox: str = 'inbox', pages: Sequence[int] = None, *, client
-    ):
+        self, pages: Sequence[int], sent_or_inbox: str = 'inbox', *, client: Client
+    ) -> List[FriendRequest]:
         assert sent_or_inbox in ('sent', 'inbox')
 
         to_run = [
@@ -971,12 +960,10 @@ class GDSession:
 
         return await self.run_many(to_run)
 
-
     async def retrieve_page_comments(
-        self, user, type: str = 'profile', page: int = 0, *, raise_errors: bool = True, strategy
-    ):
-        from .classconverter import ClassConverter
-
+        self, user: AbstractUser, type: str = 'profile', page: int = 0, *,
+        raise_errors: bool = True, strategy: CommentStrategy, client: Client
+    ) -> List[Comment]:
         assert isinstance(page, int) and page >= 0
         assert type in ("profile", "level")
 
@@ -987,7 +974,7 @@ class GDSession:
         selfid = user.id if is_level else user.account_id
         route = Route.GET_COMMENT_HISTORY if is_level else Route.GET_ACC_COMMENTS
 
-        def func(elem):
+        def func(elem: Any) -> List[str]:
             if is_level:
                 return elem.split(':')[0].split('~')
             return elem.split('~')
@@ -1014,30 +1001,30 @@ class GDSession:
             )
             res.append(
                 ClassConverter.comment_convert(
-                    prepared, user._dict_for_parse, user._client
+                    prepared, user._dict_for_parse, client
                 )
             )
 
         return res
 
-
     async def retrieve_comments(
-        self, user, type: str = 'profile', pages: Sequence[int] = None, *, strategy
-    ):
+        self, user: AbstractUser, pages: Sequence[int], type: str = 'profile',
+        *, strategy: CommentStrategy, client: Client
+    ) -> List[Comment]:
         assert type in ('profile', 'level')
 
         to_run = [
             self.retrieve_page_comments(
-                type=type, user=user, page=page, raise_errors=False, strategy=strategy
+                type=type, user=user, page=page, raise_errors=False, strategy=strategy, client=client
             ) for page in pages
         ]
 
         return await self.run_many(to_run)
 
-
-    async def get_level_comments(self, level, strategy, amount: int):
-        from .classconverter import ClassConverter
-
+    async def get_level_comments(
+        self, level: Level, strategy: CommentStrategy,
+        amount: int, client: Client
+    ) -> List[Comment]:
         st_value = strategy.value
 
         parameters = (
@@ -1060,21 +1047,20 @@ class GDSession:
             com_data.update({1: level.id, 101: 0, 102: 0})
 
             user_dict = {
-                'account_id': user_data[i.USER_ACCOUNT_ID],
-                'id': com_data[i.COMMENT_AUTHOR_ID],
-                'name': user_data[i.USER_NAME]
+                'account_id': user_data[Index.USER_ACCOUNT_ID],
+                'id': com_data[Index.COMMENT_AUTHOR_ID],
+                'name': user_data[Index.USER_NAME]
             }
 
             res.append(
                 ClassConverter.comment_convert(
-                    com_data, user_dict, level._client
+                    com_data, user_dict, client
                 )
             )
 
         return res
 
-
-    async def block_user(self, user, unblock: bool = False, *, client):
+    async def block_user(self, user: AbstractUser, unblock: bool = False, *, client: Client) -> None:
         route = Route.UNBLOCK_USER if unblock else Route.BLOCK_USER
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
@@ -1085,8 +1071,7 @@ class GDSession:
         if resp != 1:
             raise MissingAccess(message='Failed to (un)block a user: {!r}.'.format(user))
 
-
-    async def unfriend_user(self, user, *, client):
+    async def unfriend_user(self, user: AbstractUser, *, client: Client) -> None:
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
             .put_password(client.encodedpass).put_definer('user', user.account_id).finish()
@@ -1095,8 +1080,7 @@ class GDSession:
         if resp != 1:
             raise MissingAccess(message='Failed to unfriend a user: {!r}.'.format(user))
 
-
-    async def send_message(self, target, subject: str, body: str, *, client):
+    async def send_message(self, target: AbstractUser, subject: str, body: str, *, client: Client) -> None:
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
             .put_message(subject, body).put_recipient(target.account_id)
@@ -1106,8 +1090,7 @@ class GDSession:
         if resp != 1:
             raise MissingAccess(message='Failed to send a message to a user: {!r}.'.format(target))
 
-
-    async def update_profile(self, settings: Dict[str, int], *, client):
+    async def update_profile(self, settings: Dict[str, int], *, client: Client) -> None:
         settings_cased = {Converter.snake_to_camel(name): value for name, value in settings.items()}
 
         rs = Coder.gen_rs()
@@ -1136,8 +1119,7 @@ class GDSession:
         if not resp > 0:
             raise MissingAccess(message='Failed to update profile of a client: {!r}'.format(client))
 
-
-    async def generate_icon(self, form: str, id: int, color_1: int, color_2: int, has_glow: bool):
+    async def generate_icon(self, form: str, id: int, color_1: int, color_2: int, has_glow: bool) -> bytes:
         # fetch an icon from gdbrowser site
         query = {
             'form': form,
@@ -1155,8 +1137,8 @@ class GDSession:
 
     async def update_settings(
         self, msg: int, friend_req: int, comments: int,
-        youtube: str, twitter: str, twitch: str, *, client
-    ):
+        youtube: str, twitter: str, twitch: str, *, client: Client
+    ) -> None:
         parameters = (
             Params().create_new('web').put_definer('accountid', client.account_id)
             .put_password(client.encodedpass)
@@ -1166,8 +1148,7 @@ class GDSession:
         if resp != 1:
             raise MissingAccess(message='Failed to update profile settings of a client: {!r}.'.format(client))
 
-
-    async def run_many(self, tasks):
+    async def run_many(self, tasks: List[asyncio.Task]) -> Any:
         res = await asyncio.gather(*tasks)
 
         res = [elem for elem in res if elem]
@@ -1178,7 +1159,7 @@ class GDSession:
         return res
 
 
-def _iterable(maybe_iterable):
+def _iterable(maybe_iterable: Iterable) -> bool:
     try:
         iter(maybe_iterable)
         return True
@@ -1186,7 +1167,7 @@ def _iterable(maybe_iterable):
         return False
 
 
-def _is_not_empty(sequence):
+def _is_not_empty(sequence: Sequence) -> bool:
     return bool(len(sequence))
 
 

@@ -124,13 +124,13 @@ User
 .. autoclass:: User
     :members:
 
-Icon Set and Colour
--------------------
+Icon Set and Color
+------------------
 
 .. autoclass:: IconSet
     :members:
 
-.. autoclass:: Colour
+.. autoclass:: Color
     :members:
 
 Comment

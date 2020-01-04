@@ -4,11 +4,12 @@ import signal
 import logging
 import traceback
 
+from .._typing import Level, List
 from ..client import Client
 
 from ..utils import tasks
+from ..utils.decorators import run_once
 from ..utils.filters import Filters
-from ..utils.wrap_tools import run_once
 
 __all__ = (
     'AbstractScanner', 'TimelyLevelScanner', 'RateLevelScanner',
@@ -26,16 +27,16 @@ log = logging.getLogger(__name__)
 all_listeners = []
 
 
-def get_loop():
+def get_loop() -> asyncio.AbstractEventLoop:
     return loop
 
 
-def set_loop(new_loop):
+def set_loop(new_loop: asyncio.AbstractEventLoop) -> None:
     global loop
     loop = new_loop
 
 
-def shutdown_loop(loop):
+def shutdown_loop(loop: asyncio.AbstractEventLoop) -> None:
     """Shutdown a loop."""
     loop.call_soon_threadsafe(loop.stop)
 
@@ -53,7 +54,7 @@ def shutdown_loop(loop):
         pass
 
 
-def run(loop):
+def run(loop: asyncio.AbstractEventLoop) -> None:
     try:
         loop.add_signal_handler(signal.SIGINT, loop.stop)
         loop.add_signal_handler(signal.SIGTERM, loop.stop)
@@ -74,14 +75,15 @@ def run(loop):
         shutdown_loop(loop)
 
 
-def update_thread_loop(thread, loop):  # only for the 'thread' below
+def update_thread_loop(thread: threading.Thread, loop: asyncio.AbstractEventLoop) -> None:
     thread.args = (loop,)
+
 
 thread = threading.Thread(target=run, args=(loop,), name='ScannerThread')
 
 
 class AbstractScanner:
-    def __init__(self, delay: float = 10.0, *, loop=None):
+    def __init__(self, delay: float = 10.0, *, loop: asyncio.AbstractEventLoop = None) -> None:
         if loop is None:
             loop = get_loop()
         self.loop = loop
@@ -90,24 +92,24 @@ class AbstractScanner:
         self.clients = []
         all_listeners.append(self)
 
-    def add_client(self, client):
+    def add_client(self, client: Client) -> None:
         """Add a client to fire events for."""
         if client not in self.clients:
             self.clients.append(client)
 
-    def attach_to_loop(self, loop):
+    def attach_to_loop(self, loop: asyncio.AbstractEventLoop) -> None:
         """Attach the runner to another event loop."""
         self.runner.loop = loop
         self.loop = loop
 
-    def enable(self):
+    def enable(self) -> None:
         try:
             self.runner.start()
         except RuntimeError:
             pass
 
     @run_once
-    def close(self, *args, force: bool = True):
+    def close(self, *args, force: bool = True) -> None:
         """Accurately shutdown a scanner.
         If force is true, cancel the runner, and wait until it finishes otherwise.
         """
@@ -116,15 +118,15 @@ class AbstractScanner:
         else:
             self.runner.stop()
 
-    async def on_error(self, exc):
+    async def on_error(self, exc: Exception) -> None:
         """Basic event handler to print the errors if any occur."""
         traceback.print_exc()
 
-    async def scan(self):
+    async def scan(self) -> None:
         """This function should contain main code of the scanner."""
         pass
 
-    async def main(self):
+    async def main(self) -> None:
         """Main function, that is basically doing all the job."""
         try:
             await self.scan()
@@ -134,12 +136,15 @@ class AbstractScanner:
 
 
 class TimelyLevelScanner(AbstractScanner):
-    def __init__(self, t_type: str, delay: int = 10.0, *, loop=None):
+    def __init__(
+        self, t_type: str, delay: int = 10.0, *,
+        loop: asyncio.AbstractEventLoop = None
+    ) -> None:
         super().__init__(delay, loop=loop)
         self.method = getattr(scanner_client, 'get_' + t_type)
         self.call_method = 'new_' + t_type
 
-    async def scan(self):
+    async def scan(self) -> None:
         """Scan for either daily or weekly levels."""
         timely = await self.method()
 
@@ -156,17 +161,20 @@ class TimelyLevelScanner(AbstractScanner):
 
 
 class RateLevelScanner(AbstractScanner):
-    def __init__(self, listen_to_rate: bool = True, delay: float = 30.0, *, loop=None):
+    def __init__(
+        self, listen_to_rate: bool = True, delay: float = 30.0,
+        *, loop: asyncio.AbstractEventLoop = None
+    ) -> None:
         super().__init__(delay, loop=loop)
         self.call_method = 'level_rated' if listen_to_rate else 'level_unrated'
         self.filters = Filters(strategy='awarded')
         self.find_new = listen_to_rate
         self.cache = []
 
-    async def method(self, pages: int = 100):
+    async def method(self, pages: int = 100) -> List[Level]:
         return await scanner_client.search_levels(filters=self.filters, pages=range(pages))
 
-    async def scan(self):
+    async def scan(self) -> None:
         new = await self.method()
 
         if not self.cache:
@@ -180,7 +188,7 @@ class RateLevelScanner(AbstractScanner):
                 self.loop.create_task(dispatcher)
 
 
-def differ(before: list, after: list, find_new: bool = True):
+def differ(before: list, after: list, find_new: bool = True) -> filter:
     a, b = (before, after) if find_new else (after, before)
     return filter(lambda elem: (elem not in a), b)
 

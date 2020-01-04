@@ -9,11 +9,12 @@ __version__ = '0.10.3'
 from collections import namedtuple
 import logging
 import re
+from typing import Any
 
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser, LevelRecord
 from .client import Client
-from .colors import Colour, Color
+from .colors import Color
 from .colors import colors
 from .comment import Comment
 from .errors import *
@@ -68,7 +69,8 @@ RegularExpression = r"""
 """
 CompiledRE = re.compile(re.sub(r'\s', '', RegularExpression), re.MULTILINE)
 
-def make_version_details(ver: str):
+
+def make_version_details(ver: str) -> VersionInfo:
     match = CompiledRE.match(ver)
 
     if match is None:
@@ -87,7 +89,7 @@ def make_version_details(ver: str):
             value = {
                 'a': 'alpha',
                 'b': 'beta',
-                'rc': 'release_candidate',
+                'rc': 'candidate',
                 'f': 'final',
                 'dev': 'developer'
             }.get(value, 'final')
@@ -102,10 +104,15 @@ def make_version_details(ver: str):
 
     return VersionInfo(**args)
 
+
 version_info = make_version_details(__version__)
 
 
-def setup_logging(level: int = logging.DEBUG, *, stream=None, file=None, formatter=None):
+def setup_logging(
+    level: int = logging.DEBUG, *,
+    stream: Any = None, file: Any = None,
+    formatter: str = None
+):
     """Function that sets up logs of the module.
 
     Parameters
@@ -136,6 +143,7 @@ def setup_logging(level: int = logging.DEBUG, *, stream=None, file=None, formatt
     log.addHandler(handler)
 
     log.setLevel(level)
+
 
 # setting up the NullHandler here
 try:

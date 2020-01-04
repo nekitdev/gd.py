@@ -1,20 +1,25 @@
 import asyncio
 import functools
-import inspect
 
-from .wrap_tools import find_subclass, add_method, del_method
+try:
+    import gc
+except ImportError:
+    pass
+
+import inspect
+from types import CoroutineType as coroutine
+
+from .._typing import Any, Callable, Coroutine, Dict, Sequence, Set, Tuple, Type, Union
 
 __all__ = (
-    'run_blocking_io', 'wait', 'run', 'sync',
+    'run_blocking_io', 'wait', 'run',
     'cancel_all_tasks', 'shutdown_loop',
     'coroutine', 'maybe_coroutine', 'acquire_loop',
     'enable_asyncwrap', 'enable_run_method', 'synchronize'
 )
 
-coroutine = find_subclass('coroutine')
 
-
-async def run_blocking_io(func, *args, **kwargs):
+async def run_blocking_io(func: Callable, *args, **kwargs) -> Any:
     """|coro|
 
     Run some blocking function in an event loop.
@@ -41,7 +46,10 @@ async def run_blocking_io(func, *args, **kwargs):
     return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
 
 
-async def wait(fs, *, loop=None, timeout=None, return_when='ALL_COMPLETED'):
+async def wait(
+    fs: Sequence[Coroutine], *, loop: asyncio.AbstractEventLoop = None,
+    timeout: Union[float, int] = None, return_when: str = 'ALL_COMPLETED'
+) -> Tuple[Set[asyncio.Task], Set[asyncio.Task]]:
     """A function that is calling :func:`asyncio.wait`.
 
     Used for less imports inside and outside of this library.
@@ -78,7 +86,10 @@ async def wait(fs, *, loop=None, timeout=None, return_when='ALL_COMPLETED'):
     return await asyncio.wait(fs, loop=loop, timeout=timeout, return_when=return_when)
 
 
-def run(coro, *, loop=None, debug: bool = False, set_to_none: bool = False):
+def run(
+    coro: Coroutine, *, loop: asyncio.AbstractEventLoop = None,
+    debug: bool = False, set_to_none: bool = False
+) -> Any:
     """Run a |coroutine_link|_.
 
     This function runs the passed coroutine, taking care
@@ -157,7 +168,7 @@ def run(coro, *, loop=None, debug: bool = False, set_to_none: bool = False):
         asyncio.set_event_loop(loop)
 
 
-def cancel_all_tasks(loop):
+def cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
     """Cancels all tasks in a loop.
 
     Parameters
@@ -192,7 +203,7 @@ def cancel_all_tasks(loop):
             })
 
 
-def shutdown_loop(loop):
+def shutdown_loop(loop: asyncio.AbstractEventLoop) -> None:
     try:
         cancel_all_tasks(loop)
         loop.run_until_complete(loop.shutdown_asyncgens())
@@ -201,7 +212,7 @@ def shutdown_loop(loop):
         loop.close()
 
 
-async def maybe_coroutine(func, *args, **kwargs):
+async def maybe_coroutine(func: Callable, *args, **kwargs) -> Any:
     value = func(*args, **kwargs)
 
     if inspect.isawaitable(value):
@@ -211,7 +222,7 @@ async def maybe_coroutine(func, *args, **kwargs):
         return value
 
 
-def acquire_loop(running: bool = False):
+def acquire_loop(running: bool = False) -> None:
     """Gracefully acquire a loop.
 
     The function tries to get an event loop via :func:`asyncio.get_event_loop`.
@@ -246,29 +257,54 @@ def acquire_loop(running: bool = False):
     return loop
 
 
-def sync(loop=None):
-    if loop is None:
-        loop = acquire_loop()
+def _get_class_dict(cls: Type[Any]) -> Dict[str, Any]:
+    """Gets 'cls.__dict__' that can be edited."""
+    for obj in gc.get_objects():
 
-    def decorator(func):
-        f_name = func.__name__
+        try:
+            if obj == dict(cls.__dict__) and type(obj) is dict:
+                return obj
 
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            coro = maybe_coroutine(func, *args, **kwargs)
-            return loop.run_until_complete(coro)
+        except Exception:
+            continue
 
-        env = {'wrapper': wrapper}
-
-        exec('def {}(*args, **kwargs): return wrapper(*args, **kwargs)'.format(f_name), env)
-
-        inner = env.get(f_name)
-
-        return inner
-    return decorator
+    raise ValueError(
+        'Failed to find editable __dict__ for {}.'.format(cls)
+    )
 
 
-def _run(self, loop=None):
+def _del_method(cls: type, method_name: str):
+    """Delete a method of a 'cls'."""
+    cls_d = _get_class_dict(cls)
+    cls_d.pop(method_name, None)
+
+
+def _add_method(cls: type, func, *, name: str = None):
+    """Adds a new method to a 'cls'."""
+    cls_d = _get_class_dict(cls)
+
+    if name is None:
+        name = _get_name(func)
+
+    cls_d[name] = func
+
+
+def _get_name(func):
+    try:
+        if isinstance(func, property):
+            return func.fget.__name__
+        elif isinstance(func, (staticmethod, classmethod)):
+            return func.__func__.__name__
+        else:
+            return func.__name__
+    except AttributeError:
+        raise RuntimeError(
+            'Failed to find the name of given function. '
+            'Please provide the name explicitly.'
+        ) from None
+
+
+def _run(self, loop: asyncio.AbstractEventLoop = None) -> Any:
     """Run the coroutine in a new event loop,
     closing the loop after execution (if not given).
     """
@@ -281,36 +317,38 @@ def _run(self, loop=None):
     return loop.run_until_complete(self)
 
 
-async def _async_wrapper(var):
+async def _async_wrapper(var: object) -> Any:
     try:
         return await var
     except Exception:
         return var
 
-def _asyncwrap(self):
+
+def _asyncwrap(self: object) -> Callable:
     return _async_wrapper(self)
 
 
-def _enable_method(obj: type, name: str, on: bool = True, func=None):
+def _enable_method(obj: type, name: str, on: bool = True, func: Callable = None) -> None:
     try:
         if on:
-            add_method(obj, func, name=name)
+            _add_method(obj, func, name=name)
         else:
-            del_method(obj, name)
+            _del_method(obj, name)
 
     except Exception:
         print('Failed to edit the {!r} method.'.format(name))
 
-def enable_asyncwrap(on: bool = True):
+
+def enable_asyncwrap(on: bool = True) -> None:
     """Add or delete '__asyncwrap__' method of objects."""
     _enable_method(object, '__asyncwrap__', on, _asyncwrap)
 
 
-def enable_run_method(on: bool = True):
+def enable_run_method(on: bool = True) -> None:
     """Add or delete 'run' method of a coroutine."""
     _enable_method(coroutine, 'run', on, _run)
 
 
-def synchronize(on: bool = True):
+def synchronize(on: bool = True) -> None:
     enable_asyncwrap(on)
     enable_run_method(on)

@@ -1,7 +1,19 @@
 """Automatic object property code generator."""
 
-from .enums import *
-from .parser import *
+from .._typing import Enum, Union
+
+from .enums import (
+    ColorChannelProperties,
+    LevelDataEnum,
+    LevelHeaderEnum,
+    ObjectDataEnum,
+    PlayerColor,
+)
+from .parser import (
+    _INT, _BOOL, _FLOAT, _HSV, _ENUMS, _TEXT, _GROUPS,
+    _COLOR_INT, _COLOR_BOOL, _COLOR_PLAYER, _COLOR_FLOAT, _COLOR_HSV,
+    _HEADER_INT, _HEADER_BOOL, _HEADER_FLOAT, _HEADER_COLORS, _COLORS, _GUIDELINES, _HEADER_ENUMS
+)
 from .hsv import HSV
 
 __all__ = (
@@ -20,18 +32,8 @@ def {name}(self, value):
 
 _container = '_container = {}'
 
-_ENUMS = {
-    _EASING: Easing,
-    _PULSE_MODE: PulseMode,
-    _PULSE_TYPE: PulseType,
-    _PICKUP_MODE: PickupItemMode,
-    _TOUCH_TOGGLE: TouchToggleMode,
-    _COMP: InstantCountComparison,
-    _TARGET_COORDS: TargetPosCoordinates
-}
 
-
-def _get_type(n, ts: str = 'object'):
+def _get_type(n: Union[int, str], ts: str = 'object') -> str:
     t = {
         'object': {
             n in _INT: int,
@@ -70,7 +72,7 @@ def _get_type(n, ts: str = 'object'):
         return r
 
 
-def _create(enum, ts: str):
+def _create(enum: Enum, ts: str) -> str:
     final = []
 
     for name, value in enum.as_dict().items():

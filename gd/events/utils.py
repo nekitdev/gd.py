@@ -1,3 +1,4 @@
+import asyncio
 from os import _exit
 
 from .scanner import (
@@ -5,17 +6,19 @@ from .scanner import (
     shutdown_loop, all_listeners, thread, update_thread_loop, set_loop
 )
 
+from .._typing import Client
+
 from .. import utils
 
 __all__ = ('exit', 'disable', 'enable', 'add_client', 'start', 'run', 'attach_to_loop')
 
 
-def exit(status: int = 0):
+def exit(status: int = 0) -> None:
     disable()
     _exit(status)
 
 
-def disable():
+def disable() -> None:
     try:
         shutdown_loop(get_loop())
         thread.join()
@@ -31,17 +34,17 @@ def disable():
         scan.close()
 
 
-def enable():
+def enable() -> None:
     for listener in all_listeners:
         listener.enable()
 
 
-def add_client(client):
+def add_client(client: Client) -> None:
     for listener in all_listeners:
         listener.add_client(client)
 
 
-def attach_to_loop(loop):
+def attach_to_loop(loop: asyncio.AbstractEventLoop) -> None:
     update_thread_loop(thread, loop)
 
     set_loop(loop)
@@ -50,9 +53,9 @@ def attach_to_loop(loop):
         listener.attach_to_loop(loop)
 
 
-def run(loop):
+def run(loop: asyncio.AbstractEventLoop) -> None:
     run_loop(loop)
 
 
-def start():
+def start() -> None:
     thread.start()

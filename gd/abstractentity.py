@@ -1,4 +1,6 @@
-from .utils.wrap_tools import make_repr
+from ._typing import AbstractEntity, Client
+from .errors import ClientException
+from .utils.text_tools import make_repr
 
 
 class AbstractEntity:
@@ -18,38 +20,46 @@ class AbstractEntity:
 
             Returns ``hash(self.to_hash_string())``.
     """
-    def __init__(self, **options):
+    def __init__(self, **options) -> None:
         self.options = options
         self._client = options.get('client')  # None if not provided
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = {'id': self.id}
         return make_repr(self, info)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.hash_str)
 
-    def __eq__(self, other):
+    def __eq__(self, other: AbstractEntity) -> bool:
         if not hasattr(other, 'id'):
             return False
         return type(self) == type(other) and self.id == other.id
 
-    def __ne__(self, other):
+    def __ne__(self, other: AbstractEntity) -> bool:
         return not self.__eq__(other)
 
-    def __json__(self):
+    def __json__(self) -> dict:
         return self.options
 
     @property
-    def hash_str(self):
+    def hash_str(self) -> str:
         cls = self.__class__.__name__
         return '<GDEntity<{}(ID->{})>>'.format(cls, self.id)
 
     @property
-    def id(self):
+    def id(self) -> int:
         """:class:`int`: ID of the Entity."""
         return self.options.get('id', 0)
 
-    def attach_client(self, client):
+    @property
+    def client(self) -> Client:
+        """:class:`.Client`: Client attached to this object."""
+        if self._client is None:
+            raise ClientException('Client is not attached to the entity: {!r}.'.format(self))
+        return self._client
+
+    def attach_client(self, client: Client) -> None:
+        """Attach ``client`` to ``self`` as ``self._client``."""
         self._client = client
         return self

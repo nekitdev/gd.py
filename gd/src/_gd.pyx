@@ -10,6 +10,7 @@ from itertools import chain
 
 from libcpp cimport bool
 
+
 # MAIN HELPERS
 
 cdef _try_convert(object obj, type cls = int):
@@ -113,6 +114,7 @@ cdef str _b64_failsafe(str string, bool encode = True):
     except Exception:
         return string
 
+
 # OBJECT PARSING
 
 cdef set _INT = {
@@ -205,6 +207,7 @@ cdef _convert_type(object x):
         return x.value
     return x
 
+
 # COLOR PARSING
 
 cdef set _COLOR_INT = {1, 2, 3, 6, 9, 11, 12, 13}
@@ -212,6 +215,7 @@ cdef set _COLOR_BOOL = {5, 8, 15, 17, 18}
 cdef int _COLOR_PLAYER = 4
 cdef int _COLOR_FLOAT = 7
 cdef int _COLOR_HSV = 10
+
 
 cdef _parse_color(int n, str v):
     if n in _COLOR_INT:
@@ -226,11 +230,14 @@ cdef _parse_color(int n, str v):
         return PlayerColor(int(v))
     return v
 
+
 cpdef dict _color_convert(str s):
     return _convert(s, delim='_', attempt_conversion=True, f=_parse_color)
 
+
 cpdef dict _color_dump(dict d):
     return _dump(d)
+
 
 cpdef str _color_collect(dict d):
     return _collect(d, '_')

@@ -1,24 +1,25 @@
 from .abstractentity import AbstractEntity
-from .utils.wrap_tools import make_repr
+from .utils.text_tools import make_repr
+
 
 class UnregisteredUser(AbstractEntity):
     """Class that represents Unregistered Users in Geometry Dash.
     This class is derived from :class:`.AbstractEntity`.
     """
-    def __init__(self, id: int = 0, name: str = 'UnregisteredUser'):
+    def __init__(self, id: int = 0, name: str = 'UnregisteredUser') -> None:
         super().__init__(id=id)
         self._name = name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = {'id': self.id, 'name': self.name}
         return make_repr(self, info)
 
-    def __json__(self):
+    def __json__(self) -> dict:
         final = dict(name=self.name)
         final.update(super().__json__())
         return final
 
     @property
-    def name(self):
+    def name(self) -> str:
         """:class:`str`: A name of the user. ``'UnregisteredUser'`` if not present."""
         return self._name

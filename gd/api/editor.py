@@ -1,11 +1,31 @@
-from typing import Union, Sequence
+from .._typing import (
+    Any,
+    Callable,
+    Editor,
+    Iterable,
+    Level,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
-from .enums import *
-from .struct import *
+from .enums import (
+    SpeedMagic,
+    Speed,
+    PortalType,
+)
+from .struct import (
+    Object,
+    ColorChannel,
+    Header,
+    ColorCollection,
+    LevelAPI
+)
 
-from ..abstractentity import AbstractEntity
 from ..errors import EditorError
-from ..utils.wrap_tools import make_repr
+from ..utils.text_tools import make_repr
 
 __all__ = ('Editor', 'get_length_from_x')
 
@@ -70,30 +90,20 @@ def get_length_from_x(dx: float, start_speed: Speed, portals: Sequence[Object]) 
     return (dx - last_x) / speed + total
 
 
-def _is_portal(obj):
+def _is_portal(obj: Object) -> bool:
     return obj.id in _portals and obj.is_checked()
 
-def _is_speed_portal(obj):
+
+def _is_speed_portal(obj: Object) -> bool:
     return obj.id in _speed_protals and obj.is_checked()
 
-def _get_x(obj):
+
+def _get_x(obj: Object) -> Union[float, int]:
     return obj.x
 
 
-def launch_editor(caller: object, attribute: str):
-    string = getattr(caller, attribute)
-    editor = Editor.from_string(string)
-    editor._set_callback(caller, attribute)
-    return editor
-
-def dump_editor(editor):
-    if None in (editor._callback, editor._attr):
-        return
-    string = editor.dump()
-    setattr(editor._callback, editor._attr, string)
-
-
-def _find_next(s, rng=range(1, 10000)):  # 2.2 has 1-9999 groups
+def _find_next(s: Iterable[int], rng: Iterable[int] = range(1, 10000)) -> Optional[int]:
+    # 2.2 has 1-9999 groups
     for i in rng:
         if i not in s:
             return i
@@ -104,27 +114,27 @@ class Editor:
 
     Editor can be created either by hand, from decoded level's data, or taken from a level itself.
     """
-    def __init__(self, header: Header = None, *objects):
+    def __init__(self, header: Header = None, *objects: Sequence[Object]) -> None:
         self.header = header or Header()
         self.objects = list(objects)
         self._set_callback()
 
-    def __json__(self):
+    def __json__(self) -> dict:
         return dict(header=self.header, objects=self.objects)
 
-    def _set_callback(self, caller: object = None, attribute: str = None):
+    def _set_callback(self, caller: Any = None, attribute: Optional[str] = None) -> None:
         self._callback = caller
         self._attr = attribute
 
     @classmethod
-    def launch(cls, caller: object, attribute: str):
+    def launch(cls, caller: Any, attribute: str) -> Editor:
         return launch_editor(caller, attribute)
 
-    def dump_back(self):
+    def dump_back(self) -> None:
         dump_editor(self)
 
     @classmethod
-    def from_string(cls, data: Union[bytes, str]):
+    def from_string(cls, data: Union[bytes, str]) -> Editor:
         if isinstance(data, bytes):
             try:
                 data = data.decode()
@@ -141,7 +151,7 @@ class Editor:
         try:
             last = objects.pop()
             if last:
-               objects.append(last)
+                objects.append(last)
         except IndexError:
             pass
 
@@ -150,30 +160,30 @@ class Editor:
 
         return cls(header, *objects)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = {
             'len': len(self.objects),
             'objects': '[...]'
         }
         return make_repr(self, info)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable[Object]:
         return iter(self.objects)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.objects)
 
-    def set_header(self, header: Header):
+    def set_header(self, header: Header) -> None:
         if isinstance(header, Header):
             self.header = header
 
-    def get_header(self):
+    def get_header(self) -> Header:
         return self.header
 
-    def copy_header(self):
+    def copy_header(self) -> Header:
         return self.header.copy()
 
-    def get_groups(self):
+    def get_groups(self) -> Iterable[int]:
         groups = set()
 
         for obj in self.objects:
@@ -183,22 +193,22 @@ class Editor:
 
         return groups
 
-    def get_free_group(self):
+    def get_free_group(self) -> Optional[int]:
         return _find_next(self.get_groups())
 
-    def get_portals(self):
+    def get_portals(self) -> List[Object]:
         return sorted(filter(_is_portal, self.objects), key=(_get_x))
 
-    def get_speed_portals(self):
+    def get_speed_portals(self) -> List[Object]:
         return sorted(filter(_is_speed_portal, self.objects), key=(_get_x))
 
-    def get_x_length(self):
+    def get_x_length(self) -> Union[float, int]:
         return max(map(_get_x, self.objects), default=0)
 
-    def get_speed(self):
+    def get_speed(self) -> Speed:
         return self.header.speed or Speed(0)
 
-    def get_length(self, x: float = None):
+    def get_length(self, x: Optional[Union[float, int]] = None) -> float:
         if x is None:
             x = self.get_x_length()
 
@@ -207,47 +217,49 @@ class Editor:
 
         return get_length_from_x(x, speed, portals)
 
-    def get_color(self, directive_or_id):
+    def get_color(self, directive_or_id: Union[int, str]) -> ColorChannel:
         return self.header.colors.get(directive_or_id)
 
-    def get_colors(self):
+    def get_colors(self) -> ColorCollection:
         return self.header.colors
 
-    def copy_colors(self):
+    def copy_colors(self) -> ColorCollection:
         return self.header.copy_colors()
 
-    def add_colors(self, *colors):
+    def add_colors(
+        self, *colors: Sequence[Union[Tuple[int, int, int], int, ColorCollection]]
+    ) -> None:
         self.header.colors.update(colors)
 
-    def get_objects(self):
+    def get_objects(self) -> List[Object]:
         return self.objects
 
-    def add_objects(self, *objects: Sequence[Object]):
+    def add_objects(self, *objects: Sequence[Object]) -> None:
         """Add objects to ``self.objects``."""
         self.objects.extend(list(objects))
 
-    def copy_objects(self):
+    def copy_objects(self) -> List[Object]:
         """List[:class:`.api.Object`]: Copy objects of ``self``.
         Note: copies, not references are returned!
         """
         return list(obj.copy() for obj in self.objects)
 
-    def map(self, function):
+    def map(self, function: Callable[[Object], Any]) -> map:
         """:class:`map`: Same as calling ``map`` on ``self.objects``."""
         return map(function, self.objects)
 
-    def filter(self, function):
+    def filter(self, function: Callable[[Object], Any]) -> filter:
         """:class:`filter`: Same as calling ``filter`` on ``self.objects``."""
         return filter(function, self.objects)
 
-    def dump_to_level(self, level, append_sc: bool = True):
+    def dump_to_level(self, level: Level, append_sc: bool = True) -> None:
         """Dump ``self`` to a ``level`` object."""
         level.options.update(data=self.dump(append_sc=append_sc))
 
-    def dump_to_api(self, api, append_sc: bool = True):
+    def dump_to_api(self, api: LevelAPI, append_sc: bool = True) -> None:
         api.edit(level_string=self.dump(append_sc=append_sc))
 
-    def dump(self, append_sc: bool = True):
+    def dump(self, append_sc: bool = True) -> str:
         """Dump all objects and header into a level data string."""
         seq = [self.header.dump(), *(obj.dump() for obj in self.objects)]
 
@@ -257,5 +269,19 @@ class Editor:
         data = ';'.join(map(str, seq))
         return data
 
-    def copy(self):
+    def copy(self) -> Editor:
         return Editor(self.copy_header(), *self.copy_objects())
+
+
+def launch_editor(caller: Any, attribute: str) -> Editor:
+    string = getattr(caller, attribute)
+    editor = Editor.from_string(string)
+    editor._set_callback(caller, attribute)
+    return editor
+
+
+def dump_editor(editor: Editor) -> None:
+    if None in (editor._callback, editor._attr):
+        return
+    string = editor.dump()
+    setattr(editor._callback, editor._attr, string)

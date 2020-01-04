@@ -1,13 +1,15 @@
 import re
 
-from .enums import DemonDifficulty, LevelDifficulty
+from .enums import DemonDifficulty, LevelDifficulty, GauntletEnum
 
+from .._typing import Union
 from ..song import Song
+
 
 class Converter:
     """Some weird class where NeKit holds his converters for everything"""
     @classmethod
-    def to_normal_song(cls, song_id: int):
+    def to_normal_song(cls, song_id: int) -> Song:
         cases = {
             0: ('ForeverBound', 'Stereo Madness'),
             1: ('DJVI', 'Back On Track'),
@@ -33,12 +35,12 @@ class Converter:
         }
         author, name = cases.get(song_id, (None, None))
         return Song(
-            name = name, author = author, id = song_id,
-            size = None, links = {}, custom = False
+            name=name, author=author, id=song_id,
+            size=None, links={}, custom=False
         )
 
     @classmethod
-    def to_ordinal(cls, n: int):
+    def to_ordinal(cls, n: int) -> str:
         x = str(n)
 
         pn = x[-2:-1]
@@ -56,11 +58,15 @@ class Converter:
         return res
 
     @classmethod
-    def snake_to_camel(cls, string: str):  # not perfect but still...
+    def snake_to_camel(cls, string: str) -> str:  # not perfect but still...
         return re.sub('_([a-zA-Z0-9])', lambda match: match.group(1).upper(), string)
 
     @classmethod
-    def value_to_pack_difficulty(cls, value: int):
+    def get_gauntlet_name(cls, value: int) -> str:
+        return GauntletEnum.from_value(value).desc + ' ' + 'Gauntlet'
+
+    @classmethod
+    def value_to_pack_difficulty(cls, value: int) -> LevelDifficulty:
         cases = {
             1: LevelDifficulty.EASY,
             2: LevelDifficulty.NORMAL,
@@ -72,7 +78,7 @@ class Converter:
         return cases.get(value, LevelDifficulty.NA)
 
     @classmethod
-    def value_to_difficulty(cls, value: int):
+    def value_to_difficulty(cls, value: int) -> LevelDifficulty:
         cases = {
             10: LevelDifficulty.EASY,
             20: LevelDifficulty.NORMAL,
@@ -83,7 +89,7 @@ class Converter:
         return cases.get(value, LevelDifficulty.NA)
 
     @classmethod
-    def value_to_demon(cls, value: int):
+    def value_to_demon(cls, value: int) -> DemonDifficulty:
         cases = {
             3: DemonDifficulty.EASY_DEMON,
             4: DemonDifficulty.MEDIUM_DEMON,
@@ -93,7 +99,9 @@ class Converter:
         return cases.get(value, DemonDifficulty.HARD_DEMON)
 
     @classmethod
-    def convert_level_difficulty(cls, diff: int, demon_diff: int, is_demon: bool, is_auto: bool):
+    def convert_level_difficulty(
+        cls, diff: int, demon_diff: int, is_demon: bool, is_auto: bool
+    ) -> Union[LevelDifficulty, DemonDifficulty]:
         if is_auto:
             return LevelDifficulty.AUTO
         if is_demon:

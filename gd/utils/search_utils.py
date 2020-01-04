@@ -1,16 +1,32 @@
 from operator import attrgetter as attrget
 
+from .._typing import Any, Callable, Iterable, List, Optional, Union
+
 __all__ = ('find', 'get', 'unique')
 
-def unique(iterable):
+
+def unique(iterable: Iterable) -> List[Any]:
+    """Return a list of all unique elements in iterable.
+
+    This function preserves order of elements.
+
+    Example:
+
+    .. code-block:: python3
+
+        unique([3, 2, 1, 1, 2]) -> [3, 2, 1]
+    """
     seen = set()
-    add = seen.add
-    return [x for x in iterable if not (x in seen or add(x))]
+    f = seen.add
+    return list(x for x in iterable if not (x in seen or f(x)))
 
 
-def find(predicate, seq, *, _all: bool = False):
-    """For each element in sequence, return first element if predicate
-    returns ``True`` and ``'_all'`` is ``False``.
+def find(
+    predicate: Callable[[Any], bool], iterable: Iterable, *,
+    find_all: bool = False
+) -> Union[Optional[Any], List[Any]]:
+    """For each element in iterable, return first element if predicate
+    returns ``True`` and ``'find_all'`` is ``False``.
 
     Otherwise, find all elements matching and return them.
 
@@ -20,23 +36,21 @@ def find(predicate, seq, *, _all: bool = False):
 
         ...
         friends = await client.get_friends()
-        old_users = gd.utils.find(lambda x: x.account_id < 500000, friends, _all=True)
+        old_users = gd.utils.find(lambda x: x.account_id < 500000, friends, find_all=True)
 
     """
-    res = []
-    for elem in seq:
-        if predicate(elem):
-            if not _all:
+    if not find_all:
+        for elem in iterable:
+            if predicate(elem):
                 return elem
-            res.append(elem)
 
-    if _all:
-        return res
+    else:
+        return list(filter(predicate, iterable))
 
 
-def get(iterable, **attrs):
+def get(iterable: Iterable, **attrs) -> Union[Optional[Any], List[Any]]:
     """For each element in iterable, return first element that matches
-    requirements and ``'_all'`` is ``False``.
+    requirements and ``'find_all'`` is ``False``.
 
     Otherwise, find all elements matching and return them.
 
@@ -50,19 +64,19 @@ def get(iterable, **attrs):
 
     """
     # check if ALL elements matching requirements should be returned
-    _all = attrs.pop("_all", False)
+    find_all = attrs.pop("find_all", False)
 
     converted = [
         (attrget(attr.replace('__', '.')), value)
         for attr, value in attrs.items()
     ]
 
-    res = []
-    for elem in iterable:
-        if all(pred(elem) == value for pred, value in converted):
-            if not _all:
+    if not find_all:
+        for elem in iterable:
+            if all(pred(elem) == value for pred, value in converted):
                 return elem
-            res.append(elem)
 
-    if _all:
-        return res
+    else:
+        return list(filter(
+            lambda elem: all(pred(elem) == value for pred, value in converted), iterable
+        ))

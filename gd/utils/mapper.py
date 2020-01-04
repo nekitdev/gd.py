@@ -1,15 +1,18 @@
-from .wrap_tools import convert_to_type
+from .._typing import Any, Dict, Iterable
 
 __all__ = ('mapper', 'MapperUtil', 'pad')
 
 
-def convert(obj):
-    return convert_to_type(obj, int)
+def convert(obj: Any) -> Any:
+    try:
+        return int(obj)
+    except Exception:
+        return obj
 
 
 class MapperUtil:
     @staticmethod
-    def map(item, try_convert: bool = True):
+    def map(item: Iterable, try_convert: bool = True) -> Dict[Any, Any]:
         mapping = zip(item[::2], item[1::2])
 
         if try_convert:
@@ -21,21 +24,22 @@ class MapperUtil:
         return res
 
     @staticmethod
-    def normalize(item):
+    def normalize(item: str) -> str:
         res = str(item).replace('-', '+').replace('_', '/')
         return pad(res)
 
     @staticmethod
-    def prepare_sending(item):
+    def prepare_sending(item: str) -> str:
         res = str(item).replace('+', '-').replace('/', '_')
         return pad(res)
+
 
 mapper = MapperUtil()
 
 
-def pad(res: str):
+def pad(res: str, *, char: str = '=') -> str:
     # pad a string to be divisible by 4
     while len(res) % 4:
-        res += '='
+        res += char
 
     return res

@@ -1,17 +1,26 @@
-from pathlib import Path
 import base64
 import json
 
+from .._typing import Any, Dict, Struct
 from ..errors import EditorError
 from ..colors import Color
 
-from .enums import *
-from .hsv import HSV
+from .enums import (
+    SpecialBlockType,
+    TriggerType,
+    PortalType,
+    OrbType,
+    PadType,
+    Easing,
+    ZLayer,
+    SpecialColorID,
+    MiscType,
+)
 
 __all__ = ('supported', 'get_id', 'get_default')
 
 
-def get_id(x: str, ret_enum: bool = False, delim: str = ':'):
+def get_id(x: str, ret_enum: bool = False, delim: str = ':') -> Any:
     """Calculate required value from the given directive ``x``.
 
     The format is, as follows: ``class:name``, e.g. ``special:h``.
@@ -59,11 +68,11 @@ def get_id(x: str, ret_enum: bool = False, delim: str = ':'):
         raise EditorError('ID by directive {!r} was not found.'.format(x)) from None
 
 
-def get_default(name: str):
+def get_default(name: str) -> Dict[Any, Any]:
     return default.get(name, {})
 
 
-def _load_default():
+def _load_default() -> Dict[Any, Any]:
     data = json.loads(base64.b64decode(_default.encode()).decode())
 
     final = {}
@@ -107,7 +116,7 @@ for i, s in zip(range(5), ('slow', 'normal', 'fast', 'faster', 'fastest')):
 del i, s, d
 
 
-def _make_color(struct):
+def _make_color(struct: Struct) -> Color:
     channels = (struct.r, struct.g, struct.b)
 
     if None in channels:
@@ -116,8 +125,7 @@ def _make_color(struct):
     return Color.from_rgb(*channels)
 
 
-
-def _define_color(color):
+def _define_color(color: Any) -> Color:
     if hasattr(color, '__iter__'):
         # something iterable
         return Color.from_rgb(*color)
@@ -128,8 +136,9 @@ def _define_color(color):
     return Color(color)
 
 
-def _get_dir(directive: str, cls: str, delim: str = ':'):
+def _get_dir(directive: str, cls: str, delim: str = ':') -> str:
     return delim.join((cls, directive.split(delim).pop()))
+
 
 # json-like dictionary, encoded in Base64
 _default = """

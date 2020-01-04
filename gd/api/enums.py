@@ -317,7 +317,7 @@ class OrbType(NEnum):
 
 
 class PadType(NEnum):
-    Yellow  = 35
+    Yellow = 35
     Pink = 140
     Red = 1332
     Blue = 67
@@ -395,7 +395,7 @@ class SpecialColorID(NEnum):
 
 
 class TargetPosCoordinates(NEnum):
-    Both  = 0
+    Both = 0
     OnlyX = 1
     OnlyY = 2
 

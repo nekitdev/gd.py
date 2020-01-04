@@ -87,7 +87,7 @@ To install the developer version, run these commands:
 Quick example
 -------------
 
-Below is an example of fetching a song by its ID.
+Please note: gd.py writes the new method for coroutines, called 'run'.
 
 .. code:: python
 
@@ -104,6 +104,11 @@ Below is an example of fetching a song by its ID.
     # OUTPUT: Random Song 01
 
 You can find more examples in examples directory.
+
+NOTICE
+------
+
+Developers of this library do not own any images in `resources <https://github.com/NeKitDS/gd.py/blob/master/gd/graphics/resources>`_ package. All of them were created and are owned by the Developer of Geometry Dash - Robert Topala (aka `RobTop <http://robtopgames.com/>`_).
 
 Credits
 -------

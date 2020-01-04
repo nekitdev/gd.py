@@ -1,7 +1,7 @@
 import base64
 import random
 
-from typing import Union, Sequence
+from .._typing import Any, Dict, Filters, List, Parameters, Sequence, Union
 
 from .mapper import mapper
 from .crypto.coders import Coder
@@ -9,10 +9,11 @@ from .crypto.coders import Coder
 __all__ = ('Parameters', 'enter_gdworld', 'leave_gdworld')
 
 
-def enter_gdworld():
+def enter_gdworld() -> None:
     Parameters.GDW = 1
 
-def leave_gdworld():
+
+def leave_gdworld() -> None:
     Parameters.GDW = 0
 
 
@@ -52,7 +53,7 @@ class Parameters:
     """
     GDW = 0
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.gameVersion = '21'
         self.binaryVersion = '35'
         self.secret = 'Wmfd2893gb7'
@@ -61,7 +62,7 @@ class Parameters:
         self.mod_secret = 'Wmfp3879gc3'
         self.dict = {}
 
-    def create_new(self, type: str = None):
+    def create_new(self, type: str = None) -> Parameters:
         """Start forming a new dictionary.
 
         Parameters
@@ -86,7 +87,7 @@ class Parameters:
             self.dict = {}
         return self
 
-    def finish(self):
+    def finish(self) -> Dict[str, str]:
         """Finishes creating parameters dictionary, and adds ``secret`` parameter.
 
         Puts :attr:`.Parameters.secret` as *secret* parameter.
@@ -99,7 +100,7 @@ class Parameters:
         self.dict['secret'] = self.secret
         return self.dict
 
-    def finish_level(self):
+    def finish_level(self) -> Dict[str, str]:
         """Same as :meth:`.Parameters.finish`, but adds :attr:`.Parameters.level_secret` instead.
 
         Returns
@@ -110,7 +111,7 @@ class Parameters:
         self.dict['secret'] = self.level_secret
         return self.dict
 
-    def finish_login(self):
+    def finish_login(self) -> Dict[str, str]:
         """Same as :meth:`.Parameters.finish`, but adds :attr:`.Parameters.login_secret` instead.
 
         Returns
@@ -121,7 +122,7 @@ class Parameters:
         self.dict['secret'] = self.login_secret
         return self.dict
 
-    def finish_mod(self):
+    def finish_mod(self) -> Dict[str, str]:
         """Same as :meth:`.Parameters.finish`, but adds :attr:`.Parameters.mod_secret` instead.
 
         Returns
@@ -132,7 +133,7 @@ class Parameters:
         self.dict['secret'] = self.mod_secret
         return self.dict
 
-    def close(self):
+    def close(self) -> Dict[str, str]:
         """Finishes creating parameters dictionary, without adding anything.
 
         Returns
@@ -142,8 +143,7 @@ class Parameters:
         """
         return self.dict
 
-
-    def put_definer(self, for_what: str, item):
+    def put_definer(self, for_what: str, item: Any) -> Parameters:
         """Puts a definer.
 
         Parameters
@@ -199,7 +199,7 @@ class Parameters:
             pass
         return self
 
-    def put_recipient(self, account_id: int):
+    def put_recipient(self, account_id: int) -> Parameters:
         """Puts recipient of a message/friend request/...
 
         Parameters
@@ -215,7 +215,7 @@ class Parameters:
         self.dict['toAccountID'] = str(account_id)
         return self
 
-    def put_is_sender(self, t: str):
+    def put_is_sender(self, t: str) -> Parameters:
         """Puts `'isSender'` parameter.
 
         Parameters
@@ -234,7 +234,7 @@ class Parameters:
 
         return self
 
-    def put_message(self, subject: str, body: str):
+    def put_message(self, subject: str, body: str) -> Parameters:
         """Puts message's subject and body.
 
         Parameters
@@ -253,7 +253,7 @@ class Parameters:
         self.dict['body'] = mapper.prepare_sending(Coder.encode(type='message', string=body))
         return self
 
-    def put_password(self, item: str):
+    def put_password(self, item: str) -> Parameters:
         """Self explanatory. Puts `'gjp'` parameter.
 
         Parameters
@@ -269,7 +269,7 @@ class Parameters:
         self.dict['gjp'] = item
         return self
 
-    def put_username(self, item: str):
+    def put_username(self, item: str) -> Parameters:
         """Self explanatory. Puts `'userName'` parameter.
 
         Parameters
@@ -285,7 +285,7 @@ class Parameters:
         self.dict['userName'] = item
         return self
 
-    def put_fr_comment(self, item: str):
+    def put_fr_comment(self, item: str) -> Parameters:
         """Pretty self explanatory. Puts `'comment'` parameter.
 
         Parameters
@@ -302,7 +302,7 @@ class Parameters:
             base64.b64encode(item.encode()).decode())
         return self
 
-    def put_save_data(self, data_seq: Sequence[Union[bytes, str]]):
+    def put_save_data(self, data_seq: Sequence[Union[bytes, str]]) -> Parameters:
         """Self explanatory. Puts `'saveData'` parameter.
 
         Parameters
@@ -332,7 +332,7 @@ class Parameters:
 
         return self
 
-    def put_type(self, number: Union[int, str] = 0):
+    def put_type(self, number: Union[int, str] = 0) -> Parameters:
         """Sets `'type'` parameter to a given number or string.
 
         Parameters
@@ -348,57 +348,57 @@ class Parameters:
         self.dict['type'] = str(number)
         return self
 
-    def put_percent(self, number: int = 0):
+    def put_percent(self, number: int = 0) -> Parameters:
         """Same as :meth:`.Parameters.put_type`, but for `'percent'`."""
         self.dict['percent'] = str(number)
         return self
 
-    def put_page(self, number: int = 0):
+    def put_page(self, number: int = 0) -> Parameters:
         """Same as :meth:`.Parameters.put_type`, but for `'page'`."""
         self.dict['page'] = str(number)
         return self
 
-    def put_weekly(self, number: int = 0):
+    def put_weekly(self, number: int = 0) -> Parameters:
         """Same as :meth:`.Parameters.put_type`, but for `'weekly'`."""
         self.dict['weekly'] = str(number)
         return self
 
-    def put_total(self, number: int = 0):
+    def put_total(self, number: int = 0) -> Parameters:
         """Same as :meth:`.Parameters.put_type`, but for `'total'`."""
         self.dict['total'] = str(number)
         return self
 
-    def put_mode(self, number: int = 0):
+    def put_mode(self, number: int = 0) -> Parameters:
         """Same as :meth:`.Parameters.put_type`, but for `'mode'`."""
         self.dict['mode'] = str(number)
         return self
 
-    def put_like(self, number: int = 0):
+    def put_like(self, number: int = 0) -> Parameters:
         """Same as :meth:`.Parameters.put_type`, but for `'like'`."""
         self.dict['like'] = str(number)
         return self
 
-    def put_count(self, number: int = 0):
+    def put_count(self, number: int = 0) -> Parameters:
         """Same as :meth:`.Parameters.put_type`, but for `'count'`."""
         self.dict['count'] = str(number)
         return self
 
-    def put_feature(self, number: int = 0):
+    def put_feature(self, number: int = 0) -> Parameters:
         """Same as :meth:`.Parameters.put_type`, but for `'feature'`."""
         self.dict['feature'] = str(number)
         return self
 
-    def put_special(self, number: int = 0):
+    def put_special(self, number: int = 0) -> Parameters:
         """Same as :meth:`.Parameters.put_type`, but for `'special'`."""
         self.dict['special'] = str(number)
         return self
 
-    def put_local(self, number: int = 0):
+    def put_local(self, number: int = 0) -> Parameters:
         """Same as :meth:`.Parameters.put_type`, but for `'local'`."""
         self.dict['local'] = str(number)
         return self
 
-    def put_seed(self, seed: str, prefix: str = 'seed', suffix: str = ''):
+    def put_seed(self, seed: str, prefix: str = 'seed', suffix: str = '') -> Parameters:
         """Puts ``'{prefix}{suffix}'`` parameter.
 
         Parameters
@@ -420,7 +420,7 @@ class Parameters:
         self.dict[str(prefix)+str(suffix)] = str(seed)
         return self
 
-    def put_rs(self, rs: str):
+    def put_rs(self, rs: str) -> Parameters:
         """Self explanatory. Puts ``'rs'`` parameter.
 
         Parameters
@@ -436,7 +436,7 @@ class Parameters:
         self.dict['rs'] = str(rs)
         return self
 
-    def put_chk(self, chk: str):
+    def put_chk(self, chk: str) -> Parameters:
         """Self explanatory. Puts ``'chk'`` parameter.
 
         Parameters
@@ -452,7 +452,7 @@ class Parameters:
         self.dict['chk'] = str(chk)
         return self
 
-    def put_comment(self, content: str, values: list):
+    def put_comment(self, content: str, values: List[Any]) -> Parameters:
         """Puts a comment.
 
         Parameters
@@ -474,7 +474,7 @@ class Parameters:
         self.put_chk(Coder.gen_chk(type='comment', values=values))
         return self
 
-    def comment_for(self, type: str, number: int = None):
+    def comment_for(self, type: str, number: int = 0) -> Parameters:
         """Defines type of a comment, and puts parameters required for it.
 
         Parameters
@@ -498,7 +498,7 @@ class Parameters:
 
         return self
 
-    def put_login_definer(self, username: str, password: str):
+    def put_login_definer(self, username: str, password: str) -> Parameters:
         """Puts parameters for a login request.
 
         Parameters
@@ -519,7 +519,7 @@ class Parameters:
         self.put_username(username)
         return self
 
-    def put_udid(self, id: int = -1):
+    def put_udid(self, id: int = -1) -> Parameters:
         """Puts ``'udid'`` parameter.
 
         .. note::
@@ -537,14 +537,13 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        if not (id + 1):  # if -1
+        if id == -1:  # if -1
             id = random.randint(100000, 100000000000)
 
         self.dict['udid'] = str(id)
         return self
 
-
-    def put_uuid(self, id: int = -1):
+    def put_uuid(self, id: int = -1) -> Parameters:
         """Same as :meth:`.Parameters.put_udid`, but puts ``'uuid'``.
 
         .. note::
@@ -561,13 +560,13 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        if not (id + 1):
+        if id == -1:
             id = random.randint(100000, 100000000)
 
         self.dict['uuid'] = str(id)
         return self
 
-    def put_level_desc(self, content: str):
+    def put_level_desc(self, content: str) -> Parameters:
         """Encodes given content and puts ``'levelDesc'``.
 
         Parameters
@@ -591,7 +590,7 @@ class Parameters:
     def put_profile_upd(
         self, msg: int, friend_req: int, comments: int,
         youtube: str, twitter: str, twitch: str
-    ):
+    ) -> Parameters:
         """Puts all parameters required for profile update.
 
         Parameters
@@ -621,7 +620,7 @@ class Parameters:
         self.dict.update(to_put)
         return self
 
-    def put_filters(self, filters: dict):
+    def put_filters(self, filters: Union[dict, Filters]) -> Parameters:
         """Appends level filters.
 
         Parameters
@@ -639,7 +638,7 @@ class Parameters:
         self.dict.update(filters)
         return self
 
-    def get_sent(self, indicator: int):
+    def get_sent(self, indicator: int) -> Parameters:
         if (indicator == 1):
             self.dict['getSent'] = '1'
         else:

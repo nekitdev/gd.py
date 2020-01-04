@@ -1,19 +1,15 @@
-from typing import Union
+from ._typing import Tuple, Union
 
+from .abstractentity import AbstractEntity
 from .colors import Color
-from .session import _session
 
-from .utils._async import run_blocking_io
 from .utils.enums import IconType
-from .utils.wrap_tools import make_repr
+from .utils.text_tools import make_repr
 
 
-class IconSet:
+class IconSet(AbstractEntity):
     """Class that represents an Icon Set."""
-    def __init__(self, **options):
-        self.options = options
-
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = {
             'main_icon': self.main,
             'main_type': self.main_type,
@@ -22,83 +18,79 @@ class IconSet:
         }
         return make_repr(self, info)
 
-    def __json__(self):
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and self.options == other.options
+
+    def __json__(self) -> dict:
         return self.options
 
     @property
-    def main(self):
+    def main(self) -> int:
         """:class:`int`: ID of the main icon of the iconset. (see :attr:`.IconSet.main_type`)"""
         return self.options.get('main_icon', 1)
 
     @property
-    def color_1(self):
-        """:class:`.Colour`: A first color of the iconset."""
+    def color_1(self) -> Color:
+        """:class:`.Color`: A first color of the iconset."""
         return self.options.get('color_1', Color(0x00ff00))
 
     @property
-    def color_2(self):
-        """:class:`.Colour`: A second color of the iconset."""
+    def color_2(self) -> Color:
+        """:class:`.Color`: A second color of the iconset."""
         return self.options.get('color_2', Color(0x00ffff))
 
     @property
-    def main_type(self):
+    def main_type(self) -> IconType:
         """:class:`.IconType`: A type of the main icon of the iconset."""
-        return self.options.get('main_icon_type', IconType(0))
+        return IconType.from_value(self.options.get('main_icon_type', 0))
 
     @property
-    def cube(self):
+    def cube(self) -> int:
         """:class:`int`: Cube ID of the iconset."""
         return self.options.get('icon_cube', 1)
 
     @property
-    def ship(self):
+    def ship(self) -> int:
         """:class:`int`: Ship ID of the iconset."""
         return self.options.get('icon_ship', 1)
 
     @property
-    def ball(self):
+    def ball(self) -> int:
         """:class:`int`: Ball ID of the iconset."""
         return self.options.get('icon_ball', 1)
 
     @property
-    def ufo(self):
+    def ufo(self) -> int:
         """:class:`int`: UFO ID of the iconset."""
         return self.options.get('icon_ufo', 1)
 
     @property
-    def wave(self):
+    def wave(self) -> int:
         """:class:`int`: Wave ID of the iconset."""
         return self.options.get('icon_wave', 1)
 
     @property
-    def robot(self):
+    def robot(self) -> int:
         """:class:`int`: Robot ID of the iconset."""
         return self.options.get('icon_robot', 1)
 
     @property
-    def spider(self):
+    def spider(self) -> int:
         """:class:`int`: Spider ID of the iconset."""
         return self.options.get('icon_spider', 1)
 
     @property
-    def explosion(self):
+    def explosion(self) -> int:
         """:class:`int`: Explosion ID of the iconset."""
         return self.options.get('icon_explosion', 1)
 
-    def has_glow_outline(self):
+    def has_glow_outline(self) -> bool:
         """:class:`bool`: Indicates whether an iconset has glow outline."""
         return self.options.get('has_glow_outline', False)
 
-    def get_colors(self):
-        """Tuple[:class:`.Colour`, :class:`.Colour`]: A shorthand for *color_1* and *color_2*."""
+    def get_colors(self) -> Tuple[Color, Color]:
+        """Tuple[:class:`.Color`, :class:`.Color`]: A shorthand for *color_1* and *color_2*."""
         return self.color_1, self.color_2
 
-    async def generate(self, type: Union[int, str, IconType] = 'cube'):
-        form = IconType.from_value(type).name.lower()
-
-        icon_bytes = await _session.generate_icon(
-            form=form, id=getattr(self, form), has_glow=self.has_glow_outline(),
-            color_1=self.color_1.index, color_2=self.color_2.index
-        )
-
-        return icon_bytes
+    async def generate(self, type: Union[int, str, IconType] = 'cube') -> bytes:
+        return await self.client.generate_icon(type, self)

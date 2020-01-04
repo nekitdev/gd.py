@@ -3,6 +3,7 @@ import re
 
 from ._async import run_blocking_io
 
+from .._typing import Any, Dict
 from ..errors import ParserError
 
 __all__ = ('xml', 'XMLParser', 'AioXMLParser')
@@ -20,17 +21,18 @@ MAPPING = {
     'string': 's'
 }
 
+
 class XMLParser:
-    def __init__(self):
+    def __init__(self) -> None:
         self._default({})
 
-    def preprocess(self, string):
+    def preprocess(self, string: str) -> str:
         for key, value in MAPPING.items():
             string = string.replace(key, value)
         string = re.sub(r'[\n\t]', '', string)
         return string
 
-    def load(self, xml_string):
+    def load(self, xml_string: str) -> Dict[str, Any]:
         xml_string = self.preprocess(xml_string)
         try:
             plist = xml.fromstring(xml_string)
@@ -44,7 +46,7 @@ class XMLParser:
         except Exception as exc:
             raise ParserError('Failed to parse xml string.') from exc
 
-    def iterate_xml(self, element):
+    def iterate_xml(self, element: xml.Element) -> Dict[str, Any]:
         elements = element.getchildren()
         grouped = zip(elements[::2], elements[1::2])
 
@@ -65,17 +67,17 @@ class XMLParser:
 
         return ret
 
-    def dump(self, py_dict):
+    def dump(self, py_dict: Dict[str, Any]) -> str:
         plist = xml.Element('plist', attrib=self.attrib)
         root = xml.SubElement(plist, 'dict')
 
         self.iterate_dict(root, py_dict)
 
         return self._dump(plist)
-        
-    def iterate_dict(self, element, py_dict):
+
+    def iterate_dict(self, element: xml.Element, py_dict: Dict[str, Any]) -> None:
         for key, value in py_dict.items():
-            if value is None or value == False:  # exactly bool here
+            if value is None or value is False:  # exactly bool here
                 continue
 
             k = xml.SubElement(element, 'k')
@@ -99,10 +101,11 @@ class XMLParser:
 
                 sub.text = str(value)
 
-    def _dump(self, element):
-        return DECLARATION + xml.tostring(element).decode(errors='replace').replace('!version', 'version', 1)
+    def _dump(self, element: xml.Element) -> str:
+        string = xml.tostring(element).decode(errors='replace').replace('!version', 'version', 1)
+        return DECLARATION + string
 
-    def _default(self, _dict):
+    def _default(self, _dict: Dict[str, str]) -> None:
         self.attrib = {
             '!version': _dict.get('version', PLIST_VERSION),
             'gjver': _dict.get('gjver', GJ_VERSION)
@@ -110,8 +113,8 @@ class XMLParser:
 
 
 class AioXMLParser(XMLParser):
-    async def load(self, xml_string):
+    async def load(self, xml_string: str) -> Dict[str, Any]:
         return await run_blocking_io(super().load, xml_string)
 
-    async def dump(self, py_dict):
+    async def dump(self, py_dict: Dict[str, Any]) -> str:
         return await run_blocking_io(super().dump, py_dict)

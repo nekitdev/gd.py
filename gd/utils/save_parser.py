@@ -1,5 +1,6 @@
 from collections import namedtuple
 
+from .._typing import List
 from .xml_parser import XMLParser, AioXMLParser
 
 Save = namedtuple('Save', 'completed followed')
@@ -7,28 +8,28 @@ Save = namedtuple('Save', 'completed followed')
 
 class SaveParser:
     @staticmethod
-    def parse(xml):
+    def parse(xml) -> Save:
         parser = XMLParser()
         _dict = parser.load(xml)
 
         return SaveParser._parse(_dict)
 
     @staticmethod
-    async def aio_parse(xml):
+    async def aio_parse(xml) -> Save:
         parser = AioXMLParser()
         _dict = await parser.load(xml)
 
         return SaveParser._parse(_dict)
 
     @staticmethod
-    def _parse(d):
+    def _parse(d) -> Save:
         completed = _get_completed(d)
         followed = _get_followed(d)
 
         return Save(completed=completed, followed=followed)
 
 
-def _get_completed(d):
+def _get_completed(d) -> List[int]:
     inner = d['GS_completed']
 
     final = []
@@ -42,11 +43,10 @@ def _get_completed(d):
 
     return final
 
-def _get_followed(d):
+
+def _get_followed(d) -> List[int]:
     inner = d['GLM_06']
 
-    final = [
-        int(entry) for entry, _ in inner.items()
-    ]
+    final = list(map(int, inner.values()))
 
     return final

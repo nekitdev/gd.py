@@ -1,25 +1,8 @@
+from .._typing import Any, Iterable, List
+
 from ..errors import PagesOutOfRange
-from .wrap_tools import make_repr
+from .text_tools import make_repr
 
-def paginate(iterable=(), per_page: int = 10):
-    """A function that paginates the given iterable.
-
-    Simply wraps iterable in :class:`.Paginator` and returns it.
-
-    Parameters
-    ----------
-    iterable: Sequence[`Any`]
-        A finite sequence to paginate.
-
-    per_page: :class:`int`
-        Amount of elements in iterable to present on each page.
-
-    Returns
-    -------
-    :class:`.Paginator`
-        A paginator that has an ``iterable`` wrapped.
-    """
-    return Paginator(to_paginate=iterable, per_page=per_page)
 
 class Paginator:
     """A class that implements a pagination system.
@@ -32,23 +15,22 @@ class Paginator:
     per_page: :class:`int`
         Number of elements each page can have.
     """
-
-    def __init__(self, to_paginate, per_page: int = 10):
+    def __init__(self, to_paginate: Iterable, per_page: int = 10) -> None:
         self._list = list(to_paginate)
         self._per_page = per_page
         self._current_page = 0
         self.reload()
 
-    def _configure_pages(self):
+    def _configure_pages(self) -> None:
         y = self._length / self._per_page
         x = round(y)
 
         self._pages = x+1 if x < y else x
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.current_state
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = {
             'empty': self.is_empty(),
             'length': self.length,
@@ -58,30 +40,30 @@ class Paginator:
         }
         return make_repr(self, info)
 
-    def __getitem__(self, index: int):
+    def __getitem__(self, index: int) -> Any:
         return self._list[index]
 
-    def __setitem__(self, index: int, item):
+    def __setitem__(self, index: int, item: Any) -> None:
         self._list[index] = item
         self.reload()
 
     @property
-    def length(self):
+    def length(self) -> int:
         """:class:`int`: Total amount of elements in a paginator."""
         return self._length
 
     @property
-    def per_page(self):
+    def per_page(self) -> int:
         """:class:`int`: Amount of elements shown on each page."""
         return self._per_page
 
     @property
-    def list(self):
+    def list(self) -> List[Any]:
         """List[`Any`] Paginated sequence, represented as list."""
         return self._list
 
     @property
-    def current_state(self):
+    def current_state(self) -> str:
         """:class:`str`: Returns a string representation of the Paginator.
 
         Theoretically, this is only used when printing the Paginator's state.
@@ -103,7 +85,7 @@ class Paginator:
             page=self.get_curr_page(), _from=_from, _to=_to
         )
 
-    def load_iterable(self, iterable):
+    def load_iterable(self, iterable: Iterable) -> None:
         """A function that paginates the given iterable.
 
         Basically reloads already created paginator with given iterable.
@@ -119,17 +101,17 @@ class Paginator:
         self._list = list(iterable)
         self.reload()
 
-    def reload(self):
+    def reload(self) -> None:
         """Reconfigure length and configure pages amount."""
         self._length = len(self._list)
         self._configure_pages()
 
-    def append(self, obj):
+    def append(self, obj: Any) -> None:
         """Append ``obj`` to a paginated sequence, then reload."""
         self._list.append(obj)
         self.reload()
 
-    def pop(self, index: int = -1):
+    def pop(self, index: int = -1) -> Any:
         """Pops out an element.
 
         Deletes element with given ``index``, and returns it.
@@ -139,24 +121,24 @@ class Paginator:
         self.reload()
         return value
 
-    def clear(self):
+    def clear(self) -> None:
         """Clears :attr:`Paginator.list`, then reloads."""
         self._list.clear()
         self.reload()
 
-    def get_pages_count(self):
+    def get_pages_count(self) -> int:
         """:class:`int`: Get current amount of pages."""
         return self._pages
 
-    def get_curr_page(self):
+    def get_curr_page(self) -> int:
         """:class:`int`: Get a number of the current page."""
         return self._current_page
 
-    def is_empty(self):
+    def is_empty(self) -> bool:
         """:class:`bool`: Indicates whether paginator is empty."""
         return self.length > 0
 
-    def move_to_next(self):
+    def move_to_next(self) -> None:
         """Tries to go to the next page.
 
         Raises
@@ -166,7 +148,7 @@ class Paginator:
         """
         self.move_to(self.get_curr_page() + 1)
 
-    def move_to_prev(self):
+    def move_to_prev(self) -> None:
         """Attempts to go to the previous page.
 
         Raises
@@ -176,19 +158,19 @@ class Paginator:
         """
         self.move_to(self.get_curr_page() - 1)
 
-    def _check_page(self, page: int):
+    def _check_page(self, page: int) -> None:
         if page < 0:
             raise PagesOutOfRange(
-                page = page,
-                info = 'Page does not support negative integers.'
+                page=page,
+                info='Page does not support negative integers.'
             )
         if (page + 1) > self.get_pages_count():
             raise PagesOutOfRange(
-                page = page,
-                info = self.get_pages_count()
+                page=page,
+                info=self.get_pages_count()
             )
 
-    def move_to(self, page: int):
+    def move_to(self, page: int) -> None:
         """Moves to the ``page`` given.
 
         Parameters
@@ -205,7 +187,7 @@ class Paginator:
         self._check_page(page)
         self._current_page = page
 
-    def view_page(self, page: int = None):
+    def view_page(self, page: int = None) -> List[Any]:
         """View elements on a page.
 
         Parameters
@@ -231,8 +213,29 @@ class Paginator:
         res = self.list[to_pass:(to_pass + self.per_page)]
         return res
 
-    def get_all(self):
+    def get_all(self) -> List[List[Any]]:
         """Pretty similar to self.list, but returns List[List[`Any`]], where each
         inner list represents one page.
         """
         return [self.view_page(i) for i in range(self.get_pages_count())]
+
+
+def paginate(iterable: Iterable = (), per_page: int = 10) -> Paginator:
+    """A function that paginates the given iterable.
+
+    Simply wraps iterable in :class:`.Paginator` and returns it.
+
+    Parameters
+    ----------
+    iterable: Sequence[`Any`]
+        A finite sequence to paginate.
+
+    per_page: :class:`int`
+        Amount of elements in iterable to present on each page.
+
+    Returns
+    -------
+    :class:`.Paginator`
+        A paginator that has an ``iterable`` wrapped.
+    """
+    return Paginator(to_paginate=iterable, per_page=per_page)

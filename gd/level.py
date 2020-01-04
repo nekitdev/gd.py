@@ -1,12 +1,10 @@
 import logging
 
-from typing import Union
+from ._typing import Comment, Level, LevelRecord, List, Optional, Union
 
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser
 from .song import Song
-
-from .session import _session
 
 from .errors import MissingAccess
 
@@ -14,25 +12,22 @@ from .api.editor import Editor
 
 from .utils.enums import (
     DemonDifficulty, LevelDifficulty, CommentStrategy,
-    LevelLength, TimelyType, LevelLeaderboardStrategy,
-    value_to_enum
+    LevelLength, TimelyType, LevelLeaderboardStrategy
 )
-from .utils.wrap_tools import make_repr, check
-
-from .utils.text_tools import object_split
-
+from .utils.text_tools import make_repr, object_split
 
 log = logging.getLogger(__name__)
+
 
 class Level(AbstractEntity):
     """Class that represents a Geometry Dash Level.
     This class is derived from :class:`.AbstractEntity`.
     """
-    def __init__(self, **options):
+    def __init__(self, **options) -> None:
         super().__init__(**options)
         self.options = options
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = {
             'id': self.id,
             'name': repr(self.name),
@@ -42,57 +37,57 @@ class Level(AbstractEntity):
         }
         return make_repr(self, info)
 
-    def __json__(self):
+    def __json__(self) -> dict:
         return {k: v for k, v in super().__json__().items() if k != 'data'}
 
     @property
-    def name(self):
+    def name(self) -> str:
         """:class:`str`: The name of the level."""
         return self.options.get('name', 'Unnamed')
 
     @property
-    def description(self):
+    def description(self) -> str:
         """:class:`str`: Description of the level."""
         return self.options.get('description', '')
 
     @property
-    def version(self):
+    def version(self) -> int:
         """:class:`int`: Version of the level."""
         return self.options.get('version', 0)
 
     @property
-    def downloads(self):
+    def downloads(self) -> int:
         """:class:`int`: Amount of the level's downloads."""
         return self.options.get('downloads', 0)
 
     @property
-    def rating(self):
+    def rating(self) -> int:
         """:class:`int`: Amount of the level's likes or dislikes."""
         return self.options.get('rating', 0)
 
     @property
-    def score(self):
+    def score(self) -> int:
         """:class:`int`: Level's featured score."""
         return self.options.get('score', 0)
 
     @property
-    def creator(self):
+    def creator(self) -> AbstractUser:
         """:class:`.AbstractUser`: Creator of the level."""
         return self.options.get('creator', AbstractUser())
 
     @property
-    def song(self):
+    def song(self) -> Song:
         """:class:`.Song`: Song used in the level."""
         return self.options.get('song', Song())
 
     @property
-    def difficulty(self):
+    def difficulty(self) -> LevelDifficulty:
         """:class:`.LevelDifficulty`: Difficulty of the level."""
-        return self.options.get('difficulty', LevelDifficulty(-1))
+        return LevelDifficulty.from_value(self.options.get('difficulty', -1))
 
     @property
-    def password(self):
-        """:class:`str`: The password to copy the level.
+    def password(self) -> Optional[str]:
+        """Optional[:class:`str`]: The password to copy the level.
         Empty string if the level is free to copy,
         ``None`` if not copyable,
         and a string containing password otherwise.
@@ -100,83 +95,83 @@ class Level(AbstractEntity):
         return self.options.get('password')
 
     @property
-    def stars(self):
+    def stars(self) -> int:
         """:class:`int`: Amount of stars the level has."""
         return self.options.get('stars', 0)
 
     @property
-    def coins(self):
+    def coins(self) -> int:
         """:class:`int`: Amount of coins in the level."""
         return self.options.get('coins', 0)
 
     @property
-    def original_id(self):
+    def original_id(self) -> int:
         """:class:`int`: ID of the original level. (``0`` if is not a copy)"""
         return self.options.get('original', 0)
 
     @property
-    def uploaded_timestamp(self):
+    def uploaded_timestamp(self) -> str:
         """:class:`str`: A human-readable string representing how much time ago level was uploaded."""
         return self.options.get('uploaded_timestamp', 'unknown')
 
     @property
-    def last_updated_timestamp(self):
+    def last_updated_timestamp(self) -> str:
         """:class:`str`: A human-readable string showing how much time ago the last update was."""
         return self.options.get('last_updated_timestamp', 'unknown')
 
     @property
-    def length(self):
+    def length(self) -> LevelLength:
         """:class:`.LevelLength`: A type that represents length of the level."""
-        return self.options.get('length', LevelLength(-1))
+        return LevelLength.from_value(self.options.get('length', -1))
 
     @property
-    def game_version(self):
+    def game_version(self) -> int:
         """:class:`int`: A version of the game required to play the level."""
         return self.options.get('game_version', 0)
 
     @property
-    def requested_stars(self):
+    def requested_stars(self) -> int:
         """:class:`int`: Amount of stars creator of the level has requested."""
         return self.options.get('stars_requested', 0)
 
     @property
-    def objects(self):
+    def objects(self) -> int:
         """:class:`int`: Amount of objects the level has in data."""
         return len(object_split(self.data))
 
     @property
-    def object_count(self):
+    def object_count(self) -> int:
         """:class:`int`: Amount of objects the level according to the servers."""
         return self.options.get('object_count', 0)
 
     @property
-    def type(self):
+    def type(self) -> TimelyType:
         """:class:`.TimelyType`: A type that shows whether a level is Daily/Weekly."""
-        return self.options.get('type', TimelyType(0))
+        return TimelyType.from_value(self.options.get('type', 0))
 
     @property
-    def timely_index(self):
+    def timely_index(self) -> int:
         """:class:`int`: A number that represents current index of the timely.
         Increments on new dailies/weeklies. If not timely, equals ``-1``.
         """
         return self.options.get('time_n', -1)
 
     @property
-    def cooldown(self):
+    def cooldown(self) -> int:
         """:class:`int`: Represents a cooldown until next timely. If not timely, equals ``-1``."""
         return self.options.get('cooldown', -1)
 
     @property
-    def data(self):
+    def data(self) -> Union[bytes, str]:
         """Union[:class:`str`, :class:`bytes`]: Level data, represented as a stream."""
         return self.options.get('data', '')
 
     @data.setter
-    def data(self, value):
+    def data(self, value: Union[bytes, str]) -> None:
         """Set ``self.data`` to ``value``."""
         self.options.update(data=value)
 
-    def is_timely(self, daily_or_weekly: str = None):
+    def is_timely(self, daily_or_weekly: str = None) -> bool:
         """:class:`bool`: Indicates whether a level is timely/daily/weekly.
         For instance, let's suppose a *level* is daily. Then, the behavior of this method is:
         ``level.is_timely() -> True`` and ``level.is_timely('daily') -> True`` but
@@ -191,42 +186,42 @@ class Level(AbstractEntity):
 
         return self.type.name.lower() == daily_or_weekly
 
-    def is_rated(self):
+    def is_rated(self) -> bool:
         """:class:`bool`: Indicates if a level is rated (has stars)."""
         return self.stars > 0
 
-    def is_featured(self):
+    def is_featured(self) -> bool:
         """:class:`bool`: Indicates whether a level is featured."""
         return self.score > 0  # not sure if this is the right way though
 
-    def is_epic(self):
+    def is_epic(self) -> bool:
         """:class:`bool`: Indicates whether a level is epic."""
-        return self.options.get('is_epic', False)
+        return bool(self.options.get('is_epic'))
 
-    def is_demon(self):
+    def is_demon(self) -> bool:
         """:class:`bool`: Indicates whether a level is demon."""
-        return self.options.get('is_demon', False)
+        return bool(self.options.get('is_demon'))
 
-    def is_auto(self):
+    def is_auto(self) -> bool:
         """:class:`bool`: Indicates whether a level is auto."""
-        return self.options.get('is_auto', False)
+        return bool(self.options.get('is_auto'))
 
-    def is_original(self):
+    def is_original(self) -> bool:
         """:class:`bool`: Indicates whether a level is original."""
         return not self.original_id
 
-    def has_coins_verified(self):
+    def has_coins_verified(self) -> bool:
         """:class:`bool`: Indicates whether level's coins are verified."""
-        return self.options.get('verified_coins', False)
+        return bool(self.options.get('verified_coins'))
 
-    def download(self):
-        """:class:`str`: Returns level data, represented as string."""
+    def download(self) -> Union[bytes, str]:
+        """Union[:class:`str`, :class:`bytes`]: Returns level data, represented as string."""
         return self.data
 
-    def open_editor(self):
+    def open_editor(self) -> Editor:
         return Editor.launch(self, 'data')
 
-    async def report(self):
+    async def report(self) -> None:
         """|coro|
 
         Reports a level.
@@ -236,10 +231,10 @@ class Level(AbstractEntity):
         :exc:`.MissingAccess`
             Failed to report a level.
         """
-        await _session.report_level(self)
+        await self.client.report_level(self)
 
-    async def upload(self, **kwargs):
-        """|coro|
+    async def upload(self, **kwargs) -> None:
+        r"""|coro|
 
         Upload ``self``.
 
@@ -258,8 +253,10 @@ class Level(AbstractEntity):
 
         if client is None:
             raise MissingAccess(
-                message=('Could not find the client to upload level from. '
-                'Either attach a client to this level or provide "from_client" parameter.')
+                message=(
+                    'Could not find the client to upload level from. '
+                    'Either attach a client to this level or provide "from_client" parameter.'
+                )
             )
 
         password = kwargs.pop('password', self.password)
@@ -278,27 +275,19 @@ class Level(AbstractEntity):
 
         self.options = uploaded.options
 
-    async def delete(self, *, from_client=None):
+    async def delete(self) -> None:
         """|coro|
 
         Deletes a level.
-
-        Parameters
-        ----------
-        from_client: :class:`.Client`
-            A logged in client to delete a level with. If ``None`` or omitted,
-            defaults to the one attached to this level.
 
         Raises
         ------
         :exc:`.MissingAccess`
             Failed to delete a level.
         """
-        client = from_client if from_client is not None else self._client
-        check.is_logged_obj(client, 'delete')
-        await _session.delete_level(self, client=client)
+        await self.client.delete_level(self)
 
-    async def update_description(self, content: str = None, *, from_client=None):
+    async def update_description(self, content: str = None) -> None:
         """|coro|
 
         Updates level description.
@@ -309,10 +298,6 @@ class Level(AbstractEntity):
             Content of the new description. If ``None`` or omitted,
             sets content to :attr:`.Level.description`.
 
-        from_client: :class:`.Client`
-            A logged in client to update level description with. If ``None`` or omitted,
-            defaults to the one attached to this level.
-
         Raises
         ------
         :exc:`.MissingAccess`
@@ -321,11 +306,9 @@ class Level(AbstractEntity):
         if content is None:
             content = self.description
 
-        client = from_client if from_client is not None else self._client
-        check.is_logged_obj(client, 'update_description')
-        await _session.update_level_desc(self, content, client=client)
+        await self.client.update_level_description(self, content)
 
-    async def rate(self, stars: int = 1, *, from_client=None):
+    async def rate(self, stars: int = 1) -> None:
         """|coro|
 
         Sends level rating.
@@ -335,23 +318,16 @@ class Level(AbstractEntity):
         stars: :class:`int`
             Amount of stars to rate with.
 
-        from_client: :class:`.Client`
-            A logged in client to rate level with. If ``None`` or omitted,
-            defaults to the one attached to this level.
-
         Raises
         ------
         :exc:`.MissingAccess`
             Failed to rate a level.
         """
-        client = from_client if from_client is not None else self._client
-        check.is_logged_obj(client, 'rate')
-        await _session.rate_level(self, stars, client=client)
+        await self.client.rate_level(self, stars)
 
     async def rate_demon(
-        self, demon_difficulty: Union[int, str, DemonDifficulty] = 1,
-        as_mod: bool = False, *, from_client=None
-    ):
+        self, demon_difficulty: Union[int, str, DemonDifficulty] = 1, as_mod: bool = False
+    ) -> None:
         """|coro|
 
         Sends level demon rating.
@@ -364,27 +340,15 @@ class Level(AbstractEntity):
         as_mod: :class:`bool`
             Whether to send a demon rating as moderator.
 
-        from_client: :class:`.Client`
-            A logged in client to rate demon difficulty with. If ``None`` or omitted,
-            defaults to the one attached to this level.
-
         Raises
         ------
         :exc:`.MissingAccess`
             If attempted to rate a level as moderator without required permissions.
         """
-        client = from_client if from_client is not None else self._client
-        check.is_logged_obj(client, 'rate_demon')
-        demon_difficulty = value_to_enum(DemonDifficulty, demon_difficulty)
 
-        success = await _session.rate_demon(self, demon_difficulty, mod=as_mod, client=client)
+        await self.client.rate_demon(self, demon_difficulty=demon_difficulty, as_mod=as_mod)
 
-        if success:
-            log.info('Successfully demon-rated level: %s.', self)
-        else:
-            log.warning('Failed to rate demon difficulty for level: %s.', self)
-
-    async def send(self, stars: int = 1, featured: bool = True, *, from_client=None):
+    async def send(self, stars: int = 1, featured: bool = True) -> None:
         """|coro|
 
         Sends a level to Geometry Dash Developer and Administrator, *RobTop*.
@@ -397,20 +361,14 @@ class Level(AbstractEntity):
         featured: :class:`bool`
             Whether to send to feature, or to simply rate.
 
-        from_client: :class:`.Client`
-            A logged in client to send a level from. If ``None`` or omitted,
-            defaults to the one attached to this level.
-
         Raises
         ------
         :exc:`.MissingAccess`
             Missing required moderator permissions.
         """
-        client = from_client if from_client is not None else self._client
-        check.is_logged_obj(client, 'send')
-        await _session.send_level(self, stars, featured=featured, client=client)
+        await self.client.send_level(self, stars=stars, featured=featured)
 
-    async def is_alive(self):
+    async def is_alive(self) -> bool:
         """|coro|
 
         Checks if a level is still on Geometry Dash servers.
@@ -425,14 +383,14 @@ class Level(AbstractEntity):
             return False
 
         try:
-            await self._client.search_levels_on_page(query=str(self.id))
+            await self.client.search_levels_on_page(query=str(self.id))
 
         except MissingAccess:
             return False
 
         return True
 
-    async def refresh(self):
+    async def refresh(self) -> Optional[Level]:
         """|coro|
 
         Refreshes a level. Returns ``None`` on fail.
@@ -453,14 +411,14 @@ class Level(AbstractEntity):
             )
         try:
             if self.is_timely():
-                async_func = getattr(self._client, 'get_' + self.type.name.lower())
+                async_func = getattr(self.client, 'get_' + self.type.name.lower())
                 new_ver = await async_func()
 
                 if new_ver.id != self.id:
                     log.warning('There is a new {0.type.desc} Level: {1!r}. Updating to it...'.format(self, new_ver))
 
             else:
-                new_ver = await self._client.get_level(self.id)
+                new_ver = await self.client.get_level(self.id)
 
         except MissingAccess:
             return log.warning('Failed to refresh level: %r. Most likely it was deleted.', self)
@@ -469,7 +427,7 @@ class Level(AbstractEntity):
 
         return self
 
-    async def comment(self, content: str, percentage: int = 0, *, from_client=None):
+    async def comment(self, content: str, percentage: int = 0) -> None:
         """|coro|
 
         Posts a comment on a level.
@@ -487,62 +445,40 @@ class Level(AbstractEntity):
                 gd.py developers are not responsible for effects that changing this may cause.
                 Set this parameter higher than 0 on your own risk.
 
-        from_client: :class:`.Client`
-            A logged in client to post a comment from. If ``None`` or omitted,
-            defaults to the one attached to this level.
-
         Raises
         ------
         :exc:`.MissingAccess`
             Failed to post a level comment.
         """
-        client = from_client if from_client is not None else self._client
-        check.is_logged_obj(client, 'comment')
-        await _session.comment_level(self, content, percentage, client=client)
+        await self.client.comment_level(self, content, percentage)
 
-    async def like(self, from_client=None):
+    async def like(self) -> None:
         """|coro|
 
         Likes a level.
-
-        Parameters
-        ----------
-        from_client: :class:`.Client`
-            A logged in client to like a level with. If ``None`` or omitted,
-            defaults to the one attached to this level.
 
         Raises
         ------
         :exc:`.MissingAccess`
             Failed to like a level.
         """
-        client = from_client if from_client is not None else self._client
-        check.is_logged_obj(client, 'like')
-        await _session.like(self, dislike=False, client=client)
+        await self.client.like(self)
 
-    async def dislike(self, from_client=None):
+    async def dislike(self) -> None:
         """|coro|
 
         Dislikes a level.
-
-        Parameters
-        ----------
-        from_client: :class:`.Client`
-            A logged in client to dislike a level with. If ``None`` or omitted,
-            defaults to the one attached to this level.
 
         Raises
         ------
         :exc:`.MissingAccess`
             Failed to dislike a level.
         """
-        client = from_client if from_client is not None else self._client
-        check.is_logged_obj(client, 'dislike')
-        await _session.like(self, dislike=True, client=client)
+        await self.client.dislike(self)
 
     async def get_leaderboard(
-        self, strategy: Union[int, str, LevelLeaderboardStrategy] = 0, *, from_client=None
-    ):
+        self, strategy: Union[int, str, LevelLeaderboardStrategy] = 0
+    ) -> List[LevelRecord]:
         """|coro|
 
         Retrieves the leaderboard of a level.
@@ -558,14 +494,12 @@ class Level(AbstractEntity):
         List[:class:`.LevelRecord`]
             A list of user-like objects.
         """
-        client = from_client if from_client is not None else self._client
-        check.is_logged_obj(client, 'get_leaderboard')
+        return await self.client.get_level_leaderboard(self, strategy=strategy)
 
-        strategy = value_to_enum(LevelLeaderboardStrategy, strategy)
-
-        return await _session.get_leaderboard(self, strategy=strategy, client=client)
-
-    async def get_comments(self, strategy: Union[int, str, CommentStrategy] = 0, amount: int = 20):
+    async def get_comments(
+        self, strategy: Union[int, str, CommentStrategy] = 0,
+        amount: int = 20
+    ) -> List[Comment]:
         """|coro|
 
         Retrieves level comments.
@@ -595,6 +529,4 @@ class Level(AbstractEntity):
         :exc:`.FailedConversion`
             Raised if ``strategy`` can not be converted to :class:`.CommentStrategy`.
         """
-        strategy = value_to_enum(CommentStrategy, strategy)
-
-        return await _session.get_level_comments(level=self, strategy=strategy, amount=amount)
+        return await self.client.get_level_comments(self, strategy=strategy, amount=amount)

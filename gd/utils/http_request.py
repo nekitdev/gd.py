@@ -1,13 +1,13 @@
 import asyncio
 import logging
-from typing import Callable, Dict, Union
 
 from yarl import URL
 import aiohttp
 
+from .._typing import Any, Callable, Dict, Optional, Union
 from ..errors import HTTPNotConnected
 from .mapper import mapper
-from .wrap_tools import make_repr
+from .text_tools import make_repr
 
 log = logging.getLogger(__name__)
 
@@ -17,6 +17,7 @@ VALID_ERRORS = (
     aiohttp.ClientError
 )
 
+
 class HTTPClient:
     """Class that handles the main part of the entire gd.py - sending HTTP requests.
 
@@ -25,13 +26,16 @@ class HTTPClient:
     semaphore: Optional[:class:`asyncio.Semaphore`]
         A semaphore to use when doing requests. Defaults to :class:`asyncio.Semaphore` with value ``250``.
     """
-    def __init__(self, base: Union[str, URL] = BASE, *, semaphore=None):
+    def __init__(
+        self, base: Union[str, URL] = BASE, *,
+        semaphore: Optional[asyncio.Semaphore] = None
+    ) -> None:
         self.semaphore = semaphore or asyncio.Semaphore(250)
         self.debug = False
         self.base = URL(base)
         self._last_result = None  # for testing purposes
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = {
             'debug': self.debug,
             'semaphore': self.semaphore,
@@ -39,7 +43,7 @@ class HTTPClient:
         }
         return make_repr(self, info)
 
-    def change_base(self, base: str):
+    def change_base(self, base: str) -> None:
         """Change base for requests.
 
         Default base is ``http://www.boomlings.com/database/``,
@@ -52,7 +56,10 @@ class HTTPClient:
         """
         self.base = URL(base)
 
-    def set_default_semaphore(self, value: int = 250, *, loop=None):
+    def set_default_semaphore(
+        self, value: int = 250, *,
+        loop: asyncio.AbstractEventLoop = None
+    ) -> None:
         """Sets semaphore to :class:`asyncio.Semaphore` with given value and loop.
 
         Parameters
@@ -65,7 +72,7 @@ class HTTPClient:
         """
         self.semaphore = asyncio.Semaphore(value, loop=loop)
 
-    def set_semaphore(self, semaphore):
+    def set_semaphore(self, semaphore: Any) -> None:
         """Sets semaphore of ``self`` to a given ``semaphore``.
 
         Parameters
@@ -75,7 +82,7 @@ class HTTPClient:
         """
         self.semaphore = semaphore
 
-    def set_debug(self, debug: bool = False):
+    def set_debug(self, debug: bool = False) -> None:
         """Set http client debugging.
 
         Parameters
@@ -86,9 +93,9 @@ class HTTPClient:
         self.debug = bool(debug)
 
     async def fetch(
-        self, php: str, params: dict = None, get_cookies: bool = False,
-        cookie: str = None, custom_base: str = None
-    ):
+        self, php: str, params: Optional[Union[dict, str]] = None, get_cookies: bool = False,
+        cookie: Optional[str] = None, custom_base: Optional[str] = None
+    ) -> Optional[Union[bytes, int, str]]:
         """|coro|
 
         Sends an HTTP Request to a Geometry Dash server and returns the response.
@@ -123,7 +130,7 @@ class HTTPClient:
 
         Returns
         -------
-        Optional[:class:`bytes`, :class:`str`, :class:`int`]
+        Optional[Union[:class:`bytes`, :class:`str`, :class:`int`]]
             ``res`` with the following rules:
 
             If Exception occurs while sending request, returns ``None``.
@@ -176,14 +183,15 @@ class HTTPClient:
                 return res
 
     async def request(
-        self, route: str, parameters: dict = None, custom_base: str = None,
-        splitter: str = None, splitter_func: Callable[[str], list] = None,
+        self, route: str, parameters: Optional[Union[dict, str]] = None,
+        custom_base: Optional[str] = None, splitter: Optional[str] = None,
+        splitter_func: Optional[Callable[[str], list]] = None,
         # 'error_codes' is a dict: {code: error_to_raise}
-        error_codes: Dict[int, Exception] = None,
+        error_codes: Optional[Dict[int, Exception]] = None,
         # 'should_map': whether response should be mapped 'enum -> value' (dict)
         raise_errors: bool = True, should_map: bool = False,
-        get_cookies: bool = False, cookie: str = None
-    ):
+        get_cookies: bool = False, cookie: Optional[str] = None
+    ) -> Optional[Union[bytes, dict, int, list, str]]:
         """|coro|
 
         A handy shortcut for fetching response from a server and formatting it.
@@ -274,7 +282,11 @@ class HTTPClient:
                 resp = mapper.map(resp)
         return resp
 
-    async def normal_request(self, url: str, data = None, params = None, method: str = None, **kwargs):
+    async def normal_request(
+        self, url: str, data: Optional[Union[dict, str]] = None,
+        params: Optional[Union[dict, str]] = None,
+        method: Optional[str] = None, **kwargs
+    ) -> aiohttp.ClientResponse:
         """|coro|
 
         Same as doing :meth:`aiohttp.ClientSession.request`, where ``method`` is

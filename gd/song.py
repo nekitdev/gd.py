@@ -1,16 +1,17 @@
 from .abstractentity import AbstractEntity
 from .utils.http_request import http
-from .utils.wrap_tools import make_repr
+from .utils.text_tools import make_repr
+
 
 class Song(AbstractEntity):
     """Class that represents Geometry Dash/Newgrounds songs.
     This class is derived from :class:`.AbstractEntity`.
     """
-    def __init__(self, **options):
+    def __init__(self, **options) -> None:
         super().__init__(**options)
         self.options = options
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = {
             'id': self.id,
             'name': repr(self.name),
@@ -19,40 +20,40 @@ class Song(AbstractEntity):
         return make_repr(self, info)
 
     @property
-    def id(self):
+    def id(self) -> int:
         """:class:`int`: An ID of the song."""
         return self.options.get('id', 0)
 
     @property
-    def name(self):
+    def name(self) -> int:
         """:class:`str`: A name of the song."""
         return self.options.get('name', '')
 
     @property
-    def size(self):
+    def size(self) -> float:
         """:class:`float`: A float representing size of the song, in megabytes."""
         return self.options.get('size', 0.0)
 
     @property
-    def author(self):
+    def author(self) -> str:
         """:class:`str`: An author of the song."""
         return self.options.get('author', '')
 
     @property
-    def link(self):
+    def link(self) -> str:
         """:class:`str`: A link to the song on Newgrounds, e.g. ``.../audio/listen/id``."""
         return self.options.get('links', {}).get('normal', '')
 
     @property
-    def dl_link(self):
+    def dl_link(self) -> str:
         """:class:`str`: A link to download the song, used in :meth:`.Song.download`."""
         return self.options.get('links', {}).get('download', '')
 
-    def is_custom(self):
+    def is_custom(self) -> bool:
         """:class:`bool`: Indicates whether the song is custom or not."""
-        return self.options.get('custom', False)
+        return bool(self.options.get('custom'))
 
-    async def download(self):
+    async def download(self) -> bytes:
         """|coro|
 
         Download a song from Newgrounds.
