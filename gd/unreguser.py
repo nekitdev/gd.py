@@ -1,4 +1,5 @@
 from .abstractentity import AbstractEntity
+from .abstractuser import AbstractUser
 from .utils.text_tools import make_repr
 
 
@@ -18,6 +19,14 @@ class UnregisteredUser(AbstractEntity):
         final = dict(name=self.name)
         final.update(super().__json__())
         return final
+
+    def as_user(self) -> AbstractUser:
+        """:class:`.AbstractUser`: Construct user object from ``self``."""
+        return AbstractUser(
+            name=self.name,
+            id=self.id,
+            account_id=(-1)  # unregistered users do not have this one
+        )
 
     @property
     def name(self) -> str:

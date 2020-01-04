@@ -63,7 +63,7 @@ class Color:
 
     @property
     def index(self) -> Optional[int]:
-        """Optional[:class:`int`:] Returns index that represents position of the colour in ``colors``.
+        """Optional[:class:`int`]: Returns index that represents position of the colour in ``colors``.
         ``None`` if the colour is not present in ``colors``.
         """
         try:
