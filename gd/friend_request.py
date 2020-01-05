@@ -10,10 +10,6 @@ class FriendRequest(AbstractEntity):
     """Class that represents a friend request.
     This class is derived from :class:`.AbstractEntity`.
     """
-    def __init__(self, **options) -> None:
-        super().__init__(**options)
-        self.options = options
-
     def __repr__(self) -> str:
         info = {
             'id': self.id,

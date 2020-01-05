@@ -14,7 +14,6 @@ class Gauntlet(AbstractEntity):
     """
     def __init__(self, **options) -> None:
         super().__init__(**options)
-        self.options = options
         self._levels = ()
 
     def __repr__(self) -> str:

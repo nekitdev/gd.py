@@ -11,10 +11,6 @@ class Comment(AbstractEntity):
     """Class that represents a Profile/Level comment in Geometry Dash.
     This class is derived from :class:`.AbstractEntity`.
     """
-    def __init__(self, **options) -> None:
-        super().__init__(**options)
-        self.options = options
-
     def __repr__(self) -> str:
         info = {
             'author': self.author,

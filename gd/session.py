@@ -114,7 +114,7 @@ class GDSession:
         self, account_id: int = 0, return_only_stats: bool = False, *, client: Client
     ) -> Union[UnregisteredUser, UserStats, User]:
         if account_id == -1:
-            return UnregisteredUser()
+            return UnregisteredUser(client=client)
 
         parameters = Params().create_new().put_definer('user', account_id).finish()
         codes = {
@@ -175,7 +175,7 @@ class GDSession:
         account_id = mapped.get(Index.USER_ACCOUNT_ID) or 0
 
         if not id or not account_id:
-            return UnregisteredUser(name=name, id=id)
+            return UnregisteredUser(name=name, id=id, client=client)
 
         if return_abstract:
             return ClassConverter.abstractuser_convert(
@@ -230,9 +230,9 @@ class GDSession:
         # getting creator
         creator_data = resp[1]
         creator = (
-            UnregisteredUser(level_data.get(Index.LEVEL_CREATOR_ID)) if not creator_data
+            UnregisteredUser(id=level_data.get(Index.LEVEL_CREATOR_ID)) if not creator_data
             else ClassConverter.abstractuser_convert(
-                {k: v for k, v in zip(('id', 'name', 'account_id'), creator_data.split(':'))}
+                dict(zip(('id', 'name', 'account_id'), creator_data.split(':')))
             )
         ).attach_client(client)
 
@@ -535,7 +535,7 @@ class GDSession:
             creator_id = data.get(Index.LEVEL_CREATOR_ID)
             creator = utils.get(creators, id=creator_id)
             if creator is None:
-                creator = UnregisteredUser(creator_id)
+                creator = UnregisteredUser(id=creator_id, client=client)
 
             levels.append(ClassConverter.level_convert(data, song, creator, client))
 
@@ -543,7 +543,7 @@ class GDSession:
 
     async def search_levels(
         self, query: str = '', filters: Optional[Filters] = None, user: Optional[AbstractUser] = None,
-        pages: Sequence[int] = None, *, client: Client
+        pages: Optional[Sequence[int]] = None, *, client: Client
     ) -> List[Level]:
         to_run = [
             self.search_levels_on_page(
@@ -717,7 +717,7 @@ class GDSession:
         return res
 
     async def get_messages(
-        self, sent_or_inbox: str, pages: Sequence[int] = None,
+        self, sent_or_inbox: str, pages: Optional[Sequence[int]] = None,
         *, client: Client
     ) -> List[Message]:
         assert sent_or_inbox in ('inbox', 'sent')
@@ -984,7 +984,15 @@ class GDSession:
             param_obj.put_mode(strategy.value)
         parameters = param_obj.finish()
 
-        resp = await http.request(route, parameters, splitter='#')
+        codes = {
+            -1: MissingAccess(message='Failed to retrieve comment for user: {!r}.'.format(user))
+        }
+
+        resp = await http.request(route, parameters, splitter='#', error_codes=codes, raise_errors=raise_errors)
+
+        if not resp:
+            return list()
+
         thing = resp[0]
 
         if not thing:

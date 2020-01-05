@@ -1,5 +1,5 @@
 from ._typing import (
-    AbstractUser, Comment, Level, User,
+    AbstractUser, Comment, Level, Optional, User,
     List, Sequence, Union
 )
 
@@ -184,7 +184,7 @@ class AbstractUser(AbstractEntity):
         return await self.client.search_levels_on_page(
             page=page, filters=filters, user=self, raise_errors=raise_errors)
 
-    async def get_levels(self, pages: Sequence[int] = None) -> List[Level]:
+    async def get_levels(self, pages: Optional[Sequence[int]] = None) -> List[Level]:
         """|coro|
 
         Gets levels on specified pages.
@@ -239,7 +239,7 @@ class AbstractUser(AbstractEntity):
         """
         return await self.retrieve_page_comments('level', page, strategy=strategy)
 
-    async def get_comments(self, pages: Sequence[int] = None) -> List[Comment]:
+    async def get_comments(self, pages: Optional[Sequence[int]] = None) -> List[Comment]:
         """|coro|
 
         Gets user's profile comments on specific pages.
@@ -314,7 +314,7 @@ class AbstractUser(AbstractEntity):
             self, type=type, page=page, raise_errors=raise_errors, strategy=strategy)
 
     async def retrieve_comments(
-        self, type: str = 'profile', pages: Sequence[int] = None,
+        self, type: str = 'profile', pages: Optional[Sequence[int]] = None,
         strategy: Union[int, str, CommentStrategy] = 0
     ) -> List[Comment]:
         """|coro|

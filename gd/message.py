@@ -14,7 +14,6 @@ class Message(AbstractEntity):
     """
     def __init__(self, **options) -> None:
         super().__init__(**options)
-        self.options = options
         self._body = options.pop('body', '')
 
     def __repr__(self) -> str:
