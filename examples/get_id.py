@@ -7,6 +7,7 @@ import gd
 
 client = gd.Client()
 
+
 async def main():
     # get some input from user
     name = input('Enter your GD nickname: ')
@@ -15,7 +16,7 @@ async def main():
     try:
         user = await client.find_user(name)
 
-        if isinstance(user, gd.UnregisteredUser):
+        if not user.is_registered():
             print('Hey there, {0.name}! Seems like you are unregistered...'.format(user))
 
         else:

@@ -28,7 +28,6 @@ from ._typing import (
 )
 
 from .classconverter import ClassConverter
-from .unreguser import UnregisteredUser
 from .errors import (
     MissingAccess,
     SongRestrictedForUsage,
@@ -86,6 +85,7 @@ class GDSession:
         song_id = int(song_id)  # ensure type
 
         link = Route.NEWGROUNDS_SONG_LISTEN + str(song_id)
+
         resp = await http.normal_request(link)
         content = await resp.content.read()
         html = content.decode().replace('\\', '')
@@ -112,10 +112,7 @@ class GDSession:
 
     async def get_user(
         self, account_id: int = 0, return_only_stats: bool = False, *, client: Client
-    ) -> Union[UnregisteredUser, UserStats, User]:
-        if account_id == -1:
-            return UnregisteredUser(client=client)
-
+    ) -> Union[UserStats, User]:
         parameters = Params().create_new().put_definer('user', account_id).finish()
         codes = {
             -1: MissingAccess(message='No users were found with ID: {}.'.format(account_id))
@@ -148,12 +145,12 @@ class GDSession:
         if conv_dict is None:
             conv_dict = {}
 
-        return ClassConverter.abstractuser_convert(conv_dict, client)
+        return ClassConverter.abstractuser_convert(conv_dict, client=client)
 
     async def search_user(
         self, param: Union[int, str],
         return_abstract: bool = False, *, client: Client
-    ) -> Union[AbstractUser, User, UnregisteredUser]:
+    ) -> Union[AbstractUser, User]:
 
         parameters = (
             Params().create_new().put_definer('search', param)
@@ -170,20 +167,17 @@ class GDSession:
 
         mapped = mapper.map(item.split(':'))
 
-        name = mapped.get(Index.USER_NAME) or 'UnregisteredUser'
-        id = mapped.get(Index.USER_PLAYER_ID) or 0
-        account_id = mapped.get(Index.USER_ACCOUNT_ID) or 0
+        name = mapped.get(Index.USER_NAME, 'unknown')
+        id = mapped.get(Index.USER_PLAYER_ID, 0)
+        account_id = mapped.get(Index.USER_ACCOUNT_ID, 0)
 
-        if not id or not account_id:
-            return UnregisteredUser(name=name, id=id, client=client)
-
-        if return_abstract:
+        if return_abstract or not account_id:
             return ClassConverter.abstractuser_convert(
-                dict(name=name, id=id, account_id=account_id), client
+                dict(name=name, id=id, account_id=account_id), client=client
             )
 
         # ok if we should not return abstract, let's find all other parameters
-        parameters = Params().create_new().put_definer('user', mapped.get(Index.USER_ACCOUNT_ID, 0)).finish()
+        parameters = Params().create_new().put_definer('user', account_id).finish()
 
         resp = await http.request(
             Route.GET_USER_INFO, parameters, splitter=':', error_codes=codes, should_map=True
@@ -229,12 +223,15 @@ class GDSession:
 
         # getting creator
         creator_data = resp[1]
-        creator = (
-            UnregisteredUser(id=level_data.get(Index.LEVEL_CREATOR_ID)) if not creator_data
-            else ClassConverter.abstractuser_convert(
-                dict(zip(('id', 'name', 'account_id'), creator_data.split(':')))
-            )
-        ).attach_client(client)
+
+        if not creator_data:
+            id, name, account_id = (0, 'unknown', 0)
+        else:
+            id, name, account_id = creator_data.split(':')
+
+        creator = ClassConverter.abstractuser_convert(
+            dict(id=id, name=name, account_id=account_id), client=client
+        )
 
         return ClassConverter.level_convert(
             level_data, song=song, creator=creator, client=client)
@@ -336,7 +333,7 @@ class GDSession:
             }
 
             ret.append(
-                ClassConverter.abstractuser_convert(parse_dict, client)
+                ClassConverter.abstractuser_convert(parse_dict, client=client)
             )
 
         return ret
@@ -517,7 +514,7 @@ class GDSession:
         creators = []
         for c in filter(_is_not_empty, cdata.split('|')):
             creator = ClassConverter.abstractuser_convert(
-                {k: v for k, v in zip(('id', 'name', 'account_id'), c.split(':'))}, client=client
+                dict(zip(('id', 'name', 'account_id'), c.split(':'))), client=client
             )
             creators.append(creator)
 
@@ -535,7 +532,9 @@ class GDSession:
             creator_id = data.get(Index.LEVEL_CREATOR_ID)
             creator = utils.get(creators, id=creator_id)
             if creator is None:
-                creator = UnregisteredUser(id=creator_id, client=client)
+                creator = ClassConverter.abstractuser_convert(
+                    dict(id=creator_id, name='unknown', account_id=0), client=client
+                )
 
             levels.append(ClassConverter.level_convert(data, song, creator, client))
 

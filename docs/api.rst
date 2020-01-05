@@ -109,9 +109,6 @@ Song
 User
 ----
 
-.. autoclass:: UnregisteredUser
-    :members:
-
 .. autoclass:: AbstractUser
     :members:
 

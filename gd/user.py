@@ -79,7 +79,7 @@ class UserStats(AbstractUser):
 
         Update ``self``.
         """
-        new = await self._client.fetch_user(self.account_id, stats=True)
+        new = await self.client.fetch_user(self.account_id, stats=True)
 
         new.set_place(self.lb_place)
 
@@ -187,5 +187,5 @@ class User(UserStats):
 
         Update the user's statistics and other parameters.
         """
-        new = await self._client.get_user(self.account_id)
+        new = await self.client.get_user(self.account_id)
         self.options = new.options

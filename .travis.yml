@@ -17,7 +17,7 @@ install:
 
 script:
   # run lint
-  - flake8 gd
+  - flake8
   # run tests and check coverage
   - coverage run -m pytest ./tests/ --maxfail=3 --disable-warnings
 

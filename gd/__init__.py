@@ -25,7 +25,6 @@ from .level_packs import Gauntlet, MapPack
 from .message import Message
 from .session import GDSession
 from .song import Song
-from .unreguser import UnregisteredUser
 from .user import UserStats, User
 from .events import exit  # idk
 from .utils.enums import *

@@ -9,27 +9,18 @@ import gd
 # create our client instance
 client = gd.Client()
 
-
-def make_user_dict(user):
-    """Create JSON-resizable dictionary containing user info."""
-    icon = user.icon_set
-    return {
-        'name': user.name, 'id': user.id, 'account_id': user.account_id,
-        'stars': user.stars, 'demons': user.demons, 'coins': user.coins,
-        'user_coins': user.user_coins, 'cp': user.cp, 'diamonds': user.diamonds,
-        'is_mod': user.is_mod(), 'status': user.role.value, 'rank': user.rank,
-        'messages': user.msg_policy.value,
-        'friend_requests': user.friend_req_policy.value,
-        'comments': user.comments_policy.value,
-        'youtube': user.youtube_link, 'twitter': user.twitter_link, 'twitch': user.twitch_link,
-        'color_1': icon.color_1.value, 'color_2': icon.color_2.value,
-        'main_icon_type': icon.main_type.value, 'has_glow_outline': icon.has_glow_outline(),
-        'cube': icon.cube, 'ship': icon.ship, 'ball': icon.ball, 'ufo': icon.ufo,
-        'wave': icon.wave, 'robot': icon.robot, 'spider': icon.spider
-    }
-
 # create a sequence of route table definitions
 routes = web.RouteTableDef()
+
+
+def json_resp(item: object, **kwargs) -> str:
+    # enforce <application/json> content type
+    kwargs.update(content_type='application/json')
+    # gd.py introduces gd.utils.dump method, used
+    # for conveniently converting its objects to
+    # JSON-resizable dictionaries
+    return web.Response(text=gd.utils.dump(item, indent=4), **kwargs)
+
 
 # let our app listen to GET requests
 @routes.get('/api/user/{query}')
@@ -37,7 +28,10 @@ async def get_user(request):
     try:
         req = request.match_info.get('query')
         # try to convert query to an integer
-        query = gd.utils.convert_to_type(req, int, str)
+        try:
+            query = int(req)
+        except ValueError:
+            query = str(req)
 
         # if we have an integer query, consider AccountID search
         if isinstance(query, int):
@@ -46,8 +40,7 @@ async def get_user(request):
         else:
             user = await client.search_user(query)
 
-        # return JSON response
-        return web.json_response(make_user_dict(user))
+        return json_resp(user)
 
     # return 404 if we have not found any users
     except Exception:

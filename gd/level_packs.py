@@ -63,7 +63,7 @@ class Gauntlet(AbstractEntity):
         """
         filters, query = Filters.setup_search_many(), ','.join(map(str, self.level_ids))
 
-        levels = await self._client.search_levels_on_page(query=query, filters=filters)
+        levels = await self.client.search_levels_on_page(query=query, filters=filters)
 
         self._levels = tuple(levels)
         return levels

@@ -39,6 +39,10 @@ class AbstractUser(AbstractEntity):
             k: getattr(self, k) for k in ('name', 'id', 'account_id')
         }
 
+    def is_registered(self) -> bool:
+        """:class:`bool`: Indicates whether user is registered or not."""
+        return self.id > 0 and self.account_id > 0
+
     def as_user(self) -> AbstractUser:
         """Returns :class:`.AbstractUser` object.
 
@@ -161,7 +165,7 @@ class AbstractUser(AbstractEntity):
 
         .. code-block:: python3
 
-            await self._client.search_levels_on_page(
+            await self.client.search_levels_on_page(
                 page=page, filters=gd.Filters.setup_by_user(),
                 user=self, raise_errors=raise_errors
             )
@@ -193,7 +197,7 @@ class AbstractUser(AbstractEntity):
 
         .. code-block:: python3
 
-            return await self._client.search_levels(
+            return await self.client.search_levels(
                 pages=pages, filters=gd.Filters.setup_by_user(), user=self
             )
             # where 'self' is an AbstractUser instance.
@@ -256,7 +260,7 @@ class AbstractUser(AbstractEntity):
         return await self.retrieve_comments('profile', pages)
 
     async def get_comment_history(
-        self, strategy: Union[int, str, CommentStrategy] = 0, pages: Sequence[int] = None
+        self, strategy: Union[int, str, CommentStrategy] = 0, pages: Optional[Sequence[int]] = None
     ) -> List[Comment]:
         """|coro|
 
@@ -358,7 +362,7 @@ class LevelRecord(AbstractUser):
         """
         from .level import Level  # this is a hack because *circular imports*
 
-        records = await Level(id=self.level_id, client=self._client).get_leaderboard(self.type.value)
+        records = await Level(id=self.level_id, client=self.client).get_leaderboard(self.type.value)
         record = _get(records, account_id=self.account_id)
 
         if record is not None:

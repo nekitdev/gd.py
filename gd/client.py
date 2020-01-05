@@ -3,8 +3,8 @@ import asyncio
 import logging
 
 from ._typing import (
-    Any, AbstractUser, Comment, Coroutine, Dict, FriendRequest, Gauntlet, IconSet, Level, LevelRecord,
-    List, MapPack, Message, Optional, Sequence, Song, Union, UnregisteredUser, User, UserStats
+    Any, AbstractUser, Comment, Coroutine, Dict, FriendRequest, Gauntlet, IconSet, Level,
+    LevelRecord, List, MapPack, Message, Optional, Sequence, Song, Union, User, UserStats
 )
 from .session import _session
 
@@ -177,10 +177,6 @@ class Client:
         account_id: :class:`int`
             An account ID of the user to fetch.
 
-            .. note::
-
-                If the given ID is equal to -1, a :class:`.UnregisteredUser` will be returned.
-
         Raises
         ------
         :exc:`.MissingAccess`
@@ -189,7 +185,7 @@ class Client:
         Returns
         -------
         :class:`.User`
-            The user from the ID. (if ID != -1)
+            The user from the ID.
         """
         return await self.session.get_user(account_id, return_only_stats=False, client=self)
 
@@ -205,10 +201,6 @@ class Client:
         ----------
         account_id: :class:`int`
             An account ID of the user to fetch stats of.
-
-            .. note::
-
-                If the given ID is equal to -1, a :class:`.UnregisteredUser` will be returned.
 
         stats: :class:`bool`
             Whether to return :class:`.UserStats` or :class:`.AbstractUser`.
@@ -228,7 +220,7 @@ class Client:
         # return UserStats if needed, and AbstractUser otherwise.
         return user_stats if stats else user_stats.as_user()
 
-    async def search_user(self, query: Union[int, str]) -> Union[UnregisteredUser, User]:
+    async def search_user(self, query: Union[int, str]) -> Union[AbstractUser, User]:
         """|coro|
 
         Searches for a user on Geometry Dash servers.
@@ -245,18 +237,18 @@ class Client:
 
         Returns
         -------
-        Union[:class:`.User`, :class:`.UnregisteredUser`]
+        Union[:class:`.User`, :class:`.AbstractUser`]
             A User found when searching with the query.
         """
         return await self.session.search_user(query, return_abstract=False, client=self)
 
-    async def find_user(self, query: Union[int, str]) -> Union[AbstractUser, UnregisteredUser]:
+    async def find_user(self, query: Union[int, str]) -> AbstractUser:
         """|coro|
 
         Fetches a user on Geometry Dash servers by given query.
 
         Works almost like :meth:`.Client.search_user`, except the fact that
-        it returns :class:`.AbstractUser` or :class:`.UnregisteredUser`.
+        it returns :class:`.AbstractUser`.
 
         Parameters
         ----------
@@ -270,8 +262,8 @@ class Client:
 
         Returns
         -------
-        Union[:class:`.AbstractUser`, :class:`.UnregisteredUser`]
-            An AbstractUser or UnregisteredUser corresponding to the query.
+        Union[:class:`.AbstractUser`]
+            An AbstractUser corresponding to the query.
         """
         return await self.session.search_user(query, return_abstract=True, client=self)
 

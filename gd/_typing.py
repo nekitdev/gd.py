@@ -37,7 +37,6 @@ __all__ = (
     'MapPack',
     'Message',
     'Song',
-    'UnregisteredUser',
     'UserStats',
     'User',
     'Filters',
@@ -76,8 +75,8 @@ __all__ = (
 )
 
 
-def _modify_typevar():
-    def __repr__(self):
+def _modify_typevar() -> None:
+    def __repr__(self) -> str:
         if self.__covariant__:
             prefix = '+'
         elif self.__contravariant__:
@@ -101,7 +100,6 @@ if TYPE_CHECKING:
     from .level_packs import Gauntlet, MapPack
     from .message import Message
     from .song import Song
-    from .unreguser import UnregisteredUser
     from .user import UserStats, User
     from .utils.filters import Filters
     from .utils.params import Parameters
@@ -127,7 +125,6 @@ else:
     MapPack = TypeVar('MapPack')
     Message = TypeVar('Message')
     Song = TypeVar('Song')
-    UnregisteredUser = TypeVar('UnregisteredUser')
     UserStats = TypeVar('UserStats')
     User = TypeVar('User')
     Filters = TypeVar('Filters')
