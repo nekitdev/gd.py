@@ -114,12 +114,31 @@ class ClassConverter:
     def level_convert(
         cls, odict: ParseMap, song: Song, creator: AbstractUser, client: Client = None
     ) -> Level:
-        try:  # decode password
-            password = Coder.decode(type='levelpass', string=odict.get(Index.LEVEL_PASS))
-        except TypeError:  # password not present
-            password = None
-        if password:  # password has format '1XXXXXX'
-            password = password[1:]
+        string = odict.get(Index.LEVEL_PASS)
+
+        if string is None:
+            copyable, password = False, None
+        else:
+            try:
+                # decode password
+                password = Coder.decode(type='levelpass', string=string)
+            except Exception:
+                # failed to get password
+                copyable, password = False, None
+            else:
+                copyable = True
+
+                if not password:
+                    password = None
+
+                else:
+                    password = password[1:]
+
+                    if password.isdigit():
+                        password = int(password)
+
+                    else:
+                        password = None
 
         desc = b64.b64decode(
             mapper.normalize(odict.get(Index.LEVEL_DESCRIPTION, ''))
@@ -147,6 +166,7 @@ class ClassConverter:
             song=song,
             data=leveldata,
             password=password,
+            copyable=copyable,
             is_demon=is_demon,
             is_auto=is_auto,
             difficulty=difficulty,
