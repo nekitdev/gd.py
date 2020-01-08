@@ -256,7 +256,7 @@ class GDSession:
     async def upload_level(
         self, data: str, name: str, level_id: int, version: int, length: int, audio_track: int,
         desc: str, song_id: int, is_auto: bool, original: int, two_player: bool, objects: int, coins: int,
-        stars: int, unlisted: bool, ldm: bool, password: int, copyable: bool, *, load_after: bool, client: Client
+        stars: int, unlisted: bool, ldm: bool, password: Optional[Union[int, str]], copyable: bool, *, load_after: bool, client: Client
     ) -> Level:
         data = Coder.zip(data)
         extra_string = ('_'.join(map(str, (0 for _ in range(55)))))
@@ -268,12 +268,13 @@ class GDSession:
 
         pwd = 0
 
-        if copyable or password:
-            if not password:
-                pwd = 1
+        if copyable and password is None:
+            pwd = 1
 
-            else:
-                pwd = '1{:06}'.format(int(password))
+        check, add = str(password), 1000000
+
+        if check.isdigit() and int(check) < add:
+            pwd = add + int(password)
 
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
