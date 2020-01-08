@@ -442,7 +442,7 @@ class Client:
         self, name: str = 'Unnamed', id: int = 0, version: int = 1, length: int = 0,
         track: int = 0, song_id: int = 0, is_auto: bool = False, original: int = 0,
         two_player: bool = False, objects: int = None, coins: int = 0, star_amount: int = 0,
-        unlist: bool = False, ldm: bool = False, password: Optional[Union[int, str]] = 0, copyable: bool = False,
+        unlist: bool = False, ldm: bool = False, password: Optional[Union[int, str]] = None, copyable: bool = False,
         data: Union[bytes, str] = '', description: str = '', *, load: bool = True
     ) -> Level:
         """|coro|
@@ -482,7 +482,10 @@ class Client:
         ldm: :class:`bool`
             Indicates if the level has LDM mode.
         password: Union[:class:`int`, :class:`str`]
-            The password to apply. Either a natural number or a string representing a natural number.
+            The password to apply.
+            Either a natural number or a string representing a natural number.
+            If ``None``, depending on what ``copyable`` is,
+            either indicates whether a level is free to copy or not copyable at all.
         copyable: :class:`bool`
             Indicates whether the level should be copyable.
         data: Union[:class:`bytes`, :class:`str`]
