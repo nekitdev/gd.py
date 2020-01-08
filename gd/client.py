@@ -481,8 +481,8 @@ class Client:
             Indicates whether the level should be unlisted.
         ldm: :class:`bool`
             Indicates if the level has LDM mode.
-        password: :class:`int`
-            The password to apply.
+        password: Union[:class:`int`, :class:`str`]
+            The password to apply. Either a natural number or a string representing a natural number.
         copyable: :class:`bool`
             Indicates whether the level should be copyable.
         data: Union[:class:`bytes`, :class:`str`]
