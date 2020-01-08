@@ -82,13 +82,15 @@ class Level(AbstractEntity):
         return LevelDifficulty.from_value(self.options.get('difficulty', -1))
 
     @property
-    def password(self) -> Optional[str]:
-        """Optional[:class:`str`]: The password to copy the level.
-        Empty string if the level is free to copy,
-        ``None`` if not copyable,
-        and a string containing password otherwise.
+    def password(self) -> Optional[int]:
+        """Optional[:class:`int`]: The password to copy the level.
+        See :meth:`.Level.is_copyable`.
         """
         return self.options.get('password')
+
+    def is_copyable(self) -> bool:
+        """:class:`bool`: Indicates whether a level is copyable."""
+        return bool(self.options.get('copyable'))
 
     @property
     def stars(self) -> int:
@@ -262,7 +264,7 @@ class Level(AbstractEntity):
             track=track, song_id=song_id, two_player=False, is_auto=self.is_auto(),
             original=self.original_id, objects=self.objects, coins=self.coins,
             star_amount=self.stars, unlist=False, ldm=False, password=password,
-            copyable=(password is not None), description=self.description, data=self.data
+            copyable=self.is_copyable(), description=self.description, data=self.data
         )
 
         args.update(kwargs)
