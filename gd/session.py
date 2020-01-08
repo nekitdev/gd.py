@@ -256,7 +256,8 @@ class GDSession:
     async def upload_level(
         self, data: str, name: str, level_id: int, version: int, length: int, audio_track: int,
         desc: str, song_id: int, is_auto: bool, original: int, two_player: bool, objects: int, coins: int,
-        stars: int, unlisted: bool, ldm: bool, password: Optional[Union[int, str]], copyable: bool, *, load_after: bool, client: Client
+        stars: int, unlisted: bool, ldm: bool, password: Optional[Union[int, str]],
+        copyable: bool, *, load_after: bool, client: Client
     ) -> Level:
         data = Coder.zip(data)
         extra_string = ('_'.join(map(str, (0 for _ in range(55)))))
