@@ -1,4 +1,4 @@
-from typing import (  # type: ignore
+from typing import (
     Any,
     Callable,
     Optional,
@@ -21,7 +21,6 @@ from typing import (  # type: ignore
     TYPE_CHECKING,
     no_type_check,
     overload,
-    _ForwardRef as _ref,
 )
 from enum import Enum
 
@@ -79,31 +78,31 @@ __all__ = (
     'overload',
 )
 
-AbstractEntity = _ref('gd.abstractentity.AbstractEntity')
-AbstractUser = _ref('gd.abstractuser.AbstractUser')
-LevelRecord = _ref('gd.abstractuser.LevelRecord')
-Client = _ref('gd.client.Client')
-Color = _ref('gd.colors.Color')
-Comment = _ref('gd.comment.Comment')
-FriendRequest = _ref('gd.friend_request.FriendRequest')
-IconSet = _ref('gd.iconset.IconSet')
-Level = _ref('gd.level.Level')
-Gauntlet = _ref('gd.level_packs.Gauntlet')
-MapPack = _ref('gd.level_packs.MapPack')
-Message = _ref('gd.message.Message')
-Song = _ref('gd.song.Song')
-UserStats = _ref('gd.user.UserStats')
-User = _ref('gd.user.User')
-NEnum = _ref('gd.utils.enums.NEnum')
-Filters = _ref('gd.utils.filters.Filters')
-Parameters = _ref('gd.utils.params.Parameters')
-Loop = _ref('gd.utils.tasks.Loop')
-Editor = _ref('gd.api.editor.Editor')
-HSV = _ref('gd.api.hsv.HSV')
-LevelCollection = _ref('gd.api.save.LevelCollection')
-Struct = _ref('gd.api.struct.Struct')
-Object = _ref('gd.api.struct.Object')
-ColorChannel = _ref('gd.api.struct.ColorChannel')
-ColorCollection = _ref('gd.api.struct.ColorCollection')
-Header = _ref('gd.api.struct.Header')
-LevelAPI = _ref('gd.api.struct.LevelAPI')
+AbstractEntity = 'gd.abstractentity.AbstractEntity'
+AbstractUser = 'gd.abstractuser.AbstractUser'
+LevelRecord = 'gd.abstractuser.LevelRecord'
+Client = 'gd.client.Client'
+Color = 'gd.colors.Color'
+Comment = 'gd.comment.Comment'
+FriendRequest = 'gd.friend_request.FriendRequest'
+IconSet = 'gd.iconset.IconSet'
+Level = 'gd.level.Level'
+Gauntlet = 'gd.level_packs.Gauntlet'
+MapPack = 'gd.level_packs.MapPack'
+Message = 'gd.message.Message'
+Song = 'gd.song.Song'
+UserStats = 'gd.user.UserStats'
+User = 'gd.user.User'
+NEnum = 'gd.utils.enums.NEnum'
+Filters = 'gd.utils.filters.Filters'
+Parameters = 'gd.utils.params.Parameters'
+Loop = 'gd.utils.tasks.Loop'
+Editor = 'gd.api.editor.Editor'
+HSV = 'gd.api.hsv.HSV'
+LevelCollection = 'gd.api.save.LevelCollection'
+Struct = 'gd.api.struct.Struct'
+Object = 'gd.api.struct.Object'
+ColorChannel = 'gd.api.struct.ColorChannel'
+ColorCollection = 'gd.api.struct.ColorCollection'
+Header = 'gd.api.struct.Header'
+LevelAPI = 'gd.api.struct.LevelAPI'
