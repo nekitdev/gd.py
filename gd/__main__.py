@@ -13,7 +13,6 @@ con_v = '0.3.0'  # gd_console version
 def show_version() -> None:
     # do imports here because we don't use them
     import aiohttp
-    import PIL
 
     entries = []
 
@@ -30,8 +29,6 @@ def show_version() -> None:
     entries.append('- [gd_console] v{0}'.format(con_v))
 
     entries.append('- aiohttp v{0.__version__}'.format(aiohttp))
-
-    entries.append('- Pillow (PIL) v{0.__version__}'.format(PIL))
 
     uname = platform.uname()
     entries.append('- System Info: {0.system} {0.release} {0.version}'.format(uname))

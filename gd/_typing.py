@@ -1,4 +1,4 @@
-from typing import (
+from typing import (  # type: ignore
     Any,
     Callable,
     Optional,
@@ -20,6 +20,8 @@ from typing import (
     Type,
     TYPE_CHECKING,
     no_type_check,
+    overload,
+    _ForwardRef as _ref,
 )
 from enum import Enum
 
@@ -39,6 +41,7 @@ __all__ = (
     'Song',
     'UserStats',
     'User',
+    'NEnum',
     'Filters',
     'Parameters',
     'Loop',
@@ -70,73 +73,37 @@ __all__ = (
     'AsyncIterable',
     'AsyncIterator',
     'Type',
+    'TypeVar',
     'TYPE_CHECKING',
     'no_type_check',
+    'overload',
 )
 
-
-def _modify_typevar() -> None:
-    def __repr__(self) -> str:
-        if self.__covariant__:
-            prefix = '+'
-        elif self.__contravariant__:
-            prefix = '-'
-        else:
-            prefix = str()
-        return prefix + self.__name__
-
-    TypeVar.__repr__ = __repr__
-
-
-if TYPE_CHECKING:
-    from .abstractentity import AbstractEntity
-    from .abstractuser import AbstractUser, LevelRecord
-    from .client import Client
-    from .colors import Color
-    from .comment import Comment
-    from .friend_request import FriendRequest
-    from .iconset import IconSet
-    from .level import Level
-    from .level_packs import Gauntlet, MapPack
-    from .message import Message
-    from .song import Song
-    from .user import UserStats, User
-    from .utils.filters import Filters
-    from .utils.params import Parameters
-    from .utils.tasks import Loop
-    from .api.editor import Editor
-    from .api.hsv import HSV
-    from .api.save import LevelCollection
-    from .api.struct import Struct, Object, ColorChannel, ColorCollection, Header, LevelAPI
-
-else:
-    # TypeVar('SomeString') allows any type,
-    # but nekit does not like string annotations.
-    AbstractEntity = TypeVar('AbstractEntity')
-    AbstractUser = TypeVar('AbstractUser')
-    LevelRecord = TypeVar('LevelRecord')
-    Client = TypeVar('Client')
-    Color = TypeVar('Color')
-    Comment = TypeVar('Comment')
-    FriendRequest = TypeVar('FriendRequest')
-    IconSet = TypeVar('IconSet')
-    Level = TypeVar('Level')
-    Gauntlet = TypeVar('Gauntlet')
-    MapPack = TypeVar('MapPack')
-    Message = TypeVar('Message')
-    Song = TypeVar('Song')
-    UserStats = TypeVar('UserStats')
-    User = TypeVar('User')
-    Filters = TypeVar('Filters')
-    Parameters = TypeVar('Parameters')
-    Loop = TypeVar('Loop')
-    Editor = TypeVar('Editor')
-    HSV = TypeVar('HSV')
-    LevelCollection = TypeVar('LevelCollection')
-    Struct = TypeVar('Struct')
-    Object = TypeVar('Object')
-    ColorChannel = TypeVar('ColorChannel')
-    ColorCollection = TypeVar('ColorCollection')
-    Header = TypeVar('Header')
-    LevelAPI = TypeVar('LevelAPI')
-    _modify_typevar()
+AbstractEntity = _ref('gd.abstractentity.AbstractEntity')
+AbstractUser = _ref('gd.abstractuser.AbstractUser')
+LevelRecord = _ref('gd.abstractuser.LevelRecord')
+Client = _ref('gd.client.Client')
+Color = _ref('gd.colors.Color')
+Comment = _ref('gd.comment.Comment')
+FriendRequest = _ref('gd.friend_request.FriendRequest')
+IconSet = _ref('gd.iconset.IconSet')
+Level = _ref('gd.level.Level')
+Gauntlet = _ref('gd.level_packs.Gauntlet')
+MapPack = _ref('gd.level_packs.MapPack')
+Message = _ref('gd.message.Message')
+Song = _ref('gd.song.Song')
+UserStats = _ref('gd.user.UserStats')
+User = _ref('gd.user.User')
+NEnum = _ref('gd.utils.enums.NEnum')
+Filters = _ref('gd.utils.filters.Filters')
+Parameters = _ref('gd.utils.params.Parameters')
+Loop = _ref('gd.utils.tasks.Loop')
+Editor = _ref('gd.api.editor.Editor')
+HSV = _ref('gd.api.hsv.HSV')
+LevelCollection = _ref('gd.api.save.LevelCollection')
+Struct = _ref('gd.api.struct.Struct')
+Object = _ref('gd.api.struct.Object')
+ColorChannel = _ref('gd.api.struct.ColorChannel')
+ColorCollection = _ref('gd.api.struct.ColorCollection')
+Header = _ref('gd.api.struct.Header')
+LevelAPI = _ref('gd.api.struct.LevelAPI')
