@@ -1,6 +1,3 @@
-import base64
-import json
-
 from .._typing import Any, Dict, Struct
 from ..errors import EditorError
 from ..colors import Color
@@ -72,25 +69,6 @@ def get_default(name: str) -> Dict[Any, Any]:
     return default.get(name, {})
 
 
-def _load_default() -> Dict[Any, Any]:
-    data = json.loads(base64.b64decode(_default.encode()).decode())
-
-    final = {}
-
-    for k, d_i in data.items():
-        d = {}
-        for k_i, v in d_i.items():
-            try:
-                k_i = int(k_i)
-            except ValueError:
-                pass
-            finally:
-                d[k_i] = v
-        final[k] = d
-
-    return final
-
-
 mapping = {
     'special': SpecialBlockType,
     'trigger': TriggerType,
@@ -140,40 +118,180 @@ def _get_dir(directive: str, cls: str, delim: str = ':') -> str:
     return delim.join((cls, directive.split(delim).pop()))
 
 
-# json-like dictionary, encoded in Base64
-_default = """
-eyJvYmplY3QiOiB7IjEiOiAxLCAiMiI6IDAsICIzIjogMH0sICJjb2xvcl9jaGFubmVsIjogeyIxIjogMjU1LCAiMiI6IDI1NSwg
-IjMiOiAyNTUsICI0IjogLTEsICI1IjogZmFsc2UsICI2IjogMCwgIjciOiAxLCAiOCI6IHRydWUsICIxMSI6IDI1NSwgIjEyIjog
-MjU1LCAiMTMiOiAyNTUsICIxNSI6IHRydWUsICIxOCI6IGZhbHNlfSwgImhlYWRlciI6IHsia0EyIjogMCwgImtBMyI6IGZhbHNl
-LCAia0E0IjogMCwgImtBNiI6IDAsICJrQTciOiAwLCAia0E4IjogZmFsc2UsICJrQTkiOiBmYWxzZSwgImtBMTAiOiBmYWxzZSwg
-ImtBMTEiOiBmYWxzZSwgImtBMTMiOiAwLCAia0ExNCI6IFtdLCAia0ExNSI6IGZhbHNlLCAia0ExNiI6IGZhbHNlLCAia0ExNyI6
-IGZhbHNlLCAia0ExOCI6IDAsICJrUzM4IjogW10sICJrUzM5IjogMH0sICJhcGkiOiB7ImtDRUsiOiA0LCAiazIiOiAiVW5uYW1l
-ZCIsICJrNCI6ICIiLCAiazEzIjogdHJ1ZSwgImsxNiI6IDF9LCAibWFpbiI6IHsidmFsdWVLZWVwZXIiOiB7Imd2XzAwMDEiOiAi
-MSIsICJndl8wMDAyIjogIjEiLCAiZ3ZfMDAxMyI6ICIxIiwgImd2XzAwMTYiOiAiMSIsICJndl8wMDE4IjogIjEiLCAiZ3ZfMDAx
-OSI6ICIxIiwgImd2XzAwMjMiOiAiMSIsICJndl8wMDI1IjogIjEiLCAiZ3ZfMDAyNiI6ICIxIiwgImd2XzAwMjciOiAiMSIsICJn
-dl8wMDI5IjogIjEiLCAiZ3ZfMDAzMCI6ICIxIiwgImd2XzAwMzYiOiAiMSIsICJndl8wMDM4IjogIjEiLCAiZ3ZfMDA0MyI6ICIx
-IiwgImd2XzAwNDQiOiAiMSIsICJndl8wMDQ2IjogIjEiLCAiZ3ZfMDA0OCI6ICIxIiwgImd2XzAwNDkiOiAiMSIsICJndl8wMDUw
-IjogIjEiLCAiZ3ZfMDA2MyI6ICIxIiwgImd2XzAwOTgiOiAiMSJ9LCAidW5sb2NrVmFsdWVLZWVwZXIiOiB7fSwgImN1c3RvbU9i
-amVjdERpY3QiOiB7fSwgImJnVm9sdW1lIjogMS4wLCAic2Z4Vm9sdW1lIjogMS4wLCAicGxheWVyVURJRCI6ICJTMTIzNDU2Nzg5
-MCIsICJwbGF5ZXJOYW1lIjogIlBsYXllciIsICJwbGF5ZXJGcmFtZSI6IDEsICJwbGF5ZXJTaGlwIjogMSwgInBsYXllckJhbGwi
-OiAxLCAicGxheWVyQmlyZCI6IDEsICJwbGF5ZXJEYXJ0IjogMSwgInBsYXllclJvYm90IjogMSwgInBsYXllclNwaWRlciI6IDEs
-ICJwbGF5ZXJDb2xvcjIiOiAzLCAicGxheWVyU3RyZWFrIjogMSwgInBsYXllckRlYXRoRWZmZWN0IjogMSwgInJlcG9ydGVkQWNo
-aWV2ZW1lbnRzIjoge30sICJHTE1fMDEiOiB7fSwgIkdMTV8wMyI6IHt9LCAiR0xNXzEwIjoge30sICJHTE1fMTYiOiB7fSwgIkdM
-TV8wOSI6IHt9LCAiR0xNXzA3Ijoge30sICJHTE1fMTQiOiB7fSwgIkdMTV8xMiI6IHt9LCAiR0xNXzEzIjoge30sICJHTE1fMTUi
-OiB7fSwgIkdMTV8wNiI6IHt9LCAiR0xNXzA4IjogeyJEaWZmMCI6ICIwIiwgIkRpZmYxIjogIjAiLCAiRGlmZjIiOiAiMCIsICJE
-aWZmMyI6ICIwIiwgIkRpZmY0IjogIjAiLCAiRGlmZjUiOiAiMCIsICJEaWZmNiI6ICIwIiwgIkRpZmY3IjogIjAiLCAiTGVuMCI6
-ICIwIiwgIkxlbjEiOiAiMCIsICJMZW4yIjogIjAiLCAiTGVuMyI6ICIwIiwgIkxlbjQiOiAiMCIsICJkZW1vbl9maWx0ZXIiOiAi
-MCJ9LCAiR0xNXzE4Ijoge30sICJHTE1fMTkiOiB7fSwgIkdTX3ZhbHVlIjogeyIxIjogIjAiLCAiMiI6ICIwIiwgIjMiOiAiMCIs
-ICI0IjogIjAiLCAiNSI6ICIwIiwgIjYiOiAiMCIsICI3IjogIjAiLCAiOCI6ICIwIiwgIjkiOiAiMCIsICIxMCI6ICIwIiwgIjEx
-IjogIjAiLCAiMTIiOiAiMCIsICIxMyI6ICIwIiwgIjE0IjogIjAiLCAiMTUiOiAiMCIsICIxNiI6ICIwIiwgIjE3IjogIjAiLCAi
-MTgiOiAiMCIsICIxOSI6ICIwIiwgIjIwIjogIjAiLCAiMjEiOiAiMCIsICIyMiI6ICIwIn0sICJHU19jb21wbGV0ZWQiOiB7fSwg
-IkdTXzMiOiB7fSwgIkdTXzQiOiB7fSwgIkdTXzUiOiB7fSwgIkdTXzYiOiB7fSwgIkdTXzciOiB7fSwgIkdTXzIzIjoge30sICJH
-U184Ijoge30sICJHU185Ijoge30sICJHU18xMCI6IHt9LCAiR1NfMTYiOiB7fSwgIkdTXzE3Ijoge30sICJHU18xOCI6IHt9LCAi
-R1NfMjQiOiB7fSwgIkdTXzExIjoge30sICJHU18yMiI6IHt9LCAiR1NfMjUiOiB7fSwgIkdTXzEyIjoge30sICJHU18xNSI6IHt9
-LCAiR1NfMTQiOiB7fSwgIkdTXzE5Ijoge30sICJHU18yMSI6IHt9LCAiTURMTV8wMDEiOiB7fSwgIktCTV8wMDEiOiB7fSwgIktC
-TV8wMDIiOiB7fSwgInNob3dTb25nTWFya2VycyI6IHRydWUsICJjbGlja2VkRWRpdG9yIjogdHJ1ZSwgImNsaWNrZWRQcmFjdGlj
-ZSI6IHRydWUsICJib290dXBzIjogMCwgImJpbmFyeVZlcnNpb24iOiAzNSwgInJlc29sdXRpb24iOiAtMX0sICJsZXZlbHMiOiB7
-IkxMTV8wMSI6IHsiX2lzQXJyIjogdHJ1ZX0sICJMTE1fMDIiOiAzNX19
-"""
+# a large dictionary containing all default values for various objects
 
-default = _load_default()
+default = {
+    'object': {
+        1: 1, 2: 0, 3: 0,
+    },
+    'color_channel': {
+        1: 255, 2: 255, 3: 255,
+        4: -1,
+        5: False,
+        6: 0,
+        7: 1,
+        8: True,
+        11: 255, 12: 255, 13: 255,
+        15: True,
+        18: False,
+    },
+    'header': {
+        'kA2': 0,
+        'kA3': False,
+        'kA4': 0,
+        'kA6': 0,
+        'kA7': 0,
+        'kA8': False,
+        'kA9': False,
+        'kA10': False,
+        'kA11': False,
+        'kA13': 0,
+        'kA14': [],
+        'kA15': False,
+        'kA16': False,
+        'kA17': False,
+        'kA18': 0,
+        'kS38': [],
+        'kS39': 0
+    },
+    'api': {
+        'kCEK': 4,
+        'k2': 'Unnamed',
+        'k4': '',
+        'k13': True,
+        'k16': 1
+    },
+    'main': {
+        'valueKeeper': {
+            'gv_0001': '1',
+            'gv_0002': '1',
+            'gv_0013': '1',
+            'gv_0016': '1',
+            'gv_0018': '1',
+            'gv_0019': '1',
+            'gv_0023': '1',
+            'gv_0025': '1',
+            'gv_0026': '1',
+            'gv_0027': '1',
+            'gv_0029': '1',
+            'gv_0030': '1',
+            'gv_0036': '1',
+            'gv_0038': '1',
+            'gv_0043': '1',
+            'gv_0044': '1',
+            'gv_0046': '1',
+            'gv_0048': '1',
+            'gv_0049': '1',
+            'gv_0050': '1',
+            'gv_0063': '1',
+            'gv_0098': '1'
+        },
+        'unlockValueKeeper': {},
+        'customObjectDict': {},
+        'bgVolume': 1.0,
+        'sfxVolume': 1.0,
+        'playerUDID': 'S1234567890',
+        'playerName': 'Player',
+        'playerFrame': 1,
+        'playerShip': 1,
+        'playerBall': 1,
+        'playerBird': 1,
+        'playerDart': 1,
+        'playerRobot': 1,
+        'playerSpider': 1,
+        'playerColor2': 3,
+        'playerStreak': 1,
+        'playerDeathEffect': 1,
+        'reportedAchievements': {},
+        'GLM_01': {},
+        'GLM_03': {},
+        'GLM_10': {},
+        'GLM_16': {},
+        'GLM_09': {},
+        'GLM_07': {},
+        'GLM_14': {},
+        'GLM_12': {},
+        'GLM_13': {},
+        'GLM_15': {},
+        'GLM_06': {},
+        'GLM_08': {
+            'Diff0': '0',
+            'Diff1': '0',
+            'Diff2': '0',
+            'Diff3': '0',
+            'Diff4': '0',
+            'Diff5': '0',
+            'Diff6': '0',
+            'Diff7': '0',
+            'Len0': '0',
+            'Len1': '0',
+            'Len2': '0',
+            'Len3': '0',
+            'Len4': '0',
+            'demon_filter': '0'
+        },
+        'GLM_18': {},
+        'GLM_19': {},
+        'GS_value': {
+            '1': '0',
+            '2': '0',
+            '3': '0',
+            '4': '0',
+            '5': '0',
+            '6': '0',
+            '7': '0',
+            '8': '0',
+            '9': '0',
+            '10': '0',
+            '11': '0',
+            '12': '0',
+            '13': '0',
+            '14': '0',
+            '15': '0',
+            '16': '0',
+            '17': '0',
+            '18': '0',
+            '19': '0',
+            '20': '0',
+            '21': '0',
+            '22': '0'
+        },
+        'GS_completed': {},
+        'GS_3': {},
+        'GS_4': {},
+        'GS_5': {},
+        'GS_6': {},
+        'GS_7': {},
+        'GS_23': {},
+        'GS_8': {},
+        'GS_9': {},
+        'GS_10': {},
+        'GS_16': {},
+        'GS_17': {},
+        'GS_18': {},
+        'GS_24': {},
+        'GS_11': {},
+        'GS_22': {},
+        'GS_25': {},
+        'GS_12': {},
+        'GS_15': {},
+        'GS_14': {},
+        'GS_19': {},
+        'GS_21': {},
+        'MDLM_001': {},
+        'KBM_001': {},
+        'KBM_002': {},
+        'showSongMarkers': True,
+        'clickedEditor': True,
+        'clickedPractice': True,
+        'bootups': 0,
+        'binaryVersion': 35,
+        'resolution': -1
+    },
+    'levels': {
+        'LLM_01': {
+            '_isArr': True
+        },
+        'LLM_02': 35
+    }
+}

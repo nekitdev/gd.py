@@ -88,9 +88,9 @@ class SaveUtil:
         except Exception:
             return str()
 
-    def _load(self, main_stream: str = '', level_stream: str = '', xor: bool = True) -> Database:
-        main = self._decode(main_stream, xor=xor)
-        levels = self._decode(level_stream, xor=xor)
+    def _load(self, main: str = '', levels: str = '', xor: bool = True) -> Database:
+        main = self._decode(main, xor=xor)
+        levels = self._decode(levels, xor=xor)
         return Database(main, levels)
 
     def _dump(
@@ -109,11 +109,11 @@ class SaveUtil:
             return main, levels
 
     def _local_load(
-        self, main_path: PathLike = None, levels_path: PathLike = None,
+        self, main: PathLike = None, levels: PathLike = None,
         default_main: PathLike = MAIN, default_levels: PathLike = LEVELS
     ) -> Database:
-        main_path = _config_path(main_path, default_main)
-        levels_path = _config_path(levels_path, default_levels)
+        main_path = _config_path(main, default_main)
+        levels_path = _config_path(levels, default_levels)
 
         try:
             parts = []
@@ -126,14 +126,14 @@ class SaveUtil:
             return self._load(*parts)
 
         except OSError:
-            print('Failed to find save files in given path.')
+            return self.make_db()
 
     def _local_dump(
-        self, db: Database, main_path: PathLike = None, levels_path: PathLike = None,
+        self, db: Database, main: PathLike = None, levels: PathLike = None,
         default_main: PathLike = MAIN, default_levels: PathLike = LEVELS
     ) -> None:
-        main_path = _config_path(main_path, default_main)
-        levels_path = _config_path(levels_path, default_levels)
+        main_path = _config_path(main, default_main)
+        levels_path = _config_path(levels, default_levels)
 
         files = (main_path, levels_path)
 
