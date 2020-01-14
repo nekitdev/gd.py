@@ -35,7 +35,7 @@ def get_loop() -> asyncio.AbstractEventLoop:
 def set_loop(new_loop: asyncio.AbstractEventLoop) -> None:
     global loop
     loop = new_loop
-    
+
 
 def run(loop: asyncio.AbstractEventLoop) -> None:
     try:
