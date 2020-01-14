@@ -204,6 +204,9 @@ def cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
 
 
 def shutdown_loop(loop: asyncio.AbstractEventLoop) -> None:
+    if loop.is_closed():
+        return
+
     try:
         loop.stop()
         cancel_all_tasks(loop)
