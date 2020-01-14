@@ -211,7 +211,6 @@ class Editor:
         color_ids.discard(None)
 
         return color_ids
-        
 
     def get_free_group(self) -> Optional[int]:
         return _find_next(self.get_groups())
