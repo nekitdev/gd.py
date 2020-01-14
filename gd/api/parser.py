@@ -330,7 +330,7 @@ _TAB = 'kI6'
 
 
 def _parse_into_array(s: str, delim: str = '_'):
-    return list(map(int, s.split(delim)))
+    return list(map(int, filter(lambda x: x, s.split(delim))))
 
 
 def _join_into_string(array: list, delim: str = '_'):
