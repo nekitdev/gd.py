@@ -8,6 +8,7 @@ from .._typing import Level, List
 from ..client import Client
 
 from ..utils import tasks
+from ..utils._async import shutdown_loop
 from ..utils.decorators import run_once
 from ..utils.filters import Filters
 
@@ -34,25 +35,7 @@ def get_loop() -> asyncio.AbstractEventLoop:
 def set_loop(new_loop: asyncio.AbstractEventLoop) -> None:
     global loop
     loop = new_loop
-
-
-def shutdown_loop(loop: asyncio.AbstractEventLoop) -> None:
-    """Shutdown a loop."""
-    loop.call_soon_threadsafe(loop.stop)
-
-    try:
-        tasks = asyncio.all_tasks(loop)
-    except AttributeError:
-        tasks = asyncio.Task.all_tasks(loop)
-
-    for task in tasks:
-        task.cancel()
-
-    try:
-        loop.call_soon_threadsafe(loop.close)
-    except RuntimeError:
-        pass
-
+    
 
 def run(loop: asyncio.AbstractEventLoop) -> None:
     try:
@@ -79,7 +62,7 @@ def update_thread_loop(thread: threading.Thread, loop: asyncio.AbstractEventLoop
     thread.args = (loop,)
 
 
-thread = threading.Thread(target=run, args=(loop,), name='ScannerThread')
+thread = threading.Thread(target=run, args=(loop,), name='ScannerThread', daemon=True)
 
 
 class AbstractScanner:
@@ -171,7 +154,7 @@ class RateLevelScanner(AbstractScanner):
         self.find_new = listen_to_rate
         self.cache = []
 
-    async def method(self, pages: int = 100) -> List[Level]:
+    async def method(self, pages: int = 10) -> List[Level]:
         return await scanner_client.search_levels(filters=self.filters, pages=range(pages))
 
     async def scan(self) -> None:
