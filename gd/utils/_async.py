@@ -49,7 +49,7 @@ async def run_blocking_io(func: Callable, *args, **kwargs) -> Any:
 async def wait(
     fs: Sequence[Coroutine], *, loop: asyncio.AbstractEventLoop = None,
     timeout: Union[float, int] = None, return_when: str = 'ALL_COMPLETED'
-) -> Tuple[Set[asyncio.Task], Set[asyncio.Task]]:
+) -> Tuple[Set[asyncio.Future], Set[asyncio.Future]]:
     """A function that is calling :func:`asyncio.wait`.
 
     Used for less imports inside and outside of this library.
@@ -205,6 +205,7 @@ def cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
 
 def shutdown_loop(loop: asyncio.AbstractEventLoop) -> None:
     try:
+        loop.stop()
         cancel_all_tasks(loop)
         loop.run_until_complete(loop.shutdown_asyncgens())
 
