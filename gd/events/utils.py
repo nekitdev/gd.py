@@ -1,5 +1,5 @@
 import asyncio
-from os import _exit
+import atexit
 
 from .scanner import (
     AbstractScanner as scanner, run as run_loop, get_loop,
@@ -10,19 +10,14 @@ from .._typing import Client
 
 from .. import utils
 
-__all__ = ('exit', 'disable', 'enable', 'add_client', 'start', 'run', 'attach_to_loop')
-
-
-def exit(status: int = 0) -> None:
-    disable()
-    _exit(status)
+__all__ = ('disable', 'enable', 'add_client', 'start', 'run', 'attach_to_loop')
 
 
 def disable() -> None:
     try:
         shutdown_loop(get_loop())
         thread.join()
-    except RuntimeError:
+    except (RuntimeError, ValueError):
         pass
 
     try:
@@ -59,3 +54,6 @@ def run(loop: asyncio.AbstractEventLoop) -> None:
 
 def start() -> None:
     thread.start()
+
+
+atexit.register(disable)
