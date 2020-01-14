@@ -26,7 +26,6 @@ from .message import Message
 from .session import GDSession
 from .song import Song
 from .user import UserStats, User
-from .events import exit  # idk
 from .utils.enums import *
 from .utils.filters import Filters
 from .utils.gdpaginator import paginate, Paginator
