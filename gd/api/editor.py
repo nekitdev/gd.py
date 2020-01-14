@@ -3,6 +3,7 @@ from .._typing import (
     Callable,
     Editor,
     Iterable,
+    Iterator,
     Level,
     List,
     Optional,
@@ -35,7 +36,7 @@ for s in ('slow', 'normal', 'fast', 'faster', 'fastest'):
     a, b, c = (
         SpeedMagic[s.upper()],
         Speed[s.upper()],
-        PortalType[s.title()+'Speed']
+        PortalType[s.title() + 'Speed']
     )
     speed_map.update({b.value: a.value, c.value: a.value})
 
@@ -102,8 +103,17 @@ def _get_x(obj: Object) -> Union[float, int]:
     return obj.x
 
 
-def _find_next(s: Iterable[int], rng: Iterable[int] = range(1, 10000)) -> Optional[int]:
-    # 2.2 has 1-9999 groups
+def _inf_range(start: int = 0, step: int = 1) -> Iterator[int]:
+    value = start
+
+    while True:
+        yield value
+        value += step
+
+
+def _find_next(s: Iterable[int], rng: Optional[Iterable[int]] = None) -> Optional[int]:
+    if rng is None:
+        rng = _inf_range()
     for i in rng:
         if i not in s:
             return i
@@ -187,14 +197,27 @@ class Editor:
         groups = set()
 
         for obj in self.objects:
-            g = obj.groups
-            if g is not None:
-                groups.update(g)
+            g = obj.groups or set()
+            groups.update(g)
 
         return groups
 
+    def get_color_ids(self) -> Iterable[int]:
+        color_ids = set()
+
+        for obj in self.objects:
+            color_ids.update((obj.color_1, obj.color_2))
+
+        color_ids.discard(None)
+
+        return color_ids
+        
+
     def get_free_group(self) -> Optional[int]:
         return _find_next(self.get_groups())
+
+    def get_free_color_id(self) -> Optional[int]:
+        return _find_next(self.get_color_ids())
 
     def get_portals(self) -> List[Object]:
         return sorted(filter(_is_portal, self.objects), key=(_get_x))
