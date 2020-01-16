@@ -15,7 +15,7 @@ fn get_version() -> PyResult(String) {
 
 /// This module is a python module implemented in Rust.
 #[pymodule]
-fn string_sum(py: Python, module: &PyModule) -> PyResult<()> {
+fn _gd(py: Python, module: &PyModule) -> PyResult<()> {
     module.add_wrapped(wrap_pyfunction!(get_version))?;
     Ok(())
 }
