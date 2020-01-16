@@ -46,7 +46,7 @@ def create_ext(**kwargs):
     ext = Extension(**kwargs)
     ext.optional = optional
     return ext
-    
+
 
 extension_list = [
     create_ext(name='_gd', sources=['gd/src/_gd.pyx'], language='c++', optional=True)

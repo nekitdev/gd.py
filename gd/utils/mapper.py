@@ -1,6 +1,6 @@
 from .._typing import Any, Dict, Sequence
 
-__all__ = ('mapper', 'MapperUtil', 'pad')
+__all__ = ('mapper', 'MapperUtil')
 
 
 def convert(obj: Any) -> Any:
