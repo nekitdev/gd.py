@@ -52,24 +52,22 @@ log = logging.getLogger(__name__)
 
 VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
 
-RegularExpression = r"""
-^\s*
-(?:
-    (?P<major>\d+)
-    (?P<split>[\.-])?
-    (?P<minor>\d+)?
-    (?P=split)?
-    (?P<micro>\d+)?
-    (?P<releaselevel>a|b|rc|f|dev)?
-    (?P<serial>\d+)?
+_normal_re = (
+r'^\s*(?:'
+    r'(?P<major>\d+)'
+    r'(?P<split>[\.-])?'
+    r'(?P<minor>\d+)?'
+    r'(?P=split)?'
+    r'(?P<micro>\d+)?'
+    r'(?P<releaselevel>a|b|rc|f|dev)?'
+    r'(?P<serial>\d+)?'
+r')\s*$'
 )
-\s*$
-"""
-CompiledRE = re.compile(re.sub(r'\s', '', RegularExpression), re.MULTILINE)
+_compiled_re = re.compile(_normal_re, re.MULTILINE)
 
 
 def make_version_details(ver: str) -> VersionInfo:
-    match = CompiledRE.match(ver)
+    match = _compiled_re.match(ver)
 
     if match is None:
         return VersionInfo(0, 0, 0, 'final', 0)

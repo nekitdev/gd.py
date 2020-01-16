@@ -82,7 +82,6 @@ class SaveUtil:
     def _decode(self, stream: Union[bytes, str], xor: bool = True) -> str:
         if isinstance(stream, str):
             stream = stream.encode()
-
         try:
             return Coder.decode_save(stream, needs_xor=xor).decode(errors='replace')
         except Exception:

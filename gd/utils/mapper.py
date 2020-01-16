@@ -1,4 +1,4 @@
-from .._typing import Any, Dict, Iterable
+from .._typing import Any, Dict, Sequence
 
 __all__ = ('mapper', 'MapperUtil', 'pad')
 
@@ -12,7 +12,7 @@ def convert(obj: Any) -> Any:
 
 class MapperUtil:
     @staticmethod
-    def map(item: Iterable, try_convert: bool = True) -> Dict[Any, Any]:
+    def map(item: Sequence, try_convert: bool = True) -> Dict[Any, Any]:
         mapping = zip(item[::2], item[1::2])
 
         if try_convert:
@@ -23,23 +23,5 @@ class MapperUtil:
 
         return res
 
-    @staticmethod
-    def normalize(item: str) -> str:
-        res = str(item).replace('-', '+').replace('_', '/')
-        return pad(res)
-
-    @staticmethod
-    def prepare_sending(item: str) -> str:
-        res = str(item).replace('+', '-').replace('/', '_')
-        return pad(res)
-
 
 mapper = MapperUtil()
-
-
-def pad(res: str, *, char: str = '=') -> str:
-    # pad a string to be divisible by 4
-    while len(res) % 4:
-        res += char
-
-    return res

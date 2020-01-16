@@ -437,7 +437,6 @@ class GDSession:
             main, levels, *_ = resp.split(';')
             save_api = await api.save.from_string_async(main, levels, xor=False)
             save = await SaveParser.aio_parse(save_api.main.dump())
-
             client._upd('save_api', save_api)
             client._upd('save', save)
 
@@ -848,7 +847,7 @@ class GDSession:
         )
 
         ret = Coder.decode(
-            type='message', string=mapper.normalize(resp.get(Index.MESSAGE_BODY))
+            type='message', string=resp.get(Index.MESSAGE_BODY)
         )
         msg._body = ret
         return ret

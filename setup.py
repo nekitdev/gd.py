@@ -3,6 +3,7 @@ import re
 import pathlib
 import sys
 from setuptools import Extension, setup
+# from setuptools_rust import Binding, RustExtension  # soon
 
 root = pathlib.Path(__file__).parent
 
@@ -40,14 +41,15 @@ if sys.implementation.name.lower() != 'cpython':
     NO_EXTENSIONS = True
 
 
-class OptionalExtension(Extension):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.optional = True
-
+def create_ext(**kwargs):
+    optional = kwargs.pop('optional', True)
+    ext = Extension(**kwargs)
+    ext.optional = optional
+    return ext
+    
 
 extension_list = [
-    OptionalExtension(name='_gd', sources=['gd/src/_gd.pyx'], language='c++')
+    create_ext(name='_gd', sources=['gd/src/_gd.pyx'], language='c++', optional=True)
 ]
 
 try:
@@ -91,7 +93,8 @@ args = dict(
         'console': [
             'gd = gd.__main__:main',
         ],
-    }
+    },
+    zip_safe=False,
 )
 
 if NO_EXTENSIONS:

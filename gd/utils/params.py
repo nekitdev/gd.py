@@ -3,7 +3,6 @@ import random
 
 from .._typing import Any, Dict, Filters, List, Parameters, Sequence, Union
 
-from .mapper import mapper
 from .crypto.coders import Coder
 
 __all__ = ('Parameters', 'enter_gdworld', 'leave_gdworld')
@@ -249,8 +248,8 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        self.dict['subject'] = base64.b64encode(subject.encode()).decode()
-        self.dict['body'] = mapper.prepare_sending(Coder.encode(type='message', string=body))
+        self.dict['subject'] = base64.urlsafe_b64encode(subject.encode()).decode()
+        self.dict['body'] = Coder.encode(type='message', string=body)
         return self
 
     def put_password(self, item: str) -> Parameters:
@@ -298,8 +297,7 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        self.dict['comment'] = mapper.prepare_sending(
-            base64.b64encode(item.encode()).decode())
+        self.dict['comment'] = base64.urlsafe_b64encode(item.encode()).decode()
         return self
 
     def put_save_data(self, data_seq: Sequence[Union[bytes, str]]) -> Parameters:
@@ -468,7 +466,7 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        comment = mapper.prepare_sending(base64.b64encode(content.encode()).decode())
+        comment = base64.urlsafe_b64encode(content.encode()).decode()
         self.dict['comment'] = comment
         values.insert(1, comment)
         self.put_chk(Coder.gen_chk(type='comment', values=values))
@@ -580,9 +578,9 @@ class Parameters:
             ``self``
         """
         if content is None:
-            content = ''
+            content = str()
 
-        desc = mapper.prepare_sending(base64.b64encode(content.encode()).decode())
+        desc = base64.urlsafe_b64encode(content.encode()).decode()
 
         self.dict['levelDesc'] = desc
         return self

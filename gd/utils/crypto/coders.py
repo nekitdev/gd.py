@@ -8,7 +8,6 @@ import zlib
 # absolute import because we are deep
 from gd._typing import Sequence, Union
 
-from ..mapper import mapper
 from .xor_cipher import XORCipher as XOR
 
 
@@ -66,9 +65,7 @@ class Coder:
         else:
             save = save.decode(errors='ignore')
 
-        data = mapper.normalize(save).encode()
-
-        from_b64 = base64.b64decode(data)[10:]
+        from_b64 = base64.urlsafe_b64decode(save.encode())[10:]
 
         return zlib.decompress(from_b64, -zlib.MAX_WBITS)
 
@@ -84,16 +81,16 @@ class Coder:
 
         encrypted = bytes(cls.additional) + compressed[2:-4] + crc32 + save_size
 
-        encoded = mapper.prepare_sending(base64.b64encode(encrypted).decode()).encode()
+        encoded = base64.urlsafe_b64encode(encrypted)
 
         return encoded if not needs_xor else cls.normal_xor(encoded, 11).encode()
 
     @classmethod
     def do_base64(cls, data: str, encode: bool = True) -> Union[bytes, str]:
         if encode:
-            return mapper.prepare_sending(base64.b64encode(data.encode()).decode())
+            return base64.urlsafe_b64encode(data.encode()).decode()
         else:
-            return base64.b64decode(mapper.normalize(data).encode()).decode()
+            return base64.urlsafe_b64decode(data.encode()).decode()
 
     @classmethod
     def gen_rs(cls, length: int = 10) -> str:
@@ -234,7 +231,7 @@ class Coder:
         if isinstance(string, bytes):
             string = string.decode(errors='replace')
 
-        decoded = base64.b64decode(mapper.normalize(string).encode())
+        decoded = base64.urlsafe_b64decode(string.encode())
 
         try:
             unzipped = zlib.decompress(decoded, zlib.MAX_WBITS)

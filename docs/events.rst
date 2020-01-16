@@ -143,7 +143,3 @@ The main idea is subclassing `AbstractScanner`` and creating your own ``scan`` m
     scanner.add_client(your_client)
     scanner.enable()
     gd.events.start()
-
-Important Note
---------------
-If ``gd.events.start()`` was called, it is recommended to call ``gd.exit()`` to normally close the interpreter, or at least all scanners should be closed via ``gd.events.disable()``.

@@ -16,24 +16,20 @@ def make_repr(obj: Any, info: Optional[Dict[Any, Any]] = None) -> str:
     if not info:
         return '<{}.{}>'.format(module, name)
 
-    info = (' '.join('{0}={1}'.format(*t) for t in info.items()))
+    final = (' '.join('{0}={1}'.format(*t) for t in info.items()))
 
-    return '<{}.{} {}>'.format(module, name, info)
-
-
-def _f(o: Any) -> Union[Any, Dict[Any, Any]]:
-    try:
-        return o.__json__()
-    except AttributeError:
-        return o
+    return '<{}.{} {}>'.format(module, name, final)
 
 
 def dump(x: Any, **kwargs) -> str:
     return json.dumps(_dump(x), **kwargs)
 
 
-def _dump(x: Any) -> List[Union[int, float, str]]:
-    if isinstance(x, dict):
+def _dump(x: Any) -> Any:
+    if hasattr(x, '__json__'):
+        return _dump(x.__json__())
+
+    elif isinstance(x, dict):
         return {_dump(k): _dump(v) for k, v in x.items()}
 
     elif isinstance(x, (list, tuple, set)):
@@ -45,16 +41,17 @@ def _dump(x: Any) -> List[Union[int, float, str]]:
     elif x is None:
         return x
 
-    return _dump(_f(x))
+    else:
+        raise TypeError('Object of type {0.__class__.__name__!r} is not JSON resizable.'.format(x))
 
 
-def object_split(string: Union[bytes, str]) -> List[Union[bytes, str]]:
-    sc = ';' if isinstance(string, str) else b';'
+def object_split(string: Union[bytes, str]) -> Union[List[bytes], List[str]]:
+    sc = ';' if isinstance(string, str) else b';'  # type: ignore
 
-    final = string.split(sc)
+    final = string.split(sc)  # type: ignore
     final.pop(0)
 
-    if string.endswith(sc):
+    if string.endswith(sc):  # type: ignore
         final.pop()
 
     return final

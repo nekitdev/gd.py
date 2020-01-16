@@ -18,7 +18,6 @@ from .utils.converter import Converter
 from .utils.enums import LeaderboardStrategy
 from .utils.indexer import Index
 from .utils.crypto.coders import Coder
-from .utils.mapper import mapper
 from .utils.routes import Route
 
 # MapperUtil.map attempts to convert keys and values to integer objects.
@@ -140,8 +139,8 @@ class ClassConverter:
                     else:
                         password = None
 
-        desc = b64.b64decode(
-            mapper.normalize(odict.get(Index.LEVEL_DESCRIPTION, ''))
+        desc = b64.urlsafe_b64decode(
+            odict.get(Index.LEVEL_DESCRIPTION, '')
         ).decode(errors='replace')
 
         data = odict.get(Index.LEVEL_DATA, '')
@@ -235,7 +234,7 @@ class ClassConverter:
         indicator = odict.get(Index.MESSAGE_INDICATOR, 0)
         is_normal = indicator ^ 1
 
-        subject = b64.b64decode(mapper.normalize(odict.get(Index.MESSAGE_SUBJECT, ''))).decode()
+        subject = b64.urlsafe_b64decode(odict.get(Index.MESSAGE_SUBJECT, '')).decode()
 
         return Message(
             id=odict.get(Index.MESSAGE_ID, 0),
@@ -266,7 +265,7 @@ class ClassConverter:
         return FriendRequest(
             id=odict.get(Index.REQUEST_ID, 0),
             timestamp=str(odict.get(Index.REQUEST_TIMESTAMP, 'unknown')),
-            body=b64.b64decode(mapper.normalize(odict.get(Index.REQUEST_BODY, ''))).decode(),
+            body=b64.urlsafe_b64decode(odict.get(Index.REQUEST_BODY, '')).decode(),
             is_read=bool(bool(odict.get(Index.REQUEST_STATUS)) ^ 1),
             author=(user_1 if is_normal else user_2),
             recipient=(user_2 if is_normal else user_1),
@@ -280,7 +279,7 @@ class ClassConverter:
         color = Color.from_rgb(*map(int, color_string.split(',')))
 
         return Comment(
-            body=b64.b64decode(mapper.normalize(odict.get(Index.COMMENT_BODY, ''))).decode(),
+            body=b64.urlsafe_b64decode(odict.get(Index.COMMENT_BODY, '')).decode(),
             rating=odict.get(Index.COMMENT_RATING, 0),
             timestamp=str(odict.get(Index.COMMENT_TIMESTAMP, 'unknown')),
             id=odict.get(Index.COMMENT_ID, 0),

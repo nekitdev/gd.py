@@ -76,6 +76,10 @@ which can be used to run async functions in repl:
     # Windows
     py -3 -m pip install -U gd.py[console]
 
+gd.py also provides an optional Cython extension to speed up its parser functions in
+`gd.api <https://github.com/NeKitDS/gd.py/blob/master/gd/api>`_ folder,
+so make sure that you have Cython and C++ Build Tools installed.
+
 To install the developer version, run these commands:
 
 .. code:: sh

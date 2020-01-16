@@ -9,7 +9,7 @@ from .enums import (
     ObjectDataEnum,
     PlayerColor,
 )
-from .parser import (
+from .parser import (  # type: ignore
     _INT, _BOOL, _FLOAT, _HSV, _ENUMS, _TEXT, _GROUPS,
     _COLOR_INT, _COLOR_BOOL, _COLOR_PLAYER, _COLOR_FLOAT, _COLOR_HSV,
     _HEADER_INT, _HEADER_BOOL, _HEADER_FLOAT, _HEADER_COLORS, _COLORS, _GUIDELINES, _HEADER_ENUMS
