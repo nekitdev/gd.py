@@ -28,8 +28,8 @@ ParseMap = Dict[Union[int, str], Union[int, str]]
 
 class ClassConverter:
 
-    @classmethod
-    def song_convert(cls, odict: ParseMap) -> Song:
+    @staticmethod
+    def song_convert(odict: ParseMap) -> Song:
         quoted_url = odict.get(Index.SONG_URL, '')
         dl_link = urllib.parse.unquote(quoted_url)
         return Song(
@@ -44,12 +44,12 @@ class ClassConverter:
             custom=True,
         )
 
-    @classmethod
-    def song_from_kwargs(cls, **kwargs) -> Song:
+    @staticmethod
+    def song_from_kwargs(**kwargs) -> Song:
         return Song(**kwargs)
 
-    @classmethod
-    def user_stats_convert(cls, odict: ParseMap, client: Client = None) -> UserStats:
+    @staticmethod
+    def user_stats_convert(odict: ParseMap, client: Client = None) -> UserStats:
         return UserStats(
             account_id=odict.get(Index.USER_ACCOUNT_ID, 0),
             name=str(odict.get(Index.USER_NAME, 'unknown')),
@@ -63,8 +63,8 @@ class ClassConverter:
             lb_place=odict.get(Index.USER_TOP_PLACE, 0), client=client
         )
 
-    @classmethod
-    def user_convert(cls, odict: ParseMap, client: Client = None) -> User:
+    @staticmethod
+    def user_convert(odict: ParseMap, client: Client = None) -> User:
         youtube = str(odict.get(Index.USER_YOUTUBE))
         yt = {
             'normal': youtube,
@@ -109,9 +109,9 @@ class ClassConverter:
             client=client
         )
 
-    @classmethod
+    @staticmethod
     def level_convert(
-        cls, odict: ParseMap, song: Song, creator: AbstractUser, client: Client = None
+        odict: ParseMap, song: Song, creator: AbstractUser, client: Client = None
     ) -> Level:
         string = odict.get(Index.LEVEL_PASS)
 
@@ -189,8 +189,8 @@ class ClassConverter:
             client=client
         )
 
-    @classmethod
-    def map_pack_convert(cls, odict: ParseMap, client: Client = None) -> MapPack:
+    @staticmethod
+    def map_pack_convert(odict: ParseMap, client: Client = None) -> MapPack:
         level_id_string = odict.get(Index.MAP_PACK_LEVEL_IDS, '0,0,0')
         level_ids = tuple(map(int, level_id_string.split(',')))
 
@@ -210,8 +210,8 @@ class ClassConverter:
             client=client
         )
 
-    @classmethod
-    def gauntlet_convert(cls, odict, client=None):
+    @staticmethod
+    def gauntlet_convert(odict, client=None):
         level_id_string = odict.get(Index.GAUNTLET_LEVEL_IDS, '0,0,0,0,0')
         level_ids = tuple(map(int, level_id_string.split(',')))
 
@@ -220,8 +220,8 @@ class ClassConverter:
 
         return Gauntlet(id=gid, name=name, level_ids=level_ids, client=client)
 
-    @classmethod
-    def message_convert(cls, odict: ParseMap, odict_2: ParseMap, client: Client = None) -> Message:
+    @staticmethod
+    def message_convert(odict: ParseMap, odict_2: ParseMap, client: Client = None) -> Message:
         useful_dict = {
             'name': odict.get(Index.MESSAGE_SENDER_NAME, 'unknown'),
             'id': odict.get(Index.MESSAGE_SENDER_ID, 0),
@@ -247,8 +247,8 @@ class ClassConverter:
             client=client
         )
 
-    @classmethod
-    def request_convert(cls, odict: ParseMap, odict_2: ParseMap, client: Client = None) -> FriendRequest:
+    @staticmethod
+    def request_convert(odict: ParseMap, odict_2: ParseMap, client: Client = None) -> FriendRequest:
         useful_dict = {
             'name': odict.get(Index.REQUEST_SENDER_NAME, 'unknown'),
             'id': odict.get(Index.REQUEST_SENDER_ID, 0),
@@ -273,8 +273,8 @@ class ClassConverter:
             client=client
         )
 
-    @classmethod
-    def comment_convert(cls, odict: ParseMap, odict_2: ParseMap, client: Client = None) -> Comment:
+    @staticmethod
+    def comment_convert(odict: ParseMap, odict_2: ParseMap, client: Client = None) -> Comment:
         color_string = odict.get(Index.COMMENT_COLOR, '255,255,255')
         color = Color.from_rgb(*map(int, color_string.split(',')))
 
@@ -292,9 +292,9 @@ class ClassConverter:
             client=client
         )
 
-    @classmethod
+    @staticmethod
     def level_record_convert(
-        cls, odict: ParseMap, strategy: LeaderboardStrategy,
+        odict: ParseMap, strategy: LeaderboardStrategy,
         client: Client = None
     ) -> LevelRecord:
         return LevelRecord(
@@ -310,8 +310,8 @@ class ClassConverter:
             client=client
         )
 
-    @classmethod
-    def abstractuser_convert(cls, from_dict: Dict[str, str], client: Client = None) -> AbstractUser:
+    @staticmethod
+    def abstractuser_convert(from_dict: Dict[str, str], client: Client = None) -> AbstractUser:
         from_dict = {k: _convert(v, int) for k, v in from_dict.items()}
         return AbstractUser(**from_dict).attach_client(client)
 
