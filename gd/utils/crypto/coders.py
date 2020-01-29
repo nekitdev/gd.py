@@ -61,13 +61,10 @@ class Coder:
 
         if needs_xor:
             save = cls.normal_xor(save, 11)
-
         else:
             save = save.decode(errors='ignore')
 
-        from_b64 = base64.urlsafe_b64decode(save.encode())[10:]
-
-        return zlib.decompress(from_b64, -zlib.MAX_WBITS)
+        return zlib.decompress(base64.urlsafe_b64decode(save.encode()), zlib.MAX_WBITS | 0x10)
 
     @classmethod
     def encode_save(cls, save: bytes, needs_xor: bool = True) -> bytes:
@@ -234,9 +231,9 @@ class Coder:
         decoded = base64.urlsafe_b64decode(string.encode())
 
         try:
-            unzipped = zlib.decompress(decoded, zlib.MAX_WBITS)
+            unzipped = zlib.decompress(decoded, zlib.MAX_WBITS | 0x10)
         except zlib.error:
-            unzipped = zlib.decompress(decoded[10:], -zlib.MAX_WBITS)
+            unzipped = zlib.decompress(decoded, zlib.MAX_WBITS)
 
         try:
             final = unzipped.decode()
