@@ -2,7 +2,9 @@ import json
 
 from .._typing import Any, Dict, List, Optional, Union
 
-__all__ = ('make_repr', 'object_split', 'dump')
+__all__ = ('make_repr', 'object_split', 'dump', 'to_json')
+
+NoneType = type(None)
 
 
 def make_repr(obj: Any, info: Optional[Dict[Any, Any]] = None) -> str:
@@ -22,18 +24,24 @@ def make_repr(obj: Any, info: Optional[Dict[Any, Any]] = None) -> str:
 
 
 def dump(x: Any, **kwargs) -> str:
-    return json.dumps(_dump(x), **kwargs)
+    return json.dumps(to_json(x), **kwargs)
 
 
-def _dump(x: Any) -> Any:
+def _check_key(x: Any) -> Any:
+    if isinstance(x, (float, int, str, NoneType)):
+        return to_json(x)
+    raise TypeError('Dictionary keys can only be of int, float, str, bool, or None.')
+
+
+def to_json(x: Any) -> Any:
     if hasattr(x, '__json__'):
-        return _dump(x.__json__())
+        return to_json(x.__json__())
 
     elif isinstance(x, dict):
-        return {_dump(k): _dump(v) for k, v in x.items()}
+        return {_check_key(k): to_json(v) for k, v in x.items()}
 
     elif isinstance(x, (list, tuple, set)):
-        return list(_dump(e) for e in x)
+        return list(to_json(e) for e in x)
 
     elif isinstance(x, (int, float, str)):
         return x
@@ -49,7 +57,7 @@ def object_split(string: Union[bytes, str]) -> Union[List[bytes], List[str]]:
     sc = ';' if isinstance(string, str) else b';'  # type: ignore
 
     final = string.split(sc)  # type: ignore
-    final.pop(0)
+    final.pop(0)  # pop header
 
     if string.endswith(sc):  # type: ignore
         final.pop()
