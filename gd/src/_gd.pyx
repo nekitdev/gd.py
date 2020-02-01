@@ -171,7 +171,7 @@ cpdef str _object_collect(dict d):
     return _collect(d, ',')
 
 
-cdef _from_str(int n, str v):
+cdef _from_str(n, str v):
     if n in _INT:
         return int(v)
     if n in _BOOL:
@@ -217,7 +217,7 @@ cdef int _COLOR_FLOAT = 7
 cdef int _COLOR_HSV = 10
 
 
-cdef _parse_color(int n, str v):
+cdef _parse_color(n, str v):
     if n in _COLOR_INT:
         return int(v)
     if n in _COLOR_BOOL:

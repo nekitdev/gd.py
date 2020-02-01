@@ -4,7 +4,7 @@ import signal
 import logging
 import traceback
 
-from .._typing import Level, List
+from .._typing import AsyncIterator, Iterable, Level, List
 from ..client import Client
 
 from ..utils import tasks
@@ -145,7 +145,7 @@ class TimelyLevelScanner(AbstractScanner):
 
 class RateLevelScanner(AbstractScanner):
     def __init__(
-        self, listen_to_rate: bool = True, delay: float = 30.0,
+        self, listen_to_rate: bool = True, delay: float = 10.0,
         *, loop: asyncio.AbstractEventLoop = None
     ) -> None:
         super().__init__(delay, loop=loop)
@@ -154,21 +154,41 @@ class RateLevelScanner(AbstractScanner):
         self.find_new = listen_to_rate
         self.cache = []
 
-    async def method(self, pages: int = 10) -> List[Level]:
+    async def method(self, pages: int = 2) -> List[Level]:
         return await scanner_client.search_levels(filters=self.filters, pages=range(pages))
 
     async def scan(self) -> None:
         new = await self.method()
 
         if not self.cache:
+            self.cache = new
             return
 
         difference = differ(self.cache, new, self.find_new)
 
-        for client in self.clients:
-            for level in difference:
+        self.cache = new
+
+        async for level in further_differ(difference, self.find_new):
+            for client in self.clients:
                 dispatcher = client.dispatch(self.call_method, level)
                 self.loop.create_task(dispatcher)
+
+
+async def further_differ(
+    array: Iterable[Level], find_new: bool = True
+) -> AsyncIterator[Level]:
+    array = list(array)
+    updated = await asyncio.gather(*(level.refresh() for level in array))
+
+    for level, new in zip(array, updated):
+        if find_new:
+            if new.is_rated() or new.has_coins_verified():
+                yield new
+        else:
+            if new is None:
+                yield level
+            elif not new.is_rated() and not new.has_coins_verified():
+                yield new
 
 
 def differ(before: list, after: list, find_new: bool = True) -> filter:

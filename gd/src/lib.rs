@@ -2,15 +2,32 @@
 /// Requires nightly-rust or dev rust
 /// DO NOT COMPILE YET
 
+use std::collections::HashMap;
+
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
 
+fn split_to_map<'a>(
+    string: &'a str,
+    separator: &str
+) -> HashMap<&'a str, &'a str> {
+    let mut iter = string.split(separator);
+    let mut data = HashMap::new();
+    while let (
+        Some(key), Some(value)
+    ) = (iter.next(), iter.next()) {
+        data.insert(key, value);
+    }
+    return data;
+}
+
+
 #[pyfunction]
-/// Show current version of the _gd library
-fn get_version() -> PyResult<String> {
-    let version = "0.1.0".to_string();
-    Ok(version)
+/// Split a string into python dict
+/// split('1:1:2:2') -> {'1': '1', '2': '2'}
+fn split(string: &'a str, delim: &'a str) -> PyDict<String, String> {
+    Ok(split_to_map(string, delim).into_py_dict())
 }
 
 
@@ -18,7 +35,7 @@ fn get_version() -> PyResult<String> {
 #[pymodule]
 fn _gd(py: Python, module: &PyModule) -> PyResult<()> {
     // add all functions
-    module.add_wrapped(wrap_pyfunction!(get_version))?;
+    module.add_wrapped(wrap_pyfunction!(split))?;
     // return nothing
     Ok(())
 }

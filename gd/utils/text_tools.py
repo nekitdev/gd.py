@@ -4,8 +4,6 @@ from .._typing import Any, Dict, List, Optional, Union
 
 __all__ = ('make_repr', 'object_split', 'dump', 'to_json')
 
-NoneType = type(None)
-
 
 def make_repr(obj: Any, info: Optional[Dict[Any, Any]] = None) -> str:
     """Create a nice __repr__ for the object."""
@@ -28,7 +26,7 @@ def dump(x: Any, **kwargs) -> str:
 
 
 def _check_key(x: Any) -> Any:
-    if isinstance(x, (float, int, str, NoneType)):
+    if isinstance(x, (float, int, str)) or x is None:
         return to_json(x)
     raise TypeError('Dictionary keys can only be of int, float, str, bool, or None.')
 

@@ -51,14 +51,19 @@ Client
 
         level = gd.Level(id=30029017)
 
-        # Now let us do something, supposing that you have logged in client.
+    Now let us do something, supposing that you have logged in client.
+
+    .. code-block:: python3
+
         await level.comment('Here is some comment.')  # ERROR!
 
-        # the point is, there is no client attached to this level.
+    The point is, there is no client attached to this level.
+    You can attach a client to an instance of AbstractEntity like that:
 
-        # you can attach a client to an instance of AbstractEntity like that:
+    .. code-block:: python3
+
         level.attach_client(client)
-        # or like that:
+        # or
         level = gd.Level(id=30029017, client=client)
 
     Do not forget this when writing your programs.
@@ -337,5 +342,3 @@ Useful Utils
 .. autofunction:: unique
 
 .. autofunction:: value_to_enum
-
-.. autofunction:: convert_to_type

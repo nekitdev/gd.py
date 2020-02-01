@@ -47,8 +47,8 @@ from .utils.enums import (
 from .utils.filters import Filters
 from .utils.http_request import http
 from .utils.indexer import Index
-from .utils.mapper import mapper
 from .utils.params import Parameters as Params
+from .utils.parser import Parser
 from .utils.routes import Route
 from .utils.save_parser import SaveParser
 from .utils.crypto.coders import Coder
@@ -65,10 +65,7 @@ class GDSession:
         start = time.perf_counter()
         await http.normal_request(link)
         end = time.perf_counter()
-
-        ping = (end-start)*1000
-
-        return round(ping, 2)
+        return round((end - start) * 1000, 2)
 
     async def get_song(self, song_id: int = 0) -> Song:
         parameters = Params().create_new().put_definer('song', song_id).finish()
@@ -76,9 +73,9 @@ class GDSession:
             -1: MissingAccess(message='No songs were found with ID: {}.'.format(song_id)),
             -2: SongRestrictedForUsage(song_id)
         }
-        resp = await http.request(
-            Route.GET_SONG_INFO, parameters, splitter='~|~', error_codes=codes, should_map=True)
-        return ClassConverter.song_convert(resp)
+        resp = await http.request(Route.GET_SONG_INFO, parameters, error_codes=codes)
+        parsed = Parser().with_split('~|~').should_map().parse(resp)
+        return ClassConverter.song_convert(parsed)
 
     async def get_ng_song(self, song_id: int = 0) -> Song:
         # just like get_song(), but gets anything available on NG.
@@ -99,7 +96,7 @@ class GDSession:
         try:
             dl_link = re.search(RE[0], html).group(0)
             size_b = int(re.search(RE[1], html).group(1))  # in B
-            size_mb = round(size_b/1024/1024, 2)  # in MB (rounded)
+            size_mb = round(size_b / 1024 / 1024, 2)  # in MB (rounded)
             name = re.search(RE[2], html).group(1)
             author = re.search(RE[3], html).group(1)
         except AttributeError:  # if re.search returned None -> Song not found
@@ -118,8 +115,8 @@ class GDSession:
             -1: MissingAccess(message='No users were found with ID: {}.'.format(account_id))
         }
 
-        resp = await http.request(
-            Route.GET_USER_INFO, parameters, splitter=':', error_codes=codes, should_map=True)
+        resp = await http.request(Route.GET_USER_INFO, parameters, error_codes=codes)
+        resp = Parser().with_split(':').should_map().parse(resp)
 
         if return_only_stats:
             return ClassConverter.user_stats_convert(resp, client)
@@ -128,16 +125,19 @@ class GDSession:
             Params().create_new().put_definer('search', resp.get(Index.USER_PLAYER_ID))
             .put_total(0).put_page(0).finish()
         )
-        some_resp = await http.request(Route.USER_SEARCH, another, splitter='#')
+        some_resp = await http.request(Route.USER_SEARCH, another)
 
-        item = some_resp[0]
-        if not item:
+        new_resp = (
+            Parser().split('#').take(0).check_empty().split(':')
+            .should_map().parse(some_resp)
+        )
+
+        if new_resp is None:
             return
 
-        new_resp = mapper.map(item.split(':'))
-        to_add = (Index.USER_NAME, Index.USER_ICON, Index.USER_ICON_TYPE)
-        new_dict = {k: new_resp.get(k) for k in to_add}
-        resp.update(new_dict)
+        resp.update({
+            k: new_resp.get(k) for k in (Index.USER_NAME, Index.USER_ICON, Index.USER_ICON_TYPE)
+        })
 
         return ClassConverter.user_convert(resp, client)
 
@@ -160,12 +160,14 @@ class GDSession:
             -1: MissingAccess(message='Searching for {} returned -1.'.format(param))
         }
 
-        resp = await http.request(Route.USER_SEARCH, parameters, splitter='#', error_codes=codes)
-        item = resp[0]
-        if not item:
-            return
+        resp = await http.request(Route.USER_SEARCH, parameters, error_codes=codes)
+        mapped = (
+            Parser().split('#').take(0).check_empty().split(':')
+            .should_map().parse(resp)
+        )
 
-        mapped = mapper.map(item.split(':'))
+        if mapped is None:
+            return
 
         name = mapped.get(Index.USER_NAME, 'unknown')
         id = mapped.get(Index.USER_PLAYER_ID, 0)
@@ -180,8 +182,9 @@ class GDSession:
         parameters = Params().create_new().put_definer('user', account_id).finish()
 
         resp = await http.request(
-            Route.GET_USER_INFO, parameters, splitter=':', error_codes=codes, should_map=True
+            Route.GET_USER_INFO, parameters, error_codes=codes
         )
+        resp = Parser().with_split(':').should_map().parse(resp)
 
         resp.update(
             {k: mapped.get(k) for k in (Index.USER_NAME, Index.USER_ICON, Index.USER_ICON_TYPE)}
@@ -194,17 +197,17 @@ class GDSession:
     ) -> Level:
         assert level_id >= -2
 
-        type, number, cooldown = map(str, timetuple)
-        ext = ['101', type, '102', number, '103', cooldown]
+        type, number, cooldown = timetuple
+        ext = {101: type, 102: number, 103: cooldown}
 
         codes = {
             -1: MissingAccess(message='Failed to get a level. Given ID: {}'.format(level_id))
         }
 
         parameters = Params().create_new().put_definer('levelid', level_id).finish()
-        resp = await http.request(Route.DOWNLOAD_LEVEL, parameters, error_codes=codes, splitter='#')
+        resp = await http.request(Route.DOWNLOAD_LEVEL, parameters, error_codes=codes)
 
-        level_data = mapper.map(resp[0].split(':') + ext)
+        level_data = Parser().split('#').take(0).split(':').add_ext(ext).should_map().parse(resp)
 
         real_id = level_data.get(Index.LEVEL_ID)
 
@@ -212,13 +215,14 @@ class GDSession:
             Params().create_new().put_definer('search', real_id)
             .put_filters(Filters.setup_empty()).finish()
         )
-        resp = await http.request(Route.LEVEL_SEARCH, parameters, error_codes=codes, splitter='#')
+        resp = await http.request(Route.LEVEL_SEARCH, parameters, error_codes=codes)
+        resp = resp.split('#')
 
         # getting song
         song_data = resp[2]
         song = (
             Converter.to_normal_song(level_data.get(Index.LEVEL_AUDIO_TRACK)) if not song_data
-            else ClassConverter.song_convert(mapper.map(song_data.split('~|~')))
+            else ClassConverter.song_convert(Parser().with_split('~|~').should_map().parse(song_data))
         ).attach_client(client)
 
         # getting creator
@@ -242,11 +246,12 @@ class GDSession:
         codes = {
             -1: MissingAccess(message='Failed to fetch a {!r} level.'.format(type))
         }
-        resp = await http.request(Route.GET_TIMELY, parameters, error_codes=codes, splitter='|')
-        if len(resp) < 2:
+        resp = await http.request(Route.GET_TIMELY, parameters, error_codes=codes)
+
+        if not resp:
             raise MissingAccess(message='Failed to fetch a {} level. Most likely it is being refreshed.'.format(type))
 
-        num, cooldown, *_ = map(int, resp)
+        num, cooldown, *_ = map(int, resp.split('|'))
         num %= 100000
         w += 1
 
@@ -322,11 +327,12 @@ class GDSession:
             -2: NothingFound('gd.AbstractUser')
         }
 
-        resp = await http.request(Route.GET_USER_LIST, parameters, error_codes=codes, splitter='|')
+        resp = await http.request(Route.GET_USER_LIST, parameters, error_codes=codes)
+        resp, parser = resp.split('|'), Parser().with_split(':').should_map()
 
         ret = []
         for elem in resp:
-            temp = mapper.map(elem.split(':'))
+            temp = parser.parse(elem)
 
             parse_dict = {
                 'name': temp[Index.USER_NAME],
@@ -354,19 +360,17 @@ class GDSession:
             -1: MissingAccess(message='Failed to get leaderboard of the level: {!r}.'.format(level))
         }
 
-        resp = await http.request(Route.GET_LEVEL_SCORES, parameters, error_codes=codes, splitter='|')
+        resp = await http.request(Route.GET_LEVEL_SCORES, parameters, error_codes=codes)
 
         if not resp:
             return list()
 
-        ext = ['101', str(level.id)]
+        resp, parser = resp.split('|'), Parser().with_split(':').add_ext({101: level.id}).should_map()
 
-        res = []
-
-        for data in filter(_is_not_empty, resp):
-            mapped = mapper.map(data.split(':') + ext)
-            record = ClassConverter.level_record_convert(mapped, strategy, client)
-            res.append(record)
+        res = list(
+            ClassConverter.level_record_convert(parser.parse(data), strategy, client)
+            for data in filter(_is_not_empty, resp)
+        )
 
         return res
 
@@ -390,13 +394,13 @@ class GDSession:
 
         parameters = params.finish()
 
-        resp = await http.request(Route.GET_USER_TOP, parameters, error_codes=codes, splitter='|')
+        resp = await http.request(Route.GET_USER_TOP, parameters, error_codes=codes)
+        resp, parser = resp.split('|'), Parser().with_split(':').should_map()
 
-        res = []
-        for data in filter(_is_not_empty, resp):
-            mapped = mapper.map(data.split(':'))
-            stats = ClassConverter.user_stats_convert(mapped, client)
-            res.append(stats)
+        res = list(
+            ClassConverter.user_stats_convert(parser.parse(data), client)
+            for data in filter(_is_not_empty, resp)
+        )
 
         return res
 
@@ -409,9 +413,9 @@ class GDSession:
             -1: LoginFailure(login=user, password=password)
         }
 
-        resp = await http.request(Route.LOGIN, parameters, splitter=',', error_codes=codes)
+        resp = await http.request(Route.LOGIN, parameters, error_codes=codes)
 
-        account_id, id = resp
+        account_id, id, *junk = resp.split(',')
 
         prepared = {
             'name': user, 'password': password,
@@ -448,17 +452,21 @@ class GDSession:
     async def do_save(self, client: Client, data: str) -> None:
         link = Route.GD_URL
 
+        codes = {
+            -4: MissingAccess(message='Data too large.'),
+            -5: MissingAccess(message='Invalid login credentials.'),
+            -6: MissingAccess(message='Something wrong happened.')
+        }
+
         parameters = (
             Params().create_new().put_username(client.name).put_definer('password', client.password)
             .put_save_data(data).finish_login()
         )
 
-        resp = await http.request(Route.SAVE_DATA, parameters, custom_base=link)
+        resp = await http.request(Route.SAVE_DATA, parameters, custom_base=link, error_codes=codes)
 
         if resp != 1:
-            raise MissingAccess(
-                message='Failed to do backup for client: {!r}. [ERROR: {}]'.format(client, resp)
-            )
+            raise MissingAccess('Failed to do backup for client: {!r}'.format(client))
 
     async def search_levels_on_page(
         self, page: int = 0, query: str = '', filters: Optional[Filters] = None, user: Optional[AbstractUser] = None,
@@ -500,16 +508,18 @@ class GDSession:
 
         resp = await http.request(
             Route.LEVEL_SEARCH, parameters, raise_errors=raise_errors,
-            error_codes=codes, splitter='#')
+            error_codes=codes)
 
         if not resp:
             return list()
+
+        resp, parser = resp.split('#'), Parser().with_split('~|~').should_map()
 
         lvdata, cdata, sdata = resp[:3]
 
         songs = []
         for s in filter(_is_not_empty, sdata.split('~:~')):
-            song = ClassConverter.song_convert(mapper.map(s.split('~|~')))
+            song = ClassConverter.song_convert(parser.parse(s))
             songs.append(song)
 
         creators = []
@@ -520,10 +530,10 @@ class GDSession:
             creators.append(creator)
 
         levels = []
-        ext = ['101', '0', '102', '-1', '103', '-1']
+        parser.with_split(':').add_ext({101: 0, 102: -1, 103: -1})
 
         for lv in filter(_is_not_empty, lvdata.split('|')):
-            data = mapper.map(lv.split(':') + ext)
+            data = parser.parse(lv)
 
             song_id = data.get(Index.LEVEL_SONG_ID)
             song = Converter.to_normal_song(
@@ -700,19 +710,19 @@ class GDSession:
 
         resp = await http.request(
             Route.GET_PRIVATE_MESSAGES, parameters, error_codes=codes,
-            splitter_func=lambda s: s.split('#')[0].split('|'), raise_errors=raise_errors
+            raise_errors=raise_errors
         )
+        resp = Parser().split('#').take(0).check_empty().split('|').parse(resp)
+
         if resp is None:
             return list()
 
-        res = []
-        for elem in resp:
-            mapped = mapper.map(elem.split(':'))
-            res.append(
-                ClassConverter.message_convert(
-                    mapped, client.get_parse_dict(), client
-                )
-            )
+        parser = Parser().with_split(':').should_map()
+        res = list(
+            ClassConverter.message_convert(
+                parser.parse(elem), client.get_parse_dict(), client
+            ) for elem in resp
+        )
 
         return res
 
@@ -811,7 +821,7 @@ class GDSession:
     async def accept_friend_req(self, req: FriendRequest, client: Client) -> None:
         if req.type.value:  # is gd.MessageOrRequestType.SENT
             raise MissingAccess(
-                message="Failed to accept a friend request. Reason: request is sent, not recieved one."
+                message='Failed to accept a friend request. Reason: request is sent, not recieved one.'
             )
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
@@ -843,8 +853,8 @@ class GDSession:
         }
         resp = await http.request(
             Route.READ_PRIVATE_MESSAGE, parameters, error_codes=codes,
-            splitter=':', should_map=True
         )
+        resp = Parser().with_split(':').should_map()
 
         ret = Coder.decode(
             type='message', string=resp.get(Index.MESSAGE_BODY)
@@ -865,16 +875,15 @@ class GDSession:
     async def get_gauntlets(self, *, client: Client) -> List[Gauntlet]:
         parameters = Params().create_new().finish()
 
-        resp = await http.request(
-            Route.GET_GAUNTLETS, parameters, splitter_func=lambda s: s.split('#')[0].split('|')
-        )
+        resp = await http.request(Route.GET_GAUNTLETS, parameters)
 
-        res = []
-        for gdata in filter(_is_not_empty, resp):
-            mapped = mapper.map(gdata.split(':'))
-            res.append(
-                ClassConverter.gauntlet_convert(mapped, client)
-            )
+        resp = Parser().split('#').take(0).split('|').parse(resp)
+
+        parser = Parser().with_split(':').should_map()
+        res = list(
+            ClassConverter.gauntlet_convert(parser.parse(gdata), client)
+            for gdata in filter(_is_not_empty, resp)
+        )
 
         return res
 
@@ -884,22 +893,18 @@ class GDSession:
     ) -> List[MapPack]:
         parameters = Params().create_new().put_page(page).finish()
 
-        resp = await http.request(
-            Route.GET_MAP_PACKS, parameters, splitter_func=lambda s: s.split('#')[0].split('|')
-        )
+        resp = await http.request(Route.GET_MAP_PACKS, parameters)
 
-        if resp and not resp[0]:
+        resp = Parser().split('#').take(0).split('|').check_empty().should_map().parse(resp)
+
+        if resp is None:
             if raise_errors:
                 raise NothingFound('gd.MapPack')
             return list()
 
-        res = []
-        for elem in resp:
-            mapped = mapper.map(elem.split(':'))
-            res.append(
-                ClassConverter.map_pack_convert(mapped, client)
-            )
+        parser = Parser().with_split(':').should_map()
 
+        res = list(ClassConverter.map_pack_convert(parser.parse(elem), client) for elem in resp)
         return res
 
     async def get_map_packs(self, pages: Sequence[int], *, client: Client) -> List[MapPack]:
@@ -927,23 +932,19 @@ class GDSession:
         }
 
         resp = await http.request(
-            Route.GET_FRIEND_REQUESTS, parameters, error_codes=codes, raise_errors=raise_errors,
-            splitter_func=lambda s: s.split('#')[0].split('|')
+            Route.GET_FRIEND_REQUESTS, parameters, error_codes=codes, raise_errors=raise_errors
         )
+        resp = Parser().split('#').take(0).split('|').check_empty().parse(resp)
 
-        if not resp:
+        if resp is None:
             return list()
 
-        res = []
-        for elem in resp:
-            mapped = mapper.map(
-                elem.split(':') + ['101', str(inbox)]
-            )
-            res.append(
-                ClassConverter.request_convert(
-                    mapped, client.get_parse_dict(), client
-                )
-            )
+        parser = Parser().split(':').add_ext({101: inbox}).should_map()
+        res = list(
+            ClassConverter.request_convert(
+                parser.parse(elem), client.get_parse_dict(), client
+            ) for elem in resp
+        )
 
         return res
 
@@ -965,19 +966,21 @@ class GDSession:
         raise_errors: bool = True, strategy: CommentStrategy, client: Client
     ) -> List[Comment]:
         assert isinstance(page, int) and page >= 0
-        assert type in ("profile", "level")
+        assert type in ('profile', 'level')
 
-        is_level = (type == "level")
+        is_level = (type == 'level')
 
-        typeid = 0 if is_level else 1
-        definer = "userid" if is_level else "accountid"
+        typeid = is_level ^ 1
+        definer = 'userid' if is_level else 'accountid'
         selfid = user.id if is_level else user.account_id
         route = Route.GET_COMMENT_HISTORY if is_level else Route.GET_ACC_COMMENTS
 
-        def func(elem: Any) -> List[str]:
-            if is_level:
-                return elem.split(':')[0].split('~')
-            return elem.split('~')
+        parser = Parser().add_ext({101: typeid}).should_map()
+
+        if is_level:
+            parser.split(':').take(0).split('~')
+        else:
+            parser.with_split('~')
 
         param_obj = Params().create_new().put_definer(definer, selfid).put_page(page).put_total(0)
         if is_level:
@@ -988,30 +991,23 @@ class GDSession:
             -1: MissingAccess(message='Failed to retrieve comment for user: {!r}.'.format(user))
         }
 
-        resp = await http.request(route, parameters, splitter='#', error_codes=codes, raise_errors=raise_errors)
+        resp = await http.request(route, parameters, error_codes=codes, raise_errors=raise_errors)
 
         if not resp:
             return list()
 
-        thing = resp[0]
+        resp = resp.split('#').pop(0)
 
-        if not thing:
+        if not resp:
             if raise_errors:
                 raise NothingFound('gd.Comment')
             return list()
 
-        to_map = thing.split('|')
-
-        res = []
-        for elem in to_map:
-            prepared = mapper.map(
-                func(elem) + ['101', str(typeid)]
-            )
-            res.append(
-                ClassConverter.comment_convert(
-                    prepared, user._dict_for_parse, client
-                )
-            )
+        res = list(
+            ClassConverter.comment_convert(
+                parser.parse(elem), user._dict_for_parse, client
+            ) for elem in resp.split('|')
+        )
 
         return res
 
@@ -1044,14 +1040,14 @@ class GDSession:
             -2: NothingFound('gd.Comment')
         }
 
-        resp = await http.request(
-            Route.GET_COMMENTS, parameters, error_codes=codes,
-            splitter_func=lambda s: s.split('#')[0].split('|')
-        )
+        resp = await http.request(Route.GET_COMMENTS, parameters, error_codes=codes)
+
+        resp = Parser().split('#').take(0).split('|').parse(resp)
+        parser = Parser().with_split('~').should_map()
 
         res = []
         for elem in resp:
-            com_data, user_data = (mapper.map(part.split('~')) for part in elem.split(':'))
+            com_data, user_data = (parser.parse(part) for part in elem.split(':'))
             com_data.update({1: level.id, 101: 0, 102: 0})
 
             user_dict = {
@@ -1060,11 +1056,7 @@ class GDSession:
                 'name': user_data[Index.USER_NAME]
             }
 
-            res.append(
-                ClassConverter.comment_convert(
-                    com_data, user_dict, client
-                )
-            )
+            res.append(ClassConverter.comment_convert(com_data, user_dict, client))
 
         return res
 

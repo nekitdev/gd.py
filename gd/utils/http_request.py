@@ -4,9 +4,8 @@ import logging
 from yarl import URL
 import aiohttp
 
-from .._typing import Any, Callable, Dict, Optional, Union
+from .._typing import Any, Dict, Optional, Union
 from ..errors import HTTPNotConnected
-from .mapper import mapper
 from .text_tools import make_repr
 
 log = logging.getLogger(__name__)
@@ -184,14 +183,13 @@ class HTTPClient:
 
     async def request(
         self, route: str, parameters: Optional[Union[dict, str]] = None,
-        custom_base: Optional[str] = None, splitter: Optional[str] = None,
-        splitter_func: Optional[Callable[[str], list]] = None,
+        custom_base: Optional[str] = None,
         # 'error_codes' is a dict: {code: error_to_raise}
         error_codes: Optional[Dict[int, Exception]] = None,
         # 'should_map': whether response should be mapped 'enum -> value' (dict)
         raise_errors: bool = True, should_map: bool = False,
         get_cookies: bool = False, cookie: Optional[str] = None
-    ) -> Optional[Union[bytes, dict, int, list, str]]:
+    ) -> Optional[Union[bytes, str, int]]:
         """|coro|
 
         A handy shortcut for fetching response from a server and formatting it.
@@ -205,23 +203,11 @@ class HTTPClient:
             Same as ``params`` in :meth:`HTTPClient.fetch`.
         custom_base: :class:`str`
             Same as ``custom_base`` in :meth:`HTTPClient.fetch`.
-        splitter: :class:`str`
-            A string to split the response with. If ``None``, splitting is passed.
-        splitter_func: Callable[[:class:`str`], :class:`list`]
-            A function that takes one argument of type string. Preferably should return a list.
-
-            .. note::
-
-                Either *splitter* can be specified, or *splitter_func*. Not both.
-
         error_codes: Dict[:class:`int`, :exc:`Exception`]
             A dictionary that response is checked against. ``Exception`` can be any Exception.
         raise_errors: :class:`bool`
             If ``False``, errors are not raised.
             (technically, just turns on ignoring ``error_codes``)
-        should_map: :class:`bool`
-            Whether should operate :meth:`.mapper.map` or not,
-            considering that current response is converted to a list.
         get_cookies: :class:`bool`
             Same as ``get_cookies`` in :meth:`HTTPClient.fetch`
         cookie: :class:`str`
@@ -238,20 +224,12 @@ class HTTPClient:
 
         Returns
         -------
-        Union[:class:`int`, :class:`bytes`, :class:`str`, :class:`list`, :class:`dict`, `None`]
-            If ``splitter``, ``splitter_func``, ``should_map`` and ``error_codes`` are omitted,
+        Optional[Union[:class:`int`, :class:`bytes`, :class:`str`]]
+            If ``error_codes`` is omitted,
             return type is same as return of :meth:`HTTPClient.fetch` call.
 
             If ``error_codes`` is specified, and ``raise_errors`` is ``False``, returns ``None``
             when response is in ``error_codes``.
-
-            If ``splitter`` is not ``None``, and ``should_map`` is
-            ``False`` or omitted, returns :class:`list`.
-
-            If ``splitter_func`` is not ``None`` and ``should_map`` is not present or ``False``,
-            returns whatever passed function does return.
-
-            If ``should_map`` is ``True``, returns :class:`dict`.
         """
         if parameters is None:
             parameters = {}
@@ -271,15 +249,6 @@ class HTTPClient:
                 raise error_codes.get(resp)
             return
 
-        assert not (splitter is not None and splitter_func is not None)
-
-        if not isinstance(resp, int):
-            if splitter is not None:
-                resp = resp.split(splitter)
-            if splitter_func is not None:
-                resp = splitter_func(resp)
-            if should_map:
-                resp = mapper.map(resp)
         return resp
 
     async def normal_request(

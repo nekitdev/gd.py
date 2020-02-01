@@ -35,8 +35,6 @@ from .utils.save_parser import Save, SaveParser
 from .utils.crypto.coders import Coder
 from .utils.crypto.xor_cipher import XORCipher
 
-from ._jokes import jokes  # why not?...
-
 from .utils._async import synchronize
 from .utils import tasks
 
@@ -108,7 +106,7 @@ def setup_logging(
     level: int = logging.DEBUG, *,
     stream: Any = None, file: Any = None,
     formatter: str = None
-):
+) -> None:
     """Function that sets up logs of the module.
 
     Parameters

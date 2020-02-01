@@ -1,9 +1,10 @@
 [run]
 source = ./gd
-omit = 
+omit =
+    # those are rarely run
     .gd/events/utils.py
-
     */__main__.py
+    # _private are also not run frequently
     */_*.py
 
 [report]
