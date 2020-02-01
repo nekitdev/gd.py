@@ -1232,7 +1232,7 @@ class Client:
 
         Raises
         ------
-        ``None`` [yet]
+        ``~ soon``
         """
         return await self.session.search_levels_on_page(
             page=page, query=query, filters=filters, user=user, raise_errors=raise_errors, client=self
@@ -1287,6 +1287,24 @@ class Client:
         """|coro|
 
         This is an event that is fired when a new weekly demon is assigned.
+
+        See :ref:`events` for more info.
+        """
+        pass
+
+    async def on_level_rated(self, level: Level) -> Any:
+        """|coro|
+
+        This is an event that is fired when a new level is rated.
+
+        See :ref:`events` for more info.
+        """
+        pass
+
+    async def on_level_unrated(self, level: Level) -> Any:
+        """|coro|
+
+        This is an event that is fired when a level is unrated.
 
         See :ref:`events` for more info.
         """
