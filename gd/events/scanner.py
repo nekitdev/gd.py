@@ -4,7 +4,7 @@ import signal
 import logging
 import traceback
 
-from .._typing import AsyncIterator, Iterable, Level, List
+from .._typing import Iterable, Level, List
 from ..client import Client
 
 from ..utils import tasks
@@ -168,7 +168,7 @@ class RateLevelScanner(AbstractScanner):
 
         self.cache = new
 
-        async for level in further_differ(difference, self.find_new):
+        for level in await further_differ(difference, self.find_new):
             for client in self.clients:
                 dispatcher = client.dispatch(self.call_method, level)
                 self.loop.create_task(dispatcher)
@@ -176,19 +176,22 @@ class RateLevelScanner(AbstractScanner):
 
 async def further_differ(
     array: Iterable[Level], find_new: bool = True
-) -> AsyncIterator[Level]:
+) -> List[Level]:
     array = list(array)
     updated = await asyncio.gather(*(level.refresh() for level in array))
+    final = list()
 
     for level, new in zip(array, updated):
         if find_new:
             if new.is_rated() or new.has_coins_verified():
-                yield new
+                final.append(new)
         else:
             if new is None:
-                yield level
+                final.append(level)
             elif not new.is_rated() and not new.has_coins_verified():
-                yield new
+                final.append(new)
+
+    return final
 
 
 def differ(before: list, after: list, find_new: bool = True) -> filter:
