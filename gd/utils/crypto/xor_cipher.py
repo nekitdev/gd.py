@@ -1,3 +1,6 @@
+from itertools import cycle
+
+
 class XORCipher:
 
     @staticmethod
@@ -25,12 +28,4 @@ class XORCipher:
         :class:`str`
             A string after XOR operation.
         """
-        keyB = tuple(map(ord, key))  # we need an index
-        stringB = map(ord, string)
-        result = ''
-
-        for i, byte in enumerate(stringB):
-            key_i = i % len(key)
-            result += chr(byte ^ keyB[key_i])
-
-        return result
+        return ('').join(chr(ord(x) ^ ord(y)) for x, y in zip(string, cycle(key)))
