@@ -1,10 +1,12 @@
-"""Library that provides its users ability to interact with servers of Geometry Dash."""
+"""Library that provides its users ability to interact
+with the servers and the game of Geometry Dash.
+"""
 
 __title__ = 'gd'
 __author__ = 'NeKitDS'
 __copyright__ = 'Copyright 2019-2020 NeKitDS'
 __license__ = 'MIT'
-__version__ = '0.10.3'
+__version__ = '0.10.4'
 
 from collections import namedtuple
 import logging
@@ -31,9 +33,10 @@ from .utils.filters import Filters
 from .utils.gdpaginator import paginate, Paginator
 from .utils.http_request import http, HTTPClient
 from .utils.params import *
+from .utils.parser import Parser
 from .utils.save_parser import Save, SaveParser
 from .utils.crypto.coders import Coder
-from .utils.crypto.xor_cipher import XORCipher
+from .utils.crypto.xor_cipher import XORCipher as xor
 
 from .utils._async import synchronize
 from .utils import tasks
