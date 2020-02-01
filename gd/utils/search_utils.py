@@ -1,6 +1,6 @@
 from operator import attrgetter as attrget
 
-from .._typing import Any, Callable, Iterable, List, Optional, Set, Union
+from .._typing import Any, Callable, Iterable, List, Set, Union
 
 __all__ = ('find', 'get', 'unique')
 
@@ -23,8 +23,8 @@ def unique(iterable: Iterable) -> List[Any]:
 
 def find(
     predicate: Callable[[Any], bool], iterable: Iterable, *,
-    find_all: bool = False,
-) -> Union[Optional[Any], List[Any]]:
+    find_all: bool = False
+) -> Union[Any, List[Any]]:
     """For each element in iterable, return first element if predicate
     returns ``True`` and ``'find_all'`` is ``False``.
 
