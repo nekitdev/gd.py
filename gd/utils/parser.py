@@ -34,13 +34,6 @@ def action_not_empty() -> Callable[[Sequence[Any]], Optional[Sequence[Any]]]:
     return not_empty
 
 
-def convert(x: Any) -> Any:
-    try:
-        return int(x)
-    except Exception:
-        return x
-
-
 class Parser:
     def __init__(self) -> None:
         self.split_f = empty
@@ -50,15 +43,8 @@ class Parser:
         self.ext = {}
 
     @staticmethod
-    def map(item: Sequence, try_convert: bool = True) -> Dict[Any, Any]:
-        mapping = zip(item[::2], item[1::2])
-
-        if try_convert:
-            res = {convert(key): convert(value) for key, value in mapping}
-        else:
-            res = {convert(key): value for key, value in mapping}
-
-        return res
+    def map(item: Sequence[Any]) -> Dict[Any, Any]:
+        return dict(zip(item[::2], item[1::2]))
 
     def split(self, delim: str) -> Parser:
         self.actions.append(action_split(delim))
