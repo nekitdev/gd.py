@@ -1,7 +1,7 @@
 import functools
 import time
 
-from .._typing import Any, Callable
+from .._typing import Any, Callable, Tuple, Type
 
 from ..errors import NotLoggedError, MissingAccess
 
@@ -43,6 +43,25 @@ def check_logged_obj(obj: Any, func_name: str) -> None:
 
         if not client.is_logged():
             raise NotLoggedError(func_name)
+
+
+def stringify(*classes: Tuple[Type[Any]]) -> Function:
+
+    if not classes:
+        classes = int
+
+    def decorator(cls: Type[Any]) -> Type[Any]:
+        for attr in dir(cls):
+
+            try:
+                value = getattr(cls, attr)
+                if isinstance(value, classes):
+                    setattr(cls, attr, str(value))
+            except Exception:  # noqa
+                continue
+
+        return cls
+    return decorator
 
 
 def benchmark(func: Function) -> Function:
