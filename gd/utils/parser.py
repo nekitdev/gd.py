@@ -1,8 +1,9 @@
-from .._typing import Any, Callable, Dict, List, Optional, Parser, Sequence, Union
+from .._typing import Any, Callable, Dict, List, Optional, Parser, Sequence, Type, Union
 
 __all__ = ('Parser',)
 
 Function = Callable[[Any], Any]
+Null = object()
 
 
 class StopExecution(Exception):
@@ -34,6 +35,32 @@ def action_not_empty() -> Callable[[Sequence[Any]], Optional[Sequence[Any]]]:
     return not_empty
 
 
+class ExtDict(dict):
+
+    def __repr__(self):
+        return (self.__class__.__name__ + super().__repr__())
+
+    def get_default(self, value: Any, default: Any) -> Any:
+        if default is Null:
+            return value
+        return default
+
+    def getcast(self, key: Any, default: Any = Null, type: Type[Any] = int) -> Any:
+        if key in self:
+            value = self[key]
+
+            try:
+                return type(value)
+
+            except Exception:
+                pass
+
+        else:
+            value = None
+
+        return self.get_default(value, default)
+
+
 class Parser:
     def __init__(self) -> None:
         self.split_f = empty
@@ -43,7 +70,7 @@ class Parser:
 
     @staticmethod
     def map(item: Sequence[Any]) -> Dict[Any, Any]:
-        return dict(zip(item[::2], item[1::2]))
+        return ExtDict(zip(item[::2], item[1::2]))
 
     def split(self, delim: str) -> Parser:
         self.actions.append(action_split(delim))
