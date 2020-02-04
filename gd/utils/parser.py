@@ -38,7 +38,6 @@ class Parser:
     def __init__(self) -> None:
         self.split_f = empty
         self.need_map = False
-        self.attempt = True
         self.actions = list()
         self.ext = {}
 
@@ -70,17 +69,13 @@ class Parser:
                 res = action(res)
 
             if self.need_map:
-                res = self.map(res, self.attempt)
+                res = self.map(res)
                 res.update(self.ext)
 
             return res
 
         except Exception:
             return
-
-    def no_convert(self) -> Parser:
-        self.attempt = False
-        return self
 
     def should_map(self) -> Parser:
         self.need_map = True
