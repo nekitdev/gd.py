@@ -1,7 +1,5 @@
-from .decorators import stringify
+# NOTE: all values are converted to strings on init!
 
-
-@stringify(int)
 class Index:
     """Class that contains all indexes required for operating on GD Server responses."""
     # Indexes '10X' are custom made by this library, and have nothing to do with the servers.
@@ -121,3 +119,13 @@ class Index:
     # all indexes for gauntlets
     GAUNTLET_ID = 1
     GAUNTLET_LEVEL_IDS = 3
+
+
+for attr in dir(Index):
+ 
+    try:
+        value = getattr(Index, attr)
+        if isinstance(value, int):
+            setattr(cls, attr, str(value))
+    except Exception:  # noqa
+        continue
