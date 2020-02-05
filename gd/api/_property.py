@@ -28,6 +28,12 @@ def {name}(self):
 @{name}.setter
 def {name}(self, value):
     self.data[{enum!r}] = value
+@{name}.deleter
+def {name}(self):
+    try:
+        del self.data[{enum!r}]
+    except KeyError:
+        pass
 """.strip('\n')
 
 _container = '_container = {}'
@@ -77,12 +83,16 @@ def _create(enum: Enum, ts: str) -> str:
 
     for name, value in enum.as_dict().items():
         desc = enum(value).desc
+        value = str(value)
         cls = _get_type(value, ts=ts)
         final.append(_template.format(name=name, enum=value, desc=desc, cls=cls))
 
     property_container = {}
 
     for name, value in enum.as_dict().items():
+
+        value = str(value)  # we are going with str now
+
         if value not in property_container:
             property_container[value] = name
 
