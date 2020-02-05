@@ -178,7 +178,7 @@ class GDSession:
                 dict(name=name, id=id, account_id=account_id), client=client
             )
 
-        # ok if we should not return abstract, let's find all other parameters
+        # ok; if we should not return abstract, let's find all other parameters
         parameters = Params().create_new().put_definer('user', account_id).finish()
 
         resp = await http.request(
@@ -198,7 +198,7 @@ class GDSession:
         assert level_id >= -2
 
         type, number, cooldown = timetuple
-        ext = {101: type, 102: number, 103: cooldown}
+        ext = {'101': type, '102': number, '103': cooldown}
 
         codes = {
             -1: MissingAccess(message='Failed to get a level. Given ID: {}'.format(level_id))
@@ -365,7 +365,7 @@ class GDSession:
         if not resp:
             return list()
 
-        resp, parser = resp.split('|'), Parser().with_split(':').add_ext({101: level.id}).should_map()
+        resp, parser = resp.split('|'), Parser().with_split(':').add_ext({'101': level.id}).should_map()
 
         res = list(
             ClassConverter.level_record_convert(parser.parse(data), strategy, client)
@@ -530,7 +530,7 @@ class GDSession:
             creators.append(creator)
 
         levels = []
-        parser.with_split(':').add_ext({101: 0, 102: -1, 103: -1})
+        parser.with_split(':').add_ext({'101': 0, '102': -1, '103': -1})
 
         for lv in filter(_is_not_empty, lvdata.split('|')):
             data = parser.parse(lv)
@@ -939,7 +939,7 @@ class GDSession:
         if resp is None:
             return list()
 
-        parser = Parser().split(':').add_ext({101: inbox}).should_map()
+        parser = Parser().split(':').add_ext({'101': inbox}).should_map()
         res = list(
             ClassConverter.request_convert(
                 parser.parse(elem), client.get_parse_dict(), client
@@ -975,7 +975,7 @@ class GDSession:
         selfid = user.id if is_level else user.account_id
         route = Route.GET_COMMENT_HISTORY if is_level else Route.GET_ACC_COMMENTS
 
-        parser = Parser().add_ext({101: typeid}).should_map()
+        parser = Parser().add_ext({'101': typeid}).should_map()
 
         if is_level:
             parser.split(':').take(0).split('~')
@@ -1048,7 +1048,7 @@ class GDSession:
         res = []
         for elem in resp:
             com_data, user_data = (parser.parse(part) for part in elem.split(':'))
-            com_data.update({1: level.id, 101: 0, 102: 0})
+            com_data.update({'1': level.id, '101': 0, '102': 0})
 
             user_dict = {
                 'account_id': user_data[Index.USER_ACCOUNT_ID],
