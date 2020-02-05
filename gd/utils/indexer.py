@@ -1,5 +1,6 @@
 # NOTE: all values are converted to strings on init!
 
+
 class Index:
     """Class that contains all indexes required for operating on GD Server responses."""
     # Indexes '10X' are custom made by this library, and have nothing to do with the servers.
@@ -122,7 +123,7 @@ class Index:
 
 
 for attr in dir(Index):
- 
+
     try:
         value = getattr(Index, attr)
         if isinstance(value, int):
