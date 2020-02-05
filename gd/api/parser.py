@@ -371,10 +371,10 @@ def _process_level(d: dict):
 
 # LOAD ACCELERATOR
 
-try:
-    import _gd
-    locals().update(_gd.__dict__)  # hacky insertion yay
-except ImportError:
-    pass  # can not import? kden
+# try:
+#     import _gd
+#     locals().update(_gd.__dict__)  # hacky insertion yay
+# except ImportError:
+#     pass  # can not import? kden
 
 __all__ = tuple(key for key in locals().keys() if key.startswith('_') and '__' not in key)
