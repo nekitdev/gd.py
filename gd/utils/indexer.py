@@ -126,6 +126,7 @@ for attr in dir(Index):
     try:
         value = getattr(Index, attr)
         if isinstance(value, int):
-            setattr(cls, attr, str(value))
+            setattr(Index, attr, str(value))
+
     except Exception:  # noqa
         continue
