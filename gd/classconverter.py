@@ -1,7 +1,7 @@
 import base64 as b64
 import urllib.parse
 
-from ._typing import Any, Client, Dict, Optional, Type, Union
+from ._typing import Any, Client, Dict, Optional, Type
 
 from .song import Song
 from .user import UserStats, User
