@@ -101,7 +101,7 @@ class Parser:
 
             return res
 
-        except Exception:
+        except Exception:  # noqa
             return
 
     def should_map(self) -> Parser:
