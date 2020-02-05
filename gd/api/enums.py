@@ -1,3 +1,4 @@
+# from ..utils.decorators import stringify
 from ..utils.enums import NEnum
 
 __all__ = (
@@ -29,6 +30,7 @@ __all__ = (
 )
 
 
+# @stringify(int)
 class ObjectDataEnum(NEnum):
     ID = 1
     X = 2  # in Units
@@ -233,6 +235,7 @@ class ObjectDataEnum(NEnum):
     LOCK_TO_CAMERA_Y = -303
 
 
+# @stringify(int)
 class ColorChannelProperties(NEnum):
     RED = 1
     GREEN = 2
