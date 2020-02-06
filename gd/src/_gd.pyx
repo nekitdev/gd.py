@@ -25,31 +25,20 @@ cdef _prepare(str s, str delim):
     return zip(split[::2], split[1::2])
 
 
-cpdef dict _convert(str s, str delim = '_', bool attempt_conversion = True, object f = None):
+cpdef dict _convert(str s, str delim = '_', object f = None):
     prepared = _prepare(s, delim)
 
     if f is None:
-        # case: no convert func
-        if attempt_conversion:
-            return {_try_convert(key): value for key, value in prepared}
-
         return dict(prepared)
 
-    if not attempt_conversion:
-        # leave the keys untouched
-        return {key: f(key, value) for key, value in prepared}
-
-    final = {}
-
-    for key, value in prepared:
-        key = _try_convert(key)
-        final[key] = f(key, value)
-
-    return final
+    return {key: f(key, value) for key, value in prepared}
 
 
 cpdef _dump(dict d, dict additional = None):
     final = {}
+
+    if additional is None:
+        additional = {}
 
     for n, value in d.items():
         to_add = _convert_type(value)
@@ -118,33 +107,33 @@ cdef str _b64_failsafe(str string, bool encode = True):
 # OBJECT PARSING
 
 cdef set _INT = {
-    1, 7, 8, 9, 12, 20, 21, 22, 23, 24, 25, 50, 51, 61, 71, 
-    76, 77, 80, 95, 108
+    '1', '7', '8', '9', '12', '20', '21', '22', '23', '24', '25', '50', '51', '61', '71',
+    '76', '77', '80', '95', '108'
 }
 
 cdef set _BOOL = {
-    4, 5, 11, 13, 14, 15, 16, 17, 34, 36, 41, 42, 56, 58, 59, 60, 62, 64, 65,
-    66, 67, 70, 78, 81, 86, 87, 89, 93, 94, 96, 98, 99, 100, 102, 103, 106
+    '4', '5', '11', '13', '14', '15', '16', '17', '34', '36', '41', '42', '56', '58', '59', '60', '62', '64', '65',
+    '66', '67', '70', '78', '81', '86', '87', '89', '93', '94', '96', '98', '99', '100', '102', '103', '106'
 }
 
 cdef set _FLOAT = {
-    2, 3, 6, 10, 28, 29, 32, 35, 45, 46, 47, 54, 63, 68, 69, 72, 73, 75,
-    84, 85, 90, 91, 92, 97, 105, 107
+    '2', '3', '6', '10', '28', '29', '32', '35', '45', '46', '47', '54', '63', '68', '69', '72', '73', '75',
+    '84', '85', '90', '91', '92', '97', '105', '107'
 }
 
-cdef set _HSV = {43, 44, 49}
+cdef set _HSV = {'43', '44', '49'}
 
-cdef int _TEXT = 31
-cdef int _GROUPS = 57
+cdef str _TEXT = '31'
+cdef str _GROUPS = '57'
 
-cdef int _Z_LAYER = 24
-cdef int _EASING = 30
-cdef int _PULSE_MODE = 48
-cdef int _PULSE_TYPE = 52
-cdef int _PICKUP_MODE = 79
-cdef int _TOUCH_TOGGLE = 82
-cdef int _COMP = 88
-cdef int _TARGET_COORDS = 101
+cdef str _Z_LAYER = '24'
+cdef str _EASING = '30'
+cdef str _PULSE_MODE = '48'
+cdef str _PULSE_TYPE = '52'
+cdef str _PICKUP_MODE = '79'
+cdef str _TOUCH_TOGGLE = '82'
+cdef str _COMP = '88'
+cdef str _TARGET_COORDS = '101'
 
 cdef dict _ENUMS = {
     _Z_LAYER: ZLayer,
@@ -162,7 +151,7 @@ cdef dict _OBJECT_ADDITIONAL = {
 }
 
 cpdef dict _object_convert(str s):
-    return _convert(s, delim=',', attempt_conversion=True, f=_from_str)
+    return _convert(s, delim=',', f=_from_str)
 
 cpdef dict _object_dump(dict d):
     return _dump(d, _OBJECT_ADDITIONAL)
@@ -210,11 +199,11 @@ cdef _convert_type(object x):
 
 # COLOR PARSING
 
-cdef set _COLOR_INT = {1, 2, 3, 6, 9, 11, 12, 13}
-cdef set _COLOR_BOOL = {5, 8, 15, 17, 18}
-cdef int _COLOR_PLAYER = 4
-cdef int _COLOR_FLOAT = 7
-cdef int _COLOR_HSV = 10
+cdef set _COLOR_INT = {'1', '2', '3', '6', '9', '11', '12', '13'}
+cdef set _COLOR_BOOL = {'5', '8', '15', '17', '18'}
+cdef str _COLOR_PLAYER = '4'
+cdef str _COLOR_FLOAT = '7'
+cdef str _COLOR_HSV = '10'
 
 
 cdef _parse_color(n, str v):
@@ -232,7 +221,7 @@ cdef _parse_color(n, str v):
 
 
 cpdef dict _color_convert(str s):
-    return _convert(s, delim='_', attempt_conversion=True, f=_parse_color)
+    return _convert(s, delim='_', f=_parse_color)
 
 
 cpdef dict _color_dump(dict d):
