@@ -39,7 +39,7 @@ class XMLParser:
 
             self._default(plist.attrib)
 
-            root = plist.getchildren().pop(0)
+            root = list(plist).pop(0)
 
             return self.iterate_xml(root)
 
@@ -47,7 +47,7 @@ class XMLParser:
             raise ParserError('Failed to parse xml string.') from exc
 
     def iterate_xml(self, element: xml.Element) -> Dict[str, Any]:
-        elements = element.getchildren()
+        elements = list(element)
         grouped = zip(elements[::2], elements[1::2])
 
         ret = {}

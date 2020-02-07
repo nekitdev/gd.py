@@ -44,13 +44,16 @@ _cases = {
     32: ('Dex Arson', 'Embers'),
     33: ('Dex Arson', 'Round 1'),
     34: ('F-777', 'Monster Dance Off'),
+    35: ('MDK', 'Press Start'),
+    36: ('Bossfight', 'Nock Em'),
+    37: ('Boom Kitty', 'Power Trip')
 }
 
 
 class Converter:
     """Some weird class where NeKit holds his converters for everything"""
-    @classmethod
-    def to_normal_song(cls, song_id: int, server_style: bool = True) -> Song:
+    @staticmethod
+    def to_normal_song(song_id: int, server_style: bool = True) -> Song:
         if server_style:
             cases = _cases
         else:
@@ -63,8 +66,8 @@ class Converter:
             size=0.0, links={}, custom=False
         )
 
-    @classmethod
-    def to_ordinal(cls, n: int) -> str:
+    @staticmethod
+    def to_ordinal(n: int) -> str:
         x = str(n)
 
         pn = x[-2:-1]
@@ -81,16 +84,16 @@ class Converter:
         )
         return res
 
-    @classmethod
-    def snake_to_camel(cls, string: str) -> str:  # not perfect but still...
+    @staticmethod
+    def snake_to_camel(string: str) -> str:  # not perfect but still...
         return re.sub('_([a-zA-Z0-9])', lambda match: match.group(1).upper(), string)
 
-    @classmethod
-    def get_gauntlet_name(cls, value: int) -> str:
+    @staticmethod
+    def get_gauntlet_name(value: int) -> str:
         return GauntletEnum.from_value(value).desc + ' ' + 'Gauntlet'
 
-    @classmethod
-    def value_to_pack_difficulty(cls, value: int) -> LevelDifficulty:
+    @staticmethod
+    def value_to_pack_difficulty(value: int) -> LevelDifficulty:
         cases = {
             1: LevelDifficulty.EASY,
             2: LevelDifficulty.NORMAL,
@@ -101,8 +104,8 @@ class Converter:
         }
         return cases.get(value, LevelDifficulty.NA)
 
-    @classmethod
-    def value_to_difficulty(cls, value: int) -> LevelDifficulty:
+    @staticmethod
+    def value_to_difficulty(value: int) -> LevelDifficulty:
         cases = {
             10: LevelDifficulty.EASY,
             20: LevelDifficulty.NORMAL,
@@ -112,8 +115,8 @@ class Converter:
         }
         return cases.get(value, LevelDifficulty.NA)
 
-    @classmethod
-    def value_to_demon(cls, value: int) -> DemonDifficulty:
+    @staticmethod
+    def value_to_demon(value: int) -> DemonDifficulty:
         cases = {
             3: DemonDifficulty.EASY_DEMON,
             4: DemonDifficulty.MEDIUM_DEMON,

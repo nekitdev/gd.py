@@ -24,6 +24,9 @@ class IconSet(AbstractEntity):
         }
         return make_repr(self, info)
 
+    def __str__(self) -> str:
+        return 'IconSet({}, {})'.format(self.color_1, self.color_2)
+
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.options == other.options
 

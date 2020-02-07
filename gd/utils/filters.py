@@ -54,8 +54,8 @@ class Filters:
         uncompleted: bool = False, only_completed: bool = False,
         completed_levels: Optional[Sequence[Union[int, Level]]] = None,
         require_coins: bool = False, featured: bool = False,
-        epic: bool = False, rated: bool = None, require_two_player: bool = False,
-        song_id: int = None, use_custom_song: bool = False, require_original: bool = False,
+        epic: bool = False, rated: Optional[bool] = None, require_two_player: bool = False,
+        song_id: Optional[int] = None, use_custom_song: bool = False, require_original: bool = False,
         followed: Optional[Sequence[Union[int, AbstractUser]]] = None
     ) -> None:
         if isinstance(difficulty, (int, str, NEnum)):
@@ -192,12 +192,14 @@ def _join(elements: Sequence[Any], *, string: str = ',', wrap_with: str = '{}') 
 
     def func(element: Any) -> str:
         to_str = element
+
         if isinstance(element, NEnum):  # Enum
             to_str = element.value
-        elif hasattr(element, 'account_id'):  # AbstractUser
+        elif hasattr(element, 'account_id'):  # User
             to_str = element.account_id
         elif hasattr(element, 'id'):  # Level
             to_str = element.id
+
         return str(to_str)
 
     return wrap_with.format(string.join(map(func, elements)))

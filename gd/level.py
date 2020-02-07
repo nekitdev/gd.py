@@ -33,6 +33,9 @@ class Level(AbstractEntity):
         }
         return make_repr(self, info)
 
+    def __str__(self) -> str:
+        return self.name
+
     def __json__(self) -> dict:
         return {k: v for k, v in super().__json__().items() if k != 'data'}
 

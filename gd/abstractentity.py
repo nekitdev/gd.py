@@ -28,6 +28,9 @@ class AbstractEntity:
         info = {'id': self.id}
         return make_repr(self, info)
 
+    def __str__(self) -> str:
+        return self.hash_str
+
     def __hash__(self) -> int:
         return hash(self.hash_str)
 

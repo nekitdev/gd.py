@@ -23,6 +23,9 @@ class AbstractUser(AbstractEntity):
         }
         return make_repr(self, info)
 
+    def __str__(self) -> str:
+        return self.name
+
     @property
     def name(self) -> str:
         """:class:`str`: String representing name of the user."""

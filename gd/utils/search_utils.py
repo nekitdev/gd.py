@@ -1,6 +1,6 @@
 from operator import attrgetter as attrget
 
-from .._typing import Any, Callable, Iterable, List, Set, Union
+from .._typing import Any, Callable, Iterable, List, Union
 
 __all__ = ('find', 'get', 'unique')
 
@@ -16,7 +16,7 @@ def unique(iterable: Iterable) -> List[Any]:
 
         unique([3, 2, 1, 1, 2]) -> [3, 2, 1]
     """
-    seen = set()  # type: Set[Any]
+    seen = set()
     f = seen.add
     return list(x for x in iterable if not (x in seen or f(x)))
 

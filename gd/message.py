@@ -24,6 +24,9 @@ class Message(AbstractEntity):
         }
         return make_repr(self, info)
 
+    def __str__(self) -> str:
+        return self.subject
+
     @property
     def author(self) -> AbstractUser:
         """:class:`.AbstractUser`: An author of the message."""

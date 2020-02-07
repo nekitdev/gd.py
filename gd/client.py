@@ -605,7 +605,7 @@ class Client:
             return log.warning('No data was provided.')
 
         if not save_data:
-            data = await api.to_string(self.save_api, connect=False, xor=False)
+            data = await api.save.to_string_async(self.save_api, connect=False, xor=False)
         else:
             data = save_data
 

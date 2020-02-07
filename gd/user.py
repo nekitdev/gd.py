@@ -15,10 +15,6 @@ class UserStats(AbstractUser):
     """Class that extends :class:`.AbstractUser`, adding
     user's statistics to it.
     """
-    def __init__(self, **options) -> None:
-        super().__init__(**options)
-        self.options = options
-
     def __repr__(self) -> str:
         info = {
             'account_id': self.account_id,
@@ -90,10 +86,6 @@ class User(UserStats):
     """Class that represents a Geometry Dash User.
     This class is derived from :class:`.UserStats`.
     """
-    def __init__(self, **options) -> None:
-        super().__init__(**options)
-        self.options = options
-
     def __repr__(self) -> str:
         info = {
             'account_id': self.account_id,

@@ -1,20 +1,13 @@
 from datetime import datetime
-import os
-
-import gd
 import pytest
+
+from conftest import client
 
 # PREPARATIONS
 
-gd.setup_logging()
-
 pytestmark = pytest.mark.asyncio
 
-user, password = (
-    os.getenv('GD_USER'), os.getenv('GD_PASSWORD')
-)
-
-client = gd.Client()
+message = ('[gd.py] ({}): Running tests...'.format(datetime.utcnow()))
 
 
 # MAIN TESTS
@@ -53,6 +46,7 @@ async def test_many_levels():
 #     await client.get_weekly()
 # TODO: add check if daily/weekly is being refreshed
 
+
 async def test_level_packs():
     await client.get_gauntlets()
     await client.get_page_map_packs()
@@ -71,15 +65,7 @@ async def test_search_levels():
     await client.search_levels(query='VorteX')
 
 
-async def test_close():
-    client.close()
-
-
 # LOGGED IN CLIENT TESTS
-
-@pytest.mark.skipif(user is None or password is None, reason='Environment variables not set.')
-async def test_login():
-    await client.login(user, password)
 
 
 skip_not_logged = pytest.mark.skipif(
@@ -118,6 +104,20 @@ async def test_get_friends():
 
 
 @skip_not_logged
+async def test_send_message_and_request():
+    nekit = await client.get_user(5509312)
+    await nekit.send('<gd.py>', message)
+    await nekit.send_friend_request('<gd.py>')
+
+
+@skip_not_logged
+async def test_level_upload_and_delete():
+    level = await client.get_level(30029017)
+    await level.upload(id=0)  # reupload
+    await level.delete()      # delete new level
+
+
+@skip_not_logged
 async def test_get_messages():
     await client.get_messages()
 
@@ -134,7 +134,7 @@ async def test_to_user():
 
 @skip_not_logged
 async def test_post_comment():
-    await client.post_comment('[gd.py] ({}): Running tests...'.format(datetime.utcnow()))
+    await client.post_comment(message)
 
 
 @skip_not_logged
@@ -148,7 +148,5 @@ async def test_update_settings():
 
 
 @skip_not_logged
-def test_as_user():
-    print(client.as_user())
-
-# TODO: add more tests (yep, I use todo stuff ._.)
+async def test_as_user():
+    await client.as_user().to_user()

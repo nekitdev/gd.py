@@ -28,6 +28,9 @@ class Gauntlet(AbstractEntity):
 
         return make_repr(self, info)
 
+    def __str__(self) -> str:
+        return self.name
+
     def __json__(self) -> dict:
         final = dict(levels=self.levels)
         final.update(super().__json__())

@@ -76,14 +76,6 @@ Filters
 .. autoclass:: Filters
     :members:
 
-Paginator
----------
-
-.. autofunction:: paginate
-
-.. autoclass:: Paginator
-    :members:
-
 AbstractEntity
 --------------
 

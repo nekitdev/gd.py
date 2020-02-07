@@ -274,8 +274,6 @@ class ClassConverter:
         color_string = odict.get(Index.COMMENT_COLOR, '255,255,255')
         color = Color.from_rgb(*map(int, color_string.split(',')))
 
-        print(odict)
-
         return Comment(
             body=b64.urlsafe_b64decode(odict.get(Index.COMMENT_BODY, '')).decode(errors='replace'),
             rating=odict.getcast(Index.COMMENT_RATING, 0, int),

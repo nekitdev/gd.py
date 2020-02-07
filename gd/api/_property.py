@@ -91,7 +91,7 @@ def _create(enum: Enum, ts: str) -> str:
 
     for name, value in enum.as_dict().items():
 
-        value = str(value)  # we are going with str now
+        value = str(value)  # we are going with str from now on
 
         if value not in property_container:
             property_container[value] = name

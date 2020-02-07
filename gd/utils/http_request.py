@@ -4,7 +4,7 @@ import logging
 from yarl import URL
 import aiohttp
 
-from .._typing import Any, Dict, Optional, Union
+from .._typing import Dict, Optional, Union
 from ..errors import HTTPNotConnected
 from .text_tools import make_repr
 
@@ -37,7 +37,7 @@ class HTTPClient:
     def __repr__(self) -> str:
         info = {
             'debug': self.debug,
-            'semaphore': self.semaphore,
+            'max_requests': self.semaphore._value,
             'url': repr(self.base)
         }
         return make_repr(self, info)
@@ -55,7 +55,7 @@ class HTTPClient:
         """
         self.base = URL(base)
 
-    def set_default_semaphore(
+    def set_semaphore(
         self, value: int = 250, *,
         loop: asyncio.AbstractEventLoop = None
     ) -> None:
@@ -70,16 +70,6 @@ class HTTPClient:
             Event loop to pass to semaphore's constructor.
         """
         self.semaphore = asyncio.Semaphore(value, loop=loop)
-
-    def set_semaphore(self, semaphore: Any) -> None:
-        """Sets semaphore of ``self`` to a given ``semaphore``.
-
-        Parameters
-        ----------
-        semaphore: `Any`
-            Semaphore to set. Preferably from ``asyncio`` module or subclasses of asyncio semaphores.
-        """
-        self.semaphore = semaphore
 
     def set_debug(self, debug: bool = False) -> None:
         """Set http client debugging.
@@ -162,6 +152,7 @@ class HTTPClient:
                     return
 
                 data = await resp.content.read()
+
                 self._last_result = data
 
                 try:
@@ -169,6 +160,7 @@ class HTTPClient:
 
                     try:
                         return int(res)
+
                     except ValueError:
                         pass
 
@@ -176,7 +168,7 @@ class HTTPClient:
                     res = data
 
                 if get_cookies:
-                    c = str(resp.cookies).split(' ')[1]
+                    c = str(resp.cookies).split(' ').pop(1)
                     return res, c
 
                 return res

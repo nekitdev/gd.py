@@ -15,6 +15,9 @@ class Song(AbstractEntity):
         }
         return make_repr(self, info)
 
+    def __str__(self) -> str:
+        return self.name
+
     @property
     def id(self) -> int:
         """:class:`int`: An ID of the song."""

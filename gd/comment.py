@@ -19,6 +19,9 @@ class Comment(AbstractEntity):
         }
         return make_repr(self, info)
 
+    def __str__(self) -> str:
+        return self.body
+
     @property
     def body(self) -> str:
         """:class:`str`: Returns body of the comment."""

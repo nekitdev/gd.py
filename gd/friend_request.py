@@ -18,6 +18,9 @@ class FriendRequest(AbstractEntity):
         }
         return make_repr(self, info)
 
+    def __str__(self) -> str:
+        return self.body
+
     @property
     def author(self) -> AbstractUser:
         """:class:`.AbstractUser`: An author of the friend request."""
