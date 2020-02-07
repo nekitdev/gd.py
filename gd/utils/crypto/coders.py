@@ -106,9 +106,7 @@ class Coder:
             Generated string.
         """
         sset = string.ascii_letters + string.digits
-        rand = random.choices(sset, k=length)
-        final = ''.join(rand)
-        return final
+        return str().join(random.choice(sset) for _ in range(length))
 
     @classmethod
     def encode(cls, type: str, string: str) -> str:
