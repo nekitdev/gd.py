@@ -2,6 +2,7 @@ import gd
 
 from conftest import client
 
+
 def make_editor():
     editor = gd.api.Editor()
     editor.add_objects(
