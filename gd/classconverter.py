@@ -34,7 +34,7 @@ class ClassConverter:
             id=odict.getcast(Index.SONG_ID, 0, int),
             size=odict.getcast(Index.SONG_SIZE, 0.0, float),
             links={
-                'normal': Route.NEWGROUNDS_SONG_LISTEN + odict.get(Index.SONG_ID),
+                'normal': Route.NEWGROUNDS_SONG_LISTEN + odict.get(Index.SONG_ID, ''),
                 'download': dl_link
             },
             custom=True,

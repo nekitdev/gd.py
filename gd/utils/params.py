@@ -316,13 +316,11 @@ class Parameters:
         parts = []
 
         for data in data_seq:
-            if isinstance(data, str):
-                data = data.encode()
+            if isinstance(data, bytes):
+                data = data.decode(errors='ignore')
 
-            if b'?xml' in data:  # not encoded
+            if '?xml' in data:  # not encoded
                 data = Coder.encode_save(data, needs_xor=False)
-
-            data = data.decode(errors='replace')
 
             parts.append(data)
 

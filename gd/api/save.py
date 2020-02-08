@@ -39,8 +39,8 @@ class Part(dict):
     def dump(self) -> str:
         return self.parser.dump(self)
 
-    def encode(self, xor: bool = True) -> bytes:
-        return Coder.encode_save(self.dump().encode(), needs_xor=xor)
+    def encode(self, xor: bool = True) -> str:
+        return Coder.encode_save(self.dump(), needs_xor=xor)
 
 
 class Database:

@@ -172,8 +172,8 @@ class Editor:
 
     def __repr__(self) -> str:
         info = {
-            'len': len(self.objects),
-            'objects': '[...]'
+            'objects': len(self.objects),
+            'header': '<...>'
         }
         return make_repr(self, info)
 

@@ -80,10 +80,10 @@ class SaveUtil:
         return Database(main, levels)
 
     def _decode(self, stream: Union[bytes, str], xor: bool = True) -> str:
-        if isinstance(stream, str):
-            stream = stream.encode()
+        if isinstance(stream, bytes):
+            stream = stream.decode(errors='ignore')
         try:
-            return Coder.decode_save(stream, needs_xor=xor).decode(errors='replace')
+            return Coder.decode_save(stream, needs_xor=xor)
         except Exception:
             return str()
 
@@ -98,7 +98,7 @@ class SaveUtil:
         parts = []
 
         for part in db.as_tuple():
-            parts.append(part.encode(xor=xor).decode())
+            parts.append(part.encode(xor=xor))
 
         main, levels, *_ = parts
 
@@ -119,7 +119,7 @@ class SaveUtil:
 
             for path in (main_path, levels_path):
 
-                with open(path, 'rb') as file:
+                with open(path, 'r') as file:
                     parts.append(file.read())
 
             return self._load(*parts)
@@ -138,7 +138,7 @@ class SaveUtil:
 
         for file, part in zip(files, db.as_tuple()):
 
-            with open(file, 'wb') as data_file:
+            with open(file, 'w') as data_file:
                 data_file.write(part.encode())
 
 

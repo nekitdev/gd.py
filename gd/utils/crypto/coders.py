@@ -6,7 +6,7 @@ import struct
 import zlib
 
 # absolute import because we are deep
-from gd._typing import Sequence, Union
+from gd._typing import List, Union
 
 from .xor_cipher import XORCipher as XOR
 
@@ -35,39 +35,21 @@ class Coder:
 
     additional = (0x1f, 0x8b, 0x8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xb)
 
-    @classmethod
-    def normal_xor(cls, data: bytes, key: int) -> str:
-        """Applies simple XOR on an array of bytes.
-
-        Parameters
-        ----------
-        data: :class:`bytes`
-            Data to apply XOR on.
-
-        key: :class:`int`
-            A key to XOR data with.
-
-        Returns
-        -------
-        :class:`str`
-            Decoded data as a string.
-        """
-        return bytearray(i ^ key for i in data).decode(errors='replace')
+    @staticmethod
+    def normal_xor(string: str, key: int) -> str:
+        return str().join(chr(ord(char) ^ key) for char in string)
 
     @classmethod
-    def decode_save(cls, save: bytes, needs_xor: bool = True) -> bytes:
-        if isinstance(save, str):
-            save = save.encode()
-
+    def decode_save(cls, save: str, needs_xor: bool = True) -> str:
         if needs_xor:
             save = cls.normal_xor(save, 11)
-        else:
-            save = save.decode(errors='ignore')
 
-        return zlib.decompress(base64.urlsafe_b64decode(save.encode()), zlib.MAX_WBITS | 0x10)
+        return zlib.decompress(
+            base64.urlsafe_b64decode(save.encode()), zlib.MAX_WBITS | 0x10
+        ).decode(errors='replace')
 
     @classmethod
-    def encode_save(cls, save: bytes, needs_xor: bool = True) -> bytes:
+    def encode_save(cls, save: Union[bytes, str], needs_xor: bool = True) -> str:
         if isinstance(save, str):
             save = save.encode()
 
@@ -78,12 +60,15 @@ class Coder:
 
         encrypted = bytes(cls.additional) + compressed[2:-4] + crc32 + save_size
 
-        encoded = base64.urlsafe_b64encode(encrypted)
+        final = base64.urlsafe_b64encode(encrypted).decode()
 
-        return encoded if not needs_xor else cls.normal_xor(encoded, 11).encode()
+        if needs_xor:
+            final = cls.normal_xor(final, 11)
+
+        return final
 
     @classmethod
-    def do_base64(cls, data: str, encode: bool = True) -> Union[bytes, str]:
+    def do_base64(cls, data: str, encode: bool = True) -> str:
         if encode:
             return base64.urlsafe_b64encode(data.encode()).decode()
         else:
@@ -129,7 +114,7 @@ class Coder:
             Encoded string.
         """
         ciphered = XOR.cipher(key=cls.keys[type], string=string)
-        encoded = base64.b64encode(ciphered.encode()).decode()
+        encoded = base64.urlsafe_b64encode(ciphered.encode()).decode()
         return encoded
 
     @classmethod
@@ -158,12 +143,12 @@ class Coder:
         :class:`str`
             Decoded string.
         """
-        ciphered = base64.b64decode(string).decode()
+        ciphered = base64.urlsafe_b64decode(string).decode()
         decoded = XOR.cipher(key=cls.keys[type], string=ciphered)
         return decoded
 
     @classmethod
-    def gen_chk(cls, type: str, values: Sequence[Union[int, str]]) -> str:
+    def gen_chk(cls, type: str, values: List[Union[int, str]]) -> str:
         """Generates a "chk" value, used in different requests to GD servers.
 
         The method is: combine_values -> add salt -> sha1 hash
@@ -175,36 +160,31 @@ class Coder:
             String representation of type, e.g. ``'comment'``.
             Used to define salt and XOR key.
 
-        values: Sequence[Union[:class:`int`, :class:`str`]]
-            Sequence of values to generate a chk with.
+        values: List[Union[:class:`int`, :class:`str`]]
+            List of values to generate a chk with.
 
         Returns
         -------
         :class:`str`
             Generated ``'chk'``, represented as string.
         """
-        values = list(map(str, values))
         salt = cls.salts.get(type, '')  # get salt
-        string = ''
-        # combine
-        # special case for 'levelscore'
+
         if (type == 'levelscore'):
-            for i in range(len(values)-1):
-                string += values[i]
-                if (i == 7):
-                    string += '1'
-            string += salt + values[-1]
-        # normal case
+            values.insert(8, 1)
+            values.insert(-1, salt)
+
         else:
-            for value in values:
-                string += value
-            string += salt
+            values.append(salt)
+
+        string = str().join(map(str, values))
+
         # sha1 hash
         hashed = hashlib.sha1(string.encode()).hexdigest()
         # XOR
         xored = XOR.cipher(key=cls.keys[type], string=hashed)
         # Base64
-        final = base64.b64encode(xored.encode()).decode()
+        final = base64.urlsafe_b64encode(xored.encode()).decode()
         return final
 
     @classmethod
@@ -223,10 +203,10 @@ class Coder:
         Union[:class:`bytes`, :class:`str`]
             Unzipped level data, as a stream.
         """
-        if isinstance(string, bytes):
-            string = string.decode(errors='replace')
+        if isinstance(string, str):
+            string = string.encode()
 
-        decoded = base64.urlsafe_b64decode(string.encode())
+        decoded = base64.urlsafe_b64decode(string)
 
         try:
             unzipped = zlib.decompress(decoded, zlib.MAX_WBITS | 0x10)
@@ -242,13 +222,13 @@ class Coder:
 
     @classmethod
     def zip(cls, string: Union[bytes, str], append_semicolon: bool = True) -> str:
-        if isinstance(string, str):
-            string = string.encode()
+        if isinstance(string, bytes):
+            string = string.decode(errors='ignore')
 
-        if append_semicolon and not string.endswith(b';'):
-            string += b';'
+        if append_semicolon and not string.endswith(';'):
+            string += ';'
 
-        return cls.encode_save(string, needs_xor=False).decode()
+        return cls.encode_save(string, needs_xor=False)
 
     @classmethod
     def gen_level_upload_seed(cls, data_string: str, chars_required: int = 50) -> str:
