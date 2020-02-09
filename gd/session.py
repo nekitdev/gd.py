@@ -1046,7 +1046,7 @@ class GDSession:
         parser = Parser().with_split('~').should_map()
 
         res = []
-        for elem in resp:
+        for elem in filter(_is_not_empty, resp):
             com_data, user_data = (parser.parse(part) for part in elem.split(':'))
             com_data.update({'1': level.id, '101': 0, '102': 0})
 
