@@ -61,14 +61,38 @@ gd.py also gives some helpers in case user does not know some values:
 
 .. autofunction:: get_id
 
+Editor
+------
+
 .. autoclass:: Editor
     :members:
+
+Header
+------
+
+.. autoclass:: Header
+    :members:
+
+LevelAPI
+--------
+
+.. autoclass:: LevelAPI
+    :members:
+
+Object
+------
 
 .. autoclass:: Object
     :members:
 
+HSV
+---
+
 .. autoclass:: HSV
     :members:
+
+ColorChannel
+------------
 
 .. autoclass:: ColorChannel
     :members:
