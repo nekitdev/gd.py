@@ -18,6 +18,8 @@ from ._property import (
     _level_code,
 )
 
+from .._typing import ColorChannel, Object, Struct
+
 __all__ = ('Object', 'ColorChannel', 'Header', 'LevelAPI', 'ColorCollection')
 
 
@@ -62,9 +64,10 @@ class Struct:
         self_copy.data = self.data.copy()
         return self_copy
 
-    def edit(self, **fields):
+    def edit(self, **fields) -> Struct:
         for field, value in fields.items():
             setattr(self, field, value)
+        return self
 
     @classmethod
     def from_mapping(cls, mapping: dict):
@@ -87,26 +90,30 @@ class Object(Struct):
     _convert = _object_convert
     _collect = _object_collect
 
-    def set_id(self, directive: str):
+    def set_id(self, directive: str) -> Object:
         """Set ``id`` of ``self`` according to the directive, e.g. ``trigger:move``."""
         self.edit(id=get_id(directive))
+        return self
 
-    def set_z_layer(self, directive: str):
+    def set_z_layer(self, directive: str) -> Object:
         """Set ``z_layer`` of ``self`` according to the directive, e.g. ``layer:t1`` or ``b3``."""
         self.edit(z_layer=get_id(_get_dir(directive, 'layer'), ret_enum=True))
+        return self
 
-    def set_easing(self, directive: str):
+    def set_easing(self, directive: str) -> Object:
         """Set ``easing`` of ``self`` according to the directive, e.g. ``sine_in_out``."""
         self.edit(easing=get_id(_get_dir(directive, 'easing'), ret_enum=True))
+        return self
 
-    def set_color(self, color):
+    def set_color(self, color) -> Object:
         """Set ``rgb`` of ``self`` to ``color``."""
         self.edit(**dict(zip('rgb', _define_color(color).to_rgb())))
+        return self
 
     def get_color(self):
         return _make_color(self)
 
-    def add_groups(self, *groups: int):
+    def add_groups(self, *groups: int) -> Object:
         """Add ``groups`` to ``self.groups``."""
         if not hasattr(self, 'groups'):
             self.groups = set(groups)
@@ -114,25 +121,31 @@ class Object(Struct):
         else:
             self.groups.update(groups)
 
+        return self
+
     def get_pos(self):
         """Tuple[:class:`int`, :class:`int`]: ``x`` and ``y`` of ``self``."""
         return (self.x, self.y)
 
-    def set_pos(self, x: float, y: float):
+    def set_pos(self, x: float, y: float) -> Object:
         """Set ``x`` and ``y`` position of ``self`` to given values."""
         self.x, self.y = x, y
+        return self
 
-    def move(self, x: float = 0, y: float = 0):
+    def move(self, x: float = 0, y: float = 0) -> Object:
         """Add ``x`` and ``y`` to coordinates of ``self``."""
         self.x += x
         self.y += y
+        return self
 
-    def rotate(self, deg: float = 0):
+    def rotate(self, deg: float = 0) -> Object:
         """Add ``deg`` to ``rotation`` of ``self``."""
         if not self.rotation:
             self.rotation = deg
         else:
             self.rotation += deg
+
+        return self
 
     def is_checked(self):
         """:class:`bool`: indicates if ``self.portal_checked`` is true."""
@@ -160,13 +173,15 @@ class ColorChannel(Struct):
         if isinstance(other, type(self)):
             return self.data == other.data
 
-    def set_id(self, directive: str):
+    def set_id(self, directive: str) -> ColorChannel:
         """Set ColorID of ``self`` according to the directive, e.g. ``BG`` or ``color:bg``."""
         self.edit(id=get_id(_get_dir(directive, 'color')))
+        return self
 
-    def set_color(self, color):
+    def set_color(self, color) -> ColorChannel:
         """Set ``rgb`` of ``self`` to ``color``."""
         self.edit(**dict(zip('rgb', _define_color(color).to_rgb())))
+        return self
 
     def get_color(self):
         return _make_color(self)
