@@ -183,9 +183,10 @@ class Editor:
     def __len__(self) -> int:
         return len(self.objects)
 
-    def set_header(self, header: Header) -> None:
+    def set_header(self, header: Header) -> Editor:
         if isinstance(header, Header):
             self.header = header
+        return self
 
     def get_header(self) -> Header:
         return self.header
@@ -250,15 +251,17 @@ class Editor:
 
     def add_colors(
         self, *colors: Sequence[Union[Tuple[int, int, int], int, ColorCollection]]
-    ) -> None:
+    ) -> Editor:
         self.header.colors.update(colors)
+        return self
 
     def get_objects(self) -> List[Object]:
         return self.objects
 
-    def add_objects(self, *objects: Sequence[Object]) -> None:
+    def add_objects(self, *objects: Sequence[Object]) -> Editor:
         """Add objects to ``self.objects``."""
         self.objects.extend(list(objects))
+        return self
 
     def copy_objects(self) -> List[Object]:
         """List[:class:`.api.Object`]: Copy objects of ``self``.
