@@ -12,6 +12,8 @@ class Message(AbstractEntity):
     """Class that represents private messages in Geometry Dash.
     This class is derived from :class:`.AbstractEntity`.
     """
+    SCHEMA = 'Re: {msg.subject}'
+
     def __init__(self, **options) -> None:
         super().__init__(**options)
         self._body = options.pop('body', '')
@@ -73,6 +75,32 @@ class Message(AbstractEntity):
             The content of the message.
         """
         return await self.client.read_message(self)
+
+    @check_logged
+    async def reply(self, content: str, schema: Optional[str] = None) -> None:
+        """|coro|
+
+        Reply to the message. Format the subject according to schema.
+
+        Schema format can only contain ``{msg.attr}`` elements.
+
+        Content also allows schema format.
+
+        Example:
+
+        .. code-block:: python3
+
+            await message.reply(
+                content='Replying to message by {msg.author.name}.'
+                schema='Re: {msg.subject} ({msg.rating})'
+            )
+        """
+        if schema is None:
+            schema = self.SCHEMA
+
+        content, subject = content.format(msg=self), schema.format(msg=self)
+
+        await self.author.send(subject, content)
 
     @check_logged
     async def delete(self) -> None:

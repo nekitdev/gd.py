@@ -3,6 +3,7 @@ import re
 from .enums import DemonDifficulty, LevelDifficulty, GauntletEnum
 
 from .._typing import Union
+from ..errors import FailedConversion
 from ..song import Song
 
 
@@ -90,7 +91,12 @@ class Converter:
 
     @staticmethod
     def get_gauntlet_name(value: int) -> str:
-        return GauntletEnum.from_value(value).desc + ' ' + 'Gauntlet'
+        try:
+            gauntlet = GauntletEnum.from_value(value).desc
+        except FailedConversion:
+            gauntlet = 'Unknown'
+
+        return '{} Gauntlet'.format(gauntlet)
 
     @staticmethod
     def value_to_pack_difficulty(value: int) -> LevelDifficulty:

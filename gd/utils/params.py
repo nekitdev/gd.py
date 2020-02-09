@@ -1,7 +1,7 @@
 import base64
 import random
 
-from .._typing import Any, Dict, Filters, List, Parameters, Sequence, Union
+from .._typing import Any, Dict, Filters, List, Optional, Parameters, Sequence, Union
 
 from .crypto.coders import Coder
 
@@ -61,7 +61,7 @@ class Parameters:
         self.mod_secret = 'Wmfp3879gc3'
         self.dict = {}
 
-    def create_new(self, type: str = None) -> Parameters:
+    def create_new(self, type: Optional[str] = None) -> Parameters:
         """Start forming a new dictionary.
 
         Parameters

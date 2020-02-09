@@ -1,4 +1,4 @@
-.. _setup_logging:
+.. currentmodule:: gd
 
 Setting Up Logging
 ==================
@@ -14,23 +14,7 @@ messages into the console::
 
 As it can be seen, nothing is too hard.
 
-Although, here is a snippet of how this funcion works::
-
-    import logging
-    def setup_logging(level: int = 10, *, stream=None, file=None, formatter=None):
-        handler = (
-            logging.StreamHandler(stream) if file is None else logging.FileHandler(file)
-        )
-
-        if formatter is None:
-            formatter = '[%(levelname)s] (%(asctime)s) {%(name)s}: %(message)s'
-
-        handler.setFormatter(
-            logging.Formatter(formatter)
-        )
-
-        log.addHandler(handler)
-        log.setLevel(level)
+.. autofunction:: setup_logging
 
 If something more specific is required, things can get a bit harder.
 

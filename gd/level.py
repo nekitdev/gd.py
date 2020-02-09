@@ -172,7 +172,7 @@ class Level(AbstractEntity):
         """Set ``self.data`` to ``value``."""
         self.options.update(data=value)
 
-    def is_timely(self, daily_or_weekly: str = None) -> bool:
+    def is_timely(self, daily_or_weekly: Optional[str] = None) -> bool:
         """:class:`bool`: Indicates whether a level is timely/daily/weekly.
         For instance, let's suppose a *level* is daily. Then, the behavior of this method is:
         ``level.is_timely() -> True`` and ``level.is_timely('daily') -> True`` but
@@ -288,7 +288,7 @@ class Level(AbstractEntity):
         """
         await self.client.delete_level(self)
 
-    async def update_description(self, content: str = None) -> None:
+    async def update_description(self, content: Optional[str] = None) -> None:
         """|coro|
 
         Updates level description.

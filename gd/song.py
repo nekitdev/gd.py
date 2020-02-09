@@ -1,3 +1,5 @@
+from ._typing import Song
+
 from .abstractentity import AbstractEntity
 from .utils.http_request import http
 from .utils.text_tools import make_repr
@@ -51,6 +53,11 @@ class Song(AbstractEntity):
     def is_custom(self) -> bool:
         """:class:`bool`: Indicates whether the song is custom or not."""
         return bool(self.options.get('custom'))
+
+    @classmethod
+    def official(cls, id: int, server_style: bool = True) -> Song:
+        from .utils.converter import Converter  # I am too lazy ~ nekit
+        return Converter.to_normal_song(id, server_style)
 
     async def download(self) -> bytes:
         """|coro|

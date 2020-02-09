@@ -124,7 +124,7 @@ class Editor:
 
     Editor can be created either by hand, from decoded level's data, or taken from a level itself.
     """
-    def __init__(self, header: Header = None, *objects: Sequence[Object]) -> None:
+    def __init__(self, header: Optional[Header] = None, *objects: Sequence[Object]) -> None:
         self.header = header or Header()
         self.objects = list(objects)
         self._set_callback()

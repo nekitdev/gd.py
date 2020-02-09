@@ -158,7 +158,7 @@ class User(UserStats):
         """:class:`.IconSet`: An iconset of the user."""
         return self.options.get('icon_setup', IconSet())
 
-    def is_mod(self, elder: str = None) -> bool:
+    def is_mod(self, elder: Optional[str] = None) -> bool:
         """:class:`bool`: Indicates if a user is Geometry Dash (Elder) Moderator.
         For instance, *RobTop* is an Elder Moderator, that means:
         ``robtop.is_mod() -> True`` and ``robtop.is_mod('elder') -> True``.

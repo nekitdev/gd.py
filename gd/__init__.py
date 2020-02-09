@@ -11,7 +11,7 @@ __version__ = '0.10.4'
 from collections import namedtuple
 import logging
 import re
-from typing import Any
+from typing import Any, Optional
 
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser, LevelRecord
@@ -107,7 +107,7 @@ version_info = make_version_details(__version__)
 def setup_logging(
     level: int = logging.DEBUG, *,
     stream: Any = None, file: Any = None,
-    formatter: str = None
+    formatter: Optional[str] = None
 ) -> None:
     """Function that sets up logs of the module.
 
@@ -156,4 +156,6 @@ log.addHandler(NullHandler())
 
 
 # delete not required stuff
-del NullHandler, namedtuple, re
+del Any, Optional
+del NullHandler
+del namedtuple, re

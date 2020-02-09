@@ -441,7 +441,7 @@ class Client:
     async def upload_level(
         self, name: str = 'Unnamed', id: int = 0, version: int = 1, length: int = 0,
         track: int = 0, song_id: int = 0, is_auto: bool = False, original: int = 0,
-        two_player: bool = False, objects: int = None, coins: int = 0, star_amount: int = 0,
+        two_player: bool = False, objects: Optional[int] = None, coins: int = 0, star_amount: int = 0,
         unlist: bool = False, ldm: bool = False, password: Optional[Union[int, str]] = None, copyable: bool = False,
         data: Union[bytes, str] = '', description: str = '', *, load: bool = True
     ) -> Level:

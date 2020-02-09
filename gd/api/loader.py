@@ -108,7 +108,7 @@ class SaveUtil:
             return main, levels
 
     def _local_load(
-        self, main: PathLike = None, levels: PathLike = None,
+        self, main: Optional[PathLike] = None, levels: Optional[PathLike] = None,
         default_main: PathLike = MAIN, default_levels: PathLike = LEVELS
     ) -> Database:
         main_path = _config_path(main, default_main)

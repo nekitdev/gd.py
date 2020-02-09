@@ -1,4 +1,4 @@
-from ._typing import Any, Enum, Union
+from ._typing import Any, Enum, Optional, Union
 
 
 class GDException(Exception):
@@ -66,8 +66,12 @@ class HTTPNotConnected(ClientException):
 
 class MissingAccess(ClientException):
     """Exception that is raised when server responses with -1."""
-    def __init__(self, *, message: str = None) -> None:
-        super().__init__(message)
+    def __init__(self, message: Optional[str] = None) -> None:
+        if message is not None:
+            super().__init__(message)
+
+        else:
+            super().__init__()
 
 
 class SongRestrictedForUsage(ClientException):

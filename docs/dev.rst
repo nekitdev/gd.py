@@ -31,8 +31,14 @@ Parameters Creating
 Ciphers and Coders
 ------------------
 
+.. currentmodule:: gd.utils.crypto.xor_cipher
+
 .. autoclass:: XORCipher
     :members:
+
+.. currentmodule:: gd
+
+.. autoclass:: xor
 
 .. autoclass:: Coder
     :members:

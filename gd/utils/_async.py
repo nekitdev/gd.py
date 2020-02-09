@@ -9,10 +9,13 @@ except ImportError:
 import inspect
 from types import CoroutineType as coroutine
 
-from .._typing import Any, Callable, Coroutine, Dict, Sequence, Set, Tuple, Type, Union
+from .._typing import (
+    Any, Awaitable, Callable, Coroutine, Dict, List,
+    Optional, Sequence, Set, Tuple, Type, Union
+)
 
 __all__ = (
-    'run_blocking_io', 'wait', 'run',
+    'run_blocking_io', 'wait', 'run', 'gather',
     'cancel_all_tasks', 'shutdown_loop',
     'coroutine', 'maybe_coroutine', 'acquire_loop',
     'enable_asyncwrap', 'enable_run_method', 'synchronize'
@@ -46,9 +49,30 @@ async def run_blocking_io(func: Callable, *args, **kwargs) -> Any:
     return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
 
 
+async def gather(
+    *aws: Sequence[Awaitable], loop: Optional[asyncio.AbstractEventLoop] = None,
+    return_exceptions: bool = False
+) -> List[Any]:
+    """A function that is calling :func:`asyncio.gather`.
+
+    Used for less imports inside and outside gd.py.
+
+    One small addition is that a sequence of awaitables can be given
+    as the only positional argument.
+
+    This way, :func:`asyncio.gather` will be run on that sequence.
+    """
+    if (len(aws) == 1):
+        maybe_aw = aws[0]
+        if not inspect.isawaitable(maybe_aw):
+            aws = maybe_aw
+
+    return await asyncio.gather(*aws, loop=loop, return_exceptions=return_exceptions)
+
+
 async def wait(
-    fs: Sequence[Coroutine], *, loop: asyncio.AbstractEventLoop = None,
-    timeout: Union[float, int] = None, return_when: str = 'ALL_COMPLETED'
+    fs: Sequence[Coroutine], *, loop: Optional[asyncio.AbstractEventLoop] = None,
+    timeout: Optional[Union[float, int]] = None, return_when: str = 'ALL_COMPLETED'
 ) -> Tuple[Set[asyncio.Future], Set[asyncio.Future]]:
     """A function that is calling :func:`asyncio.wait`.
 
@@ -87,7 +111,7 @@ async def wait(
 
 
 def run(
-    coro: Coroutine, *, loop: asyncio.AbstractEventLoop = None,
+    coro: Coroutine, *, loop: Optional[asyncio.AbstractEventLoop] = None,
     debug: bool = False, set_to_none: bool = False
 ) -> Any:
     """Run a |coroutine_link|_.
@@ -283,7 +307,7 @@ def _del_method(cls: type, method_name: str):
     cls_d.pop(method_name, None)
 
 
-def _add_method(cls: type, func, *, name: str = None):
+def _add_method(cls: type, func, *, name: Optional[str] = None):
     """Adds a new method to a 'cls'."""
     cls_d = _get_class_dict(cls)
 
@@ -308,7 +332,7 @@ def _get_name(func):
         ) from None
 
 
-def _run(self, loop: asyncio.AbstractEventLoop = None) -> Any:
+def _run(self, loop: Optional[asyncio.AbstractEventLoop] = None) -> Any:
     """Run the coroutine in a new event loop,
     closing the loop after execution (if not given).
     """
@@ -332,7 +356,7 @@ def _asyncwrap(self: object) -> Callable:
     return _async_wrapper(self)
 
 
-def _enable_method(obj: type, name: str, on: bool = True, func: Callable = None) -> None:
+def _enable_method(obj: type, name: str, on: bool = True, func: Optional[Callable] = None) -> None:
     try:
         if on:
             _add_method(obj, func, name=name)

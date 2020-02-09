@@ -18,8 +18,17 @@ Documentation Contents
     intro
     quickstart
     logging
-    api
+    client
+    entity
+    user
+    text
+    song
+    level
+    game_api
+    utils
+    exceptions
     synchronization
+    enums
     events
     console
     dev

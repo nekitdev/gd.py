@@ -13,7 +13,7 @@ __all__ = ('Part', 'Database', 'LevelCollection')
 
 
 class Part(dict):
-    def __init__(self, string: str = '', default: Dict[str, Any] = None) -> None:
+    def __init__(self, string: str = '', default: Optional[Dict[str, Any]] = None) -> None:
         self.parser = XMLParser()
         try:
             loaded = self.parser.load(string)
@@ -143,10 +143,10 @@ class LevelCollection(list):
             return self._callback
         return api
 
-    def dump(self, api: Database = None) -> None:
+    def dump(self, api: Optional[Database] = None) -> None:
         api = self._conf_api(api)
         api.dump_my_levels(self)
 
-    def dump_to_saved(self, api: Database = None) -> None:
+    def dump_to_saved(self, api: Optional[Database] = None) -> None:
         api = self._conf_api(api)
         api.dump_saved_levels(self)

@@ -4,7 +4,7 @@ import signal
 import logging
 import traceback
 
-from .._typing import Iterable, Level, List
+from .._typing import Iterable, Level, List, Optional
 from ..client import Client
 
 from ..utils import tasks
@@ -66,7 +66,10 @@ thread = threading.Thread(target=run, args=(loop,), name='ScannerThread', daemon
 
 
 class AbstractScanner:
-    def __init__(self, delay: float = 10.0, *, loop: asyncio.AbstractEventLoop = None) -> None:
+    def __init__(
+        self, delay: float = 10.0, *,
+        loop: Optional[asyncio.AbstractEventLoop] = None
+    ) -> None:
         if loop is None:
             loop = get_loop()
         self.loop = loop
@@ -121,7 +124,7 @@ class AbstractScanner:
 class TimelyLevelScanner(AbstractScanner):
     def __init__(
         self, t_type: str, delay: int = 10.0, *,
-        loop: asyncio.AbstractEventLoop = None
+        loop: Optional[asyncio.AbstractEventLoop] = None
     ) -> None:
         super().__init__(delay, loop=loop)
         self.method = getattr(scanner_client, 'get_' + t_type)
@@ -146,7 +149,7 @@ class TimelyLevelScanner(AbstractScanner):
 class RateLevelScanner(AbstractScanner):
     def __init__(
         self, listen_to_rate: bool = True, delay: float = 10.0,
-        *, loop: asyncio.AbstractEventLoop = None
+        *, loop: Optional[asyncio.AbstractEventLoop] = None
     ) -> None:
         super().__init__(delay, loop=loop)
         self.call_method = 'level_rated' if listen_to_rate else 'level_unrated'
