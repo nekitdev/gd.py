@@ -272,6 +272,3 @@ class HTTPClient:
                 log.debug('URL: {}, Data: {}'.format(url, data))
 
         return resp
-
-
-http = HTTPClient()
