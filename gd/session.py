@@ -51,6 +51,7 @@ from .utils.params import Parameters as Params
 from .utils.parser import Parser
 from .utils.routes import Route
 from .utils.save_parser import SaveParser
+from .utils.text_tools import make_repr
 from .utils.crypto.coders import Coder
 
 from . import api
@@ -63,6 +64,16 @@ class GDSession:
     """
     def __init__(self) -> None:
         self.http = HTTPClient()
+
+    def __repr__(self) -> str:
+        methods = list(filter(lambda string: not string.startswith('_'), dir(self.__class__)))
+
+        info = {
+            'methods': len(methods),
+            'http': self.http
+        }
+
+        return make_repr(self, info)
 
     async def ping_server(self, link: str) -> float:
         start = time.perf_counter()
@@ -208,7 +219,7 @@ class GDSession:
         }
 
         parameters = Params().create_new().put_definer('levelid', level_id).finish()
-        resp = await http.request(Route.DOWNLOAD_LEVEL, parameters, error_codes=codes)
+        resp = await self.http.request(Route.DOWNLOAD_LEVEL, parameters, error_codes=codes)
 
         level_data = Parser().split('#').take(0).split(':').add_ext(ext).should_map().parse(resp)
 
@@ -218,7 +229,7 @@ class GDSession:
             Params().create_new().put_definer('search', real_id)
             .put_filters(Filters.setup_empty()).finish()
         )
-        resp = await http.request(Route.LEVEL_SEARCH, parameters, error_codes=codes)
+        resp = await self.http.request(Route.LEVEL_SEARCH, parameters, error_codes=codes)
 
         if not resp:
             raise codes.get(-1)
