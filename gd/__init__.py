@@ -30,7 +30,7 @@ from .song import Song
 from .user import UserStats, User
 from .utils.enums import *
 from .utils.filters import Filters
-from .utils.http_request import http, HTTPClient
+from .utils.http_request import HTTPClient
 from .utils.params import *
 from .utils.parser import Parser
 from .utils.save_parser import Save, SaveParser
