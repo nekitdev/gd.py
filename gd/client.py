@@ -6,7 +6,7 @@ from ._typing import (
     Any, AbstractUser, Comment, Coroutine, Dict, FriendRequest, Gauntlet, IconSet, Level,
     LevelRecord, List, MapPack, Message, Optional, Sequence, Song, Union, User, UserStats
 )
-from .session import _session
+from .session import GDSession
 
 from .utils.decorators import check_logged
 from .utils.enums import (
@@ -20,6 +20,7 @@ from .utils.enums import (
     MessagePolicyType,
 )
 from .utils.filters import Filters
+from .utils.http_request import HTTPClient
 from .utils.save_parser import Save
 from .utils.text_tools import make_repr
 
@@ -60,7 +61,7 @@ class Client:
         Contains empty lists if not loaded.
     """
     def __init__(self, *, loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
-        self.session = _session
+        self.session = GDSession()
         self.loop = loop or utils.acquire_loop()
         self._set_to_defaults()
 
@@ -96,6 +97,10 @@ class Client:
         # update encodedpass if password was updated
         if attr == 'password':
             self.encodedpass = Coder.encode(type='accountpass', string=self.password)
+
+    @property
+    def http(self) -> HTTPClient:
+        return self.session.http
 
     def is_logged(self) -> bool:
         return (self.name is not None) and (self.password is not None)
