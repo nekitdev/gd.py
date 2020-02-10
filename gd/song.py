@@ -1,8 +1,10 @@
 from ._typing import Song
 
 from .abstractentity import AbstractEntity
-from .utils.http_request import http
+from .utils.http_request import HTTPClient
 from .utils.text_tools import make_repr
+
+http = HTTPClient()  # used in song downloading
 
 
 class Song(AbstractEntity):
