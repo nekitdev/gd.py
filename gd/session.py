@@ -45,7 +45,7 @@ from .utils.enums import (
     SearchStrategy,
 )
 from .utils.filters import Filters
-from .utils.http_request import http
+from .utils.http_request import HTTPClient
 from .utils.indexer import Index
 from .utils.params import Parameters as Params
 from .utils.parser import Parser
@@ -61,9 +61,12 @@ class GDSession:
     """Implements all requests-related functionality.
     No docstrings here yet...
     """
+    def __init__(self) -> None:
+        self.http = HTTPClient()
+
     async def ping_server(self, link: str) -> float:
         start = time.perf_counter()
-        await http.normal_request(link)
+        await self.http.normal_request(link)
         end = time.perf_counter()
         return round((end - start) * 1000, 2)
 
@@ -73,7 +76,7 @@ class GDSession:
             -1: MissingAccess('No songs were found with ID: {}.'.format(song_id)),
             -2: SongRestrictedForUsage(song_id)
         }
-        resp = await http.request(Route.GET_SONG_INFO, parameters, error_codes=codes)
+        resp = await self.http.request(Route.GET_SONG_INFO, parameters, error_codes=codes)
         parsed = Parser().with_split('~|~').should_map().parse(resp)
         return ClassConverter.song_convert(parsed)
 
@@ -83,7 +86,7 @@ class GDSession:
 
         link = Route.NEWGROUNDS_SONG_LISTEN + str(song_id)
 
-        resp = await http.normal_request(link)
+        resp = await self.http.normal_request(link)
         content = await resp.content.read()
         html = content.decode().replace('\\', '')
 
@@ -115,7 +118,7 @@ class GDSession:
             -1: MissingAccess('No users were found with ID: {}.'.format(account_id))
         }
 
-        resp = await http.request(Route.GET_USER_INFO, parameters, error_codes=codes)
+        resp = await self.http.request(Route.GET_USER_INFO, parameters, error_codes=codes)
         resp = Parser().with_split(':').should_map().parse(resp)
 
         if return_only_stats:
@@ -125,7 +128,7 @@ class GDSession:
             Params().create_new().put_definer('search', resp.getcast(Index.USER_PLAYER_ID, 0, int))
             .put_total(0).put_page(0).finish()
         )
-        some_resp = await http.request(Route.USER_SEARCH, another)
+        some_resp = await self.http.request(Route.USER_SEARCH, another)
 
         new_resp = (
             Parser().split('#').take(0).check_empty().split(':')
@@ -160,7 +163,7 @@ class GDSession:
             -1: MissingAccess('Searching for {} returned -1.'.format(param))
         }
 
-        resp = await http.request(Route.USER_SEARCH, parameters, error_codes=codes)
+        resp = await self.http.request(Route.USER_SEARCH, parameters, error_codes=codes)
         mapped = (
             Parser().split('#').take(0).check_empty().split(':')
             .should_map().parse(resp)
@@ -181,7 +184,7 @@ class GDSession:
         # ok; if we should not return abstract, let's find all other parameters
         parameters = Params().create_new().put_definer('user', account_id).finish()
 
-        resp = await http.request(
+        resp = await self.http.request(
             Route.GET_USER_INFO, parameters, error_codes=codes
         )
         resp = Parser().with_split(':').should_map().parse(resp)
@@ -216,6 +219,10 @@ class GDSession:
             .put_filters(Filters.setup_empty()).finish()
         )
         resp = await http.request(Route.LEVEL_SEARCH, parameters, error_codes=codes)
+
+        if not resp:
+            raise codes.get(-1)
+
         resp = resp.split('#')
 
         # getting song
@@ -249,7 +256,7 @@ class GDSession:
         codes = {
             -1: MissingAccess('Failed to fetch a {!r} level.'.format(type))
         }
-        resp = await http.request(Route.GET_TIMELY, parameters, error_codes=codes)
+        resp = await self.http.request(Route.GET_TIMELY, parameters, error_codes=codes)
 
         if not resp:
             raise MissingAccess('Failed to fetch a {} level. Most likely it is being refreshed.'.format(type))
@@ -308,7 +315,7 @@ class GDSession:
 
         parameters.update(payload_cased)
 
-        level_id = await http.request(Route.UPLOAD_LEVEL, parameters)
+        level_id = await self.http.request(Route.UPLOAD_LEVEL, parameters)
 
         if level_id == -1:
             raise MissingAccess('Failed to upload a level.')
@@ -330,7 +337,7 @@ class GDSession:
             -2: NothingFound('gd.AbstractUser')
         }
 
-        resp = await http.request(Route.GET_USER_LIST, parameters, error_codes=codes)
+        resp = await self.http.request(Route.GET_USER_LIST, parameters, error_codes=codes)
         resp, parser = resp.split('|'), Parser().with_split(':').should_map()
 
         ret = []
@@ -363,7 +370,7 @@ class GDSession:
             -1: MissingAccess('Failed to get leaderboard of the level: {!r}.'.format(level))
         }
 
-        resp = await http.request(Route.GET_LEVEL_SCORES, parameters, error_codes=codes)
+        resp = await self.http.request(Route.GET_LEVEL_SCORES, parameters, error_codes=codes)
 
         if not resp:
             return list()
@@ -397,7 +404,7 @@ class GDSession:
 
         parameters = params.finish()
 
-        resp = await http.request(Route.GET_USER_TOP, parameters, error_codes=codes)
+        resp = await self.http.request(Route.GET_USER_TOP, parameters, error_codes=codes)
         resp, parser = resp.split('|'), Parser().with_split(':').should_map()
 
         res = list(
@@ -416,7 +423,7 @@ class GDSession:
             -1: LoginFailure(login=user, password=password)
         }
 
-        resp = await http.request(Route.LOGIN, parameters, error_codes=codes)
+        resp = await self.http.request(Route.LOGIN, parameters, error_codes=codes)
 
         account_id, id, *junk = resp.split(',')
 
@@ -438,7 +445,7 @@ class GDSession:
             -11: MissingAccess('Failed to load data for client: {!r}.'.format(client))
         }
 
-        resp = await http.request(Route.LOAD_DATA, parameters, error_codes=codes, custom_base=link)
+        resp = await self.http.request(Route.LOAD_DATA, parameters, error_codes=codes, custom_base=link)
 
         try:
             main, levels, *_ = resp.split(';')
@@ -466,7 +473,7 @@ class GDSession:
             .put_save_data(data).finish_login()
         )
 
-        resp = await http.request(Route.SAVE_DATA, parameters, custom_base=link, error_codes=codes)
+        resp = await self.http.request(Route.SAVE_DATA, parameters, custom_base=link, error_codes=codes)
 
         if resp != 1:
             raise MissingAccess('Failed to do backup for client: {!r}'.format(client))
@@ -509,7 +516,7 @@ class GDSession:
 
         parameters = params.finish()
 
-        resp = await http.request(
+        resp = await self.http.request(
             Route.LEVEL_SEARCH, parameters, raise_errors=raise_errors,
             error_codes=codes)
 
@@ -572,7 +579,7 @@ class GDSession:
             -1: MissingAccess('Failed to report a level: {!r}.'.format(level))
         }
 
-        await http.request(Route.REPORT_LEVEL, parameters, error_codes=codes)
+        await self.http.request(Route.REPORT_LEVEL, parameters, error_codes=codes)
 
     async def delete_level(self, level: Level, *, client: Client) -> None:
         parameters = (
@@ -580,7 +587,7 @@ class GDSession:
             .put_definer('levelid', level.id).put_password(client.encodedpass).finish_level()
         )
 
-        resp = await http.request(Route.DELETE_LEVEL, parameters)
+        resp = await self.http.request(Route.DELETE_LEVEL, parameters)
 
         if resp != 1:
             raise MissingAccess('Failed to delete a level: {}.'.format(level))
@@ -598,13 +605,13 @@ class GDSession:
             .put_level_desc(content).finish()
         )
 
-        resp = await http.request(Route.UPDATE_LEVEL_DESC, parameters)
+        resp = await self.http.request(Route.UPDATE_LEVEL_DESC, parameters)
 
         if resp != 1:
             raise MissingAccess('Failed to update description of the level: {}.'.format(level))
 
         # update level's description on success
-        level.options.edit(description=content)
+        level.options.update(description=content)
 
     async def rate_level(self, level: Level, rating: int, *, client: Client) -> None:
         assert 0 < rating <= 10, 'Invalid star value given.'
@@ -619,7 +626,7 @@ class GDSession:
             .put_udid(0).put_uuid(0).put_definer('stars', rating).put_rs(rs).put_chk(chk).finish()
         )
 
-        resp = await http.request(Route.RATE_LEVEL_STARS, parameters)
+        resp = await self.http.request(Route.RATE_LEVEL_STARS, parameters)
 
         if resp != 1:
             raise MissingAccess('Failed to rate level: {}.'.format(level))
@@ -639,10 +646,11 @@ class GDSession:
             -2: MissingAccess('Attempt to rate as mod without mod permissions.')
         }
 
-        resp = await http.request(Route.RATE_LEVEL_DEMON, parameters, error_codes=codes)
+        resp = await self.http.request(Route.RATE_LEVEL_DEMON, parameters, error_codes=codes)
 
         if not resp:
             return False
+
         elif isinstance(resp, int) and resp > 0:
             return True
 
@@ -656,7 +664,7 @@ class GDSession:
             -2: MissingAccess('Missing moderator permissions to send a level: {!r}.'.format(level))
         }
 
-        resp = await http.request(Route.SUGGEST_LEVEL_STARS, parameters, error_codes=codes)
+        resp = await self.http.request(Route.SUGGEST_LEVEL_STARS, parameters, error_codes=codes)
 
         if resp != 1:
             raise MissingAccess('Failed to send a level: {!r}.'.format(level))
@@ -691,7 +699,7 @@ class GDSession:
             .put_special(special).put_rs(rs).put_chk(chk).finish()
         )
 
-        resp = await http.request(Route.LIKE_ITEM, parameters)
+        resp = await self.http.request(Route.LIKE_ITEM, parameters)
 
         if resp != 1:
             raise MissingAccess('Failed to like an item: {}.'.format(item))
@@ -711,7 +719,7 @@ class GDSession:
             -2: NothingFound('gd.Message')
         }
 
-        resp = await http.request(
+        resp = await self.http.request(
             Route.GET_PRIVATE_MESSAGES, parameters, error_codes=codes,
             raise_errors=raise_errors
         )
@@ -755,7 +763,7 @@ class GDSession:
             -1: MissingAccess('Failed to post a comment.')
         }
 
-        await http.request(Route.UPLOAD_ACC_COMMENT, parameters, error_codes=codes)
+        await self.http.request(Route.UPLOAD_ACC_COMMENT, parameters, error_codes=codes)
 
     async def comment_level(
         self, level: Level, content: str,
@@ -776,7 +784,7 @@ class GDSession:
             -1: MissingAccess('Failed to post a comment on a level: {!r}.'.format(level))
         }
 
-        await http.request(Route.UPLOAD_COMMENT, parameters, error_codes=codes)
+        await self.http.request(Route.UPLOAD_COMMENT, parameters, error_codes=codes)
 
     async def delete_comment(self, comment: Comment, *, client: Client) -> None:
         cases = {
@@ -789,20 +797,20 @@ class GDSession:
             .put_definer('accountid', client.account_id).put_password(client.encodedpass)
             .comment_for(comment.type.name.lower(), comment.level_id).finish()
         )
-        resp = await http.request(route, parameters)
+        resp = await self.http.request(route, parameters)
         if resp != 1:
             raise MissingAccess('Failed to delete a comment: {!r}.'.format(comment))
 
     async def send_friend_request(self, target: AbstractUser, message: str, client: Client) -> None:
         if message is None:
-            message = ''
+            message = str()
 
         parameters = (
             Params().create_new().put_definer('accountid', client.account_id)
             .put_recipient(target.account_id).put_fr_comment(message)
             .put_password(client.encodedpass).finish()
         )
-        resp = await http.request(Route.SEND_REQUEST, parameters)
+        resp = await self.http.request(Route.SEND_REQUEST, parameters)
 
         if not resp:  # if request is already sent
             return
@@ -817,7 +825,7 @@ class GDSession:
             .put_definer('user', user.account_id).put_password(client.encodedpass)
             .put_is_sender(req.type.name.lower()).finish()
         )
-        resp = await http.request(Route.DELETE_REQUEST, parameters)
+        resp = await self.http.request(Route.DELETE_REQUEST, parameters)
         if resp != 1:
             raise MissingAccess('Failed to delete a friend request: {!r}.'.format(req))
 
@@ -831,7 +839,7 @@ class GDSession:
             .put_password(client.encodedpass).put_definer('user', req.author.account_id)
             .put_definer('requestid', req.id).finish()
         )
-        resp = await http.request(Route.ACCEPT_REQUEST, parameters)
+        resp = await self.http.request(Route.ACCEPT_REQUEST, parameters)
         if resp != 1:
             raise MissingAccess('Failed to accept a friend request: {!r}.'.format(req))
 
@@ -840,7 +848,7 @@ class GDSession:
             Params().create_new().put_definer('accountid', client.account_id)
             .put_password(client.encodedpass).put_definer('requestid', req.id).finish()
         )
-        resp = await http.request(Route.READ_REQUEST, parameters)
+        resp = await self.http.request(Route.READ_REQUEST, parameters)
         if resp != 1:
             raise MissingAccess('Failed to read a friend request: {!r}.'.format(req))
         req.options.update({'is_read': True})
@@ -854,7 +862,7 @@ class GDSession:
         codes = {
             -1: MissingAccess('Failed to read a message: {!r}.'.format(msg))
         }
-        resp = await http.request(
+        resp = await self.http.request(
             Route.READ_PRIVATE_MESSAGE, parameters, error_codes=codes,
         )
         resp = Parser().with_split(':').should_map().parse(resp)
@@ -871,14 +879,14 @@ class GDSession:
             .put_definer('messageid', msg.id).put_password(client.encodedpass)
             .put_is_sender(msg.type.name.lower()).finish()
         )
-        resp = await http.request(Route.DELETE_PRIVATE_MESSAGE, parameters)
+        resp = await self.http.request(Route.DELETE_PRIVATE_MESSAGE, parameters)
         if resp != 1:
             raise MissingAccess('Failed to delete a message: {!r}.'.format(msg))
 
     async def get_gauntlets(self, *, client: Client) -> List[Gauntlet]:
         parameters = Params().create_new().finish()
 
-        resp = await http.request(Route.GET_GAUNTLETS, parameters)
+        resp = await self.http.request(Route.GET_GAUNTLETS, parameters)
 
         resp = Parser().split('#').take(0).split('|').parse(resp)
 
@@ -896,7 +904,7 @@ class GDSession:
     ) -> List[MapPack]:
         parameters = Params().create_new().put_page(page).finish()
 
-        resp = await http.request(Route.GET_MAP_PACKS, parameters)
+        resp = await self.http.request(Route.GET_MAP_PACKS, parameters)
 
         resp = Parser().split('#').take(0).split('|').check_empty().should_map().parse(resp)
 
@@ -934,7 +942,7 @@ class GDSession:
             -2: NothingFound('gd.FriendRequest')
         }
 
-        resp = await http.request(
+        resp = await self.http.request(
             Route.GET_FRIEND_REQUESTS, parameters, error_codes=codes, raise_errors=raise_errors
         )
         resp = Parser().split('#').take(0).split('|').check_empty().parse(resp)
@@ -994,7 +1002,7 @@ class GDSession:
             -1: MissingAccess('Failed to retrieve comment for user: {!r}.'.format(user))
         }
 
-        resp = await http.request(route, parameters, error_codes=codes, raise_errors=raise_errors)
+        resp = await self.http.request(route, parameters, error_codes=codes, raise_errors=raise_errors)
 
         if not resp:
             return list()
@@ -1043,7 +1051,7 @@ class GDSession:
             -2: NothingFound('gd.Comment')
         }
 
-        resp = await http.request(Route.GET_COMMENTS, parameters, error_codes=codes)
+        resp = await self.http.request(Route.GET_COMMENTS, parameters, error_codes=codes)
 
         resp = Parser().split('#').take(0).split('|').parse(resp)
         parser = Parser().with_split('~').should_map()
@@ -1070,7 +1078,7 @@ class GDSession:
             .put_password(client.encodedpass)
             .put_definer('user', user.account_id).finish()
         )
-        resp = await http.request(route, parameters)
+        resp = await self.http.request(route, parameters)
         if resp != 1:
             raise MissingAccess('Failed to (un)block a user: {!r}.'.format(user))
 
@@ -1079,7 +1087,7 @@ class GDSession:
             Params().create_new().put_definer('accountid', client.account_id)
             .put_password(client.encodedpass).put_definer('user', user.account_id).finish()
         )
-        resp = await http.request(Route.REMOVE_FRIEND, parameters)
+        resp = await self.http.request(Route.REMOVE_FRIEND, parameters)
         if resp != 1:
             raise MissingAccess('Failed to unfriend a user: {!r}.'.format(user))
 
@@ -1089,7 +1097,7 @@ class GDSession:
             .put_message(subject, body).put_recipient(target.account_id)
             .put_password(client.encodedpass).finish()
         )
-        resp = await http.request(Route.SEND_PRIVATE_MESSAGE, parameters)
+        resp = await self.http.request(Route.SEND_PRIVATE_MESSAGE, parameters)
         if resp != 1:
             raise MissingAccess('Failed to send a message to a user: {!r}.'.format(target))
 
@@ -1117,7 +1125,7 @@ class GDSession:
 
         parameters.update(settings_cased)
 
-        resp = await http.request(Route.UPDATE_USER_SCORE, parameters)
+        resp = await self.http.request(Route.UPDATE_USER_SCORE, parameters)
 
         if not resp > 0:
             raise MissingAccess('Failed to update profile of a client: {!r}'.format(client))
@@ -1135,7 +1143,7 @@ class GDSession:
         endpoint = 'https://gdbrowser.com/icon/icon'
         method = 'GET'
 
-        response = await http.normal_request(url=endpoint, params=query, method=method)
+        response = await self.http.normal_request(url=endpoint, params=query, method=method)
         return await response.read()
 
     async def update_settings(
@@ -1147,7 +1155,7 @@ class GDSession:
             .put_password(client.encodedpass)
             .put_profile_upd(msg, friend_req, comments, youtube, twitter, twitch).finish_login()
         )
-        resp = await http.request(Route.UPDATE_ACC_SETTINGS, parameters)
+        resp = await self.http.request(Route.UPDATE_ACC_SETTINGS, parameters)
         if resp != 1:
             raise MissingAccess('Failed to update profile settings of a client: {!r}.'.format(client))
 
@@ -1172,6 +1180,3 @@ def _iterable(maybe_iterable: Iterable) -> bool:
 
 def _is_not_empty(sequence: Sequence) -> bool:
     return bool(len(sequence))
-
-
-_session = GDSession()
