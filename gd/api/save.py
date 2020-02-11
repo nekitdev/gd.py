@@ -16,6 +16,8 @@ class Part(dict):
     def __init__(self, string: str = '', default: Optional[Dict[str, Any]] = None) -> None:
         self.parser = XMLParser()
         try:
+            assert string  # fall into <except> clause if empty
+
             loaded = self.parser.load(string)
 
         except Exception:
