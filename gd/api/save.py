@@ -13,15 +13,13 @@ __all__ = ('Part', 'Database', 'LevelCollection')
 
 
 class Part(dict):
-    def __init__(self, string: str = '', default: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, string: str = '', default: Dict[str, Any] = {}) -> None:
         self.parser = XMLParser()
         try:
+            assert(string!='')
             loaded = self.parser.load(string)
 
         except Exception:
-            if default is None:
-                default = {}
-
             loaded = default
 
         super().__init__(loaded)
