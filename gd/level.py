@@ -80,9 +80,15 @@ class Level(AbstractEntity):
         return self.options.get('song', Song())
 
     @property
-    def difficulty(self) -> LevelDifficulty:
-        """:class:`.LevelDifficulty`: Difficulty of the level."""
-        return LevelDifficulty.from_value(self.options.get('difficulty', -1))
+    def difficulty(self) -> Union[DemonDifficulty, LevelDifficulty]:
+        """Union[:class:`.LevelDifficulty`, :class:`.DemonDifficulty`]: Difficulty of the level."""
+        difficulty = self.options.get('difficulty', -1)
+
+        if self.is_demon:
+            return DemonDifficulty.from_value(difficulty)
+
+        else:
+            return LevelDifficulty.from_value(difficulty)
 
     @property
     def password(self) -> Optional[int]:
