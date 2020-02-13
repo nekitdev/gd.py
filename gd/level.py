@@ -84,7 +84,7 @@ class Level(AbstractEntity):
         """Union[:class:`.LevelDifficulty`, :class:`.DemonDifficulty`]: Difficulty of the level."""
         difficulty = self.options.get('difficulty', -1)
 
-        if self.is_demon:
+        if self.is_demon():
             return DemonDifficulty.from_value(difficulty)
 
         else:
