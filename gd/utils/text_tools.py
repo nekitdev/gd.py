@@ -2,7 +2,7 @@ import json
 
 from .._typing import Any, Dict, List, Optional, Union
 
-__all__ = ('make_repr', 'object_split', 'dump', 'to_json')
+__all__ = ('make_repr', 'object_split', 'dump')
 
 
 def make_repr(obj: Any, info: Optional[Dict[Any, Any]] = None) -> str:
@@ -21,34 +21,19 @@ def make_repr(obj: Any, info: Optional[Dict[Any, Any]] = None) -> str:
     return '<{}.{} {}>'.format(module, name, final)
 
 
+def default(x: Any) -> Any:
+    try:
+        return x.__json__()
+
+    except AttributeError:
+        raise TypeError(
+            'Object of type {!r} is not JSON-serializable.'.format(type(x).__name__)
+        ) from None
+
+
 def dump(x: Any, **kwargs) -> str:
-    return json.dumps(to_json(x), **kwargs)
-
-
-def _check_key(x: Any) -> Any:
-    if isinstance(x, (float, int, str)) or x is None:
-        return to_json(x)
-    raise TypeError('Dictionary keys can only be of int, float, str, bool, or None.')
-
-
-def to_json(x: Any) -> Any:
-    if hasattr(x, '__json__'):
-        return to_json(x.__json__())
-
-    elif isinstance(x, dict):
-        return {_check_key(k): to_json(v) for k, v in x.items()}
-
-    elif isinstance(x, (list, tuple, set)):
-        return list(to_json(e) for e in x)
-
-    elif isinstance(x, (int, float, str)):
-        return x
-
-    elif x is None:
-        return x
-
-    else:
-        raise TypeError('Object of type {0.__class__.__name__!r} is not JSON resizable.'.format(x))
+    kwargs.update(default=default)
+    return json.dumps(x, **kwargs)
 
 
 def object_split(string: Union[bytes, str]) -> Union[List[bytes], List[str]]:
