@@ -5,7 +5,7 @@ except ImportError:
 
 __all__ = ('get_instances_of', 'find_objects')
 
-from .._typing import Any, Callable, List, Optional, Type
+from ..typing import Any, Callable, List, Optional, Type
 
 
 def get_instances_of(obj_class: Type[Any] = object) -> List[Any]:

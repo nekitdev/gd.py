@@ -1,6 +1,6 @@
 import json
 
-from .._typing import Any, Dict, List, Optional, Union
+from ..typing import Any, Dict, List, Optional, Union
 
 __all__ = ('make_repr', 'object_split', 'dump')
 
@@ -22,10 +22,16 @@ def make_repr(obj: Any, info: Optional[Dict[Any, Any]] = None) -> str:
 
 
 def default(x: Any) -> Any:
-    try:
-        return x.__json__()
+    if isinstance(x, (list, tuple, set)):
+        return list(x)
 
-    except AttributeError:
+    elif isinstance(x, dict):
+        return dict(x)
+
+    elif hasattr(x, '_json'):
+        return x._json()
+
+    else:
         raise TypeError(
             'Object of type {!r} is not JSON-serializable.'.format(type(x).__name__)
         ) from None

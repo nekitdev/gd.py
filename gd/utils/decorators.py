@@ -1,7 +1,7 @@
 import functools
 import time
 
-from .._typing import Any, Callable
+from ..typing import Any, Callable
 
 from ..errors import NotLoggedError, MissingAccess
 

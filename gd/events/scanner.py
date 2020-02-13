@@ -1,11 +1,11 @@
 import asyncio
 import threading
 import signal
-import logging
 import traceback
 
-from .._typing import Iterable, Level, List, Optional
 from ..client import Client
+from ..logging import get_logger
+from ..typing import Iterable, Level, List, Optional
 
 from ..utils import tasks
 from ..utils._async import shutdown_loop
@@ -23,7 +23,7 @@ loop = asyncio.new_event_loop()
 
 scanner_client = Client(loop=loop)
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 all_listeners = []
 

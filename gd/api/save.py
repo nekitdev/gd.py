@@ -1,6 +1,6 @@
 import json
 
-from .._typing import Any, Dict, Iterable, LevelCollection, List, Optional, Tuple
+from ..typing import Any, Dict, Iterable, LevelCollection, List, Optional, Tuple
 
 from ..utils.text_tools import make_repr
 from ..utils.xml_parser import XMLParser
@@ -57,7 +57,7 @@ class Database:
         }
         return make_repr(self, info)
 
-    def __json__(self) -> Dict[str, Any]:
+    def _json(self) -> Dict[str, Any]:
         return self.as_tuple()
 
     def get_username(self) -> Optional[str]:

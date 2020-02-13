@@ -1,6 +1,6 @@
 import random
 
-from ._typing import Tuple, Union
+from .typing import Tuple, Union
 
 from .abstractentity import AbstractEntity
 from .colors import Color
@@ -30,7 +30,7 @@ class IconSet(AbstractEntity):
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.options == other.options
 
-    def __json__(self) -> dict:
+    def _json(self) -> dict:
         return self.options
 
     @property

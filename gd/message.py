@@ -1,4 +1,4 @@
-from ._typing import Optional
+from .typing import Optional
 
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser

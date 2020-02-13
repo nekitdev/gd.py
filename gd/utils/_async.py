@@ -9,16 +9,15 @@ except ImportError:
 import inspect
 from types import CoroutineType as coroutine
 
-from .._typing import (
+from ..typing import (
     Any, Awaitable, Callable, Coroutine, Dict, List,
     Optional, Sequence, Set, Tuple, Type, Union
 )
 
 __all__ = (
     'run_blocking_io', 'wait', 'run', 'gather',
-    'cancel_all_tasks', 'shutdown_loop',
-    'coroutine', 'maybe_coroutine', 'acquire_loop',
-    'enable_asyncwrap', 'enable_run_method', 'synchronize'
+    'cancel_all_tasks', 'shutdown_loop', 'maybe_coroutine', 'acquire_loop',
+    'synchronize'
 )
 
 
@@ -336,24 +335,12 @@ def _run(self, loop: Optional[asyncio.AbstractEventLoop] = None) -> Any:
     """Run the coroutine in a new event loop,
     closing the loop after execution (if not given).
     """
-
     if loop is None:
         loop = acquire_loop()
 
     asyncio.set_event_loop(loop)
 
     return loop.run_until_complete(self)
-
-
-async def _async_wrapper(var: object) -> Any:
-    try:
-        return await var
-    except Exception:
-        return var
-
-
-def _asyncwrap(self: object) -> Callable:
-    return _async_wrapper(self)
 
 
 def _enable_method(obj: type, name: str, on: bool = True, func: Optional[Callable] = None) -> None:
@@ -367,16 +354,5 @@ def _enable_method(obj: type, name: str, on: bool = True, func: Optional[Callabl
         print('Failed to edit the {!r} method.'.format(name))
 
 
-def enable_asyncwrap(on: bool = True) -> None:
-    """Add or delete '__asyncwrap__' method of objects."""
-    _enable_method(object, '__asyncwrap__', on, _asyncwrap)
-
-
-def enable_run_method(on: bool = True) -> None:
-    """Add or delete 'run' method of a coroutine."""
-    _enable_method(coroutine, 'run', on, _run)
-
-
 def synchronize(on: bool = True) -> None:
-    enable_asyncwrap(on)
-    enable_run_method(on)
+    _enable_method(coroutine, 'run', on, _run)

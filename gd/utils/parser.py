@@ -1,4 +1,4 @@
-from .._typing import Any, Callable, Dict, List, Optional, Parser, Sequence, Type, Union
+from ..typing import Any, Callable, Dict, List, Optional, Parser, Sequence, Type, Union
 
 __all__ = ('Parser',)
 

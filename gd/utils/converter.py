@@ -2,7 +2,7 @@ import re
 
 from .enums import DemonDifficulty, LevelDifficulty, GauntletEnum
 
-from .._typing import Union
+from ..typing import Union
 from ..errors import FailedConversion
 from ..song import Song
 
@@ -69,21 +69,16 @@ class Converter:
 
     @staticmethod
     def to_ordinal(n: int) -> str:
-        x = str(n)
-
-        pn = x[-2:-1]
-        sn = x[-1:]
-
         cases = {
-            '1': 'st',
-            '2': 'nd',
-            '3': 'rd'
+            1: 'st', 2: 'nd', 3: 'rd'
         }
+        x = abs(n)
 
-        res = x + (
-            cases.get(sn, 'th') if pn != '1' else 'th'
-        )
-        return res
+        if 11 <= x <= 13:
+            return str(n) + 'th'
+
+        else:
+            return str(n) + cases.get(x % 10, 'th')
 
     @staticmethod
     def snake_to_camel(string: str) -> str:  # not perfect but still...

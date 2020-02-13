@@ -1,4 +1,4 @@
-from .._typing import Any, Dict, Struct
+from ..typing import Any, Dict, Struct
 from ..errors import EditorError
 from ..colors import Color
 

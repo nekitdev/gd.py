@@ -1,4 +1,4 @@
-from .._typing import AbstractUser, Any, Dict, Filters, Level, Optional, Sequence, Union
+from ..typing import AbstractUser, Any, Dict, Filters, Level, Optional, Sequence, Union
 
 from .enums import (
     NEnum, LevelDifficulty, DemonDifficulty,

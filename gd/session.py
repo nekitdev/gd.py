@@ -4,7 +4,7 @@ import time  # for perf_counter in ping
 
 from itertools import chain
 
-from ._typing import (
+from .typing import (
     AbstractUser,
     Any,
     Client,

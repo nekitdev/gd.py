@@ -1,6 +1,6 @@
 """Automatic object property code generator."""
 
-from .._typing import Enum, Union
+from ..typing import Enum, Union
 
 from .enums import (
     ColorChannelProperties,

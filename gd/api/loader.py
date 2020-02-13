@@ -3,7 +3,7 @@ import functools
 import os
 import sys
 
-from .._typing import Optional, Tuple, Union
+from ..typing import Optional, Tuple, Union
 
 from ..utils._async import run_blocking_io
 from ..utils.crypto.coders import Coder

@@ -6,7 +6,7 @@ from .scanner import (
     shutdown_loop, all_listeners, thread, update_thread_loop, set_loop
 )
 
-from .._typing import Client
+from ..typing import Client
 
 from .. import utils
 

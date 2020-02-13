@@ -18,7 +18,7 @@ from ._property import (
     _level_code,
 )
 
-from .._typing import ColorChannel, Object, Struct
+from ..typing import ColorChannel, Object, Struct
 
 __all__ = ('Object', 'ColorChannel', 'Header', 'LevelAPI', 'ColorCollection')
 
@@ -40,7 +40,7 @@ class Struct:
         info = {key: repr(value) for key, value in self.to_dict().items()}
         return make_repr(self, info)
 
-    def __json__(self):
+    def _json(self):
         return self.to_dict()
 
     def to_dict(self):

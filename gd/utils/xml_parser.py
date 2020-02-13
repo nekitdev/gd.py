@@ -3,7 +3,7 @@ import re
 
 from ._async import run_blocking_io
 
-from .._typing import Any, Dict
+from ..typing import Any, Dict
 from ..errors import ParserError
 
 __all__ = ('xml', 'XMLParser', 'AioXMLParser')

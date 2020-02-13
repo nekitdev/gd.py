@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from .._typing import List
+from ..typing import List
 from .xml_parser import XMLParser, AioXMLParser
 
 Save = namedtuple('Save', 'completed followed')

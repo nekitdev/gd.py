@@ -1,4 +1,4 @@
-from ._typing import (
+from .typing import (
     AbstractUser, Comment, Level, Optional, User,
     List, Sequence, Union
 )

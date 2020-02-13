@@ -1,6 +1,5 @@
-import logging
-
-from ._typing import Comment, Level, LevelRecord, List, Optional, Union
+from .logging import get_logger
+from .typing import Comment, Level, LevelRecord, List, Optional, Union
 
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser
@@ -16,7 +15,7 @@ from .utils.enums import (
 )
 from .utils.text_tools import make_repr, object_split
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 
 class Level(AbstractEntity):
@@ -36,8 +35,8 @@ class Level(AbstractEntity):
     def __str__(self) -> str:
         return self.name
 
-    def __json__(self) -> dict:
-        return {k: v for k, v in super().__json__().items() if k != 'data'}
+    def _json(self) -> dict:
+        return {k: v for k, v in super()._json().items() if k != 'data'}
 
     @property
     def name(self) -> str:

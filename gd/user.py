@@ -1,4 +1,4 @@
-from ._typing import Optional
+from .typing import Optional
 
 from .abstractuser import AbstractUser
 from .iconset import IconSet

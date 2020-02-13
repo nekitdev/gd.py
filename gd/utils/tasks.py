@@ -4,15 +4,15 @@ import asyncio
 import aiohttp
 import gd
 import inspect
-import logging
 import random
 import time
 
-from .._typing import Coroutine, Loop, Optional, Type, Union
+from ..logging import get_logger
+from ..typing import Coroutine, Loop, Optional, Type, Union
 
 MAX_ASYNCIO_SECONDS = 3456000
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 
 class ExponentialBackoff:

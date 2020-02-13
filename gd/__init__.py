@@ -11,7 +11,6 @@ __version__ = '0.10.4'
 from collections import namedtuple
 import logging
 import re
-from typing import Any, Optional
 
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser, LevelRecord
@@ -24,6 +23,7 @@ from .friend_request import FriendRequest
 from .iconset import IconSet
 from .level import Level
 from .level_packs import Gauntlet, MapPack
+from .logging import *
 from .message import Message
 from .session import GDSession
 from .song import Song
@@ -34,6 +34,7 @@ from .utils.http_request import HTTPClient
 from .utils.params import *
 from .utils.parser import Parser
 from .utils.save_parser import Save, SaveParser
+
 from .utils.crypto.coders import Coder
 from .utils.crypto.xor_cipher import XORCipher as xor
 
@@ -43,12 +44,9 @@ from .utils import tasks
 from . import (
     api,     # non-server GD API.
     events,  # event-related functions and classes.
-    utils    # different useful utils.
+    utils,   # different useful utils.
+    typing   # various utils for typing gd.py.
 )
-
-
-log = logging.getLogger(__name__)
-
 
 VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
 
@@ -104,43 +102,6 @@ def make_version_details(ver: str) -> VersionInfo:
 version_info = make_version_details(__version__)
 
 
-def setup_logging(
-    level: int = logging.DEBUG, *,
-    stream: Any = None, file: Any = None,
-    formatter: Optional[str] = None
-) -> None:
-    """Function that sets up logs of the module.
-
-    Parameters
-    ----------
-    level: :class:`int`
-        Level to set.
-
-    stream: `Any`
-        Stream to log messages into. ``stderr`` by default.
-
-    file: `Any`
-        File to log messages to. If not given, messages are logged into the ``stream``.
-
-    formatter: :class:`str`
-        Formatter to use. ``[LEVEL] (time) {gd.module}: Message`` by default.
-    """
-    handler = (
-        logging.StreamHandler(stream) if file is None else logging.FileHandler(file)
-    )
-
-    if formatter is None:
-        formatter = '[%(levelname)s] (%(asctime)s) {%(name)s}: %(message)s'
-
-    handler.setFormatter(
-        logging.Formatter(formatter)
-    )
-
-    log.addHandler(handler)
-
-    log.setLevel(level)
-
-
 # setting up the NullHandler here
 try:
     from logging import NullHandler
@@ -152,10 +113,10 @@ except ImportError:  # pragma: no cover
         def emit(self, record):
             pass
 
+# log is from gd.logging.
 log.addHandler(NullHandler())
 
 
 # delete not required stuff
-del Any, Optional
 del NullHandler
-del namedtuple, re
+del logging, namedtuple, re

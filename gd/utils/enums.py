@@ -1,7 +1,7 @@
 import functools
 from enum import Enum
 
-from .._typing import Any, Dict, Union
+from ..typing import Any, Dict, Union
 
 from ..errors import FailedConversion
 
@@ -159,7 +159,7 @@ class NEnum(Enum):
     def __hash__(self) -> int:
         return hash(self.__repr__())
 
-    def __json__(self) -> Any:
+    def _json(self) -> Any:
         return self.value
 
     @property

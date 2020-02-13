@@ -1,4 +1,4 @@
-from ._typing import AbstractEntity, Client
+from .typing import AbstractEntity, Client
 from .errors import ClientException
 from .utils.text_tools import make_repr
 
@@ -42,7 +42,7 @@ class AbstractEntity:
     def __ne__(self, other: AbstractEntity) -> bool:
         return not self.__eq__(other)
 
-    def __json__(self) -> dict:
+    def _json(self) -> dict:
         return self.options
 
     @property

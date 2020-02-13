@@ -1,4 +1,4 @@
-from ._typing import Level, List, Tuple
+from .typing import Level, List, Tuple
 
 from .abstractentity import AbstractEntity
 from .colors import Color
@@ -31,9 +31,9 @@ class Gauntlet(AbstractEntity):
     def __str__(self) -> str:
         return self.name
 
-    def __json__(self) -> dict:
+    def _json(self) -> dict:
         final = dict(levels=self.levels)
-        final.update(super().__json__())
+        final.update(super()._json())
         return final
 
     @property

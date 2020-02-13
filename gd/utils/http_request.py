@@ -1,14 +1,14 @@
 import asyncio
-import logging
 
 from yarl import URL
 import aiohttp
 
-from .._typing import Dict, Optional, Union
+from ..typing import Dict, Optional, Union
+from ..logging import get_logger
 from ..errors import HTTPNotConnected
 from .text_tools import make_repr
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 BASE = 'http://www.boomlings.com/database/'
 VALID_ERRORS = (
@@ -32,7 +32,7 @@ class HTTPClient:
         self.semaphore = semaphore or asyncio.Semaphore(250)
         self.debug = False
         self.base = URL(base)
-        self._last_result = None  # for testing purposes
+        self.last_result = None  # for testing purposes
 
     def __repr__(self) -> str:
         info = {
@@ -142,7 +142,8 @@ class HTTPClient:
             headers = {'Cookie': cookie}
 
         if self.debug:
-            log.debug('URL: {}, Data: {}'.format(url, params))
+            log.debug('URL: {}'.format(url))
+            log.debug('Data: {}'.format(params))
 
         async with aiohttp.ClientSession() as client:
             async with self.semaphore:
@@ -153,7 +154,9 @@ class HTTPClient:
 
                 data = await resp.content.read()
 
-                self._last_result = data
+                if self.debug:
+                    self.last_result = data.decode(errors='replace')
+                    log.debug('Response: {!r}'.format(self.last_result))
 
                 try:
                     res = data.decode()
@@ -258,6 +261,7 @@ class HTTPClient:
 
         if data is None:
             data = {}
+
         if params is None:
             params = {}
 
@@ -269,6 +273,7 @@ class HTTPClient:
                 raise HTTPNotConnected()
 
             if self.debug:
-                log.debug('URL: {}, Data: {}'.format(url, data))
+                for name, value in zip(('URL', 'Data', 'Params'), (url, data, params)):
+                    log.debug('{}: {}'.format(name, value))
 
         return resp

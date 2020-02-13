@@ -1,4 +1,4 @@
-from .._typing import (
+from ..typing import (
     Any,
     Callable,
     Editor,
@@ -39,6 +39,8 @@ for s in ('slow', 'normal', 'fast', 'faster', 'fastest'):
         PortalType[s.title() + 'Speed']
     )
     speed_map.update({b.value: a.value, c.value: a.value})
+
+del a, b, c, s
 
 _portals = {enum.value for enum in PortalType}
 _speed_protals = {enum.value for enum in PortalType if ('speed' in enum.name.lower())}
@@ -129,7 +131,7 @@ class Editor:
         self.objects = list(objects)
         self._set_callback()
 
-    def __json__(self) -> dict:
+    def _json(self) -> dict:
         return dict(header=self.header, objects=self.objects)
 
     def _set_callback(self, caller: Any = None, attribute: Optional[str] = None) -> None:

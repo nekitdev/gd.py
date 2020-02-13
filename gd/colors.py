@@ -1,7 +1,7 @@
 import colorsys
 from sys import platform
 
-from ._typing import Color, Optional, Tuple
+from .typing import Color, Optional, Tuple
 
 from .utils.converter import Converter
 from .utils.text_tools import make_repr
@@ -53,7 +53,7 @@ class Color:
     def __hash__(self) -> int:
         return hash(self.value)
 
-    def __json__(self) -> dict:
+    def _json(self) -> dict:
         return dict(
             rgb=self.to_rgb(),
             hex=self.to_hex(),

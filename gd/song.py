@@ -1,4 +1,4 @@
-from ._typing import Song
+from .typing import Song
 
 from .abstractentity import AbstractEntity
 from .utils.http_request import HTTPClient

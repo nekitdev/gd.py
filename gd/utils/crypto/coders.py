@@ -6,7 +6,7 @@ import struct
 import zlib
 
 # absolute import because we are deep
-from gd._typing import List, Union
+from gd.typing import List, Union
 
 from .xor_cipher import XORCipher as XOR
 

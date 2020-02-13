@@ -1,8 +1,7 @@
 import asyncio
 
-import logging
-
-from ._typing import (
+from .logging import get_logger
+from .typing import (
     Any, AbstractUser, Comment, Coroutine, Dict, FriendRequest, Gauntlet, IconSet, Level,
     LevelRecord, List, MapPack, Message, Optional, Sequence, Song, Union, User, UserStats
 )
@@ -29,7 +28,7 @@ from .utils.crypto.coders import Coder
 from . import api
 from . import utils
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 
 class Client:
@@ -75,7 +74,7 @@ class Client:
         }
         return make_repr(self, info)
 
-    def __json__(self) -> Dict[str, Optional[Union[int, str]]]:
+    def _json(self) -> Dict[str, Optional[Union[int, str]]]:
         return dict(
             account_id=self.account_id,
             id=self.id,

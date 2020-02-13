@@ -1,4 +1,4 @@
-from .._typing import HSV, Union
+from ..typing import HSV, Union
 from ..utils.text_tools import make_repr
 
 __all__ = ('HSV',)
@@ -25,7 +25,7 @@ class HSV:
         }
         return make_repr(self, info)
 
-    def __json__(self) -> dict:
+    def _json(self) -> dict:
         return dict(
             h=self.h, s=self.s, v=self.v,
             s_checked=self.s_checked, v_checked=self.v_checked
