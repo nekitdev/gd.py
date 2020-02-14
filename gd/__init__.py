@@ -38,6 +38,8 @@ from .utils.save_parser import Save, SaveParser
 from .utils.crypto.coders import Coder
 from .utils.crypto.xor_cipher import XORCipher as xor
 
+from ._jokes import *  # idk
+
 from .utils._async import synchronize
 from .utils import tasks
 
