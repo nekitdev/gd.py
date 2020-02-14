@@ -18,7 +18,7 @@ class AbstractEntity:
 
         .. describe:: hash(x)
 
-            Returns ``hash(self.to_hash_string())``.
+            Returns ``hash(self.hash_str)``.
     """
     def __init__(self, **options) -> None:
         self.options = options
