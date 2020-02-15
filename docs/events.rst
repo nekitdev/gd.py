@@ -84,7 +84,7 @@ If you wish to run the scanner normally (blocking the main thread), you can do t
 
         gd.events.enable()
 
-        gd.events.run(loop)  # or, simplier, loop.run_forever()
+        gd.events.run(loop)  # or, simpler, loop.run_forever()
 
 There are two main ways to write an implementation for ``on_event`` task.
 
@@ -119,7 +119,7 @@ Creating Custom Listeners
 
 It is possible to implement your own listeners.
 
-The main idea is subclassing `AbstractScanner`` and creating your own ``scan`` method in there.
+The main idea is subclassing ``AbstractScanner`` and creating your own ``scan`` method in there.
 
 .. code-block:: python3
 
