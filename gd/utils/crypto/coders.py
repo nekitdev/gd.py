@@ -70,13 +70,12 @@ class Coder:
     @classmethod
     def do_base64(cls, data: str, encode: bool = True, errors: str = 'strict') -> str:
         try:
-            padded = data + ('=' * (len(data) % 4))
-
             if encode:
                 return base64.urlsafe_b64encode(
-                    padded.encode(errors=errors)
+                    data.encode(errors=errors)
                 ).decode(errors=errors)
             else:
+                padded = data + ('=' * (len(data) % 4))
                 return base64.urlsafe_b64decode(
                     padded.encode(errors=errors)
                 ).decode(errors=errors)
