@@ -40,6 +40,7 @@ joke_map = {
     'colon': 'okay google comment something on my profile',
     'cos8o': 'have you heard of hyperdash?',  # I was forced to ~ nekit
     'cvolton': 'what if we take gd, and make it so you get free rates from random people',
+    'cyber': ['rewrite it in rust', 'guys how do i optimize this 1 nanosecond out of the function?'],
     'smjs': 'does not like python',
     '101arrowz': 'code cleaning 101',
     'absolute': 'mega hack v5032 when',
@@ -50,7 +51,7 @@ joke_map = {
     'blaze': 'stop using mac',
     'devexit': 'lol just beat zodiac',
     'italianapkdownloader': 'let\'s hook super mario maker to gd',
-    'mgostih': 'iq 9999999999999',
+    'mgostih': ['iq 9999999999999', 'rust rust rust rust rust rust rust rust rust rust rust rust rust rust'],
     'noah': 'let\'s copy osu for all my design',
     'pavlukivan': 'new gd codes are out: hold my beer',
     'pizzaroot': 'asian student stereotype',
