@@ -38,9 +38,9 @@ joke_map = {
     'miko': 'oh boy what name does she have this week',
     'nekit': 'oh damn I missed a certain feature of gd in my api',
     'colon': 'okay google comment something on my profile',
-    'cos8o': 'let\'s leak all levels in gd',
+    'cos8o': 'have you heard of hyperdash?',  # I was forced to ~ nekit
     'cvolton': 'what if we take gd, and make it so you get free rates from random people',
-    'smjs': '<insert joke here>',
+    'smjs': 'does not like python',
     '101arrowz': 'code cleaning 101',
     'absolute': 'mega hack v5032 when',
     'adafcaefc': 'we need more numbers in the progress bar',

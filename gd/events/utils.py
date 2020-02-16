@@ -1,16 +1,14 @@
 import asyncio
 import atexit
 
-from .scanner import (
-    AbstractScanner as scanner, run as run_loop, get_loop,
+from .listener import (
+    AbstractListener as abstract, run as run_loop, get_loop,
     shutdown_loop, all_listeners, thread, update_thread_loop, set_loop
 )
 
-from ..typing import Client
-
 from .. import utils
 
-__all__ = ('disable', 'enable', 'add_client', 'start', 'run', 'attach_to_loop')
+__all__ = ('disable', 'start', 'run', 'attach_to_loop')
 
 
 def disable() -> None:
@@ -21,22 +19,12 @@ def disable() -> None:
         pass
 
     try:
-        scanners = utils.get_instances_of(scanner)
+        listeners = utils.get_instances_of(abstract)
     except Exception:
-        scanners = all_listeners
+        listeners = all_listeners
 
-    for scan in scanners:
+    for scan in listeners:
         scan.close()
-
-
-def enable() -> None:
-    for listener in all_listeners:
-        listener.enable()
-
-
-def add_client(client: Client) -> None:
-    for listener in all_listeners:
-        listener.add_client(client)
 
 
 def attach_to_loop(loop: asyncio.AbstractEventLoop) -> None:

@@ -1,5 +1,3 @@
-import random
-
 from .typing import Tuple, Union
 
 from .abstractentity import AbstractEntity
@@ -11,9 +9,6 @@ from .utils.text_tools import make_repr
 
 class IconSet(AbstractEntity):
     """Class that represents an Icon Set."""
-    def __init__(self, **options):
-        options.update(id=random.randint(0, 1000000))
-        super().__init__(**options)
 
     def __repr__(self) -> str:
         info = {
@@ -32,6 +27,10 @@ class IconSet(AbstractEntity):
 
     def _json(self) -> dict:
         return self.options
+
+    @property
+    def id(self) -> int:
+        return self.main + self.color_1.value + self.color_2.value + self.main_type.value
 
     @property
     def main(self) -> int:

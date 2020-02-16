@@ -1,11 +1,20 @@
 import asyncio
 
+from .errors import ClientException
+
 from .logging import get_logger
 from .typing import (
     Any, AbstractUser, Comment, Coroutine, Dict, FriendRequest, Gauntlet, IconSet, Level,
     LevelRecord, List, MapPack, Message, Optional, Sequence, Song, Union, User, UserStats
 )
 from .session import GDSession
+
+from .events.listener import (
+    TimelyLevelListener,
+    RateLevelListener,
+    MessageOrRequestListener,
+    LevelCommentListener
+)
 
 from .utils.decorators import check_logged
 from .utils.enums import (
@@ -62,6 +71,7 @@ class Client:
     def __init__(self, *, loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
         self.session = GDSession()
         self.loop = loop or utils.acquire_loop()
+        self.listeners = list()
         self._set_to_defaults()
 
     def __repr__(self) -> str:
@@ -83,7 +93,7 @@ class Client:
         )
 
     def _set_to_defaults(self) -> None:
-        self.save = Save(completed=[], followed=[])
+        self.save = Save(completed=list(), followed=list())
         self.save_api = api.Database()
         self.account_id = 0
         self.id = 0
@@ -1313,6 +1323,59 @@ class Client:
         See :ref:`events` for more info.
         """
         pass
+
+    async def on_message(self, message: Message) -> Any:
+        """|coro|
+
+        This is an event that is fired when a logged in client gets a message.
+
+        See :ref:`events` for more info.
+        """
+        pass
+
+    async def on_friend_request(self, friend_request: FriendRequest) -> Any:
+        """|coro|
+
+        This is an event that is fired when a logged in client gets a friend request.
+
+        See :ref:`events` for more info.
+        """
+        pass
+
+    async def on_level_comment(self, level: Level, comment: Comment) -> Any:
+        """|coro|
+
+        This is an event that is fired when a comment is posted on some level.
+
+        See :ref:`events` for more info.
+        """
+        pass
+
+    def listen_for(self, type: str, entity_id: Optional[int] = None) -> None:
+        lower = str(type).lower()
+
+        if lower in {'daily', 'weekly'}:
+            listener = TimelyLevelListener(self, lower)
+
+        elif lower in {'rate', 'unrate'}:
+            listener = RateLevelListener(self, listen_to_rate=(lower == 'rate'))
+
+        elif lower in {'friend_request', 'message'}:
+            listener = MessageOrRequestListener(self, listen_to_msg=(lower == 'message'))
+
+        elif lower in {'level_comment'}:
+            if entity_id is None:
+                raise ClientException('Entity ID is required for type: {!r}.'.format(lower))
+
+            listener = LevelCommentListener(self, entity_id)
+
+        else:
+            raise ClientException('Invalid listener type: {!r}.'.format(lower))
+
+        self.listeners.append(listener)
+        listener.enable()
+
+        return self.event  # allow using as a decorator
 
     async def dispatch(self, event_name: str, *args, **kwargs) -> Any:
         name = 'on_' + event_name

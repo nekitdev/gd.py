@@ -63,6 +63,6 @@ class AbstractEntity:
         return self._client
 
     def attach_client(self, client: Client) -> None:
-        """Attach ``client`` to ``self`` as ``self._client``."""
+        """Attach ``client`` to ``self``."""
         self._client = client
         return self
