@@ -786,6 +786,9 @@ class Client:
     async def get_level_comments(
         self, level: Level, strategy: Union[int, str, CommentStrategy] = 0, amount: int = 20
     ) -> List[Comment]:
+        if amount < 0:
+            amount += 2 ** 31
+
         return await self.session.get_level_comments(
             level=level, strategy=CommentStrategy.from_value(strategy), amount=amount, client=self)
 

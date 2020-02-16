@@ -1,4 +1,3 @@
-import base64 as b64
 import urllib.parse
 
 from .typing import Any, Client, Dict, Optional, Type
@@ -135,9 +134,10 @@ class ClassConverter:
                     else:
                         password = None
 
-        desc = b64.urlsafe_b64decode(
-            odict.get(Index.LEVEL_DESCRIPTION, '')
-        ).decode(errors='replace')
+        desc = Coder.do_base64(
+            odict.get(Index.LEVEL_DESCRIPTION, ''),
+            encode=False, errors='replace'
+        )
 
         data = odict.get(Index.LEVEL_DATA, '')
         try:
@@ -230,7 +230,9 @@ class ClassConverter:
         indicator = odict.getcast(Index.MESSAGE_INDICATOR, 0, int)
         is_normal = indicator ^ 1
 
-        subject = b64.urlsafe_b64decode(odict.get(Index.MESSAGE_SUBJECT, '')).decode(errors='replace')
+        subject = Coder.do_base64(
+            odict.get(Index.MESSAGE_SUBJECT, ''), encode=False, errors='replace'
+        )
 
         return Message(
             id=odict.getcast(Index.MESSAGE_ID, 0, int),
@@ -261,7 +263,9 @@ class ClassConverter:
         return FriendRequest(
             id=odict.getcast(Index.REQUEST_ID, 0, int),
             timestamp=str(odict.get(Index.REQUEST_TIMESTAMP, 'unknown')),
-            body=b64.urlsafe_b64decode(odict.get(Index.REQUEST_BODY, '')).decode(),
+            body=Coder.do_base64(
+                odict.get(Index.REQUEST_BODY, ''), encode=False, errors='replace'
+            ),
             is_read=bool(bool(odict.get(Index.REQUEST_STATUS)) ^ 1),
             author=(user_1 if is_normal else user_2),
             recipient=(user_2 if is_normal else user_1),
@@ -275,7 +279,9 @@ class ClassConverter:
         color = Color.from_rgb(*map(int, color_string.split(',')))
 
         return Comment(
-            body=b64.urlsafe_b64decode(odict.get(Index.COMMENT_BODY, '')).decode(errors='replace'),
+            body=Coder.do_base64(
+                odict.get(Index.COMMENT_BODY, ''), encode=False, errors='replace'
+            ),
             rating=odict.getcast(Index.COMMENT_RATING, 0, int),
             timestamp=odict.get(Index.COMMENT_TIMESTAMP, 'unknown'),
             id=odict.getcast(Index.COMMENT_ID, 0, int),

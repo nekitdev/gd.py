@@ -517,7 +517,9 @@ class Level(AbstractEntity):
             using :func:`.utils.value_to_enum`.
 
         amount: :class:`int`
-            Amount of comments to retrieve. Default is ``20``. (no limits)
+            Amount of comments to retrieve. Default is ``20``.
+            For ``amount < 0``, ``2 ** 31`` is added, allowing to fetch
+            a theoretical limit of comments.
 
         Returns
         -------

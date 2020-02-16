@@ -38,7 +38,7 @@ joke_map = {
     'miko': 'oh boy what name does she have this week',
     'nekit': 'oh damn I missed a certain feature of gd in my api',
     'colon': 'okay google comment something on my profile',
-    'cos8o': 'have you heard of hyperdash?',  # I was forced to ~ nekit
+    'cos8o': 'have you heard of hyperdash?',
     'cvolton': 'what if we take gd, and make it so you get free rates from random people',
     'smjs': 'does not like python',
     '101arrowz': 'code cleaning 101',
@@ -48,7 +48,7 @@ joke_map = {
     'alex1304': 'how are your codes so clean?',
     'alphalaneous': 'let\'s interface gd',
     'blaze': 'stop using mac',
-    'cyber': 'why not write it in rust?',
+    'cyber': 'why not use rust?',
     'devexit': 'lol just beat zodiac',
     'italianapkdownloader': 'let\'s hook super mario maker to gd',
     'mgostih': 'smart and rust',

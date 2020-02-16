@@ -68,11 +68,21 @@ class Coder:
         return final
 
     @classmethod
-    def do_base64(cls, data: str, encode: bool = True) -> str:
-        if encode:
-            return base64.urlsafe_b64encode(data.encode()).decode()
-        else:
-            return base64.urlsafe_b64decode(data.encode()).decode()
+    def do_base64(cls, data: str, encode: bool = True, errors: str = 'strict') -> str:
+        try:
+            padded = data + ('=' * (len(data) % 4))
+
+            if encode:
+                return base64.urlsafe_b64encode(
+                    padded.encode(errors=errors)
+                ).decode(errors=errors)
+            else:
+                return base64.urlsafe_b64decode(
+                    padded.encode(errors=errors)
+                ).decode(errors=errors)
+
+        except Exception:
+            return data
 
     @classmethod
     def gen_rs(cls, length: int = 10) -> str:

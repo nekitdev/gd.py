@@ -1,4 +1,3 @@
-import base64
 import random
 
 from ..typing import Any, Dict, Filters, List, Optional, Parameters, Sequence, Union
@@ -248,7 +247,7 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        self.dict['subject'] = base64.urlsafe_b64encode(subject.encode()).decode()
+        self.dict['subject'] = Coder.do_base64(subject)
         self.dict['body'] = Coder.encode(type='message', string=body)
         return self
 
@@ -297,7 +296,7 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        self.dict['comment'] = base64.urlsafe_b64encode(item.encode()).decode()
+        self.dict['comment'] = Coder.do_base64(item)
         return self
 
     def put_save_data(self, data_seq: Sequence[Union[bytes, str]]) -> Parameters:
@@ -464,7 +463,7 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        comment = base64.urlsafe_b64encode(content.encode()).decode()
+        comment = Coder.do_base64(content)
         self.dict['comment'] = comment
         values.insert(1, comment)
         self.put_chk(Coder.gen_chk(type='comment', values=values))
@@ -578,7 +577,7 @@ class Parameters:
         if content is None:
             content = str()
 
-        desc = base64.urlsafe_b64encode(content.encode()).decode()
+        desc = Coder.do_base64(content)
 
         self.dict['levelDesc'] = desc
         return self

@@ -171,7 +171,7 @@ class RateLevelListener(AbstractListener):
         self.find_new = listen_to_rate
         self.cache = []
 
-    async def method(self, pages: int = 2) -> List[Level]:
+    async def method(self, pages: int = 5) -> List[Level]:
         return await self.client.search_levels(filters=self.filters, pages=range(pages))
 
     async def scan(self) -> None:
@@ -197,7 +197,7 @@ async def further_differ(
     array: Iterable[Level], find_new: bool = True
 ) -> List[Level]:
     array = list(array)
-    updated = await asyncio.gather(*(level.refresh() for level in array))
+    updated = await gather(level.refresh() for level in array)
     final = list()
 
     for level, new in zip(array, updated):
@@ -224,7 +224,7 @@ class MessageOrRequestListener(AbstractListener):
         self.to_call = 'message' if listen_to_msg else 'friend_request'
         self.method = getattr(client, ('get_messages' if listen_to_msg else 'get_friend_requests'))
 
-    async def call_method(self, pages: int = 2) -> Union[List[FriendRequest], List[Message]]:
+    async def call_method(self, pages: int = 10) -> Union[List[FriendRequest], List[Message]]:
         return await self.method(pages=range(pages))
 
     async def scan(self) -> None:
@@ -263,7 +263,8 @@ class LevelCommentListener(AbstractListener):
         except Exception:
             self.level = Level(id=self.level_id, client=self.client)
 
-    async def method(self, amount: int = 1000000) -> List[Comment]:
+    async def method(self, amount: int = -1) -> List[Comment]:
+        # -1 implies 'all comments'
         return await self.level.get_comments(amount=amount)
 
     async def scan(self) -> None:
@@ -287,5 +288,14 @@ class LevelCommentListener(AbstractListener):
 
 def differ(before: list, after: list, find_new: bool = True) -> filter:
     # this could be improved a lot ~ nekit
+    if find_new:
+        for item in before:
+            # find a pivot
+            try:
+                after = after[:after.index(item)]
+                break
+            except ValueError:  # not in list
+                pass
+
     a, b = (before, after) if find_new else (after, before)
     return filter(lambda elem: (elem not in a), b)
