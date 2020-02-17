@@ -62,8 +62,8 @@ class GDSession:
     """Implements all requests-related functionality.
     No docstrings here yet...
     """
-    def __init__(self) -> None:
-        self.http = HTTPClient()
+    def __init__(self, **http_args) -> None:
+        self.http = HTTPClient(**http_args)
 
     def __repr__(self) -> str:
         methods = list(filter(lambda string: not string.startswith('_'), dir(self.__class__)))
