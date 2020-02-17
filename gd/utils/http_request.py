@@ -1,9 +1,13 @@
 import asyncio
+import platform
+import random
 
 from yarl import URL
 import aiohttp
 
-from ..typing import Dict, Optional, Union
+import gd
+
+from ..typing import Dict, Optional, Sequence, Union
 from ..logging import get_logger
 from ..errors import HTTPNotConnected
 from .text_tools import make_repr
@@ -18,31 +22,69 @@ VALID_ERRORS = (
 
 
 class HTTPClient:
-    """Class that handles the main part of the entire gd.py - sending HTTP requests.
-
-    Attributes
-    ----------
-    semaphore: Optional[:class:`asyncio.Semaphore`]
-        A semaphore to use when doing requests. Defaults to :class:`asyncio.Semaphore` with value ``250``.
-    """
+    """Class that handles the main part of the entire gd.py - sending HTTP requests."""
     def __init__(
-        self, base: Union[str, URL] = BASE, *,
+        self, *, url: Union[str, URL] = BASE,
+        headers: Optional[Dict[str, str]] = None,
+        timeout: Union[float, int] = 150,
+        debug: bool = False, ip: str = 'default',
+        use_user_agent: bool = True,
         semaphore: Optional[asyncio.Semaphore] = None
     ) -> None:
-        self.semaphore = semaphore or asyncio.Semaphore(250)
-        self.debug = False
-        self.base = URL(base)
-        self.last_result = None  # for testing purposes
+        if headers is None:
+            headers = {}
+
+        if semaphore is None:
+            semaphore = asyncio.Semaphore(250)
+
+        self.user_agent = headers.pop('User-Agent', self.get_default_agent())
+        self.use_user_agent = use_user_agent
+        self.url = URL(url)
+        self.ip = ip
+        self.semaphore = semaphore
+        self.timeout = timeout
+        self.headers = headers
+        self.debug = debug
+        self.last_result = None  # for testing
 
     def __repr__(self) -> str:
         info = {
             'debug': self.debug,
+            'ip': self.ip,
             'max_requests': self.semaphore._value,
-            'url': repr(self.base)
+            'timeout': self.timeout,
+            'url': repr(self.url),
+            'user_agent': repr(self.user_agent)
         }
         return make_repr(self, info)
 
-    def change_base(self, base: str) -> None:
+    @staticmethod
+    def get_default_agent() -> str:
+        string = 'GDClient (gd.py {}) Python/{} aiohttp/{}'
+        return string.format(gd.__version__, platform.python_version(), aiohttp.__version__)
+
+    @staticmethod
+    def make_random_ipv4() -> str:
+        return ('.').join(map(str, (random.randint(0, 255) for _ in range(4))))
+
+    def make_headers(self) -> Dict[str, str]:
+        headers = {}
+
+        if self.use_user_agent:
+            headers['User-Agent'] = self.user_agent
+
+        if self.ip != 'default':
+            headers['X-Forwarded-For'] = (
+                self.ip if self.ip != 'random' else self.make_random_ipv4()
+            )
+
+        headers.update(self.headers)
+        return headers
+
+    def make_timeout(self) -> aiohttp.ClientTimeout:
+        return aiohttp.ClientTimeout(total=self.timeout)
+
+    def change_url(self, url: Union[str, URL]) -> None:
         """Change base for requests.
 
         Default base is ``http://www.boomlings.com/database/``,
@@ -50,10 +92,10 @@ class HTTPClient:
 
         Parameters
         ----------
-        base: :class:`str`
+        url: :class:`str`
             Base to change HTTPClient base to.
         """
-        self.base = URL(base)
+        self.url = URL(url)
 
     def set_semaphore(
         self, value: int = 250, *,
@@ -132,7 +174,7 @@ class HTTPClient:
 
             If a cookie is requested, returns a pair (``res``, ``c``) where c is a :class:`str` cookie.
         """
-        base = self.base if custom_base is None else URL(custom_base)
+        base = self.url if custom_base is None else URL(custom_base)
         url = base / (php + '.php')
 
         method = 'GET' if params is None else 'POST'
@@ -141,47 +183,55 @@ class HTTPClient:
         if cookie is not None:
             headers = {'Cookie': cookie}
 
+        skip = []
+
+        if not self.use_user_agent:
+            skip.append('User-Agent')
+
         if self.debug:
             log.debug('URL: {}'.format(url))
             log.debug('Data: {}'.format(params))
 
-        async with aiohttp.ClientSession() as client:
-            async with self.semaphore:
+        async with self.semaphore, aiohttp.ClientSession(
+            headers=self.make_headers(),
+            skip_auto_headers=skip,
+            timeout=self.make_timeout()
+        ) as client:
+            try:
+                resp = await client.request(method, url, data=params, headers=headers)
+            except VALID_ERRORS:
+                return
+
+            data = await resp.content.read()
+
+            if self.debug:
+                log.debug('Headers: {!r}'.format(resp.request_info.headers))
+                self.last_result = data.decode(errors='replace')
+                log.debug('Response: {!r}'.format(self.last_result))
+
+            try:
+                res = data.decode()
+
                 try:
-                    resp = await client.request(method, url, data=params, headers=headers)
-                except VALID_ERRORS:
-                    return
+                    return int(res)
 
-                data = await resp.content.read()
+                except ValueError:
+                    pass
 
-                if self.debug:
-                    self.last_result = data.decode(errors='replace')
-                    log.debug('Response: {!r}'.format(self.last_result))
+            except UnicodeDecodeError:
+                res = data
 
-                try:
-                    res = data.decode()
+            if get_cookies:
+                c = str(resp.cookies).split(' ').pop(1)
+                return res, c
 
-                    try:
-                        return int(res)
-
-                    except ValueError:
-                        pass
-
-                except UnicodeDecodeError:
-                    res = data
-
-                if get_cookies:
-                    c = str(resp.cookies).split(' ').pop(1)
-                    return res, c
-
-                return res
+            return res
 
     async def request(
         self, route: str, parameters: Optional[Union[dict, str]] = None,
         custom_base: Optional[str] = None,
         # 'error_codes' is a dict: {code: error_to_raise}
         error_codes: Optional[Dict[int, Exception]] = None,
-        # 'should_map': whether response should be mapped 'enum -> value' (dict)
         raise_errors: bool = True, should_map: bool = False,
         get_cookies: bool = False, cookie: Optional[str] = None
     ) -> Optional[Union[bytes, str, int]]:
@@ -265,7 +315,7 @@ class HTTPClient:
         if params is None:
             params = {}
 
-        async with aiohttp.ClientSession() as client:
+        async with aiohttp.ClientSession(headers=self.make_headers(), timeout=self.make_timeout()) as client:
             try:
                 resp = await client.request(method, url, data=data, params=params, **kwargs)
 
@@ -273,7 +323,7 @@ class HTTPClient:
                 raise HTTPNotConnected()
 
             if self.debug:
-                for name, value in zip(('URL', 'Data', 'Params'), (url, data, params)):
+                for name, value in zip(('URL', 'Data', 'Params', 'Headers'), (url, data, params, resp.request_info.headers)):
                     log.debug('{}: {}'.format(name, value))
 
         return resp
