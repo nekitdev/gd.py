@@ -7,7 +7,7 @@ import aiohttp
 
 import gd
 
-from ..typing import Dict, Optional, Sequence, Union
+from ..typing import Dict, Optional, Union
 from ..logging import get_logger
 from ..errors import HTTPNotConnected
 from .text_tools import make_repr
@@ -323,7 +323,10 @@ class HTTPClient:
                 raise HTTPNotConnected()
 
             if self.debug:
-                for name, value in zip(('URL', 'Data', 'Params', 'Headers'), (url, data, params, resp.request_info.headers)):
+                for name, value in zip(
+                    ('URL', 'Data', 'Params', 'Headers'),
+                    (url, data, params, resp.request_info.headers)
+                ):
                     log.debug('{}: {}'.format(name, value))
 
         return resp
