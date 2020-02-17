@@ -1,4 +1,4 @@
-import asyncio
+simport asyncio
 
 from .errors import ClientException
 
@@ -41,7 +41,7 @@ log = get_logger(__name__)
 
 
 class Client:
-    """A main class in the gd.py library, used for interacting with the servers of Geometry Dash.
+    r"""A main class in the gd.py library, used for interacting with the servers of Geometry Dash.
 
     Parameters
     ----------
@@ -49,6 +49,9 @@ class Client:
         The :class:`asyncio.AbstractEventLoop` to use for asynchronous operations.
         Defaults to ``None``, in which case the default event loop is used
         via :func:`.utils.acquire_loop`.
+
+    \*\*http_args
+        Arguments to pass to :class:`.HTTPClient` constructor.
 
     Attributes
     ----------
@@ -68,8 +71,10 @@ class Client:
         This is a namedtuple with format ``(completed, followed)``.
         Contains empty lists if not loaded.
     """
-    def __init__(self, *, loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
-        self.session = GDSession()
+    def __init__(
+        self, *, loop: Optional[asyncio.AbstractEventLoop] = None, **http_args
+    ) -> None:
+        self.session = GDSession(**http_args)
         self.loop = loop or utils.acquire_loop()
         self.listeners = list()
         self._set_to_defaults()
