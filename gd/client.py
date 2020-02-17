@@ -1,4 +1,4 @@
-simport asyncio
+import asyncio
 
 from .errors import ClientException
 
