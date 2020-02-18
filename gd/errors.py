@@ -22,6 +22,13 @@ class PaginatorException(GDException):
     pass
 
 
+class CommandException(GDException):
+    """Base exception class for errors that are thrown
+    on command parsing or invocation failure.
+    """
+    pass
+
+
 class FailedConversion(GDException):
     """Exception that is raised when Enum converter
     fails to turn given value into requested Enum.
@@ -52,11 +59,6 @@ class EditorError(GDException):
     """Exception that is raised when converting string
     to :class:`.api.Object` or :class:`.api.Editor` failed.
     """
-    pass
-
-
-class CommandParseError(GDException):
-    """Exception that is raised when parsing command input has failed."""
     pass
 
 
@@ -162,3 +164,13 @@ class PagesOutOfRange(PaginatorException):
             message = '{} Requested page: {}'.format(info, page)
 
         super().__init__(message)
+
+
+class CommandParseError(CommandException):
+    """Exception that is raised when parsing command input has failed."""
+    pass
+
+
+class BadArgument(CommandException):
+    """Exception that is raised when an invalid argument is passed."""
+    pass
