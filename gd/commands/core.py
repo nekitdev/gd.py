@@ -1,17 +1,13 @@
-import functools
 import inspect
 
 from ..errors import (
-    BadArgument, CommandException
+    CommandException
 )
 from ..typing import (
     Any, Callable, Iterator, Optional, Set, Type
 )
 from ..utils.text_tools import make_repr
 
-from .converters import (
-    convert_to_bool
-)
 
 __all__ = ('Command', 'Group', 'GroupMixin', 'command', 'group')
 
@@ -87,7 +83,7 @@ class Command:
         self.__init__(self.callback, **{**self._original_kwargs, **kwargs})
 
     def copy(self):
-         return self.__class__(self.callback, **self._original_kwargs)
+        return self.__class__(self.callback, **self._original_kwargs)
 
 
 class GroupMixin:
@@ -233,6 +229,7 @@ def command(cls: Optional[Type[Any]] = None, **kwargs) -> Function:
         return cls(func, **kwargs)
 
     return decorator
+
 
 def group(**attrs) -> Group:
     attrs.setdefault('cls', Group)
