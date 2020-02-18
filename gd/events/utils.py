@@ -2,8 +2,8 @@ import asyncio
 import atexit
 
 from .listener import (
-    AbstractListener as abstract, run as run_loop, get_loop,
-    shutdown_loop, all_listeners, thread, update_thread_loop, set_loop
+    run as run_loop, get_loop, shutdown_loop,
+    all_listeners, thread, update_thread_loop, set_loop
 )
 
 __all__ = ('disable', 'start', 'run', 'attach_to_loop')
