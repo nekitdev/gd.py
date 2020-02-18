@@ -183,27 +183,6 @@ class GroupMixin:
 
 
 class Group(GroupMixin, Command):
-    """A class that implements a grouping protocol for commands to be
-    executed as subcommands.
-
-    This class is a subclass of :class:`.Command` and thus all options
-    valid in :class:`.Command` are valid in here as well.
-
-    Attributes
-    -----------
-    invoke_without_command: Optional[:class:`bool`]
-        Indicates if the group callback should begin parsing and
-        invocation only if no subcommand was found. Useful for
-        making it an error handling function to tell the user that
-        no subcommand was found or to have different functionality
-        in case no subcommand was found. If this is ``False``, then
-        the group callback will always be invoked first. This means
-        that the checks and the parsing dictated by its parameters
-        will be executed. Defaults to ``False``.
-    case_insensitive: Optional[:class:`bool`]
-        Indicates if the group's commands should be case insensitive.
-        Defaults to ``False``.
-    """
     def __init__(self, *args, **attrs) -> None:
         self.invoke_without_command = attrs.pop('invoke_without_command', False)
         super().__init__(*args, **attrs)
