@@ -6,8 +6,6 @@ from .listener import (
     shutdown_loop, all_listeners, thread, update_thread_loop, set_loop
 )
 
-from .. import utils
-
 __all__ = ('disable', 'start', 'run', 'attach_to_loop')
 
 
@@ -18,13 +16,8 @@ def disable() -> None:
     except (RuntimeError, ValueError):
         pass
 
-    try:
-        listeners = utils.get_instances_of(abstract)
-    except Exception:
-        listeners = all_listeners
-
-    for scan in listeners:
-        scan.close()
+    for listener in all_listeners:
+        listener.close()
 
 
 def attach_to_loop(loop: asyncio.AbstractEventLoop) -> None:
