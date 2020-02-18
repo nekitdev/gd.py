@@ -9,7 +9,7 @@ import gd
 
 from ..typing import Dict, Optional, Union
 from ..logging import get_logger
-from ..errors import HTTPNotConnected
+from ..errors import HTTPError
 from .text_tools import make_repr
 
 log = get_logger(__name__)
@@ -131,10 +131,6 @@ class HTTPClient:
 
         Sends an HTTP Request to a Geometry Dash server and returns the response.
 
-        .. note::
-            This method does not raise any errors, but still,
-            should be used carefully in programs.
-
         Parameters
         ----------
         php: :class:`str`
@@ -161,10 +157,8 @@ class HTTPClient:
 
         Returns
         -------
-        Optional[Union[:class:`bytes`, :class:`str`, :class:`int`]]
+        Union[:class:`bytes`, :class:`str`, :class:`int`]
             ``res`` with the following rules:
-
-            If Exception occurs while sending request, returns ``None``.
 
             Returns an :class:`int`, representing server error code, e.g. ``-1``,
             if server responded with error.
@@ -173,6 +167,11 @@ class HTTPClient:
             decodes it, and on fail returns :class:`bytes`.
 
             If a cookie is requested, returns a pair (``res``, ``c``) where c is a :class:`str` cookie.
+
+        Raises
+        ------
+        :exc:`.HTTPError`
+            An exception occured during handling request/response.
         """
         base = self.url if custom_base is None else URL(custom_base)
         url = base / (php + '.php')
@@ -199,8 +198,8 @@ class HTTPClient:
         ) as client:
             try:
                 resp = await client.request(method, url, data=params, headers=headers)
-            except VALID_ERRORS:
-                return
+            except VALID_ERRORS as exc:
+                raise HTTPError(exc)
 
             data = await resp.content.read()
 
@@ -260,7 +259,7 @@ class HTTPClient:
 
         Raises
         ------
-        :exc:`.HTTPNotConnected`
+        :exc:`.HTTPError`
             GD Server has destroyed the connection, or machine has no connection.
             Raised when :meth:`HTTPClient.fetch` returns ``None`` and ``raise_errors`` is ``True``.
 
@@ -282,11 +281,11 @@ class HTTPClient:
         if error_codes is None:
             error_codes = {}
 
-        resp = await self.fetch(route, parameters, get_cookies, cookie, custom_base)
-
-        if resp is None:
+        try:
+            resp = await self.fetch(route, parameters, get_cookies, cookie, custom_base)
+        except HTTPError:
             if raise_errors:
-                raise HTTPNotConnected()
+                raise
             return
 
         if resp in error_codes:
@@ -319,8 +318,8 @@ class HTTPClient:
             try:
                 resp = await client.request(method, url, data=data, params=params, **kwargs)
 
-            except VALID_ERRORS:
-                raise HTTPNotConnected()
+            except VALID_ERRORS as exc:
+                raise HTTPError(exc)
 
             if self.debug:
                 for name, value in zip(

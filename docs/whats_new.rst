@@ -1,8 +1,8 @@
 .. currentmodule:: gd
 
-[0.9.x] - What's new?
-=====================
+What's new? - gd.py
+===================
 
-0.9.0 - ...
+Unfortunately, there is nothing to see here yet.
 
 ~ NeKitDS

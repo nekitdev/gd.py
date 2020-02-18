@@ -9,10 +9,12 @@ use pyo3::types::{IntoPyDict, PyDict, PyFloat, PyList, PyAny, PyTuple};
 use pyo3::wrap_pyfunction;
 
 
-fn split_to_map<'a>(
-    string: &'a str,
-    separator: &str
-) -> HashMap<&'a str, &'a str> {
+#[pyfunction]
+fn split_to_map(
+    py: Python,
+    string: String,
+    separator: String
+) -> HashMap<String, String> {
     let mut iter = string.split(separator);
     let mut data = HashMap::new();
     while let (
@@ -20,13 +22,15 @@ fn split_to_map<'a>(
     ) = (iter.next(), iter.next()) {
         data.insert(key, value);
     }
-    return data;
+    return data.into_py_dict(py)?;
 }
 
 
 /// This module is a python module implemented in Rust.
 #[pymodule]
 fn _gd(_py: Python, module: &PyModule) -> PyResult<()> {
+    module.add_wrapped(wrap_pyfunction!(split_to_map));
+    module.add("__doc__", "Implementation of parser accelerator module, written in Rust.");
     // return nothing
     Ok(())
 }

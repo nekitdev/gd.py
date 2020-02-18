@@ -70,7 +70,7 @@ args = dict(
     version=version,
     packages=[
         'gd', 'gd.utils', 'gd.utils.crypto',
-        'gd.events', 'gd.api', 'gd.src'
+        'gd.events', 'gd.api', 'gd.src', 'gd.commands'
     ],
     license='MIT',
     description='A Geometry Dash API wrapper for Python',

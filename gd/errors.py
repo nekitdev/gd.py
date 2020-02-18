@@ -55,12 +55,20 @@ class EditorError(GDException):
     pass
 
 
-class HTTPNotConnected(ClientException):
+class CommandParseError(GDException):
+    """Exception that is raised when parsing command input has failed."""
+    pass
+
+
+class HTTPError(ClientException):
     """Exception that is raised when exception
     in :class:`.utils.http.HTTPClient` occurs.
     """
-    def __init__(self) -> None:
-        message = 'Internet connection failed.'
+    def __init__(self, exc: Exception) -> None:
+        message = (
+            'Failed to process HTTP request. '
+            'Caused by: <{0.__class__.__name__}> ({0})'.format(exc)
+        )
         super().__init__(message)
 
 

@@ -10,8 +10,8 @@ import inspect
 from types import CoroutineType as coroutine
 
 from ..typing import (
-    Any, Awaitable, Callable, Coroutine, Dict, List,
-    Optional, Sequence, Set, Tuple, Type, Union
+    Any, Awaitable, Callable, Coroutine, Dict, Iterable,
+    List, Optional, Sequence, Set, Tuple, Type, Union
 )
 
 __all__ = (
@@ -70,7 +70,7 @@ async def gather(
 
 
 async def wait(
-    fs: Sequence[Coroutine], *, loop: Optional[asyncio.AbstractEventLoop] = None,
+    fs: Iterable[Coroutine], *, loop: Optional[asyncio.AbstractEventLoop] = None,
     timeout: Optional[Union[float, int]] = None, return_when: str = 'ALL_COMPLETED'
 ) -> Tuple[Set[asyncio.Future], Set[asyncio.Future]]:
     """A function that is calling :func:`asyncio.wait`.
@@ -100,11 +100,6 @@ async def wait(
         fs = set(fs)
     except TypeError:  # not iterable 'fs'
         fs = {fs}
-
-    if loop is None:
-        loop = acquire_loop()
-
-    fs = {asyncio.ensure_future(f, loop=loop) for f in fs}
 
     return await asyncio.wait(fs, loop=loop, timeout=timeout, return_when=return_when)
 

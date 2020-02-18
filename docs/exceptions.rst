@@ -20,7 +20,7 @@ Exception List
 
 .. autoexception:: EditorError
 
-.. autoexception:: HTTPNotConnected
+.. autoexception:: HTTPError
 
 .. autoexception:: MissingAccess
 
@@ -46,7 +46,7 @@ Exception Hierarchy
         EditorError
         FailedConversion
         ClientException
-            HTTPNotConnected
+            HTTPError
             MissingAccess
             SongRestrictedForUsage
             LoginFailure
