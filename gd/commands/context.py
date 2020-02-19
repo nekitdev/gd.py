@@ -11,7 +11,10 @@ __all__ = ('Context',)
 
 
 class Context:
-    def __init__(self, prefix: Optional[str], client: Client, view: StringView, entity: Union[Comment, FriendRequest, Message]) -> None:
+    def __init__(
+        self, prefix: Optional[str], client: Client, view: StringView,
+        entity: Union[Comment, FriendRequest, Message]
+    ) -> None:
         self.prefix = prefix
         self.client = client
         self.view = view
