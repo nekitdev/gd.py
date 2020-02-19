@@ -25,25 +25,24 @@ class HTTPClient:
     """Class that handles the main part of the entire gd.py - sending HTTP requests."""
     def __init__(
         self, *, url: Union[str, URL] = BASE,
-        headers: Optional[Dict[str, str]] = None,
         timeout: Union[float, int] = 150,
         debug: bool = False, ip: str = 'default',
+        user_agent: Optional[str] = None,
         use_user_agent: bool = True,
         semaphore: Optional[asyncio.Semaphore] = None
     ) -> None:
-        if headers is None:
-            headers = {}
-
         if semaphore is None:
             semaphore = asyncio.Semaphore(250)
 
-        self.user_agent = headers.pop('User-Agent', self.get_default_agent())
+        if user_agent is None:
+            user_agent = self.get_default_agent()
+
+        self.user_agent = user_agent
         self.use_user_agent = use_user_agent
         self.url = URL(url)
         self.ip = ip
         self.semaphore = semaphore
         self.timeout = timeout
-        self.headers = headers
         self.debug = debug
         self.last_result = None  # for testing
 
@@ -78,7 +77,6 @@ class HTTPClient:
                 self.ip if self.ip != 'random' else self.make_random_ipv4()
             )
 
-        headers.update(self.headers)
         return headers
 
     def make_timeout(self) -> aiohttp.ClientTimeout:
@@ -199,7 +197,7 @@ class HTTPClient:
             try:
                 resp = await client.request(method, url, data=params, headers=headers)
             except VALID_ERRORS as exc:
-                raise HTTPError(exc)
+                raise HTTPError(exc) from None
 
             data = await resp.content.read()
 
@@ -319,7 +317,7 @@ class HTTPClient:
                 resp = await client.request(method, url, data=data, params=params, **kwargs)
 
             except VALID_ERRORS as exc:
-                raise HTTPError(exc)
+                raise HTTPError(exc) from None
 
             if self.debug:
                 for name, value in zip(
