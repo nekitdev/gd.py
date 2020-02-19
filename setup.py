@@ -75,6 +75,8 @@ try:
 except ImportError:
     NO_EXTENSIONS = True
 
+# rust_extensions=[RustExtension('_gd', 'Cargo.toml', debug=True)]
+
 args = dict(
     name='gd.py',
     author='NeKitDS',
@@ -97,7 +99,6 @@ args = dict(
     install_requires=requirements,
     extras_require=extras_require,
     python_requires='>=3.5.3',
-#     rust_extensions=[RustExtension('_gd', 'Cargo.toml', debug=True)],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: MIT License',
