@@ -1,7 +1,8 @@
+import functools
 import inspect
 
 from ..errors import (
-    CommandException
+    CommandException, CheckFailure, CheckAnyFailure
 )
 from ..typing import (
     Any, Callable, Iterator, Optional, Set, Type
@@ -9,7 +10,7 @@ from ..typing import (
 from ..utils.text_tools import make_repr
 
 
-__all__ = ('Command', 'Group', 'GroupMixin', 'command', 'group')
+__all__ = ('Command', 'Group', 'GroupMixin', 'command', 'group', 'check', 'check_any')
 
 Function = Callable[[Any], Any]
 
@@ -52,6 +53,14 @@ class Command:
 
         self.parent = kwargs.get('parent')
 
+        try:
+            checks = func._command_checks
+            checks.reverse()
+        except AttributeError:
+            checks = kwargs.get('checks', [])
+        finally:
+            self.checks = checks
+
     def __repr__(self) -> str:
         info = {
             'name': self.name,
@@ -59,6 +68,9 @@ class Command:
             'aliases': tuple(self.aliases)
         }
         return make_repr(self, info)
+
+    def __str__(self):
+        return self.qualified_name
 
     @property
     def callback(self) -> Callable:
@@ -79,11 +91,73 @@ class Command:
             if isinstance(value.annotation, str):
                 self.params[key] = value = value.replace(annotation=eval(value.annotation, function.__globals__))
 
+    def add_check(self, func: Function) -> None:
+        self.checks.append(func)
+
+    def remove_check(self, func: Function) -> None:
+        try:
+            self.checks.remove(func)
+        except ValueError:  # not in checks
+            pass
+
+    async def __call__(self, *args, **kwargs) -> Any:
+        return await self.callback(*args, **kwargs)
+
     def update(self, **kwargs) -> None:
         self.__init__(self.callback, **{**self._original_kwargs, **kwargs})
 
     def copy(self):
         return self.__class__(self.callback, **self._original_kwargs)
+
+    @property
+    def clean_params(self):
+        result = self.params.copy()
+        try:
+            # first
+            result.popitem(last=False)
+
+        except Exception:
+            raise ValueError('Missing context parameter') from None
+
+        return result
+
+    @property
+    def full_parent_name(self):
+        entries = []
+        command = self
+
+        while command.parent is not None:
+            command = command.parent
+            entries.append(command.name)
+
+        return ' '.join(reversed(entries))
+
+    @property
+    def parents(self):
+        entries = []
+        command = self
+
+        while command.parent is not None:
+            command = command.parent
+            entries.append(command)
+
+        return entries
+
+    @property
+    def root_parent(self):
+        if not self.parent:
+            return None
+
+        return self.parents[-1]
+
+    @property
+    def qualified_name(self):
+        parent = self.full_parent_name
+
+        if parent:
+            return parent + ' ' + self.name
+        else:
+            return self.name
 
 
 class GroupMixin:
@@ -213,3 +287,52 @@ def command(cls: Optional[Type[Any]] = None, **kwargs) -> Function:
 def group(**attrs) -> Group:
     attrs.setdefault('cls', Group)
     return command(**attrs)
+
+
+def check(predicate):
+    def decorator(func):
+        if isinstance(func, Command):
+            func.checks.append(predicate)
+        else:
+            if not hasattr(func, '_commands_checks'):
+                func._commands_checks = []
+
+            func._commands_checks.append(predicate)
+
+        return func
+
+    if inspect.iscoroutinefunction(predicate):
+        decorator.predicate = predicate
+    else:
+        @functools.wraps(predicate)
+        async def wrapper(ctx):
+            return predicate(ctx)
+        decorator.predicate = wrapper
+
+    return decorator
+
+
+def check_any(*checks):
+    unwrapped = []
+    for wrapped in checks:
+        try:
+            pred = wrapped.predicate
+        except AttributeError:
+            raise TypeError('{!r} must be wrapped by commands.check decorator'.format(wrapped)) from None
+        else:
+            unwrapped.append(pred)
+
+    async def predicate(ctx):
+        errors = []
+        for func in unwrapped:
+            try:
+                value = await func(ctx)
+            except CheckFailure as exc:
+                errors.append(exc)
+            else:
+                if value:
+                    return True
+        # if we're here, all checks failed
+        raise CheckAnyFailure(*errors)
+
+    return check(predicate)
