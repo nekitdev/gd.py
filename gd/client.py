@@ -4,7 +4,7 @@ from .errors import ClientException
 
 from .logging import get_logger
 from .typing import (
-    Any, AbstractUser, Comment, Coroutine, Dict, FriendRequest, Gauntlet, IconSet, Level,
+    Any, AbstractUser, Client, Comment, Coroutine, Dict, FriendRequest, Gauntlet, IconSet, Level,
     LevelRecord, List, MapPack, Message, Optional, Sequence, Song, Union, User, UserStats
 )
 from .session import GDSession
@@ -85,7 +85,8 @@ class Client:
             'account_id': self.account_id,
             'id': self.id,
             'name': self.name,
-            'password': repr('...')
+            'password': '...',
+            'session': self.session
         }
         return make_repr(self, info)
 
@@ -111,6 +112,11 @@ class Client:
         # update encodedpass if password was updated
         if attr == 'password':
             self.encodedpass = Coder.encode(type='accountpass', string=self.password)
+
+    def edit(self, **attrs) -> Client:
+        for attr, value in attrs.items():
+            self._upd(attr, value)
+        return self
 
     @property
     def http(self) -> HTTPClient:

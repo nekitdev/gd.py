@@ -3,7 +3,24 @@ import re
 import pathlib
 import sys
 from setuptools import Extension, setup
-# from setuptools_rust import Binding, RustExtension  # soon
+
+# try:
+#     from setuptools_rust import RustExtension
+
+# except ImportError:
+#     import subprocess
+
+#     args = [sys.executable]
+#     args.extend('-m pip install setuptools-rust'.split())
+
+#     errno = subprocess.call(args)
+
+#     if errno:
+#         print("Please install setuptools-rust package")
+#         exit(errno)
+
+#     else:
+#         from setuptools_rust import RustExtension
 
 root = pathlib.Path(__file__).parent
 
@@ -80,6 +97,7 @@ args = dict(
     install_requires=requirements,
     extras_require=extras_require,
     python_requires='>=3.5.3',
+#     rust_extensions=[RustExtension('_gd', 'Cargo.toml', debug=True)],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: MIT License',

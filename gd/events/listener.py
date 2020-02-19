@@ -169,7 +169,6 @@ class RateLevelListener(AbstractListener):
         self.call_method = 'level_rated' if listen_to_rate else 'level_unrated'
         self.filters = Filters(strategy='awarded')
         self.find_new = listen_to_rate
-        self.cache = []
 
     async def method(self, pages: int = 5) -> List[Level]:
         return await self.client.search_levels(filters=self.filters, pages=range(pages))
