@@ -431,7 +431,8 @@ class GDSession:
             .finish_login()
         )
         codes = {
-            -1: LoginFailure(login=user, password=password)
+            -1: LoginFailure(login=user, password=password),
+            -12: MissingAccess('Account {!r} (password {!r}) is disabled.'.format(user, password))
         }
 
         resp = await self.http.request(Route.LOGIN, parameters, error_codes=codes)
