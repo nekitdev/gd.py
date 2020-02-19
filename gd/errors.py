@@ -1,4 +1,4 @@
-from .typing import Any, Enum, Optional, Union
+from .typing import Any, Callable, Enum, Optional, Sequence, Union
 
 
 class GDException(Exception):
@@ -174,3 +174,19 @@ class CommandParseError(CommandException):
 class BadArgument(CommandException):
     """Exception that is raised when an invalid argument is passed."""
     pass
+
+
+class CheckFailure(CommandException):
+    """Exception that is raised when a command check has failed."""
+    def __init__(self, func: Callable) -> None:
+        self.check = func
+        message = 'Check {} has failed.'.format(func)
+        super().__init__(message)
+
+
+class CheckAnyFailure(CheckFailure):
+    """Exception that is raised when all checks have failed in @check_any."""
+    def __init__(self, *errors: Sequence[CheckFailure]) -> None:
+        self.errors = errors
+        message = ('\n  ').join(('Check Any has failed. All fails:', *map(str, errors)))
+        super(CommandException, self).__init__(message)
