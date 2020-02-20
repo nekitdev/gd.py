@@ -47,5 +47,6 @@ class Route:
     GET_COMMENT_HISTORY = 'getGJCommentHistory'
     GET_ACCOUNT_URL = 'getAccountURL'
     LIKE_ITEM = 'likeGJItem211'
+    TEST_SONG = 'testSong'
     GD_URL = 'http://geometrydash.com/database/'
     NEWGROUNDS_SONG_LISTEN = 'https://www.newgrounds.com/audio/listen/'

@@ -2,7 +2,7 @@ import urllib.parse
 
 from .typing import Any, Client, Dict, Optional, Type
 
-from .song import Song
+from .song import ArtistInfo, Song
 from .user import UserStats, User
 from .colors import Color, colors
 from .comment import Comment
@@ -22,6 +22,10 @@ from .utils.routes import Route
 
 
 class ClassConverter:
+
+    @staticmethod
+    def artist_info_convert(odict: Dict[str, str]) -> ArtistInfo:
+        return ArtistInfo(**odict)
 
     @staticmethod
     def song_convert(odict: ExtDict) -> Song:

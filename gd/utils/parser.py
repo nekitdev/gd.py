@@ -1,4 +1,4 @@
-from ..typing import Any, Callable, Dict, List, Optional, Parser, Sequence, Type, Union
+from ..typing import Any, Callable, Dict, Iterable, List, Optional, Parser, Sequence, Type, Union
 
 __all__ = ('Parser',)
 
@@ -69,8 +69,12 @@ class Parser:
         self.ext = {}
 
     @staticmethod
-    def map(item: Sequence[Any]) -> Dict[Any, Any]:
-        return ExtDict(zip(item[::2], item[1::2]))
+    def map(item: Iterable[Any]) -> Dict[Any, Any]:
+        # this is quite a magical one.
+        # iterators are exhaustive (or lazy), which
+        # means that consumed items can no longer be retrieved.
+        # therefore, this function works.
+        return ExtDict(zip(*(iter(item),) * 2))
 
     def split(self, delim: str) -> Parser:
         self.actions.append(action_split(delim))

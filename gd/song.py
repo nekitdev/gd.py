@@ -1,10 +1,55 @@
-from .typing import Song
+import functools
+
+from .typing import Any, Callable, Song
 
 from .abstractentity import AbstractEntity
 from .utils.http_request import HTTPClient
 from .utils.text_tools import make_repr
 
-http = HTTPClient()  # used in song downloading
+Function = Callable[[Any], Any]
+
+http = HTTPClient(ip='random', use_user_agent=False)  # used in song downloading
+
+
+class ArtistInfo(AbstractEntity):
+    """Class that represents info about the creator of a particular song."""
+    def __repr__(self) -> str:
+        info = {
+            'id': self.id
+            'artist': repr(self.artist),
+            'song': repr(self.song),
+            'is_scouted': self.is_scouted(),
+            'is_whitelisted': self.is_whitelisted(),
+            'exists': self.exists
+        }
+        return make_repr(self, info)
+
+    @property
+    def artist(self) -> str:
+        """:class:`str`: Author of the song."""
+        return self.options.get('artist', '')
+    
+    @property
+    def song(self) -> str:
+        """:class:`str`: A name of the song."""
+        return self.options.get('song', '')
+
+    @property
+    def exists(self) -> bool:
+        """:class:`bool`: Whether the song exists."""
+        return bool(self.artist and self.name)
+
+    def is_scouted(self) -> bool:
+        """:class:`bool`: Whether the artist is scouted."""
+        return bool(self.options.get('scouted', ''))
+
+    def is_whitelisted(self) -> bool:
+        """:class:`bool`: Whether the artist is whitelisted."""
+        return bool(self.options.get('whitelisted', ''))
+
+    def api_allowed(self) -> bool:
+        """:class:`bool`: Whether the external API is allowed."""
+        return bool(self.options.get('api', ''))
 
 
 class Song(AbstractEntity):
@@ -21,11 +66,6 @@ class Song(AbstractEntity):
 
     def __str__(self) -> str:
         return self.name
-
-    @property
-    def id(self) -> int:
-        """:class:`int`: An ID of the song."""
-        return self.options.get('id', 0)
 
     @property
     def name(self) -> int:
@@ -58,8 +98,13 @@ class Song(AbstractEntity):
 
     @classmethod
     def official(cls, id: int, server_style: bool = True) -> Song:
-        from .utils.converter import Converter  # I am too lazy ~ nekit
+        from .utils.converter import Converter  # ehh
         return Converter.to_normal_song(id, server_style)
+
+    async def get_artist_info(self) -> ArtistInfo:
+        from .client import Client  # *circular imports*
+        client = Client(ip='162.216.16.96', use_user_agent=False)
+        return await client.get_artist_info(self.id)
 
     async def download(self) -> bytes:
         """|coro|

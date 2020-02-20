@@ -23,6 +23,12 @@ gd.py provides simple API for fetching and working with both of them::
     with open('test.mp3', 'wb') as file:
         file.write(data)
 
+Artist Info
+-----------
+
+.. autoclass:: ArtistInfo
+    :members:
+
 Song
 ----
 

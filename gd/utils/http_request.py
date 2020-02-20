@@ -7,7 +7,7 @@ import aiohttp
 
 import gd
 
-from ..typing import Dict, Optional, Union
+from ..typing import Any, Dict, Optional, Union
 from ..logging import get_logger
 from ..errors import HTTPError
 from .text_tools import make_repr
@@ -25,23 +25,18 @@ class HTTPClient:
     """Class that handles the main part of the entire gd.py - sending HTTP requests."""
     def __init__(
         self, *, url: Union[str, URL] = BASE,
-        timeout: Union[float, int] = 150,
+        timeout: Union[float, int] = 150, max_requests: int = 250,
         debug: bool = False, ip: str = 'default',
-        user_agent: Optional[str] = None,
-        use_user_agent: bool = True,
-        semaphore: Optional[asyncio.Semaphore] = None
+        user_agent: Optional[str] = None, use_user_agent: bool = True
     ) -> None:
-        if semaphore is None:
-            semaphore = asyncio.Semaphore(250)
-
         if user_agent is None:
             user_agent = self.get_default_agent()
 
+        self.semaphore = asyncio.Semaphore(max_requests)
+        self.url = URL(url)
         self.user_agent = user_agent
         self.use_user_agent = use_user_agent
-        self.url = URL(url)
         self.ip = ip
-        self.semaphore = semaphore
         self.timeout = timeout
         self.debug = debug
         self.last_result = None  # for testing
@@ -95,16 +90,17 @@ class HTTPClient:
         """
         self.url = URL(url)
 
-    def set_semaphore(
+    def set_max_requests(
         self, value: int = 250, *,
-        loop: asyncio.AbstractEventLoop = None
+        loop: Optional[asyncio.AbstractEventLoop] = None
     ) -> None:
-        """Sets semaphore to :class:`asyncio.Semaphore` with given value and loop.
+        """Creates an :class:`asyncio.Semaphore` object with given ``value`` and ``loop``
+        in order to limit amount of max requests at a time.
 
         Parameters
         ----------
         value: :class:`int`
-            Value to set semaphore to. Default is ``200``.
+            Value to set semaphore to. Default is ``250``.
 
         loop: :class:`asyncio.AbstractEventLoop`
             Event loop to pass to semaphore's constructor.
@@ -122,8 +118,10 @@ class HTTPClient:
         self.debug = bool(debug)
 
     async def fetch(
-        self, php: str, params: Optional[Union[dict, str]] = None, get_cookies: bool = False,
-        cookie: Optional[str] = None, custom_base: Optional[str] = None
+        self, php: str, data: Optional[Dict[str, Any]] = None,
+        params: Optional[Dict[str, Any]] = None,
+        get_cookies: bool = False, cookie: Optional[str] = None,
+        custom_base: Optional[str] = None, method: Optional[str] = None
     ) -> Optional[Union[bytes, int, str]]:
         """|coro|
 
@@ -153,6 +151,11 @@ class HTTPClient:
             Custom base using different Geometry Dash IP.
             By default ``self.base`` is used.
 
+        method: :class:`str`
+            Method to use when requesting. This parameter is case insensetive.
+            By default, if ``parameters`` is or empty, ``GET`` is used,
+            otherwise ``POST`` is used.
+
         Returns
         -------
         Union[:class:`bytes`, :class:`str`, :class:`int`]
@@ -174,7 +177,11 @@ class HTTPClient:
         base = self.url if custom_base is None else URL(custom_base)
         url = base / (php + '.php')
 
-        method = 'GET' if params is None else 'POST'
+        if method is None:
+            method = 'get' if params is None else 'post'
+
+        method = str(method).upper()
+
         headers = None
 
         if cookie is not None:
@@ -186,8 +193,8 @@ class HTTPClient:
             skip.append('User-Agent')
 
         if self.debug:
-            log.debug('URL: {}'.format(url))
-            log.debug('Data: {}'.format(params))
+            for name, value in {'URL': url, 'Data': data, 'Params': params}.items():
+                log.debug('{}: {}'.format(name, value))
 
         async with self.semaphore, aiohttp.ClientSession(
             headers=self.make_headers(),
@@ -195,14 +202,14 @@ class HTTPClient:
             timeout=self.make_timeout()
         ) as client:
             try:
-                resp = await client.request(method, url, data=params, headers=headers)
+                resp = await client.request(method, url, data=data, params=params, headers=headers)
             except VALID_ERRORS as exc:
                 raise HTTPError(exc) from None
 
             data = await resp.content.read()
 
             if self.debug:
-                log.debug('Headers: {!r}'.format(resp.request_info.headers))
+                log.debug('Headers: {!r}'.format(dict(resp.request_info.headers)))
                 self.last_result = data.decode(errors='replace')
                 log.debug('Response: {!r}'.format(self.last_result))
 
@@ -225,8 +232,9 @@ class HTTPClient:
             return res
 
     async def request(
-        self, route: str, parameters: Optional[Union[dict, str]] = None,
-        custom_base: Optional[str] = None,
+        self, route: str, data: Optional[Dict[str, Any]] = None,
+        params: Optional[Dict[str, Any]] = None,
+        custom_base: Optional[str] = None, method: Optional[str] = None,
         # 'error_codes' is a dict: {code: error_to_raise}
         error_codes: Optional[Dict[int, Exception]] = None,
         raise_errors: bool = True, should_map: bool = False,
@@ -239,21 +247,11 @@ class HTTPClient:
 
         Parameters
         ----------
-        route: :class:`str`
-            Same as ``php`` in :meth:`HTTPClient.fetch`.
-        parameters: :class:`dict`
-            Same as ``params`` in :meth:`HTTPClient.fetch`.
-        custom_base: :class:`str`
-            Same as ``custom_base`` in :meth:`HTTPClient.fetch`.
         error_codes: Dict[:class:`int`, :exc:`Exception`]
             A dictionary that response is checked against. ``Exception`` can be any Exception.
         raise_errors: :class:`bool`
             If ``False``, errors are not raised.
             (technically, just turns on ignoring ``error_codes``)
-        get_cookies: :class:`bool`
-            Same as ``get_cookies`` in :meth:`HTTPClient.fetch`
-        cookie: :class:`str`
-            Same as ``cookie`` in :meth:`HTTPClient.fetch`
 
         Raises
         ------
@@ -273,14 +271,20 @@ class HTTPClient:
             If ``error_codes`` is specified, and ``raise_errors`` is ``False``, returns ``None``
             when response is in ``error_codes``.
         """
-        if parameters is None:
-            parameters = {}
-
+        if params is None:
+            params = {}
+        if data is None:
+            data = {}
         if error_codes is None:
             error_codes = {}
 
         try:
-            resp = await self.fetch(route, parameters, get_cookies, cookie, custom_base)
+            resp = await self.fetch(
+                php=route, data=data, params=params,
+                get_cookies=get_cookies, cookie=cookie,
+                custom_base=custom_base, method=method
+            )
+
         except HTTPError:
             if raise_errors:
                 raise
@@ -312,7 +316,9 @@ class HTTPClient:
         if params is None:
             params = {}
 
-        async with aiohttp.ClientSession(headers=self.make_headers(), timeout=self.make_timeout()) as client:
+        async with aiohttp.ClientSession(
+            headers=self.make_headers(), timeout=self.make_timeout()
+        ) as client:
             try:
                 resp = await client.request(method, url, data=data, params=params, **kwargs)
 
@@ -320,10 +326,10 @@ class HTTPClient:
                 raise HTTPError(exc) from None
 
             if self.debug:
-                for name, value in zip(
-                    ('URL', 'Data', 'Params', 'Headers'),
-                    (url, data, params, resp.request_info.headers)
-                ):
+                for name, value in {
+                    'URL': url, 'Data': data, 'Params': params,
+                    'Headers': dict(resp.request_info.headers)
+                }.items():
                     log.debug('{}: {}'.format(name, value))
 
         return resp

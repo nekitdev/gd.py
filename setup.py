@@ -100,12 +100,14 @@ args = dict(
     extras_require=extras_require,
     python_requires='>=3.5.3',
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 4 - Beta',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Rust',
+        'Intended Audience :: Developers',
         'Natural Language :: English',
         'Operating System :: OS Independent'
     ],

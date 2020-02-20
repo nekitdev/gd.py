@@ -4,8 +4,9 @@ from .errors import ClientException
 
 from .logging import get_logger
 from .typing import (
-    Any, AbstractUser, Client, Comment, Coroutine, Dict, FriendRequest, Gauntlet, IconSet, Level,
-    LevelRecord, List, MapPack, Message, Optional, Sequence, Song, Union, User, UserStats
+    AbstractUser, Any, ArtistInfo, Client, Comment, Coroutine, Dict,
+    FriendRequest, Gauntlet, IconSet, Level, LevelRecord, List,
+    MapPack, Message, Optional, Sequence, Song, Union, User, UserStats
 )
 from .session import GDSession
 
@@ -85,8 +86,7 @@ class Client:
             'account_id': self.account_id,
             'id': self.id,
             'name': self.name,
-            'password': '...',
-            'session': self.session
+            'password': '...'
         }
         return make_repr(self, info)
 
@@ -128,19 +128,36 @@ class Client:
     async def ping_server(self) -> float:
         """|coro|
 
-        Pings ``boomlings.com/database`` and prints the time taken.
-        Returns the ping as well.
+        Pings ``boomlings.com/database`` and returns the time taken.
 
         Returns
         -------
         :class:`float`
             Server ping, in milliseconds.
         """
-        duration = await self.session.ping_server('http://boomlings.com/database/')
+        return await self.session.ping_server('http://boomlings.com/database/')
 
-        print('GD Server ping: {}ms'.format(duration))
+    async def get_artist_info(self, song_id: int = 0) -> ArtistInfo:
+        """|coro|
 
-        return duration
+        Retrieves artist info about for a song with a particular ID.
+
+        Parameters
+        ----------
+        song_id: :class:`int`
+            An ID of the song whose info to fetch.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to fetch the song info.
+
+        Returns
+        -------
+        :class:`.ArtistInfo`
+            Info regarding the artist.
+        """
+        return await self.session.test_song(song_id)
 
     async def get_song(self, song_id: int = 0) -> Song:
         """|coro|
@@ -167,7 +184,7 @@ class Client:
         """
         return await self.session.get_song(song_id)
 
-    async def get_ng_song(self, song_id: int = 0) -> Song:  # pragma: no cover
+    async def get_ng_song(self, song_id: int = 0) -> Song:
         """|coro|
 
         Fetches a song from Newgrounds.
