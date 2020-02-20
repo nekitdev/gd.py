@@ -52,7 +52,7 @@ class ExtDict(dict):
             try:
                 return type(value)
 
-            except Exception:
+            except Exception:  # noqa
                 pass
 
         else:
