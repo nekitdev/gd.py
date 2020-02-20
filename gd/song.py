@@ -15,7 +15,7 @@ class ArtistInfo(AbstractEntity):
     """Class that represents info about the creator of a particular song."""
     def __repr__(self) -> str:
         info = {
-            'id': self.id
+            'id': self.id,
             'artist': repr(self.artist),
             'song': repr(self.song),
             'is_scouted': self.is_scouted(),
@@ -28,7 +28,7 @@ class ArtistInfo(AbstractEntity):
     def artist(self) -> str:
         """:class:`str`: Author of the song."""
         return self.options.get('artist', '')
-    
+
     @property
     def song(self) -> str:
         """:class:`str`: A name of the song."""
