@@ -93,11 +93,11 @@ class GDSession:
         return ClassConverter.song_convert(parsed)
 
     async def test_song(self, song_id: int = 0) -> ArtistInfo:
-        error_codes = {
+        codes = {
             -1: MissingAccess('Failed to fetch artist info for ID: {}'.format(song_id))
         }
         payload = Params().create_new('web').put_definer('song', song_id).close()
-        resp = await self.http.request(Route.TEST_SONG, params=payload, method='get')
+        resp = await self.http.request(Route.TEST_SONG, params=payload, method='get', error_codes=codes)
 
         artist, whitelisted, scouted, song, api, *_ = filter(_is_not_empty, re.split(r'</?br>', resp))
 
