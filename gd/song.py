@@ -1,5 +1,3 @@
-import functools
-
 from .typing import Any, Callable, Song
 
 from .abstractentity import AbstractEntity
@@ -102,8 +100,36 @@ class Song(AbstractEntity):
         return Converter.to_normal_song(id, server_style)
 
     async def get_artist_info(self) -> ArtistInfo:
+        """|coro|
+
+        Fetch artist info of ``self``.
+
+        If song is official, returns ``ArtistInfo()``.
+
+        Otherwise, acts like the following:
+
+        .. code-block:: python3
+
+            await client.get_artist_info(song.id)
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to find artist info.
+
+        Returns
+        -------
+        :class:`.ArtistInfo`
+            Fetched info about an artist.
+        """
+        if not self.is_custom():
+            return ArtistInfo()
+
         from .client import Client  # *circular imports*
+
+        # we are using boomlings.com IP for fun ~ nekit
         client = Client(ip='162.216.16.96', use_user_agent=False)
+
         return await client.get_artist_info(self.id)
 
     async def download(self) -> bytes:
