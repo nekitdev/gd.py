@@ -1256,7 +1256,7 @@ class Client:
         page: :class:`int`
             A page to search levels on.
 
-        query: :class:`int`
+        query: :class:`str`
             A query to search with.
 
         filters: :class:`.Filters`
