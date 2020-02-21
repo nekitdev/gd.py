@@ -99,7 +99,11 @@ class GDSession:
         payload = Params().create_new('web').put_definer('song', song_id).close()
         resp = await self.http.request(Route.TEST_SONG, params=payload, method='get', error_codes=codes)
 
-        artist, whitelisted, scouted, song, api, *_ = filter(_is_not_empty, re.split(r'</?br>', resp))
+        try:
+            artist, whitelisted, scouted, song, api, *_ = filter(_is_not_empty, re.split(r'</?br>', resp))
+
+        except ValueError:
+            raise MissingAccess('Failed to load data. Response: {!r}.'.format(resp)) from None
 
         def check(string: str) -> bool:
             return not ('not' in string.lower())
