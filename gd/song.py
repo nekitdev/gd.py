@@ -35,7 +35,7 @@ class ArtistInfo(AbstractEntity):
     @property
     def exists(self) -> bool:
         """:class:`bool`: Whether the song exists."""
-        return bool(self.artist and self.name)
+        return bool(self.artist and self.song)
 
     def is_scouted(self) -> bool:
         """:class:`bool`: Whether the artist is scouted."""
