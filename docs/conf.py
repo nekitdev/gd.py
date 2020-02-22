@@ -53,7 +53,7 @@ master_doc = 'index'
 
 # General information about the project
 project = u'gd.py'
-copyright = u'2019, NeKitDS'
+copyright = u'2019-2020, NeKitDS'
 
 version = ''
 with open('../gd/__init__.py') as f:  # version should be set at this point
@@ -62,6 +62,11 @@ with open('../gd/__init__.py') as f:  # version should be set at this point
 release = version
 
 language = 'en'
+
+pdf_documents = [
+    ('index', u'Geometry Dash Python Documentation',
+    u'gd.py documentation, built with PDF format.', u'NeKitDS')
+]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

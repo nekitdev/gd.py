@@ -281,10 +281,12 @@ def acquire_loop(running: bool = False) -> None:
 
 def _get_class_dict(cls: Type[Any]) -> Dict[str, Any]:
     """Gets 'cls.__dict__' that can be edited."""
+    sentinel = dict(cls.__dict__)
+
     for obj in gc.get_objects():
 
         try:
-            if obj == dict(cls.__dict__) and type(obj) is dict:
+            if type(obj) is dict and obj == sentinel:
                 return obj
 
         except Exception:

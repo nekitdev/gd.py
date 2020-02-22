@@ -11,6 +11,9 @@ http = HTTPClient(ip='random', use_user_agent=False)  # used in song downloading
 
 class ArtistInfo(AbstractEntity):
     """Class that represents info about the creator of a particular song."""
+    def __str__(self) -> str:
+        return '{} (ArtistInfo)'.format(self.artist)
+
     def __repr__(self) -> str:
         info = {
             'id': self.id,

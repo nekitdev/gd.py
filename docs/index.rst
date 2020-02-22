@@ -17,6 +17,7 @@ Documentation Contents
 
     intro
     quickstart
+    version
     logging
     client
     entity

@@ -1051,7 +1051,7 @@ class Client:
 
         Returns
         -------
-        List[:class:`.]
+        List[:class:`.UserStats`]
         """
         strategy = LeaderboardStrategy.from_value(strategy)
         return await self.session.get_top(strategy=strategy, count=count, client=self)
