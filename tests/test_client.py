@@ -183,10 +183,5 @@ async def test_rate_level():
 
 
 @skip_not_logged
-async def test_get_levels():
-    await client.get_levels()
-
-
-@skip_not_logged
 async def test_get_page_levels():
     await client.get_page_levels()
