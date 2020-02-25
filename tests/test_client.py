@@ -65,6 +65,21 @@ async def test_search_levels():
     await client.search_levels(query='VorteX')
 
 
+async def test_retrieve_comments():
+    user = await client.get_user('NekitDS')
+    await client.retrieve_comments(user)
+
+
+async def test_retrieve_page_comments():
+    user = await client.get_user('NekitDS')
+    await client.retrieve_page_comments(user)
+
+
+async def test_is_timely():
+    level = await client.get_level(30029017)
+    await level.is_timely()
+
+    
 # LOGGED IN CLIENT TESTS
 
 
@@ -111,13 +126,6 @@ async def test_send_message_and_request():
 
 
 @skip_not_logged
-async def test_level_upload_and_delete():
-    level = await client.get_level(30029017)
-    await level.upload(id=0)  # reupload
-    await level.delete()      # delete new level
-
-
-@skip_not_logged
 async def test_get_messages():
     await client.get_messages()
 
@@ -150,3 +158,21 @@ async def test_update_settings():
 @skip_not_logged
 async def test_as_user():
     await client.as_user().to_user()
+
+
+@skip_not_logged
+async def test_like():
+    level = await client.get_level(30029017)
+    await level.like()
+
+
+@skip_not_logged
+async def test_dislike():
+    level = await client.get_level(30029017)
+    await level.dislike()
+
+
+@skip_not_logged
+async def test_rate_level():
+    level = await client.get_level(30029017)
+    await level.rate(5)
