@@ -6,7 +6,8 @@ from .logging import get_logger
 from .typing import (
     AbstractUser, Any, ArtistInfo, Client, Comment, Coroutine, Dict,
     FriendRequest, Gauntlet, IconSet, Level, LevelRecord, List,
-    MapPack, Message, Optional, Sequence, Song, Union, User, UserStats
+    MapPack, Message, Optional, Sequence, Song, Union, User, UserStats,
+    Iterable
 )
 from .session import GDSession
 
@@ -341,7 +342,7 @@ class Client:
         """
         return await self.session.get_timely('weekly', client=self)
 
-    async def get_level(self, level_id: int = 0) -> Level:
+    async def get_level(self, level_id: int = 0, get_data: bool = True) -> Level:
         """|coro|
 
         Fetches a level from Geometry Dash servers.
@@ -357,7 +358,8 @@ class Client:
                 this function will search for daily/weekly levels, however,
                 it is not recommended to use since it can cause confusion.
                 Use :meth:`.Client.get_daily` and :meth:`.Client.get_weekly` instead.
-
+        get_data: :class:`bool`
+            Whether to download the level data or not.
         Raises
         ------
         :exc:`.MissingAccess`
@@ -368,7 +370,10 @@ class Client:
         :class:`.Level`
             The level corresponding to given id.
         """
-        return await self.session.get_level(level_id, client=self)
+        if get_data:
+            return await self.session.get_level(level_id, client=self)
+        else:
+            return await self.search_levels_on_page(query=level_id)[0]
 
     async def get_many_levels(self, *level_ids: Sequence[int]) -> List[Level]:
         r"""|coro|
@@ -438,14 +443,14 @@ class Client:
         """
         return await self.session.get_page_map_packs(page=page, client=self)
 
-    async def get_map_packs(self, pages: Optional[Sequence[int]] = None) -> List[MapPack]:
+    async def get_map_packs(self, pages: Optional[Iterable[int]] = range(10)) -> List[MapPack]:
         """|coro|
 
         Gets map packs on given ``pages``.
 
         Parameters
         ----------
-        pages: Sequence[:class:`int`]
+        pages: Iterable[:class:`int`]
             Pages to search map packs on.
 
         Returns
@@ -453,8 +458,6 @@ class Client:
         List[:class:`.MapPack`]
             List of map packs found.
         """
-        if pages is None:
-            pages = range(10)
 
         return await self.session.get_map_packs(pages=pages, client=self)
 
@@ -591,7 +594,7 @@ class Client:
         return await self.search_levels_on_page(filters=filters, raise_errors=raise_errors)
 
     @check_logged
-    async def get_levels(self, pages: Optional[Sequence[int]] = None) -> List[Level]:
+    async def get_levels(self, pages: Optional[Iterable[int]] = range(10)) -> List[Level]:
         """|coro|
 
         Searches for levels on given pages.
@@ -602,7 +605,7 @@ class Client:
 
         Parameters
         ----------
-        pages: Sequence[:class:`int`]
+        pages: Iterable[:class:`int`]
             Pages to look for levels at.
 
         Returns
@@ -752,11 +755,9 @@ class Client:
         )
 
     async def retrieve_comments(
-        self, user: AbstractUser, type: str = 'profile', pages: Optional[Sequence[int]] = None,
+        self, user: AbstractUser, type: str = 'profile', pages: Optional[Iterable[int]] = range(10),
         strategy: Union[int, str, CommentStrategy] = 0
     ) -> List[Comment]:
-        if pages is None:
-            pages = range(10)
 
         strategy = CommentStrategy.from_value(strategy)
         return await self.session.retrieve_comments(
@@ -917,7 +918,7 @@ class Client:
 
     @check_logged
     async def get_messages(
-        self, sent_or_inbox: str = 'inbox', pages: Optional[Sequence[int]] = None
+        self, sent_or_inbox: str = 'inbox', pages: Optional[Iterable[int]] = range(10)
     ) -> List[Message]:
         """|coro|
 
@@ -929,7 +930,7 @@ class Client:
             Type of messages to retrieve. Either `'sent'` or `'inbox'`.
             Defaults to the latter.
 
-        pages: Sequence[:class:`int`]
+        pages: Iterable[:class:`int`]
             Pages to look at, represented as a finite sequence, so iterations can be performed.
 
         Returns
@@ -937,8 +938,6 @@ class Client:
         List[:class:`.Message`]
             List of messages found. Can be an empty list.
         """
-        if pages is None:
-            pages = range(10)
 
         return await self.session.get_messages(
             sent_or_inbox=sent_or_inbox, pages=pages, client=self
@@ -985,7 +984,7 @@ class Client:
 
     @check_logged
     async def get_friend_requests(
-        self, sent_or_inbox: str = 'inbox', pages: Optional[Sequence[int]] = None
+        self, sent_or_inbox: str = 'inbox', pages: Optional[Iterable[int]] = range(10)
     ) -> List[FriendRequest]:
         """|coro|
 
@@ -997,7 +996,7 @@ class Client:
             Type of friend requests to retrieve. Either `'sent'` or `'inbox'`.
             Defaults to the latter.
 
-        pages: Sequence[:class:`int`]
+        pages: Iterable[:class:`int`]
             Pages to look at, represented as a finite sequence, so iterations can be performed.
 
         Returns
@@ -1005,8 +1004,6 @@ class Client:
         List[:class:`.FriendRequests`]
             List of friend requests found. Can be an empty list.
         """
-        if pages is None:
-            pages = range(10)
 
         return await self.session.get_friend_requests(
             sent_or_inbox=sent_or_inbox, pages=pages, client=self
@@ -1244,8 +1241,8 @@ class Client:
         await self.session.update_settings(*args, client=self)
 
     async def search_levels_on_page(
-        self, page: int = 0, query: str = '', filters: Optional[Filters] = None,
-        user: Optional[AbstractUser] = None, *, raise_errors: bool = True
+        self, page: int = 0, query: Union[str, int] = '', filters: Optional[Filters] = None,
+        user: Optional[Union[int, AbstractUser, User]] = None, *, raise_errors: bool = True
     ) -> List[Level]:
         """|coro|
 
@@ -1256,7 +1253,7 @@ class Client:
         page: :class:`int`
             A page to search levels on.
 
-        query: :class:`str`
+        query: Union[:class:`str`,:class:`int`]
             A query to search with.
 
         filters: :class:`.Filters`
@@ -1284,8 +1281,8 @@ class Client:
         )
 
     async def search_levels(
-        self, query: str = '', filters: Optional[Filters] = None, user: Optional[AbstractUser] = None,
-        pages: Optional[Sequence[int]] = None
+        self, query: Union[str, int] = '', filters: Optional[Filters] = None,
+        user: Optional[Union[int, AbstractUser, User]] = None, pages: Optional[Iterable[int]] = range(10)
     ) -> List[Level]:
         """|coro|
 
@@ -1293,7 +1290,7 @@ class Client:
 
         Parameters
         ----------
-        query: :class:`int`
+        query: Union[:class:`str`,:class:`int`]
             A query to search with.
 
         filters: :class:`.Filters`
@@ -1304,7 +1301,7 @@ class Client:
             equal to :class:`.SearchStrategy` ``BY_USER``. Can be omitted, then
             logged in client is required.)
 
-        pages: Sequence[:class:`int`]
+        pages: Iterable[:class:`int`]
             Pages to look at, represented as a finite sequence, so iterations can be performed.
 
         Returns
@@ -1312,8 +1309,6 @@ class Client:
         List[:class:`.Level`]
             List of levels found. Can be an empty list.
         """
-        if pages is None:
-            pages = range(10)
 
         return await self.session.search_levels(
             query=query, filters=filters, user=user, pages=pages, client=self
