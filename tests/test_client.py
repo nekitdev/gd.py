@@ -20,6 +20,10 @@ async def test_ng_song():
     await client.get_ng_song(1)
 
 
+async def test_get_artist_info():
+    await client.get_artist_info(1)
+
+
 async def test_get_user():
     await client.get_user(71)
 
@@ -66,20 +70,20 @@ async def test_search_levels():
 
 
 async def test_retrieve_comments():
-    user = await client.get_user('NekitDS')
-    await client.retrieve_comments(user)
+    user = await client.find_user('NekitDS')
+    await user.retrieve_comments(pages=range(10))
 
 
 async def test_retrieve_page_comments():
-    user = await client.get_user('NekitDS')
-    await client.retrieve_page_comments(user)
+    user = await client.find_user('NekitDS')
+    await user.retrieve_page_comments()
 
 
 async def test_is_timely():
     level = await client.get_level(30029017)
-    await level.is_timely()
+    level.is_timely()
 
-    
+
 # LOGGED IN CLIENT TESTS
 
 
@@ -176,3 +180,13 @@ async def test_dislike():
 async def test_rate_level():
     level = await client.get_level(30029017)
     await level.rate(5)
+
+
+@skip_not_logged
+async def test_get_levels():
+    await client.get_levels()
+
+
+@skip_not_logged
+async def test_get_page_levels():
+    await client.get_page_levels()
