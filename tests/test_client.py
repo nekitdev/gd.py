@@ -35,6 +35,7 @@ async def test_search_user():
 
 async def test_get_level():
     await client.get_level(30029017)
+    await client.get_level(30029017, get_data=False)
 
 
 async def test_many_levels():
