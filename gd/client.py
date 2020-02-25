@@ -373,7 +373,7 @@ class Client:
         if get_data:
             return await self.session.get_level(level_id, client=self)
         else:
-            return await self.search_levels_on_page(query=level_id)[0]
+            return (await self.search_levels_on_page(query=level_id))[0]
 
     async def get_many_levels(self, *level_ids: Sequence[int]) -> List[Level]:
         r"""|coro|
