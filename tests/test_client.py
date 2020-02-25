@@ -121,7 +121,7 @@ async def test_user_update():
 
 
 async def test_userstats_update():
-    user = await client.fetch_user(5509312,stats=True)
+    user = await client.fetch_user(5509312, stats=True)
     await user.update()
 
 
@@ -143,11 +143,6 @@ async def test_user_properties():
     user = await client.find_user('NekitDS')
     user.is_registered()
     user.as_user()
-
-
-async def test_user_update():
-    user = await client.find_user('NekitDS')
-    await user.update()
 
 
 async def test_block():
@@ -302,6 +297,7 @@ async def test_rate_level():
 @skip_not_logged
 async def test_get_page_levels():
     await client.get_page_levels()
+
 
 @skip_not_logged
 async def test_get_level_leaderboard():

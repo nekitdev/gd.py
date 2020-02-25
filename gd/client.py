@@ -1284,6 +1284,7 @@ class Client:
         self, query: Union[str, int] = '', filters: Optional[Filters] = None,
         user: Optional[Union[int, AbstractUser, User]] = None, pages: Optional[Iterable[int]] = range(10)
     ) -> List[Level]:
+        print(pages)
         """|coro|
 
         Searches levels on given pages.
