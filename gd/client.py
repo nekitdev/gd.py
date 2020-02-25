@@ -1293,7 +1293,7 @@ class Client:
 
         Parameters
         ----------
-        query: :class:`int`
+        query: :class:`str`
             A query to search with.
 
         filters: :class:`.Filters`
