@@ -64,8 +64,10 @@ release = version
 language = 'en'
 
 pdf_documents = [
-    ('index', u'Geometry Dash Python Documentation',
-    u'gd.py documentation, built with PDF format.', u'NeKitDS')
+    (
+        'index', u'Geometry Dash Python Documentation',
+        u'gd.py documentation, built with PDF format.', u'NeKitDS'
+    )
 ]
 
 # List of patterns, relative to source directory, that match files and
