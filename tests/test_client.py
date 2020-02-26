@@ -90,112 +90,6 @@ async def test_search_levels():
     await client.search_levels(query='VorteX')
 
 
-async def test_retrieve_comments():
-    user = await client.find_user('NekitDS')
-    await user.retrieve_comments(pages=range(10))
-
-
-async def test_retrieve_page_comments():
-    user = await client.find_user('NekitDS')
-    await user.retrieve_page_comments()
-
-
-async def test_has_cp():
-    user = await client.search_user('NekitDS')
-    user.has_cp()
-
-
-async def test_is_mod():
-    user = await client.search_user('NekitDS')
-    user.is_mod()
-    user.is_mod('elder')
-    try:
-        user.is_mod('gd.py')
-    except TypeError:
-        pass
-
-
-async def test_user_update():
-    user = await client.search_user('NekitDS')
-    await user.update()
-
-
-async def test_userstats_update():
-    user = await client.fetch_user(5509312, stats=True)
-    await user.update()
-
-
-async def test_level_properties():
-    level = await client.get_level(30029017)
-    level.is_copyable()
-    level.is_timely()
-    level.is_rated()
-    level.is_featured()
-    level.is_epic()
-    level.is_demon()
-    level.is_auto()
-    level.is_original()
-    level.has_coins_verified()
-    level.download()
-
-
-async def test_user_properties():
-    user = await client.find_user('NekitDS')
-    user.is_registered()
-    user.as_user()
-
-
-async def test_block():
-    user = await client.find_user('NekitDS')
-    await user.block()
-    await user.unblock()
-
-
-async def test_user_get_levels_on_page():
-    user = await client.find_user('NekitDS')
-    await user.get_levels_on_page()
-
-
-async def test_user_get_levels():
-    user = await client.find_user('NekitDS')
-    await user.get_levels()
-
-
-async def test_get_comments():
-    level = await client.get_level(30029017)
-    await level.get_comments()
-
-
-async def test_user_get_page_comments():
-    user = await client.find_user('NekitDS')
-    await user.get_page_comments()
-
-
-async def test_user_get_page_comment_history():
-    user = await client.find_user('NekitDS')
-    await user.get_page_comment_history()
-
-
-async def test_user_get_comments():
-    user = await client.find_user('NekitDS')
-    await user.get_comments()
-
-
-async def test_user_get_comment_history():
-    user = await client.find_user('NekitDS')
-    await user.get_comment_history()
-
-
-async def test_refresh():
-    level = await client.get_level(30029017)
-    await level.refresh()
-
-
-async def test_is_alive():
-    level = await client.get_level(30029017)
-    await level.is_alive()
-
-
 # LOGGED IN CLIENT TESTS
 
 
@@ -235,13 +129,6 @@ async def test_get_friends():
 
 
 @skip_not_logged
-async def test_send_message_and_request():
-    nekit = await client.get_user(5509312)
-    await nekit.send('<gd.py>', message)
-    await nekit.send_friend_request('<gd.py>')
-
-
-@skip_not_logged
 async def test_get_messages():
     await client.get_messages()
 
@@ -277,29 +164,5 @@ async def test_as_user():
 
 
 @skip_not_logged
-async def test_like():
-    level = await client.get_level(30029017)
-    await level.like()
-
-
-@skip_not_logged
-async def test_dislike():
-    level = await client.get_level(30029017)
-    await level.dislike()
-
-
-@skip_not_logged
-async def test_rate_level():
-    level = await client.get_level(30029017)
-    await level.rate(5)
-
-
-@skip_not_logged
 async def test_get_page_levels():
     await client.get_page_levels()
-
-
-@skip_not_logged
-async def test_get_level_leaderboard():
-    level = await client.get_level(30029017)
-    await level.get_leaderboard()

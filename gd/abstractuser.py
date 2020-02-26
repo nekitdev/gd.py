@@ -257,9 +257,6 @@ class AbstractUser(AbstractEntity):
 
             await self.retrieve_comments('profile', pages)
         """
-        if pages is None:
-            pages = range(10)
-
         return await self.retrieve_comments('profile', pages)
 
     async def get_comment_history(
@@ -275,9 +272,6 @@ class AbstractUser(AbstractEntity):
 
             await self.retrieve_comments('level', pages, strategy=strategy)
         """
-        if pages is None:
-            pages = range(10)
-
         return await self.retrieve_comments('level', pages, strategy=strategy)
 
     async def retrieve_page_comments(
