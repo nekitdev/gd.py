@@ -1,7 +1,7 @@
 from datetime import datetime
 import pytest
 
-from conftest import client, gd
+from conftest import client
 
 # PREPARATIONS
 
@@ -10,8 +10,9 @@ user = None
 
 message = ('[gd.py] ({}): Running tests...'.format(datetime.utcnow()))
 
+
 async def test_preparations():
-    global user # i am so very sorry for this
+    global user  # i am so very sorry for this
     user = await client.search_user('NekitDS')
 
 
@@ -74,10 +75,10 @@ async def test_abstractuser_update():
     abstractuser.update()
 
 
-
 skip_not_logged = pytest.mark.skipif(
     not client.is_logged(), reason='Test for only logged in client.'
 )
+
 
 @skip_not_logged
 async def test_block():

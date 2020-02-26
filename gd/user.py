@@ -163,7 +163,7 @@ class User(UserStats):
         For instance, *RobTop* is an Elder Moderator, that means:
         ``robtop.is_mod() -> True`` and ``robtop.is_mod('elder') -> True``.
         """
-        if self.role is None: # pragma: no cover
+        if self.role is None:  # pragma: no cover
             return False
 
         elif elder is None:
@@ -172,7 +172,7 @@ class User(UserStats):
         elif elder == 'elder':
             return self.role.value == 2
 
-        raise TypeError("is_mod(elder) expected elder=='elder', or None.") # pragma: no cover
+        raise TypeError("is_mod(elder) expected elder=='elder', or None.")  # pragma: no cover
 
     async def update(self) -> None:
         """|coro|

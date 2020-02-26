@@ -12,6 +12,7 @@ message = ('[gd.py] ({}): Running tests...'.format(datetime.utcnow()))
 
 # MAIN TESTS
 
+
 async def test_attach_client():
     level.attach_client(client)
 
@@ -78,7 +79,7 @@ async def test_rate_level():
 @skip_not_logged
 async def test_rate_demon():
     temp_level = await client.get_level(10565740)
-    await level.rate_demon(5)
+    await temp_level.rate_demon(5)
 
 
 @skip_not_logged

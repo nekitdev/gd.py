@@ -35,7 +35,7 @@ class Level(AbstractEntity):
     def __str__(self) -> str:
         return self.name
 
-    def _json(self) -> dict: # pragma: no cover
+    def _json(self) -> dict:  # pragma: no cover
         return {k: v for k, v in super()._json().items() if k != 'data'}
 
     @property
@@ -182,7 +182,7 @@ class Level(AbstractEntity):
         For instance, let's suppose a *level* is daily. Then, the behavior of this method is:
         ``level.is_timely() -> True`` and ``level.is_timely('daily') -> True`` but
         ``level.is_timely('weekly') -> False``."""
-        if self.type is None: # pragma: no cover
+        if self.type is None:  # pragma: no cover
             return False
 
         if daily_or_weekly is None:
