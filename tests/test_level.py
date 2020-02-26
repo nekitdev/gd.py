@@ -87,4 +87,3 @@ async def test_send():
 @skip_not_logged
 async def test_comment():
     await level.comment(message)
-
