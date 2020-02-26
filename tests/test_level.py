@@ -45,17 +45,6 @@ async def test_is_alive():
     await level.is_alive()
 
 
-async def test_send():
-    try:
-        await level.send()
-    except gd.errors.MissingAccess:
-        pass
-
-
-async def test_comment():
-    await level.comment(message)
-
-
 skip_not_logged = pytest.mark.skipif(
     not client.is_logged(), reason='Test for only logged in client.'
 )
@@ -85,3 +74,16 @@ async def test_rate_demon():
 @skip_not_logged
 async def test_get_leaderboard():
     await level.get_leaderboard()
+
+
+@skip_not_logged
+async def test_send():
+    try:
+        await level.send()
+    except gd.errors.MissingAccess:
+        pass
+
+
+@skip_not_logged
+async def test_comment():
+    await level.comment(message)
