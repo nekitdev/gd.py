@@ -54,6 +54,8 @@ async def test_properties():
 async def test_demon_difficulty():
     temp_level = await client.get_level(10565740)
     temp_level.difficulty
+
+
 async def test_download():
     level.download()
 
@@ -71,7 +73,6 @@ async def test_is_alive():
 
     temp_level = gd.Level(id=0)
     await temp_level.is_alive()
-
 
 
 async def test_report():
