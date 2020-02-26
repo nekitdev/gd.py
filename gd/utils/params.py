@@ -535,7 +535,7 @@ class Parameters:
         if id == -1:  # if -1
             id = random.randint(100000, 100000000000)
 
-        self.dict['udid'] = str(id)
+        self.dict['udid'] = 'gd.py' + str(id)
         return self
 
     def put_uuid(self, id: int = -1) -> Parameters:
@@ -558,7 +558,7 @@ class Parameters:
         if id == -1:
             id = random.randint(100000, 100000000)
 
-        self.dict['uuid'] = str(id)
+        self.dict['uuid'] = 'gd.py' + str(id)
         return self
 
     def put_level_desc(self, content: str) -> Parameters:
