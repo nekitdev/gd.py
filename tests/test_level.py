@@ -87,3 +87,12 @@ async def test_send():
 @skip_not_logged
 async def test_comment():
     await level.comment(message)
+
+
+@skip_not_logged
+async def upload_delete():
+    try:
+        await level.upload(id=0)
+        await level.delete()
+    except gd.errors.MissingAccess:
+        pass

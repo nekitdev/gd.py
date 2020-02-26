@@ -1,7 +1,7 @@
 from datetime import datetime
 import pytest
 
-from conftest import client, gd
+from conftest import client
 
 # PREPARATIONS
 
@@ -22,27 +22,6 @@ async def test_ng_song():
 
 async def test_get_artist_info():
     await client.get_artist_info(1)
-
-    song1 = await client.get_song(1)
-    await song1.get_artist_info()
-
-    song2 = gd.Song.official(0)
-    await song2.get_artist_info()
-
-
-async def test_is_scouted():
-    artist = await client.get_artist_info(1)
-    artist.is_scouted()
-
-
-async def test_is_whitelisted():
-    artist = await client.get_artist_info(1)
-    artist.is_whitelisted()
-
-
-async def test_is_api_allowed():
-    artist = await client.get_artist_info(1)
-    artist.api_allowed()
 
 
 async def test_get_user():

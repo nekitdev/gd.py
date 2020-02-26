@@ -5,9 +5,8 @@ from .errors import ClientException
 from .logging import get_logger
 from .typing import (
     AbstractUser, Any, ArtistInfo, Client, Comment, Coroutine, Dict,
-    FriendRequest, Gauntlet, IconSet, Level, LevelRecord, List,
-    MapPack, Message, Optional, Sequence, Song, Union, User, UserStats,
-    Iterable
+    FriendRequest, Gauntlet, IconSet, Iterable, Level, LevelRecord, List,
+    MapPack, Message, Optional, Sequence, Song, Union, User, UserStats
 )
 from .session import GDSession
 
@@ -91,7 +90,7 @@ class Client:
         }
         return make_repr(self, info)
 
-    def _json(self) -> Dict[str, Optional[Union[int, str]]]:
+    def _json(self) -> Dict[str, Optional[Union[int, str]]]:  # pragma: no cover
         return dict(
             account_id=self.account_id,
             id=self.id,
@@ -373,7 +372,7 @@ class Client:
         if get_data:
             return await self.session.get_level(level_id, client=self)
         else:
-            return (await self.search_levels_on_page(query=level_id))[0]
+            return (await self.search_levels_on_page(query=level_id)).pop(0)
 
     async def get_many_levels(self, *level_ids: Sequence[int]) -> List[Level]:
         r"""|coro|
@@ -627,7 +626,7 @@ class Client:
 
         if success:
             log.info('Successfully loaded a save.')
-        else:
+        else:  # pragma: no cover
             log.warning('Failed to load a save.')
 
     @check_logged
@@ -1253,7 +1252,7 @@ class Client:
         page: :class:`int`
             A page to search levels on.
 
-        query: Union[:class:`str`,:class:`int`]
+        query: Union[:class:`str`, :class:`int`]
             A query to search with.
 
         filters: :class:`.Filters`

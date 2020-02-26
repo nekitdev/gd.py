@@ -68,7 +68,7 @@ class UserStats(AbstractUser):
 
     def set_place(self, place: int = 0) -> None:
         """Set the ``self.lb_place`` to ``place`` argument."""
-        self.options['lb_place'] = place
+        self.options.update(lb_place=place)
 
     async def update(self) -> None:
         """|coro|

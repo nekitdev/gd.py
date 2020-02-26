@@ -1,6 +1,6 @@
 from .typing import (
-    AbstractUser, Comment, Level, Optional, User,
-    List, Union, Iterable
+    AbstractUser, Comment, Iterable, Level, Optional,
+    List, Union, User
 )
 
 from .abstractentity import AbstractEntity
@@ -191,7 +191,7 @@ class AbstractUser(AbstractEntity):
         return await self.client.search_levels_on_page(
             page=page, filters=filters, user=self, raise_errors=raise_errors)
 
-    async def get_levels(self, pages: Optional[Iterable[int]] = range(10)) -> List[Level]:
+    async def get_levels(self, pages: Iterable[int] = range(10)) -> List[Level]:
         """|coro|
 
         Gets levels on specified pages.
