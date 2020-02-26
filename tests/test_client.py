@@ -69,6 +69,10 @@ async def test_search_levels():
     await client.search_levels(query='VorteX')
 
 
+async def test_hash():
+    print(client)
+
+
 # LOGGED IN CLIENT TESTS
 
 

@@ -19,7 +19,20 @@ async def test_get_artist_info():
     await song2.get_artist_info()
 
 
-async def test_properties():
+async def test_artist_properties():
+    artist.artist
+    artist.song
+    artist.exists
+
     artist.is_scouted()
     artist.is_whitelisted()
     artist.api_allowed()
+
+
+async def test_song_properties():
+    song = await client.get_song(1)
+    song.name
+    song.size
+    song.author
+    song.link
+    song.dl_link

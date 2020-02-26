@@ -1,7 +1,7 @@
 from datetime import datetime
 import pytest
 
-from conftest import client
+from conftest import client, gd
 
 # PREPARATIONS
 
@@ -22,6 +22,26 @@ async def test_retrieve_page_comments():
 
 
 async def test_properties():
+    user.stars
+    user.demons
+    user.cp
+    user.diamonds
+    user.coins 
+    user.user_coins
+    user.lb_place
+    user.role
+    user.rank
+    user.youtube
+    user.youtube_link
+    user.twitter
+    user.twitter_link
+    user.twitch
+    user.twitch_link
+    user.msg_policy
+    user.friend_req_policy
+    user.comments_policy
+    user.icon_set
+
     user.has_cp()
     user.is_registered()
     user.is_mod()
@@ -70,6 +90,20 @@ async def test_abstractuser_update():
     abstractuser.update()
 
 
+async def test_levelrecord():
+    temp_level = await client.get_level(30029017)
+    temp_lr = (await temp_level.get_leaderboard(1)).pop(0)
+
+    temp_lr.level_id
+    temp_lr.percentage
+    temp_lr.coins
+    temp_lr.timestamp
+    temp_lr.lb_place
+    temp_lr.type
+
+    await temp_lr.update()
+
+
 skip_not_logged = pytest.mark.skipif(
     not client.is_logged(), reason='Test for only logged in client.'
 )
@@ -85,3 +119,19 @@ async def test_block():
 async def test_send_message_and_request():
     await user.send_friend_request('<gd.py>')
     await user.send('<gd.py>', message)
+
+
+@skip_not_logged
+async def test_unfriend():
+    try:
+        await user.unfriend()
+    except gd.errors.MissingAccess:
+        pass
+
+
+@skip_not_logged
+async def test_unfriend():
+    try:
+        await user.unfriend()
+    except gd.errors.MissingAccess:
+        pass

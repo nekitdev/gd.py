@@ -18,6 +18,28 @@ async def test_attach_client():
 
 
 async def test_properties():
+    level.name
+    level.description
+    level.version
+    level.downloads
+    level.rating
+    level.score
+    level.creator
+    level.song
+    level.difficulty
+    level.password
+    level.stars
+    level.coins
+    level.original_id
+    level.uploaded_timestamp
+    level.last_updated_timestamp
+    level.length
+    level.game_version
+    level.requested_stars
+    level.objects
+    level.object_count
+    level.timely_index
+    level.cooldown
     level.is_copyable()
     level.is_timely()
     level.is_rated()
@@ -29,6 +51,9 @@ async def test_properties():
     level.has_coins_verified()
 
 
+async def test_demon_difficulty():
+    temp_level = await client.get_level(10565740)
+    temp_level.difficulty
 async def test_download():
     level.download()
 
@@ -43,6 +68,14 @@ async def test_refresh():
 
 async def test_is_alive():
     await level.is_alive()
+
+    temp_level = gd.Level(id=0)
+    await temp_level.is_alive()
+
+
+
+async def test_report():
+    await level.report()
 
 
 skip_not_logged = pytest.mark.skipif(
@@ -90,9 +123,10 @@ async def test_comment():
 
 
 @skip_not_logged
-async def upload_delete():
+async def test_upload_update_delete():
     try:
         await level.upload(id=0)
+        await level.update_description()
         await level.delete()
     except gd.errors.MissingAccess:
         pass

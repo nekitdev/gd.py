@@ -257,7 +257,7 @@ class Level(AbstractEntity):
 
         client = kwargs.pop('from_client', self._client)
 
-        if client is None:
+        if client is None:  # pragma: no cover
             raise MissingAccess(
                 message=(
                     'Could not find the client to upload level from. '
