@@ -127,8 +127,8 @@ class Song(AbstractEntity):
         """
         if not self.is_custom():  # pragma: no cover
             return ArtistInfo(
-               id=self.id, artist=self.author, song=self.name,
-               whitelisted=True, scouted=True, api=True
+                id=self.id, artist=self.author, song=self.name,
+                whitelisted=True, scouted=True, api=True
             )
 
         from .client import Client  # *circular imports*
