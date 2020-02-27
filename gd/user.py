@@ -68,7 +68,7 @@ class UserStats(AbstractUser):
 
     def set_place(self, place: int = 0) -> None:
         """Set the ``self.lb_place`` to ``place`` argument."""
-        self.options.edit(lb_place=place)
+        self.options.update(lb_place=place)
 
     async def update(self) -> None:
         """|coro|
@@ -163,7 +163,7 @@ class User(UserStats):
         For instance, *RobTop* is an Elder Moderator, that means:
         ``robtop.is_mod() -> True`` and ``robtop.is_mod('elder') -> True``.
         """
-        if self.role is None:
+        if self.role is None:  # pragma: no cover
             return False
 
         elif elder is None:
@@ -172,7 +172,7 @@ class User(UserStats):
         elif elder == 'elder':
             return self.role.value == 2
 
-        raise TypeError("is_mod(elder) expected elder=='elder', or None.")
+        raise TypeError("is_mod(elder) expected elder=='elder', or None.")  # pragma: no cover
 
     async def update(self) -> None:
         """|coro|

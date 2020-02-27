@@ -20,6 +20,10 @@ async def test_ng_song():
     await client.get_ng_song(1)
 
 
+async def test_get_artist_info():
+    await client.get_artist_info(1)
+
+
 async def test_get_user():
     await client.get_user(71)
 
@@ -35,6 +39,7 @@ async def test_search_user():
 
 async def test_get_level():
     await client.get_level(30029017)
+    await client.get_level(30029017, get_data=False)
 
 
 async def test_many_levels():
@@ -62,6 +67,10 @@ async def test_get_leaderboard():
 
 async def test_search_levels():
     await client.search_levels(query='VorteX')
+
+
+async def test_hash():
+    print(client)
 
 
 # LOGGED IN CLIENT TESTS
@@ -103,20 +112,6 @@ async def test_get_friends():
 
 
 @skip_not_logged
-async def test_send_message_and_request():
-    nekit = await client.get_user(5509312)
-    await nekit.send('<gd.py>', message)
-    await nekit.send_friend_request('<gd.py>')
-
-
-@skip_not_logged
-async def test_level_upload_and_delete():
-    level = await client.get_level(30029017)
-    await level.upload(id=0)  # reupload
-    await level.delete()      # delete new level
-
-
-@skip_not_logged
 async def test_get_messages():
     await client.get_messages()
 
@@ -149,3 +144,8 @@ async def test_update_settings():
 @skip_not_logged
 async def test_as_user():
     await client.as_user().to_user()
+
+
+@skip_not_logged
+async def test_get_page_levels():
+    await client.get_page_levels()

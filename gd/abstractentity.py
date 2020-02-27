@@ -42,7 +42,7 @@ class AbstractEntity:
     def __ne__(self, other: AbstractEntity) -> bool:
         return not self.__eq__(other)
 
-    def _json(self) -> dict:
+    def _json(self) -> dict:  # pragma: no cover
         return self.options
 
     @property

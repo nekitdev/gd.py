@@ -1,6 +1,6 @@
 from .typing import (
-    AbstractUser, Comment, Level, Optional, User,
-    List, Sequence, Union
+    AbstractUser, Comment, Iterable, Level, Optional,
+    List, Union, User
 )
 
 from .abstractentity import AbstractEntity
@@ -191,7 +191,7 @@ class AbstractUser(AbstractEntity):
         return await self.client.search_levels_on_page(
             page=page, filters=filters, user=self, raise_errors=raise_errors)
 
-    async def get_levels(self, pages: Optional[Sequence[int]] = None) -> List[Level]:
+    async def get_levels(self, pages: Iterable[int] = range(10)) -> List[Level]:
         """|coro|
 
         Gets levels on specified pages.
@@ -246,7 +246,7 @@ class AbstractUser(AbstractEntity):
         """
         return await self.retrieve_page_comments('level', page, strategy=strategy)
 
-    async def get_comments(self, pages: Optional[Sequence[int]] = None) -> List[Comment]:
+    async def get_comments(self, pages: Optional[Iterable[int]] = range(10)) -> List[Comment]:
         """|coro|
 
         Gets user's profile comments on specific pages.
@@ -257,13 +257,10 @@ class AbstractUser(AbstractEntity):
 
             await self.retrieve_comments('profile', pages)
         """
-        if pages is None:
-            pages = range(10)
-
         return await self.retrieve_comments('profile', pages)
 
     async def get_comment_history(
-        self, strategy: Union[int, str, CommentStrategy] = 0, pages: Optional[Sequence[int]] = None
+        self, strategy: Union[int, str, CommentStrategy] = 0, pages: Optional[Iterable[int]] = range(10)
     ) -> List[Comment]:
         """|coro|
 
@@ -275,9 +272,6 @@ class AbstractUser(AbstractEntity):
 
             await self.retrieve_comments('level', pages, strategy=strategy)
         """
-        if pages is None:
-            pages = range(10)
-
         return await self.retrieve_comments('level', pages, strategy=strategy)
 
     async def retrieve_page_comments(
@@ -321,7 +315,7 @@ class AbstractUser(AbstractEntity):
             self, type=type, page=page, raise_errors=raise_errors, strategy=strategy)
 
     async def retrieve_comments(
-        self, type: str = 'profile', pages: Optional[Sequence[int]] = None,
+        self, type: str = 'profile', pages: Optional[Iterable[int]] = range(10),
         strategy: Union[int, str, CommentStrategy] = 0
     ) -> List[Comment]:
         """|coro|

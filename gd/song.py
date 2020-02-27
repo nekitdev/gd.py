@@ -125,8 +125,11 @@ class Song(AbstractEntity):
         :class:`.ArtistInfo`
             Fetched info about an artist.
         """
-        if not self.is_custom():
-            return ArtistInfo()
+        if not self.is_custom():  # pragma: no cover
+            return ArtistInfo(
+                id=self.id, artist=self.author, song=self.name,
+                whitelisted=True, scouted=True, api=True
+            )
 
         from .client import Client  # *circular imports*
 

@@ -11,8 +11,6 @@ omit =
 exclude_lines =
     pragma: no cover
 
-    @property
-    @check.is_logged
     def __(\w+)__
     if self\.debug
 
