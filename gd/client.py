@@ -75,9 +75,12 @@ class Client:
     def __init__(
         self, *, loop: Optional[asyncio.AbstractEventLoop] = None, **http_args
     ) -> None:
+        if loop is None:
+            loop = utils.acquire_loop()
+
         self.session = GDSession(**http_args)
-        self.loop = loop or utils.acquire_loop()
         self.listeners = list()
+        self.loop = loop
         self._set_to_defaults()
 
     def __repr__(self) -> str:
@@ -157,7 +160,7 @@ class Client:
         :class:`.ArtistInfo`
             Info regarding the artist.
         """
-        return await self.session.test_song(song_id)
+        return await self.session.test_song(song_id, client=self)
 
     async def get_song(self, song_id: int = 0) -> Song:
         """|coro|
@@ -182,7 +185,7 @@ class Client:
         :class:`.Song`
             The song from the ID.
         """
-        return await self.session.get_song(song_id)
+        return await self.session.get_song(song_id, client=self)
 
     async def get_ng_song(self, song_id: int = 0) -> Song:
         """|coro|
@@ -207,7 +210,7 @@ class Client:
         :class:`.Song`
             The song found under given ID.
         """
-        return await self.session.get_ng_song(song_id)
+        return await self.session.get_ng_song(song_id, client=self)
 
     async def get_user(self, account_id: int = 0) -> User:
         """|coro|
@@ -1283,7 +1286,6 @@ class Client:
         self, query: Union[str, int] = '', filters: Optional[Filters] = None,
         user: Optional[Union[int, AbstractUser, User]] = None, pages: Optional[Iterable[int]] = range(10)
     ) -> List[Level]:
-        print(pages)
         """|coro|
 
         Searches levels on given pages.

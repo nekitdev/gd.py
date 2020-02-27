@@ -2,7 +2,7 @@ import re
 
 from .enums import DemonDifficulty, LevelDifficulty, GauntletEnum
 
-from ..typing import Union
+from ..typing import Client, Optional, Union
 from ..errors import FailedConversion
 from ..song import Song
 
@@ -52,9 +52,9 @@ _cases = {
 
 
 class Converter:
-    """Some weird class where NeKit holds his converters for everything"""
+    """Some weird class where NeKit holds his converters for everything."""
     @staticmethod
-    def to_normal_song(song_id: int, server_style: bool = True) -> Song:
+    def to_normal_song(song_id: int, server_style: bool = True, client: Optional[Client] = None) -> Song:
         if server_style:
             cases = _cases
         else:
@@ -64,7 +64,7 @@ class Converter:
         author, name = cases.get(song_id, ('DJVI', 'Unknown'))
         return Song(
             name=name, author=author, id=song_id,
-            size=0.0, links={}, custom=False
+            size=0.0, links={}, custom=False, client=client
         )
 
     @staticmethod

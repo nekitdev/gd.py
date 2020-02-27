@@ -7,7 +7,7 @@ from conftest import client, gd
 
 pytestmark = pytest.mark.asyncio
 
-level = gd.Level(id=30029017)
+level = client.run(client.get_level(30029017))
 message = ('[gd.py] ({}): Running tests...'.format(datetime.utcnow()))
 
 # MAIN TESTS
@@ -30,7 +30,6 @@ async def test_properties():
     level.password
     level.stars
     level.coins
-    level.original_id
     level.uploaded_timestamp
     level.last_updated_timestamp
     level.length
@@ -40,6 +39,7 @@ async def test_properties():
     level.object_count
     level.timely_index
     level.cooldown
+
     level.is_copyable()
     level.is_timely()
     level.is_rated()
@@ -114,7 +114,7 @@ async def test_get_leaderboard():
 async def test_send():
     try:
         await level.send()
-    except gd.errors.MissingAccess:
+    except gd.MissingAccess:
         pass
 
 
@@ -129,5 +129,5 @@ async def test_upload_update_delete():
         await level.upload(id=0)
         await level.update_description()
         await level.delete()
-    except gd.errors.MissingAccess:
+    except gd.MissingAccess:
         pass

@@ -27,7 +27,7 @@ class Message(AbstractEntity):
         return make_repr(self, info)
 
     def __str__(self) -> str:
-        return self.subject
+        return str(self.subject)
 
     @property
     def author(self) -> AbstractUser:

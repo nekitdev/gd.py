@@ -24,11 +24,11 @@ from .utils.routes import Route
 class ClassConverter:
 
     @staticmethod
-    def artist_info_convert(odict: Dict[str, str]) -> ArtistInfo:
-        return ArtistInfo(**odict)
+    def artist_info_convert(odict: Dict[str, str], client: Optional[Client] = None) -> ArtistInfo:
+        return ArtistInfo(**odict).attach_client(client)
 
     @staticmethod
-    def song_convert(odict: ExtDict) -> Song:
+    def song_convert(odict: ExtDict, client: Optional[Client] = None) -> Song:
         quoted_url = odict.get(Index.SONG_URL, '')
         dl_link = urllib.parse.unquote(quoted_url)
         return Song(
@@ -41,6 +41,7 @@ class ClassConverter:
                 'download': dl_link
             },
             custom=True,
+            client=client
         )
 
     @staticmethod

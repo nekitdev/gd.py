@@ -12,27 +12,28 @@ artist = client.run(client.get_artist_info(1))
 
 
 async def test_get_artist_info():
-    song1 = await client.get_song(1)
-    await song1.get_artist_info()
+    custom_song = await client.get_song(1)
+    await custom_song.get_artist_info()
 
-    song2 = gd.Song.official(0)
-    await song2.get_artist_info()
+    official_song = gd.Song.official(0)
+    await official_song.get_artist_info()
 
 
 async def test_artist_properties():
-    artist.artist
-    artist.song
-    artist.exists
+    info = await client.get_artist_info(1)
+    assert info.artist
+    assert info.song
+    assert info.exists
 
-    artist.is_scouted()
-    artist.is_whitelisted()
-    artist.api_allowed()
+    assert info.is_scouted()
+    assert info.is_whitelisted()
+    assert info.api_allowed()
 
 
 async def test_song_properties():
     song = await client.get_song(1)
-    song.name
-    song.size
-    song.author
-    song.link
-    song.dl_link
+    assert song.name
+    assert song.size
+    assert song.author
+    assert song.link
+    assert song.dl_link

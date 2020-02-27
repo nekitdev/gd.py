@@ -7,7 +7,7 @@ import aiohttp
 
 import gd
 
-from ..typing import Any, Dict, Optional, Union
+from ..typing import Any, Dict, List, Optional, Union
 from ..logging import get_logger
 from ..errors import HTTPError
 from .text_tools import make_repr
@@ -26,8 +26,8 @@ class HTTPClient:
     def __init__(
         self, *, url: Union[str, URL] = BASE,
         timeout: Union[float, int] = 150, max_requests: int = 250,
-        debug: bool = False, ip: str = 'default',
-        user_agent: Optional[str] = None, use_user_agent: bool = True
+        debug: bool = False, user_agent: Optional[str] = None,
+        use_user_agent: bool = True
     ) -> None:
         if user_agent is None:
             user_agent = self.get_default_agent()
@@ -36,7 +36,6 @@ class HTTPClient:
         self.url = URL(url)
         self.user_agent = user_agent
         self.use_user_agent = use_user_agent
-        self.ip = ip
         self.timeout = timeout
         self.debug = debug
         self.last_result = None  # for testing
@@ -44,7 +43,6 @@ class HTTPClient:
     def __repr__(self) -> str:
         info = {
             'debug': self.debug,
-            'ip': self.ip,
             'max_requests': self.semaphore._value,
             'timeout': self.timeout,
             'url': repr(self.url),
@@ -57,20 +55,19 @@ class HTTPClient:
         string = 'GDClient (gd.py {}) Python/{} aiohttp/{}'
         return string.format(gd.__version__, platform.python_version(), aiohttp.__version__)
 
-    @staticmethod
-    def make_random_ipv4() -> str:
-        return ('.').join(map(str, (random.randint(0, 255) for _ in range(4))))
+    def get_skip_headers(self) -> List[str]:
+        result = []
+
+        if not self.use_user_agent:
+            result.append('User-Agent')
+
+        return result
 
     def make_headers(self) -> Dict[str, str]:
         headers = {}
 
         if self.use_user_agent:
             headers['User-Agent'] = self.user_agent
-
-        if self.ip != 'default':
-            headers['X-Forwarded-For'] = (
-                self.ip if self.ip != 'random' else self.make_random_ipv4()
-            )
 
         return headers
 
@@ -79,10 +76,8 @@ class HTTPClient:
 
     def change_url(self, url: Union[str, URL]) -> None:
         """Change base for requests.
-
         Default base is ``http://www.boomlings.com/database/``,
         but it can be changed.
-
         Parameters
         ----------
         url: :class:`str`
@@ -96,12 +91,10 @@ class HTTPClient:
     ) -> None:
         """Creates an :class:`asyncio.Semaphore` object with given ``value`` and ``loop``
         in order to limit amount of max requests at a time.
-
         Parameters
         ----------
         value: :class:`int`
             Value to set semaphore to. Default is ``250``.
-
         loop: :class:`asyncio.AbstractEventLoop`
             Event loop to pass to semaphore's constructor.
         """
@@ -109,7 +102,6 @@ class HTTPClient:
 
     def set_debug(self, debug: bool = False) -> None:
         """Set http client debugging.
-
         Parameters
         ----------
         debug: :class:`bool`
@@ -124,51 +116,37 @@ class HTTPClient:
         custom_base: Optional[str] = None, method: Optional[str] = None
     ) -> Optional[Union[bytes, int, str]]:
         """|coro|
-
         Sends an HTTP Request to a Geometry Dash server and returns the response.
-
         Parameters
         ----------
         php: :class:`str`
             The endpoint for the request URL, passed like this:
-
             .. code-block:: python3
-
                 url = 'http://www.boomlings.com/database/' + php + '.php'
-
         params: Union[:class:`dict`, :class:`str`]
             Parameters to send with the request. Type ``dict`` is prefered.
-
         get_cookies: :class:`bool`
             Indicates whether to fetch a cookie. This is used
             in different account management actions.
-
         cookie: :class:`str`
             Cookie, represented as string. Technically should be
             catched with ``get_cookies`` set to ``True``.
-
         custom_base: [:class:`str`, :class:`yarl.URL`]
             Custom base using different Geometry Dash IP.
             By default ``self.base`` is used.
-
         method: :class:`str`
             Method to use when requesting. This parameter is case insensetive.
             By default, if ``parameters`` is or empty, ``GET`` is used,
             otherwise ``POST`` is used.
-
         Returns
         -------
         Union[:class:`bytes`, :class:`str`, :class:`int`]
             ``res`` with the following rules:
-
             Returns an :class:`int`, representing server error code, e.g. ``-1``,
             if server responded with error.
-
             Otherwise, returns response from a server as a :class:`str` if successfully
             decodes it, and on fail returns :class:`bytes`.
-
             If a cookie is requested, returns a pair (``res``, ``c``) where c is a :class:`str` cookie.
-
         Raises
         ------
         :exc:`.HTTPError`
@@ -187,18 +165,13 @@ class HTTPClient:
         if cookie is not None:
             headers = {'Cookie': cookie}
 
-        skip = []
-
-        if not self.use_user_agent:
-            skip.append('User-Agent')
-
         if self.debug:
             for name, value in {'URL': url, 'Data': data, 'Params': params}.items():
                 log.debug('{}: {}'.format(name, value))
 
         async with self.semaphore, aiohttp.ClientSession(
             headers=self.make_headers(),
-            skip_auto_headers=skip,
+            skip_auto_headers=self.get_skip_headers(),
             timeout=self.make_timeout()
         ) as client:
             try:
@@ -241,10 +214,8 @@ class HTTPClient:
         get_cookies: bool = False, cookie: Optional[str] = None
     ) -> Optional[Union[bytes, str, int]]:
         """|coro|
-
         A handy shortcut for fetching response from a server and formatting it.
         Basically does :meth:`HTTPClient.fetch` and operates on its result.
-
         Parameters
         ----------
         error_codes: Dict[:class:`int`, :exc:`Exception`]
@@ -252,22 +223,18 @@ class HTTPClient:
         raise_errors: :class:`bool`
             If ``False``, errors are not raised.
             (technically, just turns on ignoring ``error_codes``)
-
         Raises
         ------
         :exc:`.HTTPError`
             GD Server has destroyed the connection, or machine has no connection.
             Raised when :meth:`HTTPClient.fetch` returns ``None`` and ``raise_errors`` is ``True``.
-
         :exc:`Exception`
             Exception specified in ``error_codes``, if present.
-
         Returns
         -------
         Optional[Union[:class:`int`, :class:`bytes`, :class:`str`]]
             If ``error_codes`` is omitted,
             return type is same as return of :meth:`HTTPClient.fetch` call.
-
             If ``error_codes`` is specified, and ``raise_errors`` is ``False``, returns ``None``
             when response is in ``error_codes``.
         """
@@ -303,24 +270,22 @@ class HTTPClient:
         method: Optional[str] = None, **kwargs
     ) -> aiohttp.ClientResponse:
         """|coro|
-
         Same as doing :meth:`aiohttp.ClientSession.request`, where ``method`` is
         either given one or ``"GET"`` if ``data`` is None or omitted, and ``"POST"`` otherwise.
         """
         if method is None:
             method = 'GET' if data is None else 'POST'
-
         if data is None:
             data = {}
-
         if params is None:
             params = {}
 
         async with aiohttp.ClientSession(
-            headers=self.make_headers(), timeout=self.make_timeout()
+            headers=self.make_headers(), timeout=self.make_timeout(),
+            skip_auto_headers=self.get_skip_headers()
         ) as client:
             try:
-                resp = await client.request(method, url, data=data, params=params, **kwargs)
+                resp = await client.request(method=method, url=url, data=data, params=params, **kwargs)
 
             except VALID_ERRORS as exc:
                 raise HTTPError(exc) from None

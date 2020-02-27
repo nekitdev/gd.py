@@ -1,4 +1,4 @@
-from .typing import Any, Callable, Song
+from .typing import Any, Callable, Client, Optional, Song
 
 from .abstractentity import AbstractEntity
 from .utils.http_request import HTTPClient
@@ -6,7 +6,7 @@ from .utils.text_tools import make_repr
 
 Function = Callable[[Any], Any]
 
-http = HTTPClient(ip='random', use_user_agent=False)  # used in song downloading
+http = HTTPClient(use_user_agent=False)  # used in song downloading
 
 
 class ArtistInfo(AbstractEntity):
@@ -66,7 +66,7 @@ class Song(AbstractEntity):
         return make_repr(self, info)
 
     def __str__(self) -> str:
-        return self.name
+        return str(self.name)
 
     @property
     def name(self) -> int:
@@ -98,9 +98,9 @@ class Song(AbstractEntity):
         return bool(self.options.get('custom'))
 
     @classmethod
-    def official(cls, id: int, server_style: bool = True) -> Song:
+    def official(cls, id: int, server_style: bool = True, client: Optional[Client] = None) -> Song:
         from .utils.converter import Converter  # ehh
-        return Converter.to_normal_song(id, server_style)
+        return Converter.to_normal_song(id, server_style, client=client)
 
     async def get_artist_info(self) -> ArtistInfo:
         """|coro|
@@ -128,15 +128,11 @@ class Song(AbstractEntity):
         if not self.is_custom():  # pragma: no cover
             return ArtistInfo(
                 id=self.id, artist=self.author, song=self.name,
-                whitelisted=True, scouted=True, api=True
+                whitelisted=True, scouted=True, api=True,
+                client=self._client  # might be not attached
             )
 
-        from .client import Client  # *circular imports*
-
-        # we are using boomlings.com IP for fun ~ nekit
-        client = Client(ip='162.216.16.96', use_user_agent=False)
-
-        return await client.get_artist_info(self.id)
+        return await self.client.get_artist_info(self.id)
 
     async def download(self) -> bytes:
         """|coro|

@@ -33,7 +33,7 @@ class Level(AbstractEntity):
         return make_repr(self, info)
 
     def __str__(self) -> str:
-        return self.name
+        return str(self.name)
 
     def _json(self) -> dict:  # pragma: no cover
         return {k: v for k, v in super()._json().items() if k != 'data'}

@@ -29,7 +29,7 @@ class Gauntlet(AbstractEntity):
         return make_repr(self, info)
 
     def __str__(self) -> str:
-        return self.name
+        return str(self.name)
 
     def _json(self) -> dict:
         final = dict(levels=self.levels)

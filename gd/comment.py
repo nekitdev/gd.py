@@ -20,7 +20,7 @@ class Comment(AbstractEntity):
         return make_repr(self, info)
 
     def __str__(self) -> str:
-        return self.body
+        return str(self.body)
 
     @property
     def body(self) -> str:

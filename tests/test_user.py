@@ -6,20 +6,11 @@ from conftest import client, gd
 # PREPARATIONS
 
 pytestmark = pytest.mark.asyncio
-user = client.run(client.search_user('NekitDS'))
+user = client.run(client.search_user('NeKitDS'))
 
 message = ('[gd.py] ({}): Running tests...'.format(datetime.utcnow()))
 
-
 # MAIN TESTS
-
-async def test_retrieve_comments():
-    await user.retrieve_comments(pages=range(10))
-
-
-async def test_retrieve_page_comments():
-    await user.retrieve_page_comments()
-
 
 async def test_properties():
     user.stars
@@ -65,14 +56,6 @@ async def test_get_levels():
     await user.get_levels()
 
 
-async def testr_get_page_comments():
-    await user.get_page_comments()
-
-
-async def test_get_page_comment_history():
-    await user.get_page_comment_history()
-
-
 async def test_get_comments():
     await user.get_comments()
 
@@ -86,8 +69,8 @@ async def test_as_user():
 
 
 async def test_abstractuser_update():
-    abstractuser = user.as_user()
-    abstractuser.update()
+    abstract = user.as_user()
+    await abstract.update()
 
 
 skip_not_logged = pytest.mark.skipif(
@@ -109,22 +92,19 @@ async def test_send_message_and_request():
 
 @skip_not_logged
 async def test_unfriend():
-    try:
-        await user.unfriend()
-    except gd.errors.MissingAccess:
-        pass
+    await user.unfriend()
 
 
 @skip_not_logged
 async def test_levelrecord():
     temp_level = await client.get_level(30029017)
-    temp_lr = (await temp_level.get_leaderboard(1)).pop(0)
+    entry = (await temp_level.get_leaderboard(1)).pop(0)
 
-    temp_lr.level_id
-    temp_lr.percentage
-    temp_lr.coins
-    temp_lr.timestamp
-    temp_lr.lb_place
-    temp_lr.type
+    entry.level_id
+    entry.percentage
+    entry.coins
+    entry.timestamp
+    entry.lb_place
+    entry.type
 
-    await temp_lr.update()
+    await entry.update()

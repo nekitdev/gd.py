@@ -9,7 +9,6 @@ pytestmark = pytest.mark.asyncio
 
 message = ('[gd.py] ({}): Running tests...'.format(datetime.utcnow()))
 
-
 # MAIN TESTS
 
 async def test_get_song():

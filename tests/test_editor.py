@@ -18,4 +18,4 @@ def test_open_editor():
 
 def test_get_length():
     editor = make_editor()
-    assert editor.get_length() > 0
+    assert editor.get_length()

@@ -67,13 +67,9 @@ class GDSession:
         self.http = HTTPClient(**http_args)
 
     def __repr__(self) -> str:
-        methods = list(filter(lambda string: not string.startswith('_'), dir(self.__class__)))
-
         info = {
-            'methods': len(methods),
             'http': self.http
         }
-
         return make_repr(self, info)
 
     async def ping_server(self, link: str) -> float:
@@ -82,7 +78,7 @@ class GDSession:
         end = time.perf_counter()
         return round((end - start) * 1000, 2)
 
-    async def get_song(self, song_id: int = 0) -> Song:
+    async def get_song(self, song_id: int = 0, *, client: Client) -> Song:
         payload = Params().create_new().put_definer('song', song_id).finish()
         codes = {
             -1: MissingAccess('No songs were found with ID: {}.'.format(song_id)),
@@ -90,9 +86,9 @@ class GDSession:
         }
         resp = await self.http.request(Route.GET_SONG_INFO, payload, error_codes=codes)
         parsed = Parser().with_split('~|~').should_map().parse(resp)
-        return ClassConverter.song_convert(parsed)
+        return ClassConverter.song_convert(parsed, client)
 
-    async def test_song(self, song_id: int = 0) -> ArtistInfo:
+    async def test_song(self, song_id: int = 0, *, client: Client) -> ArtistInfo:
         codes = {
             -1: MissingAccess('Failed to fetch artist info for ID: {}'.format(song_id))
         }
@@ -117,9 +113,9 @@ class GDSession:
             'api': check(api)
         }
 
-        return ClassConverter.artist_info_convert(data)
+        return ClassConverter.artist_info_convert(data, client)
 
-    async def get_ng_song(self, song_id: int = 0) -> Song:
+    async def get_ng_song(self, song_id: int = 0, *, client: Client) -> Song:
         # just like get_song(), but gets anything available on NG.
         song_id = int(song_id)  # ensure type
 
@@ -146,7 +142,8 @@ class GDSession:
 
         return ClassConverter.song_from_kwargs(
             name=name, author=author, id=song_id, size=size_mb,
-            links=dict(normal=link, download=dl_link), custom=True
+            links=dict(normal=link, download=dl_link),
+            custom=True, client=client
         )
 
     async def get_user(
