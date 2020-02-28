@@ -3,6 +3,6 @@
 What's new? - gd.py
 ===================
 
-Unfortunately, there is nothing to see here yet.
+Very soon the change log will appear here.
 
 ~ NeKitDS
