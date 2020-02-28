@@ -20,7 +20,7 @@ HTTP Requests Module
 
 .. autoclass:: GDSession
 
-.. note:: See source of the session.
+.. note:: See source of the session for more information.
 
 Parameters Creating
 -------------------

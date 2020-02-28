@@ -5,6 +5,9 @@ Useful Utils
 
 gd.py provides a plenty of useful and handy functions.
 
+Async Helpers
+-------------
+
 Whether they are for async things::
 
     import asyncio
@@ -32,6 +35,9 @@ Whether they are for async things::
 .. autofunction:: wait
 
 .. autofunction:: gather
+
+Sequence Helpers
+----------------
 
 Or for sequences::
 

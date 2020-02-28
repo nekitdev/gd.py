@@ -53,9 +53,7 @@ Every time it is called, a new event loop is created,
 and a coroutine is being run in it.
 This method does not change event loop in a thread, though.
 
-You can enable it by doing:
-
-.. code-block:: python3
+You can enable it by doing::
 
     import gd
     gd.synchronize()

