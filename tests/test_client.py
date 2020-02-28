@@ -9,6 +9,7 @@ pytestmark = pytest.mark.asyncio
 
 message = ('[gd.py] ({}): Running tests...'.format(datetime.utcnow()))
 
+
 # MAIN TESTS
 
 async def test_get_song():
@@ -147,4 +148,4 @@ async def test_as_user():
 
 @skip_not_logged
 async def test_get_page_levels():
-    await client.get_page_levels()
+    await client.get_page_levels(raise_errors=False)

@@ -1,6 +1,5 @@
-"""Discord.py task implementation, adjusted for gd.py."""
+"""Discord.py task implementation, adjusted for gd.py.
 
-"""
 The MIT License (MIT)
 Copyright (c) 2015-2020 Rapptz
 Permission is hereby granted, free of charge, to any person obtaining a
