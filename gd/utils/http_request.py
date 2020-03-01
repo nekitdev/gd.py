@@ -25,16 +25,10 @@ class HTTPClient:
     def __init__(
         self, *, url: Union[str, URL] = BASE,
         timeout: Union[float, int] = 150, max_requests: int = 250,
-        debug: bool = False, user_agent: Optional[str] = None,
-        use_user_agent: bool = True, **kwargs  # kwargs are unused; made for backwards compability
+        debug: bool = False, **kwargs  # kwargs are unused; made for backwards compability
     ) -> None:
-        if user_agent is None:
-            user_agent = self.get_default_agent()
-
         self.semaphore = asyncio.Semaphore(max_requests)
         self.url = URL(url)
-        self.use_user_agent = use_user_agent
-        self.user_agent = user_agent
         self.timeout = timeout
         self.debug = debug
         self.last_result = None  # for testing
@@ -44,30 +38,24 @@ class HTTPClient:
             'debug': self.debug,
             'max_requests': self.semaphore._value,
             'timeout': self.timeout,
-            'url': repr(self.url),
-            'user_agent': repr(self.user_agent)
+            'url': repr(self.url)
         }
         return make_repr(self, info)
 
     @staticmethod
     def get_default_agent() -> str:
-        string = 'GDClient (gd.py {}) Python/{} aiohttp/{}'
+        string = 'gd.py/{} python/{} aiohttp/{}'
         return string.format(gd.__version__, platform.python_version(), aiohttp.__version__)
 
     def get_skip_headers(self) -> List[str]:
         result = []
-
-        if not self.use_user_agent:
-            result.append('User-Agent')
-
+        result.append('User-Agent')
         return result
 
     def make_headers(self) -> Dict[str, str]:
-        headers = {}
-
-        if self.use_user_agent:
-            headers['User-Agent'] = self.user_agent
-
+        headers = {
+            'User-Agent': self.get_default_agent()
+        }
         return headers
 
     def make_timeout(self) -> aiohttp.ClientTimeout:
@@ -174,7 +162,9 @@ class HTTPClient:
             timeout=self.make_timeout()
         ) as client:
             try:
-                resp = await client.request(method, url, data=data, params=params, headers=headers)
+                resp = await client.request(
+                    method=method, url=url, data=data, params=params, headers=headers
+                )
             except VALID_ERRORS as exc:
                 raise HTTPError(exc) from None
 
