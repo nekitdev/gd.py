@@ -126,9 +126,9 @@ async def test_to_user():
     await client.to_user()
 
 
-@skip_not_logged
-async def test_post_comment():
-    await client.post_comment(message)
+# @skip_not_logged
+# async def test_post_comment():
+#     await client.post_comment(message)
 
 
 @skip_not_logged
@@ -143,7 +143,7 @@ async def test_update_settings():
 
 @skip_not_logged
 async def test_as_user():
-    await client.as_user().to_user()
+    client.as_user()
 
 
 @skip_not_logged

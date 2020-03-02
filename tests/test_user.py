@@ -85,10 +85,10 @@ async def test_block():
     await user.unblock()
 
 
-@skip_not_logged
-async def test_send_message_and_request():
-    await user.send_friend_request('<gd.py>')
-    await user.send('<gd.py>', message)
+# @skip_not_logged
+# async def test_send_message_and_request():
+#     await user.send_friend_request('gd.py test')
+#     await user.send('gd.py test', message)
 
 
 @skip_not_logged
