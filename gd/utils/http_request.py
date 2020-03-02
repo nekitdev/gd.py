@@ -23,12 +23,13 @@ VALID_ERRORS = (
 class HTTPClient:
     """Class that handles the main part of the entire gd.py - sending HTTP requests."""
     def __init__(
-        self, *, url: Union[str, URL] = BASE,
+        self, *, url: Union[str, URL] = BASE, use_user_agent: bool = False,
         timeout: Union[float, int] = 150, max_requests: int = 250,
         debug: bool = False, **kwargs  # kwargs are unused; made for backwards compability
     ) -> None:
         self.semaphore = asyncio.Semaphore(max_requests)
         self.url = URL(url)
+        self.use_agent = use_user_agent
         self.timeout = timeout
         self.debug = debug
         self.last_result = None  # for testing
@@ -50,12 +51,15 @@ class HTTPClient:
     def get_skip_headers(self) -> List[str]:
         result = []
         result.append('User-Agent')
+        result.append('Accept-Encoding')
         return result
 
     def make_headers(self) -> Dict[str, str]:
-        headers = {
-            'User-Agent': self.get_default_agent()
-        }
+        headers = {}
+
+        if self.use_agent:
+            headers['User-Agent'] = self.get_default_agent()
+
         return headers
 
     def make_timeout(self) -> aiohttp.ClientTimeout:
