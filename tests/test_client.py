@@ -134,7 +134,7 @@ async def test_to_user():
 @skip_not_logged
 async def test_update_profile():
     print(client.password)
-    print(0/0)
+    raise TypeError
     await client.update_profile()
 
 
