@@ -156,5 +156,5 @@ async def test_as_user():
 async def test_get_page_levels():
     try:
         await client.get_page_levels()
-    except gd.NothingFound:
-        pass
+    except gd.MissingAccess:
+        pass  # no levels found, skip
