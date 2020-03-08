@@ -1,7 +1,7 @@
 from datetime import datetime
 import pytest
 
-from conftest import client
+from conftest import client, gd
 
 # PREPARATIONS
 
@@ -103,12 +103,18 @@ async def test_get_levels():
 
 @skip_not_logged
 async def test_get_blocked():
-    await client.get_blocked_users()
+    try:
+        await client.get_blocked_users()
+    except gd.NothingFound:
+        pass
 
 
 @skip_not_logged
 async def test_get_friends():
-    await client.get_friends()
+    try:
+        await client.get_friends()
+    except gd.NothingFound:
+        pass
 
 
 @skip_not_logged
@@ -148,4 +154,7 @@ async def test_as_user():
 
 @skip_not_logged
 async def test_get_page_levels():
-    await client.get_page_levels(raise_errors=False)
+    try:
+        await client.get_page_levels()
+    except gd.NothingFound:
+        pass
