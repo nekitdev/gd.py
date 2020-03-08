@@ -6,7 +6,7 @@ from .utils.text_tools import make_repr
 
 Function = Callable[[Any], Any]
 
-http = HTTPClient()  # used in song downloading
+http = HTTPClient(use_user_agent=True)  # used in song downloading
 
 
 class ArtistInfo(AbstractEntity):
