@@ -273,10 +273,7 @@ class HTTPClient:
         if params is None:
             params = {}
 
-        async with aiohttp.ClientSession(
-            headers=self.make_headers(), timeout=self.make_timeout(),
-            skip_auto_headers=self.get_skip_headers()
-        ) as client:
+        async with aiohttp.ClientSession(timeout=self.make_timeout()) as client:
             try:
                 resp = await client.request(method=method, url=url, data=data, params=params, **kwargs)
 
