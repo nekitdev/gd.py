@@ -32,8 +32,9 @@ class ClassConverter:
         quoted_url = odict.get(Index.SONG_URL, '')
         dl_link = urllib.parse.unquote(quoted_url)
         return Song(
-            name=odict.get(Index.SONG_TITLE, 'unknown'),
-            author=odict.get(Index.SONG_AUTHOR, 'unknown'),
+            # name and author - cp1252 encoding seems to fix weird characters - Alex1304
+            name=odict.get(Index.SONG_TITLE, 'unknown').encode('cp1252').decode('utf-8'),
+            author=odict.get(Index.SONG_AUTHOR, 'unknown').encode('cp1252').decode('utf-8'),
             id=odict.getcast(Index.SONG_ID, 0, int),
             size=odict.getcast(Index.SONG_SIZE, 0.0, float),
             links={
