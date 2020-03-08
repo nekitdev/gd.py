@@ -281,20 +281,11 @@ def acquire_loop(running: bool = False) -> None:
 
 def _get_class_dict(cls: Type[Any]) -> Dict[str, Any]:
     """Gets 'cls.__dict__' that can be edited."""
-    sentinel = dict(cls.__dict__)
+    try:
+        return gc.get_referents(cls.__dict__).pop(0)
 
-    for obj in gc.get_objects():
-
-        try:
-            if type(obj) is dict and obj == sentinel:
-                return obj
-
-        except Exception:
-            continue
-
-    raise ValueError(
-        'Failed to find editable __dict__ for {}.'.format(cls)
-    )
+    except IndexError:
+        raise RuntimeError('Failed to find dict for {}.'.format(cls.__name__)) from None
 
 
 def _del_method(cls: type, method_name: str):
