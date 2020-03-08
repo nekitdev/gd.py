@@ -39,6 +39,7 @@ from . import api
 from . import utils
 
 log = get_logger(__name__)
+song_session = GDSession(use_user_agent=True)  # for get_ng_song
 
 
 class Client:
@@ -210,7 +211,7 @@ class Client:
         :class:`.Song`
             The song found under given ID.
         """
-        return await self.session.get_ng_song(song_id, client=self)
+        return await song_session.get_ng_song(song_id, client=self)
 
     async def get_user(self, account_id: int = 0) -> User:
         """|coro|
