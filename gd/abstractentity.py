@@ -1,4 +1,4 @@
-from .typing import AbstractEntity, Client
+from .typing import AbstractEntity, Client, Optional
 from .errors import ClientException
 from .utils.text_tools import make_repr
 
@@ -22,7 +22,6 @@ class AbstractEntity:
     """
     def __init__(self, **options) -> None:
         self.options = options
-        self._client = options.get('client')  # None if not provided
 
     def __repr__(self) -> str:
         info = {'id': self.id}
@@ -60,7 +59,16 @@ class AbstractEntity:
         """:class:`.Client`: Client attached to this object."""
         if self._client is None:
             raise ClientException('Client is not attached to the entity: {!r}.'.format(self))
+
         return self._client
+
+    @property
+    def _client(self) -> Optional[Client]:
+        return self.options.get('client')
+
+    @_client.setter
+    def _client(self, client: Client) -> None:
+        self.options.update(client=client)
 
     def attach_client(self, client: Client) -> None:
         """Attach ``client`` to ``self``."""
