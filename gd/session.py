@@ -566,7 +566,7 @@ class GDSession:
 
         songs = []
         for s in filter(_is_not_empty, sdata.split('~:~')):
-            song = ClassConverter.song_convert(parser.parse(s))
+            song = ClassConverter.song_convert(parser.parse(s), client)
             songs.append(song)
 
         creators = []
@@ -584,7 +584,7 @@ class GDSession:
 
             song_id = data.getcast(Index.LEVEL_SONG_ID, 0, int)
             song = Converter.to_normal_song(
-                data.getcast(Index.LEVEL_AUDIO_TRACK, 0, int)
+                data.getcast(Index.LEVEL_AUDIO_TRACK, 0, int), client=client
             ) if not song_id else utils.get(songs, id=song_id)
 
             creator_id = data.getcast(Index.LEVEL_CREATOR_ID, 0, int)
