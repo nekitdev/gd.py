@@ -65,17 +65,17 @@ def create_ext(**kwargs):
     return ext
 
 
-extension_list = [
-    create_ext(name='_gd', sources=['gd/src/_gd.pyx'], language='c++', optional=True)
+# rust_extensions = []
+
+extensions = [
+    create_ext(name='_gdc', sources=['gd/src/_gdc.pyx'], language='c++', optional=True)
 ]
 
 try:
     from Cython.Build import cythonize
-    extensions = cythonize(extension_list)
+    extensions = cythonize(extensions)
 except ImportError:
     NO_EXTENSIONS = True
-
-# rust_extensions=[RustExtension('_gd', 'Cargo.toml', debug=True)]
 
 args = dict(
     name='gd.py',

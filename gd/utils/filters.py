@@ -70,15 +70,11 @@ class Filters:
 
         self.difficulty = None if (
             (difficulty is None) or not_accepting
-        ) else tuple(
-            map(lambda diff: LevelDifficulty.from_value(diff), difficulty)
-        )
+        ) else tuple(map(LevelDifficulty.from_value, difficulty))
 
         self.length = None if (
             (length is None) or not_accepting
-        ) else tuple(
-            map(lambda l_length: LevelLength.from_value(l_length), length)
-        )
+        ) else tuple(map(LevelLength.from_value, length))
 
         self.demon_difficulty = None if (
             (demon_difficulty is None) or not_accepting

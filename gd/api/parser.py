@@ -372,8 +372,8 @@ def _process_level(d: dict):
 # LOAD ACCELERATOR
 
 try:
-    import _gd
-    locals().update(_gd.__dict__)  # hacky insertion yay
+    import _gdc
+    locals().update(_gdc.__dict__)  # hacky insertion yay
 except ImportError:
     pass  # can not import? kden
 

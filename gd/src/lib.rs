@@ -11,12 +11,11 @@ use pyo3::wrap_pyfunction;
 fn split_to_map(
     py: Python,
     string: String,
-    separator: String
+    delim: String
 ) -> PyResult<PyObject> {
-    let delim: &str = &separator;
     let mut data = HashMap::new();
 
-    let mut iter = string.split(delim);
+    let mut iter = string.split(&delim);
 
     while let (
         Some(key), Some(value)
