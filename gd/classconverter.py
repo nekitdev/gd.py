@@ -33,8 +33,8 @@ class ClassConverter:
         dl_link = urllib.parse.unquote(quoted_url)
         return Song(
             # name and author - cp1252 encoding seems to fix weird characters - Alex1304
-            name=odict.get(Index.SONG_TITLE, 'unknown').encode('cp1252').decode('utf-8'),
-            author=odict.get(Index.SONG_AUTHOR, 'unknown').encode('cp1252').decode('utf-8'),
+            name=_fix_song_encoding(odict.get(Index.SONG_TITLE, 'unknown')),
+            author=_fix_song_encoding(odict.get(Index.SONG_AUTHOR, 'unknown')),
             id=odict.getcast(Index.SONG_ID, 0, int),
             size=odict.getcast(Index.SONG_SIZE, 0.0, float),
             links={
@@ -322,6 +322,14 @@ class ClassConverter:
     def abstractuser_convert(from_dict: Dict[str, str], client: Optional[Client] = None) -> AbstractUser:
         from_dict = {k: _convert(v, int) for k, v in from_dict.items()}
         return AbstractUser(**from_dict).attach_client(client)
+
+
+def _fix_song_encoding(string: str) -> str:
+    try:
+        return string.encode('cp1252').decode('utf-8')
+
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return string
 
 
 def _convert(obj: Any, cls: Type[Any]) -> Any:
