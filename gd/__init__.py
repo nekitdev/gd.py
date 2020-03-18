@@ -44,10 +44,11 @@ from .utils._async import synchronize
 from .utils import tasks
 
 from . import (
-    api,       # non-server GD API.
-    events,    # event-related functions and classes.
-    utils,     # different useful utils.
-    typing     # various utils for typing gd.py.
+    api,     # non-server GD API.
+    events,  # event-related functions and classes.
+    server,  # gd.api merged into gd.py
+    utils,   # different useful utils.
+    typing   # various utils for typing gd.py.
 )
 
 VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
