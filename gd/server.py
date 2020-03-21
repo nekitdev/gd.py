@@ -4,6 +4,7 @@ HTTP Request handler can be found at gd/utils/http_requests.py.
 
 import functools
 import platform
+import re
 
 from aiohttp import web
 import aiohttp
@@ -42,7 +43,7 @@ class Error:
         return json_resp(**self.data, **kwargs)
 
 
-DEFAULT_ERROR = Error(500, 'Server got into trouble')
+DEFAULT_ERROR = Error(500, 'Server got into trouble.')
 
 
 def json_dump(*args, **kwargs) -> str:
@@ -51,7 +52,8 @@ def json_dump(*args, **kwargs) -> str:
 
 
 def json_resp(*args, **kwargs) -> web.Response:
-    kwargs.setdefault('dumps', json_dump)
+    func = json_dump if kwargs.pop('use_indent', True) else gd.utils.dump
+    kwargs.setdefault('dumps', func)
     return web.json_response(*args, **kwargs)
 
 
@@ -83,6 +85,10 @@ def handle_errors(error_dict: Dict[Type[BaseException], Error]) -> Function:
     return decorator
 
 
+def clean_str(string: str) -> str:
+    return re.sub(r'[\t ]+', ' ', string).strip()
+
+
 def str_to_bool(
     string: str,
     true: Iterable[str] = {'yes', 'y', 'true', 't', '1', 'yeah', 'yep'},
@@ -102,7 +108,7 @@ def parse_routes(routes: Iterable[web.RouteDef]) -> List[Dict[str, Optional[str]
         for route in routes:
             yield {
                 'name': route.handler.__name__,
-                'description': route.handler.__doc__,
+                'description': clean_str(route.handler.__doc__),
                 'path': route.path,
                 'method': route.method
             }
@@ -111,6 +117,10 @@ def parse_routes(routes: Iterable[web.RouteDef]) -> List[Dict[str, Optional[str]
 
 @routes.get('/api')
 async def main_page(request: web.Request) -> web.Response:
+    """Return simple JSON with useful info.
+    Returns:
+        200 - JSON with API info.
+    """
     payload = {
         'aiohttp': aiohttp.__version__,
         'gd.py': gd.__version__,
@@ -122,21 +132,37 @@ async def main_page(request: web.Request) -> web.Response:
 
 @routes.get('/api/user/{id}')
 @handle_errors({
-    ValueError: Error(422, 'Invalid type in payload.'),
+    ValueError: Error(400, 'Invalid type in payload.'),
     gd.MissingAccess: Error(404, 'Requested user not found.')
 })
 async def user_get(request: web.Request) -> web.Response:
+    """Fetch a user by their Account ID.
+    Returns:
+        200 - JSON with user info;
+        400 - Invalid type;
+        404 - User was not found.
+    """
     query = int(request.match_info.get('id'))
     return json_resp(await request.app.client.get_user(query))
 
 
 @routes.get('/api/song/{id}')
 @handle_errors({
-    ValueError: Error(422, 'Invalid type in payload.'),
+    ValueError: Error(400, 'Invalid type in payload.'),
     gd.MissingAccess: Error(404, 'Requested song not found.'),
     gd.SongRestrictedForUsage: Error(403, 'Song is not allowed for use.')
 })
 async def song_search(request: web.Request) -> web.Response:
+    """Fetch a song by its ID.
+    Parameters:
+        GET:
+            ng - Bool indicating whether a song should be loaded from Newgrounds.
+    Returns:
+        200 - JSON with user info;
+        400 - Invalid type in payload;
+        403 - Song is not allowed to use;
+        404 - Song was not found.
+    """
     query = int(request.match_info.get('id'))
     is_ng = str_to_bool(request.rel_url.query.get('ng', 'false'))
 
@@ -149,5 +175,26 @@ async def song_search(request: web.Request) -> web.Response:
     gd.MissingAccess: Error(404, 'Requested user was not found.')
 })
 async def user_search(request: web.Request) -> web.Response:
+    """Fetch a user by their name or player ID
+    Returns:
+        200 - JSON with user info;
+        404 - User was not found.
+    """
     query = request.match_info.get('query')
     return json_resp(await request.app.client.search_user(query))
+
+
+@routes.get('/api/level/{id}')
+@handle_errors({
+    ValueError: Error(400, 'Invalid type in payload.'),
+    gd.MissingAccess: Error(404, 'Requested level was not found')
+})
+async def get_level(request: web.Request) -> web.Response:
+    """Fetch a level by given ID.
+    Returns:
+        200 - JSON with level info;
+        400 - Invalid type;
+        404 - Level was not found.
+    """
+    query = int(request.match_info.get('id'))
+    return json_resp(await request.app.client.get_level(query, get_data=False))

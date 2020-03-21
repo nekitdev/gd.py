@@ -291,7 +291,7 @@ class Editor:
         seq = [self.header.dump(), *(obj.dump() for obj in self.objects)]
 
         if append_sc:
-            seq.append(str())
+            seq.append('')
 
         data = ';'.join(map(str, seq))
         return data

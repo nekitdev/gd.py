@@ -4,24 +4,6 @@ import pathlib
 import sys
 from setuptools import Extension, setup
 
-# try:
-#     from setuptools_rust import RustExtension
-
-# except ImportError:
-#     import subprocess
-
-#     args = [sys.executable]
-#     args.extend('-m pip install setuptools-rust'.split())
-
-#     errno = subprocess.call(args)
-
-#     if errno:
-#         print("Please install setuptools-rust package")
-#         exit(errno)
-
-#     else:
-#         from setuptools_rust import RustExtension
-
 root = pathlib.Path(__file__).parent
 
 requirements = (root / 'requirements.txt').read_text('utf-8').splitlines()
@@ -43,6 +25,7 @@ extras_require = {
     'dev': [
         'aioconsole',
         'coverage',
+        'flake8',
         'pytest-asyncio'
     ],
     'docs': [
@@ -53,6 +36,7 @@ extras_require = {
 }
 
 NO_EXTENSIONS = bool(os.environ.get('GD_NO_EXTENSIONS'))
+
 
 if sys.implementation.name.lower() != 'cpython':
     NO_EXTENSIONS = True
@@ -65,17 +49,27 @@ def create_ext(**kwargs):
     return ext
 
 
-# rust_extensions = []
-
 extensions = [
     create_ext(name='_gdc', sources=['gd/src/_gdc.pyx'], language='c++', optional=True)
 ]
+rust_extensions = []
+
 
 try:
     from Cython.Build import cythonize
-    extensions = cythonize(extensions)
 except ImportError:
     NO_EXTENSIONS = True
+    print('Please install Cython.')
+else:
+    extensions = cythonize(extensions)
+
+try:
+    from setuptools_rust import RustExtension
+except ImportError:
+    print('Please install setuptools-rust.')
+else:
+    rust_extensions.append(RustExtension('_gd', 'Cargo.toml'))
+
 
 args = dict(
     name='gd.py',
@@ -116,6 +110,7 @@ args = dict(
             'gd = gd.__main__:main',
         ],
     },
+    rust_extensions=rust_extensions,
     zip_safe=False,
 )
 

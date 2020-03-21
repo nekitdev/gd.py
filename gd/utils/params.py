@@ -575,7 +575,7 @@ class Parameters:
             ``self``
         """
         if content is None:
-            content = str()
+            content = ''
 
         desc = Coder.do_base64(content)
 

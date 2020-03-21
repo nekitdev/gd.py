@@ -840,7 +840,7 @@ class GDSession:
 
     async def send_friend_request(self, target: AbstractUser, message: str, client: Client) -> None:
         if message is None:
-            message = str()
+            message = ''
 
         payload = (
             Params().create_new().put_definer('accountid', client.account_id)

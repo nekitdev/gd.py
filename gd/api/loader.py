@@ -85,7 +85,7 @@ class SaveUtil:
         try:
             return Coder.decode_save(stream, needs_xor=xor)
         except Exception:
-            return str()
+            return ''
 
     def _load(self, main: str = '', levels: str = '', xor: bool = True) -> Database:
         main = self._decode(main, xor=xor)

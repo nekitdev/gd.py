@@ -9,6 +9,9 @@ name = '_gd'
 path = 'gd/src/lib.rs'
 crate-type = ['cdylib']
 
+[dependencies.base64]
+version = '>=0.12.0'
+
 [dependencies.pyo3]
-version = '0.8.5'
+version = '>=0.8.5'
 features = ['extension-module']

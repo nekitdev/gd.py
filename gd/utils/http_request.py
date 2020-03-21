@@ -163,7 +163,8 @@ class HTTPClient:
         async with self.semaphore, aiohttp.ClientSession(
             headers=self.make_headers(),
             skip_auto_headers=self.get_skip_headers(),
-            timeout=self.make_timeout()
+            timeout=self.make_timeout(),
+            raise_for_status=True
         ) as client:
             try:
                 resp = await client.request(

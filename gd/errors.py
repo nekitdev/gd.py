@@ -71,7 +71,13 @@ class HTTPError(ClientException):
             'Failed to process HTTP request. '
             'Caused by: <{0.__class__.__name__}> ({0})'.format(exc)
         )
+        self._origin = exc
         super().__init__(message)
+
+    @property
+    def origin(self) -> Exception:
+        """:class:`Exception`: The original exception that was raised."""
+        return self._origin
 
 
 class MissingAccess(ClientException):

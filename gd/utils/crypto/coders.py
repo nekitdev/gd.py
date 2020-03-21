@@ -1,4 +1,8 @@
-import base64
+from base64 import urlsafe_b64decode, urlsafe_b64encode
+try:
+    from _gd import urlsafe_b64decode, urlsafe_b64encode  # noqa
+except ImportError:
+    pass
 import hashlib
 import random
 import string
@@ -37,7 +41,7 @@ class Coder:
 
     @staticmethod
     def normal_xor(string: str, key: int) -> str:
-        return str().join(chr(ord(char) ^ key) for char in string)
+        return ''.join(chr(ord(char) ^ key) for char in string)
 
     @classmethod
     def decode_save(cls, save: str, needs_xor: bool = True) -> str:
@@ -45,7 +49,7 @@ class Coder:
             save = cls.normal_xor(save, 11)
 
         return zlib.decompress(
-            base64.urlsafe_b64decode(save.encode()), zlib.MAX_WBITS | 0x10
+            urlsafe_b64decode(save.encode()), zlib.MAX_WBITS | 0x10
         ).decode(errors='replace')
 
     @classmethod
@@ -60,7 +64,7 @@ class Coder:
 
         encrypted = bytes(cls.additional) + compressed[2:-4] + crc32 + save_size
 
-        final = base64.urlsafe_b64encode(encrypted).decode()
+        final = urlsafe_b64encode(encrypted).decode()
 
         if needs_xor:
             final = cls.normal_xor(final, 11)
@@ -71,14 +75,10 @@ class Coder:
     def do_base64(cls, data: str, encode: bool = True, errors: str = 'strict') -> str:
         try:
             if encode:
-                return base64.urlsafe_b64encode(
-                    data.encode(errors=errors)
-                ).decode(errors=errors)
+                return urlsafe_b64encode(data.encode(errors=errors)).decode(errors=errors)
             else:
                 padded = data + ('=' * (len(data) % 4))
-                return base64.urlsafe_b64decode(
-                    padded.encode(errors=errors)
-                ).decode(errors=errors)
+                return urlsafe_b64decode(padded.encode(errors=errors)).decode(errors=errors)
 
         except Exception:
             return data
@@ -100,7 +100,7 @@ class Coder:
             Generated string.
         """
         sset = string.ascii_letters + string.digits
-        return str().join(random.choice(sset) for _ in range(length))
+        return ''.join(random.choice(sset) for _ in range(length))
 
     @classmethod
     def encode(cls, type: str, string: str) -> str:
@@ -123,7 +123,7 @@ class Coder:
             Encoded string.
         """
         ciphered = XOR.cipher(key=cls.keys[type], string=string)
-        encoded = base64.urlsafe_b64encode(ciphered.encode()).decode()
+        encoded = urlsafe_b64encode(ciphered.encode()).decode()
         return encoded
 
     @classmethod
@@ -152,7 +152,7 @@ class Coder:
         :class:`str`
             Decoded string.
         """
-        ciphered = base64.urlsafe_b64decode(string).decode()
+        ciphered = urlsafe_b64decode(string.encode()).decode()
         decoded = XOR.cipher(key=cls.keys[type], string=ciphered)
         return decoded
 
@@ -186,14 +186,14 @@ class Coder:
         else:
             values.append(salt)
 
-        string = str().join(map(str, values))
+        string = ''.join(map(str, values))
 
         # sha1 hash
         hashed = hashlib.sha1(string.encode()).hexdigest()
         # XOR
         xored = XOR.cipher(key=cls.keys[type], string=hashed)
         # Base64
-        final = base64.urlsafe_b64encode(xored.encode()).decode()
+        final = urlsafe_b64encode(xored.encode()).decode()
         return final
 
     @classmethod
@@ -215,7 +215,7 @@ class Coder:
         if isinstance(string, str):
             string = string.encode()
 
-        decoded = base64.urlsafe_b64decode(string)
+        decoded = urlsafe_b64decode(string)
 
         try:
             unzipped = zlib.decompress(decoded, zlib.MAX_WBITS | 0x10)
