@@ -217,7 +217,7 @@ async def get_daily(request: web.Request) -> web.Response:
 @handle_errors({
     gd.MissingAccess(404, 'Weekly is likely being refreshed.')
 })
-async def get_daily(request: web.Request) -> web.Response:
+async def get_weekly(request: web.Request) -> web.Response:
     """Fetch current weekly level.
     Returns:
         200 - JSON with weekly info;
