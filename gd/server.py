@@ -202,7 +202,7 @@ async def get_level(request: web.Request) -> web.Response:
 
 @routes.get('/api/daily')
 @handle_errors({
-    gd.MissingAccess(404, 'Daily is likely being refreshed.')
+    gd.MissingAccess: Error(404, 'Daily is likely being refreshed.')
 })
 async def get_daily(request: web.Request) -> web.Response:
     """Fetch current daily level.
@@ -215,7 +215,7 @@ async def get_daily(request: web.Request) -> web.Response:
 
 @routes.get('/api/weekly')
 @handle_errors({
-    gd.MissingAccess(404, 'Weekly is likely being refreshed.')
+    gd.MissingAccess: Error(404, 'Weekly is likely being refreshed.')
 })
 async def get_weekly(request: web.Request) -> web.Response:
     """Fetch current weekly level.
