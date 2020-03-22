@@ -86,7 +86,7 @@ def handle_errors(error_dict: Dict[Type[BaseException], Error]) -> Function:
 
 
 def clean_str(string: str) -> str:
-    return re.sub(r'[\t ]+', ' ', string).strip()
+    return re.sub(r'\s+', ' ', string).strip()
 
 
 def str_to_bool(
@@ -198,3 +198,29 @@ async def get_level(request: web.Request) -> web.Response:
     """
     query = int(request.match_info.get('id'))
     return json_resp(await request.app.client.get_level(query, get_data=False))
+
+
+@routes.get('/api/daily')
+@handle_errors({
+    gd.MissingAccess(404, 'Daily is likely being refreshed.')
+})
+async def get_daily(request: web.Request) -> web.Response:
+    """Fetch current daily level.
+    Returns:
+        200 - JSON with daily info;
+        404 - Daily is being refreshed.
+    """
+    return json_resp(await request.app.client.get_daily())
+
+
+@routes.get('/api/weekly')
+@handle_errors({
+    gd.MissingAccess(404, 'Weekly is likely being refreshed.')
+})
+async def get_daily(request: web.Request) -> web.Response:
+    """Fetch current weekly level.
+    Returns:
+        200 - JSON with weekly info;
+        404 - Weekly is being refreshed.
+    """
+    return json_resp(await request.app.client.get_weekly())
