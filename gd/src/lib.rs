@@ -14,7 +14,7 @@ fn urlsafe_b64encode(py: Python, bytes: &[u8]) -> PyResult<PyObject> {
 
 #[pyfunction]
 fn urlsafe_b64decode(py: Python, bytes: &[u8]) -> PyResult<PyObject> {
-    Ok(PyBytes::new(py, &base64::decode_config(bytes, base64::URL_SAFE).unwrap()).to_object(py))
+    Ok(PyBytes::new(py, &base64::decode_config(bytes, base64::URL_SAFE)?).to_object(py))
 }
 
 /// This module is a python module implemented in Rust.
