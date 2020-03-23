@@ -262,7 +262,7 @@ class HTTPClient:
         self, url: str, data: Optional[Union[dict, str]] = None,
         params: Optional[Union[dict, str]] = None,
         method: Optional[str] = None, **kwargs
-    ) -> aiohttp.ClientResponse:
+    ) -> bytes:
         """|coro|
         Same as doing :meth:`aiohttp.ClientSession.request`, where ``method`` is
         either given one or ``"GET"`` if ``data`` is None or omitted, and ``"POST"`` otherwise.
@@ -276,7 +276,10 @@ class HTTPClient:
 
         async with aiohttp.ClientSession(timeout=self.make_timeout()) as client:
             try:
-                resp = await client.request(method=method, url=url, data=data, params=params, **kwargs)
+                resp = await client.request(
+                    method=method, url=url, data=data, params=params, **kwargs
+                )
+                data = await resp.content.read()
 
             except VALID_ERRORS as exc:
                 raise HTTPError(exc) from None
@@ -288,4 +291,4 @@ class HTTPClient:
                 }.items():
                     log.debug('{}: {}'.format(name, value))
 
-        return resp
+        return data

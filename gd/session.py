@@ -121,8 +121,7 @@ class GDSession:
 
         link = Route.NEWGROUNDS_SONG_LISTEN + str(song_id)
 
-        resp = await self.http.normal_request(link)
-        content = await resp.content.read()
+        content = await self.http.normal_request(link)
         html = content.decode().replace('\\', '')
 
         RE = (
@@ -1180,8 +1179,7 @@ class GDSession:
         endpoint = 'https://gdbrowser.com/icon/icon'
         method = 'GET'
 
-        response = await self.http.normal_request(url=endpoint, params=query, method=method)
-        return await response.read()
+        return await self.http.normal_request(url=endpoint, params=query, method=method)
 
     async def update_settings(
         self, msg: int, friend_req: int, comments: int,
