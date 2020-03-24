@@ -40,6 +40,8 @@ from . import utils
 
 log = get_logger(__name__)
 
+DAILY, WEEKLY = -1, -2
+
 
 class Client:
     r"""A main class in the gd.py library, used for interacting with the servers of Geometry Dash.
@@ -326,7 +328,7 @@ class Client:
         :class:`.Level`
             Current daily level.
         """
-        return await self.session.get_timely('daily', client=self)
+        return await self.session.get_level(DAILY, client=self)
 
     async def get_weekly(self) -> Level:
         """|coro|
@@ -342,7 +344,7 @@ class Client:
         :class:`.Level`
             Current weekly demon.
         """
-        return await self.session.get_timely('weekly', client=self)
+        return await self.session.get_level(WEEKLY, client=self)
 
     async def get_level(self, level_id: int = 0, get_data: bool = True) -> Level:
         """|coro|
@@ -359,9 +361,12 @@ class Client:
                 If the given ID is *n*, and ``0 > n >= -2`` is ``True``,
                 this function will search for daily/weekly levels, however,
                 it is not recommended to use since it can cause confusion.
-                Use :meth:`.Client.get_daily` and :meth:`.Client.get_weekly` instead.
+                Use :meth:`.Client.get_daily` and :meth:`.Client.get_weekly`
+                for better understanding.
+
         get_data: :class:`bool`
             Whether to download the level data or not.
+
         Raises
         ------
         :exc:`.MissingAccess`

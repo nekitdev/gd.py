@@ -230,12 +230,14 @@ class GDSession:
 
         return ClassConverter.user_convert(resp, client)
 
-    async def get_level(
-        self, level_id: int = 0, timetuple: Tuple[int, int, int] = (0, -1, -1), *, client: Client
-    ) -> Level:
-        assert level_id >= -2
+    async def get_level(self, level_id: int = 0, *, client: Client) -> Level:
+        assert level_id >= -2, 'Invalid Level ID provided.'
 
-        type, number, cooldown = timetuple
+        if level_id < 0:
+            type, number, cooldown = await self.get_timely_info(level_id)
+        else:
+            type, number, cooldown = 0, -1, -1
+
         ext = {'101': type, '102': number, '103': cooldown}
 
         codes = {
@@ -285,9 +287,10 @@ class GDSession:
         return ClassConverter.level_convert(
             level_data, song=song, creator=creator, client=client)
 
-    async def get_timely(self, type: str = 'daily', *, client: Client) -> Level:
-        w = ('daily', 'weekly').index(type)
-        payload = Params().create_new().put_weekly(w).finish()
+    async def get_timely_info(self, type_id: int = -1) -> Tuple[int, int, int]:
+        # Daily: -1, Weekly: -2
+        weekly = ~type_id
+        payload = Params().create_new().put_weekly().finish()
         codes = {
             -1: MissingAccess('Failed to fetch a {!r} level.'.format(type))
         }
@@ -296,12 +299,11 @@ class GDSession:
         if not resp:
             raise MissingAccess('Failed to fetch a {} level. Most likely it is being refreshed.'.format(type))
 
-        num, cooldown, *_ = map(int, resp.split('|'))
-        num %= 100000
-        w += 1
+        number, cooldown, *_ = map(int, resp.split('|'))
+        number %= 100000
+        weekly += 1
 
-        level = await self.get_level(-w, (w, num, cooldown), client=client)
-        return level.attach_client(client)
+        return (weekly, number, cooldown)
 
     async def upload_level(
         self, data: str, name: str, level_id: int, version: int, length: int, audio_track: int,

@@ -1,6 +1,6 @@
 [package]
 name = '_gd'
-version = '0.1.0'
+version = '0.1.1'
 edition = '2018'
 include = ['gd/src/*']
 
@@ -8,9 +8,6 @@ include = ['gd/src/*']
 name = '_gd'
 path = 'gd/src/lib.rs'
 crate-type = ['cdylib']
-
-[dependencies.base64]
-version = '>=0.12.0'
 
 [dependencies.pyo3]
 version = '>=0.8.5'

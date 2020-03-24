@@ -1,8 +1,4 @@
 from base64 import urlsafe_b64decode, urlsafe_b64encode
-try:
-    from _gd import urlsafe_b64decode, urlsafe_b64encode  # noqa
-except ImportError:
-    pass
 import hashlib
 import random
 import string

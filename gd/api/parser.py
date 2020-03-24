@@ -284,7 +284,7 @@ def _parse_header(n: str, v: str):
     if n == _HEADER_FLOAT:
         return _maybefloat(v)
     if n in _HEADER_COLORS:
-        from .struct import ColorChannel  # HACK: circular imports
+        from gd.api.struct import ColorChannel  # HACK: circular imports
         return ColorChannel.from_mapping(_color_convert(v))
     if n == _GUIDELINES:
         return _parse_guidelines(v)

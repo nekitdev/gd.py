@@ -1,4 +1,4 @@
-import xml.etree.ElementTree as xml
+from lxml import etree as xml
 import re
 
 from ._async import run_blocking_io
@@ -102,12 +102,12 @@ class XMLParser:
                 sub.text = str(value)
 
     def _dump(self, element: xml.Element) -> str:
-        string = xml.tostring(element).decode(errors='replace').replace('!version', 'version', 1)
+        string = xml.tostring(element).decode(errors='replace')
         return DECLARATION + string
 
     def _default(self, _dict: Dict[str, str]) -> None:
         self.attrib = {
-            '!version': _dict.get('version', PLIST_VERSION),
+            'version': _dict.get('version', PLIST_VERSION),
             'gjver': _dict.get('gjver', GJ_VERSION)
         }
 
