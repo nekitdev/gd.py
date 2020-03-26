@@ -1,4 +1,8 @@
-from lxml import etree as xml
+try:
+    from lxml import etree as xml
+except ImportError:
+    from xml.etree import ElementTree as xml
+
 import re
 
 from ._async import run_blocking_io

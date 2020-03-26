@@ -4,11 +4,20 @@ from collections import namedtuple
 from itertools import chain
 import re
 
-from lxml import html
 from yarl import URL
 
 from ..song import Author
-from ..typing import Dict, List, TypeVar, Union
+from ..typing import Dict, HTMLElement, List, TypeVar, Union, XMLElement
+
+use_lxml, Element = False, XMLElement
+try:
+    from lxml import html
+    use_lxml, Element = True, HTMLElement
+except ImportError:
+    try:
+        from html5lib import parse
+    except ImportError:
+        print('Failed to import lxml and html5lib. Newgrounds parsing will not be supported.')
 
 __all__ = (
     're_link', 're_name', 're_author', 're_size',
@@ -26,6 +35,13 @@ re_link, re_size, re_name, re_author = (
     r'.artist.:.([^\'"]+).'
 )
 SongInfo = namedtuple('SongInfo', 'link size name author')
+
+
+def html_parse(text: str) -> Element:
+    if use_lxml:
+        return html.fromstring(text)
+    else:
+        return parse(text, 'etree', False)
 
 
 def find_song_info(text: str) -> SongInfo:
@@ -52,11 +68,11 @@ def extract_info_from_endpoint(text: str) -> Dict[str, Union[bool, str]]:
 
 
 def search_song_data(text: str) -> List[Dict[str, Union[int, str]]]:
-    tree, result = html.fromstring(text), []
+    tree, result = html_parse(text), []
 
     for a, div in zip(
-        tree.xpath(r'//a[@class="item-audiosubmission"]'),
-        tree.xpath(r'//div[@class="detail-title"]')
+        tree.findall(r'.//a[@class="item-audiosubmission"]'),
+        tree.findall(r'.//div[@class="detail-title"]')
     ):
         url = URL(a.attrib['href']).with_scheme('https')
         song_id = int(url.parts[-1])
@@ -87,8 +103,8 @@ def extract_user_songs(
         return result
 
     for entry in chain.from_iterable(year['items'] for year in years):
-        tree = html.fromstring(entry)
-        a = tree.xpath(r'//a[@class="item-link"]')[0]
+        tree = html_parse(entry)
+        a = tree.findall(r'.//a[@class="item-link"]')[0]
 
         url = URL(a.attrib['href']).with_scheme('https')
         song_id = int(url.parts[-1])
@@ -103,9 +119,9 @@ def extract_user_songs(
 
 
 def extract_users(text: str) -> List[Author]:
-    tree, result = html.fromstring(text), []
+    tree, result = html_parse(text), []
 
-    for div in tree.xpath(r'//div[@class="item-details-main"]'):
+    for div in tree.findall(r'.//div[@class="item-details-main"]'):
         # div -> h4 -> a
         a = div.getchildren()[0].getchildren()[0]
 
