@@ -1,5 +1,5 @@
 import asyncio
-import re  # for NG songs
+import json
 import time  # for perf_counter in ping
 
 from itertools import chain
@@ -8,6 +8,7 @@ from .typing import (
     AbstractUser,
     Any,
     ArtistInfo,
+    Author,
     Client,
     Comment,
     Dict,
@@ -48,6 +49,10 @@ from .utils.enums import (
 from .utils.filters import Filters
 from .utils.http_request import HTTPClient
 from .utils.indexer import Index
+from .utils.ng_parser import (
+    find_song_info, search_song_data, extract_info_from_endpoint,
+    extract_user_songs, extract_users
+)
 from .utils.params import Parameters as Params
 from .utils.parser import Parser
 from .utils.routes import Route
@@ -95,23 +100,12 @@ class GDSession:
         payload = Params().create_new('web').put_definer('song', song_id).close()
         resp = await self.http.request(Route.TEST_SONG, params=payload, method='get', error_codes=codes)
 
-        try:
-            artist, whitelisted, scouted, song, api, *_ = filter(_is_not_empty, re.split(r'</?br>', resp))
+        data = {'id': song_id}
 
+        try:
+            data.update(extract_info_from_endpoint(resp))
         except ValueError:
             raise MissingAccess('Failed to load data. Response: {!r}.'.format(resp)) from None
-
-        def check(string: str) -> bool:
-            return not ('not' in string.lower())
-
-        data = {
-            'id': song_id,
-            'artist': artist.split('Artist: ').pop(),
-            'song': song.split('Song: ').pop(),
-            'whitelisted': check(whitelisted),
-            'scouted': check(scouted),
-            'api': check(api)
-        }
 
         return ClassConverter.artist_info_convert(data, client)
 
@@ -124,26 +118,73 @@ class GDSession:
         content = await self.http.normal_request(link)
         html = content.decode().replace('\\', '')
 
-        RE = (
-            r'https://audio\.ngfiles\.com/([^\'"]+)',  # searching for link
-            r'.filesize.:(\d+)',  # searching for size
-            r'<title>([^<>]+)</title>',  # searching for name
-            r'.artist.:.([^\'"]+).'  # searching for author
-        )
         try:
-            dl_link = re.search(RE[0], html).group(0)
-            size_b = int(re.search(RE[1], html).group(1))  # in B
-            size_mb = round(size_b / 1024 / 1024, 2)  # in MB (rounded)
-            name = re.search(RE[2], html).group(1)
-            author = re.search(RE[3], html).group(1)
-        except AttributeError:  # if re.search returned None -> Song not found
-            raise MissingAccess('No song found under ID: {}.'.format(song_id))
+            info = find_song_info(html)
+        except ValueError:
+            raise MissingAccess('Song was not found by ID: {}'.format(song_id)) from None
 
         return ClassConverter.song_from_kwargs(
-            name=name, author=author, id=song_id, size=size_mb,
-            links=dict(normal=link, download=dl_link),
+            name=info.name, author=info.author, id=song_id, size=round(info.size / 1024 / 1024, 2),
+            links=dict(normal=link, download=info.link),
             custom=True, client=client
         )
+
+    async def search_page_songs(
+        self, query: str, page: int = 0, *, client: Client
+    ) -> List[Song]:
+        payload = {'terms': query, 'page': page + 1}
+
+        data = await self.http.normal_request(
+            Route.NEWGROUNDS_SEARCH.format(type='audio'), params=payload
+        )
+
+        info = search_song_data(data.decode())
+        return [
+            ClassConverter.song_from_kwargs(**song, client=client) for song in info
+        ]
+
+    async def search_songs(self, query: str, pages: Iterable[int], *, client: Client) -> List[Song]:
+        to_run = [
+            self.search_page_songs(query=query, page=page, client=client) for page in pages
+        ]
+
+        return await self.run_many(to_run)
+
+    async def search_page_users(self, query: str, page: int = 0, *, client: Client) -> List[Author]:
+        payload = {'terms': query, 'page': page + 1}
+
+        data = await self.http.normal_request(
+            Route.NEWGROUNDS_SEARCH.format(type='users'), params=payload
+        )
+
+        return [
+            user.attach_client(client) for user in extract_users(data.decode())
+        ]
+
+    async def search_users(self, query: str, pages: Iterable[int], *, client: Client) -> List[Author]:
+        to_run = [
+            self.search_page_users(query=query, page=page, client=client) for page in pages
+        ]
+
+        return await self.run_many(to_run)
+
+    async def get_page_user_songs(self, user: Author, page: int = 0, *, client: Client) -> List[Song]:
+        link = user.link / 'audio/page/{}'.format(page + 1)
+
+        data = await self.http.normal_request(link, headers={'X-Requested-With': 'XMLHttpRequest'})
+
+        info = extract_user_songs(json.loads(data))
+
+        return [
+            ClassConverter.song_from_kwargs(**song, author=user.name, client=client) for song in info
+        ]
+
+    async def get_user_songs(self, user: Author, pages: Iterable[int], *, client: Client) -> List[Song]:
+        to_run = [
+            self.get_page_user_songs(user=user, page=page, client=client) for page in pages
+        ]
+
+        return await self.run_many(to_run)
 
     async def get_user(
         self, account_id: int = 0, return_only_stats: bool = False, *, client: Client
@@ -416,7 +457,7 @@ class GDSession:
 
         res = list(
             ClassConverter.level_record_convert(parser.parse(data), strategy, client)
-            for data in filter(_is_not_empty, resp)
+            for data in filter(is_not_empty, resp)
         )
 
         return res
@@ -446,7 +487,7 @@ class GDSession:
 
         res = list(
             ClassConverter.user_stats_convert(parser.parse(data), client)
-            for data in filter(_is_not_empty, resp)
+            for data in filter(is_not_empty, resp)
         )
 
         return res
@@ -566,12 +607,12 @@ class GDSession:
         lvdata, cdata, sdata = resp[:3]
 
         songs = []
-        for s in filter(_is_not_empty, sdata.split('~:~')):
+        for s in filter(is_not_empty, sdata.split('~:~')):
             song = ClassConverter.song_convert(parser.parse(s), client)
             songs.append(song)
 
         creators = []
-        for c in filter(_is_not_empty, cdata.split('|')):
+        for c in filter(is_not_empty, cdata.split('|')):
             creator = ClassConverter.abstractuser_convert(
                 dict(zip(('id', 'name', 'account_id'), c.split(':'))), client=client
             )
@@ -580,7 +621,7 @@ class GDSession:
         levels = []
         parser.with_split(':').add_ext({'101': 0, '102': -1, '103': -1})
 
-        for lv in filter(_is_not_empty, lvdata.split('|')):
+        for lv in filter(is_not_empty, lvdata.split('|')):
             data = parser.parse(lv)
 
             song_id = data.getcast(Index.LEVEL_SONG_ID, 0, int)
@@ -931,7 +972,7 @@ class GDSession:
         parser = Parser().with_split(':').should_map()
         res = list(
             ClassConverter.gauntlet_convert(parser.parse(gdata), client)
-            for gdata in filter(_is_not_empty, resp)
+            for gdata in filter(is_not_empty, resp)
         )
 
         return res
@@ -1095,7 +1136,7 @@ class GDSession:
         parser = Parser().with_split('~').should_map()
 
         res = []
-        for elem in filter(_is_not_empty, resp):
+        for elem in filter(is_not_empty, resp):
             com_data, user_data = (parser.parse(part) for part in elem.split(':'))
             com_data.update({'1': level.id, '101': 0, '102': 0})
 
@@ -1201,13 +1242,13 @@ class GDSession:
 
         res = [elem for elem in res if elem]
 
-        if all(_iterable(elem) for elem in res):
+        if all(iterable(elem) for elem in res):
             res = list(chain.from_iterable(res))
 
         return res
 
 
-def _iterable(maybe_iterable: Iterable) -> bool:
+def iterable(maybe_iterable: Iterable) -> bool:
     try:
         iter(maybe_iterable)
         return True
@@ -1215,5 +1256,5 @@ def _iterable(maybe_iterable: Iterable) -> bool:
         return False
 
 
-def _is_not_empty(sequence: Sequence) -> bool:
+def is_not_empty(sequence: Sequence) -> bool:
     return bool(len(sequence))

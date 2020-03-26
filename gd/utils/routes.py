@@ -50,3 +50,4 @@ class Route:
     TEST_SONG = 'testSong'
     GD_URL = 'http://geometrydash.com/database/'
     NEWGROUNDS_SONG_LISTEN = 'https://www.newgrounds.com/audio/listen/'
+    NEWGROUNDS_SEARCH = 'https://www.newgrounds.com/search/conduct/{type}'

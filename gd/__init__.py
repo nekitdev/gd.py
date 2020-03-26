@@ -26,7 +26,7 @@ from .level_packs import Gauntlet, MapPack
 from .logging import *
 from .message import Message
 from .session import GDSession
-from .song import ArtistInfo, Song
+from .song import ArtistInfo, Author, Song
 from .user import UserStats, User
 from .utils.enums import *
 from .utils.filters import Filters

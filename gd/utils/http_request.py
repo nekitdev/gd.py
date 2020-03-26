@@ -69,6 +69,7 @@ class HTTPClient:
         """Change base for requests.
         Default base is ``http://www.boomlings.com/database/``,
         but it can be changed.
+
         Parameters
         ----------
         url: :class:`str`
@@ -82,6 +83,7 @@ class HTTPClient:
     ) -> None:
         """Creates an :class:`asyncio.Semaphore` object with given ``value`` and ``loop``
         in order to limit amount of max requests at a time.
+
         Parameters
         ----------
         value: :class:`int`
@@ -93,6 +95,7 @@ class HTTPClient:
 
     def set_debug(self, debug: bool = False) -> None:
         """Set http client debugging.
+
         Parameters
         ----------
         debug: :class:`bool`
@@ -108,12 +111,15 @@ class HTTPClient:
     ) -> Optional[Union[bytes, int, str]]:
         """|coro|
         Sends an HTTP Request to a Geometry Dash server and returns the response.
+
         Parameters
         ----------
         php: :class:`str`
             The endpoint for the request URL, passed like this:
+
             .. code-block:: python3
                 url = 'http://www.boomlings.com/database/' + php + '.php'
+
         params: Union[:class:`dict`, :class:`str`]
             Parameters to send with the request. Type ``dict`` is prefered.
         get_cookies: :class:`bool`
@@ -129,6 +135,7 @@ class HTTPClient:
             Method to use when requesting. This parameter is case insensetive.
             By default, if ``parameters`` is or empty, ``GET`` is used,
             otherwise ``POST`` is used.
+
         Returns
         -------
         Union[:class:`bytes`, :class:`str`, :class:`int`]
@@ -138,6 +145,7 @@ class HTTPClient:
             Otherwise, returns response from a server as a :class:`str` if successfully
             decodes it, and on fail returns :class:`bytes`.
             If a cookie is requested, returns a pair (``res``, ``c``) where c is a :class:`str` cookie.
+
         Raises
         ------
         :exc:`.HTTPError`
@@ -210,6 +218,7 @@ class HTTPClient:
         """|coro|
         A handy shortcut for fetching response from a server and formatting it.
         Basically does :meth:`HTTPClient.fetch` and operates on its result.
+
         Parameters
         ----------
         error_codes: Dict[:class:`int`, :exc:`Exception`]
@@ -217,6 +226,7 @@ class HTTPClient:
         raise_errors: :class:`bool`
             If ``False``, errors are not raised.
             (technically, just turns on ignoring ``error_codes``)
+
         Raises
         ------
         :exc:`.HTTPError`
@@ -224,6 +234,7 @@ class HTTPClient:
             Raised when :meth:`HTTPClient.fetch` returns ``None`` and ``raise_errors`` is ``True``.
         :exc:`Exception`
             Exception specified in ``error_codes``, if present.
+
         Returns
         -------
         Optional[Union[:class:`int`, :class:`bytes`, :class:`str`]]

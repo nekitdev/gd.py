@@ -1,7 +1,7 @@
-from .typing import Any, Callable, Client, Optional, Song
+from .typing import Any, Callable, Client, Iterable, List, Optional, Song, Union
 
 from .abstractentity import AbstractEntity
-from .utils.http_request import HTTPClient
+from .utils.http_request import HTTPClient, URL
 from .utils.text_tools import make_repr
 
 Function = Callable[[Any], Any]
@@ -53,6 +53,36 @@ class ArtistInfo(AbstractEntity):
         return bool(self.options.get('api', ''))
 
 
+class Author(AbstractEntity):
+    """Class that represents an author on Newgrounds.
+    This class is derived from :class:`.AbstractEntity`.
+    """
+    def __repr__(self) -> str:
+        info = {
+            'name': repr(self.name),
+            'link': repr(self.link)
+        }
+        return make_repr(self, info)
+
+    @property
+    def id(self) -> int:
+        return product(map(ord, self.name)) ^ 1
+
+    @property
+    def link(self) -> URL:
+        return URL(self.options.get('link', 'https://%s.newgrounds.com/' % self.name))
+
+    @property
+    def name(self) -> str:
+        return self.options.get('name', '')
+
+    async def get_page_songs(self, page: int = 0) -> List[Song]:
+        return await self.client.get_page_user_songs(self, page=page)
+
+    async def get_songs(self, pages: Iterable[int] = range(10)) -> List[Song]:
+        return await self.client.get_user_songs(self, pages=pages)
+
+
 class Song(AbstractEntity):
     """Class that represents Geometry Dash/Newgrounds songs.
     This class is derived from :class:`.AbstractEntity`.
@@ -85,7 +115,7 @@ class Song(AbstractEntity):
 
     @property
     def link(self) -> str:
-        """:class:`str`: A link to the song on Newgrounds, e.g. ``.../audio/listen/id``."""
+        """:class:`str`: A link to the song on Newgrounds, e.g. ``.../audio/listen/<id>``."""
         return self.options.get('links', {}).get('normal', '')
 
     @property
@@ -101,6 +131,11 @@ class Song(AbstractEntity):
     def official(cls, id: int, server_style: bool = True, client: Optional[Client] = None) -> Song:
         from .utils.converter import Converter  # ehh
         return Converter.to_normal_song(id, server_style, client=client)
+
+    async def update(self, from_ng: bool = False) -> None:
+        method = 'get_ng_song' if from_ng else 'get_song'
+        new = await getattr(self.client, method)(self.id)
+        self.options = new.options
 
     async def get_artist_info(self) -> ArtistInfo:
         """|coro|
@@ -145,3 +180,12 @@ class Song(AbstractEntity):
             A song as bytes.
         """
         return await http.normal_request(self.dl_link)
+
+
+def product(iterable: Iterable[Union[float, int]]) -> Union[float, int]:
+    result = 1
+
+    for element in iterable:
+        result *= element
+
+    return result

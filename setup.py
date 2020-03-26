@@ -26,10 +26,12 @@ extras_require = {
         'aioconsole',
         'coverage',
         'flake8',
+        'pytest',
         'pytest-asyncio'
     ],
     'docs': [
         'sphinx',
+        'sphinx_rtd_theme',
         'sphinxcontrib_trio',
         'sphinxcontrib-websupport'
     ]

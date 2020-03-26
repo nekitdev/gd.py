@@ -99,10 +99,10 @@ async def test_rate_level():
     await level.rate(5)
 
 
-@skip_not_logged
-async def test_rate_demon():
-    temp_level = await client.get_level(10565740)
-    await temp_level.rate_demon(5)
+# @skip_not_logged
+# async def test_rate_demon():  # got disabled
+#     temp_level = await client.get_level(10565740)
+#     await temp_level.rate_demon(5)
 
 
 @skip_not_logged

@@ -4,7 +4,7 @@ from .errors import ClientException
 
 from .logging import get_logger
 from .typing import (
-    AbstractUser, Any, ArtistInfo, Client, Comment, Coroutine, Dict,
+    AbstractUser, Any, ArtistInfo, Author, Client, Comment, Coroutine, Dict,
     FriendRequest, Gauntlet, IconSet, Iterable, Level, LevelRecord, List,
     MapPack, Message, Optional, Sequence, Song, Union, User, UserStats
 )
@@ -213,6 +213,24 @@ class Client:
             The song found under given ID.
         """
         return await self.session.get_ng_song(song_id, client=self)
+
+    async def search_page_songs(self, query: str, page: int = 0) -> List[Song]:
+        return await self.session.search_page_songs(query=query, page=page, client=self)
+
+    async def search_songs(self, query: str, pages: Iterable[int] = range(10)) -> List[Song]:
+        return await self.session.search_songs(query=query, pages=pages, client=self)
+
+    async def search_page_users(self, query: str, page: int = 0) -> List[Author]:
+        return await self.session.search_page_users(query=query, page=page, client=self)
+
+    async def search_users(self, query: str, pages: Iterable[int] = range(10)) -> List[Author]:
+        return await self.session.search_users(query=query, pages=pages, client=self)
+
+    async def get_page_user_songs(self, user: Author, page: int = 0) -> List[Song]:
+        return await self.session.get_page_user_songs(user, page=page, client=self)
+
+    async def get_user_songs(self, user: Author, pages: Iterable[int] = range(10)) -> List[Song]:
+        return await self.session.get_user_songs(user, pages=pages, client=self)
 
     async def get_user(self, account_id: int = 0) -> User:
         """|coro|

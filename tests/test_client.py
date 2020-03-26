@@ -16,10 +16,6 @@ async def test_get_song():
     await client.get_song(1)
 
 
-async def test_ng_song():
-    await client.get_ng_song(1)
-
-
 async def test_get_artist_info():
     await client.get_artist_info(1)
 

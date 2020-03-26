@@ -34,6 +34,7 @@ __all__ = (
     'AbstractEntity',
     'AbstractUser',
     'ArtistInfo',
+    'Author',
     'LevelRecord',
     'Client',
     'Color',
@@ -96,6 +97,7 @@ setattr(ref, '__repr__', __repr__)
 AbstractEntity = ref('gd.abstractentity.AbstractEntity')
 AbstractUser = ref('gd.abstractuser.AbstractUser')
 ArtistInfo = ref('gd.song.ArtistInfo')
+Author = ref('gd.song.Author')
 LevelRecord = ref('gd.abstractuser.LevelRecord')
 Client = ref('gd.client.Client')
 Color = ref('gd.colors.Color')
