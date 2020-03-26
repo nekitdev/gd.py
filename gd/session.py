@@ -173,7 +173,7 @@ class GDSession:
 
         data = await self.http.normal_request(link, headers={'X-Requested-With': 'XMLHttpRequest'})
 
-        info = extract_user_songs(json.loads(data))
+        info = extract_user_songs(json.loads(data.decode(errors='replace')))
 
         return [
             ClassConverter.song_from_kwargs(**song, author=user.name, client=client) for song in info
