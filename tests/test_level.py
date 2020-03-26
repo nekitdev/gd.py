@@ -119,11 +119,6 @@ async def test_send():
 
 
 @skip_not_logged
-async def test_comment():
-    await level.comment(message)
-
-
-@skip_not_logged
 async def test_upload_update_delete():
     try:
         await level.upload(id=0)
