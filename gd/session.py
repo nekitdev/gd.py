@@ -337,10 +337,11 @@ class GDSession:
         }
         resp = await self.http.request(Route.GET_TIMELY, payload, error_codes=codes)
 
-        if not resp:
-            raise MissingAccess('Failed to fetch a {} level. Most likely it is being refreshed.'.format(type))
+        try:
+            number, cooldown, *_ = map(int, resp.split('|'))
+        except ValueError:  # unpacking failed or something else
+            raise MissingAccess('Failed to fetch a timely level. Most likely it is being refreshed.') from None
 
-        number, cooldown, *_ = map(int, resp.split('|'))
         number %= 100000
         weekly += 1
 
