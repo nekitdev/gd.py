@@ -14,7 +14,7 @@ import re
 
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser, LevelRecord
-from .client import Client
+from .client import Client, DAILY, WEEKLY
 from .colors import Color
 from .colors import colors
 from .comment import Comment
