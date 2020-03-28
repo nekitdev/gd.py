@@ -256,9 +256,9 @@ class LevelCommentListener(AbstractListener):
         self.call_method = 'level_comment'
         self.level_id = level_id
 
-    async def setup(self) -> None:
+    async def load_level(self) -> None:
         try:
-            self.level = await self.client.get_level(self.level_id)
+            self.level = await self.client.get_level(self.level_id, get_data=False)
         except Exception:
             self.level = Level(id=self.level_id, client=self.client)
 
@@ -267,6 +267,8 @@ class LevelCommentListener(AbstractListener):
         return await self.level.get_comments(amount=amount)
 
     async def scan(self) -> None:
+        await self.load_level()
+
         new = await self.method()
 
         if not new:
