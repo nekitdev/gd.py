@@ -262,8 +262,7 @@ class LevelCommentListener(AbstractListener):
         except Exception:
             self.level = Level(id=self.level_id, client=self.client)
 
-    async def method(self, amount: int = -1) -> List[Comment]:
-        # -1 implies 'all comments'
+    async def method(self, amount: int = 1000) -> List[Comment]:
         return await self.level.get_comments(amount=amount)
 
     async def scan(self) -> None:
