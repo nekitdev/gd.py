@@ -12,15 +12,17 @@ from .parser import (
 
 from .utils import _make_color, _get_dir, _define_color, get_id, get_default
 from ._property import (
-    _object_code,
-    _color_code,
-    _header_code,
-    _level_code,
+    _object_code, _color_code, _header_code, _level_code,
 )
 
-from ..typing import ColorChannel, Object, Struct
+from ..typing import (
+    Any, Color, ColorChannel, ColorCollection, Dict, Editor, Header,
+    Iterable, LevelAPI, Object, Optional, Struct, Tuple, Union
+)
 
 __all__ = ('Object', 'ColorChannel', 'Header', 'LevelAPI', 'ColorCollection')
+
+Number = Union[float, int]
 
 
 class Struct:
@@ -30,20 +32,20 @@ class Struct:
     _base_data = {}
     _container = {}
 
-    def __init__(self, **properties):
+    def __init__(self, **properties) -> None:
         self.data = self._base_data.copy()
 
         for name, value in properties.items():
             setattr(self, name, value)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = {key: repr(value) for key, value in self.to_dict().items()}
         return make_repr(self, info)
 
-    def _json(self):
+    def _json(self) -> dict:
         return self.to_dict()
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         final = {}
         for key, value in self.data.items():
             key = self._container.get(key)
@@ -53,13 +55,13 @@ class Struct:
 
         return final
 
-    def dump(self):
+    def dump(self) -> str:
         return self.__class__._collect(self.to_map())
 
-    def to_map(self):
+    def to_map(self) -> Dict[str, Any]:
         return self.__class__._dump(self.data)
 
-    def copy(self):
+    def copy(self) -> Struct:
         self_copy = self.__class__()
         self_copy.data = self.data.copy()
         return self_copy
@@ -70,13 +72,13 @@ class Struct:
         return self
 
     @classmethod
-    def from_mapping(cls, mapping: dict):
+    def from_mapping(cls, mapping: dict) -> Struct:
         self = cls()
         self.data = mapping
         return self
 
     @classmethod
-    def from_string(cls, string: str):
+    def from_string(cls, string: str) -> Struct:
         try:
             return cls.from_mapping(cls._convert(string))
 
@@ -105,17 +107,17 @@ class Object(Struct):
         self.edit(easing=get_id(_get_dir(directive, 'easing'), ret_enum=True))
         return self
 
-    def set_color(self, color) -> Object:
+    def set_color(self, color: Any) -> Object:
         """Set ``rgb`` of ``self`` to ``color``."""
-        self.edit(**dict(zip('rgb', _define_color(color).to_rgb())))
+        self.edit(**zip('rgb', _define_color(color).to_rgb()))
         return self
 
-    def get_color(self):
+    def get_color(self) -> Color:
         return _make_color(self)
 
-    def add_groups(self, *groups: int) -> Object:
+    def add_groups(self, *groups: Iterable[int]) -> Object:
         """Add ``groups`` to ``self.groups``."""
-        if not hasattr(self, 'groups'):
+        if self.groups is None:
             self.groups = set(groups)
 
         else:
@@ -123,24 +125,26 @@ class Object(Struct):
 
         return self
 
-    def get_pos(self):
-        """Tuple[:class:`int`, :class:`int`]: ``x`` and ``y`` of ``self``."""
+    def get_pos(self) -> Tuple[Number, Number]:
+        """Tuple[Union[:class:`float`, :class:`int`], Union[:class:`float`, :class:`int`]]:
+        ``x`` and ``y`` coordinates of ``self``.
+        """
         return (self.x, self.y)
 
-    def set_pos(self, x: float, y: float) -> Object:
+    def set_pos(self, x: Number, y: Number) -> Object:
         """Set ``x`` and ``y`` position of ``self`` to given values."""
         self.x, self.y = x, y
         return self
 
-    def move(self, x: float = 0, y: float = 0) -> Object:
+    def move(self, x: Number = 0, y: Number = 0) -> Object:
         """Add ``x`` and ``y`` to coordinates of ``self``."""
         self.x += x
         self.y += y
         return self
 
-    def rotate(self, deg: float = 0) -> Object:
+    def rotate(self, deg: Number = 0) -> Object:
         """Add ``deg`` to ``rotation`` of ``self``."""
-        if not self.rotation:
+        if self.rotation is None:
             self.rotation = deg
         else:
             self.rotation += deg
@@ -160,36 +164,37 @@ class ColorChannel(Struct):
     _convert = _color_convert
     _collect = _color_collect
 
-    def __init__(self, special_directive: str = None, **properties):
+    def __init__(self, special_directive: str = None, **properties) -> None:
         super().__init__(**properties)
 
         if special_directive is not None:
             self.set_id(special_directive)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.id)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Struct) -> bool:
         if isinstance(other, type(self)):
             return self.data == other.data
+        return False
 
     def set_id(self, directive: str) -> ColorChannel:
         """Set ColorID of ``self`` according to the directive, e.g. ``BG`` or ``color:bg``."""
         self.edit(id=get_id(_get_dir(directive, 'color')))
         return self
 
-    def set_color(self, color) -> ColorChannel:
+    def set_color(self, color: Any) -> ColorChannel:
         """Set ``rgb`` of ``self`` to ``color``."""
         self.edit(**dict(zip('rgb', _define_color(color).to_rgb())))
         return self
 
-    def get_color(self):
+    def get_color(self) -> Color:
         return _make_color(self)
 
     exec(_color_code)
 
 
-def _process_color(color):
+def _process_color(color: Union[str, Dict[str, Any], ColorChannel]):
     if isinstance(color, ColorChannel):
         return color
     elif isinstance(color, dict):
@@ -200,7 +205,7 @@ def _process_color(color):
 
 class ColorCollection(set):
     @classmethod
-    def create(cls, colors: list):
+    def create(cls, colors: Iterable[Any]) -> ColorCollection:
         if isinstance(colors, cls):
             return colors.copy()
 
@@ -209,29 +214,29 @@ class ColorCollection(set):
 
         return self
 
-    def get(self, directive_or_id):
+    def get(self, directive_or_id: Union[int, str]) -> Optional[ColorCollection]:
         final = directive_or_id
         if isinstance(final, str):
             final = get_id(_get_dir(final, 'color'))
         return search.get(self, id=final)
 
-    def copy(self):
+    def copy(self) -> ColorCollection:
         return self.__class__(self)
 
-    def update(self, colors):
+    def update(self, colors: Iterable[ColorCollection]) -> None:
         super().update(
             color for color in map(_process_color, colors)
             if color is not None)
 
-    def add(self, color):
+    def add(self, color: Any) -> None:
         color = _process_color(color)
         if color is not None:
             super().add(color)
 
-    def __getitem__(self, c_id: int):
+    def __getitem__(self, c_id: int) -> Optional[ColorCollection]:
         return self.get(c_id)
 
-    def dump(self):
+    def dump(self) -> Iterable[Dict[str, Any]]:
         return [cc.data for cc in self]
 
 
@@ -241,30 +246,40 @@ class Header(Struct):
     _convert = _header_convert
     _collect = _header_collect
 
-    def __init__(self, **properties):
+    def __init__(self, **properties) -> None:
         super().__init__(**properties)
         self.colorhook()
 
-    def copy(self):
-        header = super().copy()
-        header.edit(colors=self.copy_colors())
-        return header
+    def copy(self) -> Header:
+        copy = super().copy()
 
-    def copy_colors(self):
-        return ColorCollection(color.copy() for color in (self.colors or list()))
+        if self.colors is not None:
+            copy.edit(colors=self.copy_colors())
 
-    def colorhook(self):
-        self.edit(colors=ColorCollection.create(self.colors or list()))
+        return copy
+
+    def copy_colors(self) -> ColorCollection:
+        if self.colors is None:
+            return ColorCollection()
+        return ColorCollection(color.copy() for color in self.colors)
+
+    def colorhook(self) -> None:
+        if self.colors is None:
+            return
+        self.colors = ColorCollection.create(self.colors)
 
     @classmethod
-    def from_mapping(cls, mapping):
+    def from_mapping(cls, mapping) -> Header:
         self = super().from_mapping(mapping)
         self.colorhook()
         return self
 
-    def dump(self):
+    def dump(self) -> str:
         header = self.copy()
-        header.edit(colors=header.colors.dump())
+
+        if self.colors is not None:
+            header.edit(colors=self.colors.dump())
+
         return super(type(header), header).dump()
 
     exec(_header_code)
@@ -276,10 +291,10 @@ class LevelAPI(Struct):
     _dump = _level_dump
     _base_data = get_default('api')
 
-    def __init__(self, **properties):
+    def __init__(self, **properties) -> None:
         super().__init__(**properties)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         info = {
             'id': self.id,
             'version': self.version,
@@ -287,33 +302,33 @@ class LevelAPI(Struct):
         }
         return make_repr(self, info)
 
-    def dump(self):
+    def dump(self) -> None:
         raise EditorError('Level API can not be dumped.')
 
-    def open_editor(self):
+    def open_editor(self) -> Editor:
         from .editor import Editor  # *circular imports*
         return Editor.launch(self, 'level_string')
 
-    def is_verified(self):
+    def is_verified(self) -> bool:
         return bool(self.verified)
 
-    def is_uploaded(self):
+    def is_uploaded(self) -> bool:
         return bool(self.uploaded)
 
-    def is_original(self):
+    def is_original(self) -> bool:
         return bool(self.original)
 
-    def is_unlisted(self):
+    def is_unlisted(self) -> bool:
         return bool(self.unlisted)
 
     @classmethod
-    def from_mapping(cls, mapping):
+    def from_mapping(cls, mapping) -> LevelAPI:
         self = cls()
         self.data = _process_level(mapping)
         return self
 
     @classmethod
-    def from_string(cls, string: str):
+    def from_string(cls, string: str) -> None:
         raise EditorError('Level API can not be created from string.')
 
     exec(_level_code)

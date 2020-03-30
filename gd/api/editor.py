@@ -126,8 +126,8 @@ class Editor:
 
     Editor can be created either by hand, from decoded level's data, or taken from a level itself.
     """
-    def __init__(self, header: Optional[Header] = None, *objects: Sequence[Object]) -> None:
-        self.header = header or Header()
+    def __init__(self, *objects: Sequence[Object], **header_args) -> None:
+        self.header = Header(**header_args)
         self.objects = list(objects)
         self._set_callback()
 
@@ -170,7 +170,7 @@ class Editor:
         header = Header.from_string(info)
         objects = list(map(Object.from_string, objects))
 
-        return cls(header, *objects)
+        return cls(*objects).set_header(header)
 
     def __repr__(self) -> str:
         info = {

@@ -34,7 +34,9 @@ class ObjectDataEnum(NEnum):
     X = 2  # in Units
     Y = 3  # in Units
     H_FLIPPED = 4
+    H_FLIP = H_FLIPPED
     V_FLIPPED = 5
+    V_FLIP = V_FLIPPED
     ROTATION = 6
     RED = 7  # Color-related Trigger
     GREEN = 8  # Color-related Trigger
@@ -45,8 +47,10 @@ class ObjectDataEnum(NEnum):
     SECRET_COIN_ID = 12
     PORTAL_CHECKED = 13  # Portal
     TINT_GROUND = 14  # deprecated
-    SET_TO_PLAYER_COLOR_1 = 15
+    SET_TO_PLAYER_COLOR_1 = 15  # Trigger
+    SET_PCOL1 = SET_TO_PLAYER_COLOR_1
     SET_TO_PLAYER_COLOR_2 = 16  # Trigger
+    SET_PCOL2 = SET_TO_PLAYER_COLOR_2
     BLENDING = 17
     UNKNOWN_18 = 18
     UNKNOWN_19 = 19
@@ -54,6 +58,7 @@ class ObjectDataEnum(NEnum):
     COLOR_1 = 21
     COLOR_2 = 22
     TARGET_COLOR_ID = 23
+    TARGET_COLOR = TARGET_COLOR_ID
     Z_LAYER = 24
     Z_ORDER = 25
     UNKNOWN_26 = 26
@@ -74,14 +79,19 @@ class ObjectDataEnum(NEnum):
     COLOR_1_HSV_ENABLED = 41
     COLOR_2_HSV_ENABLED = 42
     COLOR_1_HSV_VALUES = 43
+    COLOR_1_HSV = COLOR_1_HSV_VALUES
     COLOR_2_HSV_VALUES = 44
+    COLOR_2_HSV = COLOR_2_HSV_VALUES
     FADE_IN_TIME = 45  # Pulse Trigger
     HOLD_TIME = 46  # Pulse Trigger
     FADE_OUT_TIME = 47  # Pulse Trigger
     PULSE_MODE = 48  # Pulse Trigger (0 = Color, 1 = HSV)
     COPIED_COLOR_HSV_VALUES = 49  # Color-related Trigger
+    COPY_COLOR_HSV = COPIED_COLOR_HSV_VALUES
     COPIED_COLOR_ID = 50  # Color-related Trigger
+    COPY_COLOR_ID = COPIED_COLOR_ID
     TARGET_GROUP_ID = 51  # Trigger
+    TARGET_GROUP = TARGET_GROUP_ID  # alias
     PULSE_TYPE = 52  # Pulse Trigger (0 = Channel, 1 = Group)
     UNKNOWN_53 = 53
     TP_PORTAL_DISTANCE = 54  # Blue Teleportation Portal
@@ -245,6 +255,7 @@ class ColorChannelProperties(NEnum):
     UNKNOWN_8 = 8  # 1?
     COPIED_COLOR_ID = 9
     HSV_VALUES = 10
+    HSV = HSV_VALUES
     UNKNOWN_RED = 11
     UNKNOWN_GREEN = 12
     UNKNOWN_BLUE = 13
