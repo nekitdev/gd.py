@@ -52,8 +52,6 @@ class ObjectDataEnum(NEnum):
     SET_TO_PLAYER_COLOR_2 = 16  # Trigger
     SET_PCOL2 = SET_TO_PLAYER_COLOR_2
     BLENDING = 17
-    UNKNOWN_18 = 18
-    UNKNOWN_19 = 19
     EDITOR_LAYER_1 = 20
     COLOR_1 = 21
     COLOR_2 = 22
@@ -61,21 +59,14 @@ class ObjectDataEnum(NEnum):
     TARGET_COLOR = TARGET_COLOR_ID
     Z_LAYER = 24
     Z_ORDER = 25
-    UNKNOWN_26 = 26
-    UNKNOWN_27 = 27
     MOVE_X = 28  # Move Trigger (in Units)
     MOVE_Y = 29  # Move Trigger (in Units)
     EASING = 30  # Move and Rotate Trigger
     TEXT = 31  # Text Object
     SCALE = 32
-    UNKNOWN_33 = 33
     GROUP_PARENT = 34
     OPACITY = 35  # Alpha/Color Trigger
     IS_ACTIVE_TRIGGER = 36  # ???
-    UNKNOWN_37 = 37
-    UNKNOWN_38 = 38
-    UNKNOWN_39 = 39
-    UNKNOWN_40 = 40
     COLOR_1_HSV_ENABLED = 41
     COLOR_2_HSV_ENABLED = 42
     COLOR_1_HSV_VALUES = 43
@@ -93,9 +84,7 @@ class ObjectDataEnum(NEnum):
     TARGET_GROUP_ID = 51  # Trigger
     TARGET_GROUP = TARGET_GROUP_ID  # alias
     PULSE_TYPE = 52  # Pulse Trigger (0 = Channel, 1 = Group)
-    UNKNOWN_53 = 53
     TP_PORTAL_DISTANCE = 54  # Blue Teleportation Portal
-    UNKNOWN_55 = 55
     ACTIVATE_GROUP = 56  # Trigger
     GROUPS = 57  # Separated with '.'
     LOCK_TO_PLAYER_X = 58  # Move Trigger
@@ -114,7 +103,6 @@ class ObjectDataEnum(NEnum):
     FOLLOW_TARGET_POS_CENTER_ID = 71  # Follow, Move and Rotate Trigger
     X_MOD = 72  # Follow Trigger
     Y_MOD = 73  # Follow Trigger
-    UNKNOWN_74 = 74
     STRENGTH = 75  # Shake Trigger
     ANIMATION_ID = 76  # Animation Trigger
     COUNT = 77  # Count, Instant Count and Pickup Trigger
@@ -125,7 +113,6 @@ class ObjectDataEnum(NEnum):
     BLOCK_A_ID = 80  # Collision Trigger
     HOLD_MODE = 81  # Touch Trigger
     TOGGLE_MODE = 82  # Touch Trigger (0 = Default, 1 = On, 2 = Off)
-    UNKNOWN_83 = 83
     INTERVAL = 84  # Shake Trigger
     EASING_RATE = 85  # Move and Rotate Trigger
     EXCLUSIVE = 86  # Pulse Trigger
@@ -146,14 +133,12 @@ class ObjectDataEnum(NEnum):
     TARGET_POS_COORDINATES = 101  # Move Trigger (0 = Both, 1 = X Only, 2 = Y Only)
     EDITOR_DISABLE = 102  # Spawn Trigger
     HIGH_DETAIL = 103
-    UNKNOWN_104 = 104
     MAX_SPEED = 105  # Follow Y Trigger
     RANDOMIZE_START = 106  # Animation Trigger
     ANIMATION_SPEED = 107  # Animation Trigger
     LINKED_GROUP = 108
 
     # <-- 2.2 -->
-    UNKNOWN_115 = 115
     SWITCH_PLAYER_DIRECTION = 117
     NO_EFFECTS = 116
     ICE_BLOCK = -201
@@ -252,16 +237,10 @@ class ColorChannelProperties(NEnum):
     BLENDING = 5
     ID = 6
     OPACITY = 7
-    UNKNOWN_8 = 8  # 1?
     COPIED_COLOR_ID = 9
     HSV_VALUES = 10
     HSV = HSV_VALUES
-    UNKNOWN_RED = 11
-    UNKNOWN_GREEN = 12
-    UNKNOWN_BLUE = 13
-    UNKNOWN_15 = 15  # 1?
     COPY_OPACITY = 17
-    UNKNOWN_18 = 18  # 0?
 
 
 class PlayerColor(NEnum):
@@ -546,7 +525,7 @@ class LevelDataEnum(NEnum):
     BUILD_TAB_PAGES_DICT = 'kI6'
     EDITOR_LAYER = 'kI7'
 
-    UNKNOWN_KCEK = 'kCEK'  # int
+    KCEK = 'kCEK'  # int
 
 
 class LevelHeaderEnum(NEnum):
