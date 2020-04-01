@@ -29,6 +29,12 @@ Artist Info
 .. autoclass:: ArtistInfo
     :members:
 
+Author
+------
+
+.. autoclass:: Author
+    :members:
+
 Song
 ----
 
