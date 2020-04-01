@@ -651,7 +651,7 @@ class GDSession:
             ) for page in pages
         ]
 
-        return await self.run_many(to_run)
+        return utils.unique(await self.run_many(to_run))
 
     async def report_level(self, level: Level) -> None:
         payload = Params().create_new('web').put_definer('levelid', level.id).finish()

@@ -1,5 +1,7 @@
 import json
 
+from yarl import URL
+
 from ..typing import Any, Dict, List, Optional, Union
 
 __all__ = ('make_repr', 'object_split', 'dump')
@@ -30,6 +32,9 @@ def default(x: Any) -> Any:
 
     elif hasattr(x, '_json'):
         return x._json()
+
+    elif isinstance(x, URL):
+        return str(x)
 
     else:
         raise TypeError(
