@@ -70,7 +70,7 @@ async def gather(
 
 
 async def wait(
-    fs: Iterable[Coroutine], *, loop: Optional[asyncio.AbstractEventLoop] = None,
+    *fs: Iterable[Coroutine], loop: Optional[asyncio.AbstractEventLoop] = None,
     timeout: Optional[Union[float, int]] = None, return_when: str = 'ALL_COMPLETED'
 ) -> Tuple[Set[asyncio.Future], Set[asyncio.Future]]:
     """A function that is calling :func:`asyncio.wait`.
@@ -96,10 +96,10 @@ async def wait(
         This does not raise :exc:`TimeoutError`! Futures that aren't done
         when the timeout occurs are returned in the second set.
     """
-    try:
-        fs = set(fs)
-    except TypeError:  # not iterable 'fs'
-        fs = {fs}
+    if (len(fs) == 1):
+        maybe_aw = fs[0]
+        if not inspect.isawaitable(maybe_aw):
+            fs = maybe_aw
 
     return await asyncio.wait(fs, loop=loop, timeout=timeout, return_when=return_when)
 
