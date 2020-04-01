@@ -99,7 +99,7 @@ class Song(AbstractEntity):
         return make_repr(self, info)
 
     def __str__(self) -> str:
-        return '{} - {}'.format(song.author, song.name)
+        return '{} - {}'.format(self.author, self.name)
 
     @property
     def name(self) -> int:
