@@ -1,6 +1,7 @@
 from .typing import Any, Callable, Client, Iterable, List, Optional, Song, Union
 
 from .abstractentity import AbstractEntity
+from .errors import ClientException
 from .utils.http_request import HTTPClient, URL
 from .utils.text_tools import make_repr
 
@@ -90,6 +91,9 @@ class Song(AbstractEntity):
     """Class that represents Geometry Dash/Newgrounds songs.
     This class is derived from :class:`.AbstractEntity`.
     """
+    def __init__(self, **options) -> None:
+        super().__init__(**options)
+
     def __repr__(self) -> str:
         info = {
             'id': self.id,
@@ -113,8 +117,8 @@ class Song(AbstractEntity):
 
     @property
     def author(self) -> str:
-        """:class:`.Author`: An author of the song."""
-        return Author(name=self.options.get('author', ''))
+        """:class:`str`: An author of the song."""
+        return self.options.get('author', '')
 
     @property
     def link(self) -> str:
@@ -134,6 +138,12 @@ class Song(AbstractEntity):
     def official(cls, id: int, server_style: bool = True, client: Optional[Client] = None) -> Song:
         from .utils.converter import Converter  # ehh
         return Converter.to_normal_song(id, server_style, client=client)
+
+    def get_author(self) -> Author:
+        if not self.is_custom():
+            raise ClientException('Can not get author of an official song.')
+
+        return Author(name=self.author, client=self.client)
 
     async def update(self, from_ng: bool = False) -> None:
         method = 'get_ng_song' if from_ng else 'get_song'
