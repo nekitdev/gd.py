@@ -12,7 +12,7 @@ http = HTTPClient(use_user_agent=True)  # used in song downloading
 class ArtistInfo(AbstractEntity):
     """Class that represents info about the creator of a particular song."""
     def __str__(self) -> str:
-        return '{} (ArtistInfo)'.format(self.artist)
+        return str(self.artist)
 
     def __repr__(self) -> str:
         info = {
@@ -64,6 +64,9 @@ class Author(AbstractEntity):
         }
         return make_repr(self, info)
 
+    def __str__(self) -> str:
+        return str(self.name)
+
     @property
     def id(self) -> int:
         return product(map(ord, self.name)) ^ 1
@@ -96,7 +99,7 @@ class Song(AbstractEntity):
         return make_repr(self, info)
 
     def __str__(self) -> str:
-        return str(self.name)
+        return '{} - {}'.format(song.author, song.name)
 
     @property
     def name(self) -> int:
@@ -110,8 +113,8 @@ class Song(AbstractEntity):
 
     @property
     def author(self) -> str:
-        """:class:`str`: An author of the song."""
-        return self.options.get('author', '')
+        """:class:`.Author`: An author of the song."""
+        return Author(name=self.options.get('author', ''))
 
     @property
     def link(self) -> str:
