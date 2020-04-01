@@ -4,7 +4,6 @@ HTTP Request handler can be found at gd/utils/http_request.py.
 
 import functools
 import platform
-import re
 
 from aiohttp import web
 import aiohttp
