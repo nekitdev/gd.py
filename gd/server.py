@@ -121,14 +121,13 @@ def parse_routes(routes: Iterable[web.RouteDef]) -> List[Dict[str, Optional[str]
 
 @routes.get('/api')
 async def main_page(request: web.Request) -> web.Response:
-    """/api
-    GET:
-        Description:
-            Return simple JSON with useful info.
-        Example:
-            </api>
-        Returns:
-            200 - JSON with API info.
+    """GET /api
+    Description:
+        Return simple JSON with useful info.
+    Example:
+        </api>
+    Returns:
+        200 - JSON with API info.
     """
     payload = {
         'aiohttp': aiohttp.__version__,
@@ -145,16 +144,15 @@ async def main_page(request: web.Request) -> web.Response:
     gd.MissingAccess: Error(404, 'Requested user not found.')
 })
 async def user_get(request: web.Request) -> web.Response:
-    """/api/user/{id}
-    GET:
-        Description:
-            Fetch a user by their Account ID.
-        Example:
-            </api/user/71>
-        Returns:
-            200 - JSON with user info;
-            400 - Invalid type;
-            404 - User was not found.
+    """GET /api/user/{id}
+    Description:
+        Fetch a user by their Account ID.
+    Example:
+        </api/user/71>
+    Returns:
+        200 - JSON with user info;
+        400 - Invalid type;
+        404 - User was not found.
     """
     query = int(request.match_info.get('id'))
     return json_resp(await request.app.client.get_user(query))
@@ -167,17 +165,16 @@ async def user_get(request: web.Request) -> web.Response:
     gd.SongRestrictedForUsage: Error(403, 'Song is not allowed for use.')
 })
 async def song_search(request: web.Request) -> web.Response:
-    """/api/song/{id}
-    GET:
-        Description:
-            Fetch a song by its ID.
-        Example:
-            </api/song/1>
-        Returns:
-            200 - JSON with song info;
-            400 - Invalid type in payload;
-            403 - Song is not allowed to use;
-            404 - Song was not found.
+    """GET /api/song/{id}
+    Description:
+        Fetch a song by its ID.
+    Example:
+        </api/song/1>
+    Returns:
+        200 - JSON with song info;
+        400 - Invalid type in payload;
+        403 - Song is not allowed to use;
+        404 - Song was not found.
     """
     query = int(request.match_info.get('id'))
     return json_resp(await request.app.client.get_song(query))
@@ -188,15 +185,14 @@ async def song_search(request: web.Request) -> web.Response:
     gd.MissingAccess: Error(404, 'Requested user was not found.')
 })
 async def user_search(request: web.Request) -> web.Response:
-    """/api/search/user/{query}
-    GET:
-        Description:
-            Fetch a user by their name or player ID.
-        Example:
-            </api/search/user/RobTop>
-        Returns:
-            200 - JSON with user info;
-            404 - User was not found.
+    """GET /api/search/user/{query}
+    Description:
+        Fetch a user by their name or player ID.
+    Example:
+        </api/search/user/RobTop>
+    Returns:
+        200 - JSON with user info;
+        404 - User was not found.
     """
     query = request.match_info.get('query')
     return json_resp(await request.app.client.search_user(query))
@@ -208,16 +204,15 @@ async def user_search(request: web.Request) -> web.Response:
     gd.MissingAccess: Error(404, 'Requested level was not found')
 })
 async def get_level(request: web.Request) -> web.Response:
-    """/api/level/{id}
-    GET:
-        Description:
-            Fetch a level by given ID.
-        Example:
-            </api/level/30029017>
-        Returns:
-            200 - JSON with level info;
-            400 - Invalid type;
-            404 - Level was not found.
+    """GET /api/level/{id}
+    Description:
+        Fetch a level by given ID.
+    Example:
+        </api/level/30029017>
+    Returns:
+        200 - JSON with level info;
+        400 - Invalid type;
+        404 - Level was not found.
     """
     query = int(request.match_info.get('id'))
     return json_resp(await request.app.client.get_level(query, get_data=False))
@@ -228,15 +223,14 @@ async def get_level(request: web.Request) -> web.Response:
     gd.MissingAccess: Error(404, 'Daily is likely being refreshed.')
 })
 async def get_daily(request: web.Request) -> web.Response:
-    """/api/daily
-    GET:
-        Description:
-            Fetch current daily level.
-        Example:
-            </api/daily>
-        Returns:
-            200 - JSON with daily info;
-            404 - Daily is being refreshed.
+    """GET /api/daily
+    Description:
+        Fetch current daily level.
+    Example:
+        </api/daily>
+    Returns:
+        200 - JSON with daily info;
+        404 - Daily is being refreshed.
     """
     return json_resp(await request.app.client.get_daily())
 
@@ -246,15 +240,14 @@ async def get_daily(request: web.Request) -> web.Response:
     gd.MissingAccess: Error(404, 'Weekly is likely being refreshed.')
 })
 async def get_weekly(request: web.Request) -> web.Response:
-    """/api/weekly
-    GET:
-        Description:
-            Fetch current weekly level.
-        Example:
-            </api/weekly>
-        Returns:
-            200 - JSON with weekly info;
-            404 - Weekly is being refreshed.
+    """GET /api/weekly
+    Description:
+        Fetch current weekly level.
+    Example:
+        </api/weekly>
+    Returns:
+        200 - JSON with weekly info;
+        404 - Weekly is being refreshed.
     """
     return json_resp(await request.app.client.get_weekly())
 
@@ -265,16 +258,15 @@ async def get_weekly(request: web.Request) -> web.Response:
     gd.MissingAccess: Error(404, 'Requested song not found.'),
 })
 async def ng_song_search(request: web.Request) -> web.Response:
-    """/api/ng/song/{id}
-    GET:
-        Description:
-            Fetch a song on Newgrounds by its ID.
-        Example:
-            </api/ng/song/1>
-        Returns:
-            200 - JSON with song info;
-            400 - Invalid type in payload;
-            404 - Song was not found.
+    """GET /api/ng/song/{id}
+    Description:
+        Fetch a song on Newgrounds by its ID.
+    Example:
+        </api/ng/song/1>
+    Returns:
+        200 - JSON with song info;
+        400 - Invalid type in payload;
+        404 - Song was not found.
     """
     query = int(request.match_info.get('id'))
     return json_resp(await request.app.client.get_song(query))
@@ -285,17 +277,16 @@ async def ng_song_search(request: web.Request) -> web.Response:
     ValueError: Error(400, 'Invalid type in payload.')
 })
 async def ng_user_search(request: web.Request) -> web.Response:
-    """/api/ng/users/{query}
-    GET:
-        Description:
-            Search for users on Newgrounds by given query.
-        Example:
-            </api/ng/users/Xtrullor?pages=0,1,2,3>
-        Parameters:
-            pages - Pages to load, e.g. '0,1,2,3'.
-        Returns:
-            200 - JSON with user info;
-            400 - Invalid type in payload.
+    """GET /api/ng/users/{query}
+    Description:
+        Search for users on Newgrounds by given query.
+    Example:
+        </api/ng/users/Xtrullor?pages=0,1,2,3>
+    Parameters:
+        pages - Pages to load, e.g. '0,1,2,3'.
+    Returns:
+        200 - JSON with user info;
+        400 - Invalid type in payload.
     """
     query = request.match_info.get('query')
     pages = map(int, request.rel_url.query.get('pages', '0').split(','))
@@ -309,17 +300,16 @@ async def ng_user_search(request: web.Request) -> web.Response:
     ValueError: Error(400, 'Invalid type in payload.')
 })
 async def ng_songs_search(request: web.Request) -> web.Response:
-    """/api/ng/songs/{query}
-    GET:
-        Description:
-            Find songs on Newgrounds by given query.
-        Example:
-            </api/ng/songs/PandaEyes?pages=0,1,2,3>
-        Parameters:
-            pages - Pages to load, e.g. '0,1,2,3'.
-        Returns:
-            200 - JSON with user info;
-            400 - Invalid type in payload.
+    """GET /api/ng/songs/{query}
+    Description:
+        Find songs on Newgrounds by given query.
+    Example:
+        </api/ng/songs/PandaEyes?pages=0,1,2,3>
+    Parameters:
+        pages - Pages to load, e.g. '0,1,2,3'.
+    Returns:
+        200 - JSON with user info;
+        400 - Invalid type in payload.
     """
     query = request.match_info.get('query')
     pages = map(int, request.rel_url.query.get('pages', '0').split(','))
@@ -331,16 +321,15 @@ async def ng_songs_search(request: web.Request) -> web.Response:
 @routes.get('/api/ng/user_songs/{user}')
 @handle_errors()
 async def search_songs_by_user(request: web.Request) -> web.Response:
-    """/api/ng/user_songs/
-    GET:
-        Description:
-            Find songs by given artist on Newgrounds.
-        Example:
-            </api/ng/user_songs/CreoMusic?pages=0,1,2,3>
-        Parameters:
-            pages - Pages to load, e.g. '0,1,2,3'.
-        Returns:
-            200 - JSON with song info.
+    """GET /api/ng/user_songs/{user}
+    Description:
+        Find songs by given artist on Newgrounds.
+    Example:
+        </api/ng/user_songs/CreoMusic?pages=0,1,2,3>
+    Parameters:
+        pages - Pages to load, e.g. '0,1,2,3'.
+    Returns:
+        200 - JSON with song info.
     """
     query = request.match_info.get('user')
     pages = map(int, request.rel_url.query.get('pages', '0').split(','))
