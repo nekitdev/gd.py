@@ -100,5 +100,5 @@ class IconSet(AbstractEntity):
         """Tuple[:class:`.Color`, :class:`.Color`]: A shorthand for *color_1* and *color_2*."""
         return self.color_1, self.color_2
 
-    async def generate(self, type: Union[int, str, IconType] = 'cube') -> bytes:
-        return await self.client.generate_icon(type, self)
+    async def generate(self, type: Union[int, str, IconType] = 'cube', size: int = 250) -> bytes:
+        return await self.client.generate_icon(type, self, size=size)
