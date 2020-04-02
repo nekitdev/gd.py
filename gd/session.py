@@ -1210,7 +1210,9 @@ class GDSession:
         if not resp > 0:
             raise MissingAccess('Failed to update profile of a client: {!r}'.format(client))
 
-    async def generate_icon(self, form: str, id: int, color_1: int, color_2: int, has_glow: bool) -> bytes:
+    async def generate_icon(
+        self, form: str, id: int, color_1: int, color_2: int, has_glow: bool, size: int
+    ) -> bytes:
         # fetch an icon from gdbrowser site
         query = {
             'form': form,
@@ -1218,6 +1220,7 @@ class GDSession:
             'col1': color_1,
             'col2': color_2,
             'glow': int(has_glow),
+            'size': size,
             'noUser': int(True)
         }
         endpoint = 'https://gdbrowser.com/icon/icon'
