@@ -740,7 +740,9 @@ class Client:
     async def delete_message(self, message: Message) -> None:
         await self.session.delete_message(message, client=self)
 
-    async def generate_icon(self, type: Union[int, str, IconType], icon_set: IconSet) -> bytes:
+    async def generate_icon(
+        self, type: Union[int, str, IconType], icon_set: IconSet, size: int = 250
+    ) -> bytes:
         form = IconType.from_value(type).name.lower()
         return await self.session.generate_icon(
             form=form, id=getattr(icon_set, form), has_glow=icon_set.has_glow_outline(),
