@@ -746,7 +746,7 @@ class Client:
         form = IconType.from_value(type).name.lower()
         return await self.session.generate_icon(
             form=form, id=getattr(icon_set, form), has_glow=icon_set.has_glow_outline(),
-            color_1=icon_set.color_1.index, color_2=icon_set.color_2.index
+            color_1=icon_set.color_1.index, color_2=icon_set.color_2.index, size=size
         )
 
     def make_user(self, user: AbstractUser) -> AbstractUser:
