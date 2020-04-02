@@ -36,6 +36,8 @@ This library has a bunch of enums, listed below.
 
 .. autoclass:: CommentStrategy
 
+.. autoclass:: LeaderboardStrategy
+
 .. autoclass:: LevelLeaderboardStrategy
 
 .. autoclass:: SearchStrategy
