@@ -1228,6 +1228,17 @@ class GDSession:
 
         return await self.http.normal_request(url=endpoint, params=query, method=method)
 
+    async def generate_icons(
+        self, icon_map: Dict[str, int], color_1: int, color_2: int, has_glow: bool, size: int
+    ) -> List[bytes]:
+        to_run = [
+            self.generate_icon(
+                form=form, id=id, color_1=color_1, color_2=color_2, has_glow=has_glow, size=size
+            ) for form, id in icon_map.items()
+        ]
+
+        return await self.run_many(to_run)
+
     async def update_settings(
         self, msg: int, friend_req: int, comments: int,
         youtube: str, twitter: str, twitch: str, *, client: Client
