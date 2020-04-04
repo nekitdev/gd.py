@@ -86,11 +86,6 @@ class AbstractListener:
         }
         return make_repr(self, info)
 
-    def add_client(self, client: Client) -> None:
-        """Add a client to fire events for."""
-        if client not in self.clients:
-            self.clients.append(client)
-
     def attach_to_loop(self, loop: asyncio.AbstractEventLoop) -> None:
         """Attach the runner to another event loop."""
         self.runner.loop = loop
