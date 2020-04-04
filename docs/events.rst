@@ -32,6 +32,11 @@ and schedules the loop task.
 
 ``gd.events.start()`` runs all the scheduled tasks in another thread.
 
+.. warning::
+
+    Do not call ``client.listen_for`` after  ``gd.events.start()`` was called,
+    since it simply will not have any effect and will not start another listener.
+
 Running Manually
 ----------------
 If you wish to run the listener normally (blocking the main thread), you can do the following:
