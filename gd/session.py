@@ -331,7 +331,7 @@ class GDSession:
     async def get_timely_info(self, type_id: int = -1) -> Tuple[int, int, int]:
         # Daily: -1, Weekly: -2
         weekly = ~type_id
-        payload = Params().create_new().put_weekly().finish()
+        payload = Params().create_new().put_weekly(weekly).finish()
         codes = {
             -1: MissingAccess('Failed to fetch a {!r} level.'.format(type))
         }
