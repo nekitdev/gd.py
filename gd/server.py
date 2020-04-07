@@ -215,7 +215,7 @@ async def get_level(request: web.Request) -> web.Response:
         404 - Level was not found.
     """
     query = int(request.match_info.get('id'))
-    return json_resp(await request.app.client.get_level(query, get_data=False))
+    return json_resp(await request.app.client.get_level(query))
 
 
 @routes.get('/api/daily')
