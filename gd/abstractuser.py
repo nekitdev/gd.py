@@ -13,11 +13,11 @@ from .utils.search_utils import get
 from .utils.text_tools import make_repr
 
 
-def try_int(some: Any) -> Any:
+def try_int(some: Any) -> int:
     try:
         return int(some)
     except Exception:  # noqa
-        return some
+        return 0
 
 
 class AbstractUser(AbstractEntity):
@@ -25,8 +25,10 @@ class AbstractUser(AbstractEntity):
     This class is derived from :class:`.AbstractEntity`.
     """
     def __init__(self, *, client: Client, **options) -> None:
+        options.update(
+            {key: try_int(value) for key, value in options.items() if key in {'account_id', 'id'}}
+        )
         super().__init__(client=client, **options)
-        self.options = {key: try_int(value) for key, value in self.options.items()}
 
     def __repr__(self) -> str:
         info = {
