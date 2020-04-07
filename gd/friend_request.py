@@ -1,9 +1,14 @@
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser
 
+from .typing import Client, FriendRequest, Union
+
 from .utils.decorators import check_logged
 from .utils.enums import MessageOrRequestType
+from .utils.indexer import Index
+from .utils.parser import ExtDict
 from .utils.text_tools import make_repr
+from .utils.crypto.coders import Coder
 
 
 class FriendRequest(AbstractEntity):
@@ -21,15 +26,42 @@ class FriendRequest(AbstractEntity):
     def __str__(self) -> str:
         return str(self.body)
 
+    @classmethod
+    def from_data(cls, data: ExtDict, user_2: Union[ExtDict, AbstractUser], client: Client) -> FriendRequest:
+        user_1 = AbstractUser(
+            name=data.get(Index.REQUEST_SENDER_NAME, 'unknown'),
+            id=data.getcast(Index.REQUEST_SENDER_ID, 0, int),
+            account_id=data.getcast(Index.REQUEST_SENDER_ACCOUNT_ID, 0, int),
+            client=client
+        )
+        if isinstance(user_2, ExtDict):
+            user_2 = AbstractUser(**user_2, client=client)
+
+        indicator = data.getcast(Index.REQUEST_INDICATOR, 0, int)
+        is_normal = indicator ^ 1
+
+        return cls(
+            id=data.getcast(Index.REQUEST_ID, 0, int),
+            timestamp=str(data.get(Index.REQUEST_TIMESTAMP, 'unknown')),
+            body=Coder.do_base64(
+                data.get(Index.REQUEST_BODY, ''), encode=False, errors='replace'
+            ),
+            is_read=bool(bool(data.get(Index.REQUEST_STATUS)) ^ 1),
+            author=(user_1 if is_normal else user_2),
+            recipient=(user_2 if is_normal else user_1),
+            type=indicator,
+            client=client
+        )
+
     @property
     def author(self) -> AbstractUser:
         """:class:`.AbstractUser`: An author of the friend request."""
-        return self.options.get('author', AbstractUser())
+        return self.options.get('author', AbstractUser(client=self.client))
 
     @property
     def recipient(self) -> AbstractUser:
         """:class:`.AbstractUser`: A recipient of the friend request."""
-        return self.options.get('recipient', AbstractUser())
+        return self.options.get('recipient', AbstractUser(client=self.client))
 
     @property
     def type(self) -> MessageOrRequestType:

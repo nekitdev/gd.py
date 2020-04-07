@@ -1,13 +1,18 @@
 from .typing import Optional
 
 from .abstractuser import AbstractUser
+from .colors import colors
 from .iconset import IconSet
+
+from .typing import Client, User, UserStats
 
 from .utils.converter import Converter
 from .utils.enums import (
     StatusLevel, MessagePolicyType,
     FriendRequestPolicyType, CommentPolicyType
 )
+from .utils.indexer import Index
+from .utils.parser import ExtDict
 from .utils.text_tools import make_repr
 
 
@@ -26,6 +31,21 @@ class UserStats(AbstractUser):
             'cp': self.cp
         }
         return make_repr(self, info)
+
+    @classmethod
+    def from_data(cls, data: ExtDict, client: Client) -> UserStats:
+        return cls(
+            account_id=data.getcast(Index.USER_ACCOUNT_ID, 0, int),
+            name=data.get(Index.USER_NAME, 'unknown'),
+            id=data.getcast(Index.USER_PLAYER_ID, 0, int),
+            stars=data.getcast(Index.USER_STARS, 0, int),
+            demons=data.getcast(Index.USER_DEMONS, 0, int),
+            cp=data.getcast(Index.USER_CREATOR_POINTS, 0, int),
+            diamonds=data.getcast(Index.USER_DIAMONDS, 0, int),
+            coins=data.getcast(Index.USER_COINS, 0, int),
+            secret_coins=data.getcast(Index.USER_SECRET_COINS, 0, int),
+            lb_place=data.getcast(Index.USER_TOP_PLACE, 0, int), client=client
+        )
 
     @property
     def stars(self) -> int:
@@ -96,6 +116,59 @@ class User(UserStats):
         }
         return make_repr(self, info)
 
+    @classmethod
+    def from_data(cls, data: ExtDict, client: Client) -> User:
+        youtube = data.get(Index.USER_YOUTUBE, '')
+        yt = {
+            'normal': youtube,
+            'link': 'https://www.youtube.com/channel/' + youtube
+        }
+        twitter = data.get(Index.USER_TWITTER, '')
+        twt = {
+            'normal': twitter,
+            'link': 'https://twitter.com/' + twitter
+        }
+        twitch = data.get(Index.USER_TWITCH, '')
+        twch = {
+            'normal': twitch,
+            'link': 'https://twitch.tv/' + twitch
+        }
+
+        return cls(
+            name=data.get(Index.USER_NAME, 'unknown'),
+            id=data.getcast(Index.USER_PLAYER_ID, 0, int),
+            stars=data.getcast(Index.USER_STARS, 0, int),
+            demons=data.getcast(Index.USER_DEMONS, 0, int),
+            secret_coins=data.getcast(Index.USER_SECRET_COINS, 0, int),
+            coins=data.getcast(Index.USER_COINS, 0, int),
+            cp=data.getcast(Index.USER_CREATOR_POINTS, 0, int),
+            diamonds=data.getcast(Index.USER_DIAMONDS, 0, int),
+            role=data.getcast(Index.USER_ROLE, 0, int),
+            global_rank=data.getcast(Index.USER_GLOBAL_RANK, None, int),
+            account_id=data.getcast(Index.USER_ACCOUNT_ID, 0, int),
+            youtube=yt, twitter=twt, twitch=twch,
+            messages=data.getcast(Index.USER_PRIVATE_MESSAGE_POLICY, 0, int),
+            friend_requests=data.getcast(Index.USER_FRIEND_REQUEST_POLICY, 0, int),
+            comments=data.getcast(Index.USER_COMMENT_HISTORY_POLICY, 0, int),
+            icon_setup=IconSet(
+                main_icon=data.getcast(Index.USER_ICON, 1, int),
+                color_1=colors[data.getcast(Index.USER_COLOR_1, 0, int)],
+                color_2=colors[data.getcast(Index.USER_COLOR_2, 0, int)],
+                main_icon_type=data.getcast(Index.USER_ICON_TYPE, 0, int),
+                has_glow_outline=bool(data.getcast(Index.USER_GLOW_OUTLINE_2, 0, int)),
+                icon_cube=data.getcast(Index.USER_ICON_CUBE, 1, int),
+                icon_ship=data.getcast(Index.USER_ICON_SHIP, 1, int),
+                icon_ball=data.getcast(Index.USER_ICON_BALL, 1, int),
+                icon_ufo=data.getcast(Index.USER_ICON_UFO, 1, int),
+                icon_wave=data.getcast(Index.USER_ICON_WAVE, 1, int),
+                icon_robot=data.getcast(Index.USER_ICON_ROBOT, 1, int),
+                icon_spider=data.getcast(Index.USER_ICON_SPIDER, 1, int),
+                icon_explosion=data.getcast(Index.USER_EXPLOSION, 1, int),
+                client=client
+            ),
+            client=client
+        )
+
     @property
     def role(self) -> StatusLevel:
         """:class:`.StatusLevel`: A status level of the user."""
@@ -156,7 +229,7 @@ class User(UserStats):
     @property
     def icon_set(self) -> IconSet:
         """:class:`.IconSet`: An iconset of the user."""
-        return self.options.get('icon_setup', IconSet())
+        return self.options.get('icon_setup', IconSet(client=self.client))
 
     def is_mod(self, elder: Optional[str] = None) -> bool:
         """:class:`bool`: Indicates if a user is Geometry Dash (Elder) Moderator.

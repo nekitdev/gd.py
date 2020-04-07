@@ -84,28 +84,11 @@ You can even do this (I strongly do not recommend though)::
 
 .. warning::
 
-    If you ever need to initialize any object by hand, please follow this:
+    If you ever need to initialize any object by hand, do not forget to attach a client:
 
     .. code-block:: python3
 
-        level = gd.Level(id=30029017)
-
-    Now let us do something, supposing that you have logged in client.
-
-    .. code-block:: python3
-
-        await level.comment('Here is some comment.')  # ERROR!
-
-    The point is, there is no client attached to this level.
-    You can attach a client to an instance of AbstractEntity like that:
-
-    .. code-block:: python3
-
-        level.attach_client(client)
-        # or
         level = gd.Level(id=30029017, client=client)
-
-    Do not forget this when writing your programs.
 
 .. autoclass:: Client
     :members:

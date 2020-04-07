@@ -25,7 +25,7 @@ def check_logged(func: Function) -> Function:
 
 def check_logged_obj(obj: Any, func_name: str) -> None:
     try:
-        client = obj if hasattr(obj, 'is_logged') else obj._client
+        client = obj if hasattr(obj, 'is_logged') else obj.client
 
     except AttributeError:
         raise MissingAccess(

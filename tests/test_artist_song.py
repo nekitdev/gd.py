@@ -15,7 +15,7 @@ async def test_get_artist_info():
     custom_song = await client.get_song(1)
     await custom_song.get_artist_info()
 
-    official_song = gd.Song.official(0)
+    official_song = gd.Song.official(0, client=client)
     await official_song.get_artist_info()
 
 

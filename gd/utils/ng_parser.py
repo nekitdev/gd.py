@@ -6,7 +6,7 @@ import re
 
 from yarl import URL
 
-from ..song import Author
+from .parser import ExtDict
 from ..typing import Dict, HTMLElement, List, TypeVar, Union, XMLElement
 
 use_lxml, Element = False, XMLElement
@@ -56,18 +56,18 @@ def find_song_info(text: str) -> SongInfo:
         raise ValueError('Song info was not found.') from None
 
 
-def extract_info_from_endpoint(text: str) -> Dict[str, Union[bool, str]]:
+def extract_info_from_endpoint(text: str) -> ExtDict:
     artist, whitelisted, scouted, song, api, *_ = filter(is_not_empty, re.split(r'</?br>', text))
-    return {
-        'artist': artist.split('Artist: ').pop(),
-        'song': song.split('Song: ').pop(),
-        'whitelisted': check(whitelisted),
-        'scouted': check(scouted),
-        'api': check(api)
-    }
+    return ExtDict(
+        artist=artist.split('Artist: ').pop(),
+        song=song.split('Song: ').pop(),
+        whitelisted=check(whitelisted),
+        scouted=check(scouted),
+        api=check(api)
+    )
 
 
-def search_song_data(text: str) -> List[Dict[str, Union[int, str]]]:
+def search_song_data(text: str) -> List[ExtDict]:
     tree, result = html_parse(text), []
 
     for a, div in zip(
@@ -85,16 +85,16 @@ def search_song_data(text: str) -> List[Dict[str, Union[int, str]]]:
         )
         author = span.getchildren()[0].text
 
-        result.append({
-            'id': song_id, 'name': name, 'author': author, 'links': {'normal': str(url)}
-        })
+        result.append(ExtDict(
+            id=song_id, name=name, author=author, links={'normal': str(url)}
+        ))
 
     return result
 
 
 def extract_user_songs(
     json: Dict[str, Dict[str, Dict[str, Union[Dict[str, str], List[str]]]]]
-) -> List[Dict[str, Union[int, str]]]:
+) -> List[ExtDict]:
     result = []
 
     try:
@@ -111,14 +111,12 @@ def extract_user_songs(
 
         name = a.attrib['title']
 
-        result.append({
-            'id': song_id, 'name': name, 'links': {'normal': str(url)}
-        })
+        result.append(ExtDict(id=song_id, name=name, links={'normal': str(url)}))
 
     return result
 
 
-def extract_users(text: str) -> List[Author]:
+def extract_users(text: str) -> List[ExtDict]:
     tree, result = html_parse(text), []
 
     for div in tree.findall(r'.//div[@class="item-details-main"]'):
@@ -128,7 +126,7 @@ def extract_users(text: str) -> List[Author]:
         url = URL(a.attrib['href']).with_scheme('https')
         name = a.text
 
-        result.append(Author(link=url, name=name))
+        result.append(ExtDict(link=url, name=name))
 
     return result
 

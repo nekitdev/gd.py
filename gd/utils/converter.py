@@ -1,10 +1,10 @@
 import re
 
 from .enums import DemonDifficulty, LevelDifficulty, GauntletEnum
+from .parser import ExtDict
 
-from ..typing import Client, Optional, Union
+from ..typing import Union
 from ..errors import FailedConversion
-from ..song import Song
 
 
 # song-related dict
@@ -54,7 +54,7 @@ _cases = {
 class Converter:
     """Some weird class where NeKit holds his converters for everything."""
     @staticmethod
-    def to_normal_song(song_id: int, server_style: bool = True, client: Optional[Client] = None) -> Song:
+    def to_normal_song(song_id: int, server_style: bool = True) -> ExtDict:
         if server_style:
             cases = _cases
         else:
@@ -62,9 +62,8 @@ class Converter:
 
         # get author and name, just like gd does
         author, name = cases.get(song_id, ('DJVI', 'Unknown'))
-        return Song(
-            name=name, author=author, id=song_id,
-            size=0.0, links={}, custom=False, client=client
+        return ExtDict(
+            name=name, author=author, id=song_id, size=0.0, links={}, custom=False
         )
 
     @staticmethod

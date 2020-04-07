@@ -1,5 +1,6 @@
-from .typing import AbstractEntity, Client, Optional
+from .typing import AbstractEntity, Client
 from .errors import ClientException
+from .utils.parser import ExtDict
 from .utils.text_tools import make_repr
 
 
@@ -20,8 +21,9 @@ class AbstractEntity:
 
             Returns ``hash(self.hash_str)``.
     """
-    def __init__(self, **options) -> None:
+    def __init__(self, *, client: Client, **options) -> None:
         self.options = options
+        self.attach_client(client)
 
     def __repr__(self) -> str:
         info = {'id': self.id}
@@ -44,6 +46,10 @@ class AbstractEntity:
     def _json(self) -> dict:  # pragma: no cover
         return self.options
 
+    @classmethod
+    def from_data(cls, data: ExtDict, client: Client) -> AbstractEntity:
+        return cls(client=client)
+
     @property
     def hash_str(self) -> str:
         cls = self.__class__.__name__
@@ -57,20 +63,14 @@ class AbstractEntity:
     @property
     def client(self) -> Client:
         """:class:`.Client`: Client attached to this object."""
-        if self._client is None:
-            raise ClientException('Client is not attached to the entity: {!r}.'.format(self))
+        client = self.options.get('client')
 
-        return self._client
+        if client is None:
+            raise ClientException('Client is not attached to an entity: {!r}.'.format(self))
 
-    @property
-    def _client(self) -> Optional[Client]:
-        return self.options.get('client')
-
-    @_client.setter
-    def _client(self, client: Client) -> None:
-        self.options.update(client=client)
+        return client
 
     def attach_client(self, client: Client) -> None:
         """Attach ``client`` to ``self``."""
-        self._client = client
+        self.options.update(client=client)
         return self

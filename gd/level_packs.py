@@ -1,10 +1,13 @@
-from .typing import Level, List, Tuple
+from .typing import Client, Gauntlet, Level, List, MapPack, Tuple
 
 from .abstractentity import AbstractEntity
 from .colors import Color
 
+from .utils.converter import Converter
 from .utils.enums import LevelDifficulty
 from .utils.filters import Filters
+from .utils.indexer import Index
+from .utils.parser import ExtDict
 from .utils.text_tools import make_repr
 
 
@@ -30,6 +33,18 @@ class Gauntlet(AbstractEntity):
 
     def __str__(self) -> str:
         return str(self.name)
+
+    @classmethod
+    def from_data(cls, data: ExtDict, client: Client) -> Gauntlet:
+        try:
+            level_ids = tuple(map(int, data.get(Index.GAUNTLET_LEVEL_IDS, '').split(',')))
+        except ValueError:
+            level_ids = ()
+
+        gid = data.getcast(Index.GAUNTLET_ID, 0, int)
+        name = Converter.get_gauntlet_name(gid)
+
+        return cls(id=gid, name=name, level_ids=level_ids, client=client)
 
     def _json(self) -> dict:
         final = dict(levels=self.levels)
@@ -92,6 +107,29 @@ class MapPack(Gauntlet):
             info.update(levels=self.levels)
 
         return make_repr(self, info)
+
+    @classmethod
+    def from_data(cls, data: ExtDict, client: Client) -> MapPack:
+        try:
+            level_ids = tuple(map(int, data.get(Index.MAP_PACK_LEVEL_IDS, '').split(',')))
+        except ValueError:
+            level_ids = ()
+
+        color_string = data.get(Index.MAP_PACK_COLOR, '255,255,255')
+        color = Color.from_rgb(*map(int, color_string.split(',')))
+
+        difficulty = Converter.value_to_pack_difficulty(data.getcast(Index.MAP_PACK_DIFFICULTY, 0, int))
+
+        return cls(
+            id=data.getcast(Index.MAP_PACK_ID, 0, int),
+            name=data.get(Index.MAP_PACK_NAME, 'unknown'),
+            level_ids=level_ids,
+            stars=data.getcast(Index.MAP_PACK_STARS, 0, int),
+            coins=data.getcast(Index.MAP_PACK_COINS, 0, int),
+            difficulty=difficulty,
+            color=color,
+            client=client
+        )
 
     @property
     def stars(self) -> int:

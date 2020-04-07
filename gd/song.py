@@ -1,8 +1,15 @@
-from .typing import Any, Callable, Client, Iterable, List, Optional, Song, Union
+from urllib.parse import unquote
+
+from .typing import Any, Callable, Client, Iterable, List, Song, Union
 
 from .abstractentity import AbstractEntity
 from .errors import ClientException
+
+from .utils.converter import Converter
 from .utils.http_request import HTTPClient, URL
+from .utils.indexer import Index
+from .utils.parser import ExtDict
+from .utils.routes import Route
 from .utils.text_tools import make_repr
 
 Function = Callable[[Any], Any]
@@ -105,6 +112,20 @@ class Song(AbstractEntity):
     def __str__(self) -> str:
         return '{} - {}'.format(self.author, self.name)
 
+    @classmethod
+    def from_data(cls, data: ExtDict, *, custom: bool = True, client: Client) -> Song:
+        return cls(
+            # name and author - cp1252 encoding seems to fix weird characters - Alex1304
+            name=fix_song_encoding(data.get(Index.SONG_TITLE, 'unknown')),
+            author=fix_song_encoding(data.get(Index.SONG_AUTHOR, 'unknown')),
+            id=data.getcast(Index.SONG_ID, 0, int),
+            size=data.getcast(Index.SONG_SIZE, 0.0, float),
+            links=dict(
+                normal=Route.NEWGROUNDS_SONG_LISTEN + data.get(Index.SONG_ID, ''),
+                download=unquote(data.get(Index.SONG_URL, ''))
+            ), custom=custom, client=client
+        )
+
     @property
     def name(self) -> int:
         """:class:`str`: A name of the song."""
@@ -135,9 +156,9 @@ class Song(AbstractEntity):
         return bool(self.options.get('custom'))
 
     @classmethod
-    def official(cls, id: int, server_style: bool = True, client: Optional[Client] = None) -> Song:
-        from .utils.converter import Converter  # ehh
-        return Converter.to_normal_song(id, server_style, client=client)
+    def official(cls, id: int, server_style: bool = True, *, client: Client) -> Song:
+        data = Converter.to_normal_song(id, server_style)
+        return cls(**data, client=client)
 
     def get_author(self) -> Author:
         if not self.is_custom():
@@ -155,9 +176,7 @@ class Song(AbstractEntity):
 
         Fetch artist info of ``self``.
 
-        If song is official, returns ``ArtistInfo()``.
-
-        Otherwise, acts like the following:
+        Acts like the following:
 
         .. code-block:: python3
 
@@ -177,7 +196,7 @@ class Song(AbstractEntity):
             return ArtistInfo(
                 id=self.id, artist=self.author, song=self.name,
                 whitelisted=True, scouted=True, api=True,
-                client=self._client  # might be not attached
+                client=self.client
             )
 
         return await self.client.get_artist_info(self.id)
@@ -193,6 +212,14 @@ class Song(AbstractEntity):
             A song as bytes.
         """
         return await http.normal_request(self.dl_link)
+
+
+def fix_song_encoding(string: str) -> str:
+    try:
+        return string.encode('cp1252').decode('utf-8')
+
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return string
 
 
 def product(iterable: Iterable[Union[float, int]]) -> Union[float, int]:

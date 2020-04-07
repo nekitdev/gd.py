@@ -1,5 +1,5 @@
 from .typing import (
-    AbstractUser, Comment, Iterable, Level, Optional,
+    AbstractUser, Any, Client, Comment, Iterable, Level, LevelRecord, Optional,
     List, Union, User
 )
 
@@ -7,14 +7,27 @@ from .abstractentity import AbstractEntity
 
 from .utils.enums import CommentStrategy, LevelLeaderboardStrategy
 from .utils.filters import Filters
-from .utils.search_utils import get as _get
+from .utils.indexer import Index
+from .utils.parser import ExtDict
+from .utils.search_utils import get
 from .utils.text_tools import make_repr
+
+
+def try_int(some: Any) -> Any:
+    try:
+        return int(some)
+    except Exception:  # noqa
+        return some
 
 
 class AbstractUser(AbstractEntity):
     """Class that represents an Abstract Geometry Dash User.
     This class is derived from :class:`.AbstractEntity`.
     """
+    def __init__(self, *, client: Client, **options) -> None:
+        super().__init__(client=client, **options)
+        self.options = {key: try_int(value) for key, value in self.options.items()}
+
     def __repr__(self) -> str:
         info = {
             'name': repr(self.name),
@@ -25,6 +38,16 @@ class AbstractUser(AbstractEntity):
 
     def __str__(self) -> str:
         return str(self.name)
+
+    @classmethod
+    def from_data(
+        cls, data: ExtDict, type: str = 'normal', *, client: Client
+    ) -> AbstractUser:
+        return cls(
+            account_id=data.getcast(Index.USER_ACCOUNT_ID, 0, int),
+            id=data.getcast(Index.USER_PLAYER_ID, 0, int),
+            name=data.get(Index.USER_NAME, 'unknown'), client=client
+        )
 
     @property
     def name(self) -> str:
@@ -37,10 +60,10 @@ class AbstractUser(AbstractEntity):
         return self.options.get('account_id', 0)
 
     @property
-    def _dict_for_parse(self) -> dict:
-        return {
+    def parse_dict(self) -> ExtDict:
+        return ExtDict({
             k: getattr(self, k) for k in ('name', 'id', 'account_id')
-        }
+        })
 
     def is_registered(self) -> bool:
         """:class:`bool`: Indicates whether user is registered or not."""
@@ -56,7 +79,7 @@ class AbstractUser(AbstractEntity):
         :class:`.AbstractUser`
             Abstract User from given object.
         """
-        return self.client.make_user(self)
+        return AbstractUser(**self.parse_dict, client=self.client)
 
     async def to_user(self) -> User:
         """|coro|
@@ -352,6 +375,22 @@ class LevelRecord(AbstractUser):
         info.pop('client', None)
         return make_repr(self, info)
 
+    @classmethod
+    def from_data(
+        cls, data: ExtDict, strategy: LevelLeaderboardStrategy, client: Client
+    ) -> LevelRecord:
+        return cls(
+            account_id=data.getcast(Index.USER_ACCOUNT_ID, 0, int),
+            name=data.get(Index.USER_NAME, 'unknown'),
+            id=data.getcast(Index.USER_PLAYER_ID, 0, int),
+            level_id=data.getcast(Index.USER_LEVEL_ID, 0, int),
+            lb_place=data.getcast(Index.USER_TOP_PLACE, 0, int),
+            percentage=data.getcast(Index.USER_PERCENT, 0, int),
+            coins=data.getcast(Index.USER_SECRET_COINS, 0, int),
+            timestamp=data.get(Index.USER_RECORD_TIMESTAMP, 'unknown'),
+            type=strategy, client=client
+        )
+
     async def update(self) -> None:
         """|coro|
 
@@ -360,7 +399,7 @@ class LevelRecord(AbstractUser):
         from .level import Level  # this is a hack because *circular imports*
 
         records = await Level(id=self.level_id, client=self.client).get_leaderboard(self.type.value)
-        record = _get(records, account_id=self.account_id)
+        record = get(records, account_id=self.account_id)
 
         if record is not None:
             self.options = record.options

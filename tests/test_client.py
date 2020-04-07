@@ -43,8 +43,11 @@ async def test_many_levels():
 
 
 async def test_get_timely():
-    await client.get_daily()
-    await client.get_weekly()
+    try:
+        await client.get_daily()
+        await client.get_weekly()
+    except gd.MissingAccess:
+        print('Timely levels are being refreshed.')
 
 
 async def test_level_packs():

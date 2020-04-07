@@ -1,5 +1,5 @@
 from .logging import get_logger
-from .typing import Comment, Level, LevelRecord, List, Optional, Union
+from .typing import Client, Comment, Level, LevelRecord, List, Optional, Union
 
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser
@@ -9,11 +9,15 @@ from .errors import MissingAccess
 
 from .api.editor import Editor
 
+from .utils.converter import Converter
 from .utils.enums import (
     DemonDifficulty, LevelDifficulty, CommentStrategy,
     LevelLength, TimelyType, LevelLeaderboardStrategy
 )
+from .utils.indexer import Index
+from .utils.parser import ExtDict
 from .utils.text_tools import make_repr, object_split
+from .utils.crypto.coders import Coder
 
 log = get_logger(__name__)
 
@@ -37,6 +41,89 @@ class Level(AbstractEntity):
 
     def _json(self) -> dict:  # pragma: no cover
         return {k: v for k, v in super()._json().items() if k != 'data'}
+
+    @classmethod
+    def from_data(
+        cls, data: ExtDict, creator: Union[ExtDict, AbstractUser],
+        song: Union[ExtDict, Song], client: Client
+    ) -> Level:
+        if isinstance(creator, ExtDict):
+            creator = AbstractUser(**creator, client=client)
+        if isinstance(song, ExtDict):
+            song = Song.from_data(song, client=client)
+
+        string = data.get(Index.LEVEL_PASS)
+
+        if string is None:
+            copyable, password = False, None
+        else:
+            try:
+                # decode password
+                password = Coder.decode(type='levelpass', string=string)
+            except Exception:
+                # failed to get password
+                copyable, password = False, None
+            else:
+                copyable = True
+
+                if not password:
+                    password = None
+
+                else:
+                    password = password[1:]
+
+                    password = int(password) if password.isdigit() else None
+
+        desc = Coder.do_base64(
+            data.get(Index.LEVEL_DESCRIPTION, ''),
+            encode=False, errors='replace'
+        )
+
+        level_data = data.get(Index.LEVEL_DATA, '')
+        try:
+            level_data = Coder.unzip(level_data)
+        except Exception:  # conversion failed
+            pass
+
+        diff = data.getcast(Index.LEVEL_DIFFICULTY, 0, int)
+        demon_diff = data.getcast(Index.LEVEL_DEMON_DIFFICULTY, 0, int)
+        is_demon = bool(data.getcast(Index.LEVEL_IS_DEMON, 0, int))
+        is_auto = bool(data.getcast(Index.LEVEL_IS_AUTO, 0, int))
+        difficulty = Converter.convert_level_difficulty(
+            diff=diff, demon_diff=demon_diff, is_demon=is_demon, is_auto=is_auto)
+
+        return cls(
+            id=data.getcast(Index.LEVEL_ID, 0, int),
+            name=data.get(Index.LEVEL_NAME, 'unknown'),
+            description=desc,
+            version=data.getcast(Index.LEVEL_VERSION, 0, int),
+            creator=creator,
+            song=song,
+            data=level_data,
+            password=password,
+            copyable=copyable,
+            is_demon=is_demon,
+            is_auto=is_auto,
+            difficulty=difficulty,
+            stars=data.getcast(Index.LEVEL_STARS, 0, int),
+            coins=data.getcast(Index.LEVEL_COIN_COUNT, 0, int),
+            verified_coins=bool(data.getcast(Index.LEVEL_COIN_VERIFIED, 0, int)),
+            is_epic=bool(data.getcast(Index.LEVEL_IS_EPIC, 0, int)),
+            original=data.getcast(Index.LEVEL_ORIGINAL, 0, int),
+            downloads=data.getcast(Index.LEVEL_DOWNLOADS, 0, int),
+            rating=data.getcast(Index.LEVEL_LIKES, 0, int),
+            score=data.getcast(Index.LEVEL_FEATURED_SCORE, 0, int),
+            uploaded_timestamp=data.get(Index.LEVEL_UPLOADED_TIMESTAMP, 'unknown'),
+            last_updated_timestamp=data.get(Index.LEVEL_LAST_UPDATED_TIMESTAMP, 'unknown'),
+            length=data.getcast(Index.LEVEL_LENGTH, 0, int),
+            game_version=data.getcast(Index.LEVEL_GAME_VERSION, 0, int),
+            stars_requested=data.getcast(Index.LEVEL_REQUESTED_STARS, 0, int),
+            object_count=data.getcast(Index.LEVEL_OBJECT_COUNT, 0, int),
+            type=data.getcast(Index.LEVEL_TIMELY_TYPE, 0, int),
+            time_n=data.getcast(Index.LEVEL_TIMELY_INDEX, -1, int),
+            cooldown=data.getcast(Index.LEVEL_TIMELY_COOLDOWN, -1, int),
+            client=client
+        )
 
     @property
     def name(self) -> str:
@@ -71,12 +158,12 @@ class Level(AbstractEntity):
     @property
     def creator(self) -> AbstractUser:
         """:class:`.AbstractUser`: Creator of the level."""
-        return self.options.get('creator', AbstractUser())
+        return self.options.get('creator', AbstractUser(client=self.client))
 
     @property
     def song(self) -> Song:
         """:class:`.Song`: Song used in the level."""
-        return self.options.get('song', Song())
+        return self.options.get('song', Song(client=self.client))
 
     @property
     def difficulty(self) -> Union[DemonDifficulty, LevelDifficulty]:
@@ -255,7 +342,7 @@ class Level(AbstractEntity):
         if self.song.is_custom():
             track, song_id = song_id, track
 
-        client = kwargs.pop('from_client', self._client)
+        client = kwargs.pop('from_client', self.client)
 
         if client is None:  # pragma: no cover
             raise MissingAccess(
@@ -385,9 +472,6 @@ class Level(AbstractEntity):
             ``True`` if a level is still *alive*, and ``False`` otherwise.
             Also ``False`` if a client is not attached to the level.s
         """
-        if self._client is None:
-            return False
-
         try:
             await self.client.search_levels_on_page(query=str(self.id))
 
@@ -411,10 +495,6 @@ class Level(AbstractEntity):
         :class:`.Level`
             A newly fetched version. ``None`` if failed to fetch.
         """
-        if self._client is None:
-            return log.warning(
-                'gd.Level instance: {!r} does not have a client attached.'.format(self)
-            )
         try:
             if self.is_timely():
                 async_func = getattr(self.client, 'get_' + self.type.name.lower())

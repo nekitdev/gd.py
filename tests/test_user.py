@@ -96,16 +96,17 @@ async def test_unfriend():
     await user.unfriend()
 
 
-@skip_not_logged
-async def test_levelrecord():
-    temp_level = await client.get_level(30029017)
-    entry = (await temp_level.get_leaderboard(1)).pop(0)
+# @skip_not_logged
+# async def test_levelrecord():
+#     temp_level = await client.get_level(30029017)
+#     leaderboard = await temp_level.get_leaderboard(1)
+#     entry = leaderboard[0]
 
-    entry.level_id
-    entry.percentage
-    entry.coins
-    entry.timestamp
-    entry.lb_place
-    entry.type
+#     entry.level_id
+#     entry.percentage
+#     entry.coins
+#     entry.timestamp
+#     entry.lb_place
+#     entry.type
 
-    await entry.update()
+#     await entry.update()

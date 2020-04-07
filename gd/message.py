@@ -1,11 +1,14 @@
-from .typing import Optional
+from .typing import Client, Message, Optional, Union
 
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser
 
 from .utils.decorators import check_logged
 from .utils.enums import MessageOrRequestType
+from .utils.indexer import Index
+from .utils.parser import ExtDict
 from .utils.text_tools import make_repr
+from .utils.crypto.coders import Coder
 
 
 class Message(AbstractEntity):
@@ -29,15 +32,44 @@ class Message(AbstractEntity):
     def __str__(self) -> str:
         return str(self.subject)
 
+    @classmethod
+    def from_data(cls, data: ExtDict, user_2: Union[ExtDict, AbstractUser], client: Client) -> Message:
+        user_1 = AbstractUser(
+            name=data.get(Index.MESSAGE_SENDER_NAME, 'unknown'),
+            id=data.getcast(Index.MESSAGE_SENDER_ID, 0, int),
+            account_id=data.getcast(Index.MESSAGE_SENDER_ACCOUNT_ID, 0, int),
+            client=client
+        )
+        if isinstance(user_2, ExtDict):
+            user_2 = AbstractUser(**user_2, client=client)
+
+        indicator = data.getcast(Index.MESSAGE_INDICATOR, 0, int)
+        is_normal = indicator ^ 1
+
+        subject = Coder.do_base64(
+            data.get(Index.MESSAGE_SUBJECT, ''), encode=False, errors='replace'
+        )
+
+        return Message(
+            id=data.getcast(Index.MESSAGE_ID, 0, int),
+            timestamp=data.get(Index.MESSAGE_TIMESTAMP, 'unknown'),
+            subject=subject,
+            is_read=bool(data.getcast(Index.MESSAGE_IS_READ, 0, int)),
+            author=(user_1 if is_normal else user_2),
+            recipient=(user_2 if is_normal else user_1),
+            type=indicator,
+            client=client
+        )
+
     @property
     def author(self) -> AbstractUser:
         """:class:`.AbstractUser`: An author of the message."""
-        return self.options.get('author', AbstractUser())
+        return self.options.get('author', AbstractUser(client=self.client))
 
     @property
     def recipient(self) -> AbstractUser:
         """:class:`.AbstractUser`: A recipient of the message."""
-        return self.options.get('recipient', AbstractUser())
+        return self.options.get('recipient', AbstractUser(client=self.client))
 
     @property
     def subject(self) -> str:

@@ -1,6 +1,6 @@
 import pytest
 
-from conftest import client, gd
+from conftest import client
 
 pytestmark = pytest.mark.asyncio
 
@@ -18,4 +18,4 @@ async def test_search_users():
 
 
 async def test_get_user_songs():
-    await client.get_page_user_songs(gd.Author(name='Xtrullor'))
+    await client.get_page_user_songs('Xtrullor')

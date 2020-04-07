@@ -3,8 +3,13 @@ from .abstractuser import AbstractUser
 
 from .colors import Color
 
+from .typing import Client, Comment, Union
+
 from .utils.enums import CommentType
+from .utils.indexer import Index
+from .utils.parser import ExtDict
 from .utils.text_tools import make_repr
+from .utils.crypto.coders import Coder
 
 
 class Comment(AbstractEntity):
@@ -21,6 +26,29 @@ class Comment(AbstractEntity):
 
     def __str__(self) -> str:
         return str(self.body)
+
+    @classmethod
+    def from_data(cls, data: ExtDict, author: Union[ExtDict, AbstractUser], client: Client) -> Comment:
+        if isinstance(author, ExtDict):
+            author = AbstractUser.from_data(author, client=client)
+
+        color_string = data.get(Index.COMMENT_COLOR, '255,255,255')
+        color = Color.from_rgb(*map(int, color_string.split(',')))
+
+        return cls(
+            body=Coder.do_base64(
+                data.get(Index.COMMENT_BODY, ''), encode=False, errors='replace'
+            ),
+            rating=data.getcast(Index.COMMENT_RATING, 0, int),
+            timestamp=data.get(Index.COMMENT_TIMESTAMP, 'unknown'),
+            id=data.getcast(Index.COMMENT_ID, 0, int),
+            is_spam=bool(data.getcast(Index.COMMENT_IS_SPAM, 0, int)),
+            type=data.getcast(Index.COMMENT_TYPE, 0, int),
+            color=color,
+            level_id=data.getcast(Index.COMMENT_LEVEL_ID, 0, int),
+            level_percentage=data.getcast(Index.COMMENT_LEVEL_PERCENTAGE, -1, int),
+            author=author, client=client
+        )
 
     @property
     def body(self) -> str:
@@ -40,7 +68,7 @@ class Comment(AbstractEntity):
     @property
     def author(self) -> AbstractUser:
         """:class:`.AbstractUser`: An author of the comment."""
-        return self.options.get('author', AbstractUser())
+        return self.options.get('author', AbstractUser(client=self.client))
 
     @property
     def type(self) -> CommentType:
