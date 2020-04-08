@@ -49,8 +49,12 @@ class Level(AbstractEntity):
     ) -> Level:
         if isinstance(creator, ExtDict):
             creator = AbstractUser(**creator, client=client)
+
         if isinstance(song, ExtDict):
-            song = Song.from_data(song, client=client)
+            if any(key.isdigit() for key in song.keys()):
+                song = Song.from_data(song, client=client)
+            else:
+                song = Song(**song, client=client)
 
         string = data.get(Index.LEVEL_PASS)
 
