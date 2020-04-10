@@ -44,16 +44,16 @@ class Coder:
         if needs_xor:
             save = cls.normal_xor(save, 11)
 
-        return zlib.decompress(
-            urlsafe_b64decode(save.encode()), zlib.MAX_WBITS | 0x10
-        ).decode(errors='replace')
+        save += ('=' * (len(save) % 4))
+
+        return pako_inflate(urlsafe_b64decode(save.encode())).decode(errors='replace')
 
     @classmethod
     def encode_save(cls, save: Union[bytes, str], needs_xor: bool = True) -> str:
         if isinstance(save, str):
             save = save.encode()
 
-        compressed = zlib.compress(save)
+        compressed = pako_deflate(save)
 
         crc32 = struct.pack('I', zlib.crc32(save))
         save_size = struct.pack('I', len(save))
@@ -213,10 +213,7 @@ class Coder:
 
         decoded = urlsafe_b64decode(string)
 
-        try:
-            unzipped = zlib.decompress(decoded, zlib.MAX_WBITS | 0x10)
-        except zlib.error:
-            unzipped = zlib.decompress(decoded, zlib.MAX_WBITS)
+        unzipped = pako_inflate(decoded)
 
         try:
             final = unzipped.decode()
@@ -249,3 +246,19 @@ class Coder:
         return (
             1482 + (jumps + 3991) * (percentage + 8354) + ((seconds + 4085)**2) - 50028039
         )
+
+
+def pako_inflate(data: bytes) -> bytes:
+    decompress = zlib.decompressobj(15 | 32)
+    decompressed = decompress.decompress(data) + decompress.flush()
+    return decompressed
+
+
+def pako_deflate(data: bytes) -> bytes:
+    compress = zlib.compressobj(
+        zlib.Z_DEFAULT_COMPRESSION,
+        zlib.DEFLATED, 15, memLevel=8,
+        strategy=zlib.Z_DEFAULT_STRATEGY
+    )
+    compressed = compress.compress(data) + compress.flush()
+    return compressed

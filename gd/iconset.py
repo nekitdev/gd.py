@@ -1,7 +1,8 @@
-from .typing import Tuple, Union
+from .typing import Iterable, List, Tuple, Union
 
 from .abstractentity import AbstractEntity
 from .colors import Color
+from .image import DEFAULT_SIZE, ImageType
 
 from .utils.enums import IconType
 from .utils.text_tools import make_repr
@@ -9,6 +10,7 @@ from .utils.text_tools import make_repr
 
 class IconSet(AbstractEntity):
     """Class that represents an Icon Set."""
+    ALL_TYPES = ('cube', 'ship', 'ball', 'ufo', 'wave', 'robot', 'spider')
 
     def __repr__(self) -> str:
         info = {
@@ -100,5 +102,25 @@ class IconSet(AbstractEntity):
         """Tuple[:class:`.Color`, :class:`.Color`]: A shorthand for *color_1* and *color_2*."""
         return self.color_1, self.color_2
 
-    async def generate(self, type: Union[int, str, IconType] = 'cube', size: int = 250) -> bytes:
-        return await self.client.generate_icon(type, self, size=size)
+    async def generate(
+        self, type: Union[int, str, IconType] = 'cube', size: int = DEFAULT_SIZE,
+        as_image: bool = False
+    ) -> Union[bytes, ImageType]:
+        return await self.client.generate_icon(type, self, size=size, as_image=as_image)
+
+    async def generate_many(
+        self, *types: Iterable[Union[int, str, IconType]], size: int = DEFAULT_SIZE,
+        as_image: bool = False
+    ) -> Union[List[bytes], List[ImageType]]:
+        return await self.client.generate_icons(*types, icon_set=self, size=size, as_image=as_image)
+
+    async def generate_image(
+        self, *types: Iterable[Union[int, str, IconType]], size: int = DEFAULT_SIZE,
+        as_image: bool = False
+    ) -> Union[bytes, ImageType]:
+        return await self.client.generate_image(*types, icon_set=self, size=size, as_image=as_image)
+
+    async def generate_full(
+        self, size: int = DEFAULT_SIZE, as_image: bool = False
+    ) -> Union[bytes, ImageType]:
+        return await self.generate_image(*self.ALL_TYPES, size=size, as_image=as_image)

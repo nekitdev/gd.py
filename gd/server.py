@@ -334,5 +334,5 @@ async def search_songs_by_user(request: web.Request) -> web.Response:
     query = request.match_info.get('user')
     pages = map(int, request.rel_url.query.get('pages', '0').split(','))
     return json_resp(
-        await request.app.client.get_user_songs(gd.Author(name=query), pages=pages)
+        await request.app.client.get_user_songs(query, pages=pages)
     )

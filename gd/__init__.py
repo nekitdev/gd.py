@@ -46,6 +46,7 @@ from .utils import tasks
 from . import (
     api,     # non-server GD API.
     events,  # event-related functions and classes.
+    image,   # functions for working with images.
     server,  # gd.api merged into gd.py
     utils,   # different useful utils.
     typing   # various utils for typing gd.py.

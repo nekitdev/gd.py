@@ -5,6 +5,7 @@ from .comment import Comment
 from .errors import ClientException
 from .friend_request import FriendRequest
 from .iconset import IconSet
+from .image import DEFAULT_SIZE, ImageType, to_image, connect_images, to_bytes
 from .level import Level
 from .level_packs import Gauntlet, MapPack
 from .logging import get_logger
@@ -853,13 +854,41 @@ class Client:
         await self.session.delete_message(message.type, message.id, client=self)
 
     async def generate_icon(
-        self, type: Union[int, str, IconType], icon_set: IconSet, size: int = 250
-    ) -> bytes:
+        self, type: Union[int, str, IconType], icon_set: IconSet,
+        size: int = DEFAULT_SIZE, as_image: bool = False
+    ) -> Union[bytes, ImageType]:
         form = IconType.from_value(type).name.lower()
-        return await self.session.generate_icon(
+        data = await self.session.generate_icon(
             form=form, id=getattr(icon_set, form), has_glow=icon_set.has_glow_outline(),
             color_1=icon_set.color_1.index, color_2=icon_set.color_2.index, size=size
         )
+
+        if as_image:
+            return await utils.run_blocking_io(to_image, data)
+
+        return data
+
+    async def generate_icons(
+        self, *types: Iterable[Union[int, str, IconType]], icon_set: IconSet,
+        size: int = DEFAULT_SIZE, as_image: bool = False
+    ) -> Union[List[bytes], List[ImageType]]:
+        return await utils.gather(
+            self.generate_icon(
+                type=type, icon_set=icon_set, size=size, as_image=as_image
+            ) for type in types
+        )
+
+    async def generate_image(
+        self, *types: Iterable[Union[int, str, IconType]], icon_set: IconSet,
+        size: int = DEFAULT_SIZE, as_image: bool = False
+    ) -> Union[bytes, ImageType]:
+        images = await self.generate_icons(*types, icon_set=icon_set, size=size, as_image=True)
+        result = await utils.run_blocking_io(connect_images, images)
+
+        if as_image:
+            return result
+
+        return await utils.run_blocking_io(to_bytes, result)
 
     @check_logged
     async def send_message(self, user: AbstractUser, subject: str, body: str) -> None:
