@@ -167,8 +167,11 @@ class Song(AbstractEntity):
         return Author(name=self.author, client=self.client)
 
     async def update(self, from_ng: bool = False) -> None:
-        method = 'get_ng_song' if from_ng else 'get_song'
-        new = await getattr(self.client, method)(self.id)
+        if from_ng:
+            new = await self.client.get_ng_song(self.id)
+        else:
+            new = await self.client.get_song(self.id)
+
         self.options = new.options
 
     async def get_artist_info(self) -> ArtistInfo:
@@ -211,6 +214,10 @@ class Song(AbstractEntity):
         :class:`bytes`
             A song as bytes.
         """
+        if not self.dl_link:
+            # load song from NG if there is no link
+            await self.update(from_ng=True)
+
         return await http.normal_request(self.dl_link)
 
 
