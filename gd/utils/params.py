@@ -1,4 +1,5 @@
 import random
+import uuid
 
 from ..typing import Any, Dict, Filters, List, Optional, Parameters, Sequence, Union
 
@@ -535,30 +536,18 @@ class Parameters:
         if id == -1:  # if -1
             id = random.randint(100000, 100000000000)
 
-        self.dict['udid'] = 'gd.py' + str(id)
+        self.dict['udid'] = 'S' + str(id)
         return self
 
-    def put_uuid(self, id: int = -1) -> Parameters:
+    def put_uuid(self) -> Parameters:
         """Same as :meth:`.Parameters.put_udid`, but puts ``'uuid'``.
-
-        .. note::
-
-            If ``id`` is ``-1``, generates randomly between 100,000 and 100,000,000.
-
-        Parameters
-        ----------
-        id: :class:`int`
-            UUID to put.
 
         Returns
         -------
         :class:`.Parameters`
             ``self``
         """
-        if id == -1:
-            id = random.randint(100000, 100000000)
-
-        self.dict['uuid'] = 'gd.py' + str(id)
+        self.dict['uuid'] = uuid.uuid4()
         return self
 
     def put_level_desc(self, content: str) -> Parameters:

@@ -985,9 +985,9 @@ class Client:
         self, level: Level, strategy: Union[int, str, LevelLeaderboardStrategy]
     ) -> List[LevelRecord]:
         strategy = LevelLeaderboardStrategy.from_value(strategy)
-        data = await self.session.get_leaderboard(level, strategy=strategy, client=self)
+        data = await self.session.get_leaderboard(level.id, strategy=strategy, client=self)
         return list(
-            LevelRecord.from_data(part, client=self) for part in data
+            LevelRecord.from_data(part, strategy=strategy, client=self) for part in data
         )
 
     async def get_level_comments(

@@ -1,5 +1,6 @@
 import asyncio
 import json
+# import random
 import time  # for perf_counter in ping
 
 from itertools import chain
@@ -33,7 +34,7 @@ from .utils.enums import (
     LeaderboardStrategy,
     LevelLeaderboardStrategy,
     MessageOrRequestType,
-    SearchStrategy,
+    SearchStrategy,  # TimelyType
 )
 from .utils.filters import Filters
 from .utils.http_request import HTTPClient
@@ -379,17 +380,41 @@ class Session:
     async def get_leaderboard(
         self, level_id: int, strategy: LevelLeaderboardStrategy, *, client: Client
     ) -> List[ExtDict]:
-        payload = (
+        # timely_type: TimelyType, played: bool = False, timely_index: int = 0, percentage: int = 0,
+        # jumps: int = 0, attempts: int = 0, seconds: int = 0, coins: int = 0
+        # rs = Coder.gen_rs()
+        # seed = Coder.gen_level_lb_seed(jumps, percentage, seconds, played)
+
+        # if str(timely_type) == 'weekly':
+        #     timely_index += 100000
+
+        # values = [
+        #     client.account_id, level_id, percentage, seconds, jumps, attempts,
+        #     percentage, 100 - percentage, coins, timely_index, rs
+        # ]
+
+        # chk = Coder.gen_chk(type='levelscore', values=values)
+
+        params = (
             Params().create_new().put_definer('accountid', client.account_id)
-            .put_definer('levelid', level_id)
-            .put_password(client.encodedpass).put_type(strategy.value).finish()
+            .put_definer('levelid', level_id).put_password(client.encodedpass)
+            .put_type(strategy.value)
         )
+
+        # params.put_percent(percentage).put_chk(chk)
+
+        # for index, value in enumerate((
+        #     attempts + 8354, jumps + 3991, seconds + 4085, seed, random.randint(100, 10000),
+        #     'Z2QucHk=', rs, attempts, coins + 5819, timely_index
+        # ), 1):
+        #     params.put_seed(value, prefix='s', suffix=index)
+
+        payload = params.finish()
 
         codes = {
             -1: MissingAccess('Failed to get leaderboard of the level by ID: {!r}.'.format(level_id))
         }
 
-        # TODO: Fix parameters and rewrite this
         resp = await self.http.request(Route.GET_LEVEL_SCORES, payload, error_codes=codes)
 
         if not resp:

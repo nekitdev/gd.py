@@ -242,10 +242,10 @@ class Coder:
         return data_string[::space][:chars_required]
 
     @classmethod
-    def gen_level_lb_seed(cls, jumps: int = 0, percentage: int = 0, seconds: int = 0) -> int:
-        return (
-            1482 + (jumps + 3991) * (percentage + 8354) + ((seconds + 4085)**2) - 50028039
-        )
+    def gen_level_lb_seed(
+        cls, jumps: int = 0, percentage: int = 0, seconds: int = 0, played: bool = True
+    ) -> int:
+        return 1482 * (played + 1) + (jumps + 3991) * (percentage + 8354) + ((seconds + 4085)**2) - 50028039
 
 
 def pako_inflate(data: bytes) -> bytes:
