@@ -1,7 +1,7 @@
 import random
 import uuid
 
-from ..typing import Any, Dict, Filters, List, Parameters, Sequence, Union
+from ..typing import Any, Dict, Filters, List, Optional, Parameters, Sequence, Union
 
 from .crypto.coders import Coder
 
@@ -518,17 +518,12 @@ class Parameters:
         self.put_username(username)
         return self
 
-    def put_udid(self, id: int = -1) -> Parameters:
+    def put_udid(self, udid_string: Optional[str] = None) -> Parameters:
         """Puts ``'udid'`` parameter.
-
-        .. note::
-
-            If ``id`` is ``-1`` or omitted, random udid is generated.
-            (From 100,000 to 100,000,000,000)
 
         Parameters
         ----------
-        id: :class:`int`
+        udid_string: :class:`str`
             UDID to put.
 
         Returns
@@ -536,21 +531,39 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        if id == -1:  # if -1
-            id = random.randint(100000, 100000000000)
+        if udid_string is None:
+            udid_string = self.gen_udid()
 
-        self.dict['udid'] = 'S' + str(id)
+        self.dict['udid'] = str(udid_string)
         return self
 
-    def put_uuid(self) -> Parameters:
+    @staticmethod
+    def gen_udid(id: int = -1) -> str:
+        if id == -1:
+            id = random.randint(100000, 100000000000)
+        return 'S' + str(id)
+
+    @staticmethod
+    def gen_uuid() -> str:
+        return str(uuid.uuid4())
+
+    def put_uuid(self, uuid_string: Optional[str] = None) -> Parameters:
         """Same as :meth:`.Parameters.put_udid`, but puts ``'uuid'``.
+
+        Parameters
+        ----------
+        uuid_string: :class:`str`
+            UUID to put.
 
         Returns
         -------
         :class:`.Parameters`
             ``self``
         """
-        self.dict['uuid'] = str(uuid.uuid4())
+        if uuid_string is None:
+            uuid_string = self.gen_uuid()
+
+        self.dict['uuid'] = str(uuid_string)
         return self
 
     def put_level_desc(self, content: str) -> Parameters:

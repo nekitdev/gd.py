@@ -621,14 +621,14 @@ class Session:
     async def rate_level(self, level_id: int, rating: int, *, client: Client) -> None:
         assert 0 < rating <= 10, 'Invalid star value given.'
 
-        rs = Coder.gen_rs()
-        values = [level_id, rating, rs, client.account_id, 0, 0]
+        rs, udid, uuid = Coder.gen_rs(), Params.gen_udid(), Params.gen_uuid()
+        values = [level_id, rating, rs, client.account_id, udid, uuid]
         chk = Coder.gen_chk(type='like_rate', values=values)
 
         payload = (
             Params().create_new().put_definer('levelid', level_id)
             .put_definer('accountid', client.account_id).put_password(client.encodedpass)
-            .put_udid().put_uuid().put_definer('stars', rating).put_rs(rs).put_chk(chk).finish()
+            .put_udid(udid).put_uuid(uuid).put_definer('stars', rating).put_rs(rs).put_chk(chk).finish()
         )
 
         resp = await self.http.request(Route.RATE_LEVEL_STARS, payload)
@@ -679,13 +679,13 @@ class Session:
     ) -> None:
         like = dislike ^ 1
 
-        rs = Coder.gen_rs()
-        values = [special, item_id, like, typeid, rs, client.account_id, 0, 0]
+        rs, udid, uuid = Coder.gen_rs(), Params.gen_udid(), Params.gen_uuid()
+        values = [special, item_id, like, typeid, rs, client.account_id, udid, uuid]
         chk = Coder.gen_chk(type='like_rate', values=values)
 
         payload = (
             Params().create_new(game_version=20).put_definer('accountid', client.account_id)
-            .put_password(client.encodedpass).put_udid().put_uuid()
+            .put_password(client.encodedpass).put_udid(udid).put_uuid(uuid)
             .put_definer('itemid', item_id).put_like(like).put_type(typeid)
             .put_special(special).put_rs(rs).put_chk(chk).finish()
         )
