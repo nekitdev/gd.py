@@ -53,15 +53,15 @@ class Parameters:
     GDW = 0
 
     def __init__(self) -> None:
-        self.gameVersion = '21'
-        self.binaryVersion = '35'
         self.secret = 'Wmfd2893gb7'
         self.level_secret = 'Wmfv2898gc9'
         self.login_secret = 'Wmfv3899gc9'
         self.mod_secret = 'Wmfp3879gc3'
         self.dict = {}
 
-    def create_new(self, type: Optional[str] = None) -> Parameters:
+    def create_new(
+        self, game_version: int = 21, binary_version: int = 35, add_basic: bool = True
+    ) -> Parameters:
         """Start forming a new dictionary.
 
         Parameters
@@ -76,14 +76,15 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        if type is None:
+        if add_basic:
             self.dict = {
-                'gameVersion': self.gameVersion,
-                'binaryVersion': self.binaryVersion,
+                'gameVersion': str(game_version),
+                'binaryVersion': str(binary_version),
                 'gdw': str(self.GDW)
             }
-        if type == 'web':
+        else:
             self.dict = {}
+
         return self
 
     def finish(self) -> Dict[str, str]:
@@ -229,7 +230,7 @@ class Parameters:
             ``self``
         """
         if t == 'sent':
-            self.dict['isSender'] = '1'
+            self.dict['isSender'] = str(1)
 
         return self
 
@@ -394,12 +395,14 @@ class Parameters:
         self.dict['local'] = str(number)
         return self
 
-    def put_seed(self, seed: str, prefix: str = 'seed', suffix: str = '') -> Parameters:
+    def put_seed(
+        self, seed: Union[int, str], prefix: str = 'seed', suffix: str = ''
+    ) -> Parameters:
         """Puts ``'{prefix}{suffix}'`` parameter.
 
         Parameters
         ----------
-        seed: :class:`str`
+        seed: Union[:class:`int`, :class:`str`]
             The seed to put, as string.
 
         prefix: `Any`
@@ -487,7 +490,7 @@ class Parameters:
             ``self``
         """
         if type == 'profile':
-            self.dict['cType'] = '1'
+            self.dict['cType'] = str(1)
 
         elif type == 'level':
             self.dict['levelID'] = str(number)
@@ -547,7 +550,7 @@ class Parameters:
         :class:`.Parameters`
             ``self``
         """
-        self.dict['uuid'] = uuid.uuid4()
+        self.dict['uuid'] = str(uuid.uuid4())
         return self
 
     def put_level_desc(self, content: str) -> Parameters:
@@ -623,8 +626,20 @@ class Parameters:
         return self
 
     def get_sent(self, indicator: int) -> Parameters:
+        """Put ``'getSent'`` parameter if needed.
+
+        Parameters
+        ----------
+        indicator: :class:`int`
+            Indicates whether to put the parameter.
+
+        Returns
+        -------
+        :class:`.Parameters`
+            ``self``
+        """
         if (indicator == 1):
-            self.dict['getSent'] = '1'
+            self.dict['getSent'] = str(1)
         else:
             pass
         return self

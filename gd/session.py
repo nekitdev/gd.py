@@ -684,7 +684,7 @@ class Session:
         chk = Coder.gen_chk(type='like_rate', values=values)
 
         payload = (
-            Params().create_new().put_definer('accountid', client.account_id)
+            Params().create_new(game_version=20).put_definer('accountid', client.account_id)
             .put_password(client.encodedpass).put_udid().put_uuid()
             .put_definer('itemid', item_id).put_like(like).put_type(typeid)
             .put_special(special).put_rs(rs).put_chk(chk).finish()
