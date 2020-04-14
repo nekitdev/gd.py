@@ -1,7 +1,7 @@
 import random
 import uuid
 
-from ..typing import Any, Dict, Filters, List, Optional, Parameters, Sequence, Union
+from ..typing import Any, Dict, Filters, List, Parameters, Sequence, Union
 
 from .crypto.coders import Coder
 
