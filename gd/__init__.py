@@ -55,7 +55,7 @@ from . import (
 VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
 
 _normal_re = (
-r'^\s*(?:'
+    r'^\s*(?:'
     r'(?P<major>\d+)'
     r'(?P<split>[\.-])?'
     r'(?P<minor>\d+)?'
@@ -63,7 +63,7 @@ r'^\s*(?:'
     r'(?P<micro>\d+)?'
     r'(?P<releaselevel>a|b|rc|f|dev)?'
     r'(?P<serial>\d+)?'
-r')\s*$'
+    r')\s*$'
 )
 _compiled_re = re.compile(_normal_re, re.MULTILINE)
 
