@@ -6,12 +6,13 @@ from conftest import client
 # PREPARATIONS
 
 pytestmark = pytest.mark.asyncio
-user = client.run(client.search_user('NeKitDS'))
+user = client.run(client.search_user("NeKitDS"))
 
-message = ('[gd.py] ({}): Running tests...'.format(datetime.utcnow()))
+message = "[gd.py] ({}): Running tests...".format(datetime.utcnow())
 
 
 # MAIN TESTS
+
 
 async def test_properties():
     user.stars
@@ -37,7 +38,7 @@ async def test_properties():
     user.has_cp()
     user.is_registered()
     user.is_mod()
-    user.is_mod('elder')
+    user.is_mod("elder")
 
 
 async def test_update():
@@ -75,7 +76,7 @@ async def test_abstractuser_update():
 
 
 skip_not_logged = pytest.mark.skipif(
-    not client.is_logged(), reason='Test for only logged in client.'
+    not client.is_logged(), reason="Test for only logged in client."
 )
 
 

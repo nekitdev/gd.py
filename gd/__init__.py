@@ -2,11 +2,11 @@
 with the servers and the game of Geometry Dash.
 """
 
-__title__ = 'gd'
-__author__ = 'NeKitDS'
-__copyright__ = 'Copyright 2019-2020 NeKitDS'
-__license__ = 'MIT'
-__version__ = '0.10.4'
+__title__ = "gd"
+__author__ = "NeKitDS"
+__copyright__ = "Copyright 2019-2020 NeKitDS"
+__license__ = "MIT"
+__version__ = "0.10.4"
 
 from collections import namedtuple
 import logging
@@ -44,26 +44,26 @@ from .utils._async import synchronize
 from .utils import tasks
 
 from . import (
-    api,     # non-server GD API.
+    api,  # non-server GD API.
     events,  # event-related functions and classes.
-    image,   # functions for working with images.
+    image,  # functions for working with images.
     server,  # gd.api merged into gd.py
-    utils,   # different useful utils.
-    typing   # various utils for typing gd.py.
+    utils,  # different useful utils.
+    typing,  # various utils for typing gd.py.
 )
 
-VersionInfo = namedtuple('VersionInfo', 'major minor micro releaselevel serial')
+VersionInfo = namedtuple("VersionInfo", "major minor micro releaselevel serial")
 
 _normal_re = (
-    r'^\s*(?:'
-    r'(?P<major>\d+)'
-    r'(?P<split>[\.-])?'
-    r'(?P<minor>\d+)?'
-    r'(?P=split)?'
-    r'(?P<micro>\d+)?'
-    r'(?P<releaselevel>a|b|rc|f|dev)?'
-    r'(?P<serial>\d+)?'
-    r')\s*$'
+    r"^\s*(?:"
+    r"(?P<major>\d+)"
+    r"(?P<split>[\.-])?"
+    r"(?P<minor>\d+)?"
+    r"(?P=split)?"
+    r"(?P<micro>\d+)?"
+    r"(?P<releaselevel>a|b|rc|f|dev)?"
+    r"(?P<serial>\d+)?"
+    r")\s*$"
 )
 _compiled_re = re.compile(_normal_re, re.MULTILINE)
 
@@ -72,25 +72,25 @@ def make_version_details(ver: str) -> VersionInfo:
     match = _compiled_re.match(ver)
 
     if match is None:
-        return VersionInfo(0, 0, 0, 'final', 0)
+        return VersionInfo(0, 0, 0, "final", 0)
 
     args = {}
 
     for key, value in match.groupdict().items():
-        if key == 'split':
+        if key == "split":
             continue
 
-        elif key == 'releaselevel':
+        elif key == "releaselevel":
             if value is None:
-                value = 'f'
+                value = "f"
 
             value = {
-                'a': 'alpha',
-                'b': 'beta',
-                'rc': 'candidate',
-                'f': 'final',
-                'dev': 'developer'
-            }.get(value, 'final')
+                "a": "alpha",
+                "b": "beta",
+                "rc": "candidate",
+                "f": "final",
+                "dev": "developer",
+            }.get(value, "final")
 
         elif value is None:
             value = 0
@@ -116,6 +116,7 @@ except ImportError:  # pragma: no cover
     class NullHandler(logging.Handler):
         def emit(self, record):
             pass
+
 
 # log is from gd.logging.
 log.addHandler(NullHandler())

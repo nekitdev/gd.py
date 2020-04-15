@@ -5,10 +5,7 @@ import traceback
 
 from ..level import Level
 from ..logging import get_logger
-from ..typing import (
-    Client, Comment, FriendRequest, Iterable,
-    List, Message, Optional, Union
-)
+from ..typing import Client, Comment, FriendRequest, Iterable, List, Message, Optional, Union
 
 from ..utils import tasks
 from ..utils._async import shutdown_loop, gather
@@ -17,9 +14,17 @@ from ..utils.filters import Filters
 from ..utils.text_tools import make_repr
 
 __all__ = (
-    'AbstractListener', 'TimelyLevelListener', 'RateLevelListener',
-    'MessageOrRequestListener', 'LevelCommentListener',
-    'thread', 'get_loop', 'set_loop', 'run', 'differ', 'all_listeners'
+    "AbstractListener",
+    "TimelyLevelListener",
+    "RateLevelListener",
+    "MessageOrRequestListener",
+    "LevelCommentListener",
+    "thread",
+    "get_loop",
+    "set_loop",
+    "run",
+    "differ",
+    "all_listeners",
 )
 
 loop = asyncio.new_event_loop()
@@ -52,10 +57,10 @@ def run(loop: asyncio.AbstractEventLoop) -> None:
         loop.run_forever()
 
     except KeyboardInterrupt:
-        log.info('Received the signal to terminate the event loop.')
+        log.info("Received the signal to terminate the event loop.")
 
     finally:
-        log.info('Cleaning up tasks.')
+        log.info("Cleaning up tasks.")
         shutdown_loop(loop)
 
 
@@ -63,13 +68,16 @@ def update_thread_loop(thread: threading.Thread, loop: asyncio.AbstractEventLoop
     thread.args = (loop,)
 
 
-thread = threading.Thread(target=run, args=(loop,), name='ListenerThread', daemon=True)
+thread = threading.Thread(target=run, args=(loop,), name="ListenerThread", daemon=True)
 
 
 class AbstractListener:
     def __init__(
-        self, client: Client, delay: float = 10.0, *,
-        loop: Optional[asyncio.AbstractEventLoop] = None
+        self,
+        client: Client,
+        delay: float = 10.0,
+        *,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> None:
         if loop is None:
             loop = get_loop()
@@ -80,10 +88,7 @@ class AbstractListener:
         all_listeners.append(self)
 
     def __repr__(self) -> str:
-        info = {
-            'client': self.client,
-            'loop': self.loop
-        }
+        info = {"client": self.client, "loop": self.loop}
         return make_repr(self, info)
 
     def attach_to_loop(self, loop: asyncio.AbstractEventLoop) -> None:
@@ -132,12 +137,16 @@ class AbstractListener:
 
 class TimelyLevelListener(AbstractListener):
     def __init__(
-        self, client: Client, t_type: str, delay: int = 10.0, *,
-        loop: Optional[asyncio.AbstractEventLoop] = None
+        self,
+        client: Client,
+        t_type: str,
+        delay: int = 10.0,
+        *,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> None:
         super().__init__(client, delay, loop=loop)
-        self.method = getattr(client, 'get_' + t_type)
-        self.call_method = 'new_' + t_type
+        self.method = getattr(client, "get_" + t_type)
+        self.call_method = "new_" + t_type
 
     async def scan(self) -> None:
         """Scan for either daily or weekly levels."""
@@ -156,13 +165,17 @@ class TimelyLevelListener(AbstractListener):
 
 class RateLevelListener(AbstractListener):
     def __init__(
-        self, client: Client, listen_to_rate: bool = True, delay: float = 10.0,
-        *, loop: Optional[asyncio.AbstractEventLoop] = None
+        self,
+        client: Client,
+        listen_to_rate: bool = True,
+        delay: float = 10.0,
+        *,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> None:
         super().__init__(client, delay, loop=loop)
         self.client = client
-        self.call_method = 'level_rated' if listen_to_rate else 'level_unrated'
-        self.filters = Filters(strategy='awarded')
+        self.call_method = "level_rated" if listen_to_rate else "level_unrated"
+        self.filters = Filters(strategy="awarded")
         self.find_new = listen_to_rate
 
     async def method(self, pages: int = 5) -> List[Level]:
@@ -187,9 +200,7 @@ class RateLevelListener(AbstractListener):
             self.loop.create_task(dispatcher)
 
 
-async def further_differ(
-    array: Iterable[Level], find_new: bool = True
-) -> List[Level]:
+async def further_differ(array: Iterable[Level], find_new: bool = True) -> List[Level]:
     array = list(array)
     updated = await gather(level.refresh() for level in array)
     final = list()
@@ -209,14 +220,17 @@ async def further_differ(
 
 class MessageOrRequestListener(AbstractListener):
     def __init__(
-        self, client: Client, listen_to_msg: bool = True,
-        delay: float = 5.0, *,
-        loop: Optional[asyncio.AbstractEventLoop] = None
+        self,
+        client: Client,
+        listen_to_msg: bool = True,
+        delay: float = 5.0,
+        *,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> None:
         super().__init__(client, delay, loop=loop)
         self.client = client
-        self.to_call = 'message' if listen_to_msg else 'friend_request'
-        self.method = getattr(client, ('get_messages' if listen_to_msg else 'get_friend_requests'))
+        self.to_call = "message" if listen_to_msg else "friend_request"
+        self.method = getattr(client, ("get_messages" if listen_to_msg else "get_friend_requests"))
 
     async def call_method(self, pages: int = 10) -> Union[List[FriendRequest], List[Message]]:
         return await self.method(pages=range(pages))
@@ -244,11 +258,15 @@ class MessageOrRequestListener(AbstractListener):
 
 class LevelCommentListener(AbstractListener):
     def __init__(
-        self, client: Client, level_id: int, delay: float = 10.0,
-        *, loop: Optional[asyncio.AbstractEventLoop] = None
+        self,
+        client: Client,
+        level_id: int,
+        delay: float = 10.0,
+        *,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> None:
         super().__init__(client, delay, loop=loop)
-        self.call_method = 'level_comment'
+        self.call_method = "level_comment"
         self.level_id = level_id
 
     async def load_level(self) -> None:
@@ -287,7 +305,7 @@ def differ(before: list, after: list, find_new: bool = True) -> filter:
         for item in before:
             # find a pivot
             try:
-                after = after[:after.index(item)]
+                after = after[: after.index(item)]
                 break
             except ValueError:  # not in list
                 pass

@@ -6,29 +6,29 @@ from ..typing import Any, Dict, Union
 from ..errors import FailedConversion
 
 __all__ = (
-    'NEnum',
-    'IconType',
-    'MessagePolicyType',
-    'CommentPolicyType',
-    'FriendRequestPolicyType',
-    'StatusLevel',
-    'LevelLength',
-    'LevelDifficulty',
-    'DemonDifficulty',
-    'TimelyType',
-    'CommentType',
-    'MessageOrRequestType',
-    'CommentStrategy',
-    'LeaderboardStrategy',
-    'LevelLeaderboardStrategy',
-    'SearchStrategy',
-    'GauntletEnum',
-    'ServerError'
+    "NEnum",
+    "IconType",
+    "MessagePolicyType",
+    "CommentPolicyType",
+    "FriendRequestPolicyType",
+    "StatusLevel",
+    "LevelLength",
+    "LevelDifficulty",
+    "DemonDifficulty",
+    "TimelyType",
+    "CommentType",
+    "MessageOrRequestType",
+    "CommentStrategy",
+    "LeaderboardStrategy",
+    "LevelLeaderboardStrategy",
+    "SearchStrategy",
+    "GauntletEnum",
+    "ServerError",
 )
 
 
 def _name_to_enum(x: str) -> str:
-    return x.upper().replace(' ', '_')
+    return x.upper().replace(" ", "_")
 
 
 def _is_upper(string: str) -> bool:
@@ -36,10 +36,8 @@ def _is_upper(string: str) -> bool:
 
 
 def _enum_to_name(x: Enum) -> str:
-    name = x.name.strip('_')
-    return name if (
-        name in ('NA', 'XL') or not _is_upper(name)
-    ) else name.replace('_', ' ').title()
+    name = x.name.strip("_")
+    return name if (name in ("NA", "XL") or not _is_upper(name)) else name.replace("_", " ").title()
 
 
 def value_to_enum(enum: Enum, x: Union[int, str, Enum]) -> Enum:
@@ -143,7 +141,7 @@ class NEnum(Enum):
         return self.desc
 
     def __repr__(self) -> str:
-        return '<gd.{0}.{1}: {2} ({3})>'.format(
+        return "<gd.{0}.{1}: {2} ({3})>".format(
             self.__class__.__name__, self.name, self.value, self.desc
         )
 
@@ -217,6 +215,7 @@ class NEnum(Enum):
 
 class IconType(NEnum):
     """An enumeration of icon types."""
+
     CUBE = 0
     SHIP = 1
     BALL = 2
@@ -228,6 +227,7 @@ class IconType(NEnum):
 
 class MessagePolicyType(NEnum):
     """An enumeration for message policy."""
+
     OPENED_TO_ALL = 0
     OPENED_TO_FRIENDS_ONLY = 1
     CLOSED = 2
@@ -235,6 +235,7 @@ class MessagePolicyType(NEnum):
 
 class CommentPolicyType(NEnum):
     """An enumeration for comment policy."""
+
     OPENED_TO_ALL = 0
     OPENED_TO_FRIENDS_ONLY = 1
     CLOSED = 2
@@ -242,12 +243,14 @@ class CommentPolicyType(NEnum):
 
 class FriendRequestPolicyType(NEnum):
     """An enumeration for friend request policy."""
+
     OPENED = 0
     CLOSED = 1
 
 
 class StatusLevel(NEnum):
     """An enumeration for Geometry Dash Status."""
+
     USER = 0
     MODERATOR = 1
     ELDER_MODERATOR = 2
@@ -255,6 +258,7 @@ class StatusLevel(NEnum):
 
 class LevelLength(NEnum):
     """An enumeration for level lengths."""
+
     NA = -1
     TINY = 0
     SHORT = 1
@@ -265,6 +269,7 @@ class LevelLength(NEnum):
 
 class LevelDifficulty(NEnum):
     """An enumeration for level difficulties."""
+
     NA = -1
     AUTO = -3
     EASY = 1
@@ -277,6 +282,7 @@ class LevelDifficulty(NEnum):
 
 class DemonDifficulty(NEnum):
     """An enumeration for demon difficulties."""
+
     NA = -1
     EASY_DEMON = 1
     MEDIUM_DEMON = 2
@@ -287,6 +293,7 @@ class DemonDifficulty(NEnum):
 
 class TimelyType(NEnum):
     """An enumeration for timely types."""
+
     NOT_TIMELY = 0
     DAILY = 1
     WEEKLY = 2
@@ -294,24 +301,28 @@ class TimelyType(NEnum):
 
 class CommentType(NEnum):
     """An enumeration for comment objects."""
+
     LEVEL = 0
     PROFILE = 1
 
 
 class MessageOrRequestType(NEnum):
     """An enumeration for message and friend request objects."""
+
     NORMAL = 0
     SENT = 1
 
 
 class CommentStrategy(NEnum):
     """An enumeration for comment searching."""
+
     RECENT = 0
     MOST_LIKED = 1
 
 
 class LeaderboardStrategy(NEnum):
     """An enumeration for getting leaderboard users."""
+
     PLAYERS = 0
     FRIENDS = 1
     RELATIVE = 2
@@ -320,6 +331,7 @@ class LeaderboardStrategy(NEnum):
 
 class LevelLeaderboardStrategy(NEnum):
     """An enumeration for getting level leaderboard."""
+
     FRIENDS = 0
     ALL = 1
     WEEKLY = 2
@@ -327,6 +339,7 @@ class LevelLeaderboardStrategy(NEnum):
 
 class GauntletEnum(NEnum):
     """An enumeration for gauntlets."""
+
     UNKNOWN = 0
     FIRE = 1
     ICE = 2
@@ -347,6 +360,7 @@ class GauntletEnum(NEnum):
 
 class SearchStrategy(NEnum):
     """An enumeration for search strategy."""
+
     REGULAR = 0
     MOST_DOWNLOADED = 1
     MOST_LIKED = 2
@@ -365,6 +379,7 @@ class SearchStrategy(NEnum):
 
 class ServerError(NEnum):
     """An enumeration for server errors."""
+
     EMAILS_NOT_MATCHING = -99
     LINKED_TO_DIFFERENT_STEAM_ACCOUNT = -12
     ACCOUNT_DISABLED = -11

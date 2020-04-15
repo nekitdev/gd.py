@@ -18,10 +18,14 @@ async def coro():
     weekly = await client.get_weekly()
 
     # now let's print...
-    info = ('Current daily level: {!r}.'.format(daily), 'Current weekly demon: {!r}.'.format(weekly))
+    info = (
+        "Current daily level: {!r}.".format(daily),
+        "Current weekly demon: {!r}.".format(weekly),
+    )
 
     for piece in info:
         print(piece)
+
 
 # run a coroutine
 client.run(coro())

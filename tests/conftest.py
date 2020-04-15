@@ -2,9 +2,7 @@ import os
 
 import gd
 
-name, password = (
-    os.getenv('GDUSER'), os.getenv('GDPASSWORD')
-)
+name, password = (os.getenv("GDUSER"), os.getenv("GDPASSWORD"))
 
 client = gd.Client()
 

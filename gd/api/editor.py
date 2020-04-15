@@ -17,33 +17,23 @@ from .enums import (
     Speed,
     PortalType,
 )
-from .struct import (
-    Object,
-    ColorChannel,
-    Header,
-    ColorCollection,
-    LevelAPI
-)
+from .struct import Object, ColorChannel, Header, ColorCollection, LevelAPI
 
 from ..errors import EditorError
 from ..utils.text_tools import make_repr
 
-__all__ = ('Editor', 'get_length_from_x')
+__all__ = ("Editor", "get_length_from_x")
 
 speed_map = {}
 
-for s in ('slow', 'normal', 'fast', 'faster', 'fastest'):
-    a, b, c = (
-        SpeedMagic[s.upper()],
-        Speed[s.upper()],
-        PortalType[s.title() + 'Speed']
-    )
+for s in ("slow", "normal", "fast", "faster", "fastest"):
+    a, b, c = (SpeedMagic[s.upper()], Speed[s.upper()], PortalType[s.title() + "Speed"])
     speed_map.update({b.value: a.value, c.value: a.value})
 
 del a, b, c, s
 
 _portals = {enum.value for enum in PortalType}
-_speed_protals = {enum.value for enum in PortalType if ('speed' in enum.name.lower())}
+_speed_protals = {enum.value for enum in PortalType if ("speed" in enum.name.lower())}
 
 
 def get_length_from_x(dx: float, start_speed: Speed, portals: Sequence[Object]) -> float:
@@ -126,6 +116,7 @@ class Editor:
 
     Editor can be created either by hand, from decoded level's data, or taken from a level itself.
     """
+
     def __init__(self, *objects: Sequence[Object], **header_args) -> None:
         self.header = Header(**header_args)
         self.objects = list(objects)
@@ -152,13 +143,13 @@ class Editor:
                 data = data.decode()
 
             except UnicodeDecodeError:
-                raise EditorError('Invalid level data recieved.') from None
+                raise EditorError("Invalid level data recieved.") from None
 
         if not data:
             # nothing interesting...
             return cls()
 
-        info, *objects = data.split(';')
+        info, *objects = data.split(";")
         # remove last object if none
         try:
             last = objects.pop()
@@ -173,10 +164,7 @@ class Editor:
         return cls(*objects).set_header(header)
 
     def __repr__(self) -> str:
-        info = {
-            'objects': len(self.objects),
-            'header': '<...>'
-        }
+        info = {"objects": len(self.objects), "header": "<...>"}
         return make_repr(self, info)
 
     def __iter__(self) -> Iterable[Object]:
@@ -291,9 +279,9 @@ class Editor:
         seq = [self.header.dump(), *(obj.dump() for obj in self.objects)]
 
         if append_sc:
-            seq.append('')
+            seq.append("")
 
-        data = ';'.join(map(str, seq))
+        data = ";".join(map(str, seq))
         return data
 
     def copy(self) -> Editor:

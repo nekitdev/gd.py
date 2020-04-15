@@ -19,7 +19,7 @@ from .events.listener import (
     TimelyLevelListener,
     RateLevelListener,
     MessageOrRequestListener,
-    LevelCommentListener
+    LevelCommentListener,
 )
 
 from .utils.converter import Converter
@@ -77,14 +77,15 @@ def construct_levels(
     for data in lvdata:
         song = utils.get(songs, id=data.getcast(Index.LEVEL_SONG_ID, 0, int))
         if song is None:
-            song = Song(**Converter.to_normal_song(
-                data.getcast(Index.LEVEL_AUDIO_TRACK, 0, int)
-            ), client=client)
+            song = Song(
+                **Converter.to_normal_song(data.getcast(Index.LEVEL_AUDIO_TRACK, 0, int)),
+                client=client,
+            )
 
         creator_id = data.getcast(Index.LEVEL_CREATOR_ID, 0, int)
         creator = utils.get(creators, id=creator_id)
         if creator is None:
-            creator = AbstractUser(id=creator_id, name='unknown', account_id=0, client=client)
+            creator = AbstractUser(id=creator_id, name="unknown", account_id=0, client=client)
 
         levels.append(Level.from_data(data, creator, song, client=client))
 
@@ -127,9 +128,13 @@ class Client:
         This is a namedtuple with format ``(completed, followed)``.
         Contains empty lists if not loaded.
     """
+
     def __init__(
-        self, *, loop: Optional[asyncio.AbstractEventLoop] = None,
-        load_after_post: bool = True, **http_args
+        self,
+        *,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
+        load_after_post: bool = True,
+        **http_args,
     ) -> None:
         if loop is None:
             loop = utils.acquire_loop()
@@ -142,11 +147,11 @@ class Client:
 
     def __repr__(self) -> str:
         info = {
-            'is_logged': self.is_logged(),
-            'account_id': self.account_id,
-            'id': self.id,
-            'name': self.name,
-            'password': '...'
+            "is_logged": self.is_logged(),
+            "account_id": self.account_id,
+            "id": self.id,
+            "name": self.name,
+            "password": "...",
         }
         return make_repr(self, info)
 
@@ -155,7 +160,7 @@ class Client:
             account_id=self.account_id,
             id=self.id,
             name=self.name,
-            password=None  # for safety reasons
+            password=None,  # for safety reasons
         )
 
     def _set_to_defaults(self) -> None:
@@ -170,8 +175,8 @@ class Client:
     def _upd(self, attr: str, value: Any) -> None:  # pragma: no cover
         setattr(self, attr, value)
         # update encodedpass if password was updated
-        if attr == 'password':
-            self.encodedpass = Coder.encode(type='accountpass', string=self.password)
+        if attr == "password":
+            self.encodedpass = Coder.encode(type="accountpass", string=self.password)
 
     def edit(self, **attrs) -> Client:
         for attr, value in attrs.items():
@@ -187,7 +192,7 @@ class Client:
             self.name is not None,
             self.password is not None,
             self.account_id > 0,
-            self.id > 0
+            self.id > 0,
         )
         return all(checks)
 
@@ -201,7 +206,7 @@ class Client:
         :class:`float`
             Server ping, in milliseconds.
         """
-        return await self.session.ping_server('http://boomlings.com/database/')
+        return await self.session.ping_server("http://boomlings.com/database/")
 
     async def get_artist_info(self, song_id: int = 0) -> ArtistInfo:
         """|coro|
@@ -280,33 +285,23 @@ class Client:
 
     async def search_page_songs(self, query: str, page: int = 0) -> List[Song]:
         data = await self.session.search_page_songs(query=query, page=page)
-        return list(
-            Song(**part, client=self) for part in data
-        )
+        return list(Song(**part, client=self) for part in data)
 
     async def search_songs(self, query: str, pages: Iterable[int] = range(10)) -> List[Song]:
         data = await self.session.search_songs(query=query, pages=pages)
-        return list(
-            Song(**part, client=self) for part in data
-        )
+        return list(Song(**part, client=self) for part in data)
 
     async def search_page_users(self, query: str, page: int = 0) -> List[Author]:
         data = await self.session.search_page_users(query=query, page=page)
-        return list(
-            Author(**part, client=self) for part in data
-        )
+        return list(Author(**part, client=self) for part in data)
 
     async def search_users(self, query: str, pages: Iterable[int] = range(10)) -> List[Author]:
         data = await self.session.search_users(query=query, pages=pages)
-        return list(
-            Author(**part, client=self) for part in data
-        )
+        return list(Author(**part, client=self) for part in data)
 
     async def get_page_user_songs(self, user: Union[str, Author], page: int = 0) -> List[Song]:
         data = await self.session.get_page_user_songs(user, page=page)
-        return utils.unique(
-            Song(**part, client=self) for part in data
-        )
+        return utils.unique(Song(**part, client=self) for part in data)
 
     async def get_user_songs(
         self, user: Union[str, Author], pages: Iterable[int] = range(10)
@@ -315,9 +310,7 @@ class Client:
 
         data = await self.session.get_user_songs(name, pages=pages)
 
-        return list(
-            Song(**part, client=self) for part in data
-        )
+        return list(Song(**part, client=self) for part in data)
 
     async def get_user(self, account_id: int = 0) -> User:
         """|coro|
@@ -520,7 +513,7 @@ class Client:
             A list of all levels found.
         """
         filters = Filters.setup_search_many()
-        query = ','.join(map(str, level_ids))
+        query = ",".join(map(str, level_ids))
 
         return await self.search_levels_on_page(query=query, filters=filters)
 
@@ -535,11 +528,11 @@ class Client:
             All gauntlets retrieved, as list.
         """
         data = await self.session.get_gauntlets()
-        return list(
-            Gauntlet.from_data(part, client=self) for part in data
-        )
+        return list(Gauntlet.from_data(part, client=self) for part in data)
 
-    async def get_page_map_packs(self, page: int = 0, *, raise_errors: bool = True) -> List[MapPack]:
+    async def get_page_map_packs(
+        self, page: int = 0, *, raise_errors: bool = True
+    ) -> List[MapPack]:
         """|coro|
 
         Fetches map packs on given page.
@@ -563,9 +556,7 @@ class Client:
             No map packs were found at the given page.
         """
         data = await self.session.get_page_map_packs(page=page)
-        return list(
-            MapPack.from_data(part, client=self) for part in data
-        )
+        return list(MapPack.from_data(part, client=self) for part in data)
 
     async def get_map_packs(self, pages: Optional[Iterable[int]] = range(10)) -> List[MapPack]:
         """|coro|
@@ -583,9 +574,7 @@ class Client:
             List of map packs found.
         """
         data = await self.session.get_map_packs(pages=pages)
-        return list(
-            MapPack.from_data(part, client=self) for part in data
-        )
+        return list(MapPack.from_data(part, client=self) for part in data)
 
     async def login(self, user: str, password: str) -> None:  # pragma: no cover
         """|coro|
@@ -612,11 +601,27 @@ class Client:
 
     @check_logged
     async def upload_level(
-        self, name: str = 'Unnamed', id: int = 0, version: int = 1, length: int = 0,
-        track: int = 0, song_id: int = 0, is_auto: bool = False, original: int = 0,
-        two_player: bool = False, objects: Optional[int] = None, coins: int = 0, star_amount: int = 0,
-        unlist: bool = False, ldm: bool = False, password: Optional[Union[int, str]] = None, copyable: bool = False,
-        data: Union[bytes, str] = '', description: str = '', *, load: bool = True
+        self,
+        name: str = "Unnamed",
+        id: int = 0,
+        version: int = 1,
+        length: int = 0,
+        track: int = 0,
+        song_id: int = 0,
+        is_auto: bool = False,
+        original: int = 0,
+        two_player: bool = False,
+        objects: Optional[int] = None,
+        coins: int = 0,
+        star_amount: int = 0,
+        unlist: bool = False,
+        ldm: bool = False,
+        password: Optional[Union[int, str]] = None,
+        copyable: bool = False,
+        data: Union[bytes, str] = "",
+        description: str = "",
+        *,
+        load: bool = True,
     ) -> Level:
         """|coro|
 
@@ -683,11 +688,25 @@ class Client:
             objects = len(utils.object_split(data))
 
         level_id = await self.session.upload_level(
-            data=data, name=name, level_id=id, version=version, length=length,
-            audio_track=track, song_id=song_id, is_auto=is_auto, original=original,
-            two_player=two_player, objects=objects, coins=coins, stars=star_amount,
-            unlisted=unlist, ldm=ldm, password=password, copyable=copyable,
-            desc=description, client=self
+            data=data,
+            name=name,
+            level_id=id,
+            version=version,
+            length=length,
+            audio_track=track,
+            song_id=song_id,
+            is_auto=is_auto,
+            original=original,
+            two_player=two_player,
+            objects=objects,
+            coins=coins,
+            stars=star_amount,
+            unlisted=unlist,
+            ldm=ldm,
+            password=password,
+            copyable=copyable,
+            desc=description,
+            client=self,
         )
 
         if load:
@@ -759,10 +778,10 @@ class Client:
         db, save = await self.session.load_save(client=self)
 
         if db is None or save is None:  # pragma: no cover
-            log.warning('Failed to load a save.')
+            log.warning("Failed to load a save.")
         else:
             self.edit(db=db, save=save)
-            log.info('Successfully loaded a save.')
+            log.info("Successfully loaded a save.")
 
     @check_logged
     async def backup(self, save_data: Optional[Sequence[Union[bytes, str]]] = None) -> None:
@@ -781,7 +800,7 @@ class Client:
             Failed to do a backup.
         """
         if save_data is None and self.db is None:
-            return log.warning('No data was provided.')
+            return log.warning("No data was provided.")
 
         if not save_data:
             data = await api.save.to_string_async(self.db, connect=False, xor=False)
@@ -803,7 +822,7 @@ class Client:
         """
         self._set_to_defaults()
 
-        log.info('Has logged out with message: %r', message)
+        log.info("Has logged out with message: %r", message)
 
     def temp_login(self, user: str, password: str) -> Any:
         """Async context manager, used for temporarily logging in.
@@ -854,13 +873,20 @@ class Client:
         await self.session.delete_message(message.type, message.id, client=self)
 
     async def generate_icon(
-        self, type: Union[int, str, IconType], icon_set: IconSet,
-        size: int = DEFAULT_SIZE, as_image: bool = False
+        self,
+        type: Union[int, str, IconType],
+        icon_set: IconSet,
+        size: int = DEFAULT_SIZE,
+        as_image: bool = False,
     ) -> Union[bytes, ImageType]:
         form = IconType.from_value(type).name.lower()
         data = await self.session.generate_icon(
-            form=form, id=getattr(icon_set, form), has_glow=icon_set.has_glow_outline(),
-            color_1=icon_set.color_1.index, color_2=icon_set.color_2.index, size=size
+            form=form,
+            id=getattr(icon_set, form),
+            has_glow=icon_set.has_glow_outline(),
+            color_1=icon_set.color_1.index,
+            color_2=icon_set.color_2.index,
+            size=size,
         )
 
         if as_image:
@@ -869,18 +895,23 @@ class Client:
         return data
 
     async def generate_icons(
-        self, *types: Iterable[Union[int, str, IconType]], icon_set: IconSet,
-        size: int = DEFAULT_SIZE, as_image: bool = False
+        self,
+        *types: Iterable[Union[int, str, IconType]],
+        icon_set: IconSet,
+        size: int = DEFAULT_SIZE,
+        as_image: bool = False,
     ) -> Union[List[bytes], List[ImageType]]:
         return await utils.gather(
-            self.generate_icon(
-                type=type, icon_set=icon_set, size=size, as_image=as_image
-            ) for type in types
+            self.generate_icon(type=type, icon_set=icon_set, size=size, as_image=as_image)
+            for type in types
         )
 
     async def generate_image(
-        self, *types: Iterable[Union[int, str, IconType]], icon_set: IconSet,
-        size: int = DEFAULT_SIZE, as_image: bool = False
+        self,
+        *types: Iterable[Union[int, str, IconType]],
+        icon_set: IconSet,
+        size: int = DEFAULT_SIZE,
+        as_image: bool = False,
     ) -> Union[bytes, ImageType]:
         images = await self.generate_icons(*types, icon_set=icon_set, size=size, as_image=True)
         result = await utils.run_blocking_io(connect_images, images)
@@ -911,31 +942,38 @@ class Client:
         await self.session.send_friend_request(user.account_id, message=message, client=self)
 
     async def retrieve_page_comments(
-        self, user: AbstractUser, type: str = 'profile', page: int = 0, *,
-        raise_errors: bool = True, strategy: Union[int, str, CommentStrategy] = 0
+        self,
+        user: AbstractUser,
+        type: str = "profile",
+        page: int = 0,
+        *,
+        raise_errors: bool = True,
+        strategy: Union[int, str, CommentStrategy] = 0,
     ) -> List[Comment]:
         strategy = CommentStrategy.from_value(strategy)
         data = await self.session.retrieve_page_comments(
-            user.account_id, user.id, type=type, page=page,
-            raise_errors=raise_errors, strategy=strategy
+            user.account_id,
+            user.id,
+            type=type,
+            page=page,
+            raise_errors=raise_errors,
+            strategy=strategy,
         )
-        return list(
-            Comment.from_data(part, user, client=self) for part in data
-        )
+        return list(Comment.from_data(part, user, client=self) for part in data)
 
     async def retrieve_comments(
-        self, user: AbstractUser, type: str = 'profile', pages: Optional[Iterable[int]] = range(10),
-        strategy: Union[int, str, CommentStrategy] = 0
+        self,
+        user: AbstractUser,
+        type: str = "profile",
+        pages: Optional[Iterable[int]] = range(10),
+        strategy: Union[int, str, CommentStrategy] = 0,
     ) -> List[Comment]:
 
         strategy = CommentStrategy.from_value(strategy)
         data = await self.session.retrieve_comments(
-            user.account_id, user.id, type=type,
-            pages=pages, strategy=strategy
+            user.account_id, user.id, type=type, pages=pages, strategy=strategy
         )
-        return list(
-            Comment.from_data(part, user, client=self) for part in data
-        )
+        return list(Comment.from_data(part, user, client=self) for part in data)
 
     async def report_level(self, level: Level) -> None:
         await self.session.report_level(level.id)
@@ -956,28 +994,26 @@ class Client:
 
     @check_logged
     async def rate_demon(
-        self, level: Level, demon_difficulty: Union[int, str, DemonDifficulty] = 1,
-        as_mod: bool = False
+        self,
+        level: Level,
+        demon_difficulty: Union[int, str, DemonDifficulty] = 1,
+        as_mod: bool = False,
     ) -> None:
         demon_difficulty = DemonDifficulty.from_value(demon_difficulty)
 
         success = await self.session.rate_demon(level.id, demon_difficulty, mod=as_mod, client=self)
 
         if success:
-            log.info('Successfully demon-rated level: %s.', level)
+            log.info("Successfully demon-rated level: %s.", level)
         else:
-            log.warning('Failed to rate demon difficulty for level: %s.', level)
+            log.warning("Failed to rate demon difficulty for level: %s.", level)
 
     @check_logged
-    async def send_level(
-        self, level: Level, stars: int = 1, featured: bool = True
-    ) -> None:
+    async def send_level(self, level: Level, stars: int = 1, featured: bool = True) -> None:
         await self.session.send_level(level.id, stars, featured=featured, client=self)
 
     @check_logged
-    async def comment_level(
-        self, level: Level, content: str, percentage: int = 0
-    ) -> None:
+    async def comment_level(self, level: Level, content: str, percentage: int = 0) -> None:
         await self.session.comment_level(level.id, content, percentage, client=self)
 
     @check_logged
@@ -986,9 +1022,7 @@ class Client:
     ) -> List[LevelRecord]:
         strategy = LevelLeaderboardStrategy.from_value(strategy)
         data = await self.session.get_leaderboard(level.id, strategy=strategy, client=self)
-        return list(
-            LevelRecord.from_data(part, strategy=strategy, client=self) for part in data
-        )
+        return list(LevelRecord.from_data(part, strategy=strategy, client=self) for part in data)
 
     async def get_level_comments(
         self, level: Level, strategy: Union[int, str, CommentStrategy] = 0, amount: int = 20
@@ -999,9 +1033,7 @@ class Client:
         data = await self.session.get_level_comments(
             level_id=level.id, strategy=CommentStrategy.from_value(strategy), amount=amount
         )
-        return list(
-            Comment.from_data(part, user_data, client=self) for (part, user_data) in data
-        )
+        return list(Comment.from_data(part, user_data, client=self) for (part, user_data) in data)
 
     @check_logged
     async def get_blocked_users(self) -> List[AbstractUser]:
@@ -1023,9 +1055,7 @@ class Client:
             No blocked users were found. Cool.
         """
         data = await self.session.get_user_list(type=1, client=self)
-        return list(
-            AbstractUser.from_data(part, client=self) for part in data
-        )
+        return list(AbstractUser.from_data(part, client=self) for part in data)
 
     @check_logged
     async def get_friends(self) -> List[AbstractUser]:
@@ -1047,9 +1077,7 @@ class Client:
             No friends were found. Sadly...
         """
         data = await self.session.get_user_list(type=0, client=self)
-        return list(
-            AbstractUser.from_data(part, client=self) for part in data
-        )
+        return list(AbstractUser.from_data(part, client=self) for part in data)
 
     @check_logged
     async def to_user(self) -> User:
@@ -1067,7 +1095,7 @@ class Client:
 
     @check_logged
     async def get_page_messages(
-        self, sent_or_inbox: str = 'inbox', page: int = 0, *, raise_errors: bool = True
+        self, sent_or_inbox: str = "inbox", page: int = 0, *, raise_errors: bool = True
     ) -> List[Message]:
         """|coro|
 
@@ -1100,16 +1128,13 @@ class Client:
             No messages were found. Raised if ``raise_errors`` is ``True``.
         """
         data = await self.session.get_page_messages(
-            sent_or_inbox=sent_or_inbox, page=page,
-            raise_errors=raise_errors, client=self
+            sent_or_inbox=sent_or_inbox, page=page, raise_errors=raise_errors, client=self
         )
-        return list(
-            Message.from_data(part, self.get_parse_dict(), client=self) for part in data
-        )
+        return list(Message.from_data(part, self.get_parse_dict(), client=self) for part in data)
 
     @check_logged
     async def get_messages(
-        self, sent_or_inbox: str = 'inbox', pages: Optional[Iterable[int]] = range(10)
+        self, sent_or_inbox: str = "inbox", pages: Optional[Iterable[int]] = range(10)
     ) -> List[Message]:
         """|coro|
 
@@ -1133,13 +1158,11 @@ class Client:
             sent_or_inbox=sent_or_inbox, pages=pages, client=self
         )
 
-        return list(
-            Message.from_data(part, self.get_parse_dict(), client=self) for part in data
-        )
+        return list(Message.from_data(part, self.get_parse_dict(), client=self) for part in data)
 
     @check_logged
     async def get_page_friend_requests(
-        self, sent_or_inbox: str = 'inbox', page: int = 0, *, raise_errors: bool = True
+        self, sent_or_inbox: str = "inbox", page: int = 0, *, raise_errors: bool = True
     ) -> List[FriendRequest]:
         """|coro|
 
@@ -1172,8 +1195,7 @@ class Client:
             No friend requests were found. Raised if ``raise_errors`` is ``True``.
         """
         data = await self.session.get_page_friend_requests(
-            sent_or_inbox=sent_or_inbox, page=page,
-            raise_errors=raise_errors, client=self
+            sent_or_inbox=sent_or_inbox, page=page, raise_errors=raise_errors, client=self
         )
         return list(
             FriendRequest.from_data(part, self.get_parse_dict(), client=self) for part in data
@@ -1181,7 +1203,7 @@ class Client:
 
     @check_logged
     async def get_friend_requests(
-        self, sent_or_inbox: str = 'inbox', pages: Optional[Iterable[int]] = range(10)
+        self, sent_or_inbox: str = "inbox", pages: Optional[Iterable[int]] = range(10)
     ) -> List[FriendRequest]:
         """|coro|
 
@@ -1210,15 +1232,14 @@ class Client:
 
     @check_logged
     def get_parse_dict(self) -> ExtDict:
-        return ExtDict({k: getattr(self, k) for k in ('name', 'id', 'account_id')})
+        return ExtDict({k: getattr(self, k) for k in ("name", "id", "account_id")})
 
     @check_logged
     def as_user(self) -> AbstractUser:
         return AbstractUser(**self.get_parse_dict(), client=self)
 
     async def get_top(
-        self, strategy: Union[int, str, LeaderboardStrategy] = 0,
-        *, count: int = 100
+        self, strategy: Union[int, str, LeaderboardStrategy] = 0, *, count: int = 100
     ) -> List[UserStats]:
         """|coro|
 
@@ -1251,9 +1272,7 @@ class Client:
         """
         strategy = LeaderboardStrategy.from_value(strategy)
         data = await self.session.get_top(strategy=strategy, count=count, client=self)
-        return list(
-            UserStats.from_data(part, client=self) for part in data
-        )
+        return list(UserStats.from_data(part, client=self) for part in data)
 
     async def get_leaderboard(
         self, strategy: Union[int, str, LeaderboardStrategy] = 0, *, count: int = 100
@@ -1286,11 +1305,26 @@ class Client:
 
     @check_logged
     async def update_profile(
-        self, stars: int = 0, demons: int = 0, diamonds: int = 0, has_glow: bool = False,
-        icon_type: int = 0, color_1: int = 0, color_2: int = 3, coins: int = 0,
-        user_coins: int = 0, cube: int = 1, ship: int = 1, ball: int = 1, ufo: int = 1,
-        wave: int = 1, robot: int = 1, spider: int = 1, explosion: int = 1, special: int = 0,
-        set_as_user: Optional[User] = None
+        self,
+        stars: int = 0,
+        demons: int = 0,
+        diamonds: int = 0,
+        has_glow: bool = False,
+        icon_type: int = 0,
+        color_1: int = 0,
+        color_2: int = 3,
+        coins: int = 0,
+        user_coins: int = 0,
+        cube: int = 1,
+        ship: int = 1,
+        ball: int = 1,
+        ufo: int = 1,
+        wave: int = 1,
+        robot: int = 1,
+        spider: int = 1,
+        explosion: int = 1,
+        special: int = 0,
+        set_as_user: Optional[User] = None,
     ) -> None:
         """|coro|
 
@@ -1344,12 +1378,23 @@ class Client:
         """
         if set_as_user is None:
             stats_dict = {
-                'stars': stars, 'demons': demons, 'diamonds': diamonds,
-                'color1': color_1, 'color2': color_2,
-                'coins': coins, 'user_coins': user_coins, 'special': special,
-                'acc_icon': cube, 'acc_ship': ship, 'acc_ball': ball,
-                'acc_bird': ufo, 'acc_dart': wave, 'acc_robot': robot,
-                'acc_spider': spider, 'acc_explosion': explosion, 'acc_glow': int(has_glow)
+                "stars": stars,
+                "demons": demons,
+                "diamonds": diamonds,
+                "color1": color_1,
+                "color2": color_2,
+                "coins": coins,
+                "user_coins": user_coins,
+                "special": special,
+                "acc_icon": cube,
+                "acc_ship": ship,
+                "acc_ball": ball,
+                "acc_bird": ufo,
+                "acc_dart": wave,
+                "acc_robot": robot,
+                "acc_spider": spider,
+                "acc_explosion": explosion,
+                "acc_glow": int(has_glow),
             }
 
             icon_type = IconType.from_value(icon_type).value
@@ -1360,24 +1405,39 @@ class Client:
         else:
             user, iconset = set_as_user, set_as_user.icon_set
             stats_dict = {
-                'stars': user.stars, 'demons': user.demons, 'diamonds': user.diamonds,
-                'color1': iconset.color_1.index, 'color2': iconset.color_2.index,
-                'coins': user.coins, 'user_coins': user.user_coins, 'special': special,
-                'icon': iconset.main, 'icon_type': iconset.main_type.value,
-                'acc_icon': iconset.cube, 'acc_ship': iconset.ship, 'acc_ball': iconset.ball,
-                'acc_bird': iconset.ufo, 'acc_dart': iconset.wave, 'acc_robot': iconset.robot,
-                'acc_spider': iconset.spider, 'acc_explosion': iconset.explosion,
-                'acc_glow': int(iconset.has_glow_outline())
+                "stars": user.stars,
+                "demons": user.demons,
+                "diamonds": user.diamonds,
+                "color1": iconset.color_1.index,
+                "color2": iconset.color_2.index,
+                "coins": user.coins,
+                "user_coins": user.user_coins,
+                "special": special,
+                "icon": iconset.main,
+                "icon_type": iconset.main_type.value,
+                "acc_icon": iconset.cube,
+                "acc_ship": iconset.ship,
+                "acc_ball": iconset.ball,
+                "acc_bird": iconset.ufo,
+                "acc_dart": iconset.wave,
+                "acc_robot": iconset.robot,
+                "acc_spider": iconset.spider,
+                "acc_explosion": iconset.explosion,
+                "acc_glow": int(iconset.has_glow_outline()),
             }
 
         await self.session.update_profile(stats_dict, client=self)
 
     @check_logged
     async def update_settings(
-        self, *, msg: Optional[Union[int, MessagePolicyType]] = None,
+        self,
+        *,
+        msg: Optional[Union[int, MessagePolicyType]] = None,
         friend_req: Optional[Union[int, FriendRequestPolicyType]] = None,
         comments: Optional[Union[int, CommentPolicyType]] = None,
-        youtube: Optional[str] = None, twitter: Optional[str] = None, twitch: Optional[str] = None
+        youtube: Optional[str] = None,
+        twitter: Optional[str] = None,
+        twitch: Optional[str] = None,
     ) -> None:
         """|coro|
 
@@ -1416,12 +1476,12 @@ class Client:
             Failed to update profile.
         """
         profile_dict = {
-            'msg_policy': msg,
-            'friend_req_policy': friend_req,
-            'comments_policy': comments,
-            'youtube': youtube,
-            'twitter': twitter,
-            'twitch': twitch
+            "msg_policy": msg,
+            "friend_req_policy": friend_req,
+            "comments_policy": comments,
+            "youtube": youtube,
+            "twitter": twitter,
+            "twitch": twitch,
         }
 
         self_user = await self.to_user()
@@ -1430,13 +1490,18 @@ class Client:
 
         for attr, value in profile_dict.items():
             to_add = getattr(self_user, attr) if value is None else value
-            args.append(to_add or '')
+            args.append(to_add or "")
 
         await self.session.update_settings(*args, client=self)
 
     async def search_levels_on_page(
-        self, page: int = 0, query: Union[str, int] = '', filters: Optional[Filters] = None,
-        user: Optional[Union[int, AbstractUser, User]] = None, *, raise_errors: bool = True
+        self,
+        page: int = 0,
+        query: Union[str, int] = "",
+        filters: Optional[Filters] = None,
+        user: Optional[Union[int, AbstractUser, User]] = None,
+        *,
+        raise_errors: bool = True,
     ) -> List[Level]:
         """|coro|
 
@@ -1470,14 +1535,22 @@ class Client:
             user = user.id
 
         lvdata, cdata, sdata = await self.session.search_levels_on_page(
-            page=page, query=query, filters=filters, user_id=user, raise_errors=raise_errors, client=self
+            page=page,
+            query=query,
+            filters=filters,
+            user_id=user,
+            raise_errors=raise_errors,
+            client=self,
         )
 
         return construct_levels(lvdata, cdata, sdata, client=self)
 
     async def search_levels(
-        self, query: Union[str, int] = '', filters: Optional[Filters] = None,
-        user: Optional[Union[int, AbstractUser, User]] = None, pages: Optional[Iterable[int]] = range(10)
+        self,
+        query: Union[str, int] = "",
+        filters: Optional[Filters] = None,
+        user: Optional[Union[int, AbstractUser, User]] = None,
+        pages: Optional[Iterable[int]] = range(10),
     ) -> List[Level]:
         """|coro|
 
@@ -1579,23 +1652,23 @@ class Client:
     def listen_for(self, type: str, entity_id: Optional[int] = None) -> None:
         lower = str(type).lower()
 
-        if lower in {'daily', 'weekly'}:
+        if lower in {"daily", "weekly"}:
             listener = TimelyLevelListener(self, lower)
 
-        elif lower in {'rate', 'unrate'}:
-            listener = RateLevelListener(self, listen_to_rate=(lower == 'rate'))
+        elif lower in {"rate", "unrate"}:
+            listener = RateLevelListener(self, listen_to_rate=(lower == "rate"))
 
-        elif lower in {'friend_request', 'message'}:
-            listener = MessageOrRequestListener(self, listen_to_msg=(lower == 'message'))
+        elif lower in {"friend_request", "message"}:
+            listener = MessageOrRequestListener(self, listen_to_msg=(lower == "message"))
 
-        elif lower in {'level_comment'}:
+        elif lower in {"level_comment"}:
             if entity_id is None:
-                raise ClientException('Entity ID is required for type: {!r}.'.format(lower))
+                raise ClientException("Entity ID is required for type: {!r}.".format(lower))
 
             listener = LevelCommentListener(self, entity_id)
 
         else:
-            raise ClientException('Invalid listener type: {!r}.'.format(lower))
+            raise ClientException("Invalid listener type: {!r}.".format(lower))
 
         self.listeners.append(listener)
         listener.enable()
@@ -1603,9 +1676,9 @@ class Client:
         return self.event  # allow using as a decorator
 
     async def dispatch(self, event_name: str, *args, **kwargs) -> Any:
-        name = 'on_' + event_name
+        name = "on_" + event_name
 
-        log.info('Dispatching event {!r}, client: {!r}'.format(name, self))
+        log.info("Dispatching event {!r}, client: {!r}".format(name, self))
 
         try:
             method = getattr(self, name)
@@ -1660,6 +1733,7 @@ class _LoginSession:
     Allows to temporarily login and execute
     a block of code in an <async with> statement.
     """
+
     def __init__(self, client: Client, username: str, password: str) -> None:
         self._client = client
         self._name = username

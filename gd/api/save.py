@@ -9,11 +9,11 @@ from ..utils.crypto.coders import Coder
 from .struct import LevelAPI
 from .utils import get_default
 
-__all__ = ('Part', 'Database', 'LevelCollection')
+__all__ = ("Part", "Database", "LevelCollection")
 
 
 class Part(dict):
-    def __init__(self, string: str = '', default: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, string: str = "", default: Optional[Dict[str, Any]] = None) -> None:
         self.parser = XMLParser()
         try:
             assert string  # fall into <except> clause if empty
@@ -33,9 +33,7 @@ class Part(dict):
 
     def __repr__(self) -> str:
         string = super().__repr__()
-        info = {
-            'len': len(string)
-        }
+        info = {"len": len(string)}
         return make_repr(self, info)
 
     def dump(self) -> str:
@@ -46,37 +44,34 @@ class Part(dict):
 
 
 class Database:
-    def __init__(self, main: str = '', levels: str = '') -> None:
-        self.main = Part(main, get_default('main'))
-        self.levels = Part(levels, get_default('levels'))
+    def __init__(self, main: str = "", levels: str = "") -> None:
+        self.main = Part(main, get_default("main"))
+        self.levels = Part(levels, get_default("levels"))
 
     def __repr__(self) -> str:
-        info = {
-            'main': repr(self.main),
-            'levels': repr(self.levels)
-        }
+        info = {"main": repr(self.main), "levels": repr(self.levels)}
         return make_repr(self, info)
 
     def _json(self) -> Dict[str, Any]:
         return self.as_tuple()
 
     def get_username(self) -> Optional[str]:
-        return self.main.get('GJA_001')
+        return self.main.get("GJA_001")
 
     def get_password(self) -> Optional[str]:
-        return self.main.get('GJA_002')
+        return self.main.get("GJA_002")
 
     def get_account_id(self) -> Optional[int]:
-        return self.main.get('GJA_003')
+        return self.main.get("GJA_003")
 
     def get_player_id(self) -> Optional[int]:
-        return self.main.get('playerUserID')
+        return self.main.get("playerUserID")
 
     def get_udid(self) -> Optional[str]:
-        return self.main.get('playerUDID')
+        return self.main.get("playerUDID")
 
     def get_bootup_amount(self) -> Optional[int]:
-        return self.main.get('bootups')
+        return self.main.get("bootups")
 
     def _get_failsafe(self, key: str, is_level_part: bool = True, default: Any = None) -> Any:
         part = self.levels if is_level_part else self.main
@@ -91,33 +86,29 @@ class Database:
 
     def _to_levels(self, level_dicts: List[Dict[str, Any]]) -> LevelCollection:
         return LevelCollection.launch(
-            self, map(
-                LevelAPI.from_mapping, filter(
-                    lambda thing: isinstance(thing, dict), level_dicts
-                )
-            )
+            self,
+            map(LevelAPI.from_mapping, filter(lambda thing: isinstance(thing, dict), level_dicts)),
         )
 
-    def load_saved_levels(self, *, key: str = 'GLM_03') -> LevelCollection:
+    def load_saved_levels(self, *, key: str = "GLM_03") -> LevelCollection:
         inner = self._get_failsafe(key, is_level_part=False)
         return self._to_levels(inner.values())
 
-    def dump_saved_levels(self, levels: LevelCollection, *, key: str = 'GLM_03') -> None:
+    def dump_saved_levels(self, levels: LevelCollection, *, key: str = "GLM_03") -> None:
         self.main[key] = {str(level.id): level.to_map() for level in levels}
 
-    def load_my_levels(self, *, key: str = 'LLM_01') -> LevelCollection:
+    def load_my_levels(self, *, key: str = "LLM_01") -> LevelCollection:
         inner = self._get_failsafe(key)
         return self._to_levels(inner.values())
 
-    def dump_my_levels(self, levels: list, *, key: str = 'LLM_01', prefix: str = 'k_') -> None:
-        stuff = {'_isArr': True}
-        stuff.update(
-            {prefix + str(n): level.to_map() for n, level in enumerate(levels)}
-        )
+    def dump_my_levels(self, levels: list, *, key: str = "LLM_01", prefix: str = "k_") -> None:
+        stuff = {"_isArr": True}
+        stuff.update({prefix + str(n): level.to_map() for n, level in enumerate(levels)})
         self.levels[key] = stuff
 
     def dump(self) -> None:
         from .loader import save  # I hate circular imports. - nekit
+
         save.dump(self)
 
     def as_tuple(self) -> Tuple[Part, Part]:

@@ -16,83 +16,81 @@ class Comment(AbstractEntity):
     """Class that represents a Profile/Level comment in Geometry Dash.
     This class is derived from :class:`.AbstractEntity`.
     """
+
     def __repr__(self) -> str:
-        info = {
-            'author': self.author,
-            'id': self.id,
-            'rating': self.rating
-        }
+        info = {"author": self.author, "id": self.id, "rating": self.rating}
         return make_repr(self, info)
 
     def __str__(self) -> str:
         return str(self.body)
 
     @classmethod
-    def from_data(cls, data: ExtDict, author: Union[ExtDict, AbstractUser], client: Client) -> Comment:
+    def from_data(
+        cls, data: ExtDict, author: Union[ExtDict, AbstractUser], client: Client
+    ) -> Comment:
         if isinstance(author, ExtDict):
             author = AbstractUser.from_data(author, client=client)
 
-        color_string = data.get(Index.COMMENT_COLOR, '255,255,255')
-        color = Color.from_rgb(*map(int, color_string.split(',')))
+        color_string = data.get(Index.COMMENT_COLOR, "255,255,255")
+        color = Color.from_rgb(*map(int, color_string.split(",")))
 
         return cls(
-            body=Coder.do_base64(
-                data.get(Index.COMMENT_BODY, ''), encode=False, errors='replace'
-            ),
+            body=Coder.do_base64(data.get(Index.COMMENT_BODY, ""), encode=False, errors="replace"),
             rating=data.getcast(Index.COMMENT_RATING, 0, int),
-            timestamp=data.get(Index.COMMENT_TIMESTAMP, 'unknown'),
+            timestamp=data.get(Index.COMMENT_TIMESTAMP, "unknown"),
             id=data.getcast(Index.COMMENT_ID, 0, int),
             is_spam=bool(data.getcast(Index.COMMENT_IS_SPAM, 0, int)),
             type=data.getcast(Index.COMMENT_TYPE, 0, int),
             color=color,
             level_id=data.getcast(Index.COMMENT_LEVEL_ID, 0, int),
             level_percentage=data.getcast(Index.COMMENT_LEVEL_PERCENTAGE, -1, int),
-            author=author, client=client
+            author=author,
+            client=client,
         )
 
     @property
     def body(self) -> str:
         """:class:`str`: Returns body of the comment."""
-        return self.options.get('body', '')
+        return self.options.get("body", "")
 
     @property
     def rating(self) -> int:
         """:class:`int`: Rating of the comment."""
-        return self.options.get('rating', 0)
+        return self.options.get("rating", 0)
 
     @property
     def timestamp(self) -> str:
         """:class:`str`: A human-readable timestamp representing how long ago the comment was created."""
-        return self.options.get('timestamp', 'unknown')
+        return self.options.get("timestamp", "unknown")
 
     @property
     def author(self) -> AbstractUser:
         """:class:`.AbstractUser`: An author of the comment."""
-        return self.options.get('author', AbstractUser(client=self.client))
+        return self.options.get("author", AbstractUser(client=self.client))
 
     @property
     def type(self) -> CommentType:
         """:class:`.CommentType`: Whether comment is on profile or on a level."""
-        return CommentType.from_value(self.options.get('type', 0))
+        return CommentType.from_value(self.options.get("type", 0))
 
     @property
     def level_id(self) -> int:
         """:class:`int`: Level ID of a level the comment is on, if present. ``0`` if profile comment."""
-        return self.options.get('level_id', 0)
+        return self.options.get("level_id", 0)
 
     @property
     def level_percentage(self) -> int:
         """:class:`int`: Level highscore linked to a comment, if present. ``-1`` if profile comment."""
-        return self.options.get('level_percentage', -1)
+        return self.options.get("level_percentage", -1)
 
     @property
     def color(self) -> Color:
         """:class:`.Color`: Color of the comment. Oftenly equals ``gd.Color(0xffffff)``."""
-        return self.options.get('color', Color(0xffffff))
+        return self.options.get("color", Color(0xFFFFFF))
 
     def is_spam(self) -> bool:
         """:class:`bool`: Indicates whether a comment is marked as spam. ``False`` if profile comment."""
-        return self.options.get('is_spam', False)
+        return self.options.get("is_spam", False)
 
     def is_disliked(self) -> bool:
         """:class:`bool`: Indicates whether a comment is disliked or not."""

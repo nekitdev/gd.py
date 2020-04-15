@@ -3,7 +3,7 @@ try:
 except ImportError:
     pass
 
-__all__ = ('get_instances_of', 'find_objects')
+__all__ = ("get_instances_of", "find_objects")
 
 from ..typing import Any, Callable, List, Optional, Type
 

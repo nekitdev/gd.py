@@ -1,6 +1,6 @@
 from ..typing import Any, Callable, Dict, Iterable, List, Optional, Parser, Sequence, Type, Union
 
-__all__ = ('Parser',)
+__all__ = ("Parser",)
 
 Function = Callable[[Any], Any]
 Null = object()
@@ -8,6 +8,7 @@ Null = object()
 
 class StopExecution(Exception):
     """Indicates that a check failed."""
+
     pass
 
 
@@ -18,12 +19,14 @@ def empty(string: str) -> str:
 def action_split(delim: str) -> Callable[[str], List[str]]:
     def split(string: str) -> List[str]:
         return string.split(delim)
+
     return split
 
 
 def action_take(key: Any) -> Callable[[Sequence[Any]], Any]:
     def take(x: Any) -> Any:
         return x[key]
+
     return take
 
 
@@ -32,13 +35,13 @@ def action_not_empty() -> Callable[[Sequence[Any]], Optional[Sequence[Any]]]:
         if seq:
             return seq
         raise StopExecution()
+
     return not_empty
 
 
 class ExtDict(dict):
-
     def __repr__(self):
-        return (self.__class__.__name__ + super().__repr__())
+        return self.__class__.__name__ + super().__repr__()
 
     def get_default(self, value: Any, default: Any) -> Any:
         if default is Null:

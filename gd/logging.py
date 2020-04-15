@@ -2,7 +2,7 @@ import logging
 
 from .typing import Any, Optional
 
-__all__ = ('get_logger', 'setup_logging', 'log')
+__all__ = ("get_logger", "setup_logging", "log")
 
 
 def get_logger(name: Optional[str] = None) -> logging.Logger:
@@ -10,13 +10,15 @@ def get_logger(name: Optional[str] = None) -> logging.Logger:
 
 
 def get_root_logger():
-    return get_logger(__name__.split('.').pop(0))
+    return get_logger(__name__.split(".").pop(0))
 
 
 def setup_logging(
-    level: int = logging.DEBUG, *,
-    stream: Any = None, file: Any = None,
-    formatter: Optional[str] = None
+    level: int = logging.DEBUG,
+    *,
+    stream: Any = None,
+    file: Any = None,
+    formatter: Optional[str] = None,
 ) -> None:
     """Function that sets up logs of the module.
 
@@ -34,16 +36,12 @@ def setup_logging(
     formatter: :class:`str`
         Formatter to use. ``[LEVEL] (time) {gd.module}: Message`` by default.
     """
-    handler = (
-        logging.StreamHandler(stream) if file is None else logging.FileHandler(file)
-    )
+    handler = logging.StreamHandler(stream) if file is None else logging.FileHandler(file)
 
     if formatter is None:
-        formatter = '[%(levelname)s] (%(asctime)s) {%(name)s}: %(message)s'
+        formatter = "[%(levelname)s] (%(asctime)s) {%(name)s}: %(message)s"
 
-    handler.setFormatter(
-        logging.Formatter(formatter)
-    )
+    handler.setFormatter(logging.Formatter(formatter))
 
     log.addHandler(handler)
 

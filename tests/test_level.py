@@ -8,7 +8,7 @@ from conftest import client, gd
 pytestmark = pytest.mark.asyncio
 
 level = client.run(client.get_level(30029017))
-message = ('[gd.py] ({}): Running tests...'.format(datetime.utcnow()))
+message = "[gd.py] ({}): Running tests...".format(datetime.utcnow())
 
 # MAIN TESTS
 
@@ -80,7 +80,7 @@ async def test_report():
 
 
 skip_not_logged = pytest.mark.skipif(
-    not client.is_logged(), reason='Test for only logged in client.'
+    not client.is_logged(), reason="Test for only logged in client."
 )
 
 

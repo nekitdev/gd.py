@@ -10,12 +10,12 @@ async def test_get_ng_song():
 
 
 async def test_search_songs():
-    await client.search_page_songs('Panda Eyes')
+    await client.search_page_songs("Panda Eyes")
 
 
 async def test_search_users():
-    await client.search_page_users('CreoMusic')
+    await client.search_page_users("CreoMusic")
 
 
 async def test_get_user_songs():
-    await client.get_page_user_songs('Xtrullor')
+    await client.get_page_user_songs("Xtrullor")

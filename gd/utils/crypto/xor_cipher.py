@@ -2,7 +2,6 @@ from itertools import cycle
 
 
 class XORCipher:
-
     @staticmethod
     def cipher(key: str, string: str) -> str:
         """Ciphers a string with XOR using key given.
@@ -28,4 +27,4 @@ class XORCipher:
         :class:`str`
             A string after XOR operation.
         """
-        return ('').join(chr(ord(x) ^ ord(y)) for x, y in zip(string, cycle(key)))
+        return ("").join(chr(ord(x) ^ ord(y)) for x, y in zip(string, cycle(key)))

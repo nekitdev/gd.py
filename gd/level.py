@@ -11,8 +11,12 @@ from .api.editor import Editor
 
 from .utils.converter import Converter
 from .utils.enums import (
-    DemonDifficulty, LevelDifficulty, CommentStrategy,
-    LevelLength, TimelyType, LevelLeaderboardStrategy
+    DemonDifficulty,
+    LevelDifficulty,
+    CommentStrategy,
+    LevelLength,
+    TimelyType,
+    LevelLeaderboardStrategy,
 )
 from .utils.indexer import Index
 from .utils.parser import ExtDict
@@ -26,13 +30,14 @@ class Level(AbstractEntity):
     """Class that represents a Geometry Dash Level.
     This class is derived from :class:`.AbstractEntity`.
     """
+
     def __repr__(self) -> str:
         info = {
-            'id': self.id,
-            'name': repr(self.name),
-            'creator': self.creator,
-            'version': self.version,
-            'difficulty': self.difficulty
+            "id": self.id,
+            "name": repr(self.name),
+            "creator": self.creator,
+            "version": self.version,
+            "difficulty": self.difficulty,
         }
         return make_repr(self, info)
 
@@ -40,12 +45,15 @@ class Level(AbstractEntity):
         return str(self.name)
 
     def _json(self) -> dict:  # pragma: no cover
-        return {k: v for k, v in super()._json().items() if k != 'data'}
+        return {k: v for k, v in super()._json().items() if k != "data"}
 
     @classmethod
     def from_data(
-        cls, data: ExtDict, creator: Union[ExtDict, AbstractUser],
-        song: Union[ExtDict, Song], client: Client
+        cls,
+        data: ExtDict,
+        creator: Union[ExtDict, AbstractUser],
+        song: Union[ExtDict, Song],
+        client: Client,
     ) -> Level:
         if isinstance(creator, ExtDict):
             creator = AbstractUser(**creator, client=client)
@@ -63,7 +71,7 @@ class Level(AbstractEntity):
         else:
             try:
                 # decode password
-                password = Coder.decode(type='levelpass', string=string)
+                password = Coder.decode(type="levelpass", string=string)
             except Exception:
                 # failed to get password
                 copyable, password = False, None
@@ -79,11 +87,10 @@ class Level(AbstractEntity):
                     password = int(password) if password.isdigit() else None
 
         desc = Coder.do_base64(
-            data.get(Index.LEVEL_DESCRIPTION, ''),
-            encode=False, errors='replace'
+            data.get(Index.LEVEL_DESCRIPTION, ""), encode=False, errors="replace"
         )
 
-        level_data = data.get(Index.LEVEL_DATA, '')
+        level_data = data.get(Index.LEVEL_DATA, "")
         try:
             level_data = Coder.unzip(level_data)
         except Exception:  # conversion failed
@@ -94,11 +101,12 @@ class Level(AbstractEntity):
         is_demon = bool(data.getcast(Index.LEVEL_IS_DEMON, 0, int))
         is_auto = bool(data.getcast(Index.LEVEL_IS_AUTO, 0, int))
         difficulty = Converter.convert_level_difficulty(
-            diff=diff, demon_diff=demon_diff, is_demon=is_demon, is_auto=is_auto)
+            diff=diff, demon_diff=demon_diff, is_demon=is_demon, is_auto=is_auto
+        )
 
         return cls(
             id=data.getcast(Index.LEVEL_ID, 0, int),
-            name=data.get(Index.LEVEL_NAME, 'unknown'),
+            name=data.get(Index.LEVEL_NAME, "unknown"),
             description=desc,
             version=data.getcast(Index.LEVEL_VERSION, 0, int),
             creator=creator,
@@ -117,8 +125,8 @@ class Level(AbstractEntity):
             downloads=data.getcast(Index.LEVEL_DOWNLOADS, 0, int),
             rating=data.getcast(Index.LEVEL_LIKES, 0, int),
             score=data.getcast(Index.LEVEL_FEATURED_SCORE, 0, int),
-            uploaded_timestamp=data.get(Index.LEVEL_UPLOADED_TIMESTAMP, 'unknown'),
-            last_updated_timestamp=data.get(Index.LEVEL_LAST_UPDATED_TIMESTAMP, 'unknown'),
+            uploaded_timestamp=data.get(Index.LEVEL_UPLOADED_TIMESTAMP, "unknown"),
+            last_updated_timestamp=data.get(Index.LEVEL_LAST_UPDATED_TIMESTAMP, "unknown"),
             length=data.getcast(Index.LEVEL_LENGTH, 0, int),
             game_version=data.getcast(Index.LEVEL_GAME_VERSION, 0, int),
             stars_requested=data.getcast(Index.LEVEL_REQUESTED_STARS, 0, int),
@@ -126,53 +134,53 @@ class Level(AbstractEntity):
             type=data.getcast(Index.LEVEL_TIMELY_TYPE, 0, int),
             time_n=data.getcast(Index.LEVEL_TIMELY_INDEX, -1, int),
             cooldown=data.getcast(Index.LEVEL_TIMELY_COOLDOWN, -1, int),
-            client=client
+            client=client,
         )
 
     @property
     def name(self) -> str:
         """:class:`str`: The name of the level."""
-        return self.options.get('name', 'Unnamed')
+        return self.options.get("name", "Unnamed")
 
     @property
     def description(self) -> str:
         """:class:`str`: Description of the level."""
-        return self.options.get('description', '')
+        return self.options.get("description", "")
 
     @property
     def version(self) -> int:
         """:class:`int`: Version of the level."""
-        return self.options.get('version', 0)
+        return self.options.get("version", 0)
 
     @property
     def downloads(self) -> int:
         """:class:`int`: Amount of the level's downloads."""
-        return self.options.get('downloads', 0)
+        return self.options.get("downloads", 0)
 
     @property
     def rating(self) -> int:
         """:class:`int`: Amount of the level's likes or dislikes."""
-        return self.options.get('rating', 0)
+        return self.options.get("rating", 0)
 
     @property
     def score(self) -> int:
         """:class:`int`: Level's featured score."""
-        return self.options.get('score', 0)
+        return self.options.get("score", 0)
 
     @property
     def creator(self) -> AbstractUser:
         """:class:`.AbstractUser`: Creator of the level."""
-        return self.options.get('creator', AbstractUser(client=self.client))
+        return self.options.get("creator", AbstractUser(client=self.client))
 
     @property
     def song(self) -> Song:
         """:class:`.Song`: Song used in the level."""
-        return self.options.get('song', Song(client=self.client))
+        return self.options.get("song", Song(client=self.client))
 
     @property
     def difficulty(self) -> Union[DemonDifficulty, LevelDifficulty]:
         """Union[:class:`.LevelDifficulty`, :class:`.DemonDifficulty`]: Difficulty of the level."""
-        difficulty = self.options.get('difficulty', -1)
+        difficulty = self.options.get("difficulty", -1)
 
         if self.is_demon():
             return DemonDifficulty.from_value(difficulty)
@@ -185,51 +193,51 @@ class Level(AbstractEntity):
         """Optional[:class:`int`]: The password to copy the level.
         See :meth:`.Level.is_copyable`.
         """
-        return self.options.get('password')
+        return self.options.get("password")
 
     def is_copyable(self) -> bool:
         """:class:`bool`: Indicates whether a level is copyable."""
-        return bool(self.options.get('copyable'))
+        return bool(self.options.get("copyable"))
 
     @property
     def stars(self) -> int:
         """:class:`int`: Amount of stars the level has."""
-        return self.options.get('stars', 0)
+        return self.options.get("stars", 0)
 
     @property
     def coins(self) -> int:
         """:class:`int`: Amount of coins in the level."""
-        return self.options.get('coins', 0)
+        return self.options.get("coins", 0)
 
     @property
     def original_id(self) -> int:
         """:class:`int`: ID of the original level. (``0`` if is not a copy)"""
-        return self.options.get('original', 0)
+        return self.options.get("original", 0)
 
     @property
     def uploaded_timestamp(self) -> str:
         """:class:`str`: A human-readable string representing how much time ago level was uploaded."""
-        return self.options.get('uploaded_timestamp', 'unknown')
+        return self.options.get("uploaded_timestamp", "unknown")
 
     @property
     def last_updated_timestamp(self) -> str:
         """:class:`str`: A human-readable string showing how much time ago the last update was."""
-        return self.options.get('last_updated_timestamp', 'unknown')
+        return self.options.get("last_updated_timestamp", "unknown")
 
     @property
     def length(self) -> LevelLength:
         """:class:`.LevelLength`: A type that represents length of the level."""
-        return LevelLength.from_value(self.options.get('length', -1))
+        return LevelLength.from_value(self.options.get("length", -1))
 
     @property
     def game_version(self) -> int:
         """:class:`int`: A version of the game required to play the level."""
-        return self.options.get('game_version', 0)
+        return self.options.get("game_version", 0)
 
     @property
     def requested_stars(self) -> int:
         """:class:`int`: Amount of stars creator of the level has requested."""
-        return self.options.get('stars_requested', 0)
+        return self.options.get("stars_requested", 0)
 
     @property
     def objects(self) -> int:
@@ -239,29 +247,29 @@ class Level(AbstractEntity):
     @property
     def object_count(self) -> int:
         """:class:`int`: Amount of objects the level according to the servers."""
-        return self.options.get('object_count', 0)
+        return self.options.get("object_count", 0)
 
     @property
     def type(self) -> TimelyType:
         """:class:`.TimelyType`: A type that shows whether a level is Daily/Weekly."""
-        return TimelyType.from_value(self.options.get('type', 0))
+        return TimelyType.from_value(self.options.get("type", 0))
 
     @property
     def timely_index(self) -> int:
         """:class:`int`: A number that represents current index of the timely.
         Increments on new dailies/weeklies. If not timely, equals ``-1``.
         """
-        return self.options.get('time_n', -1)
+        return self.options.get("time_n", -1)
 
     @property
     def cooldown(self) -> int:
         """:class:`int`: Represents a cooldown until next timely. If not timely, equals ``-1``."""
-        return self.options.get('cooldown', -1)
+        return self.options.get("cooldown", -1)
 
     @property
     def data(self) -> Union[bytes, str]:
         """Union[:class:`str`, :class:`bytes`]: Level data, represented as a stream."""
-        return self.options.get('data', '')
+        return self.options.get("data", "")
 
     @data.setter
     def data(self, value: Union[bytes, str]) -> None:
@@ -279,7 +287,7 @@ class Level(AbstractEntity):
         if daily_or_weekly is None:
             return self.type.value > 0
 
-        assert daily_or_weekly in ('daily', 'weekly')
+        assert daily_or_weekly in ("daily", "weekly")
 
         return self.type.name.lower() == daily_or_weekly
 
@@ -293,15 +301,15 @@ class Level(AbstractEntity):
 
     def is_epic(self) -> bool:
         """:class:`bool`: Indicates whether a level is epic."""
-        return bool(self.options.get('is_epic'))
+        return bool(self.options.get("is_epic"))
 
     def is_demon(self) -> bool:
         """:class:`bool`: Indicates whether a level is demon."""
-        return bool(self.options.get('is_demon'))
+        return bool(self.options.get("is_demon"))
 
     def is_auto(self) -> bool:
         """:class:`bool`: Indicates whether a level is auto."""
-        return bool(self.options.get('is_auto'))
+        return bool(self.options.get("is_auto"))
 
     def is_original(self) -> bool:
         """:class:`bool`: Indicates whether a level is original."""
@@ -309,14 +317,14 @@ class Level(AbstractEntity):
 
     def has_coins_verified(self) -> bool:
         """:class:`bool`: Indicates whether level's coins are verified."""
-        return bool(self.options.get('verified_coins'))
+        return bool(self.options.get("verified_coins"))
 
     def download(self) -> Union[bytes, str]:
         """Union[:class:`str`, :class:`bytes`]: Returns level data, represented as string."""
         return self.data
 
     def open_editor(self) -> Editor:
-        return Editor.launch(self, 'data')
+        return Editor.launch(self, "data")
 
     async def report(self) -> None:
         """|coro|
@@ -346,24 +354,37 @@ class Level(AbstractEntity):
         if self.song.is_custom():
             track, song_id = song_id, track
 
-        client = kwargs.pop('from_client', self.client)
+        client = kwargs.pop("from_client", self.client)
 
         if client is None:  # pragma: no cover
             raise MissingAccess(
                 message=(
-                    'Could not find the client to upload level from. '
+                    "Could not find the client to upload level from. "
                     'Either attach a client to this level or provide "from_client" parameter.'
                 )
             )
 
-        password = kwargs.pop('password', self.password)
+        password = kwargs.pop("password", self.password)
 
         args = dict(
-            name=self.name, id=self.id, version=self.version, length=abs(self.length.value),
-            track=track, song_id=song_id, two_player=False, is_auto=self.is_auto(),
-            original=self.original_id, objects=self.objects, coins=self.coins,
-            star_amount=self.stars, unlist=False, ldm=False, password=password,
-            copyable=self.is_copyable(), description=self.description, data=self.data
+            name=self.name,
+            id=self.id,
+            version=self.version,
+            length=abs(self.length.value),
+            track=track,
+            song_id=song_id,
+            two_player=False,
+            is_auto=self.is_auto(),
+            original=self.original_id,
+            objects=self.objects,
+            coins=self.coins,
+            star_amount=self.stars,
+            unlist=False,
+            ldm=False,
+            password=password,
+            copyable=self.is_copyable(),
+            description=self.description,
+            data=self.data,
         )
 
         args.update(kwargs)
@@ -501,17 +522,21 @@ class Level(AbstractEntity):
         """
         try:
             if self.is_timely():
-                async_func = getattr(self.client, 'get_' + self.type.name.lower())
+                async_func = getattr(self.client, "get_" + self.type.name.lower())
                 new_ver = await async_func()
 
                 if new_ver.id != self.id:
-                    log.warning('There is a new {0.type.desc} Level: {1!r}. Updating to it...'.format(self, new_ver))
+                    log.warning(
+                        "There is a new {0.type.desc} Level: {1!r}. Updating to it...".format(
+                            self, new_ver
+                        )
+                    )
 
             else:
                 new_ver = await self.client.get_level(self.id)
 
         except MissingAccess:
-            return log.warning('Failed to refresh level: %r. Most likely it was deleted.', self)
+            return log.warning("Failed to refresh level: %r. Most likely it was deleted.", self)
 
         self.options = new_ver.options
 
@@ -587,8 +612,7 @@ class Level(AbstractEntity):
         return await self.client.get_level_leaderboard(self, strategy=strategy)
 
     async def get_comments(
-        self, strategy: Union[int, str, CommentStrategy] = 0,
-        amount: int = 20
+        self, strategy: Union[int, str, CommentStrategy] = 0, amount: int = 20
     ) -> List[Comment]:
         """|coro|
 

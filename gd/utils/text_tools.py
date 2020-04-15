@@ -4,7 +4,7 @@ from yarl import URL
 
 from ..typing import Any, Dict, List, Optional, Union
 
-__all__ = ('make_repr', 'object_split', 'dump')
+__all__ = ("make_repr", "object_split", "dump")
 
 
 def make_repr(obj: Any, info: Optional[Dict[Any, Any]] = None) -> str:
@@ -12,15 +12,15 @@ def make_repr(obj: Any, info: Optional[Dict[Any, Any]] = None) -> str:
     if info is None:
         info = {}
 
-    module = obj.__module__.split('.').pop(0)
+    module = obj.__module__.split(".").pop(0)
     name = obj.__class__.__name__
 
     if not info:
-        return '<{}.{}>'.format(module, name)
+        return "<{}.{}>".format(module, name)
 
-    final = (' '.join('{0}={1}'.format(*t) for t in info.items()))
+    final = " ".join("{0}={1}".format(*t) for t in info.items())
 
-    return '<{}.{} {}>'.format(module, name, final)
+    return "<{}.{} {}>".format(module, name, final)
 
 
 def default(x: Any) -> Any:
@@ -30,7 +30,7 @@ def default(x: Any) -> Any:
     elif isinstance(x, dict):
         return dict(x)
 
-    elif hasattr(x, '_json'):
+    elif hasattr(x, "_json"):
         return x._json()
 
     elif isinstance(x, URL):
@@ -38,7 +38,7 @@ def default(x: Any) -> Any:
 
     else:
         raise TypeError(
-            'Object of type {!r} is not JSON-serializable.'.format(type(x).__name__)
+            "Object of type {!r} is not JSON-serializable.".format(type(x).__name__)
         ) from None
 
 
@@ -48,7 +48,7 @@ def dump(x: Any, **kwargs) -> str:
 
 
 def object_split(string: Union[bytes, str]) -> Union[List[bytes], List[str]]:
-    sc = ';' if isinstance(string, str) else b';'  # type: ignore
+    sc = ";" if isinstance(string, str) else b";"  # type: ignore
 
     final = string.split(sc)  # type: ignore
     final.pop(0)  # pop header

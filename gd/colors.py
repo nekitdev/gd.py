@@ -18,15 +18,16 @@ class Color:
     value: :class:`int`
         The raw integer colour value.
     """
+
     def __init__(self, value: int) -> None:
         if not isinstance(value, int):
             raise TypeError(
-                'Expected int parameter, but received {!r}.'.format(value.__class__.__name__)
+                "Expected int parameter, but received {!r}.".format(value.__class__.__name__)
             )
         self.value = value
 
     def _get_byte(self, byte: int) -> int:
-        return (self.value >> (8 * byte)) & 0xff
+        return (self.value >> (8 * byte)) & 0xFF
 
     @property
     def _ord_index(self) -> str:
@@ -44,9 +45,9 @@ class Color:
 
     def __repr__(self) -> str:
         info = {
-            'hex': self.to_hex(),
-            'value': self.value,
-            'index': self._ord_index,
+            "hex": self.to_hex(),
+            "value": self.value,
+            "index": self._ord_index,
         }
         return make_repr(self, info)
 
@@ -54,12 +55,7 @@ class Color:
         return hash(self.value)
 
     def _json(self) -> dict:
-        return dict(
-            rgb=self.to_rgb(),
-            hex=self.to_hex(),
-            value=self.value,
-            index=self.index
-        )
+        return dict(rgb=self.to_rgb(), hex=self.to_hex(), value=self.value, index=self.index)
 
     @property
     def index(self) -> Optional[int]:
@@ -87,14 +83,14 @@ class Color:
         return self._get_byte(0)
 
     def print(self) -> None:
-        if platform in ('win32', 'cygwin'):
+        if platform in ("win32", "cygwin"):
             print(self.to_hex())
         else:
             print(self.ansi_escape())
 
     def to_hex(self) -> str:
         """:class:`str`: Returns the colour in hex format."""
-        return '#{:0>6x}'.format(self.value)
+        return "#{:0>6x}".format(self.value)
 
     def to_rgb(self) -> Tuple[int, int, int]:
         """Tuple[:class:`int`, :class:`int`, :class:`int`]: Returns an (r, g, b) tuple representing the colour."""
@@ -107,7 +103,7 @@ class Color:
         return (*self.to_rgb(), 255)
 
     def ansi_escape(self) -> str:
-        return '\x1b[38;2;{};{};{}m{}\x1b[0m'.format(*self.to_rgb(), self.to_hex())
+        return "\x1b[38;2;{};{};{}m{}\x1b[0m".format(*self.to_rgb(), self.to_hex())
 
     @classmethod
     def from_rgb(cls, r: int, g: int, b: int) -> Color:
@@ -122,20 +118,48 @@ class Color:
 
 
 values = (
-    0x7dff00, 0x00ff00, 0x00ff7d,
-    0x00ffff, 0x007dff, 0x0000ff,
-    0x7d00ff, 0xff00ff, 0xff007d,
-    0xff0000, 0xff7d00, 0xffff00,
-    0xffffff, 0xb900ff, 0xffb900,
-    0x000000, 0x00c8ff, 0xafafaf,
-    0x5a5a5a, 0xff7d7d, 0x00af4b,
-    0x007d7d, 0x004baf, 0x4b00af,
-    0x7d007d, 0xaf004b, 0xaf4b00,
-    0x7d7d00, 0x4baf00, 0xff4b00,
-    0x963200, 0x966400, 0x649600,
-    0x009664, 0x006496, 0x640096,
-    0x960064, 0x960000, 0x009600,
-    0x000096, 0x7dffaf, 0x7d7daf
+    0x7DFF00,
+    0x00FF00,
+    0x00FF7D,
+    0x00FFFF,
+    0x007DFF,
+    0x0000FF,
+    0x7D00FF,
+    0xFF00FF,
+    0xFF007D,
+    0xFF0000,
+    0xFF7D00,
+    0xFFFF00,
+    0xFFFFFF,
+    0xB900FF,
+    0xFFB900,
+    0x000000,
+    0x00C8FF,
+    0xAFAFAF,
+    0x5A5A5A,
+    0xFF7D7D,
+    0x00AF4B,
+    0x007D7D,
+    0x004BAF,
+    0x4B00AF,
+    0x7D007D,
+    0xAF004B,
+    0xAF4B00,
+    0x7D7D00,
+    0x4BAF00,
+    0xFF4B00,
+    0x963200,
+    0x966400,
+    0x649600,
+    0x009664,
+    0x006496,
+    0x640096,
+    0x960064,
+    0x960000,
+    0x009600,
+    0x000096,
+    0x7DFFAF,
+    0x7D7DAF,
 )
 colors = tuple(Color(value) for value in values)
 

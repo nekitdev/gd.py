@@ -7,10 +7,11 @@ from conftest import client, gd
 
 pytestmark = pytest.mark.asyncio
 
-message = ('[gd.py] ({}): Running tests...'.format(datetime.utcnow()))
+message = "[gd.py] ({}): Running tests...".format(datetime.utcnow())
 
 
 # MAIN TESTS
+
 
 async def test_get_song():
     await client.get_song(1)
@@ -29,8 +30,8 @@ async def test_fetch_user():
 
 
 async def test_search_user():
-    await client.search_user('NeKitDS')  # 1
-    await client.find_user('RobTop')     # 2
+    await client.search_user("NeKitDS")  # 1
+    await client.find_user("RobTop")  # 2
 
 
 async def test_get_level():
@@ -47,7 +48,7 @@ async def test_get_timely():
         await client.get_daily()
         await client.get_weekly()
     except gd.MissingAccess:
-        print('Timely levels are being refreshed.')
+        print("Timely levels are being refreshed.")
 
 
 async def test_level_packs():
@@ -65,7 +66,7 @@ async def test_get_leaderboard():
 
 
 async def test_search_levels():
-    await client.search_levels(query='VorteX')
+    await client.search_levels(query="VorteX")
 
 
 async def test_hash():
@@ -76,7 +77,7 @@ async def test_hash():
 
 
 skip_not_logged = pytest.mark.skipif(
-    not client.is_logged(), reason='Test for only logged in client.'
+    not client.is_logged(), reason="Test for only logged in client."
 )
 
 

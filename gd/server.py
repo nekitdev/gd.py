@@ -10,13 +10,11 @@ import aiohttp
 from gd.typing import Any, Callable, Dict, Iterable, List, Optional, Type, ref
 import gd
 
-DEFAULT_MIDDLEWARES = [
-    web.normalize_path_middleware(append_slash=False, remove_slash=True)
-]
+DEFAULT_MIDDLEWARES = [web.normalize_path_middleware(append_slash=False, remove_slash=True)]
 CLIENT = gd.Client()
 
 Function = Callable[[Any], Any]
-Error = ref('gd.server.Error')
+Error = ref("gd.server.Error")
 
 routes = web.RouteTableDef()
 
@@ -24,42 +22,37 @@ routes = web.RouteTableDef()
 class Error:
     def __init__(self, resp_code: int, message: str, **additional) -> None:
         self.data = {
-            'status': resp_code,
-            'data': {
-                'message': message, 'exc': None, 'exc_message': None, **additional
-            }
+            "status": resp_code,
+            "data": {"message": message, "exc": None, "exc_message": None, **additional},
         }
 
     def set_error(self, exc: BaseException) -> Error:
-        to_add = {
-            'exc': type(exc).__name__,
-            'exc_message': str(exc)
-        }
-        self.data.get('data').update(to_add)
+        to_add = {"exc": type(exc).__name__, "exc_message": str(exc)}
+        self.data.get("data").update(to_add)
         return self
 
     def into_resp(self, **kwargs) -> web.Response:
         return json_resp(**self.data, **kwargs)
 
 
-DEFAULT_ERROR = Error(500, 'Server got into trouble.')
+DEFAULT_ERROR = Error(500, "Server got into trouble.")
 
 
 def json_dump(*args, **kwargs) -> str:
-    kwargs.setdefault('indent', 4)
+    kwargs.setdefault("indent", 4)
     return gd.utils.dump(*args, **kwargs)
 
 
 def json_resp(*args, **kwargs) -> web.Response:
-    func = json_dump if kwargs.pop('use_indent', True) else gd.utils.dump
-    kwargs.setdefault('dumps', func)
+    func = json_dump if kwargs.pop("use_indent", True) else gd.utils.dump
+    kwargs.setdefault("dumps", func)
     return web.json_response(*args, **kwargs)
 
 
 def create_app(**kwargs) -> web.Application:
-    kwargs.setdefault('middlewares', DEFAULT_MIDDLEWARES)
+    kwargs.setdefault("middlewares", DEFAULT_MIDDLEWARES)
     app = web.Application(**kwargs)
-    app.client = kwargs.get('client', CLIENT)
+    app.client = kwargs.get("client", CLIENT)
     app.add_routes(routes)
 
     print()
@@ -90,13 +83,14 @@ def handle_errors(error_dict: Optional[Dict[Type[BaseException], Error]] = None)
                 return error_dict.get(type(error), DEFAULT_ERROR).set_error(error).into_resp()
 
         return wrapper
+
     return decorator
 
 
 def str_to_bool(
     string: str,
-    true: Iterable[str] = {'yes', 'y', 'true', 't', '1', 'yeah', 'yep'},
-    false: Iterable[str] = {'no', 'n', 'false', 'f', '0', 'nah', 'nope'}
+    true: Iterable[str] = {"yes", "y", "true", "t", "1", "yeah", "yep"},
+    false: Iterable[str] = {"no", "n", "false", "f", "0", "nah", "nope"},
 ) -> bool:  # I thought it might be cool ~ nekit
     string = string.casefold()
     if string in true:
@@ -104,22 +98,23 @@ def str_to_bool(
     elif string in false:
         return False
     else:
-        raise ValueError('Invalid string given: {!r}.'.format(string))
+        raise ValueError("Invalid string given: {!r}.".format(string))
 
 
 def parse_routes(routes: Iterable[web.RouteDef]) -> List[Dict[str, Optional[str]]]:
     def gen():
         for route in routes:
             yield {
-                'name': route.handler.__name__,
-                'description': route.handler.__doc__.replace('    ', '\t'),
-                'path': route.path,
-                'method': route.method
+                "name": route.handler.__name__,
+                "description": route.handler.__doc__.replace("    ", "\t"),
+                "path": route.path,
+                "method": route.method,
             }
+
     return list(gen())
 
 
-@routes.get('/api')
+@routes.get("/api")
 async def main_page(request: web.Request) -> web.Response:
     """GET /api
     Description:
@@ -130,19 +125,21 @@ async def main_page(request: web.Request) -> web.Response:
         200 - JSON with API info.
     """
     payload = {
-        'aiohttp': aiohttp.__version__,
-        'gd.py': gd.__version__,
-        'python': platform.python_version(),
-        'routes': parse_routes(routes)
+        "aiohttp": aiohttp.__version__,
+        "gd.py": gd.__version__,
+        "python": platform.python_version(),
+        "routes": parse_routes(routes),
     }
     return json_resp(payload)
 
 
-@routes.get('/api/user/{id}')
-@handle_errors({
-    ValueError: Error(400, 'Invalid type in payload.'),
-    gd.MissingAccess: Error(404, 'Requested user not found.')
-})
+@routes.get("/api/user/{id}")
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload."),
+        gd.MissingAccess: Error(404, "Requested user not found."),
+    }
+)
 async def user_get(request: web.Request) -> web.Response:
     """GET /api/user/{id}
     Description:
@@ -154,16 +151,18 @@ async def user_get(request: web.Request) -> web.Response:
         400 - Invalid type;
         404 - User was not found.
     """
-    query = int(request.match_info.get('id'))
+    query = int(request.match_info.get("id"))
     return json_resp(await request.app.client.get_user(query))
 
 
-@routes.get('/api/song/{id}')
-@handle_errors({
-    ValueError: Error(400, 'Invalid type in payload.'),
-    gd.MissingAccess: Error(404, 'Requested song not found.'),
-    gd.SongRestrictedForUsage: Error(403, 'Song is not allowed for use.')
-})
+@routes.get("/api/song/{id}")
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload."),
+        gd.MissingAccess: Error(404, "Requested song not found."),
+        gd.SongRestrictedForUsage: Error(403, "Song is not allowed for use."),
+    }
+)
 async def song_search(request: web.Request) -> web.Response:
     """GET /api/song/{id}
     Description:
@@ -176,14 +175,12 @@ async def song_search(request: web.Request) -> web.Response:
         403 - Song is not allowed to use;
         404 - Song was not found.
     """
-    query = int(request.match_info.get('id'))
+    query = int(request.match_info.get("id"))
     return json_resp(await request.app.client.get_song(query))
 
 
-@routes.get('/api/search/user/{query}')
-@handle_errors({
-    gd.MissingAccess: Error(404, 'Requested user was not found.')
-})
+@routes.get("/api/search/user/{query}")
+@handle_errors({gd.MissingAccess: Error(404, "Requested user was not found.")})
 async def user_search(request: web.Request) -> web.Response:
     """GET /api/search/user/{query}
     Description:
@@ -194,15 +191,17 @@ async def user_search(request: web.Request) -> web.Response:
         200 - JSON with user info;
         404 - User was not found.
     """
-    query = request.match_info.get('query')
+    query = request.match_info.get("query")
     return json_resp(await request.app.client.search_user(query))
 
 
-@routes.get('/api/level/{id}')
-@handle_errors({
-    ValueError: Error(400, 'Invalid type in payload.'),
-    gd.MissingAccess: Error(404, 'Requested level was not found')
-})
+@routes.get("/api/level/{id}")
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload."),
+        gd.MissingAccess: Error(404, "Requested level was not found"),
+    }
+)
 async def get_level(request: web.Request) -> web.Response:
     """GET /api/level/{id}
     Description:
@@ -214,14 +213,12 @@ async def get_level(request: web.Request) -> web.Response:
         400 - Invalid type;
         404 - Level was not found.
     """
-    query = int(request.match_info.get('id'))
+    query = int(request.match_info.get("id"))
     return json_resp(await request.app.client.get_level(query))
 
 
-@routes.get('/api/daily')
-@handle_errors({
-    gd.MissingAccess: Error(404, 'Daily is likely being refreshed.')
-})
+@routes.get("/api/daily")
+@handle_errors({gd.MissingAccess: Error(404, "Daily is likely being refreshed.")})
 async def get_daily(request: web.Request) -> web.Response:
     """GET /api/daily
     Description:
@@ -235,10 +232,8 @@ async def get_daily(request: web.Request) -> web.Response:
     return json_resp(await request.app.client.get_daily())
 
 
-@routes.get('/api/weekly')
-@handle_errors({
-    gd.MissingAccess: Error(404, 'Weekly is likely being refreshed.')
-})
+@routes.get("/api/weekly")
+@handle_errors({gd.MissingAccess: Error(404, "Weekly is likely being refreshed.")})
 async def get_weekly(request: web.Request) -> web.Response:
     """GET /api/weekly
     Description:
@@ -252,11 +247,13 @@ async def get_weekly(request: web.Request) -> web.Response:
     return json_resp(await request.app.client.get_weekly())
 
 
-@routes.get('/api/ng/song/{id}')
-@handle_errors({
-    ValueError: Error(400, 'Invalid type in payload.'),
-    gd.MissingAccess: Error(404, 'Requested song not found.'),
-})
+@routes.get("/api/ng/song/{id}")
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload."),
+        gd.MissingAccess: Error(404, "Requested song not found."),
+    }
+)
 async def ng_song_search(request: web.Request) -> web.Response:
     """GET /api/ng/song/{id}
     Description:
@@ -268,14 +265,12 @@ async def ng_song_search(request: web.Request) -> web.Response:
         400 - Invalid type in payload;
         404 - Song was not found.
     """
-    query = int(request.match_info.get('id'))
+    query = int(request.match_info.get("id"))
     return json_resp(await request.app.client.get_song(query))
 
 
-@routes.get('/api/ng/users/{query}')
-@handle_errors({
-    ValueError: Error(400, 'Invalid type in payload.')
-})
+@routes.get("/api/ng/users/{query}")
+@handle_errors({ValueError: Error(400, "Invalid type in payload.")})
 async def ng_user_search(request: web.Request) -> web.Response:
     """GET /api/ng/users/{query}
     Description:
@@ -288,17 +283,13 @@ async def ng_user_search(request: web.Request) -> web.Response:
         200 - JSON with user info;
         400 - Invalid type in payload.
     """
-    query = request.match_info.get('query')
-    pages = map(int, request.rel_url.query.get('pages', '0').split(','))
-    return json_resp(gd.utils.unique(
-        await request.app.client.search_users(query, pages=pages)
-    ))
+    query = request.match_info.get("query")
+    pages = map(int, request.rel_url.query.get("pages", "0").split(","))
+    return json_resp(gd.utils.unique(await request.app.client.search_users(query, pages=pages)))
 
 
-@routes.get('/api/ng/songs/{query}')
-@handle_errors({
-    ValueError: Error(400, 'Invalid type in payload.')
-})
+@routes.get("/api/ng/songs/{query}")
+@handle_errors({ValueError: Error(400, "Invalid type in payload.")})
 async def ng_songs_search(request: web.Request) -> web.Response:
     """GET /api/ng/songs/{query}
     Description:
@@ -311,14 +302,12 @@ async def ng_songs_search(request: web.Request) -> web.Response:
         200 - JSON with user info;
         400 - Invalid type in payload.
     """
-    query = request.match_info.get('query')
-    pages = map(int, request.rel_url.query.get('pages', '0').split(','))
-    return json_resp(gd.utils.unique(
-        await request.app.client.search_songs(query, pages=pages)
-    ))
+    query = request.match_info.get("query")
+    pages = map(int, request.rel_url.query.get("pages", "0").split(","))
+    return json_resp(gd.utils.unique(await request.app.client.search_songs(query, pages=pages)))
 
 
-@routes.get('/api/ng/user_songs/{user}')
+@routes.get("/api/ng/user_songs/{user}")
 @handle_errors()
 async def search_songs_by_user(request: web.Request) -> web.Response:
     """GET /api/ng/user_songs/{user}
@@ -331,8 +320,6 @@ async def search_songs_by_user(request: web.Request) -> web.Response:
     Returns:
         200 - JSON with song info.
     """
-    query = request.match_info.get('user')
-    pages = map(int, request.rel_url.query.get('pages', '0').split(','))
-    return json_resp(
-        await request.app.client.get_user_songs(query, pages=pages)
-    )
+    query = request.match_info.get("user")
+    pages = map(int, request.rel_url.query.get("pages", "0").split(","))
+    return json_resp(await request.app.client.get_user_songs(query, pages=pages))

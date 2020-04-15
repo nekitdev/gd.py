@@ -1,6 +1,15 @@
 from .typing import (
-    AbstractUser, Any, Client, Comment, Iterable, Level, LevelRecord, Optional,
-    List, Union, User
+    AbstractUser,
+    Any,
+    Client,
+    Comment,
+    Iterable,
+    Level,
+    LevelRecord,
+    Optional,
+    List,
+    Union,
+    User,
 )
 
 from .abstractentity import AbstractEntity
@@ -24,48 +33,42 @@ class AbstractUser(AbstractEntity):
     """Class that represents an Abstract Geometry Dash User.
     This class is derived from :class:`.AbstractEntity`.
     """
+
     def __init__(self, *, client: Client, **options) -> None:
         options.update(
-            {key: try_int(value) for key, value in options.items() if key in {'account_id', 'id'}}
+            {key: try_int(value) for key, value in options.items() if key in {"account_id", "id"}}
         )
         super().__init__(client=client, **options)
 
     def __repr__(self) -> str:
-        info = {
-            'name': repr(self.name),
-            'id': self.id,
-            'account_id': self.account_id
-        }
+        info = {"name": repr(self.name), "id": self.id, "account_id": self.account_id}
         return make_repr(self, info)
 
     def __str__(self) -> str:
         return str(self.name)
 
     @classmethod
-    def from_data(
-        cls, data: ExtDict, type: str = 'normal', *, client: Client
-    ) -> AbstractUser:
+    def from_data(cls, data: ExtDict, type: str = "normal", *, client: Client) -> AbstractUser:
         return cls(
             account_id=data.getcast(Index.USER_ACCOUNT_ID, 0, int),
             id=data.getcast(Index.USER_PLAYER_ID, 0, int),
-            name=data.get(Index.USER_NAME, 'unknown'), client=client
+            name=data.get(Index.USER_NAME, "unknown"),
+            client=client,
         )
 
     @property
     def name(self) -> str:
         """:class:`str`: String representing name of the user."""
-        return self.options.get('name', '')
+        return self.options.get("name", "")
 
     @property
     def account_id(self) -> int:
         """:class:`int`: Account ID of the user."""
-        return self.options.get('account_id', 0)
+        return self.options.get("account_id", 0)
 
     @property
     def parse_dict(self) -> ExtDict:
-        return ExtDict({
-            k: getattr(self, k) for k in ('name', 'id', 'account_id')
-        })
+        return ExtDict({k: getattr(self, k) for k in ("name", "id", "account_id")})
 
     def is_registered(self) -> bool:
         """:class:`bool`: Indicates whether user is registered or not."""
@@ -214,7 +217,8 @@ class AbstractUser(AbstractEntity):
         """
         filters = Filters.setup_by_user()
         return await self.client.search_levels_on_page(
-            page=page, filters=filters, user=self, raise_errors=raise_errors)
+            page=page, filters=filters, user=self, raise_errors=raise_errors
+        )
 
     async def get_levels(self, pages: Iterable[int] = range(10)) -> List[Level]:
         """|coro|
@@ -254,7 +258,7 @@ class AbstractUser(AbstractEntity):
 
             await self.retrieve_page_comments('profile', page)
         """
-        return await self.retrieve_page_comments('profile', page)
+        return await self.retrieve_page_comments("profile", page)
 
     async def get_page_comment_history(
         self, strategy: Union[int, str, CommentStrategy] = 0, page: int = 0
@@ -269,7 +273,7 @@ class AbstractUser(AbstractEntity):
 
             await self.retrieve_page_comments('profile', page, strategy=strategy)
         """
-        return await self.retrieve_page_comments('level', page, strategy=strategy)
+        return await self.retrieve_page_comments("level", page, strategy=strategy)
 
     async def get_comments(self, pages: Optional[Iterable[int]] = range(10)) -> List[Comment]:
         """|coro|
@@ -282,10 +286,12 @@ class AbstractUser(AbstractEntity):
 
             await self.retrieve_comments('profile', pages)
         """
-        return await self.retrieve_comments('profile', pages)
+        return await self.retrieve_comments("profile", pages)
 
     async def get_comment_history(
-        self, strategy: Union[int, str, CommentStrategy] = 0, pages: Optional[Iterable[int]] = range(10)
+        self,
+        strategy: Union[int, str, CommentStrategy] = 0,
+        pages: Optional[Iterable[int]] = range(10),
     ) -> List[Comment]:
         """|coro|
 
@@ -297,11 +303,15 @@ class AbstractUser(AbstractEntity):
 
             await self.retrieve_comments('level', pages, strategy=strategy)
         """
-        return await self.retrieve_comments('level', pages, strategy=strategy)
+        return await self.retrieve_comments("level", pages, strategy=strategy)
 
     async def retrieve_page_comments(
-        self, type: str = 'profile', page: int = 0, *, raise_errors: bool = True,
-        strategy: Union[int, str, CommentStrategy] = 0
+        self,
+        type: str = "profile",
+        page: int = 0,
+        *,
+        raise_errors: bool = True,
+        strategy: Union[int, str, CommentStrategy] = 0,
     ) -> List[Comment]:
         """|coro|
 
@@ -337,11 +347,14 @@ class AbstractUser(AbstractEntity):
             No comments were found.
         """
         return await self.client.retrieve_page_comments(
-            self, type=type, page=page, raise_errors=raise_errors, strategy=strategy)
+            self, type=type, page=page, raise_errors=raise_errors, strategy=strategy
+        )
 
     async def retrieve_comments(
-        self, type: str = 'profile', pages: Optional[Iterable[int]] = range(10),
-        strategy: Union[int, str, CommentStrategy] = 0
+        self,
+        type: str = "profile",
+        pages: Optional[Iterable[int]] = range(10),
+        strategy: Union[int, str, CommentStrategy] = 0,
     ) -> List[Comment]:
         """|coro|
 
@@ -372,9 +385,10 @@ class LevelRecord(AbstractUser):
     """Class that represents Geometry Dash User's Level Record.
     This class is derived from :class:`.AbstractUser`.
     """
+
     def __repr__(self) -> str:
         info = self.options.copy()
-        info.pop('client', None)
+        info.pop("client", None)
         return make_repr(self, info)
 
     @classmethod
@@ -383,14 +397,15 @@ class LevelRecord(AbstractUser):
     ) -> LevelRecord:
         return cls(
             account_id=data.getcast(Index.USER_ACCOUNT_ID, 0, int),
-            name=data.get(Index.USER_NAME, 'unknown'),
+            name=data.get(Index.USER_NAME, "unknown"),
             id=data.getcast(Index.USER_PLAYER_ID, 0, int),
             level_id=data.getcast(Index.USER_LEVEL_ID, 0, int),
             lb_place=data.getcast(Index.USER_TOP_PLACE, 0, int),
             percentage=data.getcast(Index.USER_PERCENT, 0, int),
             coins=data.getcast(Index.USER_SECRET_COINS, 0, int),
-            timestamp=data.get(Index.USER_RECORD_TIMESTAMP, 'unknown'),
-            type=strategy, client=client
+            timestamp=data.get(Index.USER_RECORD_TIMESTAMP, "unknown"),
+            type=strategy,
+            client=client,
         )
 
     async def update(self) -> None:
@@ -409,28 +424,28 @@ class LevelRecord(AbstractUser):
     @property
     def level_id(self) -> int:
         """:class:`int`: An integer representing ID of the level the record was retrieved from."""
-        return self.options.get('level_id', 0)
+        return self.options.get("level_id", 0)
 
     @property
     def percentage(self) -> int:
         """:class:`int`: Percentage of the record."""
-        return self.options.get('percentage', 0)
+        return self.options.get("percentage", 0)
 
     @property
     def coins(self) -> int:
         """:class:`int`: Amount of coins collected."""
-        return self.options.get('coins', 0)
+        return self.options.get("coins", 0)
 
     @property
     def timestamp(self) -> str:
         """:class:`str`: Human-readable string representation of a timestamp."""
-        return self.options.get('timestamp', 'unknown')
+        return self.options.get("timestamp", "unknown")
 
     @property
     def lb_place(self) -> int:
         """:class:`int`: User's place in leaderboard. ``0`` if not set."""
-        return self.options.get('lb_place', 0)
+        return self.options.get("lb_place", 0)
 
     @property
     def type(self) -> LevelLeaderboardStrategy:
-        return LevelLeaderboardStrategy.from_value(self.options.get('type', 0))
+        return LevelLeaderboardStrategy.from_value(self.options.get("type", 0))

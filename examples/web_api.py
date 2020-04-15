@@ -15,7 +15,7 @@ routes = web.RouteTableDef()
 
 def json_resp(item: object, **kwargs) -> str:
     # enforce <application/json> content type
-    kwargs.update(content_type='application/json')
+    kwargs.update(content_type="application/json")
     # gd.py introduces gd.utils.dump method, used
     # for conveniently converting its objects to
     # JSON-resizable dictionaries
@@ -23,10 +23,10 @@ def json_resp(item: object, **kwargs) -> str:
 
 
 # let our app listen to GET requests
-@routes.get('/api/user/{query}')
+@routes.get("/api/user/{query}")
 async def get_user(request):
     try:
-        req = request.match_info.get('query')
+        req = request.match_info.get("query")
         # try to convert query to an integer
         try:
             query = int(req)
@@ -44,7 +44,8 @@ async def get_user(request):
 
     # return 404 if we have not found any users
     except Exception:
-        raise web.HTTPNotFound(text='Failed to find a user by the query: {!r}'.format(query))
+        raise web.HTTPNotFound(text="Failed to find a user by the query: {!r}".format(query))
+
 
 # initialize an application
 app = web.Application()

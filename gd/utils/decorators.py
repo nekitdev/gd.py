@@ -7,9 +7,7 @@ from ..errors import NotLoggedError, MissingAccess
 
 Function = Callable[[Any], Any]
 
-__all__ = (
-    'check_logged', 'check_logged_obj', 'benchmark', 'run_once'
-)
+__all__ = ("check_logged", "check_logged_obj", "benchmark", "run_once")
 
 
 def check_logged(func: Function) -> Function:
@@ -20,24 +18,23 @@ def check_logged(func: Function) -> Function:
         check_logged_obj(obj, func.__name__)
 
         return func(obj, *args, **kwargs)
+
     return wrapper
 
 
 def check_logged_obj(obj: Any, func_name: str) -> None:
     try:
-        client = obj if hasattr(obj, 'is_logged') else obj.client
+        client = obj if hasattr(obj, "is_logged") else obj.client
 
     except AttributeError:
-        raise MissingAccess(
-            message='Failed to find client on object: {!r}.'.format(obj)
-        ) from None
+        raise MissingAccess(message="Failed to find client on object: {!r}.".format(obj)) from None
 
     else:
         if client is None:
             raise MissingAccess(
                 message=(
-                    'Attempt to check if client is logged for {!r} returned None. '
-                    'Have you made this object by hand?'
+                    "Attempt to check if client is logged for {!r} returned None. "
+                    "Have you made this object by hand?"
                 ).format(obj)
             )
 
@@ -53,25 +50,22 @@ def benchmark(func: Function) -> Function:
         res = func(*args, **kwargs)
         end = time.perf_counter()
 
-        time_taken = (end-start)*1000
+        time_taken = (end - start) * 1000
 
-        thing = (
-            'Executed {0!r}\n'
-            'Estimated time: {1:,.2f}ms.'
-        ).format(func, time_taken)
+        thing = ("Executed {0!r}\n" "Estimated time: {1:,.2f}ms.").format(func, time_taken)
 
         print(thing)
 
         return res
+
     return decorator
 
 
 def run_once(func: Function) -> Function:
-
     @functools.wraps(func)
     def wrapper(*args, **kwargs) -> Any:
 
-        if not hasattr(func, '_res'):
+        if not hasattr(func, "_res"):
             func._res = func(*args, **kwargs)
 
         return func._res

@@ -1,11 +1,11 @@
 from .typing import Any, Dict, Optional
 
-__all__ = ('Jokes', 'jokes')
+__all__ = ("Jokes", "jokes")
 
 
 class Jokes:
     def __repr__(self) -> str:
-        return '<jokes>'
+        return "<jokes>"
 
     def __getattr__(self, name: str) -> None:
         joke = self.get(name)
@@ -35,27 +35,27 @@ class Jokes:
 jokes = Jokes()
 
 joke_map = {
-    'miko': 'oh boy what name does she have this week',
-    'nekit': 'oh damn I missed a certain feature of gd in my api',
-    'colon': 'okay google comment something on my profile',
-    'cos8o': 'have you heard of hyperdash?',
-    'cvolton': 'what if we take gd, and make it so you get free rates from random people',
-    'smjs': 'does not like python',
-    '101arrowz': 'code cleaning 101',
-    'absolute': 'mega hack v5032 when',
-    'adafcaefc': 'we need more numbers in the progress bar',
-    'alex': 'loading everything at the same time != good code',
-    'alex1304': 'how are your codes so clean?',
-    'alphalaneous': 'let\'s interface gd',
-    'blaze': 'stop using mac',
-    'cyber': 'why not use rust?',
-    'devexit': 'lol just beat zodiac',
-    'italianapkdownloader': 'let\'s hook super mario maker to gd',
-    'mgostih': 'smart and rust',
-    'noah': 'let\'s copy osu for all my design',
-    'pavlukivan': 'new gd codes are out: hold my beer',
-    'pizzaroot': 'asian student stereotype',
-    'rya': 'lol rebooting my gdps for the 80th time',
-    'sputnix': 'let\'s make gta5 in gd',
-    'zmx': 'no rust is a shit language stop telling me to use it'
+    "miko": "oh boy what name does she have this week",
+    "nekit": "oh damn I missed a certain feature of gd in my api",
+    "colon": "okay google comment something on my profile",
+    "cos8o": "have you heard of hyperdash?",
+    "cvolton": "what if we take gd, and make it so you get free rates from random people",
+    "smjs": "does not like python",
+    "101arrowz": "code cleaning 101",
+    "absolute": "mega hack v5032 when",
+    "adafcaefc": "we need more numbers in the progress bar",
+    "alex": "loading everything at the same time != good code",
+    "alex1304": "how are your codes so clean?",
+    "alphalaneous": "let's interface gd",
+    "blaze": "stop using mac",
+    "cyber": "why not use rust?",
+    "devexit": "lol just beat zodiac",
+    "italianapkdownloader": "let's hook super mario maker to gd",
+    "mgostih": "smart and rust",
+    "noah": "let's copy osu for all my design",
+    "pavlukivan": "new gd codes are out: hold my beer",
+    "pizzaroot": "asian student stereotype",
+    "rya": "lol rebooting my gdps for the 80th time",
+    "sputnix": "let's make gta5 in gd",
+    "zmx": "no rust is a shit language stop telling me to use it",
 }

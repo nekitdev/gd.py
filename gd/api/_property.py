@@ -10,15 +10,29 @@ from .enums import (
     PlayerColor,
 )
 from .parser import (  # type: ignore
-    _INT, _BOOL, _FLOAT, _HSV, _ENUMS, _TEXT, _GROUPS,
-    _COLOR_INT, _COLOR_BOOL, _COLOR_PLAYER, _COLOR_FLOAT, _COLOR_HSV,
-    _HEADER_INT, _HEADER_BOOL, _HEADER_FLOAT, _HEADER_COLORS, _COLORS, _GUIDELINES, _HEADER_ENUMS
+    _INT,
+    _BOOL,
+    _FLOAT,
+    _HSV,
+    _ENUMS,
+    _TEXT,
+    _GROUPS,
+    _COLOR_INT,
+    _COLOR_BOOL,
+    _COLOR_PLAYER,
+    _COLOR_FLOAT,
+    _COLOR_HSV,
+    _HEADER_INT,
+    _HEADER_BOOL,
+    _HEADER_FLOAT,
+    _HEADER_COLORS,
+    _COLORS,
+    _GUIDELINES,
+    _HEADER_ENUMS,
 )
 from .hsv import HSV
 
-__all__ = (
-    '_template', '_create', '_object_code', '_color_code', '_header_code', '_level_code'
-)
+__all__ = ("_template", "_create", "_object_code", "_color_code", "_header_code", "_level_code")
 
 _template = """
 @property
@@ -34,41 +48,41 @@ def {name}(self):
         del self.data[{enum!r}]
     except KeyError:
         pass
-""".strip('\n')
+""".strip(
+    "\n"
+)
 
-_container = '_container = {}'
+_container = "_container = {}"
 
 
-def _get_type(n: Union[int, str], ts: str = 'object') -> str:
+def _get_type(n: Union[int, str], ts: str = "object") -> str:
     t = {
-        'object': {
+        "object": {
             n in _INT: int,
             n in _BOOL: bool,
             n in _FLOAT: float,
             n in _HSV: HSV,
             n in _ENUMS: _ENUMS.get(n),
             n == _TEXT: str,
-            n == _GROUPS: set
+            n == _GROUPS: set,
         },
-        'color': {
+        "color": {
             n in _COLOR_INT: int,
             n in _COLOR_BOOL: bool,
             n == _COLOR_PLAYER: PlayerColor,
             n == _COLOR_FLOAT: float,
-            n == _COLOR_HSV: HSV
+            n == _COLOR_HSV: HSV,
         },
-        'header': {
+        "header": {
             n in _HEADER_INT: int,
             n in _HEADER_BOOL: bool,
             n == _HEADER_FLOAT: float,
-            n in _HEADER_COLORS: 'ColorChannel',
+            n in _HEADER_COLORS: "ColorChannel",
             n == _COLORS: list,
             n == _GUIDELINES: list,
-            n in _HEADER_ENUMS: _HEADER_ENUMS.get(n)
+            n in _HEADER_ENUMS: _HEADER_ENUMS.get(n),
         },
-        'level': {
-            True: 'soon',  # yikes!
-        }
+        "level": {True: "soon"},  # yikes!
     }
     r = t.get(ts, {}).get(1, str)
 
@@ -98,10 +112,10 @@ def _create(enum: Enum, ts: str) -> str:
 
     final.append(_container.format(property_container))
 
-    return ('\n\n').join(final)
+    return ("\n\n").join(final)
 
 
-_object_code = _create(ObjectDataEnum, 'object')
-_color_code = _create(ColorChannelProperties, 'color')
-_header_code = _create(LevelHeaderEnum, 'header')
-_level_code = _create(LevelDataEnum, 'level')
+_object_code = _create(ObjectDataEnum, "object")
+_color_code = _create(ColorChannelProperties, "color")
+_header_code = _create(LevelHeaderEnum, "header")
+_level_code = _create(LevelDataEnum, "level")

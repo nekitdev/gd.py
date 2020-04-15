@@ -2,11 +2,16 @@ import asyncio
 import atexit
 
 from .listener import (
-    run as run_loop, get_loop, shutdown_loop,
-    all_listeners, thread, update_thread_loop, set_loop
+    run as run_loop,
+    get_loop,
+    shutdown_loop,
+    all_listeners,
+    thread,
+    update_thread_loop,
+    set_loop,
 )
 
-__all__ = ('disable', 'start', 'run', 'attach_to_loop')
+__all__ = ("disable", "start", "run", "attach_to_loop")
 
 
 def disable() -> None:

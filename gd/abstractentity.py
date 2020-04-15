@@ -21,12 +21,13 @@ class AbstractEntity:
 
             Returns ``hash(self.hash_str)``.
     """
+
     def __init__(self, *, client: Client, **options) -> None:
         self.options = options
         self.attach_client(client)
 
     def __repr__(self) -> str:
-        info = {'id': self.id}
+        info = {"id": self.id}
         return make_repr(self, info)
 
     def __str__(self) -> str:
@@ -36,7 +37,7 @@ class AbstractEntity:
         return hash(self.hash_str)
 
     def __eq__(self, other: AbstractEntity) -> bool:
-        if not hasattr(other, 'id'):
+        if not hasattr(other, "id"):
             return False
         return type(self) == type(other) and self.id == other.id
 
@@ -53,20 +54,20 @@ class AbstractEntity:
     @property
     def hash_str(self) -> str:
         cls = self.__class__.__name__
-        return '<GDEntity<{}(ID->{})>>'.format(cls, self.id)
+        return "<GDEntity<{}(ID->{})>>".format(cls, self.id)
 
     @property
     def id(self) -> int:
         """:class:`int`: ID of the Entity."""
-        return self.options.get('id', 0)
+        return self.options.get("id", 0)
 
     @property
     def client(self) -> Client:
         """:class:`.Client`: Client attached to this object."""
-        client = self.options.get('client')
+        client = self.options.get("client")
 
         if client is None:
-            raise ClientException('Client is not attached to an entity: {!r}.'.format(self))
+            raise ClientException("Client is not attached to an entity: {!r}.".format(self))
 
         return client
 

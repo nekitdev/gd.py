@@ -11,21 +11,21 @@ from ..utils.text_tools import make_repr
 
 from .save import Database
 
-__all__ = ('SaveUtil', 'get_path', 'save', 'make_db', 'set_path')
+__all__ = ("SaveUtil", "get_path", "save", "make_db", "set_path")
 
-MAIN = 'CCGameManager.dat'
-LEVELS = 'CCLocalLevels.dat'
+MAIN = "CCGameManager.dat"
+LEVELS = "CCLocalLevels.dat"
 
 PathLike = Optional[Union[str, Path]]
 
 try:
-    if sys.platform == 'win32':
-        local_env = os.getenv('localappdata')
-        path = Path(local_env) / 'GeometryDash'
+    if sys.platform == "win32":
+        local_env = os.getenv("localappdata")
+        path = Path(local_env) / "GeometryDash"
 
-    elif sys.platform == 'darwin':
-        local_env = os.getenv('HOME')
-        path = Path(local_env) / 'Library' / 'Application Support' / 'Geometry Dash'
+    elif sys.platform == "darwin":
+        local_env = os.getenv("HOME")
+        path = Path(local_env) / "Library" / "Application Support" / "Geometry Dash"
         # TODO: figure out encoding of MacOS GD saves (if possible)
 
     else:
@@ -61,33 +61,29 @@ class SaveUtil:
         return self._local_dump(*args, **kwargs)
 
     async def to_string_async(self, *args, **kwargs) -> str:
-        return await run_blocking_io(
-            functools.partial(self._dump, *args, **kwargs)
-        )
+        return await run_blocking_io(functools.partial(self._dump, *args, **kwargs))
 
     def to_string(self, *args, **kwargs) -> str:
         return self._dump(*args, **kwargs)
 
     async def from_string_async(self, *args, **kwargs) -> Database:
-        return await run_blocking_io(
-            functools.partial(self._load, *args, **kwargs)
-        )
+        return await run_blocking_io(functools.partial(self._load, *args, **kwargs))
 
     def from_string(self, *args, **kwargs) -> Database:
         return self._load(*args, **kwargs)
 
-    def make_db(self, main: str = '', levels: str = '') -> Database:
+    def make_db(self, main: str = "", levels: str = "") -> Database:
         return Database(main, levels)
 
     def _decode(self, stream: Union[bytes, str], xor: bool = True) -> str:
         if isinstance(stream, bytes):
-            stream = stream.decode(errors='ignore')
+            stream = stream.decode(errors="ignore")
         try:
             return Coder.decode_save(stream, needs_xor=xor)
         except Exception:
-            return ''
+            return ""
 
-    def _load(self, main: str = '', levels: str = '', xor: bool = True) -> Database:
+    def _load(self, main: str = "", levels: str = "", xor: bool = True) -> Database:
         main = self._decode(main, xor=xor)
         levels = self._decode(levels, xor=xor)
         return Database(main, levels)
@@ -103,13 +99,16 @@ class SaveUtil:
         main, levels, *_ = parts
 
         if connect:
-            return main + ';' + levels
+            return main + ";" + levels
         else:
             return main, levels
 
     def _local_load(
-        self, main: Optional[PathLike] = None, levels: Optional[PathLike] = None,
-        default_main: PathLike = MAIN, default_levels: PathLike = LEVELS
+        self,
+        main: Optional[PathLike] = None,
+        levels: Optional[PathLike] = None,
+        default_main: PathLike = MAIN,
+        default_levels: PathLike = LEVELS,
     ) -> Database:
         main_path = _config_path(main, default_main)
         levels_path = _config_path(levels, default_levels)
@@ -119,7 +118,7 @@ class SaveUtil:
 
             for path in (main_path, levels_path):
 
-                with open(path, 'r') as file:
+                with open(path, "r") as file:
                     parts.append(file.read())
 
             return self._load(*parts)
@@ -128,8 +127,12 @@ class SaveUtil:
             return self.make_db()
 
     def _local_dump(
-        self, db: Database, main: PathLike = None, levels: PathLike = None,
-        default_main: PathLike = MAIN, default_levels: PathLike = LEVELS
+        self,
+        db: Database,
+        main: PathLike = None,
+        levels: PathLike = None,
+        default_main: PathLike = MAIN,
+        default_levels: PathLike = LEVELS,
     ) -> None:
         main_path = _config_path(main, default_main)
         levels_path = _config_path(levels, default_levels)
@@ -138,7 +141,7 @@ class SaveUtil:
 
         for file, part in zip(files, db.as_tuple()):
 
-            with open(file, 'w') as data_file:
+            with open(file, "w") as data_file:
                 data_file.write(part.encode())
 
 

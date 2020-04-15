@@ -1,31 +1,31 @@
 from ..utils.enums import NEnum
 
 __all__ = (
-    'ObjectDataEnum',
-    'ColorChannelProperties',
-    'PlayerColor',
-    'CustomParticleGrouping',
-    'CustomParticleProperty1',
-    'Easing',
-    'PulseMode',
-    'InstantCountComparison',
-    'OrbType',
-    'PadType',
-    'PortalType',
-    'PickupItemMode',
-    'PulseType',
-    'SpecialBlockType',
-    'SpecialColorID',
-    'TargetPosCoordinates',
-    'TouchToggleMode',
-    'TriggerType',
-    'ZLayer',
-    'MiscType',
-    'Gamemode',
-    'Speed',
-    'SpeedMagic',
-    'LevelDataEnum',
-    'LevelHeaderEnum'
+    "ObjectDataEnum",
+    "ColorChannelProperties",
+    "PlayerColor",
+    "CustomParticleGrouping",
+    "CustomParticleProperty1",
+    "Easing",
+    "PulseMode",
+    "InstantCountComparison",
+    "OrbType",
+    "PadType",
+    "PortalType",
+    "PickupItemMode",
+    "PulseType",
+    "SpecialBlockType",
+    "SpecialColorID",
+    "TargetPosCoordinates",
+    "TouchToggleMode",
+    "TriggerType",
+    "ZLayer",
+    "MiscType",
+    "Gamemode",
+    "Speed",
+    "SpeedMagic",
+    "LevelDataEnum",
+    "LevelHeaderEnum",
 )
 
 
@@ -467,117 +467,117 @@ class ZLayer(NEnum):
 
 
 class Speed(NEnum):
-    NORMAL = 0   # x 1
-    SLOW = 1     # x 0.5
-    FAST = 2     # x 2
-    FASTER = 3   # x 3
+    NORMAL = 0  # x 1
+    SLOW = 1  # x 0.5
+    FAST = 2  # x 2
+    FASTER = 3  # x 3
     FASTEST = 4  # x 4
 
 
 class SpeedMagic(NEnum):
-    SLOW = 251.16     # x 0.5
-    NORMAL = 311.58   # x 1
-    FAST = 387.42     # x 2
-    FASTER = 468.0    # x 3
-    FASTEST = 576.0   # x 4
+    SLOW = 251.16  # x 0.5
+    NORMAL = 311.58  # x 1
+    FAST = 387.42  # x 2
+    FASTER = 468.0  # x 3
+    FASTEST = 576.0  # x 4
     DEFAULT = NORMAL  # -> x 1
 
 
 class LevelDataEnum(NEnum):
-    ID = 'k1'
-    NAME = 'k2'
-    DESCRIPTION = 'k3'
-    LEVEL_STRING = 'k4'
-    CREATOR = 'k5'
-    OFFICIAL_SONG = 'k8'
-    DOWNLOADS = 'k11'
-    VERIFIED = 'k14'
-    UPLOADED = 'k15'
-    VERSION = 'k16'
-    ATTEMPTS = 'k18'
-    NORMAL_MODE_PERCENTAGE = 'k19'
-    PRACTICE_MODE_PERCENTAGE = 'k20'
-    LIKES = 'k22'
-    LENGTH = 'k23'
-    STARS = 'k26'
-    INFO = 'k34'
-    JUMPS = 'k36'
-    PASSWORD = 'k41'
-    ORIGINAL = 'k42'
-    CUSTOM_SONG = 'k45'
-    REVISION = 'k46'
-    OBJECTS = 'k48'
-    BINARY_VERSION = 'k50'
-    FIRST_COIN_ACQUIRED = 'k61'
-    SECOND_COIN_ACQUIRED = 'k62'
-    THIRD_COIN_ACQUIRED = 'k63'
-    REQUESTED_STARS = 'k66'
-    EXTRA = 'k67'
-    UNLISTED = 'k79'
-    SECONDS_SPENT_IN_EDITOR = 'k80'
-    FOLDER = 'k84'
+    ID = "k1"
+    NAME = "k2"
+    DESCRIPTION = "k3"
+    LEVEL_STRING = "k4"
+    CREATOR = "k5"
+    OFFICIAL_SONG = "k8"
+    DOWNLOADS = "k11"
+    VERIFIED = "k14"
+    UPLOADED = "k15"
+    VERSION = "k16"
+    ATTEMPTS = "k18"
+    NORMAL_MODE_PERCENTAGE = "k19"
+    PRACTICE_MODE_PERCENTAGE = "k20"
+    LIKES = "k22"
+    LENGTH = "k23"
+    STARS = "k26"
+    INFO = "k34"
+    JUMPS = "k36"
+    PASSWORD = "k41"
+    ORIGINAL = "k42"
+    CUSTOM_SONG = "k45"
+    REVISION = "k46"
+    OBJECTS = "k48"
+    BINARY_VERSION = "k50"
+    FIRST_COIN_ACQUIRED = "k61"
+    SECOND_COIN_ACQUIRED = "k62"
+    THIRD_COIN_ACQUIRED = "k63"
+    REQUESTED_STARS = "k66"
+    EXTRA = "k67"
+    UNLISTED = "k79"
+    SECONDS_SPENT_IN_EDITOR = "k80"
+    FOLDER = "k84"
 
-    X = 'kI1'
-    Y = 'kI2'
-    ZOOM = 'kI3'
-    BUILD_TAB_PAGE = 'kI4'
-    BUILD_TAB = 'kI5'
-    BUILD_TAB_PAGES_DICT = 'kI6'
-    EDITOR_LAYER = 'kI7'
+    X = "kI1"
+    Y = "kI2"
+    ZOOM = "kI3"
+    BUILD_TAB_PAGE = "kI4"
+    BUILD_TAB = "kI5"
+    BUILD_TAB_PAGES_DICT = "kI6"
+    EDITOR_LAYER = "kI7"
 
-    KCEK = 'kCEK'  # int
+    KCEK = "kCEK"  # int
 
 
 class LevelHeaderEnum(NEnum):
-    AUDIO_TRACK = 'kA1'
-    GAMEMODE = 'kA2'
-    MINIMODE = 'kA3'
-    SPEED = 'kA4'
-    COLOR_1_BLEND = 'kA5'
-    BACKGROUND = 'kA6'
-    GROUND = 'kA7'
-    DUAL_MODE = 'kA8'
-    LEVEL_OR_START_POS_OBJECT = 'kA9'
-    TWO_PLAYER_MODE = 'kA10'
-    FLIP_GRAVITY = 'kA11'
-    SONG_OFFSET = 'kA13'
-    GUIDELINES = 'kA14'
-    SONG_FADE_IN = 'kA15'
-    SONG_FADE_OUT = 'kA16'
-    GROUND_LINE = 'kA17'
-    FONT = 'kA18'
-    COLORS = 'kS38'
-    COLOR_PAGES = 'kS39'
+    AUDIO_TRACK = "kA1"
+    GAMEMODE = "kA2"
+    MINIMODE = "kA3"
+    SPEED = "kA4"
+    COLOR_1_BLEND = "kA5"
+    BACKGROUND = "kA6"
+    GROUND = "kA7"
+    DUAL_MODE = "kA8"
+    LEVEL_OR_START_POS_OBJECT = "kA9"
+    TWO_PLAYER_MODE = "kA10"
+    FLIP_GRAVITY = "kA11"
+    SONG_OFFSET = "kA13"
+    GUIDELINES = "kA14"
+    SONG_FADE_IN = "kA15"
+    SONG_FADE_OUT = "kA16"
+    GROUND_LINE = "kA17"
+    FONT = "kA18"
+    COLORS = "kS38"
+    COLOR_PAGES = "kS39"
 
     # <= 1.9
-    BACKGROUND_R = 'kS1'
-    BACKGROUND_G = 'kS2'
-    BACKGROUND_B = 'kS3'
-    GROUND_R = 'kS4'
-    GROUND_G = 'kS5'
-    GROUND_B = 'kS6'
-    LINE_R = 'kS7'
-    LINE_G = 'kS8'
-    LINE_B = 'kS9'
-    OBJECT_R = 'kS10'
-    OBJECT_G = 'kS11'
-    OBJECT_B = 'kS12'
-    COLOR_1_R = 'kS13'
-    COLOR_1_G = 'kS14'
-    COLOR_1_B = 'kS15'
-    BACKGROUND_PLAYER_COLOR = 'kS16'
-    GROUND_PLAYER_COLOR = 'kS17'
-    LINE_PLAYER_COLOR = 'kS18'
-    OBJECT_FORMAT = 'kS19'
-    COLOR_1_PLAYER_COLOR = 'kS20'
+    BACKGROUND_R = "kS1"
+    BACKGROUND_G = "kS2"
+    BACKGROUND_B = "kS3"
+    GROUND_R = "kS4"
+    GROUND_G = "kS5"
+    GROUND_B = "kS6"
+    LINE_R = "kS7"
+    LINE_G = "kS8"
+    LINE_B = "kS9"
+    OBJECT_R = "kS10"
+    OBJECT_G = "kS11"
+    OBJECT_B = "kS12"
+    COLOR_1_R = "kS13"
+    COLOR_1_G = "kS14"
+    COLOR_1_B = "kS15"
+    BACKGROUND_PLAYER_COLOR = "kS16"
+    GROUND_PLAYER_COLOR = "kS17"
+    LINE_PLAYER_COLOR = "kS18"
+    OBJECT_FORMAT = "kS19"
+    COLOR_1_PLAYER_COLOR = "kS20"
 
     # 1.9
-    BACKGROUND_COLOR = 'kS29'
-    GROUND_COLOR = 'kS30'
-    LINE_COLOR = 'kS31'
-    OBJECT_COLOR = 'kS32'
-    COLOR_1 = 'kS33'
-    COLOR_2 = 'kS34'
-    COLOR_3 = 'kS35'
-    COLOR_4 = 'kS36'
-    COLOR_3DL = 'kS37'
+    BACKGROUND_COLOR = "kS29"
+    GROUND_COLOR = "kS30"
+    LINE_COLOR = "kS31"
+    OBJECT_COLOR = "kS32"
+    COLOR_1 = "kS33"
+    COLOR_2 = "kS34"
+    COLOR_3 = "kS35"
+    COLOR_4 = "kS36"
+    COLOR_3DL = "kS37"

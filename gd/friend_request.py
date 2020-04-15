@@ -15,24 +15,23 @@ class FriendRequest(AbstractEntity):
     """Class that represents a friend request.
     This class is derived from :class:`.AbstractEntity`.
     """
+
     def __repr__(self) -> str:
-        info = {
-            'id': self.id,
-            'author': self.author,
-            'type': self.type
-        }
+        info = {"id": self.id, "author": self.author, "type": self.type}
         return make_repr(self, info)
 
     def __str__(self) -> str:
         return str(self.body)
 
     @classmethod
-    def from_data(cls, data: ExtDict, user_2: Union[ExtDict, AbstractUser], client: Client) -> FriendRequest:
+    def from_data(
+        cls, data: ExtDict, user_2: Union[ExtDict, AbstractUser], client: Client
+    ) -> FriendRequest:
         user_1 = AbstractUser(
-            name=data.get(Index.REQUEST_SENDER_NAME, 'unknown'),
+            name=data.get(Index.REQUEST_SENDER_NAME, "unknown"),
             id=data.getcast(Index.REQUEST_SENDER_ID, 0, int),
             account_id=data.getcast(Index.REQUEST_SENDER_ACCOUNT_ID, 0, int),
-            client=client
+            client=client,
         )
         if isinstance(user_2, ExtDict):
             user_2 = AbstractUser(**user_2, client=client)
@@ -42,45 +41,43 @@ class FriendRequest(AbstractEntity):
 
         return cls(
             id=data.getcast(Index.REQUEST_ID, 0, int),
-            timestamp=str(data.get(Index.REQUEST_TIMESTAMP, 'unknown')),
-            body=Coder.do_base64(
-                data.get(Index.REQUEST_BODY, ''), encode=False, errors='replace'
-            ),
+            timestamp=str(data.get(Index.REQUEST_TIMESTAMP, "unknown")),
+            body=Coder.do_base64(data.get(Index.REQUEST_BODY, ""), encode=False, errors="replace"),
             is_read=bool(bool(data.get(Index.REQUEST_STATUS)) ^ 1),
             author=(user_1 if is_normal else user_2),
             recipient=(user_2 if is_normal else user_1),
             type=indicator,
-            client=client
+            client=client,
         )
 
     @property
     def author(self) -> AbstractUser:
         """:class:`.AbstractUser`: An author of the friend request."""
-        return self.options.get('author', AbstractUser(client=self.client))
+        return self.options.get("author", AbstractUser(client=self.client))
 
     @property
     def recipient(self) -> AbstractUser:
         """:class:`.AbstractUser`: A recipient of the friend request."""
-        return self.options.get('recipient', AbstractUser(client=self.client))
+        return self.options.get("recipient", AbstractUser(client=self.client))
 
     @property
     def type(self) -> MessageOrRequestType:
         """:class:`.MessageOrRequestType`: Whether request is incoming or sent."""
-        return MessageOrRequestType.from_value(self.options.get('type', 0))
+        return MessageOrRequestType.from_value(self.options.get("type", 0))
 
     @property
     def body(self) -> str:
         """:class:`str`: A string representing a message request was sent with."""
-        return self.options.get('body', '')
+        return self.options.get("body", "")
 
     @property
     def timestamp(self) -> str:
         """:class:`str`: A human-readable string representing how long ago request was created."""
-        return self.options.get('timestamp', 'unknown')
+        return self.options.get("timestamp", "unknown")
 
     def is_read(self) -> bool:
         """:class:`bool`: Indicates whether request was already read."""
-        return self.options.get('is_read', False)
+        return self.options.get("is_read", False)
 
     @check_logged
     async def read(self) -> None:

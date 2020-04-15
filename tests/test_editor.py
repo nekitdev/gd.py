@@ -5,9 +5,7 @@ from conftest import client
 
 def make_editor():
     editor = gd.api.Editor()
-    editor.add_objects(
-        *(gd.api.Object(id=1, x=n*30, y=n*30) for n in range(100))
-    )
+    editor.add_objects(*(gd.api.Object(id=1, x=n * 30, y=n * 30) for n in range(100)))
     return editor
 
 

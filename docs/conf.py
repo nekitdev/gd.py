@@ -14,7 +14,7 @@ import re
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath(".."))
 
 # -- General configuration ---------------------------------------------------
 
@@ -22,20 +22,20 @@ sys.path.insert(0, os.path.abspath('..'))
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.extlinks',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.viewcode',
-    'sphinxcontrib_trio'
+    "sphinx.ext.autodoc",
+    "sphinx.ext.extlinks",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
+    "sphinxcontrib_trio",
 ]
 
-autodoc_member_order = 'bysource'
+autodoc_member_order = "bysource"
 
 # Links used for cross-referencing stuff in other documentation
 intersphinx_mapping = {
-    'py': ('https://docs.python.org/3', None),
-    'aio': ('https://aiohttp.readthedocs.io/en/stable/', None)
+    "py": ("https://docs.python.org/3", None),
+    "aio": ("https://aiohttp.readthedocs.io/en/stable/", None),
 }
 
 rst_prolog = """
@@ -46,40 +46,42 @@ rst_prolog = """
 """
 
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = ".rst"
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 # General information about the project
-project = u'gd.py'
-copyright = u'2019-2020, NeKitDS'
+project = "gd.py"
+copyright = "2019-2020, NeKitDS"
 
-version = ''
-with open('../gd/__init__.py') as f:  # version should be set at this point
+version = ""
+with open("../gd/__init__.py") as f:  # version should be set at this point
     version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE).group(1)
 
 release = version
 
-language = 'en'
+language = "en"
 
 pdf_documents = [
     (
-        'index', u'Geometry Dash Python Documentation',
-        u'gd.py documentation, built with PDF format.', u'NeKitDS'
+        "index",
+        "Geometry Dash Python Documentation",
+        "gd.py documentation, built with PDF format.",
+        "NeKitDS",
     )
 ]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ["_build"]
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'friendly'
+pygments_style = "friendly"
 
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"

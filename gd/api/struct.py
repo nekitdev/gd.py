@@ -4,23 +4,48 @@ from ..errors import EditorError
 from ..utils import search_utils as search
 
 from .parser import (
-    _dump, _convert, _collect, _process_level, _level_dump,
-    _object_dump, _object_convert, _object_collect,
-    _color_dump, _color_convert, _color_collect,
-    _header_dump, _header_convert, _header_collect,
+    _dump,
+    _convert,
+    _collect,
+    _process_level,
+    _level_dump,
+    _object_dump,
+    _object_convert,
+    _object_collect,
+    _color_dump,
+    _color_convert,
+    _color_collect,
+    _header_dump,
+    _header_convert,
+    _header_collect,
 )
 
 from .utils import _make_color, _get_dir, _define_color, get_id, get_default
 from ._property import (
-    _object_code, _color_code, _header_code, _level_code,
+    _object_code,
+    _color_code,
+    _header_code,
+    _level_code,
 )
 
 from ..typing import (
-    Any, Color, ColorChannel, ColorCollection, Dict, Editor, Header,
-    Iterable, LevelAPI, Object, Optional, Struct, Tuple, Union
+    Any,
+    Color,
+    ColorChannel,
+    ColorCollection,
+    Dict,
+    Editor,
+    Header,
+    Iterable,
+    LevelAPI,
+    Object,
+    Optional,
+    Struct,
+    Tuple,
+    Union,
 )
 
-__all__ = ('Object', 'ColorChannel', 'Header', 'LevelAPI', 'ColorCollection')
+__all__ = ("Object", "ColorChannel", "Header", "LevelAPI", "ColorCollection")
 
 Number = Union[float, int]
 
@@ -83,11 +108,11 @@ class Struct:
             return cls.from_mapping(cls._convert(string))
 
         except Exception as exc:
-            raise EditorError('Failed to process string.') from exc
+            raise EditorError("Failed to process string.") from exc
 
 
 class Object(Struct):
-    _base_data = get_default('object')
+    _base_data = get_default("object")
     _dump = _object_dump
     _convert = _object_convert
     _collect = _object_collect
@@ -99,17 +124,17 @@ class Object(Struct):
 
     def set_z_layer(self, directive: str) -> Object:
         """Set ``z_layer`` of ``self`` according to the directive, e.g. ``layer:t1`` or ``b3``."""
-        self.edit(z_layer=get_id(_get_dir(directive, 'layer'), ret_enum=True))
+        self.edit(z_layer=get_id(_get_dir(directive, "layer"), ret_enum=True))
         return self
 
     def set_easing(self, directive: str) -> Object:
         """Set ``easing`` of ``self`` according to the directive, e.g. ``sine_in_out``."""
-        self.edit(easing=get_id(_get_dir(directive, 'easing'), ret_enum=True))
+        self.edit(easing=get_id(_get_dir(directive, "easing"), ret_enum=True))
         return self
 
     def set_color(self, color: Any) -> Object:
         """Set ``rgb`` of ``self`` to ``color``."""
-        self.edit(**zip('rgb', _define_color(color).to_rgb()))
+        self.edit(**zip("rgb", _define_color(color).to_rgb()))
         return self
 
     def get_color(self) -> Color:
@@ -159,7 +184,7 @@ class Object(Struct):
 
 
 class ColorChannel(Struct):
-    _base_data = get_default('color_channel')
+    _base_data = get_default("color_channel")
     _dump = _color_dump
     _convert = _color_convert
     _collect = _color_collect
@@ -180,12 +205,12 @@ class ColorChannel(Struct):
 
     def set_id(self, directive: str) -> ColorChannel:
         """Set ColorID of ``self`` according to the directive, e.g. ``BG`` or ``color:bg``."""
-        self.edit(id=get_id(_get_dir(directive, 'color')))
+        self.edit(id=get_id(_get_dir(directive, "color")))
         return self
 
     def set_color(self, color: Any) -> ColorChannel:
         """Set ``rgb`` of ``self`` to ``color``."""
-        self.edit(**dict(zip('rgb', _define_color(color).to_rgb())))
+        self.edit(**dict(zip("rgb", _define_color(color).to_rgb())))
         return self
 
     def get_color(self) -> Color:
@@ -217,16 +242,14 @@ class ColorCollection(set):
     def get(self, directive_or_id: Union[int, str]) -> Optional[ColorCollection]:
         final = directive_or_id
         if isinstance(final, str):
-            final = get_id(_get_dir(final, 'color'))
+            final = get_id(_get_dir(final, "color"))
         return search.get(self, id=final)
 
     def copy(self) -> ColorCollection:
         return self.__class__(self)
 
     def update(self, colors: Iterable[ColorCollection]) -> None:
-        super().update(
-            color for color in map(_process_color, colors)
-            if color is not None)
+        super().update(color for color in map(_process_color, colors) if color is not None)
 
     def add(self, color: Any) -> None:
         color = _process_color(color)
@@ -241,7 +264,7 @@ class ColorCollection(set):
 
 
 class Header(Struct):
-    _base_data = get_default('header')
+    _base_data = get_default("header")
     _dump = _header_dump
     _convert = _header_convert
     _collect = _header_collect
@@ -289,25 +312,26 @@ class LevelAPI(Struct):
     _convert = None
     _collect = None
     _dump = _level_dump
-    _base_data = get_default('api')
+    _base_data = get_default("api")
 
     def __init__(self, **properties) -> None:
         super().__init__(**properties)
 
     def __repr__(self) -> str:
         info = {
-            'id': self.id,
-            'version': self.version,
-            'name': self.name,
+            "id": self.id,
+            "version": self.version,
+            "name": self.name,
         }
         return make_repr(self, info)
 
     def dump(self) -> None:
-        raise EditorError('Level API can not be dumped.')
+        raise EditorError("Level API can not be dumped.")
 
     def open_editor(self) -> Editor:
         from .editor import Editor  # *circular imports*
-        return Editor.launch(self, 'level_string')
+
+        return Editor.launch(self, "level_string")
 
     def is_verified(self) -> bool:
         return bool(self.verified)
@@ -329,6 +353,6 @@ class LevelAPI(Struct):
 
     @classmethod
     def from_string(cls, string: str) -> None:
-        raise EditorError('Level API can not be created from string.')
+        raise EditorError("Level API can not be created from string.")
 
     exec(_level_code)

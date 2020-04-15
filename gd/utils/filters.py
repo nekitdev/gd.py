@@ -1,9 +1,6 @@
 from ..typing import AbstractUser, Any, Dict, Filters, Level, Optional, Sequence, Union
 
-from .enums import (
-    NEnum, LevelDifficulty, DemonDifficulty,
-    SearchStrategy, LevelLength
-)
+from .enums import NEnum, LevelDifficulty, DemonDifficulty, SearchStrategy, LevelLength
 from .text_tools import make_repr
 
 
@@ -46,17 +43,25 @@ class Filters:
     followed: Optional[Sequence[Union[:class:`int`, :class:`.AbstractUser`, :class:`.User`]]]
         Followed users, basically this will work as ``BY_USER`` ``strategy``, but for many users.
     """
+
     def __init__(
-        self, strategy: Union[int, str, SearchStrategy] = 0,
+        self,
+        strategy: Union[int, str, SearchStrategy] = 0,
         difficulty: Optional[Sequence[Union[int, str, LevelDifficulty]]] = None,
         demon_difficulty: Optional[Union[int, str, DemonDifficulty]] = None,
         length: Optional[Union[int, str, LevelLength]] = None,
-        uncompleted: bool = False, only_completed: bool = False,
+        uncompleted: bool = False,
+        only_completed: bool = False,
         completed_levels: Optional[Sequence[Union[int, Level]]] = None,
-        require_coins: bool = False, featured: bool = False,
-        epic: bool = False, rated: Optional[bool] = None, require_two_player: bool = False,
-        song_id: Optional[int] = None, use_custom_song: bool = False, require_original: bool = False,
-        followed: Optional[Sequence[Union[int, AbstractUser]]] = None
+        require_coins: bool = False,
+        featured: bool = False,
+        epic: bool = False,
+        rated: Optional[bool] = None,
+        require_two_player: bool = False,
+        song_id: Optional[int] = None,
+        use_custom_song: bool = False,
+        require_original: bool = False,
+        followed: Optional[Sequence[Union[int, AbstractUser]]] = None,
     ) -> None:
         if isinstance(difficulty, (int, str, NEnum)):
             difficulty = [difficulty]
@@ -66,19 +71,25 @@ class Filters:
 
         self.strategy = SearchStrategy.from_value(strategy)
 
-        not_accepting = (self.strategy.value in (5, 6, 16))
+        not_accepting = self.strategy.value in (5, 6, 16)
 
-        self.difficulty = None if (
-            (difficulty is None) or not_accepting
-        ) else tuple(map(LevelDifficulty.from_value, difficulty))
+        self.difficulty = (
+            None
+            if ((difficulty is None) or not_accepting)
+            else tuple(map(LevelDifficulty.from_value, difficulty))
+        )
 
-        self.length = None if (
-            (length is None) or not_accepting
-        ) else tuple(map(LevelLength.from_value, length))
+        self.length = (
+            None
+            if ((length is None) or not_accepting)
+            else tuple(map(LevelLength.from_value, length))
+        )
 
-        self.demon_difficulty = None if (
-            (demon_difficulty is None) or not_accepting
-        ) else DemonDifficulty.from_value(demon_difficulty)
+        self.demon_difficulty = (
+            None
+            if ((demon_difficulty is None) or not_accepting)
+            else DemonDifficulty.from_value(demon_difficulty)
+        )
 
         if self.demon_difficulty is not None:
             self.diffculty = LevelDifficulty.DEMON
@@ -96,11 +107,22 @@ class Filters:
         self.followed = list(followed or list())
         self.require_original = require_original
         self.set = (
-            'strategy', 'difficulty', 'demon_difficulty', 'length',
-            'uncompleted', 'only_completed', 'completed_levels',
-            'require_coins', 'require_two_player', 'rated',
-            'featured', 'epic', 'song_id', 'use_custom_song',
-            'followed', 'require_original'
+            "strategy",
+            "difficulty",
+            "demon_difficulty",
+            "length",
+            "uncompleted",
+            "only_completed",
+            "completed_levels",
+            "require_coins",
+            "require_two_player",
+            "rated",
+            "featured",
+            "epic",
+            "song_id",
+            "use_custom_song",
+            "followed",
+            "require_original",
         )
 
     def __repr__(self) -> str:
@@ -122,8 +144,11 @@ class Filters:
     @classmethod
     def setup_with_song(cls, song_id: int, is_custom: bool = True, *args, **kwargs) -> Filters:
         return cls(
-            strategy=SearchStrategy.MOST_LIKED, song_id=song_id,
-            use_custom_song=is_custom, *args, **kwargs
+            strategy=SearchStrategy.MOST_LIKED,
+            song_id=song_id,
+            use_custom_song=is_custom,
+            *args,
+            **kwargs,
         )
 
     @classmethod
@@ -144,56 +169,55 @@ class Filters:
 
     @classmethod
     def setup_client_completed(cls, client, *args, **kwargs) -> Filters:
-        return cls(strategy=SearchStrategy.MOST_LIKED, completed_levels=client.save.completed, *args, **kwargs)
+        return cls(
+            strategy=SearchStrategy.MOST_LIKED,
+            completed_levels=client.save.completed,
+            *args,
+            **kwargs,
+        )
 
     def to_parameters(self) -> Dict[str, str]:
         main = {
-            'type': self.strategy.value,
-            'diff': '-' if self.difficulty is None else _join(self.difficulty),
-            'len': '-' if self.length is None else _join(self.length),
-            'uncompleted': int(self.uncompleted),
-            'onlyCompleted': int(self.only_completed),
-            'featured': int(self.featured),
-            'original': int(self.require_original),
-            'twoPlayer': int(self.require_two_player),
-            'coins': int(self.require_coins),
-            'epic': int(self.epic)
+            "type": self.strategy.value,
+            "diff": "-" if self.difficulty is None else _join(self.difficulty),
+            "len": "-" if self.length is None else _join(self.length),
+            "uncompleted": int(self.uncompleted),
+            "onlyCompleted": int(self.only_completed),
+            "featured": int(self.featured),
+            "original": int(self.require_original),
+            "twoPlayer": int(self.require_two_player),
+            "coins": int(self.require_coins),
+            "epic": int(self.epic),
         }
 
         if self.demon_difficulty is not None:
             main.update(demonFilter=self.demon_difficulty.value)
 
         if self.uncompleted or self.only_completed:
-            main.update(completedLevels=_join(self.completed_levels, wrap_with='({})'))
+            main.update(completedLevels=_join(self.completed_levels, wrap_with="({})"))
 
         if self.rated is not None:
-            main.update(
-                {('star' if self.rated else 'noStar'): 1}
-            )
+            main.update({("star" if self.rated else "noStar"): 1})
 
         if self.strategy == SearchStrategy.FOLLOWED:
             main.update(followed=_join(self.followed))
 
         if self.song_id is not None:
-            main.update(
-                song=int(self.song_id),
-                isCustom=int(self.use_custom_song)
-            )
+            main.update(song=int(self.song_id), isCustom=int(self.use_custom_song))
 
         filters = {k: str(v) for k, v in main.items()}
         return filters
 
 
-def _join(elements: Sequence[Any], *, string: str = ',', wrap_with: str = '{}') -> str:
-
+def _join(elements: Sequence[Any], *, string: str = ",", wrap_with: str = "{}") -> str:
     def func(element: Any) -> str:
         to_str = element
 
         if isinstance(element, NEnum):  # Enum
             to_str = element.value
-        elif hasattr(element, 'account_id'):  # User
+        elif hasattr(element, "account_id"):  # User
             to_str = element.account_id
-        elif hasattr(element, 'id'):  # Level
+        elif hasattr(element, "id"):  # Level
             to_str = element.id
 
         return str(to_str)

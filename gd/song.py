@@ -19,29 +19,30 @@ http = HTTPClient(use_user_agent=True)  # used in song downloading
 
 class ArtistInfo(AbstractEntity):
     """Class that represents info about the creator of a particular song."""
+
     def __str__(self) -> str:
         return str(self.artist)
 
     def __repr__(self) -> str:
         info = {
-            'id': self.id,
-            'artist': repr(self.artist),
-            'song': repr(self.song),
-            'is_scouted': self.is_scouted(),
-            'is_whitelisted': self.is_whitelisted(),
-            'exists': self.exists
+            "id": self.id,
+            "artist": repr(self.artist),
+            "song": repr(self.song),
+            "is_scouted": self.is_scouted(),
+            "is_whitelisted": self.is_whitelisted(),
+            "exists": self.exists,
         }
         return make_repr(self, info)
 
     @property
     def artist(self) -> str:
         """:class:`str`: Author of the song."""
-        return self.options.get('artist', '')
+        return self.options.get("artist", "")
 
     @property
     def song(self) -> str:
         """:class:`str`: A name of the song."""
-        return self.options.get('song', '')
+        return self.options.get("song", "")
 
     @property
     def exists(self) -> bool:
@@ -50,26 +51,24 @@ class ArtistInfo(AbstractEntity):
 
     def is_scouted(self) -> bool:
         """:class:`bool`: Whether the artist is scouted."""
-        return bool(self.options.get('scouted', ''))
+        return bool(self.options.get("scouted", ""))
 
     def is_whitelisted(self) -> bool:
         """:class:`bool`: Whether the artist is whitelisted."""
-        return bool(self.options.get('whitelisted', ''))
+        return bool(self.options.get("whitelisted", ""))
 
     def api_allowed(self) -> bool:
         """:class:`bool`: Whether the external API is allowed."""
-        return bool(self.options.get('api', ''))
+        return bool(self.options.get("api", ""))
 
 
 class Author(AbstractEntity):
     """Class that represents an author on Newgrounds.
     This class is derived from :class:`.AbstractEntity`.
     """
+
     def __repr__(self) -> str:
-        info = {
-            'name': repr(self.name),
-            'link': repr(self.link)
-        }
+        info = {"name": repr(self.name), "link": repr(self.link)}
         return make_repr(self, info)
 
     def __str__(self) -> str:
@@ -81,11 +80,11 @@ class Author(AbstractEntity):
 
     @property
     def link(self) -> URL:
-        return URL(self.options.get('link', 'https://%s.newgrounds.com/' % self.name))
+        return URL(self.options.get("link", "https://%s.newgrounds.com/" % self.name))
 
     @property
     def name(self) -> str:
-        return self.options.get('name', '')
+        return self.options.get("name", "")
 
     async def get_page_songs(self, page: int = 0) -> List[Song]:
         return await self.client.get_page_user_songs(self, page=page)
@@ -98,62 +97,61 @@ class Song(AbstractEntity):
     """Class that represents Geometry Dash/Newgrounds songs.
     This class is derived from :class:`.AbstractEntity`.
     """
+
     def __init__(self, **options) -> None:
         super().__init__(**options)
 
     def __repr__(self) -> str:
-        info = {
-            'id': self.id,
-            'name': repr(self.name),
-            'author': repr(self.author)
-        }
+        info = {"id": self.id, "name": repr(self.name), "author": repr(self.author)}
         return make_repr(self, info)
 
     def __str__(self) -> str:
-        return '{} - {}'.format(self.author, self.name)
+        return "{} - {}".format(self.author, self.name)
 
     @classmethod
     def from_data(cls, data: ExtDict, *, custom: bool = True, client: Client) -> Song:
         return cls(
             # name and author - cp1252 encoding seems to fix weird characters - Alex1304
-            name=fix_song_encoding(data.get(Index.SONG_TITLE, 'unknown')),
-            author=fix_song_encoding(data.get(Index.SONG_AUTHOR, 'unknown')),
+            name=fix_song_encoding(data.get(Index.SONG_TITLE, "unknown")),
+            author=fix_song_encoding(data.get(Index.SONG_AUTHOR, "unknown")),
             id=data.getcast(Index.SONG_ID, 0, int),
             size=data.getcast(Index.SONG_SIZE, 0.0, float),
             links=dict(
-                normal=Route.NEWGROUNDS_SONG_LISTEN + data.get(Index.SONG_ID, ''),
-                download=unquote(data.get(Index.SONG_URL, ''))
-            ), custom=custom, client=client
+                normal=Route.NEWGROUNDS_SONG_LISTEN + data.get(Index.SONG_ID, ""),
+                download=unquote(data.get(Index.SONG_URL, "")),
+            ),
+            custom=custom,
+            client=client,
         )
 
     @property
     def name(self) -> int:
         """:class:`str`: A name of the song."""
-        return self.options.get('name', '')
+        return self.options.get("name", "")
 
     @property
     def size(self) -> float:
         """:class:`float`: A float representing size of the song, in megabytes."""
-        return self.options.get('size', 0.0)
+        return self.options.get("size", 0.0)
 
     @property
     def author(self) -> str:
         """:class:`str`: An author of the song."""
-        return self.options.get('author', '')
+        return self.options.get("author", "")
 
     @property
     def link(self) -> str:
         """:class:`str`: A link to the song on Newgrounds, e.g. ``.../audio/listen/<id>``."""
-        return self.options.get('links', {}).get('normal', '')
+        return self.options.get("links", {}).get("normal", "")
 
     @property
     def dl_link(self) -> str:
         """:class:`str`: A link to download the song, used in :meth:`.Song.download`."""
-        return self.options.get('links', {}).get('download', '')
+        return self.options.get("links", {}).get("download", "")
 
     def is_custom(self) -> bool:
         """:class:`bool`: Indicates whether the song is custom or not."""
-        return bool(self.options.get('custom'))
+        return bool(self.options.get("custom"))
 
     @classmethod
     def official(cls, id: int, server_style: bool = True, *, client: Client) -> Song:
@@ -162,7 +160,7 @@ class Song(AbstractEntity):
 
     def get_author(self) -> Author:
         if not self.is_custom():
-            raise ClientException('Can not get author of an official song.')
+            raise ClientException("Can not get author of an official song.")
 
         return Author(name=self.author, client=self.client)
 
@@ -197,9 +195,13 @@ class Song(AbstractEntity):
         """
         if not self.is_custom():  # pragma: no cover
             return ArtistInfo(
-                id=self.id, artist=self.author, song=self.name,
-                whitelisted=True, scouted=True, api=True,
-                client=self.client
+                id=self.id,
+                artist=self.author,
+                song=self.name,
+                whitelisted=True,
+                scouted=True,
+                api=True,
+                client=self.client,
             )
 
         return await self.client.get_artist_info(self.id)
@@ -223,7 +225,7 @@ class Song(AbstractEntity):
 
 def fix_song_encoding(string: str) -> str:
     try:
-        return string.encode('cp1252').decode('utf-8')
+        return string.encode("cp1252").decode("utf-8")
 
     except (UnicodeEncodeError, UnicodeDecodeError):
         return string

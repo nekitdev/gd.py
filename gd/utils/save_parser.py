@@ -3,7 +3,7 @@ from collections import namedtuple
 from ..typing import List
 from .xml_parser import XMLParser, AioXMLParser
 
-Save = namedtuple('Save', 'completed followed')
+Save = namedtuple("Save", "completed followed")
 
 
 class SaveParser:
@@ -30,14 +30,14 @@ class SaveParser:
 
 
 def _get_completed(d) -> List[int]:
-    inner = d['GS_completed']
+    inner = d["GS_completed"]
 
     final = []
 
     for entry, _ in inner.items():
 
-        if entry.startswith('c_'):
-            _id = int(entry.lstrip('c_'))
+        if entry.startswith("c_"):
+            _id = int(entry.lstrip("c_"))
 
             final.append(_id)
 
@@ -45,7 +45,7 @@ def _get_completed(d) -> List[int]:
 
 
 def _get_followed(d) -> List[int]:
-    inner = d['GLM_06']
+    inner = d["GLM_06"]
 
     final = list(map(int, inner.values()))
 

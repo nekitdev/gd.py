@@ -97,9 +97,16 @@ class Loop:
 
     The main interface to create this is through :func:`loop`.
     """
+
     def __init__(
-        self, seconds: Union[float, int], hours: Union[float, int], minutes: Union[float, int],
-        coro: Coroutine, count: Optional[int], reconnect: bool, loop: asyncio.AbstractEventLoop
+        self,
+        seconds: Union[float, int],
+        hours: Union[float, int],
+        minutes: Union[float, int],
+        coro: Coroutine,
+        count: Optional[int],
+        reconnect: bool,
+        loop: asyncio.AbstractEventLoop,
     ) -> None:
         self.coro = coro
         self.reconnect = reconnect
@@ -122,15 +129,17 @@ class Loop:
         self._stop_next_iteration = False
 
         if self.count is not None and self.count <= 0:
-            raise ValueError('Count must be greater than 0 or None.')
+            raise ValueError("Count must be greater than 0 or None.")
 
         self.change_interval(seconds=seconds, minutes=minutes, hours=hours)
 
         if not inspect.iscoroutinefunction(self.coro):
-            raise TypeError('Expected coroutine function, not {!r}.'.format(type(self.coro).__name__))
+            raise TypeError(
+                "Expected coroutine function, not {!r}.".format(type(self.coro).__name__)
+            )
 
     async def _call_loop_function(self, name: str) -> None:
-        coro = getattr(self, '_' + name)
+        coro = getattr(self, "_" + name)
         if coro is None:
             return
 
@@ -141,7 +150,7 @@ class Loop:
 
     async def _loop(self, *args, **kwargs) -> None:
         backoff = ExponentialBackoff()
-        await self._call_loop_function('before_loop')
+        await self._call_loop_function("before_loop")
         try:
             while True:
                 try:
@@ -163,10 +172,10 @@ class Loop:
             raise
         except Exception:
             self._has_failed = True
-            log.exception('Internal background task failed.')
+            log.exception("Internal background task failed.")
             raise
         finally:
-            await self._call_loop_function('after_loop')
+            await self._call_loop_function("after_loop")
             self._is_being_cancelled = False
             self._current_loop = 0
             self._stop_next_iteration = False
@@ -205,7 +214,7 @@ class Loop:
         """
 
         if self._task is not None and not self._task.done():
-            raise RuntimeError('Task is already launched and is not completed.')
+            raise RuntimeError("Task is already launched and is not completed.")
 
         if self._injected is not None:
             args = (self._injected, *args)
@@ -255,9 +264,9 @@ class Loop:
         \*\*kwargs
             The keyword arguments to use.
         """
+
         def restart_when_over(
-            future: Union[asyncio.Future, asyncio.Task],
-            *, args=args, kwargs=kwargs
+            future: Union[asyncio.Future, asyncio.Task], *, args=args, kwargs=kwargs
         ) -> None:
             self._task.remove_done_callback(restart_when_over)
             self.start(*args, **kwargs)
@@ -283,9 +292,9 @@ class Loop:
             The exception passed is either not a class or not inherited from :class:`BaseException`.
         """
         if not inspect.isclass(exc):
-            raise TypeError('{0!r} must be a class.'.format(exc))
+            raise TypeError("{0!r} must be a class.".format(exc))
         if not issubclass(exc, BaseException):
-            raise TypeError('{0!r} must inherit from BaseException.'.format(exc))
+            raise TypeError("{0!r} must inherit from BaseException.".format(exc))
 
         self._valid_exception = (*self._valid_exception, exc)
 
@@ -344,7 +353,9 @@ class Loop:
         """
 
         if not inspect.iscoroutinefunction(coro):
-            raise TypeError('Expected coroutine function, received {0.__name__!r}.'.format(type(coro)))
+            raise TypeError(
+                "Expected coroutine function, received {0.__name__!r}.".format(type(coro))
+            )
 
         self._before_loop = coro
         return coro
@@ -372,15 +383,19 @@ class Loop:
         """
 
         if not inspect.iscoroutinefunction(coro):
-            raise TypeError('Expected coroutine function, received {0.__name__!r}.'.format(type(coro)))
+            raise TypeError(
+                "Expected coroutine function, received {0.__name__!r}.".format(type(coro))
+            )
 
         self._after_loop = coro
         return coro
 
     def change_interval(
-        self, *, seconds: Union[float, int] = 0,
+        self,
+        *,
+        seconds: Union[float, int] = 0,
         minutes: Union[float, int] = 0,
-        hours: Union[float, int] = 0
+        hours: Union[float, int] = 0,
     ) -> None:
         """Changes the interval for the sleep time.
 
@@ -406,11 +421,11 @@ class Loop:
 
         sleep = seconds + (minutes * 60.0) + (hours * 3600.0)
         if sleep >= MAX_ASYNCIO_SECONDS:
-            fmt = 'Total number of seconds exceeds asyncio imposed limit of {0} seconds.'
+            fmt = "Total number of seconds exceeds asyncio imposed limit of {0} seconds."
             raise ValueError(fmt.format(MAX_ASYNCIO_SECONDS))
 
         if sleep < 0:
-            raise ValueError('Total number of seconds cannot be less than zero.')
+            raise ValueError("Total number of seconds cannot be less than zero.")
 
         self._sleep = sleep
         self.seconds = seconds
@@ -419,9 +434,13 @@ class Loop:
 
 
 def loop(
-    *, seconds: Union[float, int] = 0, minutes: Union[float, int] = 0,
-    hours: Union[float, int] = 0, count: Optional[int] = None,
-    reconnect: bool = True, loop: asyncio.AbstractEventLoop = None
+    *,
+    seconds: Union[float, int] = 0,
+    minutes: Union[float, int] = 0,
+    hours: Union[float, int] = 0,
+    count: Optional[int] = None,
+    reconnect: bool = True,
+    loop: asyncio.AbstractEventLoop = None,
 ) -> Loop:  # technically returns a function, but after a call - Loop.
     """A decorator that schedules a task in the background for you with
     optional reconnect logic.
@@ -457,10 +476,16 @@ def loop(
     :class:`Loop`
         The loop helper that handles the background task.
     """
+
     def decorator(func: Coroutine) -> Loop:
         return Loop(
-            coro=func, seconds=seconds, minutes=minutes, hours=hours,
-            count=count, reconnect=reconnect, loop=loop
+            coro=func,
+            seconds=seconds,
+            minutes=minutes,
+            hours=hours,
+            count=count,
+            reconnect=reconnect,
+            loop=loop,
         )
 
     return decorator

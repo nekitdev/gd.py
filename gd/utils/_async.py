@@ -10,14 +10,31 @@ import inspect
 from types import CoroutineType as coroutine
 
 from ..typing import (
-    Any, Awaitable, Callable, Coroutine, Dict, Iterable,
-    List, Optional, Sequence, Set, Tuple, Type, Union
+    Any,
+    Awaitable,
+    Callable,
+    Coroutine,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+    Union,
 )
 
 __all__ = (
-    'run_blocking_io', 'wait', 'run', 'gather',
-    'cancel_all_tasks', 'shutdown_loop', 'maybe_coroutine', 'acquire_loop',
-    'synchronize'
+    "run_blocking_io",
+    "wait",
+    "run",
+    "gather",
+    "cancel_all_tasks",
+    "shutdown_loop",
+    "maybe_coroutine",
+    "acquire_loop",
+    "synchronize",
 )
 
 
@@ -49,8 +66,9 @@ async def run_blocking_io(func: Callable, *args, **kwargs) -> Any:
 
 
 async def gather(
-    *aws: Sequence[Awaitable], loop: Optional[asyncio.AbstractEventLoop] = None,
-    return_exceptions: bool = False
+    *aws: Sequence[Awaitable],
+    loop: Optional[asyncio.AbstractEventLoop] = None,
+    return_exceptions: bool = False,
 ) -> List[Any]:
     """A function that is calling :func:`asyncio.gather`.
 
@@ -61,7 +79,7 @@ async def gather(
 
     This way, :func:`asyncio.gather` will be run on that sequence.
     """
-    if (len(aws) == 1):
+    if len(aws) == 1:
         maybe_aw = aws[0]
         if not inspect.isawaitable(maybe_aw):
             aws = maybe_aw
@@ -70,8 +88,10 @@ async def gather(
 
 
 async def wait(
-    *fs: Iterable[Coroutine], loop: Optional[asyncio.AbstractEventLoop] = None,
-    timeout: Optional[Union[float, int]] = None, return_when: str = 'ALL_COMPLETED'
+    *fs: Iterable[Coroutine],
+    loop: Optional[asyncio.AbstractEventLoop] = None,
+    timeout: Optional[Union[float, int]] = None,
+    return_when: str = "ALL_COMPLETED",
 ) -> Tuple[Set[asyncio.Future], Set[asyncio.Future]]:
     """A function that is calling :func:`asyncio.wait`.
 
@@ -96,7 +116,7 @@ async def wait(
         This does not raise :exc:`TimeoutError`! Futures that aren't done
         when the timeout occurs are returned in the second set.
     """
-    if (len(fs) == 1):
+    if len(fs) == 1:
         maybe_aw = fs[0]
         if not inspect.isawaitable(maybe_aw):
             fs = maybe_aw
@@ -105,8 +125,11 @@ async def wait(
 
 
 def run(
-    coro: Coroutine, *, loop: Optional[asyncio.AbstractEventLoop] = None,
-    debug: bool = False, set_to_none: bool = False
+    coro: Coroutine,
+    *,
+    loop: Optional[asyncio.AbstractEventLoop] = None,
+    debug: bool = False,
+    set_to_none: bool = False,
 ) -> Any:
     """Run a |coroutine_link|_.
 
@@ -157,10 +180,10 @@ def run(
         Anything that ``coro`` returns.
     """
     if asyncio._get_running_loop() is not None:
-        raise RuntimeError('Can not perform gd.utils.run() in a running event loop.')
+        raise RuntimeError("Can not perform gd.utils.run() in a running event loop.")
 
     if not asyncio.iscoroutine(coro):
-        raise ValueError('A coroutine was expected, got {!r}.'.format(coro))
+        raise ValueError("A coroutine was expected, got {!r}.".format(coro))
 
     shutdown = False
 
@@ -205,20 +228,20 @@ def cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
     for task in to_cancel:
         task.cancel()
 
-    loop.run_until_complete(
-        asyncio.gather(*to_cancel, loop=loop, return_exceptions=True)
-    )
+    loop.run_until_complete(asyncio.gather(*to_cancel, loop=loop, return_exceptions=True))
 
     for task in to_cancel:
         if task.cancelled():
             continue
 
         if task.exception() is not None:
-            loop.call_exception_handler({
-                'message': 'Unhandled exception during runner shutdown',
-                'exception': task.exception(),
-                'task': task
-            })
+            loop.call_exception_handler(
+                {
+                    "message": "Unhandled exception during runner shutdown",
+                    "exception": task.exception(),
+                    "task": task,
+                }
+            )
 
 
 def shutdown_loop(loop: asyncio.AbstractEventLoop) -> None:
@@ -271,7 +294,7 @@ def acquire_loop(running: bool = False) -> None:
             if loop.is_running() and not running:
                 # loop is running while we have to get the non-running one,
                 # let us raise an error to go into <except> clause.
-                raise ValueError('Current event loop is already running.')
+                raise ValueError("Current event loop is already running.")
 
         except Exception:
             loop = asyncio.new_event_loop()
@@ -285,7 +308,7 @@ def _get_class_dict(cls: Type[Any]) -> Dict[str, Any]:
         return gc.get_referents(cls.__dict__).pop(0)
 
     except IndexError:
-        raise RuntimeError('Failed to find dict for {}.'.format(cls.__name__)) from None
+        raise RuntimeError("Failed to find dict for {}.".format(cls.__name__)) from None
 
 
 def _del_method(cls: type, method_name: str):
@@ -314,8 +337,7 @@ def _get_name(func):
             return func.__name__
     except AttributeError:
         raise RuntimeError(
-            'Failed to find the name of given function. '
-            'Please provide the name explicitly.'
+            "Failed to find the name of given function. " "Please provide the name explicitly."
         ) from None
 
 
@@ -339,8 +361,8 @@ def _enable_method(obj: type, name: str, on: bool = True, func: Optional[Callabl
             _del_method(obj, name)
 
     except Exception:
-        print('Failed to edit the {!r} method.'.format(name))
+        print("Failed to edit the {!r} method.".format(name))
 
 
 def synchronize(on: bool = True) -> None:
-    _enable_method(coroutine, 'run', on, _run)
+    _enable_method(coroutine, "run", on, _run)

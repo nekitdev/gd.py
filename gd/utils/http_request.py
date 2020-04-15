@@ -13,19 +13,22 @@ from .text_tools import make_repr
 
 log = get_logger(__name__)
 
-BASE = 'http://www.boomlings.com/database/'
-VALID_ERRORS = (
-    OSError,
-    aiohttp.ClientError
-)
+BASE = "http://www.boomlings.com/database/"
+VALID_ERRORS = (OSError, aiohttp.ClientError)
 
 
 class HTTPClient:
     """Class that handles the main part of the entire gd.py - sending HTTP requests."""
+
     def __init__(
-        self, *, url: Union[str, URL] = BASE, use_user_agent: bool = False,
-        timeout: Union[float, int] = 150, max_requests: int = 250,
-        debug: bool = False, **kwargs  # kwargs are unused; made for backwards compability
+        self,
+        *,
+        url: Union[str, URL] = BASE,
+        use_user_agent: bool = False,
+        timeout: Union[float, int] = 150,
+        max_requests: int = 250,
+        debug: bool = False,
+        **kwargs,  # kwargs are unused; made for backwards compability
     ) -> None:
         self.semaphore = asyncio.Semaphore(max_requests)
         self.url = URL(url)
@@ -36,29 +39,29 @@ class HTTPClient:
 
     def __repr__(self) -> str:
         info = {
-            'debug': self.debug,
-            'max_requests': self.semaphore._value,
-            'timeout': self.timeout,
-            'url': repr(self.url)
+            "debug": self.debug,
+            "max_requests": self.semaphore._value,
+            "timeout": self.timeout,
+            "url": repr(self.url),
         }
         return make_repr(self, info)
 
     @staticmethod
     def get_default_agent() -> str:
-        string = 'gd.py/{} python/{} aiohttp/{}'
+        string = "gd.py/{} python/{} aiohttp/{}"
         return string.format(gd.__version__, platform.python_version(), aiohttp.__version__)
 
     def get_skip_headers(self) -> List[str]:
         result = []
-        result.append('User-Agent')
-        result.append('Accept-Encoding')
+        result.append("User-Agent")
+        result.append("Accept-Encoding")
         return result
 
     def make_headers(self) -> Dict[str, str]:
         headers = {}
 
         if self.use_agent:
-            headers['User-Agent'] = self.get_default_agent()
+            headers["User-Agent"] = self.get_default_agent()
 
         return headers
 
@@ -78,8 +81,7 @@ class HTTPClient:
         self.url = URL(url)
 
     def set_max_requests(
-        self, value: int = 250, *,
-        loop: Optional[asyncio.AbstractEventLoop] = None
+        self, value: int = 250, *, loop: Optional[asyncio.AbstractEventLoop] = None
     ) -> None:
         """Creates an :class:`asyncio.Semaphore` object with given ``value`` and ``loop``
         in order to limit amount of max requests at a time.
@@ -104,10 +106,14 @@ class HTTPClient:
         self.debug = bool(debug)
 
     async def fetch(
-        self, php: str, data: Optional[Dict[str, Any]] = None,
+        self,
+        php: str,
+        data: Optional[Dict[str, Any]] = None,
         params: Optional[Dict[str, Any]] = None,
-        get_cookies: bool = False, cookie: Optional[str] = None,
-        custom_base: Optional[str] = None, method: Optional[str] = None
+        get_cookies: bool = False,
+        cookie: Optional[str] = None,
+        custom_base: Optional[str] = None,
+        method: Optional[str] = None,
     ) -> Optional[Union[bytes, int, str]]:
         """|coro|
         Sends an HTTP Request to a Geometry Dash server and returns the response.
@@ -152,27 +158,27 @@ class HTTPClient:
             An exception occured during handling request/response.
         """
         base = self.url if custom_base is None else URL(custom_base)
-        url = base / (php + '.php')
+        url = base / (php + ".php")
 
         if method is None:
-            method = 'get' if params is None else 'post'
+            method = "get" if params is None else "post"
 
         method = str(method).upper()
 
         headers = None
 
         if cookie is not None:
-            headers = {'Cookie': cookie}
+            headers = {"Cookie": cookie}
 
         if self.debug:
-            for name, value in {'URL': url, 'Data': data, 'Params': params}.items():
-                log.debug('{}: {}'.format(name, value))
+            for name, value in {"URL": url, "Data": data, "Params": params}.items():
+                log.debug("{}: {}".format(name, value))
 
         async with self.semaphore, aiohttp.ClientSession(
             headers=self.make_headers(),
             skip_auto_headers=self.get_skip_headers(),
             timeout=self.make_timeout(),
-            raise_for_status=True
+            raise_for_status=True,
         ) as client:
             try:
                 resp = await client.request(
@@ -184,9 +190,9 @@ class HTTPClient:
             data = await resp.content.read()
 
             if self.debug:
-                log.debug('Headers: {!r}'.format(dict(resp.request_info.headers)))
-                self.last_result = data.decode(errors='replace')
-                log.debug('Response: {!r}'.format(self.last_result))
+                log.debug("Headers: {!r}".format(dict(resp.request_info.headers)))
+                self.last_result = data.decode(errors="replace")
+                log.debug("Response: {!r}".format(self.last_result))
 
             try:
                 res = data.decode()
@@ -201,19 +207,24 @@ class HTTPClient:
                 res = data
 
             if get_cookies:
-                c = str(resp.cookies).split(' ').pop(1)
+                c = str(resp.cookies).split(" ").pop(1)
                 return res, c
 
             return res
 
     async def request(
-        self, route: str, data: Optional[Dict[str, Any]] = None,
+        self,
+        route: str,
+        data: Optional[Dict[str, Any]] = None,
         params: Optional[Dict[str, Any]] = None,
-        custom_base: Optional[str] = None, method: Optional[str] = None,
+        custom_base: Optional[str] = None,
+        method: Optional[str] = None,
         # 'error_codes' is a dict: {code: error_to_raise}
         error_codes: Optional[Dict[int, Exception]] = None,
-        raise_errors: bool = True, should_map: bool = False,
-        get_cookies: bool = False, cookie: Optional[str] = None
+        raise_errors: bool = True,
+        should_map: bool = False,
+        get_cookies: bool = False,
+        cookie: Optional[str] = None,
     ) -> Optional[Union[bytes, str, int]]:
         """|coro|
         A handy shortcut for fetching response from a server and formatting it.
@@ -252,9 +263,13 @@ class HTTPClient:
 
         try:
             resp = await self.fetch(
-                php=route, data=data, params=params,
-                get_cookies=get_cookies, cookie=cookie,
-                custom_base=custom_base, method=method
+                php=route,
+                data=data,
+                params=params,
+                get_cookies=get_cookies,
+                cookie=cookie,
+                custom_base=custom_base,
+                method=method,
             )
 
         except HTTPError:
@@ -270,16 +285,19 @@ class HTTPClient:
         return resp
 
     async def normal_request(
-        self, url: str, data: Optional[Union[dict, str]] = None,
+        self,
+        url: str,
+        data: Optional[Union[dict, str]] = None,
         params: Optional[Union[dict, str]] = None,
-        method: Optional[str] = None, **kwargs
+        method: Optional[str] = None,
+        **kwargs,
     ) -> bytes:
         """|coro|
         Same as doing :meth:`aiohttp.ClientSession.request`, where ``method`` is
         either given one or ``"GET"`` if ``data`` is None or omitted, and ``"POST"`` otherwise.
         """
         if method is None:
-            method = 'GET' if data is None else 'POST'
+            method = "GET" if data is None else "POST"
         if data is None:
             data = {}
         if params is None:
@@ -297,9 +315,11 @@ class HTTPClient:
 
             if self.debug:
                 for name, value in {
-                    'URL': url, 'Data': data, 'Params': params,
-                    'Headers': dict(resp.request_info.headers)
+                    "URL": url,
+                    "Data": data,
+                    "Params": params,
+                    "Headers": dict(resp.request_info.headers),
                 }.items():
-                    log.debug('{}: {}'.format(name, value))
+                    log.debug("{}: {}".format(name, value))
 
         return data

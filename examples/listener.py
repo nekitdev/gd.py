@@ -11,10 +11,10 @@ gd.setup_logging()
 client = gd.Client()
 
 # create a listener object and decorate as an event
-@client.listen_for('rate')
+@client.listen_for("rate")
 # implement the listener handling
 async def on_level_rated(level: gd.Level) -> None:
-    print('New level rated: {}'.format(level.name))
+    print("New level rated: {}".format(level.name))
 
 
 # enable listening

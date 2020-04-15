@@ -2,7 +2,7 @@ from operator import attrgetter as attrget
 
 from ..typing import Any, Callable, Iterable, List, Union
 
-__all__ = ('find', 'get', 'unique')
+__all__ = ("find", "get", "unique")
 
 
 def unique(iterable: Iterable) -> List[Any]:
@@ -22,8 +22,7 @@ def unique(iterable: Iterable) -> List[Any]:
 
 
 def find(
-    predicate: Callable[[Any], bool], iterable: Iterable, *,
-    find_all: bool = False
+    predicate: Callable[[Any], bool], iterable: Iterable, *, find_all: bool = False
 ) -> Union[Any, List[Any]]:
     """For each element in iterable, return first element if predicate
     returns ``True`` and ``'find_all'`` is ``False``.
@@ -66,10 +65,7 @@ def get(iterable: Iterable, **attrs: Any) -> Union[Any, List[Any]]:
     # check if ALL elements matching requirements should be returned
     find_all = attrs.pop("find_all", False)
 
-    converted = [
-        (attrget(attr.replace('__', '.')), value)
-        for attr, value in attrs.items()
-    ]
+    converted = [(attrget(attr.replace("__", ".")), value) for attr, value in attrs.items()]
 
     if not find_all:
         for elem in iterable:
@@ -77,6 +73,6 @@ def get(iterable: Iterable, **attrs: Any) -> Union[Any, List[Any]]:
                 return elem
 
     else:
-        return list(filter(
-            lambda elem: all(pred(elem) == value for pred, value in converted), iterable
-        ))
+        return list(
+            filter(lambda elem: all(pred(elem) == value for pred, value in converted), iterable)
+        )

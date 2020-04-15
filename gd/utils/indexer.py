@@ -3,6 +3,7 @@
 
 class Index:
     """Class that contains all indexes required for operating on GD Server responses."""
+
     # Indexes '10X' are custom made by this library, and have nothing to do with the servers.
     # All indexes for gd levels
     LEVEL_ID = 1
