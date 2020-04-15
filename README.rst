@@ -53,7 +53,7 @@ Key Features
 Installing
 ----------
 
-**Python 3.5.3 or higher is required**
+**Python 3.6 or higher is required**
 
 To install the library, you can just run the following command:
 
