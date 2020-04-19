@@ -527,9 +527,7 @@ class Level(AbstractEntity):
 
                 if new_ver.id != self.id:
                     log.warning(
-                        "There is a new {0.type.desc} Level: {1!r}. Updating to it...".format(
-                            self, new_ver
-                        )
+                        f"There is a new {self.type.desc} Level: {new_ver!r}. Updating to it..."
                     )
 
             else:

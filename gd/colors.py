@@ -1,5 +1,4 @@
 import colorsys
-from sys import platform
 
 from .typing import Color, Optional, Tuple
 
@@ -19,11 +18,9 @@ class Color:
         The raw integer colour value.
     """
 
-    def __init__(self, value: int) -> None:
+    def __init__(self, value: int = 0) -> None:
         if not isinstance(value, int):
-            raise TypeError(
-                "Expected int parameter, but received {!r}.".format(value.__class__.__name__)
-            )
+            raise TypeError(f"Expected int parameter, but received {self.__class__.__name__!r}.")
         self.value = value
 
     def _get_byte(self, byte: int) -> int:
@@ -82,15 +79,12 @@ class Color:
         """:class:`int`: Returns the blue component of the colour."""
         return self._get_byte(0)
 
-    def print(self) -> None:
-        if platform in ("win32", "cygwin"):
-            print(self.to_hex())
-        else:
-            print(self.ansi_escape())
+    def show(self) -> None:
+        print(self.ansi_escape())
 
     def to_hex(self) -> str:
         """:class:`str`: Returns the colour in hex format."""
-        return "#{:0>6x}".format(self.value)
+        return f"#{self.value:0>6x}"
 
     def to_rgb(self) -> Tuple[int, int, int]:
         """Tuple[:class:`int`, :class:`int`, :class:`int`]: Returns an (r, g, b) tuple representing the colour."""
@@ -103,7 +97,7 @@ class Color:
         return (*self.to_rgb(), 255)
 
     def ansi_escape(self) -> str:
-        return "\x1b[38;2;{};{};{}m{}\x1b[0m".format(*self.to_rgb(), self.to_hex())
+        return f"\x1b[38;2;{self.r};{self.g};{self.b}m{self.to_hex()}\x1b[0m"
 
     @classmethod
     def from_rgb(cls, r: int, g: int, b: int) -> Color:

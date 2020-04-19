@@ -1,4 +1,4 @@
-from .typing import Any, Callable, Enum, Optional, Sequence, Union
+from .typing import Any, Enum, Optional
 
 
 class GDException(Exception):
@@ -12,14 +12,6 @@ class GDException(Exception):
 class ClientException(GDException):
     """Base exception class for errors that are thrown
     when operation in :class:`Client` fails.
-    """
-
-    pass
-
-
-class PaginatorException(GDException):
-    """Base exception class for errors that are thrown
-    when operating with :class:`Paginator` gets an error.
     """
 
     pass
@@ -41,7 +33,7 @@ class FailedConversion(GDException):
     def __init__(self, enum: Enum, value: Any) -> None:
         self._enum = enum
         self._value = value
-        message = "Failed to convert value {!r} to enum: {!r}.".format(value, enum)
+        message = f"Failed to convert value {value!r} to enum: {enum!r}."
         super().__init__(message)
 
     @property
@@ -105,7 +97,7 @@ class SongRestrictedForUsage(ClientException):
     """
 
     def __init__(self, id: int) -> None:
-        message = "Song with id {!r} is not allowed to use.".format(id)
+        message = f"Song with id {id!r} is not allowed to use."
         super().__init__(message)
 
 
@@ -118,9 +110,7 @@ class LoginFailure(ClientException):
         self._login = login
         self._password = password
 
-        message = ("Failed to login with parameters: " "<login={0!r}, password={1!r}>.").format(
-            login, password
-        )
+        message = "Failed to login with parameters: " f"login: {login!r}, password: {password!r}."
 
         super().__init__(message)
 
@@ -135,16 +125,6 @@ class LoginFailure(ClientException):
         return self._password
 
 
-class FailedToChange(ClientException):
-    """Exception that is raised when logged in :class:`Client`
-    fails to change its password or username.
-    """
-
-    def __init__(self, type: str) -> None:
-        message = "Failed to change {}. Reason: Unspecified".format(type)  # [Future]
-        super().__init__(message)
-
-
 class NothingFound(ClientException):
     """Exception that is raised when server returns nothing
     that can be converted to object of name *cls_name*.
@@ -152,7 +132,7 @@ class NothingFound(ClientException):
 
     def __init__(self, cls_name: str) -> None:
         self._cls_name = cls_name
-        message = "No <{}> instances were found.".format(cls_name)
+        message = f"No <{cls_name}> instances were found."
         super().__init__(message)
 
     @property
@@ -167,52 +147,5 @@ class NotLoggedError(ClientException):
     """
 
     def __init__(self, func_name: str) -> None:
-        message = "{!r} requires client to be logged.".format(func_name)
+        message = f"{func_name!r} requires client to be logged."
         super().__init__(message)
-
-
-class PagesOutOfRange(PaginatorException):
-    """Exception that is raised if a non-existing page
-    is requested in :class:`Paginator`.
-    """
-
-    def __init__(self, page: int, info: Union[int, str]) -> None:
-
-        if str(info).isdigit():
-            message = "Pages are out of range. Requested page: {!r}, Pages existing: {}".format(
-                page, info
-            )
-        else:
-            message = "{} Requested page: {}".format(info, page)
-
-        super().__init__(message)
-
-
-class CommandParseError(CommandException):
-    """Exception that is raised when parsing command input has failed."""
-
-    pass
-
-
-class BadArgument(CommandException):
-    """Exception that is raised when an invalid argument is passed."""
-
-    pass
-
-
-class CheckFailure(CommandException):
-    """Exception that is raised when a command check has failed."""
-
-    def __init__(self, func: Callable) -> None:
-        self.check = func
-        message = "Check {} has failed.".format(func)
-        super().__init__(message)
-
-
-class CheckAnyFailure(CheckFailure):
-    """Exception that is raised when all checks have failed in @check_any."""
-
-    def __init__(self, *errors: Sequence[CheckFailure]) -> None:
-        self.errors = errors
-        message = ("\n  ").join(("Check Any has failed. All fails:", *map(str, errors)))
-        super(CommandException, self).__init__(message)

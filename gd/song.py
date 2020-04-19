@@ -106,7 +106,7 @@ class Song(AbstractEntity):
         return make_repr(self, info)
 
     def __str__(self) -> str:
-        return "{} - {}".format(self.author, self.name)
+        return str(self.name)
 
     @classmethod
     def from_data(cls, data: ExtDict, *, custom: bool = True, client: Client) -> Song:

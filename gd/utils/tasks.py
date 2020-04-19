@@ -134,9 +134,7 @@ class Loop:
         self.change_interval(seconds=seconds, minutes=minutes, hours=hours)
 
         if not inspect.iscoroutinefunction(self.coro):
-            raise TypeError(
-                "Expected coroutine function, not {!r}.".format(type(self.coro).__name__)
-            )
+            raise TypeError(f"Expected coroutine function, not {type(self.coro).__name__!r}.")
 
     async def _call_loop_function(self, name: str) -> None:
         coro = getattr(self, "_" + name)
@@ -292,9 +290,9 @@ class Loop:
             The exception passed is either not a class or not inherited from :class:`BaseException`.
         """
         if not inspect.isclass(exc):
-            raise TypeError("{0!r} must be a class.".format(exc))
+            raise TypeError(f"{exc!r} must be a class.")
         if not issubclass(exc, BaseException):
-            raise TypeError("{0!r} must inherit from BaseException.".format(exc))
+            raise TypeError(f"{exc!r} must inherit from BaseException.")
 
         self._valid_exception = (*self._valid_exception, exc)
 
@@ -353,9 +351,7 @@ class Loop:
         """
 
         if not inspect.iscoroutinefunction(coro):
-            raise TypeError(
-                "Expected coroutine function, received {0.__name__!r}.".format(type(coro))
-            )
+            raise TypeError(f"Expected coroutine function, received {type(coro).__name__!r}.")
 
         self._before_loop = coro
         return coro
@@ -383,9 +379,7 @@ class Loop:
         """
 
         if not inspect.iscoroutinefunction(coro):
-            raise TypeError(
-                "Expected coroutine function, received {0.__name__!r}.".format(type(coro))
-            )
+            raise TypeError(f"Expected coroutine function, received {type(coro).__name__!r}.")
 
         self._after_loop = coro
         return coro

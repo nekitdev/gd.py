@@ -54,7 +54,7 @@ class AbstractEntity:
     @property
     def hash_str(self) -> str:
         cls = self.__class__.__name__
-        return "<GDEntity<{}(ID->{})>>".format(cls, self.id)
+        return f"<GDEntity<{cls}(ID->{self.id})>>"
 
     @property
     def id(self) -> int:
@@ -67,7 +67,7 @@ class AbstractEntity:
         client = self.options.get("client")
 
         if client is None:
-            raise ClientException("Client is not attached to an entity: {!r}.".format(self))
+            raise ClientException(f"Client is not attached to an entity: {self!r}.")
 
         return client
 

@@ -183,7 +183,7 @@ def run(
         raise RuntimeError("Can not perform gd.utils.run() in a running event loop.")
 
     if not asyncio.iscoroutine(coro):
-        raise ValueError("A coroutine was expected, got {!r}.".format(coro))
+        raise ValueError(f"A coroutine was expected, got {coro!r}.")
 
     shutdown = False
 
@@ -308,7 +308,7 @@ def _get_class_dict(cls: Type[Any]) -> Dict[str, Any]:
         return gc.get_referents(cls.__dict__).pop(0)
 
     except IndexError:
-        raise RuntimeError("Failed to find dict for {}.".format(cls.__name__)) from None
+        raise RuntimeError(f"Failed to find dict for {cls}.") from None
 
 
 def _del_method(cls: type, method_name: str):
@@ -361,7 +361,7 @@ def _enable_method(obj: type, name: str, on: bool = True, func: Optional[Callabl
             _del_method(obj, name)
 
     except Exception:
-        print("Failed to edit the {!r} method.".format(name))
+        print(f"Failed to edit the {name!r} method.")
 
 
 def synchronize(on: bool = True) -> None:

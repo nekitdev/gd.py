@@ -13,8 +13,6 @@ Exception List
 
 .. autoexception:: ClientException
 
-.. autoexception:: PaginatorException
-
 .. autoexception:: FailedConversion
     :members:
 
@@ -35,8 +33,6 @@ Exception List
 
 .. autoexception:: NotLoggedError
 
-.. autoexception:: PagesOutOfRange
-
 Exception Hierarchy
 -------------------
 
@@ -53,5 +49,3 @@ Exception Hierarchy
             FailedToChange
             NothingFound
             NotLoggedError
-        PaginatorException
-            PagesOutOfRange

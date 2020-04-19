@@ -1,8 +1,9 @@
 import functools
 from enum import Enum
 
-from ..typing import Any, Dict, Union
+from .text_tools import get_module
 
+from ..typing import Any, Dict, Union
 from ..errors import FailedConversion
 
 __all__ = (
@@ -141,9 +142,10 @@ class NEnum(Enum):
         return self.desc
 
     def __repr__(self) -> str:
-        return "<gd.{0}.{1}: {2} ({3})>".format(
-            self.__class__.__name__, self.name, self.value, self.desc
-        )
+        cls_name = self.__class__.__name__
+        module = get_module(self.__module__)
+
+        return f"<{module}.{cls_name}.{self.name}: {self.value} ({self.desc})>"
 
     def __eq__(self, other) -> bool:
         return isinstance(other, type(self)) and self.value == other.value

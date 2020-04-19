@@ -21,6 +21,7 @@ def get_id(x: str, ret_enum: bool = False, delim: str = ":") -> Any:
     """Calculate required value from the given directive ``x``.
 
     The format is, as follows: ``class:name``, e.g. ``special:h``.
+    Spaces around ``:`` are allowed.
 
     Parameters
     ----------
@@ -61,7 +62,7 @@ def get_id(x: str, ret_enum: bool = False, delim: str = ":") -> Any:
         return found
 
     except Exception:
-        raise EditorError("ID by directive {!r} was not found.".format(x)) from None
+        raise EditorError(f"ID by directive {x!r} was not found.") from None
 
 
 def get_default(name: str) -> Dict[Any, Any]:
@@ -86,8 +87,8 @@ supported = {name: enum.as_dict() for name, enum in mapping.items()}
 supported.get("color", {}).update({"3dl": "color:line3d"})
 
 d = supported.get("portal", {})
-for i, s in zip(range(5), ("slow", "normal", "fast", "faster", "fastest")):
-    d.update({"speed:x{}".format(i): "portal:{}speed".format(s)})
+for i, s in enumerate(("slow", "normal", "fast", "faster", "fastest")):
+    d.update({f"speed:x{i}": f"portal:{s}speed"})
 
 # do some cleanup
 del i, s, d
@@ -103,8 +104,7 @@ def _make_color(struct: Struct) -> Color:
 
 
 def _define_color(color: Any) -> Color:
-    if hasattr(color, "__iter__"):
-        # something iterable
+    if _iterable(color):
         return Color.from_rgb(*color)
 
     if isinstance(color, Color):
@@ -115,6 +115,14 @@ def _define_color(color: Any) -> Color:
 
 def _get_dir(directive: str, cls: str, delim: str = ":") -> str:
     return delim.join((cls, directive.split(delim).pop()))
+
+
+def _iterable(maybe_iterable: Any) -> bool:
+    try:
+        iter(maybe_iterable)
+        return True
+    except Exception:  # noqa
+        return False
 
 
 # a large dictionary containing all default values for various objects

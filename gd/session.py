@@ -78,14 +78,14 @@ class Session:
     async def get_song(self, song_id: int = 0) -> ExtDict:
         payload = Params().create_new().put_definer("song", song_id).finish()
         codes = {
-            -1: MissingAccess("No songs were found with ID: {}.".format(song_id)),
+            -1: MissingAccess(f"No songs were found with ID: {song_id}."),
             -2: SongRestrictedForUsage(song_id),
         }
         resp = await self.http.request(Route.GET_SONG_INFO, payload, error_codes=codes)
         return Parser().with_split("~|~").should_map().parse(resp)
 
     async def test_song(self, song_id: int = 0) -> ExtDict:
-        codes = {-1: MissingAccess("Failed to fetch artist info for ID: {}".format(song_id))}
+        codes = {-1: MissingAccess(f"Failed to fetch artist info for ID: {song_id}")}
         payload = Params().create_new("web").put_definer("song", song_id).close()
         resp = await self.http.request(
             Route.TEST_SONG, params=payload, method="get", error_codes=codes
@@ -96,7 +96,7 @@ class Session:
         try:
             data.update(extract_info_from_endpoint(resp))
         except ValueError:
-            raise MissingAccess("Failed to load data. Response: {!r}.".format(resp)) from None
+            raise MissingAccess(f"Failed to load data. Response: {resp!r}.") from None
 
         return data
 
@@ -110,7 +110,7 @@ class Session:
         try:
             info = find_song_info(html)
         except ValueError:
-            raise MissingAccess("Song was not found by ID: {}".format(song_id)) from None
+            raise MissingAccess(f"Song was not found by ID: {song_id}") from None
 
         return ExtDict(
             name=info.name,
@@ -150,7 +150,7 @@ class Session:
         return await self.run_many(to_run)
 
     async def get_page_user_songs(self, user_name: str, page: int = 0) -> List[ExtDict]:
-        link = URL("https://%s.newgrounds.com/" % user_name) / "audio/page/{}".format(page + 1)
+        link = URL("https://%s.newgrounds.com/" % user_name) / f"audio/page/{page + 1}"
 
         data = await self.http.normal_request(link, headers={"X-Requested-With": "XMLHttpRequest"})
 
@@ -168,7 +168,7 @@ class Session:
 
     async def get_user(self, account_id: int = 0, return_only_stats: bool = False) -> ExtDict:
         payload = Params().create_new().put_definer("user", account_id).finish()
-        codes = {-1: MissingAccess("No users were found with ID: {}.".format(account_id))}
+        codes = {-1: MissingAccess(f"No users were found with ID: {account_id}.")}
 
         resp = await self.http.request(Route.GET_USER_INFO, payload, error_codes=codes)
         mapped = Parser().with_split(":").should_map().parse(resp)
@@ -204,7 +204,7 @@ class Session:
         payload = (
             Params().create_new().put_definer("search", query).put_total(0).put_page(0).finish()
         )
-        codes = {-1: MissingAccess("Searching for {} failed.".format(query))}
+        codes = {-1: MissingAccess(f"Searching for {query!r} failed.")}
 
         resp = await self.http.request(Route.USER_SEARCH, payload, error_codes=codes)
         mapped = Parser().split("#").take(0).check_empty().split(":").should_map().parse(resp)
@@ -236,7 +236,7 @@ class Session:
 
         ext = {"101": type, "102": number, "103": cooldown}
 
-        codes = {-1: MissingAccess("Failed to get a level. Given ID: {}".format(level_id))}
+        codes = {-1: MissingAccess(f"Failed to get a level. Given ID: {level_id}")}
 
         payload = Params().create_new().put_definer("levelid", level_id).finish()
         resp = await self.http.request(Route.DOWNLOAD_LEVEL, payload, error_codes=codes)
@@ -283,7 +283,7 @@ class Session:
         # Daily: -1, Weekly: -2
         weekly = ~type_id
         payload = Params().create_new().put_weekly(weekly).finish()
-        codes = {-1: MissingAccess("Failed to fetch a {!r} level.".format(type))}
+        codes = {-1: MissingAccess(f"Failed to fetch a {type!r} level.")}
         resp = await self.http.request(Route.GET_TIMELY, payload, error_codes=codes)
 
         try:
@@ -443,11 +443,7 @@ class Session:
 
         payload = params.finish()
 
-        codes = {
-            -1: MissingAccess(
-                "Failed to get leaderboard of the level by ID: {!r}.".format(level_id)
-            )
-        }
+        codes = {-1: MissingAccess(f"Failed to get leaderboard of the level by ID: {level_id!r}.")}
 
         resp = await self.http.request(Route.GET_LEVEL_SCORES, payload, error_codes=codes)
 
@@ -470,9 +466,7 @@ class Session:
         strategy = strategy.name.lower() if strategy.value else "top"
 
         params = Params().create_new().put_type(strategy).put_count(count)
-        codes = {
-            -1: MissingAccess("Failed to fetch leaderboard for strategy: {!r}.".format(strategy))
-        }
+        codes = {-1: MissingAccess(f"Failed to fetch leaderboard for strategy: {strategy!r}.")}
 
         if needs_login:
             check_logged_obj(client, "get_top")
@@ -492,7 +486,7 @@ class Session:
         )
         codes = {
             -1: LoginFailure(login=user, password=password),
-            -12: MissingAccess("Account {!r} (password {!r}) is disabled.".format(user, password)),
+            -12: MissingAccess(f"Account {user!r} (password {password!r}) is disabled."),
         }
 
         resp = await self.http.request(Route.LOGIN, payload, error_codes=codes)
@@ -511,7 +505,7 @@ class Session:
             .put_definer("password", client.password)
             .finish_login()
         )
-        codes = {-11: MissingAccess("Failed to load data for client: {!r}.".format(client))}
+        codes = {-11: MissingAccess(f"Failed to load data for client: {client!r}.")}
 
         resp = await self.http.request(
             Route.LOAD_DATA, payload, error_codes=codes, custom_base=link
@@ -550,7 +544,7 @@ class Session:
         )
 
         if resp != 1:
-            raise MissingAccess("Failed to do backup for client: {!r}".format(client))
+            raise MissingAccess(f"Failed to do backup for client: {client!r}")
 
     async def search_levels_on_page(
         self,
@@ -652,7 +646,7 @@ class Session:
 
     async def report_level(self, level_id: int) -> None:
         payload = Params().create_new("web").put_definer("levelid", level_id).finish()
-        codes = {-1: MissingAccess("Failed to report a level by ID: {!r}.".format(level_id))}
+        codes = {-1: MissingAccess(f"Failed to report a level by ID: {level_id!r}.")}
 
         await self.http.request(Route.REPORT_LEVEL, payload, error_codes=codes)
 
@@ -669,7 +663,7 @@ class Session:
         resp = await self.http.request(Route.DELETE_LEVEL, payload)
 
         if resp != 1:
-            raise MissingAccess("Failed to delete a level by ID: {}.".format(level_id))
+            raise MissingAccess(f"Failed to delete a level by ID: {level_id}.")
 
     async def update_level_desc(self, level_id: int, content: str, *, client: Client) -> None:
         payload = (
@@ -685,9 +679,7 @@ class Session:
         resp = await self.http.request(Route.UPDATE_LEVEL_DESC, payload)
 
         if resp != 1:
-            raise MissingAccess(
-                "Failed to update description of the level by ID: {}.".format(level_id)
-            )
+            raise MissingAccess(f"Failed to update description of the level by ID: {level_id}.")
 
     async def rate_level(self, level_id: int, rating: int, *, client: Client) -> None:
         assert 0 < rating <= 10, "Invalid star value given."
@@ -713,7 +705,7 @@ class Session:
         resp = await self.http.request(Route.RATE_LEVEL_STARS, payload)
 
         if resp != 1:
-            raise MissingAccess("Failed to rate level by ID: {}.".format(level_id))
+            raise MissingAccess(f"Failed to rate level by ID: {level_id}.")
 
     async def rate_demon(
         self, level_id: int, demon_rating: DemonDifficulty, mod: bool, *, client: Client
@@ -754,15 +746,13 @@ class Session:
             .finish_mod()
         )
         codes = {
-            -2: MissingAccess(
-                "Missing moderator permissions to send a level by ID: {!r}.".format(level_id)
-            )
+            -2: MissingAccess(f"Missing moderator permissions to send a level by ID: {level_id!r}.")
         }
 
         resp = await self.http.request(Route.SUGGEST_LEVEL_STARS, payload, error_codes=codes)
 
         if resp != 1:
-            raise MissingAccess("Failed to send a level by ID: {!r}.".format(level_id))
+            raise MissingAccess(f"Failed to send a level by ID: {level_id!r}.")
 
     async def like(
         self, item_id: int, typeid: int, special: int, dislike: bool = False, *, client: Client
@@ -792,7 +782,7 @@ class Session:
         resp = await self.http.request(Route.LIKE_ITEM, payload)
 
         if resp != 1:
-            raise MissingAccess("Failed to like an item by ID: {}.".format(item_id))
+            raise MissingAccess(f"Failed to like an item by ID: {item_id}.")
 
     async def get_page_messages(
         self, sent_or_inbox: str, page: int, *, raise_errors: bool = True, client: Client
@@ -857,7 +847,8 @@ class Session:
     async def comment_level(
         self, level_id: int, content: str, percentage: int, *, client: Client
     ) -> None:
-        assert percentage <= 100, "{}% > 100% percentage arg was recieved.".format(percentage)
+        if percentage > 100:
+            raise ValueError(f"{percentage}% > 100% percentage arg was recieved.")
 
         percentage = round(percentage)  # just in case
         to_gen = [client.name, level_id, percentage, 0]
@@ -873,9 +864,7 @@ class Session:
             .put_percent(percentage)
             .finish()
         )
-        codes = {
-            -1: MissingAccess("Failed to post a comment on a level by ID: {!r}.".format(level_id))
-        }
+        codes = {-1: MissingAccess(f"Failed to post a comment on a level by ID: {level_id!r}.")}
 
         await self.http.request(Route.UPLOAD_COMMENT, payload, error_codes=codes)
 
@@ -896,7 +885,7 @@ class Session:
         resp = await self.http.request(route, payload)
 
         if resp != 1:
-            raise MissingAccess("Failed to delete a comment by ID: {!r}.".format(comment_id))
+            raise MissingAccess(f"Failed to delete a comment by ID: {comment_id!r}.")
 
     async def send_friend_request(
         self, target_id: int, message: Optional[str] = None, *, client: Client
@@ -919,9 +908,7 @@ class Session:
             return
 
         elif resp != 1:
-            raise MissingAccess(
-                "Failed to send a friend request to user by ID: {!r}.".format(target_id)
-            )
+            raise MissingAccess(f"Failed to send a friend request to user by ID: {target_id!r}.")
 
     async def delete_friend_req(
         self, typeof: MessageOrRequestType, user_id: int, client: Client
@@ -938,7 +925,9 @@ class Session:
         resp = await self.http.request(Route.DELETE_REQUEST, payload)
 
         if resp != 1:
-            raise MissingAccess("Failed to delete a friend request by User: {!r}.".format(user_id))
+            raise MissingAccess(
+                f"Failed to delete a friend request by User (with ID): {user_id!r}."
+            )
 
     async def accept_friend_req(
         self, typeof: MessageOrRequestType, request_id: int, user_id: int, client: Client
@@ -959,7 +948,7 @@ class Session:
         resp = await self.http.request(Route.ACCEPT_REQUEST, payload)
 
         if resp != 1:
-            raise MissingAccess("Failed to accept a friend request by ID: {!r}.".format(request_id))
+            raise MissingAccess(f"Failed to accept a friend request by ID: {request_id!r}.")
 
     async def read_friend_req(self, request_id: int, client: Client) -> None:
         payload = (
@@ -973,7 +962,7 @@ class Session:
         resp = await self.http.request(Route.READ_REQUEST, payload)
 
         if resp != 1:
-            raise MissingAccess("Failed to read a friend request by ID: {!r}.".format(request_id))
+            raise MissingAccess(f"Failed to read a friend request by ID: {request_id!r}.")
 
     async def read_message(
         self, typeof: MessageOrRequestType, message_id: int, client: Client
@@ -987,7 +976,7 @@ class Session:
             .put_password(client.encodedpass)
             .finish()
         )
-        codes = {-1: MissingAccess("Failed to read a message by ID: {!r}.".format(message_id))}
+        codes = {-1: MissingAccess(f"Failed to read a message by ID: {message_id!r}.")}
         resp = await self.http.request(Route.READ_PRIVATE_MESSAGE, payload, error_codes=codes,)
         mapped = Parser().with_split(":").should_map().parse(resp)
 
@@ -1008,7 +997,7 @@ class Session:
         resp = await self.http.request(Route.DELETE_PRIVATE_MESSAGE, payload)
 
         if resp != 1:
-            raise MissingAccess("Failed to delete a message by ID: {!r}.".format(message_id))
+            raise MissingAccess(f"Failed to delete a message by ID: {message_id!r}.")
 
     async def get_gauntlets(self) -> List[ExtDict]:
         payload = Params().create_new().finish()
@@ -1063,7 +1052,7 @@ class Session:
             .finish()
         )
         codes = {
-            -1: MissingAccess("Failed to get friend requests on page {}.".format(page)),
+            -1: MissingAccess(f"Failed to get friend requests on page {page}."),
             -2: NothingFound("gd.FriendRequest"),
         }
 
@@ -1126,9 +1115,7 @@ class Session:
         payload = param_obj.finish()
 
         codes = {
-            -1: MissingAccess(
-                "Failed to retrieve comment for user by Account ID: {!r}.".format(account_id)
-            )
+            -1: MissingAccess(f"Failed to retrieve comment for user by Account ID: {account_id!r}.")
         }
 
         resp = await self.http.request(route, payload, error_codes=codes, raise_errors=raise_errors)
@@ -1185,7 +1172,7 @@ class Session:
             .finish()
         )
         codes = {
-            -1: MissingAccess("Failed to get comments of a level by ID: {!r}.".format(level_id)),
+            -1: MissingAccess(f"Failed to get comments of a level by ID: {level_id!r}."),
             -2: NothingFound("gd.Comment"),
         }
 
@@ -1224,7 +1211,7 @@ class Session:
 
         if resp != 1:
             raise MissingAccess(
-                "Failed to (un)block a user by Account ID: {!r}.".format(account_id)
+                f"Failed to {'un' if unblock else ''}block a user by Account ID: {account_id!r}."
             )
 
     async def unfriend_user(self, account_id: int, *, client: Client) -> None:
@@ -1239,7 +1226,7 @@ class Session:
         resp = await self.http.request(Route.REMOVE_FRIEND, payload)
 
         if resp != 1:
-            raise MissingAccess("Failed to unfriend a user by Account ID: {!r}.".format(account_id))
+            raise MissingAccess(f"Failed to unfriend a user by Account ID: {account_id!r}.")
 
     async def send_message(
         self, account_id: int, subject: str, body: str, *, client: Client
@@ -1257,7 +1244,7 @@ class Session:
 
         if resp != 1:
             raise MissingAccess(
-                "Failed to send a message to a user by Account ID: {!r}.".format(account_id)
+                f"Failed to send a message to a user by Account ID: {account_id!r}."
             )
 
     async def update_profile(self, settings: Dict[str, int], *, client: Client) -> None:
@@ -1306,7 +1293,7 @@ class Session:
         resp = await self.http.request(Route.UPDATE_USER_SCORE, payload)
 
         if not resp > 0:
-            raise MissingAccess("Failed to update profile of a client: {!r}".format(client))
+            raise MissingAccess(f"Failed to update profile of a client: {client!r}")
 
     async def generate_icon(
         self, form: str, id: int, color_1: int, color_2: int, has_glow: bool, size: int
@@ -1360,9 +1347,7 @@ class Session:
         resp = await self.http.request(Route.UPDATE_ACC_SETTINGS, payload)
 
         if resp != 1:
-            raise MissingAccess(
-                "Failed to update profile settings of a client: {!r}.".format(client)
-            )
+            raise MissingAccess(f"Failed to update profile settings of a client: {client!r}.")
 
     async def run_many(self, tasks: List[asyncio.Task]) -> Any:
         res = await asyncio.gather(*tasks)

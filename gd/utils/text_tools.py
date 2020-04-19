@@ -4,7 +4,11 @@ from yarl import URL
 
 from ..typing import Any, Dict, List, Optional, Union
 
-__all__ = ("make_repr", "object_split", "dump")
+__all__ = ("get_module", "make_repr", "object_split", "dump")
+
+
+def get_module(module: str) -> str:
+    return module.split(".", 1)[0]
 
 
 def make_repr(obj: Any, info: Optional[Dict[Any, Any]] = None) -> str:
@@ -12,15 +16,15 @@ def make_repr(obj: Any, info: Optional[Dict[Any, Any]] = None) -> str:
     if info is None:
         info = {}
 
-    module = obj.__module__.split(".").pop(0)
+    module = get_module(obj.__module__)
     name = obj.__class__.__name__
 
     if not info:
-        return "<{}.{}>".format(module, name)
+        return f"<{module}.{name}>"
 
-    final = " ".join("{0}={1}".format(*t) for t in info.items())
+    formatted_info = " ".join(f"{key}={value}" for key, value in info.items())
 
-    return "<{}.{} {}>".format(module, name, final)
+    return f"<{module}.{name} {formatted_info}>"
 
 
 def default(x: Any) -> Any:
@@ -37,9 +41,7 @@ def default(x: Any) -> Any:
         return str(x)
 
     else:
-        raise TypeError(
-            "Object of type {!r} is not JSON-serializable.".format(type(x).__name__)
-        ) from None
+        raise TypeError(f"Object of type {type(x).__name__!r} is not JSON-serializable.") from None
 
 
 def dump(x: Any, **kwargs) -> str:

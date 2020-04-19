@@ -172,7 +172,7 @@ class HTTPClient:
 
         if self.debug:
             for name, value in {"URL": url, "Data": data, "Params": params}.items():
-                log.debug("{}: {}".format(name, value))
+                log.debug(f"{name}: {value}")
 
         async with self.semaphore, aiohttp.ClientSession(
             headers=self.make_headers(),
@@ -190,9 +190,9 @@ class HTTPClient:
             data = await resp.content.read()
 
             if self.debug:
-                log.debug("Headers: {!r}".format(dict(resp.request_info.headers)))
+                log.debug(f"Headers: {dict(resp.request_info.headers)!r}")
                 self.last_result = data.decode(errors="replace")
-                log.debug("Response: {!r}".format(self.last_result))
+                log.debug(f"Response: {self.last_result}")
 
             try:
                 res = data.decode()
@@ -320,6 +320,6 @@ class HTTPClient:
                     "Params": params,
                     "Headers": dict(resp.request_info.headers),
                 }.items():
-                    log.debug("{}: {}".format(name, value))
+                    log.debug(f"{name}: {value}")
 
         return data

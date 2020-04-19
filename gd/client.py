@@ -122,8 +122,8 @@ class Client:
         Password of the client. ``None`` if not logged in.
     encodedpass: :class:`str`
         Encoded Password of the client. ``None`` on init as well.
-    database: Optional[:class:`.api.Database`]
-        Save API. If not loaded, has empty parts inside.
+    db: Optional[:class:`.api.Database`]
+        Database/Save API. If not loaded, has empty parts inside.
     save: :class:`.Save`
         This is a namedtuple with format ``(completed, followed)``.
         Contains empty lists if not loaded.
@@ -866,7 +866,9 @@ class Client:
 
     @check_logged
     async def read_message(self, message: Message) -> str:
-        return await self.session.read_message(message.type, message.id, client=self)
+        body = await self.session.read_message(message.type, message.id, client=self)
+        message._body = body
+        return body
 
     @check_logged
     async def delete_message(self, message: Message) -> None:
@@ -1663,12 +1665,12 @@ class Client:
 
         elif lower in {"level_comment"}:
             if entity_id is None:
-                raise ClientException("Entity ID is required for type: {!r}.".format(lower))
+                raise ClientException(f"Entity ID is required for type: {lower!r}.")
 
             listener = LevelCommentListener(self, entity_id)
 
         else:
-            raise ClientException("Invalid listener type: {!r}.".format(lower))
+            raise ClientException(f"Invalid listener type: {lower!r}.")
 
         self.listeners.append(listener)
         listener.enable()
@@ -1678,7 +1680,7 @@ class Client:
     async def dispatch(self, event_name: str, *args, **kwargs) -> Any:
         name = "on_" + event_name
 
-        log.info("Dispatching event {!r}, client: {!r}".format(name, self))
+        log.info(f"Dispatching event {name!r}, client: {self!r}")
 
         try:
             method = getattr(self, name)

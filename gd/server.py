@@ -98,7 +98,7 @@ def str_to_bool(
     elif string in false:
         return False
     else:
-        raise ValueError("Invalid string given: {!r}.".format(string))
+        raise ValueError(f"Invalid string given: {string!r}.")
 
 
 def parse_routes(routes: Iterable[web.RouteDef]) -> List[Dict[str, Optional[str]]]:

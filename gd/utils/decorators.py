@@ -27,15 +27,15 @@ def check_logged_obj(obj: Any, func_name: str) -> None:
         client = obj if hasattr(obj, "is_logged") else obj.client
 
     except AttributeError:
-        raise MissingAccess(message="Failed to find client on object: {!r}.".format(obj)) from None
+        raise MissingAccess(message=f"Failed to find client on object: {obj!r}.") from None
 
     else:
         if client is None:
             raise MissingAccess(
                 message=(
-                    "Attempt to check if client is logged for {!r} returned None. "
+                    f"Attempt to check if client is logged for {obj!r} returned None. "
                     "Have you made this object by hand?"
-                ).format(obj)
+                )
             )
 
         if not client.is_logged():
@@ -52,9 +52,7 @@ def benchmark(func: Function) -> Function:
 
         time_taken = (end - start) * 1000
 
-        thing = ("Executed {0!r}\n" "Estimated time: {1:,.2f}ms.").format(func, time_taken)
-
-        print(thing)
+        print(f"Executed {func!r}\nEstimated time: {time_taken:,.2f}ms.")
 
         return res
 

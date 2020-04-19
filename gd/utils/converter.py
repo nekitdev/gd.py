@@ -87,7 +87,7 @@ class Converter:
         except FailedConversion:
             gauntlet = "Unknown"
 
-        return "{} Gauntlet".format(gauntlet)
+        return f"{gauntlet} Gauntlet"
 
     @staticmethod
     def value_to_pack_difficulty(value: int) -> LevelDifficulty:

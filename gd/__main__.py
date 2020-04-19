@@ -26,9 +26,9 @@ def show_version() -> None:
         if pkg:
             entries.append("    - gd.py pkg_resources: v{0}".format(pkg.version))
 
-    entries.append("- [gd_console] v{0}".format(con_v))
+    entries.append("- [gd_console] v0.4.0")
 
-    entries.append("- aiohttp v{0.__version__}".format(aiohttp))
+    entries.append(f"- aiohttp v{aiohttp.__version__}")
 
     uname = platform.uname()
     entries.append("- System Info: {0.system} {0.release} {0.version}".format(uname))
@@ -75,7 +75,7 @@ def main() -> None:
         gd.server.start()
 
     else:
-        print("Invalid action: {!r}.".format(action))
+        print(f"Invalid action: {action!r}.")
 
 
 # run main
