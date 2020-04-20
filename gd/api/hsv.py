@@ -1,4 +1,4 @@
-from ..typing import HSV, Union
+from ..typing import HSV, Tuple, Union
 from ..utils.text_tools import make_repr
 
 __all__ = ("HSV",)
@@ -9,13 +9,13 @@ class HSV:
 
     Below is a table that shows how S and V depend on whether they are checked:
 
-        +------------+--------+---------+
-        | is_checked |  False |    True |
-        +============+========+=========+
-        | s range    | [0, 2] | [-1, 1] |
-        +------------+--------+---------+
-        | v range    | [0, 2] | [-1, 1] |
-        +------------+--------+---------+
+        +-------------+--------+---------+
+        | value range |  false |    true |
+        +=============+========+=========+
+        | s range     | [0, 2] | [-1, 1] |
+        +-------------+--------+---------+
+        | v range     | [0, 2] | [-1, 1] |
+        +-------------+--------+---------+
 
     Parameters
     ----------
@@ -60,6 +60,10 @@ class HSV:
         return dict(
             h=self.h, s=self.s, v=self.v, s_checked=self.s_checked, v_checked=self.v_checked
         )
+
+    def as_tuple(self) -> Tuple[int, float, float]:
+        """Return an ``(h, s, v)`` tuple."""
+        return self.h, self.s, self.v
 
     @classmethod
     def from_string(cls, string: str) -> HSV:
