@@ -79,12 +79,6 @@ LevelAPI
 .. autoclass:: LevelAPI
     :members:
 
-Object
-------
-
-.. autoclass:: Object
-    :members:
-
 HSV
 ---
 
@@ -95,4 +89,10 @@ ColorChannel
 ------------
 
 .. autoclass:: ColorChannel
+    :members:
+
+Object
+------
+
+.. autoclass:: Object
     :members:
