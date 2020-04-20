@@ -23,11 +23,6 @@ try:
         local_env = os.getenv("localappdata")
         path = Path(local_env) / "GeometryDash"
 
-    elif sys.platform == "darwin":
-        local_env = os.getenv("HOME")
-        path = Path(local_env) / "Library" / "Application Support" / "Geometry Dash"
-        # TODO: figure out encoding of MacOS GD saves (if possible)
-
     else:
         path = Path()
 

@@ -138,6 +138,7 @@ class Object(Struct):
         return self
 
     def get_color(self) -> Color:
+        """Attempt to get color of ``self``."""
         return _make_color(self)
 
     def add_groups(self, *groups: Iterable[int]) -> Object:
@@ -214,6 +215,7 @@ class ColorChannel(Struct):
         return self
 
     def get_color(self) -> Color:
+        """Attempt to get color of ``self``."""
         return _make_color(self)
 
     exec(_color_code)

@@ -174,54 +174,74 @@ class Editor:
         return len(self.objects)
 
     def set_header(self, header: Header) -> Editor:
+        """Set header of Editor instance to ``header``."""
         if isinstance(header, Header):
             self.header = header
         return self
 
     def get_header(self) -> Header:
+        """Get header of Editor instance."""
         return self.header
 
     def copy_header(self) -> Header:
+        """Copy header of Editor instance."""
         return self.header.copy()
 
     def get_groups(self) -> Iterable[int]:
+        """Fetch all used groups in Editor instance and return them as a set."""
         groups = set()
 
         for obj in self.objects:
-            g = obj.groups or set()
-            groups.update(g)
+            new_groups, group = obj.groups, obj.target_group
+
+            if new_groups is not None:
+                groups.update(new_groups)
+
+            if group is not None:
+                groups.add(group)
 
         return groups
 
     def get_color_ids(self) -> Iterable[int]:
+        """Fetch all used color IDs in Editor instance and return them as a set."""
         color_ids = set()
 
         for obj in self.objects:
-            color_ids.update((obj.color_1, obj.color_2))
+            color_1, color_2 = obj.color_1, obj.color_2
 
-        color_ids.discard(None)
+            if color_1 is not None:
+                color_ids.add(color_1)
+            if color_2 is not None:
+                color_ids.add(color_2)
 
         return color_ids
 
     def get_free_group(self) -> Optional[int]:
+        """Get next free group of Editor instance. ``None`` if not found."""
         return _find_next(self.get_groups())
 
     def get_free_color_id(self) -> Optional[int]:
+        """Get next free color ID of Editor instance. ``None`` if not found."""
         return _find_next(self.get_color_ids())
 
     def get_portals(self) -> List[Object]:
+        """Fetch all portals / speed triggers used in this level, sorted by position in level."""
         return sorted(filter(_is_portal, self.objects), key=(_get_x))
 
     def get_speed_portals(self) -> List[Object]:
+        """Fetch all speed triggers used in this level, sorted by position in level."""
         return sorted(filter(_is_speed_portal, self.objects), key=(_get_x))
 
     def get_x_length(self) -> Union[float, int]:
+        """Get the X position of a last object. Default is 0."""
         return max(map(_get_x, self.objects), default=0)
 
     def get_speed(self) -> Speed:
+        """Get speed from a header, or return normal speed."""
         return self.header.speed or Speed(0)
 
     def get_length(self, x: Optional[Union[float, int]] = None) -> float:
+        """Calculate length of the level in seconds."""
         if x is None:
             x = self.get_x_length()
 
@@ -230,22 +250,27 @@ class Editor:
 
         return get_length_from_x(x, speed, portals)
 
-    def get_color(self, directive_or_id: Union[int, str]) -> ColorChannel:
+    def get_color(self, directive_or_id: Union[int, str]) -> Optional[ColorChannel]:
+        """Get color by ID or special directive. ``None`` if not found."""
         return self.header.colors.get(directive_or_id)
 
     def get_colors(self) -> ColorCollection:
+        """Return a reference to colors of the Editor instance."""
         return self.header.colors
 
     def copy_colors(self) -> ColorCollection:
+        """Copy colors of the Editor instance."""
         return self.header.copy_colors()
 
     def add_colors(
         self, *colors: Sequence[Union[Tuple[int, int, int], int, ColorCollection]]
     ) -> Editor:
+        """Add colors to the Editor."""
         self.header.colors.update(colors)
         return self
 
     def get_objects(self) -> List[Object]:
+        """Return a reference to object of the Editor instance."""
         return self.objects
 
     def add_objects(self, *objects: Sequence[Object]) -> Editor:
@@ -254,9 +279,7 @@ class Editor:
         return self
 
     def copy_objects(self) -> List[Object]:
-        """List[:class:`.api.Object`]: Copy objects of ``self``.
-        Note: copies, not references are returned!
-        """
+        """Copy objects of the Editor instance."""
         return list(obj.copy() for obj in self.objects)
 
     def map(self, function: Callable[[Object], Any]) -> map:
@@ -285,6 +308,7 @@ class Editor:
         return data
 
     def copy(self) -> Editor:
+        """Return a copy of the Editor instance."""
         return Editor(self.copy_header(), *self.copy_objects())
 
 

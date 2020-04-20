@@ -5,6 +5,33 @@ __all__ = ("HSV",)
 
 
 class HSV:
+    """A class that represents HSV - Hue, Saturation, Value (Brightness) options.
+
+    Below is a table that shows how S and V depend on whether they are checked:
+
+        +------------+--------+---------+
+        | is_checked |  False |    True |
+        +============+========+=========+
+        | s range    | [0, 2] | [-1, 1] |
+        +------------+--------+---------+
+        | v range    | [0, 2] | [-1, 1] |
+        +------------+--------+---------+
+
+    Parameters
+    ----------
+    h: :class:`int`
+        Hue integer value in range [-180, 180].
+    s: :class:`float`
+        Saturation float value in range [0, 2] or [-1, 1]
+        depending on ``s_checked``.
+    v: :class:`float`
+        Value (Brightness) float value in range [0, 2] or [-1, 1]
+        depending on ``v_checked``.
+    s_checked: :class:`bool`
+        Whether ``s`` is checked.
+    v_checked: :class:`bool`
+        Whether ``v`` is checked.
+    """
     def __init__(
         self,
         h: int = 0,
@@ -42,8 +69,8 @@ class HSV:
             int(h),
             _maybefloat(s),
             _maybefloat(v),
-            bool(int(s_checked)),
-            bool(int(v_checked)),
+            _bool(s_checked),
+            _bool(v_checked),
         )
 
         return cls(*value_tuple)
@@ -55,3 +82,7 @@ class HSV:
 
 def _maybefloat(string: str) -> Union[float, int]:
     return (float if "." in string else int)(string)
+
+
+def _bool(string: str) -> bool:
+    return string == "1"
