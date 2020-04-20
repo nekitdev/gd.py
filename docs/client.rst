@@ -90,5 +90,8 @@ You can even do this (I strongly do not recommend though)::
 
         level = gd.Level(id=30029017, client=client)
 
+Client
+------
+
 .. autoclass:: Client
     :members:
