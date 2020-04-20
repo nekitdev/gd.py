@@ -3,7 +3,6 @@ from .abstractuser import AbstractUser
 
 from .typing import Client, FriendRequest, Union
 
-from .utils.decorators import check_logged
 from .utils.enums import MessageOrRequestType
 from .utils.indexer import Index
 from .utils.parser import ExtDict
@@ -79,7 +78,6 @@ class FriendRequest(AbstractEntity):
         """:class:`bool`: Indicates whether request was already read."""
         return self.options.get("is_read", False)
 
-    @check_logged
     async def read(self) -> None:
         """|coro|
 
@@ -88,11 +86,10 @@ class FriendRequest(AbstractEntity):
         Raises
         ------
         :exc:`.MissingAccess`
-            Failed to read a message.
+            Failed to read a request.
         """
         await self.client.read_friend_request(self)
 
-    @check_logged
     async def delete(self) -> None:
         """|coro|
 
@@ -105,7 +102,6 @@ class FriendRequest(AbstractEntity):
         """
         await self.client.delete_friend_request(self)
 
-    @check_logged
     async def accept(self) -> None:
         """|coro|
 

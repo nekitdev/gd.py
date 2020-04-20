@@ -107,6 +107,20 @@ class Client:
         Defaults to ``None``, in which case the default event loop is used
         via :func:`.utils.acquire_loop`.
 
+    load_after_post: :class:`bool`
+        Whether to load comments/messages/requests after sending them.
+
+        .. note::
+
+            Defaults to ``True``, in which case the following method calls will return objects:
+
+            - :meth:`.Client.send_message`;
+            - :meth:`.Client.send_friend_request`;
+            - :meth:`.Client.comment_level`;
+            - :meth:`.Client.post_comment`.
+
+            Otherwise, if ``False`` or not found (extremely rarely), these methods will return ``None``.
+
     \*\*http_args
         Arguments to pass to :class:`.HTTPClient` constructor.
 
@@ -959,6 +973,11 @@ class Client:
         ----------
         entity: Union[:class:`.Comment`, :class:`.Level`]
             An entity to like.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to like an entity.
         """
         typeid, special = figure_type_and_special(entity)
         await self.session.like(entity.id, typeid, special, dislike=False, client=self)
@@ -973,6 +992,11 @@ class Client:
         ----------
         entity: Union[:class:`.Comment`, :class:`.Level`]
             An entity to like.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to dislike an entity.
         """
         typeid, special = figure_type_and_special(entity)
         await self.session.like(entity.id, typeid, special, dislike=True, client=self)
@@ -987,6 +1011,11 @@ class Client:
         ----------
         comment: :class:`.Comment`
             A comment to delete.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Server did not return 1, which means comment was not deleted.
         """
         await self.session.delete_comment(comment.type, comment.id, comment.level_id, client=self)
 
@@ -1000,8 +1029,14 @@ class Client:
         ----------
         request: :class:`.FriendRequest`
             A friend request to read.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to read a request.
         """
         await self.session.read_friend_req(request.id, client=self)
+        request.options.update(is_read=True)
 
     @check_logged
     async def delete_friend_request(self, request: FriendRequest) -> None:
@@ -1013,6 +1048,11 @@ class Client:
         ----------
         request: :class:`.FriendRequest`
             A friend request to delete.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to delete a friend request.
         """
         await self.session.delete_friend_req(request.type, request.author.account_id, client=self)
 
@@ -1026,6 +1066,11 @@ class Client:
         ----------
         request: :class:`.FriendRequest`
             A friend request to accept.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to accept a friend request.
         """
         await self.session.accept_friend_req(
             request.type, request.id, request.author.account_id, client=self
@@ -1041,9 +1086,15 @@ class Client:
         ----------
         message: :class:`.Message`
             A message to read.
+
+        Returns
+        -------
+        :class:`str`
+            The content of the message.
         """
         body = await self.session.read_message(message.type, message.id, client=self)
         message.body = body
+        message.options.update(is_read=True)
         return body
 
     @check_logged
@@ -1056,6 +1107,11 @@ class Client:
         ----------
         message: :class:`.Message`
             A message to delete.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to delete a message.
         """
         await self.session.delete_message(message.type, message.id, client=self)
 
@@ -1185,6 +1241,16 @@ class Client:
             Subject of a new message.
         body: :class:`str`
             Body of a new message.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to send a message.
+
+        Returns
+        -------
+        Optional[:class:`.Message`]
+            Sent message.
         """
         await self.session.send_message(user.account_id, subject=subject, body=body, client=self)
 
@@ -1208,6 +1274,11 @@ class Client:
         ----------
         user: :class:`.AbstractUser`
             User to block.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to block a user.
         """
         await self.session.block_user(user.account_id, unblock=False, client=self)
 
@@ -1221,6 +1292,11 @@ class Client:
         ----------
         user: :class:`.AbstractUser`
             User to unblock.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to unblock a user.
         """
         await self.session.block_user(user.account_id, unblock=True, client=self)
 
@@ -1234,6 +1310,11 @@ class Client:
         ----------
         user: :class:`.AbstractUser`
             User to unfriend.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to unfriend a user.
         """
         await self.session.unfriend_user(user.account_id, client=self)
 
@@ -1252,6 +1333,16 @@ class Client:
 
         message: :class:`str`
             Body of friend request message.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to send a friend request to user.
+
+        Returns
+        -------
+        Optional[:class:`.FriendRequest`]
+            Sent friend request.
         """
         await self.session.send_friend_request(user.account_id, message=message, client=self)
 
@@ -1346,6 +1437,11 @@ class Client:
         ----------
         level: :class:`.Level`
             A level to report.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to report a level.
         """
         await self.session.report_level(level.id)
 
@@ -1359,6 +1455,11 @@ class Client:
         ----------
         level: :class:`.Level`
             A level to delete.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to delete a level.
         """
         await self.session.delete_level(level.id, client=self)
         level.is_alive = is_alive_mock
@@ -1393,6 +1494,11 @@ class Client:
 
         stars: :class:`int`
             Amount of stars to rate a level with.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to rate a level.
         """
         await self.session.rate_level(level.id, stars, client=self)
 
@@ -1441,6 +1547,11 @@ class Client:
 
         featured: :class:`bool`
             Whether to send a level for feature.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Missing required moderator permissions.
         """
         await self.session.send_level(level.id, stars, featured=featured, client=self)
 
@@ -1462,6 +1573,16 @@ class Client:
 
         precentage: :class:`int`
             Percentage to put a comment with.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Failed to post a level comment.
+
+        Returns
+        -------
+        Optional[:class:`.Comment`]
+            Sent comment.
         """
         await self.session.comment_level(level.id, content, percentage, client=self)
 
@@ -1789,6 +1910,11 @@ class Client:
         ------
         :exc:`.MissingAccess`
             Failed to post a comment.
+
+        Returns
+        -------
+        Optional[:class:`.Comment`]
+            Posted comment.
         """
         await self.session.post_comment(content, client=self)
 

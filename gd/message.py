@@ -3,7 +3,6 @@ from .typing import Client, Message, Optional, Union
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser
 
-from .utils.decorators import check_logged
 from .utils.enums import MessageOrRequestType
 from .utils.indexer import Index
 from .utils.parser import ExtDict
@@ -99,7 +98,6 @@ class Message(AbstractEntity):
         """:class:`bool`: Indicates whether message is read or not."""
         return bool(self.options.get("is_read"))
 
-    @check_logged
     async def read(self) -> str:
         """|coro|
 
@@ -112,7 +110,6 @@ class Message(AbstractEntity):
         """
         return await self.client.read_message(self)
 
-    @check_logged
     async def reply(self, content: str, schema: Optional[str] = None) -> None:
         """|coro|
 
@@ -138,7 +135,6 @@ class Message(AbstractEntity):
 
         return await self.author.send(subject, content)
 
-    @check_logged
     async def delete(self) -> None:
         """|coro|
 

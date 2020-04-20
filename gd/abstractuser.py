@@ -3,9 +3,11 @@ from .typing import (
     Any,
     Client,
     Comment,
+    FriendRequest,
     Iterable,
     Level,
     LevelRecord,
+    Message,
     Optional,
     List,
     Union,
@@ -106,7 +108,7 @@ class AbstractUser(AbstractEntity):
         new = await self.client.fetch_user(self.account_id)
         self.options = new.options
 
-    async def send(self, subject: str, body: str) -> None:
+    async def send(self, subject: str, body: str) -> Optional[Message]:
         """|coro|
 
         Send the message to ``self``. Requires logged client.
@@ -127,6 +129,11 @@ class AbstractUser(AbstractEntity):
         ------
         :exc:`.MissingAccess`
             Failed to send a message.
+
+        Returns
+        -------
+        Optional[:class:`.Message`]
+            Sent message.
         """
         return await self.client.send_message(self, subject, body)
 
@@ -166,7 +173,7 @@ class AbstractUser(AbstractEntity):
         """
         await self.client.unfriend(self)
 
-    async def send_friend_request(self, message: Optional[str] = None) -> None:
+    async def send_friend_request(self, message: str = '') -> Optional[FriendRequest]:
         """|coro|
 
         Send a friend request to a user.
@@ -184,6 +191,11 @@ class AbstractUser(AbstractEntity):
         ------
         :exc:`.MissingAccess`
             Failed to send a friend request to user.
+
+        Returns
+        -------
+        Optional[:class:`.FriendRequest`]
+            Sent friend request.
         """
         return await self.client.send_friend_request(self, message)
 

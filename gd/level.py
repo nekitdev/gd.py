@@ -413,8 +413,7 @@ class Level(AbstractEntity):
         Parameters
         ----------
         content: :class:`str`
-            Content of the new description. If ``None`` or omitted,
-            sets content to :attr:`.Level.description`.
+            Content of the new description. If ``None`` or omitted, nothing is run.
 
         Raises
         ------
@@ -422,7 +421,7 @@ class Level(AbstractEntity):
             Failed to update level's description.
         """
         if content is None:
-            content = self.description
+            return
 
         await self.client.update_level_description(self, content)
 
@@ -540,7 +539,7 @@ class Level(AbstractEntity):
 
         return self
 
-    async def comment(self, content: str, percentage: int = 0) -> None:
+    async def comment(self, content: str, percentage: int = 0) -> Optional[Comment]:
         """|coro|
 
         Posts a comment on a level.
@@ -562,6 +561,11 @@ class Level(AbstractEntity):
         ------
         :exc:`.MissingAccess`
             Failed to post a level comment.
+
+        Returns
+        -------
+        Optional[:class:`.Comment`]
+            Sent comment.
         """
         return await self.client.comment_level(self, content, percentage)
 
