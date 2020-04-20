@@ -28,7 +28,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinxcontrib_trio",
-    "rst2pdf.pdfbuilder",
+    # "rst2pdf.pdfbuilder",
 ]
 
 autodoc_member_order = "bysource"
