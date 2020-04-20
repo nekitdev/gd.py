@@ -29,7 +29,10 @@ class Comment(AbstractEntity):
         cls, data: ExtDict, author: Union[ExtDict, AbstractUser], client: Client
     ) -> Comment:
         if isinstance(author, ExtDict):
-            author = AbstractUser.from_data(author, client=client)
+            if any(key.isdigit() for key in author.keys()):
+                author = AbstractUser.from_data(author, client=client)
+            else:
+                author = AbstractUser(**author, client=client)
 
         color_string = data.get(Index.COMMENT_COLOR, "255,255,255")
         color = Color.from_rgb(*map(int, color_string.split(",")))

@@ -563,7 +563,7 @@ class Level(AbstractEntity):
         :exc:`.MissingAccess`
             Failed to post a level comment.
         """
-        await self.client.comment_level(self, content, percentage)
+        return await self.client.comment_level(self, content, percentage)
 
     async def like(self) -> None:
         """|coro|

@@ -90,6 +90,11 @@ class Message(AbstractEntity):
         """Optional[:class:`str`]: A body of the message. Requires :meth:`.Message.read`."""
         return self._body
 
+    @body.setter
+    def body(self, body: str) -> None:
+        """Set ``self.body`` to ``body``."""
+        self._body = body
+
     def is_read(self) -> bool:
         """:class:`bool`: Indicates whether message is read or not."""
         return bool(self.options.get("is_read"))
@@ -131,7 +136,7 @@ class Message(AbstractEntity):
 
         content, subject = content.format(msg=self), schema.format(msg=self)
 
-        await self.author.send(subject, content)
+        return await self.author.send(subject, content)
 
     @check_logged
     async def delete(self) -> None:

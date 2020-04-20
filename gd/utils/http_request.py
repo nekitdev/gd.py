@@ -124,6 +124,7 @@ class HTTPClient:
             The endpoint for the request URL, passed like this:
 
             .. code-block:: python3
+
                 url = 'http://www.boomlings.com/database/' + php + '.php'
 
         params: Union[:class:`dict`, :class:`str`]

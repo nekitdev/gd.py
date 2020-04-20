@@ -128,7 +128,7 @@ class AbstractUser(AbstractEntity):
         :exc:`.MissingAccess`
             Failed to send a message.
         """
-        await self.client.send_message(self, subject, body)
+        return await self.client.send_message(self, subject, body)
 
     async def block(self) -> None:
         """|coro|
@@ -185,7 +185,7 @@ class AbstractUser(AbstractEntity):
         :exc:`.MissingAccess`
             Failed to send a friend request to user.
         """
-        await self.client.send_friend_request(self, message)
+        return await self.client.send_friend_request(self, message)
 
     async def get_levels_on_page(self, page: int = 0, *, raise_errors: bool = True) -> List[Level]:
         """|coro|

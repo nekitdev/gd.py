@@ -18,7 +18,7 @@ HTTP Requests Module
 .. autoclass:: HTTPClient
     :members:
 
-.. autoclass:: GDSession
+.. autoclass:: Session
 
 .. note:: See source of the session for more information.
 

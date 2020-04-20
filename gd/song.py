@@ -76,7 +76,7 @@ class Author(AbstractEntity):
 
     @property
     def id(self) -> int:
-        return product(map(ord, self.name)) ^ 1
+        return hash(str(self))
 
     @property
     def link(self) -> URL:

@@ -888,11 +888,8 @@ class Session:
             raise MissingAccess(f"Failed to delete a comment by ID: {comment_id!r}.")
 
     async def send_friend_request(
-        self, target_id: int, message: Optional[str] = None, *, client: Client
+        self, target_id: int, message: str = "", *, client: Client
     ) -> None:
-        if message is None:
-            message = ""
-
         payload = (
             Params()
             .create_new()

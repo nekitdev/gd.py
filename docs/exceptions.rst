@@ -27,8 +27,6 @@ Exception List
 .. autoexception:: LoginFailure
     :members:
 
-.. autoexception:: FailedToChange
-
 .. autoexception:: NothingFound
 
 .. autoexception:: NotLoggedError
@@ -46,6 +44,5 @@ Exception Hierarchy
             MissingAccess
             SongRestrictedForUsage
             LoginFailure
-            FailedToChange
             NothingFound
             NotLoggedError

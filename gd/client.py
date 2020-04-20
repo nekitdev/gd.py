@@ -179,15 +179,26 @@ class Client:
             self.encodedpass = Coder.encode(type="accountpass", string=self.password)
 
     def edit(self, **attrs) -> Client:
+        """Update attributes given by ``attrs`` of ``self``.
+
+        This could be used to manually set credentials, for example:
+
+        .. code-block:: python3
+
+            client = gd.Client()
+            client.edit(name='NeKitDS', id=17876467, account_id=5509312, password='secret')
+        """
         for attr, value in attrs.items():
             self._upd(attr, value)
         return self
 
     @property
     def http(self) -> HTTPClient:
+        """:class:`.HTTPClient`: HTTP Client bound to that Client. Same as ``self.session.http``."""
         return self.session.http
 
     def is_logged(self) -> bool:
+        """:class:`bool`: Indicates whether the Client is logged in."""
         checks = (
             self.name is not None,
             self.password is not None,
@@ -284,28 +295,130 @@ class Client:
         return Song(**data, client=self)
 
     async def search_page_songs(self, query: str, page: int = 0) -> List[Song]:
+        """|coro|
+
+        Search for songs on Newgrounds.
+
+        Parameters
+        ----------
+        query: :class:`str`
+            Query to search for.
+
+        page: :class:`int`
+            Page to look songs on.
+
+        Returns
+        -------
+        List[:class:`.Song`]
+            A list of Songs, containing attributes ``id``, ``name`` and ``author``.
+        """
         data = await self.session.search_page_songs(query=query, page=page)
         return list(Song(**part, client=self) for part in data)
 
     async def search_songs(self, query: str, pages: Iterable[int] = range(10)) -> List[Song]:
+        """|coro|
+
+        Search for songs on Newgrounds.
+
+        Parameters
+        ----------
+        query: :class:`str`
+            Query to search for.
+
+        pages: Iterable[:class:`int`]
+            Pages to look songs on.
+
+        Returns
+        -------
+        List[:class:`.Song`]
+            A list of Songs, containing attributes ``id``, ``name`` and ``author``.
+        """
         data = await self.session.search_songs(query=query, pages=pages)
         return list(Song(**part, client=self) for part in data)
 
     async def search_page_users(self, query: str, page: int = 0) -> List[Author]:
+        """|coro|
+
+        Search for users on Newgrounds.
+
+        Parameters
+        ----------
+        query: :class:`str`
+            Query to search for.
+
+        page: :class:`int`
+            Page to look users on.
+
+        Returns
+        -------
+        List[:class:`.Author`]
+            A list of Authors, containing attributes ``name`` and ``link``.
+        """
         data = await self.session.search_page_users(query=query, page=page)
         return list(Author(**part, client=self) for part in data)
 
     async def search_users(self, query: str, pages: Iterable[int] = range(10)) -> List[Author]:
+        """|coro|
+
+        Search for users on Newgrounds.
+
+        Parameters
+        ----------
+        query: :class:`str`
+            Query to search for.
+
+        pages: Iterable[:class:`int`]
+            Pages to look users on.
+
+        Returns
+        -------
+        List[:class:`.Author`]
+            A list of Authors, containing attributes ``name`` and ``link``.
+        """
         data = await self.session.search_users(query=query, pages=pages)
         return list(Author(**part, client=self) for part in data)
 
     async def get_page_user_songs(self, user: Union[str, Author], page: int = 0) -> List[Song]:
+        """|coro|
+
+        Search for songs by a user on Newgrounds.
+
+        Parameters
+        ----------
+        query: :class:`str`
+            Query to search for.
+
+        page: :class:`int`
+            Page to look songs on.
+
+        Returns
+        -------
+        List[:class:`.Song`]
+            A list of Songs, containing attributes ``id``, ``name`` and ``author``.
+        """
         data = await self.session.get_page_user_songs(user, page=page)
         return utils.unique(Song(**part, client=self) for part in data)
 
     async def get_user_songs(
         self, user: Union[str, Author], pages: Iterable[int] = range(10)
     ) -> List[Song]:
+        """|coro|
+
+        Search for songs by a user on Newgrounds.
+
+        Parameters
+        ----------
+        query: :class:`str`
+            Query to search for.
+
+        pages: Iterable[:class:`int`]
+            Page to look songs on.
+
+        Returns
+        -------
+        List[:class:`.Song`]
+            A list of Songs, containing attributes ``id``, ``name`` and ``author``.
+        """
         name = user.name if isinstance(user, Author) else user
 
         data = await self.session.get_user_songs(name, pages=pages)
@@ -838,40 +951,112 @@ class Client:
 
     @check_logged
     async def like(self, entity: Union[Comment, Level]) -> None:
+        """|coro|
+
+        Like an entity (either a comment or a level).
+
+        Parameters
+        ----------
+        entity: Union[:class:`.Comment`, :class:`.Level`]
+            An entity to like.
+        """
         typeid, special = figure_type_and_special(entity)
         await self.session.like(entity.id, typeid, special, dislike=False, client=self)
 
     @check_logged
     async def dislike(self, entity: Union[Comment, Level]) -> None:
+        """|coro|
+
+        Dislike an entity (either a comment or a level).
+
+        Parameters
+        ----------
+        entity: Union[:class:`.Comment`, :class:`.Level`]
+            An entity to like.
+        """
         typeid, special = figure_type_and_special(entity)
         await self.session.like(entity.id, typeid, special, dislike=True, client=self)
 
     @check_logged
     async def delete_comment(self, comment: Comment) -> None:
+        """|coro|
+
+        Delete a comment.
+
+        Parameters
+        ----------
+        comment: :class:`.Comment`
+            A comment to delete.
+        """
         await self.session.delete_comment(comment.type, comment.id, comment.level_id, client=self)
 
     @check_logged
     async def read_friend_request(self, request: FriendRequest) -> None:
+        """|coro|
+
+        Read a friend request.
+
+        Parameters
+        ----------
+        request: :class:`.FriendRequest`
+            A friend request to read.
+        """
         await self.session.read_friend_req(request.id, client=self)
 
     @check_logged
     async def delete_friend_request(self, request: FriendRequest) -> None:
+        """|coro|
+
+        Delete a friend request.
+
+        Parameters
+        ----------
+        request: :class:`.FriendRequest`
+            A friend request to delete.
+        """
         await self.session.delete_friend_req(request.type, request.author.account_id, client=self)
 
     @check_logged
     async def accept_friend_request(self, request: FriendRequest) -> None:
+        """|coro|
+
+        Accept a friend request.
+
+        Parameters
+        ----------
+        request: :class:`.FriendRequest`
+            A friend request to accept.
+        """
         await self.session.accept_friend_req(
             request.type, request.id, request.author.account_id, client=self
         )
 
     @check_logged
     async def read_message(self, message: Message) -> str:
+        """|coro|
+
+        Read a message.
+
+        Parameters
+        ----------
+        message: :class:`.Message`
+            A message to read.
+        """
         body = await self.session.read_message(message.type, message.id, client=self)
-        message._body = body
+        message.body = body
         return body
 
     @check_logged
     async def delete_message(self, message: Message) -> None:
+        """|coro|
+
+        Delete a message.
+
+        Parameters
+        ----------
+        message: :class:`.Message`
+            A message to delete.
+        """
         await self.session.delete_message(message.type, message.id, client=self)
 
     async def generate_icon(
@@ -881,6 +1066,27 @@ class Client:
         size: int = DEFAULT_SIZE,
         as_image: bool = False,
     ) -> Union[bytes, ImageType]:
+        """|coro|
+
+        Generate an icon.
+
+        Parameters
+        ----------
+        type: Union[:class:`int`, :class:`str`, :class:`.IconType`]
+            Type of an icon to generate, e.g. ``cube``.
+        icon_set: :class:`.IconSet`
+            Icon set to generate an icon with.
+        size: :class:`int`
+            Size of a square of a resulting image.
+            For example, when given ``200``, returns a *200 x 200* image.
+        as_image: :class:`bool`
+            Boolean indicating whether to return :class:`bytes` or :class:`PIL.Image.Image`.
+
+        Returns
+        -------
+        Union[:class:`bytes`, :class:`PIL.Image.Image`]
+            A generated image, according to ``as_image``.
+        """
         form = IconType.from_value(type).name.lower()
         data = await self.session.generate_icon(
             form=form,
@@ -903,6 +1109,27 @@ class Client:
         size: int = DEFAULT_SIZE,
         as_image: bool = False,
     ) -> Union[List[bytes], List[ImageType]]:
+        r"""|coro|
+
+        Generate icons.
+
+        Parameters
+        ----------
+        \*types: IterableUnion[:class:`int`, :class:`str`, :class:`.IconType`]]
+            Types of icons to generate, e.g. ``cube, ship, ball``.
+        icon_set: :class:`.IconSet`
+            Icon set to generate icons with.
+        size: :class:`int`
+            Size of a square of resulting images.
+            For example, when given ``200``, returns *200 x 200* images.
+        as_image: :class:`bool`
+            Boolean indicating whether to return :class:`bytes` or :class:`PIL.Image.Image`.
+
+        Returns
+        -------
+        Union[List[:class:`bytes`], List[:class:`PIL.Image.Image`]]
+            Generated images, according to ``as_image``.
+        """
         return await utils.gather(
             self.generate_icon(type=type, icon_set=icon_set, size=size, as_image=as_image)
             for type in types
@@ -915,6 +1142,27 @@ class Client:
         size: int = DEFAULT_SIZE,
         as_image: bool = False,
     ) -> Union[bytes, ImageType]:
+        r"""|coro|
+
+        Generate an image.
+
+        Parameters
+        ----------
+        \*types: IterableUnion[:class:`int`, :class:`str`, :class:`.IconType`]]
+            Types of icons to generate, e.g. ``cube, ship, ball``.
+        icon_set: :class:`.IconSet`
+            Icon set to generate an image with.
+        size: :class:`int`
+            Size of a resulting image.
+            For example, when given ``200``, returns a *(let(types) \* 200) x 200* image.
+        as_image: :class:`bool`
+            Boolean indicating whether to return :class:`bytes` or :class:`PIL.Image.Image`.
+
+        Returns
+        -------
+        Union[:class:`bytes`, :class:`PIL.Image.Image`]
+            A generated image, according to ``as_image``.
+        """
         images = await self.generate_icons(*types, icon_set=icon_set, size=size, as_image=True)
         result = await utils.run_blocking_io(connect_images, images)
 
@@ -924,34 +1172,124 @@ class Client:
         return await utils.run_blocking_io(to_bytes, result)
 
     @check_logged
-    async def send_message(self, user: AbstractUser, subject: str, body: str) -> None:
+    async def send_message(self, user: AbstractUser, subject: str, body: str) -> Optional[Message]:
+        """|coro|
+
+        Send a message.
+
+        Parameters
+        ----------
+        user: :class:`.AbstractUser`
+            User to send a message to.
+        subject: :class:`str`
+            Subject of a new message.
+        body: :class:`str`
+            Body of a new message.
+        """
         await self.session.send_message(user.account_id, subject=subject, body=body, client=self)
+
+        if self.load_after_post:
+            messages = await self.get_page_messages("sent")
+            message = utils.get(messages, subject=subject, recipient=user)
+
+            if message is None:
+                return
+
+            message.body = body
+            return message
 
     @check_logged
     async def block(self, user: AbstractUser) -> None:
+        """|coro|
+
+        Block a user.
+
+        Parameters
+        ----------
+        user: :class:`.AbstractUser`
+            User to block.
+        """
         await self.session.block_user(user.account_id, unblock=False, client=self)
 
     @check_logged
     async def unblock(self, user: AbstractUser) -> None:
+        """|coro|
+
+        Unblock a user.
+
+        Parameters
+        ----------
+        user: :class:`.AbstractUser`
+            User to unblock.
+        """
         await self.session.block_user(user.account_id, unblock=True, client=self)
 
     @check_logged
     async def unfriend(self, user: AbstractUser) -> None:
+        """|coro|
+
+        Unfriend a user.
+
+        Parameters
+        ----------
+        user: :class:`.AbstractUser`
+            User to unfriend.
+        """
         await self.session.unfriend_user(user.account_id, client=self)
 
     @check_logged
-    async def send_friend_request(self, user: AbstractUser, message: Optional[str] = None) -> None:
+    async def send_friend_request(
+        self, user: AbstractUser, message: str = ""
+    ) -> Optional[FriendRequest]:
+        """|coro|
+
+        Send a friend request.
+
+        Parameters
+        ----------
+        user: :class:`.AbstractUser`
+            User to send a request to.
+
+        message: :class:`str`
+            Body of friend request message.
+        """
         await self.session.send_friend_request(user.account_id, message=message, client=self)
+
+        if self.load_after_post:
+            requests = await self.get_page_friend_requests("sent")
+            return utils.get(requests, recipient=user)
 
     async def retrieve_page_comments(
         self,
         user: AbstractUser,
         type: str = "profile",
         page: int = 0,
-        *,
         raise_errors: bool = True,
         strategy: Union[int, str, CommentStrategy] = 0,
     ) -> List[Comment]:
+        """|coro|
+
+        Retrieve comments of a user.
+
+        Parameters
+        ----------
+        user: :class:`.AbstractUser`
+            User to retrieve comments of.
+        type: :class:`str`
+            Type of comments to look for.
+            Either ``profile`` or ``level``.
+        page: :class:`int`
+            Page to look comments on.
+        raise_errors: :class:`bool`
+            Whether to raise errors. Defaults to ``True``.
+        strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]
+            Strategy to use. ``recent`` or ``most_liked``.
+
+        Returns
+        -------
+        List[:class:`.Comment`]
+            Retrieved comments.
+        """
         strategy = CommentStrategy.from_value(strategy)
         data = await self.session.retrieve_page_comments(
             user.account_id,
@@ -970,7 +1308,29 @@ class Client:
         pages: Optional[Iterable[int]] = range(10),
         strategy: Union[int, str, CommentStrategy] = 0,
     ) -> List[Comment]:
+        """|coro|
 
+        Retrieve comments of a user.
+
+        Parameters
+        ----------
+        user: :class:`.AbstractUser`
+            User to retrieve comments of.
+        type: :class:`str`
+            Type of comments to look for.
+            Either ``profile`` or ``level``.
+        pages: Iterable[:class:`int`]
+            Pages to look comments on.
+        raise_errors: :class:`bool`
+            Whether to raise errors. Defaults to ``True``.
+        strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]
+            Strategy to use. ``recent`` or ``most_liked``.
+
+        Returns
+        -------
+        List[:class:`.Comment`]
+            Retrieved comments.
+        """
         strategy = CommentStrategy.from_value(strategy)
         data = await self.session.retrieve_comments(
             user.account_id, user.id, type=type, pages=pages, strategy=strategy
@@ -978,20 +1338,62 @@ class Client:
         return list(Comment.from_data(part, user, client=self) for part in data)
 
     async def report_level(self, level: Level) -> None:
+        """|coro|
+
+        Report a level.
+
+        Parameters
+        ----------
+        level: :class:`.Level`
+            A level to report.
+        """
         await self.session.report_level(level.id)
 
     @check_logged
     async def delete_level(self, level: Level) -> None:
+        """|coro|
+
+        Delete a level.
+
+        Parameters
+        ----------
+        level: :class:`.Level`
+            A level to delete.
+        """
         await self.session.delete_level(level.id, client=self)
         level.is_alive = is_alive_mock
 
     @check_logged
     async def update_level_description(self, level: Level, content: str) -> None:
+        """|coro|
+
+        Update description a level.
+
+        Parameters
+        ----------
+        level: :class:`.Level`
+            A level to update description of.
+
+        content: :class:`str`
+            Content of a new description.
+        """
         await self.session.update_level_desc(level.id, content, client=self)
         level.options.update(description=content)
 
     @check_logged
     async def rate_level(self, level: Level, stars: int = 1) -> None:
+        """|coro|
+
+        Rate a level.
+
+        Parameters
+        ----------
+        level: :class:`.Level`
+            A level to rate.
+
+        stars: :class:`int`
+            Amount of stars to rate a level with.
+        """
         await self.session.rate_level(level.id, stars, client=self)
 
     @check_logged
@@ -1001,6 +1403,19 @@ class Client:
         demon_difficulty: Union[int, str, DemonDifficulty] = 1,
         as_mod: bool = False,
     ) -> None:
+        """|coro|
+
+        Rate a level as demon.
+
+        Parameters
+        ----------
+        level: :class:`.Level`
+            A level to rate.
+        demon_difficulty: Union[:class:`int`, :class:`str`, :class:`.DemonDifficulty`]
+            Demon difficulty to rate a level with.
+        as_mod: :class:`bool`
+            Whether to attempt to rate a level as moderator.
+        """
         demon_difficulty = DemonDifficulty.from_value(demon_difficulty)
 
         success = await self.session.rate_demon(level.id, demon_difficulty, mod=as_mod, client=self)
@@ -1012,16 +1427,69 @@ class Client:
 
     @check_logged
     async def send_level(self, level: Level, stars: int = 1, featured: bool = True) -> None:
+        """|coro|
+
+        Send a level to RobTop.
+
+        Parameters
+        ----------
+        level: :class:`.Level`
+            A level to send.
+
+        stars: :class:`int`
+            Amount of stars to send a level with.
+
+        featured: :class:`bool`
+            Whether to send a level for feature.
+        """
         await self.session.send_level(level.id, stars, featured=featured, client=self)
 
     @check_logged
-    async def comment_level(self, level: Level, content: str, percentage: int = 0) -> None:
+    async def comment_level(
+        self, level: Level, content: str, percentage: int = 0
+    ) -> Optional[Comment]:
+        """|coro|
+
+        Comment a level.
+
+        Parameters
+        ----------
+        level: :class:`.Level`
+            A level to comment.
+
+        content: :class:`str`
+            Content of a comment to post.
+
+        precentage: :class:`int`
+            Percentage to put a comment with.
+        """
         await self.session.comment_level(level.id, content, percentage, client=self)
+
+        if self.load_after_post:
+            comments = await level.get_comments()
+            return utils.get(comments, author=self.as_user(), body=content)
 
     @check_logged
     async def get_level_leaderboard(
         self, level: Level, strategy: Union[int, str, LevelLeaderboardStrategy]
     ) -> List[LevelRecord]:
+        """|coro|
+
+        Get leaderboard of a level.
+
+        Parameters
+        ----------
+        level: :class:`.Level`
+            A level to fetch a leaderboard of.
+
+        strategy: Union[:class:`int`, :class:`str`, :class:`.LevelLeaderboardStrategy`]
+            Strategy to use when fetching a leaderboard.
+
+        Returns
+        -------
+        List[:class:`.LevelRecord`]
+            Level records that were found.
+        """
         strategy = LevelLeaderboardStrategy.from_value(strategy)
         data = await self.session.get_leaderboard(level.id, strategy=strategy, client=self)
         return list(LevelRecord.from_data(part, strategy=strategy, client=self) for part in data)
@@ -1029,8 +1497,29 @@ class Client:
     async def get_level_comments(
         self, level: Level, strategy: Union[int, str, CommentStrategy] = 0, amount: int = 20
     ) -> List[Comment]:
+        """|coro|
+
+        Get comments of a level.
+
+        Parameters
+        ----------
+        level: :class:`.Level`
+            A level to fetch comments of.
+
+        strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]
+            Strategy to use when fetching a leaderboard.
+
+        amount: :class:`int`
+            Amount of comments to fetch. When lower than *0*, adds *2^32* to the amount.
+            (meaning to fetch all the comments)
+
+        Returns
+        -------
+        List[:class:`.Comment`]
+            Comments that were found.
+        """
         if amount < 0:
-            amount += 2 ** 31  # 2,147,483,648 is enough? ~ nekit
+            amount += 2 ** 31  # 2,147,483,648 is enough?! ~ nekit
 
         data = await self.session.get_level_comments(
             level_id=level.id, strategy=CommentStrategy.from_value(strategy), amount=amount
@@ -1286,7 +1775,7 @@ class Client:
         return await self.get_top(strategy, count=count)
 
     @check_logged
-    async def post_comment(self, content: str) -> None:
+    async def post_comment(self, content: str) -> Optional[Comment]:
         """|coro|
 
         Post a profile comment.
@@ -1304,6 +1793,11 @@ class Client:
         await self.session.post_comment(content, client=self)
 
         log.debug("Posted a comment. Content: %r", content)
+
+        if self.load_after_post:
+            user = self.as_user()
+            comments = await user.get_page_comments()
+            return utils.get(comments, author=user, body=content)
 
     @check_logged
     async def update_profile(
