@@ -105,7 +105,7 @@ def _inf_range(start: int = 0, step: int = 1) -> Iterator[int]:
 
 def _find_next(s: Iterable[int], rng: Optional[Iterable[int]] = None) -> Optional[int]:
     if rng is None:
-        rng = _inf_range()
+        rng = _inf_range(start=1)
     for i in rng:
         if i not in s:
             return i
