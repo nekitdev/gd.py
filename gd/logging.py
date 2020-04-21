@@ -49,3 +49,4 @@ def setup_logging(
 
 
 log = get_root_logger()
+log.addHandler(logging.NullHandler())
