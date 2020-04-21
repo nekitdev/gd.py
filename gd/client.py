@@ -327,7 +327,7 @@ class Client:
             A list of Songs, containing attributes ``id``, ``name`` and ``author``.
         """
         data = await self.session.search_page_songs(query=query, page=page)
-        return list(Song(**part, client=self) for part in data)
+        return utils.unique(Song(**part, client=self) for part in data)
 
     async def search_songs(self, query: str, pages: Iterable[int] = range(10)) -> List[Song]:
         """|coro|
@@ -348,7 +348,7 @@ class Client:
             A list of Songs, containing attributes ``id``, ``name`` and ``author``.
         """
         data = await self.session.search_songs(query=query, pages=pages)
-        return list(Song(**part, client=self) for part in data)
+        return utils.unique(Song(**part, client=self) for part in data)
 
     async def search_page_users(self, query: str, page: int = 0) -> List[Author]:
         """|coro|
@@ -369,7 +369,7 @@ class Client:
             A list of Authors, containing attributes ``name`` and ``link``.
         """
         data = await self.session.search_page_users(query=query, page=page)
-        return list(Author(**part, client=self) for part in data)
+        return utils.unique(Author(**part, client=self) for part in data)
 
     async def search_users(self, query: str, pages: Iterable[int] = range(10)) -> List[Author]:
         """|coro|
@@ -390,7 +390,7 @@ class Client:
             A list of Authors, containing attributes ``name`` and ``link``.
         """
         data = await self.session.search_users(query=query, pages=pages)
-        return list(Author(**part, client=self) for part in data)
+        return utils.unique(Author(**part, client=self) for part in data)
 
     async def get_page_user_songs(self, user: Union[str, Author], page: int = 0) -> List[Song]:
         """|coro|

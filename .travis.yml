@@ -7,13 +7,13 @@ python:
 
 install:
   # install cython
-  - pip install Cython
+  - pip install -U Cython
+  # install setuptools-rust
+  - pip install -U setuptools_rust
   # install gd.py with asyncio pytest plugin
-  - pip install .[dev]
-  # install flake8
-  - pip install flake8
+  - pip install -U .[dev]
   # install coveralls
-  - pip install coveralls
+  - pip install -U coveralls
 
 script:
   # run lint

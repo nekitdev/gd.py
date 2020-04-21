@@ -285,7 +285,7 @@ async def ng_user_search(request: web.Request) -> web.Response:
     """
     query = request.match_info.get("query")
     pages = map(int, request.rel_url.query.get("pages", "0").split(","))
-    return json_resp(gd.utils.unique(await request.app.client.search_users(query, pages=pages)))
+    return json_resp(await request.app.client.search_users(query, pages=pages))
 
 
 @routes.get("/api/ng/songs/{query}")
@@ -304,7 +304,7 @@ async def ng_songs_search(request: web.Request) -> web.Response:
     """
     query = request.match_info.get("query")
     pages = map(int, request.rel_url.query.get("pages", "0").split(","))
-    return json_resp(gd.utils.unique(await request.app.client.search_songs(query, pages=pages)))
+    return json_resp(await request.app.client.search_songs(query, pages=pages))
 
 
 @routes.get("/api/ng/user_songs/{user}")
