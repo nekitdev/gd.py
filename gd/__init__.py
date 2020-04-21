@@ -6,7 +6,7 @@ __title__ = "gd"
 __author__ = "NeKitDS"
 __copyright__ = "Copyright 2019-2020 NeKitDS"
 __license__ = "MIT"
-__version__ = "0.10.5"
+__version__ = "1.0.0a0"
 
 from .abstractentity import AbstractEntity
 from .abstractuser import AbstractUser, LevelRecord
