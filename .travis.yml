@@ -8,8 +8,6 @@ python:
 install:
   # install cython
   - pip install -U Cython
-  # install setuptools-rust
-  - pip install -U setuptools_rust
   # install gd.py with asyncio pytest plugin
   - pip install -U .[dev]
   # install coveralls
