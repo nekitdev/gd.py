@@ -3,6 +3,54 @@
 Game API
 ========
 
+gd.py implements an interface to interact with saves of Geometry Dash.
+
+Save
+----
+
+Main save/load functionality is contained in :class:`.SaveUtil`,
+exported and intended to be used as ``gd.api.save`` instance.
+
+Example of loading a local database:
+
+.. code-block:: python3
+
+    import gd
+    database = gd.api.save.load()
+
+That simple? Yeah, that's *python*! Everything is simple.
+
+.. autoclass:: SaveUtil
+    :members:
+
+Database
+--------
+
+Database is *python* interface to saves of Geometry Dash.
+
+.. code-block:: python3
+
+    db = gd.api.make_db()
+
+    print(db.load_my_levels())
+    # LevelCollection[<gd.LevelAPI id=... version=... name=...>, ...]
+
+    levels = db.levels
+    # <gd.Part len=...>
+
+    # {"LLM_01": {...}, "LLM_02": ..., ...}
+
+    print(levels.get("LLM_02", 0))
+
+.. autoclass:: Part
+    :members:
+
+.. autoclass:: Database
+    :members:
+
+Level Editing
+-------------
+
 gd.py provides convenient API for creating and editing levels.
 
 You can create objects like this:

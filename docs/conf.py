@@ -78,7 +78,7 @@ pdf_documents = [
 exclude_patterns = ["build"]
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = "friendly"
+pygments_style = "friendly"  # we need to use "monokai" for dark theme I think ~ nekit
 
 # -- Options for HTML output -------------------------------------------------
 

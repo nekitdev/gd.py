@@ -32,6 +32,7 @@ class HSV:
     v_checked: :class:`bool`
         Whether ``v`` is checked.
     """
+
     def __init__(
         self,
         h: int = 0,

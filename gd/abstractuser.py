@@ -173,7 +173,7 @@ class AbstractUser(AbstractEntity):
         """
         await self.client.unfriend(self)
 
-    async def send_friend_request(self, message: str = '') -> Optional[FriendRequest]:
+    async def send_friend_request(self, message: str = "") -> Optional[FriendRequest]:
         """|coro|
 
         Send a friend request to a user.

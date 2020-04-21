@@ -16,7 +16,7 @@ __all__ = ("SaveUtil", "get_path", "save", "make_db", "set_path")
 MAIN = "CCGameManager.dat"
 LEVELS = "CCLocalLevels.dat"
 
-PathLike = Optional[Union[str, Path]]
+PathLike = Union[str, Path]
 
 try:
     if sys.platform == "win32":
@@ -44,30 +44,258 @@ class SaveUtil:
         return make_repr(self)
 
     async def load_async(self, *args, **kwargs) -> Database:
+        """|coro|
+
+        Asynchronously load a save.
+
+        This function is normally used for local GD management.
+        Typical use-case might be, as follows:
+
+        .. code-block:: python3
+
+            database = await gd.api.save.load_async()
+
+        .. warning::
+
+            Please note that ``main_file`` and ``levels_file`` can **NOT** be ``None``.
+
+        Parameters
+        ----------
+
+        main: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+            Path to a file/directory containing main part of the save.
+        levels: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+            Path to a file/directory containing levels part of the save.
+        main_file: Union[:class:`str`, :class:`pathlib.Path`]
+            Path to a file containing main part of the save.
+            Applied when ``main`` is a directory.
+        levels_file: Union[:class:`str`, :class:`pathlib.Path`]
+            Path to a file containing levels part of the save.
+            Applied when ``levels`` is a directory.
+
+        Returns
+        -------
+        :class:`.api.Database`
+            Loaded Database. If any of the files not found, returns an empty ``gd.api.Database()``.
+        """
         return await run_blocking_io(self._local_load, *args, **kwargs)
 
     def load(self, *args, **kwargs) -> Database:
+        """Load a save.
+
+        This function is normally used for local GD management.
+        Typical use-case might be, as follows:
+
+        .. code-block:: python3
+
+            database = gd.api.save.load()
+
+        .. warning::
+
+            Please note that ``main_file`` and ``levels_file`` can **NOT** be ``None``.
+
+        Parameters
+        ----------
+
+        main: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+            Path to a file/directory containing main part of the save.
+        levels: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+            Path to a file/directory containing levels part of the save.
+        main_file: Union[:class:`str`, :class:`pathlib.Path`]
+            Path to a file containing main part of the save.
+            Applied when ``main`` is a directory.
+        levels_file: Union[:class:`str`, :class:`pathlib.Path`]
+            Path to a file containing levels part of the save.
+            Applied when ``levels`` is a directory.
+
+        Returns
+        -------
+        :class:`.api.Database`
+            Loaded Database. If any of the files not found, returns an empty ``gd.api.Database()``.
+        """
         return self._local_load(*args, **kwargs)
 
     async def dump_async(self, *args, **kwargs) -> None:
+        """|coro|
+
+        Asynchronously dump a save.
+
+        This function is normally used for local GD management.
+        Typical use-case might be, as follows:
+
+        .. code-block:: python3
+
+            await gd.api.save.dump_async(database)
+
+        .. warning::
+
+            Please note that ``main_file`` and ``levels_file`` can **NOT** be ``None``.
+
+        Parameters
+        ----------
+
+        db: :class:`.api.Database`
+            Database object to dump.
+        main: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+            Path to a file/directory containing main part of the save.
+        levels: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+            Path to a file/directory containing levels part of the save.
+        main_file: Union[:class:`str`, :class:`pathlib.Path`]
+            Path to a file containing main part of the save.
+            Applied when ``main`` is a directory.
+        levels_file: Union[:class:`str`, :class:`pathlib.Path`]
+            Path to a file containing levels part of the save.
+            Applied when ``levels`` is a directory.
+        """
         await run_blocking_io(self._local_dump, *args, **kwargs)
 
     def dump(self, *args, **kwargs) -> None:
+        """Dump a save.
+
+        This function is normally used for local GD management.
+        Typical use-case might be, as follows:
+
+        .. code-block:: python3
+
+            gd.api.save.dump(database)
+
+        .. warning::
+
+            Please note that ``main_file`` and ``levels_file`` can **NOT** be ``None``.
+
+        Parameters
+        ----------
+
+        db: :class:`.api.Database`
+            Database object to dump.
+        main: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+            Path to a file/directory containing main part of the save.
+        levels: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+            Path to a file/directory containing levels part of the save.
+        main_file: Union[:class:`str`, :class:`pathlib.Path`]
+            Path to a file containing main part of the save.
+            Applied when ``main`` is a directory.
+        levels_file: Union[:class:`str`, :class:`pathlib.Path`]
+            Path to a file containing levels part of the save.
+            Applied when ``levels`` is a directory.
+        """
         return self._local_dump(*args, **kwargs)
 
     async def to_string_async(self, *args, **kwargs) -> str:
+        """|coro|
+
+        Asynchronously dump a save into string(s).
+
+        This might be used when you need to transfer your save a stream.
+
+        Parameters
+        ----------
+
+        db: :class:`.api.Database`
+            Database object to dump.
+        connect: :class:`bool`
+            Whether to join all strings with ``;`` into one string. Default is ``True``.
+        xor: :class:`bool`
+            Whether to apply *XOR* after zipping the save. (GD does that for local files)
+            Defaults to ``False``.
+
+        Returns
+        -------
+        Union[:class:`str`, Tuple[:class:`str`, :class:`str`]]
+            A string or a tuple of strings containing the save.
+        """
         return await run_blocking_io(functools.partial(self._dump, *args, **kwargs))
 
     def to_string(self, *args, **kwargs) -> str:
+        """Dump a save into strings(s).
+
+        This might be used when you need to transfer your save a stream.
+
+        Parameters
+        ----------
+
+        db: :class:`.api.Database`
+            Database object to dump.
+        connect: :class:`bool`
+            Whether to join all strings with ``;`` into one string. Default is ``True``.
+        xor: :class:`bool`
+            Whether to apply *XOR* after zipping the save. (GD does that for local files)
+            Defaults to ``False``.
+
+        Returns
+        -------
+        Union[:class:`str`, Tuple[:class:`str`, :class:`str`]]
+            A string or a tuple of strings containing the save.
+        """
         return self._dump(*args, **kwargs)
 
     async def from_string_async(self, *args, **kwargs) -> Database:
+        """|coro|
+
+        Asynchronoulsy load save from strings.
+
+        Parameters
+        ----------
+
+        main: Union[:class:`bytes`, :class:`str`]
+            A stream containing main part of the save.
+        levels: Union[:class:`bytes`, :class:`str`]
+            A stream containing levels part of the save.
+        xor: :class:`bool`
+            Whether to apply *XOR 11* to a string. (used in local GD saves)
+            Defautls to ``False``.
+
+        Returns
+        -------
+        :class:`.api.Database`
+            Database object containing loaded data.
+        """
         return await run_blocking_io(functools.partial(self._load, *args, **kwargs))
 
     def from_string(self, *args, **kwargs) -> Database:
+        """Load save from strings.
+
+        Parameters
+        ----------
+
+        main: Union[:class:`bytes`, :class:`str`]
+            A stream containing main part of the save.
+        levels: Union[:class:`bytes`, :class:`str`]
+            A stream containing levels part of the save.
+        xor: :class:`bool`
+            Whether to apply *XOR 11* to a string. (used in local GD saves)
+            Defautls to ``False``.
+
+        Returns
+        -------
+        :class:`.api.Database`
+            Database object containing loaded data.
+        """
         return self._load(*args, **kwargs)
 
     def make_db(self, main: str = "", levels: str = "") -> Database:
+        """Create a database from string parts.
+
+        This method should be used if you already have XML strings, or it can be used
+        as a more understandable way of doing ``gd.api.Database()`` creation:
+
+        .. code-block:: python3
+
+            db = gd.api.save.make_db()  # or supply arguments
+
+        Parameters
+        ----------
+
+        main: :class:`str`
+            A string containing main XML part of the save.
+        levels: :class:`str`
+            A string containing levels XML part of the save.
+
+        Returns
+        -------
+        :class:`.api.Database`
+            Database object containing loaded data.
+        """
         return Database(main, levels)
 
     def _decode(self, stream: Union[bytes, str], xor: bool = True) -> str:
@@ -78,7 +306,9 @@ class SaveUtil:
         except Exception:
             return ""
 
-    def _load(self, main: str = "", levels: str = "", xor: bool = True) -> Database:
+    def _load(
+        self, main: Union[bytes, str] = "", levels: Union[bytes, str] = "", xor: bool = False
+    ) -> Database:
         main = self._decode(main, xor=xor)
         levels = self._decode(levels, xor=xor)
         return Database(main, levels)
@@ -102,11 +332,11 @@ class SaveUtil:
         self,
         main: Optional[PathLike] = None,
         levels: Optional[PathLike] = None,
-        default_main: PathLike = MAIN,
-        default_levels: PathLike = LEVELS,
+        main_file: PathLike = MAIN,
+        levels_file: PathLike = LEVELS,
     ) -> Database:
-        main_path = _config_path(main, default_main)
-        levels_path = _config_path(levels, default_levels)
+        main_path = _config_path(main, main_file)
+        levels_path = _config_path(levels, levels_file)
 
         try:
             parts = []
@@ -116,7 +346,7 @@ class SaveUtil:
                 with open(path, "r") as file:
                     parts.append(file.read())
 
-            return self._load(*parts)
+            return self._load(*parts, xor=True)
 
         except OSError:
             return self.make_db()
@@ -124,13 +354,13 @@ class SaveUtil:
     def _local_dump(
         self,
         db: Database,
-        main: PathLike = None,
-        levels: PathLike = None,
-        default_main: PathLike = MAIN,
-        default_levels: PathLike = LEVELS,
+        main: Optional[PathLike] = None,
+        levels: Optional[PathLike] = None,
+        main_file: PathLike = MAIN,
+        levels_file: PathLike = LEVELS,
     ) -> None:
-        main_path = _config_path(main, default_main)
-        levels_path = _config_path(levels, default_levels)
+        main_path = _config_path(main, main_file)
+        levels_path = _config_path(levels, levels_file)
 
         files = (main_path, levels_path)
 

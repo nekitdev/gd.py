@@ -37,9 +37,11 @@ class Part(dict):
         return make_repr(self, info)
 
     def dump(self) -> str:
+        """Dump the part and return a string."""
         return self.parser.dump(self)
 
     def encode(self, xor: bool = True) -> str:
+        """Dump and encode the part, returning a string."""
         return Coder.encode_save(self.dump(), needs_xor=xor)
 
 
@@ -55,23 +57,23 @@ class Database:
     def _json(self) -> Dict[str, Any]:
         return self.as_tuple()
 
-    def get_username(self) -> Optional[str]:
-        return self.main.get("GJA_001")
+    def get_username(self) -> str:
+        return self.main.get("GJA_001", "unknown")
 
-    def get_password(self) -> Optional[str]:
-        return self.main.get("GJA_002")
+    def get_password(self) -> str:
+        return self.main.get("GJA_002", "unknown")
 
-    def get_account_id(self) -> Optional[int]:
-        return self.main.get("GJA_003")
+    def get_account_id(self) -> int:
+        return self.main.get("GJA_003", 0)
 
-    def get_player_id(self) -> Optional[int]:
-        return self.main.get("playerUserID")
+    def get_player_id(self) -> int:
+        return self.main.get("playerUserID", 0)
 
-    def get_udid(self) -> Optional[str]:
-        return self.main.get("playerUDID")
+    def get_udid(self) -> str:
+        return self.main.get("playerUDID", "S0")
 
-    def get_bootup_amount(self) -> Optional[int]:
-        return self.main.get("bootups")
+    def get_bootup_amount(self) -> int:
+        return self.main.get("bootups", 0)
 
     def _get_failsafe(self, key: str, is_level_part: bool = True, default: Any = None) -> Any:
         part = self.levels if is_level_part else self.main
@@ -91,17 +93,21 @@ class Database:
         )
 
     def load_saved_levels(self, *, key: str = "GLM_03") -> LevelCollection:
+        """Load "Saved Levels" into :class:`.api.LevelCollection`."""
         inner = self._get_failsafe(key, is_level_part=False)
         return self._to_levels(inner.values())
 
     def dump_saved_levels(self, levels: LevelCollection, *, key: str = "GLM_03") -> None:
+        """Dump "Saved Levels" from :class:`.api.LevelCollection`."""
         self.main[key] = {str(level.id): level.to_map() for level in levels}
 
     def load_my_levels(self, *, key: str = "LLM_01") -> LevelCollection:
+        """Load "My Levels" into :class:`.api.LevelCollection`."""
         inner = self._get_failsafe(key)
         return self._to_levels(inner.values())
 
     def dump_my_levels(self, levels: list, *, key: str = "LLM_01", prefix: str = "k_") -> None:
+        """Dump "My Levels" from :class:`.api.LevelCollection`."""
         stuff = {"_isArr": True}
         stuff.update({prefix + str(n): level.to_map() for n, level in enumerate(levels)})
         self.levels[key] = stuff

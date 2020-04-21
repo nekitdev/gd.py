@@ -91,6 +91,11 @@ class Struct:
         self_copy.data = self.data.copy()
         return self_copy
 
+    def delete(self, *attrs) -> Struct:
+        for attr in attrs:
+            delattr(self, attr)
+        return self
+
     def edit(self, **fields) -> Struct:
         for field, value in fields.items():
             setattr(self, field, value)

@@ -1,4 +1,5 @@
 try:
+    raise ImportError
     from lxml import etree as xml
 except ImportError:
     from xml.etree import ElementTree as xml
@@ -24,6 +25,7 @@ MAPPING = {
     "real": "r",
     "string": "s",
 }
+TYPES = {float: "r", int: "i", str: "s"}
 
 
 class XMLParser:
@@ -51,25 +53,10 @@ class XMLParser:
             raise ParserError("Failed to parse xml string.") from exc
 
     def iterate_xml(self, element: xml.Element) -> Dict[str, Any]:
-        elements = list(element)
-        grouped = zip(elements[::2], elements[1::2])
+        element_it = iter(element)
+        groups = zip(element_it, element_it)
 
-        ret = {}
-
-        for key, inner in grouped:
-
-            if inner.tag == "d":
-                ret[key.text] = self.iterate_xml(inner)
-
-            elif inner.tag in ("f", "t"):
-                # well, 'f' is not used, but just in case '-')/
-                ret[key.text] = inner.tag == "t"
-
-            else:
-                func = {"i": int, "r": float, "s": str}.get(inner.tag, str)
-                ret[key.text] = func(inner.text)
-
-        return ret
+        return {key.text: _process(self, inner.tag, inner) for key, inner in groups}
 
     def dump(self, py_dict: Dict[str, Any]) -> str:
         plist = xml.Element("plist", attrib=self.attrib)
@@ -91,14 +78,11 @@ class XMLParser:
                 sub = xml.SubElement(element, "d")
                 self.iterate_dict(sub, value)
 
-            elif isinstance(value, bool):
-                # if false -> do not add (though, this can not really happen, but anyways)
-                if value:
-                    xml.SubElement(element, "t")
+            elif value is True:
+                xml.SubElement(element, "t")
 
             else:
-                tag = {int: "i", float: "r", str: "s"}.get(type(value), "s")
-                sub = xml.SubElement(element, tag)
+                sub = xml.SubElement(element, TYPES.get(type(value), "s"))
 
                 if isinstance(value, float) and value.is_integer():
                     value = round(value)
@@ -122,3 +106,32 @@ class AioXMLParser(XMLParser):
 
     async def dump(self, py_dict: Dict[str, Any]) -> str:
         return await run_blocking_io(super().dump, py_dict)
+
+
+def _bool(parser: XMLParser, element: xml.Element) -> bool:
+    # accepts either "t" or "f"
+    return element.tag == "t"
+
+
+def _int(parser: XMLParser, element: xml.Element) -> int:
+    return int(element.text)
+
+
+def _real(parser: XMLParser, element: xml.Element) -> float:
+    return float(element.text)
+
+
+def _str(parser: XMLParser, element: xml.Element) -> str:
+    return element.text
+
+
+def _recurse(parser: XMLParser, element: xml.Element) -> Any:
+    return parser.iterate_xml(element)
+
+
+DEFAULT = _str
+FUNCTIONS = {"d": _recurse, "f": _bool, "i": _int, "r": _real, "s": _str, "t": _bool}
+
+
+def _process(parser: XMLParser, tag: str, element: xml.Element) -> Any:
+    return FUNCTIONS.get(tag, DEFAULT)(parser, element)
