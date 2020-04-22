@@ -17,18 +17,17 @@ async def main():
         user = await client.find_user(name)
 
         if not user.is_registered():
-            print("Hey there, {0.name}! Seems like you are unregistered...".format(user))
+            print(f"Hey there, {user.name}! Seems like you are unregistered...".format(user))
 
         else:
             print(
-                "Hello, {0.name}! Your AccountID is {0.account_id} and PlayerID is {0.id}.".format(
-                    user
-                )
+                f"Hello, {user.name}! Your AccountID is {user.account_id} "
+                f"and PlayerID is {user.id}."
             )
 
     # could not find
     except gd.MissingAccess:
-        print("Sorry, could not find user with name {}...".format(name))
+        print(f"Sorry, could not find user with name {name}...")
 
     # let us wait a bit before exiting
     await asyncio.sleep(3)

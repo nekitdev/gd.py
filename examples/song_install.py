@@ -23,10 +23,14 @@ async def main() -> None:
 
         else:
             # save a song and print a message
-            name = "{}.mp3".format(song.id)
+            name = f"{song.id}.mp3"
             with open(name, "wb") as file:
                 file.write(data)
-            print("Installed {0.name!r} by {0.author!r} -> {!r}.".format(song, name))
+            print(f"Installed {song.name!r} by {song.author!r} -> {name!r}.")
 
 
-client.run(main())
+# gracefully run
+try:
+    client.run(main())
+except KeyboardInterrupt:
+    pass

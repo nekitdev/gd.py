@@ -44,7 +44,7 @@ async def get_user(request):
 
     # return 404 if we have not found any users
     except Exception:
-        raise web.HTTPNotFound(text="Failed to find a user by the query: {!r}".format(query))
+        raise web.HTTPNotFound(text=f"Failed to find a user by the query: {query!r}")
 
 
 # initialize an application
@@ -52,6 +52,9 @@ app = web.Application()
 
 # add routes
 app.add_routes(routes)
+
+# this might fail sometimes
+print("Go to <http://127.0.0.1:8080/api/user/RobTop> to see info about RobTop.")
 
 # run the app
 web.run_app(app)

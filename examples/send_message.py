@@ -26,7 +26,7 @@ async def coro():
     # choose one target
     target = random.choice(friends)
 
-    if input("Do you want to send a message to {}? (y/n): ".format(target.name)).lower() in (
+    if input(f"Do you want to send a message to {target}? (y/n): ").lower() in (
         "n",
         "no",
     ):
@@ -37,11 +37,11 @@ async def coro():
         await target.send(subject="Hello!", body="This is a message sent using gd.py library! :)")
 
         # print that message was successfully sent
-        print("Successfully sent a message to {!r}! :)".format(target))
+        print(f"Successfully sent a message to {target}! :)")
 
     # check if an error occured
     except gd.ClientException:  # if a user has their messages closed or other error occured
-        print("Failed to send a message to {!r}...".format(target))
+        print(f"Failed to send a message to {target}...")
 
 
 # run a program

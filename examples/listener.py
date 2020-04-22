@@ -14,8 +14,14 @@ client = gd.Client()
 @client.listen_for("rate")
 # implement the listener handling
 async def on_level_rated(level: gd.Level) -> None:
-    print("New level rated: {}".format(level.name))
+    print(f"New level rated: {level}")
 
 
-# enable listening
+# start listening
 gd.events.start()
+
+while True:  # run graceful loop
+    try:
+        pass
+    except KeyboardInterrupt:
+        break
