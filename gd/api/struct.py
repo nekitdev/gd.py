@@ -205,9 +205,9 @@ class ColorChannel(Struct):
         return hash(self.id)
 
     def __eq__(self, other: Struct) -> bool:
-        if isinstance(other, type(self)):
-            return self.data == other.data
-        return False
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.data == other.data
 
     def set_id(self, directive: str) -> ColorChannel:
         """Set ColorID of ``self`` according to the directive, e.g. ``BG`` or ``color:bg``."""

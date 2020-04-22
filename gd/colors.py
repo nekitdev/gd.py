@@ -32,10 +32,14 @@ class Color:
             return Converter.to_ordinal(self.index)
 
     def __eq__(self, other: Color) -> bool:
-        return isinstance(other, Color) and self.value == other.value
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.value == other.value
 
     def __ne__(self, other: Color) -> bool:
-        return not self.__eq__(other)
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.value != other.value
 
     def __str__(self) -> str:
         return self.to_hex()

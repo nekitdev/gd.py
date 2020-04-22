@@ -26,7 +26,9 @@ class IconSet(AbstractEntity):
         return f"IconSet{self.get_colors()}"
 
     def __eq__(self, other):
-        return isinstance(other, type(self)) and self.options == other.options
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.options == other.options
 
     def _json(self) -> dict:
         return self.options

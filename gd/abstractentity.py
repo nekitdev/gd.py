@@ -38,11 +38,13 @@ class AbstractEntity:
 
     def __eq__(self, other: AbstractEntity) -> bool:
         if not hasattr(other, "id"):
-            return False
+            return NotImplemented
         return type(self) == type(other) and self.id == other.id
 
     def __ne__(self, other: AbstractEntity) -> bool:
-        return not self.__eq__(other)
+        if not hasattr(other, "id"):
+            return NotImplemented
+        return type(self) != type(other) or self.id != other.id
 
     def _json(self) -> dict:  # pragma: no cover
         return self.options

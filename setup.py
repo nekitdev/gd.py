@@ -68,7 +68,7 @@ args = dict(
         "Issue tracker": "https://github.com/NeKitDS/gd.py/issues",
     },
     version=version,
-    packages=["gd", "gd.utils", "gd.utils.crypto", "gd.events", "gd.api", "gd.src"],
+    packages=["gd", "gd.utils", "gd.utils.crypto", "gd.events", "gd.api", "gd.src", "gd.memory"],
     license="MIT",
     description="A Geometry Dash API wrapper for Python",
     long_description=readme,

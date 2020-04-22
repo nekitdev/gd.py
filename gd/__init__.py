@@ -44,7 +44,8 @@ from . import (
     api,  # non-server GD API.
     events,  # event-related functions and classes.
     image,  # functions for working with images.
-    server,  # gd.api merged into gd.py
-    utils,  # different useful utils.
+    memory,  # functions for interacting with memory.
+    server,  # gd.api merged into gd.py.
     typing,  # various utils for typing gd.py.
+    utils,  # different useful utils.
 )

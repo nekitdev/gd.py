@@ -108,3 +108,6 @@ venv.bak/
 
 # compiled rust
 /target
+
+# Cython-generated C++ files
+/src/*.cpp

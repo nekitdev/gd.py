@@ -148,13 +148,19 @@ class NEnum(Enum):
         return f"<{module}.{cls_name}.{self.name}: {self.value} ({self.desc})>"
 
     def __eq__(self, other) -> bool:
-        return isinstance(other, type(self)) and self.value == other.value
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.value == other.value
 
     def __ne__(self, other) -> bool:
-        return isinstance(other, type(self)) and self.value != other.value
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.value != other.value
 
     def __gt__(self, other) -> bool:
-        return isinstance(other, type(self)) and self.value > other.value
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.value > other.value
 
     def __hash__(self) -> int:
         return hash(self.__repr__())
