@@ -76,7 +76,7 @@ def value_to_enum(enum: Enum, x: Union[int, str, Enum]) -> Enum:
     """
     try:
         # if int -> enum of value x
-        if isinstance(x, int):
+        if isinstance(x, (float, int)):
             return enum(x)
 
         # if str -> enum of name x (converted)

@@ -23,6 +23,7 @@ __all__ = (
     "MiscType",
     "Gamemode",
     "Speed",
+    "SpeedConstant",
     "SpeedMagic",
     "LevelDataEnum",
     "LevelHeaderEnum",
@@ -472,6 +473,15 @@ class Speed(NEnum):
     FAST = 2  # x 2
     FASTER = 3  # x 3
     FASTEST = 4  # x 4
+
+
+class SpeedConstant(NEnum):
+    NULL = 0.0
+    SLOW = 0.7
+    NORMAL = 0.9
+    FAST = 1.1
+    FASTER = 1.3
+    FASTEST = 1.6
 
 
 class SpeedMagic(NEnum):

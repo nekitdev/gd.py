@@ -8,6 +8,7 @@ except Exception:  # noqa
     pass
 
 from .enums import Scene
+from ..api.enums import SpeedConstant
 
 from ..typing import Result, Tuple
 from ..utils.text_tools import make_repr
@@ -148,6 +149,33 @@ class WindowsMemory(MemoryType):
 
     def get_level_id(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x2A0).as_int()
+
+    def get_x_pos(self) -> float:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x224, 0x67C).as_float()
+
+    def get_y_pos(self) -> float:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x224, 0x680).as_float()
+
+    def get_speed_value(self) -> float:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x224, 0x648).as_float()
+
+    def get_speed(self) -> SpeedConstant:
+        return SpeedConstant.from_value(round(self.get_speed_value(), 1))
+
+    def get_attempts(self) -> int:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x218).as_int()
+
+    def get_jumps(self) -> int:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x224).as_int()
+
+    def get_normal_percent(self) -> int:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x248).as_int()
+
+    def get_practice_percent(self) -> int:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x26C).as_int()
+
+    def get_song_id(self) -> int:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x488, 0x1C4).as_int()
 
 
 def resolution_from_value(value: int) -> Tuple[int, int]:
