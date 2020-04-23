@@ -53,6 +53,7 @@ __all__ = (
     "Filters",
     "Parameters",
     "Parser",
+    "Result",
     "Loop",
     "Enum",
     "Editor",
@@ -118,6 +119,7 @@ NEnum = ref("gd.utils.enums.NEnum")
 Filters = ref("gd.utils.filters.Filters")
 Parameters = ref("gd.utils.params.Parameters")
 Parser = ref("gd.utils.parser.Parser")
+Result = ref("gd.memory.interface.Result")
 Loop = ref("gd.utils.tasks.Loop")
 Editor = ref("gd.api.editor.Editor")
 HSV = ref("gd.api.hsv.HSV")

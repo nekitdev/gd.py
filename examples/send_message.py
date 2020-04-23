@@ -26,10 +26,7 @@ async def coro():
     # choose one target
     target = random.choice(friends)
 
-    if input(f"Do you want to send a message to {target}? (y/n): ").lower() in (
-        "n",
-        "no",
-    ):
+    if input(f"Do you want to send a message to {target}? (y/n): ").lower() in {"n", "no"}:
         return
 
     # send a message to them

@@ -1,4 +1,5 @@
 import ctypes
+import struct
 import sys
 
 try:
@@ -8,10 +9,10 @@ except Exception:  # noqa
 
 from .enums import Scene
 
-from ..typing import Tuple
+from ..typing import Result, Tuple
 from ..utils.text_tools import make_repr
 
-__all__ = ("Memory", "MemoryType", "get_memory")
+__all__ = ("Memory", "MemoryType", "WindowsMemory", "MacOSMemory", "Result", "get_memory")
 
 
 class MemoryType:
@@ -25,16 +26,38 @@ class Result:
 
     def __init__(self, data: bytes) -> None:
         self.data = data
+        self.order = "little"
 
     def __repr__(self) -> str:
         info = {"data": repr(self.to_str())}
         return make_repr(self, info)
 
+    def with_order(self, byte_order: str) -> Result:
+        self.order = byte_order
+        return self
+
     def to_str(self) -> str:
         return " ".join(format(byte, "02x") for byte in self.data)
 
-    def as_int(self, byte_order: str = "little") -> int:
-        return int.from_bytes(self.data, byte_order)
+    def as_int(self) -> int:
+        return int.from_bytes(self.data, self.order)
+
+    def as_bool(self) -> bool:
+        return self.as_int() != 0
+
+    def as_float(self) -> float:
+        if self.order == "big":
+            mode = ">f"
+        else:
+            mode = "<f"
+
+        try:
+            return struct.unpack(mode, self.data)[0]
+        except Exception as error:
+            raise ValueError(f"Could not convert to float. Error: {error}.") from None
+
+    def as_str(self, encoding: str = "utf-8", errors: str = "strict") -> str:
+        return self.data.decode(encoding, errors)
 
 
 class Memory(MemoryType):
@@ -42,12 +65,18 @@ class Memory(MemoryType):
 
     def __new__(cls, *args, **kwargs) -> MemoryType:
         if sys.platform == "win32":
-            return WinMemory(*args, **kwargs)
+            return WindowsMemory(*args, **kwargs)
+        # elif sys.platform == "darwin":
+        # return MacOSMemory(*args, **kwargs)
         else:
             raise OSError("Only Windows is currently supported.")
 
 
-class WinMemory(MemoryType):
+class MacOSMemory(MemoryType):
+    pass
+
+
+class WindowsMemory(MemoryType):
     PTR_LEN = 4
 
     loaded = False
