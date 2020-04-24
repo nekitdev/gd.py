@@ -252,12 +252,11 @@ def shutdown_loop(loop: asyncio.AbstractEventLoop) -> None:
         return
 
     try:
-        loop.stop()
         cancel_all_tasks(loop)
         loop.run_until_complete(loop.shutdown_asyncgens())
 
-    except RuntimeError as error:
-        log.warning("Error while shutting loop down: %s", str(error))
+    except Exception as exc:
+        log.warning(f"Error<{type(exc).__name__}> was raised. {exc}")
 
     finally:
         loop.close()
@@ -343,7 +342,7 @@ def _get_name(func):
             return func.__name__
     except AttributeError:
         raise RuntimeError(
-            "Failed to find the name of given function. " "Please provide the name explicitly."
+            "Failed to find the name of given function. Please provide the name explicitly."
         ) from None
 
 

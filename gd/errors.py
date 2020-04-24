@@ -17,14 +17,6 @@ class ClientException(GDException):
     pass
 
 
-class CommandException(GDException):
-    """Base exception class for errors that are thrown
-    on command parsing or invocation failure.
-    """
-
-    pass
-
-
 class FailedConversion(GDException):
     """Exception that is raised when Enum converter
     fails to turn given value into requested Enum.
@@ -69,7 +61,7 @@ class HTTPError(ClientException):
     def __init__(self, exc: Exception) -> None:
         message = (
             "Failed to process HTTP request. "
-            "Caused by: <{0.__class__.__name__}> ({0})".format(exc)
+            "Caused by: Error<{0.__class__.__name__}>({0})".format(exc)
         )
         self._origin = exc
         super().__init__(message)
