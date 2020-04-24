@@ -1,5 +1,4 @@
 import gd
-import time  # I am sorry ~ nekit
 
 should_error = True
 previous_message = ""
