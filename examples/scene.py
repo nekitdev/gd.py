@@ -1,48 +1,53 @@
 import gd
 import time  # I am sorry ~ nekit
 
+should_error = True
+previous_message = ""
+memory = None
 
-def main():
-    # initialize some variables we might need
-    can_error = True
-    previous = None
 
-    # start a loop
-    while True:
-        # attempt to fetch memory object from GD process
-        try:
-            memory = gd.memory.get_memory()
-            can_error = True
+@gd.tasks.loop(seconds=1)
+async def load_memory() -> None:
+    global memory, should_error
 
-        except RuntimeError:
-            # failed, print message and wait
-            if can_error:
-                print("Geometry Dash is not opened.")
+    # try to fetch process, and print an error on fail
+    try:
+        memory = gd.memory.get_memory()
+        should_error = True
+    except RuntimeError:
+        if should_error:
+            print("Geometry Dash is not open.")
+        should_error = False
 
-            can_error = False
-            time.sleep(1)
-            continue
 
-        # run checks if a scene has changes
-        for _ in range(10):
-            # fetch a scene
-            scene = memory.get_scene()
+@gd.tasks.loop(seconds=0.1)
+async def get_scene() -> None:
+    global previous_message
 
-            if previous != scene:
+    if memory is not None:
+        scene = memory.get_scene()
 
-                print(f"In scene: {memory.get_scene()}.")
+        # figure out scene and print things if stuff has changed
 
-                if scene.name.lower() == "editor_or_level":
-                    print(f"-> In level: {memory.get_level_id()}")
+        message = f"In scene: {scene}"
 
-                previous = scene
+        if scene.name.lower() == "editor_or_level":
+            message += f" -> ID: {memory.get_level_id()} ({memory.get_attempt()} attempt)"
 
-            # sleep a bit
-            time.sleep(0.1)
+        if previous_message != message:
+            print(message)
+            previous_message = message
 
+
+# start task loops
+load_memory.start()
+get_scene.start()
+
+# get a loop
+loop = gd.utils.acquire_loop()
 
 # run main with graceful shutdown
 try:
-    main()
+    loop.run_forever()
 except KeyboardInterrupt:
-    pass
+    gd.utils.shutdown_loop(loop)

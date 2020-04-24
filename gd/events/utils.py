@@ -11,6 +11,8 @@ from .listener import (
     set_loop,
 )
 
+from ..typing import Optional
+
 __all__ = ("disable", "start", "run", "attach_to_loop")
 
 
@@ -34,7 +36,10 @@ def attach_to_loop(loop: asyncio.AbstractEventLoop) -> None:
         listener.attach_to_loop(loop)
 
 
-def run(loop: asyncio.AbstractEventLoop) -> None:
+def run(loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
+    if loop is None:
+        loop = get_loop()
+
     run_loop(loop)
 
 

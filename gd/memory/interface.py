@@ -177,6 +177,9 @@ class WindowsMemory(MemoryType):
     def get_song_id(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x488, 0x1C4).as_int()
 
+    def get_attempt(self) -> int:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x4A8).as_int()
+
 
 def resolution_from_value(value: int) -> Tuple[int, int]:
     mapping = {

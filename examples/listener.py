@@ -18,10 +18,4 @@ async def on_level_rated(level: gd.Level) -> None:
 
 
 # start listening
-gd.events.start()
-
-while True:  # run graceful loop
-    try:
-        pass
-    except KeyboardInterrupt:
-        break
+gd.events.run()

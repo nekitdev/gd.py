@@ -9,6 +9,7 @@ except ImportError:
 import inspect
 from types import CoroutineType as coroutine
 
+from ..logging import get_logger
 from ..typing import (
     Any,
     Awaitable,
@@ -36,6 +37,8 @@ __all__ = (
     "acquire_loop",
     "synchronize",
 )
+
+log = get_logger("gd.async")
 
 
 async def run_blocking_io(func: Callable, *args, **kwargs) -> Any:
@@ -252,6 +255,9 @@ def shutdown_loop(loop: asyncio.AbstractEventLoop) -> None:
         loop.stop()
         cancel_all_tasks(loop)
         loop.run_until_complete(loop.shutdown_asyncgens())
+
+    except RuntimeError as error:
+        log.warning("Error while shutting loop down: %s", str(error))
 
     finally:
         loop.close()
