@@ -48,6 +48,99 @@ class Level(AbstractEntity):
         return {k: v for k, v in super()._json().items() if k != "data"}
 
     @classmethod
+    def official(cls, level_id: int, client: Optional[Client] = None) -> None:
+        mapping = {
+            # ID: (name, stars, difficulty, coins, length)
+            1: ("Stereo Madness", 1, "easy", 3, 3),
+            2: ("Back On Track", 2, "easy", 3, 3),
+            3: ("Polargeist", 3, "normal", 3, 3),
+            4: ("Dry Out", 4, "normal", 3, 3),
+            5: ("Base After Base", 5, "hard", 3, 3),
+            6: ("Cant Let Go", 6, "hard", 3, 3),
+            7: ("Jumper", 7, "harder", 3, 3),
+            8: ("Time Machine", 8, "harder", 3, 3),
+            9: ("Cycles", 9, "harder", 3, 3),
+            10: ("xStep", 10, "insane", 3, 3),
+            11: ("Clutterfunk", 11, "insane", 3, 3),
+            12: ("Theory of Everything", 12, "insane", 3, 3),
+            13: ("Electroman Adventures", 10, "insane", 3, 3),
+            14: ("Clubstep", 14, "demon", 3, 3),
+            15: ("Electrodynamix", 12, "insane", 3, 3),
+            16: ("Hexagon Force", 12, "insane", 3, 3),
+            17: ("Blast Processing", 10, "harder", 3, 3),
+            18: ("Theory of Everything 2", 14, "demon", 3, 3),
+            19: ("Geometrical Dominator", 10, "harder", 3, 3),
+            20: ("Deadlocked", 15, "demon", 3, 3),
+            21: ("Fingerdash", 12, "insane", 3, 3),
+            22: ("The Seven Seas", 1, "easy", 3, 3),
+            23: ("Viking Arena", 2, "normal", 3, 3),
+            24: ("Airborne Robots", 3, "hard", 3, 3),
+            25: ("Secret", 3, "hard", 0, 1),
+            26: ("Payload", 2, "easy", 0, 1),
+            27: ("Beast Mode", 3, "normal", 0, 2),
+            28: ("Machina", 3, "normal", 0, 2),
+            29: ("Years", 3, "normal", 0, 2),
+            30: ("Frontlines", 3, "normal", 0, 2),
+            31: ("Space Pirates", 3, "normal", 0, 2),
+            32: ("Striker", 3, "normal", 0, 2),
+            33: ("Embers", 3, "normal", 0, 1),
+            34: ("Round 1", 3, "normal", 0, 2),
+            35: ("Monster Dance Off", 3, "normal", 0, 2),
+            36: ("Press Start", 4, "normal", 3, 3),
+            37: ("Nock Em", 6, "hard", 3, 3),
+            38: ("Power Trip", 8, "harder", 3, 3),
+            3001: ("The Challenge", 3, "hard", 0, 1),  # well...
+        }
+        translate = {3001: 25}
+
+        if level_id not in mapping:
+            raise ValueError(f"Level ID [{level_id}] is not known to be official.")
+
+        song_id, (name, stars, str_diff, coins, length) = (
+            translate.get(level_id, level_id),
+            mapping[level_id],
+        )
+
+        creator, song = (
+            AbstractUser(client=client),
+            Song.official(song_id, server_style=False, client=client),
+        )
+        difficulty = LevelDifficulty.from_value(str_diff)
+
+        return cls(
+            id=level_id,
+            name=name,
+            description=f"Official Level: {name}",
+            version=1,
+            creator=creator,
+            song=song,
+            data="",  # XXX: maybe we can dump all official levels and load their data
+            password=None,
+            copyable=False,
+            is_demon=(str_diff == "demon"),
+            is_auto=(str_diff == "auto"),
+            difficulty=difficulty,
+            stars=stars,
+            coins=coins,
+            verified_coins=True,
+            is_epic=False,  # XXX: are Rob's levels epic? ~ nekit
+            original=True,  # would be fun if this was false haha
+            downloads=0,
+            rating=0,
+            score=1,
+            uploaded_timestamp="unknown",
+            last_updated_timestamp="unknown",
+            length=length,
+            game_version=21,
+            stars_requested=0,
+            object_count=0,
+            type=0,
+            time_n=-1,
+            cooldown=-1,
+            client=client,
+        )
+
+    @classmethod
     def from_data(
         cls,
         data: ExtDict,
@@ -170,12 +263,12 @@ class Level(AbstractEntity):
     @property
     def creator(self) -> AbstractUser:
         """:class:`.AbstractUser`: Creator of the level."""
-        return self.options.get("creator", AbstractUser(client=self.client))
+        return self.options.get("creator", AbstractUser(client=self.options.get("client")))
 
     @property
     def song(self) -> Song:
         """:class:`.Song`: Song used in the level."""
-        return self.options.get("song", Song(client=self.client))
+        return self.options.get("song", Song(client=self.options.get("client")))
 
     @property
     def difficulty(self) -> Union[DemonDifficulty, LevelDifficulty]:

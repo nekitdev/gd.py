@@ -1,6 +1,6 @@
 from urllib.parse import unquote
 
-from .typing import Any, Callable, Client, Iterable, List, Song, Union
+from .typing import Any, Callable, Client, Iterable, List, Optional, Song, Union
 
 from .abstractentity import AbstractEntity
 from .errors import ClientException
@@ -60,6 +60,10 @@ class ArtistInfo(AbstractEntity):
     def api_allowed(self) -> bool:
         """:class:`bool`: Whether the external API is allowed."""
         return bool(self.options.get("api", ""))
+
+    async def update(self) -> None:
+        new = await self.client.get_artist_info(self.id)
+        self.options = new.options
 
 
 class Author(AbstractEntity):
@@ -154,7 +158,9 @@ class Song(AbstractEntity):
         return bool(self.options.get("custom"))
 
     @classmethod
-    def official(cls, id: int, server_style: bool = True, *, client: Client) -> Song:
+    def official(
+        cls, id: int, server_style: bool = True, *, client: Optional[Client] = None
+    ) -> Song:
         data = Converter.to_normal_song(id, server_style)
         return cls(**data, client=client)
 
@@ -201,7 +207,7 @@ class Song(AbstractEntity):
                 whitelisted=True,
                 scouted=True,
                 api=True,
-                client=self.client,
+                client=self.options.get("client"),
             )
 
         return await self.client.get_artist_info(self.id)

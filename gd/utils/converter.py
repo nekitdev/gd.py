@@ -39,7 +39,7 @@ _cases = {
     26: ("Dex Arson", "Beast Mode"),
     27: ("Dex Arson", "Machina"),
     28: ("Dex Arson", "Years"),
-    29: ("Dex Arson", "Frontline"),
+    29: ("Dex Arson", "Frontlines"),
     30: ("Waterflame", "Space Pirates"),
     31: ("Waterflame", "Striker"),
     32: ("Dex Arson", "Embers"),

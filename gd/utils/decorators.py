@@ -1,4 +1,5 @@
 import functools
+import inspect
 import time
 
 from ..typing import Any, Callable
@@ -7,7 +8,7 @@ from ..errors import NotLoggedError, MissingAccess
 
 Function = Callable[[Any], Any]
 
-__all__ = ("check_logged", "check_logged_obj", "benchmark", "run_once")
+__all__ = ("check_logged", "check_logged_obj", "benchmark", "source", "run_once")
 
 
 def check_logged(func: Function) -> Function:
@@ -40,6 +41,19 @@ def check_logged_obj(obj: Any, func_name: str) -> None:
 
         if not client.is_logged():
             raise NotLoggedError(func_name)
+
+
+def source(func: Function) -> Function:
+    try:
+        print(inspect.getsource(func))
+    except Exception:
+        pass
+
+    @functools.wraps(func)
+    def decorator(*args, **kwargs) -> Any:
+        return func(*args, **kwargs)
+
+    return decorator
 
 
 def benchmark(func: Function) -> Function:
