@@ -30,4 +30,5 @@ class LevelType(Enum):
     NULL = 0
     OFFICIAL = 1
     EDITOR = 2
-    ONLINE = 3
+    SAVED = 3
+    ONLINE = 4
