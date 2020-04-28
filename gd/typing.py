@@ -36,6 +36,7 @@ __all__ = (
     "AbstractUser",
     "ArtistInfo",
     "Author",
+    "Buffer",
     "LevelRecord",
     "Client",
     "Color",
@@ -53,7 +54,6 @@ __all__ = (
     "Filters",
     "Parameters",
     "Parser",
-    "Result",
     "Loop",
     "Enum",
     "Editor",
@@ -100,6 +100,7 @@ AbstractEntity = ref("gd.abstractentity.AbstractEntity")
 AbstractUser = ref("gd.abstractuser.AbstractUser")
 ArtistInfo = ref("gd.song.ArtistInfo")
 Author = ref("gd.song.Author")
+Buffer = ref("gd.memory.interface.Buffer")
 LevelRecord = ref("gd.abstractuser.LevelRecord")
 Client = ref("gd.client.Client")
 Color = ref("gd.colors.Color")
@@ -119,7 +120,6 @@ NEnum = ref("gd.utils.enums.NEnum")
 Filters = ref("gd.utils.filters.Filters")
 Parameters = ref("gd.utils.params.Parameters")
 Parser = ref("gd.utils.parser.Parser")
-Result = ref("gd.memory.interface.Result")
 Loop = ref("gd.utils.tasks.Loop")
 Editor = ref("gd.api.editor.Editor")
 HSV = ref("gd.api.hsv.HSV")

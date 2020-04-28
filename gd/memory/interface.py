@@ -11,10 +11,10 @@ except Exception:  # noqa
 from .enums import LevelType, Scene
 from ..api.enums import SpeedConstant
 
-from ..typing import Result, Tuple
+from ..typing import Buffer, Tuple
 from ..utils.text_tools import make_repr
 
-__all__ = ("Memory", "MemoryType", "WindowsMemory", "MacOSMemory", "Result", "get_memory")
+__all__ = ("Memory", "MemoryType", "WindowsMemory", "MacOSMemory", "Buffer", "get_memory")
 
 
 def read_until_terminator(data: bytes, terminator: int = 0) -> bytes:
@@ -27,18 +27,21 @@ class MemoryType:
     pass
 
 
-class Result:
+class Buffer:
     """Type that allows to unwrap bytes that were read into different Python types."""
 
     def __init__(self, data: bytes) -> None:
         self.data = data
         self.order = "little"
 
+    def __str__(self) -> str:
+        return self.to_str()
+
     def __repr__(self) -> str:
         info = {"data": repr(self.to_str())}
         return make_repr(self, info)
 
-    def with_order(self, byte_order: str) -> Result:
+    def with_order(self, byte_order: str) -> Buffer:
         self.order = byte_order
         return self
 
@@ -73,7 +76,7 @@ class Memory(MemoryType):
         if sys.platform == "win32":
             return WindowsMemory(*args, **kwargs)
         # elif sys.platform == "darwin":
-        # return MacOSMemory(*args, **kwargs)
+            # return MacOSMemory(*args, **kwargs)
         else:
             raise OSError("Only Windows is currently supported.")
 
@@ -109,16 +112,16 @@ class WindowsMemory(MemoryType):
         }
         return make_repr(self, info)
 
-    def read_at(self, n: int = 0, address: int = 0) -> Result:
+    def read_at(self, n: int = 0, address: int = 0) -> Buffer:
         buffer = ctypes.create_string_buffer(n)
 
         read_process_memory(
             self.process_handle, ctypes.c_void_p(address), ctypes.byref(buffer), n, None
         )
 
-        return Result(buffer.raw)
+        return Buffer(buffer.raw)
 
-    def read_bytes(self, n: int = 0, address: int = 0, *offsets) -> Result:
+    def read_bytes(self, n: int = 0, address: int = 0, *offsets) -> Buffer:
         address = self.base_address + address
 
         for offset in offsets:
@@ -177,13 +180,9 @@ class WindowsMemory(MemoryType):
         maybe_pointer = self.read_at(self.PTR_LEN, address).as_int()
 
         try:
-            string = self.read_at(length, maybe_pointer).as_str()
-        except UnicodeError:
-            string = ""
-
-        if not string:
             return self.read_at(length, address).as_str()
-        return string
+        except UnicodeError:
+            return self.read_at(length, maybe_pointer).as_str()
 
     def get_attempts(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x218).as_int()
