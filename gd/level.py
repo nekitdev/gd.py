@@ -64,13 +64,13 @@ class Level(AbstractEntity):
             11: ("Clutterfunk", 11, "insane", 3, 3),
             12: ("Theory of Everything", 12, "insane", 3, 3),
             13: ("Electroman Adventures", 10, "insane", 3, 3),
-            14: ("Clubstep", 14, "demon", 3, 3),
+            14: ("Clubstep", 14, "easy_demon", 3, 3),
             15: ("Electrodynamix", 12, "insane", 3, 3),
             16: ("Hexagon Force", 12, "insane", 3, 3),
             17: ("Blast Processing", 10, "harder", 3, 3),
-            18: ("Theory of Everything 2", 14, "demon", 3, 3),
+            18: ("Theory of Everything 2", 14, "easy_demon", 3, 3),
             19: ("Geometrical Dominator", 10, "harder", 3, 3),
-            20: ("Deadlocked", 15, "demon", 3, 3),
+            20: ("Deadlocked", 15, "easy_demon", 3, 3),
             21: ("Fingerdash", 12, "insane", 3, 3),
             1001: ("The Seven Seas", 1, "easy", 3, 3),
             1002: ("Viking Arena", 2, "normal", 3, 3),
@@ -122,7 +122,12 @@ class Level(AbstractEntity):
             AbstractUser(client=client),
             Song.official(song_id, server_style=False, client=client),
         )
-        difficulty = LevelDifficulty.from_value(str_diff)
+        is_demon = ("demon" in str_diff)
+
+        if is_demon:
+            difficulty = DemonDifficulty.from_value(str_diff)
+        else:
+            difficulty = LevelDifficulty.from_value(str_diff)
 
         return cls(
             id=level_id,
@@ -134,7 +139,7 @@ class Level(AbstractEntity):
             data="",  # XXX: maybe we can dump all official levels and load their data
             password=None,
             copyable=False,
-            is_demon=(str_diff == "demon"),
+            is_demon=is_demon,
             is_auto=(str_diff == "auto"),
             difficulty=difficulty,
             stars=stars,
