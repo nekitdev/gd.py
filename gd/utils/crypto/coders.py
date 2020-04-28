@@ -5,6 +5,8 @@ import string
 import struct
 import zlib
 
+# from Crypto.Cipher import AES
+
 # absolute import because we are deep
 from gd.typing import List, Union
 
@@ -33,7 +35,14 @@ class Coder:
         "levelscore": "yPg6pUrtWn0J",
     }
 
-    additional = (0x1F, 0x8B, 0x8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xB)
+    additional = b"\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x0b"
+
+    mac_key = (
+        b"\x69\x70\x75\x39\x54\x55\x76\x35\x34\x79\x76\x5d\x69\x73\x46\x4d"
+        b"\x68\x35\x40\x3b\x74\x2e\x35\x77\x33\x34\x45\x32\x52\x79\x40\x7b"
+    )
+
+    # cipher = AES.new(mac_key, AES.MODE_ECB)
 
     @staticmethod
     def normal_xor(string: str, key: int) -> str:
@@ -44,9 +53,23 @@ class Coder:
         if needs_xor:
             save = cls.normal_xor(save, 11)
 
-        save += "=" * (len(save) % 4)
+        save += "=" * (4 - len(save) % 4)
 
         return pako_inflate(urlsafe_b64decode(save.encode())).decode(errors="replace")
+
+    # @classmethod
+    # def decode_mac_save(cls, save: Union[bytes, str]) -> bytes:
+    # if isinstance(save, str):
+    # save = save.encode()
+    # save += b"\x0b" * (16 - len(save) % 16)
+    # return AES.encrypt(save)
+
+    # @classmethod
+    # def encode_mac_save(cls, save: Union[bytes, str]) -> bytes:
+    # if isinstance(save, str):
+    # save = save.encode()
+    # save += b"\x0b" * (16 - len(save) % 16)
+    # return AES.encrypt(save)
 
     @classmethod
     def encode_save(cls, save: Union[bytes, str], needs_xor: bool = True) -> str:
@@ -58,7 +81,7 @@ class Coder:
         crc32 = struct.pack("I", zlib.crc32(save))
         save_size = struct.pack("I", len(save))
 
-        encrypted = bytes(cls.additional) + compressed[2:-4] + crc32 + save_size
+        encrypted = cls.additional + compressed[2:-4] + crc32 + save_size
 
         final = urlsafe_b64encode(encrypted).decode()
 
@@ -73,7 +96,7 @@ class Coder:
             if encode:
                 return urlsafe_b64encode(data.encode(errors=errors)).decode(errors=errors)
             else:
-                padded = data + ("=" * (len(data) % 4))
+                padded = data + ("=" * (4 - len(data) % 4))
                 return urlsafe_b64decode(padded.encode(errors=errors)).decode(errors=errors)
 
         except Exception:
@@ -119,7 +142,7 @@ class Coder:
             Encoded string.
         """
         ciphered = XOR.cipher(key=cls.keys[type], string=string)
-        encoded = urlsafe_b64encode(ciphered.encode()).decode()
+        encoded = cls.do_base64(ciphered, encode=True)
         return encoded
 
     @classmethod
@@ -148,7 +171,7 @@ class Coder:
         :class:`str`
             Decoded string.
         """
-        ciphered = urlsafe_b64decode(string.encode()).decode()
+        ciphered = cls.do_base64(string, encode=False)
         decoded = XOR.cipher(key=cls.keys[type], string=ciphered)
         return decoded
 
@@ -175,12 +198,7 @@ class Coder:
         """
         salt = cls.salts.get(type, "")  # get salt
 
-        if type == "levelscore":
-            values.insert(8, 1)
-            values.insert(-1, salt)
-
-        else:
-            values.append(salt)
+        values.append(salt)
 
         string = "".join(map(str, values))
 
@@ -189,7 +207,8 @@ class Coder:
         # XOR
         xored = XOR.cipher(key=cls.keys[type], string=hashed)
         # Base64
-        final = urlsafe_b64encode(xored.encode()).decode()
+        final = cls.do_base64(xored, encode=True)
+
         return final
 
     @classmethod
@@ -234,7 +253,7 @@ class Coder:
 
     @classmethod
     def gen_level_upload_seed(cls, data_string: str, chars_required: int = 50) -> str:
-        if len(data_string) < 50:
+        if len(data_string) < chars_required:
             return data_string
 
         space = len(data_string) // chars_required

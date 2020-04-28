@@ -72,26 +72,43 @@ class Level(AbstractEntity):
             19: ("Geometrical Dominator", 10, "harder", 3, 3),
             20: ("Deadlocked", 15, "demon", 3, 3),
             21: ("Fingerdash", 12, "insane", 3, 3),
-            22: ("The Seven Seas", 1, "easy", 3, 3),
-            23: ("Viking Arena", 2, "normal", 3, 3),
-            24: ("Airborne Robots", 3, "hard", 3, 3),
-            25: ("Secret", 3, "hard", 0, 1),
-            26: ("Payload", 2, "easy", 0, 1),
-            27: ("Beast Mode", 3, "normal", 0, 2),
-            28: ("Machina", 3, "normal", 0, 2),
-            29: ("Years", 3, "normal", 0, 2),
-            30: ("Frontlines", 3, "normal", 0, 2),
-            31: ("Space Pirates", 3, "normal", 0, 2),
-            32: ("Striker", 3, "normal", 0, 2),
-            33: ("Embers", 3, "normal", 0, 1),
-            34: ("Round 1", 3, "normal", 0, 2),
-            35: ("Monster Dance Off", 3, "normal", 0, 2),
-            36: ("Press Start", 4, "normal", 3, 3),
-            37: ("Nock Em", 6, "hard", 3, 3),
-            38: ("Power Trip", 8, "harder", 3, 3),
+            1001: ("The Seven Seas", 1, "easy", 3, 3),
+            1002: ("Viking Arena", 2, "normal", 3, 3),
+            1003: ("Airborne Robots", 3, "hard", 3, 3),
+            2001: ("Payload", 2, "easy", 0, 1),
+            2002: ("Beast Mode", 3, "normal", 0, 2),
+            2003: ("Machina", 3, "normal", 0, 2),
+            2004: ("Years", 3, "normal", 0, 2),
+            2005: ("Frontlines", 3, "normal", 0, 2),
+            2006: ("Space Pirates", 3, "normal", 0, 2),
+            2007: ("Striker", 3, "normal", 0, 2),
+            2008: ("Embers", 3, "normal", 0, 1),
+            2009: ("Round 1", 3, "normal", 0, 2),
+            2010: ("Monster Dance Off", 3, "normal", 0, 2),
             3001: ("The Challenge", 3, "hard", 0, 1),  # well...
+            4001: ("Press Start", 4, "normal", 3, 3),
+            4002: ("Nock Em", 6, "hard", 3, 3),
+            4003: ("Power Trip", 8, "harder", 3, 3),
         }
-        translate = {3001: 25}
+        translate = {
+            1001: 22,
+            1002: 23,
+            1003: 24,
+            3001: 25,
+            2001: 26,
+            2002: 27,
+            2003: 28,
+            2004: 29,
+            2005: 30,
+            2006: 31,
+            2007: 32,
+            2008: 33,
+            2009: 34,
+            2010: 35,
+            4001: 36,
+            4002: 37,
+            4003: 38,
+        }
 
         if level_id not in mapping:
             raise ValueError(f"Level ID [{level_id}] is not known to be official.")
@@ -175,6 +192,7 @@ class Level(AbstractEntity):
                     password = None
 
                 else:
+                    # password is in format 1XXXXXX
                     password = password[1:]
 
                     password = int(password) if password.isdigit() else None

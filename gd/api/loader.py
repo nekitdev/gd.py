@@ -20,8 +20,10 @@ PathLike = Union[str, Path]
 
 try:
     if sys.platform == "win32":
-        local_env = os.getenv("localappdata")
-        path = Path(local_env) / "GeometryDash"
+        path = Path(os.getenv("localappdata")) / "GeometryDash"
+
+    elif sys.platform == "darwin":
+        path = Path("~/Library/Application Support/GeometryDash").expanduser()
 
     else:
         path = Path()

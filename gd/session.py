@@ -419,7 +419,7 @@ class Session:
 
         # values = [
         #     client.account_id, level_id, percentage, seconds, jumps, attempts,
-        #     percentage, 100 - percentage, coins, timely_index, rs
+        #     percentage, 100 - percentage, 1, coins, timely_index, rs
         # ]
 
         # chk = Coder.gen_chk(type='levelscore', values=values)
