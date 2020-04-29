@@ -1,13 +1,7 @@
 import asyncio
 import functools
 
-try:
-    import gc
-except ImportError:
-    pass
-
 import inspect
-from types import CoroutineType as coroutine
 
 from ..logging import get_logger
 from ..typing import (
@@ -15,14 +9,12 @@ from ..typing import (
     Awaitable,
     Callable,
     Coroutine,
-    Dict,
     Iterable,
     List,
     Optional,
     Sequence,
     Set,
     Tuple,
-    Type,
     Union,
 )
 
@@ -35,7 +27,6 @@ __all__ = (
     "shutdown_loop",
     "maybe_coroutine",
     "acquire_loop",
-    "synchronize",
 )
 
 log = get_logger("gd.async")
@@ -305,69 +296,3 @@ def acquire_loop(running: bool = False) -> None:
             loop = asyncio.new_event_loop()
 
     return loop
-
-
-def _get_class_dict(cls: Type[Any]) -> Dict[str, Any]:
-    """Gets 'cls.__dict__' that can be edited."""
-    try:
-        return gc.get_referents(cls.__dict__).pop(0)
-
-    except IndexError:
-        raise RuntimeError(f"Failed to find dict for {cls}.") from None
-
-
-def _del_method(cls: type, method_name: str):
-    """Delete a method of a 'cls'."""
-    cls_d = _get_class_dict(cls)
-    cls_d.pop(method_name, None)
-
-
-def _add_method(cls: type, func, *, name: Optional[str] = None):
-    """Adds a new method to a 'cls'."""
-    cls_d = _get_class_dict(cls)
-
-    if name is None:
-        name = _get_name(func)
-
-    cls_d[name] = func
-
-
-def _get_name(func):
-    try:
-        if isinstance(func, property):
-            return func.fget.__name__
-        elif isinstance(func, (staticmethod, classmethod)):
-            return func.__func__.__name__
-        else:
-            return func.__name__
-    except AttributeError:
-        raise RuntimeError(
-            "Failed to find the name of given function. Please provide the name explicitly."
-        ) from None
-
-
-def _run(self, loop: Optional[asyncio.AbstractEventLoop] = None) -> Any:
-    """Run the coroutine in a new event loop,
-    closing the loop after execution (if not given).
-    """
-    if loop is None:
-        loop = acquire_loop()
-
-    asyncio.set_event_loop(loop)
-
-    return loop.run_until_complete(self)
-
-
-def _enable_method(obj: type, name: str, on: bool = True, func: Optional[Callable] = None) -> None:
-    try:
-        if on:
-            _add_method(obj, func, name=name)
-        else:
-            _del_method(obj, name)
-
-    except Exception:
-        print(f"Failed to edit the {name!r} method.")
-
-
-def synchronize(on: bool = True) -> None:
-    _enable_method(coroutine, "run", on, _run)

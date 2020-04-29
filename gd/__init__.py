@@ -37,7 +37,6 @@ from .utils.crypto.xor_cipher import XORCipher as xor
 
 from ._jokes import *  # idk
 
-from .utils._async import synchronize
 from .utils import tasks
 
 from . import (

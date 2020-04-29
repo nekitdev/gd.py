@@ -76,7 +76,7 @@ class Memory(MemoryType):
         if sys.platform == "win32":
             return WindowsMemory(*args, **kwargs)
         # elif sys.platform == "darwin":
-            # return MacOSMemory(*args, **kwargs)
+        # return MacOSMemory(*args, **kwargs)
         else:
             raise OSError("Only Windows is currently supported.")
 
@@ -158,6 +158,9 @@ class WindowsMemory(MemoryType):
 
     def is_in_editor(self) -> bool:
         return self.read_bytes(4, 0x3222D0, 0x168).as_int() != 0
+
+    def get_object_count(self) -> int:
+        return self.read_bytes(4, 0x3222D0, 0x168, 0x3A0).as_int()
 
     def get_x_pos(self) -> float:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x224, 0x67C).as_float()

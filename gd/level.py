@@ -122,7 +122,7 @@ class Level(AbstractEntity):
             AbstractUser(client=client),
             Song.official(song_id, server_style=False, client=client),
         )
-        is_demon = ("demon" in str_diff)
+        is_demon = "demon" in str_diff
 
         if is_demon:
             difficulty = DemonDifficulty.from_value(str_diff)
@@ -147,6 +147,7 @@ class Level(AbstractEntity):
             verified_coins=True,
             is_epic=False,  # XXX: are Rob's levels epic? ~ nekit
             original=True,  # would be fun if this was false haha
+            low_detail_mode=False,
             downloads=0,
             rating=0,
             score=1,
@@ -232,6 +233,7 @@ class Level(AbstractEntity):
             copyable=copyable,
             is_demon=is_demon,
             is_auto=is_auto,
+            low_detail_mode=bool(data.get(Index.LEVEL_HAS_LDM)),
             difficulty=difficulty,
             stars=data.getcast(Index.LEVEL_STARS, 0, int),
             coins=data.getcast(Index.LEVEL_COIN_COUNT, 0, int),
@@ -438,6 +440,9 @@ class Level(AbstractEntity):
     def download(self) -> Union[bytes, str]:
         """Union[:class:`str`, :class:`bytes`]: Returns level data, represented as string."""
         return self.data
+
+    def has_ldm(self) -> bool:
+        return bool(self.options.get("low_detail_mode"))
 
     def open_editor(self) -> Editor:
         return Editor.launch(self, "data")

@@ -3,7 +3,6 @@ import inspect
 import time
 
 from ..typing import Any, Callable
-
 from ..errors import NotLoggedError, MissingAccess
 
 Function = Callable[[Any], Any]

@@ -28,7 +28,6 @@ Documentation Contents
     game_api
     utils
     exceptions
-    synchronization
     enums
     events
     console
