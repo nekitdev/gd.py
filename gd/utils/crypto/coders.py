@@ -5,7 +5,10 @@ import string
 import struct
 import zlib
 
-# from Crypto.Cipher import AES
+try:
+    from Crypto.Cipher import AES
+except ImportError:
+    print("Failed to import pycryptodome module. MacOS save coding will not be supported")
 
 # absolute import because we are deep
 from gd.typing import List, Union
@@ -36,13 +39,17 @@ class Coder:
     }
 
     additional = b"\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x0b"
+    base64_additional = urlsafe_b64encode(additional).decode().rstrip("=")
 
     mac_key = (
         b"\x69\x70\x75\x39\x54\x55\x76\x35\x34\x79\x76\x5d\x69\x73\x46\x4d"
         b"\x68\x35\x40\x3b\x74\x2e\x35\x77\x33\x34\x45\x32\x52\x79\x40\x7b"
     )
 
-    # cipher = AES.new(mac_key, AES.MODE_ECB)
+    try:
+        cipher = AES.new(mac_key, AES.MODE_ECB)
+    except NameError:  # AES not imported
+        pass
 
     @staticmethod
     def normal_xor(string: str, key: int) -> str:
@@ -57,19 +64,30 @@ class Coder:
 
         return pako_inflate(urlsafe_b64decode(save.encode())).decode(errors="replace")
 
-    # @classmethod
-    # def decode_mac_save(cls, save: Union[bytes, str]) -> bytes:
-    # if isinstance(save, str):
-    # save = save.encode()
-    # save += b"\x0b" * (16 - len(save) % 16)
-    # return AES.encrypt(save)
+    @classmethod
+    def decode_mac_save(cls, save: Union[bytes, str], *args, **kwargs) -> bytes:
+        if isinstance(save, str):
+            save = save.encode()
 
-    # @classmethod
-    # def encode_mac_save(cls, save: Union[bytes, str]) -> bytes:
-    # if isinstance(save, str):
-    # save = save.encode()
-    # save += b"\x0b" * (16 - len(save) % 16)
-    # return AES.encrypt(save)
+        data = cls.cipher.decrypt(save)
+
+        last = data[-1]
+        if last < 16:
+            data = data[:-last]
+
+        return data.decode()
+
+    @classmethod
+    def encode_mac_save(cls, save: Union[bytes, str], *args, **kwargs) -> bytes:
+        if isinstance(save, str):
+            save = save.encode()
+
+        remain = len(save) % 16
+        if remain:
+            to_add = 16 - remain
+            save += to_add.to_bytes(1, "little") * to_add
+
+        return cls.cipher.encrypt(save)
 
     @classmethod
     def encode_save(cls, save: Union[bytes, str], needs_xor: bool = True) -> str:

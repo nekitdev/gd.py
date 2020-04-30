@@ -11,10 +11,11 @@ from ..utils.text_tools import make_repr
 
 from .save import Database
 
-__all__ = ("SaveUtil", "get_path", "save", "make_db", "set_path")
+__all__ = ("SaveUtil", "get_path", "save", "make_db", "set_path", "encode_save", "decode_save")
 
 MAIN = "CCGameManager.dat"
 LEVELS = "CCLocalLevels.dat"
+MACOS = False
 
 PathLike = Union[str, Path]
 
@@ -23,6 +24,7 @@ try:
         path = Path(os.getenv("localappdata")) / "GeometryDash"
 
     elif sys.platform == "darwin":
+        MACOS = True
         path = Path("~/Library/Application Support/GeometryDash").expanduser()
 
     else:
@@ -39,6 +41,12 @@ def set_path(new_path: Path) -> None:
 
 def get_path() -> Path:
     return path
+
+
+if MACOS:
+    decode_save, encode_save = Coder.decode_mac_save, Coder.encode_mac_save
+else:
+    decode_save, encode_save = Coder.decode_save, Coder.encode_save
 
 
 class SaveUtil:
@@ -304,7 +312,7 @@ class SaveUtil:
         if isinstance(stream, bytes):
             stream = stream.decode(errors="ignore")
         try:
-            return Coder.decode_save(stream, needs_xor=xor)
+            return decode_save(stream, needs_xor=xor)
         except Exception:
             return ""
 
@@ -321,7 +329,7 @@ class SaveUtil:
         parts = []
 
         for part in db.as_tuple():
-            parts.append(part.encode(xor=xor))
+            parts.append(encode_save(part.dump(), needs_xor=xor))
 
         main, levels, *_ = parts
 
@@ -369,7 +377,7 @@ class SaveUtil:
         for file, part in zip(files, db.as_tuple()):
 
             with open(file, "w") as data_file:
-                data_file.write(part.encode())
+                data_file.write(encode_save(part.dump(), needs_xor=True))
 
 
 def _config_path(some_path: PathLike, default: PathLike) -> Path:

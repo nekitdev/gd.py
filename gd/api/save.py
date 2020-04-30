@@ -4,7 +4,6 @@ from ..typing import Any, Dict, Iterable, LevelCollection, List, Optional, Tuple
 
 from ..utils.text_tools import make_repr
 from ..utils.xml_parser import XMLParser
-from ..utils.crypto.coders import Coder
 
 from .struct import LevelAPI
 from .utils import get_default
@@ -39,10 +38,6 @@ class Part(dict):
     def dump(self) -> str:
         """Dump the part and return a string."""
         return self.parser.dump(self)
-
-    def encode(self, xor: bool = True) -> str:
-        """Dump and encode the part, returning a string."""
-        return Coder.encode_save(self.dump(), needs_xor=xor)
 
 
 class Database:

@@ -420,7 +420,7 @@ def _join_into_string(array: list, delim: str = "_"):
 
 
 def _attempt_zip(s: str):
-    unzip = all(char not in s for char in "|;,.")
+    unzip = all(char not in s for char in "|;,.")  # O(4n)
     try:
         if unzip:
             return Coder.unzip(s)
