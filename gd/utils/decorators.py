@@ -109,7 +109,7 @@ def impl_sync(cls: Type[T]) -> Type[T]:
     cls.__getattr__ = get_impl
 
     return cls
-            
+
 
 def run_once(func: Function) -> Function:
     @functools.wraps(func)
