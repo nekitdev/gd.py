@@ -1,13 +1,16 @@
+import asyncio
 import functools
 import inspect
 import time
+
+from . import maybe_coroutine
 
 from ..typing import Any, Callable
 from ..errors import NotLoggedError, MissingAccess
 
 Function = Callable[[Any], Any]
 
-__all__ = ("check_logged", "check_logged_obj", "benchmark", "source", "run_once")
+__all__ = ("check_logged", "check_logged_obj", "benchmark", "source", "sync", "run_once")
 
 
 def check_logged(func: Function) -> Function:
@@ -70,6 +73,17 @@ def benchmark(func: Function) -> Function:
         return res
 
     return decorator
+
+
+def sync(func: Function) -> Function:
+    @functools.wraps(func)
+    def syncer(*args, **kwargs) -> Any:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        return loop.run_until_complete(maybe_coroutine(func, *args, **kwargs))  # no shutdown uwu ~ nekit
+
+    return syncer
 
 
 def run_once(func: Function) -> Function:
