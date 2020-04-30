@@ -46,7 +46,7 @@ class Buffer:
         return self
 
     def to_str(self) -> str:
-        return " ".join(format(byte, "02x") for byte in self.data)
+        return " ".join(format(byte, "02X") for byte in self.data)
 
     def as_int(self) -> int:
         return int.from_bytes(self.data, self.order)
@@ -106,8 +106,8 @@ class WindowsMemory(MemoryType):
         info = {
             "name": repr(self.process_name),
             "pid": self.process_id,
-            "base_addr": format(self.base_address, "x"),
-            "handle": format(self.process_handle, "x"),
+            "base_addr": format(self.base_address, "X"),
+            "handle": format(self.process_handle, "X"),
             "loaded": self.loaded,
         }
         return make_repr(self, info)
