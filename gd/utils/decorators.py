@@ -5,12 +5,14 @@ import time
 
 from . import maybe_coroutine
 
-from ..typing import Any, Callable
+from ..typing import Any, Callable, Type, TypeVar
 from ..errors import NotLoggedError, MissingAccess
 
 Function = Callable[[Any], Any]
 
-__all__ = ("check_logged", "check_logged_obj", "benchmark", "source", "sync", "run_once")
+__all__ = ("check_logged", "check_logged_obj", "benchmark", "impl_sync", "source", "sync", "run_once")
+
+T = TypeVar("T")
 
 
 def check_logged(func: Function) -> Function:
@@ -85,6 +87,29 @@ def sync(func: Function) -> Function:
 
     return syncer
 
+
+def impl_sync(cls: Type[T]) -> Type[T]:
+    try:
+        old_get = cls.__getattr__
+    except AttributeError:
+        def old_get(instance: Any, name: str) -> None:
+            raise AttributeError(f"{type(instance).__name__!r} has no attribute {name!r}")
+
+    lookup = "sync_"
+
+    def get_impl(instance: Any, name: str) -> Any:
+        if name.startswith(lookup):
+            name = name[len(lookup):]  # skip lookup part in name
+
+            return sync(getattr(instance, name))
+
+        else:
+            return old_get(instance, name)
+
+    cls.__getattr__ = get_impl
+
+    return cls
+            
 
 def run_once(func: Function) -> Function:
     @functools.wraps(func)
