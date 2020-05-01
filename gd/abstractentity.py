@@ -1,9 +1,12 @@
 from .typing import AbstractEntity, Client
 from .errors import ClientException
+
+from .utils.decorators import impl_sync
 from .utils.parser import ExtDict
 from .utils.text_tools import make_repr
 
 
+@impl_sync
 class AbstractEntity:
     """Class that represents Abstract Entity. This is a base for many gd.py objects.
 
