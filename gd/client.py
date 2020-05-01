@@ -23,7 +23,7 @@ from .events.listener import (
 )
 
 from .utils.converter import Converter
-from .utils.decorators import check_logged
+from .utils.decorators import check_logged, impl_sync
 from .utils.enums import (
     CommentPolicyType,
     CommentStrategy,
@@ -97,6 +97,7 @@ async def is_alive_mock(level: Level) -> bool:
     return False
 
 
+@impl_sync
 class Client:
     r"""A main class in the gd.py library, used for interacting with the servers of Geometry Dash.
 
