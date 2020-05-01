@@ -16,7 +16,6 @@ from .typing import (
 
 from .abstractentity import AbstractEntity
 
-from .utils.decorators import impl_sync
 from .utils.enums import CommentStrategy, LevelLeaderboardStrategy
 from .utils.filters import Filters
 from .utils.indexer import Index
@@ -32,7 +31,6 @@ def try_int(some: Any) -> int:
         return 0
 
 
-@impl_sync
 class AbstractUser(AbstractEntity):
     """Class that represents an Abstract Geometry Dash User.
     This class is derived from :class:`.AbstractEntity`.
@@ -395,7 +393,6 @@ class AbstractUser(AbstractEntity):
         return await self.client.retrieve_comments(self, type=type, pages=pages, strategy=strategy)
 
 
-@impl_sync
 class LevelRecord(AbstractUser):
     """Class that represents Geometry Dash User's Level Record.
     This class is derived from :class:`.AbstractUser`.
