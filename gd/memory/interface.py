@@ -55,15 +55,20 @@ class Buffer:
         return self.as_int() != 0
 
     def as_float(self) -> float:
-        if self.order == "big":
-            mode = ">f"
-        else:
-            mode = "<f"
+        mode = ">f" if self.order == "big" else "<f"
 
         try:
             return struct.unpack(mode, self.data)[0]
         except Exception as error:
             raise ValueError(f"Could not convert to float. Error: {error}.") from None
+
+    def as_double(self) -> float:
+        mode = ">d" if self.order == "big" else "<d"
+
+        try:
+            return struct.unpack(mode, self.data)[0]
+        except Exception as error:
+            raise ValueError(f"Could not convert to double. Error: {error}.") from None
 
     def as_str(self, encoding: str = "utf-8", errors: str = "strict") -> str:
         return read_until_terminator(self.data).decode(encoding, errors)
@@ -89,6 +94,7 @@ class WindowsMemory(MemoryType):
     # [GeometryDash.exe + 0x3222D0] + 0x168 -> Editor object
     # [[[GeometryDash.exe + 0x3222D0] + 0x164] + 0x22C] + 0x114 -> Level object
     PTR_LEN = 4
+    STR_LEN = 16
 
     loaded = False
     process_handle = 0
@@ -159,8 +165,14 @@ class WindowsMemory(MemoryType):
     def is_in_editor(self) -> bool:
         return self.read_bytes(4, 0x3222D0, 0x168).as_int() != 0
 
+    def is_dead(self) -> bool:
+        return self.read_bytes(4, 0x3222D0, 0x314, 0x510).as_int() != 0
+
     def get_object_count(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x168, 0x3A0).as_int()
+
+    def get_percent(self) -> float:
+        return self.read_bytes(8, 0x3222D0, 0x164, 0x450).as_double()
 
     def get_x_pos(self) -> float:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x224, 0x67C).as_float()
@@ -177,15 +189,20 @@ class WindowsMemory(MemoryType):
     def get_level_id(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0xF8).as_int()
 
-    def get_level_name(self, length: int = 128) -> str:
-        address = self.read_bytes(self.PTR_LEN, 0x3222D0, 0x164, 0x22C, 0x114).as_int() + 0xFC
+    def get_level_name(self) -> str:
+        base = self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114).as_int()
 
-        maybe_pointer = self.read_at(self.PTR_LEN, address).as_int()
+        address, size_address = base + 0xFC, base + 0x10C
 
-        try:
-            return self.read_at(length, address).as_str()
-        except UnicodeError:
-            return self.read_at(length, maybe_pointer).as_str()
+        size = self.read_at(4, size_address).as_int()
+
+        if size <= self.STR_LEN:
+            return self.read_at(size, address).as_str()
+
+        else:
+            address = self.read_at(self.PTR_LEN, address).as_int()
+
+            return self.read_at(size, address).as_str()
 
     def get_attempts(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x218).as_int()
