@@ -8,7 +8,7 @@ import zlib
 try:
     from Crypto.Cipher import AES
 except ImportError:
-    print("Failed to import pycryptodome module. MacOS save coding will not be supported")
+    print("Failed to import pycryptodome module. MacOS save coding will not be supported.")
 
 # absolute import because we are deep
 from gd.typing import List, Union
@@ -45,6 +45,7 @@ class Coder:
         b"\x69\x70\x75\x39\x54\x55\x76\x35\x34\x79\x76\x5d\x69\x73\x46\x4d"
         b"\x68\x35\x40\x3b\x74\x2e\x35\x77\x33\x34\x45\x32\x52\x79\x40\x7b"
     )
+    mac_key_hex = "69707539545576353479765d6973464d6835403b742e3577333445325279407b"
 
     try:
         cipher = AES.new(mac_key, AES.MODE_ECB)
