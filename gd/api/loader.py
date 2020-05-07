@@ -308,7 +308,10 @@ class SaveUtil:
         """
         return Database(main, levels)
 
-    def _decode(self, stream: Union[bytes, str], xor: bool = True) -> str:
+    def _decode(self, stream: Union[bytes, str], xor: bool = True, bypass_os: bool = False) -> str:
+        if bypass_os:
+            decode_save = Coder.decode_save
+
         if isinstance(stream, bytes):
             stream = stream.decode(errors="ignore")
         try:
@@ -317,15 +320,18 @@ class SaveUtil:
             return ""
 
     def _load(
-        self, main: Union[bytes, str] = "", levels: Union[bytes, str] = "", xor: bool = False
+        self, main: Union[bytes, str] = "", levels: Union[bytes, str] = "", xor: bool = False, bypass_os: bool = False
     ) -> Database:
-        main = self._decode(main, xor=xor)
-        levels = self._decode(levels, xor=xor)
+        main = self._decode(main, xor=xor, bypass_os=bypass_os)
+        levels = self._decode(levels, xor=xor, bypass_os=bypass_os)
         return Database(main, levels)
 
     def _dump(
-        self, db: Database, connect: bool = True, xor: bool = False
+        self, db: Database, connect: bool = True, xor: bool = False, bypass_os: bool = False
     ) -> Union[str, Tuple[str, str]]:
+        if bypass_os:
+            encode_save = Coder.encode_save
+
         parts = []
 
         for part in db.as_tuple():
