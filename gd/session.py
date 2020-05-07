@@ -437,7 +437,7 @@ class Session:
 
         # for index, value in enumerate((
         #     attempts + 8354, jumps + 3991, seconds + 4085, seed, random.randint(100, 10000),
-        #     'Z2QucHk=', rs, attempts, coins + 5819, timely_index
+        #     "", rs, attempts, coins + 5819, timely_index
         # ), 1):
         #     params.put_seed(value, prefix='s', suffix=index)
 
@@ -513,7 +513,7 @@ class Session:
 
         try:
             main, levels, *_ = resp.split(";")
-            db = await api.save.from_string_async(main, levels, xor=False)
+            db = await api.save.from_string_async(main, levels, xor=False, follow_os=False)
             save = await SaveParser.aio_parse(db.main.dump())
 
             return db, save
