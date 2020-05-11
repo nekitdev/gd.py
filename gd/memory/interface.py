@@ -134,6 +134,19 @@ class WindowsMemory(MemoryType):
 
         return self.read_at(n, address)
 
+    def read_string(self, base: int, offset: int) -> str:
+        address, size_address = base + offset, base + offset + 0x10
+
+        size = self.read_at(4, size_address).as_int()
+
+        if size < self.STR_LEN:
+            return self.read_at(size, address).as_str()
+
+        else:
+            address = self.read_at(self.PTR_LEN, address).as_int()
+
+            return self.read_at(size, address).as_str()
+
     def load(self) -> None:
         self.process_id = get_pid_from_name(self.process_name)
         self.process_handle = get_handle(self.process_id)
@@ -189,19 +202,12 @@ class WindowsMemory(MemoryType):
         return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0xF8).as_int()
 
     def get_level_name(self) -> str:
-        base = self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114).as_int()
+        base = self.read_bytes(self.PTR_LEN, 0x3222D0, 0x164, 0x22C, 0x114).as_int()
+        return self.read_string(base, 0xFC)
 
-        address, size_address = base + 0xFC, base + 0x10C
-
-        size = self.read_at(4, size_address).as_int()
-
-        if size < self.STR_LEN:
-            return self.read_at(size, address).as_str()
-
-        else:
-            address = self.read_at(self.PTR_LEN, address).as_int()
-
-            return self.read_at(size, address).as_str()
+    def get_level_creator(self) -> str:
+        base = self.read_bytes(self.PTR_LEN, 0x3222D0, 0x164, 0x22C, 0x114).as_int()
+        return self.read_string(base, 0x144)
 
     def get_attempts(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x218).as_int()
