@@ -195,7 +195,7 @@ class WindowsMemory(MemoryType):
 
         size = self.read_at(4, size_address).as_int()
 
-        if size <= self.STR_LEN:
+        if size < self.STR_LEN:
             return self.read_at(size, address).as_str()
 
         else:
