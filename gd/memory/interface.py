@@ -124,7 +124,6 @@ class WindowsMemory(MemoryType):
         read_process_memory(
             self.process_handle, ctypes.c_void_p(address), ctypes.byref(buffer), n, None
         )
-
         return Buffer(buffer.raw)
 
     def read_bytes(self, n: int = 0, address: int = 0, *offsets) -> Buffer:
@@ -166,7 +165,7 @@ class WindowsMemory(MemoryType):
         return self.read_bytes(4, 0x3222D0, 0x168).as_int() != 0
 
     def is_dead(self) -> bool:
-        return self.read_bytes(4, 0x3222D0, 0x314, 0x510).as_int() != 0
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x39C).as_int() != 0
 
     def get_object_count(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x168, 0x3A0).as_int()
