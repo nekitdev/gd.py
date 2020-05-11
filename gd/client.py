@@ -704,7 +704,29 @@ class Client:
         data = await self.session.get_map_packs(pages=pages)
         return list(MapPack.from_data(part, client=self) for part in data)
 
-    async def login(self, user: str, password: str) -> None:  # pragma: no cover
+    async def unsafe_login(self, user: str, password: str) -> None:
+        """|coro|
+
+        Login into account, without validating credentials.
+
+        Parameters
+        ----------
+        user: :class:`str`
+            A username of the account to log into.
+
+        password: :class:`str`
+            A password of the account to log into.
+
+        Raises
+        ------
+        :exc:`.MissingAccess`
+            Could not find account by given ``user``.
+        """
+        self_user = await self.find_user(user)
+        self.edit(name=user, password=password, account_id=self_user.account_id, id=self_user.id)
+        log.info("Logged in? as %r, with password %r.", user, password)
+
+    async def login(self, user: str, password: str) -> None:
         """|coro|
 
         Tries to login with given parameters.
