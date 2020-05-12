@@ -30,9 +30,6 @@ class IconSet(AbstractEntity):
             return NotImplemented
         return self.options == other.options
 
-    def _json(self) -> dict:
-        return self.options
-
     @property
     def id(self) -> int:
         return self.main + self.color_1.value + self.color_2.value + self.main_type.value

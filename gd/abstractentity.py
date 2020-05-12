@@ -1,4 +1,4 @@
-from .typing import AbstractEntity, Client
+from .typing import AbstractEntity, Any, Client, Dict, Iterable
 from .errors import ClientException
 
 from .utils.decorators import impl_sync
@@ -49,8 +49,8 @@ class AbstractEntity:
             return NotImplemented
         return type(self) != type(other) or self.id != other.id
 
-    def _json(self) -> dict:  # pragma: no cover
-        return self.options
+    def _json(self, ignore: Iterable[str] = {"client", "data"}) -> Dict[str, Any]:
+        return {key: value for key, value in self.options.items() if key not in ignore}
 
     @classmethod
     def from_data(cls, data: ExtDict, client: Client) -> AbstractEntity:

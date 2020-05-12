@@ -41,7 +41,7 @@ re_link, re_size, re_name, re_author, re_attrib = (
     r".filesize.:(\d+)",
     r"<title>([^<>]+)</title>",
     r".artist.:.([^\"']+).",
-    r"{}[ ]*=[ ]*(?P<quote>[\"'])(.*)(?P=quote)"
+    r"{}[ ]*=[ ]*(?P<quote>[\"'])(.*?)(?P=quote)",
 )
 re_class = re_attrib.format("class")
 

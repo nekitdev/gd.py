@@ -44,9 +44,6 @@ class Level(AbstractEntity):
     def __str__(self) -> str:
         return str(self.name)
 
-    def _json(self) -> dict:  # pragma: no cover
-        return {k: v for k, v in super()._json().items() if k != "data"}
-
     @classmethod
     def official(cls, level_id: int, client: Optional[Client] = None) -> None:
         mapping = {

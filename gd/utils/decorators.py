@@ -88,9 +88,7 @@ def sync(func: Function) -> Function:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        result = loop.run_until_complete(
-            maybe_coroutine(func, *args, **kwargs)
-        )
+        result = loop.run_until_complete(maybe_coroutine(func, *args, **kwargs))
         shutdown_loop(loop)
         return result
 
