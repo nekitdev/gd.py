@@ -217,10 +217,10 @@ class WindowsMemory(MemoryType):
         return self.read_bytes(4, 0x3222D0, 0x2A0).as_int()
 
     def is_in_editor(self) -> bool:
-        return self.read_bytes(4, 0x3222D0, 0x168).as_int() != 0
+        return self.read_bytes(4, 0x3222D0, 0x168).as_bool()
 
     def is_dead(self) -> bool:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x39C).as_int() != 0
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x39C).as_bool()
 
     def get_object_count(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x168, 0x3A0).as_int()
