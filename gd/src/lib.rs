@@ -2,10 +2,11 @@
 /// Requires nightly-rust or development rust version
 
 use std;
+use std::io::Error;
+
 
 #[cfg(windows)]
 extern crate winapi;
-
 
 use winapi::{
     ctypes::*,
@@ -20,21 +21,20 @@ use winapi::{
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
-/*
+
 #[inline]
 pub unsafe fn write_process_memory(
     proc_handle: HANDLE,
     address: LPVOID,
     buffer: &[u8],
-) -> Result<()> {
+) -> Result<(), Error> {
     if WriteProcessMemory(
         proc_handle,
         address,
         buffer.as_ptr() as LPVOID,
         buffer.len(),
         std::ptr::null_mut(),
-    ) != 0
-    {
+    ) != 0 {
         Ok(())
     } else {
         Err(Error::last_os_error())
@@ -43,7 +43,9 @@ pub unsafe fn write_process_memory(
 
 
 #[inline]
-pub unsafe fn virtual_protect(address: LPVOID, size: usize, protection_flags: u32) -> Result<u32> {
+pub unsafe fn virtual_protect(
+    address: LPVOID, size: usize, protection_flags: u32
+) -> Result<u32, Error> {
     let mut old_protect: u32 = 0;
     if VirtualProtect(address, size, protection_flags, &mut old_protect) != 0 {
         Ok(old_protect)
@@ -53,10 +55,10 @@ pub unsafe fn virtual_protect(address: LPVOID, size: usize, protection_flags: u3
 }
 
 
-unsafe fn hook(address: usize, callback: usize) -> Result<()> {
+unsafe fn hook(address: usize, callback: usize) -> Result<(), Error> {
     println!("Address is {}, while callback is {}", address, callback);
     let offset = callback.wrapping_sub(address).wrapping_sub(5);
-    let op = &[0xE9];
+    let op = &[0xE9];  // jmp
 
     let old = virtual_protect(address as LPVOID, 5, PAGE_EXECUTE_READWRITE)?;
 
@@ -67,9 +69,8 @@ unsafe fn hook(address: usize, callback: usize) -> Result<()> {
     virtual_protect(address as LPVOID, 5, old)?;
     Ok(())
 }
-*/
 
-/// This module is a python module implemented in Rust.
+
 #[pymodule]
 fn _gd(_py: Python, module: &PyModule) -> PyResult<()> {
     module.add("__doc__", "Implementation of memory manipulation module, written in Rust.")?;
@@ -77,4 +78,3 @@ fn _gd(_py: Python, module: &PyModule) -> PyResult<()> {
     // return nothing
     Ok(())
 }
-
