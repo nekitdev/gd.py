@@ -16,6 +16,10 @@ from ..utils.text_tools import make_repr
 
 __all__ = ("Memory", "MemoryType", "WindowsMemory", "MacOSMemory", "Buffer", "get_memory")
 
+ORDER = {"big": ">", "little": "<"}
+DEFAULT_ORDER = "little"
+NULL_BYTE = b"\x00"
+
 
 def read_until_terminator(data: bytes, terminator: int = 0) -> bytes:
     return bytes(itertools.takewhile(lambda char: char != terminator, data))
@@ -30,9 +34,9 @@ class MemoryType:
 class Buffer:
     """Type that allows to unwrap bytes that were read into different Python types."""
 
-    def __init__(self, data: bytes) -> None:
+    def __init__(self, data: bytes, order: str = DEFAULT_ORDER) -> None:
         self.data = data
-        self.order = "little"
+        self.order = order
 
     def __str__(self) -> str:
         return self.to_str()
@@ -41,12 +45,17 @@ class Buffer:
         info = {"data": repr(self.to_str())}
         return make_repr(self, info)
 
-    def with_order(self, byte_order: str) -> Buffer:
-        self.order = byte_order
+    def with_order(self, order: str) -> Buffer:
+        self.order = order
         return self
 
     def to_str(self) -> str:
         return " ".join(format(byte, "02X") for byte in self.data)
+
+    @classmethod
+    def from_int(cls, integer: int, size: int = 4, order: str = DEFAULT_ORDER) -> Buffer:
+        data = integer.to_bytes(size, order)
+        return cls(data, order)
 
     def as_int(self) -> int:
         return int.from_bytes(self.data, self.order)
@@ -54,21 +63,54 @@ class Buffer:
     def as_bool(self) -> bool:
         return self.as_int() != 0
 
+    @classmethod
+    def from_float(cls, number: float, order: str = DEFAULT_ORDER) -> Buffer:
+        mode = ORDER[order] + "f"
+
+        try:
+            data = struct.pack(mode, number)
+        except Exception as error:
+            raise ValueError(f"Could not convert to float. Error: {error}.") from None
+        else:
+            return cls(data, order)
+
     def as_float(self) -> float:
-        mode = ">f" if self.order == "big" else "<f"
+        mode = ORDER[self.order] + "f"
 
         try:
             return struct.unpack(mode, self.data)[0]
         except Exception as error:
-            raise ValueError(f"Could not convert to float. Error: {error}.") from None
+            raise ValueError(f"Could not convert from float. Error: {error}.") from None
+
+    @classmethod
+    def from_double(cls, number: float, order: str = DEFAULT_ORDER) -> Buffer:
+        mode = ORDER[order] + "d"
+
+        try:
+            data = struct.pack(mode, number)
+        except Exception as error:
+            raise ValueError(f"Could not convert from double. Error: {error}.") from None
+        else:
+            return cls(data, order)
 
     def as_double(self) -> float:
-        mode = ">d" if self.order == "big" else "<d"
+        mode = ORDER[self.order] + "d"
 
         try:
             return struct.unpack(mode, self.data)[0]
         except Exception as error:
             raise ValueError(f"Could not convert to double. Error: {error}.") from None
+
+    @classmethod
+    def from_str(
+        cls, string: str, terminate: bool = True, order: str = DEFAULT_ORDER
+    ) -> Buffer:
+        data = string.encode()
+
+        if terminate:
+            data += NULL_BYTE
+
+        return cls(data, order)
 
     def as_str(self, encoding: str = "utf-8", errors: str = "strict") -> str:
         return read_until_terminator(self.data).decode(encoding, errors)
