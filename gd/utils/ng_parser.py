@@ -25,6 +25,7 @@ __all__ = (
     "re_name",
     "re_author",
     "re_size",
+    "re_attrib",
     "find_song_info",
     "extract_info_from_endpoint",
     "search_song_data",
@@ -35,16 +36,21 @@ __all__ = (
 T = TypeVar("T")
 U = TypeVar("U")
 
-re_link, re_size, re_name, re_author = (
-    r'https://audio\.ngfiles\.com/([^\'"]+)',
+re_link, re_size, re_name, re_author, re_attrib = (
+    r"https://audio\.ngfiles\.com/([^\"']+)",
     r".filesize.:(\d+)",
     r"<title>([^<>]+)</title>",
-    r'.artist.:.([^\'"]+).',
+    r".artist.:.([^\"']+).",
+    r"{}[ ]*=[ ]*(?P<quote>[\"'])(.*)(?P=quote)"
 )
+re_class = re_attrib.format("class")
+
 SongInfo = namedtuple("SongInfo", "link size name author")
 
 
 def html_parse(text: str) -> Element:
+    text = re.sub(re_class, lambda match: match.group(0).replace(" ", ""), text)
+
     if use_lxml:
         return html.fromstring(text)
     else:
@@ -68,9 +74,9 @@ def extract_info_from_endpoint(text: str) -> ExtDict:
     return ExtDict(
         artist=artist.split("Artist: ").pop(),
         song=song.split("Song: ").pop(),
-        whitelisted=check(whitelisted),
-        scouted=check(scouted),
-        api=check(api),
+        whitelisted=check_not(whitelisted),
+        scouted=check_not(scouted),
+        api=check_not(api),
     )
 
 
@@ -124,10 +130,7 @@ def extract_user_songs(
 def extract_users(text: str) -> List[ExtDict]:
     tree, result = html_parse(text), []
 
-    for div in tree.findall(r'.//div[@class="item-details-main"]'):
-        # div -> h4 -> a
-        a = div.getchildren()[0].getchildren()[0]
-
+    for a in tree.findall(r'.//div[@class="item-details-main"]/h4/a'):
         url = URL(a.attrib["href"]).with_scheme("https")
         name = a.text
 
@@ -142,8 +145,8 @@ def switch_if_none(obj: T, to: U) -> Union[T, U]:
     return obj
 
 
-def check(string: str) -> bool:
-    return not ("not" in string.lower())
+def check_not(string: str) -> bool:
+    return "not" not in string.casefold()
 
 
 def is_not_empty(string: str) -> bool:

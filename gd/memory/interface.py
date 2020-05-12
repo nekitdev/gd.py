@@ -260,5 +260,5 @@ def resolution_from_value(value: int) -> Tuple[int, int]:
     return mapping.get(value, (0, 0))
 
 
-def get_memory(name: str = "GeometryDash.exe") -> MemoryType:
-    return Memory(name, load=True)
+def get_memory(name: str = "GeometryDash.exe", load: bool = True) -> MemoryType:
+    return Memory(name, load=load)

@@ -3,13 +3,10 @@ import ctypes
 
 kernel32 = ctypes.WinDLL("kernel32.dll")
 
-SNAPHEAPLIST = 0x01
 SNAPPROCESS = 0x02
-SNAPTHREAD = 0x04
 SNAPMODULE = 0x08
 SNAPMODULE32 = 0x10
-SNAPALL = SNAPHEAPLIST | SNAPPROCESS | SNAPTHREAD | SNAPMODULE
-PROCESS_ALL_ACCESS = 0x100000 | 0x00F0000 | 0x000FFF
+PROCESS_ALL_ACCESS = 0x100000 | 0x0F0000 | 0x000FFF
 MAX_MODULE_NAME32 = 0x100  # 0xff + 1
 
 
@@ -95,6 +92,16 @@ module_next.argtypes = [wintypes.HANDLE, LPMODULEENTRY32]
 read_process_memory = kernel32.ReadProcessMemory
 read_process_memory.restype = wintypes.BOOL
 read_process_memory.argtypes = [
+    wintypes.HANDLE,
+    wintypes.LPCVOID,
+    wintypes.LPVOID,
+    ctypes.c_size_t,
+    ctypes.POINTER(ctypes.c_size_t),
+]
+
+write_process_memory = kernel32.WriteProcessMemory
+write_process_memory.restype = wintypes.BOOL
+write_process_memory.argtypes = [
     wintypes.HANDLE,
     wintypes.LPCVOID,
     wintypes.LPVOID,

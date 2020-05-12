@@ -322,7 +322,11 @@ class SaveUtil:
             return ""
 
     def _load(
-        self, main: Union[bytes, str] = "", levels: Union[bytes, str] = "", xor: bool = False, follow_os: bool = True
+        self,
+        main: Union[bytes, str] = "",
+        levels: Union[bytes, str] = "",
+        xor: bool = False,
+        follow_os: bool = True,
     ) -> Database:
         main = self._decode(main, xor=xor, follow_os=follow_os)
         levels = self._decode(levels, xor=xor, follow_os=follow_os)

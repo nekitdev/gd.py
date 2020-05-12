@@ -5,7 +5,7 @@ from .comment import Comment
 from .errors import ClientException
 from .friend_request import FriendRequest
 from .iconset import IconSet
-from .image import DEFAULT_SIZE, ImageType, to_image, connect_images, to_bytes
+from .image import DEFAULT_SIZE, ImageType, resize, to_image, connect_images, to_bytes
 from .level import Level
 from .level_packs import Gauntlet, MapPack
 from .logging import get_logger
@@ -1173,13 +1173,14 @@ class Client:
             has_glow=icon_set.has_glow_outline(),
             color_1=icon_set.color_1.index,
             color_2=icon_set.color_2.index,
-            size=size,
         )
+        original = await utils.run_blocking_io(to_image, data)
+        image = await utils.run_blocking_io(resize, original, size=size)
 
         if as_image:
-            return await utils.run_blocking_io(to_image, data)
-
-        return data
+            return image
+        else:
+            return await utils.run_blocking_io(to_bytes, image)
 
     async def generate_icons(
         self,

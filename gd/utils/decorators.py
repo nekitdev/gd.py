@@ -3,16 +3,25 @@ import functools
 import inspect
 import time
 
-from . import maybe_coroutine
+from . import maybe_coroutine, shutdown_loop
 
 from ..typing import Any, Callable, Type, TypeVar
 from ..errors import NotLoggedError, MissingAccess
 
 Function = Callable[[Any], Any]
 
-__all__ = ("check_logged", "check_logged_obj", "benchmark", "impl_sync", "source", "sync", "run_once")
+__all__ = (
+    "check_logged",
+    "check_logged_obj",
+    "benchmark",
+    "impl_sync",
+    "source",
+    "sync",
+    "run_once",
+)
 
 T = TypeVar("T")
+CF = TypeVar("CF", Type[T], Function)
 
 
 def check_logged(func: Function) -> Function:
@@ -47,17 +56,13 @@ def check_logged_obj(obj: Any, func_name: str) -> None:
             raise NotLoggedError(func_name)
 
 
-def source(func: Function) -> Function:
+def source(cls_or_func: CF) -> CF:
     try:
-        print(inspect.getsource(func))
+        print(inspect.getsource(cls_or_func))
     except Exception:
         pass
 
-    @functools.wraps(func)
-    def decorator(*args, **kwargs) -> Any:
-        return func(*args, **kwargs)
-
-    return decorator
+    return cls_or_func
 
 
 def benchmark(func: Function) -> Function:
@@ -83,7 +88,11 @@ def sync(func: Function) -> Function:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        return loop.run_until_complete(maybe_coroutine(func, *args, **kwargs))  # no shutdown uwu ~ nekit
+        result = loop.run_until_complete(
+            maybe_coroutine(func, *args, **kwargs)
+        )
+        shutdown_loop(loop)
+        return result
 
     return syncer
 
@@ -92,6 +101,7 @@ def impl_sync(cls: Type[T]) -> Type[T]:
     try:
         old_get = cls.__getattr__
     except AttributeError:
+
         def old_get(instance: Any, name: str) -> None:
             raise AttributeError(f"{type(instance).__name__!r} has no attribute {name!r}")
 

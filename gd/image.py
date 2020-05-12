@@ -10,11 +10,22 @@ except ImportError:
     ImageType = ref("PIL.Image.Image")
     print("Failed to load Pillow/PIL. Image creating will not be supported.")
 
-DEFAULT_SIZE = 250
+DEFAULT_SIZE = 200
 
 
 def to_image(data: bytes) -> ImageType:
     return Image.open(io.BytesIO(data))
+
+
+def resize(image: ImageType, mode: str = "RGBA", size: int = DEFAULT_SIZE) -> ImageType:
+    result = Image.new(mode=mode, size=(size, size))
+    w, h = image.size
+    # up-left corner
+    x, y = size // 2 - w // 2, size // 2 - h // 2
+
+    result.alpha_composite(image, (x, y))
+
+    return result
 
 
 def connect_images(images: Sequence[ImageType], mode: str = "RGBA") -> ImageType:
