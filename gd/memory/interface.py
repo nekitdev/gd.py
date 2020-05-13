@@ -4,14 +4,20 @@ import struct
 import sys
 
 try:
-    from .win import get_base_address, get_handle, get_pid_from_name, read_process_memory
+    from .win import (
+        get_base_address,
+        get_handle,
+        get_pid_from_name,
+        read_process_memory,
+        write_process_memory,
+    )
 except Exception:  # noqa
     pass
 
 from .enums import LevelType, Scene
 from ..api.enums import SpeedConstant
 
-from ..typing import Buffer, Tuple
+from ..typing import Any, Buffer, Tuple
 from ..utils.text_tools import make_repr
 
 __all__ = ("Memory", "MemoryType", "WindowsMemory", "MacOSMemory", "Buffer", "get_memory")
@@ -115,6 +121,9 @@ class Buffer:
     def as_str(self, encoding: str = "utf-8", errors: str = "strict") -> str:
         return read_until_terminator(self.data).decode(encoding, errors)
 
+    def into_buffer(self) -> Any:
+        return ctypes.create_string_buffer(self.data)
+
 
 class Memory(MemoryType):
     """Simple wrapper with platform check."""
@@ -168,6 +177,12 @@ class WindowsMemory(MemoryType):
         )
         return Buffer(buffer.raw)
 
+    def write_at(self, buffer: Buffer, address: int = 0) -> None:
+        data = buffer.into_buffer()
+        write_process_memory(
+            self.process_handle, ctypes.c_void_p(address), ctypes.byref(data), len(data), None
+        )
+
     def read_bytes(self, n: int = 0, address: int = 0, *offsets) -> Buffer:
         address = self.base_address + address
 
@@ -175,6 +190,14 @@ class WindowsMemory(MemoryType):
             address = self.read_at(self.PTR_LEN, address).as_int() + offset
 
         return self.read_at(n, address)
+
+    def write_bytes(self, buffer: Buffer, address: int = 0, *offsets) -> None:
+        address = self.base_address + address
+
+        for offset in offsets:
+            address = self.read_at(self.PTR_LEN, address).as_int() + offset
+
+        self.write_at(buffer, address)
 
     def read_string(self, base: int, offset: int) -> str:
         address, size_address = base + offset, base + offset + 0x10
