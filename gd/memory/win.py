@@ -21,7 +21,7 @@ class ProcessEntry32(ctypes.Structure):
         th32ParentProcessID=wintypes.DWORD,
         pcPriClassBase=wintypes.LONG,
         dwFlags=wintypes.DWORD,
-        szExeFile=ctypes.c_char * ctypes.wintypes.MAX_PATH,
+        szExeFile=ctypes.c_char * wintypes.MAX_PATH,
     )
     _fields_ = list(fields.items())
 
@@ -45,7 +45,7 @@ class ModuleEntry32(ctypes.Structure):
         modBaseSize=wintypes.DWORD,
         hModule=wintypes.HMODULE,
         szModule=ctypes.c_char * MAX_MODULE_NAME32,
-        szExePath=ctypes.c_char * ctypes.wintypes.MAX_PATH,
+        szExePath=ctypes.c_char * wintypes.MAX_PATH,
     )
     _fields_ = list(fields.items())
 
