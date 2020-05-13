@@ -8,6 +8,9 @@ SNAPMODULE = 0x08
 SNAPMODULE32 = 0x10
 PROCESS_ALL_ACCESS = 0x100000 | 0x0F0000 | 0x000FFF
 MAX_MODULE_NAME32 = 0x100  # 0xff + 1
+PAGE_EXECUTE_READWRITE = 0x40
+
+JMP = bytes([0xE9])
 
 
 class ProcessEntry32(ctypes.Structure):
@@ -93,8 +96,8 @@ read_process_memory = kernel32.ReadProcessMemory
 read_process_memory.restype = wintypes.BOOL
 read_process_memory.argtypes = [
     wintypes.HANDLE,
-    wintypes.LPCVOID,
     wintypes.LPVOID,
+    wintypes.LPCVOID,
     ctypes.c_size_t,
     ctypes.POINTER(ctypes.c_size_t),
 ]
@@ -103,8 +106,8 @@ write_process_memory = kernel32.WriteProcessMemory
 write_process_memory.restype = wintypes.BOOL
 write_process_memory.argtypes = [
     wintypes.HANDLE,
-    wintypes.LPCVOID,
     wintypes.LPVOID,
+    wintypes.LPCVOID,
     ctypes.c_size_t,
     ctypes.POINTER(ctypes.c_size_t),
 ]
@@ -112,6 +115,21 @@ write_process_memory.argtypes = [
 open_process = kernel32.OpenProcess
 open_process.restype = wintypes.HANDLE
 open_process.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+
+virtual_protect_real = kernel32.VirtualProtect
+virtual_protect_real.restype = wintypes.BOOL
+virtual_protect_real.argtypes = [
+    wintypes.LPVOID,
+    ctypes.c_size_t,
+    wintypes.DWORD,
+    wintypes.PDWORD,
+]
+
+
+def virtual_protect(address: int, size: int, flags: int) -> int:
+    old_protect = wintypes.DWORD(0)
+    virtual_protect_real(ctypes.c_void_p(address), size, flags, ctypes.byref(old_protect))
+    return old_protect.value
 
 
 def get_pid_from_name(process_name: str) -> int:
