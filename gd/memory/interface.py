@@ -17,7 +17,7 @@ except Exception:  # noqa
 from .enums import LevelType, Scene
 from ..api.enums import SpeedConstant
 
-from ..typing import Any, Buffer, Tuple
+from ..typing import Any, Buffer, Sequence, Tuple
 from ..utils.text_tools import make_repr
 
 __all__ = ("Memory", "MemoryType", "WindowsMemory", "MacOSMemory", "Buffer", "get_memory")
@@ -48,15 +48,12 @@ class Buffer:
         return self.to_str()
 
     def __repr__(self) -> str:
-        info = {"data": repr(self.to_str())}
+        info = {"data": repr(self.to_format())}
         return make_repr(self, info)
 
     def with_order(self, order: str) -> Buffer:
         self.order = order
         return self
-
-    def to_str(self) -> str:
-        return " ".join(format(byte, "02X") for byte in self.data)
 
     @classmethod
     def from_int(cls, integer: int, size: int = 4, order: str = DEFAULT_ORDER) -> Buffer:
@@ -120,6 +117,19 @@ class Buffer:
 
     def as_str(self, encoding: str = "utf-8", errors: str = "strict") -> str:
         return read_until_terminator(self.data).decode(encoding, errors)
+
+    @classmethod
+    def from_format(cls, format_str: str) -> Buffer:
+        # format should be something like "6A 14 8B CB FF"
+        array = [int(byte, 16) for byte in format_str.split()]
+        return cls.from_byte_array(array)
+
+    def to_format(self) -> str:
+        return " ".join(format(byte, "02X") for byte in self.data)
+
+    @classmethod
+    def from_byte_array(cls, array: Sequence[int]) -> Buffer:
+        return cls(bytes(array))
 
     def into_buffer(self) -> Any:
         return ctypes.create_string_buffer(self.data)
