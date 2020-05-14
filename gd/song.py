@@ -213,11 +213,7 @@ class Song(AbstractEntity):
 
         return await self.client.get_artist_info(self.id)
 
-    async def download(
-        self,
-        file: Optional[IO] = None,
-        with_bar: bool = False,
-    ) -> Optional[bytes]:
+    async def download(self, file: Optional[IO] = None, with_bar: bool = False,) -> Optional[bytes]:
         """|coro|
 
         Download a song from Newgrounds.

@@ -1,4 +1,3 @@
-from ..typing import Any
 from ..utils.enums import NEnum as Enum
 
 __all__ = ("LevelType", "Scene")
@@ -17,13 +16,6 @@ class Scene(Enum):
     OFFICIAL_LEVELS = 8
     OFFICIAL_LEVEL = 9
     THE_CHALLENGE = 12
-
-    @classmethod
-    def from_value(cls, value: Any) -> Enum:
-        try:
-            return super().from_value(value)
-        except Exception:
-            return cls.UNKNOWN
 
 
 class LevelType(Enum):

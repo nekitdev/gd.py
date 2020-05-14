@@ -16,8 +16,10 @@ except Exception:  # noqa
 
 from .enums import LevelType, Scene
 from ..api.enums import SpeedConstant
-
-from ..typing import Any, Buffer, Sequence, Tuple
+from ..errors import FailedConversion
+from ..typing import Any, Buffer, Sequence, Tuple, Union
+from ..utils.converter import Converter
+from ..utils.enums import LevelDifficulty, DemonDifficulty
 from ..utils.text_tools import make_repr
 
 __all__ = ("Memory", "MemoryType", "WindowsMemory", "MacOSMemory", "Buffer", "get_memory")
@@ -43,9 +45,10 @@ class Buffer:
     def __init__(self, data: bytes, order: str = DEFAULT_ORDER) -> None:
         self.data = data
         self.order = order
+        print(self)
 
     def __str__(self) -> str:
-        return self.to_str()
+        return self.to_format()
 
     def __repr__(self) -> str:
         info = {"data": repr(self.to_format())}
@@ -236,13 +239,16 @@ class WindowsMemory(MemoryType):
         return self.read_bytes(4, 0x3222D0, 0x1DC).as_int()
 
     def get_scene(self) -> Scene:
-        return Scene.from_value(self.get_scene_value())
+        try:
+            return Scene.from_value(self.get_scene_value())
+        except FailedConversion:
+            return Scene.UNKNOWN
 
     def get_resolution_value(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x2E0).as_int()
 
     def get_resolution(self) -> Tuple[int, int]:
-        return resolution_from_value(self.get_resolution_value())
+        return number_to_resolution.get(self.get_resolution_value(), (0, 0))
 
     def get_level_id_fast(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x2A0).as_int()
@@ -262,14 +268,26 @@ class WindowsMemory(MemoryType):
     def get_x_pos(self) -> float:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x224, 0x67C).as_float()
 
+    def set_x_pos(self, pos: float) -> None:
+        self.write_bytes(Buffer.from_float(pos), 0x3222D0, 0x164, 0x224, 0x67C)
+
     def get_y_pos(self) -> float:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x224, 0x680).as_float()
+
+    def set_y_pos(self, pos: float) -> None:
+        self.write_bytes(Buffer.from_float(pos), 0x3222D0, 0x164, 0x224, 0x680)
 
     def get_speed_value(self) -> float:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x224, 0x648).as_float()
 
+    def set_speed_value(self, value: float) -> None:
+        self.write_bytes(Buffer.from_float(value), 0x3222D0, 0x164, 0x224, 0x648)
+
     def get_speed(self) -> SpeedConstant:
-        return SpeedConstant.from_value(round(self.get_speed_value(), 1))
+        try:
+            return SpeedConstant.from_value(round(self.get_speed_value(), 1))
+        except FailedConversion:
+            return SpeedConstant.NULL
 
     def get_level_id(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0xF8).as_int()
@@ -281,6 +299,35 @@ class WindowsMemory(MemoryType):
     def get_level_creator(self) -> str:
         base = self.read_bytes(self.PTR_LEN, 0x3222D0, 0x164, 0x22C, 0x114).as_int()
         return self.read_string(base, 0x144)
+
+    def get_level_stars(self) -> int:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x2AC).as_int()
+
+    def is_level_demon(self) -> bool:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x29C).as_bool()
+
+    def is_level_auto(self) -> bool:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x2B0).as_bool()
+
+    def get_level_diff_value(self) -> int:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x1E4).as_int()
+
+    def get_level_demon_diff_value(self) -> int:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x2A0).as_int()
+
+    def get_level_difficulty(self) -> Union[LevelDifficulty, DemonDifficulty]:
+        address = self.read_bytes(self.PTR_LEN, 0x3222D0, 0x164, 0x22C, 0x114).as_int()
+
+        is_demon, is_auto, diff, demon_diff = (  # optimized
+            self.read_at(4, address + 0x29C).as_bool(),
+            self.read_at(4, address + 0x2B0).as_bool(),
+            self.read_at(4, address + 0x1E4).as_int(),
+            self.read_at(4, address + 0x2A0).as_int(),
+        )
+
+        return Converter.convert_level_difficulty(
+            diff=diff, demon_diff=demon_diff, is_demon=is_demon, is_auto=is_auto
+        )
 
     def get_attempts(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x218).as_int()
@@ -298,7 +345,13 @@ class WindowsMemory(MemoryType):
         return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x364).as_int()
 
     def get_level_type(self) -> LevelType:
-        return LevelType.from_value(self.get_level_type_value())
+        try:
+            return LevelType.from_value(self.get_level_type_value())
+        except FailedConversion:
+            return LevelType.NULL
+
+    def is_in_level(self) -> bool:
+        return self.get_level_type_value() != 0
 
     def get_song_id(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x488, 0x1C4).as_int()
@@ -306,31 +359,32 @@ class WindowsMemory(MemoryType):
     def get_attempt(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x4A8).as_int()
 
+    def set_attempt(self, attempt: int) -> None:
+        self.write_bytes(Buffer.from_int(attempt), 0x3222D0, 0x164, 0x4A8)
 
-def resolution_from_value(value: int) -> Tuple[int, int]:
-    mapping = {
-        1: (640, 480),
-        2: (720, 480),
-        3: (720, 576),
-        4: (800, 600),
-        5: (1024, 768),
-        6: (1152, 864),
-        7: (1176, 644),
-        8: (1280, 720),
-        9: (1280, 768),
-        10: (1280, 800),
-        11: (1280, 960),
-        12: (1280, 1024),
-        13: (1360, 768),
-        14: (1366, 768),
-        15: (1440, 900),
-        16: (1600, 900),
-        17: (1600, 1024),
-        18: (1680, 1050),
-        19: (1768, 992),
-        20: (1920, 1080),
-    }
-    return mapping.get(value, (0, 0))
+
+number_to_resolution = {
+    1: (640, 480),
+    2: (720, 480),
+    3: (720, 576),
+    4: (800, 600),
+    5: (1024, 768),
+    6: (1152, 864),
+    7: (1176, 644),
+    8: (1280, 720),
+    9: (1280, 768),
+    10: (1280, 800),
+    11: (1280, 960),
+    12: (1280, 1024),
+    13: (1360, 768),
+    14: (1366, 768),
+    15: (1440, 900),
+    16: (1600, 900),
+    17: (1600, 1024),
+    18: (1680, 1050),
+    19: (1768, 992),
+    20: (1920, 1080),
+}
 
 
 def get_memory(name: str = "GeometryDash.exe", load: bool = True) -> MemoryType:
