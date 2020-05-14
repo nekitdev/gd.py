@@ -27,6 +27,8 @@ __all__ = (
     "shutdown_loop",
     "maybe_coroutine",
     "acquire_loop",
+    "aiter",
+    "anext",
 )
 
 log = get_logger("gd.async")
@@ -296,3 +298,11 @@ def acquire_loop(running: bool = False) -> None:
             loop = asyncio.new_event_loop()
 
     return loop
+
+
+async def aiter(some_object: Any) -> Any:
+    return await some_object.__aiter__()
+
+
+async def anext(async_generator: Any) -> Any:
+    return await async_generator.__anext__()

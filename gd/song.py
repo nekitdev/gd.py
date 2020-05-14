@@ -1,6 +1,8 @@
 from urllib.parse import unquote
 
-from .typing import Any, Callable, Client, Iterable, List, Optional, Song, Union
+import aiohttp
+
+from .typing import Any, Callable, Client, IO, Iterable, List, Optional, Song, Union
 
 from .abstractentity import AbstractEntity
 from .errors import ClientException
@@ -13,8 +15,7 @@ from .utils.routes import Route
 from .utils.text_tools import make_repr
 
 Function = Callable[[Any], Any]
-
-http = HTTPClient(use_user_agent=True)  # used in song downloading
+UserAgent = HTTPClient.get_default_agent()
 
 
 class ArtistInfo(AbstractEntity):
@@ -212,21 +213,73 @@ class Song(AbstractEntity):
 
         return await self.client.get_artist_info(self.id)
 
-    async def download(self) -> bytes:
+    async def download(
+        self,
+        file: Optional[IO] = None,
+        with_bar: bool = False,
+    ) -> Optional[bytes]:
         """|coro|
 
         Download a song from Newgrounds.
 
+        Parameters
+        ----------
+        file: Optional[IO]
+            File-like object to write song to, instead of returning bytes.
+
+        with_bar: :class:`bool`
+            Whether to show a progress bar while downloading.
+            Requires ``tqdm`` to be installed.
+
         Returns
         -------
-        :class:`bytes`
-            A song as bytes.
+        Optional[:class:`bytes`]
+            A song as bytes, if ``file`` was not specified.
         """
         if not self.dl_link:
             # load song from NG if there is no link
             await self.update(from_ng=True)
 
-        return await http.normal_request(self.dl_link)
+        return await download(self.dl_link, file=file, with_bar=with_bar)
+
+
+async def download(
+    url: str,
+    method: str = "GET",
+    chunk_size: int = 64 * 1024,
+    with_bar: bool = False,
+    file: Optional[IO] = None,
+    **kwargs,
+) -> Optional[bytes]:
+    if with_bar:
+        import tqdm
+
+    async with aiohttp.ClientSession(headers={"User-Agent": UserAgent}) as client:
+        async with client.request(url=url, method=method, **kwargs) as response:
+            if file is None:
+                result = bytes()
+
+            if with_bar:
+                bar = tqdm.tqdm(total=response.content_length, unit="b", unit_scale=True)
+
+            while True:
+                chunk = await response.content.read(chunk_size)
+                if not chunk:
+                    break
+
+                if file is None:
+                    result += chunk
+                else:
+                    file.write(chunk)
+
+                if with_bar:
+                    bar.update(len(chunk))
+
+            if with_bar:
+                bar.close()
+
+    if file is None:
+        return result
 
 
 def fix_song_encoding(string: str) -> str:
