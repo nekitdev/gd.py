@@ -105,9 +105,7 @@ class Buffer:
             raise ValueError(f"Could not convert to double. Error: {error}.") from None
 
     @classmethod
-    def from_str(
-        cls, string: str, terminate: bool = True, order: str = DEFAULT_ORDER
-    ) -> Buffer:
+    def from_str(cls, string: str, terminate: bool = True, order: str = DEFAULT_ORDER) -> Buffer:
         data = string.encode()
 
         if terminate:

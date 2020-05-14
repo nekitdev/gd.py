@@ -107,6 +107,7 @@ def impl_sync(cls: Type[T]) -> Type[T]:
 
     def get_impl(instance: Any, name: str) -> Any:
         if name.startswith(lookup):
+
             name = name[len(lookup):]  # skip lookup part in name
 
             return sync(getattr(instance, name))

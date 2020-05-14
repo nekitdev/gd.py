@@ -7,7 +7,7 @@ import platform
 
 from aiohttp import web
 import aiohttp
-from gd.typing import Any, Callable, Dict, Generator, Iterable, List, Optional, Type, Union, ref
+from gd.typing import Any, Callable, Dict, Generator, Iterable, Optional, Type, Union, ref
 import gd
 
 DEFAULT_MIDDLEWARES = [web.normalize_path_middleware(append_slash=False, remove_slash=True)]
@@ -47,7 +47,7 @@ def parse_string(string: str) -> Dict[str, Union[Dict[Union[str, int], str], str
     result["method"], result["path"] = lines.pop(0).strip().split(maxsplit=1)
 
     for line in lines:
-        line = line.strip("< .>;")
+        line = line.strip(". ;")
         if line.endswith(":") or not line:
             if current_section:
                 if isinstance(current_content, list):
@@ -56,26 +56,22 @@ def parse_string(string: str) -> Dict[str, Union[Dict[Union[str, int], str], str
                 result[current_section] = current_content
                 current_content = None
 
-            current_section = line.lower().rstrip(":")
+            current_section = line.lower().rstrip(":").replace(" ", "_")
 
         else:
-            try:
-                key, value = line.split(" - ")
+            key, sep, value = line.partition(": ")
 
-            except ValueError:
-                if current_content is None:
-                    current_content = []
-
-                current_content.append(line.strip("<>"))
-
-            else:
+            if sep:
                 if current_content is None:
                     current_content = {}
 
-                if key.isdigit():
-                    key = int(key)
-
                 current_content[key] = value
+
+            else:
+                if current_content is None:
+                    current_content = []
+
+                current_content.append(line)
 
     return result
 
@@ -153,9 +149,11 @@ async def main_page(request: web.Request) -> web.Response:
     Description:
         Return simple JSON with useful info.
     Example:
-        </api>
+        link: /api
     Returns:
-        200 - JSON with API info.
+        200: JSON with API info.
+    Return Type:
+        application/json
     """
     payload = {
         "aiohttp": aiohttp.__version__,
@@ -178,11 +176,13 @@ async def user_get(request: web.Request) -> web.Response:
     Description:
         Fetch a user by their Account ID.
     Example:
-        </api/user/71>
+        link: /api/user/71
     Returns:
-        200 - JSON with user info;
-        400 - Invalid type;
-        404 - User was not found.
+        200: JSON with user info;
+        400: Invalid type;
+        404: User was not found.
+    Return Type:
+        application/json
     """
     query = int(request.match_info.get("id"))
     return json_resp(await request.app.client.get_user(query))
@@ -201,12 +201,14 @@ async def song_search(request: web.Request) -> web.Response:
     Description:
         Fetch a song by its ID.
     Example:
-        </api/song/1>
+        link: /api/song/1
     Returns:
-        200 - JSON with song info;
-        400 - Invalid type in payload;
-        403 - Song is not allowed to use;
-        404 - Song was not found.
+        200: JSON with song info;
+        400: Invalid type in payload;
+        403: Song is not allowed to use;
+        404: Song was not found.
+    Return Type:
+        application/json
     """
     query = int(request.match_info.get("id"))
     return json_resp(await request.app.client.get_song(query))
@@ -219,10 +221,12 @@ async def user_search(request: web.Request) -> web.Response:
     Description:
         Fetch a user by their name or player ID.
     Example:
-        </api/search/user/RobTop>
+        link: /api/search/user/RobTop
     Returns:
-        200 - JSON with user info;
-        404 - User was not found.
+        200: JSON with user info;
+        404: User was not found.
+    Return Type:
+        application/json
     """
     query = request.match_info.get("query")
     return json_resp(await request.app.client.search_user(query))
@@ -240,11 +244,13 @@ async def get_level(request: web.Request) -> web.Response:
     Description:
         Fetch a level by given ID.
     Example:
-        </api/level/30029017>
+        link: /api/level/30029017
     Returns:
-        200 - JSON with level info;
-        400 - Invalid type;
-        404 - Level was not found.
+        200: JSON with level info;
+        400: Invalid type;
+        404: Level was not found.
+    Return Type:
+        application/json
     """
     query = int(request.match_info.get("id"))
     return json_resp(await request.app.client.get_level(query))
@@ -257,10 +263,12 @@ async def get_daily(request: web.Request) -> web.Response:
     Description:
         Fetch current daily level.
     Example:
-        </api/daily>
+        link: /api/daily
     Returns:
-        200 - JSON with daily info;
-        404 - Daily is being refreshed.
+        200: JSON with daily info;
+        404: Daily is being refreshed.
+    Return Type:
+        application/json
     """
     return json_resp(await request.app.client.get_daily())
 
@@ -272,10 +280,12 @@ async def get_weekly(request: web.Request) -> web.Response:
     Description:
         Fetch current weekly level.
     Example:
-        </api/weekly>
+        link: /api/weekly
     Returns:
-        200 - JSON with weekly info;
-        404 - Weekly is being refreshed.
+        200: JSON with weekly info;
+        404: Weekly is being refreshed.
+    Return Type:
+        application/json
     """
     return json_resp(await request.app.client.get_weekly())
 
@@ -292,11 +302,13 @@ async def ng_song_search(request: web.Request) -> web.Response:
     Description:
         Fetch a song on Newgrounds by its ID.
     Example:
-        </api/ng/song/1>
+        link: /api/ng/song/1
     Returns:
-        200 - JSON with song info;
-        400 - Invalid type in payload;
-        404 - Song was not found.
+        200: JSON with song info;
+        400: Invalid type in payload;
+        404: Song was not found.
+    Return Type:
+        application/json
     """
     query = int(request.match_info.get("id"))
     return json_resp(await request.app.client.get_song(query))
@@ -309,12 +321,15 @@ async def ng_user_search(request: web.Request) -> web.Response:
     Description:
         Search for users on Newgrounds by given query.
     Example:
-        </api/ng/users/Xtrullor?pages=0,1,2,3>
+        link: /api/ng/users/Xtrullor?pages=0,1,2,3
+        pages: 0,1,2,3
     Parameters:
-        pages - Pages to load, e.g. '0,1,2,3'.
+        pages: Pages to load.
     Returns:
-        200 - JSON with user info;
-        400 - Invalid type in payload.
+        200: JSON with user info;
+        400: Invalid type in payload.
+    Return Type:
+        application/json
     """
     query = request.match_info.get("query")
     pages = map(int, request.rel_url.query.get("pages", "0").split(","))
@@ -328,12 +343,15 @@ async def ng_songs_search(request: web.Request) -> web.Response:
     Description:
         Find songs on Newgrounds by given query.
     Example:
-        </api/ng/songs/PandaEyes?pages=0,1,2,3>
+        link: /api/ng/songs/Panda Eyes?pages=0,1,2,3
+        pages: 0,1,2,3
     Parameters:
-        pages - Pages to load, e.g. '0,1,2,3'.
+        pages: Pages to load.
     Returns:
-        200 - JSON with user info;
-        400 - Invalid type in payload.
+        200: JSON with user info;
+        400: Invalid type in payload.
+    Return Type:
+        application/json
     """
     query = request.match_info.get("query")
     pages = map(int, request.rel_url.query.get("pages", "0").split(","))
@@ -347,11 +365,14 @@ async def search_songs_by_user(request: web.Request) -> web.Response:
     Description:
         Find songs by given artist on Newgrounds.
     Example:
-        </api/ng/user_songs/CreoMusic?pages=0,1,2,3>
+        link: /api/ng/user_songs/CreoMusic?pages=0,1,2,3
+        pages: 0,1,2,3
     Parameters:
-        pages - Pages to load, e.g. '0,1,2,3'.
+        pages: Pages to load.
     Returns:
-        200 - JSON with song info.
+        200: JSON with song info.
+    Return Type:
+        application/json
     """
     query = request.match_info.get("user")
     pages = map(int, request.rel_url.query.get("pages", "0").split(","))
