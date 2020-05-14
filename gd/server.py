@@ -7,7 +7,7 @@ import platform
 
 from aiohttp import web
 import aiohttp
-from gd.typing import Any, Callable, Dict, Iterable, List, Optional, Type, ref
+from gd.typing import Any, Callable, Dict, Generator, Iterable, List, Optional, Type, Union, ref
 import gd
 
 DEFAULT_MIDDLEWARES = [web.normalize_path_middleware(append_slash=False, remove_slash=True)]
@@ -38,6 +38,48 @@ class Error:
 DEFAULT_ERROR = Error(500, "Server got into trouble.")
 
 
+def parse_string(string: str) -> Dict[str, Union[Dict[Union[str, int], str], str]]:
+    current_section = ""
+    current_content = None
+    result = {}
+
+    lines = [line for line in string.strip().splitlines() if line] + [""]
+    result["method"], result["path"] = lines.pop(0).strip().split(maxsplit=1)
+
+    for line in lines:
+        line = line.strip("< .>;")
+        if line.endswith(":") or not line:
+            if current_section:
+                if isinstance(current_content, list):
+                    current_content = "\n".join(current_content)
+
+                result[current_section] = current_content
+                current_content = None
+
+            current_section = line.lower().rstrip(":")
+
+        else:
+            try:
+                key, value = line.split(" - ")
+
+            except ValueError:
+                if current_content is None:
+                    current_content = []
+
+                current_content.append(line.strip("<>"))
+
+            else:
+                if current_content is None:
+                    current_content = {}
+
+                if key.isdigit():
+                    key = int(key)
+
+                current_content[key] = value
+
+    return result
+
+
 def json_dump(*args, **kwargs) -> str:
     kwargs.setdefault("indent", 4)
     return gd.utils.dump(*args, **kwargs)
@@ -54,10 +96,6 @@ def create_app(**kwargs) -> web.Application:
     app = web.Application(**kwargs)
     app.client = kwargs.get("client", CLIENT)
     app.add_routes(routes)
-
-    print()
-    for route in routes:
-        print(route.handler.__doc__)
 
     return app
 
@@ -101,20 +139,15 @@ def str_to_bool(
         raise ValueError(f"Invalid string given: {string!r}.")
 
 
-def parse_routes(routes: Iterable[web.RouteDef]) -> List[Dict[str, Optional[str]]]:
-    def gen():
-        for route in routes:
-            yield {
-                "name": route.handler.__name__,
-                "description": route.handler.__doc__.replace("    ", "\t"),
-                "path": route.path,
-                "method": route.method,
-            }
-
-    return list(gen())
+def parse_route_docs() -> Generator[Dict[str, Union[Dict[Union[str, int], str], str]], None, None]:
+    for route in routes:
+        info = dict(name=route.handler.__name__)
+        info.update(parse_string(route.handler.__doc__))
+        yield info
 
 
 @routes.get("/api")
+@handle_errors()
 async def main_page(request: web.Request) -> web.Response:
     """GET /api
     Description:
@@ -128,7 +161,7 @@ async def main_page(request: web.Request) -> web.Response:
         "aiohttp": aiohttp.__version__,
         "gd.py": gd.__version__,
         "python": platform.python_version(),
-        "routes": parse_routes(routes),
+        "routes": list(parse_route_docs()),
     }
     return json_resp(payload)
 
