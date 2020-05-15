@@ -45,7 +45,6 @@ class Buffer:
     def __init__(self, data: bytes, order: str = DEFAULT_ORDER) -> None:
         self.data = data
         self.order = order
-        print(self)
 
     def __str__(self) -> str:
         return self.to_format()
@@ -351,7 +350,7 @@ class WindowsMemory(MemoryType):
             return LevelType.NULL
 
     def is_in_level(self) -> bool:
-        return self.get_level_type_value() != 0
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114).as_bool()
 
     def get_song_id(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x488, 0x1C4).as_int()
