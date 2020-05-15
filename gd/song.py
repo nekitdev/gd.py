@@ -1,3 +1,4 @@
+from pathlib import Path
 from urllib.parse import unquote
 
 import aiohttp
@@ -213,15 +214,17 @@ class Song(AbstractEntity):
 
         return await self.client.get_artist_info(self.id)
 
-    async def download(self, file: Optional[IO] = None, with_bar: bool = False,) -> Optional[bytes]:
+    async def download(
+        self, file: Optional[Union[str, Path, IO]] = None, with_bar: bool = False,
+    ) -> Optional[bytes]:
         """|coro|
 
         Download a song from Newgrounds.
 
         Parameters
         ----------
-        file: Optional[IO]
-            File-like object to write song to, instead of returning bytes.
+        file: Optional[Union[:class:`str`, :class:`pathlib.Path`, IO]]
+            File-like or Path-like object to write song to, instead of returning bytes.
 
         with_bar: :class:`bool`
             Whether to show a progress bar while downloading.
@@ -244,11 +247,15 @@ async def download(
     method: str = "GET",
     chunk_size: int = 64 * 1024,
     with_bar: bool = False,
-    file: Optional[IO] = None,
+    close: bool = False,
+    file: Optional[Union[str, Path, IO]] = None,
     **kwargs,
 ) -> Optional[bytes]:
     if with_bar:
         import tqdm
+
+    if isinstance(file, (str, Path)):
+        file = open(file, "wb")
 
     async with aiohttp.ClientSession(headers={"User-Agent": UserAgent}) as client:
         async with client.request(url=url, method=method, **kwargs) as response:
@@ -273,6 +280,9 @@ async def download(
 
             if with_bar:
                 bar.close()
+
+    if close and file:
+        file.close()
 
     if file is None:
         return result
