@@ -8,8 +8,6 @@ import platform
 import aiohttp
 import gd
 
-con_v = "0.3.0"  # gd_console version
-
 
 def show_version() -> None:
     entries = []
@@ -59,17 +57,9 @@ def main() -> None:
     action = parsed.action.lower()
 
     if action == "console":
-        try:
-            import aioconsole
+        from IPython import start_ipython
 
-            aioconsole.run_apython(())
-
-        except ImportError:
-            print(
-                "Failed to import aioconsole. You can install it manually",
-                'or via "pip install gd.py[console]".',
-            )
-            exit()
+        start_ipython([])
 
     elif action == "server":
         gd.server.start()

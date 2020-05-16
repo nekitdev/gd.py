@@ -65,26 +65,24 @@ To install the library, you can just run the following command:
     # Windows
     py -3 -m pip install -U gd.py
 
-You can also install optional **aioconsole** package,
-which can be used to run async functions in repl:
-
-.. code:: sh
-
-    # Linux/OS X
-    python3 -m pip install -U gd.py[console]
-
-    # Windows
-    py -3 -m pip install -U gd.py[console]
-
-gd.py also provides an optional Cython extension to speed up its parser functions in
+gd.py provides an optional *Cython* extension to speed up its parser functions in
 `gd.api <https://github.com/NeKitDS/gd.py/blob/master/gd/api>`_ folder,
-so make sure that you have Cython and C++ Build Tools installed.
+so make sure that you have *Cython* and *C++ Build Tools* installed.
 
-To install the developer version, run these commands:
+Development Version
+-------------------
+
+You can install stable version of gd.py like this:
 
 .. code:: sh
 
-    $ git clone https://github.com/NeKitDS/gd.py
+    $ python3 -m pip install gd.py[dev]
+
+Or you can install development version from GitHub:
+
+.. code:: sh
+
+    $ git clone https://github.com/NeKitDS/gd.py.git
     $ cd gd.py
     $ python3 -m pip install -U .[dev]
 
@@ -119,8 +117,8 @@ Credits to `Rapptz <https://github.com/Rapptz>`_ and `discord.py <https://github
 Authors
 -------
 
-This project is mainly developed by `NeKitDS <https://github.com/NeKitDS>`_,
-with help of `blue <https://github.com/d3vblue>`_. Big thanks to `cos8o <https://github.com/cos8o>`_ and `SMJS <https://github.com/SMJSGaming>`_ for helping
+This project is mainly developed by `NeKitDS <https://github.com/NeKitDS>`_.
+Big thanks to `cos8o <https://github.com/cos8o>`_ and `SMJS <https://github.com/SMJSGaming>`_ for helping
 to make several requests. Also thanks to `cos8o <https://github.com/cos8o>`_ again for developing `GDCrypto <https://github.com/cos8o/GDCrypto>`_ library,
 which was used as a base for `crypto <https://github.com/NeKitDS/gd.py/blob/master/gd/utils/crypto>`_ package.
 

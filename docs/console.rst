@@ -27,26 +27,24 @@ For example, there is a way to check gd.py dependencies and system version:
 
     $ python -m gd -v
 
-You can also get gd.py's documentation link (kinda useful, but eh):
+You can run API server like so:
 
 .. code-block:: sh
 
-    $ python -m gd --docs
+    $ python -m gd server
 
-    $ python -m gd -d
-
-And, the most useful console feature of gd.py is its asynchronous console launcher:
+And launch IPython like this:
 
 .. code-block:: sh
 
-    $ python -m gd --console
-
-    $ python -m gd -c
+    $ python -m gd console
 
 .. warning:: Make sure you have ``aioconsole`` package installed. There are some ways to install it below.
 
     .. code-block:: sh
 
-        $ python -m pip install -U aioconsole
+        $ python -m pip install -U ipython
 
-        $ python -m pip install -U gd.py[console]
+        # OR
+
+        $ python -m pip install -U gd.py[dev]
