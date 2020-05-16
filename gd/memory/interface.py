@@ -2,6 +2,7 @@ import ctypes
 import itertools
 import struct
 import sys
+import time
 
 try:
     from .win import (
@@ -17,12 +18,19 @@ except Exception:  # noqa
 from .enums import LevelType, Scene
 from ..api.enums import SpeedConstant
 from ..errors import FailedConversion
-from ..typing import Any, Buffer, Sequence, Tuple, Union
+from ..typing import Any, Buffer, Optional, Sequence, Tuple, Union
 from ..utils.converter import Converter
 from ..utils.enums import LevelDifficulty, DemonDifficulty
 from ..utils.text_tools import make_repr
 
-__all__ = ("Memory", "MemoryType", "WindowsMemory", "MacOSMemory", "Buffer", "get_memory")
+__all__ = (
+    "Memory",
+    "MemoryType",
+    "WindowsMemory",
+    "MacOSMemory",
+    "Buffer",
+    "get_memory",
+)
 
 ORDER = {"big": ">", "little": "<"}
 DEFAULT_ORDER = "little"
@@ -39,7 +47,16 @@ class MemoryType:
     pass
 
 
-class Buffer:
+class BufferMeta(type):
+    def __getitem__(self, byte_or_sequence: Union[int, Sequence[int]]) -> None:
+        if isinstance(byte_or_sequence, int):
+            byte_sequence = (byte_or_sequence,)
+        else:
+            byte_sequence = byte_or_sequence
+        return self.from_byte_array(byte_sequence)
+
+
+class Buffer(metaclass=BufferMeta):
     """Type that allows to unwrap bytes that were read into different Python types."""
 
     def __init__(self, data: bytes, order: str = DEFAULT_ORDER) -> None:
@@ -132,7 +149,7 @@ class Buffer:
         return cls(bytes(array))
 
     def into_buffer(self) -> Any:
-        return ctypes.create_string_buffer(self.data)
+        return ctypes.create_string_buffer(self.data, len(self.data))
 
 
 class Memory(MemoryType):
@@ -288,6 +305,15 @@ class WindowsMemory(MemoryType):
         except FailedConversion:
             return SpeedConstant.NULL
 
+    def get_size(self) -> float:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x224, 0x644).as_float()
+
+    def set_size(self, size: float) -> None:
+        self.write_bytes(Buffer.from_float(size), 0x3222D0, 0x164, 0x224, 0x644)
+
+    def get_gravity(self) -> float:
+        return self.read_bytes(4, 0x1E9050, 0).as_float()
+
     def get_level_id(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0xF8).as_int()
 
@@ -361,6 +387,113 @@ class WindowsMemory(MemoryType):
     def set_attempt(self, attempt: int) -> None:
         self.write_bytes(Buffer.from_int(attempt), 0x3222D0, 0x164, 0x4A8)
 
+    def player_freeze(self) -> None:
+        self.write_bytes(Buffer[0x90, 0x90, 0x90], 0x203519)
+
+    def player_unfreeze(self) -> None:
+        self.write_bytes(Buffer[0x50, 0xFF, 0xD6], 0x203519)
+
+    def player_kill_enable(self) -> None:
+        self.write_bytes(Buffer[0xE9, 0x57, 0x02, 0x00, 0x00, 0x90], 0x203DA2)
+        self.write_bytes(Buffer[0xE9, 0x27, 0x02, 0x00, 0x00, 0x90], 0x20401A)
+
+    def player_kill_disable(self) -> None:
+        self.write_bytes(Buffer[0x0F, 0x86, 0x56, 0x02, 0x00, 0x00], 0x203DA2)
+        self.write_bytes(Buffer[0x0F, 0x87, 0x26, 0x02, 0x00, 0x00], 0x20401A)
+
+    def player_kill(self) -> None:
+        self.player_kill_enable()
+        time.sleep(0.05)  # let GD realize the change
+        self.player_kill_disable()
+
+    def enable_level_edit(self) -> None:
+        self.write_bytes(Buffer[0x90, 0x90], 0x1E4A32)
+
+    def disable_level_edit(self) -> None:
+        self.write_bytes(Buffer[0x75, 0x6C], 0x1E4A32)
+
+    def enable_accurate_percent(self) -> None:
+        self.write_bytes(
+            Buffer[
+                0xC7, 0x02, 0x25, 0x66, 0x25, 0x25, 0x8B, 0x87, 0xC0, 0x03, 0x00, 0x00, 0x8B,
+                0xB0, 0x04, 0x01, 0x00, 0x00, 0xF3, 0x0F, 0x5A, 0xC0, 0x83, 0xEC, 0x08,
+                0xF2, 0x0F, 0x11, 0x04, 0x24, 0x83, 0xEC, 0x04, 0x89, 0x14, 0x24, 0x90
+            ], 0x208114
+        )
+        self.write_bytes(Buffer[0x83, 0xC4, 0x0C], 0x20813F)
+
+    def disable_accurate_percent(self) -> None:
+        self.write_bytes(
+            Buffer[
+                0xF3, 0x0F, 0x2C, 0xC0, 0x85, 0xC0, 0x0F, 0x4F, 0xC8, 0xB8, 0x64, 0x00, 0x00,
+                0x00, 0x3B, 0xC8, 0x0F, 0x4F, 0xC8, 0x8B, 0x87, 0xC0, 0x03, 0x00, 0x00,
+                0x51, 0x68, 0x30, 0x32, 0x69, 0x00, 0x8B, 0xB0, 0x04, 0x01, 0x00, 0x00
+            ], 0x208114
+        )
+        self.write_bytes(Buffer[0x83, 0xC4, 0x08], 0x20813F)
+
+    def enable_level_copy(self) -> None:
+        self.write_bytes(Buffer[0x90, 0x90], 0x179B8E)
+        self.write_bytes(Buffer[0x8B, 0xCA, 0x90], 0x176F5C)
+        self.write_bytes(Buffer[0xB0, 0x01, 0x90], 0x176FE5)
+
+    def disable_level_copy(self) -> None:
+        self.write_bytes(Buffer[0x75, 0x0E], 0x179B8E)
+        self.write_bytes(Buffer[0x0F, 0x44, 0xCA], 0x176F5C)
+        self.write_bytes(Buffer[0x0F, 0x95, 0xC0], 0x176FE5)
+
+    def enable_practice_song(self) -> None:
+        self.write_bytes(Buffer[0x90, 0x90, 0x90, 0x90, 0x90, 0x90], 0x20C925)
+        self.write_bytes(Buffer[0x90, 0x90], 0x20D143)
+        self.write_bytes(Buffer[0x90, 0x90], 0x20A563)
+        self.write_bytes(Buffer[0x90, 0x90], 0x20A595)
+
+    def disable_practice_song(self) -> None:
+        self.write_bytes(Buffer[0x0F, 0x85, 0xF7, 0x00, 0x00, 0x00], 0x20C925)
+        self.write_bytes(Buffer[0x75, 0x41], 0x20D143)
+        self.write_bytes(Buffer[0x75, 0x3E], 0x20A563)
+        self.write_bytes(Buffer[0x75, 0x0C], 0x20A595)
+
+    def enable_noclip(self) -> None:
+        self.write_bytes(Buffer[0xE9, 0x79, 0x06, 0x00, 0x00], 0x20A23C)
+
+    def disable_noclip(self) -> None:
+        self.write_bytes(Buffer[0x6A, 0x14, 0x8B, 0xCB, 0xFF], 0x20A23C)
+
+    def enable_inf_jump(self) -> None:
+        self.write_bytes(Buffer[0x01], 0x1E9141)
+        self.write_bytes(Buffer[0x01], 0x1E9498)
+
+    def disable_inf_jump(self) -> None:
+        self.write_bytes(Buffer[0x00], 0x1E9141)
+        self.write_bytes(Buffer[0x00], 0x1E9498)
+
+    def disable_custom_object_limit(self) -> None:
+        self.write_bytes(Buffer[0xEB], 0x7A100)
+        self.write_bytes(Buffer[0xEB], 0x7A022)
+        self.write_bytes(Buffer[0x90, 0x90], 0x7A203)
+
+    def enable_custom_object_limit(self) -> None:
+        self.write_bytes(Buffer[0x72], 0x7A100)
+        self.write_bytes(Buffer[0x76], 0x7A022)
+        self.write_bytes(Buffer[0x77, 0x3A], 0x7A203)
+
+    def disable_object_limit(self) -> None:
+        self.write_bytes(Buffer[0xFF, 0xFF, 0xFF, 0x7F], 0x73169)
+        self.write_bytes(Buffer[0xFF, 0xFF, 0xFF, 0x7F], 0x856A4)
+        self.write_bytes(Buffer[0xFF, 0xFF, 0xFF, 0x7F], 0x87B17)
+        self.write_bytes(Buffer[0xFF, 0xFF, 0xFF, 0x7F], 0x87B17)
+        self.write_bytes(Buffer[0xFF, 0xFF, 0xFF, 0x7F], 0x880F4)
+        self.write_bytes(Buffer[0xFF, 0xFF, 0xFF, 0x7F], 0x160B06)
+
+    def enable_object_limit(self) -> None:
+        self.write_bytes(Buffer[0x80, 0x38, 0x01, 0x00], 0x73169)
+        self.write_bytes(Buffer[0x80, 0x38, 0x01, 0x00], 0x856A4)
+        self.write_bytes(Buffer[0x80, 0x38, 0x01, 0x00], 0x87B17)
+        self.write_bytes(Buffer[0x80, 0x38, 0x01, 0x00], 0x87B17)
+        self.write_bytes(Buffer[0x80, 0x38, 0x01, 0x00], 0x880F4)
+        self.write_bytes(Buffer[0x80, 0x38, 0x01, 0x00], 0x160B06)
+
 
 number_to_resolution = {
     1: (640, 480),
@@ -386,5 +519,8 @@ number_to_resolution = {
 }
 
 
-def get_memory(name: str = "GeometryDash.exe", load: bool = True) -> MemoryType:
+def get_memory(name: Optional[str] = "GeometryDash", load: bool = True) -> MemoryType:
+    if sys.platform == "win32":
+        name += ".exe"
+
     return Memory(name, load=load)
