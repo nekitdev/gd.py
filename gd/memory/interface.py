@@ -243,6 +243,7 @@ class WindowsMemory(MemoryType):
         self.process_id = get_pid_from_name(self.process_name)
         self.process_handle = get_handle(self.process_id)
         self.base_address = get_base_address(self.process_id, self.process_name)
+        self.cocos_address = get_base_address(self.process_id, "libcocos2d.dll")
         self.loaded = True
 
     def is_loaded(self) -> bool:
@@ -270,10 +271,10 @@ class WindowsMemory(MemoryType):
         return self.read_bytes(4, 0x3222D0, 0x2A0).as_int()
 
     def is_in_editor(self) -> bool:
-        return self.read_bytes(4, 0x3222D0, 0x168).as_bool()
+        return self.read_bytes(1, 0x3222D0, 0x168).as_bool()
 
     def is_dead(self) -> bool:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x39C).as_bool()
+        return self.read_bytes(1, 0x3222D0, 0x164, 0x39C).as_bool()
 
     def get_object_count(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x168, 0x3A0).as_int()
@@ -329,10 +330,10 @@ class WindowsMemory(MemoryType):
         return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x2AC).as_int()
 
     def is_level_demon(self) -> bool:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x29C).as_bool()
+        return self.read_bytes(1, 0x3222D0, 0x164, 0x22C, 0x114, 0x29C).as_bool()
 
     def is_level_auto(self) -> bool:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x2B0).as_bool()
+        return self.read_bytes(1, 0x3222D0, 0x164, 0x22C, 0x114, 0x2B0).as_bool()
 
     def get_level_diff_value(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x1E4).as_int()
@@ -344,8 +345,8 @@ class WindowsMemory(MemoryType):
         address = self.read_bytes(self.PTR_LEN, 0x3222D0, 0x164, 0x22C, 0x114).as_int()
 
         is_demon, is_auto, diff, demon_diff = (  # optimized
-            self.read_at(4, address + 0x29C).as_bool(),
-            self.read_at(4, address + 0x2B0).as_bool(),
+            self.read_at(1, address + 0x29C).as_bool(),
+            self.read_at(1, address + 0x2B0).as_bool(),
             self.read_at(4, address + 0x1E4).as_int(),
             self.read_at(4, address + 0x2A0).as_int(),
         )
@@ -376,7 +377,7 @@ class WindowsMemory(MemoryType):
             return LevelType.NULL
 
     def is_in_level(self) -> bool:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114).as_bool()
+        return self.read_bytes(1, 0x3222D0, 0x164, 0x22C, 0x114).as_bool()
 
     def get_song_id(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x488, 0x1C4).as_int()
