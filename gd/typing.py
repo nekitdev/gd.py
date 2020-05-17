@@ -43,6 +43,7 @@ __all__ = (
     "Color",
     "Comment",
     "FriendRequest",
+    "Guidelines",
     "IconSet",
     "Level",
     "Gauntlet",
@@ -108,6 +109,7 @@ Client = ref("gd.client.Client")
 Color = ref("gd.colors.Color")
 Comment = ref("gd.comment.Comment")
 FriendRequest = ref("gd.friend_request.FriendRequest")
+Guidelines = ref("gd.api.guidelines.Guidelines")
 HTMLElement = ref("lxml.html.HtmlElement")
 XMLElement = ref("xml.etree.ElementTree.Element")
 IconSet = ref("gd.iconset.IconSet")
