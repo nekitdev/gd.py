@@ -5,7 +5,7 @@ Enums
 
 This library has a bunch of enums, listed below.
 
-.. autoclass:: NEnum
+.. autoclass:: Enum
     :members:
 
     .. automethod:: NEnum.from_value
