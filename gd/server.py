@@ -395,9 +395,7 @@ async def song_search(request: web.Request) -> web.Response:
 
 
 @routes.get("/api/search/user/{query}")
-@handle_errors(
-    {gd.MissingAccess: Error(404, "Requested user was not found.", ErrorType.NOT_FOUND),}
-)
+@handle_errors({gd.MissingAccess: Error(404, "Requested user was not found.", ErrorType.NOT_FOUND)})
 @needs_auth(False)
 async def user_search(request: web.Request) -> web.Response:
     """GET /api/search/user/{query}
@@ -506,7 +504,7 @@ async def download_level(request: web.Request) -> web.Response:
 
 @routes.get("/api/daily")
 @handle_errors(
-    {gd.MissingAccess: Error(404, "Daily is likely being refreshed.", ErrorType.NOT_FOUND),}
+    {gd.MissingAccess: Error(404, "Daily is likely being refreshed.", ErrorType.NOT_FOUND)}
 )
 @needs_auth(False)
 async def get_daily(request: web.Request) -> web.Response:
@@ -526,7 +524,7 @@ async def get_daily(request: web.Request) -> web.Response:
 
 @routes.get("/api/weekly")
 @handle_errors(
-    {gd.MissingAccess: Error(404, "Weekly is likely being refreshed.", ErrorType.NOT_FOUND),}
+    {gd.MissingAccess: Error(404, "Weekly is likely being refreshed.", ErrorType.NOT_FOUND)}
 )
 @needs_auth(False)
 async def get_weekly(request: web.Request) -> web.Response:
@@ -545,9 +543,7 @@ async def get_weekly(request: web.Request) -> web.Response:
 
 
 @routes.get("/api/messages")
-@handle_errors(
-    {gd.MissingAccess: Error(404, "Failed to load messages.", ErrorType.FAILED),}
-)
+@handle_errors({gd.MissingAccess: Error(404, "Failed to load messages.", ErrorType.FAILED)})
 @needs_auth(True)
 @cache(expires=10)
 async def get_messages(request: web.Request) -> web.Response:
