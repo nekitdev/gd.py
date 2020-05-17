@@ -984,7 +984,7 @@ class Client:
             async with client.temp_login('Name', 'Password'):
                 await client.post_comment('Hey there from gd.py!')
         """
-        return _LoginSession(self, user, password)
+        return LoginSession(self, user, password)
 
     @check_logged
     async def like(self, entity: Union[Comment, Level]) -> None:
@@ -2374,7 +2374,7 @@ class Client:
         return coro
 
 
-class _LoginSession:
+class LoginSession:
     """Small wrapper around Client.login method.
     Allows to temporarily login and execute
     a block of code in an <async with> statement.

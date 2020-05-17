@@ -30,6 +30,7 @@ from .utils.filters import Filters
 from .utils.http_request import HTTPClient
 from .utils.params import *
 from .utils.parser import Parser
+from .utils.routes import Route
 from .utils.save_parser import Save, SaveParser
 
 from .utils.crypto.coders import Coder

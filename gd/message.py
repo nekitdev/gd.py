@@ -17,10 +17,6 @@ class Message(AbstractEntity):
 
     SCHEMA = "Re: {msg.subject}"
 
-    def __init__(self, **options) -> None:
-        super().__init__(**options)
-        self._body = options.pop("body", "")
-
     def __repr__(self) -> str:
         info = {"author": self.author, "id": self.id, "is_read": self.is_read()}
         return make_repr(self, info)
@@ -87,12 +83,12 @@ class Message(AbstractEntity):
     @property
     def body(self) -> Optional[str]:
         """Optional[:class:`str`]: A body of the message. Requires :meth:`.Message.read`."""
-        return self._body
+        return self.options.get("body")
 
     @body.setter
     def body(self, body: str) -> None:
         """Set ``self.body`` to ``body``."""
-        self._body = body
+        self.options["body"] = body
 
     def is_read(self) -> bool:
         """:class:`bool`: Indicates whether message is read or not."""

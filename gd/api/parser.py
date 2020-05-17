@@ -3,7 +3,7 @@
 from itertools import chain
 
 from ..utils.crypto.coders import Coder
-from ..utils.enums import NEnum
+from ..utils.enums import Enum
 
 from .guidelines import Guidelines
 from .hsv import HSV
@@ -277,7 +277,7 @@ def _convert_type(x: object):
     t = x.__class__
     if t in _KEYS:
         return _MAPPING[t](x)
-    elif NEnum in t.__mro__:
+    elif Enum in t.__mro__:
         return x.value
     return x
 

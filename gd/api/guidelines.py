@@ -22,9 +22,17 @@ class Guidelines(dict):
         return list(self.keys())
 
     def dump(self, delim: str = "~", pad: int = 1) -> str:
-        return delim.join(map(str, chain.from_iterable(
-            (maybefloat(key), maybefloat(enum.value)) for key, enum in self.items()
-        ))) + delim * pad
+        return (
+            delim.join(
+                map(
+                    str,
+                    chain.from_iterable(
+                        (maybefloat(key), maybefloat(enum.value)) for key, enum in self.items()
+                    ),
+                )
+            )
+            + delim * pad
+        )
 
 
 def maybefloat(number: float) -> Union[float, int]:

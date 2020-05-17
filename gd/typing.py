@@ -30,8 +30,6 @@ except ImportError:  # pragma: no cover
     # python < 3.7
     from typing import _ForwardRef as ref  # type: ignore
 
-from enum import Enum
-
 __all__ = (
     "AbstractEntity",
     "AbstractUser",
@@ -52,7 +50,6 @@ __all__ = (
     "Song",
     "UserStats",
     "User",
-    "NEnum",
     "Filters",
     "Parameters",
     "Parser",
@@ -120,7 +117,7 @@ Message = ref("gd.message.Message")
 Song = ref("gd.song.Song")
 UserStats = ref("gd.user.UserStats")
 User = ref("gd.user.User")
-NEnum = ref("gd.utils.enums.NEnum")
+Enum = ref("gd.utils.enums.Enum")
 Filters = ref("gd.utils.filters.Filters")
 Parameters = ref("gd.utils.params.Parameters")
 Parser = ref("gd.utils.parser.Parser")

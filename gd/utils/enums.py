@@ -1,5 +1,5 @@
 import functools
-from enum import Enum
+import enum
 
 from .text_tools import get_module
 
@@ -7,7 +7,7 @@ from ..typing import Any, Dict, Union
 from ..errors import FailedConversion
 
 __all__ = (
-    "NEnum",
+    "Enum",
     "IconType",
     "MessagePolicyType",
     "CommentPolicyType",
@@ -36,12 +36,12 @@ def _is_upper(string: str) -> bool:
     return string.upper() == string
 
 
-def _enum_to_name(x: Enum) -> str:
+def _enum_to_name(x: enum.Enum) -> str:
     name = x.name.strip("_")
     return name if (name in ("NA", "XL") or not _is_upper(name)) else name.replace("_", " ").title()
 
 
-def value_to_enum(enum: Enum, x: Union[int, str, Enum]) -> Enum:
+def value_to_enum(enum: enum.Enum, x: Union[int, str, enum.Enum]) -> enum.Enum:
     """Tries to convert given value to Enum object.
 
     Example:
@@ -84,10 +84,13 @@ def value_to_enum(enum: Enum, x: Union[int, str, Enum]) -> Enum:
             try:
                 return enum[_name_to_enum(x)]
             except KeyError:
-                return enum[x]
+                try:
+                    return enum[x]
+                except KeyError:
+                    return enum(x)
 
         # if enum -> enum of value x.value
-        elif isinstance(x, NEnum):
+        elif isinstance(x, Enum):
             return enum(x.value)
 
         # let's raise it here, so if it is raised, we can tell that invalid type was given.
@@ -98,7 +101,7 @@ def value_to_enum(enum: Enum, x: Union[int, str, Enum]) -> Enum:
 
 
 @functools.total_ordering
-class NEnum(Enum):
+class Enum(enum.Enum):
     """Subclass of :class:`enum.Enum`, used for creating enums in gd.py.
 
     .. container:: operations
@@ -135,7 +138,7 @@ class NEnum(Enum):
 
         .. describe:: str(x)
 
-            Returns :attr:`.NEnum.desc`.
+            Returns :attr:`.Enum.desc`.
     """
 
     def __str__(self) -> str:
@@ -183,13 +186,13 @@ class NEnum(Enum):
         return {name.lower(): enum.value for name, enum in cls.__members__.items()}
 
     @classmethod
-    def from_value(cls, value: Union[int, str]) -> Enum:
+    def from_value(cls, value: Union[int, str]) -> enum.Enum:
         """Returns *Enum* with given value.
 
         .. note::
 
-            This can only be called in a class **derived** from :class:`.NEnum`,
-            so *NEnum.from_value(...)* will raise an error.
+            This can only be called in a class **derived** from :class:`.Enum`,
+            so *Enum.from_value(...)* will raise an error.
 
             Example:
 
@@ -206,8 +209,8 @@ class NEnum(Enum):
 
         Returns
         -------
-        :class:`.NEnum`
-            Enum from the :class:`.NEnum` subclass.
+        :class:`.Enum`
+            Enum from the :class:`.Enum` subclass.
 
         Raises
         ------
@@ -217,11 +220,11 @@ class NEnum(Enum):
         :exc:`TypeError`
             Invalid *Enum* class was given.
         """
-        assert cls is not NEnum
+        assert cls is not Enum
         return value_to_enum(cls, value)
 
 
-class IconType(NEnum):
+class IconType(Enum):
     """An enumeration of icon types."""
 
     CUBE = 0
@@ -233,7 +236,7 @@ class IconType(NEnum):
     SPIDER = 6
 
 
-class MessagePolicyType(NEnum):
+class MessagePolicyType(Enum):
     """An enumeration for message policy."""
 
     OPENED_TO_ALL = 0
@@ -241,7 +244,7 @@ class MessagePolicyType(NEnum):
     CLOSED = 2
 
 
-class CommentPolicyType(NEnum):
+class CommentPolicyType(Enum):
     """An enumeration for comment policy."""
 
     OPENED_TO_ALL = 0
@@ -249,14 +252,14 @@ class CommentPolicyType(NEnum):
     CLOSED = 2
 
 
-class FriendRequestPolicyType(NEnum):
+class FriendRequestPolicyType(Enum):
     """An enumeration for friend request policy."""
 
     OPENED = 0
     CLOSED = 1
 
 
-class StatusLevel(NEnum):
+class StatusLevel(Enum):
     """An enumeration for Geometry Dash Status."""
 
     USER = 0
@@ -264,7 +267,7 @@ class StatusLevel(NEnum):
     ELDER_MODERATOR = 2
 
 
-class LevelLength(NEnum):
+class LevelLength(Enum):
     """An enumeration for level lengths."""
 
     NA = -1
@@ -275,7 +278,7 @@ class LevelLength(NEnum):
     XL = 4
 
 
-class LevelDifficulty(NEnum):
+class LevelDifficulty(Enum):
     """An enumeration for level difficulties."""
 
     NA = -1
@@ -288,7 +291,7 @@ class LevelDifficulty(NEnum):
     DEMON = -2
 
 
-class DemonDifficulty(NEnum):
+class DemonDifficulty(Enum):
     """An enumeration for demon difficulties."""
 
     NA = -1
@@ -299,7 +302,7 @@ class DemonDifficulty(NEnum):
     EXTREME_DEMON = 5
 
 
-class TimelyType(NEnum):
+class TimelyType(Enum):
     """An enumeration for timely types."""
 
     NOT_TIMELY = 0
@@ -307,28 +310,28 @@ class TimelyType(NEnum):
     WEEKLY = 2
 
 
-class CommentType(NEnum):
+class CommentType(Enum):
     """An enumeration for comment objects."""
 
     LEVEL = 0
     PROFILE = 1
 
 
-class MessageOrRequestType(NEnum):
+class MessageOrRequestType(Enum):
     """An enumeration for message and friend request objects."""
 
     NORMAL = 0
     SENT = 1
 
 
-class CommentStrategy(NEnum):
+class CommentStrategy(Enum):
     """An enumeration for comment searching."""
 
     RECENT = 0
     MOST_LIKED = 1
 
 
-class LeaderboardStrategy(NEnum):
+class LeaderboardStrategy(Enum):
     """An enumeration for getting leaderboard users."""
 
     PLAYERS = 0
@@ -337,7 +340,7 @@ class LeaderboardStrategy(NEnum):
     CREATORS = 3
 
 
-class LevelLeaderboardStrategy(NEnum):
+class LevelLeaderboardStrategy(Enum):
     """An enumeration for getting level leaderboard."""
 
     FRIENDS = 0
@@ -345,7 +348,7 @@ class LevelLeaderboardStrategy(NEnum):
     WEEKLY = 2
 
 
-class GauntletEnum(NEnum):
+class GauntletEnum(Enum):
     """An enumeration for gauntlets."""
 
     UNKNOWN = 0
@@ -366,7 +369,7 @@ class GauntletEnum(NEnum):
     DEATH = 15
 
 
-class SearchStrategy(NEnum):
+class SearchStrategy(Enum):
     """An enumeration for search strategy."""
 
     REGULAR = 0
@@ -385,7 +388,7 @@ class SearchStrategy(NEnum):
     WORLD = 17
 
 
-class ServerError(NEnum):
+class ServerError(Enum):
     """An enumeration for server errors."""
 
     EMAILS_NOT_MATCHING = -99

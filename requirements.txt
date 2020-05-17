@@ -1,4 +1,5 @@
-aiohttp>=3.3.0
+aiohttp>=3.4.0
+aiohttp-cache>=2.0.0
 lxml>=4.3.0
 html5lib>=1.0.1
 Pillow>=7.0.0

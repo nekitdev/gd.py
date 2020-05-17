@@ -1,4 +1,4 @@
-from ..utils.enums import NEnum
+from ..utils.enums import Enum
 
 __all__ = (
     "ObjectDataEnum",
@@ -31,7 +31,7 @@ __all__ = (
 )
 
 
-class ObjectDataEnum(NEnum):
+class ObjectDataEnum(Enum):
     ID = 1
     X = 2  # in Units
     Y = 3  # in Units
@@ -230,7 +230,7 @@ class ObjectDataEnum(NEnum):
     LOCK_TO_CAMERA_Y = -303
 
 
-class ColorChannelProperties(NEnum):
+class ColorChannelProperties(Enum):
     RED = 1
     GREEN = 2
     BLUE = 3
@@ -245,25 +245,25 @@ class ColorChannelProperties(NEnum):
     COPY_OPACITY = 17
 
 
-class PlayerColor(NEnum):
+class PlayerColor(Enum):
     NotUsed = -1
     Default = 0
     P1 = 1
     P2 = 2
 
 
-class CustomParticleGrouping(NEnum):
+class CustomParticleGrouping(Enum):
     Free = 0
     Relative = 1
     Grouped = 2
 
 
-class CustomParticleProperty1(NEnum):
+class CustomParticleProperty1(Enum):
     Gravity = 0
     Radius = 1
 
 
-class Easing(NEnum):
+class Easing(Enum):
     Default = 0
     EaseInOut = 1
     EaseIn = 2
@@ -285,18 +285,18 @@ class Easing(NEnum):
     BackOut = 18
 
 
-class PulseMode(NEnum):
+class PulseMode(Enum):
     Color = 0
     HSV = 1
 
 
-class InstantCountComparison(NEnum):
+class InstantCountComparison(Enum):
     Equals = 0
     Larger = 1
     Smaller = 2
 
 
-class OrbType(NEnum):
+class OrbType(Enum):
     Yellow = 36
     Pink = 141
     Red = 1333
@@ -308,20 +308,20 @@ class OrbType(NEnum):
     Trigger = 1594
 
 
-class PadType(NEnum):
+class PadType(Enum):
     Yellow = 35
     Pink = 140
     Red = 1332
     Blue = 67
 
 
-class PickupItemMode(NEnum):
+class PickupItemMode(Enum):
     Default = 0
     Pickup = 1
     ToggleTrigger = 2
 
 
-class Gamemode(NEnum):
+class Gamemode(Enum):
     Cube = 0
     Ship = 1
     Ball = 2
@@ -332,7 +332,7 @@ class Gamemode(NEnum):
     SwingCopter = 7  # ?
 
 
-class PortalType(NEnum):
+class PortalType(Enum):
     Cube = 12
     Ship = 13
     Ball = 47
@@ -359,19 +359,19 @@ class PortalType(NEnum):
     FastestSpeed = 1334
 
 
-class PulseType(NEnum):
+class PulseType(Enum):
     ColorChannel = 0
     Group = 1
 
 
-class SpecialBlockType(NEnum):
+class SpecialBlockType(Enum):
     D = 1755
     J = 1813
     S = 1829
     H = 1859
 
 
-class SpecialColorID(NEnum):
+class SpecialColorID(Enum):
     BG = 1000
     GRND = 1001
     Line = 1002
@@ -386,23 +386,23 @@ class SpecialColorID(NEnum):
     Lighter = 1012
 
 
-class TargetPosCoordinates(NEnum):
+class TargetPosCoordinates(Enum):
     Both = 0
     OnlyX = 1
     OnlyY = 2
 
 
-class TouchToggleMode(NEnum):
+class TouchToggleMode(Enum):
     Default = 0
     On = 1
     Off = 2
 
 
-class MiscType(NEnum):
+class MiscType(Enum):
     TEXT = 914
 
 
-class TriggerType(NEnum):
+class TriggerType(Enum):
     BG = 29
     GRND = 30
     StartPos = 31
@@ -452,7 +452,7 @@ class TriggerType(NEnum):
     TimeWarp = -13
 
 
-class ZLayer(NEnum):
+class ZLayer(Enum):
     B4 = -3
     B3 = -1
     B2 = 1
@@ -468,7 +468,7 @@ class ZLayer(NEnum):
     AbsZero = 4
 
 
-class Speed(NEnum):
+class Speed(Enum):
     NORMAL = 0  # x 1
     SLOW = 1  # x 0.5
     FAST = 2  # x 2
@@ -476,7 +476,7 @@ class Speed(NEnum):
     FASTEST = 4  # x 4
 
 
-class SpeedConstant(NEnum):
+class SpeedConstant(Enum):
     NULL = 0.0
     SLOW = 0.7
     NORMAL = 0.9
@@ -485,7 +485,7 @@ class SpeedConstant(NEnum):
     FASTEST = 1.6
 
 
-class SpeedMagic(NEnum):
+class SpeedMagic(Enum):
     SLOW = 251.16  # x 0.5
     NORMAL = 311.58  # x 1
     FAST = 387.42  # x 2
@@ -494,7 +494,7 @@ class SpeedMagic(NEnum):
     DEFAULT = NORMAL  # -> x 1
 
 
-class GuidelinesColor(NEnum):
+class GuidelinesColor(Enum):
     DEFAULT = 0.0
     TRANSPARENT = 0.7
     ORANGE = 0.8
@@ -520,7 +520,7 @@ class GuidelinesColor(NEnum):
                 raise
 
 
-class LevelDataEnum(NEnum):
+class LevelDataEnum(Enum):
     ID = "k1"
     NAME = "k2"
     DESCRIPTION = "k3"
@@ -565,7 +565,7 @@ class LevelDataEnum(NEnum):
     KCEK = "kCEK"  # int
 
 
-class LevelHeaderEnum(NEnum):
+class LevelHeaderEnum(Enum):
     AUDIO_TRACK = "kA1"
     GAMEMODE = "kA2"
     MINIMODE = "kA3"

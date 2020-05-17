@@ -1,6 +1,6 @@
 from ..typing import AbstractUser, Any, Dict, Filters, Level, Optional, Sequence, Union
 
-from .enums import NEnum, LevelDifficulty, DemonDifficulty, SearchStrategy, LevelLength
+from .enums import Enum, LevelDifficulty, DemonDifficulty, SearchStrategy, LevelLength
 from .text_tools import make_repr
 
 
@@ -63,10 +63,10 @@ class Filters:
         require_original: bool = False,
         followed: Optional[Sequence[Union[int, AbstractUser]]] = None,
     ) -> None:
-        if isinstance(difficulty, (int, str, NEnum)):
+        if isinstance(difficulty, (int, str, Enum)):
             difficulty = [difficulty]
 
-        if isinstance(length, (int, str, NEnum)):
+        if isinstance(length, (int, str, Enum)):
             length = [length]
 
         self.strategy = SearchStrategy.from_value(strategy)
@@ -213,7 +213,7 @@ def _join(elements: Sequence[Any], *, string: str = ",", wrap_with: str = "{}") 
     def func(element: Any) -> str:
         to_str = element
 
-        if isinstance(element, NEnum):  # Enum
+        if isinstance(element, Enum):  # Enum
             to_str = element.value
         elif hasattr(element, "account_id"):  # User
             to_str = element.account_id

@@ -2,7 +2,7 @@
 # cython: language_level=3
 
 from gd.utils.crypto.coders import Coder
-from gd.utils.enums import NEnum
+from gd.utils.enums import Enum
 from gd.api.guidelines import Guidelines
 from gd.api.hsv import HSV
 from gd.api.enums import *
@@ -190,7 +190,7 @@ cdef _convert_type(object x):
     t = x.__class__
     if t in _KEYS:
         return _MAPPING[t](x)
-    elif NEnum in t.__mro__:
+    elif Enum in t.__mro__:
         return x.value
     return x
 

@@ -1,4 +1,4 @@
-from ..utils.enums import NEnum as Enum
+from ..utils.enums import Enum
 
 __all__ = ("LevelType", "Scene")
 
