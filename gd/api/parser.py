@@ -5,6 +5,7 @@ from itertools import chain
 from ..utils.crypto.coders import Coder
 from ..utils.enums import NEnum
 
+from .guidelines import Guidelines
 from .hsv import HSV
 from .enums import (
     ZLayer,
@@ -88,16 +89,13 @@ def _iter_to_str(x):
     char = "."
 
     try:
-        elem = next(iter(x))
+        t = type(next(iter(x)))
+
     except StopIteration:
         pass
 
     else:
-        t = type(elem)
-        if t is float:
-            char = "~0~"
-
-        elif t is dict:
+        if t is dict:
             char = "|"
             x = (_collect(_dump(elem)) for elem in x)
 
@@ -268,6 +266,7 @@ _MAPPING = {
     tuple: _iter_to_str,
     set: _iter_to_str,
     dict: _iter_to_str,
+    Guidelines: Guidelines.dump,
     HSV: HSV.dump,
 }
 
@@ -387,8 +386,9 @@ def _parse_colors(s: str, delim: str = "|"):
     return list(filter(lambda s: s, map(_color_convert, s.split(delim))))
 
 
-def _parse_guidelines(s, delim: str = "~0~"):  # wow cool splitter
-    return list() if not s else list(map(float, filter(lambda s: s, s.split(delim))))
+def _parse_guidelines(s, delim: str = "~"):
+    it = map(float, filter(lambda s: s, s.split(delim)))
+    return Guidelines.new(zip(it, it))
 
 
 def _header_convert(s):

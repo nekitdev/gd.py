@@ -25,6 +25,7 @@ __all__ = (
     "Speed",
     "SpeedConstant",
     "SpeedMagic",
+    "GuidelinesColor",
     "LevelDataEnum",
     "LevelHeaderEnum",
 )
@@ -491,6 +492,32 @@ class SpeedMagic(NEnum):
     FASTER = 468.0  # x 3
     FASTEST = 576.0  # x 4
     DEFAULT = NORMAL  # -> x 1
+
+
+class GuidelinesColor(NEnum):
+    DEFAULT = 0.0
+    TRANSPARENT = 0.7
+    ORANGE = 0.8
+    YELLOW = 0.9
+    GREEN = 1.0
+
+    @classmethod
+    def from_value(cls, value: float) -> None:
+        try:
+            return super().from_value(value)
+
+        except Exception:
+
+            if isinstance(value, float):
+                if 0 < value < 0.8:
+                    return cls.TRANSPARENT
+                elif value > 1:
+                    return cls.GREEN
+
+                else:
+                    raise
+            else:
+                raise
 
 
 class LevelDataEnum(NEnum):
