@@ -6,12 +6,14 @@ import functools
 import platform
 import re
 import secrets
+import time
 
-from aiohttp_cache import cache, setup_cache
 from aiohttp import web
 import aiohttp
 
-from gd.typing import Any, Callable, Dict, Generator, Iterable, List, Optional, Type, Union, ref
+from gd.typing import (
+    Any, Callable, Dict, Generator, Iterable, List, Optional, Sequence, Type, Union, ref
+)
 import gd
 
 AUTH_RE = re.compile(r"(?:Token )?(?P<token>[A-Fa-z0-9]+)")
@@ -32,6 +34,7 @@ class ErrorType(gd.Enum):
     NOT_FOUND = 13004
     FAILED = 13005
     LOGIN_FAILED = 13006
+    RATE_LIMIT_EXCEEDED = 13007
     AUTH_INVALID = 13101
     AUTH_MISSING = 13102
     AUTH_NOT_SET = 13103
@@ -61,6 +64,7 @@ class Error:
 
     def set_error(self, error: BaseException) -> Error:
         to_add = {
+            # format message with error object
             "message": self.payload["data"]["message"].format(error=error),
             "error": type(error).__name__,
             "error_message": str(error),
@@ -70,6 +74,15 @@ class Error:
 
     def into_resp(self, **kwargs) -> web.Response:
         return json_resp(**self.payload, **kwargs)
+
+
+def create_retry_after(retry_after: float) -> Error:
+    return Error(
+        429,
+        f"Retry after {retry_after} seconds.",
+        ErrorType.RATE_LIMIT_EXCEEDED,
+        retry_after=retry_after,
+    )
 
 
 DEFAULT_ERROR = Error(500, "Server got into trouble.", ErrorType.DEFAULT)
@@ -84,18 +97,25 @@ class TokenInfo:
         self.password = password
         self.account_id = account_id
         self.id = id
-        self.token = secrets.token_hex(64)
+        # generate 256-bit token (32 bytes -> 256 bits)
+        self.token = secrets.token_hex(32)
 
     def __repr__(self) -> str:
         info = {
-            "token": self.token,
-            "name": self.name,
+            "token": repr(self.token),
+            "name": repr(self.name),
             "account_id": self.account_id,
             "id": self.id,
         }
         return gd.utils.make_repr(self, info)
 
+    def as_dict(
+        self, include: Sequence[str] = ("token", "account_id", "id", "name", "password")
+    ) -> Dict[str, Union[int, str]]:
+        return {name: getattr(self, name) for name in include}
+
     def apply_to_client(self, client: gd.Client) -> None:
+        # apply state of self to a given client
         client.edit(name=self.name, password=self.password, account_id=self.account_id, id=self.id)
 
 
@@ -111,34 +131,94 @@ class LoginManager:
         self.client.close()
 
 
+def get_original_handler(handler: Function) -> Function:
+    while hasattr(handler, "keywords"):
+        handler = handler.keywords.get("handler")
+    return handler
+
+
 @web.middleware
 async def auth_middleware(request: web.Request, handler: Function) -> web.Response:
-    actual_handler = handler
-    while isinstance(actual_handler, functools.partial):
-        actual_handler = actual_handler.keywords.get("handler")
+    original = get_original_handler(handler)
 
-    if getattr(actual_handler, "needs_auth", False):
+    if getattr(original, "needs_auth", False):
+        # try to get token from Authorization header
         auth = request.headers.get("Authorization")
         if auth is None:
+            # try to get token from query
             auth = request.query.get("token")
             if auth is None:
                 return AUTH_NOT_SET.into_resp()
 
+        # see if token matches pattern
         match = AUTH_RE.match(auth)
         if match is None:
             return AUTH_INVALID.into_resp()
 
         token = match.group("token")
 
+        request.token = token
+
+        # check if token is in app.tokens
         info = gd.utils.get(request.app.tokens, token=token)
         if info is None:
             return AUTH_MISSING.into_resp()
 
-        with LoginManager(request.app.client, info):
-            return await handler(request)
+        # if login is required, wrap handling into context manager
+        if getattr(original, "needs_login", False):
+            with LoginManager(client=request.app.client, info=info):
+                return await handler(request)
 
     else:
-        return await handler(request)
+        request.token = ""
+
+    return await handler(request)
+
+
+class Cooldown:
+    def __init__(self, rate: int, per: float) -> None:
+        self.rate = int(rate)
+        self.per = float(per)
+        self.last = 0.0
+        self.tokens = self.rate
+        self.window = 0.0
+
+    def update_tokens(self, current: Optional[float] = None) -> None:
+        if not current:
+            current = time.time()
+
+        if current > self.window + self.per:
+            self.tokens = self.rate  # reset token state
+
+    def update_rate_limit(self, current: Optional[float] = None) -> None:
+        if not current:
+            current = time.time()
+
+        self.last = current  # may be used externally
+
+        self.update_tokens()
+
+        if self.tokens == self.rate:  # first iteration after reset
+            self.window = current  # update window to current
+
+        if not self.tokens:  # rate limited -> return retry_after
+            return self.per - (current - self.window)
+
+        self.tokens -= 1  # not rate limited -> decrement tokens
+
+        # if we got rate limited due to this token change,
+        # update the window to point to our current time frame
+        if not self.tokens:
+            self.window = current
+
+
+class CooldownMapping:
+    ...
+
+
+@web.middleware
+async def rate_limit_middleware(request: web.Request, handler: Function) -> web.Response:
+    ...
 
 
 DEFAULT_MIDDLEWARES = [
@@ -213,8 +293,6 @@ def create_app(**kwargs) -> web.Application:
     app.tokens: List[TokenInfo] = []
     app.add_routes(routes)
 
-    setup_cache(app)
-
     return app
 
 
@@ -243,8 +321,9 @@ def handle_errors(error_dict: Optional[Dict[Type[BaseException], Error]] = None)
     return decorator
 
 
-def needs_auth(required: bool) -> Function:
+def auth_setup(required: bool = True, login: bool = False) -> Function:
     def decorator(func: Function) -> Function:
+        func.needs_login = login
         func.needs_auth = required
         return func
 
@@ -274,7 +353,7 @@ def parse_route_docs() -> Generator[Dict[str, Union[Dict[Union[str, int], str], 
 
 @routes.get("/api")
 @handle_errors()
-@needs_auth(False)
+@auth_setup(required=False)
 async def main_page(request: web.Request) -> web.Response:
     """GET /api
     Description:
@@ -292,8 +371,20 @@ async def main_page(request: web.Request) -> web.Response:
         "python": platform.python_version(),
         "routes": list(parse_route_docs()),
     }
-    print(await request.text())
+
     return json_resp(payload)
+
+
+@routes.post("/api/logout")
+@handle_errors()
+@auth_setup()
+async def logout_handle(request: web.Request) -> web.Response:
+    token_info = gd.utils.get(request.app.tokens, token=request.token)
+
+    if token_info:
+        request.app.tokens.remove(token_info)
+
+    return json_resp({})
 
 
 @routes.get("/api/auth")
@@ -303,7 +394,7 @@ async def main_page(request: web.Request) -> web.Response:
         gd.LoginFailure: Error(401, "Failed to login.", ErrorType.LOGIN_FAILED),
     }
 )
-@needs_auth(False)
+@auth_setup(required=False)
 async def auth_handle(request: web.Request) -> web.Response:
     """GET /api/auth
     Description:
@@ -325,12 +416,16 @@ async def auth_handle(request: web.Request) -> web.Response:
 
     # Check if name and password are in the app.tokens
     token_info = gd.utils.get(request.app.tokens, name=name, password=password)
+
     # Create token info object to store current state if not existing
     if token_info is None:
         token_info = TokenInfo(name=name, password=password, account_id=account_id, id=id)
         request.app.tokens.append(token_info)
+        new = True
+    else:
+        new = False
 
-    return json_resp({"token": token_info.token})
+    return json_resp({"token": token_info.token, "new": new})
 
 
 @routes.get("/api/user/{id}")
@@ -340,7 +435,7 @@ async def auth_handle(request: web.Request) -> web.Response:
         gd.MissingAccess: Error(404, "Requested user not found.", ErrorType.NOT_FOUND),
     }
 )
-@needs_auth(False)
+@auth_setup(required=False)
 async def user_get(request: web.Request) -> web.Response:
     """GET /api/user/{id}
     Description:
@@ -375,7 +470,7 @@ async def user_get(request: web.Request) -> web.Response:
         ),
     }
 )
-@needs_auth(False)
+@auth_setup(required=False)
 async def song_search(request: web.Request) -> web.Response:
     """GET /api/song/{id}
     Description:
@@ -396,7 +491,7 @@ async def song_search(request: web.Request) -> web.Response:
 
 @routes.get("/api/search/user/{query}")
 @handle_errors({gd.MissingAccess: Error(404, "Requested user was not found.", ErrorType.NOT_FOUND)})
-@needs_auth(False)
+@auth_setup(required=False)
 async def user_search(request: web.Request) -> web.Response:
     """GET /api/search/user/{query}
     Description:
@@ -427,8 +522,7 @@ async def user_search(request: web.Request) -> web.Response:
         gd.MissingAccess: Error(404, "Requested level was not found", ErrorType.NOT_FOUND),
     }
 )
-@needs_auth(False)
-@cache(expires=10)
+@auth_setup(required=False)
 async def get_level(request: web.Request) -> web.Response:
     """GET /api/level/{id}
     Description:
@@ -453,7 +547,7 @@ async def get_level(request: web.Request) -> web.Response:
         gd.MissingAccess: Error(404, "{error}", ErrorType.FAILED),
     }
 )
-@needs_auth(True)
+@auth_setup(login=True)
 async def delete_level(request: web.Request) -> web.Response:
     """DELETE /api/level/{id}
     Description:
@@ -480,8 +574,7 @@ async def delete_level(request: web.Request) -> web.Response:
         gd.MissingAccess: Error(404, "Requested level was not found.", ErrorType.NOT_FOUND),
     }
 )
-@needs_auth(False)
-@cache(expires=10)
+@auth_setup(required=False)
 async def download_level(request: web.Request) -> web.Response:
     level_id = int(request.match_info.get("level_id"))
     # "raw", "parsed", "editor"
@@ -506,7 +599,7 @@ async def download_level(request: web.Request) -> web.Response:
 @handle_errors(
     {gd.MissingAccess: Error(404, "Daily is likely being refreshed.", ErrorType.NOT_FOUND)}
 )
-@needs_auth(False)
+@auth_setup(required=False)
 async def get_daily(request: web.Request) -> web.Response:
     """GET /api/daily
     Description:
@@ -526,7 +619,7 @@ async def get_daily(request: web.Request) -> web.Response:
 @handle_errors(
     {gd.MissingAccess: Error(404, "Weekly is likely being refreshed.", ErrorType.NOT_FOUND)}
 )
-@needs_auth(False)
+@auth_setup(required=False)
 async def get_weekly(request: web.Request) -> web.Response:
     """GET /api/weekly
     Description:
@@ -544,8 +637,7 @@ async def get_weekly(request: web.Request) -> web.Response:
 
 @routes.get("/api/messages")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to load messages.", ErrorType.FAILED)})
-@needs_auth(True)
-@cache(expires=10)
+@auth_setup(login=True)
 async def get_messages(request: web.Request) -> web.Response:
     pages = map(int, request.query.get("pages", "0").split(","))
     sent = str_to_bool(request.query.get("sent", "false"))
@@ -567,7 +659,7 @@ async def get_messages(request: web.Request) -> web.Response:
         gd.MissingAccess: Error(404, "{error}", ErrorType.FAILED),
     }
 )
-@needs_auth(True)
+@auth_setup(login=True)
 async def send_message(request: web.Request) -> web.Response:
     query = request.match_info.get("query")
 
@@ -592,7 +684,7 @@ async def send_message(request: web.Request) -> web.Response:
         gd.MissingAccess: Error(404, "Requested song not found.", ErrorType.NOT_FOUND),
     }
 )
-@needs_auth(False)
+@auth_setup(required=False)
 async def ng_song_search(request: web.Request) -> web.Response:
     """GET /api/ng/song/{id}
     Description:
@@ -612,7 +704,7 @@ async def ng_song_search(request: web.Request) -> web.Response:
 
 @routes.get("/api/ng/users/{query}")
 @handle_errors({ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE)})
-@needs_auth(False)
+@auth_setup(required=False)
 async def ng_user_search(request: web.Request) -> web.Response:
     """GET /api/ng/users/{query}
     Description:
@@ -635,7 +727,7 @@ async def ng_user_search(request: web.Request) -> web.Response:
 
 @routes.get("/api/ng/songs/{query}")
 @handle_errors({ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE)})
-@needs_auth(False)
+@auth_setup(required=False)
 async def ng_songs_search(request: web.Request) -> web.Response:
     """GET /api/ng/songs/{query}
     Description:
@@ -658,7 +750,7 @@ async def ng_songs_search(request: web.Request) -> web.Response:
 
 @routes.get("/api/ng/user_songs/{user}")
 @handle_errors()
-@needs_auth(False)
+@auth_setup(required=False)
 async def search_songs_by_user(request: web.Request) -> web.Response:
     """GET /api/ng/user_songs/{user}
     Description:

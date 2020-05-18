@@ -138,6 +138,9 @@ class NotLoggedError(ClientException):
     while :class:`Client` is not logged.
     """
 
-    def __init__(self, func_name: str) -> None:
-        message = f"{func_name!r} requires client to be logged."
+    def __init__(self, func_name: Optional[str]) -> None:
+        if func_name:
+            message = f"{func_name!r} requires client to be logged."
+        else:
+            message = "Login is required but is missing."
         super().__init__(message)
