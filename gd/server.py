@@ -140,7 +140,6 @@ class Forward:
         self.backup = self.http.forwarded_for
 
     def __enter__(self) -> None:
-        print(self.forwarded_for)
         self.http.forwarded_for = self.forwarded_for
 
     def __exit__(self, *exc) -> None:
