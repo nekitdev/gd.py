@@ -326,6 +326,10 @@ class WindowsMemory(MemoryType):
         base = self.read_bytes(self.PTR_LEN, 0x3222D0, 0x164, 0x22C, 0x114).as_int()
         return self.read_string(base, 0x144)
 
+    def get_editor_level_name(self) -> str:
+        base = self.read_bytes(self.PTR_LEN, 0x3222D0, 0x168, 0x124, 0xEC, 0x110, 0x114).as_int()
+        return self.read_string(base, 0xFC)
+
     def get_level_stars(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x2AC).as_int()
 
