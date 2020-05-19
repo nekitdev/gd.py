@@ -2,6 +2,7 @@ import json
 
 from ..typing import Any, Dict, Iterable, LevelCollection, List, Optional, Tuple
 
+from ..utils import search_utils as search
 from ..utils.text_tools import make_repr
 from ..utils.xml_parser import XMLParser
 
@@ -125,6 +126,9 @@ class LevelCollection(list):
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + super().__repr__()
+
+    def get_by_name(self, name: str) -> Optional[LevelAPI]:
+        return search.get(self, name=name)
 
     @classmethod
     def launch(cls, caller: Any, iterable: Iterable) -> LevelCollection:
