@@ -25,14 +25,20 @@ class HTTPClient:
         *,
         url: Union[str, URL] = BASE,
         use_user_agent: bool = False,
+        forwarded_for: Optional[str] = None,
+        proxy: Optional[str] = None,
+        proxy_auth: Optional[aiohttp.BasicAuth] = None,
         timeout: Union[float, int] = 150,
         max_requests: int = 250,
         debug: bool = False,
-        **kwargs,  # kwargs are unused; made for backwards compability
+        **kwargs,
     ) -> None:
         self.semaphore = asyncio.Semaphore(max_requests)
         self.url = URL(url)
         self.use_agent = use_user_agent
+        self.forwarded_for = forwarded_for
+        self.proxy = proxy
+        self.proxy_auth = proxy_auth
         self.timeout = timeout
         self.debug = debug
         self.last_result = None  # for testing
@@ -51,17 +57,17 @@ class HTTPClient:
         string = "gd.py/{} python/{} aiohttp/{}"
         return string.format(gd.__version__, platform.python_version(), aiohttp.__version__)
 
-    def get_skip_headers(self) -> List[str]:
-        result = []
-        result.append("User-Agent")
-        result.append("Accept-Encoding")
-        return result
+    def make_skip_headers(self) -> List[str]:
+        return ["User-Agent", "Accept-Encoding"]
 
     def make_headers(self) -> Dict[str, str]:
         headers = {}
 
         if self.use_agent:
             headers["User-Agent"] = self.get_default_agent()
+
+        if self.forwarded_for:
+            headers["X-Forwarded-For"] = self.forwarded_for
 
         return headers
 
@@ -177,13 +183,14 @@ class HTTPClient:
 
         async with self.semaphore, aiohttp.ClientSession(
             headers=self.make_headers(),
-            skip_auto_headers=self.get_skip_headers(),
+            skip_auto_headers=self.make_skip_headers(),
             timeout=self.make_timeout(),
             raise_for_status=True,
         ) as client:
             try:
                 resp = await client.request(
-                    method=method, url=url, data=data, params=params, headers=headers
+                    method=method, url=url, data=data, params=params, headers=headers,
+                    proxy=self.proxy, proxy_auth=self.proxy_auth,
                 )
             except VALID_ERRORS as exc:
                 raise HTTPError(exc) from None
@@ -324,3 +331,9 @@ class HTTPClient:
                     log.debug(f"{name}: {value}")
 
         return data
+
+
+def call_if_possible(some: Any) -> Any:
+    if callable(some):
+        return some()
+    return some

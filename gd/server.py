@@ -133,6 +133,26 @@ class LoginManager:
         self.client.close()
 
 
+class Forward:
+    def __init__(self, client: gd.Client, request: web.Request) -> None:
+        self.http = client.http
+        self.forwarded_for = request.remote
+        self.backup = self.http.forwarded_for
+
+    def __enter__(self) -> None:
+        print(self.forwarded_for)
+        self.http.forwarded_for = self.forwarded_for
+
+    def __exit__(self, *exc) -> None:
+        self.http.forwarded_for = self.backup
+
+
+@web.middleware
+async def forward_middleware(request: web.Request, handler: Function) -> web.Response:
+    with Forward(client=request.app.client, request=request):
+        return await handler(request)
+
+
 def get_original_handler(handler: Function) -> Function:
     while hasattr(handler, "keywords"):
         handler = handler.keywords.get("handler")
@@ -285,7 +305,7 @@ async def rate_limit_middleware(request: web.Request, handler: Function) -> web.
 
 
 DEFAULT_MIDDLEWARES = [
-    rate_limit_middleware, auth_middleware,
+    rate_limit_middleware, auth_middleware, forward_middleware,
     web.normalize_path_middleware(append_slash=False, remove_slash=True),
 ]
 
