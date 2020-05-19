@@ -120,7 +120,7 @@ Every interaction with the server requires logged in client.
 
 You can login into API system via its endpoint:
 
-... code:: python
+.. code:: python
 
     import requests
 
