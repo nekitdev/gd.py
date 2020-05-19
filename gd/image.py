@@ -1,6 +1,6 @@
 import io
 
-from .typing import Sequence, ref
+from gd.typing import Sequence, ref
 
 try:
     from PIL import Image

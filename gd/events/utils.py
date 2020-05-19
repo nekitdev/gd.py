@@ -1,7 +1,7 @@
 import asyncio
 import atexit
 
-from .listener import (
+from gd.events.listener import (
     run as run_loop,
     get_loop,
     shutdown_loop,
@@ -11,7 +11,7 @@ from .listener import (
     set_loop,
 )
 
-from ..typing import Optional
+from gd.typing import Optional
 
 __all__ = ("disable", "start", "run", "attach_to_loop")
 

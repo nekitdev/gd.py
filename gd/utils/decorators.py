@@ -3,10 +3,10 @@ import functools
 import inspect
 import time
 
-from . import maybe_coroutine, shutdown_loop
+from gd.utils.async_utils import maybe_coroutine, shutdown_loop
 
-from ..typing import Any, Callable, Type, TypeVar
-from ..errors import NotLoggedError, MissingAccess
+from gd.typing import Any, Callable, Type, TypeVar
+from gd.errors import NotLoggedError, MissingAccess
 
 Function = Callable[[Any], Any]
 

@@ -1,9 +1,9 @@
-from ._async import *
-from .decorators import *
-from .search_utils import *
-from .text_tools import *
-from .xml_parser import *
+from gd.utils.async_utils import *
+from gd.utils.decorators import *
+from gd.utils.search_utils import *
+from gd.utils.text_tools import *
+from gd.utils.xml_parser import *
 
-from .enums import value_to_enum
+from gd.utils.enums import value_to_enum
 
-from . import tasks
+from gd.utils import tasks

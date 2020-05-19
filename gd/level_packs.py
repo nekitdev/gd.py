@@ -1,14 +1,14 @@
-from .typing import Client, Gauntlet, Level, List, MapPack, Tuple
+from gd.typing import Client, Gauntlet, Level, List, MapPack, Tuple
 
-from .abstractentity import AbstractEntity
-from .colors import Color
+from gd.abstractentity import AbstractEntity
+from gd.colors import Color
 
-from .utils.converter import Converter
-from .utils.enums import LevelDifficulty
-from .utils.filters import Filters
-from .utils.indexer import Index
-from .utils.parser import ExtDict
-from .utils.text_tools import make_repr
+from gd.utils.converter import Converter
+from gd.utils.enums import LevelDifficulty
+from gd.utils.filters import Filters
+from gd.utils.indexer import Index
+from gd.utils.parser import ExtDict
+from gd.utils.text_tools import make_repr
 
 
 class Gauntlet(AbstractEntity):

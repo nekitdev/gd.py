@@ -1,9 +1,9 @@
 import colorsys
 
-from .typing import Color, Optional, Tuple
+from gd.typing import Color, Optional, Tuple
 
-from .utils.converter import Converter
-from .utils.text_tools import make_repr
+from gd.utils.converter import Converter
+from gd.utils.text_tools import make_repr
 
 
 class Color:

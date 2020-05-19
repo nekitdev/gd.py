@@ -1,8 +1,8 @@
-from ..typing import Any, Dict, Struct
-from ..errors import EditorError
-from ..colors import Color
+from gd.typing import Any, Dict, Struct
+from gd.errors import EditorError
+from gd.colors import Color
 
-from .enums import (
+from gd.api.enums import (
     SpecialBlockType,
     TriggerType,
     PortalType,

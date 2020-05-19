@@ -26,8 +26,8 @@ import inspect
 import random
 import time
 
-from ..logging import get_logger
-from ..typing import Coroutine, Loop, Optional, Type, Union
+from gd.logging import get_logger
+from gd.typing import Coroutine, Loop, Optional, Type, Union
 
 MAX_ASYNCIO_SECONDS = 3456000
 

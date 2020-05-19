@@ -1,13 +1,13 @@
-from .abstractentity import AbstractEntity
-from .abstractuser import AbstractUser
+from gd.abstractentity import AbstractEntity
+from gd.abstractuser import AbstractUser
 
-from .typing import Client, FriendRequest, Union
+from gd.typing import Client, FriendRequest, Union
 
-from .utils.enums import MessageOrRequestType
-from .utils.indexer import Index
-from .utils.parser import ExtDict
-from .utils.text_tools import make_repr
-from .utils.crypto.coders import Coder
+from gd.utils.enums import MessageOrRequestType
+from gd.utils.indexer import Index
+from gd.utils.parser import ExtDict
+from gd.utils.text_tools import make_repr
+from gd.utils.crypto.coders import Coder
 
 
 class FriendRequest(AbstractEntity):

@@ -1,15 +1,15 @@
-from .abstractentity import AbstractEntity
-from .abstractuser import AbstractUser
+from gd.abstractentity import AbstractEntity
+from gd.abstractuser import AbstractUser
 
-from .colors import Color
+from gd.colors import Color
 
-from .typing import Client, Comment, Union
+from gd.typing import Client, Comment, Union
 
-from .utils.enums import CommentType
-from .utils.indexer import Index
-from .utils.parser import ExtDict
-from .utils.text_tools import make_repr
-from .utils.crypto.coders import Coder
+from gd.utils.enums import CommentType
+from gd.utils.indexer import Index
+from gd.utils.parser import ExtDict
+from gd.utils.text_tools import make_repr
+from gd.utils.crypto.coders import Coder
 
 
 class Comment(AbstractEntity):

@@ -1,9 +1,9 @@
 import random
 import uuid
 
-from ..typing import Any, Dict, Filters, List, Optional, Parameters, Sequence, Union
+from gd.typing import Any, Dict, Filters, List, Optional, Parameters, Sequence, Union
 
-from .crypto.coders import Coder
+from gd.utils.crypto.coders import Coder
 
 __all__ = ("Parameters", "enter_gdworld", "leave_gdworld")
 

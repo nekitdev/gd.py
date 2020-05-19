@@ -8,39 +8,39 @@ __copyright__ = "Copyright 2019-2020 NeKitDS"
 __license__ = "MIT"
 __version__ = "1.0.0a0"
 
-from .abstractentity import AbstractEntity
-from .abstractuser import AbstractUser, LevelRecord
-from .client import Client, DAILY, WEEKLY
-from .colors import Color
-from .colors import colors
-from .comment import Comment
-from .errors import *
-from .friend_request import FriendRequest
-from .iconset import IconSet
-from .level import Level
-from .level_packs import Gauntlet, MapPack
-from .logging import *
-from .message import Message
-from .session import Session
-from .song import ArtistInfo, Author, Song
-from .user import UserStats, User
-from .version import *
-from .utils.enums import *
-from .utils.filters import Filters
-from .utils.http_request import HTTPClient
-from .utils.params import *
-from .utils.parser import Parser
-from .utils.routes import Route
-from .utils.save_parser import Save, SaveParser
+from gd.abstractentity import AbstractEntity
+from gd.abstractuser import AbstractUser, LevelRecord
+from gd.client import Client, DAILY, WEEKLY
+from gd.colors import Color
+from gd.colors import colors
+from gd.comment import Comment
+from gd.errors import *
+from gd.friend_request import FriendRequest
+from gd.iconset import IconSet
+from gd.level import Level
+from gd.level_packs import Gauntlet, MapPack
+from gd.logging import *
+from gd.message import Message
+from gd.session import Session
+from gd.song import ArtistInfo, Author, Song
+from gd.user import UserStats, User
+from gd.version import *
+from gd.utils.enums import *
+from gd.utils.filters import Filters
+from gd.utils.http_request import HTTPClient
+from gd.utils.params import *
+from gd.utils.parser import Parser
+from gd.utils.routes import Route
+from gd.utils.save_parser import Save, SaveParser
 
-from .utils.crypto.coders import Coder
-from .utils.crypto.xor_cipher import XORCipher as xor
+from gd.utils.crypto.coders import Coder
+from gd.utils.crypto.xor_cipher import XORCipher as xor
 
-from ._jokes import *  # idk
+from gd._jokes import *  # idk
 
-from .utils import tasks
+from gd.utils import tasks
 
-from . import (
+from gd import (
     api,  # non-server GD API.
     events,  # event-related functions and classes.
     image,  # functions for working with images.

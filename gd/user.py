@@ -1,16 +1,16 @@
-from .typing import Optional
+from gd.typing import Optional
 
-from .abstractuser import AbstractUser
-from .colors import colors
-from .iconset import IconSet
+from gd.abstractuser import AbstractUser
+from gd.colors import colors
+from gd.iconset import IconSet
 
-from .typing import Client, User, UserStats
+from gd.typing import Client, User, UserStats
 
-from .utils.converter import Converter
-from .utils.enums import StatusLevel, MessagePolicyType, FriendRequestPolicyType, CommentPolicyType
-from .utils.indexer import Index
-from .utils.parser import ExtDict
-from .utils.text_tools import make_repr
+from gd.utils.converter import Converter
+from gd.utils.enums import StatusLevel, MessagePolicyType, FriendRequestPolicyType, CommentPolicyType
+from gd.utils.indexer import Index
+from gd.utils.parser import ExtDict
+from gd.utils.text_tools import make_repr
 
 
 class UserStats(AbstractUser):

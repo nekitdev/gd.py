@@ -2,7 +2,7 @@ import json
 
 from yarl import URL
 
-from ..typing import Any, Dict, List, Optional, Union
+from gd.typing import Any, Dict, List, Optional, Union
 
 __all__ = ("get_module", "make_repr", "object_split", "dump")
 

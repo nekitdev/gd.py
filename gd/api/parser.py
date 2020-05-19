@@ -2,12 +2,12 @@
 # we are going very polymorphic here
 from itertools import chain
 
-from ..utils.crypto.coders import Coder
-from ..utils.enums import Enum
+from gd.utils.crypto.coders import Coder
+from gd.utils.enums import Enum
 
-from .guidelines import Guidelines
-from .hsv import HSV
-from .enums import (
+from gd.api.guidelines import Guidelines
+from gd.api.hsv import HSV
+from gd.api.enums import (
     ZLayer,
     Easing,
     PulseMode,

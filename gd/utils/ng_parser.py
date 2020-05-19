@@ -6,8 +6,8 @@ import re
 
 from yarl import URL
 
-from .parser import ExtDict
-from ..typing import Dict, HTMLElement, List, TypeVar, Union, XMLElement
+from gd.utils.parser import ExtDict
+from gd.typing import Dict, HTMLElement, List, TypeVar, Union, XMLElement
 
 use_lxml, Element = False, XMLElement
 try:

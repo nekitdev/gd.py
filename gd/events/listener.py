@@ -3,15 +3,15 @@ import threading
 import signal
 import traceback
 
-from ..level import Level
-from ..logging import get_logger
-from ..typing import Client, Comment, FriendRequest, Iterable, List, Message, Optional, Union
+from gd.level import Level
+from gd.logging import get_logger
+from gd.typing import Client, Comment, FriendRequest, Iterable, List, Message, Optional, Union
 
-from ..utils import tasks
-from ..utils._async import shutdown_loop, gather
-from ..utils.decorators import run_once
-from ..utils.filters import Filters
-from ..utils.text_tools import make_repr
+from gd.utils import tasks
+from gd.utils.async_utils import shutdown_loop, gather
+from gd.utils.decorators import run_once
+from gd.utils.filters import Filters
+from gd.utils.text_tools import make_repr
 
 __all__ = (
     "AbstractListener",

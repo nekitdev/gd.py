@@ -1,2 +1,2 @@
-from .listener import *
-from .utils import *
+from gd.events.listener import *
+from gd.events.utils import *

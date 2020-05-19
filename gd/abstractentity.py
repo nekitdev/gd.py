@@ -1,9 +1,9 @@
-from .typing import AbstractEntity, Any, Client, Dict, Iterable
-from .errors import ClientException
+from gd.typing import AbstractEntity, Any, Client, Dict, Iterable
+from gd.errors import ClientException
 
-from .utils.decorators import impl_sync
-from .utils.parser import ExtDict
-from .utils.text_tools import make_repr
+from gd.utils.decorators import impl_sync
+from gd.utils.parser import ExtDict
+from gd.utils.text_tools import make_repr
 
 
 @impl_sync

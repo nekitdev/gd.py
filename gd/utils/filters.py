@@ -1,7 +1,7 @@
-from ..typing import AbstractUser, Any, Dict, Filters, Level, Optional, Sequence, Union
+from gd.typing import AbstractUser, Any, Dict, Filters, Level, Optional, Sequence, Union
 
-from .enums import Enum, LevelDifficulty, DemonDifficulty, SearchStrategy, LevelLength
-from .text_tools import make_repr
+from gd.utils.enums import Enum, LevelDifficulty, DemonDifficulty, SearchStrategy, LevelLength
+from gd.utils.text_tools import make_repr
 
 
 class Filters:

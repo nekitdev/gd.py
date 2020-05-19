@@ -1,10 +1,10 @@
 import functools
 import enum
 
-from .text_tools import get_module
+from gd.utils.text_tools import get_module
 
-from ..typing import Any, Dict, Union
-from ..errors import FailedConversion
+from gd.typing import Any, Dict, Union
+from gd.errors import FailedConversion
 
 __all__ = (
     "Enum",

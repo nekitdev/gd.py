@@ -1,4 +1,4 @@
-from .typing import Any, Dict, Optional
+from gd.typing import Any, Dict, Optional
 
 __all__ = ("Jokes", "jokes")
 

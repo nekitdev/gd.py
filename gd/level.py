@@ -1,16 +1,16 @@
-from .logging import get_logger
-from .typing import Client, Comment, Level, LevelRecord, List, Optional, Union
+from gd.logging import get_logger
+from gd.typing import Client, Comment, Level, LevelRecord, List, Optional, Union
 
-from .abstractentity import AbstractEntity
-from .abstractuser import AbstractUser
-from .song import Song
+from gd.abstractentity import AbstractEntity
+from gd.abstractuser import AbstractUser
+from gd.song import Song
 
-from .errors import MissingAccess
+from gd.errors import MissingAccess
 
-from .api.editor import Editor
+from gd.api.editor import Editor
 
-from .utils.converter import Converter
-from .utils.enums import (
+from gd.utils.converter import Converter
+from gd.utils.enums import (
     DemonDifficulty,
     LevelDifficulty,
     CommentStrategy,
@@ -18,10 +18,10 @@ from .utils.enums import (
     TimelyType,
     LevelLeaderboardStrategy,
 )
-from .utils.indexer import Index
-from .utils.parser import ExtDict
-from .utils.text_tools import make_repr, object_split
-from .utils.crypto.coders import Coder
+from gd.utils.indexer import Index
+from gd.utils.parser import ExtDict
+from gd.utils.text_tools import make_repr, object_split
+from gd.utils.crypto.coders import Coder
 
 log = get_logger(__name__)
 

@@ -6,10 +6,10 @@ import aiohttp
 
 import gd
 
-from ..typing import Any, Dict, List, Optional, Union
-from ..logging import get_logger
-from ..errors import HTTPError
-from .text_tools import make_repr
+from gd.typing import Any, Dict, List, Optional, Union
+from gd.logging import get_logger
+from gd.errors import HTTPError
+from gd.utils.text_tools import make_repr
 
 log = get_logger(__name__)
 

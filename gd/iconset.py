@@ -1,11 +1,11 @@
-from .typing import Iterable, List, Tuple, Union
+from gd.typing import Iterable, List, Tuple, Union
 
-from .abstractentity import AbstractEntity
-from .colors import Color
-from .image import DEFAULT_SIZE, ImageType
+from gd.abstractentity import AbstractEntity
+from gd.colors import Color
+from gd.image import DEFAULT_SIZE, ImageType
 
-from .utils.enums import IconType
-from .utils.text_tools import make_repr
+from gd.utils.enums import IconType
+from gd.utils.text_tools import make_repr
 
 
 class IconSet(AbstractEntity):

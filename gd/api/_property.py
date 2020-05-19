@@ -1,15 +1,15 @@
 """Automatic object property code generator."""
 
-from ..typing import Enum, Union
+from gd.typing import Enum, Union
 
-from .enums import (
+from gd.api.enums import (
     ColorChannelProperties,
     LevelDataEnum,
     LevelHeaderEnum,
     ObjectDataEnum,
     PlayerColor,
 )
-from .parser import (  # type: ignore
+from gd.api.parser import (  # type: ignore
     _INT,
     _BOOL,
     _FLOAT,
@@ -30,7 +30,7 @@ from .parser import (  # type: ignore
     _GUIDELINES,
     _HEADER_ENUMS,
 )
-from .hsv import HSV
+from gd.api.hsv import HSV
 
 __all__ = ("_template", "_create", "_object_code", "_color_code", "_header_code", "_level_code")
 
@@ -48,9 +48,7 @@ def {name}(self):
         del self.data[{enum!r}]
     except KeyError:
         pass
-""".strip(
-    "\n"
-)
+""".strip()
 
 _container = "_container = {}"
 

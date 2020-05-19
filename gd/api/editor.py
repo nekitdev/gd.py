@@ -1,4 +1,4 @@
-from ..typing import (
+from gd.typing import (
     Any,
     Callable,
     Editor,
@@ -12,15 +12,15 @@ from ..typing import (
     Union,
 )
 
-from .enums import (
+from gd.api.enums import (
     SpeedMagic,
     Speed,
     PortalType,
 )
-from .struct import Object, ColorChannel, Header, ColorCollection, LevelAPI
+from gd.api.struct import Object, ColorChannel, Header, ColorCollection, LevelAPI
 
-from ..errors import EditorError
-from ..utils.text_tools import make_repr
+from gd.errors import EditorError
+from gd.utils.text_tools import make_repr
 
 __all__ = ("Editor", "get_length_from_x")
 

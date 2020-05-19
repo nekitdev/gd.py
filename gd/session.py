@@ -7,7 +7,7 @@ import time  # for perf_counter in ping
 from itertools import chain
 from yarl import URL
 
-from .typing import (
+from gd.typing import (
     Any,
     Client,
     Dict,
@@ -19,16 +19,16 @@ from .typing import (
     Union,
 )
 
-from .errors import (
+from gd.errors import (
     MissingAccess,
     SongRestrictedForUsage,
     NothingFound,
     LoginFailure,
 )
 
-from .utils.converter import Converter
-from .utils.decorators import check_logged_obj
-from .utils.enums import (
+from gd.utils.converter import Converter
+from gd.utils.decorators import check_logged_obj
+from gd.utils.enums import (
     CommentStrategy,
     CommentType,
     DemonDifficulty,
@@ -37,24 +37,24 @@ from .utils.enums import (
     MessageOrRequestType,
     SearchStrategy,  # TimelyType
 )
-from .utils.filters import Filters
-from .utils.http_request import HTTPClient
-from .utils.indexer import Index
-from .utils.ng_parser import (
+from gd.utils.filters import Filters
+from gd.utils.http_request import HTTPClient
+from gd.utils.indexer import Index
+from gd.utils.ng_parser import (
     find_song_info,
     search_song_data,
     extract_info_from_endpoint,
     extract_user_songs,
     extract_users,
 )
-from .utils.params import Parameters as Params
-from .utils.parser import ExtDict, Parser
-from .utils.routes import Route
-from .utils.save_parser import Save, SaveParser
-from .utils.text_tools import make_repr
-from .utils.crypto.coders import Coder
+from gd.utils.params import Parameters as Params
+from gd.utils.parser import ExtDict, Parser
+from gd.utils.routes import Route
+from gd.utils.save_parser import Save, SaveParser
+from gd.utils.text_tools import make_repr
+from gd.utils.crypto.coders import Coder
 
-from . import api
+from gd import api
 
 
 class Session:

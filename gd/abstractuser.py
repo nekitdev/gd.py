@@ -1,4 +1,4 @@
-from .typing import (
+from gd.typing import (
     AbstractUser,
     Any,
     Client,
@@ -14,14 +14,14 @@ from .typing import (
     User,
 )
 
-from .abstractentity import AbstractEntity
+from gd.abstractentity import AbstractEntity
 
-from .utils.enums import CommentStrategy, LevelLeaderboardStrategy
-from .utils.filters import Filters
-from .utils.indexer import Index
-from .utils.parser import ExtDict
-from .utils.search_utils import get
-from .utils.text_tools import make_repr
+from gd.utils.enums import CommentStrategy, LevelLeaderboardStrategy
+from gd.utils.filters import Filters
+from gd.utils.indexer import Index
+from gd.utils.parser import ExtDict
+from gd.utils.search_utils import get
+from gd.utils.text_tools import make_repr
 
 
 def try_int(some: Any) -> int:
@@ -425,7 +425,7 @@ class LevelRecord(AbstractUser):
 
         Update ``self``.
         """
-        from .level import Level  # this is a hack because *circular imports*
+        from gd.level import Level  # this is a hack because *circular imports*
 
         records = await Level(id=self.level_id, client=self.client).get_leaderboard(self.type.value)
         record = get(records, account_id=self.account_id)

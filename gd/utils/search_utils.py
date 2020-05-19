@@ -1,6 +1,6 @@
 from operator import attrgetter as attrget
 
-from ..typing import Any, Callable, Iterable, List, Union
+from gd.typing import Any, Callable, Iterable, List, Union
 
 __all__ = ("find", "get", "unique")
 

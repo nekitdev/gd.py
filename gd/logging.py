@@ -1,6 +1,6 @@
 import logging
 
-from .typing import Any, Optional
+from gd.typing import Any, Optional
 
 __all__ = ("get_logger", "setup_logging", "log")
 

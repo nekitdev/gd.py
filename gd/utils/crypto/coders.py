@@ -13,7 +13,7 @@ except ImportError:
 # absolute import because we are deep
 from gd.typing import List, Union
 
-from .xor_cipher import XORCipher as XOR
+from gd.utils.crypto.xor_cipher import XORCipher as XOR
 
 
 class Coder:

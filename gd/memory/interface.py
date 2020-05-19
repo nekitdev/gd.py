@@ -5,7 +5,7 @@ import sys
 import time
 
 try:
-    from .win import (
+    from gd.memory.win import (
         get_base_address,
         get_handle,
         get_pid_from_name,
@@ -15,13 +15,13 @@ try:
 except Exception:  # noqa
     pass
 
-from .enums import LevelType, Scene
-from ..api.enums import SpeedConstant
-from ..errors import FailedConversion
-from ..typing import Any, Buffer, Optional, Sequence, Tuple, Union
-from ..utils.converter import Converter
-from ..utils.enums import LevelDifficulty, DemonDifficulty
-from ..utils.text_tools import make_repr
+from gd.memory.enums import LevelType, Scene
+from gd.api.enums import SpeedConstant
+from gd.errors import FailedConversion
+from gd.typing import Any, Buffer, Optional, Sequence, Tuple, Union
+from gd.utils.converter import Converter
+from gd.utils.enums import LevelDifficulty, DemonDifficulty
+from gd.utils.text_tools import make_repr
 
 __all__ = (
     "Memory",

@@ -1,5 +1,5 @@
-from ..typing import HSV, Tuple, Union
-from ..utils.text_tools import make_repr
+from gd.typing import HSV, Tuple, Union
+from gd.utils.text_tools import make_repr
 
 __all__ = ("HSV",)
 

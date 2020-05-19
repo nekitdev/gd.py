@@ -1,7 +1,7 @@
 from collections import namedtuple
 
-from ..typing import List
-from .xml_parser import XMLParser, AioXMLParser
+from gd.typing import List
+from gd.utils.xml_parser import XMLParser, AioXMLParser
 
 Save = namedtuple("Save", "completed followed")
 

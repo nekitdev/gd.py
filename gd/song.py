@@ -3,17 +3,17 @@ from urllib.parse import unquote
 
 import aiohttp
 
-from .typing import Any, Callable, Client, IO, Iterable, List, Optional, Song, Union
+from gd.typing import Any, Callable, Client, IO, Iterable, List, Optional, Song, Union
 
-from .abstractentity import AbstractEntity
-from .errors import ClientException
+from gd.abstractentity import AbstractEntity
+from gd.errors import ClientException
 
-from .utils.converter import Converter
-from .utils.http_request import HTTPClient, URL
-from .utils.indexer import Index
-from .utils.parser import ExtDict
-from .utils.routes import Route
-from .utils.text_tools import make_repr
+from gd.utils.converter import Converter
+from gd.utils.http_request import HTTPClient, URL
+from gd.utils.indexer import Index
+from gd.utils.parser import ExtDict
+from gd.utils.routes import Route
+from gd.utils.text_tools import make_repr
 
 Function = Callable[[Any], Any]
 UserAgent = HTTPClient.get_default_agent()

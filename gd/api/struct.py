@@ -1,9 +1,9 @@
-from ..utils.text_tools import make_repr
-from ..errors import EditorError
+from gd.utils.text_tools import make_repr
+from gd.errors import EditorError
 
-from ..utils import search_utils as search
+from gd.utils import search_utils as search
 
-from .parser import (
+from gd.api.parser import (
     _dump,
     _convert,
     _collect,
@@ -20,15 +20,15 @@ from .parser import (
     _header_collect,
 )
 
-from .utils import _make_color, _get_dir, _define_color, get_id, get_default
-from ._property import (
+from gd.api.utils import _make_color, _get_dir, _define_color, get_id, get_default
+from gd.api._property import (
     _object_code,
     _color_code,
     _header_code,
     _level_code,
 )
 
-from ..typing import (
+from gd.typing import (
     Any,
     Color,
     ColorChannel,
@@ -336,7 +336,7 @@ class LevelAPI(Struct):
         raise EditorError("Level API can not be dumped.")
 
     def open_editor(self) -> Editor:
-        from .editor import Editor  # *circular imports*
+        from gd.api.editor import Editor  # *circular imports*
 
         return Editor.launch(self, "level_string")
 

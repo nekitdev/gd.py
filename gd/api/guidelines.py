@@ -1,8 +1,8 @@
 from itertools import chain
 
-from .enums import GuidelinesColor
+from gd.api.enums import GuidelinesColor
 
-from ..typing import Any, Guidelines, List, Union
+from gd.typing import Any, Guidelines, List, Union
 
 
 class Guidelines(dict):

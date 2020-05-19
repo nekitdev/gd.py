@@ -1,30 +1,30 @@
 import asyncio
 
-from .abstractuser import AbstractUser, LevelRecord
-from .comment import Comment
-from .errors import ClientException
-from .friend_request import FriendRequest
-from .iconset import IconSet
-from .image import DEFAULT_SIZE, ImageType, resize, to_image, connect_images, to_bytes
-from .level import Level
-from .level_packs import Gauntlet, MapPack
-from .logging import get_logger
-from .message import Message
-from .session import Session
-from .song import ArtistInfo, Author, Song
-from .typing import Any, Client, Coroutine, Dict, Iterable, List, Optional, Sequence, Tuple, Union
-from .user import User, UserStats
+from gd.abstractuser import AbstractUser, LevelRecord
+from gd.comment import Comment
+from gd.errors import ClientException
+from gd.friend_request import FriendRequest
+from gd.iconset import IconSet
+from gd.image import DEFAULT_SIZE, ImageType, resize, to_image, connect_images, to_bytes
+from gd.level import Level
+from gd.level_packs import Gauntlet, MapPack
+from gd.logging import get_logger
+from gd.message import Message
+from gd.session import Session
+from gd.song import ArtistInfo, Author, Song
+from gd.typing import Any, Client, Coroutine, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from gd.user import User, UserStats
 
-from .events.listener import (
+from gd.events.listener import (
     TimelyLevelListener,
     RateLevelListener,
     MessageOrRequestListener,
     LevelCommentListener,
 )
 
-from .utils.converter import Converter
-from .utils.decorators import check_logged, impl_sync
-from .utils.enums import (
+from gd.utils.converter import Converter
+from gd.utils.decorators import check_logged, impl_sync
+from gd.utils.enums import (
     CommentPolicyType,
     CommentStrategy,
     DemonDifficulty,
@@ -34,17 +34,16 @@ from .utils.enums import (
     LevelLeaderboardStrategy,
     MessagePolicyType,
 )
-from .utils.filters import Filters
-from .utils.http_request import HTTPClient
-from .utils.indexer import Index
-from .utils.parser import ExtDict
-from .utils.save_parser import Save
-from .utils.text_tools import make_repr
+from gd.utils.filters import Filters
+from gd.utils.http_request import HTTPClient
+from gd.utils.indexer import Index
+from gd.utils.parser import ExtDict
+from gd.utils.save_parser import Save
+from gd.utils.text_tools import make_repr
 
-from .utils.crypto.coders import Coder
+from gd.utils.crypto.coders import Coder
 
-from . import api
-from . import utils
+from gd import api, utils
 
 log = get_logger(__name__)
 

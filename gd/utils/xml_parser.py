@@ -6,10 +6,10 @@ except ImportError:
 
 import re
 
-from ._async import run_blocking_io
+from gd.utils.async_utils import run_blocking_io
 
-from ..typing import Any, Dict
-from ..errors import ParserError
+from gd.typing import Any, Dict
+from gd.errors import ParserError
 
 __all__ = ("xml", "XMLParser", "AioXMLParser")
 

@@ -1,10 +1,10 @@
 import re
 
-from .enums import DemonDifficulty, LevelDifficulty, GauntletEnum
-from .parser import ExtDict
+from gd.utils.enums import DemonDifficulty, LevelDifficulty, GauntletEnum
+from gd.utils.parser import ExtDict
 
-from ..typing import Union
-from ..errors import FailedConversion
+from gd.typing import Union
+from gd.errors import FailedConversion
 
 
 # song-related dict

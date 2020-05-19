@@ -1,2 +1,2 @@
-from .enums import *
-from .interface import *
+from gd.memory.enums import *
+from gd.memory.interface import *

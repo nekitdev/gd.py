@@ -1,13 +1,13 @@
 import json
 
-from ..typing import Any, Dict, Iterable, LevelCollection, List, Optional, Tuple
+from gd.typing import Any, Dict, Iterable, LevelCollection, List, Optional, Tuple
 
-from ..utils import search_utils as search
-from ..utils.text_tools import make_repr
-from ..utils.xml_parser import XMLParser
+from gd.utils import search_utils as search
+from gd.utils.text_tools import make_repr
+from gd.utils.xml_parser import XMLParser
 
-from .struct import LevelAPI
-from .utils import get_default
+from gd.api.struct import LevelAPI
+from gd.api.utils import get_default
 
 __all__ = ("Part", "Database", "LevelCollection")
 
@@ -109,7 +109,7 @@ class Database:
         self.levels[key] = stuff
 
     def dump(self) -> None:
-        from .loader import save  # I hate circular imports. - nekit
+        from gd.api.loader import save  # I hate circular imports. - nekit
 
         save.dump(self)
 

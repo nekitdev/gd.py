@@ -1,4 +1,4 @@
-from .typing import Any, Enum, Optional
+from gd.typing import Any, Enum, Optional
 
 
 class GDException(Exception):
