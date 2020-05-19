@@ -22,6 +22,8 @@ JSON_PREFIX = "json_"
 
 Function = Callable[[Any], Any]
 Error = ref("gd.server.Error")
+Cooldown = ref("gd.server.Cooldown")
+CooldownMapping = ref("gd.server.CooldownMapping")
 
 routes = web.RouteTableDef()
 
@@ -79,7 +81,7 @@ class Error:
 def create_retry_after(retry_after: float) -> Error:
     return Error(
         429,
-        f"Retry after {retry_after} seconds.",
+        f"Retry after {retry_after:.2f} seconds.",
         ErrorType.RATE_LIMIT_EXCEEDED,
         retry_after=retry_after,
     )
@@ -183,6 +185,9 @@ class Cooldown:
         self.tokens = self.rate
         self.window = 0.0
 
+    def copy(self) -> Cooldown:
+        return self.__class__(self.rate, self.per)
+
     def update_tokens(self, current: Optional[float] = None) -> None:
         if not current:
             current = time.time()
@@ -190,7 +195,7 @@ class Cooldown:
         if current > self.window + self.per:
             self.tokens = self.rate  # reset token state
 
-    def update_rate_limit(self, current: Optional[float] = None) -> None:
+    def update_rate_limit(self, current: Optional[float] = None) -> Optional[float]:
         if not current:
             current = time.time()
 
@@ -213,16 +218,74 @@ class Cooldown:
 
 
 class CooldownMapping:
-    ...
+    def __init__(self, original: Cooldown) -> None:
+        self.cache: Dict[str, Cooldown] = {}
+        self.original = original
+
+    def copy(self) -> CooldownMapping:
+        self_copy = self.__class__(self.original)
+        self_copy.cache = self.cache.copy()
+        return self_copy
+
+    def clear_unused_cache(self, current: Optional[float] = None) -> None:
+        if not current:
+            current = time.time()
+
+        self.cache = {
+            key: value for key, value in self.cache.items() if current < value.last + value.per
+        }
+
+    def construct_key(self, request: web.Request) -> str:
+        return "#".join(map(str, (request.remote, request.path)))
+
+    def get_bucket(self, request: web.Request, current: Optional[float] = None) -> Cooldown:
+        self.clear_unused_cache()
+
+        key = self.construct_key(request)
+
+        if key in self.cache:
+            bucket = self.cache[key]
+        else:
+            bucket = self.original.copy()
+            self.cache[key] = bucket
+
+        return bucket
+
+    def update_rate_limit(self, request: web.Request, current: Optional[float] = None) -> Optional[float]:
+        bucket = self.get_bucket(request, current)
+        return bucket.update_rate_limit(current)
+
+    @classmethod
+    def from_cooldown(cls, rate: int, per: float) -> CooldownMapping:
+        return cls(Cooldown(rate, per))
+
+
+def cooldown(rate: int, per: float) -> Function:
+    def decorator(func: Function) -> Function:
+        func.cooldown = CooldownMapping.from_cooldown(rate, per)
+        return func
+    return decorator
 
 
 @web.middleware
 async def rate_limit_middleware(request: web.Request, handler: Function) -> web.Response:
-    ...
+    cooldown = getattr(get_original_handler(handler), "cooldown", None)
+
+    if cooldown:
+        retry_after = cooldown.update_rate_limit(request)
+
+        if retry_after:
+            retry_after = round(retry_after, 5)
+            return (
+                create_retry_after(retry_after)
+                .into_resp(headers={"Retry-After": str(retry_after)})
+            )
+
+    return await handler(request)
 
 
 DEFAULT_MIDDLEWARES = [
-    auth_middleware,
+    rate_limit_middleware, auth_middleware,
     web.normalize_path_middleware(append_slash=False, remove_slash=True),
 ]
 
@@ -575,6 +638,7 @@ async def delete_level(request: web.Request) -> web.Response:
     }
 )
 @auth_setup(required=False)
+@cooldown(rate=10, per=50)
 async def download_level(request: web.Request) -> web.Response:
     level_id = int(request.match_info.get("level_id"))
     # "raw", "parsed", "editor"
@@ -660,6 +724,7 @@ async def get_messages(request: web.Request) -> web.Response:
     }
 )
 @auth_setup(login=True)
+@cooldown(rate=5, per=5)
 async def send_message(request: web.Request) -> web.Response:
     query = request.match_info.get("query")
 
