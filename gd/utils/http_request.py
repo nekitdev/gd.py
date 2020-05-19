@@ -200,7 +200,12 @@ class HTTPClient:
             if self.debug:
                 log.debug(f"Headers: {dict(resp.request_info.headers)!r}")
                 self.last_result = data.decode(errors="replace")
-                log.debug(f"Response: {self.last_result}")
+
+                result = self.last_result
+                if len(result) > 1000:
+                    result = result[:1000] + "..."
+
+                log.debug(f"Response: {result}")
 
             try:
                 res = data.decode()
