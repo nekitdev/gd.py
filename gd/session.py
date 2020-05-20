@@ -1039,7 +1039,9 @@ class Session:
         return list(map(parser.parse, splitted))
 
     async def get_map_packs(self, pages: Sequence[int]) -> List[ExtDict]:
-        to_run = [self.get_page_map_packs(page=page, exclude=False) for page in pages]
+        to_run = [
+            self.get_page_map_packs(page=page, exclude=excluding(Exception)) for page in pages
+        ]
         return await self.run_many(to_run)
 
     async def get_page_friend_requests(

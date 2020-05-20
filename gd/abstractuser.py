@@ -10,6 +10,8 @@ from gd.typing import (
     Message,
     Optional,
     List,
+    Tuple,
+    Type,
     Union,
     User,
 )
@@ -29,6 +31,13 @@ def try_int(some: Any) -> int:
         return int(some)
     except Exception:  # noqa
         return 0
+
+
+def excluding(*args: Tuple[Type[BaseException]]) -> Tuple[Type[BaseException]]:
+    return args
+
+
+DEFAULT_EXCLUDE: Tuple[Type[BaseException]] = excluding(NothingFound)
 
 
 class AbstractUser(AbstractEntity):
@@ -199,7 +208,9 @@ class AbstractUser(AbstractEntity):
         """
         return await self.client.send_friend_request(self, message)
 
-    async def get_levels_on_page(self, page: int = 0, *, raise_errors: bool = True) -> List[Level]:
+    async def get_levels_on_page(
+        self, page: int = 0, *, exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE
+    ) -> List[Level]:
         """|coro|
 
         Fetches user's levels on a given page.
@@ -210,7 +221,7 @@ class AbstractUser(AbstractEntity):
 
             await self.client.search_levels_on_page(
                 page=page, filters=gd.Filters.setup_by_user(),
-                user=self, raise_errors=raise_errors
+                user=self, exclude=exclude
             )
             # 'self' is an AbstractUser instance here.
 
@@ -219,8 +230,8 @@ class AbstractUser(AbstractEntity):
         page: :class:`int`
             Page to look for levels at.
 
-        raise_errors: :class:`bool`
-            Whether to raise errors if nothing was found or fetching failed.
+        exclude: Sequence[Type[:exc:`BaseException`]]
+            Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
         -------
@@ -229,7 +240,7 @@ class AbstractUser(AbstractEntity):
         """
         filters = Filters.setup_by_user()
         return await self.client.search_levels_on_page(
-            page=page, filters=filters, user=self, raise_errors=raise_errors
+            page=page, filters=filters, user=self, exclude=exclude
         )
 
     async def get_levels(self, pages: Iterable[int] = range(10)) -> List[Level]:
@@ -259,7 +270,11 @@ class AbstractUser(AbstractEntity):
         filters = Filters.setup_by_user()
         return await self.client.search_levels(pages=pages, filters=filters, user=self)
 
-    async def get_page_comments(self, page: int = 0) -> List[Comment]:
+    async def get_page_comments(
+        self,
+        page: int = 0,
+        exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE,
+    ) -> List[Comment]:
         """|coro|
 
         Gets user's profile comments on a specific page.
@@ -268,12 +283,15 @@ class AbstractUser(AbstractEntity):
 
         .. code-block:: python3
 
-            await self.retrieve_page_comments('profile', page)
+            await self.retrieve_page_comments('profile', page, exclude=exclude)
         """
-        return await self.retrieve_page_comments("profile", page)
+        return await self.retrieve_page_comments("profile", page, exclude=exclude)
 
     async def get_page_comment_history(
-        self, strategy: Union[int, str, CommentStrategy] = 0, page: int = 0
+        self,
+        strategy: Union[int, str, CommentStrategy] = 0,
+        page: int = 0,
+        exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE,
     ) -> List[Comment]:
         """|coro|
 
@@ -283,7 +301,7 @@ class AbstractUser(AbstractEntity):
 
         .. code-block:: python3
 
-            await self.retrieve_page_comments('profile', page, strategy=strategy)
+            await self.retrieve_page_comments('profile', page, strategy=strategy, exclude=exclude)
         """
         return await self.retrieve_page_comments("level", page, strategy=strategy)
 
@@ -339,10 +357,8 @@ class AbstractUser(AbstractEntity):
         page: :class:`int`
             Page to look comments at.
 
-        raise_errors: :class:`bool`
-            Indicates whether :exc:`.NothingFound` should be raised.
-            Should be set to false when getting several pages of comments,
-            like in :meth:`.User.retrieve_comments`.
+        exclude: Sequence[Type[:exc:`BaseException`]]
+            Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]
             A strategy to apply when searching. This is converted to :class:`.CommentStrategy`
