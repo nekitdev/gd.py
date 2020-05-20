@@ -17,6 +17,7 @@ from gd.typing import (
 )
 
 from gd.abstractentity import AbstractEntity
+from gd.errors import NothingFound
 
 from gd.utils.enums import CommentStrategy, LevelLeaderboardStrategy
 from gd.utils.filters import Filters
