@@ -2,7 +2,7 @@ import asyncio
 
 from gd.abstractuser import AbstractUser, LevelRecord
 from gd.comment import Comment
-from gd.errors import ClientException
+from gd.errors import ClientException, NothingFound
 from gd.friend_request import FriendRequest
 from gd.iconset import IconSet
 from gd.image import DEFAULT_SIZE, ImageType, resize, to_image, connect_images, to_bytes
@@ -12,7 +12,19 @@ from gd.logging import get_logger
 from gd.message import Message
 from gd.session import Session
 from gd.song import ArtistInfo, Author, Song
-from gd.typing import Any, Client, Coroutine, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from gd.typing import (
+    Any,
+    Client,
+    Coroutine,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+)
 from gd.user import User, UserStats
 
 from gd.events.listener import (
@@ -47,6 +59,12 @@ from gd import api, utils
 
 log = get_logger(__name__)
 
+
+def excluding(*args: Tuple[Type[BaseException]]) -> Tuple[Type[BaseException]]:
+    return args
+
+
+DEFAULT_EXCLUDE: Tuple[Type[BaseException]] = excluding(NothingFound)
 DAILY, WEEKLY = -1, -2
 
 
@@ -658,7 +676,7 @@ class Client:
         return list(Gauntlet.from_data(part, client=self) for part in data)
 
     async def get_page_map_packs(
-        self, page: int = 0, *, raise_errors: bool = True
+        self, page: int = 0, *, exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE
     ) -> List[MapPack]:
         """|coro|
 
@@ -669,8 +687,8 @@ class Client:
         page: :class:`int`
             Page to look for map packs on.
 
-        raise_errors: :class:`bool`
-            Indicates whether :exc:`.NothingFound` should be raised. ``True`` by default.
+        exclude: Sequence[Type[:exc:`BaseException`]]
+            Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
         -------
@@ -682,7 +700,7 @@ class Client:
         :exc:`.NothingFound`
             No map packs were found at the given page.
         """
-        data = await self.session.get_page_map_packs(page=page)
+        data = await self.session.get_page_map_packs(page=page, exclude=exclude)
         return list(MapPack.from_data(part, client=self) for part in data)
 
     async def get_map_packs(self, pages: Optional[Iterable[int]] = range(10)) -> List[MapPack]:
@@ -864,7 +882,9 @@ class Client:
             return Level(id=level_id, client=self)
 
     @check_logged
-    async def get_page_levels(self, page: int = 0, *, raise_errors: bool = True) -> List[Level]:
+    async def get_page_levels(
+        self, page: int = 0, *, exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE
+    ) -> List[Level]:
         """|coro|
 
         Gets levels of a client from a server.
@@ -878,8 +898,8 @@ class Client:
         page: :class:`int`
             Page to look levels at.
 
-        raise_errors: :class:`bool`
-            Indicates whether :exc:`.MissingAccess` should be raised. ``True`` by default.
+        exclude: Sequence[Type[:exc:`BaseException`]]
+            Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
         -------
@@ -892,7 +912,7 @@ class Client:
             No levels were found.
         """
         filters = Filters.setup_by_user()
-        return await self.search_levels_on_page(filters=filters, raise_errors=raise_errors)
+        return await self.search_levels_on_page(filters=filters, exclude=exclude)
 
     @check_logged
     async def get_levels(self, pages: Optional[Iterable[int]] = range(10)) -> List[Level]:
@@ -1378,8 +1398,8 @@ class Client:
         user: AbstractUser,
         type: str = "profile",
         page: int = 0,
-        raise_errors: bool = True,
         strategy: Union[int, str, CommentStrategy] = 0,
+        exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE,
     ) -> List[Comment]:
         """|coro|
 
@@ -1394,8 +1414,8 @@ class Client:
             Either ``profile`` or ``level``.
         page: :class:`int`
             Page to look comments on.
-        raise_errors: :class:`bool`
-            Whether to raise errors. Defaults to ``True``.
+        exclude: Sequence[Type[:exc:`BaseException`]]
+            Exceptions to ignore. By default includes only :exc:`.NothingFound`.
         strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]
             Strategy to use. ``recent`` or ``most_liked``.
 
@@ -1406,12 +1426,7 @@ class Client:
         """
         strategy = CommentStrategy.from_value(strategy)
         data = await self.session.retrieve_page_comments(
-            user.account_id,
-            user.id,
-            type=type,
-            page=page,
-            raise_errors=raise_errors,
-            strategy=strategy,
+            user.account_id, user.id, type=type, page=page, exclude=exclude, strategy=strategy,
         )
         return list(Comment.from_data(part, user, client=self) for part in data)
 
@@ -1435,8 +1450,6 @@ class Client:
             Either ``profile`` or ``level``.
         pages: Iterable[:class:`int`]
             Pages to look comments on.
-        raise_errors: :class:`bool`
-            Whether to raise errors. Defaults to ``True``.
         strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]
             Strategy to use. ``recent`` or ``most_liked``.
 
@@ -1639,7 +1652,11 @@ class Client:
         return list(LevelRecord.from_data(part, strategy=strategy, client=self) for part in data)
 
     async def get_level_comments(
-        self, level: Level, strategy: Union[int, str, CommentStrategy] = 0, amount: int = 20
+        self,
+        level: Level,
+        strategy: Union[int, str, CommentStrategy] = 0,
+        amount: int = 20,
+        exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE,
     ) -> List[Comment]:
         """|coro|
 
@@ -1654,8 +1671,11 @@ class Client:
             Strategy to use when fetching a leaderboard.
 
         amount: :class:`int`
-            Amount of comments to fetch. When lower than *0*, adds *2^32* to the amount.
+            Amount of comments to fetch. When lower than *0*, adds *2^31* to the amount.
             (meaning to fetch all the comments)
+
+        exclude: Sequence[Type[:exc:`BaseException`]]
+            Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
         -------
@@ -1666,15 +1686,25 @@ class Client:
             amount += 2 ** 31  # 2,147,483,648 is enough?! ~ nekit
 
         data = await self.session.get_level_comments(
-            level_id=level.id, strategy=CommentStrategy.from_value(strategy), amount=amount
+            level_id=level.id,
+            strategy=CommentStrategy.from_value(strategy),
+            amount=amount,
+            exclude=exclude,
         )
         return list(Comment.from_data(part, user_data, client=self) for (part, user_data) in data)
 
     @check_logged
-    async def get_blocked_users(self) -> List[AbstractUser]:
+    async def get_blocked_users(
+        self, exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE
+    ) -> List[AbstractUser]:
         """|coro|
 
         Get all users blocked by a client.
+
+        Parameters
+        ----------
+        exclude: Sequence[Type[:exc:`BaseException`]]
+            Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
         -------
@@ -1689,14 +1719,21 @@ class Client:
         :exc:`.NothingFound`
             No blocked users were found. Cool.
         """
-        data = await self.session.get_user_list(type=1, client=self)
+        data = await self.session.get_user_list(type=1, exclude=exclude, client=self)
         return list(AbstractUser.from_data(part, client=self) for part in data)
 
     @check_logged
-    async def get_friends(self) -> List[AbstractUser]:
+    async def get_friends(
+        self, exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE
+    ) -> List[AbstractUser]:
         """|coro|
 
         Get all friends of a client.
+
+        Parameters
+        ----------
+        exclude: Sequence[Type[:exc:`BaseException`]]
+            Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
         -------
@@ -1711,7 +1748,7 @@ class Client:
         :exc:`.NothingFound`
             No friends were found. Sadly...
         """
-        data = await self.session.get_user_list(type=0, client=self)
+        data = await self.session.get_user_list(type=0, exclude=exclude, client=self)
         return list(AbstractUser.from_data(part, client=self) for part in data)
 
     @check_logged
@@ -1730,7 +1767,11 @@ class Client:
 
     @check_logged
     async def get_page_messages(
-        self, sent_or_inbox: str = "inbox", page: int = 0, *, raise_errors: bool = True
+        self,
+        sent_or_inbox: str = "inbox",
+        page: int = 0,
+        *,
+        exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE,
     ) -> List[Message]:
         """|coro|
 
@@ -1746,8 +1787,8 @@ class Client:
         page: :class:`int`
             Number of page to look at.
 
-        raise_errors: :class:`bool`
-            Indicates whether errors should be raised.
+        exclude: Sequence[Type[:exc:`BaseException`]]
+            Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
         -------
@@ -1757,13 +1798,13 @@ class Client:
         Raises
         ------
         :exc:`.MissingAccess`
-            Failed to get messages. Raised if ``raise_errors`` is ``True``.
+            Failed to get messages.
 
         :exc:`.NothingFound`
-            No messages were found. Raised if ``raise_errors`` is ``True``.
+            No messages were found.
         """
         data = await self.session.get_page_messages(
-            sent_or_inbox=sent_or_inbox, page=page, raise_errors=raise_errors, client=self
+            sent_or_inbox=sent_or_inbox, page=page, exclude=exclude, client=self
         )
         return list(Message.from_data(part, self.get_parse_dict(), client=self) for part in data)
 
@@ -1797,7 +1838,11 @@ class Client:
 
     @check_logged
     async def get_page_friend_requests(
-        self, sent_or_inbox: str = "inbox", page: int = 0, *, raise_errors: bool = True
+        self,
+        sent_or_inbox: str = "inbox",
+        page: int = 0,
+        *,
+        exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE,
     ) -> List[FriendRequest]:
         """|coro|
 
@@ -1813,8 +1858,8 @@ class Client:
         page: :class:`int`
             Number of page to look at.
 
-        raise_errors: :class:`bool`
-            Indicates whether errors should be raised.
+        exclude: Sequence[Type[:exc:`BaseException`]]
+            Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
         -------
@@ -1824,13 +1869,13 @@ class Client:
         Raises
         ------
         :exc:`.MissingAccess`
-            Failed to get friend requests. Raised if ``raise_errors`` is ``True``.
+            Failed to get friend requests.
 
         :exc:`.NothingFound`
-            No friend requests were found. Raised if ``raise_errors`` is ``True``.
+            No friend requests were found.
         """
         data = await self.session.get_page_friend_requests(
-            sent_or_inbox=sent_or_inbox, page=page, raise_errors=raise_errors, client=self
+            sent_or_inbox=sent_or_inbox, page=page, exclude=exclude, client=self
         )
         return list(
             FriendRequest.from_data(part, self.get_parse_dict(), client=self) for part in data
@@ -2146,7 +2191,7 @@ class Client:
         filters: Optional[Filters] = None,
         user: Optional[Union[int, AbstractUser, User]] = None,
         *,
-        raise_errors: bool = True,
+        exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE,
     ) -> List[Level]:
         """|coro|
 
@@ -2168,8 +2213,8 @@ class Client:
             equal to :class:`.SearchStrategy` ``BY_USER``. Can be omitted, then
             logged in client is required.)
 
-        raise_errors: :class:`bool`
-            Whether or not to raise errors.
+        exclude: Sequence[Type[:exc:`BaseException`]]
+            Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
         -------
@@ -2180,12 +2225,7 @@ class Client:
             user = user.id
 
         lvdata, cdata, sdata = await self.session.search_levels_on_page(
-            page=page,
-            query=query,
-            filters=filters,
-            user_id=user,
-            raise_errors=raise_errors,
-            client=self,
+            page=page, query=query, filters=filters, user_id=user, exclude=exclude, client=self,
         )
 
         return construct_levels(lvdata, cdata, sdata, client=self)

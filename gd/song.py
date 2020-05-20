@@ -3,7 +3,7 @@ from urllib.parse import unquote
 
 import aiohttp
 
-from gd.typing import Any, Callable, Client, IO, Iterable, List, Optional, Song, Union
+from gd.typing import Any, Callable, Client, Dict, IO, Iterable, List, Optional, Song, Union
 
 from gd.abstractentity import AbstractEntity
 from gd.errors import ClientException
@@ -35,6 +35,9 @@ class ArtistInfo(AbstractEntity):
             "exists": self.exists,
         }
         return make_repr(self, info)
+
+    def _json(self) -> Dict[str, Any]:
+        return dict(super()._json(), exists=self.exists)
 
     @property
     def artist(self) -> str:

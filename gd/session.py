@@ -16,6 +16,7 @@ from gd.typing import (
     Optional,
     Sequence,
     Tuple,
+    Type,
     Union,
 )
 
@@ -387,7 +388,9 @@ class Session:
 
         return level_id
 
-    async def get_user_list(self, type: int = 0, *, client: Client) -> List[ExtDict]:
+    async def get_user_list(
+        self, type: int = 0, *, exclude: Tuple[Type[BaseException]] = (), client: Client
+    ) -> List[ExtDict]:
         payload = (
             Params()
             .create_new()
@@ -401,7 +404,13 @@ class Session:
             -2: NothingFound("gd.AbstractUser"),
         }
 
-        resp = await self.http.request(Route.GET_USER_LIST, payload, error_codes=codes)
+        resp = await self.http.request(
+            Route.GET_USER_LIST, payload, error_codes=codes, exclude=exclude
+        )
+
+        if resp is None:
+            return []
+
         resp, parser = resp.split("|"), Parser().with_split(":").should_map()
 
         return list(map(parser.parse, resp))
@@ -448,7 +457,7 @@ class Session:
         resp = await self.http.request(Route.GET_LEVEL_SCORES, payload, error_codes=codes)
 
         if not resp:
-            return list()
+            return []
 
         resp, parser = (
             resp.split("|"),
@@ -554,7 +563,7 @@ class Session:
         user_id: Optional[int] = None,
         gauntlet: Optional[int] = None,
         *,
-        raise_errors: bool = True,
+        exclude: Tuple[Type[BaseException]] = (),
         client: Client,
     ) -> Tuple[List[ExtDict], List[ExtDict], List[ExtDict]]:
         # levels, creators, songs
@@ -592,7 +601,7 @@ class Session:
         payload = params.finish()
 
         resp = await self.http.request(
-            Route.LEVEL_SEARCH, payload, raise_errors=raise_errors, error_codes=codes
+            Route.LEVEL_SEARCH, payload, exclude=exclude, error_codes=codes
         )
 
         if not resp:
@@ -630,7 +639,7 @@ class Session:
                 filters=filters,
                 user_id=user_id,
                 page=page,
-                raise_errors=False,
+                exclude=excluding(Exception),
                 client=client,
             )
             for page in pages
@@ -785,7 +794,12 @@ class Session:
             raise MissingAccess(f"Failed to like an item by ID: {item_id}.")
 
     async def get_page_messages(
-        self, sent_or_inbox: str, page: int, *, raise_errors: bool = True, client: Client
+        self,
+        sent_or_inbox: str,
+        page: int,
+        *,
+        exclude: Tuple[Type[BaseException]] = (),
+        client: Client,
     ) -> List[ExtDict]:
         assert sent_or_inbox in ("inbox", "sent")
         inbox = 0 if sent_or_inbox != "sent" else 1
@@ -803,12 +817,12 @@ class Session:
         codes = {-1: MissingAccess("Failed to get messages."), -2: NothingFound("gd.Message")}
 
         resp = await self.http.request(
-            Route.GET_PRIVATE_MESSAGES, payload, error_codes=codes, raise_errors=raise_errors
+            Route.GET_PRIVATE_MESSAGES, payload, error_codes=codes, exclude=exclude
         )
         resp = Parser().split("#").take(0).check_empty().split("|").parse(resp)
 
         if resp is None:
-            return list()
+            return []
 
         parser = Parser().with_split(":").should_map()
         return list(map(parser.parse, resp))
@@ -820,7 +834,7 @@ class Session:
 
         to_run = [
             self.get_page_messages(
-                sent_or_inbox=sent_or_inbox, page=page, raise_errors=False, client=client
+                sent_or_inbox=sent_or_inbox, page=page, exclude=excluding(Exception), client=client
             )
             for page in pages
         ]
@@ -1007,7 +1021,7 @@ class Session:
         return list(map(parser.parse, filter(is_not_empty, splitted)))
 
     async def get_page_map_packs(
-        self, page: int = 0, *, raise_errors: bool = True
+        self, page: int = 0, *, exclude: Tuple[Type[BaseException]] = (),
     ) -> List[ExtDict]:
         payload = Params().create_new().put_page(page).finish()
 
@@ -1016,16 +1030,16 @@ class Session:
         splitted = Parser().split("#").take(0).split("|").check_empty().should_map().parse(resp)
 
         if not splitted:
-            if raise_errors:
-                raise NothingFound("gd.MapPack")
-            return list()
+            if issubclass(NothingFound, exclude):
+                return []
+            raise NothingFound("gd.MapPack")
 
         parser = Parser().with_split(":").should_map()
 
         return list(map(parser.parse, splitted))
 
     async def get_map_packs(self, pages: Sequence[int]) -> List[ExtDict]:
-        to_run = [self.get_page_map_packs(page=page, raise_errors=False) for page in pages]
+        to_run = [self.get_page_map_packs(page=page, exclude=False) for page in pages]
         return await self.run_many(to_run)
 
     async def get_page_friend_requests(
@@ -1033,7 +1047,7 @@ class Session:
         sent_or_inbox: str = "inbox",
         page: int = 0,
         *,
-        raise_errors: bool = True,
+        exclude: Tuple[Type[BaseException]] = (),
         client: Client,
     ) -> List[ExtDict]:
         inbox = int(sent_or_inbox == "sent")
@@ -1054,12 +1068,12 @@ class Session:
         }
 
         resp = await self.http.request(
-            Route.GET_FRIEND_REQUESTS, payload, error_codes=codes, raise_errors=raise_errors
+            Route.GET_FRIEND_REQUESTS, payload, error_codes=codes, exclude=exclude
         )
         splitted = Parser().split("#").take(0).split("|").check_empty().parse(resp)
 
         if resp is None:
-            return list()
+            return []
 
         parser = Parser().split(":").add_ext({"101": inbox}).should_map()
 
@@ -1072,7 +1086,7 @@ class Session:
 
         to_run = [
             self.get_page_friend_requests(
-                sent_or_inbox=sent_or_inbox, page=page, raise_errors=False, client=client
+                sent_or_inbox=sent_or_inbox, page=page, exclude=excluding(Exception), client=client
             )
             for page in pages
         ]
@@ -1086,8 +1100,8 @@ class Session:
         type: str = "profile",
         page: int = 0,
         *,
-        raise_errors: bool = True,
         strategy: CommentStrategy,
+        exclude: Tuple[Type[BaseException]] = (),
     ) -> List[ExtDict]:
         assert isinstance(page, int) and page >= 0
         assert type in ("profile", "level")
@@ -1115,17 +1129,17 @@ class Session:
             -1: MissingAccess(f"Failed to retrieve comment for user by Account ID: {account_id!r}.")
         }
 
-        resp = await self.http.request(route, payload, error_codes=codes, raise_errors=raise_errors)
+        resp = await self.http.request(route, payload, error_codes=codes, exclude=exclude)
 
         if not resp:
-            return list()
+            return []
 
         splitted = resp.split("#").pop(0)
 
         if not splitted:
-            if raise_errors:
-                raise NothingFound("gd.Comment")
-            return list()
+            if issubclass(NothingFound, exclude):
+                return []
+            raise NothingFound("gd.Comment")
 
         return list(map(parser.parse, filter(is_not_empty, splitted.split("|"))))
 
@@ -1146,7 +1160,7 @@ class Session:
                 account_id=account_id,
                 id=id,
                 page=page,
-                raise_errors=False,
+                exclude=excluding(Exception),
                 strategy=strategy,
             )
             for page in pages
@@ -1155,7 +1169,11 @@ class Session:
         return await self.run_many(to_run)
 
     async def get_level_comments(
-        self, level_id: int, strategy: CommentStrategy, amount: int
+        self,
+        level_id: int,
+        strategy: CommentStrategy,
+        amount: int,
+        exclude: Tuple[Type[BaseException]] = (),
     ) -> List[Tuple[ExtDict, ExtDict]]:
         # comment, user
         payload = (
@@ -1173,7 +1191,12 @@ class Session:
             -2: NothingFound("gd.Comment"),
         }
 
-        resp = await self.http.request(Route.GET_COMMENTS, payload, error_codes=codes)
+        resp = await self.http.request(
+            Route.GET_COMMENTS, payload, error_codes=codes, exclude=exclude
+        )
+
+        if resp is None:
+            return []
 
         splitted = Parser().split("#").take(0).split("|").parse(resp)
         parser = Parser().with_split("~").should_map()
@@ -1354,6 +1377,10 @@ class Session:
             res = list(chain.from_iterable(res))
 
         return res
+
+
+def excluding(*args: Tuple[Type[BaseException]]) -> Tuple[Type[BaseException]]:
+    return args
 
 
 def iterable(maybe_iterable: Iterable) -> bool:

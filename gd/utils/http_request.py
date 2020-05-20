@@ -6,7 +6,7 @@ import aiohttp
 
 import gd
 
-from gd.typing import Any, Dict, List, Optional, Union
+from gd.typing import Any, Dict, List, Optional, Tuple, Type, Union
 from gd.logging import get_logger
 from gd.errors import HTTPError
 from gd.utils.text_tools import make_repr
@@ -189,8 +189,13 @@ class HTTPClient:
         ) as client:
             try:
                 resp = await client.request(
-                    method=method, url=url, data=data, params=params, headers=headers,
-                    proxy=self.proxy, proxy_auth=self.proxy_auth,
+                    method=method,
+                    url=url,
+                    data=data,
+                    params=params,
+                    headers=headers,
+                    proxy=self.proxy,
+                    proxy_auth=self.proxy_auth,
                 )
             except VALID_ERRORS as exc:
                 raise HTTPError(exc) from None
@@ -234,7 +239,7 @@ class HTTPClient:
         method: Optional[str] = None,
         # 'error_codes' is a dict: {code: error_to_raise}
         error_codes: Optional[Dict[int, Exception]] = None,
-        raise_errors: bool = True,
+        exclude: Tuple[Type[BaseException]] = (),
         should_map: bool = False,
         get_cookies: bool = False,
         cookie: Optional[str] = None,
@@ -247,15 +252,13 @@ class HTTPClient:
         ----------
         error_codes: Dict[:class:`int`, :exc:`Exception`]
             A dictionary that response is checked against. ``Exception`` can be any Exception.
-        raise_errors: :class:`bool`
-            If ``False``, errors are not raised.
-            (technically, just turns on ignoring ``error_codes``)
+        exclude: Tuple[Type[:exc:`BaseException`]]
+            Types of errors to ignore.
 
         Raises
         ------
         :exc:`.HTTPError`
             GD Server has destroyed the connection, or machine has no connection.
-            Raised when :meth:`HTTPClient.fetch` returns ``None`` and ``raise_errors`` is ``True``.
         :exc:`Exception`
             Exception specified in ``error_codes``, if present.
 
@@ -264,8 +267,7 @@ class HTTPClient:
         Optional[Union[:class:`int`, :class:`bytes`, :class:`str`]]
             If ``error_codes`` is omitted,
             return type is same as return of :meth:`HTTPClient.fetch` call.
-            If ``error_codes`` is specified, and ``raise_errors`` is ``False``, returns ``None``
-            when response is in ``error_codes``.
+            If error is raised and it is in ``exclude``, returns ``None``.
         """
         if params is None:
             params = {}
@@ -285,14 +287,10 @@ class HTTPClient:
                 method=method,
             )
 
-        except HTTPError:
-            if raise_errors:
-                raise
-            return
-
-        if resp in error_codes:
-            if raise_errors:
+            if resp in error_codes:
                 raise error_codes.get(resp)
+
+        except exclude:
             return
 
         return resp

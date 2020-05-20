@@ -1,11 +1,11 @@
 from gd.logging import get_logger
-from gd.typing import Client, Comment, Level, LevelRecord, List, Optional, Union
+from gd.typing import Client, Comment, Level, LevelRecord, List, Optional, Tuple, Type, Union
 
 from gd.abstractentity import AbstractEntity
 from gd.abstractuser import AbstractUser
 from gd.song import Song
 
-from gd.errors import MissingAccess
+from gd.errors import MissingAccess, NothingFound
 
 from gd.api.editor import Editor
 
@@ -24,6 +24,13 @@ from gd.utils.text_tools import make_repr, object_split
 from gd.utils.crypto.coders import Coder
 
 log = get_logger(__name__)
+
+
+def excluding(*args: Tuple[Type[BaseException]]) -> Tuple[Type[BaseException]]:
+    return args
+
+
+DEFAULT_EXCLUDE: Tuple[Type[BaseException]] = excluding(NothingFound)
 
 
 class Level(AbstractEntity):
@@ -732,7 +739,10 @@ class Level(AbstractEntity):
         return await self.client.get_level_leaderboard(self, strategy=strategy)
 
     async def get_comments(
-        self, strategy: Union[int, str, CommentStrategy] = 0, amount: int = 20
+        self,
+        strategy: Union[int, str, CommentStrategy] = 0,
+        amount: int = 20,
+        exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE,
     ) -> List[Comment]:
         """|coro|
 
@@ -748,6 +758,9 @@ class Level(AbstractEntity):
             Amount of comments to retrieve. Default is ``20``.
             For ``amount < 0``, ``2 ** 31`` is added, allowing to fetch
             a theoretical limit of comments.
+
+        exclude: Sequence[Type[:exc:`BaseException`]]
+            Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
         -------
@@ -765,4 +778,6 @@ class Level(AbstractEntity):
         :exc:`.FailedConversion`
             Raised if ``strategy`` can not be converted to :class:`.CommentStrategy`.
         """
-        return await self.client.get_level_comments(self, strategy=strategy, amount=amount)
+        return await self.client.get_level_comments(
+            self, strategy=strategy, amount=amount, exclude=exclude
+        )

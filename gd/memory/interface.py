@@ -273,6 +273,10 @@ class WindowsMemory(MemoryType):
     def is_in_editor(self) -> bool:
         return self.read_bytes(1, 0x3222D0, 0x168).as_bool()
 
+    def get_user_name(self) -> str:
+        base = self.read_bytes(self.PTR_LEN, 0x3222D8).as_int()
+        return self.read_string(base, 0x108)
+
     def is_dead(self) -> bool:
         return self.read_bytes(1, 0x3222D0, 0x164, 0x39C).as_bool()
 

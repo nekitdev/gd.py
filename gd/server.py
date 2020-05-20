@@ -8,17 +8,32 @@ import re
 import secrets
 import time
 
+from pathlib import Path
+
 from aiohttp import web
 import aiohttp
 
 from gd.typing import (
-    Any, Callable, Dict, Generator, Iterable, List, Optional, Sequence, Type, Union, ref
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    Union,
+    ref,
 )
 import gd
 
 AUTH_RE = re.compile(r"(?:Token )?(?P<token>[A-Fa-z0-9]+)")
+CHUNK_SIZE = 64 * 1024
 CLIENT = gd.Client()
 JSON_PREFIX = "json_"
+ROOT_PATH = Path(".gd")
+ROOT_PATH.mkdir()
 
 Function = Callable[[Any], Any]
 Error = ref("gd.server.Error")
@@ -270,7 +285,9 @@ class CooldownMapping:
 
         return bucket
 
-    def update_rate_limit(self, request: web.Request, current: Optional[float] = None) -> Optional[float]:
+    def update_rate_limit(
+        self, request: web.Request, current: Optional[float] = None
+    ) -> Optional[float]:
         bucket = self.get_bucket(request, current)
         return bucket.update_rate_limit(current)
 
@@ -283,6 +300,7 @@ def cooldown(rate: int, per: float) -> Function:
     def decorator(func: Function) -> Function:
         func.cooldown = CooldownMapping.from_cooldown(rate, per)
         return func
+
     return decorator
 
 
@@ -295,16 +313,17 @@ async def rate_limit_middleware(request: web.Request, handler: Function) -> web.
 
         if retry_after:
             retry_after = round(retry_after, 5)
-            return (
-                create_retry_after(retry_after)
-                .into_resp(headers={"Retry-After": str(retry_after)})
+            return create_retry_after(retry_after).into_resp(
+                headers={"Retry-After": str(retry_after)}
             )
 
     return await handler(request)
 
 
 DEFAULT_MIDDLEWARES = [
-    rate_limit_middleware, auth_middleware, forward_middleware,
+    rate_limit_middleware,
+    auth_middleware,
+    forward_middleware,
     web.normalize_path_middleware(append_slash=False, remove_slash=True),
 ]
 
@@ -571,6 +590,19 @@ async def song_search(request: web.Request) -> web.Response:
     return json_resp(await request.app.client.get_song(query))
 
 
+@routes.get("/api/artist_info/{id}")
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Requested artist info was not found", ErrorType.NOT_FOUND),
+    }
+)
+@auth_setup(required=False)
+async def get_artist_info(request: web.Request) -> web.Response:
+    query = int(request.match_info.get("id"))
+    return json_resp(await request.app.client.get_artist_info(query))
+
+
 @routes.get("/api/search/user/{query}")
 @handle_errors({gd.MissingAccess: Error(404, "Requested user was not found.", ErrorType.NOT_FOUND)})
 @auth_setup(required=False)
@@ -649,7 +681,29 @@ async def delete_level(request: web.Request) -> web.Response:
     return json_resp({})
 
 
-@routes.get("/api/install/{level_id}")
+@routes.get("/api/install/song/{song_id}")
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Requested song not found.", ErrorType.NOT_FOUND),
+    }
+)
+@auth_setup(required=False)
+async def download_song(request: web.Request) -> web.FileResponse:
+    song_id = int(request.match_info.get("song_id"))
+
+    path = ROOT_PATH / f"song-{song_id}.mp3"
+
+    if path.exists():
+        return web.FileResponse(path)
+
+    song = await request.app.client.get_ng_song(song_id)
+    await song.download(file=path)
+
+    return web.FileResponse(path)
+
+
+@routes.get("/api/install/level/{level_id}")
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
@@ -733,6 +787,39 @@ async def get_messages(request: web.Request) -> web.Response:
         await gd.utils.gather(message.read() for message in messages)
 
     return json_resp(messages)
+
+
+@routes.get("/api/friend_requests")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to get friend requests.", ErrorType.FAILED)})
+@auth_setup(login=True)
+async def get_friend_requests(request: web.Request) -> web.Response:
+    pages = map(int, request.query.get("pages", "0").split(","))
+    sent = str_to_bool(request.query.get("sent", "false"))
+    read = str_to_bool(request.query.get("read", "false"))
+    sent_or_inbox = "sent" if sent else "inbox"
+
+    friend_requests = await request.app.client.get_friend_requests(sent_or_inbox, pages=pages)
+
+    if read:
+        await gd.utils.gather(friend_request.read() for friend_request in friend_requests)
+
+    return json_resp(friend_requests)
+
+
+@routes.get("/api/friends")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to get friends.", ErrorType.FAILED)})
+@auth_setup(login=True)
+async def get_friends(request: web.Request) -> web.Response:
+    friends = await request.app.client.get_friends()
+    return json_resp(friends)
+
+
+@routes.get("/api/blocked")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to get blocked users.", ErrorType.FAILED)})
+@auth_setup(login=True)
+async def get_blocked(request: web.Request) -> web.Response:
+    blocked = await request.app.client.get_blocked_users()
+    return json_resp(blocked)
 
 
 @routes.post("/api/send/{query}")
