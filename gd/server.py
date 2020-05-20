@@ -22,7 +22,9 @@ from gd.typing import (
     List,
     Optional,
     Sequence,
+    Tuple,
     Type,
+    TypeVar,
     Union,
     ref,
 )
@@ -32,8 +34,11 @@ AUTH_RE = re.compile(r"(?:Token )?(?P<token>[A-Fa-z0-9]+)")
 CHUNK_SIZE = 64 * 1024
 CLIENT = gd.Client()
 JSON_PREFIX = "json_"
+T = TypeVar("T")
+
 ROOT_PATH = Path(".gd")
-ROOT_PATH.mkdir()
+if not ROOT_PATH.exists():
+    ROOT_PATH.mkdir()
 
 Function = Callable[[Any], Any]
 Error = ref("gd.server.Error")
@@ -445,6 +450,47 @@ def str_to_bool(
         raise ValueError(f"Invalid string given: {string!r}.")
 
 
+def string_to_enum(string: str, enum: gd.Enum) -> gd.Enum:
+    if string.isdigit():
+        return enum.from_value(int(string))
+    return enum.from_value(string)
+
+
+def get_value(parameter: str, function: Function, default: Any, request: web.Request) -> Any:
+    value = request.query.get(parameter)
+    if value is None:
+        value = default
+    else:
+        value = function(value)
+    return value
+
+
+UPLOAD_QUERY: Dict[str, Tuple[Union[Callable[[str], T], T]]] = {
+    "name": (str, "Unnamed"),
+    "id": (int, 0),
+    "version": (int, 1),
+    "length": (
+        functools.partial(string_to_enum, enum=gd.LevelLength),
+        gd.LevelLength.TINY,
+    ),
+    "track": (int, 0),
+    "song_id": (int, 0),
+    "is_auto": (str_to_bool, False),
+    "original": (int, 0),
+    "two_player": (str_to_bool, False),
+    "objects": (int, None),
+    "coins": (int, 0),
+    "star_amount": (int, 0),
+    "unlist": (str_to_bool, False),
+    "ldm": (str_to_bool, False),
+    "password": (int, None),
+    "copyable": (str_to_bool, False),
+    "data": (str, ""),
+    "description": (str, ""),
+    "load": (str_to_bool, True),
+}
+
+
 def parse_route_docs() -> Generator[Dict[str, Union[Dict[Union[str, int], str], str]], None, None]:
     for route in routes:
         info = dict(name=route.handler.__name__)
@@ -772,6 +818,44 @@ async def get_weekly(request: web.Request) -> web.Response:
     return json_resp(await request.app.client.get_weekly())
 
 
+@routes.get("/api/gauntlets")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to load gauntlets.", ErrorType.FAILED)})
+@auth_setup(required=False)
+async def get_gauntlets(request: web.Request) -> web.Response:
+    return json_resp(await request.app.client.get_gauntlets())
+
+
+@routes.get("/api/map_packs")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to load map packs.", ErrorType.FAILED)})
+@auth_setup(required=False)
+async def get_map_packs(request: web.Request) -> web.Response:
+    pages = map(int, request.query.get("pages", "0").split(","))
+    return json_resp(await request.app.client.get_map_packs(pages=pages))
+
+
+@routes.post("/api/level")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to upload a level.", ErrorType.FAILED)})
+@auth_setup(login=True)
+@cooldown(rate=10, per=50)
+async def upload_level(request: web.Request) -> web.Response:
+    upload_arguments = {
+        parameter: get_value(parameter, function, default, request)
+        for (parameter, (function, default)) in UPLOAD_QUERY.items()
+    }
+
+    level = await request.app.client.upload_level(**upload_arguments)
+
+    return json_resp(level)
+
+
+@routes.get("/api/levels")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to get levels.", ErrorType.FAILED)})
+@auth_setup(login=True)
+async def get_levels(request: web.Request) -> web.Response:
+    pages = map(int, request.query.get("pages", "0").split(","))
+    return json_resp(await request.app.client.get_levels(pages=pages))
+
+
 @routes.get("/api/messages")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to load messages.", ErrorType.FAILED)})
 @auth_setup(login=True)
@@ -844,8 +928,7 @@ async def send_message(request: web.Request) -> web.Response:
     else:
         user = await request.app.client.find_user(query)
 
-    await user.send(subject, body)
-    return json_resp({})
+    return json_resp(await user.send(subject, body))
 
 
 @routes.get("/api/ng/song/{id}")

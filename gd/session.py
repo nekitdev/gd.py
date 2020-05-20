@@ -35,6 +35,7 @@ from gd.utils.enums import (
     DemonDifficulty,
     LeaderboardStrategy,
     LevelLeaderboardStrategy,
+    LevelLength,
     MessageOrRequestType,
     SearchStrategy,  # TimelyType
 )
@@ -305,7 +306,7 @@ class Session:
         name: str,
         level_id: int,
         version: int,
-        length: int,
+        length: LevelLength,
         audio_track: int,
         desc: str,
         song_id: int,
@@ -359,7 +360,7 @@ class Session:
             "level_name": name,
             "level_desc": desc,
             "level_version": version,
-            "level_length": length,
+            "level_length": length.value,
             "audio_track": audio_track,
             "auto": int(is_auto),
             "original": int(original),

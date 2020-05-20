@@ -111,3 +111,6 @@ venv.bak/
 
 # Cython-generated C++ files
 /src/*.cpp
+
+# gd.server folder
+.gd/

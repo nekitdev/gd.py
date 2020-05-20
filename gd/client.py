@@ -44,6 +44,7 @@ from gd.utils.enums import (
     IconType,
     LeaderboardStrategy,
     LevelLeaderboardStrategy,
+    LevelLength,
     MessagePolicyType,
 )
 from gd.utils.filters import Filters
@@ -772,7 +773,7 @@ class Client:
         name: str = "Unnamed",
         id: int = 0,
         version: int = 1,
-        length: int = 0,
+        length: Union[int, str, LevelLength] = 0,
         track: int = 0,
         song_id: int = 0,
         is_auto: bool = False,
@@ -803,7 +804,7 @@ class Client:
             non-zero when attempting to update already existing level.
         version: :class:`int`
             A version of the level.
-        length: :class:`int`
+        length: Union[:class:`int`, :class:`str`, :class:`.LevelLength`]
             A length of the level. See :class:`.LevelLength` for more info.
         track: :class:`int`
             A normal track to set, e.g. ``0 - Stereo Madness, 1 - Back on Track, ...``.
@@ -853,6 +854,8 @@ class Client:
         """
         if objects is None:
             objects = len(utils.object_split(data))
+
+        length = LevelLength.from_value(length)
 
         level_id = await self.session.upload_level(
             data=data,
