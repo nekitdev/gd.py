@@ -343,6 +343,7 @@ class AbstractUser(AbstractEntity):
         *,
         raise_errors: bool = True,
         strategy: Union[int, str, CommentStrategy] = 0,
+        exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE,
     ) -> List[Comment]:
         """|coro|
 

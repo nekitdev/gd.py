@@ -252,6 +252,12 @@ class WindowsMemory(MemoryType):
     def reload(self) -> None:
         self.load()
 
+    def is_level_epic(self) -> bool:
+        ...
+
+    def is_level_featured(self) -> bool:
+        ...
+
     def get_scene_value(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x1DC).as_int()
 
