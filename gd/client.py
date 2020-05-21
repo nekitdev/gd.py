@@ -1080,7 +1080,7 @@ class Client:
         :exc:`.MissingAccess`
             Failed to read a request.
         """
-        await self.session.read_friend_req(request.id, client=self)
+        await self.session.read_friend_request(request.id, client=self)
         request.options.update(is_read=True)
 
     @check_logged
@@ -1099,7 +1099,7 @@ class Client:
         :exc:`.MissingAccess`
             Failed to delete a friend request.
         """
-        await self.session.delete_friend_req(request.type, request.author.account_id, client=self)
+        await self.session.delete_friend_request(request.type, request.author.account_id, client=self)
 
     @check_logged
     async def accept_friend_request(self, request: FriendRequest) -> None:
@@ -1117,7 +1117,7 @@ class Client:
         :exc:`.MissingAccess`
             Failed to accept a friend request.
         """
-        await self.session.accept_friend_req(
+        await self.session.accept_friend_request(
             request.type, request.id, request.author.account_id, client=self
         )
 
@@ -1999,23 +1999,24 @@ class Client:
     @check_logged
     async def update_profile(
         self,
-        stars: int = 0,
-        demons: int = 0,
-        diamonds: int = 0,
-        has_glow: bool = False,
-        icon_type: int = 0,
-        color_1: int = 0,
-        color_2: int = 3,
-        coins: int = 0,
-        user_coins: int = 0,
-        cube: int = 1,
-        ship: int = 1,
-        ball: int = 1,
-        ufo: int = 1,
-        wave: int = 1,
-        robot: int = 1,
-        spider: int = 1,
-        explosion: int = 1,
+        stars: Optional[int] = None,
+        demons: Optional[int] = None,
+        diamonds: Optional[int] = None,
+        has_glow: Optional[bool] = None,
+        icon_type: Optional[Union[int, str, IconType]] = None,
+        icon: Optional[int] = None,
+        color_1: Optional[int] = None,
+        color_2: Optional[int] = None,
+        coins: Optional[int] = None,
+        user_coins: Optional[int] = None,
+        cube: Optional[int] = None,
+        ship: Optional[int] = None,
+        ball: Optional[int] = None,
+        ufo: Optional[int] = None,
+        wave: Optional[int] = None,
+        robot: Optional[int] = None,
+        spider: Optional[int] = None,
+        explosion: Optional[int] = None,
         special: int = 0,
         set_as_user: Optional[User] = None,
     ) -> None:
@@ -2040,6 +2041,8 @@ class Client:
             Indicates whether a user should have the glow outline.
         icon_type: :class:`int`
             Icon type that should be used. See :class:`.IconType` for info.
+        icon: :class:`int`
+            Icon ID that should be used.
         color_1: :class:`int`
             Index of a color to use as the main color.
         color_2: :class:`int`
@@ -2070,54 +2073,31 @@ class Client:
             Passing this parameter allows to copy user's profile.
         """
         if set_as_user is None:
-            stats_dict = {
-                "stars": stars,
-                "demons": demons,
-                "diamonds": diamonds,
-                "color1": color_1,
-                "color2": color_2,
-                "coins": coins,
-                "user_coins": user_coins,
-                "special": special,
-                "acc_icon": cube,
-                "acc_ship": ship,
-                "acc_ball": ball,
-                "acc_bird": ufo,
-                "acc_dart": wave,
-                "acc_robot": robot,
-                "acc_spider": spider,
-                "acc_explosion": explosion,
-                "acc_glow": int(has_glow),
-            }
+            set_as_user = await self.to_user()
 
-            icon_type = IconType.from_value(icon_type).value
-            icon = (cube, ship, ball, ufo, wave, robot, spider)[icon_type]
+        user, iconset = set_as_user, set_as_user.icon_set
 
-            stats_dict.update(icon_type=icon_type, icon=icon)
-
-        else:
-            user, iconset = set_as_user, set_as_user.icon_set
-            stats_dict = {
-                "stars": user.stars,
-                "demons": user.demons,
-                "diamonds": user.diamonds,
-                "color1": iconset.color_1.index,
-                "color2": iconset.color_2.index,
-                "coins": user.coins,
-                "user_coins": user.user_coins,
-                "special": special,
-                "icon": iconset.main,
-                "icon_type": iconset.main_type.value,
-                "acc_icon": iconset.cube,
-                "acc_ship": iconset.ship,
-                "acc_ball": iconset.ball,
-                "acc_bird": iconset.ufo,
-                "acc_dart": iconset.wave,
-                "acc_robot": iconset.robot,
-                "acc_spider": iconset.spider,
-                "acc_explosion": iconset.explosion,
-                "acc_glow": int(iconset.has_glow_outline()),
-            }
+        stats_dict = {
+            "stars": value_or(stars, user.stars),
+            "demons": value_or(demons, user.demons),
+            "diamonds": value_or(diamonds, user.diamonds),
+            "color1": value_or(color_1, iconset.color_1.index),
+            "color2": value_or(color_2, iconset.color_2.index),
+            "coins": value_or(coins, user.coins),
+            "user_coins": value_or(user_coins, user.user_coins),
+            "special": special,
+            "icon": value_or(icon, iconset.main),
+            "icon_type": IconType.from_value(value_or(icon_type, iconset.main_type)).value,
+            "acc_icon": value_or(cube, iconset.cube),
+            "acc_ship": value_or(ship, iconset.ship),
+            "acc_ball": value_or(ball, iconset.ball),
+            "acc_bird": value_or(ufo, iconset.ufo),
+            "acc_dart": value_or(wave, iconset.wave),
+            "acc_robot": value_or(robot, iconset.robot),
+            "acc_spider": value_or(spider, iconset.spider),
+            "acc_explosion": value_or(explosion, iconset.explosion),
+            "acc_glow": int(value_or(has_glow, iconset.has_glow_outline())),
+        }
 
         await self.session.update_profile(stats_dict, client=self)
 
@@ -2125,9 +2105,9 @@ class Client:
     async def update_settings(
         self,
         *,
-        msg: Optional[Union[int, MessagePolicyType]] = None,
-        friend_req: Optional[Union[int, FriendRequestPolicyType]] = None,
-        comments: Optional[Union[int, CommentPolicyType]] = None,
+        message_policy: Optional[Union[int, str, MessagePolicyType]] = None,
+        friend_request_policy: Optional[Union[int, str, FriendRequestPolicyType]] = None,
+        comment_policy: Optional[Union[int, str, CommentPolicyType]] = None,
         youtube: Optional[str] = None,
         twitter: Optional[str] = None,
         twitch: Optional[str] = None,
@@ -2150,11 +2130,11 @@ class Client:
 
         Parameters
         ----------
-        msg: Union[:class:`int`, :class:`.MessagePolicyType`]
+        message_policy: Union[:class:`int`, :class:`str`, :class:`.MessagePolicyType`]
             New message policy.
-        friend_req: Union[:class:`int`, :class:`.FriendRequestPolicyType`]
+        friend_request_policy: Union[:class:`int`, :class:`str`, :class:`.FriendRequestPolicyType`]
             New friend request policy.
-        comments: Union[:class:`int`, :class:`.CommentPolicyType`]
+        comment_policy: Union[:class:`int`, :class:`str`, :class:`.CommentPolicyType`]
             New comment history policy.
         youtube: :class:`str`
             New youtube channel string. (not link)
@@ -2168,24 +2148,24 @@ class Client:
         :exc:`.MissingAccess`
             Failed to update profile.
         """
+        user = await self.to_user()
+
         profile_dict = {
-            "msg_policy": msg,
-            "friend_req_policy": friend_req,
-            "comments_policy": comments,
-            "youtube": youtube,
-            "twitter": twitter,
-            "twitch": twitch,
+            "message_policy": MessagePolicyType.from_value(
+                value_or(message_policy, user.message_policy)
+            ),
+            "friend_request_policy": FriendRequestPolicyType.from_value(
+                value_or(friend_request_policy, user.friend_request_policy)
+            ),
+            "comment_policy": CommentPolicyType.from_value(
+                value_or(comment_policy, user.comment_policy)
+            ),
+            "youtube": value_or(youtube, user.youtube),
+            "twitter": value_or(twitter, user.twitter),
+            "twitch": value_or(twitch, user.twitch),
         }
 
-        self_user = await self.to_user()
-
-        args = []
-
-        for attr, value in profile_dict.items():
-            to_add = getattr(self_user, attr) if value is None else value
-            args.append(to_add or "")
-
-        await self.session.update_settings(*args, client=self)
+        await self.session.update_settings(**profile_dict, client=self)
 
     async def search_levels_on_page(
         self,
@@ -2433,3 +2413,7 @@ class LoginSession:
 
     async def __aexit__(self, *exc) -> None:
         self._client.close()
+
+
+def value_or(value: Any, default: Any) -> Any:
+    return default if value is None else value

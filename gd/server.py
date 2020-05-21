@@ -2,7 +2,9 @@
 HTTP Request handler can be found at gd/utils/http_request.py.
 """
 
+import asyncio
 import functools
+import json
 import platform
 import re
 import secrets
@@ -24,7 +26,6 @@ from gd.typing import (
     Sequence,
     Tuple,
     Type,
-    TypeVar,
     Union,
     ref,
 )
@@ -34,7 +35,6 @@ AUTH_RE = re.compile(r"(?:Token )?(?P<token>[A-Fa-z0-9]+)")
 CHUNK_SIZE = 64 * 1024
 CLIENT = gd.Client()
 JSON_PREFIX = "json_"
-T = TypeVar("T")
 
 ROOT_PATH = Path(".gd")
 if not ROOT_PATH.exists():
@@ -178,40 +178,52 @@ def get_original_handler(handler: Function) -> Function:
     return handler
 
 
-@web.middleware
-async def auth_middleware(request: web.Request, handler: Function) -> web.Response:
-    original = get_original_handler(handler)
-
-    if getattr(original, "needs_auth", False):
-        # try to get token from Authorization header
-        auth = request.headers.get("Authorization")
+def get_token(request: web.Request, required: bool) -> Optional[Union[TokenInfo, Error]]:
+    # try to get token from Authorization header
+    auth = request.headers.get("Authorization")
+    if auth is None:
+        # try to get token from query
+        auth = request.query.get("token")
         if auth is None:
-            # try to get token from query
-            auth = request.query.get("token")
-            if auth is None:
-                return AUTH_NOT_SET.into_resp()
+            if required:
+                return AUTH_NOT_SET
+            return
 
         # see if token matches pattern
         match = AUTH_RE.match(auth)
         if match is None:
-            return AUTH_INVALID.into_resp()
+            if required:
+                return AUTH_INVALID
+            return
 
         token = match.group("token")
 
-        request.token = token
-
         # check if token is in app.tokens
-        info = gd.utils.get(request.app.tokens, token=token)
-        if info is None:
-            return AUTH_MISSING.into_resp()
+        token_info = gd.utils.get(request.app.tokens, token=token)
+        if token_info is None:
+            if required:
+                return AUTH_MISSING
+            return
 
-        # if login is required, wrap handling into context manager
-        if getattr(original, "needs_login", False):
-            with LoginManager(client=request.app.client, info=info):
-                return await handler(request)
+        return token_info
 
-    else:
-        request.token = ""
+
+@web.middleware
+async def auth_middleware(request: web.Request, handler: Function) -> web.Response:
+    original = get_original_handler(handler)
+    required = getattr(original, "required", False)
+
+    result = get_token(request, required=required)
+
+    if isinstance(result, Error):
+        return result.into_resp()
+
+    request.token_info = result
+
+    # if token is supplied, wrap handling into context manager
+    if request.token_info:
+        with LoginManager(client=request.app.client, info=request.token_info):
+            return await handler(request)
 
     return await handler(request)
 
@@ -427,10 +439,9 @@ def handle_errors(error_dict: Optional[Dict[Type[BaseException], Error]] = None)
     return decorator
 
 
-def auth_setup(required: bool = True, login: bool = False) -> Function:
+def auth_setup(required: bool = True) -> Function:
     def decorator(func: Function) -> Function:
-        func.needs_login = login
-        func.needs_auth = required
+        func.required = required
         return func
 
     return decorator
@@ -474,37 +485,20 @@ def get_id_and_special(item_type: str, item_id: int = 0, level_id: int = 0) -> O
     return mapping.get(item_type.casefold().replace(" ", "_"), None)
 
 
-UPLOAD_QUERY: Dict[str, Tuple[Union[Callable[[str], T], T]]] = {
-    "name": (str, "Unnamed"),
-    "id": (int, 0),
-    "version": (int, 1),
-    "length": (
-        functools.partial(string_to_enum, enum=gd.LevelLength),
-        gd.LevelLength.TINY,
-    ),
-    "track": (int, 0),
-    "song_id": (int, 0),
-    "is_auto": (str_to_bool, False),
-    "original": (int, 0),
-    "two_player": (str_to_bool, False),
-    "objects": (int, None),
-    "coins": (int, 0),
-    "star_amount": (int, 0),
-    "unlist": (str_to_bool, False),
-    "ldm": (str_to_bool, False),
-    "password": (int, None),
-    "copyable": (str_to_bool, False),
-    "data": (str, ""),
-    "description": (str, ""),
-    "load": (str_to_bool, True),
-}
-
-
 def parse_route_docs() -> Generator[Dict[str, Union[Dict[Union[str, int], str], str]], None, None]:
     for route in routes:
         info = dict(name=route.handler.__name__)
         info.update(parse_string(route.handler.__doc__))
         yield info
+
+
+async def delete_after(seconds: float, path: Path) -> None:
+    await asyncio.sleep(seconds)
+
+    try:
+        path.unlink()
+    except Exception:  # noqa
+        pass
 
 
 @routes.get("/api")
@@ -535,10 +529,10 @@ async def main_page(request: web.Request) -> web.Response:
 @handle_errors()
 @auth_setup()
 async def logout_handle(request: web.Request) -> web.Response:
-    token_info = gd.utils.get(request.app.tokens, token=request.token)
-
-    if token_info:
-        request.app.tokens.remove(token_info)
+    try:
+        request.app.tokens.remove(request.token_info)
+    except ValueError:
+        pass  # nevermind
 
     return json_resp({})
 
@@ -646,7 +640,7 @@ async def song_search(request: web.Request) -> web.Response:
     return json_resp(song)
 
 
-@routes.get("/api/artist_info/{id}")
+@routes.get("/api/song/{id}/info")
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
@@ -719,7 +713,7 @@ async def get_level(request: web.Request) -> web.Response:
         gd.MissingAccess: Error(404, "Failed to delete a level.", ErrorType.FAILED),
     }
 )
-@auth_setup(login=True)
+@auth_setup(required=True)
 async def delete_level(request: web.Request) -> web.Response:
     """DELETE /api/level/{id}
     Description:
@@ -734,7 +728,8 @@ async def delete_level(request: web.Request) -> web.Response:
         application/json
     """
     level_id = int(request.match_info["id"])
-    await request.app.client.session.delete_level(level_id, client=request.app.client)
+
+    await gd.Level(id=level_id, client=request.app.client).delete()
     return json_resp({})
 
 
@@ -756,6 +751,8 @@ async def download_song(request: web.Request) -> web.FileResponse:
 
     song = await request.app.client.get_ng_song(song_id)
     await song.download(file=path)
+
+    request.loop.create_task(delete_after(60, path))
 
     return web.FileResponse(path)
 
@@ -848,9 +845,35 @@ async def get_map_packs(request: web.Request) -> web.Response:
     return json_resp(map_packs)
 
 
+UPLOAD_QUERY: Dict[str, Tuple[Union[Callable[[str], Any], Any]]] = {
+    "name": (str, "Unnamed"),
+    "id": (int, 0),
+    "version": (int, 1),
+    "length": (
+        functools.partial(string_to_enum, enum=gd.LevelLength),
+        gd.LevelLength.TINY,
+    ),
+    "track": (int, 0),
+    "song_id": (int, 0),
+    "is_auto": (str_to_bool, False),
+    "original": (int, 0),
+    "two_player": (str_to_bool, False),
+    "objects": (int, None),
+    "coins": (int, 0),
+    "star_amount": (int, 0),
+    "unlist": (str_to_bool, False),
+    "ldm": (str_to_bool, False),
+    "password": (int, None),
+    "copyable": (str_to_bool, False),
+    "data": (str, ""),
+    "description": (str, ""),
+    "load": (str_to_bool, True),
+}
+
+
 @routes.post("/api/level")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to upload a level.", ErrorType.FAILED)})
-@auth_setup(login=True)
+@auth_setup(required=True)
 @cooldown(rate=10, per=50)
 async def upload_level(request: web.Request) -> web.Response:
     upload_arguments = {
@@ -865,7 +888,7 @@ async def upload_level(request: web.Request) -> web.Response:
 
 @routes.get("/api/levels")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get levels.", ErrorType.FAILED)})
-@auth_setup(login=True)
+@auth_setup(required=True)
 async def get_levels(request: web.Request) -> web.Response:
     pages = map(int, request.query.get("pages", "0").split(","))
     levels = await request.app.client.get_levels(pages=pages)
@@ -874,7 +897,7 @@ async def get_levels(request: web.Request) -> web.Response:
 
 @routes.get("/api/messages")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to load messages.", ErrorType.FAILED)})
-@auth_setup(login=True)
+@auth_setup(required=True)
 async def get_messages(request: web.Request) -> web.Response:
     pages = map(int, request.query.get("pages", "0").split(","))
     sent = str_to_bool(request.query.get("sent", "false"))
@@ -891,7 +914,7 @@ async def get_messages(request: web.Request) -> web.Response:
 
 @routes.get("/api/friend_requests")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get friend requests.", ErrorType.FAILED)})
-@auth_setup(login=True)
+@auth_setup(required=True)
 async def get_friend_requests(request: web.Request) -> web.Response:
     pages = map(int, request.query.get("pages", "0").split(","))
     sent = str_to_bool(request.query.get("sent", "false"))
@@ -908,49 +931,54 @@ async def get_friend_requests(request: web.Request) -> web.Response:
 
 @routes.get("/api/friend_request/{id}")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get a request.", ErrorType.FAILED)})
-@auth_setup(login=True)
+@auth_setup(required=True)
 async def read_friend_request(request: web.Request) -> web.Response:
     request_id = int(request.match_info["id"])
 
-    await request.app.client.session.read_friend_req(request_id, client=request.app.client)
+    await gd.FriendRequest(id=request_id, client=request.app.client).read()
 
     return json_resp({})
 
 
 @routes.delete("/api/friend_request/{id}")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to delete a request.", ErrorType.FAILED)})
-@auth_setup(login=True)
+@auth_setup(required=True)
 async def delete_friend_request(request: web.Request) -> web.Response:
     request_id = int(request.match_info["id"])
     request_type = string_to_enum(request.query.get("type", "normal"), gd.MessageOrRequestType)
     account_id = int(request.query["author_id"])
 
-    await request.app.client.session.delete_friend_req(
-        request_type, author.account_id, client=request.app.client
-    )
+    await gd.FriendRequest(
+        author=gd.AbstractUser(account_id=account_id, client=request.app.client),
+        id=request_id,
+        type=request_type,
+        client=request.app.client,
+    ).delete()
 
     return json_resp({})
 
 
 @routes.patch("/api/friend_request/{id}")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to accept a request.", ErrorType.FAILED)})
-@auth_setup(login=True)
+@auth_setup(required=True)
 async def accept_friend_request(request: web.Request) -> web.Response:
     request_id = int(request.match_info["id"])
     request_type = string_to_enum(request.query.get("type", "normal"), gd.MessageOrRequestType)
     account_id = int(request.query["author_id"])
-    is_id = str_to_bool(request.query.get("id", "true"))
 
-    await request.app.client.session.accept_friend_req(
-        request_type, request_id, author.account_id, client=request.app.client
-    )
+    await gd.FriendRequest(
+        author=gd.AbstractUser(account_id=account_id, client=request.app.client),
+        id=request_id,
+        type=request_type,
+        client=request.app.client,
+    ).accept()
 
     return json_resp({})
 
 
 @routes.get("/api/friends")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get friends.", ErrorType.FAILED)})
-@auth_setup(login=True)
+@auth_setup(required=True)
 async def get_friends(request: web.Request) -> web.Response:
     friends = await request.app.client.get_friends()
     return json_resp(friends)
@@ -958,39 +986,44 @@ async def get_friends(request: web.Request) -> web.Response:
 
 @routes.patch("/api/{action:(unblock|block)}/{id}")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to (un)block user.", ErrorType.FAILED)})
-@auth_setup(login=True)
+@auth_setup(required=True)
 async def un_block_user(request: web.Request) -> web.Response:
     account_id = int(request.match_info["id"])
     unblock = request.match_info["action"].startswith("un")
 
-    await request.app.client.session.block_user(
-        account_id, unblock=unblock, client=request.app.client
-    )
+    user = await gd.AbstractUser(account_id=account_id, client=request.app.client)
+
+    if unblock:
+        await user.unblock()
+    else:
+        await user.block()
 
     return json_resp({})
 
 
 @routes.patch("/api/{action:(unfriend|friend)}/{id}")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to (un)friend user.", ErrorType.FAILED)})
-@auth_setup(login=True)
+@auth_setup(required=True)
 async def un_friend_user(request: web.Request) -> web.Response:
     account_id = int(request.match_info["id"])
     unfriend = request.match_info["action"].startswith("un")
     message = request.query.get("message", "")
 
+    user = gd.AbstractUser(account_id=account_id, client=request.app.client)
+
     if unfriend:
-        await request.app.client.session.unfriend_user(account_id, client=request.app.client)
+        await user.unfriend()
+        return json_resp({})
     else:
-        await request.app.client.session.send_friend_request(
-            account_id, message=message, client=request.app.client
-        )
+        friend_request = await user.send_friend_request(message=message)
+        return json_resp(friend_request)
 
     return json_resp({})
 
 
 @routes.get("/api/blocked")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get blocked users.", ErrorType.FAILED)})
-@auth_setup(login=True)
+@auth_setup(required=True)
 async def get_blocked(request: web.Request) -> web.Response:
     blocked = await request.app.client.get_blocked_users()
     return json_resp(blocked)
@@ -1003,7 +1036,7 @@ async def get_blocked(request: web.Request) -> web.Response:
         gd.MissingAccess: Error(404, "{error}", ErrorType.FAILED),
     }
 )
-@auth_setup(login=True)
+@auth_setup(required=True)
 @cooldown(rate=5, per=5)
 async def send_message(request: web.Request) -> web.Response:
     query = request.match_info["query"]
@@ -1030,7 +1063,7 @@ async def send_message(request: web.Request) -> web.Response:
         gd.MissingAccess: Error(404, "Failed to like an entity.", ErrorType.FAILED),
     }
 )
-@auth_setup(login=True)
+@auth_setup(required=True)
 @cooldown(rate=5, per=5)
 async def like_item(request: web.Request) -> web.Response:
     dislike = request.match_info["action"].startswith("dis")
@@ -1048,6 +1081,292 @@ async def like_item(request: web.Request) -> web.Response:
     return json_resp({})
 
 
+@routes.patch("/api/level/{id}/rate")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to rate a level.", ErrorType.FAILED)})
+@auth_setup(required=True)
+@cooldown(rate=5, per=5)
+async def rate_level(request: web.Request) -> web.Response:
+    level_id = int(request.match_info["id"])
+    stars = int(request.query["stars"])
+
+    await gd.Level(id=level_id, client=request.app.client).rate(stars)
+    return json_resp({})
+
+
+@routes.patch("/api/level/{id}/description")
+@handle_errors(
+    {gd.MissingAccess: Error(404, "Failed to update level description.", ErrorType.FAILED)}
+)
+@auth_setup(required=True)
+async def update_level_description(request: web.Request) -> web.Response:
+    level_id = int(request.match_info["id"])
+    new = request.query["new"]
+
+    await gd.Level(id=level_id, client=request.app.client).update_description(new)
+    return json_resp({})
+
+
+@routes.patch("/api/level/{id}/rate_demon")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to demon-rate a level.", ErrorType.FAILED)})
+@auth_setup(required=True)
+async def rate_level_demon(request: web.Request) -> web.Response:
+    level_id = int(request.match_info["id"])
+    demon_difficulty = string_to_enum(request.query["difficulty"], gd.DemonDifficulty)
+    as_mod = str_to_bool(request.query.get("mod", "false"))
+
+    await gd.Level(
+        id=level_id, client=request.app.client
+    ).rate_demon(demon_difficulty, as_mod=as_mod)
+
+    return json_resp({})
+
+
+@routes.patch("/api/level/{id}/send")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to send a level.", ErrorType.FAILED)})
+@auth_setup(required=True)
+async def send_level(request: web.Request) -> web.Response:
+    level_id = int(request.match_info["id"])
+    stars = int(request.query["stars"])
+    featured = str_to_bool(request.query["featured"])
+
+    await gd.Level(id=level_id, client=request.app.client).send(stars, featured=featured)
+
+    return json_resp({})
+
+
+@routes.get("/api/level/{id}/comments")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to get level comments.", ErrorType.FAILED)})
+@auth_setup(required=False)
+async def get_level_comments(request: web.Request) -> web.Response:
+    level_id = int(request.match_info["id"])
+    amount = int(request.query.get("amount", 20))
+    strategy = string_to_enum(request.query.get("strategy", "recent"), gd.CommentStrategy)
+
+    comments = await gd.Level(
+        id=level_id, client=request.app.client
+    ).get_comments(amount=amount, strategy=strategy)
+
+    return json_resp(comments)
+
+
+@routes.get("/api/level/{id}/leaderboard")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to get the leaderboard.", ErrorType.FAILED)})
+@auth_setup(required=True)
+async def get_level_leaderboard(request: web.Request) -> web.Response:
+    level_id = int(request.match_info["id"])
+    strategy = string_to_enum(
+        request.match_info.get("strategy", "all"), gd.LevelLeaderboardStrategy
+    )
+
+    records = await gd.Level(
+        id=level_id, client=request.app.client
+    ).get_leaderboard(strategy=strategy)
+
+    return json_resp(records)
+
+
+@routes.get("/api/user/{id}/comments")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to get user comments.", ErrorType.FAILED)})
+@auth_setup(required=False)
+async def get_user_comments(request: web.Request) -> web.Response:
+    account_id = int(request.match_info["id"])
+    pages = map(int, request.query.get("pages", "0").split(","))
+    type_str = request.query.get("type", "profile")
+    strategy = string_to_enum(request.query.get("strategy", "recent"), gd.CommentStrategy)
+
+    user = await request.app.client.fetch_user(account_id)
+    comments = await user.retrieve_comments(type=type_str, pages=pages, strategy=strategy)
+
+    return json_resp(comments)
+
+
+@routes.post("/api/comment/{level_id}")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to comment a level.", ErrorType.FAILED)})
+@auth_setup(required=True)
+async def comment_level(request: web.Request) -> web.Response:
+    level_id = int(request.match_info["level_id"])
+    body = request.query["body"]
+    percentage = int(request.query.get("percentage", 0))
+
+    await gd.Level(id=level_id, client=request.app.client).comment(body, percentage)
+
+    return json_resp({})
+
+
+@routes.post("/api/comment")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to post a comment.", ErrorType.FAILED)})
+@auth_setup(required=True)
+async def post_comment(request: web.Request) -> web.Response:
+    body = request.query["body"]
+
+    await request.app.client.post_comment(body)
+
+    return json_resp({})
+
+
+SETTINGS_QUERY: Dict[str, Tuple[Union[Callable[[str], Any], Any]]] = {
+    "message_policy": (
+        functools.partial(string_to_enum, enum=gd.MessagePolicyType), None
+    ),
+    "friend_request_policy": (
+        functools.partial(string_to_enum, enum=gd.FriendRequestPolicyType), None
+    ),
+    "comment_policy": (
+        functools.partial(string_to_enum, enum=gd.CommentPolicyType), None
+    ),
+    "youtube": (str, None),
+    "twitter": (str, None),
+    "twitch": (str, None),
+}
+
+
+PROFILE_QUERY: Dict[str, Tuple[Union[Callable[[str], Any], Any]]] = {
+    "stars": (int, None),
+    "demons": (int, None),
+    "diamonds": (int, None),
+    "has_glow": (bool, None),
+    "icon_type": (
+        functools.partial(string_to_enum, enum=gd.IconType), None
+    ),
+    "icon": (int, None),
+    "color_1": (int, None),
+    "color_2": (int, None),
+    "coins": (int, None),
+    "user_coins": (int, None),
+    "cube": (int, None),
+    "ship": (int, None),
+    "ball": (int, None),
+    "ufo": (int, None),
+    "wave": (int, None),
+    "robot": (int, None),
+    "spider": (int, None),
+    "explosion": (int, None),
+    "special": (int, 0),
+    "set_as_user": (str, None),
+}
+
+
+@routes.patch("/api/settings")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to edit settings.", ErrorType.FAILED)})
+@auth_setup(required=True)
+async def update_settings(request: web.Request) -> web.Response:
+    update_arguments = {
+        parameter: get_value(parameter, function, default, request)
+        for (parameter, (function, default)) in SETTINGS_QUERY.items()
+    }
+
+    await request.app.client.update_settings(**update_arguments)
+
+    return json_resp({})
+
+
+@routes.patch("/api/profile")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to update profile.", ErrorType.FAILED)})
+@auth_setup(required=True)
+async def update_profile(request: web.Request) -> web.Response:
+    is_id = str_to_bool(request.query.get("id", "false"))
+
+    update_arguments = {
+        parameter: get_value(parameter, function, default, request)
+        for (parameter, (function, default)) in PROFILE_QUERY.items()
+    }
+
+    query = update_arguments.get("set_as_user")
+
+    if query is None:
+        user = None
+    elif is_id:
+        user = await request.app.client.get_user(int(query))
+    else:
+        user = await request.app.client.search_user(query)
+
+    update_arguments.update(set_as_user=user)
+
+    await request.app.client.update_profile(**update_arguments)
+
+    return json_resp({})
+
+
+@routes.get("/api/icons/{type:(all|main|cube|ship|ball|ufo|wave|robot|spider)}/{query}")
+@handle_errors(
+    {gd.MissingAccess: Error(404, "Could not find requested user.", ErrorType.NOT_FOUND)}
+)
+@auth_setup(required=False)
+async def get_icons(request: web.Request) -> web.Response:
+    icon_type = request.match_info["type"]
+    query = request.match_info["query"]
+
+    is_id = str_to_bool(request.query.get("id", "false"))
+
+    if is_id:
+        user = await request.app.client.get_user(int(query))
+    else:
+        user = await request.app.client.search_user(query)
+
+    path = ROOT_PATH / f"icons-{icon_type}-{user.account_id}.png"
+
+    if path.exists():
+        return web.FileResponse(path)
+
+    if icon_type == "main":
+        icon_type = user.icon_set.main_type.name.lower()
+
+    if icon_type == "all":
+        image = await user.icon_set.generate_full(as_image=True)
+    else:
+        image = await user.icon_set.generate(icon_type, as_image=True)
+
+    image.save(path)
+
+    request.loop.create_task(delete_after(5, path))
+
+    return web.FileResponse(path)
+
+
+@routes.get("/api/search/levels")
+@handle_errors()
+@auth_setup(required=False)
+async def search_levels(request: web.Request) -> web.Response:
+    return json_resp([])  # TODO: finish this one
+
+    levels = await request.app.client.search_levels(...)
+
+    return json_resp(levels)
+
+
+@routes.get("/api/load")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to load the save.", ErrorType.FAILED)})
+@auth_setup(required=True)
+@cooldown(rate=10, per=50)
+async def load_save(request: web.Request) -> web.Response:
+    await request.app.client.load()
+    return json_resp(request.app.client.db)
+
+
+def convert_to_encoded(string: str) -> str:
+    try:
+        data = gd.api.Part(json.loads(string)).dump()
+    except json.JSONDecodeError:
+        if "?xml" in string:  # xml
+            data = gd.Coder.encode_save(string)
+        else:  # assume base64
+            data = string
+
+    return data
+
+
+@routes.patch("/api/save")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to save.", ErrorType.FAILED)})
+@auth_setup(required=True)
+@cooldown(rate=10, per=50)
+async def backup_save(request: web.Request) -> web.Response:
+    main = convert_to_encoded(request.query["main"])
+    levels = convert_to_encoded(request.query["levels"])
+    return print(main, levels)
+
+    await request.app.client.backup(save_data=[main, levels])
+
+
 @routes.delete("/api/comment/{id}")
 @handle_errors(
     {
@@ -1055,15 +1374,15 @@ async def like_item(request: web.Request) -> web.Response:
         gd.MissingAccess: Error(404, "Failed to delete a comment.", ErrorType.FAILED),
     }
 )
-@auth_setup(login=True)
+@auth_setup(required=True)
 async def delete_comment(request: web.Request) -> web.Response:
     comment_id = int(request.match_info["id"])
     comment_type = string_to_enum(request.query["type"], gd.CommentType)
     level_id = int(request.query.get("level_id", 0))
 
-    await request.app.client.session.delete_comment(
-        comment_type, comment_id, level_id, client=request.app.client
-    )
+    await gd.Comment(
+        type=comment_type, id=comment_id, level_id=level_id, client=request.app.client
+    ).delete()
 
     return json_resp({})
 

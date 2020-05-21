@@ -145,9 +145,9 @@ class User(UserStats):
             youtube=yt,
             twitter=twt,
             twitch=twch,
-            messages=data.getcast(Index.USER_PRIVATE_MESSAGE_POLICY, 0, int),
-            friend_requests=data.getcast(Index.USER_FRIEND_REQUEST_POLICY, 0, int),
-            comments=data.getcast(Index.USER_COMMENT_HISTORY_POLICY, 0, int),
+            message_policy=data.getcast(Index.USER_PRIVATE_MESSAGE_POLICY, 0, int),
+            friend_request_policy=data.getcast(Index.USER_FRIEND_REQUEST_POLICY, 0, int),
+            comment_policy=data.getcast(Index.USER_COMMENT_HISTORY_POLICY, 0, int),
             icon_setup=IconSet(
                 main_icon=data.getcast(Index.USER_ICON, 1, int),
                 color_1=colors[data.getcast(Index.USER_COLOR_1, 0, int)],
@@ -210,19 +210,19 @@ class User(UserStats):
         return self.options.get("twitch", {}).get("link", "")
 
     @property
-    def msg_policy(self) -> MessagePolicyType:
+    def message_policy(self) -> MessagePolicyType:
         """:class:`.MessagePolicyType`: A type indicating user's message inbox policy."""
-        return MessagePolicyType.from_value(self.options.get("messages", 0))
+        return MessagePolicyType.from_value(self.options.get("message_policy", 0))
 
     @property
-    def friend_req_policy(self) -> FriendRequestPolicyType:
+    def friend_request_policy(self) -> FriendRequestPolicyType:
         """:class:`.FriendRequestPolicyType`: A type indicating user's friend requests policy."""
-        return FriendRequestPolicyType.from_value(self.options.get("friend_requests", 0))
+        return FriendRequestPolicyType.from_value(self.options.get("friend_request_policy", 0))
 
     @property
-    def comments_policy(self) -> CommentPolicyType:
+    def comment_policy(self) -> CommentPolicyType:
         """:class:`.CommentPolicyType`: A type indicating user's comment history policy."""
-        return CommentPolicyType.from_value(self.options.get("comments", 0))
+        return CommentPolicyType.from_value(self.options.get("comment_policy", 0))
 
     @property
     def icon_set(self) -> IconSet:

@@ -30,13 +30,16 @@ from gd.errors import (
 from gd.utils.converter import Converter
 from gd.utils.decorators import check_logged_obj
 from gd.utils.enums import (
+    CommentPolicyType,
     CommentStrategy,
     CommentType,
     DemonDifficulty,
+    FriendRequestPolicyType,
     LeaderboardStrategy,
     LevelLeaderboardStrategy,
     LevelLength,
     MessageOrRequestType,
+    MessagePolicyType,
     SearchStrategy,  # TimelyType
 )
 from gd.utils.filters import Filters
@@ -922,7 +925,7 @@ class Session:
         elif resp != 1:
             raise MissingAccess(f"Failed to send a friend request to user by ID: {target_id!r}.")
 
-    async def delete_friend_req(
+    async def delete_friend_request(
         self, typeof: MessageOrRequestType, user_id: int, client: Client
     ) -> None:
         payload = (
@@ -941,7 +944,7 @@ class Session:
                 f"Failed to delete a friend request by User (with ID): {user_id!r}."
             )
 
-    async def accept_friend_req(
+    async def accept_friend_request(
         self, typeof: MessageOrRequestType, request_id: int, user_id: int, client: Client
     ) -> None:
         if typeof.value:  # is gd.MessageOrRequestType.SENT
@@ -962,7 +965,7 @@ class Session:
         if resp != 1:
             raise MissingAccess(f"Failed to accept a friend request by ID: {request_id!r}.")
 
-    async def read_friend_req(self, request_id: int, client: Client) -> None:
+    async def read_friend_request(self, request_id: int, client: Client) -> None:
         payload = (
             Params()
             .create_new()
@@ -1349,9 +1352,9 @@ class Session:
 
     async def update_settings(
         self,
-        msg: int,
-        friend_req: int,
-        comments: int,
+        message_policy: MessagePolicyType,
+        friend_request_policy: FriendRequestPolicyType,
+        comment_policy: CommentPolicyType,
         youtube: str,
         twitter: str,
         twitch: str,
@@ -1363,7 +1366,14 @@ class Session:
             .create_new("web")
             .put_definer("accountid", client.account_id)
             .put_password(client.encodedpass)
-            .put_profile_upd(msg, friend_req, comments, youtube, twitter, twitch)
+            .put_profile_upd(
+                message_policy.value,
+                friend_request_policy.value,
+                comment_policy.value,
+                youtube,
+                twitter,
+                twitch,
+            )
             .finish_login()
         )
         resp = await self.http.request(Route.UPDATE_ACC_SETTINGS, payload)

@@ -32,13 +32,9 @@ def _name_to_enum(x: str) -> str:
     return x.upper().replace(" ", "_")
 
 
-def _is_upper(string: str) -> bool:
-    return string.upper() == string
-
-
 def _enum_to_name(x: enum.Enum) -> str:
     name = x.name.strip("_")
-    return name if (name in ("NA", "XL") or not _is_upper(name)) else name.replace("_", " ").title()
+    return name if (name in {"NA", "XL"} or not name.isupper()) else name.replace("_", " ").title()
 
 
 def value_to_enum(enum: enum.Enum, x: Union[int, str, enum.Enum]) -> enum.Enum:
@@ -169,7 +165,7 @@ class Enum(enum.Enum):
         return hash(self.__repr__())
 
     def _json(self) -> Any:
-        return self.value
+        return {"name": self.desc, "value": self.value}
 
     @property
     def desc(self) -> str:
