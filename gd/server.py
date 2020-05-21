@@ -37,8 +37,6 @@ CLIENT = gd.Client()
 JSON_PREFIX = "json_"
 
 ROOT_PATH = Path(".gd")
-if not ROOT_PATH.exists():
-    ROOT_PATH.mkdir()
 
 Function = Callable[[Any], Any]
 Error = ref("gd.server.Error")
@@ -406,6 +404,9 @@ def json_resp(*args, **kwargs) -> web.Response:
 def create_app(**kwargs) -> web.Application:
     kwargs.update(middlewares=(kwargs.get("middlewares", []) + DEFAULT_MIDDLEWARES))
 
+    if not ROOT_PATH.exists():
+        ROOT_PATH.mkdir()
+
     app = web.Application(**kwargs)
     app.client = kwargs.get("client", CLIENT)
     app.tokens: List[TokenInfo] = []
@@ -476,7 +477,9 @@ def get_value(parameter: str, function: Function, default: Any, request: web.Req
     return value
 
 
-def get_id_and_special(item_type: str, item_id: int = 0, level_id: int = 0) -> Optional[Tuple[int, int]]:
+def get_id_and_special(
+    item_type: str, item_id: int = 0, level_id: int = 0
+) -> Optional[Tuple[int, int]]:
     mapping = {  # string_type: (int_type, special)
         "level": (1, 0),
         "level_comment": (2, level_id),
@@ -849,10 +852,7 @@ UPLOAD_QUERY: Dict[str, Tuple[Union[Callable[[str], Any], Any]]] = {
     "name": (str, "Unnamed"),
     "id": (int, 0),
     "version": (int, 1),
-    "length": (
-        functools.partial(string_to_enum, enum=gd.LevelLength),
-        gd.LevelLength.TINY,
-    ),
+    "length": (functools.partial(string_to_enum, enum=gd.LevelLength), gd.LevelLength.TINY),
     "track": (int, 0),
     "song_id": (int, 0),
     "is_auto": (str_to_bool, False),
@@ -1114,9 +1114,9 @@ async def rate_level_demon(request: web.Request) -> web.Response:
     demon_difficulty = string_to_enum(request.query["difficulty"], gd.DemonDifficulty)
     as_mod = str_to_bool(request.query.get("mod", "false"))
 
-    await gd.Level(
-        id=level_id, client=request.app.client
-    ).rate_demon(demon_difficulty, as_mod=as_mod)
+    await gd.Level(id=level_id, client=request.app.client).rate_demon(
+        demon_difficulty, as_mod=as_mod
+    )
 
     return json_resp({})
 
@@ -1142,9 +1142,9 @@ async def get_level_comments(request: web.Request) -> web.Response:
     amount = int(request.query.get("amount", 20))
     strategy = string_to_enum(request.query.get("strategy", "recent"), gd.CommentStrategy)
 
-    comments = await gd.Level(
-        id=level_id, client=request.app.client
-    ).get_comments(amount=amount, strategy=strategy)
+    comments = await gd.Level(id=level_id, client=request.app.client).get_comments(
+        amount=amount, strategy=strategy
+    )
 
     return json_resp(comments)
 
@@ -1158,9 +1158,9 @@ async def get_level_leaderboard(request: web.Request) -> web.Response:
         request.match_info.get("strategy", "all"), gd.LevelLeaderboardStrategy
     )
 
-    records = await gd.Level(
-        id=level_id, client=request.app.client
-    ).get_leaderboard(strategy=strategy)
+    records = await gd.Level(id=level_id, client=request.app.client).get_leaderboard(
+        strategy=strategy
+    )
 
     return json_resp(records)
 
@@ -1205,15 +1205,12 @@ async def post_comment(request: web.Request) -> web.Response:
 
 
 SETTINGS_QUERY: Dict[str, Tuple[Union[Callable[[str], Any], Any]]] = {
-    "message_policy": (
-        functools.partial(string_to_enum, enum=gd.MessagePolicyType), None
-    ),
+    "message_policy": (functools.partial(string_to_enum, enum=gd.MessagePolicyType), None),
     "friend_request_policy": (
-        functools.partial(string_to_enum, enum=gd.FriendRequestPolicyType), None
+        functools.partial(string_to_enum, enum=gd.FriendRequestPolicyType),
+        None,
     ),
-    "comment_policy": (
-        functools.partial(string_to_enum, enum=gd.CommentPolicyType), None
-    ),
+    "comment_policy": (functools.partial(string_to_enum, enum=gd.CommentPolicyType), None),
     "youtube": (str, None),
     "twitter": (str, None),
     "twitch": (str, None),
@@ -1225,9 +1222,7 @@ PROFILE_QUERY: Dict[str, Tuple[Union[Callable[[str], Any], Any]]] = {
     "demons": (int, None),
     "diamonds": (int, None),
     "has_glow": (bool, None),
-    "icon_type": (
-        functools.partial(string_to_enum, enum=gd.IconType), None
-    ),
+    "icon_type": (functools.partial(string_to_enum, enum=gd.IconType), None),
     "icon": (int, None),
     "color_1": (int, None),
     "color_2": (int, None),

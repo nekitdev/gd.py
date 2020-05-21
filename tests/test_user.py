@@ -30,9 +30,9 @@ async def test_properties():
     user.twitter_link
     user.twitch
     user.twitch_link
-    user.msg_policy
-    user.friend_req_policy
-    user.comments_policy
+    user.message_policy
+    user.friend_request_policy
+    user.comment_policy
     user.icon_set
 
     user.has_cp()

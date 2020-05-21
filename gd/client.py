@@ -1099,7 +1099,9 @@ class Client:
         :exc:`.MissingAccess`
             Failed to delete a friend request.
         """
-        await self.session.delete_friend_request(request.type, request.author.account_id, client=self)
+        await self.session.delete_friend_request(
+            request.type, request.author.account_id, client=self
+        )
 
     @check_logged
     async def accept_friend_request(self, request: FriendRequest) -> None:

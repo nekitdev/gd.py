@@ -272,9 +272,7 @@ class AbstractUser(AbstractEntity):
         return await self.client.search_levels(pages=pages, filters=filters, user=self)
 
     async def get_page_comments(
-        self,
-        page: int = 0,
-        exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE,
+        self, page: int = 0, exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE,
     ) -> List[Comment]:
         """|coro|
 
