@@ -341,7 +341,6 @@ class AbstractUser(AbstractEntity):
         type: str = "profile",
         page: int = 0,
         *,
-        raise_errors: bool = True,
         strategy: Union[int, str, CommentStrategy] = 0,
         exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE,
     ) -> List[Comment]:
@@ -377,7 +376,7 @@ class AbstractUser(AbstractEntity):
             No comments were found.
         """
         return await self.client.retrieve_page_comments(
-            self, type=type, page=page, raise_errors=raise_errors, strategy=strategy
+            self, type=type, page=page, strategy=strategy, exclude=exclude
         )
 
     async def retrieve_comments(
