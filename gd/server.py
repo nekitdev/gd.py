@@ -465,6 +465,15 @@ def get_value(parameter: str, function: Function, default: Any, request: web.Req
     return value
 
 
+def get_id_and_special(item_type: str, item_id: int = 0, level_id: int = 0) -> Optional[Tuple[int, int]]:
+    mapping = {  # string_type: (int_type, special)
+        "level": (1, 0),
+        "level_comment": (2, level_id),
+        "comment": (3, item_id),
+    }
+    return mapping.get(item_type.casefold().replace(" ", "_"), None)
+
+
 UPLOAD_QUERY: Dict[str, Tuple[Union[Callable[[str], T], T]]] = {
     "name": (str, "Unnamed"),
     "id": (int, 0),
@@ -596,7 +605,7 @@ async def user_get(request: web.Request) -> web.Response:
     Return Type:
         application/json
     """
-    query = int(request.match_info.get("id"))
+    query = int(request.match_info["id"])
     small = str_to_bool(request.query.get("small", "false"))
 
     if small:
@@ -632,8 +641,9 @@ async def song_search(request: web.Request) -> web.Response:
     Return Type:
         application/json
     """
-    query = int(request.match_info.get("id"))
-    return json_resp(await request.app.client.get_song(query))
+    query = int(request.match_info["id"])
+    song = await request.app.client.get_song(query)
+    return json_resp(song)
 
 
 @routes.get("/api/artist_info/{id}")
@@ -645,8 +655,9 @@ async def song_search(request: web.Request) -> web.Response:
 )
 @auth_setup(required=False)
 async def get_artist_info(request: web.Request) -> web.Response:
-    query = int(request.match_info.get("id"))
-    return json_resp(await request.app.client.get_artist_info(query))
+    query = int(request.match_info["id"])
+    artist_info = await request.app.client.get_artist_info(query)
+    return json_resp(artist_info)
 
 
 @routes.get("/api/search/user/{query}")
@@ -664,7 +675,7 @@ async def user_search(request: web.Request) -> web.Response:
     Return Type:
         application/json
     """
-    query = request.match_info.get("query")
+    query = request.match_info["query"]
     small = str_to_bool(request.query.get("small", "false"))
 
     if small:
@@ -696,15 +707,16 @@ async def get_level(request: web.Request) -> web.Response:
     Return Type:
         application/json
     """
-    level_id = int(request.match_info.get("id"))
-    return json_resp(await request.app.client.get_level(level_id))
+    level_id = int(request.match_info["id"])
+    level = await request.app.client.get_level(level_id)
+    return json_resp(level)
 
 
 @routes.delete("/api/level/{id}")
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "{error}", ErrorType.FAILED),
+        gd.MissingAccess: Error(404, "Failed to delete a level.", ErrorType.FAILED),
     }
 )
 @auth_setup(login=True)
@@ -721,9 +733,8 @@ async def delete_level(request: web.Request) -> web.Response:
     Return Type:
         application/json
     """
-    level_id = int(request.match_info.get("id"))
-    level = await request.app.client.get_level(level_id, get_data=False)
-    await level.delete()
+    level_id = int(request.match_info["id"])
+    await request.app.client.session.delete_level(level_id, client=request.app.client)
     return json_resp({})
 
 
@@ -736,7 +747,7 @@ async def delete_level(request: web.Request) -> web.Response:
 )
 @auth_setup(required=False)
 async def download_song(request: web.Request) -> web.FileResponse:
-    song_id = int(request.match_info.get("song_id"))
+    song_id = int(request.match_info["song_id"])
 
     path = ROOT_PATH / f"song-{song_id}.mp3"
 
@@ -759,7 +770,7 @@ async def download_song(request: web.Request) -> web.FileResponse:
 @auth_setup(required=False)
 @cooldown(rate=10, per=50)
 async def download_level(request: web.Request) -> web.Response:
-    level_id = int(request.match_info.get("level_id"))
+    level_id = int(request.match_info["level_id"])
     # "raw", "parsed", "editor"
     state = request.query.get("state", "parsed").casefold()
 
@@ -795,7 +806,8 @@ async def get_daily(request: web.Request) -> web.Response:
     Return Type:
         application/json
     """
-    return json_resp(await request.app.client.get_daily())
+    daily = await request.app.client.get_daily()
+    return json_resp(daily)
 
 
 @routes.get("/api/weekly")
@@ -815,14 +827,16 @@ async def get_weekly(request: web.Request) -> web.Response:
     Return Type:
         application/json
     """
-    return json_resp(await request.app.client.get_weekly())
+    weekly = await request.app.client.get_weekly()
+    return json_resp(weekly)
 
 
 @routes.get("/api/gauntlets")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to load gauntlets.", ErrorType.FAILED)})
 @auth_setup(required=False)
 async def get_gauntlets(request: web.Request) -> web.Response:
-    return json_resp(await request.app.client.get_gauntlets())
+    gauntlets = await request.app.client.get_gauntlets()
+    return json_resp(gauntlets)
 
 
 @routes.get("/api/map_packs")
@@ -830,7 +844,8 @@ async def get_gauntlets(request: web.Request) -> web.Response:
 @auth_setup(required=False)
 async def get_map_packs(request: web.Request) -> web.Response:
     pages = map(int, request.query.get("pages", "0").split(","))
-    return json_resp(await request.app.client.get_map_packs(pages=pages))
+    map_packs = await request.app.client.get_map_packs(pages=pages)
+    return json_resp(map_packs)
 
 
 @routes.post("/api/level")
@@ -853,7 +868,8 @@ async def upload_level(request: web.Request) -> web.Response:
 @auth_setup(login=True)
 async def get_levels(request: web.Request) -> web.Response:
     pages = map(int, request.query.get("pages", "0").split(","))
-    return json_resp(await request.app.client.get_levels(pages=pages))
+    levels = await request.app.client.get_levels(pages=pages)
+    return json_resp(levels)
 
 
 @routes.get("/api/messages")
@@ -890,12 +906,86 @@ async def get_friend_requests(request: web.Request) -> web.Response:
     return json_resp(friend_requests)
 
 
+@routes.get("/api/friend_request/{id}")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to get a request.", ErrorType.FAILED)})
+@auth_setup(login=True)
+async def read_friend_request(request: web.Request) -> web.Response:
+    request_id = int(request.match_info["id"])
+
+    await request.app.client.session.read_friend_req(request_id, client=request.app.client)
+
+    return json_resp({})
+
+
+@routes.delete("/api/friend_request/{id}")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to delete a request.", ErrorType.FAILED)})
+@auth_setup(login=True)
+async def delete_friend_request(request: web.Request) -> web.Response:
+    request_id = int(request.match_info["id"])
+    request_type = string_to_enum(request.query.get("type", "normal"), gd.MessageOrRequestType)
+    account_id = int(request.query["author_id"])
+
+    await request.app.client.session.delete_friend_req(
+        request_type, author.account_id, client=request.app.client
+    )
+
+    return json_resp({})
+
+
+@routes.patch("/api/friend_request/{id}")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to accept a request.", ErrorType.FAILED)})
+@auth_setup(login=True)
+async def accept_friend_request(request: web.Request) -> web.Response:
+    request_id = int(request.match_info["id"])
+    request_type = string_to_enum(request.query.get("type", "normal"), gd.MessageOrRequestType)
+    account_id = int(request.query["author_id"])
+    is_id = str_to_bool(request.query.get("id", "true"))
+
+    await request.app.client.session.accept_friend_req(
+        request_type, request_id, author.account_id, client=request.app.client
+    )
+
+    return json_resp({})
+
+
 @routes.get("/api/friends")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get friends.", ErrorType.FAILED)})
 @auth_setup(login=True)
 async def get_friends(request: web.Request) -> web.Response:
     friends = await request.app.client.get_friends()
     return json_resp(friends)
+
+
+@routes.patch("/api/{action:(unblock|block)}/{id}")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to (un)block user.", ErrorType.FAILED)})
+@auth_setup(login=True)
+async def un_block_user(request: web.Request) -> web.Response:
+    account_id = int(request.match_info["id"])
+    unblock = request.match_info["action"].startswith("un")
+
+    await request.app.client.session.block_user(
+        account_id, unblock=unblock, client=request.app.client
+    )
+
+    return json_resp({})
+
+
+@routes.patch("/api/{action:(unfriend|friend)}/{id}")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to (un)friend user.", ErrorType.FAILED)})
+@auth_setup(login=True)
+async def un_friend_user(request: web.Request) -> web.Response:
+    account_id = int(request.match_info["id"])
+    unfriend = request.match_info["action"].startswith("un")
+    message = request.query.get("message", "")
+
+    if unfriend:
+        await request.app.client.session.unfriend_user(account_id, client=request.app.client)
+    else:
+        await request.app.client.session.send_friend_request(
+            account_id, message=message, client=request.app.client
+        )
+
+    return json_resp({})
 
 
 @routes.get("/api/blocked")
@@ -916,7 +1006,7 @@ async def get_blocked(request: web.Request) -> web.Response:
 @auth_setup(login=True)
 @cooldown(rate=5, per=5)
 async def send_message(request: web.Request) -> web.Response:
-    query = request.match_info.get("query")
+    query = request.match_info["query"]
 
     is_id = str_to_bool(request.query.get("id", "false"))
 
@@ -928,7 +1018,54 @@ async def send_message(request: web.Request) -> web.Response:
     else:
         user = await request.app.client.find_user(query)
 
-    return json_resp(await user.send(subject, body))
+    message = await user.send(subject, body)
+
+    return json_resp(message)
+
+
+@routes.patch("/api/{action:(dislike|like)}/{id}")
+@handle_errors(
+    {
+        KeyError: Error(400, "Parameter is missing.", ErrorType.MISSING_PARAMETER),
+        gd.MissingAccess: Error(404, "Failed to like an entity.", ErrorType.FAILED),
+    }
+)
+@auth_setup(login=True)
+@cooldown(rate=5, per=5)
+async def like_item(request: web.Request) -> web.Response:
+    dislike = request.match_info["action"].startswith("dis")
+
+    item_id = int(request.match_info["id"])
+    item_type = request.query["type"]
+    level_id = int(request.query.get("level_id", 0))
+
+    type_id, special = get_id_and_special(item_type, item_id, level_id)
+
+    await request.app.client.session.like(
+        item_id, type_id, special, dislike=dislike, client=request.app.client
+    )
+
+    return json_resp({})
+
+
+@routes.delete("/api/comment/{id}")
+@handle_errors(
+    {
+        KeyError: Error(400, "Parameter is missing.", ErrorType.MISSING_PARAMETER),
+        gd.MissingAccess: Error(404, "Failed to delete a comment.", ErrorType.FAILED),
+    }
+)
+@auth_setup(login=True)
+async def delete_comment(request: web.Request) -> web.Response:
+    comment_id = int(request.match_info["id"])
+    comment_type = string_to_enum(request.query["type"], gd.CommentType)
+    level_id = int(request.query.get("level_id", 0))
+
+    await request.app.client.session.delete_comment(
+        comment_type, comment_id, level_id, client=request.app.client
+    )
+
+    return json_resp({})
 
 
 @routes.get("/api/ng/song/{id}")
@@ -952,8 +1089,9 @@ async def ng_song_search(request: web.Request) -> web.Response:
     Return Type:
         application/json
     """
-    query = int(request.match_info.get("id"))
-    return json_resp(await request.app.client.get_song(query))
+    query = int(request.match_info["id"])
+    song = await request.app.client.get_ng_song(query)
+    return json_resp(song)
 
 
 @routes.get("/api/ng/users/{query}")
@@ -974,9 +1112,10 @@ async def ng_user_search(request: web.Request) -> web.Response:
     Return Type:
         application/json
     """
-    query = request.match_info.get("query")
+    query = request.match_info["query"]
     pages = map(int, request.query.get("pages", "0").split(","))
-    return json_resp(await request.app.client.search_users(query, pages=pages))
+    users = await request.app.client.search_users(query, pages=pages)
+    return json_resp(users)
 
 
 @routes.get("/api/ng/songs/{query}")
@@ -997,9 +1136,10 @@ async def ng_songs_search(request: web.Request) -> web.Response:
     Return Type:
         application/json
     """
-    query = request.match_info.get("query")
+    query = request.match_info["query"]
     pages = map(int, request.query.get("pages", "0").split(","))
-    return json_resp(await request.app.client.search_songs(query, pages=pages))
+    songs = await request.app.client.search_songs(query, pages=pages)
+    return json_resp(songs)
 
 
 @routes.get("/api/ng/user_songs/{user}")
@@ -1019,6 +1159,7 @@ async def search_songs_by_user(request: web.Request) -> web.Response:
     Return Type:
         application/json
     """
-    query = request.match_info.get("user")
+    query = request.match_info["user"]
     pages = map(int, request.query.get("pages", "0").split(","))
-    return json_resp(await request.app.client.get_user_songs(query, pages=pages))
+    user_songs = await request.app.client.get_user_songs(query, pages=pages)
+    return json_resp(user_songs)
