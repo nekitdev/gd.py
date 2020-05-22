@@ -570,7 +570,7 @@ class Client:
         Raises
         ------
         :exc:`.MissingAccess`
-            Nothing found or invalid response was recieved.
+            Nothing found or invalid response was received.
         Returns
         -------
         :class:`.Level`
@@ -586,7 +586,7 @@ class Client:
         Raises
         ------
         :exc:`.MissingAccess`
-            Nothing found or invalid response was recieved.
+            Nothing found or invalid response was received.
         Returns
         -------
         :class:`.Level`

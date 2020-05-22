@@ -871,7 +871,7 @@ class Session:
         self, level_id: int, content: str, percentage: int, *, client: Client
     ) -> None:
         if percentage > 100:
-            raise ValueError(f"{percentage}% > 100% percentage arg was recieved.")
+            raise ValueError(f"{percentage}% > 100% percentage arg was received.")
 
         percentage = round(percentage)  # just in case
         to_gen = [client.name, level_id, percentage, 0]
@@ -954,7 +954,7 @@ class Session:
     ) -> None:
         if typeof.value:  # is gd.MessageOrRequestType.SENT
             raise MissingAccess(
-                "Failed to accept a friend request. Reason: request is sent, not recieved one."
+                "Failed to accept a friend request. Reason: request is sent, not received one."
             )
         payload = (
             Params()
