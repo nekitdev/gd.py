@@ -159,6 +159,7 @@ class Parameters:
                 'song'       -> 'songID'
                 'user'       -> 'targetAccountID'
                 'search'     -> 'str'
+                'gauntlet'   -> 'gauntlet'
                 'password'   -> 'password'
                 'levelid'    -> 'levelID'
                 'accountid'  -> 'accountID'
@@ -183,6 +184,7 @@ class Parameters:
             "song": "songID",
             "user": "targetAccountID",
             "search": "str",
+            "gauntlet": "gauntlet",
             "password": "password",
             "levelid": "levelID",
             "accountid": "accountID",

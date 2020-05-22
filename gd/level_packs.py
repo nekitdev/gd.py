@@ -44,9 +44,7 @@ class Gauntlet(AbstractEntity):
         return cls(id=gid, name=name, level_ids=level_ids, client=client)
 
     def _json(self) -> dict:
-        final = dict(levels=self.levels)
-        final.update(super()._json())
-        return final
+        return dict(super()._json(), levels=self.levels)
 
     @property
     def name(self) -> str:

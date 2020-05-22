@@ -28,14 +28,14 @@ def make_repr(obj: Any, info: Optional[Dict[Any, Any]] = None) -> str:
 
 
 def default(x: Any) -> Any:
-    if isinstance(x, (list, tuple, set)):
+    if hasattr(x, "_json"):
+        return x._json()
+
+    elif isinstance(x, (list, tuple, set)):
         return list(x)
 
     elif isinstance(x, dict):
         return dict(x)
-
-    elif hasattr(x, "_json"):
-        return x._json()
 
     elif isinstance(x, URL):
         return str(x)

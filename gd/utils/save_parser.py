@@ -1,9 +1,20 @@
-from collections import namedtuple
+import attr
 
-from gd.typing import List
+from gd.typing import Dict, List
 from gd.utils.xml_parser import XMLParser, AioXMLParser
 
-Save = namedtuple("Save", "completed followed")
+
+def empty_list() -> List:
+    return []
+
+
+@attr.s
+class Save:
+    completed = attr.ib(factory=empty_list, type=list)
+    followed = attr.ib(factory=empty_list, type=list)
+
+    def _json(self) -> Dict[str, List[int]]:
+        return {"completed": self.completed, "followed": self.followed}
 
 
 class SaveParser:

@@ -33,7 +33,7 @@ import gd
 
 AUTH_RE = re.compile(r"(?:Token )?(?P<token>[A-Fa-z0-9]+)")
 CHUNK_SIZE = 64 * 1024
-CLIENT = gd.Client()
+CLIENT = gd.Client(debug=True)
 JSON_PREFIX = "json_"
 
 ROOT_PATH = Path(".gd")
@@ -105,7 +105,15 @@ def create_retry_after(retry_after: float) -> Error:
     )
 
 
-DEFAULT_ERROR = Error(500, "Server got into trouble.", ErrorType.DEFAULT)
+DEFAULT_ERROR = Error(
+    500,
+    (
+        "Unexcepted error has occured. "
+        "If you think this is a bug, please report it. "
+        "Link: [https://github.com/NeKitDS/gd.py/issues]"
+    ),
+    ErrorType.DEFAULT,
+)
 AUTH_NOT_SET = Error(401, "Authorization header is not set.", ErrorType.AUTH_NOT_SET)
 AUTH_INVALID = Error(401, "Authorization token is incorrect.", ErrorType.AUTH_INVALID)
 AUTH_MISSING = Error(401, "Authorization token is not found in database.", ErrorType.AUTH_MISSING)
@@ -572,8 +580,13 @@ async def auth_handle(request: web.Request) -> web.Response:
 
     # Create token info object to store current state if not existing
     if token_info is None:
-        token_info = TokenInfo(name=name, password=password, account_id=account_id, id=id)
+        tokens = set(set_token.token for set_token in request.app.tokens)
+
+        while not token_info or token_info.token in tokens:
+            token_info = TokenInfo(name=name, password=password, account_id=account_id, id=id)
+
         request.app.tokens.append(token_info)
+
         new = True
     else:
         new = False
@@ -745,6 +758,18 @@ async def delete_level(request: web.Request) -> web.Response:
 )
 @auth_setup(required=False)
 async def download_song(request: web.Request) -> web.FileResponse:
+    """GET /api/install/song/{song_id}
+    Description:
+        Download a song by its ID.
+    Example:
+        link: /api/install/song/905110
+    Returns:
+        200: Found song;
+        400: Invalid type;
+        404: Failed to find the song.
+    Return Type:
+        audio/mpeg
+    """
     song_id = int(request.match_info["song_id"])
 
     path = ROOT_PATH / f"song-{song_id}.mp3"
@@ -770,6 +795,21 @@ async def download_song(request: web.Request) -> web.FileResponse:
 @auth_setup(required=False)
 @cooldown(rate=10, per=50)
 async def download_level(request: web.Request) -> web.Response:
+    """GET /api/install/level/{level_id}
+    Description:
+        Download a level by its ID, optionally parsing it.
+    Example:
+        link: /api/install/level/30029017?state=parsed
+        state: parsed
+    Parameters:
+        state: State of level to return. Either "raw", "parsed" (default) or "editor".
+    Returns:
+        200: JSON with data;
+        400: Invalid type;
+        404: Level was not found.
+    Return Type:
+        application/json
+    """
     level_id = int(request.match_info["level_id"])
     # "raw", "parsed", "editor"
     state = request.query.get("state", "parsed").casefold()
@@ -835,7 +875,26 @@ async def get_weekly(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to load gauntlets.", ErrorType.FAILED)})
 @auth_setup(required=False)
 async def get_gauntlets(request: web.Request) -> web.Response:
+    """GET /api/gauntlets
+    Description:
+        Get all gauntlets and optionally load their levels.
+    Example:
+        link: /api/gauntlets?load=true
+        load: true
+    Parameters:
+        load: Whether to load gauntlet levels, "true" (default) or "false".
+    Returns:
+        200: JSON with gauntlets;
+        404: Failed to load gauntlets.
+    Return Type:
+        application/json
+    """
     gauntlets = await request.app.client.get_gauntlets()
+    load = str_to_bool(request.query.get("load", "true"))
+
+    if load:
+        await gd.utils.gather(gauntlet.get_levels() for gauntlet in gauntlets)
+
     return json_resp(gauntlets)
 
 
@@ -843,8 +902,28 @@ async def get_gauntlets(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to load map packs.", ErrorType.FAILED)})
 @auth_setup(required=False)
 async def get_map_packs(request: web.Request) -> web.Response:
+    """GET /api/map_packs
+    Description:
+        Get all map packs and optionally load their levels.
+    Example:
+        link: /api/map_packs?load=false
+        load: false
+    Parameters:
+        load: Whether to load map pack levels, "true" (default) or "false".
+    Returns:
+        200: JSON with map packs;
+        404: Failed to load map packs.
+    Return Type:
+        application/json
+    """
     pages = map(int, request.query.get("pages", "0").split(","))
+    load = str_to_bool(request.query.get("load", "true"))
+
     map_packs = await request.app.client.get_map_packs(pages=pages)
+
+    if load:
+        await gd.utils.gather(map_pack.get_levels() for map_pack in map_packs)
+
     return json_resp(map_packs)
 
 
@@ -876,6 +955,39 @@ UPLOAD_QUERY: Dict[str, Tuple[Union[Callable[[str], Any], Any]]] = {
 @auth_setup(required=True)
 @cooldown(rate=10, per=50)
 async def upload_level(request: web.Request) -> web.Response:
+    """POST /api/level
+    Description:
+        Upload a level with given arguments.
+    Example:
+        link: /api/level?name=Test&track=35&password=123456
+        name: Test
+        track: 35
+        password: 123456
+    Parameters:
+        name: Name of the level;
+        id: ID of the level. 0 if uploading a new level, non-zero to update;
+        version: Version of the level;
+        length: Length of the level;
+        track: Normal track to set, starting from 0 - Stereo Madness;
+        song_id: ID of the custom song to set;
+        is_auto: Indicates if the level is auto;
+        original: ID of the original level;
+        two_player: Indicates whether the level has enabled Two Player mode;
+        objects: The amount of objects in the level;
+        coins: Amount of coins the level has;
+        star_amount: The amount of stars to request;
+        unlist: Indicates whether the level should be unlisted;
+        ldm: Indicates if the level has LDM mode;
+        password: The password to apply;
+        copyable: Indicates whether the level should be copyable;
+        data: The data of the level, as a string;
+        description: The description of the level.
+    Returns:
+        200: JSON with uploaded level;
+        404: Failed to upload level.
+    Return Type:
+        application/json
+    """
     upload_arguments = {
         parameter: get_value(parameter, function, default, request)
         for (parameter, (function, default)) in UPLOAD_QUERY.items()
@@ -890,6 +1002,20 @@ async def upload_level(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get levels.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def get_levels(request: web.Request) -> web.Response:
+    """GET /api/levels
+    Description:
+        Load levels of the connected client.
+    Example:
+        link: /api/levels?pages=0,1,2,3
+        pages: 0,1,2,3
+    Parameters:
+        pages: Pages of levels to load.
+    Returns:
+        200: JSON with levels;
+        404: Failed to get levels.
+    Return Type:
+        application/json
+    """
     pages = map(int, request.query.get("pages", "0").split(","))
     levels = await request.app.client.get_levels(pages=pages)
     return json_resp(levels)
@@ -899,6 +1025,24 @@ async def get_levels(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to load messages.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def get_messages(request: web.Request) -> web.Response:
+    """GET api/messages
+    Description:
+        Load messages, optionally reading them.
+    Example:
+        link: /api/messages?pages=0,1,2,3&sent=false&read=true
+        pages: 0,1,2,3
+        sent: false
+        read: true
+    Parameters:
+        pages: Pages of messages to load;
+        sent: Whether to load sent messages, "true" or "false" (default);
+        read: Whether to read messages, "true" (default) or "false".
+    Returns:
+        200: JSON with messages;
+        404: Failed to load messages.
+    Return Type:
+        application/json
+    """
     pages = map(int, request.query.get("pages", "0").split(","))
     sent = str_to_bool(request.query.get("sent", "false"))
     read = str_to_bool(request.query.get("read", "true"))
@@ -916,6 +1060,24 @@ async def get_messages(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get friend requests.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def get_friend_requests(request: web.Request) -> web.Response:
+    """GET api/friend_requests
+    Description:
+        Load friend requests, optionally reading them.
+    Example:
+        link: /api/friend_requests?pages=0,1,2,3&sent=false&read=false
+        pages: 0,1,2,3
+        sent: false
+        read: false
+    Parameters:
+        pages: Pages of friend requests to load;
+        sent: Whether to load sent friend requests, "true" or "false" (default);
+        read: Whether to read friend requests, "true" (default) or "false".
+    Returns:
+        200: JSON with friend requests;
+        404: Failed to load friend requests.
+    Return Type:
+        application/json
+    """
     pages = map(int, request.query.get("pages", "0").split(","))
     sent = str_to_bool(request.query.get("sent", "false"))
     read = str_to_bool(request.query.get("read", "false"))
@@ -933,6 +1095,17 @@ async def get_friend_requests(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get a request.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def read_friend_request(request: web.Request) -> web.Response:
+    """GET /api/friend_request/{id}
+    Description:
+        Read friend request by its ID.
+    Example:
+        link: /api/friend_request/123456789
+    Returns:
+        200: Empty JSON;
+        404: Failed to get a request.
+    Return Type:
+        application/json
+    """
     request_id = int(request.match_info["id"])
 
     await gd.FriendRequest(id=request_id, client=request.app.client).read()
@@ -944,6 +1117,22 @@ async def read_friend_request(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to delete a request.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def delete_friend_request(request: web.Request) -> web.Response:
+    """DELETE /api/friend_request/{id}
+    Description:
+        Delete friend request by its ID.
+    Example:
+        link: /api/friend_request/123456789?type=normal&author_id=987654321
+        type: normal
+        author_id: 987654321
+    Parameters:
+        type: Type of friend request, "sent" or "normal" (default);
+        author_id: AccountID of the author of friend request.
+    Returns:
+        200: Empty JSON;
+        404: Failed to delete a request.
+    Return Type:
+        application/json
+    """
     request_id = int(request.match_info["id"])
     request_type = string_to_enum(request.query.get("type", "normal"), gd.MessageOrRequestType)
     account_id = int(request.query["author_id"])
@@ -962,6 +1151,21 @@ async def delete_friend_request(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to accept a request.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def accept_friend_request(request: web.Request) -> web.Response:
+    """PATCH /api/friend_request/{id}
+    Description:
+        Accept friend request by its ID.
+    Example:
+        link: /api/friend_request/123456789?author_id=987654321
+        author_id: 987654321
+    Parameters:
+        type: Type of friend request, "normal" (always);
+        author_id: AccountID of the author of friend request.
+    Returns:
+        200: Empty JSON;
+        404: Failed to accept a request.
+    Return Type:
+        application/json
+    """
     request_id = int(request.match_info["id"])
     request_type = string_to_enum(request.query.get("type", "normal"), gd.MessageOrRequestType)
     account_id = int(request.query["author_id"])
@@ -980,6 +1184,17 @@ async def accept_friend_request(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get friends.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def get_friends(request: web.Request) -> web.Response:
+    """GET /api/friends
+    Description:
+        Get friend of the connected client.
+    Example:
+        link: /api/friends
+    Returns:
+        200: JSON list of friends;
+        404: Failed to get friends.
+    Return Type:
+        application/json
+    """
     friends = await request.app.client.get_friends()
     return json_resp(friends)
 
@@ -988,6 +1203,17 @@ async def get_friends(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to (un)block user.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def un_block_user(request: web.Request) -> web.Response:
+    """PATCH /api/{action:(block|unblock)}/{id}
+    Description:
+        Block or unblock user by their AccountID.
+    Example:
+        link: api/unblock/123456789
+    Returns:
+        200: Empty JSON;
+        404: Failed to block or unblock given user.
+    Return Type:
+        application/json
+    """
     account_id = int(request.match_info["id"])
     unblock = request.match_info["action"].startswith("un")
 
@@ -1005,6 +1231,20 @@ async def un_block_user(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to (un)friend user.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def un_friend_user(request: web.Request) -> web.Response:
+    """PATCH /api/{action:(friend|unfriend)}/{id}
+    Description:
+        Unfriend user or send a friend request to them by their AccountID.
+    Example:
+        link: api/friend/123456789?message=Hello!
+        message: Hello!
+    Parameters:
+        message: Message to send with friend request. (Ignored if /unfriend/).
+    Returns:
+        200: Empty JSON or friend request data;
+        404: Failed to send a friend request or unfriend given user.
+    Return Type:
+        application/json
+    """
     account_id = int(request.match_info["id"])
     unfriend = request.match_info["action"].startswith("un")
     message = request.query.get("message", "")
@@ -1025,6 +1265,17 @@ async def un_friend_user(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get blocked users.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def get_blocked(request: web.Request) -> web.Response:
+    """GET /api/blocked
+    Description:
+        Get users blocked by the connected client.
+    Example:
+        link: /api/blocked
+    Returns:
+        200: JSON list of blocked users;
+        404: Failed to get blocked users.
+    Return Type:
+        application/json
+    """
     blocked = await request.app.client.get_blocked_users()
     return json_resp(blocked)
 
@@ -1039,6 +1290,24 @@ async def get_blocked(request: web.Request) -> web.Response:
 @auth_setup(required=True)
 @cooldown(rate=5, per=5)
 async def send_message(request: web.Request) -> web.Response:
+    """POST /api/send/{query}
+    Description:
+        Send a message to the user given by the query.
+    Example:
+        link: /api/send/5509312?id=true&subject=Server&body=Test
+        id: true
+        subject: Server
+        body: Test
+    Parameters:
+        id: Whether given query is AccountID, "true" or "false" (default);
+        subject: Subject of the message to send, "No Subject" by default;
+        body: Body of the message to send, required.
+    Returns:
+        200: JSON with the message;
+        404: Failed to send a message.
+    Return Type:
+        application/json
+    """
     query = request.match_info["query"]
 
     is_id = str_to_bool(request.query.get("id", "false"))
@@ -1066,6 +1335,22 @@ async def send_message(request: web.Request) -> web.Response:
 @auth_setup(required=True)
 @cooldown(rate=5, per=5)
 async def like_item(request: web.Request) -> web.Response:
+    """PATCH /api/{action:(dislike|like)}/{id}
+    Description:
+        Like or dislike item given by ID.
+    Example:
+        link: /api/like/16625059?type=comment
+        type: comment
+    Parameters:
+        type: Type of the item, "comment", "level" or "level_comment". Required;
+        level_id: ID of the Level, needed if type is "level_comment".
+    Returns:
+        200: Empty JSON;
+        400: Parameter is missing;
+        404: Failed to like an entity.
+    Return Type:
+        application/json
+    """
     dislike = request.match_info["action"].startswith("dis")
 
     item_id = int(request.match_info["id"])
@@ -1086,6 +1371,20 @@ async def like_item(request: web.Request) -> web.Response:
 @auth_setup(required=True)
 @cooldown(rate=5, per=5)
 async def rate_level(request: web.Request) -> web.Response:
+    """PATCH /api/level/{id}/rate
+    Description:
+        Rate the level given by its ID.
+    Example:
+        link: /api/level/44622744/rate?stars=10
+        stars: 10
+    Parameters:
+        stars: Stars to rate the level with, required.
+    Returns:
+        200: Empty JSON;
+        404: Failed to rate a level.
+    Return Type:
+        application/json
+    """
     level_id = int(request.match_info["id"])
     stars = int(request.query["stars"])
 
@@ -1099,8 +1398,22 @@ async def rate_level(request: web.Request) -> web.Response:
 )
 @auth_setup(required=True)
 async def update_level_description(request: web.Request) -> web.Response:
+    """PATCH /api/level/{id}/description
+    Description:
+        Update level description.
+    Example:
+        link: /api/level/123456789/description?new=Test
+        new: Test
+    Parameters:
+        new: New description to set. If not given, clears current description.
+    Returns:
+        200: Empty JSON;
+        404: Failed to update level description.
+    Return Type:
+        application/json
+    """
     level_id = int(request.match_info["id"])
-    new = request.query["new"]
+    new = request.query.get("new", "")
 
     await gd.Level(id=level_id, client=request.app.client).update_description(new)
     return json_resp({})
@@ -1110,6 +1423,22 @@ async def update_level_description(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to demon-rate a level.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def rate_level_demon(request: web.Request) -> web.Response:
+    """PATCH /api/level/{id}/rate_demon
+    Description:
+        Demon-Rate the level given by its ID.
+    Example:
+        link: /api/level/42584142/rate_demon?difficulty=extreme_demon&mod=false
+        difficulty: extreme_demon
+        mod: false
+    Parameters:
+        difficulty: Difficulty to demon-rate the level with, required;
+        mod: Whether to attempt to demon-rate the level as mod, "true" or "false" (default).
+    Returns:
+        200: Empty JSON;
+        404: Failed to demon-rate a level.
+    Return Type:
+        application/json
+    """
     level_id = int(request.match_info["id"])
     demon_difficulty = string_to_enum(request.query["difficulty"], gd.DemonDifficulty)
     as_mod = str_to_bool(request.query.get("mod", "false"))
@@ -1125,6 +1454,23 @@ async def rate_level_demon(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to send a level.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def send_level(request: web.Request) -> web.Response:
+    """PATCH /api/level/{id}/send
+    Description:
+        Send the level given by its ID for rating.
+        Requires Moderator privileges.
+    Example:
+        link: /api/level/123456789/send?stars=10&feature=true
+        stars: 10
+        feature: true
+    Parameters:
+        stars: Stars to send the level with, required;
+        mod: Whether to send the level for feature, "true" or "false", required.
+    Returns:
+        200: Empty JSON;
+        404: Failed to send a level.
+    Return Type:
+        application/json
+    """
     level_id = int(request.match_info["id"])
     stars = int(request.query["stars"])
     featured = str_to_bool(request.query["featured"])
@@ -1138,6 +1484,22 @@ async def send_level(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get level comments.", ErrorType.FAILED)})
 @auth_setup(required=False)
 async def get_level_comments(request: web.Request) -> web.Response:
+    """GET /api/level/{id}/comments
+    Description:
+        Get comments of the level given by its ID.
+    Example:
+        link: /api/level/30029017/comments?amount=100&strategy=most_liked
+        amount: 100
+        strategy: most_liked
+    Parameters:
+        amount: Amount of comments to fetch, 20 by default;
+        strategy: Strategy to apply, "recent" (default) or "most_liked".
+    Returns:
+        200: JSON with level comments;
+        404: Failed to get level comments.
+    Return Type:
+        application/json
+    """
     level_id = int(request.match_info["id"])
     amount = int(request.query.get("amount", 20))
     strategy = string_to_enum(request.query.get("strategy", "recent"), gd.CommentStrategy)
@@ -1153,6 +1515,20 @@ async def get_level_comments(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get the leaderboard.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def get_level_leaderboard(request: web.Request) -> web.Response:
+    """GET /api/level/{id}/leaderboard
+    Description:
+        Get leaderboard of the level given by its ID.
+    Example:
+        link: /api/level/30029017/leaderboard?strategy=all
+        strategy: all
+    Parameters:
+        strategy: Strategy to apply, "all" (default), "weekly" or "friends".
+    Returns:
+        200: JSON with level records;
+        404: Failed to get the leaderboard.
+    Return Type:
+        application/json
+    """
     level_id = int(request.match_info["id"])
     strategy = string_to_enum(
         request.match_info.get("strategy", "all"), gd.LevelLeaderboardStrategy
@@ -1169,6 +1545,24 @@ async def get_level_leaderboard(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get user comments.", ErrorType.FAILED)})
 @auth_setup(required=False)
 async def get_user_comments(request: web.Request) -> web.Response:
+    """GET /api/user/{id}/comments
+    Description:
+        Get comments of the user given by AccountID.
+    Example:
+        link: /api/user/5509312/comments?pages=0,1,2,3&type=profile&strategy=recent
+        pages: 0,1,2,3
+        type: profile
+        strategy: recent
+    Parameters:
+        pages: Pages of comments to load, e.g. "0,1,2,3";
+        type: Type of comments to fetch, either "profile" (default) or "level";
+        strategy: Strategy to use for fetching, "recent" (default) or "most_liked".
+    Returns:
+        200: JSON with found comments;
+        404: Failed to get comments.
+    Return Type:
+        application/json
+    """
     account_id = int(request.match_info["id"])
     pages = map(int, request.query.get("pages", "0").split(","))
     type_str = request.query.get("type", "profile")
@@ -1184,24 +1578,54 @@ async def get_user_comments(request: web.Request) -> web.Response:
 @handle_errors({gd.MissingAccess: Error(404, "Failed to comment a level.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def comment_level(request: web.Request) -> web.Response:
+    """POST /api/comment/{level_id}
+    Description:
+        Post a comment on the level given by Level ID.
+    Example:
+        link: /api/comment/1?body=Test&percentage=42
+        body: Test
+        percentage: 42
+    Parameters:
+        body: Body of the comment, required;
+        percentage: Percentage to put, 0 by default.
+    Returns:
+        200: JSON with comment data;
+        404: Failed to comment a level.
+    Return Type:
+        application/json
+    """
     level_id = int(request.match_info["level_id"])
     body = request.query["body"]
     percentage = int(request.query.get("percentage", 0))
 
-    await gd.Level(id=level_id, client=request.app.client).comment(body, percentage)
+    comment = await gd.Level(id=level_id, client=request.app.client).comment(body, percentage)
 
-    return json_resp({})
+    return json_resp(comment)
 
 
 @routes.post("/api/comment")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to post a comment.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def post_comment(request: web.Request) -> web.Response:
+    """POST /api/comment
+    Description:
+        Post a profile comment.
+    Example:
+        link: /api/comment?body=Test
+        body: Test
+    Parameters:
+        body: Body of the comment to post.
+    Returns:
+        200: JSON with the comment;
+        404: Failed to post a comment.
+    Return Type:
+        application/json
+    """
     body = request.query["body"]
 
-    await request.app.client.post_comment(body)
+    comment = await request.app.client.post_comment(body)
 
-    return json_resp({})
+    return json_resp(comment)
 
 
 SETTINGS_QUERY: Dict[str, Tuple[Union[Callable[[str], Any], Any]]] = {
@@ -1215,6 +1639,39 @@ SETTINGS_QUERY: Dict[str, Tuple[Union[Callable[[str], Any], Any]]] = {
     "twitter": (str, None),
     "twitch": (str, None),
 }
+
+
+@routes.patch("/api/settings")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to edit settings.", ErrorType.FAILED)})
+@auth_setup(required=True)
+async def update_settings(request: web.Request) -> web.Response:
+    """PATCH /api/settings
+    Description:
+        Update profile settings, policies and social media links.
+    Example:
+        link: /api/settings?comment_policy=opened_to_all
+        comment_policy: opened_to_all
+    Parameters:
+        message_policy: Message policy of the account;
+        friend_request_policy: Friend Request policy of the account;
+        comment_policy: Comment policy of the account;
+        youtube: YouTube ID of the channel;
+        twitter: Twitter name of the account;
+        twitch: Twitch name of the account.
+    Returns:
+        200: Empty JSON;
+        404: Failed to edit settings.
+    Return Type:
+        application/json
+    """
+    update_arguments = {
+        parameter: get_value(parameter, function, default, request)
+        for (parameter, (function, default)) in SETTINGS_QUERY.items()
+    }
+
+    await request.app.client.update_settings(**update_arguments)
+
+    return json_resp({})
 
 
 PROFILE_QUERY: Dict[str, Tuple[Union[Callable[[str], Any], Any]]] = {
@@ -1241,24 +1698,46 @@ PROFILE_QUERY: Dict[str, Tuple[Union[Callable[[str], Any], Any]]] = {
 }
 
 
-@routes.patch("/api/settings")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to edit settings.", ErrorType.FAILED)})
-@auth_setup(required=True)
-async def update_settings(request: web.Request) -> web.Response:
-    update_arguments = {
-        parameter: get_value(parameter, function, default, request)
-        for (parameter, (function, default)) in SETTINGS_QUERY.items()
-    }
-
-    await request.app.client.update_settings(**update_arguments)
-
-    return json_resp({})
-
-
 @routes.patch("/api/profile")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to update profile.", ErrorType.FAILED)})
 @auth_setup(required=True)
 async def update_profile(request: web.Request) -> web.Response:
+    """PATCH /api/profile
+    Description:
+        Update profile of the connected client.
+    Example:
+        link: /api/profile?has_glow=true&icon_type=cube&icon=3
+        has_glow: true
+        icon_type: cube
+        icon: 3
+    Parameters:
+        stars: An amount of stars to set;
+        demons: An amount of completed demons to set;
+        diamonds: An amount of diamonds to set;
+        has_glow: Indicates whether a user should have the glow outline;
+        icon_type: Icon type that should be used;
+        icon: Icon ID that should be used;
+        color_1: Index of a color to use as the main color;
+        color_2: Index of a color to use as the secodary color;
+        coins: An amount of secret coins to set;
+        user_coins: An amount of user coins to set;
+        cube: An index of a cube icon to apply;
+        ship: An index of a ship icon to apply;
+        ball: An index of a ball icon to apply;
+        ufo: An index of a ufo icon to apply;
+        wave: An index of a wave icon to apply;
+        robot: An index of a robot icon to apply;
+        spider: An index of a spider icon to apply;
+        explosion: An index of an explosion to apply;
+        special: The purpose of this parameter is unknown;
+        id: Whether to interpret "set_as_user" as AccountID or Name/PlayerID;
+        set_as_user: Passing this parameter allows to copy user's profile.
+    Returns:
+        200: Empty JSON;
+        404: Failed to update profile.
+    Return Type:
+        application/json
+    """
     is_id = str_to_bool(request.query.get("id", "false"))
 
     update_arguments = {
@@ -1288,6 +1767,20 @@ async def update_profile(request: web.Request) -> web.Response:
 )
 @auth_setup(required=False)
 async def get_icons(request: web.Request) -> web.Response:
+    """GET /api/icons/{type:(all|main|cube|ship|ball|ufo|wave|robot|spider)}/{query}
+    Description:
+        Generate icon of the user given by query.
+    Example:
+        link: /api/icons/all/5509312?id=true
+        id: true
+    Parameters:
+        id: Whether to interpret "query" as AccountID or Name/PlayerID;
+    Returns:
+        200: Image with generated icons;
+        404: Could not find requested user.
+    Return Type:
+        image/png
+    """
     icon_type = request.match_info["type"]
     query = request.match_info["query"]
 
@@ -1322,9 +1815,125 @@ async def get_icons(request: web.Request) -> web.Response:
 @handle_errors()
 @auth_setup(required=False)
 async def search_levels(request: web.Request) -> web.Response:
-    return json_resp([])  # TODO: finish this one
+    """GET /api/search/levels
+    Description:
+        Search levels with provided options.
+    Example:
+        link: /api/search/levels?query=Bloodlust&demon_difficulty=extreme_demon&pages=0
+        query: Bloodlust
+        demon_difficulty: extreme_demon
+    Parameters:
+        query: Query to search for, by default empty string;
+        pages: Pages to look levels on;
+        strategy: Strategy to apply when searching, "regular" by default;
+        difficulty: Difficulties to filter levels, optional;
+        demon_difficulty: Demon Difficulty to filter levels, optional;
+        length: Lengths to filter levels, optional;
+        uncompleted: Whether to fetch only uncompleted levels, requires "completed_levels";
+        only_completed: Whether to fetch only completed levels, requires "completed_levels";
+        completed_levels: Comma-separated list of IDs of completed levels, e.g. "1,2,3,4";
+        require_coins: Whether levels should have coins, "false" by default;
+        featured: Whether levels should be featured, "false" by default;
+        epic: Whether levels should be epic, "false" by default;
+        require_two_player: Whether levels should have Two Player mode, "false" by default;
+        rated: If not omitted, forces levels to be either rated or unrated strictly;
+        song_id: Song ID of the Song/Track to use;
+        use_custom_song: Whether Song by given "song_id" is custom or not, "false" by default;
+        require_original: Whether to force levels to be original, "false" by default;
+        followed: Comma-separated list of IDs of followed users, e.g. "71,5509312";
+        gauntlet: ID or Name of the gauntlet to fetch levels of;
+        id: Indicates whether to interpret "user" as AccountID or Name/PlayerID;
+        user: User to fetch levels from. If not given, logged in account might be required.
+    Returns:
+        200: JSON with levels;
+        404: No levels were found.
+    Return Type:
+        application/json
+    """
+    is_id = str_to_bool(request.query.get("id", "false"))
+    query = request.query.get("query", "")
+    pages = map(int, request.query.get("pages", "0").split(","))
+    user_query = request.query.get("user")
 
-    levels = await request.app.client.search_levels(...)
+    gauntlet = request.query.get("gauntlet")
+    if gauntlet is not None:
+        if not gauntlet.isdigit():
+            gauntlet = gd.Converter.get_gauntlet_id(gauntlet)  # assume name
+        else:
+            gauntlet = int(gauntlet)
+
+    strategy = string_to_enum(request.query.get("strategy", "0"), gd.SearchStrategy)
+
+    difficulty = request.query.get("difficulty")
+    if difficulty is not None:
+        difficulty = (string_to_enum(part, gd.LevelDifficulty) for part in difficulty.split(","))
+
+    demon_difficulty = request.query.get("demon_difficulty")
+    if demon_difficulty is not None:
+        demon_difficulty = string_to_enum(demon_difficulty, gd.DemonDifficulty)
+
+    length = request.query.get("length")
+    if length is not None:
+        length = (string_to_enum(part, gd.LevelLength) for part in length.split(","))
+
+    uncompleted = str_to_bool(request.query.get("uncompleted", "false"))
+    only_completed = str_to_bool(request.query.get("only_completed", "false"))
+
+    completed_levels = request.query.get("completed_levels")
+    if completed_levels is not None:
+        completed_levels = map(int, completed_levels.split(","))
+
+    require_coins = str_to_bool(request.query.get("require_coins", "false"))
+
+    featured = str_to_bool(request.query.get("featured", "false"))
+    epic = str_to_bool(request.query.get("epic", "false"))
+
+    require_two_player = str_to_bool(request.query.get("require_two_player", "false"))
+
+    rated = request.query.get("rated")
+    if rated is not None:
+        rated = str_to_bool(rated)
+
+    song_id = request.query.get("song_id")
+    if song_id is not None:
+        song_id = int(song_id)
+
+    use_custom_song = str_to_bool(request.query.get("use_custom_song", "false"))
+    require_original = str_to_bool(request.query.get("require_original", "false"))
+
+    followed = request.query.get("followed")
+    if followed is not None:
+        followed = map(int, followed.split(","))
+
+    if user_query is None:
+        user = None
+    elif is_id:
+        user = await request.app.client.fetch_user(int(query))
+    else:
+        user = await request.app.clinet.find_user(query)
+
+    filters = gd.Filters(
+        strategy=strategy,
+        difficulty=difficulty,
+        demon_difficulty=demon_difficulty,
+        length=length,
+        uncompleted=uncompleted,
+        only_completed=only_completed,
+        completed_levels=completed_levels,
+        require_coins=require_coins,
+        featured=featured,
+        epic=epic,
+        rated=rated,
+        require_two_player=require_two_player,
+        song_id=song_id,
+        use_custom_song=use_custom_song,
+        require_original=require_original,
+        followed=followed,
+    )
+
+    levels = await request.app.client.search_levels(
+        query=query, filters=filters, user=user, gauntlet=gauntlet, pages=pages
+    )
 
     return json_resp(levels)
 
@@ -1332,10 +1941,25 @@ async def search_levels(request: web.Request) -> web.Response:
 @routes.get("/api/load")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to load the save.", ErrorType.FAILED)})
 @auth_setup(required=True)
-@cooldown(rate=10, per=50)
+@cooldown(rate=10, per=100)
 async def load_save(request: web.Request) -> web.Response:
+    """GET /api/load
+    Description:
+        Load save and return it as JSON.
+    Example:
+        link: /api/load
+    Returns:
+        200: JSON with the save and the database;
+        404: Failed to load the save.
+    Return Type:
+        application/json
+    """
     await request.app.client.load()
-    return json_resp(request.app.client.db)
+    return json_resp(
+        {"database": request.app.client.db, "save": request.app.client.save},
+        json_indent=None,
+        json_separators=(",", ":"),
+    )
 
 
 def convert_to_encoded(string: str) -> str:
@@ -1353,8 +1977,24 @@ def convert_to_encoded(string: str) -> str:
 @routes.patch("/api/save")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to save.", ErrorType.FAILED)})
 @auth_setup(required=True)
-@cooldown(rate=10, per=50)
+@cooldown(rate=10, per=100)
 async def backup_save(request: web.Request) -> web.Response:
+    """PATCH /api/save
+    Description:
+        Request save backup with given main and levels parts.
+    Example:
+        link: /api/save?main=MAIN&levels=LEVELS
+        main: MAIN
+        levels: LEVELS
+    Parameters:
+        main: Main part of the save (CCGameManager.dat). JSON, XML or Base64 format;
+        levels: Levels part of the save (CCLocalLevels.dat). JSON, XML or Base64 format.
+    Returns:
+        200: Empty JSON;
+        404: Failed to do a backup.
+    Return Type:
+        application/json
+    """
     main = convert_to_encoded(request.query["main"])
     levels = convert_to_encoded(request.query["levels"])
     return print(main, levels)
@@ -1371,6 +2011,22 @@ async def backup_save(request: web.Request) -> web.Response:
 )
 @auth_setup(required=True)
 async def delete_comment(request: web.Request) -> web.Response:
+    """DELETE /api/comment/{id}
+    Description:
+        Delete the profile/level comment, given by ID.
+    Example:
+        link: /api/comment/123456789?type=profile
+        type: profile
+    Parameters:
+        type: Type of the comment, either "profile" or "level";
+        level_id: Level ID, required if "type" is "level", default is 0.
+    Returns:
+        200: Empty JSON;
+        400: Parameter is missing;
+        404: Failed to delete a comment.
+    Return Type:
+        application/json
+    """
     comment_id = int(request.match_info["id"])
     comment_type = string_to_enum(request.query["type"], gd.CommentType)
     level_id = int(request.query.get("level_id", 0))

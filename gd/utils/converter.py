@@ -70,7 +70,7 @@ class Converter:
         cases = {1: "st", 2: "nd", 3: "rd"}
         x = abs(n)
 
-        if 11 <= x <= 13:
+        if 11 <= x % 100 <= 13:
             return str(n) + "th"
 
         else:
@@ -88,6 +88,22 @@ class Converter:
             gauntlet = "Unknown"
 
         return f"{gauntlet} Gauntlet"
+
+    @staticmethod
+    def get_gauntlet_id(name: str) -> str:
+        check = "Gauntlet"
+
+        if name.endswith(check):
+            name = name[: -len(check)]
+
+        name = name.strip()
+
+        try:
+            gauntlet = GauntletEnum.from_value(name).value
+        except FailedConversion:
+            gauntlet = 0  # Unknown
+
+        return gauntlet
 
     @staticmethod
     def value_to_pack_difficulty(value: int) -> LevelDifficulty:

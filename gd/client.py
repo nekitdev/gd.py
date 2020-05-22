@@ -2174,7 +2174,8 @@ class Client:
         page: int = 0,
         query: Union[str, int] = "",
         filters: Optional[Filters] = None,
-        user: Optional[Union[int, AbstractUser, User]] = None,
+        user: Optional[Union[int, AbstractUser]] = None,
+        gauntlet: Optional[Union[Gauntlet, int]] = None,
         *,
         exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE,
     ) -> List[Level]:
@@ -2193,10 +2194,13 @@ class Client:
         filters: :class:`.Filters`
             Filters to apply, as an object.
 
-        user: Union[:class:`int`, :class:`.AbstractUser`, :class:`.User`]
+        user: Union[:class:`int`, :class:`.AbstractUser`]
             A user to search levels by. (if :class:`.Filters` has parameter ``strategy``
             equal to :class:`.SearchStrategy` ``BY_USER``. Can be omitted, then
             logged in client is required.)
+
+        gauntlet: Union[:class:`int`, :class:`.Gauntlet`]
+            A gauntlet to get levels in.
 
         exclude: Sequence[Type[:exc:`BaseException`]]
             Exceptions to ignore. By default includes only :exc:`.NothingFound`.
@@ -2206,11 +2210,20 @@ class Client:
         List[:class:`.Level`]
             Levels found on given page.
         """
-        if user is not None:
+        if isinstance(user, AbstractUser):
             user = user.id
 
+        if isinstance(gauntlet, Gauntlet):
+            gauntlet = gauntlet.id
+
         lvdata, cdata, sdata = await self.session.search_levels_on_page(
-            page=page, query=query, filters=filters, user_id=user, exclude=exclude, client=self,
+            page=page,
+            query=query,
+            filters=filters,
+            user_id=user,
+            gauntlet=gauntlet,
+            exclude=exclude,
+            client=self,
         )
 
         return construct_levels(lvdata, cdata, sdata, client=self)
@@ -2219,7 +2232,8 @@ class Client:
         self,
         query: Union[str, int] = "",
         filters: Optional[Filters] = None,
-        user: Optional[Union[int, AbstractUser, User]] = None,
+        user: Optional[Union[int, AbstractUser]] = None,
+        gauntlet: Optional[Union[int, Gauntlet]] = None,
         pages: Optional[Iterable[int]] = range(10),
     ) -> List[Level]:
         """|coro|
@@ -2234,7 +2248,7 @@ class Client:
         filters: :class:`.Filters`
             Filters to apply, as an object.
 
-        user: Union[:class:`int`, :class:`.AbstractUser`, :class:`.User`]
+        user: Union[:class:`int`, :class:`.AbstractUser`]
             A user to search levels by. (if :class:`.Filters` has parameter ``strategy``
             equal to :class:`.SearchStrategy` ``BY_USER``. Can be omitted, then
             logged in client is required.)
@@ -2247,11 +2261,14 @@ class Client:
         List[:class:`.Level`]
             List of levels found. Can be an empty list.
         """
-        if user is not None:
+        if isinstance(user, AbstractUser):
             user = user.id
 
+        if isinstance(gauntlet, Gauntlet):
+            gauntlet = gauntlet.id
+
         lvdata, cdata, sdata = await self.session.search_levels(
-            query=query, filters=filters, user_id=user, pages=pages, client=self
+            query=query, filters=filters, user_id=user, gauntlet=gauntlet, pages=pages, client=self
         )
 
         return utils.unique(construct_levels(lvdata, cdata, sdata, client=self))

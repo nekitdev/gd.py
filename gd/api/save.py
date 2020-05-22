@@ -51,7 +51,7 @@ class Database:
         return make_repr(self, info)
 
     def _json(self) -> Dict[str, Any]:
-        return self.as_tuple()
+        return {"main": self.main, "levels": self.levels}
 
     def get_username(self) -> str:
         return self.main.get("GJA_001", "unknown")

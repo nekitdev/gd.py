@@ -574,33 +574,33 @@ class Session:
         if filters is None:
             filters = Filters.setup_empty()
 
-        params = (
-            Params()
-            .create_new()
-            .put_definer("search", query)
-            .put_page(page)
-            .put_total(0)
-            .put_filters(filters)
-        )
         codes = {-1: MissingAccess("No levels were found.")}
-        if filters.strategy == SearchStrategy.BY_USER:
 
-            if user_id is None:
-                check_logged_obj(client, "search_levels_on_page(...)")
-
-                user_id = client.id
-
-                params.put_definer("accountid", client.account_id).put_password(client.encodedpass)
-                params.put_local(1)
-
-            params.put_definer("search", user_id)  # override the 'str' parameter in request
-
-        elif filters.strategy == SearchStrategy.FRIENDS:
-            check_logged_obj(client, "search_levels_on_page(..., client=client)")
-            params.put_definer("accountid", client.account_id).put_password(client.encodedpass)
+        params = Params().create_new()
 
         if gauntlet is not None:
             params.put_definer("gauntlet", gauntlet)
+
+        else:
+            params.put_definer("search", query).put_page(page).put_total(0).put_filters(filters)
+
+            if filters.strategy == SearchStrategy.BY_USER:
+
+                if user_id is None:
+                    check_logged_obj(client, "search_levels_on_page(...)")
+
+                    user_id = client.id
+
+                    params.put_definer("accountid", client.account_id).put_password(
+                        client.encodedpass
+                    )
+                    params.put_local(1)
+
+                params.put_definer("search", user_id)  # override the 'str' parameter in request
+
+            elif filters.strategy == SearchStrategy.FRIENDS:
+                check_logged_obj(client, "search_levels_on_page(..., client=client)")
+                params.put_definer("accountid", client.account_id).put_password(client.encodedpass)
 
         payload = params.finish()
 
@@ -613,7 +613,10 @@ class Session:
 
         resp, parser = resp.split("#"), Parser().with_split("~|~").should_map()
 
-        lvdata, cdata, sdata = resp[:3]
+        try:
+            lvdata, cdata, sdata = resp[:3]
+        except ValueError:
+            return [], [], []
 
         songs = list(map(parser.parse, filter(is_not_empty, sdata.split("~:~"))))
 
@@ -634,6 +637,7 @@ class Session:
         filters: Optional[Filters] = None,
         user_id: Optional[int] = None,
         pages: Optional[Sequence[int]] = None,
+        gauntlet: Optional[int] = None,
         *,
         client: Client,
     ) -> List[ExtDict]:
@@ -643,6 +647,7 @@ class Session:
                 filters=filters,
                 user_id=user_id,
                 page=page,
+                gauntlet=gauntlet,
                 exclude=excluding(Exception),
                 client=client,
             )

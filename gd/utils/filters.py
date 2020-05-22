@@ -92,11 +92,11 @@ class Filters:
         )
 
         if self.demon_difficulty is not None:
-            self.diffculty = LevelDifficulty.DEMON
+            self.difficulty = (LevelDifficulty.DEMON,)
 
         self.uncompleted = uncompleted if completed_levels else False
         self.only_completed = only_completed if completed_levels else False
-        self.completed_levels = list(completed_levels or list())
+        self.completed_levels = list(completed_levels or [])
         self.require_coins = require_coins
         self.require_two_player = require_two_player
         self.rated = rated
@@ -104,7 +104,7 @@ class Filters:
         self.epic = epic
         self.song_id = song_id
         self.use_custom_song = use_custom_song
-        self.followed = list(followed or list())
+        self.followed = list(followed or [])
         self.require_original = require_original
         self.set = (
             "strategy",

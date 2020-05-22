@@ -25,6 +25,7 @@ from gd.session import Session
 from gd.song import ArtistInfo, Author, Song
 from gd.user import UserStats, User
 from gd.version import *
+from gd.utils.converter import Converter
 from gd.utils.enums import *
 from gd.utils.filters import Filters
 from gd.utils.http_request import HTTPClient
