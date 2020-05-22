@@ -665,6 +665,18 @@ async def song_search(request: web.Request) -> web.Response:
 )
 @auth_setup(required=False)
 async def get_artist_info(request: web.Request) -> web.Response:
+    """GET /api/song/{id}/info
+    Description:
+        Get information about the song and its artist.
+    Example:
+        link: /api/song/467339/info
+    Returns:
+        200: JSON with song and artist info;
+        400: Invalid type in payload;
+        404: Requested info was not found.
+    Return Type:
+        application/json
+    """
     query = int(request.match_info["id"])
     artist_info = await request.app.client.get_artist_info(query)
     return json_resp(artist_info)
