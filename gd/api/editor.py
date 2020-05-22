@@ -143,7 +143,7 @@ class Editor:
                 data = data.decode()
 
             except UnicodeDecodeError:
-                raise EditorError("Invalid level data recieved.") from None
+                raise EditorError("Invalid level data received.") from None
 
         if not data:
             # nothing interesting...
