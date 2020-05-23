@@ -538,12 +538,23 @@ async def main_page(request: web.Request) -> web.Response:
 
 @routes.post("/api/logout")
 @handle_errors()
-@auth_setup()
+@auth_setup(required=True)
 async def logout_handle(request: web.Request) -> web.Response:
+    """POST /api/logout
+    Description:
+        Log out of the system, deleting the token from the database.
+    Example:
+        link: /api/logout?token=01a2345678b9012345cd6e7fa8bc9cfab01234c56def7a89bc0de1fab234c56d
+        token: 01a2345678b9012345cd6e7fa8bc9cfab01234c56def7a89bc0de1fab234c56d
+    Returns:
+        200: Empty JSON.
+    Return Type:
+        application/json
+    """
     try:
         request.app.tokens.remove(request.token_info)
     except ValueError:
-        pass  # nevermind
+        pass  # not in tokens, ignore
 
     return json_resp({})
 
@@ -1920,9 +1931,9 @@ async def search_levels(request: web.Request) -> web.Response:
     if user_query is None:
         user = None
     elif is_id:
-        user = await request.app.client.fetch_user(int(query))
+        user = await request.app.client.fetch_user(int(user_query))
     else:
-        user = await request.app.client.find_user(query)
+        user = await request.app.client.find_user(user_query)
 
     filters = gd.Filters(
         strategy=strategy,
