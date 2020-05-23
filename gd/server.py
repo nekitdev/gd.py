@@ -1922,7 +1922,7 @@ async def search_levels(request: web.Request) -> web.Response:
     elif is_id:
         user = await request.app.client.fetch_user(int(query))
     else:
-        user = await request.app.clinet.find_user(query)
+        user = await request.app.client.find_user(query)
 
     filters = gd.Filters(
         strategy=strategy,
