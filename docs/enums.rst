@@ -8,9 +8,9 @@ This library has a bunch of enums, listed below.
 .. autoclass:: Enum
     :members:
 
-    .. automethod:: NEnum.from_value
+    .. automethod:: Enum.from_value
 
-.. note:: The following classes are derived from :class:`NEnum`.
+.. note:: The following classes are derived from :class:`Enum`.
 
 .. autoclass:: MessagePolicyType
 

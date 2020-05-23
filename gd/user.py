@@ -47,7 +47,7 @@ class UserStats(AbstractUser):
             diamonds=data.getcast(Index.USER_DIAMONDS, 0, int),
             coins=data.getcast(Index.USER_COINS, 0, int),
             secret_coins=data.getcast(Index.USER_SECRET_COINS, 0, int),
-            lb_place=data.getcast(Index.USER_TOP_PLACE, 0, int),
+            place=data.getcast(Index.USER_TOP_PLACE, 0, int),
             client=client,
         )
 
@@ -82,9 +82,9 @@ class UserStats(AbstractUser):
         return self.options.get("coins", 0)
 
     @property
-    def lb_place(self) -> int:
+    def place(self) -> int:
         """:class:`int`: User's place in leaderboard. ``0`` if not set."""
-        return self.options.get("lb_place", 0)
+        return self.options.get("place", 0)
 
     def has_cp(self) -> bool:
         """:class:`bool`: Indicates if a user has Creator Points."""
@@ -92,7 +92,7 @@ class UserStats(AbstractUser):
 
     def set_place(self, place: int = 0) -> None:
         """Set the ``self.lb_place`` to ``place`` argument."""
-        self.options.update(lb_place=place)
+        self.options.update(place=place)
 
     async def update(self) -> None:
         """|coro|
@@ -124,11 +124,11 @@ class User(UserStats):
     @classmethod
     def from_data(cls, data: ExtDict, client: Client) -> User:
         youtube = data.get(Index.USER_YOUTUBE, "")
-        yt = {"normal": youtube, "link": "https://www.youtube.com/channel/" + youtube}
+        youtube = {"normal": youtube, "link": "https://www.youtube.com/channel/" + youtube}
         twitter = data.get(Index.USER_TWITTER, "")
-        twt = {"normal": twitter, "link": "https://twitter.com/" + twitter}
+        twitter = {"normal": twitter, "link": "https://twitter.com/" + twitter}
         twitch = data.get(Index.USER_TWITCH, "")
-        twch = {"normal": twitch, "link": "https://twitch.tv/" + twitch}
+        twitch = {"normal": twitch, "link": "https://twitch.tv/" + twitch}
 
         return cls(
             name=data.get(Index.USER_NAME, "unknown"),
@@ -142,17 +142,23 @@ class User(UserStats):
             role=data.getcast(Index.USER_ROLE, 0, int),
             global_rank=data.getcast(Index.USER_GLOBAL_RANK, None, int),
             account_id=data.getcast(Index.USER_ACCOUNT_ID, 0, int),
-            youtube=yt,
-            twitter=twt,
-            twitch=twch,
-            message_policy=data.getcast(Index.USER_PRIVATE_MESSAGE_POLICY, 0, int),
-            friend_request_policy=data.getcast(Index.USER_FRIEND_REQUEST_POLICY, 0, int),
-            comment_policy=data.getcast(Index.USER_COMMENT_HISTORY_POLICY, 0, int),
+            youtube=youtube,
+            twitter=twitter,
+            twitch=twitch,
+            message_policy=MessagePolicyType.from_value(
+                data.getcast(Index.USER_PRIVATE_MESSAGE_POLICY, 0, int)
+            ),
+            friend_request_policy=FriendRequestPolicyType.from_value(
+                data.getcast(Index.USER_FRIEND_REQUEST_POLICY, 0, int)
+            ),
+            comment_policy=CommentType.from_value(
+                data.getcast(Index.USER_COMMENT_HISTORY_POLICY, 0, int)
+            ),
             icon_setup=IconSet(
                 main_icon=data.getcast(Index.USER_ICON, 1, int),
                 color_1=colors[data.getcast(Index.USER_COLOR_1, 0, int)],
                 color_2=colors[data.getcast(Index.USER_COLOR_2, 0, int)],
-                main_icon_type=data.getcast(Index.USER_ICON_TYPE, 0, int),
+                main_icon_type=IconType.from_value(data.getcast(Index.USER_ICON_TYPE, 0, int)),
                 has_glow_outline=bool(data.getcast(Index.USER_GLOW_OUTLINE_2, 0, int)),
                 icon_cube=data.getcast(Index.USER_ICON_CUBE, 1, int),
                 icon_ship=data.getcast(Index.USER_ICON_SHIP, 1, int),

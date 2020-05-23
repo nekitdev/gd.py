@@ -42,10 +42,10 @@ class FriendRequest(AbstractEntity):
             id=data.getcast(Index.REQUEST_ID, 0, int),
             timestamp=str(data.get(Index.REQUEST_TIMESTAMP, "unknown")),
             body=Coder.do_base64(data.get(Index.REQUEST_BODY, ""), encode=False, errors="replace"),
-            is_read=bool(bool(data.get(Index.REQUEST_STATUS)) ^ 1),
+            is_read=(not data.get(Index.REQUEST_STATUS)),
             author=(user_1 if is_normal else user_2),
             recipient=(user_2 if is_normal else user_1),
-            type=indicator,
+            type=MessageOrRequestType.from_value(indicator),
             client=client,
         )
 

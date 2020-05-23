@@ -1,6 +1,6 @@
 import colorsys
 
-from gd.typing import Color, Optional, Tuple
+from gd.typing import Any, Color, Optional, Tuple
 
 from gd.utils.converter import Converter
 from gd.utils.text_tools import make_repr
@@ -115,6 +115,14 @@ class Color:
         return cls.from_rgb(*(int(x * 255) for x in rgb))
 
 
+class ColorTuple(tuple):
+    def __getitem__(self, item: Any) -> Color:
+        try:
+            return super().__getitem__(item)
+        except (IndexError, ValueError):
+            return Color()
+
+
 values = (
     0x7DFF00,
     0x00FF00,
@@ -159,6 +167,6 @@ values = (
     0x7DFFAF,
     0x7D7DAF,
 )
-colors = tuple(Color(value) for value in values)
+colors = ColorTuple(Color(value) for value in values)
 
 Colour = Color

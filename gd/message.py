@@ -51,7 +51,7 @@ class Message(AbstractEntity):
             is_read=bool(data.getcast(Index.MESSAGE_IS_READ, 0, int)),
             author=(user_1 if is_normal else user_2),
             recipient=(user_2 if is_normal else user_1),
-            type=indicator,
+            type=MessageOrRequestType.from_value(indicator),
             client=client,
         )
 

@@ -427,7 +427,7 @@ class LevelRecord(AbstractUser):
             name=data.get(Index.USER_NAME, "unknown"),
             id=data.getcast(Index.USER_PLAYER_ID, 0, int),
             level_id=data.getcast(Index.USER_LEVEL_ID, 0, int),
-            lb_place=data.getcast(Index.USER_TOP_PLACE, 0, int),
+            place=data.getcast(Index.USER_TOP_PLACE, 0, int),
             percentage=data.getcast(Index.USER_PERCENT, 0, int),
             coins=data.getcast(Index.USER_SECRET_COINS, 0, int),
             timestamp=data.get(Index.USER_RECORD_TIMESTAMP, "unknown"),
@@ -469,9 +469,9 @@ class LevelRecord(AbstractUser):
         return self.options.get("timestamp", "unknown")
 
     @property
-    def lb_place(self) -> int:
+    def place(self) -> int:
         """:class:`int`: User's place in leaderboard. ``0`` if not set."""
-        return self.options.get("lb_place", 0)
+        return self.options.get("place", 0)
 
     @property
     def type(self) -> LevelLeaderboardStrategy:

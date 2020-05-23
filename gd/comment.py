@@ -43,7 +43,7 @@ class Comment(AbstractEntity):
             timestamp=data.get(Index.COMMENT_TIMESTAMP, "unknown"),
             id=data.getcast(Index.COMMENT_ID, 0, int),
             is_spam=bool(data.getcast(Index.COMMENT_IS_SPAM, 0, int)),
-            type=data.getcast(Index.COMMENT_TYPE, 0, int),
+            type=CommentType.from_value(data.getcast(Index.COMMENT_TYPE, 0, int)),
             color=color,
             level_id=data.getcast(Index.COMMENT_LEVEL_ID, 0, int),
             level_percentage=data.getcast(Index.COMMENT_LEVEL_PERCENTAGE, -1, int),

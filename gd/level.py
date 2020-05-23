@@ -1,5 +1,7 @@
 from gd.logging import get_logger
-from gd.typing import Client, Comment, Level, LevelRecord, List, Optional, Tuple, Type, Union
+from gd.typing import (
+    Any, Client, Comment, Dict, Level, LevelRecord, List, Optional, Tuple, Type, Union
+)
 
 from gd.abstractentity import AbstractEntity
 from gd.abstractuser import AbstractUser
@@ -50,6 +52,9 @@ class Level(AbstractEntity):
 
     def __str__(self) -> str:
         return str(self.name)
+
+    def _json(self) -> Dict[str, Any]:
+        return dict(super()._json(), featured=self.is_featured())
 
     @classmethod
     def official(cls, level_id: int, client: Optional[Client] = None) -> None:
@@ -133,6 +138,9 @@ class Level(AbstractEntity):
         else:
             difficulty = LevelDifficulty.from_value(str_diff)
 
+        length = LevelLength.from_value(length)
+        timely_type = TimelyType.from_value(0)
+
         return cls(
             id=level_id,
             name=name,
@@ -161,7 +169,7 @@ class Level(AbstractEntity):
             game_version=21,
             stars_requested=0,
             object_count=0,
-            type=0,
+            type=timely_type,
             time_n=-1,
             cooldown=-1,
             client=client,
@@ -249,11 +257,11 @@ class Level(AbstractEntity):
             score=data.getcast(Index.LEVEL_FEATURED_SCORE, 0, int),
             uploaded_timestamp=data.get(Index.LEVEL_UPLOADED_TIMESTAMP, "unknown"),
             last_updated_timestamp=data.get(Index.LEVEL_LAST_UPDATED_TIMESTAMP, "unknown"),
-            length=data.getcast(Index.LEVEL_LENGTH, 0, int),
+            length=LevelLength.from_value(data.getcast(Index.LEVEL_LENGTH, 0, int)),
             game_version=data.getcast(Index.LEVEL_GAME_VERSION, 0, int),
             stars_requested=data.getcast(Index.LEVEL_REQUESTED_STARS, 0, int),
             object_count=data.getcast(Index.LEVEL_OBJECT_COUNT, 0, int),
-            type=data.getcast(Index.LEVEL_TIMELY_TYPE, 0, int),
+            type=TimelyType.from_value(data.getcast(Index.LEVEL_TIMELY_TYPE, 0, int)),
             time_n=data.getcast(Index.LEVEL_TIMELY_INDEX, -1, int),
             cooldown=data.getcast(Index.LEVEL_TIMELY_COOLDOWN, -1, int),
             client=client,
