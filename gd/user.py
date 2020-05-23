@@ -29,7 +29,7 @@ class UserStats(AbstractUser):
             "account_id": self.account_id,
             "name": repr(self.name),
             "id": self.id,
-            "lb_place": Converter.to_ordinal(self.lb_place),
+            "place": Converter.to_ordinal(self.place),
             "stars": self.stars,
             "demons": self.demons,
             "cp": self.cp,
@@ -92,7 +92,7 @@ class UserStats(AbstractUser):
         return self.cp > 0
 
     def set_place(self, place: int = 0) -> None:
-        """Set the ``self.lb_place`` to ``place`` argument."""
+        """Set the ``self.place`` to ``place`` argument."""
         self.options.update(place=place)
 
     async def update(self) -> None:
@@ -102,7 +102,7 @@ class UserStats(AbstractUser):
         """
         new = await self.client.fetch_user(self.account_id, stats=True)
 
-        new.set_place(self.lb_place)
+        new.set_place(self.place)
 
         self.options = new.options
 
