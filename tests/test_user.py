@@ -21,7 +21,7 @@ async def test_properties():
     user.diamonds
     user.coins
     user.user_coins
-    user.lb_place
+    user.place
     user.role
     user.rank
     user.youtube
@@ -97,17 +97,17 @@ async def test_unfriend():
     await user.unfriend()
 
 
-# @skip_not_logged
-# async def test_levelrecord():
-#     temp_level = await client.get_level(30029017)
-#     leaderboard = await temp_level.get_leaderboard(1)
-#     entry = leaderboard[0]
+@skip_not_logged
+async def test_levelrecord():
+    temp_level = await client.get_level(30029017)
+    leaderboard = await temp_level.get_leaderboard(1)
+    entry = leaderboard[0]
 
-#     entry.level_id
-#     entry.percentage
-#     entry.coins
-#     entry.timestamp
-#     entry.lb_place
-#     entry.type
+    entry.level_id
+    entry.percentage
+    entry.coins
+    entry.timestamp
+    entry.place
+    entry.type
 
-#     await entry.update()
+    await entry.update()
