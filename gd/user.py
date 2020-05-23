@@ -8,6 +8,7 @@ from gd.typing import Client, User, UserStats
 
 from gd.utils.converter import Converter
 from gd.utils.enums import (
+    IconType,
     StatusLevel,
     MessagePolicyType,
     FriendRequestPolicyType,
@@ -151,7 +152,7 @@ class User(UserStats):
             friend_request_policy=FriendRequestPolicyType.from_value(
                 data.getcast(Index.USER_FRIEND_REQUEST_POLICY, 0, int)
             ),
-            comment_policy=CommentType.from_value(
+            comment_policy=CommentPolicyType.from_value(
                 data.getcast(Index.USER_COMMENT_HISTORY_POLICY, 0, int)
             ),
             icon_setup=IconSet(

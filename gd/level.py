@@ -1,6 +1,16 @@
 from gd.logging import get_logger
 from gd.typing import (
-    Any, Client, Comment, Dict, Level, LevelRecord, List, Optional, Tuple, Type, Union
+    Any,
+    Client,
+    Comment,
+    Dict,
+    Level,
+    LevelRecord,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
 )
 
 from gd.abstractentity import AbstractEntity
