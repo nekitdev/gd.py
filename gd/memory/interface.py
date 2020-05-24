@@ -286,11 +286,17 @@ class WindowsMemory(MemoryType):
     def is_dead(self) -> bool:
         return self.read_bytes(1, 0x3222D0, 0x164, 0x39C).as_bool()
 
+    def get_level_length(self) -> float:
+        return self.read_bytes(4, 0x3222D0, 0x164, 0x3B4).as_float()
+
     def get_object_count(self) -> int:
         return self.read_bytes(4, 0x3222D0, 0x168, 0x3A0).as_int()
 
     def get_percent(self) -> float:
-        return self.read_bytes(8, 0x3222D0, 0x164, 0x450).as_double()
+        try:
+            return self.get_x_pos() / self.get_level_length() * 100
+        except ZeroDivisionError:
+            return 0.0
 
     def get_x_pos(self) -> float:
         return self.read_bytes(4, 0x3222D0, 0x164, 0x224, 0x67C).as_float()
