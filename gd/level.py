@@ -138,7 +138,7 @@ class Level(AbstractEntity):
         )
 
         creator, song = (
-            AbstractUser(client=client),
+            AbstractUser(name="RobTop", id=16, account_id=71, client=client),
             Song.official(song_id, server_style=False, client=client),
         )
         is_demon = "demon" in str_diff
