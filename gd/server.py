@@ -1079,6 +1079,56 @@ async def get_messages(request: web.Request) -> web.Response:
     return json_resp(messages)
 
 
+@routes.get("/api/message/{id}")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to read a message.", ErrorType.FAILED)})
+@auth_setup(required=True)
+async def read_message(request: web.Request) -> web.Response:
+    """GET /api/message/{id}
+    Description:
+        Read a message by its ID.
+    Example:
+        link: /api/message/123456789
+    Parameters:
+        type: Type of the message, either "sent" or "normal" (default).
+    Returns:
+        200: JSON with message body;
+        404: Failed to read a message.
+    Return Type:
+        application/json
+    """
+    message_id = int(request.match_info["id"])
+    message_type = string_to_enum(request.query.get("type", "normal"), gd.MessageOrRequestType)
+
+    body = await gd.Message(id=message_id, type=message_type, client=request.app.client).read()
+
+    return json_resp({"body": body})
+
+
+@routes.delete("/api/message/{id}")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to delete a message.", ErrorType.FAILED)})
+@auth_setup(required=True)
+async def delete_message(request: web.Request) -> web.Response:
+    """DELETE /api/message/{id}
+    Description:
+        Delete a message by its ID.
+    Example:
+        link: /api/message/123456789
+    Parameters:
+        type: Type of the message, either "sent" or "normal" (default).
+    Returns:
+        200: Empty JSON;
+        404: Failed to delete a message.
+    Return Type:
+        application/json
+    """
+    message_id = int(request.match_info["id"])
+    message_type = string_to_enum(request.query.get("type", "normal"), gd.MessageOrRequestType)
+
+    await gd.Message(id=message_id, type=message_type, client=request.app.client).delete()
+
+    return json_resp({})
+
+
 @routes.get("/api/friend_requests")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get friend requests.", ErrorType.FAILED)})
 @auth_setup(required=True)
