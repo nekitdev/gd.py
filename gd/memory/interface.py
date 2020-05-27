@@ -1,4 +1,5 @@
 import ctypes
+import functools
 import itertools
 import struct
 import sys
@@ -18,7 +19,18 @@ except Exception:  # noqa
 from gd.memory.enums import LevelType, Scene
 from gd.api.enums import SpeedConstant
 from gd.errors import FailedConversion
-from gd.typing import Any, Buffer, Optional, Sequence, Tuple, Union
+from gd.typing import (
+    Any,
+    Buffer,
+    Callable,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 from gd.utils.converter import Converter
 from gd.utils.enums import LevelDifficulty, DemonDifficulty
 from gd.utils.text_tools import make_repr
@@ -30,15 +42,30 @@ __all__ = (
     "MacOSMemory",
     "Buffer",
     "get_memory",
+    "Bool",
+    "Double",
+    "Float",
+    "Int32",
+    "Int64",
+    "String",
+    "Type",
 )
 
 ORDER = {"big": ">", "little": "<"}
 DEFAULT_ORDER = "little"
 NULL_BYTE = b"\x00"
+T = TypeVar("T")
 
 
 def read_until_terminator(data: bytes, terminator: int = 0) -> bytes:
     return bytes(itertools.takewhile(lambda char: char != terminator, data))
+
+
+def list_from(one_or_seq: Union[T, Iterable[T]]) -> List[T]:
+    try:
+        return list(one_or_seq)
+    except Exception:
+        return [one_or_seq]
 
 
 class MemoryType:
@@ -49,11 +76,7 @@ class MemoryType:
 
 class BufferMeta(type):
     def __getitem__(self, byte_or_sequence: Union[int, Sequence[int]]) -> None:
-        if isinstance(byte_or_sequence, int):
-            byte_sequence = (byte_or_sequence,)
-        else:
-            byte_sequence = byte_or_sequence
-        return self.from_byte_array(byte_sequence)
+        return self.from_byte_array(list_from(byte_or_sequence))
 
 
 class Buffer(metaclass=BufferMeta):
@@ -81,6 +104,10 @@ class Buffer(metaclass=BufferMeta):
 
     def as_int(self) -> int:
         return int.from_bytes(self.data, self.order)
+
+    @classmethod
+    def from_bool(cls, value: bool, order: str = DEFAULT_ORDER) -> Buffer:
+        return cls.from_int(value, size=1, order=order)
 
     def as_bool(self) -> bool:
         return self.as_int() != 0
@@ -152,6 +179,43 @@ class Buffer(metaclass=BufferMeta):
         return ctypes.create_string_buffer(self.data, len(self.data))
 
 
+class Type:
+    def __init__(
+        self,
+        name: str,
+        size: int,
+        to_bytes: Callable[[T], Buffer],
+        from_bytes: Callable[[Buffer], T],
+    ) -> None:
+        self.name = name
+        self.size = size
+        self.to_bytes = to_bytes
+        self.from_bytes = from_bytes
+
+        setattr(self.__class__, self.name, self)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}<{self.name}>({self.size})"
+
+
+Bool = Type(name="Bool", size=1, to_bytes=Buffer.from_bool, from_bytes=Buffer.as_bool)
+Double = Type(name="Double", size=8, to_bytes=Buffer.from_double, from_bytes=Buffer.as_double)
+Float = Type(name="Float", size=4, to_bytes=Buffer.from_float, from_bytes=Buffer.as_float)
+Int32 = Type(
+    name="Int32",
+    size=4,
+    to_bytes=functools.partial(Buffer.from_int, size=4),
+    from_bytes=Buffer.as_int,
+)
+Int64 = Type(
+    name="Int64",
+    size=8,
+    to_bytes=functools.partial(Buffer.from_int, size=8),
+    from_bytes=Buffer.as_int,
+)
+String = Type(name="String", size=16, to_bytes=Buffer.from_str, from_bytes=Buffer.as_str)
+
+
 class Memory(MemoryType):
     """Simple wrapper with platform check."""
 
@@ -171,17 +235,15 @@ class MacOSMemory(MemoryType):
 class WindowsMemory(MemoryType):
     # [GeometryDash.exe + 0x3222D0] + 0x168 -> Editor object
     # [[[GeometryDash.exe + 0x3222D0] + 0x164] + 0x22C] + 0x114 -> Level object
-    PTR_LEN = 4
-    STR_LEN = 16
-
     loaded = False
     process_handle = 0
     process_id = 0
     process_name = "undefined"
     base_address = 0
 
-    def __init__(self, process_name: str, load: bool = False) -> None:
+    def __init__(self, process_name: str, load: bool = False, ptr_type: Type = Int32) -> None:
         self.process_name = process_name
+        self.ptr_type = ptr_type
 
         if load:
             self.load()
@@ -190,54 +252,72 @@ class WindowsMemory(MemoryType):
         info = {
             "name": repr(self.process_name),
             "pid": self.process_id,
-            "base_addr": format(self.base_address, "X"),
+            "base_address": format(self.base_address, "X"),
             "handle": format(self.process_handle, "X"),
+            "ptr_type": self.ptr_type,
             "loaded": self.loaded,
         }
         return make_repr(self, info)
 
-    def read_at(self, n: int = 0, address: int = 0) -> Buffer:
-        buffer = ctypes.create_string_buffer(n)
+    def resolve_layers(self, *offsets: Sequence[int]) -> int:
+        offsets: List[int] = list_from(offsets)
+
+        address = self.base_address
+
+        if offsets:
+            address += offsets.pop(0)
+
+        for offset in offsets:
+            address = self.read(self.ptr_type, address) + offset
+
+        return address
+
+    def read_at(self, size: int = 0, address: int = 0) -> Buffer:
+        buffer = ctypes.create_string_buffer(size)
 
         read_process_memory(
-            self.process_handle, ctypes.c_void_p(address), ctypes.byref(buffer), n, None
+            self.process_handle, ctypes.c_void_p(address), ctypes.byref(buffer), size, None
         )
+
         return Buffer(buffer.raw)
+
+    def read(self, type: Type, address: int = 0) -> T:
+        return type.from_bytes(self.read_at(type.size, address))
 
     def write_at(self, buffer: Buffer, address: int = 0) -> None:
         data = buffer.into_buffer()
+
         write_process_memory(
             self.process_handle, ctypes.c_void_p(address), ctypes.byref(data), len(data), None
         )
 
-    def read_bytes(self, n: int = 0, address: int = 0, *offsets) -> Buffer:
-        address = self.base_address + address
+    def write(self, type: Type, value: T, address: int = 0) -> None:
+        return self.write_at(type.to_bytes(value), address)
 
-        for offset in offsets:
-            address = self.read_at(self.PTR_LEN, address).as_int() + offset
+    def read_bytes(self, size: int = 0, *offsets) -> Buffer:
+        return self.read_at(size, self.resolve_layers(*offsets))
 
-        return self.read_at(n, address)
+    def read_type(self, type: Type, *offsets) -> T:
+        return type.from_bytes(self.read_bytes(type.size, *offsets))
 
-    def write_bytes(self, buffer: Buffer, address: int = 0, *offsets) -> None:
-        address = self.base_address + address
+    def write_bytes(self, buffer: Buffer, *offsets) -> None:
+        self.write_at(buffer, self.resolve_layers(*offsets))
 
-        for offset in offsets:
-            address = self.read_at(self.PTR_LEN, address).as_int() + offset
-
-        self.write_at(buffer, address)
+    def write_type(self, type: Type, value: T, *offsets) -> None:
+        self.write_bytes(type.to_bytes(value), *offsets)
 
     def read_string(self, base: int, offset: int) -> str:
-        address, size_address = base + offset, base + offset + 0x10
+        address, size_address = base + offset, base + offset + String.size
 
-        size = self.read_at(4, size_address).as_int()
+        size = self.read(Int32, size_address)
 
-        if size < self.STR_LEN:
-            return self.read_at(size, address).as_str()
+        if size < String.size:
+            return self.read(String, address)
 
         else:
-            address = self.read_at(self.PTR_LEN, address).as_int()
+            address = self.read(self.ptr_type, address)
 
-            return self.read_at(size, address).as_str()
+            return self.read(String, address)
 
     def load(self) -> None:
         self.process_id = get_pid_from_name(self.process_name)
@@ -259,7 +339,7 @@ class WindowsMemory(MemoryType):
         ...
 
     def get_scene_value(self) -> int:
-        return self.read_bytes(4, 0x3222D0, 0x1DC).as_int()
+        return self.read_type(Int32, 0x3222D0, 0x1DC)
 
     def get_scene(self) -> Scene:
         try:
@@ -268,29 +348,29 @@ class WindowsMemory(MemoryType):
             return Scene.UNKNOWN
 
     def get_resolution_value(self) -> int:
-        return self.read_bytes(4, 0x3222D0, 0x2E0).as_int()
+        return self.read_type(Int32, 0x3222D0, 0x2E0)
 
     def get_resolution(self) -> Tuple[int, int]:
         return number_to_resolution.get(self.get_resolution_value(), (0, 0))
 
     def get_level_id_fast(self) -> int:
-        return self.read_bytes(4, 0x3222D0, 0x2A0).as_int()
+        return self.read_type(Int32, 0x3222D0, 0x2A0)
 
     def is_in_editor(self) -> bool:
-        return self.read_bytes(1, 0x3222D0, 0x168).as_bool()
+        return self.read_type(Bool, 0x3222D0, 0x168)
 
     def get_user_name(self) -> str:
-        base = self.read_bytes(self.PTR_LEN, 0x3222D8).as_int()
+        base = self.read_type(self.ptr_type, 0x3222D8)
         return self.read_string(base, 0x108)
 
     def is_dead(self) -> bool:
-        return self.read_bytes(1, 0x3222D0, 0x164, 0x39C).as_bool()
+        return self.read_type(Bool, 0x3222D0, 0x164, 0x39C)
 
     def get_level_length(self) -> float:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x3B4).as_float()
+        return self.read_type(Float, 0x3222D0, 0x164, 0x3B4)
 
     def get_object_count(self) -> int:
-        return self.read_bytes(4, 0x3222D0, 0x168, 0x3A0).as_int()
+        return self.read_type(Int32, 0x3222D0, 0x168, 0x3A0)
 
     def get_percent(self) -> float:
         try:
@@ -299,22 +379,22 @@ class WindowsMemory(MemoryType):
             return 0.0
 
     def get_x_pos(self) -> float:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x224, 0x67C).as_float()
+        return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x67C)
 
     def set_x_pos(self, pos: float) -> None:
-        self.write_bytes(Buffer.from_float(pos), 0x3222D0, 0x164, 0x224, 0x67C)
+        self.write_type(Float, pos, 0x3222D0, 0x164, 0x224, 0x67C)
 
     def get_y_pos(self) -> float:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x224, 0x680).as_float()
+        return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x680)
 
     def set_y_pos(self, pos: float) -> None:
-        self.write_bytes(Buffer.from_float(pos), 0x3222D0, 0x164, 0x224, 0x680)
+        self.write_type(Float, pos, 0x3222D0, 0x164, 0x224, 0x680)
 
     def get_speed_value(self) -> float:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x224, 0x648).as_float()
+        return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x648)
 
     def set_speed_value(self, value: float) -> None:
-        self.write_bytes(Buffer.from_float(value), 0x3222D0, 0x164, 0x224, 0x648)
+        self.write_type(Float, value, 0x3222D0, 0x164, 0x224, 0x648)
 
     def get_speed(self) -> SpeedConstant:
         try:
@@ -323,52 +403,53 @@ class WindowsMemory(MemoryType):
             return SpeedConstant.NULL
 
     def get_size(self) -> float:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x224, 0x644).as_float()
+        return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x644)
 
     def set_size(self, size: float) -> None:
-        self.write_bytes(Buffer.from_float(size), 0x3222D0, 0x164, 0x224, 0x644)
+        self.write_type(Float, size, 0x3222D0, 0x164, 0x224, 0x644)
 
     def get_gravity(self) -> float:
-        return self.read_bytes(4, 0x1E9050, 0).as_float()
+        return self.read_type(Float, 0x1E9050, 0)
 
     def get_level_id(self) -> int:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0xF8).as_int()
+        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0xF8)
 
     def get_level_name(self) -> str:
-        base = self.read_bytes(self.PTR_LEN, 0x3222D0, 0x164, 0x22C, 0x114).as_int()
+        base = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114)
         return self.read_string(base, 0xFC)
 
     def get_level_creator(self) -> str:
-        base = self.read_bytes(self.PTR_LEN, 0x3222D0, 0x164, 0x22C, 0x114).as_int()
+        base = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114)
         return self.read_string(base, 0x144)
 
     def get_editor_level_name(self) -> str:
-        base = self.read_bytes(self.PTR_LEN, 0x3222D0, 0x168, 0x124, 0xEC, 0x110, 0x114).as_int()
+        # oh ~ zmx
+        base = self.read_type(self.ptr_type, 0x3222D0, 0x168, 0x124, 0xEC, 0x110, 0x114)
         return self.read_string(base, 0xFC)
 
     def get_level_stars(self) -> int:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x2AC).as_int()
+        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x2AC)
 
     def is_level_demon(self) -> bool:
-        return self.read_bytes(1, 0x3222D0, 0x164, 0x22C, 0x114, 0x29C).as_bool()
+        return self.read_type(Bool, 0x3222D0, 0x164, 0x22C, 0x114, 0x29C)
 
     def is_level_auto(self) -> bool:
-        return self.read_bytes(1, 0x3222D0, 0x164, 0x22C, 0x114, 0x2B0).as_bool()
+        return self.read_type(Bool, 0x3222D0, 0x164, 0x22C, 0x114, 0x2B0)
 
     def get_level_diff_value(self) -> int:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x1E4).as_int()
+        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x1E4)
 
     def get_level_demon_diff_value(self) -> int:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x2A0).as_int()
+        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x2A0)
 
     def get_level_difficulty(self) -> Union[LevelDifficulty, DemonDifficulty]:
-        address = self.read_bytes(self.PTR_LEN, 0x3222D0, 0x164, 0x22C, 0x114).as_int()
+        address = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114)
 
-        is_demon, is_auto, diff, demon_diff = (
-            self.read_at(1, address + 0x29C).as_bool(),
-            self.read_at(1, address + 0x2B0).as_bool(),
-            self.read_at(4, address + 0x1E4).as_int(),
-            self.read_at(4, address + 0x2A0).as_int(),
+        is_demon, is_auto, diff, demon_diff = (  # for speedup reasons
+            self.read(Bool, address + 0x29C),
+            self.read(Bool, address + 0x2B0),
+            self.read(Int32, address + 0x1E4),
+            self.read(Int32, address + 0x2A0),
         )
 
         return Converter.convert_level_difficulty(
@@ -376,19 +457,19 @@ class WindowsMemory(MemoryType):
         )
 
     def get_attempts(self) -> int:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x218).as_int()
+        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x218)
 
     def get_jumps(self) -> int:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x224).as_int()
+        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x224)
 
     def get_normal_percent(self) -> int:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x248).as_int()
+        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x248)
 
     def get_practice_percent(self) -> int:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x26C).as_int()
+        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x26C)
 
     def get_level_type_value(self) -> int:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x22C, 0x114, 0x364).as_int()
+        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x364)
 
     def get_level_type(self) -> LevelType:
         try:
@@ -397,16 +478,16 @@ class WindowsMemory(MemoryType):
             return LevelType.NULL
 
     def is_in_level(self) -> bool:
-        return self.read_bytes(1, 0x3222D0, 0x164, 0x22C, 0x114).as_bool()
+        return self.read_type(Bool, 0x3222D0, 0x164, 0x22C, 0x114)
 
     def get_song_id(self) -> int:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x488, 0x1C4).as_int()
+        return self.read_type(Int32, 0x3222D0, 0x164, 0x488, 0x1C4)
 
     def get_attempt(self) -> int:
-        return self.read_bytes(4, 0x3222D0, 0x164, 0x4A8).as_int()
+        return self.read_type(Int32, 0x3222D0, 0x164, 0x4A8)
 
     def set_attempt(self, attempt: int) -> None:
-        self.write_bytes(Buffer.from_int(attempt), 0x3222D0, 0x164, 0x4A8)
+        self.write_type(Int32, attempt, 0x3222D0, 0x164, 0x4A8)
 
     def player_freeze(self) -> None:
         self.write_bytes(Buffer[0x90, 0x90, 0x90], 0x203519)
