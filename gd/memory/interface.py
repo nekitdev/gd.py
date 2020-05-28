@@ -10,6 +10,7 @@ try:
         get_base_address,
         get_handle,
         get_pid_from_name,
+        get_window_process_id,
         read_process_memory,
         write_process_memory,
     )
@@ -232,6 +233,10 @@ class MacOSMemory(MemoryType):
     pass
 
 
+def add_end(string: str, part: str) -> str:
+    return string if string.endswith(part) else string + part
+
+
 class WindowsMemory(MemoryType):
     # [GeometryDash.exe + 0x3222D0] + 0x168 -> Editor object
     # [[[GeometryDash.exe + 0x3222D0] + 0x164] + 0x22C] + 0x114 -> Level object
@@ -242,7 +247,7 @@ class WindowsMemory(MemoryType):
     base_address = 0
 
     def __init__(self, process_name: str, load: bool = False, ptr_type: Type = Int32) -> None:
-        self.process_name = process_name
+        self.process_name = add_end(process_name, ".exe")
         self.ptr_type = ptr_type
 
         if load:
@@ -320,7 +325,15 @@ class WindowsMemory(MemoryType):
             return self.read(String, address)
 
     def load(self) -> None:
-        self.process_id = get_pid_from_name(self.process_name)
+        try:
+            self.process_id = get_pid_from_name(self.process_name)
+
+        except RuntimeError:  # not found, fallback to window check
+            self.process_id = get_window_process_id("Geometry Dash")
+
+            if not self.process_id:
+                raise
+
         self.process_handle = get_handle(self.process_id)
         self.base_address = get_base_address(self.process_id, self.process_name)
         self.cocos_address = get_base_address(self.process_id, "libcocos2d.dll")
@@ -791,7 +804,4 @@ number_to_resolution = {
 
 
 def get_memory(name: Optional[str] = "GeometryDash", load: bool = True) -> MemoryType:
-    if sys.platform == "win32":
-        name += ".exe"
-
     return Memory(name, load=load)

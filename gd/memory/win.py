@@ -2,6 +2,7 @@ from ctypes import wintypes
 import ctypes
 
 kernel32 = ctypes.WinDLL("kernel32.dll")
+user32 = ctypes.WinDLL("user32.dll")
 
 SNAPPROCESS = 0x02
 SNAPMODULE = 0x08
@@ -116,9 +117,10 @@ open_process = kernel32.OpenProcess
 open_process.restype = wintypes.HANDLE
 open_process.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
 
-virtual_protect_real = kernel32.VirtualProtect
-virtual_protect_real.restype = wintypes.BOOL
-virtual_protect_real.argtypes = [
+virtual_protect_ex = kernel32.VirtualProtectEx
+virtual_protect_ex.restype = wintypes.BOOL
+virtual_protect_ex.argtypes = [
+    wintypes.HANDLE,
     wintypes.LPVOID,
     ctypes.c_size_t,
     wintypes.DWORD,
@@ -126,9 +128,27 @@ virtual_protect_real.argtypes = [
 ]
 
 
-def virtual_protect(address: int, size: int, flags: int) -> int:
+find_window = user32.FindWindowA
+find_window.restype = wintypes.HWND
+find_window.argtypes = [wintypes.LPCSTR, wintypes.LPCSTR]
+
+get_window_thread_process_id = user32.GetWindowThreadProcessId
+get_window_thread_process_id.restype = wintypes.DWORD
+get_window_thread_process_id.argtypes = [wintypes.HWND, wintypes.LPDWORD]
+
+
+def get_window_process_id(title: str) -> int:
+    process_id = wintypes.DWORD(0)
+
+    window = find_window(None, ctypes.c_char_p(title.encode()))
+    get_window_thread_process_id(window, ctypes.byref(process_id))
+
+    return process_id.value
+
+
+def virtual_protect(handle: int, address: int, size: int, flags: int) -> int:
     old_protect = wintypes.DWORD(0)
-    virtual_protect_real(ctypes.c_void_p(address), size, flags, ctypes.byref(old_protect))
+    virtual_protect_ex(ctypes.c_void_p(address), size, flags, ctypes.byref(old_protect))
     return old_protect.value
 
 
