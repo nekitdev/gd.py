@@ -148,7 +148,7 @@ def get_window_process_id(title: str) -> int:
 
 def virtual_protect(handle: int, address: int, size: int, flags: int) -> int:
     old_protect = wintypes.DWORD(0)
-    virtual_protect_ex(ctypes.c_void_p(address), size, flags, ctypes.byref(old_protect))
+    virtual_protect_ex(handle, ctypes.c_void_p(address), size, flags, ctypes.byref(old_protect))
     return old_protect.value
 
 
