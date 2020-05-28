@@ -680,7 +680,7 @@ class WindowsMemory(MemoryType):
         self.write_bytes(Buffer[0x80, 0x38, 0x01, 0x00], 0x880F4)
         self.write_bytes(Buffer[0x80, 0x38, 0x01, 0x00], 0x160B06)
 
-    def enable_anticheat(self) -> None:
+    def disable_anticheat(self) -> None:
         # Speedhack kicks
         self.write_bytes(Buffer[0xEB, 0x2E], 0x202AAA)
         # Editor kick
@@ -729,7 +729,7 @@ class WindowsMemory(MemoryType):
         # Level reset
         self.write_bytes(Buffer[0xE9, 0xD7, 0x00, 0x00, 0x00, 0x90], 0x20C4E6)
 
-    def disable_anticheat(self) -> None:
+    def enable_anticheat(self) -> None:
         # Speedhack kicks
         self.write_bytes(Buffer[0x74, 0x2E], 0x202AAA)
         # Editor kick
