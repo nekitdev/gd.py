@@ -38,7 +38,6 @@ def create_ext(**kwargs):
 
 
 extensions = [create_ext(name="_gdc", sources=["gd/src/_gdc.pyx"], language="c++", optional=True)]
-rust_extensions = []
 
 
 try:
@@ -48,13 +47,6 @@ except ImportError:
     print("Please install Cython.")
 else:
     extensions = cythonize(extensions)
-
-try:
-    from setuptools_rust import RustExtension
-except ImportError:
-    print("Please install setuptools-rust.")
-else:
-    rust_extensions.append(RustExtension("_gd", "Cargo.toml"))
 
 
 args = dict(
@@ -83,13 +75,11 @@ args = dict(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
-        "Programming Language :: Rust",
         "Intended Audience :: Developers",
         "Natural Language :: English",
         "Operating System :: OS Independent",
     ],
     entry_points={"console": ["gd = gd.__main__:main"]},
-    rust_extensions=rust_extensions,
     zip_safe=False,
 )
 
