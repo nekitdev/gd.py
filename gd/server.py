@@ -403,7 +403,7 @@ def json_resp(*args, **kwargs) -> web.Response:
             actual_kwargs[key] = value
 
     json_kwargs.setdefault("indent", 4)
-    dumps = functools.partial(gd.utils.dump, **json_kwargs)
+    dumps = functools.partial(gd.utils.dumps, **json_kwargs)
     actual_kwargs.setdefault("dumps", dumps)
 
     return web.json_response(*args, **actual_kwargs)
