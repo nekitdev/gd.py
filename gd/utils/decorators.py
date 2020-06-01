@@ -5,10 +5,8 @@ import time
 
 from gd.utils.async_utils import maybe_coroutine, shutdown_loop
 
-from gd.typing import Any, Callable, Type, TypeVar
+from gd.typing import Any, Function, Type, TypeVar
 from gd.errors import NotLoggedError, MissingAccess
-
-Function = Callable[[Any], Any]
 
 __all__ = (
     "check_logged",

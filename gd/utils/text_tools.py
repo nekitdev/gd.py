@@ -1,10 +1,19 @@
+from functools import partial
 import json
 
 from yarl import URL
 
 from gd.typing import Any, Dict, List, Optional, Union
 
-__all__ = ("get_module", "make_repr", "object_split", "dump")
+__all__ = (
+    "get_module",
+    "make_repr",
+    "object_split",
+    "dump",
+    "dumps",
+    "load",
+    "loads",
+)
 
 
 def get_module(module: str) -> str:
@@ -27,6 +36,47 @@ def make_repr(obj: Any, info: Optional[Dict[Any, Any]] = None) -> str:
     return f"<{module}.{name} {formatted_info}>"
 
 
+class JSDict(dict):
+    """Improved version of stdlib dictionary, which implements following:
+    - Fields can be accessed as attributes;
+    - Get Item supports snake case to camel case option.
+    """
+
+    def __getitem__(self, item: Any) -> Any:
+        try:
+            return super().__getitem__(item)
+
+        except KeyError:
+            from gd.utils.converter import Converter
+
+            try:
+                return super().__getitem__(Converter.snake_to_camel(item))
+
+            except KeyError:
+                pass
+
+            raise
+
+    def __setattr__(self, attr: str, value: Any) -> None:
+        if attr in self.attr_dict:
+            self.attr_dict[attr] = value
+        else:
+            self[attr] = value
+
+    def __getattr__(self, attr: str) -> Any:
+        return self[attr]
+
+    @property
+    def attr_dict(self) -> Dict[str, Any]:
+        return self.__dict__
+
+    def get(self, item: Any, default: Any = None) -> Any:
+        try:
+            return self[item]
+        except KeyError:
+            return default
+
+
 def default(x: Any) -> Any:
     if hasattr(x, "_json"):
         return x._json()
@@ -44,9 +94,10 @@ def default(x: Any) -> Any:
         raise TypeError(f"Object of type {type(x).__name__!r} is not JSON-serializable.") from None
 
 
-def dump(x: Any, **kwargs) -> str:
-    kwargs.update(default=default)
-    return json.dumps(x, **kwargs)
+dump = partial(json.dump, default=default)
+dumps = partial(json.dumps, default=default)
+load = partial(json.load, object_hook=JSDict)
+loads = partial(json.loads, object_hook=JSDict)
 
 
 def object_split(string: Union[bytes, str]) -> Union[List[bytes], List[str]]:

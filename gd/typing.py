@@ -66,6 +66,7 @@ __all__ = (
     "LevelAPI",
     "Any",
     "Callable",
+    "Function",
     "Optional",
     "Tuple",
     "Union",
@@ -95,6 +96,8 @@ def __repr__(forward_ref):
 
 
 setattr(ref, "__repr__", __repr__)
+
+Function = Callable[[Any], Any]
 
 AbstractEntity = ref("gd.abstractentity.AbstractEntity")
 AbstractUser = ref("gd.abstractuser.AbstractUser")

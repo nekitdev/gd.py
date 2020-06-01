@@ -110,7 +110,7 @@ venv.bak/
 /target
 
 # Cython-generated C++ files
-/src/*.cpp
+/gd/*.cpp
 
 # gd.server folder
 .gd/

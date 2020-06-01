@@ -1,5 +1,6 @@
 include README.rst
 include LICENSE
 include requirements.txt
-include gd/src/*
-recursive-include examples *.py
+include gd/*.pyx
+include gd/assets/*
+include examples/*

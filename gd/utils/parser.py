@@ -2,7 +2,6 @@ from gd.typing import Any, Callable, Dict, Iterable, List, Optional, Parser, Seq
 
 __all__ = ("Parser",)
 
-Function = Callable[[Any], Any]
 Null = object()
 
 

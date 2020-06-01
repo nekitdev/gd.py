@@ -31,13 +31,13 @@ if sys.implementation.name.lower() != "cpython":
 
 
 def create_ext(**kwargs):
-    optional = kwargs.pop("optional", True)
+    optional = kwargs.pop("optional", False)
     ext = Extension(**kwargs)
     ext.optional = optional
     return ext
 
 
-extensions = [create_ext(name="_gdc", sources=["gd/src/_gdc.pyx"], language="c++", optional=True)]
+extensions = [create_ext(name="_gdc", sources=["gd/_gdc.pyx"], language="c++", optional=True)]
 
 
 try:
@@ -59,7 +59,7 @@ args = dict(
         "Issue tracker": "https://github.com/NeKitDS/gd.py/issues",
     },
     version=version,
-    packages=["gd", "gd.utils", "gd.utils.crypto", "gd.events", "gd.api", "gd.src", "gd.memory"],
+    packages=["gd", "gd.utils", "gd.utils.crypto", "gd.events", "gd.api", "gd.memory"],
     license="MIT",
     description="A Geometry Dash API wrapper for Python",
     long_description=readme,

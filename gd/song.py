@@ -3,7 +3,7 @@ from urllib.parse import unquote
 
 import aiohttp
 
-from gd.typing import Any, Callable, Client, Dict, IO, Iterable, List, Optional, Song, Union
+from gd.typing import Any, Client, Dict, IO, Iterable, List, Optional, Song, Union
 
 from gd.abstractentity import AbstractEntity
 from gd.errors import ClientException
@@ -15,7 +15,6 @@ from gd.utils.parser import ExtDict
 from gd.utils.routes import Route
 from gd.utils.text_tools import make_repr
 
-Function = Callable[[Any], Any]
 UserAgent = HTTPClient.get_default_agent()
 
 

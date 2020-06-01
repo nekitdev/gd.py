@@ -16,6 +16,7 @@ from gd.colors import colors
 from gd.comment import Comment
 from gd.errors import *
 from gd.friend_request import FriendRequest
+from gd.icon_factory import IconFactory
 from gd.iconset import IconSet
 from gd.level import Level
 from gd.level_packs import Gauntlet, MapPack
