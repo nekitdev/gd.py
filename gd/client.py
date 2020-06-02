@@ -4,8 +4,6 @@ from gd.abstractuser import AbstractUser, LevelRecord
 from gd.comment import Comment
 from gd.errors import ClientException, NothingFound
 from gd.friend_request import FriendRequest
-from gd.iconset import IconSet
-from gd.image import DEFAULT_SIZE, ImageType, resize, to_image, connect_images, to_bytes
 from gd.level import Level
 from gd.level_packs import Gauntlet, MapPack
 from gd.logging import get_logger
@@ -1161,119 +1159,6 @@ class Client:
             Failed to delete a message.
         """
         await self.session.delete_message(message.type, message.id, client=self)
-
-    async def generate_icon(
-        self,
-        type: Union[int, str, IconType],
-        icon_set: IconSet,
-        size: int = DEFAULT_SIZE,
-        as_image: bool = False,
-    ) -> Union[bytes, ImageType]:
-        """|coro|
-
-        Generate an icon.
-
-        Parameters
-        ----------
-        type: Union[:class:`int`, :class:`str`, :class:`.IconType`]
-            Type of an icon to generate, e.g. ``cube``.
-        icon_set: :class:`.IconSet`
-            Icon set to generate an icon with.
-        size: :class:`int`
-            Size of a square of a resulting image.
-            For example, when given ``200``, returns a *200 x 200* image.
-        as_image: :class:`bool`
-            Boolean indicating whether to return :class:`bytes` or :class:`PIL.Image.Image`.
-
-        Returns
-        -------
-        Union[:class:`bytes`, :class:`PIL.Image.Image`]
-            A generated image, according to ``as_image``.
-        """
-        form = IconType.from_value(type).name.lower()
-        data = await self.session.generate_icon(
-            form=form,
-            id=getattr(icon_set, form),
-            has_glow=icon_set.has_glow_outline(),
-            color_1=icon_set.color_1.index,
-            color_2=icon_set.color_2.index,
-        )
-        original = await utils.run_blocking_io(to_image, data)
-        image = await utils.run_blocking_io(resize, original, size=size)
-
-        if as_image:
-            return image
-        else:
-            return await utils.run_blocking_io(to_bytes, image)
-
-    async def generate_icons(
-        self,
-        *types: Iterable[Union[int, str, IconType]],
-        icon_set: IconSet,
-        size: int = DEFAULT_SIZE,
-        as_image: bool = False,
-    ) -> Union[List[bytes], List[ImageType]]:
-        r"""|coro|
-
-        Generate icons.
-
-        Parameters
-        ----------
-        \*types: IterableUnion[:class:`int`, :class:`str`, :class:`.IconType`]]
-            Types of icons to generate, e.g. ``cube, ship, ball``.
-        icon_set: :class:`.IconSet`
-            Icon set to generate icons with.
-        size: :class:`int`
-            Size of a square of resulting images.
-            For example, when given ``200``, returns *200 x 200* images.
-        as_image: :class:`bool`
-            Boolean indicating whether to return :class:`bytes` or :class:`PIL.Image.Image`.
-
-        Returns
-        -------
-        Union[List[:class:`bytes`], List[:class:`PIL.Image.Image`]]
-            Generated images, according to ``as_image``.
-        """
-        return await utils.gather(
-            self.generate_icon(type=type, icon_set=icon_set, size=size, as_image=as_image)
-            for type in types
-        )
-
-    async def generate_image(
-        self,
-        *types: Iterable[Union[int, str, IconType]],
-        icon_set: IconSet,
-        size: int = DEFAULT_SIZE,
-        as_image: bool = False,
-    ) -> Union[bytes, ImageType]:
-        r"""|coro|
-
-        Generate an image.
-
-        Parameters
-        ----------
-        \*types: IterableUnion[:class:`int`, :class:`str`, :class:`.IconType`]]
-            Types of icons to generate, e.g. ``cube, ship, ball``.
-        icon_set: :class:`.IconSet`
-            Icon set to generate an image with.
-        size: :class:`int`
-            Size of a resulting image.
-            For example, when given ``200``, returns a *(let(types) \* 200) x 200* image.
-        as_image: :class:`bool`
-            Boolean indicating whether to return :class:`bytes` or :class:`PIL.Image.Image`.
-
-        Returns
-        -------
-        Union[:class:`bytes`, :class:`PIL.Image.Image`]
-            A generated image, according to ``as_image``.
-        """
-        images = await self.generate_icons(*types, icon_set=icon_set, size=size, as_image=True)
-        result = await utils.run_blocking_io(connect_images, images)
-
-        if as_image:
-            return result
-
-        return await utils.run_blocking_io(to_bytes, result)
 
     @check_logged
     async def send_message(self, user: AbstractUser, subject: str, body: str) -> Optional[Message]:

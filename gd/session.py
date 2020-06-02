@@ -1326,35 +1326,6 @@ class Session:
         if not resp > 0:
             raise MissingAccess(f"Failed to update profile of a client: {client!r}")
 
-    async def generate_icon(
-        self, form: str, id: int, color_1: int, color_2: int, has_glow: bool
-    ) -> bytes:
-        # fetch an icon from gdbrowser site
-        query = {
-            "form": form,
-            "icon": id,
-            "col1": color_1,
-            "col2": color_2,
-            "glow": int(has_glow),
-            "noUser": int(True),
-        }
-        endpoint = "https://gdbrowser.com/icon/icon"
-        method = "GET"
-
-        return await self.http.normal_request(url=endpoint, params=query, method=method)
-
-    async def generate_icons(
-        self, icon_map: Dict[str, int], color_1: int, color_2: int, has_glow: bool
-    ) -> List[bytes]:
-        to_run = [
-            self.generate_icon(
-                form=form, id=id, color_1=color_1, color_2=color_2, has_glow=has_glow
-            )
-            for form, id in icon_map.items()
-        ]
-
-        return await self.run_many(to_run)
-
     async def update_settings(
         self,
         message_policy: MessagePolicyType,

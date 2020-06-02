@@ -16,7 +16,7 @@ from gd.colors import colors
 from gd.comment import Comment
 from gd.errors import *
 from gd.friend_request import FriendRequest
-from gd.icon_factory import IconFactory
+from gd.icon_factory import factory, IconFactory
 from gd.iconset import IconSet
 from gd.level import Level
 from gd.level_packs import Gauntlet, MapPack
@@ -45,7 +45,6 @@ from gd.utils import tasks
 from gd import (
     api,  # non-server GD API.
     events,  # event-related functions and classes.
-    image,  # functions for working with images.
     memory,  # functions for interacting with memory.
     server,  # gd.api merged into gd.py.
     typing,  # various utils for typing gd.py.

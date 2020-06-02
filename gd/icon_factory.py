@@ -1,10 +1,12 @@
+import io
 from pathlib import Path
 import plistlib  # we use plistlib since we assume valid plists. ~ nekit
+import re
 
 from attr import attrib, dataclass
 
 from gd.colors import Color
-from gd.typing import Any, Dict, Iterator, Tuple, Union, ref
+from gd.typing import Any, Dict, Iterator, List, Sequence, Tuple, Union, ref
 from gd.utils.enums import IconType
 from gd.utils.text_tools import JSDict
 
@@ -15,9 +17,10 @@ except ImportError:
     ImageType = ref("PIL.Image.Image")
     print("Failed to load Pillow/PIL. Icon Factory will not be supported.")
 
-ALPHA = Color().to_rgba()
+ALPHA = (0, 0, 0, 0)
 COLOR_1 = Color(0x00FF00)
 COLOR_2 = Color(0x00FFFF)
+DARK = Color(0x808080)
 
 ASSETS = Path(__file__).parent / "assets"
 
@@ -32,7 +35,16 @@ ROB_NAMES = {
 }
 ROB_SPRITE_STARTS = tuple(name + "_" for name in ROB_NAMES.values())
 
+TWO = "_2_"
+THREE = "_3_"
+GLOW = "_glow_"
+EXTRA = "_extra_"
+ROBOT_LEG = re.compile(r"robot_[0-9]+_(02|03|04)_.*")
+SPIDER_LEG = re.compile(r"spider_[0-9]+_02_.*")
+
 PathLike = Union[str, Path]
+PlistImageSheetType = ref("gd.icon_factory.PlistImageSheet")
+SpriteType = ref("gd.icon_factory.Sprite")
 remove_braces = str.maketrans({"{": "", "}": ""})
 
 
@@ -81,9 +93,19 @@ class Rectangle:
         return self.size.height
 
 
-def into_name(type: str, id: int, *args, last: int = 1, suffix: str = "png") -> str:
+def into_name(
+    type: str, id: int, *args, last: int = 1, suffix: str = "png", copy_level: int = 0
+) -> str:
+    if len(args) == 1:
+        maybe_args = args[0]
+        if isinstance(maybe_args, tuple):
+            args = maybe_args
+
+    suffix += "_copy" * copy_level
+
     if args:
         return f"{type}_{id:02}_{'_'.join(map(str, args))}_{last:03}.{suffix}"
+
     return f"{type}_{id:02}_{last:03}.{suffix}"
 
 
@@ -96,10 +118,10 @@ class Icon:
         self.type = IconType.from_value(self.type)
 
     def get_start(self) -> str:
-        return f"{self.rob_type}_{self.id:02}"
+        return f"{self.rob_type}_{self.id:02}_"
 
-    def get_name(self, *args) -> str:
-        return into_name(self.rob_type, self.id, *args)
+    def get_name(self, *args, copy_level: int = 0) -> str:
+        return into_name(self.rob_type, self.id, *args, copy_level=copy_level)
 
     @property
     def rob_type(self) -> str:
@@ -114,9 +136,26 @@ class Sprite:
     source_size: Size = attrib()
     rectangle: Rectangle = attrib()
     rotated: bool = attrib()
+    sheet: PlistImageSheetType = attrib()
+    copy_level: int = attrib(default=0)
+
+    def get_name(self) -> str:
+        return self.name + "_copy" * self.copy_level
 
     def is_rotated(self) -> bool:
         return self.rotated
+
+    def copy(self) -> SpriteType:
+        return self.__class__(
+            name=self.name,
+            offset=self.offset,
+            size=self.size,
+            source_size=self.source_size,
+            rectangle=self.rectangle,
+            rotated=self.rotated,
+            sheet=self.sheet,
+            copy_level=self.copy_level + 1,
+        )
 
 
 def c_int_array_str_parse(string: str) -> Iterator[int]:
@@ -131,47 +170,6 @@ def is_interesting(string: str) -> bool:
     return string.startswith(ROB_SPRITE_STARTS)
 
 
-class IconFactory:
-    def __init__(self, icon_sheet_path: PathLike, glow_sheet_path: PathLike) -> None:
-        self.icon_sheet = PlistImageSheet(icon_sheet_path)
-        self.glow_sheet = PlistImageSheet(glow_sheet_path)
-        self.loaded = False
-
-    @property
-    def cache(self):
-        return dict_merge(self.icon_sheet.cache, self.glow_sheet.cache)
-
-    def load(self) -> None:
-        self.icon_sheet.load()
-        self.glow_sheet.load()
-        self.loaded = True
-
-    def unload(self) -> None:
-        self.icon_sheet.unload()
-        self.glow_sheet.unload()
-        self.loaded = False
-
-    def is_loaded(self) -> bool:
-        return self.loaded
-
-    def generate(
-        self,
-        icon_type: Union[int, str, IconType] = IconType.CUBE,
-        icon_id: int = 1,
-        color_1: Color = COLOR_1,
-        color_2: Color = COLOR_2,
-        glow_outline: bool = False,
-    ) -> ImageType:
-        if not self.is_loaded():
-            self.load()
-
-        start = Icon(type=icon_type, id=icon_id).get_start()
-        sprites = [sprite for sprite in self.cache.values() if sprite.name.startswith(start)]
-
-        print(*(sprite.name for sprite in sprites))
-        ...
-
-
 class PlistImageSheet:
     def __init__(self, sheet_location: PathLike) -> None:
         self.sheet_path = Path(sheet_location)
@@ -181,7 +179,7 @@ class PlistImageSheet:
             if not path.exists():
                 raise FileNotFoundError(f"{path} was not found.")
 
-        self.cache: Dict[str, Sprite] = {}
+        self.cache: List[str] = []
 
         self.name = self.sheet_path.stem  # last part, without suffix
         self.image = Image.open(self.sheet_path)
@@ -190,10 +188,7 @@ class PlistImageSheet:
             self.plist = plistlib.load(plist_file, dict_type=JSDict).get("frames", {})
 
     def load(self) -> None:
-        self.cache = {name: self.get_sprite(name) for name in self.plist if is_interesting(name)}
-
-    def unload(self) -> None:
-        self.cache.clear()
+        self.cache = [name for name in self.plist if is_interesting(name)]
 
     def get_image_info(self, image_name: str) -> Dict[str, Any]:
         info = self.plist.get(image_name, JSDict())
@@ -219,40 +214,296 @@ class PlistImageSheet:
             source_size=Size(source_width, source_height),
             rectangle=Rectangle(point=Point(x, y), size=Size(rect_width, rect_height)),
             rotated=is_rotated,
+            sheet=self,
         )
 
 
-def concat_images(
-    image_1: ImageType,
-    image_2: ImageType,
-    offset_1: Tuple[int, int] = (0, 0),
-    offset_2: Tuple[int, int] = (0, 0),
-) -> ImageType:
-    width_1, height_1 = image_1.size
-    width_2, height_2 = image_2.size
+class IconFactory:
+    def __init__(self, icon_sheet_path: PathLike, glow_sheet_path: PathLike) -> None:
+        self.icon_sheet = PlistImageSheet(icon_sheet_path)
+        self.glow_sheet = PlistImageSheet(glow_sheet_path)
+        self.loaded = False
 
-    if width_1 > width_2 or height_1 > height_2:
-        width, height = width_1, height_1
-        mode, size = image_1.mode, image_1.size
-    else:
-        width, height = width_2, height_2
-        mode, size = image_2.mode, image_2.size
+    def load(self) -> None:
+        self.icon_sheet.load()
+        self.glow_sheet.load()
+        self.loaded = True
 
-    off_x1, off_y1 = offset_1
-    off_x2, off_y2 = offset_2
+    def is_loaded(self) -> bool:
+        return self.loaded
 
-    image_1_offset = (width - image_1.width) // 2 - off_x2, (height - image_1.height) // 2 - off_y2
-    image_2_offset = (width - image_2.width) // 2 - off_x1, (height - image_2.height) // 2 - off_y1
+    def get_sheet(self, image_name: str) -> PlistImageSheet:
+        for sheet in (self.icon_sheet, self.glow_sheet):
+            if image_name in sheet.cache:
+                return sheet
+        raise ValueError(f"{image_name!r} not found in cache.")
 
-    result = Image.new(mode, size, ALPHA)
-    result.paste(image_1, image_1_offset)
+    @property
+    def cache(self) -> List[str]:
+        return self.icon_sheet.cache + self.glow_sheet.cache
 
-    other = Image.new(mode, size, ALPHA)
-    other.paste(image_2, image_2_offset)
+    def reorder_sprites(self, sprites: List[Sprite], icon: Icon) -> None:
+        for sprite in sprites.copy():
+            if ROBOT_LEG.match(sprite.name):
+                sprites.append(sprite.copy())
+            elif SPIDER_LEG.match(sprite.name):
+                dupe = sprite.copy()
+                sprites.append(dupe)
+                sprites.append(dupe.copy())
 
-    result.alpha_composite(other)
+        names = self.generate_names(icon)
+        sprites.sort(key=lambda sprite: names.index(sprite.get_name()))
 
-    return result
+    def generate(
+        self,
+        icon_type: Union[int, str, IconType] = IconType.CUBE,
+        icon_id: int = 1,
+        color_1: Color = COLOR_1,
+        color_2: Color = COLOR_2,
+        glow_outline: bool = False,
+    ) -> ImageType:
+        if not self.is_loaded():
+            self.load()
+
+        result = Image.new("RGBA", (250, 250), ALPHA)
+
+        icon = Icon(type=icon_type, id=icon_id)
+        start = icon.get_start()
+
+        sprites = [
+            self.get_sheet(name).get_sprite(name) for name in self.cache if name.startswith(start)
+        ]
+
+        if not sprites:  # sprites not found, fall back to ID=1
+            return self.generate(
+                icon_type=icon_type,
+                icon_id=1,
+                color_1=color_1,
+                color_2=color_2,
+                glow_outline=glow_outline,
+            )
+
+        if not glow_outline:
+            sprites = [sprite for sprite in sprites if GLOW not in sprite.name]
+
+        self.reorder_sprites(sprites, icon)
+
+        for sprite in sprites:
+            name = sprite.name
+            copy_level = sprite.copy_level
+
+            x, y = sprite.rectangle.x, sprite.rectangle.y
+
+            width, height = sprite.size.width, sprite.size.height
+            center_x, center_y = width // 2, height // 2
+
+            off_x, off_y = sprite.offset.x, sprite.offset.y
+
+            real_width, real_height = sprite.rectangle.width, sprite.rectangle.height
+
+            is_rotated = sprite.rotated
+
+            if is_rotated:
+                real_width, real_height = real_height, real_width
+
+            image = sprite.sheet.image.crop((x, y, x + real_width, y + real_height))
+
+            if is_rotated:
+                image = image.rotate(90, resample=Image.BICUBIC, expand=True)
+
+            if copy_level and GLOW not in name:
+                image = reduce_brightness(image)
+
+            image, off_x, off_y = self.get_image_and_offset(
+                name, icon_id, image, off_x, off_y, copy_level
+            )
+
+            if GLOW in name:
+                image = apply_color(image, get_glow_color(color_1, color_2).to_rgb())
+            elif TWO in name:
+                image = apply_color(image, color_2.to_rgb())
+            elif EXTRA not in name and THREE not in name:
+                image = apply_color(image, color_1.to_rgb())
+
+            draw_x = 100 - center_x + off_x
+            draw_y = 100 - center_y - off_y
+
+            draw_off_x, draw_off_y = {
+                IconType.ROBOT: (0, -20),
+                IconType.SPIDER: (6, -5),
+                IconType.UFO: (0, 30),
+            }.get(icon.type, (0, 0))
+
+            result.alpha_composite(image, (25 + draw_off_x + draw_x, 25 + draw_off_y + draw_y))
+
+        return result
+
+    # WEIRD AND TOUGH CODE AHEAD (THANKS ROBERT)
+
+    @staticmethod
+    def generate_names(icon: Icon) -> List[str]:
+        names = []
+
+        if icon.type in {IconType.CUBE, IconType.SHIP, IconType.BALL, IconType.WAVE}:
+            names += [icon.get_name(part) for part in ("glow", 2, (), "extra")]
+
+        elif icon.type is IconType.UFO:
+            names += [icon.get_name(part) for part in ("glow", 3, 2, (), "extra")]
+
+        elif icon.type is IconType.ROBOT:
+            COPY_PARTS = (("03", 2), "03", ("04", 2), "04", ("02", 2), "02")
+            NORMAL_PARTS = (
+                ("03", 2),
+                "03",
+                ("04", 2),
+                "04",
+                ("01", 2),
+                "01",
+                ("02", 2),
+                "02",
+                ("01", "extra"),
+            )
+
+            for additional in ("glow", ()):
+                names += [
+                    icon.get_name(extend_part(part, additional), copy_level=1)
+                    for part in COPY_PARTS
+                ] + [icon.get_name(extend_part(part, additional)) for part in NORMAL_PARTS]
+
+        elif icon.type is IconType.SPIDER:
+            PRE_COPY_PARTS = (("04", 2), "04")
+            DOUBLE_COPY_PARTS = (("02", 2), "02")
+            COPY_PARTS = (("02", 2), "02")
+            NORMAL_PARTS = (("01", 2), "01", ("03", 2), "03", ("02", 2), "02", ("01", "extra"))
+
+            for additional in ("glow", ()):
+                names += (
+                    [icon.get_name(extend_part(part, additional)) for part in PRE_COPY_PARTS]
+                    + [
+                        icon.get_name(extend_part(part, additional), copy_level=2)
+                        for part in DOUBLE_COPY_PARTS
+                    ]
+                    + [
+                        icon.get_name(extend_part(part, additional), copy_level=1)
+                        for part in COPY_PARTS
+                    ]
+                    + [icon.get_name(extend_part(part, additional)) for part in NORMAL_PARTS]
+                )
+
+        return names
+
+    @staticmethod
+    def get_image_and_offset(
+        name: str, id: int, image: ImageType, off_x: int, off_y: int, copy_level: int
+    ) -> Tuple[ImageType, int, int]:  # image, off_x, off_y
+        # blame rob; honestly, I am done with doing all those exceptions at this point ~ nekit
+        if "robot" in name:
+
+            if f"{id}_02_" in name:
+                image = image.rotate(-45, resample=Image.BICUBIC, expand=True)
+                off_x -= 50 if copy_level else 40
+                off_y -= 20
+
+                if TWO in name:
+
+                    if id in {2, 5, 6, 8, 9, 11, 12, 15, 17, 24}:
+                        off_x += 15
+                        off_y -= 5
+                    elif id in {7, 10, 19, 20}:
+                        off_x += 7
+                    elif id == 13:
+                        off_x += 10
+                        off_y -= 4
+                    elif id == 18:
+                        off_x -= 1
+                        off_y -= 1
+                    elif id in {21, 25}:
+                        off_x += 12
+                    elif id == 22:
+                        off_y -= 5
+                    elif id in {3, 26}:
+                        off_x += 1
+                    elif id == 23:
+                        off_x -= 3
+                        off_y -= 2
+
+            elif f"{id}_03_" in name:
+                image = image.rotate(45, resample=Image.BICUBIC, expand=True)
+                off_x -= 40 if copy_level else 30
+
+                if TWO in name and id in {3, 5, 6, 8, 16, 17}:
+                    off_x += 10
+
+                off_y -= 52 if id == 21 and TWO not in name else 60
+
+            elif f"{id}_04_" in name:
+
+                if copy_level:
+                    off_x -= 10
+                off_y -= 70
+
+        elif "spider" in name:
+
+            if f"{id}_02_" in name:
+
+                if copy_level > 1:
+                    off_x += 55
+                    off_y -= 38
+
+                    image = image.transpose(Image.FLIP_LEFT_RIGHT)
+
+                elif copy_level > 0:
+                    off_x += 18
+                    off_y -= 38
+                else:
+                    off_x -= 16
+                    off_y -= 38
+
+            elif f"{id}_03_" in name:
+                off_x -= 86
+                off_y -= 38
+
+                if id == 7:
+                    off_x += 15
+                    off_y += 13
+
+                elif id == 15:
+                    off_x += 5
+                    off_y += 3
+
+                if TWO in name:
+
+                    if id == 16:
+                        off_y += 5
+                    elif id in {2, 3}:
+                        off_x += 25
+                    elif id == 10:
+                        off_x += 18
+                        off_y -= 5
+
+                if GLOW in name:
+                    off_y += 3
+
+                image = image.rotate(-45, resample=Image.BICUBIC, expand=True)
+
+            elif f"{id}_04_" in name:
+                off_x -= 30
+                off_y -= 20
+
+        return image, off_x, off_y
+
+
+def extend_part(part: Any, additional: Any) -> Any:
+    if additional:
+        return (*part, additional) if isinstance(part, tuple) else (part, additional)
+
+    return part
+
+
+def get_glow_color(color_1: Color, color_2: Color) -> Color:
+    if not color_1.value:  # black
+        return Color(0xFFFFFF)  # white
+    return color_2
 
 
 def apply_color(image: ImageType, color: Tuple[int, int, int]) -> ImageType:
@@ -265,6 +516,34 @@ def apply_color(image: ImageType, color: Tuple[int, int, int]) -> ImageType:
     return colored
 
 
+def reduce_brightness(image: ImageType) -> ImageType:
+    return apply_color(image, DARK.to_rgb())
+
+
+def connect_images(images: Sequence[ImageType], mode: str = "RGBA") -> ImageType:
+    all_x = [image.size[0] for image in images]  # x
+    max_y = max(image.size[1] for image in images)  # y
+
+    w, h = sum(all_x), max_y
+
+    result = Image.new(mode=mode, size=(w, h))
+
+    offset = 0
+
+    for (to_add, image) in zip(all_x, images):
+        result.paste(image, box=(offset, 0))  # box is upper-left corner
+        offset += to_add
+
+    return result
+
+
+def to_bytes(image: ImageType, image_format: str = "png") -> bytes:
+    buffer = io.BytesIO()
+    image.save(buffer, format=image_format)
+    return buffer.getvalue()
+
+
+factory = IconFactory(ASSETS / "icon_sheet.png", ASSETS / "glow_sheet.png")
+
 if __name__ == "__main__":
-    factory = IconFactory(ASSETS / "icon_sheet.png", ASSETS / "glow_sheet.png")
     factory.generate("cube", 2)

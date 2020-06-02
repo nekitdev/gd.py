@@ -1,9 +1,10 @@
-from gd.typing import Iterable, List, Tuple, Union
+from gd.typing import Iterable, List, Optional, Tuple, Union
 
 from gd.abstractentity import AbstractEntity
 from gd.colors import Color
-from gd.image import DEFAULT_SIZE, ImageType
+from gd.icon_factory import ImageType, connect_images, factory, to_bytes
 
+from gd.utils.async_utils import gather, run_blocking_io
 from gd.utils.enums import IconType
 from gd.utils.text_tools import make_repr
 
@@ -94,6 +95,9 @@ class IconSet(AbstractEntity):
         """:class:`int`: Explosion ID of the iconset."""
         return self.options.get("icon_explosion", 1)
 
+    def get_id_by_type(self, type: IconType) -> int:
+        return getattr(self, type.name.lower(), 1)
+
     def has_glow_outline(self) -> bool:
         """:class:`bool`: Indicates whether an iconset has glow outline."""
         return self.options.get("has_glow_outline", False)
@@ -103,30 +107,42 @@ class IconSet(AbstractEntity):
         return self.color_1, self.color_2
 
     async def generate(
-        self,
-        type: Union[int, str, IconType] = "cube",
-        size: int = DEFAULT_SIZE,
-        as_image: bool = False,
+        self, type: Optional[Union[int, str, IconType]] = None, as_image: bool = False,
     ) -> Union[bytes, ImageType]:
-        return await self.client.generate_icon(type, self, size=size, as_image=as_image)
+        if type is None:
+            type = self.main_type
+
+        type = IconType.from_value(type)
+
+        result = await run_blocking_io(
+            factory.generate,
+            icon_type=type,
+            icon_id=self.get_id_by_type(type),
+            color_1=self.color_1,
+            color_2=self.color_2,
+            glow_outline=self.has_glow_outline(),
+        )
+
+        if as_image:
+            return result
+
+        return await run_blocking_io(to_bytes, result)
 
     async def generate_many(
-        self,
-        *types: Iterable[Union[int, str, IconType]],
-        size: int = DEFAULT_SIZE,
-        as_image: bool = False,
+        self, *types: Iterable[Union[int, str, IconType]], as_image: bool = False,
     ) -> Union[List[bytes], List[ImageType]]:
-        return await self.client.generate_icons(*types, icon_set=self, size=size, as_image=as_image)
+        return await gather(self.generate(type=type, as_image=as_image) for type in types)
 
     async def generate_image(
-        self,
-        *types: Iterable[Union[int, str, IconType]],
-        size: int = DEFAULT_SIZE,
-        as_image: bool = False,
+        self, *types: Iterable[Union[int, str, IconType]], as_image: bool = False,
     ) -> Union[bytes, ImageType]:
-        return await self.client.generate_image(*types, icon_set=self, size=size, as_image=as_image)
+        images = await self.generate_many(*types, as_image=True)
+        result = await run_blocking_io(connect_images, images)
 
-    async def generate_full(
-        self, size: int = DEFAULT_SIZE, as_image: bool = False
-    ) -> Union[bytes, ImageType]:
-        return await self.generate_image(*self.ALL_TYPES, size=size, as_image=as_image)
+        if as_image:
+            return result
+
+        return await run_blocking_io(to_bytes, result)
+
+    async def generate_full(self, as_image: bool = False) -> Union[bytes, ImageType]:
+        return await self.generate_image(*self.ALL_TYPES, as_image=as_image)
