@@ -4,7 +4,7 @@ from gd.abstractentity import AbstractEntity
 from gd.colors import Color
 from gd.icon_factory import ImageType, connect_images, factory, to_bytes
 
-from gd.utils.async_utils import gather, run_blocking_io
+from gd.utils.async_utils import run_blocking_io
 from gd.utils.enums import IconType
 from gd.utils.text_tools import make_repr
 
@@ -131,7 +131,7 @@ class IconSet(AbstractEntity):
     async def generate_many(
         self, *types: Iterable[Union[int, str, IconType]], as_image: bool = False,
     ) -> Union[List[bytes], List[ImageType]]:
-        return await gather(self.generate(type=type, as_image=as_image) for type in types)
+        return [await self.generate(type=type, as_image=as_image) for type in types]
 
     async def generate_image(
         self, *types: Iterable[Union[int, str, IconType]], as_image: bool = False,
