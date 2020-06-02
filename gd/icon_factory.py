@@ -261,6 +261,7 @@ class IconFactory:
         color_1: Color = COLOR_1,
         color_2: Color = COLOR_2,
         glow_outline: bool = False,
+        error_on_not_found: bool = False,
     ) -> ImageType:
         if not self.is_loaded():
             self.load()
@@ -275,6 +276,9 @@ class IconFactory:
         ]
 
         if not sprites:  # sprites not found, fall back to ID=1
+            if error_on_not_found:
+                raise LookupError(f"{icon} does not exist.")
+
             return self.generate(
                 icon_type=icon_type,
                 icon_id=1,
