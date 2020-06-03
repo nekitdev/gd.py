@@ -479,6 +479,8 @@ class IconFactory:
 
                     if id == 16:
                         off_y += 5
+                    elif id in {1, 8, 9, 11, 13, 14}:
+                        off_x += 2
                     elif id in {2, 3}:
                         off_x += 25
                     elif id == 10:
