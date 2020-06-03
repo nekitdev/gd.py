@@ -1,4 +1,5 @@
 from base64 import urlsafe_b64decode, urlsafe_b64encode
+import gzip
 import hashlib
 import random
 import string
@@ -62,7 +63,9 @@ class Coder:
 
         save += "=" * (4 - len(save) % 4)
 
-        return pako_inflate(urlsafe_b64decode(save.encode())).decode(errors="replace")
+        return zlib.decompress(
+            urlsafe_b64decode(save.encode()), zlib.MAX_WBITS | 0x10
+        ).decode(errors="replace")
 
     @classmethod
     def decode_mac_save(cls, save: Union[bytes, str], *args, **kwargs) -> bytes:
@@ -94,7 +97,7 @@ class Coder:
         if isinstance(save, str):
             save = save.encode()
 
-        compressed = pako_deflate(save)
+        compressed = gzip.compress(save)
 
         crc32 = struct.pack("I", zlib.crc32(save))
         save_size = struct.pack("I", len(save))
@@ -250,7 +253,7 @@ class Coder:
 
         decoded = urlsafe_b64decode(string)
 
-        unzipped = pako_inflate(decoded)
+        unzipped = zlib.decompress(decoded, zlib.MAX_WBITS | 0x10)
 
         try:
             final = unzipped.decode()
@@ -288,17 +291,3 @@ class Coder:
             + ((seconds + 4085) ** 2)
             - 50028039
         )
-
-
-def pako_inflate(data: bytes) -> bytes:
-    decompress = zlib.decompressobj(15 | 32)
-    decompressed = decompress.decompress(data) + decompress.flush()
-    return decompressed
-
-
-def pako_deflate(data: bytes) -> bytes:
-    compress = zlib.compressobj(
-        zlib.Z_DEFAULT_COMPRESSION, zlib.DEFLATED, 15, memLevel=8, strategy=zlib.Z_DEFAULT_STRATEGY
-    )
-    compressed = compress.compress(data) + compress.flush()
-    return compressed
