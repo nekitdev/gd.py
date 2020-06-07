@@ -549,7 +549,17 @@ def to_bytes(image: ImageType, image_format: str = "png") -> bytes:
     return buffer.getvalue()
 
 
-factory = IconFactory(ASSETS / "icon_sheet.png", ASSETS / "glow_sheet.png")
+try:
+    factory = IconFactory(ASSETS / "icon_sheet.png", ASSETS / "glow_sheet.png")
+except FileNotFoundError as error:
+    factory = None
+    print(f"Could not create initial factory. {error}")
 
-if __name__ == "__main__":
-    factory.generate("cube", 2)
+if __name__ == "__main__":  # easter egg?! ~ nekit
+    factory.generate(
+        icon_type="cube",
+        icon_id=98,
+        color_1=Color(0x7289da),
+        color_2=Color(0xffffff),
+        glow_outline=True,
+    ).save("easter_egg.png")
