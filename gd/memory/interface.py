@@ -317,12 +317,12 @@ class WindowsMemory(MemoryType):
         size = self.read(Int32, size_address)
 
         if size < String.size:
-            return self.read(String, address)
+            return String.from_bytes(self.read_at(size, address))
 
         else:
             address = self.read(self.ptr_type, address)
 
-            return self.read(String, address)
+            return String.from_bytes(self.read_at(size, address))
 
     def load(self) -> None:
         try:
@@ -385,11 +385,10 @@ class WindowsMemory(MemoryType):
     def get_object_count(self) -> int:
         return self.read_type(Int32, 0x3222D0, 0x168, 0x3A0)
 
-    def get_percent(self) -> float:
-        try:
-            return self.get_x_pos() / self.get_level_length() * 100
-        except ZeroDivisionError:
-            return 0.0
+    def get_percent(self) -> int:
+        base = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x3C0)
+        string = self.read_string(base, 0x12C)
+        return 0 if not string else int(string.rstrip("%"))
 
     def get_x_pos(self) -> float:
         return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x67C)
