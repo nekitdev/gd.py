@@ -317,12 +317,14 @@ class WindowsMemory(MemoryType):
         size = self.read(Int32, size_address)
 
         if size < String.size:
-            return String.from_bytes(self.read_at(size, address))
+            try:
+                return String.from_bytes(self.read_at(size, address))
+            except UnicodeDecodeError:  # failed to read, let's try to interpret as a pointer
+                pass
 
-        else:
-            address = self.read(self.ptr_type, address)
+        address = self.read(self.ptr_type, address)
 
-            return String.from_bytes(self.read_at(size, address))
+        return String.from_bytes(self.read_at(size, address))
 
     def load(self) -> None:
         try:
