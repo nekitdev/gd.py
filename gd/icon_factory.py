@@ -551,9 +551,12 @@ def to_bytes(image: ImageType, image_format: str = "png") -> bytes:
 
 try:
     factory = IconFactory(ASSETS / "icon_sheet.png", ASSETS / "glow_sheet.png")
-except FileNotFoundError as error:
+
+except Exception as error:  # noqa
     factory = None
+
     print(f"Could not create initial factory. {error}")
+
 
 if __name__ == "__main__":  # easter egg?! ~ nekit
     factory.generate(
