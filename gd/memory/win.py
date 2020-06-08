@@ -1,7 +1,7 @@
 from ctypes import wintypes
 import ctypes
 
-from gd.memory.utils import Structure
+from gd.memory.utils import Structure, func_def
 
 kernel32 = ctypes.WinDLL("kernel32.dll")
 user32 = ctypes.WinDLL("user32.dll")
@@ -65,72 +65,87 @@ class ModuleEntry32(Structure):
 LPPROCESSENTRY32 = ctypes.POINTER(ProcessEntry32)
 LPMODULEENTRY32 = ctypes.POINTER(ModuleEntry32)
 
-create_snapshot = kernel32.CreateToolhelp32Snapshot
-create_snapshot.restype = wintypes.HANDLE
-create_snapshot.argtypes = [wintypes.DWORD, wintypes.DWORD]
 
-process_first = kernel32.Process32First
-process_first.restype = wintypes.BOOL
-process_first.argtypes = [wintypes.HANDLE, LPPROCESSENTRY32]
-
-process_next = kernel32.Process32Next
-process_next.restype = wintypes.BOOL
-process_next.argtypes = [wintypes.HANDLE, LPPROCESSENTRY32]
-
-close_handle = kernel32.CloseHandle
-close_handle.restype = wintypes.BOOL
-close_handle.argtypes = [wintypes.HANDLE]
-
-module_first = kernel32.Module32First
-module_first.restype = wintypes.BOOL
-module_first.argtypes = [wintypes.HANDLE, LPMODULEENTRY32]
-
-module_next = kernel32.Module32Next
-module_next.restype = wintypes.BOOL
-module_next.argtypes = [wintypes.HANDLE, LPMODULEENTRY32]
-
-read_process_memory = kernel32.ReadProcessMemory
-read_process_memory.restype = wintypes.BOOL
-read_process_memory.argtypes = [
-    wintypes.HANDLE,
-    wintypes.LPVOID,
-    wintypes.LPCVOID,
-    ctypes.c_size_t,
-    ctypes.POINTER(ctypes.c_size_t),
-]
-
-write_process_memory = kernel32.WriteProcessMemory
-write_process_memory.restype = wintypes.BOOL
-write_process_memory.argtypes = [
-    wintypes.HANDLE,
-    wintypes.LPVOID,
-    wintypes.LPCVOID,
-    ctypes.c_size_t,
-    ctypes.POINTER(ctypes.c_size_t),
-]
-
-open_process = kernel32.OpenProcess
-open_process.restype = wintypes.HANDLE
-open_process.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
-
-virtual_protect_ex = kernel32.VirtualProtectEx
-virtual_protect_ex.restype = wintypes.BOOL
-virtual_protect_ex.argtypes = [
-    wintypes.HANDLE,
-    wintypes.LPVOID,
-    ctypes.c_size_t,
-    wintypes.DWORD,
-    wintypes.PDWORD,
-]
+@func_def(kernel32.CreateToolhelp32Snapshot)
+def create_snapshot(flags: wintypes.DWORD, process_id: wintypes.DWORD) -> wintypes.HANDLE:
+    pass
 
 
-find_window = user32.FindWindowA
-find_window.restype = wintypes.HWND
-find_window.argtypes = [wintypes.LPCSTR, wintypes.LPCSTR]
+@func_def(kernel32.Process32First)
+def process_first(handle: wintypes.HANDLE, entry_ptr: LPPROCESSENTRY32) -> wintypes.BOOL:
+    pass
 
-get_window_thread_process_id = user32.GetWindowThreadProcessId
-get_window_thread_process_id.restype = wintypes.DWORD
-get_window_thread_process_id.argtypes = [wintypes.HWND, wintypes.LPDWORD]
+
+@func_def(kernel32.Process32Next)
+def process_next(handle: wintypes.HANDLE, entry_ptr: LPPROCESSENTRY32) -> wintypes.BOOL:
+    pass
+
+
+@func_def(kernel32.CloseHandle)
+def close_handle(handle: wintypes.HANDLE) -> wintypes.BOOL:
+    pass
+
+
+@func_def(kernel32.Module32First)
+def module_first(handle: wintypes.HANDLE, entry_ptr: LPMODULEENTRY32) -> wintypes.BOOL:
+    pass
+
+
+@func_def(kernel32.Module32Next)
+def module_next(handle: wintypes.HANDLE, entry_ptr: LPMODULEENTRY32) -> wintypes.BOOL:
+    pass
+
+
+@func_def(kernel32.ReadProcessMemory)
+def read_process_memory(
+    handle: wintypes.HANDLE,
+    base_address: wintypes.LPVOID,
+    buffer: wintypes.LPCVOID,
+    size: ctypes.c_size_t,
+    size_ptr: ctypes.POINTER(ctypes.c_size_t),
+) -> wintypes.BOOL:
+    pass
+
+
+@func_def(kernel32.WriteProcessMemory)
+def write_process_memory(
+    handle: wintypes.HANDLE,
+    base_address: wintypes.LPVOID,
+    buffer: wintypes.LPCVOID,
+    size: ctypes.c_size_t,
+    size_ptr: ctypes.POINTER(ctypes.c_size_t),
+) -> wintypes.BOOL:
+    pass
+
+
+@func_def(kernel32.OpenProcess)
+def open_process(
+    address: wintypes.DWORD, inherit_handle: wintypes.BOOL, process_id: wintypes.DWORD
+) -> wintypes.HANDLE:
+    pass
+
+
+@func_def(kernel32.VirtualProtectEx)
+def virtual_protect_ex(
+    handle: wintypes.HANDLE,
+    address: wintypes.LPVOID,
+    size: ctypes.c_size_t,
+    flags: wintypes.DWORD,
+    old_protect: wintypes.PDWORD,
+) -> wintypes.BOOL:
+    pass
+
+
+@func_def(user32.FindWindowA)
+def find_window(class_name: wintypes.LPCSTR, title: wintypes.LPCSTR) -> wintypes.HWND:
+    pass
+
+
+@func_def(user32.GetWindowThreadProcessId)
+def get_window_thread_process_id(
+    handle: wintypes.HWND, process_id_ptr: wintypes.LPDWORD
+) -> wintypes.DWORD:
+    pass
 
 
 def get_window_process_id(title: str) -> int:

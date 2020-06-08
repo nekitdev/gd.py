@@ -63,9 +63,9 @@ class Coder:
 
         save += "=" * (4 - len(save) % 4)
 
-        return zlib.decompress(
-            urlsafe_b64decode(save.encode()), zlib.MAX_WBITS | 0x10
-        ).decode(errors="replace")
+        return zlib.decompress(urlsafe_b64decode(save.encode()), zlib.MAX_WBITS | 0x10).decode(
+            errors="replace"
+        )
 
     @classmethod
     def decode_mac_save(cls, save: Union[bytes, str], *args, **kwargs) -> bytes:

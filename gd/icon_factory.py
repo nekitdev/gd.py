@@ -559,7 +559,7 @@ if __name__ == "__main__":  # easter egg?! ~ nekit
     factory.generate(
         icon_type="cube",
         icon_id=98,
-        color_1=Color(0x7289da),
-        color_2=Color(0xffffff),
+        color_1=Color(0x7289DA),
+        color_2=Color(0xFFFFFF),
         glow_outline=True,
     ).save("easter_egg.png")
