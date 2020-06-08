@@ -16,8 +16,6 @@ class StructureMeta(type(ctypes.Structure)):
             except AttributeError:
                 pass
 
-        print(fields)
-
         cls._fields_ = list(fields.items())
 
         return cls
