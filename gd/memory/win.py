@@ -10,60 +10,75 @@ SNAPPROCESS = 0x02
 SNAPMODULE = 0x08
 SNAPMODULE32 = 0x10
 PROCESS_ALL_ACCESS = 0x100000 | 0x0F0000 | 0x000FFF
+VIRTUAL_MEM = 0x1000 | 0x2000
+MEM_RELEASE = 0x8000
+INFINITE = 0xFFFFFFFF
 MAX_MODULE_NAME32 = 0x100  # 0xff + 1
+PAGE_READWRITE = 0x04
 PAGE_EXECUTE_READWRITE = 0x40
 
 JMP = bytes([0xE9])
 
 
 class ProcessEntry32(Structure):
-    dwSize: wintypes.DWORD
-    cntUsage: wintypes.DWORD
-    th32ProcessID: wintypes.DWORD
-    th32DefaultHeapID: ctypes.POINTER(ctypes.c_ulong)
-    th32ModuleID: wintypes.DWORD
-    cntThreads: wintypes.DWORD
-    th32ParentProcessID: wintypes.DWORD
-    pcPriClassBase: wintypes.LONG
-    dwFlags: wintypes.DWORD
-    szExeFile: ctypes.c_char * wintypes.MAX_PATH
+    size: wintypes.DWORD
+    count_usage: wintypes.DWORD
+    process_id: wintypes.DWORD
+    default_heap_id: ctypes.POINTER(ctypes.c_ulong)
+    module_id: wintypes.DWORD
+    count_threads: wintypes.DWORD
+    parent_process_id: wintypes.DWORD
+    base_priority: wintypes.LONG
+    flags: wintypes.DWORD
+    exe_file: ctypes.c_char * wintypes.MAX_PATH
 
     @property
     def name(self) -> str:
-        return self.szExeFile.decode("utf-8")
+        return self.exe_file.decode("utf-8")
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.dwSize = ctypes.sizeof(self)
+        self.size = ctypes.sizeof(self)
 
 
 class ModuleEntry32(Structure):
-    dwSize: wintypes.DWORD
-    th32ModuleID: wintypes.DWORD
-    th32ProcessID: wintypes.DWORD
-    GlblcntUsage: wintypes.DWORD
-    ProccntUsage: wintypes.DWORD
-    modBaseAddr: ctypes.POINTER(wintypes.BYTE)
-    modBaseSize: wintypes.DWORD
-    hModule: wintypes.HMODULE
-    szModule: ctypes.c_char * MAX_MODULE_NAME32
-    szExePath: ctypes.c_char * wintypes.MAX_PATH
+    size: wintypes.DWORD
+    module_id: wintypes.DWORD
+    process_id: wintypes.DWORD
+    global_count_usage: wintypes.DWORD
+    proc_count_usage: wintypes.DWORD
+    module_base_address: ctypes.POINTER(wintypes.BYTE)
+    module_base_size: wintypes.DWORD
+    module_handle: wintypes.HMODULE
+    module_name: ctypes.c_char * MAX_MODULE_NAME32
+    exe_path: ctypes.c_char * wintypes.MAX_PATH
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.dwSize = ctypes.sizeof(self)
+        self.size = ctypes.sizeof(self)
 
     @property
     def base_address(self):
-        return ctypes.addressof(self.modBaseAddr.contents)
+        return ctypes.addressof(self.module_base_address.contents)
 
     @property
     def name(self):
-        return self.szModule.decode("utf-8")
+        return self.module_name.decode("utf-8")
+
+
+class SecurityAttributes(Structure):
+    length: wintypes.DWORD
+    security_descriptor: wintypes.LPVOID
+    inherit_handle: wintypes.BOOL
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.length = ctypes.sizeof(self)
 
 
 LPPROCESSENTRY32 = ctypes.POINTER(ProcessEntry32)
 LPMODULEENTRY32 = ctypes.POINTER(ModuleEntry32)
+LPSECURITY_ATTRIBUTES = ctypes.POINTER(SecurityAttributes)
 
 
 @func_def(kernel32.CreateToolhelp32Snapshot)
@@ -136,6 +151,57 @@ def virtual_protect_ex(
     pass
 
 
+@func_def(kernel32.VirtualAllocEx)
+def virtual_alloc_ex(
+    handle: wintypes.HANDLE,
+    address: wintypes.LPVOID,
+    size: ctypes.c_size_t,
+    allocation_type: wintypes.DWORD,
+    protect: wintypes.DWORD,
+) -> wintypes.LPVOID:
+    pass
+
+
+@func_def(kernel32.VirtualFreeEx)
+def virtual_free_ex(
+    handle: wintypes.HANDLE,
+    address: wintypes.LPVOID,
+    size: ctypes.c_size_t,
+    free_type: wintypes.DWORD,
+) -> wintypes.BOOL:
+    pass
+
+
+@func_def(kernel32.CreateRemoteThread)
+def create_remote_thread(
+    handle: wintypes.HANDLE,
+    thread_attributes: LPSECURITY_ATTRIBUTES,
+    stack_size: ctypes.c_size_t,
+    start_address: wintypes.LPVOID,
+    start_parameter: wintypes.LPVOID,
+    flags: wintypes.DWORD,
+    thread_id: wintypes.LPDWORD,
+) -> wintypes.HANDLE:
+    pass
+
+
+@func_def(kernel32.GetModuleHandleA)
+def get_module_handle(module_name: wintypes.LPCSTR) -> wintypes.HMODULE:
+    pass
+
+
+@func_def(kernel32.GetProcAddress)
+def get_proc_address(
+    module_handle: wintypes.HMODULE, proc_name: wintypes.LPCSTR
+) -> wintypes.LPVOID:
+    pass
+
+
+@func_def(kernel32.WaitForSingleObject)
+def wait_for_single_object(handle: wintypes.HANDLE, time_ms: wintypes.DWORD) -> wintypes.DWORD:
+    pass
+
+
 @func_def(user32.FindWindowA)
 def find_window(class_name: wintypes.LPCSTR, title: wintypes.LPCSTR) -> wintypes.HWND:
     pass
@@ -146,6 +212,13 @@ def get_window_thread_process_id(
     handle: wintypes.HWND, process_id_ptr: wintypes.LPDWORD
 ) -> wintypes.DWORD:
     pass
+
+
+def get_module_proc_address(module_name: str, proc_name: str) -> int:
+    handle = get_module_handle(ctypes.c_char_p(module_name.encode()))
+
+    address = get_proc_address(handle, ctypes.c_char_p(proc_name.encode()))
+    return address if address else 0
 
 
 def get_window_process_id(title: str) -> int:
@@ -172,7 +245,7 @@ def get_pid_from_name(process_name: str) -> int:
 
     while process:
         if process_entry.name == process_name:
-            pid = process_entry.th32ProcessID
+            pid = process_entry.process_id
             close_handle(process_snap)
             return pid
 
@@ -204,3 +277,30 @@ def get_base_address(pid: int, module_name: str) -> int:
     else:
         close_handle(module_snap)
         raise RuntimeError(f"{module_name!r} was not found. Error: {kernel32.GetLastError()}.")
+
+
+def inject_dll(process_id: int, dll_path: str) -> int:  # 32-bit only
+    process = get_handle(process_id)
+
+    data = ctypes.create_string_buffer(dll_path.encode())
+
+    parameter_address = virtual_alloc_ex(process, 0, len(data), VIRTUAL_MEM, PAGE_READWRITE)
+
+    write_process_memory(process, parameter_address, ctypes.byref(data), len(data), None)
+
+    load_library = get_module_proc_address("kernel32.dll", "LoadLibraryA")
+
+    thread_id = wintypes.DWORD(0)
+
+    handle = create_remote_thread(
+        process, None, 0, load_library, parameter_address, 0, ctypes.byref(thread_id)
+    )
+
+    wait_result = wait_for_single_object(handle, INFINITE)
+
+    virtual_free_ex(process, parameter_address, 0, MEM_RELEASE)
+
+    close_handle(process)
+    close_handle(handle)
+
+    return thread_id.value
