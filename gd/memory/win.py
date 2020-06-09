@@ -1,6 +1,11 @@
 from ctypes import wintypes
 import ctypes
+from pathlib import Path
+import sys
 
+import pefile  # to parse some headers uwu ~ nekit
+
+from gd.typing import Optional, Union
 from gd.memory.utils import Structure, func_def
 
 kernel32 = ctypes.WinDLL("kernel32.dll")
@@ -202,6 +207,11 @@ def wait_for_single_object(handle: wintypes.HANDLE, time_ms: wintypes.DWORD) -> 
     pass
 
 
+@func_def(kernel32.GetSystemWow64DirectoryA)
+def get_system_wow_64_dir_a(string_buffer: wintypes.LPSTR, size: wintypes.UINT) -> wintypes.UINT:
+    pass
+
+
 @func_def(user32.FindWindowA)
 def find_window(class_name: wintypes.LPCSTR, title: wintypes.LPCSTR) -> wintypes.HWND:
     pass
@@ -214,11 +224,32 @@ def get_window_thread_process_id(
     pass
 
 
-def get_module_proc_address(module_name: str, proc_name: str) -> int:
+def get_module_proc_address(module_name: str, proc_name: str, is_32_bit: bool = True) -> int:
     handle = get_module_handle(ctypes.c_char_p(module_name.encode()))
 
     address = get_proc_address(handle, ctypes.c_char_p(proc_name.encode()))
+
     return address if address else 0
+
+
+def get_module_proc_address_32(
+    process_id: int, module_path: Union[str, Path], proc_name: str
+) -> int:
+    module_path = Path(module_path)
+
+    module_base = get_base_address(process_id, module_path.name)
+
+    pe = pefile.PE(module_path, fast_load=True)
+    pe.parse_data_directories([pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_EXPORT"]])
+
+    try:
+        return next(
+            export_proc.address + module_base
+            for export_proc in pe.DIRECTORY_ENTRY_EXPORT.symbols
+            if export_proc.name.decode("utf-8") == proc_name
+        )
+    except StopIteration:  # empty results
+        return 0
 
 
 def get_window_process_id(title: str) -> int:
@@ -238,13 +269,13 @@ def virtual_protect(handle: int, address: int, size: int, flags: int) -> int:
 
 def get_pid_from_name(process_name: str) -> int:
     process_snap = create_snapshot(SNAPPROCESS, 0)
-
     process_entry = ProcessEntry32()
+    process_name = process_name.casefold()
 
     process = process_first(process_snap, ctypes.byref(process_entry))
 
     while process:
-        if process_entry.name == process_name:
+        if process_entry.name.casefold() == process_name:
             pid = process_entry.process_id
             close_handle(process_snap)
             return pid
@@ -263,11 +294,12 @@ def get_handle(pid: int) -> wintypes.HANDLE:
 def get_base_address(pid: int, module_name: str) -> int:
     module_snap = create_snapshot(SNAPMODULE | SNAPMODULE32, pid)
     module_entry = ModuleEntry32()
+    module_name = module_name.casefold()
 
     module = module_first(module_snap, ctypes.byref(module_entry))
 
     while module:
-        if module_entry.name == module_name:
+        if module_entry.name.casefold() == module_name:
             address = module_entry.base_address
             close_handle(module_snap)
             return address
@@ -279,7 +311,21 @@ def get_base_address(pid: int, module_name: str) -> int:
         raise RuntimeError(f"{module_name!r} was not found. Error: {kernel32.GetLastError()}.")
 
 
-def inject_dll(process_id: int, dll_path: str) -> int:  # 32-bit only
+def get_system_wow_64_dir() -> Optional[Path]:
+    size = get_system_wow_64_dir_a(None, 0)
+
+    if not size:
+        return
+
+    string_buffer = ctypes.create_string_buffer(size)
+    get_system_wow_64_dir_a(string_buffer, size)
+
+    return Path(string_buffer.value.decode("utf-8"))
+
+
+def inject_dll(process_id: int, dll_path: Union[str, Path], is_32_bit: bool = True,) -> int:
+    dll_path = str(Path(dll_path).resolve())
+
     process = get_handle(process_id)
 
     data = ctypes.create_string_buffer(dll_path.encode())
@@ -288,7 +334,12 @@ def inject_dll(process_id: int, dll_path: str) -> int:  # 32-bit only
 
     write_process_memory(process, parameter_address, ctypes.byref(data), len(data), None)
 
-    load_library = get_module_proc_address("kernel32.dll", "LoadLibraryA")
+    if is_32_bit and is_python_64_bit:  # TODO: figure out faster way
+        load_library = get_module_proc_address_32(
+            process_id, system_wow_64_dir / "kernel32.dll", "LoadLibraryA"
+        )
+    else:
+        load_library = get_module_proc_address("kernel32.dll", "LoadLibraryA")
 
     thread_id = wintypes.DWORD(0)
 
@@ -296,7 +347,7 @@ def inject_dll(process_id: int, dll_path: str) -> int:  # 32-bit only
         process, None, 0, load_library, parameter_address, 0, ctypes.byref(thread_id)
     )
 
-    wait_result = wait_for_single_object(handle, INFINITE)
+    wait_for_single_object(handle, INFINITE)
 
     virtual_free_ex(process, parameter_address, 0, MEM_RELEASE)
 
@@ -304,3 +355,7 @@ def inject_dll(process_id: int, dll_path: str) -> int:  # 32-bit only
     close_handle(handle)
 
     return thread_id.value
+
+
+is_python_64_bit = sys.maxsize > 2 ** 32
+system_wow_64_dir = get_system_wow_64_dir()

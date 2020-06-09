@@ -1,6 +1,7 @@
 import ctypes
 import functools
 import itertools
+from pathlib import Path
 import struct
 import sys
 import time
@@ -11,6 +12,7 @@ try:
         get_handle,
         get_pid_from_name,
         get_window_process_id,
+        inject_dll,
         read_process_memory,
         write_process_memory,
     )
@@ -346,6 +348,9 @@ class WindowsMemory(MemoryType):
 
     def reload(self) -> None:
         self.load()
+
+    def inject_dll(self, path: Union[str, Path]) -> bool:
+        return bool(inject_dll(self.process_id, path))
 
     def is_level_epic(self) -> bool:
         ...
