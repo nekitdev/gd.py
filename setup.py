@@ -79,7 +79,7 @@ args = dict(
         "Natural Language :: English",
         "Operating System :: OS Independent",
     ],
-    entry_points={"console": ["gd = gd.__main__:main"]},
+    entry_points={"console_scripts": ["gd = gd.__main__:main"]},
     zip_safe=False,
 )
 

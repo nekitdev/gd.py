@@ -44,7 +44,7 @@ We expect all users (contributors, paid or otherwise; sponsors; and others) to a
 ---------------
 In case you need to contact the owner of this API, you can do this via:
 
-- Discord: **NeKit[DS]#1110**
+- Discord: **NeKitDS#0001**
 
 9. Licenses and Attribution
 ---------------------------
