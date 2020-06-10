@@ -265,7 +265,7 @@ async def maybe_coroutine(func: Callable, *args, **kwargs) -> Any:
         return value
 
 
-def acquire_loop(running: bool = False) -> None:
+def acquire_loop(running: bool = False) -> asyncio.AbstractEventLoop:
     """Gracefully acquire a loop.
 
     The function tries to get an event loop via :func:`asyncio.get_event_loop`.
