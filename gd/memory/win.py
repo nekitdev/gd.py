@@ -5,7 +5,7 @@ import sys
 
 import pefile  # to parse some headers uwu ~ nekit
 
-from gd.typing import Optional, Union
+from gd.typing import Dict, Optional, Union
 from gd.memory.utils import Structure, func_def
 
 kernel32 = ctypes.WinDLL("kernel32.dll")
@@ -232,24 +232,15 @@ def get_module_proc_address(module_name: str, proc_name: str, is_32_bit: bool = 
     return address if address else 0
 
 
-def get_module_proc_address_32(
-    process_id: int, module_path: Union[str, Path], proc_name: str
-) -> int:
+def get_module_symbols(module_path: Union[str, Path]) -> Dict[str, int]:
     module_path = Path(module_path)
-
-    module_base = get_base_address(process_id, module_path.name)
 
     pe = pefile.PE(module_path, fast_load=True)
     pe.parse_data_directories([pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_EXPORT"]])
 
-    try:
-        return next(
-            export_proc.address + module_base
-            for export_proc in pe.DIRECTORY_ENTRY_EXPORT.symbols
-            if export_proc.name.decode("utf-8") == proc_name
-        )
-    except StopIteration:  # empty results
-        return 0
+    return {
+        symbol.name.decode("utf-8"): symbol.address for symbol in pe.DIRECTORY_ENTRY_EXPORT.symbols
+    }
 
 
 def get_window_process_id(title: str) -> int:
@@ -334,10 +325,9 @@ def inject_dll(process_id: int, dll_path: Union[str, Path], is_32_bit: bool = Tr
 
     write_process_memory(process, parameter_address, ctypes.byref(data), len(data), None)
 
-    if is_32_bit and is_python_64_bit:  # TODO: figure out faster way
-        load_library = get_module_proc_address_32(
-            process_id, system_wow_64_dir / "kernel32.dll", "LoadLibraryA"
-        )
+    if is_32_bit and is_python_64_bit:
+        module_base = get_base_address(process_id, "kernel32.dll")
+        load_library = kernel32_symbols.get("LoadLibraryA", 0) + module_base
     else:
         load_library = get_module_proc_address("kernel32.dll", "LoadLibraryA")
 
@@ -358,4 +348,10 @@ def inject_dll(process_id: int, dll_path: Union[str, Path], is_32_bit: bool = Tr
 
 
 is_python_64_bit = sys.maxsize > 2 ** 32
+
 system_wow_64_dir = get_system_wow_64_dir()
+
+if is_python_64_bit and system_wow_64_dir:
+    kernel32_symbols = get_module_symbols(system_wow_64_dir / "kernel32.dll")
+else:
+    kernel32_symbols = {}
