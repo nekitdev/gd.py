@@ -395,7 +395,7 @@ class WindowsMemory(MemoryType):
     def get_percent(self) -> int:
         base = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x3C0)
         string = self.read_string(base, 0x12C)
-        return 0 if not string else int(string.rstrip("%"))
+        return 0 if not string else int(float(string.rstrip("%")))
 
     def get_x_pos(self) -> float:
         return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x67C)
