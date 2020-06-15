@@ -8,8 +8,6 @@ This library has a bunch of enums, listed below.
 .. autoclass:: Enum
     :members:
 
-    .. automethod:: Enum.from_value
-
 .. note:: The following classes are derived from :class:`Enum`.
 
 .. autoclass:: IconType
