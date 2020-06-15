@@ -17,8 +17,6 @@ In case you need any help, you can do:
 
     $ python -m gd --help
 
-    $ python -m gd -h
-
 For example, there is a way to check gd.py dependencies and system version:
 
 .. code-block:: sh
@@ -39,11 +37,11 @@ And launch IPython like this:
 
     $ python -m gd console
 
-.. warning:: Make sure you have ``aioconsole`` package installed. There are some ways to install it below.
+.. warning:: Make sure you have ``IPython`` package installed. There are some ways to install it below.
 
     .. code-block:: sh
 
-        $ python -m pip install -U ipython
+        $ python -m pip install -U IPython
 
         # OR
 

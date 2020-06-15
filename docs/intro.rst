@@ -13,44 +13,45 @@ For example, you can use it in a Discord bot:
 
 .. code-block:: python3
 
-    from discord.ext import commands
+    from discord.ext import commands  # import commands extension
     import discord
+
     import gd
 
-    bot = commands.Bot(command_prefix='> ')
+    bot = commands.Bot(command_prefix="> ")
     client = gd.Client()
 
     @bot.event
-    async def on_ready():
-        bot.client = client
+    async def on_ready() -> None:
+        bot.client = client  # attach gd.Client to commands.Bot
 
         activity = discord.Activity(type=discord.ActivityType.playing, name="Geometry Dash")
 
         await bot.change_presence(activity=activity, status=discord.Status.online)
 
-    @bot.command(name='daily')
-    async def _get_daily(ctx):
+    @bot.command(name="daily")
+    async def get_daily(ctx: commands.Context) -> None:
         try:
             daily = await bot.client.get_daily()
 
         except gd.MissingAccess:
-            # couldn't fetch a daily level
+            # couldn"t fetch a daily level
             return await ctx.send(
                 embed=discord.Embed(
-                    description='Failed to get a daily level.',
-                    title='Error Occured', color=0xde3e35)
+                    description="Failed to get a daily level.",
+                    title="Error Occured", color=0xde3e35)
             )
 
         embed = (
-            discord.Embed(color=0x7289da).set_author(name='Current Daily')
-            .add_field(name='Name', value=daily.name)
-            .add_field(name='Difficulty', value='{0.stars} ({0.difficulty.desc})'.format(daily))
-            .add_field(name='ID', value='{0.id}'.format(daily))
-            .set_footer(text='Creator: {0.creator.name}'.format(daily))
+            discord.Embed(color=0x7289da).set_author(name="Current Daily")
+            .add_field(name="Name", value=daily.name)
+            .add_field(name="Difficulty", value="{0.stars} ({0.difficulty.desc})".format(daily))
+            .add_field(name="ID", value="{0.id}".format(daily))
+            .set_footer(text="Creator: {0.creator.name}".format(daily))
         )
 
         await ctx.send(embed=embed)
 
-    bot.run('BOT_TOKEN')
+    bot.run("BOT_TOKEN")
 
 (You can find documentation for ``discord.py`` library `here <https://discordpy.readthedocs.io/>`_)

@@ -25,7 +25,7 @@ class AbstractEntity:
             Returns ``hash(self.hash_str)``.
     """
 
-    def __init__(self, *, client: Client, **options) -> None:
+    def __init__(self, *, client: Client = None, **options) -> None:
         self.options = options
         self.attach_client(client)
 

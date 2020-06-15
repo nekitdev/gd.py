@@ -115,6 +115,90 @@ Editor
 .. autoclass:: Editor
     :members:
 
+Enums
+-----
+
+.. autoclass:: ObjectDataEnum
+    :members:
+
+.. autoclass:: ColorChannelProperties
+    :members:
+
+.. autoclass:: PlayerColor
+    :members:
+
+.. autoclass:: CustomParticleGrouping
+    :members:
+
+.. autoclass:: CustomParticleProperty1
+    :members:
+
+.. autoclass:: Easing
+    :members:
+
+.. autoclass:: PulseMode
+    :members:
+
+.. autoclass:: InstantCountComparison
+    :members:
+
+.. autoclass:: OrbType
+    :members:
+
+.. autoclass:: PadType
+    :members:
+
+.. autoclass:: PortalType
+    :members:
+
+.. autoclass:: PickupItemMode
+    :members:
+
+.. autoclass:: PulseType
+    :members:
+
+.. autoclass:: SpecialBlockType
+    :members:
+
+.. autoclass:: SpecialColorID
+    :members:
+
+.. autoclass:: TargetPosCoordinates
+    :members:
+
+.. autoclass:: TouchToggleMode
+    :members:
+
+.. autoclass:: TriggerType
+    :members:
+
+.. autoclass:: ZLayer
+    :members:
+
+.. autoclass:: MiscType
+    :members:
+
+.. autoclass:: Gamemode
+    :members:
+
+.. autoclass:: Speed
+    :members:
+
+.. autoclass:: SpeedConstant
+    :members:
+
+.. autoclass:: SpeedMagic
+    :members:
+
+.. autoclass:: GuidelinesColor
+    :members:
+
+.. autoclass:: LevelDataEnum
+    :members:
+
+.. autoclass:: LevelHeaderEnum
+    :members:
+
 Header
 ------
 
