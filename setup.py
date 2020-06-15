@@ -6,7 +6,7 @@ from setuptools import Extension, setup
 
 root = pathlib.Path(__file__).parent
 
-requirements = (root / "requirements.txt").read_text("utf-8").splitlines()
+requirements = (root / "requirements.txt").read_text("utf-8").strip().splitlines()
 
 txt = (root / "gd" / "__init__.py").read_text("utf-8")
 

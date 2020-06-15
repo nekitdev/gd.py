@@ -1,73 +1,45 @@
 """Somewhat useful 'python -m gd' implementation"""
 
-import argparse
-import sys
-import pkg_resources
 import platform
+import sys
+from typing import Any, Generator
 
 import aiohttp
+import click
 import gd
 
 
-def show_version() -> None:
-    entries = []
-
-    entries.append(
-        "- Python v{0.major}.{0.minor}.{0.micro}-{0.releaselevel}".format(sys.version_info)
-    )
-
-    version_info = gd.version_info
-    entries.append("- gd.py v{0.major}.{0.minor}.{0.micro}-{0.releaselevel}".format(version_info))
-
-    if version_info.releaselevel != "final":
-        pkg = pkg_resources.get_distribution("gd.py")
-        if pkg:
-            entries.append("    - gd.py pkg_resources: v{0}".format(pkg.version))
-
-    entries.append("- [gd_console] v0.4.0")
-
-    entries.append(f"- aiohttp v{aiohttp.__version__}")
-
-    uname = platform.uname()
-    entries.append("- System Info: {0.system} {0.release} {0.version}".format(uname))
-
-    print("\n".join(entries))
+@click.option("--version", "-v", is_flag=True, help="Show different versions of software.")
+@click.group(invoke_without_command=True, no_args_is_help=True)
+def gd_group(version: bool) -> None:
+    if version:
+        click.echo("\n".join(collect_versions()))
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="gd.py console commands", prog="gd")
+@gd_group.command(short_help="Run gd.server web application.")
+def server() -> None:
+    gd.server.start()
 
-    parser.add_argument(
-        "-v",
-        "--version",
-        help="show versions (gd.py, python, etc.)",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument("action", help="run a given action (console, server)", nargs="?")
 
-    parsed = parser.parse_args()
+@gd_group.command(short_help="Run IPython console, with aiohttp and gd added to namespace.")
+def console() -> None:
+    from IPython import start_ipython
 
-    if parsed.version:
-        show_version()
+    start_ipython(argv=[], user_ns={"aiohttp": aiohttp, "gd": gd})
 
-    if not parsed.action:
-        return
 
-    action = parsed.action.lower()
+def version_from_info(version_info: Any) -> str:
+    return "v{0.major}.{0.minor}.{0.micro}-{0.releaselevel}".format(version_info)
 
-    if action == "console":
-        from IPython import start_ipython
 
-        start_ipython([])
-
-    elif action == "server":
-        gd.server.start()
-
-    else:
-        print(f"Invalid action: {action!r}.")
+def collect_versions() -> Generator[str, None, None]:
+    yield f"- python {version_from_info(sys.version_info)}"
+    yield f"- gd.py {version_from_info(gd.version_info)}"
+    yield f"- aiohttp v{aiohttp.__version__}"
+    yield f"- click v{click.__version__}"
+    yield "- system {0.system} {0.release} {0.version}".format(platform.uname())
 
 
 # run main
 if __name__ == "__main__":
-    main()
+    gd_group()
