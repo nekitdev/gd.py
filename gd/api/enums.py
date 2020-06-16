@@ -32,6 +32,8 @@ __all__ = (
 
 
 class ObjectDataEnum(Enum):
+    """An enumeration representing contents of an object."""
+
     ID = 1
     X = 2  # in Units
     Y = 3  # in Units
@@ -143,15 +145,15 @@ class ObjectDataEnum(Enum):
     # <-- 2.2 -->
     SWITCH_PLAYER_DIRECTION = 117
     NO_EFFECTS = 116
-    ICE_BLOCK = -201
-    NON_STICK = -202
-    UNSTUCKABLE = -203
-    UNREADABLE_PROPERTY_1 = -204
-    UNREADABLE_PROPERTY_2 = -205
-    TRANSFORM_SCALE_X = -206
-    TRANSFORM_SCALE_Y = -207
-    TRANSFORM_SCALE_CENTER_X = -208
-    TRANSFORM_SCALE_CENTER_Y = -209
+    ICE_BLOCK = 201
+    NON_STICK = 202
+    UNSTUCKABLE = 203
+    UNREADABLE_PROPERTY_1 = 204
+    UNREADABLE_PROPERTY_2 = 205
+    TRANSFORM_SCALE_X = 206
+    TRANSFORM_SCALE_Y = 207
+    TRANSFORM_SCALE_CENTER_X = 208
+    TRANSFORM_SCALE_CENTER_Y = 209
 
     EXIT_STATIC = 110
 
@@ -159,78 +161,80 @@ class ObjectDataEnum(Enum):
     LOCK_Y = 59
 
     CHANCE = 0  # needs checking
-    CHANCE_LOTS = -300
-    CHANCE_LOT_GROUPS = -301
+    CHANCE_LOTS = 300
+    CHANCE_LOT_GROUPS = 301
 
     ZOOM = 109
 
-    GROUPING = -108
-    PROPERTY_1 = -109
-    MAX_PARTICLES = -110
-    CUSTOM_PARTICLE_DURATION = -111
-    LIFETIME = -112
-    LIFETIME_ADJUSTMENT = -113
-    EMISSION = -114
-    ANGLE = -115
-    ANGLE_ADJUSTMENT = -116
-    CUSTOM_PARTICLE_SPEED = -117
-    SPEED_ADJUSTMENT = -118
-    POS_VAR_X = -119
-    POS_VAR_Y = -120
-    GRAVITY_X = -121
-    GRAVITY_Y = -122
-    ACCEL_RAD = -123
-    ACCEL_RAD_ADJUSTMENT = -124
-    ACCEL_TAN = -125
-    ACCEL_TAN_ADJUSTMENT = -126
-    START_SIZE = -127
-    START_SIZE_ADJUSTMENT = -128
-    END_SIZE = -129
-    END_SIZE_ADJUSTMENT = -130
-    START_SPIN = -131
-    START_SPIN_ADJUSTMENT = -132
-    END_SPIN = -133
-    END_SPIN_ADJUSTMENT = -134
-    START_A = -135
-    START_A_ADJUSTMENT = -136
-    START_R = -137
-    START_R_ADJUSTMENT = -138
-    START_G = -139
-    START_G_ADJUSTMENT = -140
-    START_B = -141
-    START_B_ADJUSTMENT = -142
-    END_A = -143
-    END_A_ADJUSTMENT = -144
-    END_R = -145
-    END_R_ADJUSTEMENT = -146
-    END_G = -147
-    END_G_ADJUSTMENT = -148
-    END_B = -149
-    END_B_ADJUSTMENT = -150
-    CUSTOM_PARTICLE_FADE_IN = -151
-    FADE_IN_ADJUSTMENT = -152
-    CUSTOM_PARTICLE_FADE_OUT_ADJUSTMENT = -153
-    FADE_OUT_ADJUSTMENT = -15
-    ADDICTIVE = -155
-    START_SIZE_EQUALS_END = -156
-    START_SPIN_EQUALS_END = -157
-    START_RADIUS_EQUALS_END = -158
-    IS_START_ROTATION_DIR = -159
-    DYNAMIC_ROTATION = -160
-    USE_OBJECT_COLOR = -161
-    UNIFORM_OBJECT_COLOR = -162
-    TEXTURE = -163
+    GROUPING = 108
+    PROPERTY_1 = 109
+    MAX_PARTICLES = 110
+    CUSTOM_PARTICLE_DURATION = 111
+    LIFETIME = 112
+    LIFETIME_ADJUSTMENT = 113
+    EMISSION = 114
+    ANGLE = 115
+    ANGLE_ADJUSTMENT = 116
+    CUSTOM_PARTICLE_SPEED = 117
+    SPEED_ADJUSTMENT = 118
+    POS_VAR_X = 119
+    POS_VAR_Y = 120
+    GRAVITY_X = 121
+    GRAVITY_Y = 122
+    ACCEL_RAD = 123
+    ACCEL_RAD_ADJUSTMENT = 124
+    ACCEL_TAN = 125
+    ACCEL_TAN_ADJUSTMENT = 126
+    START_SIZE = 127
+    START_SIZE_ADJUSTMENT = 128
+    END_SIZE = 129
+    END_SIZE_ADJUSTMENT = 130
+    START_SPIN = 131
+    START_SPIN_ADJUSTMENT = 132
+    END_SPIN = 133
+    END_SPIN_ADJUSTMENT = 134
+    START_A = 135
+    START_A_ADJUSTMENT = 136
+    START_R = 137
+    START_R_ADJUSTMENT = 138
+    START_G = 139
+    START_G_ADJUSTMENT = 140
+    START_B = 141
+    START_B_ADJUSTMENT = 142
+    END_A = 143
+    END_A_ADJUSTMENT = 144
+    END_R = 145
+    END_R_ADJUSTEMENT = 146
+    END_G = 147
+    END_G_ADJUSTMENT = 148
+    END_B = 149
+    END_B_ADJUSTMENT = 150
+    CUSTOM_PARTICLE_FADE_IN = 151
+    FADE_IN_ADJUSTMENT = 152
+    CUSTOM_PARTICLE_FADE_OUT_ADJUSTMENT = 153
+    FADE_OUT_ADJUSTMENT = 15
+    ADDICTIVE = 155
+    START_SIZE_EQUALS_END = 156
+    START_SPIN_EQUALS_END = 157
+    START_RADIUS_EQUALS_END = 158
+    IS_START_ROTATION_DIR = 159
+    DYNAMIC_ROTATION = 160
+    USE_OBJECT_COLOR = 161
+    UNIFORM_OBJECT_COLOR = 162
+    TEXTURE = 163
 
-    SCALE_X = -164
-    SCALE_Y = -165
-    LOCK_OBJECT_SCALE = -166
-    ONLY_MOVE_SCALE = -167
+    SCALE_X = 164
+    SCALE_Y = 165
+    LOCK_OBJECT_SCALE = 166
+    ONLY_MOVE_SCALE = 167
 
-    LOCK_TO_CAMERA_X = -302
-    LOCK_TO_CAMERA_Y = -303
+    LOCK_TO_CAMERA_X = 302
+    LOCK_TO_CAMERA_Y = 303
 
 
 class ColorChannelProperties(Enum):
+    """An enumeration representing contents of a color channel."""
+
     RED = 1
     GREEN = 2
     BLUE = 3
@@ -246,6 +250,8 @@ class ColorChannelProperties(Enum):
 
 
 class PlayerColor(Enum):
+    """An enumeration for player color setting."""
+
     NotUsed = -1
     Default = 0
     P1 = 1
@@ -253,17 +259,23 @@ class PlayerColor(Enum):
 
 
 class CustomParticleGrouping(Enum):
+    """An enumeration for particle grouping."""
+
     Free = 0
     Relative = 1
     Grouped = 2
 
 
 class CustomParticleProperty1(Enum):
+    """An enumeration for particle system."""
+
     Gravity = 0
     Radius = 1
 
 
 class Easing(Enum):
+    """An enumeration representing easing of a moving object (used in move/rotate triggers)."""
+
     Default = 0
     EaseInOut = 1
     EaseIn = 2
@@ -286,17 +298,23 @@ class Easing(Enum):
 
 
 class PulseMode(Enum):
+    """An enumeration representing mode of a pulse trigger."""
+
     Color = 0
     HSV = 1
 
 
 class InstantCountComparison(Enum):
+    """An enumeration representing instant count comparison check."""
+
     Equals = 0
     Larger = 1
     Smaller = 2
 
 
 class OrbType(Enum):
+    """An enumeration representing IDs of orb objects."""
+
     Yellow = 36
     Pink = 141
     Red = 1333
@@ -309,6 +327,8 @@ class OrbType(Enum):
 
 
 class PadType(Enum):
+    """An enumeration representing IDs of pad objects."""
+
     Yellow = 35
     Pink = 140
     Red = 1332
@@ -316,12 +336,16 @@ class PadType(Enum):
 
 
 class PickupItemMode(Enum):
+    """An enumeration representing mode of a pickup trigger."""
+
     Default = 0
     Pickup = 1
     ToggleTrigger = 2
 
 
 class Gamemode(Enum):
+    """An enumeration representing different game modes."""
+
     Cube = 0
     Ship = 1
     Ball = 2
@@ -333,6 +357,8 @@ class Gamemode(Enum):
 
 
 class PortalType(Enum):
+    """An enumeration representing IDs of portal or speed change objects."""
+
     Cube = 12
     Ship = 13
     Ball = 47
@@ -360,11 +386,14 @@ class PortalType(Enum):
 
 
 class PulseType(Enum):
+    """An enumeration representing type of pulse trigger target."""
+
     ColorChannel = 0
     Group = 1
 
 
 class SpecialBlockType(Enum):
+    """An enumeration representing IDs of special objects (e.g. *S*, *H*, etc)."""
     D = 1755
     J = 1813
     S = 1829
@@ -372,6 +401,8 @@ class SpecialBlockType(Enum):
 
 
 class SpecialColorID(Enum):
+    """An enumeration representing IDs of special colors (e.g. *BG*, *Line*, etc)."""
+
     BG = 1000
     GRND = 1001
     Line = 1002
@@ -387,22 +418,30 @@ class SpecialColorID(Enum):
 
 
 class TargetPosCoordinates(Enum):
+    """An enumeration representing modes for a targetted move trigger."""
+
     Both = 0
     OnlyX = 1
     OnlyY = 2
 
 
 class TouchToggleMode(Enum):
+    """An enumeration representing toggle modes of a touch trigger."""
+
     Default = 0
     On = 1
     Off = 2
 
 
 class MiscType(Enum):
+    """An enumeration representing miscellaneous IDs of objects."""
+
     TEXT = 914
 
 
 class TriggerType(Enum):
+    """An enumeration representing IDs of most triggers."""
+
     BG = 29
     GRND = 30
     StartPos = 31
@@ -453,6 +492,8 @@ class TriggerType(Enum):
 
 
 class ZLayer(Enum):
+    """An enumeration representing Z Layer of objects."""
+
     B4 = -3
     B3 = -1
     B2 = 1
@@ -469,6 +510,8 @@ class ZLayer(Enum):
 
 
 class Speed(Enum):
+    """An enumeration representing speed modifier modes."""
+
     NORMAL = 0  # x 1
     SLOW = 1  # x 0.5
     FAST = 2  # x 2
@@ -477,6 +520,8 @@ class Speed(Enum):
 
 
 class SpeedConstant(Enum):
+    """An enumeration representing actual speed modifiers."""
+
     NULL = 0.0
     SLOW = 0.7
     NORMAL = 0.9
@@ -486,6 +531,24 @@ class SpeedConstant(Enum):
 
 
 class SpeedMagic(Enum):
+    """An enumeration with *magic* speed constants.
+
+    *Magic* constants are used for translating distance travelled (in units)
+    with certain speed to time taken, like so:
+
+    .. code-block:: python3
+
+        speed = SpeedMagic.FAST.value  # * 2 speed (well, actually just 1.1 lol)
+
+        x1 = 0  # beginning of the level
+        x2 = 1000  # some random coordinate
+
+        dx = x2 - x1
+
+        t = dx / speed  # ~ 2.58
+        print(t)
+    """
+
     SLOW = 251.16  # x 0.5
     NORMAL = 311.58  # x 1
     FAST = 387.42  # x 2
@@ -495,6 +558,8 @@ class SpeedMagic(Enum):
 
 
 class GuidelinesColor(Enum):
+    """An enumeration representing guidelines colors."""
+
     DEFAULT = 0.0
     TRANSPARENT = 0.7
     ORANGE = 0.8
@@ -521,6 +586,8 @@ class GuidelinesColor(Enum):
 
 
 class LevelDataEnum(Enum):
+    """An enumeration representing different fields in level data in save."""
+
     ID = "k1"
     NAME = "k2"
     DESCRIPTION = "k3"
@@ -566,6 +633,8 @@ class LevelDataEnum(Enum):
 
 
 class LevelHeaderEnum(Enum):
+    """An enumeration representing fields of a level header."""
+
     AUDIO_TRACK = "kA1"
     GAMEMODE = "kA2"
     MINIMODE = "kA3"

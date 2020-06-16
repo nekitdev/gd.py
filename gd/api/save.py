@@ -1,3 +1,4 @@
+from collections import UserDict, UserList
 import json
 
 from gd.typing import Any, Dict, Iterable, LevelCollection, List, Optional, Tuple
@@ -12,7 +13,7 @@ from gd.api.utils import get_default
 __all__ = ("Part", "Database", "LevelCollection")
 
 
-class Part(dict):
+class Part(UserDict):
     def __init__(self, string: str = "", default: Optional[Dict[str, Any]] = None) -> None:
         self.parser = XMLParser()
         try:
@@ -116,7 +117,7 @@ class Database:
         return (self.main, self.levels)
 
 
-class LevelCollection(list):
+class LevelCollection(UserList):
     def __init__(self, *args) -> None:
         if len(args) == 1:
             args = args[0]

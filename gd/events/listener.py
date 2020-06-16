@@ -10,6 +10,7 @@ from gd.typing import Client, Comment, FriendRequest, Iterable, List, Message, O
 from gd.utils import tasks
 from gd.utils.async_utils import shutdown_loop, gather
 from gd.utils.decorators import run_once
+from gd.utils.enums import TimelyType
 from gd.utils.filters import Filters
 from gd.utils.text_tools import make_repr
 
@@ -267,20 +268,13 @@ class LevelCommentListener(AbstractListener):
     ) -> None:
         super().__init__(client, delay, loop=loop)
         self.call_method = "level_comment"
-        self.level_id = level_id
-
-    async def load_level(self) -> None:
-        try:
-            self.level = await self.client.get_level(self.level_id, get_data=False)
-        except Exception:
-            self.level = Level(id=self.level_id, client=self.client)
+        self.timely_type = TimelyType(-level_id if level_id < 0 else 0)
+        self.level = Level(id=level_id, type=self.timely_type, client=self.client)
 
     async def method(self, amount: int = 1000) -> List[Comment]:
         return await self.level.get_comments(amount=amount)
 
     async def scan(self) -> None:
-        await self.load_level()
-
         new = await self.method()
 
         if not new:
@@ -293,6 +287,9 @@ class LevelCommentListener(AbstractListener):
         difference = differ(self.cache, new, True)
 
         self.cache = new
+
+        if difference:
+            await self.level.refresh()
 
         for comment in difference:
             dispatcher = self.client.dispatch(self.call_method, self.level, comment)

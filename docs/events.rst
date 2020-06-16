@@ -37,6 +37,27 @@ and schedules the loop task.
     Do not call ``client.listen_for`` after  ``gd.events.start()`` was called,
     since it simply will not have any effect and will not start another listener.
 
+Built-In Listeners
+------------------
+
++----------------+-------------------+--------------------------+
+|           name |    event callback |           listener class |
++================+===================+==========================+
+| daily          | on_new_daily      | TimelyLevelListener      |
++----------------+-------------------+--------------------------+
+| weekly         | on_new_weekly     | TimelyLevelListener      |
++----------------+-------------------+--------------------------+
+| rate           | on_level_rated    | RateLevelListener        |
++----------------+-------------------+--------------------------+
+| unrate         | on_level_unrated  | RateLevelListener        |
++----------------+-------------------+--------------------------+
+| friend_request | on_friend_request | MessageOrRequestListener |
++----------------+-------------------+--------------------------+
+| message        | on_message        | MessageOrRequestListener |
++----------------+-------------------+--------------------------+
+| level_comment  | on_friend_request | LevelCommentListener     |
++----------------+-------------------+--------------------------+
+
 Running Manually
 ----------------
 If you wish to run the listener normally (blocking the main thread), you can do the following:

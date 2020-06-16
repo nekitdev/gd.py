@@ -1,3 +1,5 @@
+from collections import UserDict
+
 from gd.typing import Any, Callable, Dict, Iterable, List, Optional, Parser, Sequence, Type, Union
 
 __all__ = ("Parser",)
@@ -38,7 +40,7 @@ def action_not_empty() -> Callable[[Sequence[Any]], Optional[Sequence[Any]]]:
     return not_empty
 
 
-class ExtDict(dict):
+class ExtDict(UserDict):
     def __repr__(self):
         return self.__class__.__name__ + super().__repr__()
 

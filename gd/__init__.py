@@ -35,6 +35,7 @@ from gd.utils.params import *
 from gd.utils.parser import Parser
 from gd.utils.routes import Route
 from gd.utils.save_parser import Save, SaveParser
+from gd.utils.xml_parser import AioXMLParser, XMLParser
 
 from gd.utils.crypto.coders import Coder
 from gd.utils.crypto.xor_cipher import XORCipher as xor

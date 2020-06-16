@@ -199,6 +199,12 @@ Enums
 .. autoclass:: LevelHeaderEnum
     :members:
 
+Guidelines
+----------
+
+.. autoclass:: Guidelines
+    :members:
+
 Header
 ------
 

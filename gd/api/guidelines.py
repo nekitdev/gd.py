@@ -1,3 +1,4 @@
+from collections import UserDict
 from itertools import chain
 
 from gd.api.enums import GuidelinesColor
@@ -5,7 +6,7 @@ from gd.api.enums import GuidelinesColor
 from gd.typing import Any, Guidelines, List, Union
 
 
-class Guidelines(dict):
+class Guidelines(UserDict):
     # TODO: maybe add more functionality here ~ nekit
     def __repr__(self) -> str:
         data = {time: enum.name.lower() for time, enum in self.items()}
@@ -16,12 +17,15 @@ class Guidelines(dict):
 
     @classmethod
     def new(cls, mapping: Any) -> Guidelines:
+        """Create a new Guidelines mapping."""
         return cls({key: GuidelinesColor.from_value(value) for key, value in mapping})
 
     def points(self) -> List[Union[float, int]]:
+        """Get all points with lines on them."""
         return list(self.keys())
 
     def dump(self, delim: str = "~", pad: int = 1) -> str:
+        """Dump Guidelines object to a string."""
         return (
             delim.join(
                 map(
