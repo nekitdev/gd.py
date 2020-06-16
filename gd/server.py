@@ -1043,7 +1043,7 @@ async def get_chests(request: web.Request) -> web.Response:
 @routes.get("/api/quests")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get quests.", ErrorType.FAILED)})
 @auth_setup(required=True)
-async def get_chests(request: web.Request) -> web.Response:
+async def get_quests(request: web.Request) -> web.Response:
     """GET /api/quests
     Description:
         Load quests of the connected client.

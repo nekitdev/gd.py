@@ -40,6 +40,8 @@ from gd.utils.enums import (
     MessageOrRequestType,
     MessagePolicyType,
     RewardType,
+    ShardType,
+    QuestType,
     SearchStrategy,
 )
 from gd.utils.filters import Filters
@@ -1388,7 +1390,9 @@ class Session:
         if resp is None:
             return []
 
-        data = Coder.decode(type="challenges", string=resp[REWARD_CHALLENGE_SLICE_LENGTH:])
+        data = Coder.decode(
+            type="challenges", string=resp[REWARD_CHALLENGE_SLICE_LENGTH:], use_bytes=True
+        )
         time_left, *quests = data.split(":")[-QUEST_AMOUNT - 1 :]
 
         time_left = int(time_left)
@@ -1403,7 +1407,7 @@ class Session:
             result.append(
                 ExtDict(
                     id=int(id),
-                    type=int(type),
+                    type=QuestType.from_value_or("unknown", int(type)),
                     amount=int(amount),
                     reward=int(reward),
                     name=name,
@@ -1441,7 +1445,9 @@ class Session:
         if resp is None:
             return []
 
-        data = Coder.decode(type="rewards", string=resp[REWARD_CHALLENGE_SLICE_LENGTH:])
+        data = Coder.decode(
+            type="rewards", string=resp[REWARD_CHALLENGE_SLICE_LENGTH:], use_bytes=True
+        )
         chest_parts = data.split(":")[-CHEST_AMOUNT * CHEST_INNER_PARTS - 1 : -1]
 
         result = []
@@ -1462,6 +1468,7 @@ class Session:
                     orbs=int(orbs),
                     diamonds=int(diamonds),
                     shard_id=int(shard_id),
+                    shard_type=ShardType.from_value_or("unknown", int(shard_id)),
                     keys=int(keys),
                 )
             )

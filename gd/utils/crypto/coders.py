@@ -167,7 +167,7 @@ class Coder:
         return encoded
 
     @classmethod
-    def decode(cls, type: str, string: str) -> str:
+    def decode(cls, type: str, string: str, use_bytes: bool = False) -> str:
         """Decodes a XOR -> Base64 ciphered string.
 
         .. note::
@@ -192,9 +192,17 @@ class Coder:
         :class:`str`
             Decoded string.
         """
-        cipher_stream = urlsafe_b64decode(string.encode())
-        decoded = XOR.cipher_bytes(key=cls.keys[type], stream=cipher_stream)
-        return decoded
+        string += ("=" * (4 - len(string) % 4))  # add padding
+
+        try:
+            cipher_stream = urlsafe_b64decode(string.encode())
+        except Exception:
+            return string
+
+        if use_bytes:
+            return XOR.cipher_bytes(key=cls.keys[type], stream=cipher_stream)
+        else:
+            return XOR.cipher(key=cls.keys[type], string=cipher_stream.decode(errors="replace"))
 
     @classmethod
     def gen_chk(cls, type: str, values: List[Union[int, str]]) -> str:

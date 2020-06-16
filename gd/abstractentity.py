@@ -25,8 +25,6 @@ class AbstractEntity:
             Returns ``hash(self.hash_str)``.
     """
 
-    include_keys = {}
-
     def __init__(self, *, client: Client = None, **options) -> None:
         self.options = options
         self.attach_client(client)
@@ -49,11 +47,7 @@ class AbstractEntity:
         return type(self) != type(other) or self.id != other.id
 
     def _json(self, ignore: Iterable[str] = {"client", "data"}) -> Dict[str, Any]:
-        return {
-            name: getattr(self, name)
-            for name in (self.options.keys() | self.include_keys)
-            if name not in ignore
-        }
+        return {key: value for key, value in self.options.items() if key not in ignore}
 
     @classmethod
     def from_data(cls, data: ExtDict, client: Client) -> AbstractEntity:

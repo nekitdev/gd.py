@@ -1,15 +1,12 @@
 from datetime import datetime, timedelta
 
 from gd.abstractentity import AbstractEntity
-from gd.errors import FailedConversion
 
 from gd.utils.enums import ShardType, QuestType
 from gd.utils.text_tools import make_repr
 
 
 class Chest(AbstractEntity):
-    include_keys = {"shard_type"}
-
     def __init__(self, **options) -> None:
         super().__init__(**options)
         self.requested_at: datetime = datetime.utcnow()
@@ -44,11 +41,7 @@ class Chest(AbstractEntity):
 
     @property
     def shard_type(self) -> ShardType:
-        try:
-            return ShardType.from_value(self.shard_id)
-
-        except FailedConversion:
-            return ShardType.UNKNOWN
+        return ShardType.from_value(self.options.get("shard_type", 0))
 
     @property
     def keys(self) -> int:
@@ -97,10 +90,7 @@ class Quest(AbstractEntity):
 
     @property
     def type(self) -> QuestType:
-        try:
-            return QuestType.from_value(self.options.get("type", 0))
-        except FailedConversion:
-            return QuestType.UNKNOWN
+        return QuestType.from_value(self.options.get("type", 0))
 
     @property
     def amount(self) -> int:

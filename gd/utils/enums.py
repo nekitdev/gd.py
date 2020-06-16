@@ -185,6 +185,13 @@ class Enum(enum.Enum):
         return {name.lower(): enum.value for name, enum in cls.__members__.items()}
 
     @classmethod
+    def from_value_or(cls, default: Union[int, str], value: Union[int, str]) -> enum.Enum:
+        try:
+            return cls.from_value(value)
+        except FailedConversion:
+            return cls.from_value(default)
+
+    @classmethod
     def from_value(cls, value: Union[int, str]) -> enum.Enum:
         """Returns *Enum* with given value.
 

@@ -43,6 +43,7 @@ def excluding(*args: Tuple[Type[BaseException]]) -> Tuple[Type[BaseException]]:
 
 
 DEFAULT_EXCLUDE: Tuple[Type[BaseException]] = excluding(NothingFound)
+ZERO_STR = "0"
 
 
 class Level(AbstractEntity):
@@ -207,23 +208,25 @@ class Level(AbstractEntity):
         if string is None:
             copyable, password = False, None
         else:
-            try:
-                # decode password
-                password = Coder.decode(type="levelpass", string=string)
-            except Exception:
-                # failed to get password
+            if string == ZERO_STR:
                 copyable, password = False, None
             else:
-                copyable = True
-
-                if not password:
-                    password = None
-
+                try:
+                    # decode password
+                    password = Coder.decode(type="levelpass", string=string)
+                except Exception:
+                    # failed to get password
+                    copyable, password = False, None
                 else:
-                    # password is in format 1XXXXXX
-                    password = password[1:]
+                    copyable = True
 
-                    password = int(password) if password.isdigit() else None
+                    if not password:
+                        password = None
+
+                    else:
+                        # password is in format 1XXXXXX
+                        password = password[1:]
+                        password = int(password) if password.isdigit() else None
 
         desc = Coder.do_base64(
             data.get(Index.LEVEL_DESCRIPTION, ""), encode=False, errors="replace"
