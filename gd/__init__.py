@@ -22,6 +22,7 @@ from gd.level import Level
 from gd.level_packs import Gauntlet, MapPack
 from gd.logging import *
 from gd.message import Message
+from gd.rewards import Chest, Quest
 from gd.session import Session
 from gd.song import ArtistInfo, Author, Song
 from gd.user import UserStats, User
