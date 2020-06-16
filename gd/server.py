@@ -1021,6 +1021,44 @@ async def upload_level(request: web.Request) -> web.Response:
     return json_resp(level)
 
 
+@routes.get("/api/chests")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to get chests.", ErrorType.FAILED)})
+@auth_setup(required=True)
+async def get_chests(request: web.Request) -> web.Response:
+    """GET /api/chests
+    Description:
+        Load chests of the connected client.
+    Example:
+        link: /api/chests
+    Returns:
+        200: JSON with chests;
+        404: Failed to get chests.
+    Return Type:
+        application/json
+    """
+    chests = await request.app.client.get_chests()
+    return json_resp(chests)
+
+
+@routes.get("/api/quests")
+@handle_errors({gd.MissingAccess: Error(404, "Failed to get quests.", ErrorType.FAILED)})
+@auth_setup(required=True)
+async def get_chests(request: web.Request) -> web.Response:
+    """GET /api/quests
+    Description:
+        Load quests of the connected client.
+    Example:
+        link: /api/quests
+    Returns:
+        200: JSON with quests;
+        404: Failed to get quests.
+    Return Type:
+        application/json
+    """
+    quests = await request.app.client.get_quests()
+    return json_resp(quests)
+
+
 @routes.get("/api/levels")
 @handle_errors({gd.MissingAccess: Error(404, "Failed to get levels.", ErrorType.FAILED)})
 @auth_setup(required=True)

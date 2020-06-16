@@ -65,6 +65,7 @@ REWARD_CHALLENGE_CHK_LENGTH = 13
 REWARD_CHALLENGE_SLICE_LENGTH = 5
 QUEST_AMOUNT = 3
 CHEST_AMOUNT = 2
+CHEST_INNER_PARTS = 3
 
 
 class Session:
@@ -1441,11 +1442,13 @@ class Session:
             return []
 
         data = Coder.decode(type="rewards", string=resp[REWARD_CHALLENGE_SLICE_LENGTH:])
-        chest_parts = data.split(":")[-CHEST_AMOUNT - 1 : -1]
+        chest_parts = data.split(":")[-CHEST_AMOUNT * CHEST_INNER_PARTS - 1 : -1]
 
         result = []
 
-        for chest_id, (time_left, chest_info, chest_count) in enumerate(group(chest_parts, 3), 1):
+        for chest_id, (time_left, chest_info, chest_count) in enumerate(
+            group(chest_parts, CHEST_INNER_PARTS), 1
+        ):
             try:
                 orbs, diamonds, shard_id, keys, *_ = chest_info.split(",")
             except ValueError:
