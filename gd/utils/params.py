@@ -168,6 +168,7 @@ class Parameters:
                 'commentid'  -> 'commentID'
                 'requestid'  -> 'requestID'
                 'userid'     -> 'userID'
+                'reward'     -> 'rewardType'
                 'stars'      -> 'stars'
                 'rating'     -> 'rating'
 

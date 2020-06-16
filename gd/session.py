@@ -1,7 +1,6 @@
 import asyncio
 import json
-
-# import random
+import string
 import time  # for perf_counter in ping
 
 from itertools import chain
@@ -40,7 +39,8 @@ from gd.utils.enums import (
     LevelLength,
     MessageOrRequestType,
     MessagePolicyType,
-    SearchStrategy,  # TimelyType
+    RewardType,
+    SearchStrategy,
 )
 from gd.utils.filters import Filters
 from gd.utils.http_request import HTTPClient
@@ -60,6 +60,11 @@ from gd.utils.text_tools import make_repr
 from gd.utils.crypto.coders import Coder
 
 from gd import api
+
+REWARD_CHALLENGE_CHK_LENGTH = 13
+REWARD_CHALLENGE_SLICE_LENGTH = 5
+QUEST_AMOUNT = 3
+CHEST_AMOUNT = 2
 
 
 class Session:
@@ -1357,6 +1362,109 @@ class Session:
         if resp != 1:
             raise MissingAccess(f"Failed to update profile settings of a client: {client!r}.")
 
+    async def get_quests(self, *, client: Client) -> List[ExtDict]:
+        udid, uuid = Params.gen_udid(), Params.gen_uuid()
+        rn = Coder.gen_rs(5, charset=string.digits)
+        chk = Coder.gen_chk(type="challenges", values=[rn])
+
+        codes = {-1: MissingAccess("Failed to get quests.")}
+
+        payload = (
+            Params()
+            .create_new()
+            .put_definer("accountid", client.account_id)
+            .put_password(client.encodedpass)
+            .put_udid(udid)
+            .put_uuid(uuid)
+            .put_chk(chk[:REWARD_CHALLENGE_CHK_LENGTH])
+            .finish()
+        )
+
+        resp = await self.http.request(Route.GET_CHALLENGES, payload, error_codes=codes)
+
+        resp = Parser().split("|").take(0).check_empty().parse(resp)
+
+        if resp is None:
+            return []
+
+        data = Coder.decode(type="challenges", string=resp[REWARD_CHALLENGE_SLICE_LENGTH:])
+        time_left, *quests = data.split(":")[-QUEST_AMOUNT - 1 :]
+
+        time_left = int(time_left)
+        result = []
+
+        for quest in quests:
+            try:
+                id, type, amount, reward, name, *_ = quest.split(",")
+            except ValueError:
+                continue
+
+            result.append(
+                ExtDict(
+                    id=int(id),
+                    type=int(type),
+                    amount=int(amount),
+                    reward=int(reward),
+                    name=name,
+                    seconds=time_left,
+                )
+            )
+
+        return result
+
+    async def get_chests(self, reward_type: RewardType, *, client: Client) -> List[ExtDict]:
+        udid, uuid = Params.gen_udid(), Params.gen_uuid()
+        rn = Coder.gen_rs(5, charset=string.digits)
+        chk = Coder.gen_chk(type="rewards", values=[rn])
+
+        codes = {-1: MissingAccess("Failed to get chests.")}
+
+        payload = (
+            Params()
+            .create_new()
+            .put_definer("accountid", client.account_id)
+            .put_password(client.encodedpass)
+            .put_udid(udid)
+            .put_uuid(uuid)
+            .put_definer("reward", reward_type.value)
+            .put_chk(chk[:REWARD_CHALLENGE_CHK_LENGTH])
+            .put_seed(0, prefix="r", suffix=1)
+            .put_seed(0, prefix="r", suffix=2)
+            .finish()
+        )
+
+        resp = await self.http.request(Route.GET_REWARDS, payload, error_codes=codes)
+
+        resp = Parser().split("|").take(0).check_empty().parse(resp)
+
+        if resp is None:
+            return []
+
+        data = Coder.decode(type="rewards", string=resp[REWARD_CHALLENGE_SLICE_LENGTH:])
+        chest_parts = data.split(":")[-CHEST_AMOUNT - 1 : -1]
+
+        result = []
+
+        for chest_id, (time_left, chest_info, chest_count) in enumerate(group(chest_parts, 3), 1):
+            try:
+                orbs, diamonds, shard_id, keys, *_ = chest_info.split(",")
+            except ValueError:
+                continue
+
+            result.append(
+                ExtDict(
+                    id=chest_id,
+                    seconds=int(time_left),
+                    count=int(chest_count),
+                    orbs=int(orbs),
+                    diamonds=int(diamonds),
+                    shard_id=int(shard_id),
+                    keys=int(keys),
+                )
+            )
+
+        return result
+
     async def run_many(self, tasks: List[asyncio.Task]) -> Any:
         res = await asyncio.gather(*tasks)
 
@@ -1372,6 +1480,10 @@ def excluding(*args: Tuple[Type[BaseException]]) -> Tuple[Type[BaseException]]:
     return args
 
 
+def group(some_iterable: Iterable[Any], group_size: int = 2) -> Iterable[Tuple[Any]]:
+    return zip(*(iter(some_iterable),) * group_size)
+
+
 def iterable(maybe_iterable: Iterable) -> bool:
     try:
         iter(maybe_iterable)
@@ -1381,4 +1493,4 @@ def iterable(maybe_iterable: Iterable) -> bool:
 
 
 def is_not_empty(sequence: Sequence) -> bool:
-    return bool(len(sequence))
+    return len(sequence) != 0

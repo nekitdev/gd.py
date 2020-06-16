@@ -3,7 +3,6 @@ import gzip
 import hashlib
 import random
 import string
-import struct
 import zlib
 
 try:
@@ -15,6 +14,8 @@ except ImportError:
 from gd.typing import List, Union
 
 from gd.utils.crypto.xor_cipher import XORCipher as XOR
+
+Z_GZIP_HEADER = 0x10
 
 
 class Coder:
@@ -63,9 +64,9 @@ class Coder:
 
         save += "=" * (4 - len(save) % 4)
 
-        return zlib.decompress(urlsafe_b64decode(save.encode()), zlib.MAX_WBITS | 0x10).decode(
-            errors="replace"
-        )
+        return zlib.decompress(
+            urlsafe_b64decode(save.encode()), zlib.MAX_WBITS | Z_GZIP_HEADER
+        ).decode(errors="replace")
 
     @classmethod
     def decode_mac_save(cls, save: Union[bytes, str], *args, **kwargs) -> bytes:
@@ -99,12 +100,7 @@ class Coder:
 
         compressed = gzip.compress(save)
 
-        crc32 = struct.pack("I", zlib.crc32(save))
-        save_size = struct.pack("I", len(save))
-
-        encrypted = cls.additional + compressed[2:-4] + crc32 + save_size
-
-        final = urlsafe_b64encode(encrypted).decode()
+        final = urlsafe_b64encode(compressed).decode()
 
         if needs_xor:
             final = cls.normal_xor(final, 11)
@@ -112,7 +108,9 @@ class Coder:
         return final
 
     @classmethod
-    def do_base64(cls, data: str, encode: bool = True, errors: str = "strict") -> str:
+    def do_base64(
+        cls, data: str, encode: bool = True, errors: str = "strict", safe: bool = True
+    ) -> str:
         try:
             if encode:
                 return urlsafe_b64encode(data.encode(errors=errors)).decode(errors=errors)
@@ -121,26 +119,28 @@ class Coder:
                 return urlsafe_b64decode(padded.encode(errors=errors)).decode(errors=errors)
 
         except Exception:
-            return data
+            if safe:
+                return data
+            raise
 
     @classmethod
-    def gen_rs(cls, length: int = 10) -> str:
+    def gen_rs(cls, length: int = 10, charset: str = string.ascii_letters + string.digits) -> str:
         """Generates a random string of required length.
-
-        Uses [A-Za-z0-9] character set.
 
         Parameters
         ----------
         length: :class:`int`
             Amount of characters for a string to have.
 
+        charset: :class:`str`
+            Character set to use. ``[A-Za-z0-9]`` by default.
+
         Returns
         -------
         :class:`str`
             Generated string.
         """
-        sset = string.ascii_letters + string.digits
-        return "".join(random.choice(sset) for _ in range(length))
+        return "".join(random.choices(charset, k=length))
 
     @classmethod
     def encode(cls, type: str, string: str) -> str:
@@ -192,8 +192,8 @@ class Coder:
         :class:`str`
             Decoded string.
         """
-        ciphered = cls.do_base64(string, encode=False)
-        decoded = XOR.cipher(key=cls.keys[type], string=ciphered)
+        cipher_stream = urlsafe_b64decode(string.encode())
+        decoded = XOR.cipher_bytes(key=cls.keys[type], stream=cipher_stream)
         return decoded
 
     @classmethod

@@ -26,6 +26,8 @@ class Route:
     READ_PRIVATE_MESSAGE = "downloadGJMessage20"
     SEND_PRIVATE_MESSAGE = "uploadGJMessage20"
     DELETE_PRIVATE_MESSAGE = "deleteGJMessages20"
+    GET_REWARDS = "getGJRewards"
+    GET_CHALLENGES = "getGJChallenges"
     GET_TIMELY = "getGJDailyLevel"
     LOGIN = "accounts/loginGJAccount"
     SAVE_DATA = "accounts/backupGJAccountNew"

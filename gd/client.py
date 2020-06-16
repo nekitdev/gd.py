@@ -8,6 +8,7 @@ from gd.level import Level
 from gd.level_packs import Gauntlet, MapPack
 from gd.logging import get_logger
 from gd.message import Message
+from gd.rewards import Chest, Quest
 from gd.session import Session
 from gd.song import ArtistInfo, Author, Song
 from gd.typing import (
@@ -43,6 +44,7 @@ from gd.utils.enums import (
     LeaderboardStrategy,
     LevelLeaderboardStrategy,
     LevelLength,
+    RewardType,
     MessagePolicyType,
 )
 from gd.utils.filters import Filters
@@ -2053,6 +2055,19 @@ class Client:
         }
 
         await self.session.update_settings(**profile_dict, client=self)
+
+    @check_logged
+    async def get_quests(self) -> List[Quest]:
+        data = await self.session.get_quests(client=self)
+        return list(Quest(**part, client=self) for part in data)
+
+    @check_logged
+    async def get_chests(self, reward_type: Union[int, str, RewardType] = 0) -> List[Chest]:
+        reward_type = RewardType.from_value(reward_type)
+
+        data = await self.session.get_chests(reward_type, client=self)
+
+        return list(Chest(**part, client=self) for part in data)
 
     async def search_levels_on_page(
         self,

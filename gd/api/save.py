@@ -32,8 +32,7 @@ class Part(dict):
         return json.dumps(self, indent=4)
 
     def __repr__(self) -> str:
-        string = super().__repr__()
-        info = {"len": len(string)}
+        info = {"outer_len": len(self)}
         return make_repr(self, info)
 
     def dump(self) -> str:

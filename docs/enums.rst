@@ -58,6 +58,15 @@ This library has a bunch of enums, listed below.
 .. autoclass:: GauntletEnum
     :members:
 
+.. autoclass:: RewardType
+    :members:
+
+.. autoclass:: ShardType
+    :members:
+
+.. autoclass:: QuestType
+    :members:
+
 .. autoclass:: ServerError
     :members:
 

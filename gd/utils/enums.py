@@ -24,6 +24,9 @@ __all__ = (
     "LevelLeaderboardStrategy",
     "SearchStrategy",
     "GauntletEnum",
+    "RewardType",
+    "ShardType",
+    "QuestType",
     "ServerError",
 )
 
@@ -382,6 +385,35 @@ class SearchStrategy(Enum):
     FRIENDS = 13
     HALL_OF_FAME = 16
     WORLD = 17
+
+
+class RewardType(Enum):
+    """An enumeration for reward types."""
+
+    GET_INFO = 0
+    CLAIM_SMALL = 1
+    CLAIM_LARGE = 2
+
+
+class ShardType(Enum):
+    """An enumeration represeting shard names."""
+
+    UNKNOWN = 0
+    FIRE = 1
+    ICE = 2
+    POISON = 3
+    SHADOW = 4
+    LAVA = 5
+    NULL = 6
+
+
+class QuestType(Enum):
+    """An enumeration for quest types."""
+
+    UNKNOWN = 0
+    ORBS = 1
+    COINS = 2
+    STARS = 3
 
 
 class ServerError(Enum):
