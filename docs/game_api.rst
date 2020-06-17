@@ -8,7 +8,7 @@ gd.py implements an interface to interact with saves of Geometry Dash.
 Save
 ----
 
-.. critical::
+.. warning::
 
     As Geometry Dash has unreliable compressing of levels, some of them may be corrupted.
     Please note that not all of them can be decoded.

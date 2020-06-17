@@ -3,7 +3,7 @@
 Memory Interaction
 ==================
 
-.. critical::
+.. warning::
 
     Please note that memory interaction is currently supported on Windows only.
     If you wish to contribute to adding MacOS memory interaction, feel free to open a pull request.
