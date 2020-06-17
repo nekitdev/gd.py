@@ -8,6 +8,12 @@ gd.py implements an interface to interact with saves of Geometry Dash.
 Save
 ----
 
+.. critical::
+
+    As Geometry Dash has unreliable compressing of levels, some of them may be corrupted.
+    Please note that not all of them can be decoded.
+    **It is recommended to do a backup before working with saves.**
+
 Main save/load functionality is contained in :class:`.SaveUtil`,
 exported and intended to be used as ``gd.api.save`` instance.
 

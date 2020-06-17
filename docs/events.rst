@@ -58,13 +58,13 @@ Built-In Listeners
 | level_comment  | :meth:`.Client.on_level_comment`  | :class:`.events.LevelCommentListener`     |
 +----------------+-----------------------------------+-------------------------------------------+
 
-.. autoclass:: events.TimelyLevelListener
+.. autoclass:: gd.events.TimelyLevelListener
 
-.. autoclass:: events.RateLevelListener
+.. autoclass:: gd.events.RateLevelListener
 
-.. autoclass:: events.MessageOrRequestListener
+.. autoclass:: gd.events.MessageOrRequestListener
 
-.. autoclass:: events.LevelCommentListener
+.. autoclass:: gd.events.LevelCommentListener
 
 Running Manually
 ----------------

@@ -26,6 +26,7 @@ Documentation Contents
     song
     level
     game_api
+    memory
     utils
     exceptions
     enums
