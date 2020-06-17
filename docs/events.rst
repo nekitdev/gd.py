@@ -40,23 +40,31 @@ and schedules the loop task.
 Built-In Listeners
 ------------------
 
-+----------------+-------------------+--------------------------+
-|           name |    event callback |           listener class |
-+================+===================+==========================+
-| daily          | on_new_daily      | TimelyLevelListener      |
-+----------------+-------------------+--------------------------+
-| weekly         | on_new_weekly     | TimelyLevelListener      |
-+----------------+-------------------+--------------------------+
-| rate           | on_level_rated    | RateLevelListener        |
-+----------------+-------------------+--------------------------+
-| unrate         | on_level_unrated  | RateLevelListener        |
-+----------------+-------------------+--------------------------+
-| friend_request | on_friend_request | MessageOrRequestListener |
-+----------------+-------------------+--------------------------+
-| message        | on_message        | MessageOrRequestListener |
-+----------------+-------------------+--------------------------+
-| level_comment  | on_friend_request | LevelCommentListener     |
-+----------------+-------------------+--------------------------+
++----------------+-----------------------------------+-------------------------------------------+
+|           name |                    event callback |                            listener class |
++================+===================================+===========================================+
+| daily          | :meth:`.Client.on_new_daily`      | :class:`.events.TimelyLevelListener`      |
++----------------+-----------------------------------+-------------------------------------------+
+| weekly         | :meth:`.Client.on_new_weekly`     | :class:`.events.TimelyLevelListener`      |
++----------------+-----------------------------------+-------------------------------------------+
+| rate           | :meth:`.Client.on_level_rated`    | :class:`.events.RateLevelListener`        |
++----------------+-----------------------------------+-------------------------------------------+
+| unrate         | :meth:`.Client.on_level_unrated`  | :class:`.events.RateLevelListener`        |
++----------------+-----------------------------------+-------------------------------------------+
+| friend_request | :meth:`.Client.on_friend_request` | :class:`.events.MessageOrRequestListener` |
++----------------+-----------------------------------+-------------------------------------------+
+| message        | :meth:`.Client.on_message`        | :class:`.events.MessageOrRequestListener` |
++----------------+-----------------------------------+-------------------------------------------+
+| level_comment  | :meth:`.Client.on_level_comment`  | :class:`.events.LevelCommentListener`     |
++----------------+-----------------------------------+-------------------------------------------+
+
+.. autoclass:: events.TimelyLevelListener
+
+.. autoclass:: events.RateLevelListener
+
+.. autoclass:: events.MessageOrRequestListener
+
+.. autoclass:: events.LevelCommentListener
 
 Running Manually
 ----------------
@@ -78,15 +86,13 @@ If you wish to run the listener normally (blocking the main thread), you can do 
 
         gd.events.run(loop)  # or, simpler, loop.run_forever()
 
-There are two main ways to write an implementation for ``on_event`` task.
-
-1. Using @client.event
-----------------------
+Event handlers with @client.event
+---------------------------------
 As shown in examples above, new implementation for an event can be registered
 with ``@client.event`` decorator. See :meth:`.Client.event` for more info.
 
-2. Subclassing gd.Client
-------------------------
+Event handlers with subclassing gd.Client
+-----------------------------------------
 Another way to write an implementation for ``on_event`` task is to subclass :class:`.Client`.
 
 .. code-block:: python3
@@ -105,6 +111,21 @@ Another way to write an implementation for ``on_event`` task is to subclass :cla
     client.listen_for('daily')
 
     gd.events.start()
+
+Functions
+---------
+
+.. currentmodule:: gd.events
+
+.. autofunction:: attach_to_loop
+
+.. autofunction:: run
+
+.. autofunction:: start
+
+.. autofunction:: disable
+
+.. currentmodule:: gd
 
 Creating Custom Listeners
 -------------------------

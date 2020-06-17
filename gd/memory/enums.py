@@ -4,6 +4,8 @@ __all__ = ("LevelType", "Scene")
 
 
 class Scene(Enum):
+    """An enumeration that represents ID of different scenes in the game."""
+
     UNKNOWN = -1
     MAIN = 0
     SELECT = 1
@@ -19,6 +21,8 @@ class Scene(Enum):
 
 
 class LevelType(Enum):
+    """An enumeration that represents type of the level that is being played."""
+
     NULL = 0
     OFFICIAL = 1
     EDITOR = 2

@@ -1,19 +1,28 @@
-from collections import UserDict
 from itertools import chain
 
 from gd.api.enums import GuidelinesColor
 
 from gd.typing import Any, Guidelines, List, Union
 
+__all__ = ("Guidelines",)
 
-class Guidelines(UserDict):
+
+class Guidelines(dict):
     # TODO: maybe add more functionality here ~ nekit
     def __repr__(self) -> str:
         data = {time: enum.name.lower() for time, enum in self.items()}
         return f"{self.__class__.__name__}({data})"
 
     def __setitem__(self, time: Union[float, int], color: Union[float, GuidelinesColor]) -> None:
-        self[time] = GuidelinesColor.from_value(color) if isinstance(color, (float, int)) else color
+        if isinstance(color, GuidelinesColor):
+            pass
+        elif isinstance(color, (float, int)):
+            color = GuidelinesColor.from_value(color)
+        else:
+            raise ValueError(
+                f"Expected GuidelinesColor, float or int, got {color.__class__.__name__}."
+            )
+        super().__setitem__(time, color)
 
     @classmethod
     def new(cls, mapping: Any) -> Guidelines:

@@ -1,10 +1,7 @@
-from collections import UserDict, UserList
-import json
-
 from gd.typing import Any, Dict, Iterable, LevelCollection, List, Optional, Tuple
 
 from gd.utils import search_utils as search
-from gd.utils.text_tools import make_repr
+from gd.utils.text_tools import dumps, make_repr
 from gd.utils.xml_parser import XMLParser
 
 from gd.api.struct import LevelAPI
@@ -13,7 +10,7 @@ from gd.api.utils import get_default
 __all__ = ("Part", "Database", "LevelCollection")
 
 
-class Part(UserDict):
+class Part(dict):
     def __init__(self, string: str = "", default: Optional[Dict[str, Any]] = None) -> None:
         self.parser = XMLParser()
         try:
@@ -30,7 +27,7 @@ class Part(UserDict):
         super().__init__(loaded)
 
     def __str__(self) -> str:
-        return json.dumps(self, indent=4)
+        return dumps(self, indent=4)
 
     def __repr__(self) -> str:
         info = {"outer_len": len(self)}
@@ -117,7 +114,7 @@ class Database:
         return (self.main, self.levels)
 
 
-class LevelCollection(UserList):
+class LevelCollection(list):
     def __init__(self, *args) -> None:
         if len(args) == 1:
             args = args[0]

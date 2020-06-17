@@ -1,9 +1,11 @@
 import ctypes
 import functools
+# import inspect
 
-from gd.typing import Any, Dict, Function, Tuple, Type
+from gd.typing import Any, Dict, Function, List, Tuple, Type
 
 FuncPtr = ctypes._CFuncPtr
+# sentinel = object()
 
 
 class StructureMeta(type(ctypes.Structure)):
@@ -57,3 +59,8 @@ def func_def(func_ptr: FuncPtr) -> FuncPtr:
         return handle_call
 
     return wrap
+
+
+def parse_args_and_kwargs(func: Function, *args, **kwargs) -> List[Any]:
+    """Parses kwargs into positional args, assuming that args are at the beginning."""
+    ...

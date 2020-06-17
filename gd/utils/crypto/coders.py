@@ -1,5 +1,4 @@
 from base64 import urlsafe_b64decode, urlsafe_b64encode
-import gzip
 import hashlib
 import random
 import string
@@ -16,6 +15,7 @@ from gd.typing import List, Union
 from gd.utils.crypto.xor_cipher import XORCipher as XOR
 
 Z_GZIP_HEADER = 0x10
+Z_AUTO_HEADER = 0x20
 
 
 class Coder:
@@ -40,9 +40,6 @@ class Coder:
         "levelscore": "yPg6pUrtWn0J",
     }
 
-    additional = b"\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x0b"
-    base64_additional = urlsafe_b64encode(additional).decode().rstrip("=")
-
     mac_key = (
         b"\x69\x70\x75\x39\x54\x55\x76\x35\x34\x79\x76\x5d\x69\x73\x46\x4d"
         b"\x68\x35\x40\x3b\x74\x2e\x35\x77\x33\x34\x45\x32\x52\x79\x40\x7b"
@@ -64,9 +61,7 @@ class Coder:
 
         save += "=" * (4 - len(save) % 4)
 
-        return zlib.decompress(
-            urlsafe_b64decode(save.encode()), zlib.MAX_WBITS | Z_GZIP_HEADER
-        ).decode(errors="replace")
+        return inflate(urlsafe_b64decode(save.encode())).decode(errors="replace")
 
     @classmethod
     def decode_mac_save(cls, save: Union[bytes, str], *args, **kwargs) -> bytes:
@@ -98,9 +93,7 @@ class Coder:
         if isinstance(save, str):
             save = save.encode()
 
-        compressed = gzip.compress(save)
-
-        final = urlsafe_b64encode(compressed).decode()
+        final = urlsafe_b64encode(deflate(save)).decode()
 
         if needs_xor:
             final = cls.normal_xor(final, 11)
@@ -242,7 +235,7 @@ class Coder:
 
     @classmethod
     def unzip(cls, string: Union[bytes, str]) -> Union[bytes, str]:
-        """zlib decompresses a level string.
+        """Decompresses a level string.
 
         Used to unzip level data.
 
@@ -259,9 +252,7 @@ class Coder:
         if isinstance(string, str):
             string = string.encode()
 
-        decoded = urlsafe_b64decode(string)
-
-        unzipped = zlib.decompress(decoded, zlib.MAX_WBITS | 0x10)
+        unzipped = inflate(urlsafe_b64decode(string))
 
         try:
             final = unzipped.decode()
@@ -299,3 +290,17 @@ class Coder:
             + ((seconds + 4085) ** 2)
             - 50028039
         )
+
+
+def deflate(data: bytes) -> bytes:
+    compressor = zlib.compressobj(wbits=zlib.MAX_WBITS | Z_GZIP_HEADER)
+    data = compressor.compress(data) + compressor.flush()
+
+    return data
+
+
+def inflate(data: bytes) -> bytes:
+    decompressor = zlib.decompressobj(wbits=zlib.MAX_WBITS | Z_AUTO_HEADER)
+    data = decompressor.decompress(data) + decompressor.flush()
+
+    return data

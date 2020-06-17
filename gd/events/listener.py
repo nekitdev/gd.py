@@ -89,7 +89,7 @@ class AbstractListener:
         all_listeners.append(self)
 
     def __repr__(self) -> str:
-        info = {"client": self.client, "loop": self.loop}
+        info = {"client": self.client}
         return make_repr(self, info)
 
     def attach_to_loop(self, loop: asyncio.AbstractEventLoop) -> None:
@@ -137,6 +137,8 @@ class AbstractListener:
 
 
 class TimelyLevelListener(AbstractListener):
+    """Listens for a new daily or weekly level."""
+
     def __init__(
         self,
         client: Client,
@@ -165,6 +167,8 @@ class TimelyLevelListener(AbstractListener):
 
 
 class RateLevelListener(AbstractListener):
+    """Listens for a new rated or unrated level."""
+
     def __init__(
         self,
         client: Client,
@@ -183,6 +187,7 @@ class RateLevelListener(AbstractListener):
         return await self.client.search_levels(filters=self.filters, pages=range(pages))
 
     async def scan(self) -> None:
+        """Scan for rated/unrated levels."""
         new = await self.method()
 
         if not new:  # servers are probably broken, abort
@@ -220,6 +225,8 @@ async def further_differ(array: Iterable[Level], find_new: bool = True) -> List[
 
 
 class MessageOrRequestListener(AbstractListener):
+    """Listens for a new friend request or message."""
+
     def __init__(
         self,
         client: Client,
@@ -237,6 +244,7 @@ class MessageOrRequestListener(AbstractListener):
         return await self.method(pages=range(pages))
 
     async def scan(self) -> None:
+        """Scan for new friend requests or messages."""
         new = await self.call_method()
 
         if not new:
@@ -258,6 +266,8 @@ class MessageOrRequestListener(AbstractListener):
 
 
 class LevelCommentListener(AbstractListener):
+    """Listens for a new comment on a level."""
+
     def __init__(
         self,
         client: Client,
@@ -275,6 +285,7 @@ class LevelCommentListener(AbstractListener):
         return await self.level.get_comments(amount=amount)
 
     async def scan(self) -> None:
+        """Scan for new comments on a level."""
         new = await self.method()
 
         if not new:
