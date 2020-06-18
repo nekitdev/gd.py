@@ -140,7 +140,7 @@ def write_process_memory(
 
 @func_def(kernel32.OpenProcess)
 def open_process(
-    address: wintypes.DWORD, inherit_handle: wintypes.BOOL, process_id: wintypes.DWORD
+    access: wintypes.DWORD, inherit_handle: wintypes.BOOL, process_id: wintypes.DWORD
 ) -> wintypes.HANDLE:
     pass
 
