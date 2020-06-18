@@ -314,8 +314,6 @@ class SaveUtil:
         else:
             decode_save = Coder.decode_save
 
-        if isinstance(stream, bytes):
-            stream = stream.decode(errors="ignore")
         try:
             return decode_save(stream, needs_xor=xor)
         except Exception:
@@ -367,7 +365,7 @@ class SaveUtil:
 
             for path in (main_path, levels_path):
 
-                with open(path, "r") as file:
+                with open(path, "rb") as file:
                     parts.append(file.read())
 
             return self._load(*parts, xor=True)

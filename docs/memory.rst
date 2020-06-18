@@ -32,8 +32,39 @@ Quick example of a program that will print a random message every time the playe
         else:
             do_print = True
 
+Types
+-----
+
+There are several simple types gd.py support for reading/writing memory:
+*Bool*, *Int32*, *Int64*, *Float*, *Double*, *String*.
+
+They can be accessed like so:
+
+.. code-block:: python3
+
+    import gd
+
+    print(gd.memory.Int32)
+    # or
+    print(gd.memory.Type.Double)
+
+Enums
+-----
+
+.. autoclass:: Scene
+    :members:
+
+.. autoclass:: LevelType
+    :members:
+
+Buffer
+------
+
+.. autoclass:: Buffer
+    :members:
+
 Memory API
-==========
+----------
 
 .. autoclass:: MemoryType
     :members:

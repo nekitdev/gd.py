@@ -4,11 +4,9 @@ try:
 except ImportError:
     from xml.etree import ElementTree as xml
 
-import re
-
 from gd.utils.async_utils import run_blocking_io
 
-from gd.typing import Any, Dict
+from gd.typing import Any, Dict, Union
 from gd.errors import ParserError
 
 __all__ = ("xml", "XMLParser", "AioXMLParser")
@@ -16,7 +14,7 @@ __all__ = ("xml", "XMLParser", "AioXMLParser")
 PLIST_VERSION = "1.0"
 GJ_VERSION = "2.0"
 DECLARATION = '<?xml version="1.0"?>'
-MAPPING = {
+LONG_TO_SHORT_NAME = {
     "dict": "d",
     "key": "k",
     "true": "t",
@@ -25,6 +23,7 @@ MAPPING = {
     "real": "r",
     "string": "s",
 }
+SHORT_TO_LONG_NAME = {value: key for key, value in LONG_TO_SHORT_NAME.items()}
 TYPES = {float: "r", int: "i", str: "s"}
 
 
@@ -32,14 +31,7 @@ class XMLParser:
     def __init__(self) -> None:
         self._default({})
 
-    def preprocess(self, string: str) -> str:
-        for key, value in MAPPING.items():
-            string = string.replace(key, value)
-        string = re.sub(r"[\n\t]", "", string)
-        return string
-
-    def load(self, xml_string: str) -> Dict[str, Any]:
-        xml_string = self.preprocess(xml_string)
+    def load(self, xml_string: Union[bytes, str]) -> Dict[str, Any]:
         try:
             plist = xml.fromstring(xml_string)
 
@@ -85,7 +77,7 @@ class XMLParser:
                 sub = xml.SubElement(element, TYPES.get(type(value), "s"))
 
                 if isinstance(value, float) and value.is_integer():
-                    value = round(value)
+                    value = int(value)
 
                 sub.text = str(value)
 
@@ -131,6 +123,7 @@ def _recurse(parser: XMLParser, element: xml.Element) -> Any:
 
 DEFAULT = _str
 FUNCTIONS = {"d": _recurse, "f": _bool, "i": _int, "r": _real, "s": _str, "t": _bool}
+FUNCTIONS.update({SHORT_TO_LONG_NAME[short_name]: func for short_name, func in FUNCTIONS.items()})
 
 
 def _process(parser: XMLParser, tag: str, element: xml.Element) -> Any:

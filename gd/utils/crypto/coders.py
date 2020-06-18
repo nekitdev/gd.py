@@ -1,4 +1,5 @@
 from base64 import urlsafe_b64decode, urlsafe_b64encode
+import gzip
 import hashlib
 import random
 import string
@@ -54,17 +55,22 @@ class Coder:
     def normal_xor(string: str, key: int) -> str:
         return "".join(chr(ord(char) ^ key) for char in string)
 
+    @staticmethod
+    def byte_xor(stream: bytes, key: int) -> str:
+        return "".join(chr(byte ^ key) for byte in stream)
+
     @classmethod
-    def decode_save(cls, save: str, needs_xor: bool = True) -> str:
+    def decode_save(cls, save: Union[bytes, str], needs_xor: bool = True) -> str:
         if needs_xor:
-            save = cls.normal_xor(save, 11)
+            xor_func = cls.byte_xor if isinstance(save, bytes) else cls.normal_xor
+            save = xor_func(save, 11)
 
         save += "=" * (4 - len(save) % 4)
 
-        return inflate(urlsafe_b64decode(save.encode())).decode(errors="replace")
+        return inflate(urlsafe_b64decode(save.encode())).decode(errors="ignore")
 
     @classmethod
-    def decode_mac_save(cls, save: Union[bytes, str], *args, **kwargs) -> bytes:
+    def decode_mac_save(cls, save: Union[bytes, str], *args, **kwargs) -> str:
         if isinstance(save, str):
             save = save.encode()
 
@@ -74,7 +80,7 @@ class Coder:
         if last < 16:
             data = data[:-last]
 
-        return data.decode()
+        return data.decode(errors="ignore")
 
     @classmethod
     def encode_mac_save(cls, save: Union[bytes, str], *args, **kwargs) -> bytes:
@@ -84,7 +90,7 @@ class Coder:
         remain = len(save) % 16
         if remain:
             to_add = 16 - remain
-            save += to_add.to_bytes(1, "little") * to_add
+            save += bytes([to_add] * to_add)
 
         return cls.cipher.encrypt(save)
 
@@ -195,7 +201,7 @@ class Coder:
         if use_bytes:
             return XOR.cipher_bytes(key=cls.keys[type], stream=cipher_stream)
         else:
-            return XOR.cipher(key=cls.keys[type], string=cipher_stream.decode(errors="replace"))
+            return XOR.cipher(key=cls.keys[type], string=cipher_stream.decode(errors="ignore"))
 
     @classmethod
     def gen_chk(cls, type: str, values: List[Union[int, str]]) -> str:
@@ -300,7 +306,19 @@ def deflate(data: bytes) -> bytes:
 
 
 def inflate(data: bytes) -> bytes:
-    decompressor = zlib.decompressobj(wbits=zlib.MAX_WBITS | Z_AUTO_HEADER)
-    data = decompressor.decompress(data) + decompressor.flush()
+    try:
+        return gzip.decompress(data)
+    except (gzip.BadGzipFile, zlib.error):
+        pass
 
-    return data
+    # fallback and do some other attempts
+    for wbits in (zlib.MAX_WBITS | Z_AUTO_HEADER, zlib.MAX_WBITS | Z_GZIP_HEADER, zlib.MAX_WBITS):
+        try:
+            decompressor = zlib.decompressobj(wbits=wbits)
+            data = decompressor.decompress(data) + decompressor.flush()
+            return data
+
+        except zlib.error:
+            pass
+
+    raise RuntimeError("Failed to decompress data.")

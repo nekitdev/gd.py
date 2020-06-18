@@ -1,4 +1,4 @@
-from gd.typing import Any, Dict, Iterable, LevelCollection, List, Optional, Tuple
+from gd.typing import Any, Dict, Iterable, LevelCollection, List, Optional, Tuple, Union
 
 from gd.utils import search_utils as search
 from gd.utils.text_tools import dumps, make_repr
@@ -11,12 +11,14 @@ __all__ = ("Part", "Database", "LevelCollection")
 
 
 class Part(dict):
-    def __init__(self, string: str = "", default: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, stream: str = Union[bytes, str], default: Optional[Dict[str, Any]] = None) -> None:
         self.parser = XMLParser()
-        try:
-            assert string  # fall into <except> clause if empty
 
-            loaded = self.parser.load(string)
+        if isinstance(stream, str):
+            stream = stream.encode()
+
+        try:
+            loaded = self.parser.load(stream)
 
         except Exception:
             if default is None:

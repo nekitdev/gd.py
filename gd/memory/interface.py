@@ -83,7 +83,17 @@ class BufferMeta(type):
 
 
 class Buffer(metaclass=BufferMeta):
-    """Type that allows to unwrap bytes that were read into different Python types."""
+    """Type that allows to unwrap bytes that were read into different Python types.
+
+    Attributes
+    ----------
+    data: :class:`bytes`
+        Current data that buffer works with.
+
+    order: :class:`str`
+        Represents order that buffer should interpret bits in.
+        Either ``little`` for *little-endian* or ``big`` for *big-endian*.
+    """
 
     def __init__(self, data: bytes, order: str = DEFAULT_ORDER) -> None:
         self.data = data
@@ -97,26 +107,32 @@ class Buffer(metaclass=BufferMeta):
         return make_repr(self, info)
 
     def with_order(self, order: str) -> Buffer:
+        """Change order of the buffer to ``order`` and return ``self``."""
         self.order = order
         return self
 
     @classmethod
     def from_int(cls, integer: int, size: int = 4, order: str = DEFAULT_ORDER) -> Buffer:
+        """Create buffer from an integer with size and order."""
         data = integer.to_bytes(size, order)
         return cls(data, order)
 
     def as_int(self) -> int:
+        """Cast current bytes to an integer."""
         return int.from_bytes(self.data, self.order)
 
     @classmethod
     def from_bool(cls, value: bool, order: str = DEFAULT_ORDER) -> Buffer:
+        """Create buffer from a boolean with order."""
         return cls.from_int(value, size=1, order=order)
 
     def as_bool(self) -> bool:
+        """Cast current bytes to an integer and return bool indicating if integer is non-zero."""
         return self.as_int() != 0
 
     @classmethod
     def from_float(cls, number: float, order: str = DEFAULT_ORDER) -> Buffer:
+        """Create buffer from a float with order. ``float`` means 32-bit floating point number."""
         mode = ORDER[order] + "f"
 
         try:
@@ -127,6 +143,7 @@ class Buffer(metaclass=BufferMeta):
             return cls(data, order)
 
     def as_float(self) -> float:
+        """Cast current bytes to a 32-bit floating point number."""
         mode = ORDER[self.order] + "f"
 
         try:
@@ -136,6 +153,7 @@ class Buffer(metaclass=BufferMeta):
 
     @classmethod
     def from_double(cls, number: float, order: str = DEFAULT_ORDER) -> Buffer:
+        """Create buffer from a float with order. ``double`` means 64-bit floating point number."""
         mode = ORDER[order] + "d"
 
         try:
@@ -146,6 +164,7 @@ class Buffer(metaclass=BufferMeta):
             return cls(data, order)
 
     def as_double(self) -> float:
+        """Cast current bytes to a 64-bit floating point number."""
         mode = ORDER[self.order] + "d"
 
         try:
@@ -155,6 +174,9 @@ class Buffer(metaclass=BufferMeta):
 
     @classmethod
     def from_str(cls, string: str, terminate: bool = True, order: str = DEFAULT_ORDER) -> Buffer:
+        """Create buffer from a string with order.
+        If terminate is ``True``, a null byte is appended at the end.
+        """
         data = string.encode()
 
         if terminate:
@@ -163,22 +185,26 @@ class Buffer(metaclass=BufferMeta):
         return cls(data, order)
 
     def as_str(self, encoding: str = "utf-8", errors: str = "strict") -> str:
+        """Interpret current bytes as a string with encoding, reading until null terminator."""
         return read_until_terminator(self.data).decode(encoding, errors)
 
     @classmethod
     def from_format(cls, format_str: str) -> Buffer:
-        # format should be something like "6A 14 8B CB FF"
+        """Create buffer from byte-format string, like ``6A 14 8B CB FF``."""
         array = [int(byte, 16) for byte in format_str.split()]
         return cls.from_byte_array(array)
 
     def to_format(self) -> str:
+        """Convert current bytes to byte-format string, like ``6A 14 8B CB FF``."""
         return " ".join(format(byte, "02X") for byte in self.data)
 
     @classmethod
     def from_byte_array(cls, array: Sequence[int]) -> Buffer:
+        """Create buffer from a sequence of 8-bit integers."""
         return cls(bytes(array))
 
     def into_buffer(self) -> Any:
+        """Convert current bytes to ``ctypes`` string buffer in order to write process memory."""
         return ctypes.create_string_buffer(self.data, len(self.data))
 
 
@@ -280,6 +306,7 @@ class WindowsMemory(MemoryType):
         return address
 
     def read_at(self, size: int = 0, address: int = 0) -> Buffer:
+        """Read ``size`` bytes at ``address``, returning :class:`.Buffer` object."""
         buffer = ctypes.create_string_buffer(size)
 
         read_process_memory(
@@ -289,9 +316,11 @@ class WindowsMemory(MemoryType):
         return Buffer(buffer.raw)
 
     def read(self, type: Type, address: int = 0) -> T:
+        """Read ``type`` structure at ``address``, returning :class:`.Buffer` object."""
         return type.from_bytes(self.read_at(type.size, address))
 
     def write_at(self, buffer: Buffer, address: int = 0) -> None:
+        """Writter ``buffer`` at ``address``."""
         data = buffer.into_buffer()
 
         write_process_memory(
@@ -299,21 +328,27 @@ class WindowsMemory(MemoryType):
         )
 
     def write(self, type: Type, value: T, address: int = 0) -> None:
+        """Write ``value`` converted to ``type`` at ``address``."""
         return self.write_at(type.to_bytes(value), address)
 
     def read_bytes(self, size: int = 0, *offsets) -> Buffer:
+        """Read ``size`` bytes, resolving ``*offsets`` to the final address."""
         return self.read_at(size, self.resolve_layers(*offsets))
 
     def read_type(self, type: Type, *offsets) -> T:
+        """Read ``type``, resolving ``*offsets`` to the final address."""
         return type.from_bytes(self.read_bytes(type.size, *offsets))
 
     def write_bytes(self, buffer: Buffer, *offsets) -> None:
+        """Write ``buffer``, resolving ``*offsets`` to the final address."""
         self.write_at(buffer, self.resolve_layers(*offsets))
 
     def write_type(self, type: Type, value: T, *offsets) -> None:
+        """Write ``value`` converted to ``type``, resolving ``*offsets`` to the final address."""
         self.write_bytes(type.to_bytes(value), *offsets)
 
     def read_string(self, base: int, offset: int) -> str:
+        """Read string at ``base + offset``, handling its size and where it is allocated."""
         address, size_address = base + offset, base + offset + String.size
 
         size = self.read(Int32, size_address)
@@ -329,6 +364,7 @@ class WindowsMemory(MemoryType):
         return String.from_bytes(self.read_at(size, address))
 
     def load(self) -> None:
+        """Load memory, fetching process process id, process handle and base address."""
         try:
             self.process_id = get_pid_from_name(self.process_name)
 
@@ -340,128 +376,156 @@ class WindowsMemory(MemoryType):
 
         self.process_handle = get_handle(self.process_id)
         self.base_address = get_base_address(self.process_id, self.process_name)
-        self.cocos_address = get_base_address(self.process_id, "libcocos2d.dll")
+        # self.cocos_address = get_base_address(self.process_id, "libcocos2d.dll")
         self.loaded = True
 
     def is_loaded(self) -> bool:
+        """Check if memory was previously loaded."""
         return self.loaded
 
     def reload(self) -> None:
+        """Reload memory, fetching process process id, process handle and base address."""
         self.load()
 
     def inject_dll(self, path: Union[str, Path]) -> bool:
+        """Inject DLL from ``path`` and check if it was successfully injected."""
         return bool(inject_dll(self.process_id, path))
 
-    def is_level_epic(self) -> bool:
-        ...
-
-    def is_level_featured(self) -> bool:
-        ...
-
     def get_scene_value(self) -> int:
+        """Get value of current scene enum, which can be converted to :class:`.Scene`."""
         return self.read_type(Int32, 0x3222D0, 0x1DC)
 
     def get_scene(self) -> Scene:
+        """Get value of current scene and convert it to :class:`.Scene` enum."""
         try:
             return Scene.from_value(self.get_scene_value())
         except FailedConversion:
             return Scene.UNKNOWN
 
     def get_resolution_value(self) -> int:
+        """Get value of current resolution."""
         return self.read_type(Int32, 0x3222D0, 0x2E0)
 
     def get_resolution(self) -> Tuple[int, int]:
+        """Get value of current resolution and try to get ``(w, h)`` tuple, ``(0, 0)`` on fail."""
         return number_to_resolution.get(self.get_resolution_value(), (0, 0))
 
     def get_level_id_fast(self) -> int:
+        """Quickly read level ID, which is not always accurate for example on *official* levels."""
         return self.read_type(Int32, 0x3222D0, 0x2A0)
 
     def is_in_editor(self) -> bool:
+        """Check if the user is currently in editor."""
         return self.read_type(Bool, 0x3222D0, 0x168)
 
     def get_user_name(self) -> str:
+        """Get name of the user."""
         base = self.read_type(self.ptr_type, 0x3222D8)
         return self.read_string(base, 0x108)
 
     def is_dead(self) -> bool:
+        """Check if the player is dead in the level."""
         return self.read_type(Bool, 0x3222D0, 0x164, 0x39C)
 
     def get_level_length(self) -> float:
+        """Get length of the level in units."""
         return self.read_type(Float, 0x3222D0, 0x164, 0x3B4)
 
     def get_object_count(self) -> int:
+        """Get level object count."""
         return self.read_type(Int32, 0x3222D0, 0x168, 0x3A0)
 
     def get_percent(self) -> int:
+        """Get current percentage in the level."""
         base = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x3C0)
         string = self.read_string(base, 0x12C)
         return 0 if not string else int(float(string.rstrip("%")))
 
     def get_x_pos(self) -> float:
+        """Get X position of the player."""
         return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x67C)
 
     def set_x_pos(self, pos: float) -> None:
+        """Set X position of the player."""
         self.write_type(Float, pos, 0x3222D0, 0x164, 0x224, 0x67C)
 
     def get_y_pos(self) -> float:
+        """Get Y position of the player."""
         return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x680)
 
     def set_y_pos(self, pos: float) -> None:
+        """Set Y position of the player."""
         self.write_type(Float, pos, 0x3222D0, 0x164, 0x224, 0x680)
 
     def get_speed_value(self) -> float:
+        """Get value of the speed enum, which can be converted to :class:`gd.api.SpeedConstant`."""
         return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x648)
 
     def set_speed_value(self, value: float) -> None:
+        """Set value of the speed."""
         self.write_type(Float, value, 0x3222D0, 0x164, 0x224, 0x648)
 
     def get_speed(self) -> SpeedConstant:
+        """Get value of the speed and convert it to :class:`gd.api.SpeedConstant`."""
         try:
             return SpeedConstant.from_value(round(self.get_speed_value(), 1))
         except FailedConversion:
             return SpeedConstant.NULL
 
     def get_size(self) -> float:
+        """Get hitbox size of the player icon."""
         return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x644)
 
     def set_size(self, size: float) -> None:
+        """Set hitbox size of the player icon."""
         self.write_type(Float, size, 0x3222D0, 0x164, 0x224, 0x644)
 
     def get_gravity(self) -> float:
+        """Get value of gravity in the level."""
         return self.read_type(Float, 0x1E9050, 0)
 
     def get_level_id(self) -> int:
+        """Get accurate ID of the level."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0xF8)
 
     def get_level_name(self) -> str:
+        """Get name of the level."""
         base = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114)
         return self.read_string(base, 0xFC)
 
     def get_level_creator(self) -> str:
+        """Get creator name of the level."""
         base = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114)
         return self.read_string(base, 0x144)
 
     def get_editor_level_name(self) -> str:
+        """Get level name while in editor."""
         # oh ~ zmx
         base = self.read_type(self.ptr_type, 0x3222D0, 0x168, 0x124, 0xEC, 0x110, 0x114)
         return self.read_string(base, 0xFC)
 
     def get_level_stars(self) -> int:
+        """Get amount of stars of the level."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x2AC)
 
     def is_level_demon(self) -> bool:
+        """Fetch whether the level is demon."""
         return self.read_type(Bool, 0x3222D0, 0x164, 0x22C, 0x114, 0x29C)
 
     def is_level_auto(self) -> bool:
+        """Fetch whether the level is auto."""
         return self.read_type(Bool, 0x3222D0, 0x164, 0x22C, 0x114, 0x2B0)
 
     def get_level_diff_value(self) -> int:
+        """Get difficulty value of the level, e.g. *0*, *10*, etc."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x1E4)
 
     def get_level_demon_diff_value(self) -> int:
+        """Get demon difficulty value of the level, e.g. *0*, *3*, etc."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x2A0)
 
     def get_level_difficulty(self) -> Union[LevelDifficulty, DemonDifficulty]:
+        """Compute actual level difficulty and return the enum."""
         address = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114)
 
         is_demon, is_auto, diff, demon_diff = (  # for speedup reasons
@@ -476,65 +540,83 @@ class WindowsMemory(MemoryType):
         )
 
     def get_attempts(self) -> int:
+        """Get amount of total attempts spent on the level."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x218)
 
     def get_jumps(self) -> int:
+        """Get amount of total jumps spent on the level."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x224)
 
     def get_normal_percent(self) -> int:
+        """Get best record in normal mode."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x248)
 
     def get_practice_percent(self) -> int:
+        """Get best record in practice mode."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x26C)
 
     def get_level_type_value(self) -> int:
+        """Get value of the level type, which can be converted to :class:`.LevelType`."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x364)
 
     def get_level_type(self) -> LevelType:
+        """Get value of the level type, and convert it to :class:`.LevelType`."""
         try:
             return LevelType.from_value(self.get_level_type_value())
         except FailedConversion:
             return LevelType.NULL
 
     def is_in_level(self) -> bool:
+        """Check whether the user is currently playing a level."""
         return self.read_type(Bool, 0x3222D0, 0x164, 0x22C, 0x114)
 
     def get_song_id(self) -> int:
+        """Get ID of the song that is used."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x488, 0x1C4)
 
     def get_attempt(self) -> int:
+        """Get current attempt number."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x4A8)
 
     def set_attempt(self, attempt: int) -> None:
+        """Set current attempt to ``attempt``."""
         self.write_type(Int32, attempt, 0x3222D0, 0x164, 0x4A8)
 
     def player_freeze(self) -> None:
+        """Freeze the player."""
         self.write_bytes(Buffer[0x90, 0x90, 0x90], 0x203519)
 
     def player_unfreeze(self) -> None:
+        """Unfreeze the player."""
         self.write_bytes(Buffer[0x50, 0xFF, 0xD6], 0x203519)
 
     def player_kill_enable(self) -> None:
+        """Enable player kill loop."""
         self.write_bytes(Buffer[0xE9, 0x57, 0x02, 0x00, 0x00, 0x90], 0x203DA2)
         self.write_bytes(Buffer[0xE9, 0x27, 0x02, 0x00, 0x00, 0x90], 0x20401A)
 
     def player_kill_disable(self) -> None:
+        """Disable player kill loop."""
         self.write_bytes(Buffer[0x0F, 0x86, 0x56, 0x02, 0x00, 0x00], 0x203DA2)
         self.write_bytes(Buffer[0x0F, 0x87, 0x26, 0x02, 0x00, 0x00], 0x20401A)
 
     def player_kill(self) -> None:
+        """Enable player kill loop and disable it after ``0.05`` seconds."""
         self.player_kill_enable()
         # wait a bit to let GD realize the change
         time.sleep(0.05)
         self.player_kill_disable()
 
     def enable_level_edit(self) -> None:
+        """Enable hack: Level Edit."""
         self.write_bytes(Buffer[0x90, 0x90], 0x1E4A32)
 
     def disable_level_edit(self) -> None:
+        """Disable hack: Level Edit."""
         self.write_bytes(Buffer[0x75, 0x6C], 0x1E4A32)
 
     def enable_accurate_percent(self) -> None:
+        """Enable hack: Accurate Percentage."""
         self.write_bytes(
             Buffer[
                 0xC7,
@@ -580,6 +662,7 @@ class WindowsMemory(MemoryType):
         self.write_bytes(Buffer[0x83, 0xC4, 0x0C], 0x20813F)
 
     def disable_accurate_percent(self) -> None:
+        """Disable hack: Accurate Percentage."""
         self.write_bytes(
             Buffer[
                 0xF3,
@@ -625,52 +708,63 @@ class WindowsMemory(MemoryType):
         self.write_bytes(Buffer[0x83, 0xC4, 0x08], 0x20813F)
 
     def enable_level_copy(self) -> None:
+        """Enable hack: Level Copy."""
         self.write_bytes(Buffer[0x90, 0x90], 0x179B8E)
         self.write_bytes(Buffer[0x8B, 0xCA, 0x90], 0x176F5C)
         self.write_bytes(Buffer[0xB0, 0x01, 0x90], 0x176FE5)
 
     def disable_level_copy(self) -> None:
+        """Disable hack: Level Copy."""
         self.write_bytes(Buffer[0x75, 0x0E], 0x179B8E)
         self.write_bytes(Buffer[0x0F, 0x44, 0xCA], 0x176F5C)
         self.write_bytes(Buffer[0x0F, 0x95, 0xC0], 0x176FE5)
 
     def enable_practice_song(self) -> None:
+        """Enable hack: Practice Song Bypass."""
         self.write_bytes(Buffer[0x90, 0x90, 0x90, 0x90, 0x90, 0x90], 0x20C925)
         self.write_bytes(Buffer[0x90, 0x90], 0x20D143)
         self.write_bytes(Buffer[0x90, 0x90], 0x20A563)
         self.write_bytes(Buffer[0x90, 0x90], 0x20A595)
 
     def disable_practice_song(self) -> None:
+        """Disable hack: Practice Song Bypass."""
         self.write_bytes(Buffer[0x0F, 0x85, 0xF7, 0x00, 0x00, 0x00], 0x20C925)
         self.write_bytes(Buffer[0x75, 0x41], 0x20D143)
         self.write_bytes(Buffer[0x75, 0x3E], 0x20A563)
         self.write_bytes(Buffer[0x75, 0x0C], 0x20A595)
 
     def enable_noclip(self) -> None:
+        """Enable hack: NoClip (*safe*)."""
         self.write_bytes(Buffer[0xE9, 0x79, 0x06, 0x00, 0x00], 0x20A23C)
 
     def disable_noclip(self) -> None:
+        """Disable hack: NoClip."""
         self.write_bytes(Buffer[0x6A, 0x14, 0x8B, 0xCB, 0xFF], 0x20A23C)
 
     def enable_inf_jump(self) -> None:
+        """Enable hack: Infinite Jump."""
         self.write_bytes(Buffer[0x01], 0x1E9141)
         self.write_bytes(Buffer[0x01], 0x1E9498)
 
     def disable_inf_jump(self) -> None:
+        """Disable hack: Infinite Jump."""
         self.write_bytes(Buffer[0x00], 0x1E9141)
         self.write_bytes(Buffer[0x00], 0x1E9498)
 
     def disable_custom_object_limit(self) -> None:
+        """Enable hack: Custom Object Limit Bypass."""
         self.write_bytes(Buffer[0xEB], 0x7A100)
         self.write_bytes(Buffer[0xEB], 0x7A022)
         self.write_bytes(Buffer[0x90, 0x90], 0x7A203)
 
     def enable_custom_object_limit(self) -> None:
+        """Disable hack: Custom Object Limit Bypass."""
         self.write_bytes(Buffer[0x72], 0x7A100)
         self.write_bytes(Buffer[0x76], 0x7A022)
         self.write_bytes(Buffer[0x77, 0x3A], 0x7A203)
 
     def disable_object_limit(self) -> None:
+        """Enable hack: Object Limit Bypass."""
         self.write_bytes(Buffer[0xFF, 0xFF, 0xFF, 0x7F], 0x73169)
         self.write_bytes(Buffer[0xFF, 0xFF, 0xFF, 0x7F], 0x856A4)
         self.write_bytes(Buffer[0xFF, 0xFF, 0xFF, 0x7F], 0x87B17)
@@ -679,6 +773,7 @@ class WindowsMemory(MemoryType):
         self.write_bytes(Buffer[0xFF, 0xFF, 0xFF, 0x7F], 0x160B06)
 
     def enable_object_limit(self) -> None:
+        """Disable hack: Object Limit Bypass."""
         self.write_bytes(Buffer[0x80, 0x38, 0x01, 0x00], 0x73169)
         self.write_bytes(Buffer[0x80, 0x38, 0x01, 0x00], 0x856A4)
         self.write_bytes(Buffer[0x80, 0x38, 0x01, 0x00], 0x87B17)
@@ -687,6 +782,7 @@ class WindowsMemory(MemoryType):
         self.write_bytes(Buffer[0x80, 0x38, 0x01, 0x00], 0x160B06)
 
     def disable_anticheat(self) -> None:
+        """Disable all AntiCheats."""
         # Speedhack kicks
         self.write_bytes(Buffer[0xEB, 0x2E], 0x202AAA)
         # Editor kick
@@ -736,6 +832,7 @@ class WindowsMemory(MemoryType):
         self.write_bytes(Buffer[0xE9, 0xD7, 0x00, 0x00, 0x00, 0x90], 0x20C4E6)
 
     def enable_anticheat(self) -> None:
+        """Enable all AntiCheats."""
         # Speedhack kicks
         self.write_bytes(Buffer[0x74, 0x2E], 0x202AAA)
         # Editor kick
@@ -810,4 +907,5 @@ number_to_resolution = {
 
 
 def get_memory(name: Optional[str] = "GeometryDash", load: bool = True) -> MemoryType:
+    """Create Memory object with ``name``, optionally loading it if ``load`` is ``True``."""
     return Memory(name, load=load)
