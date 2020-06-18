@@ -15,6 +15,7 @@ __all__ = (
 )
 
 EntryType = ref("gd.api.verification_str.Entry")
+Match = type(re.match("", ""))
 Number = Union[float, int]
 
 
@@ -76,7 +77,7 @@ class Entry:
             )
 
     @classmethod
-    def from_match(cls, match: re.Match) -> EntryType:
+    def from_match(cls, match: Match) -> EntryType:
         group_dict = match.groupdict()
 
         init_dict = {
