@@ -6,7 +6,7 @@ __title__ = "gd"
 __author__ = "NeKitDS"
 __copyright__ = "Copyright 2019-2020 NeKitDS"
 __license__ = "MIT"
-__version__ = "1.0.0a0"
+__version__ = "1.0.0b0"
 
 from gd.abstractentity import AbstractEntity
 from gd.abstractuser import AbstractUser, LevelRecord
@@ -28,6 +28,7 @@ from gd.song import ArtistInfo, Author, Song
 from gd.user import UserStats, User
 from gd.version import *
 from gd.utils.converter import Converter
+from gd.utils.decorators import breakpoint
 from gd.utils.enums import *
 from gd.utils.filters import Filters
 from gd.utils.http_request import HTTPClient

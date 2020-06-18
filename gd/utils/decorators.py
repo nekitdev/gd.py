@@ -1,14 +1,16 @@
 import asyncio
 import functools
 import inspect
+import pdb
 import time
 
 from gd.utils.async_utils import maybe_coroutine, shutdown_loop
 
-from gd.typing import Any, Function, Type, TypeVar
+from gd.typing import Any, Function, Optional, Type, TypeVar
 from gd.errors import NotLoggedError, MissingAccess
 
 __all__ = (
+    "breakpoint",
     "check_logged",
     "check_logged_obj",
     "benchmark",
@@ -20,6 +22,17 @@ __all__ = (
 
 T = TypeVar("T")
 CF = TypeVar("CF", Type[T], Function)
+
+
+def breakpoint(message: Optional[str] = None, *, prompt: str = "(dbg) ") -> None:
+    debugger = pdb.Pdb()
+
+    debugger.prompt = prompt
+
+    if message is not None:
+        debugger.message(message)
+
+    debugger.set_trace(inspect.currentframe().f_back)
 
 
 def check_logged(func: Function) -> Function:

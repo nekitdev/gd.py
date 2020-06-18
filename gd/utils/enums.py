@@ -1,8 +1,6 @@
 import functools
 import enum
 
-from gd.utils.text_tools import get_module
-
 from gd.typing import Any, Dict, Union
 from gd.errors import FailedConversion
 
@@ -145,9 +143,8 @@ class Enum(enum.Enum):
 
     def __repr__(self) -> str:
         cls_name = self.__class__.__name__
-        module = get_module(self.__module__)
 
-        return f"<{module}.{cls_name}.{self.name}: {self.value} ({self.desc})>"
+        return f"<{cls_name}.{self.name}: {self.value} ({self.desc})>"
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, type(self)):

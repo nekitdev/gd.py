@@ -6,7 +6,6 @@ from yarl import URL
 from gd.typing import Any, Dict, List, Optional, Union
 
 __all__ = (
-    "get_module",
     "make_repr",
     "object_split",
     "dump",
@@ -16,24 +15,19 @@ __all__ = (
 )
 
 
-def get_module(module: str) -> str:
-    return module.split(".", 1)[0]
-
-
 def make_repr(obj: Any, info: Optional[Dict[Any, Any]] = None) -> str:
     """Create a nice __repr__ for the object."""
     if info is None:
         info = {}
 
-    module = get_module(obj.__module__)
     name = obj.__class__.__name__
 
     if not info:
-        return f"<{module}.{name}>"
+        return f"<{name}>"
 
     formatted_info = " ".join(f"{key}={value}" for key, value in info.items())
 
-    return f"<{module}.{name} {formatted_info}>"
+    return f"<{name} {formatted_info}>"
 
 
 class JSDict(dict):
