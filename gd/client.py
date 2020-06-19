@@ -2236,7 +2236,7 @@ class Client:
         """
         pass
 
-    def listen_for(self, type: str, entity_id: Optional[int] = None, enable: bool = False) -> None:
+    def listen_for(self, type: str, entity_id: Optional[int] = None, enable: bool = True) -> None:
         lower = str(type).lower()
 
         if lower in {"daily", "weekly"}:
