@@ -41,11 +41,15 @@ def attach_to_loop(loop: asyncio.AbstractEventLoop) -> None:
 
         bot = commands.Bot(command_prefix="?")
 
-        ...
-
         gd.events.attach_to_loop(bot.loop)
 
+        ...
+
         bot.run("TOKEN")  # this will also run listeners
+
+    .. warning::
+
+        This function should be called **before** any ``client.listen_for`` calls.
     """
 
     update_thread_loop(thread, loop)
