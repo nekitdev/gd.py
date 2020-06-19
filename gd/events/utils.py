@@ -13,7 +13,7 @@ from gd.events.listener import (
 
 from gd.typing import Optional
 
-__all__ = ("disable", "start", "run", "attach_to_loop")
+__all__ = ("disable", "enable", "start", "run", "attach_to_loop")
 
 
 def disable() -> None:
@@ -46,10 +46,6 @@ def attach_to_loop(loop: asyncio.AbstractEventLoop) -> None:
         ...
 
         bot.run("TOKEN")  # this will also run listeners
-
-    .. warning::
-
-        This function should be called **before** any ``client.listen_for`` calls.
     """
 
     update_thread_loop(thread, loop)
@@ -60,17 +56,27 @@ def attach_to_loop(loop: asyncio.AbstractEventLoop) -> None:
         listener.attach_to_loop(loop)
 
 
+def enable() -> None:
+    """Enable all listeners. This is done automatically
+    when calling :func:`.run` or :func:`.start`.
+    """
+    for listener in all_listeners:
+        listener.enable()
+
+
 def run(loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
     """Run listeners in a given loop."""
     if loop is None:
         loop = get_loop()
 
     attach_to_loop(loop)
+    enable()
     run_loop(loop)
 
 
 def start() -> None:
     """Start the listener thread. This can be run only once."""
+    enable()
     thread.start()
 
 

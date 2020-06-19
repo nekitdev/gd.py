@@ -2236,7 +2236,7 @@ class Client:
         """
         pass
 
-    def listen_for(self, type: str, entity_id: Optional[int] = None) -> None:
+    def listen_for(self, type: str, entity_id: Optional[int] = None, enable: bool = False) -> None:
         lower = str(type).lower()
 
         if lower in {"daily", "weekly"}:
@@ -2258,7 +2258,9 @@ class Client:
             raise ClientException(f"Invalid listener type: {lower!r}.")
 
         self.listeners.append(listener)
-        listener.enable()
+
+        if enable:
+            listener.enable()
 
         return self.event  # allow using as a decorator
 

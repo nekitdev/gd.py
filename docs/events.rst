@@ -100,10 +100,7 @@ Another way to write an implementation for ``on_event`` task is to subclass :cla
     import gd
 
     class MyClient(gd.Client):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-
-        async def on_new_daily(self, level):
+        async def on_new_daily(self, level: gd.Level) -> None:
             print(level)
 
     client = MyClient()
@@ -124,6 +121,8 @@ Functions
 .. autofunction:: start
 
 .. autofunction:: disable
+
+.. autofunction:: enable
 
 .. currentmodule:: gd
 
