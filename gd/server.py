@@ -328,6 +328,14 @@ def cooldown(rate: int, per: float) -> Function:
 
 
 @web.middleware
+async def error_middleware(request: web.Request, handler: Function) -> web.Response:
+    try:
+        return await handler(request)
+    except web.HTTPError as error:
+        return Error(error.status, "{error.status}: {error.reason}").set_error(error).into_resp()
+
+
+@web.middleware
 async def rate_limit_middleware(request: web.Request, handler: Function) -> web.Response:
     cooldown = getattr(get_original_handler(handler), "cooldown", None)
 
@@ -347,6 +355,7 @@ DEFAULT_MIDDLEWARES = [
     rate_limit_middleware,
     auth_middleware,
     forward_middleware,
+    error_middleware,
     web.normalize_path_middleware(append_slash=False, remove_slash=True),
 ]
 
