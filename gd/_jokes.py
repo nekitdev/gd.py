@@ -58,4 +58,5 @@ joke_map = {
     "rya": "lol rebooting my gdps for the 80th time",
     "sputnix": "let's make gta5 in gd",
     "zmx": "no rust is a shit language stop telling me to use it",
+    "spooky": ":crab: rust",
 }
