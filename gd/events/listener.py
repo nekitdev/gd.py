@@ -1,15 +1,12 @@
 import asyncio
-import threading
 import signal
 import traceback
 
 from gd.level import Level
 from gd.logging import get_logger
-from gd.typing import Client, Comment, FriendRequest, Iterable, List, Message, Optional, Union
+from gd.typing import Client, Comment, FriendRequest, Iterable, List, Message, Union
 
-from gd.utils import tasks
-from gd.utils.async_utils import shutdown_loop, gather
-from gd.utils.decorators import run_once
+from gd.utils.async_utils import acquire_loop, shutdown_loop, gather
 from gd.utils.enums import TimelyType
 from gd.utils.filters import Filters
 from gd.utils.text_tools import make_repr
@@ -20,7 +17,6 @@ __all__ = (
     "RateLevelListener",
     "MessageOrRequestListener",
     "LevelCommentListener",
-    "thread",
     "get_loop",
     "set_loop",
     "run",
@@ -36,11 +32,17 @@ all_listeners = []
 
 
 def get_loop() -> asyncio.AbstractEventLoop:
+    global loop
+
+    if loop.is_closed() or loop.is_running():
+        loop = asyncio.new_event_loop()
+
     return loop
 
 
 def set_loop(new_loop: asyncio.AbstractEventLoop) -> None:
     global loop
+
     loop = new_loop
 
 
@@ -65,53 +67,18 @@ def run(loop: asyncio.AbstractEventLoop) -> None:
         shutdown_loop(loop)
 
 
-def update_thread_loop(thread: threading.Thread, loop: asyncio.AbstractEventLoop) -> None:
-    thread.args = (loop,)
-
-
-thread = threading.Thread(target=run, args=(loop,), name="ListenerThread", daemon=True)
-
-
 class AbstractListener:
-    def __init__(
-        self,
-        client: Client,
-        delay: float = 10.0,
-        *,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
-    ) -> None:
-        if loop is None:
-            loop = get_loop()
+    def __init__(self, client: Client, delay: float = 10.0) -> None:
         self.client = client
-        self.loop = loop
-        self.runner = tasks.loop(seconds=delay, loop=loop)(self.main)
+        self.delay = delay
         self.cache = None
+        self.loop: asyncio.AbstractEventLoop = acquire_loop(running=True)
+
         all_listeners.append(self)
 
     def __repr__(self) -> str:
         info = {"client": self.client}
         return make_repr(self, info)
-
-    def attach_to_loop(self, loop: asyncio.AbstractEventLoop) -> None:
-        """Attach the runner to another event loop."""
-        self.runner.loop = loop
-        self.loop = loop
-
-    def enable(self) -> None:
-        try:
-            self.runner.start()
-        except RuntimeError:
-            pass
-
-    @run_once
-    def close(self, *args, force: bool = True) -> None:
-        """Accurately shutdown a listener.
-        If force is true, cancel the runner, and wait until it finishes otherwise.
-        """
-        if force:
-            self.runner.cancel()
-        else:
-            self.runner.stop()
 
     async def on_error(self, exc: Exception) -> None:
         """Basic event handler to print the errors if any occur."""
@@ -130,6 +97,7 @@ class AbstractListener:
         await self.setup()
 
         try:
+            self.loop = acquire_loop(running=True)
             await self.scan()
 
         except Exception as exc:
@@ -139,15 +107,8 @@ class AbstractListener:
 class TimelyLevelListener(AbstractListener):
     """Listens for a new daily or weekly level."""
 
-    def __init__(
-        self,
-        client: Client,
-        t_type: str,
-        delay: int = 10.0,
-        *,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
-    ) -> None:
-        super().__init__(client, delay, loop=loop)
+    def __init__(self, client: Client, t_type: str, delay: int = 10.0) -> None:
+        super().__init__(client=client, delay=delay)
         self.method = getattr(client, "get_" + t_type)
         self.call_method = "new_" + t_type
 
@@ -169,16 +130,8 @@ class TimelyLevelListener(AbstractListener):
 class RateLevelListener(AbstractListener):
     """Listens for a new rated or unrated level."""
 
-    def __init__(
-        self,
-        client: Client,
-        listen_to_rate: bool = True,
-        delay: float = 10.0,
-        *,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
-    ) -> None:
-        super().__init__(client, delay, loop=loop)
-        self.client = client
+    def __init__(self, client: Client, listen_to_rate: bool = True, delay: float = 10.0) -> None:
+        super().__init__(client=client, delay=delay)
         self.call_method = "level_rated" if listen_to_rate else "level_unrated"
         self.filters = Filters(strategy="awarded")
         self.find_new = listen_to_rate
@@ -209,7 +162,7 @@ class RateLevelListener(AbstractListener):
 async def further_differ(array: Iterable[Level], find_new: bool = True) -> List[Level]:
     array = list(array)
     updated = await gather(level.refresh() for level in array)
-    final = list()
+    final = []
 
     for level, new in zip(array, updated):
         if find_new:
@@ -227,16 +180,8 @@ async def further_differ(array: Iterable[Level], find_new: bool = True) -> List[
 class MessageOrRequestListener(AbstractListener):
     """Listens for a new friend request or message."""
 
-    def __init__(
-        self,
-        client: Client,
-        listen_to_msg: bool = True,
-        delay: float = 5.0,
-        *,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
-    ) -> None:
-        super().__init__(client, delay, loop=loop)
-        self.client = client
+    def __init__(self, client: Client, listen_to_msg: bool = True, delay: float = 5.0) -> None:
+        super().__init__(client=client, delay=delay)
         self.to_call = "message" if listen_to_msg else "friend_request"
         self.method = getattr(client, ("get_messages" if listen_to_msg else "get_friend_requests"))
 
@@ -268,15 +213,8 @@ class MessageOrRequestListener(AbstractListener):
 class LevelCommentListener(AbstractListener):
     """Listens for a new comment on a level."""
 
-    def __init__(
-        self,
-        client: Client,
-        level_id: int,
-        delay: float = 10.0,
-        *,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
-    ) -> None:
-        super().__init__(client, delay, loop=loop)
+    def __init__(self, client: Client, level_id: int, delay: float = 10.0) -> None:
+        super().__init__(client=client, delay=delay)
         self.call_method = "level_comment"
         self.timely_type = TimelyType(-level_id if level_id < 0 else 0)
         self.level = Level(id=level_id, type=self.timely_type, client=self.client)

@@ -70,21 +70,51 @@ Running Manually
 ----------------
 If you wish to run the listener normally (blocking the main thread), you can do the following:
 
-    .. code-block:: python3
+.. code-block:: python3
 
-        import gd
+    import gd
 
-        loop = gd.utils.acquire_loop()
-        gd.events.attach_to_loop(loop)
+    loop = gd.utils.acquire_loop()
 
-        client = gd.Client()
-        client.listen_for('daily')
+    client = gd.Client()
+    client.listen_for('daily')
 
-        @client.event
-        async def on_new_daily(level):
-            print(level.creator.name)
+    @client.event
+    async def on_new_daily(level):
+        print(level.creator.name)
 
-        gd.events.run(loop)  # or, simpler, loop.run_forever()
+    gd.events.run(loop)
+
+Instead of running this:
+
+.. code-block:: python3
+
+    gd.events.run(loop)
+
+You can use this:
+
+.. code-block:: python3
+
+    gd.events.enable(loop)
+    loop.run_forever()
+
+This allows for using gd.py, for example, in the discord.py bot:
+
+.. code-block:: python3
+
+    from discord.ext import commands
+    import gd
+
+    bot = commands.Bot(command_prefix="!")
+    client = gd.Client()
+    bot.client = client  # attach the client in case you might need to use it
+
+    @client.listen_for("daily")
+    async def on_new_daily(level: gd.Level) -> None:
+        ...  # you can do something with your bot here
+
+    gd.events.enable(bot.loop)
+    bot.run("BOT_TOKEN")
 
 Event handlers with @client.event
 ---------------------------------
@@ -114,7 +144,7 @@ Functions
 
 .. currentmodule:: gd.events
 
-.. autofunction:: attach_to_loop
+.. autofunction:: enable
 
 .. autofunction:: run
 
@@ -122,9 +152,9 @@ Functions
 
 .. autofunction:: disable
 
-.. autofunction:: enable
+.. autofunction:: cancel_tasks
 
-.. currentmodule:: gd
+.. autofunction:: attach_to_loop
 
 Creating Custom Listeners
 -------------------------
@@ -133,14 +163,16 @@ It is possible to implement your own listeners.
 
 The main idea is subclassing ``AbstractListener`` and creating your own ``scan`` method in there.
 
+.. autoclass:: AbstractListener
+
 .. code-block:: python3
 
     import gd
 
     class CustomListener(gd.events.AbstractListener):
-        def __init__(self, client, delay=10.0, *, loop=None):
+        def __init__(self, client, delay=10.0):
             # you can add additional arguments here
-            super().__init__(client, delay, loop=loop)  # this line is required
+            super().__init__(client=client, delay=delay)  # this line is required
 
         async def scan(self):
             # do something here
@@ -150,6 +182,6 @@ The main idea is subclassing ``AbstractListener`` and creating your own ``scan``
             # dispatches on_<event> with args and kwargs
             self.loop.create_task(dispatcher)  # schedule execution
 
-    CustomListener(client, 5.0).enable()
+    client.listener.append(CustomListener(client, 5.0))
 
     gd.events.start()

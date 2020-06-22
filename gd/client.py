@@ -2236,31 +2236,33 @@ class Client:
         """
         pass
 
-    def listen_for(self, type: str, entity_id: Optional[int] = None, enable: bool = True) -> None:
+    def listen_for(self, type: str, entity_id: Optional[int] = None, delay: Optional[float] = None) -> None:
         lower = str(type).lower()
 
+        kwargs = {"client": self}
+
+        if delay is not None:
+            kwargs["delay"] = delay
+
         if lower in {"daily", "weekly"}:
-            listener = TimelyLevelListener(self, lower)
+            listener = TimelyLevelListener(t_type=lower, **kwargs)
 
         elif lower in {"rate", "unrate"}:
-            listener = RateLevelListener(self, listen_to_rate=(lower == "rate"))
+            listener = RateLevelListener(listen_to_rate=(lower == "rate"), **kwargs)
 
         elif lower in {"friend_request", "message"}:
-            listener = MessageOrRequestListener(self, listen_to_msg=(lower == "message"))
+            listener = MessageOrRequestListener(listen_to_msg=(lower == "message"), **kwargs)
 
         elif lower in {"level_comment"}:
             if entity_id is None:
                 raise ClientException(f"Entity ID is required for type: {lower!r}.")
 
-            listener = LevelCommentListener(self, entity_id)
+            listener = LevelCommentListener(level_id=entity_id, **kwargs)
 
         else:
-            raise ClientException(f"Invalid listener type: {lower!r}.")
+            raise ClientException(f"Invalid listener type: {type!r}.")
 
         self.listeners.append(listener)
-
-        if enable:
-            listener.enable()
 
         return self.event  # allow using as a decorator
 
