@@ -1,6 +1,6 @@
 from gd.utils.enums import Enum
 
-__all__ = ("LevelType", "Scene")
+__all__ = ("GameMode", "LevelType", "Scene")
 
 
 class Scene(Enum):
@@ -28,3 +28,15 @@ class LevelType(Enum):
     EDITOR = 2
     SAVED = 3
     ONLINE = 4
+
+
+class GameMode(Enum):
+    """An enumeration that represents gamemodes."""
+
+    CUBE = 0
+    SHIP = 1
+    BALL = 2
+    UFO = 3
+    WAVE = 4
+    ROBOT = 5
+    SPIDER = 6

@@ -19,7 +19,7 @@ try:
 except Exception:  # noqa
     pass
 
-from gd.memory.enums import LevelType, Scene
+from gd.memory.enums import GameMode, LevelType, Scene
 from gd.api.enums import SpeedConstant
 from gd.errors import FailedConversion
 from gd.typing import (
@@ -410,6 +410,17 @@ class WindowsMemory(MemoryType):
         """Get value of current resolution and try to get ``(w, h)`` tuple, ``(0, 0)`` on fail."""
         return number_to_resolution.get(self.get_resolution_value(), (0, 0))
 
+    def get_gamemode_state(self) -> List[bool]:
+        return list(map(bool, self.read_bytes(6, 0x3222D0, 0x164, 0x224, 0x638).data))
+
+    def get_gamemode(self) -> GameMode:
+        try:
+            value = self.get_gamemode_state().index(True) + 1
+        except ValueError:  # not in list
+            value = 0
+
+        return GameMode.from_value(value)
+
     def get_level_id_fast(self) -> int:
         """Quickly read level ID, which is not always accurate for example on *official* levels."""
         return self.read_type(Int32, 0x3222D0, 0x2A0)
@@ -439,7 +450,10 @@ class WindowsMemory(MemoryType):
         """Get current percentage in the level."""
         base = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x3C0)
         string = self.read_string(base, 0x12C)
-        return 0 if not string else int(float(string.rstrip("%")))
+        try:
+            return int(float(string.rstrip("%")))
+        except ValueError:
+            return 0
 
     def get_x_pos(self) -> float:
         """Get X position of the player."""

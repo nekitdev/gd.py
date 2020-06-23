@@ -57,6 +57,9 @@ Enums
 .. autoclass:: LevelType
     :members:
 
+.. autoclass:: GameMode
+    :members:
+
 Buffer
 ------
 
