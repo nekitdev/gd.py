@@ -1,7 +1,6 @@
 from ctypes import wintypes
 import ctypes
 from pathlib import Path
-import sys
 
 import pefile  # to parse some headers uwu ~ nekit
 
@@ -207,6 +206,11 @@ def wait_for_single_object(handle: wintypes.HANDLE, time_ms: wintypes.DWORD) -> 
     pass
 
 
+@func_def(kernel32.IsWow64Process)
+def is_wow_64_process_impl(handle: wintypes.HANDLE, bool_ptr: wintypes.PBOOL) -> wintypes.BOOL:
+    pass
+
+
 @func_def(kernel32.GetSystemWow64DirectoryA)
 def get_system_wow_64_dir_a(string_buffer: wintypes.LPSTR, size: wintypes.UINT) -> wintypes.UINT:
     pass
@@ -314,44 +318,61 @@ def get_system_wow_64_dir() -> Optional[Path]:
     return Path(string_buffer.value.decode("utf-8"))
 
 
-def inject_dll(process_id: int, dll_path: Union[str, Path], is_32_bit: bool = True,) -> int:
-    dll_path = str(Path(dll_path).resolve())
+def is_wow_64_process(process_handle: wintypes.HANDLE) -> bool:
+    result = wintypes.BOOL(0)
+    is_wow_64_process_impl(process_handle, ctypes.byref(result))
+    return bool(result.value)
 
-    process = get_handle(process_id)
 
-    data = ctypes.create_string_buffer(dll_path.encode())
+def inject_dll(process_id: int, dll_path: Union[str, Path]) -> int:
+    dll_path = Path(dll_path).resolve()
 
+    if not dll_path.exists():
+        raise FileNotFoundError(f"Given DLL path does not exist: {dll_path}.")
+
+    dll_path = str(dll_path)
+
+    process = get_handle(process_id)  # get handle to our process
+
+    data = ctypes.create_string_buffer(dll_path.encode())  # convert python str to cstr
+
+    # allocate memory required to put our DLL path
     parameter_address = virtual_alloc_ex(process, 0, len(data), VIRTUAL_MEM, PAGE_READWRITE)
 
+    # write DLL path string into allocated space
     write_process_memory(process, parameter_address, ctypes.byref(data), len(data), None)
 
-    if is_32_bit and is_python_64_bit:
+    if is_wow_64_process(process):  # in case we are injecting into 32-bit process from 64-bit
+        # get base address to kernel32.dll module of the process
         module_base = get_base_address(process_id, "kernel32.dll")
+        # look up offset of LoadLibraryA in PE header of WoW64 kernel32.dll
         load_library = kernel32_symbols.get("LoadLibraryA", 0) + module_base
-    else:
+    else:  # otherwise, get address normally
         load_library = get_module_proc_address("kernel32.dll", "LoadLibraryA")
 
     thread_id = wintypes.DWORD(0)
 
+    # create remote thread, with start routine of LoadLibraryA(DLLPath)
     handle = create_remote_thread(
         process, None, 0, load_library, parameter_address, 0, ctypes.byref(thread_id)
     )
 
+    # wait for the handle
     wait_for_single_object(handle, INFINITE)
 
+    # free memory used to allocate DLL path
     virtual_free_ex(process, parameter_address, 0, MEM_RELEASE)
 
+    # close process and thread handles
     close_handle(process)
     close_handle(handle)
 
     return thread_id.value
 
 
-is_python_64_bit = sys.maxsize > 2 ** 32
-
 system_wow_64_dir = get_system_wow_64_dir()
 
-if is_python_64_bit and system_wow_64_dir:
+if system_wow_64_dir:
     kernel32_symbols = get_module_symbols(system_wow_64_dir / "kernel32.dll")
 else:
     kernel32_symbols = {}
