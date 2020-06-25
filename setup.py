@@ -19,7 +19,7 @@ except AttributeError:
 readme = (root / "README.rst").read_text("utf-8")
 
 extras_require = {
-    "dev": ["black", "coverage", "ipython", "flake8", "pytest-asyncio"],
+    "dev": ["black", "coverage", "ipython", "flake8", "pycryptodome", "pytest-asyncio"],
     "docs": ["sphinx", "sphinx_rtd_theme", "sphinxcontrib_trio", "sphinxcontrib-websupport"],
 }
 
