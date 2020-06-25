@@ -2236,7 +2236,9 @@ class Client:
         """
         pass
 
-    def listen_for(self, type: str, entity_id: Optional[int] = None, delay: Optional[float] = None) -> None:
+    def listen_for(
+        self, type: str, entity_id: Optional[int] = None, delay: Optional[float] = None
+    ) -> None:
         lower = str(type).lower()
 
         kwargs = {"client": self}

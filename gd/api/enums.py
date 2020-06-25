@@ -394,6 +394,7 @@ class PulseType(Enum):
 
 class SpecialBlockType(Enum):
     """An enumeration representing IDs of special objects (e.g. *S*, *H*, etc)."""
+
     D = 1755
     J = 1813
     S = 1829

@@ -1131,7 +1131,7 @@ async def get_messages(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to read a message.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to read a message.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=True)
@@ -1161,7 +1161,7 @@ async def read_message(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to delete a message.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to delete a message.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=True)
@@ -1226,7 +1226,7 @@ async def get_friend_requests(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to get a request.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to get a request.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=True)
@@ -1253,7 +1253,7 @@ async def read_friend_request(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to delete a request.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to delete a request.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=True)
@@ -1292,7 +1292,7 @@ async def delete_friend_request(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to accept a request.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to accept a request.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=True)
@@ -1349,7 +1349,7 @@ async def get_friends(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to (un)block user.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to (un)block user.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=True)
@@ -1382,7 +1382,7 @@ async def un_block_user(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to (un)friend user.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to (un)friend user.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=True)
@@ -1528,7 +1528,7 @@ async def like_item(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to rate a level.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to rate a level.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=True)
@@ -1559,7 +1559,7 @@ async def rate_level(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to update level description.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to update level description.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=True)
@@ -1589,7 +1589,7 @@ async def update_level_description(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to demon-rate a level.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to demon-rate a level.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=True)
@@ -1625,7 +1625,7 @@ async def rate_level_demon(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to send a level.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to send a level.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=True)
@@ -1660,7 +1660,7 @@ async def send_level(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to get level comments.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to get level comments.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=False)
@@ -1696,7 +1696,7 @@ async def get_level_comments(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to get the leaderboard.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to get the leaderboard.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=True)
@@ -1731,7 +1731,7 @@ async def get_level_leaderboard(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to get user comments.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to get user comments.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=False)
@@ -1769,7 +1769,7 @@ async def get_user_comments(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to comment a level.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to comment a level.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=True)
@@ -1898,7 +1898,7 @@ PROFILE_QUERY: Dict[str, Tuple[Union[Callable[[str], Any], Any]]] = {
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to update profile.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to update profile.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=True)
@@ -1974,7 +1974,7 @@ def color_from_hex(string: str) -> gd.Color:
         ),
         LookupError: Error(404, "Icon was not found.", ErrorType.NOT_FOUND),
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        Warning: Error(404, "No types to generate are given.", ErrorType.NOT_FOUND)
+        Warning: Error(404, "No types to generate are given.", ErrorType.NOT_FOUND),
     }
 )
 @auth_setup(required=False)
@@ -1984,11 +1984,10 @@ async def generate_icons(request: web.Request) -> web.Response:
     color_1 = color_from_hex(query.pop("color_1", "0x00ff00"))
     color_2 = color_from_hex(query.pop("color_2", "0x00ffff"))
     glow_outline = str_to_bool(query.pop("glow_outline", "false"))
+    error_on_not_found = str_to_bool(query.pop("error_on_not_found", "false"))
 
     settings = f"color_1={color_1}$color_2={color_2}$glow_outline={glow_outline}".lower()
-    types = "$".join(
-        f"{key}={value}".lower() for key, value in query.items()
-    )
+    types = "$".join(f"{key}={value}".lower() for key, value in query.items())
     name = f"[{settings}]({types}).png"
     path = ROOT_PATH / name
 
@@ -1998,13 +1997,14 @@ async def generate_icons(request: web.Request) -> web.Response:
     images = [
         await gd.utils.run_blocking_io(
             gd.factory.generate,
-            icon_type=icon_type,
+            icon_type=gd.IconType.from_value(icon_type),
             icon_id=int(icon_id),
             color_1=color_1,
             color_2=color_2,
             glow_outline=glow_outline,
-            error_on_not_found=True
-        ) for icon_type, icon_id in query.items()
+            error_on_not_found=error_on_not_found,
+        )
+        for icon_type, icon_id in query.items()
     ]
 
     if not images:
@@ -2023,7 +2023,7 @@ async def generate_icons(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Could not find requested user.", ErrorType.NOT_FOUND)
+        gd.MissingAccess: Error(404, "Could not find requested user.", ErrorType.NOT_FOUND),
     }
 )
 @auth_setup(required=False)
@@ -2286,9 +2286,7 @@ async def delete_comment(request: web.Request) -> web.Response:
     """
     comment_id = int(request.match_info["id"])
 
-    await gd.Comment(
-        type=gd.CommentType.PROFILE, id=comment_id, client=request.app.client
-    ).delete()
+    await gd.Comment(type=gd.CommentType.PROFILE, id=comment_id, client=request.app.client).delete()
 
     return json_resp({})
 
@@ -2297,7 +2295,7 @@ async def delete_comment(request: web.Request) -> web.Response:
 @handle_errors(
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
-        gd.MissingAccess: Error(404, "Failed to delete a comment.", ErrorType.FAILED)
+        gd.MissingAccess: Error(404, "Failed to delete a comment.", ErrorType.FAILED),
     }
 )
 @auth_setup(required=True)

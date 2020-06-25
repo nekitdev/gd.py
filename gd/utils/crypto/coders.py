@@ -191,7 +191,7 @@ class Coder:
         :class:`str`
             Decoded string.
         """
-        string += ("=" * (4 - len(string) % 4))  # add padding
+        string += "=" * (4 - len(string) % 4)  # add padding
 
         try:
             cipher_stream = urlsafe_b64decode(string.encode())

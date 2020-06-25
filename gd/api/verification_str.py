@@ -43,9 +43,7 @@ class Entry:
     dual: bool = attrib(default=False)
 
     def __repr__(self) -> None:
-        info = {
-            "time": self.time, "prev": self.prev, "next": self.next, "dual": self.dual
-        }
+        info = {"time": self.time, "prev": self.prev, "next": self.next, "dual": self.dual}
         return make_repr(self, info)
 
     def dump(self) -> str:
@@ -80,9 +78,7 @@ class Entry:
     def from_match(cls, match: Match) -> EntryType:
         group_dict = match.groupdict()
 
-        init_dict = {
-            key: func(group_dict[key]) for key, func in PATTERN_TYPES.items()
-        }
+        init_dict = {key: func(group_dict[key]) for key, func in PATTERN_TYPES.items()}
 
         return cls(**init_dict)
 

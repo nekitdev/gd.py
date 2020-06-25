@@ -11,7 +11,9 @@ __all__ = ("Part", "Database", "LevelCollection")
 
 
 class Part(dict):
-    def __init__(self, stream: str = Union[bytes, str], default: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(
+        self, stream: str = Union[bytes, str], default: Optional[Dict[str, Any]] = None
+    ) -> None:
         self.parser = XMLParser()
 
         if isinstance(stream, str):
