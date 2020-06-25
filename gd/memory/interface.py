@@ -498,6 +498,10 @@ class WindowsMemory(MemoryType):
         """Get value of gravity in the level."""
         return self.read_type(Float, 0x1E9050, 0)
 
+    def set_gravity(self, gravity: float) -> None:
+        """Set value of gravity in the level."""
+        self.write_type(Float, gravity, 0x1E9050, 0)
+
     def get_level_id(self) -> int:
         """Get accurate ID of the level."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0xF8)
