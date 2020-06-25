@@ -14,6 +14,7 @@ from pathlib import Path
 
 from aiohttp import web
 import aiohttp
+import multidict
 
 from gd.typing import (
     Any,
@@ -1127,7 +1128,12 @@ async def get_messages(request: web.Request) -> web.Response:
 
 
 @routes.get("/api/message/{id}")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to read a message.", ErrorType.FAILED)})
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to read a message.", ErrorType.FAILED)
+    }
+)
 @auth_setup(required=True)
 async def read_message(request: web.Request) -> web.Response:
     """GET /api/message/{id}
@@ -1152,7 +1158,12 @@ async def read_message(request: web.Request) -> web.Response:
 
 
 @routes.delete("/api/message/{id}")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to delete a message.", ErrorType.FAILED)})
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to delete a message.", ErrorType.FAILED)
+    }
+)
 @auth_setup(required=True)
 async def delete_message(request: web.Request) -> web.Response:
     """DELETE /api/message/{id}
@@ -1212,7 +1223,12 @@ async def get_friend_requests(request: web.Request) -> web.Response:
 
 
 @routes.get("/api/friend_request/{id}")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to get a request.", ErrorType.FAILED)})
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to get a request.", ErrorType.FAILED)
+    }
+)
 @auth_setup(required=True)
 async def read_friend_request(request: web.Request) -> web.Response:
     """GET /api/friend_request/{id}
@@ -1234,7 +1250,12 @@ async def read_friend_request(request: web.Request) -> web.Response:
 
 
 @routes.delete("/api/friend_request/{id}")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to delete a request.", ErrorType.FAILED)})
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to delete a request.", ErrorType.FAILED)
+    }
+)
 @auth_setup(required=True)
 async def delete_friend_request(request: web.Request) -> web.Response:
     """DELETE /api/friend_request/{id}
@@ -1268,7 +1289,12 @@ async def delete_friend_request(request: web.Request) -> web.Response:
 
 
 @routes.patch("/api/friend_request/{id}")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to accept a request.", ErrorType.FAILED)})
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to accept a request.", ErrorType.FAILED)
+    }
+)
 @auth_setup(required=True)
 async def accept_friend_request(request: web.Request) -> web.Response:
     """PATCH /api/friend_request/{id}
@@ -1320,7 +1346,12 @@ async def get_friends(request: web.Request) -> web.Response:
 
 
 @routes.patch("/api/{action:(unblock|block)}/{id}")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to (un)block user.", ErrorType.FAILED)})
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to (un)block user.", ErrorType.FAILED)
+    }
+)
 @auth_setup(required=True)
 async def un_block_user(request: web.Request) -> web.Response:
     """PATCH /api/{action:(block|unblock)}/{id}
@@ -1348,7 +1379,12 @@ async def un_block_user(request: web.Request) -> web.Response:
 
 
 @routes.patch("/api/{action:(unfriend|friend)}/{id}")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to (un)friend user.", ErrorType.FAILED)})
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to (un)friend user.", ErrorType.FAILED)
+    }
+)
 @auth_setup(required=True)
 async def un_friend_user(request: web.Request) -> web.Response:
     """PATCH /api/{action:(friend|unfriend)}/{id}
@@ -1404,6 +1440,7 @@ async def get_blocked(request: web.Request) -> web.Response:
 @handle_errors(
     {
         KeyError: Error(400, "Parameter is missing.", ErrorType.MISSING_PARAMETER),
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
         gd.MissingAccess: Error(404, "{error}", ErrorType.FAILED),
     }
 )
@@ -1449,6 +1486,7 @@ async def send_message(request: web.Request) -> web.Response:
 @handle_errors(
     {
         KeyError: Error(400, "Parameter is missing.", ErrorType.MISSING_PARAMETER),
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
         gd.MissingAccess: Error(404, "Failed to like an entity.", ErrorType.FAILED),
     }
 )
@@ -1487,7 +1525,12 @@ async def like_item(request: web.Request) -> web.Response:
 
 
 @routes.patch("/api/level/{id}/rate")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to rate a level.", ErrorType.FAILED)})
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to rate a level.", ErrorType.FAILED)
+    }
+)
 @auth_setup(required=True)
 @cooldown(rate=5, per=5)
 async def rate_level(request: web.Request) -> web.Response:
@@ -1514,7 +1557,10 @@ async def rate_level(request: web.Request) -> web.Response:
 
 @routes.patch("/api/level/{id}/description")
 @handle_errors(
-    {gd.MissingAccess: Error(404, "Failed to update level description.", ErrorType.FAILED)}
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to update level description.", ErrorType.FAILED)
+    }
 )
 @auth_setup(required=True)
 async def update_level_description(request: web.Request) -> web.Response:
@@ -1540,7 +1586,12 @@ async def update_level_description(request: web.Request) -> web.Response:
 
 
 @routes.patch("/api/level/{id}/rate_demon")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to demon-rate a level.", ErrorType.FAILED)})
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to demon-rate a level.", ErrorType.FAILED)
+    }
+)
 @auth_setup(required=True)
 async def rate_level_demon(request: web.Request) -> web.Response:
     """PATCH /api/level/{id}/rate_demon
@@ -1571,7 +1622,12 @@ async def rate_level_demon(request: web.Request) -> web.Response:
 
 
 @routes.patch("/api/level/{id}/send")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to send a level.", ErrorType.FAILED)})
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to send a level.", ErrorType.FAILED)
+    }
+)
 @auth_setup(required=True)
 async def send_level(request: web.Request) -> web.Response:
     """PATCH /api/level/{id}/send
@@ -1601,7 +1657,12 @@ async def send_level(request: web.Request) -> web.Response:
 
 
 @routes.get("/api/level/{id}/comments")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to get level comments.", ErrorType.FAILED)})
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to get level comments.", ErrorType.FAILED)
+    }
+)
 @auth_setup(required=False)
 async def get_level_comments(request: web.Request) -> web.Response:
     """GET /api/level/{id}/comments
@@ -1632,7 +1693,12 @@ async def get_level_comments(request: web.Request) -> web.Response:
 
 
 @routes.get("/api/level/{id}/leaderboard")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to get the leaderboard.", ErrorType.FAILED)})
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to get the leaderboard.", ErrorType.FAILED)
+    }
+)
 @auth_setup(required=True)
 async def get_level_leaderboard(request: web.Request) -> web.Response:
     """GET /api/level/{id}/leaderboard
@@ -1662,7 +1728,12 @@ async def get_level_leaderboard(request: web.Request) -> web.Response:
 
 
 @routes.get("/api/user/{id}/comments")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to get user comments.", ErrorType.FAILED)})
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to get user comments.", ErrorType.FAILED)
+    }
+)
 @auth_setup(required=False)
 async def get_user_comments(request: web.Request) -> web.Response:
     """GET /api/user/{id}/comments
@@ -1694,15 +1765,20 @@ async def get_user_comments(request: web.Request) -> web.Response:
     return json_resp(comments)
 
 
-@routes.post("/api/comment/{level_id}")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to comment a level.", ErrorType.FAILED)})
+@routes.post("/api/level/{level_id}/comment")
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to comment a level.", ErrorType.FAILED)
+    }
+)
 @auth_setup(required=True)
 async def comment_level(request: web.Request) -> web.Response:
-    """POST /api/comment/{level_id}
+    """POST /api/level/{level_id}/comment
     Description:
         Post a comment on the level given by Level ID.
     Example:
-        link: /api/comment/1?body=Test&percentage=42
+        link: /api/level/1/comment?body=Test&percentage=42
         body: Test
         percentage: 42
     Parameters:
@@ -1819,7 +1895,12 @@ PROFILE_QUERY: Dict[str, Tuple[Union[Callable[[str], Any], Any]]] = {
 
 
 @routes.patch("/api/profile")
-@handle_errors({gd.MissingAccess: Error(404, "Failed to update profile.", ErrorType.FAILED)})
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to update profile.", ErrorType.FAILED)
+    }
+)
 @auth_setup(required=True)
 async def update_profile(request: web.Request) -> web.Response:
     """PATCH /api/profile
@@ -1881,9 +1962,69 @@ async def update_profile(request: web.Request) -> web.Response:
     return json_resp({})
 
 
+def color_from_hex(string: str) -> gd.Color:
+    return gd.Color(int(string.replace("#", "0x"), 16))
+
+
+@routes.get("/api/icon_factory")
+@handle_errors(
+    {
+        AttributeError: Error(
+            500, "Can not generate icons due to factory missing.", ErrorType.NOT_FOUND
+        ),
+        LookupError: Error(404, "Icon was not found.", ErrorType.NOT_FOUND),
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        Warning: Error(404, "No types to generate are given.", ErrorType.NOT_FOUND)
+    }
+)
+@auth_setup(required=False)
+async def generate_icons(request: web.Request) -> web.Response:
+    query = multidict.CIMultiDict(request.query)
+
+    color_1 = color_from_hex(query.pop("color_1", "0x00ff00"))
+    color_2 = color_from_hex(query.pop("color_2", "0x00ffff"))
+    glow_outline = str_to_bool(query.pop("glow_outline", "false"))
+
+    settings = f"color_1={color_1}$color_2={color_2}$glow_outline={glow_outline}".lower()
+    types = "$".join(
+        f"{key}={value}".lower() for key, value in query.items()
+    )
+    name = f"[{settings}]({types}).png"
+    path = ROOT_PATH / name
+
+    if path.exists():
+        return web.FileResponse(path)
+
+    images = [
+        await gd.utils.run_blocking_io(
+            gd.factory.generate,
+            icon_type=icon_type,
+            icon_id=int(icon_id),
+            color_1=color_1,
+            color_2=color_2,
+            glow_outline=glow_outline,
+            error_on_not_found=True
+        ) for icon_type, icon_id in query.items()
+    ]
+
+    if not images:
+        raise Warning("No types were generated.")
+
+    image = await gd.utils.run_blocking_io(gd.icon_factory.connect_images, images)
+
+    image.save(path)
+
+    request.loop.create_task(delete_after(5, path))
+
+    return web.FileResponse(path)
+
+
 @routes.get("/api/icons/{type:(all|main|cube|ship|ball|ufo|wave|robot|spider)}/{query}")
 @handle_errors(
-    {gd.MissingAccess: Error(404, "Could not find requested user.", ErrorType.NOT_FOUND)}
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Could not find requested user.", ErrorType.NOT_FOUND)
+    }
 )
 @auth_setup(required=False)
 async def get_icons(request: web.Request) -> web.Response:
@@ -1932,7 +2073,7 @@ async def get_icons(request: web.Request) -> web.Response:
 
 
 @routes.get("/api/search/levels")
-@handle_errors()
+@handle_errors({ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE)})
 @auth_setup(required=False)
 async def search_levels(request: web.Request) -> web.Response:
     """GET /api/search/levels
@@ -2117,7 +2258,6 @@ async def backup_save(request: web.Request) -> web.Response:
     """
     main = convert_to_encoded(request.query["main"])
     levels = convert_to_encoded(request.query["levels"])
-    return print(main, levels)
 
     await request.app.client.backup(save_data=[main, levels])
 
@@ -2126,6 +2266,7 @@ async def backup_save(request: web.Request) -> web.Response:
 @handle_errors(
     {
         KeyError: Error(400, "Parameter is missing.", ErrorType.MISSING_PARAMETER),
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
         gd.MissingAccess: Error(404, "Failed to delete a comment.", ErrorType.FAILED),
     }
 )
@@ -2133,13 +2274,9 @@ async def backup_save(request: web.Request) -> web.Response:
 async def delete_comment(request: web.Request) -> web.Response:
     """DELETE /api/comment/{id}
     Description:
-        Delete the profile/level comment, given by ID.
+        Delete the profile comment, given by ID.
     Example:
-        link: /api/comment/123456789?type=profile
-        type: profile
-    Parameters:
-        type: Type of the comment, either "profile" or "level";
-        level_id: Level ID, required if "type" is "level", default is 0.
+        link: /api/comment/123456789
     Returns:
         200: Empty JSON;
         400: Parameter is missing;
@@ -2148,11 +2285,39 @@ async def delete_comment(request: web.Request) -> web.Response:
         application/json
     """
     comment_id = int(request.match_info["id"])
-    comment_type = string_to_enum(request.query["type"], gd.CommentType)
-    level_id = int(request.query.get("level_id", 0))
 
     await gd.Comment(
-        type=comment_type, id=comment_id, level_id=level_id, client=request.app.client
+        type=gd.CommentType.PROFILE, id=comment_id, client=request.app.client
+    ).delete()
+
+    return json_resp({})
+
+
+@routes.delete("/api/level/{level_id}/comment/{comment_id}")
+@handle_errors(
+    {
+        ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
+        gd.MissingAccess: Error(404, "Failed to delete a comment.", ErrorType.FAILED)
+    }
+)
+@auth_setup(required=True)
+async def delete_level_comment(request: web.Request) -> web.Response:
+    """DELETE /api/level/{level_id}/comment/{comment_id}
+    Description:
+        Delete the level (given by ID) comment, given by ID.
+    Example:
+        link: /api/level/1/comment/123456789
+    Returns:
+        200: Empty JSON;
+        404: Failed to delete a comment.
+    Return Type:
+        application/json
+    """
+    level_id = int(request.match_info["level_id"])
+    comment_id = int(request.match_info["comment_id"])
+
+    await gd.Comment(
+        type=gd.CommentType.LEVEL, id=comment_id, level_id=level_id, client=request.app.client
     ).delete()
 
     return json_resp({})
