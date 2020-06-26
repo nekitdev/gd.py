@@ -14,6 +14,7 @@ try:
         get_pid_from_name,
         get_window_process_id,
         inject_dll,
+        terminate_process,
         read_process_memory,
         write_process_memory,
     )
@@ -394,6 +395,9 @@ class WindowsMemory(MemoryType):
     def inject_dll(self, path: Union[str, Path]) -> bool:
         """Inject DLL from ``path`` and check if it was successfully injected."""
         return bool(inject_dll(self.process_id, path))
+
+    def terminate(self, exit_code: int = 0) -> bool:
+        return bool(terminate_process(self.process_handle, exit_code))
 
     def redirect_memory(self, size: int, *offsets, address: int = 0) -> None:
         """Allocate ``size`` bytes, resolve ``*offsets`` and write new address there."""

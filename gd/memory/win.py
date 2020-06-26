@@ -217,6 +217,11 @@ def get_system_wow_64_dir_a(string_buffer: wintypes.LPSTR, size: wintypes.UINT) 
     pass
 
 
+@func_def(kernel32.TerminateProcess)
+def terminate_process(process_handle: wintypes.HANDLE, exit_code: ctypes.c_uint) -> wintypes.BOOL:
+    pass
+
+
 @func_def(user32.FindWindowA)
 def find_window(class_name: wintypes.LPCSTR, title: wintypes.LPCSTR) -> wintypes.HWND:
     pass
