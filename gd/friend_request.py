@@ -45,7 +45,7 @@ class FriendRequest(AbstractEntity):
             is_read=(not data.get(Index.REQUEST_STATUS)),
             author=(user_1 if is_normal else user_2),
             recipient=(user_2 if is_normal else user_1),
-            type=MessageOrRequestType.from_value(indicator),
+            type=MessageOrRequestType.from_value_or(indicator, 0),
             client=client,
         )
 

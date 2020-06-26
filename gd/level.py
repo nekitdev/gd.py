@@ -270,11 +270,11 @@ class Level(AbstractEntity):
             score=data.getcast(Index.LEVEL_FEATURED_SCORE, 0, int),
             uploaded_timestamp=data.get(Index.LEVEL_UPLOADED_TIMESTAMP, "unknown"),
             last_updated_timestamp=data.get(Index.LEVEL_LAST_UPDATED_TIMESTAMP, "unknown"),
-            length=LevelLength.from_value(data.getcast(Index.LEVEL_LENGTH, 0, int)),
+            length=LevelLength.from_value_or(data.getcast(Index.LEVEL_LENGTH, 0, int), "XL"),
             game_version=data.getcast(Index.LEVEL_GAME_VERSION, 0, int),
             stars_requested=data.getcast(Index.LEVEL_REQUESTED_STARS, 0, int),
             object_count=data.getcast(Index.LEVEL_OBJECT_COUNT, 0, int),
-            type=TimelyType.from_value(data.getcast(Index.LEVEL_TIMELY_TYPE, 0, int)),
+            type=TimelyType.from_value_or(data.getcast(Index.LEVEL_TIMELY_TYPE, 0, int), 0),
             time_n=data.getcast(Index.LEVEL_TIMELY_INDEX, -1, int),
             cooldown=data.getcast(Index.LEVEL_TIMELY_COOLDOWN, -1, int),
             client=client,
@@ -749,8 +749,7 @@ class Level(AbstractEntity):
         Parameters
         ----------
         strategy: Union[:class:`int`, :class:`str`, :class:`.LevelLeaderboardStrategy`]
-            A strategy to apply. This is converted to :class:`.LevelLeaderboardStrategy`
-            using :func:`.utils.value_to_enum`.
+            A strategy to apply.
 
         Returns
         -------
@@ -772,8 +771,7 @@ class Level(AbstractEntity):
         Parameters
         ----------
         strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]
-            A strategy to apply when searching. This is converted to :class:`.CommentStrategy`
-            using :func:`.utils.value_to_enum`.
+            A strategy to apply when searching.
 
         amount: :class:`int`
             Amount of comments to retrieve. Default is ``20``.

@@ -1,7 +1,7 @@
 import functools
 import enum
 
-from gd.typing import Any, Dict, Union
+from gd.typing import Any, Dict, Iterable, Union
 from gd.errors import FailedConversion
 
 __all__ = (
@@ -29,72 +29,17 @@ __all__ = (
 )
 
 
-def _name_to_enum(x: str) -> str:
-    return x.upper().replace(" ", "_")
+def _lower_name(name: str) -> str:
+    return name.lower().replace("_", "")
 
 
-def _enum_to_name(x: enum.Enum) -> str:
+def _enum_to_name(x: enum.Enum, ignore: Iterable[str] = {"NA", "XL"}) -> str:
     name = x.name.strip("_")
-    return name if (name in {"NA", "XL"} or not name.isupper()) else name.replace("_", " ").title()
 
+    if name in ignore or not name.isupper():
+        return name
 
-def value_to_enum(enum: enum.Enum, x: Union[int, str, enum.Enum]) -> enum.Enum:
-    """Tries to convert given value to Enum object.
-
-    Example:
-
-    .. code-block:: python3
-
-        from gd.utils import value_to_enum
-
-        enum = gd.IconType
-
-        value_to_enum(enum, 0)                -> gd.IconType.CUBE
-        value_to_enum(enum, 'cube')           -> gd.IconType.CUBE
-        value_to_enum(enum, gd.IconType.CUBE) -> gd.IconType.CUBE
-
-    Parameters
-    ----------
-    enum: :class:`enum.Enum`
-        Instance of *Enum* to convert ``x`` to.
-
-    x: Union[:class:`int`, :class:`str`, :class:`enum.Enum`]
-        Object to convert to ``enum``.
-
-    Returns
-    -------
-    :class:`enum.Enum`
-        Result of converting ``x`` to ``enum``.
-
-    Raises
-    ------
-    :exc:`.FailedConversion`
-        Failed to convert ``x`` to ``enum``.
-    """
-    try:
-        # if int -> enum of value x
-        if isinstance(x, (float, int)):
-            return enum(x)
-
-        # if str -> enum of name x (converted)
-        elif isinstance(x, str):
-            try:
-                return enum[_name_to_enum(x)]
-            except KeyError:
-                try:
-                    return enum[x]
-                except KeyError:
-                    return enum(x)
-
-        # if enum -> enum of value x.value
-        elif isinstance(x, Enum):
-            return enum(x.value)
-
-        # let's raise it here, so if it is raised, we can tell that invalid type was given.
-        raise ValueError
-
-    except (KeyError, ValueError):
-        raise FailedConversion(enum=enum, value=x) from None
+    return name.replace("_", " ").title()
 
 
 @functools.total_ordering
@@ -178,6 +123,21 @@ class Enum(enum.Enum):
         return _enum_to_name(self)
 
     @classmethod
+    def from_name(cls, name: str) -> enum.Enum:
+        if not hasattr(cls, "lower_names"):
+            cls.init_lower_names()
+
+        try:
+            return cls.lower_names[_lower_name(name)]
+
+        except KeyError:
+            raise FailedConversion(enum=cls, value=name) from None
+
+    @classmethod
+    def init_lower_names(cls) -> None:
+        cls.lower_names = {_lower_name(name): enum for name, enum in cls.__members__.items()}
+
+    @classmethod
     def as_dict(cls) -> Dict[str, Any]:
         return {name.lower(): enum.value for name, enum in cls.__members__.items()}
 
@@ -219,12 +179,21 @@ class Enum(enum.Enum):
         ------
         :exc:`.FailedConversion`
             Failed to convert ``value`` to *Enum*.
-
-        :exc:`TypeError`
-            Invalid *Enum* class was given.
         """
-        assert cls is not Enum
-        return value_to_enum(cls, value)
+        if isinstance(value, str):
+            try:
+                return cls.from_name(value)
+            except FailedConversion:
+                pass
+
+        elif type(value) is cls:
+            return cls(value.value)
+
+        else:
+            try:
+                return cls(value)
+            except ValueError:
+                raise FailedConversion(enum=cls, value=value) from None
 
 
 class IconType(Enum):

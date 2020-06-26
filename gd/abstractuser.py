@@ -360,8 +360,7 @@ class AbstractUser(AbstractEntity):
             Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]
-            A strategy to apply when searching. This is converted to :class:`.CommentStrategy`
-            using :func:`.utils.value_to_enum`.
+            A strategy to apply when searching.
 
         Returns
         -------
@@ -397,8 +396,7 @@ class AbstractUser(AbstractEntity):
             Pages to look at, represented as a finite sequence, so iterations can be performed.
 
         strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]
-            A strategy to apply when searching. This is converted to :class:`.CommentStrategy`
-            using :func:`.utils.value_to_enum`.
+            A strategy to apply when searching.
 
         Returns
         -------
