@@ -8,6 +8,7 @@ import time
 
 try:
     from gd.memory.win import (
+        allocate_memory,
         get_base_address,
         get_handle,
         get_pid_from_name,
@@ -223,6 +224,9 @@ class Type:
 
         setattr(self.__class__, self.name, self)
 
+    def __call__(self, py_object: T) -> Buffer:
+        return self.to_bytes(py_object)
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}<{self.name}>({self.size})"
 
@@ -391,6 +395,11 @@ class WindowsMemory(MemoryType):
         """Inject DLL from ``path`` and check if it was successfully injected."""
         return bool(inject_dll(self.process_id, path))
 
+    def redirect_memory(self, size: int, *offsets, address: int = 0) -> None:
+        """Allocate ``size`` bytes, resolve ``*offsets`` and write new address there."""
+        new_address = allocate_memory(self.process_handle, size, address)
+        self.write_type(self.ptr_type, new_address, *offsets)
+
     def get_scene_value(self) -> int:
         """Get value of current scene enum, which can be converted to :class:`.Scene`."""
         return self.read_type(Int32, 0x3222D0, 0x1DC)
@@ -495,11 +504,12 @@ class WindowsMemory(MemoryType):
         self.write_type(Float, size, 0x3222D0, 0x164, 0x224, 0x644)
 
     def get_gravity(self) -> float:
-        """Get value of gravity in the level."""
+        """Get value of gravity in the level. Affects cube only."""
         return self.read_type(Float, 0x1E9050, 0)
 
     def set_gravity(self, gravity: float) -> None:
-        """Set value of gravity in the level."""
+        """Set value of gravity in the level. Affects cube only."""
+        self.redirect_memory(Float.size, 0x1E9050)
         self.write_type(Float, gravity, 0x1E9050, 0)
 
     def get_level_id(self) -> int:

@@ -14,7 +14,8 @@ SNAPPROCESS = 0x02
 SNAPMODULE = 0x08
 SNAPMODULE32 = 0x10
 PROCESS_ALL_ACCESS = 0x100000 | 0x0F0000 | 0x000FFF
-VIRTUAL_MEM = 0x1000 | 0x2000
+MEM_RESERVE = 0x1000
+MEM_COMMIT = 0x2000
 MEM_RELEASE = 0x8000
 INFINITE = 0xFFFFFFFF
 MAX_MODULE_NAME32 = 0x100  # 0xff + 1
@@ -318,6 +319,12 @@ def get_system_wow_64_dir() -> Optional[Path]:
     return Path(string_buffer.value.decode("utf-8"))
 
 
+def allocate_memory(
+    handle: int, size: int, address: int = 0, access: int = PAGE_EXECUTE_READWRITE
+) -> int:
+    return virtual_alloc_ex(handle, address, size, MEM_RESERVE | MEM_COMMIT, access)
+
+
 def is_wow_64_process(process_handle: wintypes.HANDLE) -> bool:
     result = wintypes.BOOL(0)
     is_wow_64_process_impl(process_handle, ctypes.byref(result))
@@ -337,7 +344,7 @@ def inject_dll(process_id: int, dll_path: Union[str, Path]) -> int:
     data = ctypes.create_string_buffer(dll_path.encode())  # convert python str to cstr
 
     # allocate memory required to put our DLL path
-    parameter_address = virtual_alloc_ex(process, 0, len(data), VIRTUAL_MEM, PAGE_READWRITE)
+    parameter_address = allocate_memory(process, len(data))
 
     # write DLL path string into allocated space
     write_process_memory(process, parameter_address, ctypes.byref(data), len(data), None)
