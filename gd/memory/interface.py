@@ -495,6 +495,13 @@ class WindowsMemory(MemoryType):
         except FailedConversion:
             return SpeedConstant.NULL
 
+    def set_speed(self, speed: Union[float, str, SpeedConstant], reverse: bool = False) -> None:
+        """Set value of speed to ``speed``. If ``reverse``, negate given speed value."""
+        speed = SpeedConstant.from_value(speed)
+        value = -speed.value if reverse else speed.value
+
+        self.set_speed_value(value)
+
     def get_size(self) -> float:
         """Get hitbox size of the player icon."""
         return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x644)
