@@ -629,6 +629,14 @@ class WindowsMemory(MemoryType):
         """Unfreeze the player."""
         self.write_bytes(Buffer[0x50, 0xFF, 0xD6], 0x203519)
 
+    def player_lock_jump_rotation(self) -> None:
+        """Lock rotation of the cube on jump."""
+        self.write_bytes(Buffer[0xC2, 0x04, 0x00], 0x1E9BF0)
+
+    def player_unlock_jump_rotation(self) -> None:
+        """Unlock rotation of the cube on jump."""
+        self.write_bytes(Buffer[0x57, 0x8B, 0xF9], 0x1E9BF0)
+
     def player_kill_enable(self) -> None:
         """Enable player kill loop."""
         self.write_bytes(Buffer[0xE9, 0x57, 0x02, 0x00, 0x00, 0x90], 0x203DA2)
