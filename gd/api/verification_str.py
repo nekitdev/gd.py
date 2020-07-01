@@ -24,10 +24,10 @@ def number_from_str(string: str) -> Number:
     return int(number) if number.is_integer() else number
 
 
-# [1;]n.[m];[1];[;]
+# [1;]n[.m];[1];[;]
 ENTRY_PATTERN = re.compile(
     r"(?:(?P<prev>1);)?"  # [1;]
-    r"(?P<time>[0-9]+(?:\.[0-9]*)?);"  # n.[m];
+    r"(?P<time>[0-9]+(?:\.[0-9]*)?);"  # n[.m];
     r"(?P<next>1)?;"  # [1];
     r"(?P<dual>;)?"  # [;]
 )

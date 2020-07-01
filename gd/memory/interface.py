@@ -297,10 +297,13 @@ class WindowsMemory(MemoryType):
         }
         return make_repr(self, info)
 
-    def resolve_layers(self, *offsets: Sequence[int]) -> int:
+    def resolve_layers(self, *offsets: Sequence[int], module: Optional[str] = None) -> int:
         offsets: List[int] = list_from(offsets)
 
-        address = self.base_address
+        if module is None:
+            address = self.base_address
+        else:
+            address = get_base_address(self.process_id, module)
 
         if offsets:
             address += offsets.pop(0)
@@ -336,21 +339,21 @@ class WindowsMemory(MemoryType):
         """Write ``value`` converted to ``type`` at ``address``."""
         return self.write_at(type.to_bytes(value), address)
 
-    def read_bytes(self, size: int = 0, *offsets) -> Buffer:
+    def read_bytes(self, size: int = 0, *offsets, module: Optional[str] = None) -> Buffer:
         """Read ``size`` bytes, resolving ``*offsets`` to the final address."""
-        return self.read_at(size, self.resolve_layers(*offsets))
+        return self.read_at(size, self.resolve_layers(*offsets, module=module))
 
-    def read_type(self, type: Type, *offsets) -> T:
+    def read_type(self, type: Type, *offsets, module: Optional[str] = None) -> T:
         """Read ``type``, resolving ``*offsets`` to the final address."""
-        return type.from_bytes(self.read_bytes(type.size, *offsets))
+        return type.from_bytes(self.read_bytes(type.size, *offsets, module=module))
 
-    def write_bytes(self, buffer: Buffer, *offsets) -> None:
+    def write_bytes(self, buffer: Buffer, *offsets, module: Optional[str] = None) -> None:
         """Write ``buffer``, resolving ``*offsets`` to the final address."""
-        self.write_at(buffer, self.resolve_layers(*offsets))
+        self.write_at(buffer, self.resolve_layers(*offsets, module=module))
 
-    def write_type(self, type: Type, value: T, *offsets) -> None:
+    def write_type(self, type: Type, value: T, *offsets, module: Optional[str] = None) -> None:
         """Write ``value`` converted to ``type``, resolving ``*offsets`` to the final address."""
-        self.write_bytes(type.to_bytes(value), *offsets)
+        self.write_bytes(type.to_bytes(value), *offsets, module=module)
 
     def read_string(self, base: int, offset: int) -> str:
         """Read string at ``base + offset``, handling its size and where it is allocated."""
@@ -381,7 +384,6 @@ class WindowsMemory(MemoryType):
 
         self.process_handle = get_handle(self.process_id)
         self.base_address = get_base_address(self.process_id, self.process_name)
-        # self.cocos_address = get_base_address(self.process_id, "libcocos2d.dll")
         self.loaded = True
 
     def is_loaded(self) -> bool:
