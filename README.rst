@@ -152,5 +152,5 @@ Links
 -----
 
 - `Documentation <https://gdpy.readthedocs.io/en/latest/index.html>`_
-- `Official Discord Server <https://discord.gg/9xhdQFR>`_
+- `Official Discord Server <https://discord.gg/mgHgnje>`_
 - `Geometry Dash Discord Server <https://discord.gg/xkgrP29>`_
