@@ -185,6 +185,9 @@ Enums
 .. autoclass:: Gamemode
     :members:
 
+.. autoclass:: LevelType
+    :members:
+
 .. autoclass:: Speed
     :members:
 

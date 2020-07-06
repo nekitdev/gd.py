@@ -22,6 +22,7 @@ __all__ = (
     "ZLayer",
     "MiscType",
     "Gamemode",
+    "LevelType",
     "Speed",
     "SpeedConstant",
     "SpeedMagic",
@@ -356,6 +357,16 @@ class Gamemode(Enum):
     SwingCopter = 7  # ?
 
 
+class LevelType(Enum):
+    """An enumeration that represents type of the level."""
+
+    NULL = 0
+    OFFICIAL = 1
+    EDITOR = 2
+    SAVED = 3
+    ONLINE = 4
+
+
 class PortalType(Enum):
     """An enumeration representing IDs of portal or speed change objects."""
 
@@ -602,6 +613,7 @@ class LevelDataEnum(Enum):
     ATTEMPTS = "k18"
     NORMAL_MODE_PERCENTAGE = "k19"
     PRACTICE_MODE_PERCENTAGE = "k20"
+    LEVEL_TYPE = "k21"
     LIKES = "k22"
     LENGTH = "k23"
     STARS = "k26"

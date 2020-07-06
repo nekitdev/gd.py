@@ -21,8 +21,8 @@ try:
 except Exception:  # noqa
     pass
 
-from gd.memory.enums import GameMode, LevelType, Scene
-from gd.api.enums import SpeedConstant
+from gd.memory.enums import Scene
+from gd.api.enums import LevelType, Gamemode, SpeedConstant
 from gd.errors import FailedConversion
 from gd.typing import (
     Any,
@@ -428,13 +428,13 @@ class WindowsMemory(MemoryType):
     def get_gamemode_state(self) -> List[bool]:
         return list(map(bool, self.read_bytes(6, 0x3222D0, 0x164, 0x224, 0x638).data))
 
-    def get_gamemode(self) -> GameMode:
+    def get_gamemode(self) -> Gamemode:
         try:
             value = self.get_gamemode_state().index(True) + 1
         except ValueError:  # not in list
             value = 0
 
-        return GameMode.from_value(value)
+        return Gamemode.from_value(value)
 
     def get_level_id_fast(self) -> int:
         """Quickly read level ID, which is not always accurate for example on *official* levels."""

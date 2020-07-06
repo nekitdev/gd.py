@@ -1,6 +1,8 @@
-# type: ignore
-# we are going very polymorphic here
 from itertools import chain
+
+from gd.typing import (
+    Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Type, TypeVar, Tuple, Union
+)
 
 from gd.utils.crypto.coders import Coder
 from gd.utils.enums import Enum
@@ -18,91 +20,96 @@ from gd.api.enums import (
     TargetPosCoordinates,
     PlayerColor,
     Gamemode,
+    LevelType,
     Speed,
 )
 
+T = TypeVar("T")
+U = TypeVar("U")
 
 # MAIN HELPERS
 
 
-def _try_convert(obj, cls: type = int):
+def _identity(any_object: T) -> T:
+    return any_object
+
+
+def _try_convert(py_object: T, cls: Type[U] = int) -> Union[T, U]:
     try:
-        return cls(obj)
+        return cls(py_object)
     except Exception:
-        return obj
+        return py_object
 
 
-def _prepare(s, delim: str):
-    s = s.split(delim)
-    return zip(s[::2], s[1::2])
+def _prepare(string: str, delim: str) -> Iterator[Tuple[str, str]]:
+    str_iter = iter(string.split(delim))
+    return zip(str_iter, str_iter)
 
 
-def _convert(s, delim: str = "_", *, f=None):
-    prepared = _prepare(s, delim)
+def _convert(
+    string: str, delim: str = "_", *, func: Optional[Callable[[str], T]] = None
+) -> Dict[str, Union[str, T]]:
+    prepared = _prepare(string, delim)
 
-    if f is None:
+    if func is None:
         # case: no convert func
         return dict(prepared)
 
-    return {key: f(key, value) for key, value in prepared}
+    return {key: func(key, value) for key, value in prepared}
 
 
-def _dump(d, additional: dict = None):
-    final = {}
-
+def _dump(
+    some_dict: Dict[str, T], additional: Optional[Dict[str, Callable[[T], U]]] = None
+) -> Dict[str, Union[T, U]]:
     if additional is None:
-        additional = {}
+        return {key: _convert_type(value) for key, value in some_dict.items()}
 
-    for n, value in d.items():
-        to_add = _convert_type(value)
-
-        if n in additional:
-            to_add = additional[n](to_add)
-
-        final[n] = to_add
-
-    return final
+    else:
+        return {
+            key: additional.get(key, _identity)(_convert_type(value))
+            for key, value in some_dict.items()
+        }
 
 
-def _collect(d, char: str = "_"):
-    return char.join(map(str, chain.from_iterable(d.items())))
+def _collect(some_dict: Dict[T, U], char: str = "_"):
+    return char.join(map(str, chain.from_iterable(some_dict.items())))
 
 
-def _maybefloat(s: str):
-    if "." in s:
-        return float(s)
-    return int(s)
+def _maybefloat(string: str) -> Union[float, int]:
+    if "." in string:
+        return float(string)
+    return int(string)
 
 
-def _bool(s: str):
-    return s == "1"
+def _bool(string: str) -> bool:
+    return string == "1"
 
 
-def _ints_from_str(string: str, split: str = "."):
+def _ints_from_str(string: str, split: str = ".") -> Set[int]:
     if not string:
         return set()
 
     return set(map(int, string.split(split)))
 
 
-def _iter_to_str(x):
+def _iter_to_str(some_iter: Iterable[Any]) -> str:
     char = "."
 
     try:
-        t = type(next(iter(x)))
+        first_type = type(next(iter(some_iter)))
 
     except StopIteration:
         pass
 
     else:
-        if t is dict:
+        if first_type is dict:
             char = "|"
-            x = (_collect(_dump(elem)) for elem in x)
+            some_iter = (_collect(_dump(elem)) for elem in some_iter)
 
-    return char.join(map(str, x))
+    return char.join(map(str, some_iter))
 
 
-def _b64_failsafe(string: str, encode: bool = True):
+def _b64_failsafe(string: str, encode: bool = True) -> str:
     try:
         return Coder.do_base64(string, encode=encode)
     except Exception:
@@ -227,37 +234,37 @@ _ENUMS = {
     _TARGET_COORDS: TargetPosCoordinates,
 }
 
-_OBJECT_ADDITIONAL = {_TEXT: lambda x: _b64_failsafe(x, encode=True)}
+_OBJECT_ADDITIONAL = {_TEXT: lambda text: _b64_failsafe(text, encode=True)}
 
 
-def _object_convert(s):
-    return _convert(s, delim=(","), f=_from_str)
+def _object_convert(string: str) -> Dict[str, Any]:
+    return _convert(string, delim=",", func=_from_str)
 
 
-def _object_dump(d):
-    return _dump(d, _OBJECT_ADDITIONAL)
+def _object_dump(some_dict: Dict[str, T]) -> Dict[str, Union[T, U]]:
+    return _dump(some_dict, _OBJECT_ADDITIONAL)
 
 
-def _object_collect(d):
-    return _collect(d, ",")
+def _object_collect(some_dict: Dict[T, U]) -> str:
+    return _collect(some_dict, ",")
 
 
-def _from_str(n: int, v: str):
-    if n in _INT:
-        return int(v)
-    if n in _BOOL:
-        return _bool(v)
-    if n in _FLOAT:
-        return _maybefloat(v)
-    if n == _GROUPS:
-        return _ints_from_str(v)
-    if n in _HSV:
-        return HSV.from_string(v)
-    if n in _ENUMS:
-        return _ENUMS[n](int(v))
-    if n == _TEXT:
-        return _b64_failsafe(v, encode=False)
-    return v
+def _from_str(key: str, value: str) -> Any:
+    if key in _INT:
+        return int(value)
+    if key in _BOOL:
+        return _bool(value)
+    if key in _FLOAT:
+        return _maybefloat(value)
+    if key == _GROUPS:
+        return _ints_from_str(value)
+    if key in _HSV:
+        return HSV.from_string(value)
+    if key in _ENUMS:
+        return _ENUMS[key](int(value))
+    if key == _TEXT:
+        return _b64_failsafe(value, encode=False)
+    return value
 
 
 _MAPPING = {
@@ -270,16 +277,14 @@ _MAPPING = {
     HSV: HSV.dump,
 }
 
-_KEYS = set(_MAPPING)
 
-
-def _convert_type(x: object):
-    t = x.__class__
-    if t in _KEYS:
-        return _MAPPING[t](x)
-    elif Enum in t.__mro__:
-        return x.value
-    return x
+def _convert_type(some_object: T) -> Union[T, U]:
+    some_type = some_object.__class__
+    if some_type in _MAPPING:
+        return _MAPPING[some_type](some_object)
+    elif Enum in some_type.__mro__:
+        return some_object.value
+    return some_object
 
 
 # COLOR PARSING
@@ -291,30 +296,30 @@ _COLOR_FLOAT = "7"
 _COLOR_HSV = "10"
 
 
-def _parse_color(n: int, v: str):
-    if n in _COLOR_INT:
-        return int(v)
-    if n in _COLOR_BOOL:
-        return _bool(v)
-    if n == _COLOR_FLOAT:
-        return _maybefloat(v)
-    if n == _COLOR_HSV:
-        return HSV.from_string(v)
-    if n == _COLOR_PLAYER:
-        return PlayerColor(int(v))
-    return v
+def _parse_color(key: str, value: str) -> Any:
+    if key in _COLOR_INT:
+        return int(value)
+    if key in _COLOR_BOOL:
+        return _bool(value)
+    if key == _COLOR_FLOAT:
+        return _maybefloat(value)
+    if key == _COLOR_HSV:
+        return HSV.from_string(value)
+    if key == _COLOR_PLAYER:
+        return PlayerColor(int(value))
+    return value
 
 
-def _color_convert(s):
-    return _convert(s, delim=("_"), f=_parse_color)
+def _color_convert(string: str) -> Dict[str, Any]:
+    return _convert(string, delim="_", func=_parse_color)
 
 
-def _color_dump(d):
-    return _dump(d)
+def _color_dump(some_dict: Dict[str, T]) -> Dict[str, Union[T, U]]:
+    return _dump(some_dict)
 
 
-def _color_collect(d):
-    return _collect(d, "_")
+def _color_collect(some_dict: Dict[T, U]) -> str:
+    return _collect(some_dict, "_")
 
 
 # HEADER PARSING
@@ -362,45 +367,45 @@ _HEADER_ENUMS = {
 }
 
 
-def _parse_header(n: str, v: str):
-    if n in _HEADER_INT:
-        return int(v)
-    if n in _HEADER_BOOL:
-        return _bool(v)
-    if n in _HEADER_ENUMS:
-        return _HEADER_ENUMS[n](int(v))
-    if n == _COLORS:
-        return _parse_colors(v)
-    if n == _HEADER_FLOAT:
-        return _maybefloat(v)
-    if n in _HEADER_COLORS:
+def _parse_header(key: str, value: str) -> Any:
+    if key in _HEADER_INT:
+        return int(value)
+    if key in _HEADER_BOOL:
+        return _bool(value)
+    if key in _HEADER_ENUMS:
+        return _HEADER_ENUMS[key](int(value))
+    if key == _COLORS:
+        return _parse_colors(value)
+    if key == _HEADER_FLOAT:
+        return _maybefloat(value)
+    if key in _HEADER_COLORS:
         from gd.api.struct import ColorChannel  # HACK: circular imports
 
-        return ColorChannel.from_mapping(_color_convert(v))
-    if n == _GUIDELINES:
-        return _parse_guidelines(v)
-    return v
+        return ColorChannel.from_mapping(_color_convert(value))
+    if key == _GUIDELINES:
+        return _parse_guidelines(value)
+    return value
 
 
-def _parse_colors(s: str, delim: str = "|"):
-    return list(filter(lambda s: s, map(_color_convert, s.split(delim))))
+def _parse_colors(string: str, delim: str = "|") -> List[Any]:
+    return list(filter(bool, map(_color_convert, string.split(delim))))
 
 
-def _parse_guidelines(s, delim: str = "~"):
-    it = map(float, filter(lambda s: s, s.split(delim)))
-    return Guidelines.new(zip(it, it))
+def _parse_guidelines(string: str, delim: str = "~"):
+    float_iter = map(float, filter(bool, string.split(delim)))
+    return Guidelines.new(zip(float_iter, float_iter))
 
 
-def _header_convert(s):
-    return _convert(s, delim=(","), f=_parse_header)
+def _header_convert(string: str) -> Dict[str, Any]:
+    return _convert(string, delim=",", func=_parse_header)
 
 
-def _header_dump(d):
-    return _dump(d)
+def _header_dump(some_dict: Dict[str, T]) -> Dict[str, Union[T, U]]:
+    return _dump(some_dict)
 
 
-def _header_collect(d):
-    return _collect(d, ",")
+def _header_collect(some_dict: Dict[T, U]) -> str:
+    return _collect(some_dict, ",")
 
 
 # LEVEL API
@@ -409,56 +414,70 @@ _DESC = "k3"
 _SPECIAL = "k67"
 _CRYPTED = {"k4", "k34"}
 _TAB = "kI6"
+_LEVEL_TYPE = "k21"
+_LEVEL_ENUMS = {
+    _LEVEL_TYPE: LevelType
+}
 
 
-def _parse_into_array(s: str, delim: str = "_"):
-    return list(map(int, filter(lambda x: x, s.split(delim))))
+def _parse_into_array(string: str, delim: str = "_") -> List[int]:
+    return list(map(int, filter(bool, string.split(delim))))
 
 
-def _join_into_string(array: list, delim: str = "_"):
+def _join_into_string(array: List[int], delim: str = "_") -> str:
     return delim.join(map(str, array))
 
 
-def _attempt_zip(s: str):
-    unzip = all(char not in s for char in "|;,.")  # O(m*n)
+def _attempt_zip(string: str) -> str:
+    unzip = all(char not in string for char in "|;,.")  # O(m*n)
+
     try:
         if unzip:
-            return Coder.unzip(s)
-        return Coder.zip(s)
+            return Coder.unzip(string)
+
+        return Coder.zip(string)
+
     except Exception:
-        return s
+        return string
 
 
-def _level_dump(d: dict):
-    return {k: _dump_entry(k, value) for k, value in d.items()}
+def _level_dump(some_dict: Dict[str, T]) -> Dict[str, U]:
+    return {key: _dump_entry(key, value) for key, value in some_dict.items()}
 
 
-def _dump_entry(n: str, v):
-    if n == _SPECIAL:
-        return _join_into_string(v)
-    if n in _CRYPTED:
-        return _attempt_zip(v)
-    if n == _DESC:
-        return _b64_failsafe(v, encode=True)
-    if n == _TAB:
-        return {str(k): str(i) for k, i in v.items()}
-    return v
+def _dump_entry(key: str, value: Any) -> Union[str, Dict[str, str]]:
+    if key == _SPECIAL:
+        return _join_into_string(value)
+    if key in _CRYPTED:
+        return _attempt_zip(value)
+    if key == _DESC:
+        return _b64_failsafe(value, encode=True)
+    if key == _TAB:
+        return {str(key): str(other_value) for key, other_value in value.items()}
+    if key in _LEVEL_ENUMS:
+        try:
+            return value.value
+        except AttributeError:
+            pass
+    return value
 
 
-def _process_entry(n: str, v):
-    if n == _SPECIAL:
-        return _parse_into_array(v)
-    if n in _CRYPTED:
-        return _attempt_zip(v)
-    if n == _DESC:
-        return _b64_failsafe(v, encode=False)
-    if n == _TAB:
-        return {int(k): int(i) for k, i in v.items()}
-    return v
+def _process_entry(key: str, value: str) -> Any:
+    if key == _SPECIAL:
+        return _parse_into_array(value)
+    if key in _CRYPTED:
+        return _attempt_zip(value)
+    if key == _DESC:
+        return _b64_failsafe(value, encode=False)
+    if key == _TAB:
+        return {int(key): int(other_value) for key, other_value in value.items()}
+    if key in _LEVEL_ENUMS:
+        return _LEVEL_ENUMS[key](int(value))
+    return value
 
 
-def _process_level(d: dict):
-    return {k: _process_entry(k, value) for k, value in d.items()}
+def _process_level(some_dict: Dict[str, T]) -> Dict[str, U]:
+    return {key: _process_entry(key, value) for key, value in some_dict.items()}
 
 
 # LOAD ACCELERATOR
@@ -470,4 +489,5 @@ try:
 except ImportError:
     pass  # can not import? kden
 
+# add all _private_stuff
 __all__ = tuple(key for key in locals().keys() if key.startswith("_") and "__" not in key)

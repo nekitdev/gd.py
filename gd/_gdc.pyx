@@ -14,56 +14,50 @@ from libcpp cimport bool
 
 # MAIN HELPERS
 
-cdef _try_convert(object obj, type cls = int):
+cdef object _identity(object some_object):
+    return some_object
+
+
+cdef object _try_convert(object some_object, type some_class = int):
     try:
-        return cls(obj)
+        return some_class(some_object)
     except Exception:
-        return obj
+        return some_object
 
 
-cdef _prepare(str s, str delim):
-    split = s.split(delim)
-    return zip(split[::2], split[1::2])
+cdef object _prepare(str string, str delim):
+    some_iter = iter(string.split(delim))
+    return zip(some_iter, some_iter)
 
 
-cpdef dict _convert(str s, str delim = "_", object f = None):
-    prepared = _prepare(s, delim)
+cpdef dict _convert(str string, str delim = "_", object func = None):
+    prepared = _prepare(string, delim)
 
-    if f is None:
+    if func is None:
         return dict(prepared)
 
-    return {key: f(key, value) for key, value in prepared}
+    return {key: func(key, value) for key, value in prepared}
 
 
-cpdef _dump(dict d, dict additional = None):
-    final = {}
-
-    if additional is None:
-        additional = {}
-
-    for n, value in d.items():
-        to_add = _convert_type(value)
-
-        if additional and n in additional:
-            to_add = additional[n](to_add)
-
-        final[n] = to_add
-
-    return final
+cpdef dict _dump(dict some_dict, dict additional = {}):
+    return {
+        key: additional.get(key, _identity)(_convert_type(value))
+        for key, value in some_dict.items()
+    }
 
 
-cpdef _collect(dict d, str char = "_"):
-    return char.join(map(str, chain.from_iterable(d.items())))
+cpdef str _collect(dict some_dict, str char = "_"):
+    return char.join(map(str, chain.from_iterable(some_dict.items())))
 
 
-cdef _maybefloat(str s):
-    if "." in s:
-        return float(s)
-    return int(s)
+cdef object _maybefloat(str string):
+    if "." in string:
+        return float(string)
+    return int(string)
 
 
-cdef bool _bool(str s):
-    return s == "1"
+cdef bool _bool(str string):
+    return string == "1"
 
 
 cdef set _ints_from_str(str string, str split = "."):
@@ -73,25 +67,22 @@ cdef set _ints_from_str(str string, str split = "."):
     return set(map(int, string.split(split)))
 
 
-cpdef _iter_to_str(x):
+cpdef str _iter_to_str(object some_iter):
     cdef str char = "."
 
     try:
-        t = type(next(iter(x)))
+        first_type = type(next(iter(some_iter)))
 
     except StopIteration:
         pass
 
     else:
-        if t is dict:
+        if first_type is dict:
             char = "|"
 
-            s = []
-            for d in x:
-                s.append(_collect(_dump(d)))
-            x = s
+            some_iter = [_collect(_dump(elem)) for elem in some_iter]
 
-    return char.join(map(str, x))
+    return char.join(map(str, some_iter))
 
 
 cdef str _b64_failsafe(str string, bool encode = True):
@@ -144,35 +135,35 @@ cdef dict _ENUMS = {
 }
 
 cdef dict _OBJECT_ADDITIONAL = {
-    _TEXT: lambda x: _b64_failsafe(x, encode=True)
+    _TEXT: lambda text: _b64_failsafe(text, encode=True)
 }
 
-cpdef dict _object_convert(str s):
-    return _convert(s, delim=",", f=_from_str)
+cpdef dict _object_convert(str string):
+    return _convert(string, delim=",", func=_from_str)
 
-cpdef dict _object_dump(dict d):
-    return _dump(d, _OBJECT_ADDITIONAL)
+cpdef dict _object_dump(dict some_dict):
+    return _dump(some_dict, _OBJECT_ADDITIONAL)
 
-cpdef str _object_collect(dict d):
-    return _collect(d, ",")
+cpdef str _object_collect(dict some_dict):
+    return _collect(some_dict, ",")
 
 
-cdef _from_str(n, str v):
-    if n in _INT:
-        return int(v)
-    if n in _BOOL:
-        return _bool(v)
-    if n in _FLOAT:
-        return _maybefloat(v)
-    if n == _GROUPS:
-        return _ints_from_str(v)
-    if n in _HSV:
-        return HSV.from_string(v)
-    if n in _ENUMS:
-        return _ENUMS[n](int(v))
-    if n == _TEXT:
-        return _b64_failsafe(v, encode=False)
-    return v
+cdef object _from_str(str key, str value):
+    if key in _INT:
+        return int(value)
+    if key in _BOOL:
+        return _bool(value)
+    if key in _FLOAT:
+        return _maybefloat(value)
+    if key == _GROUPS:
+        return _ints_from_str(value)
+    if key in _HSV:
+        return HSV.from_string(value)
+    if key in _ENUMS:
+        return _ENUMS[key](int(value))
+    if key == _TEXT:
+        return _b64_failsafe(value, encode=False)
+    return value
 
 
 cdef dict _MAPPING = {
@@ -180,19 +171,18 @@ cdef dict _MAPPING = {
     list: _iter_to_str,
     tuple: _iter_to_str,
     set: _iter_to_str,
+    dict: _iter_to_str,
     Guidelines: Guidelines.dump,
     HSV: HSV.dump
 }
 
-cdef set _KEYS = {k for k in _MAPPING}
-
-cdef _convert_type(object x):
-    t = x.__class__
-    if t in _KEYS:
-        return _MAPPING[t](x)
-    elif Enum in t.__mro__:
-        return x.value
-    return x
+cdef object _convert_type(object some_object):
+    some_type = some_object.__class__
+    if some_type in _MAPPING:
+        return _MAPPING[some_type](some_object)
+    elif Enum in some_type.__mro__:
+        return some_object.value
+    return some_object
 
 
 # COLOR PARSING
@@ -204,27 +194,38 @@ cdef str _COLOR_FLOAT = "7"
 cdef str _COLOR_HSV = "10"
 
 
-cdef _parse_color(n, str v):
-    if n in _COLOR_INT:
-        return int(v)
-    if n in _COLOR_BOOL:
-        return _bool(v)
-    if n == _COLOR_FLOAT:
-        return _maybefloat(v)
-    if n == _COLOR_HSV:
-        return HSV.from_string(v)
-    if n == _COLOR_PLAYER:
-        return PlayerColor(int(v))
-    return v
+cdef object _parse_color(str key, str value):
+    if key in _COLOR_INT:
+        return int(value)
+    if key in _COLOR_BOOL:
+        return _bool(value)
+    if key == _COLOR_FLOAT:
+        return _maybefloat(value)
+    if key == _COLOR_HSV:
+        return HSV.from_string(value)
+    if key == _COLOR_PLAYER:
+        return PlayerColor(int(value))
+    return value
 
 
-cpdef dict _color_convert(str s):
-    return _convert(s, delim="_", f=_parse_color)
+cpdef dict _color_convert(str string):
+    return _convert(string, delim="_", func=_parse_color)
 
 
-cpdef dict _color_dump(dict d):
-    return _dump(d)
+cpdef dict _color_dump(dict some_dict):
+    return _dump(some_dict)
 
 
-cpdef str _color_collect(dict d):
-    return _collect(d, "_")
+cpdef str _color_collect(dict some_dict):
+    return _collect(some_dict, "_")
+
+
+cdef str _byte_xor(char* stream, char key):
+    return bytes(byte ^ key for byte in stream).decode(errors="ignore")
+
+
+cpdef str byte_xor(bytes stream, int key):
+    return _byte_xor(stream, key)
+
+
+Coder.byte_xor = staticmethod(byte_xor)

@@ -52,18 +52,16 @@ class Coder:
         pass
 
     @staticmethod
-    def normal_xor(string: str, key: int) -> str:
-        return "".join(chr(ord(char) ^ key) for char in string)
-
-    @staticmethod
     def byte_xor(stream: bytes, key: int) -> str:
-        return "".join(chr(byte ^ key) for byte in stream)
+        return bytes(byte ^ key for byte in stream).decode(errors="ignore")
 
     @classmethod
     def decode_save(cls, save: Union[bytes, str], needs_xor: bool = True) -> str:
+        if isinstance(save, str):
+            save = save.encode()
+
         if needs_xor:
-            xor_func = cls.byte_xor if isinstance(save, bytes) else cls.normal_xor
-            save = xor_func(save, 11)
+            save = cls.byte_xor(save, 11)
 
         save += "=" * (4 - len(save) % 4)
 
@@ -99,10 +97,12 @@ class Coder:
         if isinstance(save, str):
             save = save.encode()
 
-        final = urlsafe_b64encode(deflate(save)).decode()
+        final = urlsafe_b64encode(deflate(save))
 
         if needs_xor:
-            final = cls.normal_xor(final, 11)
+            final = cls.byte_xor(final, 11)
+        else:
+            final = final.decode()
 
         return final
 

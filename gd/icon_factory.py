@@ -190,13 +190,15 @@ class PlistImageSheet:
     def load(self) -> None:
         self.cache = [name for name in self.plist if is_interesting(name)]
 
-    def get_image_info(self, image_name: str) -> Dict[str, Any]:
-        info = self.plist.get(image_name, JSDict())
+    def get_image_info(self, image_name: str, strict: bool = True) -> Dict[str, Any]:
+        try:
+            return self.plist[image_name]
 
-        if not info:
-            raise LookupError(f"Could not find image by name: {image_name!r}.")
+        except KeyError:
+            if strict:
+                raise LookupError(f"Could not find image by name: {image_name!r}.") from None
 
-        return info
+            return JSDict()
 
     def get_sprite(self, image_name: str) -> Sprite:
         info = self.get_image_info(image_name)
