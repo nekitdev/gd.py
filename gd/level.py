@@ -102,10 +102,10 @@ class Level(AbstractEntity):
                 official_level = None
 
         else:
-            raise ValueError(f"Expected either of queries: level_id, name or index.")
+            raise ValueError("Expected either of queries: level_id, name or index.")
 
         if official_level is None:
-            raise LookupError(f"Could not find official level by given query.")
+            raise LookupError("Could not find official level by given query.")
 
         return official_level.into_level(client)
 
