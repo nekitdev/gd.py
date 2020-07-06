@@ -88,6 +88,7 @@ class Level(AbstractEntity):
         name: Optional[str] = None,
         index: Optional[int] = None,
         client: Optional[Client] = None,
+        get_data: bool = True,
     ) -> Level:
         if level_id is not None:
             official_level = get(official_levels, level_id=level_id)
@@ -107,7 +108,7 @@ class Level(AbstractEntity):
         if official_level is None:
             raise LookupError("Could not find official level by given query.")
 
-        return official_level.into_level(client)
+        return official_level.into_level(client, get_data=get_data)
 
     @classmethod
     def from_data(
@@ -741,16 +742,20 @@ class OfficialLevel:
     def is_demon(self) -> bool:
         return "demon" in self.difficulty
 
-    def into_level(self, client: Optional[Client] = None) -> Level:
+    def into_level(self, client: Optional[Client] = None, get_data: bool = True) -> Level:
         if self.is_demon():
             difficulty = DemonDifficulty.from_name(self.difficulty)
         else:
             difficulty = LevelDifficulty.from_name(self.difficulty)
 
-        data = official_levels_data.get(self.name, "")
+        if get_data:
+            data = official_levels_data.get(self.name, "")
 
-        if data:
-            data = Coder.unzip(data)
+            if data:
+                data = Coder.unzip(data)
+
+        else:
+            data = ""
 
         return Level(
             id=self.level_id,

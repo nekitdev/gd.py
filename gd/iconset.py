@@ -109,7 +109,7 @@ class IconSet(AbstractEntity):
     async def generate(
         self, type: Optional[Union[int, str, IconType]] = None, as_image: bool = False,
     ) -> Union[bytes, ImageType]:
-        if type is None:
+        if type is None or type == "main":
             type = self.main_type
 
         type = IconType.from_value(type)
