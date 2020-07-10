@@ -14,7 +14,6 @@ from pathlib import Path
 
 from aiohttp import web
 import aiohttp
-from enums import Enum, IntEnum
 import multidict
 
 from gd.typing import (
@@ -48,7 +47,7 @@ CooldownMapping = ref("gd.server.CooldownMapping")
 routes = web.RouteTableDef()
 
 
-class ErrorType(IntEnum):
+class ErrorType(gd.Enum):
     DEFAULT = 13000
     INVALID_TYPE = 13001
     MISSING_PARAMETER = 13002
@@ -481,7 +480,7 @@ def str_to_bool(
         raise ValueError(f"Invalid string given: {string!r}.")
 
 
-def string_to_enum(string: str, enum: Enum) -> Enum:
+def string_to_enum(string: str, enum: gd.Enum) -> gd.Enum:
     if string.isdigit():
         return enum.from_value(int(string))
     return enum.from_value(string)

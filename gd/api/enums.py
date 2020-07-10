@@ -1,9 +1,10 @@
-from enums import Enum, IntEnum, IntFlag
+from enums import IntFlag
 
 from gd.typing import Optional
 
+from gd.utils.enums import Enum
+
 __all__ = (
-    "Enum",
     "ObjectDataEnum",
     "ColorChannelProperties",
     "PlayerColor",
@@ -36,7 +37,7 @@ __all__ = (
 )
 
 
-class ObjectDataEnum(IntEnum):
+class ObjectDataEnum(Enum):
     """An enumeration representing contents of an object."""
 
     ID = 1
@@ -237,7 +238,7 @@ class ObjectDataEnum(IntEnum):
     LOCK_TO_CAMERA_Y = 303
 
 
-class ColorChannelProperties(IntEnum):
+class ColorChannelProperties(Enum):
     """An enumeration representing contents of a color channel."""
 
     RED = 1
@@ -254,7 +255,7 @@ class ColorChannelProperties(IntEnum):
     COPY_OPACITY = 17
 
 
-class PlayerColor(IntEnum):
+class PlayerColor(Enum):
     """An enumeration for player color setting."""
 
     NotUsed = -1
@@ -263,7 +264,7 @@ class PlayerColor(IntEnum):
     P2 = 2
 
 
-class CustomParticleGrouping(IntEnum):
+class CustomParticleGrouping(Enum):
     """An enumeration for particle grouping."""
 
     Free = 0
@@ -271,14 +272,14 @@ class CustomParticleGrouping(IntEnum):
     Grouped = 2
 
 
-class CustomParticleProperty1(IntEnum):
+class CustomParticleProperty1(Enum):
     """An enumeration for particle system."""
 
     Gravity = 0
     Radius = 1
 
 
-class Easing(IntEnum):
+class Easing(Enum):
     """An enumeration representing easing of a moving object (used in move/rotate triggers)."""
 
     Default = 0
@@ -358,14 +359,14 @@ class EasingMethod(IntFlag):
         return result
 
 
-class PulseMode(IntEnum):
+class PulseMode(Enum):
     """An enumeration representing mode of a pulse trigger."""
 
     Color = 0
     HSV = 1
 
 
-class InstantCountComparison(IntEnum):
+class InstantCountComparison(Enum):
     """An enumeration representing instant count comparison check."""
 
     Equals = 0
@@ -373,7 +374,7 @@ class InstantCountComparison(IntEnum):
     Smaller = 2
 
 
-class OrbType(IntEnum):
+class OrbType(Enum):
     """An enumeration representing IDs of orb objects."""
 
     Yellow = 36
@@ -387,7 +388,7 @@ class OrbType(IntEnum):
     Trigger = 1594
 
 
-class PadType(IntEnum):
+class PadType(Enum):
     """An enumeration representing IDs of pad objects."""
 
     Yellow = 35
@@ -396,7 +397,7 @@ class PadType(IntEnum):
     Blue = 67
 
 
-class PickupItemMode(IntEnum):
+class PickupItemMode(Enum):
     """An enumeration representing mode of a pickup trigger."""
 
     Default = 0
@@ -404,7 +405,7 @@ class PickupItemMode(IntEnum):
     ToggleTrigger = 2
 
 
-class Gamemode(IntEnum):
+class Gamemode(Enum):
     """An enumeration representing different game modes."""
 
     Cube = 0
@@ -417,7 +418,7 @@ class Gamemode(IntEnum):
     SwingCopter = 7  # ?
 
 
-class LevelType(IntEnum):
+class LevelType(Enum):
     """An enumeration that represents type of the level."""
 
     NULL = 0
@@ -427,7 +428,7 @@ class LevelType(IntEnum):
     ONLINE = 4
 
 
-class PortalType(IntEnum):
+class PortalType(Enum):
     """An enumeration representing IDs of portal or speed change objects."""
 
     Cube = 12
@@ -456,14 +457,14 @@ class PortalType(IntEnum):
     FastestSpeed = 1334
 
 
-class PulseType(IntEnum):
+class PulseType(Enum):
     """An enumeration representing type of pulse trigger target."""
 
     ColorChannel = 0
     Group = 1
 
 
-class SpecialBlockType(IntEnum):
+class SpecialBlockType(Enum):
     """An enumeration representing IDs of special objects (e.g. *S*, *H*, etc)."""
 
     D = 1755
@@ -472,7 +473,7 @@ class SpecialBlockType(IntEnum):
     H = 1859
 
 
-class SpecialColorID(IntEnum):
+class SpecialColorID(Enum):
     """An enumeration representing IDs of special colors (e.g. *BG*, *Line*, etc)."""
 
     BG = 1000
@@ -489,7 +490,7 @@ class SpecialColorID(IntEnum):
     Lighter = 1012
 
 
-class TargetPosCoordinates(IntEnum):
+class TargetPosCoordinates(Enum):
     """An enumeration representing modes for a targetted move trigger."""
 
     Both = 0
@@ -497,7 +498,7 @@ class TargetPosCoordinates(IntEnum):
     OnlyY = 2
 
 
-class TouchToggleMode(IntEnum):
+class TouchToggleMode(Enum):
     """An enumeration representing toggle modes of a touch trigger."""
 
     Default = 0
@@ -505,13 +506,13 @@ class TouchToggleMode(IntEnum):
     Off = 2
 
 
-class MiscType(IntEnum):
+class MiscType(Enum):
     """An enumeration representing miscellaneous IDs of objects."""
 
     TEXT = 914
 
 
-class TriggerType(IntEnum):
+class TriggerType(Enum):
     """An enumeration representing IDs of most triggers."""
 
     BG = 29
@@ -563,7 +564,7 @@ class TriggerType(IntEnum):
     TimeWarp = -13
 
 
-class ZLayer(IntEnum):
+class ZLayer(Enum):
     """An enumeration representing Z Layer of objects."""
 
     B4 = -3
@@ -581,7 +582,7 @@ class ZLayer(IntEnum):
     AbsZero = 4
 
 
-class Speed(IntEnum):
+class Speed(Enum):
     """An enumeration representing speed modifier modes."""
 
     NORMAL = 0  # x 1

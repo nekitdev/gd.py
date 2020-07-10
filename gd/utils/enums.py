@@ -1,8 +1,9 @@
-from enums import Enum, IntEnum
+import enums
 
 from gd.typing import Dict, Any
 
 __all__ = (
+    "Enum",
     "IconType",
     "MessagePolicyType",
     "CommentPolicyType",
@@ -26,14 +27,14 @@ __all__ = (
 )
 
 
-def _enum_json(self) -> Dict[str, Any]:
-    return {"name": self.title, "value": self.value}
+class Enum(enums.StrFormat, enums.Order, enums.Enum):
+    """Normalized generic enum that has ordering and string formatting."""
+
+    def _json(self) -> Dict[str, Any]:
+        return {"name": self.title, "value": self.value}
 
 
-Enum._json = _enum_json  # patch Enum
-
-
-class IconType(IntEnum):
+class IconType(Enum):
     """An enumeration of icon types."""
 
     CUBE = 0
@@ -45,7 +46,7 @@ class IconType(IntEnum):
     SPIDER = 6
 
 
-class MessagePolicyType(IntEnum):
+class MessagePolicyType(Enum):
     """An enumeration for message policy."""
 
     OPENED_TO_ALL = 0
@@ -53,7 +54,7 @@ class MessagePolicyType(IntEnum):
     CLOSED = 2
 
 
-class CommentPolicyType(IntEnum):
+class CommentPolicyType(Enum):
     """An enumeration for comment policy."""
 
     OPENED_TO_ALL = 0
@@ -61,14 +62,14 @@ class CommentPolicyType(IntEnum):
     CLOSED = 2
 
 
-class FriendRequestPolicyType(IntEnum):
+class FriendRequestPolicyType(Enum):
     """An enumeration for friend request policy."""
 
     OPENED = 0
     CLOSED = 1
 
 
-class StatusLevel(IntEnum):
+class StatusLevel(Enum):
     """An enumeration for Geometry Dash Status."""
 
     USER = 0
@@ -76,7 +77,7 @@ class StatusLevel(IntEnum):
     ELDER_MODERATOR = 2
 
 
-class LevelLength(IntEnum):
+class LevelLength(Enum):
     """An enumeration for level lengths."""
 
     UNKNOWN = -1
@@ -89,7 +90,7 @@ class LevelLength(IntEnum):
     XL = EXTRA_LONG
 
 
-class LevelDifficulty(IntEnum):
+class LevelDifficulty(Enum):
     """An enumeration for level difficulties."""
 
     UNKNOWN = -1
@@ -103,7 +104,7 @@ class LevelDifficulty(IntEnum):
     DEMON = -2
 
 
-class DemonDifficulty(IntEnum):
+class DemonDifficulty(Enum):
     """An enumeration for demon difficulties."""
 
     UNKNOWN = -1
@@ -115,7 +116,7 @@ class DemonDifficulty(IntEnum):
     EXTREME_DEMON = 5
 
 
-class TimelyType(IntEnum):
+class TimelyType(Enum):
     """An enumeration for timely types."""
 
     NOT_TIMELY = 0
@@ -123,28 +124,28 @@ class TimelyType(IntEnum):
     WEEKLY = 2
 
 
-class CommentType(IntEnum):
+class CommentType(Enum):
     """An enumeration for comment objects."""
 
     LEVEL = 0
     PROFILE = 1
 
 
-class MessageOrRequestType(IntEnum):
+class MessageOrRequestType(Enum):
     """An enumeration for message and friend request objects."""
 
     NORMAL = 0
     SENT = 1
 
 
-class CommentStrategy(IntEnum):
+class CommentStrategy(Enum):
     """An enumeration for comment searching."""
 
     RECENT = 0
     MOST_LIKED = 1
 
 
-class LeaderboardStrategy(IntEnum):
+class LeaderboardStrategy(Enum):
     """An enumeration for getting leaderboard users."""
 
     PLAYERS = 0
@@ -153,7 +154,7 @@ class LeaderboardStrategy(IntEnum):
     CREATORS = 3
 
 
-class LevelLeaderboardStrategy(IntEnum):
+class LevelLeaderboardStrategy(Enum):
     """An enumeration for getting level leaderboard."""
 
     FRIENDS = 0
@@ -161,7 +162,7 @@ class LevelLeaderboardStrategy(IntEnum):
     WEEKLY = 2
 
 
-class GauntletEnum(IntEnum):
+class GauntletEnum(Enum):
     """An enumeration for gauntlets."""
 
     UNKNOWN = 0
@@ -182,7 +183,7 @@ class GauntletEnum(IntEnum):
     DEATH = 15
 
 
-class SearchStrategy(IntEnum):
+class SearchStrategy(Enum):
     """An enumeration for search strategy."""
 
     REGULAR = 0
@@ -201,7 +202,7 @@ class SearchStrategy(IntEnum):
     WORLD = 17
 
 
-class RewardType(IntEnum):
+class RewardType(Enum):
     """An enumeration for reward types."""
 
     GET_INFO = 0
@@ -209,7 +210,7 @@ class RewardType(IntEnum):
     CLAIM_LARGE = 2
 
 
-class ShardType(IntEnum):
+class ShardType(Enum):
     """An enumeration represeting shard names."""
 
     UNKNOWN = 0
@@ -221,7 +222,7 @@ class ShardType(IntEnum):
     NULL = 6
 
 
-class QuestType(IntEnum):
+class QuestType(Enum):
     """An enumeration for quest types."""
 
     UNKNOWN = 0
@@ -230,7 +231,7 @@ class QuestType(IntEnum):
     STARS = 3
 
 
-class AccountError(IntEnum):
+class AccountError(Enum):
     """An enumeration for account errors."""
 
     EMAILS_NOT_MATCHING = -99
