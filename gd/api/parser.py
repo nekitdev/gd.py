@@ -1,11 +1,13 @@
 from itertools import chain
 
+from enums import Enum
+
 from gd.typing import (
     Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Type, TypeVar, Tuple, Union
 )
 
+from gd.utils.enums import LevelLength
 from gd.utils.crypto.coders import Coder
-from gd.utils.enums import Enum
 
 from gd.api.guidelines import Guidelines
 from gd.api.hsv import HSV
@@ -415,8 +417,10 @@ _SPECIAL = "k67"
 _CRYPTED = {"k4", "k34"}
 _TAB = "kI6"
 _LEVEL_TYPE = "k21"
+_LEVEL_LENGTH = "k23"
 _LEVEL_ENUMS = {
-    _LEVEL_TYPE: LevelType
+    _LEVEL_TYPE: LevelType,
+    _LEVEL_LENGTH: LevelLength,
 }
 
 

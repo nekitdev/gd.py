@@ -4,7 +4,6 @@ from gd.utils.enums import DemonDifficulty, LevelDifficulty, GauntletEnum
 from gd.utils.parser import ExtDict
 
 from gd.typing import Union
-from gd.errors import FailedConversion
 
 
 # song-related dict
@@ -52,7 +51,7 @@ _cases = {
 
 
 class Converter:
-    """Some weird class where NeKit holds his converters for everything."""
+    """Some weird class where nekit holds his converters for everything."""
 
     @staticmethod
     def to_normal_song(song_id: int, server_style: bool = True) -> ExtDict:
@@ -82,15 +81,11 @@ class Converter:
 
     @staticmethod
     def get_gauntlet_name(value: int) -> str:
-        try:
-            gauntlet = GauntletEnum.from_value(value).desc
-        except FailedConversion:
-            gauntlet = "Unknown"
-
+        gauntlet = GauntletEnum.from_value(value, 0).title
         return f"{gauntlet} Gauntlet"
 
     @staticmethod
-    def get_gauntlet_id(name: str) -> str:
+    def get_gauntlet_id(name: str) -> int:
         check = "Gauntlet"
 
         if name.endswith(check):
@@ -98,10 +93,7 @@ class Converter:
 
         name = name.strip()
 
-        try:
-            gauntlet = GauntletEnum.from_value(name).value
-        except FailedConversion:
-            gauntlet = 0  # Unknown
+        gauntlet = GauntletEnum.from_value(name, "unknown").value
 
         return gauntlet
 

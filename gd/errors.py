@@ -1,4 +1,4 @@
-from gd.typing import Any, Enum, Optional
+from gd.typing import Optional
 
 
 class GDException(Exception):
@@ -15,28 +15,6 @@ class ClientException(GDException):
     """
 
     pass
-
-
-class FailedConversion(GDException):
-    """Exception that is raised when Enum converter
-    fails to turn given value into requested Enum.
-    """
-
-    def __init__(self, enum: Enum, value: Any) -> None:
-        self._enum = enum
-        self._value = value
-        message = f"Failed to convert value {value!r} to enum: {enum!r}."
-        super().__init__(message)
-
-    @property
-    def enum(self) -> Enum:
-        """:class:`enum.Enum`: Enum to which ``value`` was failed to convert."""
-        return self._enum
-
-    @property
-    def value(self) -> Any:
-        """`Any`: Value that was failed to be converted to ``enum``."""
-        return self._value
 
 
 class ParserError(GDException):

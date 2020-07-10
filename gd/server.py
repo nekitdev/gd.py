@@ -14,6 +14,7 @@ from pathlib import Path
 
 from aiohttp import web
 import aiohttp
+from enums import Enum, IntEnum
 import multidict
 
 from gd.typing import (
@@ -47,7 +48,7 @@ CooldownMapping = ref("gd.server.CooldownMapping")
 routes = web.RouteTableDef()
 
 
-class ErrorType(gd.Enum):
+class ErrorType(IntEnum):
     DEFAULT = 13000
     INVALID_TYPE = 13001
     MISSING_PARAMETER = 13002
@@ -76,7 +77,7 @@ class Error:
             "data": {
                 "message": message,
                 "code": error_type.value,
-                "code_name": error_type.desc,
+                "code_name": error_type.title,
                 "error": None,
                 "error_message": None,
                 **additional,
@@ -480,7 +481,7 @@ def str_to_bool(
         raise ValueError(f"Invalid string given: {string!r}.")
 
 
-def string_to_enum(string: str, enum: gd.Enum) -> gd.Enum:
+def string_to_enum(string: str, enum: Enum) -> Enum:
     if string.isdigit():
         return enum.from_value(int(string))
     return enum.from_value(string)
@@ -569,7 +570,7 @@ async def logout_handle(request: web.Request) -> web.Response:
     return json_resp({})
 
 
-@routes.get("/api/auth")
+@routes.get("/api/login")
 @handle_errors(
     {
         KeyError: Error(400, "Parameter is missing.", ErrorType.MISSING_PARAMETER),
@@ -578,11 +579,11 @@ async def logout_handle(request: web.Request) -> web.Response:
 )
 @auth_setup(required=False)
 async def auth_handle(request: web.Request) -> web.Response:
-    """GET /api/auth
+    """GET /api/login
     Description:
         Login into API system and get the token for further operation.
     Example:
-        link: /api/auth?name=User&password=Password
+        link: /api/login?name=User&password=Password
         name: User
         password: Password
     Returns:

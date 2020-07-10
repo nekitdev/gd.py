@@ -1,6 +1,8 @@
+from enums import Enum
+
 from gd.typing import AbstractUser, Any, Dict, Filters, Level, Optional, Sequence, Union
 
-from gd.utils.enums import Enum, LevelDifficulty, DemonDifficulty, SearchStrategy, LevelLength
+from gd.utils.enums import LevelDifficulty, DemonDifficulty, SearchStrategy, LevelLength
 from gd.utils.text_tools import make_repr
 
 

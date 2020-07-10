@@ -85,13 +85,12 @@ supported = {name: enum.as_dict() for name, enum in mapping.items()}
 
 # because variables can not start with digits, we are doing this
 supported.get("color", {}).update({"3dl": "color:line3d"})
-
-d = supported.get("portal", {})
-for i, s in enumerate(("slow", "normal", "fast", "faster", "fastest")):
-    d.update({f"speed:x{i}": f"portal:{s}speed"})
-
-# do some cleanup
-del i, s, d
+supported.get("portal", {}).update(
+    {
+        f"speed:x{index}": f"portal:{string}speed"
+        for index, string in enumerate(("slow", "normal", "fast", "faster", "fastest"))
+    }
+)
 
 
 def _make_color(struct: Struct) -> Color:

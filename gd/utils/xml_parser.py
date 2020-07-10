@@ -1,5 +1,4 @@
 try:
-    raise ImportError
     from lxml import etree as xml
 except ImportError:
     from xml.etree import ElementTree as xml

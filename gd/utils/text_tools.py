@@ -25,7 +25,7 @@ def make_repr(obj: Any, info: Optional[Dict[Any, Any]] = None) -> str:
     if not info:
         return f"<{name}>"
 
-    formatted_info = " ".join(f"{key}={value}" for key, value in info.items())
+    formatted_info = " ".join(f"{key!s}={value!s}" for key, value in info.items())
 
     return f"<{name} {formatted_info}>"
 

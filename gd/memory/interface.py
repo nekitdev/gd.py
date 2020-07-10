@@ -23,7 +23,6 @@ except Exception:  # noqa
 
 from gd.memory.enums import Scene
 from gd.api.enums import LevelType, Gamemode, SpeedConstant
-from gd.errors import FailedConversion
 from gd.typing import (
     Any,
     Buffer,
@@ -58,6 +57,7 @@ __all__ = (
 
 ORDER = {"big": ">", "little": "<"}
 DEFAULT_ORDER = "little"
+GAMEMODE_STATE = ("Cube", "Ship", "UFO", "Ball", "Wave", "Robot", "Spider")
 NULL_BYTE = b"\x00"
 T = TypeVar("T")
 
@@ -412,10 +412,7 @@ class WindowsMemory(MemoryType):
 
     def get_scene(self) -> Scene:
         """Get value of current scene and convert it to :class:`.Scene` enum."""
-        try:
-            return Scene.from_value(self.get_scene_value())
-        except FailedConversion:
-            return Scene.UNKNOWN
+        return Scene.from_value(self.get_scene_value(), -1)
 
     def get_resolution_value(self) -> int:
         """Get value of current resolution."""
@@ -434,7 +431,7 @@ class WindowsMemory(MemoryType):
         except ValueError:  # not in list
             value = 0
 
-        return Gamemode.from_value(value)
+        return Gamemode.from_name(GAMEMODE_STATE[value])
 
     def get_level_id_fast(self) -> int:
         """Quickly read level ID, which is not always accurate for example on *official* levels."""
@@ -496,10 +493,7 @@ class WindowsMemory(MemoryType):
 
     def get_speed(self) -> SpeedConstant:
         """Get value of the speed and convert it to :class:`gd.api.SpeedConstant`."""
-        try:
-            return SpeedConstant.from_value(round(self.get_speed_value(), 1))
-        except FailedConversion:
-            return SpeedConstant.NULL
+        return SpeedConstant.from_value(round(self.get_speed_value(), 1), 0)
 
     def set_speed(self, speed: Union[float, str, SpeedConstant], reverse: bool = False) -> None:
         """Set value of speed to ``speed``. If ``reverse``, negate given speed value."""
@@ -602,10 +596,7 @@ class WindowsMemory(MemoryType):
 
     def get_level_type(self) -> LevelType:
         """Get value of the level type, and convert it to :class:`.LevelType`."""
-        try:
-            return LevelType.from_value(self.get_level_type_value())
-        except FailedConversion:
-            return LevelType.NULL
+        return LevelType.from_value(self.get_level_type_value(), 0)
 
     def is_in_level(self) -> bool:
         """Check whether the user is currently playing a level."""

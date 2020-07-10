@@ -1,9 +1,9 @@
-from gd.utils.enums import Enum
+from enums import IntEnum
 
 __all__ = ("Scene",)
 
 
-class Scene(Enum):
+class Scene(IntEnum):
     """An enumeration that represents ID of different scenes in the game."""
 
     UNKNOWN = -1

@@ -1,8 +1,9 @@
 # distutils: language=c++
 # cython: language_level=3
 
+from enums import Enum
+
 from gd.utils.crypto.coders import Coder
-from gd.utils.enums import Enum
 from gd.api.guidelines import Guidelines
 from gd.api.hsv import HSV
 from gd.api.enums import *

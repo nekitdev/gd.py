@@ -5,11 +5,6 @@ Enums
 
 This library has a bunch of enums, listed below.
 
-.. autoclass:: Enum
-    :members:
-
-.. note:: The following classes are derived from :class:`Enum`.
-
 .. autoclass:: IconType
     :members:
 
@@ -67,6 +62,6 @@ This library has a bunch of enums, listed below.
 .. autoclass:: QuestType
     :members:
 
-.. autoclass:: ServerError
+.. autoclass:: AccountError
     :members:
 

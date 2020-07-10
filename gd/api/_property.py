@@ -1,6 +1,8 @@
 """Automatic object property code generator."""
 
-from gd.typing import Enum, Union
+from enums import Enum
+
+from gd.typing import Union
 
 from gd.api.enums import (
     ColorChannelProperties,
@@ -53,50 +55,50 @@ def {name}(self):
 _container = "_container = {}"
 
 
-def _get_type(n: Union[int, str], ts: str = "object") -> str:
-    t = {
+def _get_type(key: Union[int, str], type_str: str = "object") -> str:
+    type_map = {
         "object": {
-            n in _INT: int,
-            n in _BOOL: bool,
-            n in _FLOAT: float,
-            n in _HSV: HSV,
-            n in _ENUMS: _ENUMS.get(n),
-            n == _TEXT: str,
-            n == _GROUPS: set,
+            key in _INT: int,
+            key in _BOOL: bool,
+            key in _FLOAT: float,
+            key in _HSV: HSV,
+            key in _ENUMS: _ENUMS.get(key),
+            key == _TEXT: str,
+            key == _GROUPS: set,
         },
         "color": {
-            n in _COLOR_INT: int,
-            n in _COLOR_BOOL: bool,
-            n == _COLOR_PLAYER: PlayerColor,
-            n == _COLOR_FLOAT: float,
-            n == _COLOR_HSV: HSV,
+            key in _COLOR_INT: int,
+            key in _COLOR_BOOL: bool,
+            key == _COLOR_PLAYER: PlayerColor,
+            key == _COLOR_FLOAT: float,
+            key == _COLOR_HSV: HSV,
         },
         "header": {
-            n in _HEADER_INT: int,
-            n in _HEADER_BOOL: bool,
-            n == _HEADER_FLOAT: float,
-            n in _HEADER_COLORS: "ColorChannel",
-            n == _COLORS: list,
-            n == _GUIDELINES: list,
-            n in _HEADER_ENUMS: _HEADER_ENUMS.get(n),
+            key in _HEADER_INT: int,
+            key in _HEADER_BOOL: bool,
+            key == _HEADER_FLOAT: float,
+            key in _HEADER_COLORS: "ColorChannel",
+            key == _COLORS: list,
+            key == _GUIDELINES: list,
+            key in _HEADER_ENUMS: _HEADER_ENUMS.get(key),
         },
         "level": {True: "soon"},  # yikes!
     }
-    r = t.get(ts, {}).get(1, str)
+    result = type_map.get(type_str, {}).get(True, str)
 
     try:
-        return r.__name__
+        return result.__name__
     except AttributeError:
-        return r
+        return result
 
 
-def _create(enum: Enum, ts: str) -> str:
+def _create(enum: Enum, type_str: str) -> str:
     final = []
 
     for name, value in enum.as_dict().items():
-        desc = enum(value).desc
+        desc = enum(value).title
         value = str(value)
-        cls = _get_type(value, ts=ts)
+        cls = _get_type(value, type_str)
         final.append(_template.format(name=name, enum=value, desc=desc, cls=cls))
 
     property_container = {}

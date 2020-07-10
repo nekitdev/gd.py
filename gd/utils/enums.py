@@ -1,11 +1,8 @@
-import functools
-import enum
+from enums import Enum, IntEnum
 
-from gd.typing import Any, Dict, Iterable, Union
-from gd.errors import FailedConversion
+from gd.typing import Dict, Any
 
 __all__ = (
-    "Enum",
     "IconType",
     "MessagePolicyType",
     "CommentPolicyType",
@@ -25,178 +22,18 @@ __all__ = (
     "RewardType",
     "ShardType",
     "QuestType",
-    "ServerError",
+    "AccountError",
 )
 
 
-def _lower_name(name: str) -> str:
-    return name.lower().replace("_", "")
+def _enum_json(self) -> Dict[str, Any]:
+    return {"name": self.title, "value": self.value}
 
 
-def _enum_to_name(x: enum.Enum, ignore: Iterable[str] = {"NA", "XL"}) -> str:
-    name = x.name.strip("_")
-
-    if name in ignore or not name.isupper():
-        return name
-
-    return name.replace("_", " ").title()
+Enum._json = _enum_json  # patch Enum
 
 
-@functools.total_ordering
-class Enum(enum.Enum):
-    """Subclass of :class:`enum.Enum`, used for creating enums in gd.py.
-
-    .. container:: operations
-
-        .. describe:: x == y
-
-            Checks if two enums are equal.
-
-        .. describe:: x != y
-
-            Checks if two enums are not equal.
-
-        .. describe:: x > y
-
-            Checks if value of x is higher than value of y.
-            Raises an error if values are not instances of :class:`int`.
-
-        .. describe:: x < y
-
-            Checks if value of x is lower than value of y.
-            Raises an error on not-integer type as well.
-
-        .. describe:: x >= y
-
-            Same as *x == y or x > y*.
-
-        .. describe:: x <= y
-
-            Same as *x == y or x < y*.
-
-        .. describe:: hash(x)
-
-            Return the enum's hash.
-
-        .. describe:: str(x)
-
-            Returns :attr:`.Enum.desc`.
-    """
-
-    def __str__(self) -> str:
-        return self.desc
-
-    def __repr__(self) -> str:
-        cls_name = self.__class__.__name__
-
-        return f"<{cls_name}.{self.name}: {self.value} ({self.desc})>"
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return self.value == other.value
-
-    def __ne__(self, other) -> bool:
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return self.value != other.value
-
-    def __gt__(self, other) -> bool:
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return self.value > other.value
-
-    def __hash__(self) -> int:
-        return hash(self.__repr__())
-
-    def _json(self) -> Any:
-        return {"name": self.desc, "value": self.value}
-
-    @property
-    def desc(self) -> str:
-        """:class:`str`: More readable version of the name, e.g.
-
-        .. code-block:: python3
-
-            gd.SearchStrategy.BY_USER.desc -> 'By User'.
-        """
-        return _enum_to_name(self)
-
-    @classmethod
-    def from_name(cls, name: str) -> enum.Enum:
-        if not hasattr(cls, "lower_names"):
-            cls.init_lower_names()
-
-        try:
-            return cls.lower_names[_lower_name(name)]
-
-        except KeyError:
-            raise FailedConversion(enum=cls, value=name) from None
-
-    @classmethod
-    def init_lower_names(cls) -> None:
-        cls.lower_names = {_lower_name(name): enum for name, enum in cls.__members__.items()}
-
-    @classmethod
-    def as_dict(cls) -> Dict[str, Any]:
-        return {name.lower(): enum.value for name, enum in cls.__members__.items()}
-
-    @classmethod
-    def from_value_or(cls, default: Union[int, str], value: Union[int, str]) -> enum.Enum:
-        try:
-            return cls.from_value(value)
-        except FailedConversion:
-            return cls.from_value(default)
-
-    @classmethod
-    def from_value(cls, value: Union[int, str]) -> enum.Enum:
-        """Returns *Enum* with given value.
-
-        .. note::
-
-            This can only be called in a class **derived** from :class:`.Enum`,
-            so *Enum.from_value(...)* will raise an error.
-
-            Example:
-
-            .. code-block:: python3
-
-                mod = gd.StatusLevel.from_value('moderator')
-
-                hall_of_fame = gd.SearchStrategy.from_value('hall of fame')
-
-        Parameters
-        ----------
-        value: Union[:class:`int`, :class:`str`]
-            A value to make *Enum* from.
-
-        Returns
-        -------
-        :class:`.Enum`
-            Enum from the :class:`.Enum` subclass.
-
-        Raises
-        ------
-        :exc:`.FailedConversion`
-            Failed to convert ``value`` to *Enum*.
-        """
-        if isinstance(value, str):
-            try:
-                return cls.from_name(value)
-            except FailedConversion:
-                pass
-
-        elif type(value) is cls:
-            return cls(value.value)
-
-        else:
-            try:
-                return cls(value)
-            except ValueError:
-                raise FailedConversion(enum=cls, value=value) from None
-
-
-class IconType(Enum):
+class IconType(IntEnum):
     """An enumeration of icon types."""
 
     CUBE = 0
@@ -208,7 +45,7 @@ class IconType(Enum):
     SPIDER = 6
 
 
-class MessagePolicyType(Enum):
+class MessagePolicyType(IntEnum):
     """An enumeration for message policy."""
 
     OPENED_TO_ALL = 0
@@ -216,7 +53,7 @@ class MessagePolicyType(Enum):
     CLOSED = 2
 
 
-class CommentPolicyType(Enum):
+class CommentPolicyType(IntEnum):
     """An enumeration for comment policy."""
 
     OPENED_TO_ALL = 0
@@ -224,14 +61,14 @@ class CommentPolicyType(Enum):
     CLOSED = 2
 
 
-class FriendRequestPolicyType(Enum):
+class FriendRequestPolicyType(IntEnum):
     """An enumeration for friend request policy."""
 
     OPENED = 0
     CLOSED = 1
 
 
-class StatusLevel(Enum):
+class StatusLevel(IntEnum):
     """An enumeration for Geometry Dash Status."""
 
     USER = 0
@@ -239,21 +76,24 @@ class StatusLevel(Enum):
     ELDER_MODERATOR = 2
 
 
-class LevelLength(Enum):
+class LevelLength(IntEnum):
     """An enumeration for level lengths."""
 
-    NA = -1
+    UNKNOWN = -1
+    NA = UNKNOWN
     TINY = 0
     SHORT = 1
     MEDIUM = 2
     LONG = 3
-    XL = 4
+    EXTRA_LONG = 4
+    XL = EXTRA_LONG
 
 
-class LevelDifficulty(Enum):
+class LevelDifficulty(IntEnum):
     """An enumeration for level difficulties."""
 
-    NA = -1
+    UNKNOWN = -1
+    NA = UNKNOWN
     AUTO = -3
     EASY = 1
     NORMAL = 2
@@ -263,10 +103,11 @@ class LevelDifficulty(Enum):
     DEMON = -2
 
 
-class DemonDifficulty(Enum):
+class DemonDifficulty(IntEnum):
     """An enumeration for demon difficulties."""
 
-    NA = -1
+    UNKNOWN = -1
+    NA = UNKNOWN
     EASY_DEMON = 1
     MEDIUM_DEMON = 2
     HARD_DEMON = 3
@@ -274,7 +115,7 @@ class DemonDifficulty(Enum):
     EXTREME_DEMON = 5
 
 
-class TimelyType(Enum):
+class TimelyType(IntEnum):
     """An enumeration for timely types."""
 
     NOT_TIMELY = 0
@@ -282,28 +123,28 @@ class TimelyType(Enum):
     WEEKLY = 2
 
 
-class CommentType(Enum):
+class CommentType(IntEnum):
     """An enumeration for comment objects."""
 
     LEVEL = 0
     PROFILE = 1
 
 
-class MessageOrRequestType(Enum):
+class MessageOrRequestType(IntEnum):
     """An enumeration for message and friend request objects."""
 
     NORMAL = 0
     SENT = 1
 
 
-class CommentStrategy(Enum):
+class CommentStrategy(IntEnum):
     """An enumeration for comment searching."""
 
     RECENT = 0
     MOST_LIKED = 1
 
 
-class LeaderboardStrategy(Enum):
+class LeaderboardStrategy(IntEnum):
     """An enumeration for getting leaderboard users."""
 
     PLAYERS = 0
@@ -312,7 +153,7 @@ class LeaderboardStrategy(Enum):
     CREATORS = 3
 
 
-class LevelLeaderboardStrategy(Enum):
+class LevelLeaderboardStrategy(IntEnum):
     """An enumeration for getting level leaderboard."""
 
     FRIENDS = 0
@@ -320,7 +161,7 @@ class LevelLeaderboardStrategy(Enum):
     WEEKLY = 2
 
 
-class GauntletEnum(Enum):
+class GauntletEnum(IntEnum):
     """An enumeration for gauntlets."""
 
     UNKNOWN = 0
@@ -341,7 +182,7 @@ class GauntletEnum(Enum):
     DEATH = 15
 
 
-class SearchStrategy(Enum):
+class SearchStrategy(IntEnum):
     """An enumeration for search strategy."""
 
     REGULAR = 0
@@ -360,7 +201,7 @@ class SearchStrategy(Enum):
     WORLD = 17
 
 
-class RewardType(Enum):
+class RewardType(IntEnum):
     """An enumeration for reward types."""
 
     GET_INFO = 0
@@ -368,7 +209,7 @@ class RewardType(Enum):
     CLAIM_LARGE = 2
 
 
-class ShardType(Enum):
+class ShardType(IntEnum):
     """An enumeration represeting shard names."""
 
     UNKNOWN = 0
@@ -380,7 +221,7 @@ class ShardType(Enum):
     NULL = 6
 
 
-class QuestType(Enum):
+class QuestType(IntEnum):
     """An enumeration for quest types."""
 
     UNKNOWN = 0
@@ -389,8 +230,8 @@ class QuestType(Enum):
     STARS = 3
 
 
-class ServerError(Enum):
-    """An enumeration for server errors."""
+class AccountError(IntEnum):
+    """An enumeration for account errors."""
 
     EMAILS_NOT_MATCHING = -99
     LINKED_TO_DIFFERENT_STEAM_ACCOUNT = -12

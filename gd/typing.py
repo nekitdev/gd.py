@@ -54,7 +54,6 @@ __all__ = (
     "Parameters",
     "Parser",
     "Loop",
-    "Enum",
     "Editor",
     "HSV",
     "LevelCollection",
@@ -97,7 +96,7 @@ def __repr__(forward_ref):
 
 setattr(ref, "__repr__", __repr__)
 
-Function = Callable[[Any], Any]
+Function = Callable[..., Any]
 
 AbstractEntity = ref("gd.abstractentity.AbstractEntity")
 AbstractUser = ref("gd.abstractuser.AbstractUser")
@@ -120,7 +119,6 @@ Message = ref("gd.message.Message")
 Song = ref("gd.song.Song")
 UserStats = ref("gd.user.UserStats")
 User = ref("gd.user.User")
-Enum = ref("gd.utils.enums.Enum")
 Filters = ref("gd.utils.filters.Filters")
 Parameters = ref("gd.utils.params.Parameters")
 Parser = ref("gd.utils.parser.Parser")

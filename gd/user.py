@@ -146,20 +146,20 @@ class User(UserStats):
             youtube=youtube,
             twitter=twitter,
             twitch=twitch,
-            message_policy=MessagePolicyType.from_value_or(
+            message_policy=MessagePolicyType.from_value(
                 data.getcast(Index.USER_PRIVATE_MESSAGE_POLICY, 0, int), 0
             ),
-            friend_request_policy=FriendRequestPolicyType.from_value_or(
+            friend_request_policy=FriendRequestPolicyType.from_value(
                 data.getcast(Index.USER_FRIEND_REQUEST_POLICY, 0, int), 0
             ),
-            comment_policy=CommentPolicyType.from_value_or(
+            comment_policy=CommentPolicyType.from_value(
                 data.getcast(Index.USER_COMMENT_HISTORY_POLICY, 0, int), 0
             ),
             icon_setup=IconSet(
                 main_icon=data.getcast(Index.USER_ICON, 1, int),
                 color_1=colors[data.getcast(Index.USER_COLOR_1, 0, int)],
                 color_2=colors[data.getcast(Index.USER_COLOR_2, 0, int)],
-                main_icon_type=IconType.from_value_or(
+                main_icon_type=IconType.from_value(
                     data.getcast(Index.USER_ICON_TYPE, 0, int), 0
                 ),
                 has_glow_outline=bool(data.getcast(Index.USER_GLOW_OUTLINE_2, 0, int)),

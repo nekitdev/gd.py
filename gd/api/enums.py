@@ -1,12 +1,16 @@
-from gd.utils.enums import Enum
+from enums import Enum, IntEnum, IntFlag
+
+from gd.typing import Optional
 
 __all__ = (
+    "Enum",
     "ObjectDataEnum",
     "ColorChannelProperties",
     "PlayerColor",
     "CustomParticleGrouping",
     "CustomParticleProperty1",
     "Easing",
+    "EasingMethod",
     "PulseMode",
     "InstantCountComparison",
     "OrbType",
@@ -32,7 +36,7 @@ __all__ = (
 )
 
 
-class ObjectDataEnum(Enum):
+class ObjectDataEnum(IntEnum):
     """An enumeration representing contents of an object."""
 
     ID = 1
@@ -233,7 +237,7 @@ class ObjectDataEnum(Enum):
     LOCK_TO_CAMERA_Y = 303
 
 
-class ColorChannelProperties(Enum):
+class ColorChannelProperties(IntEnum):
     """An enumeration representing contents of a color channel."""
 
     RED = 1
@@ -250,7 +254,7 @@ class ColorChannelProperties(Enum):
     COPY_OPACITY = 17
 
 
-class PlayerColor(Enum):
+class PlayerColor(IntEnum):
     """An enumeration for player color setting."""
 
     NotUsed = -1
@@ -259,7 +263,7 @@ class PlayerColor(Enum):
     P2 = 2
 
 
-class CustomParticleGrouping(Enum):
+class CustomParticleGrouping(IntEnum):
     """An enumeration for particle grouping."""
 
     Free = 0
@@ -267,14 +271,14 @@ class CustomParticleGrouping(Enum):
     Grouped = 2
 
 
-class CustomParticleProperty1(Enum):
+class CustomParticleProperty1(IntEnum):
     """An enumeration for particle system."""
 
     Gravity = 0
     Radius = 1
 
 
-class Easing(Enum):
+class Easing(IntEnum):
     """An enumeration representing easing of a moving object (used in move/rotate triggers)."""
 
     Default = 0
@@ -298,14 +302,70 @@ class Easing(Enum):
     BackOut = 18
 
 
-class PulseMode(Enum):
+class EasingMethod(IntFlag):
+    Default = 0
+    In = 1
+    Out = 2
+    Ease = 4
+    Elastic = 8
+    Bounce = 16
+    Exponential = 32
+    Sine = 64
+    Back = 128
+
+    def as_easing(self) -> Easing:
+        cls, value = self.__class__, self.value
+
+        if not value:
+            return Easing.Default
+
+        has_easing_in = self & cls.In
+        has_easing_out = self & cls.Out
+
+        if not has_easing_in and not has_easing_out:
+            raise ValueError(f"{self!r} does not have In/Out modifiers.")
+
+        value = (value.bit_length() - 2) * 3
+
+        if has_easing_in:
+            value -= 1
+
+        if has_easing_out:
+            value -= 1
+
+        return Easing(value)
+
+    @classmethod
+    def from_easing(cls, easing: Easing) -> IntFlag:
+        value = easing.value
+
+        if not value:
+            return cls.Default
+
+        shift, remainder = divmod((value - 1), 3)
+        shift += 2  # In, Out
+        has_easing_in = remainder != 2
+        has_easing_out = remainder != 1
+
+        result = cls(1 << shift)
+
+        if has_easing_in:
+            result |= cls.In
+
+        if has_easing_out:
+            result |= cls.Out
+
+        return result
+
+
+class PulseMode(IntEnum):
     """An enumeration representing mode of a pulse trigger."""
 
     Color = 0
     HSV = 1
 
 
-class InstantCountComparison(Enum):
+class InstantCountComparison(IntEnum):
     """An enumeration representing instant count comparison check."""
 
     Equals = 0
@@ -313,7 +373,7 @@ class InstantCountComparison(Enum):
     Smaller = 2
 
 
-class OrbType(Enum):
+class OrbType(IntEnum):
     """An enumeration representing IDs of orb objects."""
 
     Yellow = 36
@@ -327,7 +387,7 @@ class OrbType(Enum):
     Trigger = 1594
 
 
-class PadType(Enum):
+class PadType(IntEnum):
     """An enumeration representing IDs of pad objects."""
 
     Yellow = 35
@@ -336,7 +396,7 @@ class PadType(Enum):
     Blue = 67
 
 
-class PickupItemMode(Enum):
+class PickupItemMode(IntEnum):
     """An enumeration representing mode of a pickup trigger."""
 
     Default = 0
@@ -344,7 +404,7 @@ class PickupItemMode(Enum):
     ToggleTrigger = 2
 
 
-class Gamemode(Enum):
+class Gamemode(IntEnum):
     """An enumeration representing different game modes."""
 
     Cube = 0
@@ -357,7 +417,7 @@ class Gamemode(Enum):
     SwingCopter = 7  # ?
 
 
-class LevelType(Enum):
+class LevelType(IntEnum):
     """An enumeration that represents type of the level."""
 
     NULL = 0
@@ -367,7 +427,7 @@ class LevelType(Enum):
     ONLINE = 4
 
 
-class PortalType(Enum):
+class PortalType(IntEnum):
     """An enumeration representing IDs of portal or speed change objects."""
 
     Cube = 12
@@ -396,14 +456,14 @@ class PortalType(Enum):
     FastestSpeed = 1334
 
 
-class PulseType(Enum):
+class PulseType(IntEnum):
     """An enumeration representing type of pulse trigger target."""
 
     ColorChannel = 0
     Group = 1
 
 
-class SpecialBlockType(Enum):
+class SpecialBlockType(IntEnum):
     """An enumeration representing IDs of special objects (e.g. *S*, *H*, etc)."""
 
     D = 1755
@@ -412,7 +472,7 @@ class SpecialBlockType(Enum):
     H = 1859
 
 
-class SpecialColorID(Enum):
+class SpecialColorID(IntEnum):
     """An enumeration representing IDs of special colors (e.g. *BG*, *Line*, etc)."""
 
     BG = 1000
@@ -429,7 +489,7 @@ class SpecialColorID(Enum):
     Lighter = 1012
 
 
-class TargetPosCoordinates(Enum):
+class TargetPosCoordinates(IntEnum):
     """An enumeration representing modes for a targetted move trigger."""
 
     Both = 0
@@ -437,7 +497,7 @@ class TargetPosCoordinates(Enum):
     OnlyY = 2
 
 
-class TouchToggleMode(Enum):
+class TouchToggleMode(IntEnum):
     """An enumeration representing toggle modes of a touch trigger."""
 
     Default = 0
@@ -445,13 +505,13 @@ class TouchToggleMode(Enum):
     Off = 2
 
 
-class MiscType(Enum):
+class MiscType(IntEnum):
     """An enumeration representing miscellaneous IDs of objects."""
 
     TEXT = 914
 
 
-class TriggerType(Enum):
+class TriggerType(IntEnum):
     """An enumeration representing IDs of most triggers."""
 
     BG = 29
@@ -503,7 +563,7 @@ class TriggerType(Enum):
     TimeWarp = -13
 
 
-class ZLayer(Enum):
+class ZLayer(IntEnum):
     """An enumeration representing Z Layer of objects."""
 
     B4 = -3
@@ -521,7 +581,7 @@ class ZLayer(Enum):
     AbsZero = 4
 
 
-class Speed(Enum):
+class Speed(IntEnum):
     """An enumeration representing speed modifier modes."""
 
     NORMAL = 0  # x 1
@@ -531,7 +591,7 @@ class Speed(Enum):
     FASTEST = 4  # x 4
 
 
-class SpeedConstant(Enum):
+class SpeedConstant(float, Enum):
     """An enumeration representing actual speed modifiers."""
 
     NULL = 0.0
@@ -542,7 +602,7 @@ class SpeedConstant(Enum):
     FASTEST = 1.6
 
 
-class SpeedMagic(Enum):
+class SpeedMagic(float, Enum):
     """An enumeration with *magic* speed constants.
 
     *Magic* constants are used for translating distance travelled (in units)
@@ -569,7 +629,7 @@ class SpeedMagic(Enum):
     DEFAULT = NORMAL  # -> x 1
 
 
-class GuidelinesColor(Enum):
+class GuidelinesColor(float, Enum):
     """An enumeration representing guidelines colors."""
 
     DEFAULT = 0.0
@@ -579,22 +639,16 @@ class GuidelinesColor(Enum):
     GREEN = 1.0
 
     @classmethod
-    def from_value(cls, value: float) -> None:
+    def enum_missing(cls, value: float) -> Optional[Enum]:
         try:
-            return super().from_value(value)
-
-        except Exception:
-
-            if isinstance(value, float):
-                if 0 < value < 0.8:
-                    return cls.TRANSPARENT
-                elif value > 1:
-                    return cls.GREEN
-
-                else:
-                    raise
+            if 0 < value < 0.8:
+                return cls.TRANSPARENT
+            elif value > 1:
+                return cls.GREEN
             else:
-                raise
+                return
+        except TypeError:
+            return
 
 
 class LevelDataEnum(Enum):
