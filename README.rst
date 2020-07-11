@@ -41,7 +41,7 @@ gd.py
     :target: https://patreon.com/nekit
     :alt: Patreon Page [Support]
 
-gd.py is a library that provides its users ability to interact with servers of Geometry Dash.
+gd.py is a library that provides its users ability to interact with servers, client and memory of Geometry Dash.
 
 Key Features
 ------------
@@ -107,31 +107,14 @@ Below is an example of fetching a song by its ID.
 
 You can find more examples in examples directory.
 
-API
----
+Server
+------
 
 gd.py provides server with wrapper around itself, which can be started via a command:
 
 .. code:: sh
 
     $ python3 -m gd server
-
-Every interaction with the server requires logged in client.
-
-You can login into API system via its endpoint:
-
-.. code:: python
-
-    import requests
-
-    URL = "http://nekit.xyz/api/"  # you can use this server
-
-    data = requests.get(
-        URL + "auth/", params={"name": "YOUR_NAME", "password": "YOUR_PASSWORD"}
-    ).json()
-    token = data["token"]
-
-    print(token)  # "01a2345678b9012345cd6e7fa8bc9cfab01234c56def7a89bc0de1fab234c56d", for example
 
 Credits
 -------

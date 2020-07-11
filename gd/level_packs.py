@@ -1,4 +1,4 @@
-from gd.typing import Client, Gauntlet, Level, List, MapPack, Tuple
+from gd.typing import Any, Client, Dict, Gauntlet, Level, List, MapPack, Tuple
 
 from gd.abstractentity import AbstractEntity
 from gd.colors import Color
@@ -43,8 +43,8 @@ class Gauntlet(AbstractEntity):
 
         return cls(id=gid, name=name, level_ids=level_ids, client=client)
 
-    def _json(self) -> dict:
-        return dict(super()._json(), levels=self.levels)
+    def __json__(self) -> Dict[str, Any]:
+        return dict(super().__json__(), levels=self.levels)
 
     @property
     def name(self) -> str:

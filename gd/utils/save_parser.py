@@ -9,7 +9,7 @@ class Save:
     completed = attr.ib(factory=list, type=list)
     followed = attr.ib(factory=list, type=list)
 
-    def _json(self) -> Dict[str, List[int]]:
+    def __json__(self) -> Dict[str, List[int]]:
         return {"completed": self.completed, "followed": self.followed}
 
 

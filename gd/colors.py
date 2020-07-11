@@ -1,6 +1,6 @@
 import colorsys
 
-from gd.typing import Any, Color, Optional, Tuple
+from gd.typing import Any, Color, Dict, Optional, Tuple, Union
 
 from gd.utils.converter import Converter
 from gd.utils.text_tools import make_repr
@@ -55,7 +55,7 @@ class Color:
     def __hash__(self) -> int:
         return hash(self.value)
 
-    def _json(self) -> dict:
+    def __json__(self) -> Dict[str, Optional[Union[Tuple[int, int, int], int, str]]]:
         return dict(rgb=self.to_rgb(), hex=self.to_hex(), value=self.value, index=self.index)
 
     @property

@@ -188,7 +188,7 @@ class Client:
         }
         return make_repr(self, info)
 
-    def _json(self) -> Dict[str, Optional[Union[int, str]]]:  # pragma: no cover
+    def __json__(self) -> Dict[str, Optional[Union[int, str]]]:  # pragma: no cover
         return dict(
             account_id=self.account_id,
             id=self.id,

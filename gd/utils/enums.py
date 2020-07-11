@@ -30,7 +30,7 @@ __all__ = (
 class Enum(enums.StrFormat, enums.Order, enums.Enum):
     """Normalized generic enum that has ordering and string formatting."""
 
-    def _json(self) -> Dict[str, Any]:
+    def __json__(self) -> Dict[str, Any]:
         return {"name": self.title, "value": self.value}
 
 

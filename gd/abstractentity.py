@@ -46,7 +46,7 @@ class AbstractEntity:
             return NotImplemented
         return type(self) != type(other) or self.id != other.id
 
-    def _json(self, ignore: Iterable[str] = {"client", "data"}) -> Dict[str, Any]:
+    def __json__(self, ignore: Iterable[str] = {"client", "data"}) -> Dict[str, Any]:
         return {key: value for key, value in self.options.items() if key not in ignore}
 
     @classmethod

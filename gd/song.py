@@ -35,8 +35,8 @@ class ArtistInfo(AbstractEntity):
         }
         return make_repr(self, info)
 
-    def _json(self) -> Dict[str, Any]:
-        return dict(super()._json(), exists=self.exists)
+    def __json__(self) -> Dict[str, Any]:
+        return dict(super().__json__(), exists=self.exists)
 
     @property
     def artist(self) -> str:

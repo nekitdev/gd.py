@@ -71,21 +71,23 @@ class JSDict(dict):
             return default
 
 
-def default(x: Any) -> Any:
-    if hasattr(x, "_json"):
-        return x._json()
+def default(some_object: Any) -> Any:
+    if hasattr(some_object, "__json__"):
+        return some_object.__json__()
 
-    elif isinstance(x, (list, tuple, set)):
-        return list(x)
+    elif isinstance(some_object, (list, tuple, set)):
+        return list(some_object)
 
-    elif isinstance(x, dict):
-        return dict(x)
+    elif isinstance(some_object, dict):
+        return dict(some_object)
 
-    elif isinstance(x, URL):
-        return str(x)
+    elif isinstance(some_object, URL):
+        return str(some_object)
 
     else:
-        raise TypeError(f"Object of type {type(x).__name__!r} is not JSON-serializable.") from None
+        raise TypeError(
+            f"Object of type {type(some_object).__name__!r} is not JSON-serializable."
+        ) from None
 
 
 dump = partial(json.dump, default=default)

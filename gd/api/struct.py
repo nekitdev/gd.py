@@ -67,7 +67,7 @@ class Struct:
         info = {key: repr(value) for key, value in self.to_dict().items()}
         return make_repr(self, info)
 
-    def _json(self) -> dict:
+    def __json__(self) -> Dict[str, Any]:
         return self.to_dict()
 
     def to_dict(self) -> Dict[str, Any]:

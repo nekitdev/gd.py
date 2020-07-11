@@ -1,4 +1,4 @@
-from gd.typing import HSV, Tuple, Union
+from gd.typing import Dict, HSV, Tuple, Union
 from gd.utils.text_tools import make_repr
 
 __all__ = ("HSV",)
@@ -57,7 +57,7 @@ class HSV:
         }
         return make_repr(self, info)
 
-    def _json(self) -> dict:
+    def __json__(self) -> Dict[str, Union[bool, float, int]]:
         return dict(
             h=self.h, s=self.s, v=self.v, s_checked=self.s_checked, v_checked=self.v_checked
         )

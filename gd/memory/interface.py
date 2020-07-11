@@ -510,6 +510,10 @@ class WindowsMemory(MemoryType):
         """Set hitbox size of the player icon."""
         self.write_type(Float, size, 0x3222D0, 0x164, 0x224, 0x644)
 
+    def is_practice_mode(self) -> bool:
+        """Check whether player is in Practice Mode."""
+        return self.read_type(Bool, 0x3222D0, 0x164, 0x495)
+
     def get_gravity(self) -> float:
         """Get value of gravity in the level. Affects cube only."""
         return self.read_type(Float, 0x1E9050, 0)

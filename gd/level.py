@@ -78,8 +78,8 @@ class Level(AbstractEntity):
     def __str__(self) -> str:
         return str(self.name)
 
-    def _json(self) -> Dict[str, Any]:
-        return dict(super()._json(), featured=self.is_featured(), objects=self.objects)
+    def __json__(self) -> Dict[str, Any]:
+        return dict(super().__json__(), featured=self.is_featured(), objects=self.objects)
 
     @classmethod
     def official(

@@ -1,6 +1,7 @@
 from gd.typing import (
     Any,
     Callable,
+    Dict,
     Editor,
     Iterable,
     Iterator,
@@ -122,7 +123,7 @@ class Editor:
         self.objects = list(objects)
         self._set_callback()
 
-    def _json(self) -> dict:
+    def __json__(self) -> Dict[str, Union[Header, Sequence[Object]]]:
         return dict(header=self.header, objects=self.objects)
 
     def _set_callback(self, caller: Any = None, attribute: Optional[str] = None) -> None:
