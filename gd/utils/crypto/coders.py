@@ -63,7 +63,10 @@ class Coder:
         if needs_xor:
             save = cls.byte_xor(save, 11)
 
-        save += "=" * (4 - len(save) % 4)
+        remain = len(save) % 4
+
+        if remain:
+            save += "=" * (4 - remain)
 
         return inflate(urlsafe_b64decode(save.encode())).decode(errors="ignore")
 
