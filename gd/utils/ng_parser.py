@@ -7,7 +7,10 @@ import re
 from yarl import URL
 
 from gd.utils.parser import ExtDict
+from gd.logging import get_logger
 from gd.typing import Dict, HTMLElement, List, TypeVar, Union, XMLElement
+
+log = get_logger(__name__)
 
 use_lxml, Element = False, XMLElement
 try:
@@ -18,7 +21,7 @@ except ImportError:
     try:
         from html5lib import parse
     except ImportError:
-        print("Failed to import lxml and html5lib. Newgrounds parsing will not be supported.")
+        log.warning("Failed to import lxml and html5lib. Newgrounds parsing will not be supported.")
 
 __all__ = (
     "re_link",

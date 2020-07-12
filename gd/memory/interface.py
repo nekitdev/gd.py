@@ -547,6 +547,9 @@ class WindowsMemory(MemoryType):
         """Get amount of stars of the level."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x2AC)
 
+    def is_level_epic(self) -> bool:
+        return self.read_type(Bool, 0x3222D0, 0x164, 0x22C, 0x114, 0x280)
+
     def is_level_demon(self) -> bool:
         """Fetch whether the level is demon."""
         return self.read_type(Bool, 0x3222D0, 0x164, 0x22C, 0x114, 0x29C)

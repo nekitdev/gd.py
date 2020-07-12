@@ -5,18 +5,21 @@ import random
 import string
 import zlib
 
-try:
-    from Crypto.Cipher import AES
-except ImportError:
-    print("Failed to import pycryptodome module. MacOS save coding will not be supported.")
-
 # absolute import because we are deep
+from gd.logging import get_logger
 from gd.typing import List, Union
 
 from gd.utils.crypto.xor_cipher import XORCipher as XOR
 
+log = get_logger(__name__)
+
 Z_GZIP_HEADER = 0x10
 Z_AUTO_HEADER = 0x20
+
+try:
+    from Crypto.Cipher import AES
+except ImportError:
+    log.warning("Failed to import pycryptodome module. MacOS save coding will not be supported.")
 
 
 class Coder:

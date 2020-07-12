@@ -6,16 +6,19 @@ import re
 from attr import attrib, dataclass
 
 from gd.colors import Color
+from gd.logging import get_logger
 from gd.typing import Any, Dict, Iterator, List, Sequence, Tuple, Union, ref
 from gd.utils.enums import IconType
 from gd.utils.text_tools import JSDict
+
+log = get_logger(__name__)
 
 try:
     from PIL import Image, ImageOps
     from PIL.Image import Image as ImageType
 except ImportError:
     ImageType = ref("PIL.Image.Image")
-    print("Failed to load Pillow/PIL. Icon Factory will not be supported.")
+    log.warning("Failed to load Pillow/PIL. Icon Factory will not be supported.")
 
 ALPHA = (0, 0, 0, 0)
 COLOR_1 = Color(0x00FF00)
@@ -557,7 +560,7 @@ try:
 except Exception as error:  # noqa
     factory = None
 
-    print(f"Could not create initial factory. {error}")
+    log.warning(f"Could not create initial factory. {error}")
 
 
 if __name__ == "__main__":  # easter egg?! ~ nekit
