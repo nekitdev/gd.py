@@ -84,14 +84,14 @@ class Level(AbstractEntity):
     @classmethod
     def official(
         cls,
-        level_id: Optional[int] = None,
+        id: Optional[int] = None,
         name: Optional[str] = None,
         index: Optional[int] = None,
         client: Optional[Client] = None,
         get_data: bool = True,
     ) -> Level:
-        if level_id is not None:
-            official_level = get(official_levels, level_id=level_id)
+        if id is not None:
+            official_level = get(official_levels, level_id=id)
 
         elif name is not None:
             official_level = get(official_levels, name=name)
