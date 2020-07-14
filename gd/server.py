@@ -1979,6 +1979,35 @@ def color_from_hex(string: str) -> gd.Color:
 )
 @auth_setup(required=False)
 async def generate_icons(request: web.Request) -> web.Response:
+    """GET /api/icon_factory
+    Description:
+        Generate icons according to given query.
+    Example:
+        link: /api/icon_factory?cube=2&color_1=0x7289da&color_2=0xffffff&glow_outline=true
+        cube: 2
+        color_1: 0x7289da
+        color_2: 0xffffff
+        glow_outline: true
+    Parameters:
+        cube: Cube ID to generate (can be repeated);
+        ship: Ship ID to generate (can be repeated);
+        ball: Ball ID to generate (can be repeated);
+        ufo: UFO ID to generate (can be repeated);
+        wave: Wave ID to generate (can be repeated);
+        robot: Robot ID to generate (can be repeated);
+        spider: Spider ID to generate (can be repeated);
+        color_1: Main color to use;
+        color_2: Secondary color to use;
+        glow_outline: Whether generated icon should have outline;
+        error_on_not_found: Whether error should be reported if icon was not found.
+    Returns:
+        200: Image containing all generated icons in query order;
+        400: Invalid type in payload;
+        404: Icon was not found or no types were given;
+        500: Icon Factory is missing.
+    Return Type:
+        image/png
+    """
     query = multidict.CIMultiDict(request.query)
 
     color_1 = color_from_hex(query.pop("color_1", "0x00ff00"))
@@ -2022,6 +2051,9 @@ async def generate_icons(request: web.Request) -> web.Response:
 @routes.get("/api/icons/{type:(all|main|cube|ship|ball|ufo|wave|robot|spider)}/{query}")
 @handle_errors(
     {
+        AttributeError: Error(
+            500, "Can not generate icons due to factory missing.", ErrorType.NOT_FOUND
+        ),
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
         gd.MissingAccess: Error(404, "Could not find requested user.", ErrorType.NOT_FOUND),
     }
@@ -2038,7 +2070,8 @@ async def get_icons(request: web.Request) -> web.Response:
         id: Whether to interpret "query" as AccountID or Name/PlayerID;
     Returns:
         200: Image with generated icons;
-        404: Could not find requested user.
+        404: Could not find requested user;
+        500: Icon Factory is missing.
     Return Type:
         image/png
     """
