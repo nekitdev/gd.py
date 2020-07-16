@@ -36,7 +36,7 @@ Here is more interesting client usage::
 
 Client objects also supported operations that require GD account.
 
-Logging in account is fairly simple::
+Logging in with an account is fairly simple::
 
     client = gd.Client()
     await client.login('username', 'password')
