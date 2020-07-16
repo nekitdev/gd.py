@@ -282,6 +282,7 @@ class WindowsMemory(MemoryType):
     def __init__(self, process_name: str, load: bool = False, ptr_type: Type = Int32) -> None:
         self.process_name = add_end(process_name, ".exe")
         self.ptr_type = ptr_type
+        self.stop_listening = False
 
         if load:
             self.load()
@@ -936,6 +937,87 @@ class WindowsMemory(MemoryType):
         self.write_bytes(Buffer[0x74, 0x6E], 0x18B2B4)
         # Level reset
         self.write_bytes(Buffer[0x0F, 0x85, 0xD6, 0x00, 0x00, 0x00], 0x20C4E6)
+
+    def on_death(self, *args, **kwargs) -> None:
+        """Listener for when the player dies."""
+        def decorator(func):
+            run_function = True
+            while True:
+                if self.stop_listening:
+                    return func
+                if get_memory().is_dead():
+                    if run_function:
+                        function = func() 
+                    run_function = False
+                else:
+                    run_function = True
+            return function
+            if kwargs["delay"] == None:
+                time.sleep(5)
+            else:
+                time.sleep(kwargs["delay"])
+        return decorator
+
+    def on_gamemode_change(self, *args, **kwargs) -> None:
+        """Listener for when the players gamemode changes."""
+        def decorator(func):
+            run_function = True
+            while True:
+                old_game_mode = get_memory().get_gamemode()
+                time.sleep(0.5)
+                if self.stop_listening:
+                    return func
+                gamemode = get_memory().get_gamemode()
+                if gamemode != old_game_mode:
+                    if run_function:
+                        function = func(gamemode) 
+                    run_function = False
+                else:
+                    run_function = True
+            return function
+        return decorator
+
+    def on_scene_change(self, *args, **kwargs) -> None:
+        """Listener for when the scene changes."""
+        def decorator(func):
+            run_function = True
+            while True:
+                old_scene = get_memory().get_scene_value()
+                time.sleep(0.5)
+                if self.stop_listening:
+                    return func
+                scene = get_memory().get_scene_value()
+                if scene != old_scene:
+                    if run_function:
+                        function = func(scene) 
+                    run_function = False
+                else:
+                    run_function = True
+            return function
+        return decorator
+
+    def on_pass_percent(self, percent, *args, **kwargs) -> None:
+        """Listener for when the player passes a given percent."""
+        def decorator(func):
+            run_function = True
+            while True:
+                if self.stop_listening:
+                    return func
+                time.sleep(0.5)
+                if get_memory().get_percent() == percent:
+                    if run_function:
+                        function = func() 
+                    run_function = False
+                else:
+                    run_function = True
+            return function
+        return decorator
+
+    def stop_listeners(self):
+        """Stops all listeners currently active"""
+        self.stop_listening = True
+
+    # Planned: pratice, speed, gravity, attempts, jumps, new normal, new practice, level type
 
 
 number_to_resolution = {
