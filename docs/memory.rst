@@ -76,3 +76,22 @@ Memory API
     :members:
 
 .. autofunction:: get_memory
+
+Listeners
+---------
+
+gd.py also includes support for memory listeners. This example prints "passed 20%".
+
+.. code-block:: python3
+
+    import gd
+    percent = 20
+    listener = gd.memory.Listener() # initialize listener
+
+
+    @listener.on_pass_percent(percent) # setup listener
+    def on_pass_percent():
+        print("passed " + percent + "%")
+
+.. autoclass:: Listener
+    :members:

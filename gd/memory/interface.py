@@ -282,7 +282,6 @@ class WindowsMemory(MemoryType):
     def __init__(self, process_name: str, load: bool = False, ptr_type: Type = Int32) -> None:
         self.process_name = add_end(process_name, ".exe")
         self.ptr_type = ptr_type
-        self.stop_listening = False
 
         if load:
             self.load()
@@ -938,6 +937,11 @@ class WindowsMemory(MemoryType):
         # Level reset
         self.write_bytes(Buffer[0x0F, 0x85, 0xD6, 0x00, 0x00, 0x00], 0x20C4E6)
 
+
+class Listener:
+    def __init__(self):
+        self.stop_listening = False
+
     def on_death(self, *args, **kwargs) -> None:
         """Listener for when the player dies."""
         def decorator(func):
@@ -1016,9 +1020,7 @@ class WindowsMemory(MemoryType):
     def stop_listeners(self):
         """Stops all listeners currently active"""
         self.stop_listening = True
-
     # Planned: pratice, speed, gravity, attempts, jumps, new normal, new practice, level type
-
 
 number_to_resolution = {
     1: (640, 480),
