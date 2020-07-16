@@ -89,6 +89,7 @@ class Level(AbstractEntity):
         index: Optional[int] = None,
         client: Optional[Client] = None,
         get_data: bool = True,
+        server_style: bool = False,
     ) -> Level:
         if id is not None:
             official_level = get(official_levels, level_id=id)
@@ -108,7 +109,7 @@ class Level(AbstractEntity):
         if official_level is None:
             raise LookupError("Could not find official level by given query.")
 
-        return official_level.into_level(client, get_data=get_data)
+        return official_level.into_level(client, get_data=get_data, server_style=server_style)
 
     @classmethod
     def from_data(
@@ -194,7 +195,7 @@ class Level(AbstractEntity):
             score=data.getcast(Index.LEVEL_FEATURED_SCORE, 0, int),
             uploaded_timestamp=data.get(Index.LEVEL_UPLOADED_TIMESTAMP, "unknown"),
             last_updated_timestamp=data.get(Index.LEVEL_LAST_UPDATED_TIMESTAMP, "unknown"),
-            length=LevelLength.from_value(data.getcast(Index.LEVEL_LENGTH, 0, int), "XL"),
+            length=LevelLength.from_value(data.getcast(Index.LEVEL_LENGTH, 0, int)),
             game_version=data.getcast(Index.LEVEL_GAME_VERSION, 0, int),
             stars_requested=data.getcast(Index.LEVEL_REQUESTED_STARS, 0, int),
             object_count=data.getcast(Index.LEVEL_OBJECT_COUNT, 0, int),
@@ -739,7 +740,15 @@ class OfficialLevel:
     def is_demon(self) -> bool:
         return "demon" in self.difficulty
 
-    def into_level(self, client: Optional[Client] = None, get_data: bool = True) -> Level:
+    def get_song_id(self, server_style: bool = False) -> int:
+        return self.song_id - 1 if server_style else self.song_id  # assume non-server by default
+
+    def into_level(
+        self,
+        client: Optional[Client] = None,
+        get_data: bool = True,
+        server_style: bool = False,
+    ) -> Level:
         if self.is_demon():
             difficulty = DemonDifficulty.from_name(self.difficulty)
         else:
@@ -760,7 +769,9 @@ class OfficialLevel:
             description=f"Official Level: {self.name}",
             version=1,
             creator=AbstractUser(name="RobTop", id=16, account_id=71, client=client),
-            song=Song.official(self.song_id, server_style=False, client=client),
+            song=Song.official(
+                self.get_song_id(server_style), client=client, server_style=server_style
+            ),
             data=data,
             password=None,
             copyable=False,

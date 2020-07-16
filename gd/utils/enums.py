@@ -89,6 +89,14 @@ class LevelLength(Enum):
     EXTRA_LONG = 4
     XL = EXTRA_LONG
 
+    @classmethod
+    def enum_missing(cls, value: int) -> Enum:
+        if value > cls.XL.value:
+            return cls.XL
+
+        if value < cls.TINY.value:
+            return cls.TINY
+
 
 class LevelDifficulty(Enum):
     """An enumeration for level difficulties."""
