@@ -16,7 +16,6 @@ Documentation Contents
     :maxdepth: 2
 
     intro
-    quickstart
     version
     logging
     client
@@ -25,6 +24,7 @@ Documentation Contents
     text
     song
     level
+    rewards
     game_api
     memory
     utils
@@ -39,8 +39,6 @@ Additional Information
 
 .. toctree::
     :maxdepth: 2
-
-    whats_new
     faq
 
 If you still can't find what you're looking for, try in this page:

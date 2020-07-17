@@ -48,7 +48,6 @@ joke_map = {
     "alex1304": "how are your codes so clean?",
     "alphalaneous": "let's interface gd",
     "blaze": "stop using mac",
-    "cyber": "why not use rust?",
     "devexit": "lol just beat zodiac",
     "italianapkdownloader": "let's hook super mario maker to gd",
     "mgostih": "smart and rust",
@@ -57,6 +56,4 @@ joke_map = {
     "pizzaroot": "asian student stereotype",
     "rya": "lol rebooting my gdps for the 80th time",
     "sputnix": "let's make gta5 in gd",
-    "zmx": "no rust is a shit language stop telling me to use it",
-    "spooky": ":crab: rust",
 }

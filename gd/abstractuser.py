@@ -231,7 +231,7 @@ class AbstractUser(AbstractEntity):
         page: :class:`int`
             Page to look for levels at.
 
-        exclude: Sequence[Type[:exc:`BaseException`]]
+        exclude: Tuple[Type[:exc:`BaseException`]]
             Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
@@ -356,7 +356,7 @@ class AbstractUser(AbstractEntity):
         page: :class:`int`
             Page to look comments at.
 
-        exclude: Sequence[Type[:exc:`BaseException`]]
+        exclude: Tuple[Type[:exc:`BaseException`]]
             Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]

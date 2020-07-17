@@ -11,7 +11,7 @@ and then run its methods in async functions::
 
     client = gd.Client()
     song = await client.get_song(1)
-    # <gd.Song id=1 name='Chilled 1' author='Recoil'>
+    # <Song id=1 name='Chilled 1' author='Recoil'>
 
 Client instances have ``session`` objects bind to them, which allow to run methods with custom arguments,
 if needed. Every ``session`` object has ``http`` client object bound, that can be used for any request.
@@ -21,14 +21,14 @@ Here is more interesting client usage::
     client = gd.Client()
 
     level = await client.get_level(30029017)
-    # <gd.Level id=30029017 name='VorteX' ...>
+    # <Level id=30029017 name='VorteX' ...>
 
     # some counters
     total = 0
     count = 0
 
     # for each comment on the level, add its rating to total and increment count
-    for comment in await level.get_comments(amount=1000000):  # all comments?
+    for comment in await level.get_comments(amount=-1):  # all comments
         count += 1
         total += comment.rating
 
@@ -48,20 +48,20 @@ Logged in Clients can like levels, post comments, send messages and friend reque
     await client.login('username', 'password')
 
     rob = await client.find_user('RobTop')
-    # <gd.AbstractUser name='RobTop' id=16 account_id=71>
+    # <AbstractUser name='RobTop' id=16 account_id=71>
 
     for level in await rob.get_levels():
         print(level.name, level.id)
         await level.like()  # hehe
 
     nekit = await client.fetch_user(5509312)
-    # <gd.AbstractUser name='NeKitDS' id=17876467 account_id=5509312>
+    # <AbstractUser name='NeKitDS' id=17876467 account_id=5509312>
 
     # please do not spam me with those uwu ~ nekit
     await nekit.send_friend_request('Hey there from gd.py')
 
     bot = await client.search_user('GDBotAI')
-    # <gd.User account_id=11676872 id=118270198 name='GDBotAI' ...>
+    # <User account_id=11676872 id=118270198 name='GDBotAI' ...>
 
     # send a message
     await bot.send('Ignore: gd.py', 'This is a message sent from gd.py')
@@ -78,7 +78,7 @@ Another example::
 You can even do this (I strongly do not recommend though)::
 
     level = await client.get_level(30029017)
-    # <gd.Level id=30029017 name='VorteX' ...>
+    # <Level id=30029017 name='VorteX' ...>
 
     await level.upload(id=0)  # reupload a level...
 

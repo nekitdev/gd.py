@@ -13,10 +13,12 @@ from gd.typing import Dict, HTMLElement, List, TypeVar, Union, XMLElement
 log = get_logger(__name__)
 
 use_lxml, Element = False, XMLElement
+
 try:
     from lxml import html
 
     use_lxml, Element = True, HTMLElement
+
 except ImportError:
     try:
         from html5lib import parse

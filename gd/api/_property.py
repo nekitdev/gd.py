@@ -82,7 +82,7 @@ def _get_type(key: Union[int, str], type_str: str = "object") -> str:
             key == _GUIDELINES: list,
             key in _HEADER_ENUMS: _HEADER_ENUMS.get(key),
         },
-        "level": {True: "soon"},  # yikes!
+        "level": {True: "WIP"},  # yikes!
     }
     result = type_map.get(type_str, {}).get(True, str)
 

@@ -9,7 +9,7 @@ def get_logger(name: Optional[str] = None) -> logging.Logger:
     return logging.getLogger(name)
 
 
-def get_root_logger():
+def get_module_logger():
     return get_logger(__name__.split(".").pop(0))
 
 
@@ -48,5 +48,5 @@ def setup_logging(
     log.setLevel(level)
 
 
-log = get_root_logger()
+log = get_module_logger()
 log.addHandler(logging.NullHandler())

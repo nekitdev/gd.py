@@ -11,7 +11,7 @@ gd.py implements reading, sending and interacting with comments, friend requests
     await client.login('username', 'password')
 
     nekit = await client.search_user('NeKitDS')
-    # <gd.User account_id=5509312 id=17876467 name='NeKitDS' ...>
+    # <User account_id=5509312 id=17876467 name='NeKitDS' ...>
 
     for comment in await nekit.get_comments():
         print(comment.body)

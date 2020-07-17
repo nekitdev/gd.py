@@ -13,9 +13,6 @@ Exception List
 
 .. autoexception:: ClientException
 
-.. autoexception:: FailedConversion
-    :members:
-
 .. autoexception:: EditorError
 
 .. autoexception:: HTTPError
@@ -38,7 +35,6 @@ Exception Hierarchy
 
     GDException (Exception)
         EditorError
-        FailedConversion
         ClientException
             HTTPError
             MissingAccess

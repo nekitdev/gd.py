@@ -33,6 +33,7 @@ class IconSet(AbstractEntity):
 
     @property
     def id(self) -> int:
+        """:class:`int`: ID of the icon set, based on colors and main icon."""
         return self.main + self.color_1.value + self.color_2.value + self.main_type.value
 
     @property
@@ -109,6 +110,23 @@ class IconSet(AbstractEntity):
     async def generate(
         self, type: Optional[Union[int, str, IconType]] = None, as_image: bool = False,
     ) -> Union[bytes, ImageType]:
+        """|coro|
+
+        Generate an image of an icon.
+
+        Parameters
+        ----------
+        type: Optional[Union[:class:`int`, :class:`str`, :class:`.IconType`]]
+            Type of an icon to generate. If not given or ``"main"``, picks current main icon.
+
+        as_image: :class:`bool`
+            Whether to return an image or bytes of an image.
+
+        Returns
+        -------
+        Union[:class:`bytes`, :class:`PIL.Image.Image`]
+            Bytes or an image, based on ``as_image``.
+        """
         if type is None or type == "main":
             type = self.main_type
 
@@ -131,11 +149,45 @@ class IconSet(AbstractEntity):
     async def generate_many(
         self, *types: Iterable[Union[int, str, IconType]], as_image: bool = False,
     ) -> Union[List[bytes], List[ImageType]]:
+        r"""|coro|
+
+        Generate images of icons.
+
+        Parameters
+        ----------
+        \*types: Iterable[Optional[Union[:class:`int`, :class:`str`, :class:`.IconType`]]]
+            Types of icons to generate. If ``"main"`` is given, picks current main icon.
+
+        as_image: :class:`bool`
+            Whether to return images or bytes of images.
+
+        Returns
+        -------
+        Union[List[:class:`bytes`], List[:class:`PIL.Image.Image`]]
+            List of bytes or of images, based on ``as_image``.
+        """
         return [await self.generate(type=type, as_image=as_image) for type in types]
 
     async def generate_image(
         self, *types: Iterable[Union[int, str, IconType]], as_image: bool = False,
     ) -> Union[bytes, ImageType]:
+        r"""|coro|
+
+        Generate images of icons and connect them into one image.
+
+        Parameters
+        ----------
+        \*types: Iterable[Optional[Union[:class:`int`, :class:`str`, :class:`.IconType`]]]
+            Types of icons to generate. If ``"main"`` is given, picks current main icon.
+
+        as_image: :class:`bool`
+            Whether to return an image or bytes of an image.
+
+        Returns
+        -------
+        Union[:class:`bytes`, :class:`PIL.Image.Image`]
+            Bytes or an image, based on ``as_image``.
+        """
         images = await self.generate_many(*types, as_image=True)
         result = await run_blocking_io(connect_images, images)
 
@@ -145,4 +197,18 @@ class IconSet(AbstractEntity):
         return await run_blocking_io(to_bytes, result)
 
     async def generate_full(self, as_image: bool = False) -> Union[bytes, ImageType]:
+        """|coro|
+
+        Generate an image of the full icon set.
+
+        Parameters
+        ----------
+        as_image: :class:`bool`
+            Whether to return an image or bytes of an image.
+
+        Returns
+        -------
+        Union[:class:`bytes`, :class:`PIL.Image.Image`]
+            Bytes or an image, based on ``as_image``.
+        """
         return await self.generate_image(*self.ALL_TYPES, as_image=as_image)

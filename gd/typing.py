@@ -90,11 +90,11 @@ __all__ = (
 )
 
 
-def __repr__(forward_ref):
-    return str(forward_ref.__forward_arg__)
+def __forward_ref_repr__(self: ref) -> str:
+    return str(self.__forward_arg__)
 
 
-setattr(ref, "__repr__", __repr__)
+setattr(ref, "__repr__", __forward_ref_repr__)
 
 Function = Callable[..., Any]
 

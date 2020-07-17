@@ -48,5 +48,6 @@ loop = gd.utils.acquire_loop()
 # run main with graceful shutdown
 try:
     loop.run_forever()
+
 except KeyboardInterrupt:
     gd.utils.shutdown_loop(loop)

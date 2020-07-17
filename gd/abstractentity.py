@@ -39,12 +39,12 @@ class AbstractEntity:
     def __eq__(self, other: AbstractEntity) -> bool:
         if not hasattr(other, "id"):
             return NotImplemented
-        return type(self) == type(other) and self.id == other.id
+        return type(self) is type(other) and self.id == other.id
 
     def __ne__(self, other: AbstractEntity) -> bool:
         if not hasattr(other, "id"):
             return NotImplemented
-        return type(self) != type(other) or self.id != other.id
+        return type(self) is not type(other) or self.id != other.id
 
     def __json__(self, ignore: Iterable[str] = {"client", "data"}) -> Dict[str, Any]:
         return {key: value for key, value in self.options.items() if key not in ignore}
@@ -55,8 +55,8 @@ class AbstractEntity:
 
     @property
     def hash_str(self) -> str:
-        cls = self.__class__.__name__
-        return f"<GDEntity<{cls}(ID->{self.id})>>"
+        name = self.__class__.__name__
+        return f"<GDEntity<{name}(ID->{self.id})>>"
 
     @property
     def id(self) -> int:

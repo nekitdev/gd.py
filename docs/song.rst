@@ -11,12 +11,12 @@ gd.py provides simple API for fetching and working with both of them::
     client = gd.Client()
 
     song = gd.Song.official(0, client=client)
-    # <gd.Song id=0 name='Stereo Madness' author='ForeverBound'>
+    # <Song id=0 name='Stereo Madness' author='ForeverBound'>
 
     print(song.is_custom())  # False
 
     song = await client.get_song(1)  # or get_ng_song for Newgrounds fetching
-    # <gd.Song id=1 name='Chilled 1' author='Recoil'>
+    # <Song id=1 name='Chilled 1' author='Recoil'>
 
     data = await song.download()  # returns song data, as bytes
 

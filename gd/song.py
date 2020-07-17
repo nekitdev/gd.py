@@ -84,20 +84,51 @@ class Author(AbstractEntity):
 
     @property
     def id(self) -> int:
+        """:class:`int`: ID of the Author."""
         return hash(str(self))
 
     @property
     def link(self) -> URL:
+        """:class:`yarl.URL`: URL to author's page."""
         return URL(self.options.get("link", "https://%s.newgrounds.com/" % self.name))
 
     @property
     def name(self) -> str:
+        """:class:`str`: Name of the author."""
         return self.options.get("name", "")
 
     async def get_page_songs(self, page: int = 0) -> List[Song]:
+        """|coro|
+
+        Get songs on the page.
+
+        Parameters
+        ----------
+        page: :class:`int`
+            Page of songs to look at.
+
+        Returns
+        -------
+        List[:class:`.Song`]
+            Songs found. Can be empty.
+        """
         return await self.client.get_page_user_songs(self, page=page)
 
     async def get_songs(self, pages: Iterable[int] = range(10)) -> List[Song]:
+        """|coro|
+
+        Get songs on the pages.
+
+        Parameters
+        ----------
+        pages: Iterable[:class:`int`]
+            Pages of songs to look at.
+
+        Returns
+        -------
+        List[:class:`.Song`]
+            Songs found. Can be empty.
+        """
         return await self.client.get_user_songs(self, pages=pages)
 
 
@@ -169,12 +200,22 @@ class Song(AbstractEntity):
         return cls(**data, client=client)
 
     def get_author(self) -> Author:
+        """:class:`.Author`: Author of the song."""
         if not self.is_custom():
             raise ClientException("Can not get author of an official song.")
 
         return Author(name=self.author, client=self.client)
 
     async def update(self, from_ng: bool = False) -> None:
+        """|coro|
+
+        Update the song.
+
+        Parameters
+        ----------
+        from_ng: :class:`bool`
+            Whether to fetch song from Newgrounds.
+        """
         if from_ng:
             new = await self.client.get_ng_song(self.id)
         else:
@@ -296,12 +337,3 @@ def fix_song_encoding(string: str) -> str:
 
     except (UnicodeEncodeError, UnicodeDecodeError):
         return string
-
-
-def product(iterable: Iterable[Union[float, int]]) -> Union[float, int]:
-    result = 1
-
-    for element in iterable:
-        result *= element
-
-    return result

@@ -37,10 +37,10 @@ Database is *python* interface to saves of Geometry Dash.
     db = gd.api.make_db()
 
     print(db.load_my_levels())
-    # LevelCollection[<gd.LevelAPI id=... version=... name=...>, ...]
+    # LevelCollection[<LevelAPI id=... version=... name=...>, ...]
 
     levels = db.levels
-    # <gd.Part len=...>
+    # <Part len=...>
 
     # {"LLM_01": {...}, "LLM_02": ..., ...}
 
@@ -64,7 +64,7 @@ You can create objects like this:
     from gd.api import Object
 
     obj = Object(id=1, x=150, y=150, groups={1})
-    # <gd.Object id=1 x=150 y=150 groups={1}>
+    # <Object id=1 x=150 y=150 groups={1}>
 
     string = obj.dump()
     # '1,1,2,150,3,150,57,1'
@@ -103,13 +103,13 @@ gd.py also gives some helpers in case user does not know some values:
     from gd.api import Object
 
     o = Object(x=150, y=150, lock_to_player_x=True, target_group_id=1)
-    # <gd.Object id=1 x=150 y=150 target_group_id=1 lock_to_player_x=True>
+    # <Object id=1 x=150 y=150 target_group_id=1 lock_to_player_x=True>
 
     o.set_id('trigger:move')  # move trigger
-    # <gd.Object id=901 x=150 y=150 target_group_id=1 lock_to_player_x=True>
+    # <Object id=901 x=150 y=150 target_group_id=1 lock_to_player_x=True>
 
     o.set_easing('sine_in_out')
-    # <gd.Object id=901 x=150 y=150 easing=<gd.Easing.SineInOut: 13 (SineInOut)> target_group_id=1 lock_to_player_x=True>
+    # <Object id=901 x=150 y=150 easing=Easing.SineInOut (SineInOut) target_group_id=1 lock_to_player_x=True>
 
 .. autofunction:: get_id
 

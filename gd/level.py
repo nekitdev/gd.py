@@ -91,6 +91,44 @@ class Level(AbstractEntity):
         get_data: bool = True,
         server_style: bool = False,
     ) -> Level:
+        """Get official level to work with.
+
+        Lookup is done in the following form: ``id -> name -> index``.
+
+        Parameters
+        ----------
+        id: Optional[:class:`int`]
+            ID of the official level.
+
+        name: Optional[:class:`str`]
+            Name of the official level.
+
+        index: Optional[:class:`int`]
+            Index (position) of the official level.
+
+        client: Optional[:class:`.Client`]
+            Client to attach to the level.
+
+        get_data: :class:`bool`
+            Whether to attach data to the level. Default is ``True``.
+
+        server_style: :class:`bool`
+            Indicates if server-style of official song ID should be used.
+            Set this to ``True`` in case of uploading level to the server. Defaults to ``False``.
+
+        Raises
+        ------
+        :exc:`ValueError`
+            No queries were given.
+
+        :exc:`LookupError`
+            Level was not found.
+
+        Returns
+        -------
+        :class:`.Level`
+            Official level that was found.
+        """
         if id is not None:
             official_level = get(official_levels, level_id=id)
 
@@ -703,7 +741,7 @@ class Level(AbstractEntity):
             For ``amount < 0``, ``2 ** 31`` is added, allowing to fetch
             a theoretical limit of comments.
 
-        exclude: Sequence[Type[:exc:`BaseException`]]
+        exclude: Tuple[Type[:exc:`BaseException`]]
             Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
@@ -744,10 +782,7 @@ class OfficialLevel:
         return self.song_id - 1 if server_style else self.song_id  # assume non-server by default
 
     def into_level(
-        self,
-        client: Optional[Client] = None,
-        get_data: bool = True,
-        server_style: bool = False,
+        self, client: Optional[Client] = None, get_data: bool = True, server_style: bool = False,
     ) -> Level:
         if self.is_demon():
             difficulty = DemonDifficulty.from_name(self.difficulty)
@@ -828,13 +863,7 @@ official_levels = [
         length="long",
     ),
     OfficialLevel(
-        level_id=4,
-        song_id=4,
-        name="Dry Out",
-        stars=4,
-        difficulty="normal",
-        coins=3,
-        length="long",
+        level_id=4, song_id=4, name="Dry Out", stars=4, difficulty="normal", coins=3, length="long",
     ),
     OfficialLevel(
         level_id=5,
@@ -855,13 +884,7 @@ official_levels = [
         length="long",
     ),
     OfficialLevel(
-        level_id=7,
-        song_id=7,
-        name="Jumper",
-        stars=7,
-        difficulty="harder",
-        coins=3,
-        length="long",
+        level_id=7, song_id=7, name="Jumper", stars=7, difficulty="harder", coins=3, length="long",
     ),
     OfficialLevel(
         level_id=8,
@@ -873,13 +896,7 @@ official_levels = [
         length="long",
     ),
     OfficialLevel(
-        level_id=9,
-        song_id=9,
-        name="Cycles",
-        stars=9,
-        difficulty="harder",
-        coins=3,
-        length="long",
+        level_id=9, song_id=9, name="Cycles", stars=9, difficulty="harder", coins=3, length="long",
     ),
     OfficialLevel(
         level_id=10,

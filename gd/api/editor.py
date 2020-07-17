@@ -27,11 +27,15 @@ __all__ = ("Editor", "get_length_from_x")
 
 speed_map = {}
 
-for s in ("slow", "normal", "fast", "faster", "fastest"):
-    a, b, c = (SpeedMagic[s.upper()], Speed[s.upper()], PortalType[s.title() + "Speed"])
-    speed_map.update({b.value: a.value, c.value: a.value})
+for string in ("slow", "normal", "fast", "faster", "fastest"):
+    magic, speed, portal = (
+        SpeedMagic.from_name(string),
+        Speed.from_name(string),
+        PortalType.from_name(string + "speed"),
+    )
+    speed_map.update({speed.value: magic.value, portal.value: magic.value})
 
-del a, b, c, s
+del string, magic, speed, portal
 
 _portals = {enum.value for enum in PortalType}
 _speed_protals = {enum.value for enum in PortalType if ("speed" in enum.name.lower())}
@@ -84,16 +88,16 @@ def get_length_from_x(dx: float, start_speed: Speed, portals: Sequence[Object]) 
     return (dx - last_x) / speed + total
 
 
-def _is_portal(obj: Object) -> bool:
-    return obj.id in _portals and obj.is_checked()
+def _is_portal(maybe_portal: Object) -> bool:
+    return maybe_portal.id in _portals and maybe_portal.is_checked()
 
 
-def _is_speed_portal(obj: Object) -> bool:
-    return obj.id in _speed_protals and obj.is_checked()
+def _is_speed_portal(maybe_portal: Object) -> bool:
+    return maybe_portal.id in _speed_protals and maybe_portal.is_checked()
 
 
-def _get_x(obj: Object) -> Union[float, int]:
-    return obj.x
+def _get_x(some_object: Object) -> Union[float, int]:
+    return some_object.x
 
 
 def _inf_range(start: int = 0, step: int = 1) -> Iterator[int]:
@@ -104,12 +108,15 @@ def _inf_range(start: int = 0, step: int = 1) -> Iterator[int]:
         value += step
 
 
-def _find_next(s: Iterable[int], rng: Optional[Iterable[int]] = None) -> Optional[int]:
-    if rng is None:
-        rng = _inf_range(start=1)
-    for i in rng:
-        if i not in s:
-            return i
+def _find_next(
+    numbers: Iterable[int], given_range: Optional[Iterable[int]] = None,
+) -> Optional[int]:
+    if given_range is None:
+        given_range = _inf_range(start=1)
+
+    for number in given_range:
+        if number not in numbers:
+            return number
 
 
 class Editor:
@@ -214,6 +221,8 @@ class Editor:
                 color_ids.add(color_1)
             if color_2 is not None:
                 color_ids.add(color_2)
+
+        color_ids.update(color.id for color in self.get_colors())
 
         return color_ids
 

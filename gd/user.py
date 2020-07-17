@@ -159,9 +159,7 @@ class User(UserStats):
                 main_icon=data.getcast(Index.USER_ICON, 1, int),
                 color_1=colors[data.getcast(Index.USER_COLOR_1, 0, int)],
                 color_2=colors[data.getcast(Index.USER_COLOR_2, 0, int)],
-                main_icon_type=IconType.from_value(
-                    data.getcast(Index.USER_ICON_TYPE, 0, int), 0
-                ),
+                main_icon_type=IconType.from_value(data.getcast(Index.USER_ICON_TYPE, 0, int), 0),
                 has_glow_outline=bool(data.getcast(Index.USER_GLOW_OUTLINE_2, 0, int)),
                 icon_cube=data.getcast(Index.USER_ICON_CUBE, 1, int),
                 icon_ship=data.getcast(Index.USER_ICON_SHIP, 1, int),

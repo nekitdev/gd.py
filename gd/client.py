@@ -88,6 +88,7 @@ def figure_type_and_special(item: Union[Comment, Level]) -> Optional[Tuple[int, 
 def construct_levels(
     lvdata: Iterable[ExtDict], cdata: Iterable[ExtDict], sdata: Iterable[ExtDict], client: Client
 ) -> List[Level]:
+    # construct levels from level data, creator data and song data
     creators = list(AbstractUser(**c, client=client) for c in cdata)
     songs = list(Song.from_data(s, client=client) for s in sdata)
     levels = []
@@ -688,7 +689,7 @@ class Client:
         page: :class:`int`
             Page to look for map packs on.
 
-        exclude: Sequence[Type[:exc:`BaseException`]]
+        exclude: Tuple[Type[:exc:`BaseException`]]
             Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
@@ -901,7 +902,7 @@ class Client:
         page: :class:`int`
             Page to look levels at.
 
-        exclude: Sequence[Type[:exc:`BaseException`]]
+        exclude: Tuple[Type[:exc:`BaseException`]]
             Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
@@ -1306,7 +1307,7 @@ class Client:
             Either ``profile`` or ``level``.
         page: :class:`int`
             Page to look comments on.
-        exclude: Sequence[Type[:exc:`BaseException`]]
+        exclude: Tuple[Type[:exc:`BaseException`]]
             Exceptions to ignore. By default includes only :exc:`.NothingFound`.
         strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]
             Strategy to use. ``recent`` or ``most_liked``.
@@ -1566,7 +1567,7 @@ class Client:
             Amount of comments to fetch. When lower than *0*, adds *2^31* to the amount.
             (meaning to fetch all the comments)
 
-        exclude: Sequence[Type[:exc:`BaseException`]]
+        exclude: Tuple[Type[:exc:`BaseException`]]
             Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
@@ -1595,7 +1596,7 @@ class Client:
 
         Parameters
         ----------
-        exclude: Sequence[Type[:exc:`BaseException`]]
+        exclude: Tuple[Type[:exc:`BaseException`]]
             Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
@@ -1624,7 +1625,7 @@ class Client:
 
         Parameters
         ----------
-        exclude: Sequence[Type[:exc:`BaseException`]]
+        exclude: Tuple[Type[:exc:`BaseException`]]
             Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
@@ -1679,7 +1680,7 @@ class Client:
         page: :class:`int`
             Number of page to look at.
 
-        exclude: Sequence[Type[:exc:`BaseException`]]
+        exclude: Tuple[Type[:exc:`BaseException`]]
             Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
@@ -1750,7 +1751,7 @@ class Client:
         page: :class:`int`
             Number of page to look at.
 
-        exclude: Sequence[Type[:exc:`BaseException`]]
+        exclude: Tuple[Type[:exc:`BaseException`]]
             Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
@@ -2058,11 +2059,34 @@ class Client:
 
     @check_logged
     async def get_quests(self) -> List[Quest]:
+        """|coro|
+
+        Get quests of a user.
+
+        Returns
+        -------
+        List[:class:`.Quest`]
+            Quests of a user.
+        """
         data = await self.session.get_quests(client=self)
         return list(Quest(**part, client=self) for part in data)
 
     @check_logged
     async def get_chests(self, reward_type: Union[int, str, RewardType] = 0) -> List[Chest]:
+        """|coro|
+
+        Get chests of a user.
+
+        Parameters
+        ----------
+        reward_type: Union[:class:`int`, :class:`str`, :class:`.RewardType`]
+            Reward type. If given and non-zero, "opens" a chest.
+
+        Returns
+        -------
+        List[:class:`.Chest`]
+            Chests of a user.
+        """
         reward_type = RewardType.from_value(reward_type)
 
         data = await self.session.get_chests(reward_type, client=self)
@@ -2102,7 +2126,7 @@ class Client:
         gauntlet: Union[:class:`int`, :class:`.Gauntlet`]
             A gauntlet to get levels in.
 
-        exclude: Sequence[Type[:exc:`BaseException`]]
+        exclude: Tuple[Type[:exc:`BaseException`]]
             Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
@@ -2239,6 +2263,18 @@ class Client:
     def listen_for(
         self, type: str, entity_id: Optional[int] = None, delay: Optional[float] = None
     ) -> None:
+        """Function for enabling listeners of events.
+
+        .. code-block:: python3
+
+            client.listen_for("daily")
+
+            @client.event
+            async def on_new_daily(level: gd.Level) -> None:
+                print(f"New daily: {level.name} (ID: {level.id}).")
+
+        See :ref:`events` for more info.
+        """
         lower = str(type).lower()
 
         kwargs = {"client": self}
@@ -2247,13 +2283,13 @@ class Client:
             kwargs["delay"] = delay
 
         if lower in {"daily", "weekly"}:
-            listener = TimelyLevelListener(t_type=lower, **kwargs)
+            listener = TimelyLevelListener(timely_type=lower, **kwargs)
 
         elif lower in {"rate", "unrate"}:
             listener = RateLevelListener(listen_to_rate=(lower == "rate"), **kwargs)
 
         elif lower in {"friend_request", "message"}:
-            listener = MessageOrRequestListener(listen_to_msg=(lower == "message"), **kwargs)
+            listener = MessageOrRequestListener(listen_messages=(lower == "message"), **kwargs)
 
         elif lower in {"level_comment"}:
             if entity_id is None:
@@ -2269,6 +2305,26 @@ class Client:
         return self.event  # allow using as a decorator
 
     async def dispatch(self, event_name: str, *args, **kwargs) -> Any:
+        r"""|coro|
+
+        Dispatch an event given by ``event_name`` with ``*args`` and ``**kwargs``.
+
+        Parameters
+        ----------
+        event_name: :class:`str`
+            Name of event to dispatch, e.g. ``"new_daily"``.
+
+        \*args
+            Args to call handler with.
+
+        \*\*kwargs
+            Keyword args to call handler with.
+
+        Returns
+        -------
+        Any
+            Whatever handler returns.
+        """
         name = "on_" + event_name
 
         log.info(f"Dispatching event {name!r}, client: {self!r}")
@@ -2308,7 +2364,7 @@ class Client:
 
         Raises
         ------
-        TypeError
+        :exc:`TypeError`
             The coroutine passed is not actually a coroutine.
         """
 

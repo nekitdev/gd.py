@@ -15,7 +15,7 @@ class Message(AbstractEntity):
     This class is derived from :class:`.AbstractEntity`.
     """
 
-    SCHEMA = "Re: {msg.subject}"
+    SCHEMA = "Re: {message.subject}"
 
     def __repr__(self) -> str:
         info = {"author": self.author, "id": self.id, "is_read": self.is_read()}
@@ -111,7 +111,7 @@ class Message(AbstractEntity):
 
         Reply to the message. Format the subject according to schema.
 
-        Schema format can only contain ``{msg.attr}`` elements.
+        Schema format can only contain ``{message.attr}`` elements.
 
         Content also allows schema format.
 
@@ -120,14 +120,14 @@ class Message(AbstractEntity):
         .. code-block:: python3
 
             await message.reply(
-                content='Replying to message by {msg.author.name}.'
-                schema='Re: {msg.subject} ({msg.rating})'
+                content='Replying to message by {message.author.name}.'
+                schema='Re: {message.subject} ({message.rating})'
             )
         """
         if schema is None:
             schema = self.SCHEMA
 
-        content, subject = content.format(msg=self), schema.format(msg=self)
+        content, subject = content.format(message=self), schema.format(message=self)
 
         return await self.author.send(subject, content)
 

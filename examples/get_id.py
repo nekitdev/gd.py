@@ -2,7 +2,6 @@
 Author: NeKitDS
 """
 
-import asyncio
 import gd
 
 client = gd.Client()
@@ -28,9 +27,6 @@ async def main():
     # could not find
     except gd.MissingAccess:
         print(f"Sorry, could not find user with name {name}...")
-
-    # let us wait a bit before exiting
-    await asyncio.sleep(3)
 
 
 # run a program

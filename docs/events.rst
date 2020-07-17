@@ -164,6 +164,7 @@ It is possible to implement your own listeners.
 The main idea is subclassing ``AbstractListener`` and creating your own ``scan`` method in there.
 
 .. autoclass:: AbstractListener
+    :members:
 
 .. code-block:: python3
 

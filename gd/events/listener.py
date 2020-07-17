@@ -4,7 +4,17 @@ import traceback
 
 from gd.level import Level
 from gd.logging import get_logger
-from gd.typing import Client, Comment, FriendRequest, Iterable, List, Message, Union
+from gd.typing import (
+    Client,
+    Comment,
+    FriendRequest,
+    Iterable,
+    Iterator,
+    List,
+    Message,
+    TypeVar,
+    Union,
+)
 
 from gd.utils.async_utils import acquire_loop, shutdown_loop, gather
 from gd.utils.enums import TimelyType
@@ -24,6 +34,8 @@ __all__ = (
     "all_listeners",
 )
 
+T = TypeVar("T")
+
 loop = asyncio.new_event_loop()
 
 log = get_logger(__name__)
@@ -32,6 +44,7 @@ all_listeners = []
 
 
 def get_loop() -> asyncio.AbstractEventLoop:
+    """Get loop for running listeners, optionally refreshing it if closed or running."""
     global loop
 
     if loop.is_closed() or loop.is_running():
@@ -41,12 +54,14 @@ def get_loop() -> asyncio.AbstractEventLoop:
 
 
 def set_loop(new_loop: asyncio.AbstractEventLoop) -> None:
+    """Set loop for running listeners to new_loop."""
     global loop
 
     loop = new_loop
 
 
 def run(loop: asyncio.AbstractEventLoop) -> None:
+    """Run a loop and shutdown it after stopping."""
     try:
         loop.add_signal_handler(signal.SIGINT, loop.stop)
         loop.add_signal_handler(signal.SIGTERM, loop.stop)
@@ -68,6 +83,8 @@ def run(loop: asyncio.AbstractEventLoop) -> None:
 
 
 class AbstractListener:
+    """Abstract listener for listeners to derive from."""
+
     def __init__(self, client: Client, delay: float = 10.0) -> None:
         self.client = client
         self.delay = delay
@@ -107,10 +124,10 @@ class AbstractListener:
 class TimelyLevelListener(AbstractListener):
     """Listens for a new daily or weekly level."""
 
-    def __init__(self, client: Client, t_type: str, delay: int = 10.0) -> None:
+    def __init__(self, client: Client, timely_type: str, delay: int = 10.0) -> None:
         super().__init__(client=client, delay=delay)
-        self.method = getattr(client, "get_" + t_type)
-        self.call_method = "new_" + t_type
+        self.method = getattr(client, "get_" + timely_type)
+        self.call_method = "new_" + timely_type
 
     async def scan(self) -> None:
         """Scan for either daily or weekly levels."""
@@ -154,12 +171,12 @@ class RateLevelListener(AbstractListener):
 
         self.cache = new
 
-        for level in await further_differ(difference, self.find_new):
+        for level in await rating_differ(difference, self.find_new):
             dispatcher = self.client.dispatch(self.call_method, level)
             self.loop.create_task(dispatcher)
 
 
-async def further_differ(array: Iterable[Level], find_new: bool = True) -> List[Level]:
+async def rating_differ(array: Iterable[Level], find_new: bool = True) -> List[Level]:
     array = list(array)
     updated = await gather(level.refresh() for level in array)
     final = []
@@ -180,10 +197,12 @@ async def further_differ(array: Iterable[Level], find_new: bool = True) -> List[
 class MessageOrRequestListener(AbstractListener):
     """Listens for a new friend request or message."""
 
-    def __init__(self, client: Client, listen_to_msg: bool = True, delay: float = 5.0) -> None:
+    def __init__(self, client: Client, listen_messages: bool = True, delay: float = 5.0) -> None:
         super().__init__(client=client, delay=delay)
-        self.to_call = "message" if listen_to_msg else "friend_request"
-        self.method = getattr(client, ("get_messages" if listen_to_msg else "get_friend_requests"))
+        self.to_call = "message" if listen_messages else "friend_request"
+        self.method = getattr(
+            client, ("get_messages" if listen_messages else "get_friend_requests")
+        )
 
     async def call_method(self, pages: int = 10) -> Union[List[FriendRequest], List[Message]]:
         return await self.method(pages=range(pages))
@@ -245,7 +264,7 @@ class LevelCommentListener(AbstractListener):
             self.loop.create_task(dispatcher)
 
 
-def differ(before: list, after: list, find_new: bool = True) -> filter:
+def differ(before: List[T], after: List[T], find_new: bool = True) -> Iterator[T]:
     # this could be improved a lot ~ nekit
     if find_new:
         for item in before:
@@ -256,5 +275,5 @@ def differ(before: list, after: list, find_new: bool = True) -> filter:
             except ValueError:  # not in list
                 pass
 
-    a, b = (before, after) if find_new else (after, before)
-    return filter(lambda elem: (elem not in a), b)
+    list_not_in, list_in = (before, after) if find_new else (after, before)
+    return filter(lambda elem: (elem not in list_not_in), list_in)

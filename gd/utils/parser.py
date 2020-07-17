@@ -23,16 +23,16 @@ def action_split(delim: str) -> Callable[[str], List[str]]:
 
 
 def action_take(key: Any) -> Callable[[Sequence[Any]], Any]:
-    def take(x: Any) -> Any:
-        return x[key]
+    def take(sequence: Any) -> Any:
+        return sequence[key]
 
     return take
 
 
 def action_not_empty() -> Callable[[Sequence[Any]], Optional[Sequence[Any]]]:
-    def not_empty(seq: Sequence[Any]) -> Optional[Sequence[Any]]:
-        if seq:
-            return seq
+    def not_empty(sequence: Sequence[Any]) -> Optional[Sequence[Any]]:
+        if sequence:
+            return sequence
         raise StopExecution()
 
     return not_empty

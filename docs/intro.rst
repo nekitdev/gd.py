@@ -45,9 +45,9 @@ For example, you can use it in a Discord bot:
         embed = (
             discord.Embed(color=0x7289da).set_author(name="Current Daily")
             .add_field(name="Name", value=daily.name)
-            .add_field(name="Difficulty", value="{0.stars} ({0.difficulty.desc})".format(daily))
-            .add_field(name="ID", value="{0.id}".format(daily))
-            .set_footer(text="Creator: {0.creator.name}".format(daily))
+            .add_field(name="Difficulty", value=f"{daily.stars} ({daily.difficulty.title})")
+            .add_field(name="ID", value=f"{daily.id}")
+            .set_footer(text=f"Creator: {daily.creator.name}")
         )
 
         await ctx.send(embed=embed)

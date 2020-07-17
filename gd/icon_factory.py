@@ -99,6 +99,7 @@ class Rectangle:
 def into_name(
     type: str, id: int, *args, last: int = 1, suffix: str = "png", copy_level: int = 0
 ) -> str:
+    # construct image name from type, id, args, last, copy_level and suffix
     if len(args) == 1:
         maybe_args = args[0]
         if isinstance(maybe_args, tuple):

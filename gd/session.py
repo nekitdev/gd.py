@@ -1407,7 +1407,7 @@ class Session:
             result.append(
                 ExtDict(
                     id=int(id),
-                    type=QuestType.from_value("unknown", int(type)),
+                    type=QuestType.from_value(int(type), "unknown"),
                     amount=int(amount),
                     reward=int(reward),
                     name=name,
@@ -1468,7 +1468,7 @@ class Session:
                     orbs=int(orbs),
                     diamonds=int(diamonds),
                     shard_id=int(shard_id),
-                    shard_type=ShardType.from_value("unknown", int(shard_id)),
+                    shard_type=ShardType.from_value(int(shard_id), "unknown"),
                     keys=int(keys),
                 )
             )

@@ -19,23 +19,22 @@ def json_resp(item: object, **kwargs) -> str:
     # gd.py introduces gd.utils.dump method, used
     # for conveniently converting its objects to
     # JSON-resizable dictionaries
-    return web.Response(text=gd.utils.dump(item, indent=4), **kwargs)
+    return web.Response(text=gd.utils.dumps(item, indent=4), **kwargs)
 
 
 # let our app listen to GET requests
 @routes.get("/api/user/{query}")
 async def get_user(request):
     try:
-        req = request.match_info.get("query")
-        # try to convert query to an integer
-        try:
-            query = int(req)
-        except ValueError:
-            query = str(req)
+        query = request.match_info.get("query")
 
-        # if we have an integer query, consider AccountID search
-        if isinstance(query, int):
-            user = await client.get_user(query)
+        if query.isdigit():  # if we have an integer query, consider AccountID search
+            try:
+                user = await client.get_user(int(query))
+
+            except gd.MissingAccess:  # not found, attempt UserID search
+                user = await client.search_user(int(query))
+
         # if we have a string, do regular search
         else:
             user = await client.search_user(query)
@@ -44,7 +43,7 @@ async def get_user(request):
 
     # return 404 if we have not found any users
     except Exception:
-        raise web.HTTPNotFound(text=f"Failed to find a user by the query: {query!r}")
+        raise json_resp({"error": f"Failed to find a user by the query: {query!r}"}, status=404)
 
 
 # initialize an application
@@ -53,8 +52,7 @@ app = web.Application()
 # add routes
 app.add_routes(routes)
 
-# this might fail sometimes
-print("Go to <http://127.0.0.1:8080/api/user/RobTop> to see info about RobTop.")
+print("Go to http://127.0.0.1:8080/api/user/RobTop to see info about RobTop.")
 
 # run the app
 web.run_app(app)

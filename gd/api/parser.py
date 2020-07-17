@@ -3,7 +3,18 @@ from itertools import chain
 from enums import Enum
 
 from gd.typing import (
-    Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Type, TypeVar, Tuple, Union
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Type,
+    TypeVar,
+    Tuple,
+    Union,
 )
 
 from gd.utils.enums import LevelLength
