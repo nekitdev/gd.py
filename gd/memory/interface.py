@@ -689,7 +689,7 @@ class WindowsMemory(MemoryType):
         """Get ID of the song that is used."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x488, 0x1C4)
 
-    song_id = property(get_song_id, set_song_id)
+    song_id = property(get_song_id)
 
     def get_attempt(self) -> int:
         """Get current attempt number."""
