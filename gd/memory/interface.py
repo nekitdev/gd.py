@@ -108,6 +108,9 @@ class Buffer(metaclass=BufferMeta):
         info = {"data": repr(self.to_format())}
         return make_repr(self, info)
 
+    def __len__(self) -> int:
+        return len(self.data)
+
     def with_order(self, order: str) -> Buffer:
         """Change order of the buffer to ``order`` and return ``self``."""
         self.order = order
@@ -359,7 +362,7 @@ class WindowsMemory(MemoryType):
         """Read string at ``base + offset``, handling its size and where it is allocated."""
         address, size_address = base + offset, base + offset + String.size
 
-        size = self.read(Int32, size_address)
+        size = self.read(self.ptr_type, size_address)
 
         if size < String.size:
             try:
@@ -410,20 +413,30 @@ class WindowsMemory(MemoryType):
         """Get value of current scene enum, which can be converted to :class:`.Scene`."""
         return self.read_type(Int32, 0x3222D0, 0x1DC)
 
+    scene_value = property(get_scene_value)
+
     def get_scene(self) -> Scene:
         """Get value of current scene and convert it to :class:`.Scene` enum."""
         return Scene.from_value(self.get_scene_value(), -1)
+
+    scene = property(get_scene)
 
     def get_resolution_value(self) -> int:
         """Get value of current resolution."""
         return self.read_type(Int32, 0x3222D0, 0x2E0)
 
+    resolution_value = property(get_resolution_value)
+
     def get_resolution(self) -> Tuple[int, int]:
         """Get value of current resolution and try to get ``(w, h)`` tuple, ``(0, 0)`` on fail."""
         return number_to_resolution.get(self.get_resolution_value(), (0, 0))
 
+    resolution = property(get_resolution)
+
     def get_gamemode_state(self) -> List[bool]:
         return list(map(bool, self.read_bytes(6, 0x3222D0, 0x164, 0x224, 0x638).data))
+
+    gamemode_state = property(get_gamemode_state)
 
     def get_gamemode(self) -> Gamemode:
         try:
@@ -433,9 +446,13 @@ class WindowsMemory(MemoryType):
 
         return Gamemode.from_name(GAMEMODE_STATE[value])
 
+    gamemode = property(get_gamemode)
+
     def get_level_id_fast(self) -> int:
         """Quickly read level ID, which is not always accurate for example on *official* levels."""
         return self.read_type(Int32, 0x3222D0, 0x2A0)
+
+    level_id_fast = property(get_level_id_fast)
 
     def is_in_editor(self) -> bool:
         """Check if the user is currently in editor."""
@@ -446,6 +463,8 @@ class WindowsMemory(MemoryType):
         base = self.read_type(self.ptr_type, 0x3222D8)
         return self.read_string(base, 0x108)
 
+    user_name = property(get_user_name)
+
     def is_dead(self) -> bool:
         """Check if the player is dead in the level."""
         return self.read_type(Bool, 0x3222D0, 0x164, 0x39C)
@@ -454,9 +473,13 @@ class WindowsMemory(MemoryType):
         """Get length of the level in units."""
         return self.read_type(Float, 0x3222D0, 0x164, 0x3B4)
 
+    level_length = property(get_level_length)
+
     def get_object_count(self) -> int:
         """Get level object count."""
         return self.read_type(Int32, 0x3222D0, 0x168, 0x3A0)
+
+    object_count = property(get_object_count)
 
     def get_percent(self) -> int:
         """Get current percentage in the level."""
@@ -467,6 +490,8 @@ class WindowsMemory(MemoryType):
         except ValueError:
             return 0
 
+    percent = property(get_percent)
+
     def get_x_pos(self) -> float:
         """Get X position of the player."""
         return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x67C)
@@ -474,6 +499,8 @@ class WindowsMemory(MemoryType):
     def set_x_pos(self, pos: float) -> None:
         """Set X position of the player."""
         self.write_type(Float, pos, 0x3222D0, 0x164, 0x224, 0x67C)
+
+    x_pos = property(get_x_pos, set_x_pos)
 
     def get_y_pos(self) -> float:
         """Get Y position of the player."""
@@ -483,6 +510,8 @@ class WindowsMemory(MemoryType):
         """Set Y position of the player."""
         self.write_type(Float, pos, 0x3222D0, 0x164, 0x224, 0x680)
 
+    y_pos = property(get_y_pos, set_y_pos)
+
     def get_speed_value(self) -> float:
         """Get value of the speed enum, which can be converted to :class:`gd.api.SpeedConstant`."""
         return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x648)
@@ -490,6 +519,8 @@ class WindowsMemory(MemoryType):
     def set_speed_value(self, value: float) -> None:
         """Set value of the speed."""
         self.write_type(Float, value, 0x3222D0, 0x164, 0x224, 0x648)
+
+    speed_value = property(get_speed_value, set_speed_value)
 
     def get_speed(self) -> SpeedConstant:
         """Get value of the speed and convert it to :class:`gd.api.SpeedConstant`."""
@@ -502,6 +533,8 @@ class WindowsMemory(MemoryType):
 
         self.set_speed_value(value)
 
+    speed = property(get_speed, set_speed)
+
     def get_size(self) -> float:
         """Get hitbox size of the player icon."""
         return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x644)
@@ -509,6 +542,8 @@ class WindowsMemory(MemoryType):
     def set_size(self, size: float) -> None:
         """Set hitbox size of the player icon."""
         self.write_type(Float, size, 0x3222D0, 0x164, 0x224, 0x644)
+
+    size = property(get_size, set_size)
 
     def is_practice_mode(self) -> bool:
         """Check whether player is in Practice Mode."""
@@ -523,19 +558,27 @@ class WindowsMemory(MemoryType):
         self.redirect_memory(Float.size, 0x1E9050)
         self.write_type(Float, gravity, 0x1E9050, 0)
 
+    gravity = property(get_gravity, set_gravity)
+
     def get_level_id(self) -> int:
         """Get accurate ID of the level."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0xF8)
+
+    level_id = property(get_level_id)
 
     def get_level_name(self) -> str:
         """Get name of the level."""
         base = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114)
         return self.read_string(base, 0xFC)
 
+    level_name = property(get_level_name)
+
     def get_level_creator(self) -> str:
         """Get creator name of the level."""
         base = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114)
         return self.read_string(base, 0x144)
+
+    level_creator = property(get_level_creator)
 
     def get_editor_level_name(self) -> str:
         """Get level name while in editor."""
@@ -543,13 +586,19 @@ class WindowsMemory(MemoryType):
         base = self.read_type(self.ptr_type, 0x3222D0, 0x168, 0x124, 0xEC, 0x110, 0x114)
         return self.read_string(base, 0xFC)
 
+    editor_level_name = property(get_editor_level_name)
+
     def get_level_stars(self) -> int:
         """Get amount of stars of the level."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x2AC)
 
+    level_stars = property(get_level_stars)
+
     def get_level_score(self) -> int:
         """Get featured score of the level."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x27C)
+
+    level_score = property(get_level_score)
 
     def is_level_featured(self) -> bool:
         """Check whether the level is featured."""
@@ -571,9 +620,13 @@ class WindowsMemory(MemoryType):
         """Get difficulty value of the level, e.g. *0*, *10*, etc."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x1E4)
 
+    level_diff_value = property(get_level_diff_value)
+
     def get_level_demon_diff_value(self) -> int:
         """Get demon difficulty value of the level, e.g. *0*, *3*, etc."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x2A0)
+
+    level_demon_diff_value = property(get_level_demon_diff_value)
 
     def get_level_difficulty(self) -> Union[LevelDifficulty, DemonDifficulty]:
         """Compute actual level difficulty and return the enum."""
@@ -590,29 +643,43 @@ class WindowsMemory(MemoryType):
             diff=diff, demon_diff=demon_diff, is_demon=is_demon, is_auto=is_auto
         )
 
+    level_difficulty = property(get_level_difficulty)
+
     def get_attempts(self) -> int:
         """Get amount of total attempts spent on the level."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x218)
+
+    attempts = property(get_attempts)
 
     def get_jumps(self) -> int:
         """Get amount of total jumps spent on the level."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x224)
 
+    jumps = property(get_jumps)
+
     def get_normal_percent(self) -> int:
         """Get best record in normal mode."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x248)
+
+    normal_percent = property(get_normal_percent)
 
     def get_practice_percent(self) -> int:
         """Get best record in practice mode."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x26C)
 
+    practice_percent = property(get_practice_percent)
+
     def get_level_type_value(self) -> int:
         """Get value of the level type, which can be converted to :class:`.LevelType`."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x364)
 
+    level_type_value = property(get_level_type_value)
+
     def get_level_type(self) -> LevelType:
         """Get value of the level type, and convert it to :class:`.LevelType`."""
         return LevelType.from_value(self.get_level_type_value(), 0)
+
+    level_type = property(get_level_type)
 
     def is_in_level(self) -> bool:
         """Check whether the user is currently playing a level."""
@@ -622,6 +689,8 @@ class WindowsMemory(MemoryType):
         """Get ID of the song that is used."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x488, 0x1C4)
 
+    song_id = property(get_song_id)
+
     def get_attempt(self) -> int:
         """Get current attempt number."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x4A8)
@@ -629,6 +698,8 @@ class WindowsMemory(MemoryType):
     def set_attempt(self, attempt: int) -> None:
         """Set current attempt to ``attempt``."""
         self.write_type(Int32, attempt, 0x3222D0, 0x164, 0x4A8)
+
+    attempt = property(get_attempt)
 
     def player_freeze(self) -> None:
         """Freeze the player."""

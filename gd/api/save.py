@@ -37,6 +37,10 @@ class Part(dict):
         info = {"outer_len": len(self)}
         return make_repr(self, info)
 
+    def set(self, key: Any, value: Any) -> None:
+        """Same as self[key] = value."""
+        self[key] = value
+
     def dump(self) -> str:
         """Dump the part and return a string."""
         return self.parser.dump(self)
@@ -54,23 +58,53 @@ class Database:
     def __json__(self) -> Dict[str, Any]:
         return {"main": self.main, "levels": self.levels}
 
-    def get_username(self) -> str:
+    def get_user_name(self) -> str:
         return self.main.get("GJA_001", "unknown")
+
+    def set_user_name(self, user_name: str) -> None:
+        self.main.set("GJA_001", user_name)
+
+    user_name = property(get_user_name, set_user_name)
 
     def get_password(self) -> str:
         return self.main.get("GJA_002", "unknown")
 
+    def set_password(self, password: str) -> None:
+        self.main.set("GJA_002", password)
+
+    password = property(get_password, set_password)
+
     def get_account_id(self) -> int:
         return self.main.get("GJA_003", 0)
 
-    def get_player_id(self) -> int:
+    def set_account_id(self, account_id: int) -> None:
+        self.main.set("GJA_003", account_id)
+
+    account_id = property(get_account_id, set_account_id)
+
+    def get_user_id(self) -> int:
         return self.main.get("playerUserID", 0)
+
+    def set_user_id(self, user_id: int) -> None:
+        self.main.set("playerUserID", user_id)
+
+    user_id = property(get_user_id, set_user_id)
 
     def get_udid(self) -> str:
         return self.main.get("playerUDID", "S0")
 
-    def get_bootup_amount(self) -> int:
+    def set_udid(self, udid: str) -> None:
+        self.main.set("playerUDID", udid)
+
+    udid = property(get_udid, set_udid)
+
+    def get_bootups(self) -> int:
         return self.main.get("bootups", 0)
+
+    def set_bootups(self, bootups: int) -> None:
+        self.main.set("bootups", bootups)
+
+    bootups = property(get_bootups, set_bootups)
 
     def _get_failsafe(self, key: str, is_level_part: bool = True, default: Any = None) -> Any:
         part = self.levels if is_level_part else self.main
@@ -78,10 +112,7 @@ class Database:
         if default is None:
             default = {}
 
-        if key not in part:
-            part[key] = default
-
-        return part[key]
+        return part.setdefault(key, default)
 
     def _to_levels(self, level_dicts: List[Dict[str, Any]]) -> LevelCollection:
         return LevelCollection.launch(
