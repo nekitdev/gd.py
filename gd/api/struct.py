@@ -45,7 +45,7 @@ from gd.typing import (
     Union,
 )
 
-__all__ = ("Object", "ColorChannel", "Header", "LevelAPI", "ColorCollection")
+__all__ = ("Object", "ColorChannel", "Header", "LevelAPI", "ColorCollection", "DEFAULT_COLORS")
 
 Number = Union[float, int]
 
@@ -246,6 +246,10 @@ class ColorCollection(set):
 
         return self
 
+    @classmethod
+    def from_args(cls, *args) -> ColorCollection:
+        return cls.create(args)
+
     def get(self, directive_or_id: Union[int, str]) -> Optional[ColorCollection]:
         final = directive_or_id
         if isinstance(final, str):
@@ -263,11 +267,21 @@ class ColorCollection(set):
         if color is not None:
             super().add(color)
 
-    def __getitem__(self, c_id: int) -> Optional[ColorCollection]:
-        return self.get(c_id)
+    def __getitem__(self, color_id: int) -> Optional[ColorCollection]:
+        return self.get(color_id)
 
     def dump(self) -> Iterable[Dict[str, Any]]:
         return [cc.data for cc in self]
+
+
+DEFAULT_COLORS = [
+    ColorChannel("BG").set_color(0x287dff),
+    ColorChannel("GRND").set_color(0x0066ff),
+    ColorChannel("Line").set_color(0xffffff),
+    ColorChannel("P1").set_color(0x7dff00),
+    ColorChannel("P2").set_color(0x00ffff),
+    ColorChannel("GRND2").set_color(0x0066ff),
+]
 
 
 class Header(Struct):
@@ -283,20 +297,21 @@ class Header(Struct):
     def copy(self) -> Header:
         copy = super().copy()
 
-        if self.colors is not None:
+        if self.colors:
             copy.edit(colors=self.copy_colors())
 
         return copy
 
     def copy_colors(self) -> ColorCollection:
-        if self.colors is None:
+        if not self.colors:
             return ColorCollection()
         return ColorCollection(color.copy() for color in self.colors)
 
     def colorhook(self) -> None:
-        if self.colors is None:
-            return
-        self.colors = ColorCollection.create(self.colors)
+        if not self.colors:
+            self.colors = ColorCollection.create(DEFAULT_COLORS)
+        else:
+            self.colors = ColorCollection.create(self.colors)
 
     @classmethod
     def from_mapping(cls, mapping) -> Header:
@@ -307,7 +322,7 @@ class Header(Struct):
     def dump(self) -> str:
         header = self.copy()
 
-        if self.colors is not None:
+        if self.colors:
             header.edit(colors=self.colors.dump())
 
         return super(type(header), header).dump()
