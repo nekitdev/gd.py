@@ -689,7 +689,7 @@ class WindowsMemory(MemoryType):
         """Get ID of the song that is used."""
         return self.read_type(Int32, 0x3222D0, 0x164, 0x488, 0x1C4)
 
-    song_id = property(get_song_id)
+    song_id = property(get_song_id, set_song_id)
 
     def get_attempt(self) -> int:
         """Get current attempt number."""
@@ -699,7 +699,7 @@ class WindowsMemory(MemoryType):
         """Set current attempt to ``attempt``."""
         self.write_type(Int32, attempt, 0x3222D0, 0x164, 0x4A8)
 
-    attempt = property(get_attempt)
+    attempt = property(get_attempt, set_attempt)
 
     def player_freeze(self) -> None:
         """Freeze the player."""
