@@ -1,4 +1,6 @@
-from gd.typing import Any, Dict, Iterable, LevelCollection, List, Optional, Tuple, Union
+from attr import attrib, dataclass
+
+from gd.typing import Any, Dict, Iterable, LevelCollection, List, Optional, Sequence, Tuple, Union
 
 from gd.utils import search_utils as search
 from gd.utils.text_tools import dumps, make_repr
@@ -8,6 +10,59 @@ from gd.api.struct import LevelAPI
 from gd.api.utils import get_default
 
 __all__ = ("Part", "Database", "LevelCollection")
+
+
+@dataclass
+class Batch:
+    completed: List[int] = attrib()
+    stars: List[int] = attrib()
+    demons: List[int] = attrib()
+
+    @classmethod
+    def create_empty(cls) -> Any:
+        return cls(completed=[], stars=[], demons=[])
+
+
+@dataclass
+class Values:
+    official: List[int] = attrib()
+    normal: Batch = attrib()
+    timely: Batch = attrib()
+    gauntlet: Batch = attrib()
+    packs: List[int] = attrib()
+
+    def get_prefixes(self) -> Dict[str, List[int]]:
+        values, normal, timely, gauntlet = self, self.normal, self.timely, self.gauntlet
+
+        return {
+            "n_": values.official,
+            "c_": normal.completed,
+            "d_": timely.completed,
+            "g_": gauntlet.completed,
+            "star_": normal.stars,
+            "dstar_": timely.stars,
+            "gstar_": gauntlet.stars,
+            "demon_": normal.demons,
+            "ddemon_": timely.demons,
+            "gdemon_": gauntlet.demons,
+            "pack_": values.packs,
+        }
+
+    @classmethod
+    def create_empty(cls) -> Any:
+        return cls(
+            official=[],
+            normal=Batch.create_empty(),
+            timely=Batch.create_empty(),
+            gauntlet=Batch.create_empty(),
+            packs=[],
+        )
+
+
+def remove_prefix(string: str, prefix: str) -> str:
+    if string.startswith(prefix):
+        return string[len(prefix) :]
+    return string
 
 
 class Part(dict):
@@ -106,39 +161,64 @@ class Database:
 
     bootups = property(get_bootups, set_bootups)
 
-    def _get_failsafe(self, key: str, is_level_part: bool = True, default: Any = None) -> Any:
-        part = self.levels if is_level_part else self.main
+    def get_followed(self) -> List[int]:
+        return list(map(int, self.main.get("GLM_06", {}).keys()))
 
-        if default is None:
-            default = {}
+    def set_followed(self, followed: Sequence[int]) -> None:
+        self.main.set("GLM_06", {str(account_id): 1 for account_id in followed})
 
-        return part.setdefault(key, default)
+    followed = property(get_followed, set_followed)
 
-    def _to_levels(self, level_dicts: List[Dict[str, Any]]) -> LevelCollection:
+    def get_values(self) -> Values:  # O(nm), thanks rob
+        values = Values.create_empty()
+        prefixes = values.get_prefixes()
+
+        for string in self.main.get("GS_completed", {}).keys():
+            for prefix, array in prefixes.items():
+                id_string = remove_prefix(string, prefix)
+
+                if id_string != string:
+                    array.append(int(id_string))
+                    break
+
+        return values
+
+    def set_values(self, values: Values) -> None:
+        mapping = {}
+        prefixes = values.get_prefixes()
+
+        for prefix, array in prefixes.items():
+            mapping.update({f"{prefix}{value_id}": 1 for value_id in array})
+
+        self.main.set("GS_completed", mapping)
+
+    values = property(get_values, set_values)
+
+    def _to_levels(self, level_dicts: List[Dict[str, Any]], dump_name: str) -> LevelCollection:
         return LevelCollection.launch(
             self,
+            dump_name,
             map(LevelAPI.from_mapping, filter(lambda thing: isinstance(thing, dict), level_dicts)),
         )
 
-    def load_saved_levels(self, *, key: str = "GLM_03") -> LevelCollection:
+    def load_saved_levels(self) -> LevelCollection:
         """Load "Saved Levels" into :class:`.api.LevelCollection`."""
-        inner = self._get_failsafe(key, is_level_part=False)
-        return self._to_levels(inner.values())
+        return self._to_levels(self.main.get("GLM_03", {}).values(), "dump_saved_levels")
 
-    def dump_saved_levels(self, levels: LevelCollection, *, key: str = "GLM_03") -> None:
+    def dump_saved_levels(self, levels: LevelCollection) -> None:
         """Dump "Saved Levels" from :class:`.api.LevelCollection`."""
-        self.main[key] = {str(level.id): level.to_map() for level in levels}
+        self.main.set("GLM_03", {str(level.id): level.to_map() for level in levels})
 
-    def load_my_levels(self, *, key: str = "LLM_01") -> LevelCollection:
+    def load_my_levels(self) -> LevelCollection:
         """Load "My Levels" into :class:`.api.LevelCollection`."""
-        inner = self._get_failsafe(key)
-        return self._to_levels(inner.values())
+        return self._to_levels(self.levels.get("LLM_01", {}).values(), "dump_my_levels")
 
-    def dump_my_levels(self, levels: list, *, key: str = "LLM_01", prefix: str = "k_") -> None:
+    def dump_my_levels(self, levels: LevelCollection, *, prefix: str = "k_") -> None:
         """Dump "My Levels" from :class:`.api.LevelCollection`."""
         stuff = {"_isArr": True}
-        stuff.update({prefix + str(n): level.to_map() for n, level in enumerate(levels)})
-        self.levels[key] = stuff
+        stuff.update({f"{prefix}{n}": level.to_map() for n, level in enumerate(levels)})
+
+        self.levels.set("LLM_01", stuff)
 
     def dump(self) -> None:
         from gd.api.loader import save  # I hate circular imports. - nekit
@@ -152,9 +232,15 @@ class Database:
 class LevelCollection(list):
     def __init__(self, *args) -> None:
         if len(args) == 1:
-            args = args[0]
+            new_args = args[0]
+
+            if iterable(new_args):
+                args = new_args
+
         super().__init__(args)
+
         self._callback = None
+        self._dump_func_name = None
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + super().__repr__()
@@ -163,20 +249,23 @@ class LevelCollection(list):
         return search.get(self, name=name)
 
     @classmethod
-    def launch(cls, caller: Any, iterable: Iterable) -> LevelCollection:
+    def launch(cls, caller: Any, dump_name: str, iterable: Iterable) -> LevelCollection:
         self = cls(iterable)
         self._callback = caller
+        self._dump_name = dump_name
         return self
 
-    def _conf_api(self, api: Database) -> Optional[Database]:
-        if api is None:
-            return self._callback
-        return api
-
     def dump(self, api: Optional[Database] = None) -> None:
-        api = self._conf_api(api)
-        api.dump_my_levels(self)
+        if api is None:
+            api = self._callback
 
-    def dump_to_saved(self, api: Optional[Database] = None) -> None:
-        api = self._conf_api(api)
-        api.dump_saved_levels(self)
+        getattr(api, self._dump_name)(self)
+
+
+def iterable(maybe_iterable: Any) -> bool:
+    try:
+        iter(maybe_iterable)
+        return True
+
+    except TypeError:
+        return False

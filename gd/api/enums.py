@@ -685,6 +685,7 @@ class LevelDataEnum(Enum):
     THIRD_COIN_ACQUIRED = "k63"
     REQUESTED_STARS = "k66"
     EXTRA = "k67"
+    TIMELY_ID = "k74"
     UNLISTED = "k79"
     SECONDS_SPENT_IN_EDITOR = "k80"
     FOLDER = "k84"

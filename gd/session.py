@@ -57,7 +57,6 @@ from gd.utils.ng_parser import (
 from gd.utils.params import Parameters as Params
 from gd.utils.parser import ExtDict, Parser
 from gd.utils.routes import Route
-from gd.utils.save_parser import Save, SaveParser
 from gd.utils.text_tools import make_repr
 from gd.utils.crypto.coders import Coder
 
@@ -516,7 +515,7 @@ class Session:
 
         return int(account_id), int(id)
 
-    async def load_save(self, client: Client) -> Tuple[Optional[api.Database], Optional[Save]]:
+    async def load_save(self, client: Client) -> Optional[api.Database]:
         link = Route.GD_URL
 
         payload = (
@@ -535,12 +534,11 @@ class Session:
         try:
             main, levels, *_ = resp.split(";")
             db = await api.save.from_string_async(main, levels, xor=False, follow_os=False)
-            save = await SaveParser.aio_parse(db.main.dump())
 
-            return db, save
+            return db
 
         except Exception:
-            return None, None
+            return
 
     async def do_save(self, data: str, client: Client) -> None:
         link = Route.GD_URL

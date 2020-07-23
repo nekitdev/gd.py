@@ -275,12 +275,12 @@ class ColorCollection(set):
 
 
 DEFAULT_COLORS = [
-    ColorChannel("BG").set_color(0x287dff),
-    ColorChannel("GRND").set_color(0x0066ff),
-    ColorChannel("Line").set_color(0xffffff),
-    ColorChannel("P1").set_color(0x7dff00),
-    ColorChannel("P2").set_color(0x00ffff),
-    ColorChannel("GRND2").set_color(0x0066ff),
+    ColorChannel("BG").set_color(0x287DFF),
+    ColorChannel("GRND").set_color(0x0066FF),
+    ColorChannel("Line").set_color(0xFFFFFF),
+    ColorChannel("P1").set_color(0x7DFF00),
+    ColorChannel("P2").set_color(0x00FFFF),
+    ColorChannel("GRND2").set_color(0x0066FF),
 ]
 
 

@@ -51,7 +51,6 @@ from gd.utils.filters import Filters
 from gd.utils.http_request import HTTPClient
 from gd.utils.indexer import Index
 from gd.utils.parser import ExtDict
-from gd.utils.save_parser import Save
 from gd.utils.text_tools import make_repr
 
 from gd.utils.crypto.coders import Coder
@@ -158,9 +157,6 @@ class Client:
         Encoded Password of the client. ``None`` on init as well.
     db: Optional[:class:`.api.Database`]
         Database/Save API. If not loaded, has empty parts inside.
-    save: :class:`.Save`
-        This is a namedtuple with format ``(completed, followed)``.
-        Contains empty lists if not loaded.
     """
 
     def __init__(
@@ -198,7 +194,6 @@ class Client:
         )
 
     def _set_to_defaults(self) -> None:
-        self.save = Save(completed=list(), followed=list())
         self.db = api.Database()
         self.account_id = 0
         self.id = 0
@@ -948,19 +943,19 @@ class Client:
         Loads save from a server and parses it.
         Sets :attr:`.Client.save` to :class:`.Save` namedtuple ``(completed, followed)``.
         """
-        db, save = await self.session.load_save(client=self)
+        db = await self.session.load_save(client=self)
 
-        if db is None or save is None:  # pragma: no cover
+        if db is None:  # pragma: no cover
             log.warning("Failed to load a save.")
         else:
-            self.edit(db=db, save=save)
+            self.edit(db=db)
             log.info("Successfully loaded a save.")
 
     @check_logged
     async def backup(self, save_data: Optional[Sequence[Union[bytes, str]]] = None) -> None:
         """|coro|
 
-        Back up the data of the client.
+        Back up (save) the data of the client.
 
         Parameters
         ----------
@@ -981,6 +976,8 @@ class Client:
             data = save_data
 
         await self.session.do_save(client=self, data=data)
+
+    save = backup
 
     def close(self, message: Optional[str] = None) -> None:
         """*Closes* client.

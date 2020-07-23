@@ -167,13 +167,13 @@ class Filters:
 
     @classmethod
     def setup_client_followed(cls, client, *args, **kwargs) -> Filters:
-        return cls(strategy=SearchStrategy.FOLLOWED, followed=client.save.followed, *args, **kwargs)
+        return cls(strategy=SearchStrategy.FOLLOWED, followed=client.db.followed, *args, **kwargs)
 
     @classmethod
     def setup_client_completed(cls, client, *args, **kwargs) -> Filters:
         return cls(
             strategy=SearchStrategy.MOST_LIKED,
-            completed_levels=client.save.completed,
+            completed_levels=client.db.values.normal.completed,
             *args,
             **kwargs,
         )

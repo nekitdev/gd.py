@@ -66,6 +66,9 @@ class Coder:
         if needs_xor:
             save = cls.byte_xor(save, 11)
 
+        else:
+            save = save.decode()
+
         remain = len(save) % 4
 
         if remain:
