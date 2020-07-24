@@ -463,15 +463,16 @@ class Level(AbstractEntity):
         if self.song.is_custom():
             track, song_id = song_id, track
 
-        client = kwargs.pop("from_client", self.client)
+        try:
+            client = self.client
+        except Exception:
+            client = kwargs.pop("from_client", None)
 
-        if client is None:  # pragma: no cover
-            raise MissingAccess(
-                message=(
+            if client is None:
+                raise MissingAccess(
                     "Could not find the client to upload level from. "
-                    'Either attach a client to this level or provide "from_client" parameter.'
-                )
-            )
+                    "Either attach a client to this level or provide <from_client> parameter."
+                ) from None
 
         password = kwargs.pop("password", self.password)
 
@@ -488,7 +489,8 @@ class Level(AbstractEntity):
             objects=self.objects,
             coins=self.coins,
             star_amount=self.stars,
-            unlist=False,
+            unlisted=False,
+            friends_only=False,
             ldm=False,
             password=password,
             copyable=self.is_copyable(),

@@ -162,7 +162,7 @@ default = {
         "kS38": [],
         "kS39": 0,
     },
-    "api": {"kCEK": 4, "k2": "Unnamed", "k4": "", "k13": True, "k16": 1},
+    "api": {"kCEK": 4, "k2": "Unnamed", "k4": "", "k13": True, "k16": 1, "k47": True, "k50": 35},
     "main": {
         "valueKeeper": {
             "gv_0001": "1",

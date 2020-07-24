@@ -327,6 +327,7 @@ class Session:
         coins: int,
         stars: int,
         unlisted: bool,
+        friends_only: bool,
         ldm: bool,
         password: Optional[Union[int, str]],
         copyable: bool,
@@ -350,6 +351,13 @@ class Session:
 
         if check.isdigit() and int(check) < add:
             pwd = add + int(password)
+
+        if friends_only:
+            unlisted, unlisted2 = (1, 1)
+        elif unlisted:
+            unlisted, unlisted2 = (1, 0)
+        else:
+            unlisted, unlisted2 = (0, 0)
 
         payload = (
             Params()
@@ -378,7 +386,8 @@ class Session:
             "objects": objects,
             "coins": coins,
             "requested_stars": stars,
-            "unlisted": int(unlisted),
+            "unlisted": unlisted,
+            "unlisted2": unlisted2,
             "ldm": int(ldm),
             "password": pwd,
             "level_string": data,

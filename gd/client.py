@@ -778,7 +778,8 @@ class Client:
         objects: Optional[int] = None,
         coins: int = 0,
         star_amount: int = 0,
-        unlist: bool = False,
+        unlisted: bool = False,
+        friends_only: bool = False,
         ldm: bool = False,
         password: Optional[Union[int, str]] = None,
         copyable: bool = False,
@@ -819,8 +820,10 @@ class Client:
             An amount of coins the level has.
         star_amount: :class:`int`
             The amount of stars to request.
-        unlist: :class:`bool`
+        unlisted: :class:`bool`
             Indicates whether the level should be unlisted.
+        friends_only: :class:`bool`
+            Whether the level should be seen by friends only.
         ldm: :class:`bool`
             Indicates if the level has LDM mode.
         password: Union[:class:`int`, :class:`str`]
@@ -867,7 +870,8 @@ class Client:
             objects=objects,
             coins=coins,
             stars=star_amount,
-            unlisted=unlist,
+            unlisted=unlisted,
+            friends_only=friends_only,
             ldm=ldm,
             password=password,
             copyable=copyable,

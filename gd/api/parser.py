@@ -400,6 +400,15 @@ def _parse_header(key: str, value: str) -> Any:
     return value
 
 
+def _dump_header_part(key: str, value: Any) -> Any:
+    if key in _HEADER_COLORS:
+        try:
+            return value.dump()
+        except AttributeError:
+            return value
+    return value
+
+
 def _parse_colors(string: str, delim: str = "|") -> List[Any]:
     return list(filter(bool, map(_color_convert, string.split(delim))))
 
@@ -414,7 +423,7 @@ def _header_convert(string: str) -> Dict[str, Any]:
 
 
 def _header_dump(some_dict: Dict[str, T]) -> Dict[str, Union[T, U]]:
-    return _dump(some_dict)
+    return _dump({key: _dump_header_part(key, value) for key, value in some_dict.items()})
 
 
 def _header_collect(some_dict: Dict[T, U]) -> str:
