@@ -1,8 +1,12 @@
+"""Example that shows simple memory reading. Task loops are implemented asynchronously.
+Author: NeKitDS
+"""
+
 import gd
 
-should_error = True
-previous_message = ""
 memory = None
+previous_message = ""
+should_error = True
 
 
 @gd.tasks.loop(seconds=1)
@@ -12,10 +16,15 @@ async def load_memory() -> None:
     # try to fetch process, and print an error on fail
     try:
         memory = gd.memory.get_memory()
+
         should_error = True
+
     except RuntimeError:
+        memory = None
+
         if should_error:
             print("Geometry Dash is not open.")
+
         should_error = False
 
 
@@ -28,10 +37,7 @@ async def get_scene() -> None:
 
         # figure out scene and print things if stuff has changed
 
-        message = f"In scene: {scene}"
-
-        if scene.name.lower() == "editor_or_level":
-            message += f" -> ID: {memory.get_level_id()} ({memory.get_attempt()} attempt)"
+        message = f"In scene: {scene.title}"
 
         if previous_message != message:
             print(message)
@@ -47,7 +53,7 @@ loop = gd.utils.acquire_loop()
 
 # run main with graceful shutdown
 try:
-    loop.run_forever()
+    gd.events.run(loop)
 
 except KeyboardInterrupt:
     gd.utils.shutdown_loop(loop)
