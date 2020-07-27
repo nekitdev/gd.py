@@ -36,6 +36,9 @@ class JSDict(dict):
     - Get Item supports snake case to camel case option.
     """
 
+    def copy(self) -> Any:
+        return self.__class__(super().copy())
+
     def __getitem__(self, item: Any) -> Any:
         try:
             return super().__getitem__(item)

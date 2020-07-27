@@ -24,6 +24,9 @@ class Guidelines(dict):
             )
         super().__setitem__(time, color)
 
+    def copy(self) -> Any:
+        return self.__class__(super().copy())
+
     @classmethod
     def new(cls, mapping: Any) -> Guidelines:
         """Create a new Guidelines mapping."""

@@ -39,8 +39,11 @@ def action_not_empty() -> Callable[[Sequence[Any]], Optional[Sequence[Any]]]:
 
 
 class ExtDict(dict):
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__class__.__name__ + super().__repr__()
+
+    def copy(self) -> Any:
+        return self.__class__(super().copy())
 
     def get_default(self, value: Any, default: Any) -> Any:
         if default is Null:

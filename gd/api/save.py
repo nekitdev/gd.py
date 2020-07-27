@@ -1,3 +1,5 @@
+import collections
+
 from attr import attrib, dataclass
 
 from gd.typing import Any, Dict, Iterable, LevelCollection, List, Optional, Sequence, Tuple, Union
@@ -92,12 +94,15 @@ class Part(dict):
         info = {"outer_len": len(self)}
         return make_repr(self, info)
 
+    def copy(self) -> Any:
+        return self.__class__(super().copy())
+
     def set(self, key: Any, value: Any) -> None:
         """Same as self[key] = value."""
         self[key] = value
 
     def dump(self) -> str:
-        """Dump the part and return a string."""
+        """Dump the part and return an xml string."""
         return self.parser.dump(self)
 
 
@@ -229,7 +234,7 @@ class Database:
         return (self.main, self.levels)
 
 
-class LevelCollection(list):
+class LevelCollection(collections.UserList):
     def __init__(self, *args) -> None:
         if len(args) == 1:
             new_args = args[0]
@@ -240,10 +245,7 @@ class LevelCollection(list):
         super().__init__(args)
 
         self._callback = None
-        self._dump_func_name = None
-
-    def __repr__(self) -> str:
-        return self.__class__.__name__ + super().__repr__()
+        self._dump_name = None
 
     def get_by_name(self, name: str) -> Optional[LevelAPI]:
         return search.get(self, name=name)
