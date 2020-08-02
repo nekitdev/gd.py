@@ -1,6 +1,6 @@
 import sys
 
-from gd.typing import Any, Optional, TypeVar, Union
+from gd.typing import Any, Optional, Type, TypeVar, Union
 
 __all__ = ("map_property", "is_null")
 
@@ -50,7 +50,7 @@ def map_property(
 
     env.update(TYPE=type, Optional=Optional)
 
-    code = template.format(name=name, attr=attr, default=default, key=key)
+    code = TEMPLATE.format(name=name, attr=attr, default=default, key=key)
 
     exec(code, env)
 
