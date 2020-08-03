@@ -7,7 +7,7 @@ from attr import attrib, dataclass
 
 from gd.colors import Color
 from gd.logging import get_logger
-from gd.typing import Any, Dict, Iterator, List, Sequence, Tuple, Union, ref
+from gd.typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Union, ref
 from gd.utils.enums import IconType
 from gd.utils.text_tools import JSDict
 
