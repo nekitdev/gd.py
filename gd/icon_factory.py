@@ -185,11 +185,21 @@ class PlistImageSheet:
 
         self.cache: List[str] = []
 
+        self.image: Optional[ImageType] = None
+
         self.name = self.sheet_path.stem  # last part, without suffix
-        self.image = Image.open(self.sheet_path)
 
         with open(self.plist_path, "rb") as plist_file:
             self.plist = plistlib.load(plist_file, dict_type=JSDict).get("frames", {})
+
+    def open_image(self) -> None:
+        if self.image is None:
+            self.image = Image.open(self.sheet_path)
+
+    def close_image(self) -> None:
+        if self.image is not None:
+            self.image.close()
+            self.image = None
 
     def load(self) -> None:
         self.cache = [name for name in self.plist if is_interesting(name)]
@@ -293,7 +303,12 @@ class IconFactory:
                 glow_outline=glow_outline,
             )
 
-        if not glow_outline:
+        self.icon_sheet.open_image()
+
+        if glow_outline:
+            self.glow_sheet.open_image()
+
+        else:
             sprites = [sprite for sprite in sprites if GLOW not in sprite.name]
 
         self.reorder_sprites(sprites, icon)
@@ -345,6 +360,9 @@ class IconFactory:
             }.get(icon.type, (0, 0))
 
             result.alpha_composite(image, (25 + draw_off_x + draw_x, 25 + draw_off_y + draw_y))
+
+        self.icon_sheet.close_image()
+        self.glow_sheet.close_image()
 
         return result
 
