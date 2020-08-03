@@ -1,8 +1,12 @@
+import itertools
+
 from gd.typing import Dict, Generator, Iterable, Iterator, List, Tuple, TypeVar, Union
 
 from gd.utils.text_tools import make_repr
 
 T = TypeVar("T")
+
+chain_from_iterable = itertools.chain.from_iterable
 
 
 def group(iterable: Iterable[T], into_number: int = 2) -> Iterator[Tuple[T, ...]]:
@@ -64,9 +68,14 @@ class IndexParser:
                 )
             }
 
-        else:
-            return {
-                f"{index}": value for index, value in enumerate(
-                    self.split(string, self.delim, return_iter=return_iter)
-                )
-            }
+        return {
+            f"{index}": value for index, value in enumerate(
+                self.split(string, self.delim, return_iter=return_iter)
+            )
+        }
+
+    def unparse(self, mapping: Dict[str, str]]) -> str:
+        if self.map_like:
+            return self.delim.join(chain_from_iterable(mapping.items()))
+
+        return self.delim.join(mapping.values())
