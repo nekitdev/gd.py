@@ -78,13 +78,15 @@ class Field:
     def __init__(
         self,
         index: Union[int, str],
-        converter: Callable[[str], T] = identity,
+        de: Callable[[str], T] = identity,
+        ser: Callable[[T], str] = str,
         name: Optional[str] = None,
         type: Type[T] = object,
         default: Union[T, NULL] = null,
     ) -> None:
         self._index = str(index)
-        self._converter = converter
+        self._de = de
+        self._ser = ser
         self._name = name
         self._type = type
         self._default = default
@@ -93,6 +95,8 @@ class Field:
         info = {
             "index": self.index,
             "name": self.name,
+            "ser": self.ser.__name__,
+            "de": self.de.__name__,
             "type": self.type.__name__,
             "default": repr(self.default),
         }
@@ -104,8 +108,12 @@ class Field:
         return self._index
 
     @property
-    def converter(self) -> Callable[[str], T]:
-        return self._converter
+    def de(self) -> Callable[[str], T]:
+        return self._de
+
+    @property
+    def ser(self) -> Callable[[T], str]:
+        return self._ser
 
     @property
     def name(self) -> Optional[str]:
@@ -119,8 +127,11 @@ class Field:
     def default(self) -> Optional[T]:
         return self._default
 
-    def convert(self, value: U) -> T:
-        return self.converter(value)
+    def deserialize(self, string: str) -> T:
+        return self.de(string)
+
+    def serialize(self, value: T) -> str:
+        return self.ser(string)
 
 
 field = Field
@@ -140,7 +151,7 @@ def data_index_to_name(data: Dict[str, str], index_to_name: Dict[str, str], kwar
 
 def process_data(data: Dict[str, T], field_map: Dict[str, Field]) -> Dict[str, U]:
     return {
-        name: field_map[name].convert(part) for name, part in data.items()
+        name: field_map[name].deserialize(part) for name, part in data.items()
     }
 
 
@@ -255,7 +266,7 @@ def use_attrs_backend(
                     default=(
                         field.default if field.default is not null else NOTHING
                     ),
-                    converter=field.converter,
+                    converter=field.de,
                     type=field.type
                 )
 
