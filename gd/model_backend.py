@@ -244,6 +244,7 @@ def use_attrs_backend(
         FIELD_MAP = field_map
         FIELDS = list(FIELD_MAP.values())
         INDEX_TO_NAME = {field.index: field.name for field in FIELDS}
+        NAME_TO_INDEX = {name: index for index, name in INDEX_TO_NAME.items()}
 
         namespace = vars()
         namespace.update(cls_dict)
@@ -277,6 +278,7 @@ def use_map_backend(
         FIELD_MAP = field_map
         FIELDS = list(FIELD_MAP.values())
         INDEX_TO_NAME = {field.index: field.name for field in FIELDS}
+        NAME_TO_INDEX = {name: index for index, name in INDEX_TO_NAME.items()}
 
         DEFAULTS = {field.name: field.default for field in FIELDS}
 
@@ -313,6 +315,7 @@ class Model(metaclass=ModelMeta, style="normal"):
     FIELD_MAP: Dict[str, Field] = {}
     FIELDS: List[Field] = []
     INDEX_TO_NAME: Dict[str, str] = {}
+    NAME_TO_INDEX: Dict[str, str] = {}
 
     @classmethod
     def from_data(cls, data: Dict[str, str], **kwargs) -> Model_T:
