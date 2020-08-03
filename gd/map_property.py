@@ -1,11 +1,12 @@
 import sys
 
-from gd.typing import Any, Optional, Type, TypeVar, Union
+from gd.typing import Any, Dict, Optional, Type, TypeVar, Union
 
 __all__ = ("map_property", "is_null")
 
 T = TypeVar("T")
 U = TypeVar("U")
+V = TypeVar("V")
 
 TEMPLATE = """
 def get_{name}(self) -> Optional[TYPE]:
@@ -37,18 +38,26 @@ def map_property(
     # code to run, or an object such that eval(str(default)) == default
     default: Optional[Union[str, U]] = None,
     doc: Optional[str] = None,
+    # namespace to use, tries to fetch from caller frame if not given
+    namespace: Optional[Dict[str, V]] = None,
 ) -> property:
     env = {}
 
-    try:  # ayy frame hacks! ~ nekit
-        frame = sys._getframe(1)
-        env.update(frame.f_globals)
-        del frame
+    if namespace is None:
+        namespace = {}
 
-    except (AttributeError, ValueError):
-        pass
+        try:  # ayy frame hacks! ~ nekit
+            frame = sys._getframe(1)
 
-    env.update(TYPE=type, Optional=Optional)
+            namespace.update(frame.f_globals)
+            namespace.update(frame.f_locals)
+
+            del frame
+
+        except (AttributeError, ValueError):
+            pass
+
+    env.update(namespace, TYPE=type, Optional=Optional)
 
     code = TEMPLATE.format(name=name, attr=attr, default=default, key=key)
 
