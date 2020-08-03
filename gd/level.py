@@ -79,7 +79,12 @@ class Level(AbstractEntity):
         return str(self.name)
 
     def __json__(self) -> Dict[str, Any]:
-        return dict(super().__json__(), featured=self.is_featured(), objects=self.objects)
+        return dict(
+            super().__json__(),
+            featured=self.is_featured(),
+            was_unfeatured=self.was_unfeatured(),
+            objects=self.objects,
+        )
 
     @classmethod
     def official(
@@ -400,6 +405,10 @@ class Level(AbstractEntity):
     def is_rated(self) -> bool:
         """:class:`bool`: Indicates if a level is rated (has stars)."""
         return self.stars > 0
+
+    def was_unfeatured(self) -> bool:
+        """:class:`bool`: Indicates if a level was featured, but got unfeatured."""
+        return self.score < 0
 
     def is_featured(self) -> bool:
         """:class:`bool`: Indicates whether a level is featured."""
