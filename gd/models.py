@@ -9,6 +9,8 @@ from gd.typing import Callable, Dict, Optional, Tuple, Type, TypeVar, Union
 from gd.utils.enums import Enum
 from gd.utils.text_tools import make_repr
 
+__all__ = ("Field", "Model", "ModelStyle", "attempt", "identity", "into_enum", "null", "recurse")
+
 # DO NOT CHANGE
 ANNOTATIONS = "__annotations__"
 DATA = "DATA"
@@ -69,6 +71,24 @@ def into_enum(enum: Enum, type: Optional[Type[T]]) -> Callable[[U], Enum]:
         return enum(type(value))
 
     return convert_to_enum
+
+
+def data_index_to_name(data: Dict[str, str], index_to_name: Dict[str, str], kwargs: Dict[str, T]) -> Dict[str, U]:
+    data_kwargs = {
+        index_to_name.get(index): part for index, part in data.items()
+    }
+
+    data_kwargs.pop(None, None)
+
+    kwargs.update(data_kwargs)
+
+    return kwargs
+
+
+def process_data(data: Dict[str, T], field_map: Dict[str, Field]) -> Dict[str, U]:
+    return {
+        name: field_map[name].convert(part) for name, part in data.items()
+    }
 
 
 class Field:
@@ -257,11 +277,16 @@ def use_map_backend(
         FIELDS = list(FIELD_MAP.values())
         INDEX_TO_NAME = {field.index: field.name for field in FIELDS}
 
+        DEFAULTS = {field.name: field.default for field in FIELDS}
+
         namespace = vars()
         namespace.update(cls_dict)
 
         def __init__(self, **members) -> None:
-            self.DATA = members
+            data = self.DEFAULTS.copy()
+            data.update(members)
+
+            self.DATA = process_data(data, self.FIELD_MAP)
 
         def __repr__(self) -> str:
             return make_repr(self, self.DATA)
@@ -280,3 +305,23 @@ def use_map_backend(
         del namespace
 
     return MapModel
+
+
+class Model(metaclass=ModelMeta, style="normal"):
+    PARSER = None
+    FIELD_MAP = {}
+    FIELDS = []
+    INDEX_TO_NAME = {}
+
+    @classmethod
+    def from_data(cls, data: Dict[str, str], **kwargs) -> Model_T:
+        return cls(**data_index_to_name(data, cls.DATA_INDEX_TO_NAME, kwargs))
+
+    @classmethod
+    def from_string(cls, string: str) -> Model_T:
+        parser = cls.PARSER
+
+        if parser is None:
+            raise RuntimeError("Attempt to use parsing when PARSER is undefined.")
+
+        return cls.from_data(parser.parse(string))
