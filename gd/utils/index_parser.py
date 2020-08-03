@@ -74,7 +74,7 @@ class IndexParser:
             )
         }
 
-    def unparse(self, mapping: Dict[str, str]]) -> str:
+    def unparse(self, mapping: Dict[str, str]) -> str:
         if self.map_like:
             return self.delim.join(chain_from_iterable(mapping.items()))
 

@@ -4,9 +4,10 @@ from attr import attrib, attrs, NOTHING  # attrs backend
 
 from gd.map_property import map_property  # map backend
 
-from gd.typing import Callable, Dict, Optional, Tuple, Type, TypeVar, Union
+from gd.typing import Callable, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 from gd.utils.enums import Enum
+from gd.utils.index_parser import IndexParser
 from gd.utils.text_tools import make_repr
 
 __all__ = ("Field", "Model", "ModelStyle", "attempt", "identity", "into_enum", "null", "recurse")
@@ -73,24 +74,6 @@ def into_enum(enum: Enum, type: Optional[Type[T]]) -> Callable[[U], Enum]:
     return convert_to_enum
 
 
-def data_index_to_name(data: Dict[str, str], index_to_name: Dict[str, str], kwargs: Dict[str, T]) -> Dict[str, U]:
-    data_kwargs = {
-        index_to_name.get(index): part for index, part in data.items()
-    }
-
-    data_kwargs.pop(None, None)
-
-    kwargs.update(data_kwargs)
-
-    return kwargs
-
-
-def process_data(data: Dict[str, T], field_map: Dict[str, Field]) -> Dict[str, U]:
-    return {
-        name: field_map[name].convert(part) for name, part in data.items()
-    }
-
-
 class Field:
     def __init__(
         self,
@@ -141,6 +124,24 @@ class Field:
 
 
 field = Field
+
+
+def data_index_to_name(data: Dict[str, str], index_to_name: Dict[str, str], kwargs: Dict[str, T]) -> Dict[str, U]:
+    data_kwargs = {
+        index_to_name.get(index): part for index, part in data.items()
+    }
+
+    data_kwargs.pop(None, None)
+
+    kwargs.update(data_kwargs)
+
+    return kwargs
+
+
+def process_data(data: Dict[str, T], field_map: Dict[str, Field]) -> Dict[str, U]:
+    return {
+        name: field_map[name].convert(part) for name, part in data.items()
+    }
 
 
 class ModelStyle(Enum):
@@ -308,10 +309,10 @@ def use_map_backend(
 
 
 class Model(metaclass=ModelMeta, style="normal"):
-    PARSER = None
-    FIELD_MAP = {}
-    FIELDS = []
-    INDEX_TO_NAME = {}
+    PARSER: Optional[IndexParser] = None
+    FIELD_MAP: Dict[str, Field] = {}
+    FIELDS: List[Field] = []
+    INDEX_TO_NAME: Dict[str, str] = {}
 
     @classmethod
     def from_data(cls, data: Dict[str, str], **kwargs) -> Model_T:
