@@ -1,13 +1,17 @@
 import functools
 
-from attr import attrib, attrs, NOTHING
+from attr import attrib, attrs, NOTHING  # attrs backend
+
+from gd.map_property import map_property  # map backend
 
 from gd.typing import Callable, Dict, Optional, Tuple, Type, TypeVar, Union
 
 from gd.utils.enums import Enum
 from gd.utils.text_tools import make_repr
 
+# DO NOT CHANGE
 ANNOTATIONS = "__annotations__"
+DATA = "DATA"
 
 Model_T = TypeVar("Model")
 
@@ -192,7 +196,7 @@ class ModelMeta(type):
             cls = use_attrs_backend(meta_cls, bases, cls_dict, fields)
 
         elif style.is_map():
-            ...
+            cls = use_map_backend(meta_cls, bases, cls_dict, fields)
 
         else:
             raise ValueError(f"Do not know how to process style: {style!r}.")
@@ -213,7 +217,7 @@ def use_attrs_backend(
     field_map: Dict[str, Field],
 ) -> Type[Model_T]:
     @attrs
-    class AttrsModel(*bases, metaclass=ModelMeta, style="normal"):
+    class AttrsModel(*bases, metaclass=meta_cls, style="normal"):
         nonlocal cls_dict, field_map
 
         FIELD_MAP = field_map
@@ -233,8 +237,46 @@ def use_attrs_backend(
                     type=field.type
                 )
 
-            del name, field
+            del field
 
         del namespace
 
     return AttrsModel
+
+
+def use_map_backend(
+    meta_cls: Type[Type[Model_T]],
+    bases: Tuple[Type[T], ...],
+    cls_dict: Dict[str, U],
+    field_map: Dict[str, Field],
+) -> Type[Model_T]:
+    class MapModel(*bases, metaclass=meta_cls, style="normal"):
+        nonlocal cls_dict, field_map
+
+        FIELD_MAP = field_map
+        FIELDS = list(FIELD_MAP.values())
+        INDEX_TO_NAME = {field.index: field.name for field in FIELDS}
+
+        namespace = vars()
+        namespace.update(cls_dict)
+
+        def __init__(self, **members) -> None:
+            self.DATA = members
+
+        def __repr__(self) -> str:
+            return make_repr(self, self.DATA)
+
+        if FIELDS:
+            for field in FIELDS:
+                namespace[field.name] = map_property(
+                    name=field.name,
+                    attr=DATA,
+                    key=field.name,
+                    type=field.type,
+                    doc=f"Data field: {field.name}.",
+                )
+            del field
+
+        del namespace
+
+    return MapModel
