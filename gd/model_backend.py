@@ -10,6 +10,8 @@ from gd.utils.enums import Enum
 from gd.utils.index_parser import IndexParser
 from gd.utils.text_tools import make_repr
 
+# XXX: we probably should use indexes in models data?
+
 __all__ = (
     "Field",
     "Base64Field",
@@ -22,7 +24,6 @@ __all__ = (
     "Model",
     "attempt",
     "identity",
-    "noindex",
     "null",
     "partial",
     "recurse",
@@ -51,7 +52,6 @@ __all__ = (
 # DO NOT CHANGE
 ANNOTATIONS = "__annotations__"
 DATA = "DATA"
-NOINDEX = "NOINDEX"
 
 Model_T = TypeVar("Model")
 
@@ -85,13 +85,6 @@ class RECURSE(Singleton):
 
 
 recurse = RECURSE()
-
-
-class NOINDEX(Singleton):
-    pass
-
-
-noindex = NOINDEX()
 
 
 def attempt(func: Callable[..., T], default: Optional[T] = None) -> Callable[..., T]:
@@ -153,7 +146,7 @@ ser_bytes = bytes.decode
 def ser_float(value: float) -> str:
     truncated = int(value)
 
-    return value if value != truncated else truncated
+    return str(value if value != truncated else truncated)
 
 
 def de_enum(string: str, enum: Type[Enum], de_func: Callable[[str], T]) -> Enum:
@@ -492,7 +485,9 @@ class Model(metaclass=ModelMeta):
         self.DATA = deserialize_data(data, self.FIELD_MAP)
 
     def __repr__(self) -> str:
-        return make_repr(self, self.to_dict())
+        info = {name: repr(value) for name, value in self.to_dict().items()}
+
+        return make_repr(self, info)
 
     @classmethod
     def from_data(cls, data: Dict[str, str], **kwargs) -> Model_T:
