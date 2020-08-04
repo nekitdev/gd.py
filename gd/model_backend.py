@@ -12,6 +12,12 @@ from gd.utils.text_tools import make_repr
 
 __all__ = (
     "Field",
+    "Base64Field",
+    "BoolField",
+    "FloatField",
+    "IntField",
+    "StrField",
+    "URLField",
     "IndexParser",
     "Model",
     "attempt",
@@ -25,6 +31,7 @@ __all__ = (
     "ser_base64_str",
     "de_bool_strict",
     "de_bool_soft",
+    "de_bool",
     "ser_bool",
     "de_bytes",
     "ser_bytes",
@@ -113,6 +120,9 @@ def de_bool_soft(string: str) -> bool:
         return False
 
     return string != "0"
+
+
+de_bool = de_bool_soft
 
 
 def ser_bool(value: bool, false: str = "0", true: str = "1") -> str:
@@ -231,6 +241,78 @@ class Field:
 
 
 field = Field
+
+
+class Base64Field(Field):
+    def __init__(
+        self,
+        index: Union[int, str],
+        name: Optional[str] = None,
+        default: Union[T, NULL] = null,
+    ) -> None:
+        super().__init__(
+            index=index, de=de_base64_str, ser=ser_base64_str, name=name, type=str, default=default
+        )
+
+
+class BoolField(Field):
+    def __init__(
+        self,
+        index: Union[int, str],
+        name: Optional[str] = None,
+        default: Union[T, NULL] = null,
+    ) -> None:
+        super().__init__(
+            index=index, de=de_bool, ser=ser_bool, name=name, type=bool, default=default
+        )
+
+
+class FloatField(Field):
+    def __init__(
+        self,
+        index: Union[int, str],
+        name: Optional[str] = None,
+        default: Union[T, NULL] = null,
+    ) -> None:
+        super().__init__(
+            index=index, de=de_float, ser=ser_float, name=name, type=float, default=default
+        )
+
+
+class IntField(Field):
+    def __init__(
+        self,
+        index: Union[int, str],
+        name: Optional[str] = None,
+        default: Union[T, NULL] = null,
+    ) -> None:
+        super().__init__(
+            index=index, de=de_int, ser=ser_int, name=name, type=int, default=default
+        )
+
+
+class StrField(Field):
+    def __init__(
+        self,
+        index: Union[int, str],
+        name: Optional[str] = None,
+        default: Union[T, NULL] = null,
+    ) -> None:
+        super().__init__(
+            index=index, de=de_str, ser=ser_str, name=name, type=str, default=default
+        )
+
+
+class URLField(Field):
+    def __init__(
+        self,
+        index: Union[int, str],
+        name: Optional[str] = None,
+        default: Union[T, NULL] = null,
+    ) -> None:
+        super().__init__(
+            index=index, de=de_url, ser=ser_url, name=name, type=str, default=default
+        )
 
 
 def data_index_to_name(data: Dict[str, str], index_to_name: Dict[str, str], kwargs: Dict[str, T]) -> Dict[str, U]:
