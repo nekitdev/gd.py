@@ -11,7 +11,6 @@ from gd.utils.index_parser import IndexParser
 from gd.utils.text_tools import make_repr
 
 __all__ = (
-    "NOINDEX",
     "Field",
     "Base64Field",
     "BoolField",
@@ -23,6 +22,7 @@ __all__ = (
     "Model",
     "attempt",
     "identity",
+    "noindex",
     "null",
     "partial",
     "recurse",
@@ -85,6 +85,13 @@ class RECURSE(Singleton):
 
 
 recurse = RECURSE()
+
+
+class NOINDEX(Singleton):
+    pass
+
+
+noindex = NOINDEX()
 
 
 def attempt(func: Callable[..., T], default: Optional[T] = None) -> Callable[..., T]:
@@ -420,7 +427,7 @@ class ModelMeta(type):
 
         write_class_name(cls, cls_name)
 
-        for name, field in fields.values():  # process types
+        for name, field in fields.items():  # process types
             field_type = annotations.get(name, field._type)
 
             if field_type is recurse:
