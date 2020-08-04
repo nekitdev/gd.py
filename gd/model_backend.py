@@ -1,16 +1,14 @@
 import functools
 
-from attr import attrib, attrs, NOTHING  # attrs backend
+from gd.map_property import map_property
 
-from gd.map_property import map_property  # map backend
-
-from gd.typing import Callable, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from gd.typing import Callable, Dict, Generator, List, Optional, Tuple, Type, TypeVar, Union
 
 from gd.utils.enums import Enum
 from gd.utils.index_parser import IndexParser
 from gd.utils.text_tools import make_repr
 
-__all__ = ("Field", "Model", "ModelStyle", "attempt", "identity", "into_enum", "null", "recurse")
+__all__ = ("Field", "IndexParser", "Model", "attempt", "identity", "into_enum", "null", "recurse")
 
 # DO NOT CHANGE
 ANNOTATIONS = "__annotations__"
@@ -131,7 +129,7 @@ class Field:
         return self.de(string)
 
     def serialize(self, value: T) -> str:
-        return self.ser(string)
+        return self.ser(value)
 
 
 field = Field
@@ -139,39 +137,54 @@ field = Field
 
 def data_index_to_name(data: Dict[str, str], index_to_name: Dict[str, str], kwargs: Dict[str, T]) -> Dict[str, U]:
     data_kwargs = {
-        index_to_name.get(index): part for index, part in data.items()
+        index_to_name.get(index, index): part for index, part in data.items()
     }
 
-    data_kwargs.pop(None, None)
+    data_kwargs.update(kwargs)
 
-    kwargs.update(data_kwargs)
-
-    return kwargs
+    return data_kwargs
 
 
-def process_data(data: Dict[str, T], field_map: Dict[str, Field]) -> Dict[str, U]:
-    return {
-        name: field_map[name].deserialize(part) for name, part in data.items()
+def data_name_to_index(data: Dict[str, str], name_to_index: Dict[str, str], kwargs: Dict[str, str]) -> Dict[str, str]:
+    converted = {
+        name_to_index.get(name, name): part for name, part in data.items()
     }
 
+    converted.update({
+        name_to_index.get(name, name) for name, part in kwargs.items()
+    })
 
-class ModelStyle(Enum):
-    NORMAL = 0
-    MAP = 1
-    ATTRS = 2
-    DEFAULT = ATTRS
+    return converted
 
-    def is_normal(self) -> bool:
-        return self is self.NORMAL
 
-    def is_map(self) -> bool:
-        return self is self.MAP
+def deserialize_parts(data: Dict[str, str], field_map: Dict[str, Field]) -> Generator[Tuple[str, T], None, None]:
+    for name, part in data.items():
+        field = field_map.get(name)
 
-    def is_attrs(self) -> bool:
-        return self is self.ATTRS
+        if field:
+            yield name, field.deserialize(part)
 
-    def is_default(self) -> bool:
-        return self is self.DEFAULT
+        else:
+            yield name, part
+
+
+def deserialize_data(data: Dict[str, str], field_map: Dict[str, Field]) -> Dict[str, T]:
+    return dict(deserialize_parts(data, field_map))
+
+
+def serialize_parts(data: Dict[str, T], field_map: Dict[str, Field]) -> Generator[Tuple[str, str], None, None]:
+    for name, part in data.items():
+        field = field_map.get(name)
+
+        if field:
+            yield name, field.serialize(part)
+
+        else:
+            yield name, str(part)
+
+
+def serialize_data(data: Dict[str, T], field_map: Dict[str, Field]) -> Dict[str, str]:
+    return dict(serialize_parts(data, field_map))
 
 
 class ModelDict(dict):
@@ -196,9 +209,9 @@ class ModelDict(dict):
 class ModelMeta(type):
     @classmethod
     def __prepare__(meta_cls, cls_name: str, bases: Tuple[Type[T], ...], **kwargs) -> Dict[str, U]:
-        style = ModelStyle.from_value(kwargs.get("style", "default"))
+        is_normal = kwargs.get("is_normal")
 
-        if style.is_normal():
+        if is_normal:
             return {}
 
         return ModelDict()
@@ -208,11 +221,9 @@ class ModelMeta(type):
         cls_name: str,
         bases: Tuple[Type[T], ...],
         cls_dict: Dict[str, U],
-        style: Union[int, str, ModelStyle] = ModelStyle.DEFAULT,
+        is_normal: bool = False,
     ) -> Type[Model_T]:
-        style = ModelStyle.from_value(style)
-
-        if style.is_normal():
+        if is_normal:
             return super().__new__(meta_cls, cls_name, bases, cls_dict)
 
         annotations = cls_dict.get(ANNOTATIONS, {})
@@ -224,14 +235,7 @@ class ModelMeta(type):
             field._name = name
             field._type = annotations.get(name, field._type)
 
-        if style.is_attrs():
-            cls = use_attrs_backend(meta_cls, bases, cls_dict, fields)
-
-        elif style.is_map():
-            cls = use_map_backend(meta_cls, bases, cls_dict, fields)
-
-        else:
-            raise ValueError(f"Do not know how to process style: {style!r}.")
+        cls = create_map_backend(meta_cls, bases, cls_dict, fields)
 
         write_class_name(cls, cls_name)
 
@@ -242,14 +246,13 @@ def write_class_name(cls: Type[T], name: str) -> None:
     cls.__qualname__ = cls.__name__ = name
 
 
-def use_attrs_backend(
+def create_map_backend(
     meta_cls: Type[Type[Model_T]],
     bases: Tuple[Type[T], ...],
     cls_dict: Dict[str, U],
     field_map: Dict[str, Field],
 ) -> Type[Model_T]:
-    @attrs
-    class AttrsModel(*bases, metaclass=meta_cls, style="normal"):
+    class MapModel(*bases, metaclass=meta_cls, is_normal=True):
         nonlocal cls_dict, field_map
 
         FIELD_MAP = field_map
@@ -257,53 +260,10 @@ def use_attrs_backend(
         INDEX_TO_NAME = {field.index: field.name for field in FIELDS}
         NAME_TO_INDEX = {name: index for index, name in INDEX_TO_NAME.items()}
 
-        namespace = vars()
-        namespace.update(cls_dict)
-
-        if FIELDS:
-            for field in FIELDS:
-                namespace[field.name] = attrib(
-                    default=(
-                        field.default if field.default is not null else NOTHING
-                    ),
-                    converter=field.de,
-                    type=field.type
-                )
-
-            del field
-
-        del namespace
-
-    return AttrsModel
-
-
-def use_map_backend(
-    meta_cls: Type[Type[Model_T]],
-    bases: Tuple[Type[T], ...],
-    cls_dict: Dict[str, U],
-    field_map: Dict[str, Field],
-) -> Type[Model_T]:
-    class MapModel(*bases, metaclass=meta_cls, style="normal"):
-        nonlocal cls_dict, field_map
-
-        FIELD_MAP = field_map
-        FIELDS = list(FIELD_MAP.values())
-        INDEX_TO_NAME = {field.index: field.name for field in FIELDS}
-        NAME_TO_INDEX = {name: index for index, name in INDEX_TO_NAME.items()}
-
-        DEFAULTS = {field.name: field.default for field in FIELDS}
+        DEFAULTS = {field.name: field.default for field in FIELDS if field.default is not null}
 
         namespace = vars()
         namespace.update(cls_dict)
-
-        def __init__(self, **members) -> None:
-            data = self.DEFAULTS.copy()
-            data.update(members)
-
-            self.DATA = process_data(data, self.FIELD_MAP)
-
-        def __repr__(self) -> str:
-            return make_repr(self, self.DATA)
 
         if FIELDS:
             for field in FIELDS:
@@ -321,22 +281,48 @@ def use_map_backend(
     return MapModel
 
 
-class Model(metaclass=ModelMeta, style="normal"):
+class Model(metaclass=ModelMeta):
     PARSER: Optional[IndexParser] = None
     FIELD_MAP: Dict[str, Field] = {}
     FIELDS: List[Field] = []
     INDEX_TO_NAME: Dict[str, str] = {}
     NAME_TO_INDEX: Dict[str, str] = {}
 
-    @classmethod
-    def from_data(cls, data: Dict[str, str], **kwargs) -> Model_T:
-        return cls(**data_index_to_name(data, cls.DATA_INDEX_TO_NAME, kwargs))
+    def __init__(self, **members) -> None:
+        data = self.DEFAULTS.copy()
+        data.update(members)
+
+        self.DATA = deserialize_data(data, self.FIELD_MAP)
+
+    def __repr__(self) -> str:
+        return make_repr(self, self.to_dict())
 
     @classmethod
-    def from_string(cls, string: str) -> Model_T:
+    def from_data(cls, data: Dict[str, str], **kwargs) -> Model_T:
+        return cls(**data_index_to_name(data, cls.INDEX_TO_NAME, kwargs))
+
+    def to_data(self, **kwargs) -> Dict[str, str]:
+        data = serialize_data(self.DATA, self.FIELD_MAP)
+        return data_name_to_index(data, self.NAME_TO_INDEX, kwargs)
+
+    @classmethod
+    def from_string(cls, string: str, **kwargs) -> Model_T:
         parser = cls.PARSER
 
         if parser is None:
             raise RuntimeError("Attempt to use parsing when PARSER is undefined.")
 
-        return cls.from_data(parser.parse(string))
+        return cls.from_data(parser.parse(string), **kwargs)
+
+    def to_string(self, **kwargs) -> str:
+        parser = self.PARSER
+
+        if parser is None:
+            raise RuntimeError("Attempt to use unparsing when PARSER is undefined.")
+
+        return parser.unparse(self.to_data(**kwargs))
+
+    def to_dict(self) -> Dict[str, T]:
+        field_map = self.FIELD_MAP
+
+        return {name: part for name, part in self.DATA.items() if name in field_map}
