@@ -11,6 +11,7 @@ from gd.utils.index_parser import IndexParser
 from gd.utils.text_tools import make_repr
 
 __all__ = (
+    "NOINDEX",
     "Field",
     "Base64Field",
     "BoolField",
@@ -50,6 +51,7 @@ __all__ = (
 # DO NOT CHANGE
 ANNOTATIONS = "__annotations__"
 DATA = "DATA"
+NOINDEX = "NOINDEX"
 
 Model_T = TypeVar("Model")
 
@@ -138,7 +140,7 @@ de_str = str
 ser_str = str
 
 de_bytes = str.encode
-ser_bytes = str.decode
+ser_bytes = bytes.decode
 
 
 def ser_float(value: float) -> str:
