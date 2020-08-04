@@ -131,22 +131,23 @@ def ser_bool(value: bool, false: str = "0", true: str = "1") -> str:
     return true if value else false
 
 
-de_int = int
-ser_int = str
-
 de_float = float
-
-de_str = str
-ser_str = str
-
-de_bytes = str.encode
-ser_bytes = bytes.decode
 
 
 def ser_float(value: float) -> str:
     truncated = int(value)
 
     return str(value if value != truncated else truncated)
+
+
+de_int = int
+ser_int = str
+
+de_str = str
+ser_str = str
+
+de_bytes = str.encode
+ser_bytes = bytes.decode
 
 
 def de_enum(string: str, enum: Type[Enum], de_func: Callable[[str], T]) -> Enum:
@@ -179,7 +180,7 @@ def ser_base64_bytes(string: bytes) -> str:
 
 
 de_url = unquote
-ser_url = quote
+ser_url = partial(quote, safe="")
 
 
 class Field:
