@@ -123,8 +123,11 @@ class Coder:
             if encode:
                 return urlsafe_b64encode(data.encode(errors=errors)).decode(errors=errors)
             else:
-                padded = data + ("=" * (4 - len(data) % 4))
-                return urlsafe_b64decode(padded.encode(errors=errors)).decode(errors=errors)
+                remain = len(data) % 4
+
+                if remain:
+                    data += "=" * (4 - remain)
+                return urlsafe_b64decode(data.encode(errors=errors)).decode(errors=errors)
 
         except Exception:
             if safe:

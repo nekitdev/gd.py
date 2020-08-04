@@ -1,4 +1,6 @@
-import functools
+from base64 import urlsafe_b64decode, urlsafe_b64encode
+from functools import partial, wraps
+from urllib.parse import quote, unquote
 
 from gd.map_property import map_property
 
@@ -8,7 +10,35 @@ from gd.utils.enums import Enum
 from gd.utils.index_parser import IndexParser
 from gd.utils.text_tools import make_repr
 
-__all__ = ("Field", "IndexParser", "Model", "attempt", "identity", "into_enum", "null", "recurse")
+__all__ = (
+    "Field",
+    "IndexParser",
+    "Model",
+    "attempt",
+    "identity",
+    "null",
+    "partial",
+    "recurse",
+    "de_base64_bytes",
+    "ser_base64_bytes",
+    "de_base64_str",
+    "ser_base64_str",
+    "de_bool_strict",
+    "de_bool_soft",
+    "ser_bool",
+    "de_bytes",
+    "ser_bytes",
+    "de_enum",
+    "ser_enum",
+    "de_float",
+    "ser_float",
+    "de_int",
+    "ser_int",
+    "de_str",
+    "ser_str",
+    "de_url",
+    "ser_url",
+)
 
 # DO NOT CHANGE
 ANNOTATIONS = "__annotations__"
@@ -50,7 +80,7 @@ recurse = RECURSE()
 
 def attempt(func: Callable[..., T], default: Optional[T] = None) -> Callable[..., T]:
 
-    @functools.wraps(func)
+    @wraps(func)
     def inner(*args, **kwargs) -> Optional[T]:
         try:
             return func(*args, **kwargs)
@@ -65,11 +95,79 @@ def identity(some: T) -> T:
     return some
 
 
-def into_enum(enum: Enum, type: Optional[Type[T]]) -> Callable[[U], Enum]:
-    def convert_to_enum(value: U) -> Enum:
-        return enum(type(value))
+def de_bool_strict(string: str) -> bool:
+    if not string:
+        return False
 
-    return convert_to_enum
+    if string == "0":
+        return False
+
+    if string == "1":
+        return True
+
+    raise ValueError(f"String bool deserializing expected empty string, 0 or 1, got {string!r}.")
+
+
+def de_bool_soft(string: str) -> bool:
+    if not string:
+        return False
+
+    return string != "0"
+
+
+def ser_bool(value: bool, false: str = "0", true: str = "1") -> str:
+    return true if value else false
+
+
+de_int = int
+ser_int = str
+
+de_float = float
+
+de_str = str
+ser_str = str
+
+de_bytes = str.encode
+ser_bytes = str.decode
+
+
+def ser_float(value: float) -> str:
+    truncated = int(value)
+
+    return value if value != truncated else truncated
+
+
+def de_enum(string: str, enum: Type[Enum], de_func: Callable[[str], T]) -> Enum:
+    return enum(de_func(string))
+
+
+def ser_enum(enum_member: Enum, ser_func: Callable[[T], str]) -> str:
+    return ser_func(enum_member.value)
+
+
+def de_base64_str(string: str) -> str:
+    return de_base64_bytes(string).decode()
+
+
+def de_base64_bytes(string: str) -> bytes:
+    remain = len(string) % 4
+
+    if remain:
+        string += "=" * (4 - remain)
+
+    return urlsafe_b64decode(string)
+
+
+def ser_base64_str(string: str) -> str:
+    return ser_base64_bytes(string.encode())
+
+
+def ser_base64_bytes(string: bytes) -> str:
+    return urlsafe_b64encode(string).decode()
+
+
+de_url = unquote
+ser_url = quote
 
 
 class Field:
@@ -229,15 +327,23 @@ class ModelMeta(type):
         annotations = cls_dict.get(ANNOTATIONS, {})
         fields = cls_dict.fields
 
-        for name, field in fields.items():
+        for name, field in fields.items():  # process names
             cls_dict.pop(name, None)
 
             field._name = name
-            field._type = annotations.get(name, field._type)
 
         cls = create_map_backend(meta_cls, bases, cls_dict, fields)
 
         write_class_name(cls, cls_name)
+
+        for name, field in fields.values():  # process types
+            field_type = annotations.get(name, field._type)
+
+            if field_type is recurse:
+                field_type = cls
+
+            annotations[name] = field_type
+            field._type = field_type
 
         return cls
 
