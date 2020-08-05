@@ -476,8 +476,9 @@ class Model(metaclass=ModelMeta):
     FIELDS: List[Field] = []
     INDEX_TO_NAME: Dict[str, str] = {}
 
-    def __init__(self, **members) -> None:
-        self.DATA = self.DEFAULTS.copy()
+    def __init__(self, **kwargs) -> None:
+        members = self.DEFAULTS.copy()
+        members.update(kwargs)
 
         for name, member in members.items():
             setattr(self, name, member)
