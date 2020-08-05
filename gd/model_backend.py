@@ -444,7 +444,7 @@ def create_class_backend(
         nonlocal cls_dict, field_map
 
         NAME_MAP = field_map
-        FIELDS = list(FIELD_MAP.values())
+        FIELDS = list(field_map.values())
         INDEX_MAP = {field.index: field for field in FIELDS}
         INDEX_TO_NAME = {field.index: field.name for field in FIELDS}
 
