@@ -477,6 +477,8 @@ class Model(metaclass=ModelMeta):
     INDEX_TO_NAME: Dict[str, str] = {}
 
     def __init__(self, **kwargs) -> None:
+        self.DATA = {}
+
         members = self.DEFAULTS.copy()
         members.update(kwargs)
 
