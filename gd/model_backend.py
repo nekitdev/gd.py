@@ -202,8 +202,8 @@ class Field:
         info = {
             "index": self.index,
             "name": self.name,
-            "ser": self.ser.__name__,
-            "de": self.de.__name__,
+            "ser": self.ser,
+            "de": self.de,
             "type": self.type.__name__,
             "default": repr(self.default),
         }
