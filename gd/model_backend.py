@@ -472,9 +472,9 @@ def create_class_backend(
 class Model(metaclass=ModelMeta):
     PARSER: Optional[IndexParser] = None
     NAME_MAP: Dict[str, Field] = {}
-    INDEX_MAP = Dict[str, Field] = {}
+    INDEX_MAP: Dict[str, Field] = {}
     FIELDS: List[Field] = []
-    INDEX_TO_NAME = Dict[str, str] = {}
+    INDEX_TO_NAME: Dict[str, str] = {}
 
     def __init__(self, **members) -> None:
         self.DATA = self.DEFAULTS.copy()
