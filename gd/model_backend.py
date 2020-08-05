@@ -10,8 +10,6 @@ from gd.utils.enums import Enum
 from gd.utils.index_parser import IndexParser
 from gd.utils.text_tools import make_repr
 
-# XXX: we probably should use indexes in models data?
-
 __all__ = (
     "Field",
     "Base64Field",
@@ -318,37 +316,15 @@ class URLField(Field):
         )
 
 
-def data_index_to_name(data: Dict[str, str], index_to_name: Dict[str, str], kwargs: Dict[str, T]) -> Dict[str, U]:
-    data_kwargs = {
-        index_to_name.get(index, index): part for index, part in data.items()
-    }
-
-    data_kwargs.update(kwargs)
-
-    return data_kwargs
-
-
-def data_name_to_index(data: Dict[str, str], name_to_index: Dict[str, str], kwargs: Dict[str, str]) -> Dict[str, str]:
-    converted = {
-        name_to_index.get(name, name): part for name, part in data.items()
-    }
-
-    converted.update({
-        name_to_index.get(name, name) for name, part in kwargs.items()
-    })
-
-    return converted
-
-
 def deserialize_parts(data: Dict[str, str], field_map: Dict[str, Field]) -> Generator[Tuple[str, T], None, None]:
-    for name, part in data.items():
-        field = field_map.get(name)
+    for key, part in data.items():
+        field = field_map.get(key)
 
         if field:
-            yield name, field.deserialize(part)
+            yield key, field.deserialize(part)
 
         else:
-            yield name, part
+            yield key, part
 
 
 def deserialize_data(data: Dict[str, str], field_map: Dict[str, Field]) -> Dict[str, T]:
@@ -356,18 +332,39 @@ def deserialize_data(data: Dict[str, str], field_map: Dict[str, Field]) -> Dict[
 
 
 def serialize_parts(data: Dict[str, T], field_map: Dict[str, Field]) -> Generator[Tuple[str, str], None, None]:
-    for name, part in data.items():
-        field = field_map.get(name)
+    for key, part in data.items():
+        field = field_map.get(key)
 
         if field:
-            yield name, field.serialize(part)
+            yield key, field.serialize(part)
 
         else:
-            yield name, str(part)
+            yield key, str(part)
 
 
 def serialize_data(data: Dict[str, T], field_map: Dict[str, Field]) -> Dict[str, str]:
     return dict(serialize_parts(data, field_map))
+
+
+def map_index_to_name_gen(
+    data: Dict[str, T], index_to_name: Dict[str, str], allow_missing: bool = False
+) -> Generator[Tuple[str, T], None, None]:
+    for index, part in data.items():
+        name = index_to_name.get(index)
+
+        if name:
+            yield name, part
+
+        elif allow_missing:
+            yield f"index_{index}", part
+
+        # ... no need to use else
+
+
+def map_index_to_name(
+    data: Dict[str, T], index_to_name: Dict[str, str], allow_missing: bool = False
+) -> Dict[str, T]:
+    return dict(map_index_to_name_gen(data, index_to_name, allow_missing))
 
 
 class ModelDict(dict):
@@ -417,7 +414,7 @@ class ModelMeta(type):
 
             field._name = name
 
-        cls = create_map_backend(meta_cls, bases, cls_dict, fields)
+        cls = create_class_backend(meta_cls, bases, cls_dict, fields)
 
         write_class_name(cls, cls_name)
 
@@ -437,19 +434,19 @@ def write_class_name(cls: Type[T], name: str) -> None:
     cls.__qualname__ = cls.__name__ = name
 
 
-def create_map_backend(
+def create_class_backend(
     meta_cls: Type[Type[Model_T]],
     bases: Tuple[Type[T], ...],
     cls_dict: Dict[str, U],
     field_map: Dict[str, Field],
 ) -> Type[Model_T]:
-    class MapModel(*bases, metaclass=meta_cls, is_normal=True):
+    class ModelBackend(*bases, metaclass=meta_cls, is_normal=True):
         nonlocal cls_dict, field_map
 
-        FIELD_MAP = field_map
+        NAME_MAP = field_map
         FIELDS = list(FIELD_MAP.values())
+        INDEX_MAP = {field.index: field for field in FIELDS}
         INDEX_TO_NAME = {field.index: field.name for field in FIELDS}
-        NAME_TO_INDEX = {name: index for index, name in INDEX_TO_NAME.items()}
 
         DEFAULTS = {field.name: field.default for field in FIELDS if field.default is not null}
 
@@ -461,7 +458,7 @@ def create_map_backend(
                 namespace[field.name] = map_property(
                     name=field.name,
                     attr=DATA,
-                    key=field.name,
+                    key=field.index,
                     type=field.type,
                     doc=f"Data field: {field.name}.",
                 )
@@ -469,21 +466,21 @@ def create_map_backend(
 
         del namespace
 
-    return MapModel
+    return ModelBackend
 
 
 class Model(metaclass=ModelMeta):
     PARSER: Optional[IndexParser] = None
-    FIELD_MAP: Dict[str, Field] = {}
+    NAME_MAP: Dict[str, Field] = {}
+    INDEX_MAP = Dict[str, Field] = {}
     FIELDS: List[Field] = []
-    INDEX_TO_NAME: Dict[str, str] = {}
-    NAME_TO_INDEX: Dict[str, str] = {}
+    INDEX_TO_NAME = Dict[str, str] = {}
 
     def __init__(self, **members) -> None:
-        data = self.DEFAULTS.copy()
-        data.update(members)
+        self.DATA = self.DEFAULTS.copy()
 
-        self.DATA = deserialize_data(data, self.FIELD_MAP)
+        for name, member in members.items():
+            setattr(self, name, member)
 
     def __repr__(self) -> str:
         info = {name: repr(value) for name, value in self.to_dict().items()}
@@ -491,12 +488,23 @@ class Model(metaclass=ModelMeta):
         return make_repr(self, info)
 
     @classmethod
-    def from_data(cls, data: Dict[str, str], **kwargs) -> Model_T:
-        return cls.from_dict(data_index_to_name(data, cls.INDEX_TO_NAME, kwargs))
+    def deserialize_data(cls, data: Dict[str, str]) -> Dict[str, T]:
+        return deserialize_data(data, cls.INDEX_MAP)
 
-    def to_data(self, **kwargs) -> Dict[str, str]:
-        data = serialize_data(self.DATA, self.FIELD_MAP)
-        return data_name_to_index(data, self.NAME_TO_INDEX, kwargs)
+    @classmethod
+    def serialize_data(cls, data: Dict[str, T]) -> Dict[str, str]:
+        return serialize_data(data, cls.INDEX_MAP)
+
+    @classmethod
+    def from_data(cls, data: Dict[str, str]) -> Model_T:
+        self = cls()
+
+        self.DATA.update(self.deserialize_data(data))
+
+        return self
+
+    def to_data(self) -> Dict[str, str]:
+        return self.serialize_data(self.DATA)
 
     @classmethod
     def from_string(cls, string: str, **kwargs) -> Model_T:
@@ -505,21 +513,19 @@ class Model(metaclass=ModelMeta):
         if parser is None:
             raise RuntimeError("Attempt to use parsing when PARSER is undefined.")
 
-        return cls.from_data(parser.parse(string), **kwargs)
+        return cls.from_data(parser.parse(string))
 
-    def to_string(self, **kwargs) -> str:
+    def to_string(self) -> str:
         parser = self.PARSER
 
         if parser is None:
             raise RuntimeError("Attempt to use unparsing when PARSER is undefined.")
 
-        return parser.unparse(self.to_data(**kwargs))
+        return parser.unparse(self.to_data())
 
     @classmethod
-    def from_dict(cls, data: Dict[str, T]) -> Model_T:
-        return cls(**data)
+    def from_dict(cls, arg_dict: Dict[str, T]) -> Model_T:
+        return cls(**arg_dict)
 
-    def to_dict(self) -> Dict[str, T]:
-        field_map = self.FIELD_MAP
-
-        return {name: part for name, part in self.DATA.items() if name in field_map}
+    def to_dict(self, allow_missing: bool = False) -> Dict[str, T]:
+        return map_index_to_name(self.DATA, self.INDEX_TO_NAME, allow_missing)
