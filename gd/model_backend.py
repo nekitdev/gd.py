@@ -492,7 +492,7 @@ class Model(metaclass=ModelMeta):
 
     @classmethod
     def from_data(cls, data: Dict[str, str], **kwargs) -> Model_T:
-        return cls(**data_index_to_name(data, cls.INDEX_TO_NAME, kwargs))
+        return cls.from_dict(data_index_to_name(data, cls.INDEX_TO_NAME, kwargs))
 
     def to_data(self, **kwargs) -> Dict[str, str]:
         data = serialize_data(self.DATA, self.FIELD_MAP)
@@ -514,6 +514,10 @@ class Model(metaclass=ModelMeta):
             raise RuntimeError("Attempt to use unparsing when PARSER is undefined.")
 
         return parser.unparse(self.to_data(**kwargs))
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, T]) -> Model_T:
+        return cls(**data)
 
     def to_dict(self) -> Dict[str, T]:
         field_map = self.FIELD_MAP
