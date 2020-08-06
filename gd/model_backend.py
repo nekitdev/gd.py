@@ -476,11 +476,14 @@ class Model(metaclass=ModelMeta):
     FIELDS: List[Field] = []
     INDEX_TO_NAME: Dict[str, str] = {}
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, *, use_default: bool = True, **kwargs) -> None:
         self.DATA = {}
 
-        members = self.DEFAULTS.copy()
-        members.update(kwargs)
+        if use_default:
+            members = self.DEFAULTS.copy()
+            members.update(kwargs)
+        else:
+            members = kwargs
 
         for name, member in members.items():
             setattr(self, name, member)
@@ -499,8 +502,8 @@ class Model(metaclass=ModelMeta):
         return serialize_data(data, cls.INDEX_MAP)
 
     @classmethod
-    def from_data(cls, data: Dict[str, str]) -> Model_T:
-        self = cls()
+    def from_data(cls, data: Dict[str, str], use_default: bool = False) -> Model_T:
+        self = cls(use_default=use_default)
 
         self.DATA.update(self.deserialize_data(data))
 
@@ -510,13 +513,13 @@ class Model(metaclass=ModelMeta):
         return self.serialize_data(self.DATA)
 
     @classmethod
-    def from_string(cls, string: str, **kwargs) -> Model_T:
+    def from_string(cls, string: str, use_default: bool = False) -> Model_T:
         parser = cls.PARSER
 
         if parser is None:
             raise RuntimeError("Attempt to use parsing when PARSER is undefined.")
 
-        return cls.from_data(parser.parse(string))
+        return cls.from_data(parser.parse(string), use_default=use_default)
 
     def to_string(self) -> str:
         parser = self.PARSER
@@ -527,8 +530,8 @@ class Model(metaclass=ModelMeta):
         return parser.unparse(self.to_data())
 
     @classmethod
-    def from_dict(cls, arg_dict: Dict[str, T]) -> Model_T:
-        return cls(**arg_dict)
+    def from_dict(cls, arg_dict: Dict[str, T], use_default: bool = True) -> Model_T:
+        return cls(use_default=use_default, **arg_dict)
 
     def to_dict(self, allow_missing: bool = False) -> Dict[str, T]:
         return map_index_to_name(self.DATA, self.INDEX_TO_NAME, allow_missing)
