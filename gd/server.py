@@ -2044,7 +2044,7 @@ async def generate_icons(request: web.Request) -> web.Response:
 
     image.save(path)
 
-    request.loop.create_task(delete_after(5, path))
+    request.loop.create_task(delete_after(15, path))
 
     return web.FileResponse(path)
 
@@ -2101,7 +2101,7 @@ async def get_icons(request: web.Request) -> web.Response:
 
     image.save(path)
 
-    request.loop.create_task(delete_after(5, path))
+    request.loop.create_task(delete_after(15, path))
 
     return web.FileResponse(path)
 
