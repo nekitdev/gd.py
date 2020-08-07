@@ -1,5 +1,5 @@
 import ctypes
-import functools
+from functools import partial
 import itertools
 from pathlib import Path
 import struct
@@ -49,8 +49,14 @@ __all__ = (
     "Bool",
     "Double",
     "Float",
+    "Int8",
+    "Int16",
     "Int32",
     "Int64",
+    "UInt8",
+    "UInt16",
+    "UInt32",
+    "UInt64",
     "String",
     "Type",
 )
@@ -117,23 +123,29 @@ class Buffer(metaclass=BufferMeta):
         return self
 
     @classmethod
-    def from_int(cls, integer: int, size: int = 4, order: str = DEFAULT_ORDER) -> Buffer:
+    def from_int(
+        cls,
+        integer: int,
+        size: int = 4,
+        order: str = DEFAULT_ORDER,
+        signed: bool = True,
+    ) -> Buffer:
         """Create buffer from an integer with size and order."""
-        data = integer.to_bytes(size, order)
+        data = integer.to_bytes(size, order, signed=signed)
         return cls(data, order)
 
-    def as_int(self) -> int:
+    def as_int(self, signed: bool = True) -> int:
         """Cast current bytes to an integer."""
-        return int.from_bytes(self.data, self.order)
+        return int.from_bytes(self.data, self.order, signed=signed)
 
     @classmethod
     def from_bool(cls, value: bool, order: str = DEFAULT_ORDER) -> Buffer:
         """Create buffer from a boolean with order."""
-        return cls.from_int(value, size=1, order=order)
+        return cls.from_int(value, size=1, order=order, signed=False)
 
     def as_bool(self) -> bool:
         """Cast current bytes to an integer and return bool indicating if integer is non-zero."""
-        return self.as_int() != 0
+        return self.as_int(signed=False) != 0
 
     @classmethod
     def from_float(cls, number: float, order: str = DEFAULT_ORDER) -> Buffer:
@@ -236,20 +248,60 @@ class Type:
 
 
 Bool = Type(name="Bool", size=1, to_bytes=Buffer.from_bool, from_bytes=Buffer.as_bool)
+
 Double = Type(name="Double", size=8, to_bytes=Buffer.from_double, from_bytes=Buffer.as_double)
 Float = Type(name="Float", size=4, to_bytes=Buffer.from_float, from_bytes=Buffer.as_float)
+
+Int8 = Type(
+    name="Int8",
+    size=1,
+    to_bytes=partial(Buffer.from_int, size=1, signed=True),
+    from_bytes=partial(Buffer.as_int, signed=True),
+)
+Int16 = Type(
+    name="Int16",
+    size=2,
+    to_bytes=partial(Buffer.from_int, size=2, signed=True),
+    from_bytes=partial(Buffer.as_int, signed=True),
+)
 Int32 = Type(
     name="Int32",
     size=4,
-    to_bytes=functools.partial(Buffer.from_int, size=4),
-    from_bytes=Buffer.as_int,
+    to_bytes=partial(Buffer.from_int, size=4, signed=True),
+    from_bytes=partial(Buffer.as_int, signed=True),
 )
 Int64 = Type(
     name="Int64",
     size=8,
-    to_bytes=functools.partial(Buffer.from_int, size=8),
-    from_bytes=Buffer.as_int,
+    to_bytes=partial(Buffer.from_int, size=8, signed=True),
+    from_bytes=partial(Buffer.as_int, signed=True),
 )
+
+UInt8 = Type(
+    name="UInt8",
+    size=1,
+    to_bytes=partial(Buffer.from_int, size=1, signed=False),
+    from_bytes=partial(Buffer.as_int, signed=False),
+)
+UInt16 = Type(
+    name="UInt16",
+    size=2,
+    to_bytes=partial(Buffer.from_int, size=2, signed=False),
+    from_bytes=partial(Buffer.as_int, signed=False),
+)
+UInt32 = Type(
+    name="UInt32",
+    size=4,
+    to_bytes=partial(Buffer.from_int, size=4, signed=False),
+    from_bytes=partial(Buffer.as_int, signed=False),
+)
+UInt64 = Type(
+    name="UInt64",
+    size=8,
+    to_bytes=partial(Buffer.from_int, size=8, signed=False),
+    from_bytes=partial(Buffer.as_int, signed=False),
+)
+
 String = Type(name="String", size=16, to_bytes=Buffer.from_str, from_bytes=Buffer.as_str)
 
 
@@ -282,7 +334,7 @@ class WindowsMemory(MemoryType):
     process_name = "undefined"
     base_address = 0
 
-    def __init__(self, process_name: str, load: bool = False, ptr_type: Type = Int32) -> None:
+    def __init__(self, process_name: str, load: bool = False, ptr_type: Type = UInt32) -> None:
         self.process_name = add_end(process_name, ".exe")
         self.ptr_type = ptr_type
 
@@ -358,9 +410,9 @@ class WindowsMemory(MemoryType):
         """Write ``value`` converted to ``type``, resolving ``*offsets`` to the final address."""
         self.write_bytes(type.to_bytes(value), *offsets, module=module)
 
-    def read_string(self, base: int, offset: int) -> str:
-        """Read string at ``base + offset``, handling its size and where it is allocated."""
-        address, size_address = base + offset, base + offset + String.size
+    def read_string(self, address: int) -> str:
+        """Read string at ``address``, handling its size and where it is allocated."""
+        size_address = address + String.size
 
         size = self.read(self.ptr_type, size_address)
 
@@ -373,6 +425,20 @@ class WindowsMemory(MemoryType):
         address = self.read(self.ptr_type, address)
 
         return String.from_bytes(self.read_at(size, address))
+
+    def write_string(self, string: str, address: int) -> None:
+        size_address = address + String.size
+
+        data = String.to_bytes(string)
+
+        size = len(data)
+
+        self.write(self.ptr_type, size, size_address)
+
+        if size > String.size:
+            address = allocate_memory(self.process_handle, size)
+
+        self.write_at(data, address)
 
     def load(self) -> None:
         """Load memory, fetching process process id, process handle and base address."""
@@ -411,7 +477,7 @@ class WindowsMemory(MemoryType):
 
     def get_scene_value(self) -> int:
         """Get value of current scene enum, which can be converted to :class:`.Scene`."""
-        return self.read_type(Int32, 0x3222D0, 0x1DC)
+        return self.read_type(UInt32, 0x3222D0, 0x1DC)
 
     scene_value = property(get_scene_value)
 
@@ -423,7 +489,7 @@ class WindowsMemory(MemoryType):
 
     def get_resolution_value(self) -> int:
         """Get value of current resolution."""
-        return self.read_type(Int32, 0x3222D0, 0x2E0)
+        return self.read_type(UInt32, 0x3222D0, 0x2E0)
 
     resolution_value = property(get_resolution_value)
 
@@ -450,7 +516,7 @@ class WindowsMemory(MemoryType):
 
     def get_level_id_fast(self) -> int:
         """Quickly read level ID, which is not always accurate for example on *official* levels."""
-        return self.read_type(Int32, 0x3222D0, 0x2A0)
+        return self.read_type(UInt32, 0x3222D0, 0x2A0)
 
     level_id_fast = property(get_level_id_fast)
 
@@ -460,8 +526,7 @@ class WindowsMemory(MemoryType):
 
     def get_user_name(self) -> str:
         """Get name of the user."""
-        base = self.read_type(self.ptr_type, 0x3222D8)
-        return self.read_string(base, 0x108)
+        return self.read_string(self.read_type(self.ptr_type, 0x3222D8, 0x108))
 
     user_name = property(get_user_name)
 
@@ -477,16 +542,17 @@ class WindowsMemory(MemoryType):
 
     def get_object_count(self) -> int:
         """Get level object count."""
-        return self.read_type(Int32, 0x3222D0, 0x168, 0x3A0)
+        return self.read_type(UInt32, 0x3222D0, 0x168, 0x3A0)
 
     object_count = property(get_object_count)
 
     def get_percent(self) -> int:
         """Get current percentage in the level."""
-        base = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x3C0)
-        string = self.read_string(base, 0x12C)
+        string = self.read_string(self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x3C0, 0x12C))
+
         try:
             return int(float(string.rstrip("%")))
+
         except ValueError:
             return 0
 
@@ -562,35 +628,34 @@ class WindowsMemory(MemoryType):
 
     def get_level_id(self) -> int:
         """Get accurate ID of the level."""
-        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0xF8)
+        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0xF8)
 
     level_id = property(get_level_id)
 
     def get_level_name(self) -> str:
         """Get name of the level."""
-        base = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114)
-        return self.read_string(base, 0xFC)
+        return self.read_string(self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114, 0xFC))
 
     level_name = property(get_level_name)
 
     def get_level_creator(self) -> str:
         """Get creator name of the level."""
-        base = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114)
-        return self.read_string(base, 0x144)
+        return self.read_string(self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114, 0x144))
 
     level_creator = property(get_level_creator)
 
     def get_editor_level_name(self) -> str:
         """Get level name while in editor."""
         # oh ~ zmx
-        base = self.read_type(self.ptr_type, 0x3222D0, 0x168, 0x124, 0xEC, 0x110, 0x114)
-        return self.read_string(base, 0xFC)
+        return self.read_string(
+            self.read_type(self.ptr_type, 0x3222D0, 0x168, 0x124, 0xEC, 0x110, 0x114, 0xFC)
+        )
 
     editor_level_name = property(get_editor_level_name)
 
     def get_level_stars(self) -> int:
         """Get amount of stars of the level."""
-        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x2AC)
+        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x2AC)
 
     level_stars = property(get_level_stars)
 
@@ -618,13 +683,13 @@ class WindowsMemory(MemoryType):
 
     def get_level_diff_value(self) -> int:
         """Get difficulty value of the level, e.g. *0*, *10*, etc."""
-        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x1E4)
+        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x1E4)
 
     level_diff_value = property(get_level_diff_value)
 
     def get_level_demon_diff_value(self) -> int:
         """Get demon difficulty value of the level, e.g. *0*, *3*, etc."""
-        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x2A0)
+        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x2A0)
 
     level_demon_diff_value = property(get_level_demon_diff_value)
 
@@ -635,8 +700,8 @@ class WindowsMemory(MemoryType):
         is_demon, is_auto, diff, demon_diff = (  # for speedup reasons
             self.read(Bool, address + 0x29C),
             self.read(Bool, address + 0x2B0),
-            self.read(Int32, address + 0x1E4),
-            self.read(Int32, address + 0x2A0),
+            self.read(UInt32, address + 0x1E4),
+            self.read(UInt32, address + 0x2A0),
         )
 
         return Converter.convert_level_difficulty(
@@ -647,31 +712,31 @@ class WindowsMemory(MemoryType):
 
     def get_attempts(self) -> int:
         """Get amount of total attempts spent on the level."""
-        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x218)
+        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x218)
 
     attempts = property(get_attempts)
 
     def get_jumps(self) -> int:
         """Get amount of total jumps spent on the level."""
-        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x224)
+        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x224)
 
     jumps = property(get_jumps)
 
     def get_normal_percent(self) -> int:
         """Get best record in normal mode."""
-        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x248)
+        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x248)
 
     normal_percent = property(get_normal_percent)
 
     def get_practice_percent(self) -> int:
         """Get best record in practice mode."""
-        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x26C)
+        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x26C)
 
     practice_percent = property(get_practice_percent)
 
     def get_level_type_value(self) -> int:
         """Get value of the level type, which can be converted to :class:`.LevelType`."""
-        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x364)
+        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x364)
 
     level_type_value = property(get_level_type_value)
 
@@ -687,7 +752,7 @@ class WindowsMemory(MemoryType):
 
     def get_song_id(self) -> int:
         """Get ID of the song that is used."""
-        return self.read_type(Int32, 0x3222D0, 0x164, 0x488, 0x1C4)
+        return self.read_type(UInt32, 0x3222D0, 0x164, 0x488, 0x1C4)
 
     song_id = property(get_song_id)
 
