@@ -8,10 +8,10 @@ root = pathlib.Path(__file__).parent
 
 requirements = (root / "requirements.txt").read_text("utf-8").strip().splitlines()
 
-txt = (root / "gd" / "__init__.py").read_text("utf-8")
+text = (root / "gd" / "__init__.py").read_text("utf-8")
 
 try:
-    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', txt, re.MULTILINE).group(1)
+    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', text, re.MULTILINE).group(1)
 
 except AttributeError:
     raise RuntimeError("Failed to find version.") from None

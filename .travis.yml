@@ -9,7 +9,7 @@ install:
   # install cython
   - pip install -U Cython
   # install gd.py with asyncio pytest plugin
-  - pip install -U .[dev]
+  - pip install -U .[image,lint,speedups,test]
   # install coveralls
   - pip install -U coveralls
 
