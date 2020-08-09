@@ -69,22 +69,41 @@ gd.py provides an optional *Cython* extension to speed up its parser functions i
 `gd.api <https://github.com/NeKitDS/gd.py/blob/master/gd/api>`_ folder,
 so make sure that you have *Cython* and *C++ Build Tools* installed.
 
-Development Version
--------------------
+Additional Dependencies
+-----------------------
 
-You can install stable version of gd.py like this:
+There are many dependencies that either extend functionality of the library or are used in its development.
+
+- ``crypto`` is required to decrypt saves on MacOS;
+- ``console`` is needed to run IPython console;
+- ``docs`` are used to build docs;
+- ``image`` installs PIL/Pillow for icon generating;
+- ``lint`` adds formatters and linters to check improve code style;
+- ``speedups`` provides packages to speed the library up;
+- ``test`` is required to run tests and check coverage.
+
+You can install some extras like this:
 
 .. code:: sh
 
-    $ python3 -m pip install gd.py[dev]
+    python -m pip install gd.py[image,speedups]
 
-Or you can install development version from GitHub:
+Or install all of them:
+
+.. code:: sh
+
+    python -m pip install gd.py[all]
+
+Development Version
+-------------------
+
+You can install latest development version from GitHub:
 
 .. code:: sh
 
     $ git clone https://github.com/NeKitDS/gd.py.git
     $ cd gd.py
-    $ python3 -m pip install -U .[dev]
+    $ python3 -m pip install -U .[all]
 
 Quick example
 -------------

@@ -19,9 +19,19 @@ except AttributeError:
 readme = (root / "README.rst").read_text("utf-8")
 
 extras_require = {
-    "dev": ["black", "coverage", "ipython", "flake8", "pycryptodome", "pytest-asyncio"],
+    "all": [],  # extended afterwards
+    "crypto": ["pycryptodome"],
+    "console": ["ipython"],
     "docs": ["sphinx", "sphinx_rtd_theme", "sphinxcontrib_trio", "sphinxcontrib-websupport"],
+    "image": ["Pillow"],
+    "lint": ["black", "flake8"],
+    "speedups": ["lxml"],
+    "test": ["coverage", "pytest-asyncio"],
 }
+
+for requires in extras_require.values():
+    extras_require["all"].extend(requires)
+
 
 NO_EXTENSIONS = bool(os.environ.get("GD_NO_EXTENSIONS"))
 
