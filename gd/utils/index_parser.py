@@ -52,29 +52,27 @@ class IndexParser:
 
     @staticmethod
     def split(
-        string: str, delim: str, *, return_iter: bool = False, discard_empty: bool = False
+        string: str, delim: str, *, return_iter: bool = False
     ) -> Union[Iterator[str], List[str]]:
         if return_iter:
-            split = iter_split(string, delim)
+            return iter_split(string, delim)
 
         else:
-            split = string.split(delim)
-
-        return filter(bool, split) if discard_empty else split
+            return string.split(delim)
 
     def parse(
-        self, string: str, *, return_iter: bool = False, discard_empty: bool = False
+        self, string: str, *, return_iter: bool = False
     ) -> Dict[str, str]:
         if self.map_like:
             return {
                 key: value for key, value in group(
-                    self.split(string, self.delim, return_iter=return_iter, discard_empty=discard_empty)
+                    self.split(string, self.delim, return_iter=return_iter)
                 )
             }
 
         return {
             f"{index}": value for index, value in enumerate(
-                self.split(string, self.delim, return_iter=return_iter, discard_empty=discard_empty)
+                self.split(string, self.delim, return_iter=return_iter)
             )
         }
 
