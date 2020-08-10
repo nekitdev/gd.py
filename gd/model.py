@@ -8,6 +8,8 @@ from gd.model_backend import (
 )
 
 __all__ = (
+    "AbstractUserModel",
+    "LoginIDModel",
     "SongModel",
 )
 
@@ -25,3 +27,18 @@ class SongModel(Model):
     # index 8 does not appear
     index_9: int = IntField(index=9, default=0)
     download_link: str = URLField(index=10, default="")
+
+
+class LoginIDModel(Model):
+    PARSER = IndexParser(",", map_like=False)
+
+    account_id: int = IntField(index=0, default=0)
+    id: int = IntField(index=1, default=0)
+
+
+class AbstractUserModel(Model):
+    PARSER = IndexParser(":", map_like=False)
+
+    id: int = IntField(index=0, default=0)
+    name: str = StrField(index=1, default="unknown")
+    account_id: int = IntField(index=2, default=0)
