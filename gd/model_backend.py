@@ -52,6 +52,7 @@ ANNOTATIONS = "__annotations__"
 DATA = "DATA"
 
 Model_T = TypeVar("Model")
+ModelList_T = TypeVar("ModelList")
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -154,6 +155,14 @@ def de_enum(string: str, enum: Type[Enum], de_func: Callable[[str], T]) -> Enum:
 
 def ser_enum(enum_member: Enum, ser_func: Callable[[T], str]) -> str:
     return ser_func(enum_member.value)
+
+
+def de_model(string: str, model: Type[Model_T]) -> Model_T:
+    return model.from_string(string)
+
+
+def ser_model(model: Model_T) -> str:
+    return model.to_string()
 
 
 def de_base64_str(string: str) -> str:
@@ -289,6 +298,24 @@ class IntField(Field):
     ) -> None:
         super().__init__(
             index=index, de=de_int, ser=ser_int, name=name, type=int, default=default
+        )
+
+
+class ModelField(Field):
+    def __init__(
+        self,
+        index: Union[int, str],
+        model: Type[Model_T],
+        name: Optional[str] = None,
+        default: Union[T, NULL] = null,
+    ) -> None:
+        super().__init__(
+            index=index,
+            de=partial(de_model, model=model),
+            ser=ser_model,
+            name=name,
+            type=model,
+            default=default,
         )
 
 
@@ -535,3 +562,32 @@ class Model(metaclass=ModelMeta):
 
     def to_dict(self, allow_missing: bool = False) -> Dict[str, T]:
         return map_index_to_name(self.DATA, self.INDEX_TO_NAME, allow_missing)
+
+
+class ModelListMeta(type):
+    def __getitem__(cls, model_type: Type[Model]) -> Callable[..., ModelList_T]:
+        return partial(cls, model_type=model_type)
+
+
+class ModelList(metaclass=ModelListMeta):
+    def __init__(self, delim: str, model_type: Type[Model]) -> None:
+        self._model_type = model_type
+        self._delim = delim
+
+    def __repr__(self) -> str:
+        info = {
+            "model_type": self._model_type.__name__,
+            "delim": repr(self._delim),
+        }
+        return make_repr(self, info)
+
+    def from_string(self, string: str) -> List[Model]:
+        return list(map(
+            self._model_type.from_string,
+            filter(bool, string.split(self._delim)),
+        ))
+
+    def to_string(self, models: List[Model]) -> str:
+        return self._delim.join(map(
+            self._model_type.to_string, models
+        ))
