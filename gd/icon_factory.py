@@ -193,6 +193,7 @@ class PlistImageSheet:
             self.plist = plistlib.load(plist_file, dict_type=JSDict).get("frames", {})
 
     def load(self) -> None:
+        self.image.load()
         self.cache = [name for name in self.plist if is_interesting(name)]
 
     def get_image_info(self, image_name: str, strict: bool = True) -> Dict[str, Any]:
