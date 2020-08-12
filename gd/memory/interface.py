@@ -47,8 +47,8 @@ __all__ = (
     "Buffer",
     "get_memory",
     "Bool",
-    "Double",
-    "Float",
+    "Float32",
+    "Float64",
     "Int8",
     "Int16",
     "Int32",
@@ -249,8 +249,8 @@ class Type:
 
 Bool = Type(name="Bool", size=1, to_bytes=Buffer.from_bool, from_bytes=Buffer.as_bool)
 
-Double = Type(name="Double", size=8, to_bytes=Buffer.from_double, from_bytes=Buffer.as_double)
-Float = Type(name="Float", size=4, to_bytes=Buffer.from_float, from_bytes=Buffer.as_float)
+Float32 = Type(name="Float32", size=4, to_bytes=Buffer.from_float, from_bytes=Buffer.as_float)
+Float64 = Type(name="Float64", size=8, to_bytes=Buffer.from_double, from_bytes=Buffer.as_double)
 
 Int8 = Type(
     name="Int8",
@@ -410,8 +410,42 @@ class WindowsMemory(MemoryType):
         """Write ``value`` converted to ``type``, resolving ``*offsets`` to the final address."""
         self.write_bytes(type.to_bytes(value), *offsets, module=module)
 
-    def read_string(self, address: int) -> str:
-        """Read string at ``address``, handling its size and where it is allocated."""
+    def read_bool(self, *offsets) -> bool:
+        return self.read_type(Bool, *offsets)
+
+    def read_float32(self, *offsets) -> float:
+        return self.read_type(Float32, *offsets)
+
+    def read_float64(self, *offsets) -> float:
+        return self.read_type(Float64, *offsets)
+
+    def read_int8(self, *offsets) -> int:
+        return self.read_type(Int8, *offsets)
+
+    def read_int16(self, *offsets) -> int:
+        return self.read_type(Int16, *offsets)
+
+    def read_int32(self, *offsets) -> int:
+        return self.read_type(Int32, *offsets)
+
+    def read_int64(self, *offsets) -> int:
+        return self.read_type(Int64, *offsets)
+
+    def read_uint8(self, *offsets) -> int:
+        return self.read_type(UInt8, *offsets)
+
+    def read_uint16(self, *offsets) -> int:
+        return self.read_type(UInt16, *offsets)
+
+    def read_uint32(self, *offsets) -> int:
+        return self.read_type(UInt32, *offsets)
+
+    def read_uint64(self, *offsets) -> int:
+        return self.read_type(UInt64, *offsets)
+
+    def read_string(self, *offsets) -> str:
+        """Read string resolving ``*offsets``, handling its size and where it is allocated."""
+        address = self.resolve_layers(*offsets)
         size_address = address + String.size
 
         size = self.read(self.ptr_type, size_address)
@@ -426,10 +460,44 @@ class WindowsMemory(MemoryType):
 
         return String.from_bytes(self.read_at(size, address))
 
-    def write_string(self, string: str, address: int) -> None:
+    def write_bool(self, value: bool, *offsets) -> None:
+        self.write_type(Bool, value, *offsets)
+
+    def write_float32(self, value: float, *offsets) -> None:
+        self.write_type(Float32, value, *offsets)
+
+    def write_float64(self, value: float, *offsets) -> None:
+        self.writr_type(Float64, value, *offsets)
+
+    def write_int8(self, value: int, *offsets) -> None:
+        self.write_type(Int8, value, *offsets)
+
+    def write_int16(self, value: int, *offsets) -> None:
+        self.write_type(Int16, value, *offsets)
+
+    def write_int32(self, value: int, *offsets) -> None:
+        self.write_type(Int32, *offsets)
+
+    def write_int64(self, value: int, *offsets) -> None:
+        self.write_type(Int64, value, *offsets)
+
+    def write_uint8(self, value: int, *offsets) -> None:
+        self.write_type(UInt8, value, *offsets)
+
+    def write_uint16(self, value: int, *offsets) -> None:
+        self.write_type(UInt16, value, *offsets)
+
+    def write_uint32(self, value: int, *offsets) -> None:
+        self.write_type(UInt32, value, *offsets)
+
+    def write_uint64(self, value: int, *offsets) -> None:
+        self.write_type(UInt64, value, *offsets)
+
+    def write_string(self, value: str, *offsets) -> None:
+        address = self.resolve_layers(*offsets)
         size_address = address + String.size
 
-        data = String.to_bytes(string)
+        data = String.to_bytes(value)
 
         size = len(data)
 
@@ -477,7 +545,7 @@ class WindowsMemory(MemoryType):
 
     def get_scene_value(self) -> int:
         """Get value of current scene enum, which can be converted to :class:`.Scene`."""
-        return self.read_type(UInt32, 0x3222D0, 0x1DC)
+        return self.read_uint32(0x3222D0, 0x1DC)
 
     scene_value = property(get_scene_value)
 
@@ -489,7 +557,7 @@ class WindowsMemory(MemoryType):
 
     def get_resolution_value(self) -> int:
         """Get value of current resolution."""
-        return self.read_type(UInt32, 0x3222D0, 0x2E0)
+        return self.read_uint32(0x3222D0, 0x2E0)
 
     resolution_value = property(get_resolution_value)
 
@@ -507,7 +575,7 @@ class WindowsMemory(MemoryType):
     def get_gamemode(self) -> Gamemode:
         try:
             value = self.get_gamemode_state().index(True) + 1
-        except ValueError:  # not in list
+        except ValueError:  # not in the list
             value = 0
 
         return Gamemode.from_name(GAMEMODE_STATE[value])
@@ -516,39 +584,39 @@ class WindowsMemory(MemoryType):
 
     def get_level_id_fast(self) -> int:
         """Quickly read level ID, which is not always accurate for example on *official* levels."""
-        return self.read_type(UInt32, 0x3222D0, 0x2A0)
+        return self.read_uint32(0x3222D0, 0x2A0)
 
     level_id_fast = property(get_level_id_fast)
 
     def is_in_editor(self) -> bool:
         """Check if the user is currently in editor."""
-        return self.read_type(Bool, 0x3222D0, 0x168)
+        return self.read_bool(0x3222D0, 0x168)
 
     def get_user_name(self) -> str:
         """Get name of the user."""
-        return self.read_string(self.read_type(self.ptr_type, 0x3222D8, 0x108))
+        return self.read_string(0x3222D8, 0x108)
 
     user_name = property(get_user_name)
 
     def is_dead(self) -> bool:
         """Check if the player is dead in the level."""
-        return self.read_type(Bool, 0x3222D0, 0x164, 0x39C)
+        return self.read_bool(0x3222D0, 0x164, 0x39C)
 
     def get_level_length(self) -> float:
         """Get length of the level in units."""
-        return self.read_type(Float, 0x3222D0, 0x164, 0x3B4)
+        return self.read_float32(0x3222D0, 0x164, 0x3B4)
 
     level_length = property(get_level_length)
 
     def get_object_count(self) -> int:
         """Get level object count."""
-        return self.read_type(UInt32, 0x3222D0, 0x168, 0x3A0)
+        return self.read_uint32(0x3222D0, 0x168, 0x3A0)
 
     object_count = property(get_object_count)
 
     def get_percent(self) -> int:
         """Get current percentage in the level."""
-        string = self.read_string(self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x3C0, 0x12C))
+        string = self.read_string(0x3222D0, 0x164, 0x3C0, 0x12C)
 
         try:
             return int(float(string.rstrip("%")))
@@ -560,31 +628,31 @@ class WindowsMemory(MemoryType):
 
     def get_x_pos(self) -> float:
         """Get X position of the player."""
-        return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x67C)
+        return self.read_float32(0x3222D0, 0x164, 0x224, 0x67C)
 
     def set_x_pos(self, pos: float) -> None:
         """Set X position of the player."""
-        self.write_type(Float, pos, 0x3222D0, 0x164, 0x224, 0x67C)
+        self.write_float32(pos, 0x3222D0, 0x164, 0x224, 0x67C)
 
     x_pos = property(get_x_pos, set_x_pos)
 
     def get_y_pos(self) -> float:
         """Get Y position of the player."""
-        return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x680)
+        return self.read_float32(0x3222D0, 0x164, 0x224, 0x680)
 
     def set_y_pos(self, pos: float) -> None:
         """Set Y position of the player."""
-        self.write_type(Float, pos, 0x3222D0, 0x164, 0x224, 0x680)
+        self.write_float32(pos, 0x3222D0, 0x164, 0x224, 0x680)
 
     y_pos = property(get_y_pos, set_y_pos)
 
     def get_speed_value(self) -> float:
         """Get value of the speed enum, which can be converted to :class:`gd.api.SpeedConstant`."""
-        return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x648)
+        return self.read_float32(0x3222D0, 0x164, 0x224, 0x648)
 
     def set_speed_value(self, value: float) -> None:
         """Set value of the speed."""
-        self.write_type(Float, value, 0x3222D0, 0x164, 0x224, 0x648)
+        self.write_float32(value, 0x3222D0, 0x164, 0x224, 0x648)
 
     speed_value = property(get_speed_value, set_speed_value)
 
@@ -603,65 +671,63 @@ class WindowsMemory(MemoryType):
 
     def get_size(self) -> float:
         """Get hitbox size of the player icon."""
-        return self.read_type(Float, 0x3222D0, 0x164, 0x224, 0x644)
+        return self.read_float32(0x3222D0, 0x164, 0x224, 0x644)
 
     def set_size(self, size: float) -> None:
         """Set hitbox size of the player icon."""
-        self.write_type(Float, size, 0x3222D0, 0x164, 0x224, 0x644)
+        self.write_float32(size, 0x3222D0, 0x164, 0x224, 0x644)
 
     size = property(get_size, set_size)
 
     def is_practice_mode(self) -> bool:
         """Check whether player is in Practice Mode."""
-        return self.read_type(Bool, 0x3222D0, 0x164, 0x495)
+        return self.read_bool(0x3222D0, 0x164, 0x495)
 
     def get_gravity(self) -> float:
         """Get value of gravity in the level. Affects cube only."""
-        return self.read_type(Float, 0x1E9050, 0)
+        return self.read_float32(0x1E9050, 0)
 
     def set_gravity(self, gravity: float) -> None:
         """Set value of gravity in the level. Affects cube only."""
         self.redirect_memory(Float.size, 0x1E9050)
-        self.write_type(Float, gravity, 0x1E9050, 0)
+        self.write_float32(gravity, 0x1E9050, 0)
 
     gravity = property(get_gravity, set_gravity)
 
     def get_level_id(self) -> int:
         """Get accurate ID of the level."""
-        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0xF8)
+        return self.read_uint32(0x3222D0, 0x164, 0x22C, 0x114, 0xF8)
 
     level_id = property(get_level_id)
 
     def get_level_name(self) -> str:
         """Get name of the level."""
-        return self.read_string(self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114, 0xFC))
+        return self.read_string(0x3222D0, 0x164, 0x22C, 0x114, 0xFC)
 
     level_name = property(get_level_name)
 
     def get_level_creator(self) -> str:
         """Get creator name of the level."""
-        return self.read_string(self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114, 0x144))
+        return self.read_string(0x3222D0, 0x164, 0x22C, 0x114, 0x144)
 
     level_creator = property(get_level_creator)
 
     def get_editor_level_name(self) -> str:
         """Get level name while in editor."""
         # oh ~ zmx
-        return self.read_string(
-            self.read_type(self.ptr_type, 0x3222D0, 0x168, 0x124, 0xEC, 0x110, 0x114, 0xFC)
-        )
+        return self.read_string(0x3222D0, 0x168, 0x124, 0xEC, 0x110, 0x114, 0xFC)
 
     editor_level_name = property(get_editor_level_name)
 
     def get_level_stars(self) -> int:
         """Get amount of stars of the level."""
-        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x2AC)
+        return self.read_uint32(0x3222D0, 0x164, 0x22C, 0x114, 0x2AC)
 
     level_stars = property(get_level_stars)
 
     def get_level_score(self) -> int:
         """Get featured score of the level."""
-        return self.read_type(Int32, 0x3222D0, 0x164, 0x22C, 0x114, 0x27C)
+        return self.read_int32(0x3222D0, 0x164, 0x22C, 0x114, 0x27C)
 
     level_score = property(get_level_score)
 
@@ -671,72 +737,72 @@ class WindowsMemory(MemoryType):
 
     def is_level_epic(self) -> bool:
         """Check whether the level is epic."""
-        return self.read_type(Bool, 0x3222D0, 0x164, 0x22C, 0x114, 0x280)
+        return self.read_bool(0x3222D0, 0x164, 0x22C, 0x114, 0x280)
 
     def is_level_demon(self) -> bool:
         """Fetch whether the level is demon."""
-        return self.read_type(Bool, 0x3222D0, 0x164, 0x22C, 0x114, 0x29C)
+        return self.read_bool(0x3222D0, 0x164, 0x22C, 0x114, 0x29C)
 
     def is_level_auto(self) -> bool:
         """Fetch whether the level is auto."""
-        return self.read_type(Bool, 0x3222D0, 0x164, 0x22C, 0x114, 0x2B0)
+        return self.read_bool(0x3222D0, 0x164, 0x22C, 0x114, 0x2B0)
 
-    def get_level_diff_value(self) -> int:
+    def get_level_difficulty_value(self) -> int:
         """Get difficulty value of the level, e.g. *0*, *10*, etc."""
-        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x1E4)
+        return self.read_uint32(0x3222D0, 0x164, 0x22C, 0x114, 0x1E4)
 
-    level_diff_value = property(get_level_diff_value)
+    level_difficulty_value = property(get_level_difficulty_value)
 
-    def get_level_demon_diff_value(self) -> int:
+    def get_level_demon_difficulty_value(self) -> int:
         """Get demon difficulty value of the level, e.g. *0*, *3*, etc."""
-        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x2A0)
+        return self.read_uint32(0x3222D0, 0x164, 0x22C, 0x114, 0x2A0)
 
-    level_demon_diff_value = property(get_level_demon_diff_value)
+    level_demon_difficulty_value = property(get_level_demon_difficulty_value)
 
     def get_level_difficulty(self) -> Union[LevelDifficulty, DemonDifficulty]:
         """Compute actual level difficulty and return the enum."""
         address = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114)
 
-        is_demon, is_auto, diff, demon_diff = (  # for speedup reasons
-            self.read(Bool, address + 0x29C),
-            self.read(Bool, address + 0x2B0),
-            self.read(UInt32, address + 0x1E4),
-            self.read(UInt32, address + 0x2A0),
+        is_demon, is_auto, difficulty, demon_difficulty = (
+            self.read_bool(address + 0x29C),
+            self.read_bool(address + 0x2B0),
+            self.read_uint32(address + 0x1E4),
+            self.read_uint32(address + 0x2A0),
         )
 
         return Converter.convert_level_difficulty(
-            diff=diff, demon_diff=demon_diff, is_demon=is_demon, is_auto=is_auto
+            difficulty, demon_difficulty, is_demon, is_auto
         )
 
     level_difficulty = property(get_level_difficulty)
 
     def get_attempts(self) -> int:
         """Get amount of total attempts spent on the level."""
-        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x218)
+        return self.read_uint32(0x3222D0, 0x164, 0x22C, 0x114, 0x218)
 
     attempts = property(get_attempts)
 
     def get_jumps(self) -> int:
         """Get amount of total jumps spent on the level."""
-        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x224)
+        return self.read_uint32(0x3222D0, 0x164, 0x22C, 0x114, 0x224)
 
     jumps = property(get_jumps)
 
     def get_normal_percent(self) -> int:
         """Get best record in normal mode."""
-        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x248)
+        return self.read_uint32(0x3222D0, 0x164, 0x22C, 0x114, 0x248)
 
     normal_percent = property(get_normal_percent)
 
     def get_practice_percent(self) -> int:
         """Get best record in practice mode."""
-        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x26C)
+        return self.read_uint32(0x3222D0, 0x164, 0x22C, 0x114, 0x26C)
 
     practice_percent = property(get_practice_percent)
 
     def get_level_type_value(self) -> int:
         """Get value of the level type, which can be converted to :class:`.LevelType`."""
-        return self.read_type(UInt32, 0x3222D0, 0x164, 0x22C, 0x114, 0x364)
+        return self.read_uint32(0x3222D0, 0x164, 0x22C, 0x114, 0x364)
 
     level_type_value = property(get_level_type_value)
 
@@ -748,21 +814,21 @@ class WindowsMemory(MemoryType):
 
     def is_in_level(self) -> bool:
         """Check whether the user is currently playing a level."""
-        return self.read_type(Bool, 0x3222D0, 0x164, 0x22C, 0x114)
+        return self.read_bool(0x3222D0, 0x164, 0x22C, 0x114)
 
     def get_song_id(self) -> int:
         """Get ID of the song that is used."""
-        return self.read_type(UInt32, 0x3222D0, 0x164, 0x488, 0x1C4)
+        return self.read_uint32(0x3222D0, 0x164, 0x488, 0x1C4)
 
     song_id = property(get_song_id)
 
     def get_attempt(self) -> int:
         """Get current attempt number."""
-        return self.read_type(Int32, 0x3222D0, 0x164, 0x4A8)
+        return self.read_int32(0x3222D0, 0x164, 0x4A8)
 
     def set_attempt(self, attempt: int) -> None:
         """Set current attempt to ``attempt``."""
-        self.write_type(Int32, attempt, 0x3222D0, 0x164, 0x4A8)
+        self.write_int32(attempt, 0x3222D0, 0x164, 0x4A8)
 
     attempt = property(get_attempt, set_attempt)
 

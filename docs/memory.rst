@@ -36,7 +36,7 @@ Types
 -----
 
 There are several simple types gd.py support for reading/writing memory:
-*Bool*, *Int32*, *Int64*, *Float*, *Double*, *String*.
+*Bool*, *Int32*, *Int64*, *Float32*, *Float64*, *String*.
 
 They can be accessed like so:
 
@@ -46,7 +46,7 @@ They can be accessed like so:
 
     print(gd.memory.Int32)
     # or
-    print(gd.memory.Type.Double)
+    print(gd.memory.Type.Float64)
 
 Enums
 -----
