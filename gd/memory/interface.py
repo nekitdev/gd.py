@@ -764,10 +764,10 @@ class WindowsMemory(MemoryType):
         address = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114)
 
         is_demon, is_auto, difficulty, demon_difficulty = (
-            self.read_bool(address + 0x29C),
-            self.read_bool(address + 0x2B0),
-            self.read_uint32(address + 0x1E4),
-            self.read_uint32(address + 0x2A0),
+            self.read(Bool, address + 0x29C),
+            self.read(Bool, address + 0x2B0),
+            self.read(UInt32, address + 0x1E4),
+            self.read(UInt32, address + 0x2A0),
         )
 
         return Converter.convert_level_difficulty(
