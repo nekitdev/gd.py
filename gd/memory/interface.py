@@ -689,7 +689,7 @@ class WindowsMemory(MemoryType):
 
     def set_gravity(self, gravity: float) -> None:
         """Set value of gravity in the level. Affects cube only."""
-        self.redirect_memory(Float.size, 0x1E9050)
+        self.redirect_memory(Float32.size, 0x1E9050)
         self.write_float32(gravity, 0x1E9050, 0)
 
     gravity = property(get_gravity, set_gravity)
