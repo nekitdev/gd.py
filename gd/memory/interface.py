@@ -614,35 +614,35 @@ class WindowsMemory(MemoryType):
 
     object_count = property(get_object_count)
 
-    def get_percent(self) -> int:
+    def get_percent(self, *, final: float = 100.0) -> float:
         """Get current percentage in the level."""
-        string = self.read_string(0x3222D0, 0x164, 0x3C0, 0x12C)
-
         try:
-            return int(float(string.rstrip("%")))
+            percent = self.get_x_pos() / self.get_level_length() * final
 
-        except ValueError:
-            return 0
+        except Exception:  # noqa
+            percent = 0.0
+
+        return percent if percent < final else final
 
     percent = property(get_percent)
 
     def get_x_pos(self) -> float:
         """Get X position of the player."""
-        return self.read_float32(0x3222D0, 0x164, 0x224, 0x67C)
+        return self.read_float32(0x3222D0, 0x164, 0x224, 0x34)
 
     def set_x_pos(self, pos: float) -> None:
         """Set X position of the player."""
-        self.write_float32(pos, 0x3222D0, 0x164, 0x224, 0x67C)
+        self.write_float32(pos, 0x3222D0, 0x164, 0x224, 0x34)
 
     x_pos = property(get_x_pos, set_x_pos)
 
     def get_y_pos(self) -> float:
         """Get Y position of the player."""
-        return self.read_float32(0x3222D0, 0x164, 0x224, 0x680)
+        return self.read_float32(0x3222D0, 0x164, 0x224, 0x38)
 
     def set_y_pos(self, pos: float) -> None:
         """Set Y position of the player."""
-        self.write_float32(pos, 0x3222D0, 0x164, 0x224, 0x680)
+        self.write_float32(pos, 0x3222D0, 0x164, 0x224, 0x38)
 
     y_pos = property(get_y_pos, set_y_pos)
 
@@ -675,6 +675,7 @@ class WindowsMemory(MemoryType):
 
     def set_size(self, size: float) -> None:
         """Set hitbox size of the player icon."""
+        self.write_float32(size, 0x3222D0, 0x164, 0x224, 0x35C)
         self.write_float32(size, 0x3222D0, 0x164, 0x224, 0x644)
 
     size = property(get_size, set_size)

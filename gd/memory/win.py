@@ -63,12 +63,16 @@ class ModuleEntry32(Structure):
         self.size = ctypes.sizeof(self)
 
     @property
-    def base_address(self):
+    def base_address(self) -> int:
         return ctypes.addressof(self.module_base_address.contents)
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.module_name.decode("utf-8")
+
+    @property
+    def path(self) -> str:
+        return self.exe_path.decode("utf-8")
 
 
 class SecurityAttributes(Structure):
