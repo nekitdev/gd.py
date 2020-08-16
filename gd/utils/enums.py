@@ -80,14 +80,15 @@ class StatusLevel(Enum):
 class LevelLength(Enum):
     """An enumeration for level lengths."""
 
-    UNKNOWN = -1
-    NA = UNKNOWN
+    NA = -1
     TINY = 0
     SHORT = 1
     MEDIUM = 2
     LONG = 3
     EXTRA_LONG = 4
     XL = EXTRA_LONG
+
+    UNKNOWN = NA
 
     @classmethod
     def enum_missing(cls, value: int) -> Enum:
@@ -101,8 +102,7 @@ class LevelLength(Enum):
 class LevelDifficulty(Enum):
     """An enumeration for level difficulties."""
 
-    UNKNOWN = -1
-    NA = UNKNOWN
+    NA = -1
     AUTO = -3
     EASY = 1
     NORMAL = 2
@@ -111,17 +111,20 @@ class LevelDifficulty(Enum):
     INSANE = 5
     DEMON = -2
 
+    UNKNOWN = NA
+
 
 class DemonDifficulty(Enum):
     """An enumeration for demon difficulties."""
 
-    UNKNOWN = -1
-    NA = UNKNOWN
+    NA = -1
     EASY_DEMON = 1
     MEDIUM_DEMON = 2
     HARD_DEMON = 3
     INSANE_DEMON = 4
     EXTREME_DEMON = 5
+
+    UNKNOWN = NA
 
 
 class TimelyType(Enum):
