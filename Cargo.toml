@@ -1,0 +1,21 @@
+[package]
+name = "_gd"
+version = "0.1.0"
+edition = "2018"
+include = ["src/*"]
+
+[lib]
+name = "_gd"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+
+[dependencies.flate2]
+version = ">=1.0.14"
+features = ["zlib"]
+default-features = false
+
+[dependencies.pyo3]
+version = ">=0.8.5"
+features = ["extension-module"]

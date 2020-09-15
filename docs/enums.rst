@@ -3,65 +3,112 @@
 Enums
 =====
 
-This library has a bunch of enums, listed below.
+This library has a lot of enums, listed below.
+
+.. autoclass:: Key
+
+.. autoclass:: Salt
+
+.. autoclass:: Secret
+
+.. autoclass:: AccountURLType
 
 .. autoclass:: IconType
-    :members:
 
-.. autoclass:: MessagePolicyType
-    :members:
+.. autoclass:: MessageState
 
-.. autoclass:: CommentPolicyType
-    :members:
+.. autoclass:: CommentState
 
-.. autoclass:: FriendRequestPolicyType
-    :members:
+.. autoclass:: FriendRequestState
 
-.. autoclass:: StatusLevel
-    :members:
+.. autoclass:: Role
 
 .. autoclass:: LevelLength
-    :members:
 
 .. autoclass:: LevelDifficulty
-    :members:
 
 .. autoclass:: DemonDifficulty
-    :members:
 
 .. autoclass:: TimelyType
-    :members:
 
 .. autoclass:: CommentType
-    :members:
 
-.. autoclass:: MessageOrRequestType
-    :members:
+.. autoclass:: MessageType
+
+.. autoclass:: FriendRequestType
 
 .. autoclass:: CommentStrategy
-    :members:
 
 .. autoclass:: LeaderboardStrategy
-    :members:
 
 .. autoclass:: LevelLeaderboardStrategy
-    :members:
+
+.. autoclass:: LikeType
 
 .. autoclass:: SearchStrategy
-    :members:
 
-.. autoclass:: GauntletEnum
-    :members:
+.. autoclass:: GauntletID
 
 .. autoclass:: RewardType
-    :members:
 
 .. autoclass:: ShardType
-    :members:
 
 .. autoclass:: QuestType
-    :members:
 
-.. autoclass:: AccountError
-    :members:
+.. autoclass:: UserListType
 
+.. autoclass:: Scene
+
+.. autoclass:: PlayerColor
+
+.. autoclass:: CustomParticleGrouping
+
+.. autoclass:: CustomParticleProperty
+
+.. autoclass:: Easing
+
+.. autoclass:: EasingMethod
+
+.. autoclass:: PulseMode
+
+.. autoclass:: InstantCountComparison
+
+.. autoclass:: OrbType
+
+.. autoclass:: PadType
+
+.. autoclass:: PortalType
+
+.. autoclass:: SpeedChange
+
+.. autoclass:: PickupItemMode
+
+.. autoclass:: PulseType
+
+.. autoclass:: SpecialBlockType
+
+.. autoclass:: SpecialColorID
+
+.. autoclass:: TargetPosCoordinates
+
+.. autoclass:: TouchToggleMode
+
+.. autoclass:: TriggerType
+
+.. autoclass:: ZLayer
+
+.. autoclass:: MiscType
+
+.. autoclass:: Gamemode
+
+.. autoclass:: LevelType
+
+.. autoclass:: Speed
+
+.. autoclass:: SpeedConstant
+
+.. autoclass:: SpeedMagic
+
+.. autoclass:: GuidelinesColor
+
+.. autoclass:: InternalType

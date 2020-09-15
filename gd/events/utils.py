@@ -3,16 +3,16 @@ import atexit
 import threading
 
 from gd.events.listener import (
-    run as run_loop,
+    run_loop,
     get_loop,
     shutdown_loop,
     all_listeners,
     set_loop,
 )
 
-from gd.typing import Optional
+from gd.typing import List, Optional
 
-from gd.utils import tasks
+from gd import tasks
 
 __all__ = (
     "attach_to_loop",
@@ -27,9 +27,9 @@ __all__ = (
 
 # these are used internally
 _current_thread = 1
-_loops = []
-_tasks = []
-_threads = []
+_loops: List[asyncio.AbstractEventLoop] = []
+_tasks: List[tasks.Loop] = []
+_threads: List[threading.Thread] = []
 
 
 def cancel_tasks() -> None:
@@ -96,7 +96,7 @@ def enable(loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
 
         task.start()
 
-    loop.gd_event_running = True
+    loop.gd_event_running = True  # type: ignore
 
 
 def attach_to_loop(loop: asyncio.AbstractEventLoop) -> None:

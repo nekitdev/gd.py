@@ -31,16 +31,12 @@ Documentation Contents
     exceptions
     enums
     events
+    advanced
     console
-    dev
 
 Additional Information
 -----------------------
 
-.. toctree::
-    :maxdepth: 2
-    faq
-
 If you still can't find what you're looking for, try in this page:
 
-* :ref:`genindex`
+- :ref:`genindex`

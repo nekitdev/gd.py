@@ -5,24 +5,30 @@ import re
 
 from attr import attrib, dataclass
 
-from gd.colors import Color
+from gd.color import Color, COLOR_1, COLOR_2
+from gd.enums import IconType
 from gd.logging import get_logger
-from gd.typing import Any, Dict, Iterator, List, Sequence, Tuple, Union, ref
-from gd.utils.enums import IconType
-from gd.utils.text_tools import JSDict
+from gd.typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 log = get_logger(__name__)
 
 try:
-    from PIL import Image, ImageOps
-    from PIL.Image import Image as ImageType
+    import PIL.Image  # type: ignore
+    import PIL.ImageOps  # type: ignore
+
 except ImportError:
-    ImageType = ref("PIL.Image.Image")
     log.warning("Failed to load Pillow/PIL. Icon Factory will not be supported.")
 
+__all__ = (
+    "Sprite",
+    "PlistImageSheet",
+    "IconFactory",
+    "connect_images",
+    "factory",
+    "to_bytes",
+)
+
 ALPHA = (0, 0, 0, 0)
-COLOR_1 = Color(0x00FF00)
-COLOR_2 = Color(0x00FFFF)
 DARK = Color(0x808080)
 
 ASSETS = Path(__file__).parent / "assets"
@@ -46,8 +52,6 @@ ROBOT_LEG = re.compile(r"robot_[0-9]+_(02|03|04)_.*")
 SPIDER_LEG = re.compile(r"spider_[0-9]+_02_.*")
 
 PathLike = Union[str, Path]
-PlistImageSheetType = ref("gd.icon_factory.PlistImageSheet")
-SpriteType = ref("gd.icon_factory.Sprite")
 remove_braces = str.maketrans({"{": "", "}": ""})
 
 
@@ -140,7 +144,7 @@ class Sprite:
     source_size: Size = attrib()
     rectangle: Rectangle = attrib()
     rotated: bool = attrib()
-    sheet: PlistImageSheetType = attrib()
+    sheet: "PlistImageSheet" = attrib()
     copy_level: int = attrib(default=0)
 
     def get_name(self) -> str:
@@ -149,7 +153,7 @@ class Sprite:
     def is_rotated(self) -> bool:
         return self.rotated
 
-    def copy(self) -> SpriteType:
+    def copy(self) -> "Sprite":
         return self.__class__(
             name=self.name,
             offset=self.offset,
@@ -185,12 +189,12 @@ class PlistImageSheet:
 
         self.cache: List[str] = []
 
-        self.image = Image.open(self.sheet_path)
+        self.image = PIL.Image.open(self.sheet_path)
 
         self.name = self.sheet_path.stem  # last part, without suffix
 
         with open(self.plist_path, "rb") as plist_file:
-            self.plist = plistlib.load(plist_file, dict_type=JSDict).get("frames", {})
+            self.plist = plistlib.load(plist_file).get("frames", {})
 
     def load(self) -> None:
         self.image.load()
@@ -204,16 +208,16 @@ class PlistImageSheet:
             if strict:
                 raise LookupError(f"Could not find image by name: {image_name!r}.") from None
 
-            return JSDict()
+            return {}
 
     def get_sprite(self, image_name: str) -> Sprite:
         info = self.get_image_info(image_name)
 
-        x, y, rect_width, rect_height = c_int_array_str_parse(info.get("texture_rect"))
-        offset_x, offset_y = c_int_array_str_parse(info.get("sprite_offset"))
-        width, height = c_int_array_str_parse(info.get("sprite_size"))
-        source_width, source_height = c_int_array_str_parse(info.get("sprite_source_size"))
-        is_rotated = info.get("texture_rotated", False)
+        x, y, rect_width, rect_height = c_int_array_str_parse(info["textureRect"])
+        offset_x, offset_y = c_int_array_str_parse(info["spriteOffset"])
+        width, height = c_int_array_str_parse(info["spriteSize"])
+        source_width, source_height = c_int_array_str_parse(info["spriteSourceSize"])
+        is_rotated = info["textureRotated"]
 
         return Sprite(
             name=image_name,
@@ -233,9 +237,14 @@ class IconFactory:
         self.loaded = False
 
     def load(self) -> None:
-        self.icon_sheet.load()
-        self.glow_sheet.load()
         self.loaded = True
+
+        try:
+            self.icon_sheet.load()
+            self.glow_sheet.load()
+        except Exception:  # noqa
+            self.loaded = False
+            raise
 
     def is_loaded(self) -> bool:
         return self.loaded
@@ -270,13 +279,13 @@ class IconFactory:
         color_2: Color = COLOR_2,
         glow_outline: bool = False,
         error_on_not_found: bool = False,
-    ) -> ImageType:
+    ) -> "PIL.Image.Image":
         if not self.is_loaded():
             self.load()
 
-        result = Image.new("RGBA", (250, 250), ALPHA)
+        result = PIL.Image.new("RGBA", (250, 250), ALPHA)
 
-        icon = Icon(type=icon_type, id=icon_id)
+        icon = Icon(type=IconType.from_value(icon_type), id=icon_id)
         start = icon.get_start()
 
         sprites = [
@@ -321,7 +330,7 @@ class IconFactory:
             image = sprite.sheet.image.crop((x, y, x + real_width, y + real_height))
 
             if is_rotated:
-                image = image.rotate(90, resample=Image.BICUBIC, expand=True)
+                image = image.rotate(90, resample=PIL.Image.BICUBIC, expand=True)
 
             if copy_level and GLOW not in name:
                 image = reduce_brightness(image)
@@ -363,8 +372,8 @@ class IconFactory:
             names += [icon.get_name(part) for part in ("glow", 3, 2, (), "extra")]
 
         elif icon.type is IconType.ROBOT:
-            COPY_PARTS = (("03", 2), "03", ("04", 2), "04", ("02", 2), "02")
-            NORMAL_PARTS = (
+            ROBOT_COPY_PARTS = (("03", 2), "03", ("04", 2), "04", ("02", 2), "02")
+            ROBOT_NORMAL_PARTS = (
                 ("03", 2),
                 "03",
                 ("04", 2),
@@ -379,40 +388,48 @@ class IconFactory:
             for additional in ("glow", ()):
                 names += [
                     icon.get_name(extend_part(part, additional), copy_level=1)
-                    for part in COPY_PARTS
-                ] + [icon.get_name(extend_part(part, additional)) for part in NORMAL_PARTS]
+                    for part in ROBOT_COPY_PARTS
+                ] + [icon.get_name(extend_part(part, additional)) for part in ROBOT_NORMAL_PARTS]
 
         elif icon.type is IconType.SPIDER:
-            PRE_COPY_PARTS = (("04", 2), "04")
-            DOUBLE_COPY_PARTS = (("02", 2), "02")
-            COPY_PARTS = (("02", 2), "02")
-            NORMAL_PARTS = (("01", 2), "01", ("03", 2), "03", ("02", 2), "02", ("01", "extra"))
+            SPIDER_PRE_COPY_PARTS = (("04", 2), "04")
+            SPIDER_DOUBLE_COPY_PARTS = (("02", 2), "02")
+            SPIDER_COPY_PARTS = (("02", 2), "02")
+            SPIDER_NORMAL_PARTS = (
+                ("01", 2),
+                "01",
+                ("03", 2),
+                "03",
+                ("02", 2),
+                "02",
+                ("01", "extra"),
+            )
 
             for additional in ("glow", ()):
                 names += (
-                    [icon.get_name(extend_part(part, additional)) for part in PRE_COPY_PARTS]
+                    [icon.get_name(extend_part(part, additional)) for part in SPIDER_PRE_COPY_PARTS]
                     + [
                         icon.get_name(extend_part(part, additional), copy_level=2)
-                        for part in DOUBLE_COPY_PARTS
+                        for part in SPIDER_DOUBLE_COPY_PARTS
                     ]
                     + [
                         icon.get_name(extend_part(part, additional), copy_level=1)
-                        for part in COPY_PARTS
+                        for part in SPIDER_COPY_PARTS
                     ]
-                    + [icon.get_name(extend_part(part, additional)) for part in NORMAL_PARTS]
+                    + [icon.get_name(extend_part(part, additional)) for part in SPIDER_NORMAL_PARTS]
                 )
 
         return names
 
     @staticmethod
     def get_image_and_offset(
-        name: str, id: int, image: ImageType, off_x: int, off_y: int, copy_level: int
-    ) -> Tuple[ImageType, int, int]:  # image, off_x, off_y
+        name: str, id: int, image: "PIL.Image.Image", off_x: int, off_y: int, copy_level: int
+    ) -> Tuple["PIL.Image.Image", int, int]:  # image, off_x, off_y
         # blame rob; honestly, I am done with doing all those exceptions at this point ~ nekit
         if "robot" in name:
 
             if f"{id}_02_" in name:
-                image = image.rotate(-45, resample=Image.BICUBIC, expand=True)
+                image = image.rotate(-45, resample=PIL.Image.BICUBIC, expand=True)
                 off_x -= 50 if copy_level else 40
                 off_y -= 20
 
@@ -440,7 +457,7 @@ class IconFactory:
                         off_y -= 2
 
             elif f"{id}_03_" in name:
-                image = image.rotate(45, resample=Image.BICUBIC, expand=True)
+                image = image.rotate(45, resample=PIL.Image.BICUBIC, expand=True)
                 off_x -= 40 if copy_level else 30
 
                 if TWO in name and id in {3, 5, 6, 8, 16, 17}:
@@ -462,7 +479,7 @@ class IconFactory:
                     off_x += 55
                     off_y -= 38
 
-                    image = image.transpose(Image.FLIP_LEFT_RIGHT)
+                    image = image.transpose(PIL.Image.FLIP_LEFT_RIGHT)
 
                 elif copy_level > 0:
                     off_x += 18
@@ -498,7 +515,7 @@ class IconFactory:
                 if GLOW in name:
                     off_y += 3
 
-                image = image.rotate(-45, resample=Image.BICUBIC, expand=True)
+                image = image.rotate(-45, resample=PIL.Image.BICUBIC, expand=True)
 
             elif f"{id}_04_" in name:
                 off_x -= 30
@@ -520,27 +537,27 @@ def get_glow_color(color_1: Color, color_2: Color) -> Color:
     return color_2
 
 
-def apply_color(image: ImageType, color: Tuple[int, int, int]) -> ImageType:
+def apply_color(image: "PIL.Image.Image", color: Tuple[int, int, int]) -> "PIL.Image.Image":
     # [r, g, b, a][3] -> a
     alpha = image.split()[3]
 
-    colored = ImageOps.colorize(ImageOps.grayscale(image), white=color, black="black")
+    colored = PIL.ImageOps.colorize(PIL.ImageOps.grayscale(image), white=color, black="black")
     colored.putalpha(alpha)
 
     return colored
 
 
-def reduce_brightness(image: ImageType) -> ImageType:
+def reduce_brightness(image: "PIL.Image.Image") -> "PIL.Image.Image":
     return apply_color(image, DARK.to_rgb())
 
 
-def connect_images(images: Sequence[ImageType], mode: str = "RGBA") -> ImageType:
+def connect_images(images: Sequence["PIL.Image.Image"], mode: str = "RGBA") -> "PIL.Image.Image":
     all_x = [image.size[0] for image in images]  # x
     max_y = max(image.size[1] for image in images)  # y
 
     w, h = sum(all_x), max_y
 
-    result = Image.new(mode=mode, size=(w, h))
+    result = PIL.Image.new(mode=mode, size=(w, h))
 
     offset = 0
 
@@ -551,14 +568,16 @@ def connect_images(images: Sequence[ImageType], mode: str = "RGBA") -> ImageType
     return result
 
 
-def to_bytes(image: ImageType, image_format: str = "png") -> bytes:
+def to_bytes(image: "PIL.Image.Image", image_format: str = "png") -> bytes:
     buffer = io.BytesIO()
     image.save(buffer, format=image_format)
     return buffer.getvalue()
 
 
 try:
-    factory = IconFactory(ASSETS / "icon_sheet.png", ASSETS / "glow_sheet.png")
+    factory: Optional[IconFactory] = IconFactory(
+        ASSETS / "icon_sheet.png", ASSETS / "glow_sheet.png"
+    )
 
 except Exception as error:  # noqa
     factory = None
@@ -567,7 +586,7 @@ except Exception as error:  # noqa
 
 
 if __name__ == "__main__":  # easter egg?! ~ nekit
-    factory.generate(
+    factory.generate(  # type: ignore
         icon_type="cube",
         icon_id=98,
         color_1=Color(0x7289DA),

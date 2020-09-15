@@ -9,36 +9,68 @@ Below is a list of current existing exceptions.
 Exception List
 --------------
 
-.. autoexception:: GDException
-
-.. autoexception:: ClientException
-
-.. autoexception:: EditorError
-
-.. autoexception:: HTTPError
-
-.. autoexception:: MissingAccess
-
-.. autoexception:: SongRestrictedForUsage
-
-.. autoexception:: LoginFailure
+.. autoclass:: GDException
     :members:
 
-.. autoexception:: NothingFound
+.. autoclass:: HTTPException
+    :members:
 
-.. autoexception:: NotLoggedError
+.. autoclass:: HTTPError
+    :members:
+
+.. autoclass:: HTTPStatusError
+    :members:
+
+.. autoclass:: ClientException
+    :members:
+
+.. autoclass:: MissingAccess
+    :members:
+
+.. autoclass:: SongRestricted
+    :members:
+
+.. autoclass:: LoginFailure
+    :members:
+
+.. autoclass:: NothingFound
+    :members:
+
+.. autoclass:: NotLoggedError
+    :members:
+
+.. autoclass:: DataException
+    :members:
+
+.. autoclass:: DeError
+    :members:
+
+.. autoclass:: SerError
+    :members:
+
+.. autoclass:: XMLError
+    :members:
+
+.. autoclass:: EditorError
+    :members:
 
 Exception Hierarchy
 -------------------
 
-.. code-block:: python3
+- :class:`~gd.GDException` (:class:`Exception`)
+    - :class:`~gd.HTTPException`
+        - :class:`~gd.HTTPStatusError`
+        - :class:`~gd.HTTPError`
 
-    GDException (Exception)
-        EditorError
-        ClientException
-            HTTPError
-            MissingAccess
-            SongRestrictedForUsage
-            LoginFailure
-            NothingFound
-            NotLoggedError
+    - :class:`~gd.ClientException`
+        - :class:`~gd.MissingAccess`
+        - :class:`~gd.SongRestricted`
+        - :class:`~gd.LoginFailure`
+        - :class:`~gd.NothingFound`
+        - :class:`~gd.NotLoggedError`
+
+    - :class:`~gd.DataException`
+        - :class:`~gd.DeError`
+        - :class:`~gd.SerError`
+        - :class:`~gd.XMLError`
+        - :class:`~gd.EditorErrror`

@@ -25,12 +25,12 @@ gd.py also provides a convenient way of searching for different levels::
 
     client = gd.Client()
 
-    for level in await client.search_levels('Bloodlust'):
+    async for level in client.search_levels("Bloodlust"):
         print(level.name)
 
     # also by filters!
 
-    for level in await client.search_levels(filters=gd.Filters.setup_with_song(1)):
+    async for level in client.search_levels(filters=gd.Filters.with_song(1, custom=False)):
         print(level.rating)
 
 Filters
@@ -39,7 +39,7 @@ Filters
 .. autoclass:: Filters
     :members:
 
-Geometry Dash has different level packs to play; as of 2.1.1, there are two of those:
+Geometry Dash has different level packs to play; currently, there are two of those:
 Map Packs and Gauntlets.
 
 Here is an example of fetching levels of a Fire gauntlet::

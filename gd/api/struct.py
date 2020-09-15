@@ -1,380 +1,669 @@
-from gd.utils.text_tools import make_repr
-from gd.errors import EditorError
+# type: ignore
 
-from gd.utils import search_utils as search
-
-from gd.api.parser import (
-    _dump,
-    _convert,
-    _collect,
-    _process_level,
-    _level_dump,
-    _object_dump,
-    _object_convert,
-    _object_collect,
-    _color_dump,
-    _color_convert,
-    _color_collect,
-    _header_dump,
-    _header_convert,
-    _header_collect,
+from gd.color import Color
+from gd.converters import Password, Version
+from gd.crypto import decode_base64_str, encode_base64_str, unzip_level_str, zip_level_str
+from gd.decorators import cache_by
+from gd.enums import (
+    Enum,
+    Easing,
+    Gamemode,
+    InstantCountComparison,
+    InternalType,
+    LevelLength,
+    LevelType,
+    PickupItemMode,
+    PlayerColor,
+    PortalType,
+    PulseMode,
+    PulseType,
+    Speed,
+    SpeedChange,
+    SpeedMagic,
+    TargetPosCoordinates,
+    TouchToggleMode,
+    ZLayer,
 )
-
-from gd.api.utils import _make_color, _get_dir, _define_color, get_id, get_default
-from gd.api._property import (
-    _object_code,
-    _color_code,
-    _header_code,
-    _level_code,
-)
-
+from gd.index_parser import IndexParser
+from gd.search_utils import get
+from gd.text_utils import is_level_probably_decoded
 from gd.typing import (
-    Any,
-    Color,
-    ColorChannel,
-    ColorCollection,
+    TYPE_CHECKING,
+    Callable,
     Dict,
-    Editor,
-    Header,
     Iterable,
-    LevelAPI,
-    Object,
+    Iterator,
+    List,
+    Mapping,
     Optional,
-    Struct,
+    Set,
     Tuple,
+    Type,
+    TypeVar,
     Union,
 )
 
-__all__ = ("Object", "ColorChannel", "Header", "LevelAPI", "ColorCollection", "DEFAULT_COLORS")
+from gd.api.guidelines import Guidelines
+from gd.api.hsv import HSV
+from gd.api.recording import (
+    RecordEntry,
+    dump_record_entries,
+    iter_record_entries,
+    list_record_entries,
+)
+from gd.api.utils import get_id, get_dir
 
-Number = Union[float, int]
+from gd.model_backend import (
+    BaseField,
+    Base64Field,
+    BoolField,
+    EnumField,
+    FloatField,
+    IntField,
+    IterableField,
+    MappingField,
+    ModelField,
+    ModelIterField,
+    StrField,
+    Model,
+    partial,
+)
+
+__all__ = (
+    "PORTAL_IDS",
+    "SPEED_IDS",
+    "SPEEDS",
+    "Object",
+    "ColorChannel",
+    "Channel",
+    "Header",
+    "LevelAPI",
+    "ColorCollection",
+    "DEFAULT_COLORS",
+)
+
+if TYPE_CHECKING:
+    from gd.api.editor import Editor
+
+IntoColor = Union[Color, Tuple[int, int, int], str, int]
+
+SPEEDS = {}
+
+for speed in Speed:
+    name = speed.name.lower()
+
+    magic = SpeedMagic.from_name(name)
+    speed_change = SpeedChange.from_name(name)
+
+    SPEEDS.update({speed.value: magic.value, speed_change.value: magic.value})
+
+del speed, name, magic, speed_change
+
+PORTAL_IDS = {portal.value for portal in PortalType}
+SPEED_IDS = {speed.value for speed in SpeedChange}
+SPEED_AND_PORTAL_IDS = PORTAL_IDS | SPEED_IDS
+
+T = TypeVar("T")
+
+KT = TypeVar("KT")
+VT = TypeVar("VT")
+KU = TypeVar("KU")
+VU = TypeVar("VU")
 
 
-class Struct:
-    _dump = _dump
-    _convert = _convert
-    _convert = _collect
-    _base_data = {}
-    _container = {}
+def is_iterable(maybe_iterable: Union[Iterable[T], T]) -> bool:
+    try:
+        iter(maybe_iterable)  # type: ignore
+        return True
+    except TypeError:  # "T" object is not iterable
+        return False
 
-    def __init__(self, **properties) -> None:
-        self.data = self._base_data.copy()
 
-        for name, value in properties.items():
-            setattr(self, name, value)
+def color_from(color: IntoColor) -> Color:
+    if isinstance(color, Color):
+        return color
 
-    def __repr__(self) -> str:
-        info = {key: repr(value) for key, value in self.to_dict().items()}
-        return make_repr(self, info)
+    elif isinstance(color, str):
+        return Color.from_hex(color)
 
-    def __json__(self) -> Dict[str, Any]:
-        return self.to_dict()
+    elif is_iterable(color):
+        return Color.from_rgb(*color)
 
-    def to_dict(self) -> Dict[str, Any]:
-        final = {}
-        for key, value in self.data.items():
-            key = self._container.get(key)
+    elif isinstance(color, int):
+        return Color(color)
 
-            if key is not None:
-                final[key] = value
+    else:
+        raise ValueError(
+            f"Do not know how to convert {color} to color. Known conversions: {IntoColor}."
+        )
 
-        return final
 
-    def dump(self) -> str:
-        return self.__class__._collect(self.to_map())
+def map_key_value(
+    mapping: Mapping[KT, VT], key_func: Callable[[KT], KU], value_func: Callable[[VT], VU],
+) -> Mapping[KU, VU]:
+    return {key_func(key): value_func(value) for key, value in mapping.items()}
 
-    def to_map(self) -> Dict[str, Any]:
-        return self.__class__._dump(self.data)
 
-    def copy(self) -> Struct:
-        self_copy = self.__class__()
-        self_copy.data = self.data.copy()
-        return self_copy
+def enum_from_value(value: T, enum_type: Type[Enum]) -> Enum:
+    return enum_type.from_value(value)
 
-    def delete(self, *attrs) -> Struct:
-        for attr in attrs:
-            delattr(self, attr)
+
+def enum_to_value(enum: Enum) -> T:
+    return enum.value
+
+
+class Object(Model):
+    PARSER = IndexParser(",", map_like=True)
+
+    id: int = IntField(index=1, default=0)
+    x: float = FloatField(index=2, default=0.0)
+    y: float = FloatField(index=3, default=0.0)
+    h_flipped: bool = BoolField(index=4)
+    v_flipped: bool = BoolField(index=5)
+    rotation: float = FloatField(index=6)
+    red: int = IntField(index=7, aliases=("r",))
+    green: int = IntField(index=8, aliases=("g",))
+    blue: int = IntField(index=9, aliases=("b",))
+    duration: float = FloatField(index=10)
+    touch_triggered: bool = BoolField(index=11)
+    secret_coin_id: int = IntField(index=12)
+    special_checked: bool = BoolField(index=13)
+    tint_ground: bool = BoolField(index=14)  # deprecated
+    use_player_color_1: bool = BoolField(index=15)
+    use_player_color_2: bool = BoolField(index=16)
+    blending: bool = BoolField(index=17)
+    # index_18: ... = ?Field(index=18)
+    # index_19: ... = ?Field(index=19)
+    editor_layer_1: int = IntField(index=20)
+    color_1_id: int = IntField(index=21)
+    color_2_id: int = IntField(index=22)
+    target_color_id: int = IntField(index=23)
+    z_layer: ZLayer = EnumField(index=24, enum_type=ZLayer, from_field=IntField)
+    z_order: int = IntField(index=25)
+    # index_26: ... = ?Field(index=26)
+    # index_27: ... = ?Field(index=27)
+    move_x: float = FloatField(index=28)
+    move_y: float = FloatField(index=29)
+    easing: Easing = EnumField(index=30, enum_type=Easing, from_field=IntField)
+    text: str = Base64Field(index=31)
+    scale: float = FloatField(index=32)
+    # index_33: ... = ?Field(index=33)
+    group_parent: bool = BoolField(index=34)
+    opacity: float = FloatField(index=35)
+    is_trigger: bool = BoolField(index=36)
+    # index_37: ... = ?Field(index=37)
+    # index_38: ... = ?Field(index=38)
+    # index_39: ... = ?Field(index=39)
+    # index_40: ... = ?Field(index=40)
+    color_1_hsv_enabled: bool = BoolField(index=41)
+    color_2_hsv_enabled: bool = BoolField(index=42)
+    color_1_hsv: HSV = ModelField(index=43, model=HSV)
+    color_2_hsv: HSV = ModelField(index=44, model=HSV)
+    fade_in_time: float = FloatField(index=45)
+    hold_time: float = FloatField(index=46)
+    fade_out_time: float = FloatField(index=47)
+    pulse_mode: PulseMode = EnumField(index=48, enum_type=PulseMode, from_field=IntField)
+    copied_color_hsv: HSV = ModelField(index=49, model=HSV)
+    copied_color_id: int = IntField(index=50)
+    target_group_id: int = IntField(index=51)
+    pulse_type: PulseType = EnumField(index=52, enum_type=PulseType, from_field=IntField)
+    # index_53: ... = ?Field(index=53)
+    teleport_portal_distance: float = FloatField(index=54)
+    # index_55: ... = ?Field(index=53)
+    activate_group: bool = BoolField(index=56)
+    groups: Set[int] = IterableField(index=57, delim=".", transform=set, from_field=IntField)
+    lock_to_player_x: bool = BoolField(index=58)
+    lock_to_player_y: bool = BoolField(index=59)
+    copy_opacity: bool = BoolField(index=60)
+    editor_layer_2: int = IntField(index=61)
+    spawn_triggered: bool = BoolField(index=62)
+    spawn_duration: float = FloatField(index=63)
+    do_not_fade: bool = BoolField(index=64)
+    main_only: bool = BoolField(index=65)
+    detail_only: bool = BoolField(index=66)
+    do_not_enter: bool = BoolField(index=67)
+    degrees: int = IntField(index=68)
+    full_rotation_times: int = IntField(index=69)
+    lock_object_rotation: bool = BoolField(index=70)
+    other_id: int = IntField(
+        index=71, aliases=("follow_group_id", "target_pos_id", "center_id", "secondary_id")
+    )
+    x_mod: float = FloatField(index=72)
+    y_mod: float = FloatField(index=73)
+    # index_74: ... = ?Field(index=74)
+    strength: float = FloatField(index=75)
+    animation_id: int = IntField(index=76)
+    count: int = IntField(index=77)
+    subtract_count: bool = BoolField(index=78)
+    pickup_item_mode: PickupItemMode = EnumField(
+        index=79, enum_type=PickupItemMode, from_field=IntField
+    )
+    item_or_block_id: int = IntField(index=80, aliases=("item_id", "block_id", "block_a_id"))
+    hold_mode: bool = BoolField(index=81)
+    touch_toggle_mode: TouchToggleMode = EnumField(
+        index=82, enum_type=TouchToggleMode, from_field=IntField
+    )
+    # index_83: ... = ?Field(index=83)
+    interval: float = FloatField(index=84)
+    easing_rate: float = FloatField(index=85)
+    exclusive: bool = BoolField(index=86)
+    multi_trigger: bool = BoolField(index=87)
+    comparison: InstantCountComparison = EnumField(
+        index=88, enum_type=InstantCountComparison, from_field=IntField
+    )
+    dual_mode: bool = BoolField(index=89)
+    speed: float = FloatField(index=90)
+    follow_y_delay: float = FloatField(index=91)
+    follow_y_offset: float = FloatField(index=92)
+    trigger_on_exit: bool = BoolField(index=93)
+    dynamic_block: bool = BoolField(index=94)
+    block_b_id: int = IntField(index=95)
+    disable_glow: bool = BoolField(index=96)
+    custom_rotation_speed: float = FloatField(index=97)
+    disable_rotation: float = FloatField(index=98)
+    multi_activate: bool = BoolField(index=99)
+    use_target: bool = BoolField(index=100)
+    target_pos_coordinates: TargetPosCoordinates = EnumField(
+        index=101, enum_type=TargetPosCoordinates, from_field=IntField
+    )
+    editor_disable: bool = BoolField(index=102)
+    high_detail: bool = BoolField(index=103)
+    # index_104: ... = ?Field(index=104)
+    follow_y_max_speed: float = FloatField(index=105)
+    randomize_start: bool = BoolField(index=106)
+    animation_speed: float = FloatField(index=107)
+    linked_group_id: int = IntField(index=108)
+
+    ...  # 2.2 future proofing fields will be added when it gets released
+
+    def h_flip(self) -> "Object":
+        self.h_flipped = not self.h_flipped
+
+    def v_flip(self) -> "Object":
+        self.v_flipped = not self.v_flipped
+
+    def set_id(self, directive: str) -> "Object":
+        self.id = get_id(directive)
         return self
 
-    def edit(self, **fields) -> Struct:
-        for field, value in fields.items():
-            setattr(self, field, value)
+    def set_z_layer(self, directive: str) -> "Object":
+        self.z_layer = get_id(get_dir(directive, "layer"), into_enum=True)
         return self
 
-    @classmethod
-    def from_mapping(cls, mapping: dict) -> Struct:
-        self = cls()
-        self.data = mapping
+    def set_easing(self, directive: str) -> "Object":
+        self.easing = get_id(get_dir(directive, "easing"), into_enum=True)
         return self
 
-    @classmethod
-    def from_string(cls, string: str) -> Struct:
-        try:
-            return cls.from_mapping(cls._convert(string))
-
-        except Exception as exc:
-            raise EditorError("Failed to process string.") from exc
-
-
-class Object(Struct):
-    _base_data = get_default("object")
-    _dump = _object_dump
-    _convert = _object_convert
-    _collect = _object_collect
-
-    def set_id(self, directive: str) -> Object:
-        """Set ``id`` of ``self`` according to the directive, e.g. ``trigger:move``."""
-        self.edit(id=get_id(directive))
-        return self
-
-    def set_z_layer(self, directive: str) -> Object:
-        """Set ``z_layer`` of ``self`` according to the directive, e.g. ``layer:t1`` or ``b3``."""
-        self.edit(z_layer=get_id(_get_dir(directive, "layer"), ret_enum=True))
-        return self
-
-    def set_easing(self, directive: str) -> Object:
-        """Set ``easing`` of ``self`` according to the directive, e.g. ``sine_in_out``."""
-        self.edit(easing=get_id(_get_dir(directive, "easing"), ret_enum=True))
-        return self
-
-    def set_color(self, color: Any) -> Object:
-        """Set ``rgb`` of ``self`` to ``color``."""
-        self.edit(**zip("rgb", _define_color(color).to_rgb()))
-        return self
-
-    def get_color(self) -> Color:
-        """Attempt to get color of ``self``."""
-        return _make_color(self)
-
-    def add_groups(self, *groups: Iterable[int]) -> Object:
-        """Add ``groups`` to ``self.groups``."""
+    def add_groups(self, *groups: int) -> "Object":
         if self.groups is None:
             self.groups = set(groups)
 
         else:
-            self.groups.update(groups)
+            self.groups |= set(groups)
 
         return self
 
-    def get_pos(self) -> Tuple[Number, Number]:
-        """Tuple[Union[:class:`float`, :class:`int`], Union[:class:`float`, :class:`int`]]:
-        ``x`` and ``y`` coordinates of ``self``.
-        """
+    def remove_groups(self, *groups: int) -> "Object":
+        if self.groups is not None:
+            self.groups -= set(groups)
+
+        return self
+
+    def get_pos(self) -> Tuple[float, float]:
         return (self.x, self.y)
 
-    def set_pos(self, x: Number, y: Number) -> Object:
-        """Set ``x`` and ``y`` position of ``self`` to given values."""
-        self.x, self.y = x, y
+    def set_pos(self, x: float, y: float) -> "Object":
+        self.x = x
+        self.y = y
         return self
 
-    def move(self, x: Number = 0, y: Number = 0) -> Object:
-        """Add ``x`` and ``y`` to coordinates of ``self``."""
+    def move(self, x: float = 0.0, y: float = 0.0) -> "Object":
         self.x += x
         self.y += y
         return self
 
-    def rotate(self, deg: Number = 0) -> Object:
-        """Add ``deg`` to ``rotation`` of ``self``."""
+    def rotate(self, degrees: float = 0.0) -> "Object":
         if self.rotation is None:
-            self.rotation = deg
+            self.rotation = degrees
+
         else:
-            self.rotation += deg
+            self.rotation += degrees
 
         return self
 
-    def is_checked(self):
-        """:class:`bool`: indicates if ``self.portal_checked`` is true."""
-        return bool(self.portal_checked)
+    def is_checked(self) -> bool:
+        return self.special_checked
 
-    exec(_object_code)
+    def is_portal(self) -> bool:
+        return self.id in PORTAL_IDS
+
+    def is_speed(self) -> bool:
+        return self.id in SPEED_IDS
+
+    def is_speed_or_portal(self) -> bool:
+        return self.id in SPEED_AND_PORTAL_IDS
 
 
-class ColorChannel(Struct):
-    _base_data = get_default("color_channel")
-    _dump = _color_dump
-    _convert = _color_convert
-    _collect = _color_collect
+class ColorChannel(Model):
+    PARSER = IndexParser("_", map_like=True)
 
-    def __init__(self, special_directive: str = None, **properties) -> None:
-        super().__init__(**properties)
+    red: int = IntField(index=1, default=255, aliases=("r",))
+    green: int = IntField(index=2, default=255, aliases=("g",))
+    blue: int = IntField(index=3, default=255, aliases=("b",))
+    player_color: PlayerColor = EnumField(
+        index=4, enum_type=PlayerColor, from_field=IntField, default=PlayerColor.NotUsed
+    )
+    blending: bool = BoolField(index=5, default=False)
+    id: int = IntField(index=6, default=0)
+    opacity: float = FloatField(index=7, default=1.0)
+    index_8: bool = BoolField(index=8, default=True)
+    copied_id: int = IntField(index=9)
+    hsv: HSV = ModelField(index=10, model=HSV)
+    unknown_red: int = IntField(index=11, default=255, aliases=("unknown_r",))
+    unknown_green: int = IntField(index=12, default=255, aliases=("unknown_g",))
+    unknown_blue: int = IntField(index=13, default=255, aliases=("unknown_b",))
+    index_15: bool = BoolField(index=15, default=True)
+    copy_opacity: bool = BoolField(index=17)
+    index_18: bool = BoolField(index=18, default=False)
 
-        if special_directive is not None:
-            self.set_id(special_directive)
+    def __init__(self, directive: Optional[str] = None, **kwargs) -> None:
+        super().__init__(**kwargs)
 
-    def __hash__(self) -> int:
-        return hash(self.id)
+        if directive is not None:
+            self.set_id(directive)
 
-    def __eq__(self, other: Struct) -> bool:
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return self.data == other.data
+    def set_id(self, directive: str) -> "ColorChannel":
+        self.id = get_id(get_dir(directive, "color"))
 
-    def set_id(self, directive: str) -> ColorChannel:
-        """Set ColorID of ``self`` according to the directive, e.g. ``BG`` or ``color:bg``."""
-        self.edit(id=get_id(_get_dir(directive, "color")))
-        return self
-
-    def set_color(self, color: Any) -> ColorChannel:
-        """Set ``rgb`` of ``self`` to ``color``."""
-        self.edit(**dict(zip("rgb", _define_color(color).to_rgb())))
         return self
 
     def get_color(self) -> Color:
-        """Attempt to get color of ``self``."""
-        return _make_color(self)
+        return Color.from_rgb(self.r, self.g, self.b)
 
-    exec(_color_code)
-
-
-def _process_color(color: Union[str, Dict[str, Any], ColorChannel]):
-    if isinstance(color, ColorChannel):
-        return color
-    elif isinstance(color, dict):
-        return ColorChannel.from_mapping(color)
-    elif isinstance(color, str):
-        return ColorChannel.from_string(color)
-
-
-class ColorCollection(set):
-    @classmethod
-    def create(cls, colors: Iterable[Any]) -> ColorCollection:
-        if isinstance(colors, cls):
-            return colors.copy()
-
-        self = cls()
-        self.update(colors)
-
+    def set_color(self, color: IntoColor) -> "ColorChannel":
+        new = color_from(color)
+        self.r = new.r
+        self.g = new.g
+        self.b = new.b
         return self
 
-    @classmethod
-    def from_args(cls, *args) -> ColorCollection:
-        return cls.create(args)
-
-    def get(self, directive_or_id: Union[int, str]) -> Optional[ColorCollection]:
-        final = directive_or_id
-        if isinstance(final, str):
-            final = get_id(_get_dir(final, "color"))
-        return search.get(self, id=final)
-
-    def copy(self) -> ColorCollection:
-        return self.__class__(self)
-
-    def update(self, colors: Iterable[ColorCollection]) -> None:
-        super().update(color for color in map(_process_color, colors) if color is not None)
-
-    def add(self, color: Any) -> None:
-        color = _process_color(color)
-        if color is not None:
-            super().add(color)
-
-    def __getitem__(self, color_id: int) -> Optional[ColorCollection]:
-        return self.get(color_id)
-
-    def dump(self) -> Iterable[Dict[str, Any]]:
-        return [cc.data for cc in self]
+    color = property(get_color, set_color)
 
 
-DEFAULT_COLORS = [
+DEFAULT_COLORS = (
     ColorChannel("BG").set_color(0x287DFF),
-    ColorChannel("GRND").set_color(0x0066FF),
+    ColorChannel("G").set_color(0x0066FF),
     ColorChannel("Line").set_color(0xFFFFFF),
     ColorChannel("P1").set_color(0x7DFF00),
     ColorChannel("P2").set_color(0x00FFFF),
-    ColorChannel("GRND2").set_color(0x0066FF),
-]
+    ColorChannel("G2").set_color(0x0066FF),
+)
+
+Channel = ColorChannel
 
 
-class Header(Struct):
-    _base_data = get_default("header")
-    _dump = _header_dump
-    _convert = _header_convert
-    _collect = _header_collect
-
-    def __init__(self, **properties) -> None:
-        super().__init__(**properties)
-        self.colorhook()
-
-    def copy(self) -> Header:
-        copy = super().copy()
-
-        if self.colors:
-            copy.edit(colors=self.copy_colors())
-
-        return copy
-
-    def copy_colors(self) -> ColorCollection:
-        if not self.colors:
-            return ColorCollection()
-        return ColorCollection(color.copy() for color in self.colors)
-
-    def colorhook(self) -> None:
-        if not self.colors:
-            self.colors = ColorCollection.create(DEFAULT_COLORS)
+class ColorCollection(set):
+    def __init__(
+        self, iterable: Optional[Iterable[ColorChannel]] = None, use_default: bool = True
+    ) -> None:
+        if use_default:
+            super().__init__(DEFAULT_COLORS)
         else:
-            self.colors = ColorCollection.create(self.colors)
+            super().__init__()
+
+        if iterable is not None:
+            super().update(iterable)
 
     @classmethod
-    def from_mapping(cls, mapping) -> Header:
-        self = super().from_mapping(mapping)
-        self.colorhook()
+    def new(cls, *args: ColorChannel, use_default: bool = True) -> "ColorCollection":
+        return cls(args, use_default=use_default)
+
+    def remove(self, directive_or_id: Union[int, str]) -> None:
+        self.discard(self.get(directive_or_id))
+
+    def copy(self) -> "ColorCollection":
+        return self.__class__(channel.copy() for channel in self)
+
+    def clone(self) -> "ColorCollection":
+        return self.__class__(channel.clone() for channel in self)
+
+    def difference(self, other: Iterable[ColorChannel]) -> "ColorCollection":
+        return self.__class__(super().difference(other))
+
+    def intersection(self, other: Iterable[ColorChannel]) -> "ColorCollection":
+        return self.__class__(super().intersection(other))
+
+    def symmetric_difference(self, other: Iterable[ColorChannel]) -> "ColorCollection":
+        return self.__class__(super().symmetric_difference(other))
+
+    def union(self, other: Iterable[ColorChannel]) -> "ColorCollection":
+        return self.__class__(super().union(other))
+
+    def update(self, other: Iterable[ColorChannel]) -> "ColorCollection":
+        super().update(other)
         return self
 
-    def dump(self) -> str:
-        header = self.copy()
+    def get(self, directive_or_id: Union[int, str]) -> Optional[ColorChannel]:
+        if isinstance(directive_or_id, str):
+            id = get_id(get_dir(directive_or_id, "color"))
+        else:
+            id = directive_or_id
 
-        if self.colors:
-            header.edit(colors=self.colors.dump())
+        return get(self, id=id)
 
-        return super(type(header), header).dump()
+    def __or__(self, other: Set[ColorChannel]) -> "ColorCollection":
+        return self.__class__(super().__or__(other))
 
-    exec(_header_code)
+    def __xor__(self, other: Set[ColorChannel]) -> "ColorCollection":
+        return self.__class__(super().__xor__(other))
+
+    def __sub__(self, other: Set[ColorChannel]) -> "ColorCollection":
+        return self.__class__(super().__sub__(other))
+
+    def __and__(self, other: Set[ColorChannel]) -> "ColorCollection":
+        return self.__class__(super().__and__(other))
+
+    def __ror__(self, other: Set[ColorChannel]) -> "ColorCollection":
+        return self.__class__(super().__ror__(other))
+
+    def __rxor__(self, other: Set[ColorChannel]) -> "ColorCollection":
+        return self.__class__(super().__rxor__(other))
+
+    def __rsub__(self, other: Set[ColorChannel]) -> "ColorCollection":
+        return self.__class__(super().__rsub__(other))
+
+    def __rand__(self, other: Set[ColorChannel]) -> "ColorCollection":
+        return self.__class__(super().__rand__(other))
 
 
-class LevelAPI(Struct):
-    _convert = None
-    _collect = None
-    _dump = _level_dump
-    _base_data = get_default("api")
+class Header(Model):
+    PARSER = IndexParser(",", map_like=True)
 
-    def __init__(self, **properties) -> None:
-        super().__init__(**properties)
+    audio_track: int = IntField(index="kA1")
+    gamemode: Gamemode = EnumField(
+        index="kA2", enum_type=Gamemode, from_field=IntField, default=Gamemode.CUBE
+    )
+    minimode: bool = BoolField(index="kA3", default=False)
+    speed: Speed = EnumField(
+        index="kA4", enum_type=Speed, from_field=IntField, default=Speed.NORMAL
+    )
+    index_kA5: str = StrField(index="kA5")  # need to check this, something to do with blending
+    background: int = IntField(index="kA6", default=0)
+    ground: int = IntField(index="kA7", default=0)
+    dual_mode: bool = BoolField(index="kA8", default=False)
+    has_start_pos: bool = BoolField(index="kA9", default=False)
+    two_player_mode: bool = BoolField(index="kA10", default=False)
+    flip_gravity: bool = BoolField(index="kA11", default=False)
+    song_offset: float = FloatField(index="kA13", default=0.0)
+    guidelines: Guidelines = MappingField(
+        index="kA14",
+        delim="~",
+        transform=Guidelines,
+        key_from_field=FloatField,
+        value_from_field=FloatField,
+        skip_empty=True,
+    )
+    song_fade_in: bool = BoolField(index="kA15", default=False)
+    song_fade_out: bool = BoolField(index="kA16", default=False)
+    ground_line: int = IntField(index="kA17", default=0)
+    font: int = IntField(index="kA18", default=0)
+    colors: Set[ColorChannel] = ModelIterField(
+        index="kS38",
+        model=ColorChannel,
+        delim="|",
+        transform=partial(ColorCollection, use_default=False),
+        factory=ColorCollection,
+    )
+    color_pages: int = IntField(index="kS39", default=0)
 
-    def __repr__(self) -> str:
-        info = {
-            "id": self.id,
-            "version": self.version,
-            "name": self.name,
-        }
-        return make_repr(self, info)
+    background_r: int = IntField(index="kS1")
+    background_b: int = IntField(index="kS2")
+    background_g: int = IntField(index="kS3")
+    ground_r: int = IntField(index="kS4")
+    ground_b: int = IntField(index="kS5")
+    ground_g: int = IntField(index="kS6")
+    line_r: int = IntField(index="kS7")
+    line_g: int = IntField(index="kS8")
+    line_b: int = IntField(index="kS9")
+    object_r: int = IntField(index="kS10")
+    object_g: int = IntField(index="kS11")
+    object_b: int = IntField(index="kS12")
+    color_1_r: int = IntField(index="kS13")
+    color_1_g: int = IntField(index="kS14")
+    color_1_b: int = IntField(index="kS15")
 
-    def dump(self) -> None:
-        raise EditorError("Level API can not be dumped.")
+    background_player_color: PlayerColor = EnumField(
+        index="kS16", enum_type=PlayerColor, from_field=IntField
+    )
+    ground_player_color: PlayerColor = EnumField(
+        index="kS17", enum_type=PlayerColor, from_field=IntField
+    )
+    line_player_color: PlayerColor = EnumField(
+        index="kS18", enum_type=PlayerColor, from_field=IntField
+    )
+    object_player_color: PlayerColor = EnumField(
+        index="kS19", enum_type=PlayerColor, from_field=IntField
+    )
+    color_1_player_color: PlayerColor = EnumField(
+        index="kS20", enum_type=PlayerColor, from_field=IntField
+    )
 
-    def open_editor(self) -> Editor:
-        from gd.api.editor import Editor  # *circular imports*
+    background_color: ColorChannel = ModelField(index="kS29", model=ColorChannel)
+    ground_color: ColorChannel = ModelField(index="kS30", model=ColorChannel)
+    line_color: ColorChannel = ModelField(index="kS31", model=ColorChannel)
+    object_color: ColorChannel = ModelField(index="kS32", model=ColorChannel)
+    color_1: ColorChannel = ModelField(index="kS33", model=ColorChannel)
+    color_2: ColorChannel = ModelField(index="kS34", model=ColorChannel)
+    color_3: ColorChannel = ModelField(index="kS35", model=ColorChannel)
+    color_4: ColorChannel = ModelField(index="kS36", model=ColorChannel)
+    color_3dl: ColorChannel = ModelField(index="kS37", model=ColorChannel)
 
-        return Editor.launch(self, "level_string")
 
-    def is_verified(self) -> bool:
-        return bool(self.verified)
+class LevelAPI(Model):
+    ENFORCE_STR = False
+    REPR_IGNORE = {"unprocessed_data", "recording_string"}
 
-    def is_uploaded(self) -> bool:
-        return bool(self.uploaded)
+    id: int = BaseField(index="k1", de=int, ser=int, default=0)
+    name: str = BaseField(index="k2", de=str, ser=str, default="Unnamed")
+    description: str = BaseField(index="k3", de=decode_base64_str, ser=encode_base64_str)
+    unprocessed_data: str = BaseField(index="k4", de=str, ser=str, default="")
+    creator: str = BaseField(index="k5", de=str, ser=str)
+    track_id: int = BaseField(index="k8", de=int, ser=int)
+    downloads: int = BaseField(index="k11", de=int, ser=int)
+    index_k13: bool = BaseField(index="k13", de=bool, ser=int, default=True)
+    verified: bool = BaseField(index="k14", de=bool, ser=int)
+    uploaded: bool = BaseField(index="k15", de=bool, ser=int)
+    version: int = BaseField(index="k16", de=int, ser=int, default=1)
+    attempts: int = BaseField(index="k18", de=int, ser=int)
+    normal_mode_percentage: int = BaseField(index="k19", de=int, ser=int)
+    practice_mode_percentage: int = BaseField(index="k20", de=int, ser=int)
+    level_type: LevelType = BaseField(
+        index="k21", de=partial(enum_from_value, enum_type=LevelType), ser=enum_to_value
+    )
+    likes: int = BaseField(index="k22", de=int, ser=int)
+    length: LevelLength = BaseField(
+        index="k23", de=partial(enum_from_value, enum_type=LevelLength), ser=enum_to_value
+    )
+    stars: int = BaseField(index="k26", de=int, ser=int)
+    recording_string: str = BaseField(index="k34", de=str, ser=str)
+    jumps: int = BaseField(index="k36", de=int, ser=int)
+    password: Password = BaseField(
+        index="k41", de=Password.from_robtop_number, ser=Password.to_robtop_number
+    )
+    original_id: int = BaseField(index="k42", de=int, ser=int)
+    song_id: int = BaseField(index="k45", de=int, ser=int)
+    revision: int = BaseField(index="k46", de=int, ser=int)
+    index_k47: bool = BaseField(index="k47", de=bool, ser=int, default=True)
+    object_count: int = BaseField(index="k48", de=int, ser=int)
+    binary_version: Version = BaseField(
+        index="k50", de=Version.from_number, ser=Version.to_number, default=Version(3, 5)
+    )
+    first_coint_acquired: bool = BaseField(index="k61", de=bool, ser=int)
+    second_coin_acquired: bool = BaseField(index="k62", de=bool, ser=int)
+    third_coin_acquired: bool = BaseField(index="k63", de=bool, ser=int)
+    requested_stars: int = BaseField(index="k66", de=int, ser=int)
+    extra_string: str = BaseField(index="k67", de=str, ser=str)
+    timely_id: int = BaseField(index="k74", de=int, ser=int)
+    unlisted: bool = BaseField(index="k79", de=bool, ser=int)
+    editor_seconds: int = BaseField(index="k80", de=int, ser=int)
+    folder: int = BaseField(index="k84", de=int, ser=int)
 
-    def is_original(self) -> bool:
-        return bool(self.original)
+    x: float = BaseField(index="kI1", de=float, ser=float)
+    y: float = BaseField(index="kI2", de=float, ser=float)
+    zoom: float = BaseField(index="kI3", de=float, ser=float)
+    build_tab_page: int = BaseField(index="kI4", de=int, ser=int)
+    build_tab: int = BaseField(index="kI5", de=int, ser=int)
+    build_tab_pages_dict: Dict[int, int] = BaseField(
+        index="kI6",
+        de=partial(map_key_value, key_func=int, value_func=int),
+        ser=partial(map_key_value, key_func=str, value_func=str),
+    )
+    editor_layer: int = BaseField(index="kI7", de=int, ser=int)
 
-    def is_unlisted(self) -> bool:
-        return bool(self.unlisted)
+    internal_type: InternalType = BaseField(
+        index="kCEK", de=partial(enum_from_value, enum_type=InternalType), ser=enum_to_value
+    )
 
-    @classmethod
-    def from_mapping(cls, mapping) -> LevelAPI:
-        self = cls()
-        self.data = _process_level(mapping)
-        return self
+    @cache_by("unprocessed_data")
+    def get_data(self) -> str:
+        unprocessed_data = self.unprocessed_data
 
-    @classmethod
-    def from_string(cls, string: str) -> None:
-        raise EditorError("Level API can not be created from string.")
+        if unprocessed_data is None:
+            return ""
 
-    exec(_level_code)
+        if is_level_probably_decoded(unprocessed_data):
+            return unprocessed_data
+
+        else:
+            return unzip_level_str(unprocessed_data)
+
+    def set_data(self, level_data: str) -> None:
+        if is_level_probably_decoded(level_data):
+            self.unprocessed_data = zip_level_str(level_data)
+
+        else:
+            self.unprocessed_data = level_data
+
+    data = property(get_data, set_data)
+
+    def get_recording(self) -> List[RecordEntry]:
+        if self.recording_string is None:
+            return []
+
+        return list_record_entries(unzip_level_str(self.recording_string))
+
+    def set_recording(self, recording: Iterable[RecordEntry]) -> None:
+        self.recording_string = zip_level_str(dump_record_entries(recording))
+
+    recording = property(get_recording, set_recording)
+
+    def iter_recording(self) -> Iterator[RecordEntry]:
+        if self.recording_string is None:
+            return iter(())
+
+        return iter_record_entries(unzip_level_str(self.recording_string))
+
+    def open_editor(self) -> "Editor":
+        from gd.api.editor import Editor
+
+        return Editor.load_from(self, "data")

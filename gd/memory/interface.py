@@ -7,7 +7,7 @@ import sys
 import time
 
 try:
-    from gd.memory.win import (
+    from gd.memory.win import (  # type: ignore
         allocate_memory,
         get_base_address,
         get_handle,
@@ -21,11 +21,11 @@ try:
 except Exception:  # noqa
     pass
 
-from gd.memory.enums import Scene
-from gd.api.enums import LevelType, Gamemode, SpeedConstant
+from gd.converters import get_difficulty
+from gd.enums import LevelDifficulty, DemonDifficulty, LevelType, Gamemode, SpeedConstant, Scene
+from gd.text_utils import make_repr
 from gd.typing import (
     Any,
-    Buffer,
     Callable,
     Iterable,
     List,
@@ -34,10 +34,8 @@ from gd.typing import (
     Tuple,
     TypeVar,
     Union,
+    cast,
 )
-from gd.utils.converter import Converter
-from gd.utils.enums import LevelDifficulty, DemonDifficulty
-from gd.utils.text_tools import make_repr
 
 __all__ = (
     "Memory",
@@ -74,9 +72,9 @@ def read_until_terminator(data: bytes, terminator: int = 0) -> bytes:
 
 def list_from(one_or_seq: Union[T, Iterable[T]]) -> List[T]:
     try:
-        return list(one_or_seq)
+        return list(cast(Iterable[T], one_or_seq))
     except Exception:
-        return [one_or_seq]
+        return [cast(T, one_or_seq)]
 
 
 class MemoryType:
@@ -86,8 +84,8 @@ class MemoryType:
 
 
 class BufferMeta(type):
-    def __getitem__(self, byte_or_sequence: Union[int, Sequence[int]]) -> None:
-        return self.from_byte_array(list_from(byte_or_sequence))
+    def __getitem__(cls, byte_or_sequence: Union[int, Sequence[int]]) -> "Buffer":
+        return cls.from_byte_array(list_from(byte_or_sequence))  # type: ignore
 
 
 class Buffer(metaclass=BufferMeta):
@@ -108,28 +106,24 @@ class Buffer(metaclass=BufferMeta):
         self.order = order
 
     def __str__(self) -> str:
-        return self.to_format()
+        return self.to_hex()
 
     def __repr__(self) -> str:
-        info = {"data": repr(self.to_format())}
+        info = {"data": repr(self.to_hex())}
         return make_repr(self, info)
 
     def __len__(self) -> int:
         return len(self.data)
 
-    def with_order(self, order: str) -> Buffer:
+    def with_order(self, order: str) -> "Buffer":
         """Change order of the buffer to ``order`` and return ``self``."""
         self.order = order
         return self
 
     @classmethod
     def from_int(
-        cls,
-        integer: int,
-        size: int = 4,
-        order: str = DEFAULT_ORDER,
-        signed: bool = True,
-    ) -> Buffer:
+        cls, integer: int, size: int = 4, order: str = DEFAULT_ORDER, signed: bool = True,
+    ) -> "Buffer":
         """Create buffer from an integer with size and order."""
         data = integer.to_bytes(size, order, signed=signed)
         return cls(data, order)
@@ -139,7 +133,7 @@ class Buffer(metaclass=BufferMeta):
         return int.from_bytes(self.data, self.order, signed=signed)
 
     @classmethod
-    def from_bool(cls, value: bool, order: str = DEFAULT_ORDER) -> Buffer:
+    def from_bool(cls, value: bool, order: str = DEFAULT_ORDER) -> "Buffer":
         """Create buffer from a boolean with order."""
         return cls.from_int(value, size=1, order=order, signed=False)
 
@@ -148,7 +142,7 @@ class Buffer(metaclass=BufferMeta):
         return self.as_int(signed=False) != 0
 
     @classmethod
-    def from_float(cls, number: float, order: str = DEFAULT_ORDER) -> Buffer:
+    def from_float(cls, number: float, order: str = DEFAULT_ORDER) -> "Buffer":
         """Create buffer from a float with order. ``float`` means 32-bit floating point number."""
         mode = ORDER[order] + "f"
 
@@ -169,7 +163,7 @@ class Buffer(metaclass=BufferMeta):
             raise ValueError(f"Could not convert from float. Error: {error}.") from None
 
     @classmethod
-    def from_double(cls, number: float, order: str = DEFAULT_ORDER) -> Buffer:
+    def from_double(cls, number: float, order: str = DEFAULT_ORDER) -> "Buffer":
         """Create buffer from a float with order. ``double`` means 64-bit floating point number."""
         mode = ORDER[order] + "d"
 
@@ -190,7 +184,7 @@ class Buffer(metaclass=BufferMeta):
             raise ValueError(f"Could not convert to double. Error: {error}.") from None
 
     @classmethod
-    def from_str(cls, string: str, terminate: bool = True, order: str = DEFAULT_ORDER) -> Buffer:
+    def from_str(cls, string: str, terminate: bool = True, order: str = DEFAULT_ORDER) -> "Buffer":
         """Create buffer from a string with order.
         If terminate is ``True``, a null byte is appended at the end.
         """
@@ -206,17 +200,16 @@ class Buffer(metaclass=BufferMeta):
         return read_until_terminator(self.data).decode(encoding, errors)
 
     @classmethod
-    def from_format(cls, format_str: str) -> Buffer:
+    def from_hex(cls, hex_str: str) -> "Buffer":
         """Create buffer from byte-format string, like ``6A 14 8B CB FF``."""
-        array = [int(byte, 16) for byte in format_str.split()]
-        return cls.from_byte_array(array)
+        return cls(bytes.fromhex(hex_str))
 
-    def to_format(self) -> str:
+    def to_hex(self, delim: str = " ", bytes_per_delim: int = 1) -> str:
         """Convert current bytes to byte-format string, like ``6A 14 8B CB FF``."""
-        return " ".join(format(byte, "02X") for byte in self.data)
+        return self.data.hex(delim, bytes_per_delim).upper()
 
     @classmethod
-    def from_byte_array(cls, array: Sequence[int]) -> Buffer:
+    def from_byte_array(cls, array: Sequence[int]) -> "Buffer":
         """Create buffer from a sequence of 8-bit integers."""
         return cls(bytes(array))
 
@@ -244,7 +237,8 @@ class Type:
         return self.to_bytes(py_object)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}<{self.name}>({self.size})"
+        info = {"name": repr(self.name), "size": self.size}
+        return make_repr(self, info)
 
 
 Bool = Type(name="Bool", size=1, to_bytes=Buffer.from_bool, from_bytes=Buffer.as_bool)
@@ -308,7 +302,7 @@ String = Type(name="String", size=16, to_bytes=Buffer.from_str, from_bytes=Buffe
 class Memory(MemoryType):
     """Simple wrapper with platform check."""
 
-    def __new__(cls, *args, **kwargs) -> MemoryType:
+    def __new__(cls, *args, **kwargs) -> MemoryType:  # type: ignore
         if sys.platform == "win32":
             return WindowsMemory(*args, **kwargs)
         # elif sys.platform == "darwin":
@@ -352,8 +346,8 @@ class WindowsMemory(MemoryType):
         }
         return make_repr(self, info)
 
-    def resolve_layers(self, *offsets: Sequence[int], module: Optional[str] = None) -> int:
-        offsets: List[int] = list_from(offsets)
+    def resolve_layers(self, *offsets: int, module: Optional[str] = None) -> int:
+        offset_iter = iter(offsets)
 
         if module is None:
             address = self.base_address
@@ -361,9 +355,9 @@ class WindowsMemory(MemoryType):
             address = get_base_address(self.process_id, module)
 
         if offsets:
-            address += offsets.pop(0)
+            address += next(offset_iter)
 
-        for offset in offsets:
+        for offset in offset_iter:
             address = self.read(self.ptr_type, address) + offset
 
         return address
@@ -448,17 +442,17 @@ class WindowsMemory(MemoryType):
         address = self.resolve_layers(*offsets)
         size_address = address + String.size
 
-        size = self.read(self.ptr_type, size_address)
+        size: int = self.read(self.ptr_type, size_address)
 
         if size < String.size:
             try:
-                return String.from_bytes(self.read_at(size, address))
+                return cast(str, String.from_bytes(self.read_at(size, address)))
             except UnicodeDecodeError:  # failed to read, let's try to interpret as a pointer
                 pass
 
         address = self.read(self.ptr_type, address)
 
-        return String.from_bytes(self.read_at(size, address))
+        return cast(str, String.from_bytes(self.read_at(size, address)))
 
     def write_bool(self, value: bool, *offsets) -> None:
         self.write_type(Bool, value, *offsets)
@@ -467,7 +461,7 @@ class WindowsMemory(MemoryType):
         self.write_type(Float32, value, *offsets)
 
     def write_float64(self, value: float, *offsets) -> None:
-        self.writr_type(Float64, value, *offsets)
+        self.write_type(Float64, value, *offsets)
 
     def write_int8(self, value: int, *offsets) -> None:
         self.write_type(Int8, value, *offsets)
@@ -497,7 +491,7 @@ class WindowsMemory(MemoryType):
         address = self.resolve_layers(*offsets)
         size_address = address + String.size
 
-        data = String.to_bytes(value)
+        data = String.to_bytes(value)  # type: ignore
 
         size = len(data)
 
@@ -662,8 +656,8 @@ class WindowsMemory(MemoryType):
 
     def set_speed(self, speed: Union[float, str, SpeedConstant], reverse: bool = False) -> None:
         """Set value of speed to ``speed``. If ``reverse``, negate given speed value."""
-        speed = SpeedConstant.from_value(speed)
-        value = -speed.value if reverse else speed.value
+        speed_const = SpeedConstant.from_value(speed)
+        value = -speed_const.value if reverse else speed_const.value
 
         self.set_speed_value(value)
 
@@ -683,17 +677,6 @@ class WindowsMemory(MemoryType):
     def is_practice_mode(self) -> bool:
         """Check whether player is in Practice Mode."""
         return self.read_bool(0x3222D0, 0x164, 0x495)
-
-    def get_gravity(self) -> float:
-        """Get value of gravity in the level. Affects cube only."""
-        return self.read_float32(0x1E9050, 0)
-
-    def set_gravity(self, gravity: float) -> None:
-        """Set value of gravity in the level. Affects cube only."""
-        self.redirect_memory(Float32.size, 0x1E9050)
-        self.write_float32(gravity, 0x1E9050, 0)
-
-    gravity = property(get_gravity, set_gravity)
 
     def get_level_id(self) -> int:
         """Get accurate ID of the level."""
@@ -762,18 +745,14 @@ class WindowsMemory(MemoryType):
 
     def get_level_difficulty(self) -> Union[LevelDifficulty, DemonDifficulty]:
         """Compute actual level difficulty and return the enum."""
-        address = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114)
+        address: int = self.read_type(self.ptr_type, 0x3222D0, 0x164, 0x22C, 0x114)
 
-        is_demon, is_auto, difficulty, demon_difficulty = (
-            self.read(Bool, address + 0x29C),
-            self.read(Bool, address + 0x2B0),
-            self.read(UInt32, address + 0x1E4),
-            self.read(UInt32, address + 0x2A0),
-        )
+        is_demon: bool = self.read(Bool, address + 0x29C)
+        is_auto: bool = self.read(Bool, address + 0x2B0)
+        difficulty: int = self.read(Bool, address + 0x1E4)
+        demon_difficulty: int = self.read(UInt32, address + 0x2A0)
 
-        return Converter.convert_level_difficulty(
-            difficulty, demon_difficulty, is_demon, is_auto
-        )
+        return get_difficulty(difficulty, demon_difficulty, is_demon, is_auto)
 
     level_difficulty = property(get_level_difficulty)
 

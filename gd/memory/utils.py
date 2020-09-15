@@ -1,13 +1,13 @@
 import ctypes
 import functools
 
-from gd.typing import Any, Dict, Function, Tuple, Type
+from gd.typing import Any, Callable, Dict, Tuple, Type, TypeVar
 
-FuncPtr = ctypes._CFuncPtr
+T = TypeVar("T")
 
 
-class StructureMeta(type(ctypes.Structure)):
-    def __new__(
+class StructureMeta(type(ctypes.Structure)):  # type: ignore
+    def __new__(  # type: ignore
         meta_cls, name: str, bases: Tuple[Type[Any]], namespace: Dict[str, Any]
     ) -> Type[ctypes.Structure]:
         cls = super().__new__(meta_cls, name, bases, namespace)
@@ -22,7 +22,7 @@ class StructureMeta(type(ctypes.Structure)):
 
         cls._fields_ = list(fields.items())
 
-        return cls
+        return cls  # type: ignore
 
 
 class Structure(ctypes.Structure, metaclass=StructureMeta):
@@ -31,8 +31,8 @@ class Structure(ctypes.Structure, metaclass=StructureMeta):
     pass
 
 
-def func_def(func_ptr: FuncPtr) -> FuncPtr:
-    def wrap(func: Function) -> Function:
+def func_def(func_ptr: Any) -> Any:
+    def wrap(func: Callable[..., T]) -> Callable[..., T]:
         try:
             annotations = func.__annotations__
 
@@ -51,7 +51,7 @@ def func_def(func_ptr: FuncPtr) -> FuncPtr:
                 func_ptr.argtypes = arg_types
 
         @functools.wraps(func)
-        def handle_call(*args) -> Any:
+        def handle_call(*args) -> T:
             return func_ptr(*args)
 
         return handle_call

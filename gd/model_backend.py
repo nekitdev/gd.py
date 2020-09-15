@@ -1,21 +1,54 @@
-from base64 import urlsafe_b64decode, urlsafe_b64encode
+# type: ignore  # static type checker will not understand this either
+
+from copy import deepcopy as recurse_copy
 from functools import partial, wraps
 from urllib.parse import quote, unquote
 
+from gd.color import Color
+from gd.crypto import (
+    Key,
+    decode_base64_str,
+    encode_base64_str,
+    decode_robtop_str,
+    encode_robtop_str,
+)
+from gd.errors import DeError, SerError
 from gd.map_property import map_property
 
-from gd.typing import Callable, Dict, Generator, List, Optional, Tuple, Type, TypeVar, Union
+from gd.typing import (
+    Callable,
+    Dict,
+    Generator,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
-from gd.utils.enums import Enum
-from gd.utils.index_parser import IndexParser
-from gd.utils.text_tools import make_repr
+from gd.enums import Enum
+from gd.index_parser import IndexParser, chain_from_iterable, group
+from gd.text_utils import make_repr
 
 __all__ = (
+    "BaseField",
     "Field",
     "Base64Field",
     "BoolField",
+    "ColorField",
+    "EnumField",
     "FloatField",
     "IntField",
+    "IterableField",
+    "MappingField",
+    "ModelField",
+    "ModelIterField",
+    "RobTopStrField",
     "StrField",
     "URLField",
     "IndexParser",
@@ -25,8 +58,6 @@ __all__ = (
     "null",
     "partial",
     "recurse",
-    "de_base64_bytes",
-    "ser_base64_bytes",
     "de_base64_str",
     "ser_base64_str",
     "de_bool_strict",
@@ -35,6 +66,8 @@ __all__ = (
     "ser_bool",
     "de_bytes",
     "ser_bytes",
+    "de_color_rgb",
+    "ser_color_rgb",
     "de_enum",
     "ser_enum",
     "de_float",
@@ -51,9 +84,8 @@ __all__ = (
 ANNOTATIONS = "__annotations__"
 DATA = "DATA"
 
-Model_T = TypeVar("Model")
-ModelList_T = TypeVar("ModelList")
-
+K = TypeVar("K")
+V = TypeVar("V")
 T = TypeVar("T")
 U = TypeVar("U")
 
@@ -68,7 +100,7 @@ class Singleton:
     def __new__(cls, *args, **kwargs) -> T:
         if cls.instance is None:
             cls.instance = super().__new__(cls)
-            cls.instance.__init__(*args, **kwargs)
+
         return cls.instance
 
 
@@ -86,17 +118,16 @@ class RECURSE(Singleton):
 recurse = RECURSE()
 
 
-def attempt(func: Callable[..., T], default: Optional[T] = None) -> Callable[..., T]:
-
-    @wraps(func)
-    def inner(*args, **kwargs) -> Optional[T]:
+def attempt(function: Callable[..., T], default: T) -> Callable[..., T]:
+    @wraps(function)
+    def wrapper(*args, **kwargs) -> T:
         try:
-            return func(*args, **kwargs)
+            return function(*args, **kwargs)
 
         except Exception:  # noqa
             return default
 
-    return inner
+    return wrapper
 
 
 def identity(some: T) -> T:
@@ -116,11 +147,11 @@ def de_bool_strict(string: str) -> bool:
     raise ValueError(f"String bool deserializing expected empty string, 0 or 1, got {string!r}.")
 
 
-def de_bool_soft(string: str) -> bool:
-    if not string:
+def de_bool_soft(string_or_bool: Union[bool, str]) -> bool:
+    if not string_or_bool:
         return False
 
-    return string != "0"
+    return string_or_bool != "0"
 
 
 de_bool = de_bool_soft
@@ -149,56 +180,95 @@ de_bytes = str.encode
 ser_bytes = bytes.decode
 
 
-def de_enum(string: str, enum: Type[Enum], de_func: Callable[[str], T]) -> Enum:
-    return enum(de_func(string))
+def de_iterable(
+    string: str,
+    delim: str,
+    de: Callable[[str], T],
+    transform: Callable[[Iterator[T]], Iterable[T]],
+    skip_empty: bool = True,
+) -> Iterable[T]:
+    iterator = iter(string.split(delim))
+
+    if skip_empty:
+        iterator = filter(bool, iterator)
+
+    iterator = map(de, iterator)
+
+    return transform(iterator)
+
+
+def ser_iterable(iterable: Iterable[T], delim: str, ser: Callable[[T], str]) -> str:
+    return delim.join(map(ser, iterable))
+
+
+def de_mapping(
+    string: str,
+    delim: str,
+    de_key: Callable[[str], K],
+    de_value: Callable[[str], V],
+    transform: Callable[[Iterator[Tuple[K, V]]], Mapping[K, V]],
+    skip_empty: bool = False,
+) -> Mapping[K, V]:
+    iterator = group(string.split(delim))
+
+    if skip_empty:
+        iterator = ((key, value) for key, value in iterator if key and value)
+
+    return transform((de_key(key), de_value(value)) for key, value in iterator)
+
+
+def ser_mapping(
+    mapping: Mapping[K, V], delim: str, ser_key: Callable[[K], str], ser_value: Callable[[V], str],
+) -> str:
+    return delim.join(
+        chain_from_iterable((ser_key(key), ser_value(value)) for key, value in mapping.items())
+    )
+
+
+def de_color_rgb(string: str, delim: str = ",") -> Color:
+    return Color.from_rgb_string(string, delim)
+
+
+def ser_color_rgb(color: Color, delim: str = ",") -> str:
+    return delim.join(map(str, color.to_rgb()))
+
+
+def de_enum(string: str, enum_type: Type[Enum], de_func: Callable[[str], T]) -> Enum:
+    return enum_type(de_func(string))
 
 
 def ser_enum(enum_member: Enum, ser_func: Callable[[T], str]) -> str:
     return ser_func(enum_member.value)
 
 
-def de_model(string: str, model: Type[Model_T]) -> Model_T:
-    return model.from_string(string)
+def de_model(string: str, model: Type["Model"], use_default: bool = False) -> "Model":
+    return model.from_string(string, use_default=use_default)
 
 
-def ser_model(model: Model_T) -> str:
+def ser_model(model: "Model") -> str:
     return model.to_string()
 
 
-def de_base64_str(string: str) -> str:
-    return de_base64_bytes(string).decode()
-
-
-def de_base64_bytes(string: str) -> bytes:
-    remain = len(string) % 4
-
-    if remain:
-        string += "=" * (4 - remain)
-
-    return urlsafe_b64decode(string)
-
-
-def ser_base64_str(string: str) -> str:
-    return ser_base64_bytes(string.encode())
-
-
-def ser_base64_bytes(string: bytes) -> str:
-    return urlsafe_b64encode(string).decode()
+de_base64_str = decode_base64_str
+ser_base64_str = encode_base64_str
 
 
 de_url = unquote
 ser_url = partial(quote, safe="")
 
 
-class Field:
+class BaseField:
     def __init__(
         self,
         index: Union[int, str],
-        de: Callable[[str], T] = identity,
-        ser: Callable[[T], str] = str,
+        de: Callable[[U], T],
+        ser: Callable[[T], U],
         name: Optional[str] = None,
         type: Type[T] = object,
         default: Union[T, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
     ) -> None:
         self._index = str(index)
         self._de = de
@@ -206,15 +276,19 @@ class Field:
         self._name = name
         self._type = type
         self._default = default
+        self._factory = factory
+        self._doc = doc
+        self._aliases = tuple(aliases)
 
     def __repr__(self) -> str:
         info = {
             "index": self.index,
             "name": self.name,
-            "ser": self.ser,
-            "de": self.de,
-            "type": self.type.__name__,
+            "ser": getattr(self.ser, "__qualname__", self.ser),
+            "de": getattr(self.de, "__qualname__", self.de),
+            "type": getattr(self.type, "__name__", self.type),
             "default": repr(self.default),
+            "aliases": self.aliases,
         }
 
         return make_repr(self, info)
@@ -224,11 +298,11 @@ class Field:
         return self._index
 
     @property
-    def de(self) -> Callable[[str], T]:
+    def de(self) -> Callable[[U], T]:
         return self._de
 
     @property
-    def ser(self) -> Callable[[T], str]:
+    def ser(self) -> Callable[[T], U]:
         return self._ser
 
     @property
@@ -243,14 +317,43 @@ class Field:
     def default(self) -> Optional[T]:
         return self._default
 
-    def deserialize(self, string: str) -> T:
-        return self.de(string)
+    @property
+    def factory(self) -> Optional[Callable[[], T]]:
+        return self._factory
 
-    def serialize(self, value: T) -> str:
-        return self.ser(value)
+    @property
+    def doc(self) -> Optional[str]:
+        return self._doc
+
+    @property
+    def aliases(self) -> Tuple[str]:
+        return self._aliases
 
 
-field = Field
+class Field(BaseField):
+    def __init__(
+        self,
+        index: Union[int, str],
+        de: Callable[[str], T] = identity,
+        ser: Callable[[T], str] = str,
+        name: Optional[str] = None,
+        type: Type[T] = object,
+        default: Union[T, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
+    ) -> None:
+        super().__init__(
+            index=index,
+            de=de,
+            ser=ser,
+            name=name,
+            type=type,
+            default=default,
+            factory=factory,
+            doc=doc,
+            aliases=aliases,
+        )
 
 
 class Base64Field(Field):
@@ -259,9 +362,20 @@ class Base64Field(Field):
         index: Union[int, str],
         name: Optional[str] = None,
         default: Union[T, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
     ) -> None:
         super().__init__(
-            index=index, de=de_base64_str, ser=ser_base64_str, name=name, type=str, default=default
+            index=index,
+            de=de_base64_str,
+            ser=ser_base64_str,
+            name=name,
+            type=str,
+            default=default,
+            factory=factory,
+            doc=doc,
+            aliases=aliases,
         )
 
 
@@ -270,10 +384,191 @@ class BoolField(Field):
         self,
         index: Union[int, str],
         name: Optional[str] = None,
+        false: str = "0",
+        true: str = "1",
         default: Union[T, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
     ) -> None:
         super().__init__(
-            index=index, de=de_bool, ser=ser_bool, name=name, type=bool, default=default
+            index=index,
+            de=de_bool,
+            ser=partial(ser_bool, false=false, true=true),
+            name=name,
+            type=bool,
+            default=default,
+            factory=factory,
+            doc=doc,
+            aliases=aliases,
+        )
+
+
+class ColorField(Field):
+    def __init__(
+        self,
+        index: Union[int, str],
+        name: Optional[str] = None,
+        default: Union[T, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
+    ) -> None:
+        super().__init__(
+            index=index,
+            de=de_color_rgb,
+            ser=ser_color_rgb,
+            name=name,
+            type=Color,
+            default=default,
+            factory=factory,
+            doc=doc,
+            aliases=aliases,
+        )
+
+
+class EnumField(Field):
+    def __init__(
+        self,
+        index: Union[int, str],
+        enum_type: Type[Enum],
+        de: Callable[[str], T] = identity,
+        ser: Callable[[T], str] = str,
+        from_field: Optional[Type[Field]] = None,
+        name: Optional[str] = None,
+        default: Union[T, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
+    ) -> None:
+        if from_field is not None:
+            field = from_field(index=index)
+            de, ser = field.de, field.ser
+
+        super().__init__(
+            index=index,
+            de=partial(de_enum, enum_type=enum_type, de_func=de),
+            ser=partial(ser_enum, ser_func=ser),
+            name=name,
+            type=enum_type,
+            default=default,
+            factory=factory,
+            doc=doc,
+            aliases=aliases,
+        )
+
+
+class IterableField(Field):
+    def __init__(
+        self,
+        index: Union[int, str],
+        delim: str,
+        transform: Callable[[Iterator[T]], Iterable[T]],
+        de: Callable[[str], T] = identity,
+        ser: Callable[[T], str] = str,
+        from_field: Optional[Type[Field]] = None,
+        skip_empty: bool = True,
+        name: Optional[str] = None,
+        type: Type[U] = object,
+        default: Union[U, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
+    ) -> None:
+        if from_field is not None:
+            field = from_field(index=index)
+            de, ser = field.de, field.ser
+
+        super().__init__(
+            index=index,
+            de=partial(de_iterable, delim=delim, de=de, transform=transform, skip_empty=skip_empty),
+            ser=partial(ser_iterable, delim=delim, ser=ser),
+            name=name,
+            type=type,
+            default=default,
+            factory=factory,
+            doc=doc,
+            aliases=aliases,
+        )
+
+
+class ModelIterField(IterableField):
+    def __init__(
+        self,
+        index: Union[int, str],
+        model: Type["Model"],
+        delim: str,
+        transform: Callable[[Iterator[T]], Iterable[T]],
+        skip_empty: bool = True,
+        use_default: bool = False,
+        name: Optional[str] = None,
+        type: Type[U] = object,
+        default: Union[U, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
+    ) -> None:
+        super().__init__(
+            index=index,
+            delim=delim,
+            transform=transform,
+            de=partial(de_model, model=model, use_default=use_default),
+            ser=ser_model,
+            skip_empty=skip_empty,
+            name=name,
+            type=type,
+            default=default,
+            factory=factory,
+            doc=doc,
+            aliases=aliases,
+        )
+
+
+class MappingField(Field):
+    def __init__(
+        self,
+        index: Union[int, str],
+        delim: str,
+        transform: Callable[[Iterator[Tuple[K, V]]], Mapping[K, V]],
+        de_key: Callable[[str], K] = identity,
+        de_value: Callable[[str], V] = identity,
+        ser_key: Callable[[K], str] = str,
+        ser_value: Callable[[V], str] = str,
+        key_from_field: Optional[Type[Field]] = None,
+        value_from_field: Optional[Type[Field]] = None,
+        skip_empty: bool = False,
+        name: Optional[str] = None,
+        type: Type[U] = object,
+        default: Union[U, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
+    ) -> None:
+        if key_from_field is not None:
+            field = key_from_field(index=index)
+            de_key, ser_key = field.de, field.ser
+
+        if value_from_field is not None:
+            field = value_from_field(index=index)
+            de_value, ser_value = field.de, field.ser
+
+        super().__init__(
+            index=index,
+            de=partial(
+                de_mapping,
+                delim=delim,
+                de_key=de_key,
+                de_value=de_value,
+                transform=transform,
+                skip_empty=skip_empty,
+            ),
+            ser=partial(ser_mapping, delim=delim, ser_key=ser_key, ser_value=ser_value),
+            name=name,
+            type=type,
+            default=default,
+            factory=factory,
+            doc=doc,
+            aliases=aliases,
         )
 
 
@@ -283,9 +578,20 @@ class FloatField(Field):
         index: Union[int, str],
         name: Optional[str] = None,
         default: Union[T, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
     ) -> None:
         super().__init__(
-            index=index, de=de_float, ser=ser_float, name=name, type=float, default=default
+            index=index,
+            de=de_float,
+            ser=ser_float,
+            name=name,
+            type=float,
+            default=default,
+            factory=factory,
+            doc=doc,
+            aliases=aliases,
         )
 
 
@@ -295,9 +601,20 @@ class IntField(Field):
         index: Union[int, str],
         name: Optional[str] = None,
         default: Union[T, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
     ) -> None:
         super().__init__(
-            index=index, de=de_int, ser=ser_int, name=name, type=int, default=default
+            index=index,
+            de=de_int,
+            ser=ser_int,
+            name=name,
+            type=int,
+            default=default,
+            factory=factory,
+            doc=doc,
+            aliases=aliases,
         )
 
 
@@ -305,17 +622,48 @@ class ModelField(Field):
     def __init__(
         self,
         index: Union[int, str],
-        model: Type[Model_T],
+        model: Type["Model"],
+        use_default: bool = False,
         name: Optional[str] = None,
         default: Union[T, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
     ) -> None:
         super().__init__(
             index=index,
-            de=partial(de_model, model=model),
+            de=partial(de_model, model=model, use_default=use_default),
             ser=ser_model,
             name=name,
             type=model,
             default=default,
+            factory=factory,
+            doc=doc,
+            aliases=aliases,
+        )
+
+
+class RobTopStrField(Field):
+    def __init__(
+        self,
+        index: Union[int, str],
+        key: Key,
+        name: Optional[str] = None,
+        default: Union[T, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
+    ) -> None:
+        super().__init__(
+            index=index,
+            de=partial(decode_robtop_str, key=key),
+            ser=partial(encode_robtop_str, key=key),
+            name=name,
+            type=str,
+            default=default,
+            factory=factory,
+            doc=doc,
+            aliases=aliases,
         )
 
 
@@ -325,9 +673,20 @@ class StrField(Field):
         index: Union[int, str],
         name: Optional[str] = None,
         default: Union[T, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
     ) -> None:
         super().__init__(
-            index=index, de=de_str, ser=ser_str, name=name, type=str, default=default
+            index=index,
+            de=de_str,
+            ser=ser_str,
+            name=name,
+            type=str,
+            default=default,
+            factory=factory,
+            doc=doc,
+            aliases=aliases,
         )
 
 
@@ -337,39 +696,67 @@ class URLField(Field):
         index: Union[int, str],
         name: Optional[str] = None,
         default: Union[T, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
     ) -> None:
         super().__init__(
-            index=index, de=de_url, ser=ser_url, name=name, type=str, default=default
+            index=index,
+            de=de_url,
+            ser=ser_url,
+            name=name,
+            type=str,
+            default=default,
+            factory=factory,
+            doc=doc,
+            aliases=aliases,
         )
 
 
-def deserialize_parts(data: Dict[str, str], field_map: Dict[str, Field]) -> Generator[Tuple[str, T], None, None]:
-    for key, part in data.items():
-        field = field_map.get(key)
+def deserialize_parts(
+    data: Dict[str, U], field_map: Dict[str, BaseField]
+) -> Generator[Tuple[str, T], None, None]:
+    try:
+        for key, part in data.items():
+            field = field_map.get(key)
 
-        if field:
-            yield key, field.deserialize(part)
+            if field:
+                yield key, field.de(part)
 
-        else:
-            yield key, part
+            else:
+                yield key, part
+
+    except Exception as origin:  # noqa
+        raise DeError(data=part, index=key, field=field, origin=origin) from None
 
 
-def deserialize_data(data: Dict[str, str], field_map: Dict[str, Field]) -> Dict[str, T]:
+def deserialize_data(data: Dict[str, U], field_map: Dict[str, BaseField]) -> Dict[str, T]:
     return dict(deserialize_parts(data, field_map))
 
 
-def serialize_parts(data: Dict[str, T], field_map: Dict[str, Field]) -> Generator[Tuple[str, str], None, None]:
-    for key, part in data.items():
-        field = field_map.get(key)
+def serialize_parts(
+    data: Dict[str, T], field_map: Dict[str, BaseField], enforce_str: bool = False
+) -> Generator[Tuple[str, U], None, None]:
+    try:
+        for key, part in data.items():
+            field = field_map.get(key)
 
-        if field:
-            yield key, field.serialize(part)
+            if field:
+                yield key, field.ser(part)
 
-        else:
-            yield key, str(part)
+            elif enforce_str:
+                yield key, f"{part}"
+
+            else:
+                yield key, part
+
+    except Exception as origin:  # noqa
+        raise SerError(data=part, index=key, field=field, origin=origin) from None
 
 
-def serialize_data(data: Dict[str, T], field_map: Dict[str, Field]) -> Dict[str, str]:
+def serialize_data(
+    data: Dict[str, T], field_map: Dict[str, BaseField], enforce_str: bool = False
+) -> Dict[str, U]:
     return dict(serialize_parts(data, field_map))
 
 
@@ -397,10 +784,10 @@ def map_index_to_name(
 class ModelDict(dict):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._fields: Dict[str, Field] = {}
+        self._fields: Dict[str, BaseField] = {}
 
     def __setitem__(self, key: str, value: T) -> None:
-        if isinstance(value, Field):
+        if isinstance(value, BaseField):
             self._fields[key] = value
 
         super().__setitem__(key, value)
@@ -409,7 +796,7 @@ class ModelDict(dict):
         return self.__class__(super().copy())
 
     @property
-    def fields(self) -> Dict[str, Field]:
+    def fields(self) -> Dict[str, BaseField]:
         return self._fields
 
 
@@ -429,7 +816,7 @@ class ModelMeta(type):
         bases: Tuple[Type[T], ...],
         cls_dict: Dict[str, U],
         is_normal: bool = False,
-    ) -> Type[Model_T]:
+    ) -> Type["Model"]:
         if is_normal:
             return super().__new__(meta_cls, cls_name, bases, cls_dict)
 
@@ -438,7 +825,6 @@ class ModelMeta(type):
 
         for name, field in fields.items():  # process names
             cls_dict.pop(name, None)
-
             field._name = name
 
         cls = create_class_backend(meta_cls, bases, cls_dict, fields)
@@ -462,11 +848,11 @@ def write_class_name(cls: Type[T], name: str) -> None:
 
 
 def create_class_backend(
-    meta_cls: Type[Type[Model_T]],
+    meta_cls: Type[Type["Model"]],
     bases: Tuple[Type[T], ...],
     cls_dict: Dict[str, U],
-    field_map: Dict[str, Field],
-) -> Type[Model_T]:
+    field_map: Dict[str, BaseField],
+) -> Type["Model"]:
     class ModelBackend(*bases, metaclass=meta_cls, is_normal=True):
         nonlocal cls_dict, field_map
 
@@ -476,19 +862,18 @@ def create_class_backend(
         INDEX_TO_NAME = {field.index: field.name for field in FIELDS}
 
         DEFAULTS = {field.name: field.default for field in FIELDS if field.default is not null}
+        FACTORIES = {field.name: field.factory for field in FIELDS if field.factory is not None}
 
         namespace = vars()
         namespace.update(cls_dict)
 
         if FIELDS:
             for field in FIELDS:
-                namespace[field.name] = map_property(
-                    name=field.name,
-                    attr=DATA,
-                    key=field.index,
-                    type=field.type,
-                    doc=f"Data field: {field.name}.",
-                )
+                for field_name in (field.name, *field.aliases):
+                    namespace[field_name] = map_property(
+                        name=field_name, attr=DATA, key=field.index, type=field.type, doc=field.doc,
+                    )
+            del field_name
             del field
 
         del namespace
@@ -498,16 +883,21 @@ def create_class_backend(
 
 class Model(metaclass=ModelMeta):
     PARSER: Optional[IndexParser] = None
-    NAME_MAP: Dict[str, Field] = {}
-    INDEX_MAP: Dict[str, Field] = {}
+    NAME_MAP: Dict[str, BaseField] = {}
+    INDEX_MAP: Dict[str, BaseField] = {}
     FIELDS: List[Field] = []
     INDEX_TO_NAME: Dict[str, str] = {}
+    DEFAULTS: Dict[str, T] = {}
+    FACTORIES: Dict[str, Callable[[], T]] = {}
+    ENFORCE_STR: bool = True
+    REPR_IGNORE: Set[str] = set()
 
     def __init__(self, *, use_default: bool = True, **kwargs) -> None:
         self.DATA = {}
 
         if use_default:
-            members = self.DEFAULTS.copy()
+            members = {name: factory() for name, factory in self.FACTORIES.items()}
+            members.update(self.DEFAULTS)
             members.update(kwargs)
         else:
             members = kwargs
@@ -516,9 +906,45 @@ class Model(metaclass=ModelMeta):
             setattr(self, name, member)
 
     def __repr__(self) -> str:
-        info = {name: repr(value) for name, value in self.to_dict().items()}
+        info = {
+            name: repr(value)
+            for name, value in self.to_dict().items()
+            if name not in self.REPR_IGNORE
+        }
 
         return make_repr(self, info)
+
+    def __eq__(self, other: "Model") -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.DATA == other.DATA
+
+    def __ne__(self, other: "Model") -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.DATA != other.DATA
+
+    def __hash__(self) -> int:
+        return hash(tuple(self.DATA.items()))
+
+    def __json__(self) -> Dict[str, T]:
+        return self.to_dict()
+
+    def delete(self, *attrs) -> "Model":
+        for attr in attrs:
+            delattr(self, attr)
+        return self
+
+    def edit(self, **fields) -> "Model":
+        for field, value in fields.items():
+            setattr(self, field, value)
+        return self
+
+    @classmethod
+    def with_data(cls, data: Dict[str, T], use_default: bool = False) -> "Model":
+        self = cls(use_default=use_default)
+        self.DATA.update(data)
+        return self
 
     @classmethod
     def deserialize_data(cls, data: Dict[str, str]) -> Dict[str, T]:
@@ -526,10 +952,10 @@ class Model(metaclass=ModelMeta):
 
     @classmethod
     def serialize_data(cls, data: Dict[str, T]) -> Dict[str, str]:
-        return serialize_data(data, cls.INDEX_MAP)
+        return serialize_data(data, cls.INDEX_MAP, cls.ENFORCE_STR)
 
     @classmethod
-    def from_data(cls, data: Dict[str, str], use_default: bool = False) -> Model_T:
+    def from_data(cls, data: Dict[str, str], use_default: bool = False) -> "Model":
         self = cls(use_default=use_default)
 
         self.DATA.update(self.deserialize_data(data))
@@ -540,13 +966,15 @@ class Model(metaclass=ModelMeta):
         return self.serialize_data(self.DATA)
 
     @classmethod
-    def from_string(cls, string: str, use_default: bool = False) -> Model_T:
+    def from_string(cls, string: str, use_default: bool = False) -> "Model":
         parser = cls.PARSER
 
         if parser is None:
             raise RuntimeError("Attempt to use parsing when PARSER is undefined.")
 
-        return cls.from_data(parser.parse(string), use_default=use_default)
+        data = cls.from_data(parser.parse(string), use_default=use_default)
+
+        return data
 
     def to_string(self) -> str:
         parser = self.PARSER
@@ -557,37 +985,36 @@ class Model(metaclass=ModelMeta):
         return parser.unparse(self.to_data())
 
     @classmethod
-    def from_dict(cls, arg_dict: Dict[str, T], use_default: bool = True) -> Model_T:
-        return cls(use_default=use_default, **arg_dict)
+    def from_dict(cls, arg_dict: Dict[str, T], use_default: bool = True, **kwargs) -> "Model":
+        self = cls(use_default=use_default, **kwargs)
+
+        for name, arg in arg_dict.items():
+            setattr(self, name, arg)
+
+        return self
+
+    @classmethod
+    def maybe_in(cls, string: str) -> bool:
+        parser = cls.PARSER
+
+        if parser is None:
+            raise RuntimeError("Attempt to use check when PARSER is undefined.")
+
+        return parser.delim in string
 
     def to_dict(self, allow_missing: bool = False) -> Dict[str, T]:
         return map_index_to_name(self.DATA, self.INDEX_TO_NAME, allow_missing)
 
+    def __copy__(self) -> "Model":
+        cls = self.__class__
+        return cls.with_data(self.DATA)
 
-class ModelListMeta(type):
-    def __getitem__(cls, model_type: Type[Model]) -> Callable[..., ModelList_T]:
-        return partial(cls, model_type=model_type)
+    def __deepcopy__(self, memo: Optional[Dict[str, U]] = None) -> "Model":
+        cls = self.__class__
+        return cls.with_data(recurse_copy(self.DATA, memo))
 
+    def copy(self) -> "Model":
+        return self.__copy__()
 
-class ModelList(metaclass=ModelListMeta):
-    def __init__(self, delim: str, model_type: Type[Model]) -> None:
-        self._model_type = model_type
-        self._delim = delim
-
-    def __repr__(self) -> str:
-        info = {
-            "model_type": self._model_type.__name__,
-            "delim": repr(self._delim),
-        }
-        return make_repr(self, info)
-
-    def from_string(self, string: str) -> List[Model]:
-        return list(map(
-            self._model_type.from_string,
-            filter(bool, string.split(self._delim)),
-        ))
-
-    def to_string(self, models: List[Model]) -> str:
-        return self._delim.join(map(
-            self._model_type.to_string, models
-        ))
+    def clone(self) -> "Model":
+        return self.__deepcopy__()

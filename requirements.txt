@@ -3,3 +3,5 @@ click>=7.1.0
 enums.py>=0.2.0
 html5lib>=1.0.1
 pefile>=2019.4.18
+tqdm>=4.48.0
+typing_extensions>=3.7.4

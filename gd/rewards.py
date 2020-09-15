@@ -1,9 +1,15 @@
 from datetime import datetime, timedelta
 
-from gd.abstractentity import AbstractEntity
+from gd.abstract_entity import AbstractEntity
+from gd.enums import ShardType, QuestType
+from gd.model import ChestModel, QuestModel  # type: ignore
+from gd.text_utils import make_repr
+from gd.typing import Optional, TYPE_CHECKING
 
-from gd.utils.enums import ShardType, QuestType
-from gd.utils.text_tools import make_repr
+__all__ = ("Chest", "Quest")
+
+if TYPE_CHECKING:
+    from gd.client import Client  # noqa
 
 
 class Chest(AbstractEntity):
@@ -27,6 +33,25 @@ class Chest(AbstractEntity):
     def __str__(self) -> str:
         return f"Chest; count: {self.count}, new in {self.delta}"
 
+    @classmethod
+    def from_model(
+        cls,
+        model: ChestModel,
+        *,
+        client: Optional["Client"] = None,
+        count: int = 0,
+        seconds: int = 0,
+    ) -> "Chest":
+        return cls(
+            orbs=model.orbs,
+            diamonds=model.diamonds,
+            shard_id=model.shard_id,
+            keys=model.keys,
+            count=count,
+            seconds=seconds,
+            client=client,
+        )
+
     @property
     def orbs(self) -> int:
         """:class:`int`: Amount of orbs the chest will give."""
@@ -45,7 +70,7 @@ class Chest(AbstractEntity):
     @property
     def shard_type(self) -> ShardType:
         """:class:`.ShardType`: Type of the shard the chest will give."""
-        return ShardType.from_value(self.options.get("shard_type", 0))
+        return ShardType.from_value(self.shard_id)
 
     @property
     def keys(self) -> int:
@@ -74,8 +99,8 @@ class Chest(AbstractEntity):
 
 
 class Quest(AbstractEntity):
-    def __init__(self, **options) -> None:
-        super().__init__(**options)
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
         self.requested_at: datetime = datetime.utcnow()
 
     def __repr__(self) -> str:
@@ -95,6 +120,23 @@ class Quest(AbstractEntity):
         return (
             f"Quest {self.name!r}; collect: {self.amount} "
             f"{self.type.name.lower()}, reward: {self.reward}, new in {self.delta}"
+        )
+
+    @classmethod
+    def from_model(
+        cls,
+        model: QuestModel,
+        *,
+        client: Optional["Client"] = None,
+        seconds: int = 0,
+    ) -> "Quest":
+        return cls(
+            id=model.id,
+            type=model.type,
+            amount=model.amount,
+            reward=model.reward,
+            name=model.name,
+            client=client,
         )
 
     @property

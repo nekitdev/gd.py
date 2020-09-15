@@ -2,37 +2,41 @@ import asyncio
 import signal
 import traceback
 
+from gd.async_utils import acquire_loop, shutdown_loop, gather
+from gd.enums import TimelyType
+from gd.filters import Filters
 from gd.level import Level
 from gd.logging import get_logger
+from gd.text_utils import make_repr
 from gd.typing import (
-    Client,
-    Comment,
-    FriendRequest,
+    Any,
+    AsyncIterator,
     Iterable,
     Iterator,
     List,
-    Message,
+    Optional,
+    Sequence,
     TypeVar,
-    Union,
+    TYPE_CHECKING,
 )
-
-from gd.utils.async_utils import acquire_loop, shutdown_loop, gather
-from gd.utils.enums import TimelyType
-from gd.utils.filters import Filters
-from gd.utils.text_tools import make_repr
 
 __all__ = (
     "AbstractListener",
     "TimelyLevelListener",
     "RateLevelListener",
+    "MessageListener",
     "MessageOrRequestListener",
+    "RequestListener",
     "LevelCommentListener",
     "get_loop",
     "set_loop",
-    "run",
+    "run_loop",
     "differ",
     "all_listeners",
 )
+
+if TYPE_CHECKING:
+    from gd.client import Client  # noqa
 
 T = TypeVar("T")
 
@@ -60,7 +64,7 @@ def set_loop(new_loop: asyncio.AbstractEventLoop) -> None:
     loop = new_loop
 
 
-def run(loop: asyncio.AbstractEventLoop) -> None:
+def run_loop(loop: asyncio.AbstractEventLoop) -> None:
     """Run a loop and shutdown it after stopping."""
     try:
         loop.add_signal_handler(signal.SIGINT, loop.stop)
@@ -85,10 +89,12 @@ def run(loop: asyncio.AbstractEventLoop) -> None:
 class AbstractListener:
     """Abstract listener for listeners to derive from."""
 
-    def __init__(self, client: Client, delay: float = 10.0) -> None:
+    def __init__(self, client: "Client", delay: float = 10.0) -> None:
         self.client = client
         self.delay = delay
-        self.cache = None
+
+        self.cache: Any = None
+
         self.loop: asyncio.AbstractEventLoop = acquire_loop(running=True)
 
         all_listeners.append(self)
@@ -97,7 +103,7 @@ class AbstractListener:
         info = {"client": self.client}
         return make_repr(self, info)
 
-    async def on_error(self, exc: Exception) -> None:
+    async def on_error(self, error: Exception) -> None:
         """Basic event handler to print the errors if any occur."""
         traceback.print_exc()
 
@@ -124,21 +130,23 @@ class AbstractListener:
 class TimelyLevelListener(AbstractListener):
     """Listens for a new daily or weekly level."""
 
-    def __init__(self, client: Client, timely_type: str, delay: int = 10.0) -> None:
+    def __init__(self, client: "Client", daily: bool, delay: float = 10.0) -> None:
         super().__init__(client=client, delay=delay)
-        self.method = getattr(client, "get_" + timely_type)
-        self.call_method = "new_" + timely_type
+
+        self.get_timely = client.get_daily if daily else client.get_weekly
+
+        self.to_call = "new_daily" if daily else "new_weekly"
 
     async def scan(self) -> None:
         """Scan for either daily or weekly levels."""
-        timely = await self.method()
+        timely = await self.get_timely()
 
         if self.cache is None:
             self.cache = timely
             return
 
         if timely.id != self.cache.id:
-            dispatcher = self.client.dispatch(self.call_method, timely)
+            dispatcher = self.client.dispatch(self.to_call, timely)
             self.loop.create_task(dispatcher)  # schedule the execution
 
         self.cache = timely
@@ -147,18 +155,27 @@ class TimelyLevelListener(AbstractListener):
 class RateLevelListener(AbstractListener):
     """Listens for a new rated or unrated level."""
 
-    def __init__(self, client: Client, listen_to_rate: bool = True, delay: float = 10.0) -> None:
+    def __init__(
+        self,
+        client: "Client",
+        rate: bool,
+        delay: float = 10.0,
+        pages: int = 5,
+        ensure: bool = True,
+    ) -> None:
         super().__init__(client=client, delay=delay)
-        self.call_method = "level_rated" if listen_to_rate else "level_unrated"
-        self.filters = Filters(strategy="awarded")
-        self.find_new = listen_to_rate
 
-    async def method(self, pages: int = 5) -> List[Level]:
-        return await self.client.search_levels(filters=self.filters, pages=range(pages))
+        self.filters = Filters(strategy="awarded")
+        self.pages = pages
+
+        self.to_call = "level_rated" if rate else "level_unrated"
+
+        self.ensure = ensure
+        self.find_new = rate
 
     async def scan(self) -> None:
         """Scan for rated/unrated levels."""
-        new = await self.method()
+        new = await self.client.search_levels(filters=self.filters, pages=range(self.pages))
 
         if not new:  # servers are probably broken, abort
             return
@@ -171,45 +188,61 @@ class RateLevelListener(AbstractListener):
 
         self.cache = new
 
-        for level in await rating_differ(difference, self.find_new):
-            dispatcher = self.client.dispatch(self.call_method, level)
-            self.loop.create_task(dispatcher)
+        if self.ensure:
+            async for level in rating_differ(difference, self.find_new):
+                dispatcher = self.client.dispatch(self.to_call, level)
+                self.loop.create_task(dispatcher)
 
-
-async def rating_differ(array: Iterable[Level], find_new: bool = True) -> List[Level]:
-    array = list(array)
-    updated = await gather(level.refresh() for level in array)
-    final = []
-
-    for level, new in zip(array, updated):
-        if find_new:
-            if new.is_rated() or new.has_coins_verified():
-                final.append(new)
         else:
-            if new is None:
-                final.append(level)
-            elif not new.is_rated() and not new.has_coins_verified():
-                final.append(new)
+            for level in difference:
+                dispatcher = self.client.dispatch(self.to_call, level)
+                self.loop.create_task(dispatcher)
 
-    return final
+
+async def rating_differ(iterable: Iterable[Level], find_new: bool = True) -> AsyncIterator[Level]:
+    not_refreshed: List[Level] = list(iterable)
+
+    refreshed: List[Optional[Level]] = await gather(
+        level.refresh(get_data=False) for level in not_refreshed
+    )
+
+    for level, refreshed_level in zip(not_refreshed, refreshed):
+        if find_new:
+            if refreshed_level is not None and (
+                refreshed_level.is_rated() or refreshed_level.has_coins_verified()
+            ):
+                yield refreshed_level
+
+        else:
+            if refreshed_level is None:
+                yield level
+
+            elif not refreshed_level.is_rated() and not refreshed_level.has_coins_verified():
+                yield refreshed_level
 
 
 class MessageOrRequestListener(AbstractListener):
     """Listens for a new friend request or message."""
 
-    def __init__(self, client: Client, listen_messages: bool = True, delay: float = 5.0) -> None:
+    def __init__(
+        self,
+        client: "Client",
+        message: bool,
+        delay: float = 10.0,
+        pages: int = 5,
+        read: bool = True,
+    ) -> None:
         super().__init__(client=client, delay=delay)
-        self.to_call = "message" if listen_messages else "friend_request"
-        self.method = getattr(
-            client, ("get_messages" if listen_messages else "get_friend_requests")
-        )
 
-    async def call_method(self, pages: int = 10) -> Union[List[FriendRequest], List[Message]]:
-        return await self.method(pages=range(pages))
+        self.pages = pages
+        self.read = read
+
+        self.to_call = "message" if message else "friend_request"
+        self.get_entities = client.get_messages if message else client.get_friend_requests
 
     async def scan(self) -> None:
         """Scan for new friend requests or messages."""
-        new = await self.call_method()
+        new = await self.get_entities()  # type: ignore
 
         if not new:
             return
@@ -218,9 +251,10 @@ class MessageOrRequestListener(AbstractListener):
             self.cache = new
             return
 
-        difference = list(differ(self.cache, new, True))
+        difference = differ(self.cache, new, find_new=True)
 
-        await gather(entity.read() for entity in difference)
+        if self.read:
+            await gather(entity.read() for entity in difference)
 
         self.cache = new
 
@@ -229,21 +263,34 @@ class MessageOrRequestListener(AbstractListener):
             self.loop.create_task(dispatcher)
 
 
+MessageListener = MessageOrRequestListener
+RequestListener = MessageOrRequestListener
+
+
 class LevelCommentListener(AbstractListener):
     """Listens for a new comment on a level."""
 
-    def __init__(self, client: Client, level_id: int, delay: float = 10.0) -> None:
+    def __init__(
+        self,
+        client: "Client",
+        level_id: int,
+        delay: float = 10.0,
+        amount: int = 1000,
+        refresh: bool = True,
+    ) -> None:
         super().__init__(client=client, delay=delay)
-        self.call_method = "level_comment"
+
+        self.amount = amount
+        self.refresh = refresh
+
+        self.to_call = "level_comment"
+
         self.timely_type = TimelyType(-level_id if level_id < 0 else 0)
         self.level = Level(id=level_id, type=self.timely_type, client=self.client)
 
-    async def method(self, amount: int = 1000) -> List[Comment]:
-        return await self.level.get_comments(amount=amount)
-
     async def scan(self) -> None:
         """Scan for new comments on a level."""
-        new = await self.method()
+        new = await self.level.get_comments(amount=self.amount)
 
         if not new:
             return
@@ -252,28 +299,33 @@ class LevelCommentListener(AbstractListener):
             self.cache = new
             return
 
-        difference = differ(self.cache, new, True)
+        difference = differ(self.cache, new, find_new=True)
 
         self.cache = new
 
-        if difference:
+        if difference and self.refresh:
             await self.level.refresh()
 
         for comment in difference:
-            dispatcher = self.client.dispatch(self.call_method, self.level, comment)
+            dispatcher = self.client.dispatch(self.to_call, self.level, comment)
             self.loop.create_task(dispatcher)
 
 
-def differ(before: List[T], after: List[T], find_new: bool = True) -> Iterator[T]:
-    # this could be improved a lot ~ nekit
-    if find_new:
-        for item in before:
-            # find a pivot
-            try:
-                after = after[: after.index(item)]
-                break
-            except ValueError:  # not in list
-                pass
+def differ(before: Sequence[T], after: Sequence[T], find_new: bool = True) -> Iterator[T]:
+    sequence_not_in, sequence_in = (before, after) if find_new else (after, before)
 
-    list_not_in, list_in = (before, after) if find_new else (after, before)
-    return filter(lambda elem: (elem not in list_not_in), list_in)
+    set_not_in = set(sequence_not_in)
+
+    if find_new:
+        index = 0
+
+        for index, item in enumerate(sequence_in):
+            if item in set_not_in:
+                break
+
+        else:
+            index = len(sequence_in)
+
+        sequence_in = sequence_in[:index]
+
+    return (item for item in sequence_in if item not in set_not_in)

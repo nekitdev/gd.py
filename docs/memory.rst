@@ -10,9 +10,7 @@ Memory Interaction
 
 gd.py allows to interact with the memory of Geometry Dash.
 
-Quick example of a program that will print a random message every time the player dies.
-
-.. code-block:: python3
+Quick example of a program that will print a random message every time the player dies::
 
     import random  # for fun
 
@@ -22,13 +20,16 @@ Quick example of a program that will print a random message every time the playe
 
     # initialize memory object by acquiring process handle and base addresses
     memory = gd.memory.get_memory()
+
     do_print = True
 
     while True:
         if memory.is_dead():  # if player is dead
             if do_print:
                 print(f"{random.choice(messages)} ({memory.get_percent()}%)")
+
             do_print = False
+
         else:
             do_print = True
 
@@ -36,7 +37,23 @@ Types
 -----
 
 There are several simple types gd.py support for reading/writing memory:
-*Bool*, *Int32*, *Int64*, *Float32*, *Float64*, *String*.
+
+- *Bool*
+
+- *Float32*
+- *Float64*
+
+- *Int8*
+- *Int16*
+- *Int32*
+- *Int64*
+
+- *UInt8*
+- *UInt16*
+- *UInt32*
+- *UInt64*
+
+- *String*
 
 They can be accessed like so:
 
@@ -47,12 +64,6 @@ They can be accessed like so:
     print(gd.memory.Int32)
     # or
     print(gd.memory.Type.Float64)
-
-Enums
------
-
-.. autoclass:: Scene
-    :members:
 
 Buffer
 ------

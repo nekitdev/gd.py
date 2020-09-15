@@ -3,31 +3,12 @@ from pathlib import Path
 
 from attr import attrib, dataclass
 
-from gd.logging import get_logger
-from gd.typing import (
-    Any,
-    Client,
-    Comment,
-    Dict,
-    Level,
-    LevelRecord,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-)
-
-from gd.abstractentity import AbstractEntity
-from gd.abstractuser import AbstractUser
-from gd.song import Song
-
-from gd.errors import MissingAccess, NothingFound
-
-from gd.api.editor import Editor
-
-from gd.utils.converter import Converter
-from gd.utils.enums import (
+from gd.abstract_entity import AbstractEntity
+from gd.async_iter import async_iterable
+from gd.converters import GameVersion
+from gd.crypto import unzip_level_str, zip_level_str
+from gd.decorators import cache_by
+from gd.enums import (
     DemonDifficulty,
     LevelDifficulty,
     CommentStrategy,
@@ -35,29 +16,32 @@ from gd.utils.enums import (
     TimelyType,
     LevelLeaderboardStrategy,
 )
-from gd.utils.indexer import Index
-from gd.utils.parser import ExtDict
-from gd.utils.search_utils import get
-from gd.utils.text_tools import make_repr, object_split
-from gd.utils.crypto.coders import Coder
+from gd.errors import MissingAccess
+from gd.logging import get_logger
+from gd.model import LevelModel  # type: ignore
+from gd.search_utils import get
+from gd.text_utils import is_level_probably_decoded, make_repr, object_count
+from gd.song import Song
+from gd.typing import Any, AsyncIterator, Dict, Iterable, Optional, Union, TYPE_CHECKING, cast
+from gd.user import User
+
+from gd.api.editor import Editor
+
+if TYPE_CHECKING:
+    from gd.client import Client  # noqa
+    from gd.comment import Comment  # noqa
+
+__all__ = ("Level", "official_levels", "official_levels_data")
+
+CONCURRENT = True
+COMMENT_PAGE_SIZE = 20
+ZERO_PAGE = (0,)
+
 
 official_levels_path = Path(__file__).parent / "official_levels.json"
-
-if official_levels_path.exists():
-    official_levels_data = json.loads(official_levels_path.read_text())
-
-else:
-    official_levels_data = {}
+official_levels_data: Dict[str, str] = {}
 
 log = get_logger(__name__)
-
-
-def excluding(*args: Tuple[Type[BaseException]]) -> Tuple[Type[BaseException]]:
-    return args
-
-
-DEFAULT_EXCLUDE: Tuple[Type[BaseException]] = excluding(NothingFound)
-ZERO_STR = "0"
 
 
 class Level(AbstractEntity):
@@ -80,10 +64,55 @@ class Level(AbstractEntity):
 
     def __json__(self) -> Dict[str, Any]:
         return dict(
-            super().__json__(),
-            featured=self.is_featured(),
-            was_unfeatured=self.was_unfeatured(),
-            objects=self.objects,
+            super().__json__(), featured=self.is_featured(), was_unfeatured=self.was_unfeatured(),
+        )
+
+    @classmethod
+    def from_model(
+        cls,
+        model: LevelModel,
+        *,
+        client: Optional["Client"] = None,
+        creator: Optional[User] = None,
+        song: Optional[Song] = None,
+        type: TimelyType = TimelyType.NOT_TIMELY,  # type: ignore
+        timely_id: int = -1,
+        cooldown: int = -1,
+    ) -> "Level":
+        return cls(
+            id=model.id,
+            name=model.name,
+            description=model.description,
+            unprocessed_data=model.unprocessed_data,
+            version=model.version,
+            creator=(creator if creator else User()).attach_client(client),
+            song=(song if song else Song()).attach_client(client),
+            downloads=model.downloads,
+            game_version=model.game_version,
+            rating=model.rating,
+            length=model.length,
+            is_demon=model.is_demon,
+            stars=model.stars,
+            score=model.score,
+            is_auto=model.is_auto,
+            password=model.password,
+            copyable=model.copyable,
+            difficulty=model.difficulty,
+            upload_timestamp=model.upload_timestamp,
+            update_timestamp=model.update_timestamp,
+            original_id=model.original_id,
+            two_player=model.two_player,
+            extra_string=model.extra_string,
+            coins=model.coins,
+            verified_coins=model.verified_coins,
+            requested_stars=model.requested_stars,
+            low_detail_mode=model.low_detail_mode,
+            is_epic=model.is_epic,
+            object_count=model.object_count,
+            timely_id=(timely_id if timely_id > 0 else model.timely_id),
+            type=type,
+            cooldown=cooldown,
+            client=client,
         )
 
     @classmethod
@@ -92,10 +121,10 @@ class Level(AbstractEntity):
         id: Optional[int] = None,
         name: Optional[str] = None,
         index: Optional[int] = None,
-        client: Optional[Client] = None,
+        client: Optional["Client"] = None,
         get_data: bool = True,
         server_style: bool = False,
-    ) -> Level:
+    ) -> "Level":
         """Get official level to work with.
 
         Lookup is done in the following form: ``id -> name -> index``.
@@ -152,100 +181,8 @@ class Level(AbstractEntity):
         if official_level is None:
             raise LookupError("Could not find official level by given query.")
 
-        return official_level.into_level(client, get_data=get_data, server_style=server_style)
-
-    @classmethod
-    def from_data(
-        cls,
-        data: ExtDict,
-        creator: Union[ExtDict, AbstractUser],
-        song: Union[ExtDict, Song],
-        client: Client,
-    ) -> Level:
-        if isinstance(creator, ExtDict):
-            creator = AbstractUser(**creator, client=client)
-
-        if isinstance(song, ExtDict):
-            if any(key.isdigit() for key in song.keys()):
-                song = Song.from_data(song, client=client)
-            else:
-                song = Song(**song, client=client)
-
-        string = data.get(Index.LEVEL_PASS)
-
-        if string is None:
-            copyable, password = False, None
-        else:
-            if string == ZERO_STR:
-                copyable, password = False, None
-            else:
-                try:
-                    # decode password
-                    password = Coder.decode(type="levelpass", string=string)
-                except Exception:
-                    # failed to get password
-                    copyable, password = False, None
-                else:
-                    copyable = True
-
-                    if not password:
-                        password = None
-
-                    else:
-                        # password is in format 1XXXXXX
-                        password = password[1:]
-                        password = int(password) if password.isdigit() else None
-
-        desc = Coder.do_base64(
-            data.get(Index.LEVEL_DESCRIPTION, ""), encode=False, errors="replace"
-        )
-
-        level_data = data.get(Index.LEVEL_DATA, "")
-        try:
-            level_data = Coder.unzip(level_data)
-        except Exception:  # conversion failed
-            pass
-
-        diff = data.getcast(Index.LEVEL_DIFFICULTY, 0, int)
-        demon_diff = data.getcast(Index.LEVEL_DEMON_DIFFICULTY, 0, int)
-        is_demon = bool(data.getcast(Index.LEVEL_IS_DEMON, 0, int))
-        is_auto = bool(data.getcast(Index.LEVEL_IS_AUTO, 0, int))
-        difficulty = Converter.convert_level_difficulty(
-            diff=diff, demon_diff=demon_diff, is_demon=is_demon, is_auto=is_auto
-        )
-
-        return cls(
-            id=data.getcast(Index.LEVEL_ID, 0, int),
-            name=data.get(Index.LEVEL_NAME, "unknown"),
-            description=desc,
-            version=data.getcast(Index.LEVEL_VERSION, 0, int),
-            creator=creator,
-            song=song,
-            data=level_data,
-            password=password,
-            copyable=copyable,
-            is_demon=is_demon,
-            is_auto=is_auto,
-            low_detail_mode=bool(data.get(Index.LEVEL_HAS_LDM)),
-            difficulty=difficulty,
-            stars=data.getcast(Index.LEVEL_STARS, 0, int),
-            coins=data.getcast(Index.LEVEL_COIN_COUNT, 0, int),
-            verified_coins=bool(data.getcast(Index.LEVEL_COIN_VERIFIED, 0, int)),
-            is_epic=bool(data.getcast(Index.LEVEL_IS_EPIC, 0, int)),
-            original=data.getcast(Index.LEVEL_ORIGINAL, 0, int),
-            downloads=data.getcast(Index.LEVEL_DOWNLOADS, 0, int),
-            rating=data.getcast(Index.LEVEL_LIKES, 0, int),
-            score=data.getcast(Index.LEVEL_FEATURED_SCORE, 0, int),
-            uploaded_timestamp=data.get(Index.LEVEL_UPLOADED_TIMESTAMP, "unknown"),
-            last_updated_timestamp=data.get(Index.LEVEL_LAST_UPDATED_TIMESTAMP, "unknown"),
-            length=LevelLength.from_value(data.getcast(Index.LEVEL_LENGTH, 0, int)),
-            game_version=data.getcast(Index.LEVEL_GAME_VERSION, 0, int),
-            stars_requested=data.getcast(Index.LEVEL_REQUESTED_STARS, 0, int),
-            object_count=data.getcast(Index.LEVEL_OBJECT_COUNT, 0, int),
-            type=TimelyType.from_value(data.getcast(Index.LEVEL_TIMELY_TYPE, 0, int), 0),
-            time_n=data.getcast(Index.LEVEL_TIMELY_INDEX, -1, int),
-            cooldown=data.getcast(Index.LEVEL_TIMELY_COOLDOWN, -1, int),
-            client=client,
+        return cast(OfficialLevel, official_level).into_level(
+            client, get_data=get_data, server_style=server_style
         )
 
     @property
@@ -279,14 +216,14 @@ class Level(AbstractEntity):
         return self.options.get("score", 0)
 
     @property
-    def creator(self) -> AbstractUser:
-        """:class:`.AbstractUser`: Creator of the level."""
-        return self.options.get("creator", AbstractUser(client=self.options.get("client")))
+    def creator(self) -> User:
+        """:class:`.User`: Creator of the level."""
+        return self.options.get("creator", User(client=self.client_unchecked))
 
     @property
     def song(self) -> Song:
         """:class:`.Song`: Song used in the level."""
-        return self.options.get("song", Song(client=self.options.get("client")))
+        return self.options.get("song", Song(client=self.client_unchecked))
 
     @property
     def difficulty(self) -> Union[DemonDifficulty, LevelDifficulty]:
@@ -323,17 +260,21 @@ class Level(AbstractEntity):
     @property
     def original_id(self) -> int:
         """:class:`int`: ID of the original level. (``0`` if is not a copy)"""
-        return self.options.get("original", 0)
+        return self.options.get("original_id", 0)
 
     @property
-    def uploaded_timestamp(self) -> str:
-        """:class:`str`: A human-readable string representing how much time ago level was uploaded."""
-        return self.options.get("uploaded_timestamp", "unknown")
+    def upload_timestamp(self) -> str:
+        """:class:`str`: A human-readable string representing
+        how much time ago level was uploaded.
+        """
+        return self.options.get("upload_timestamp", "unknown")
 
     @property
-    def last_updated_timestamp(self) -> str:
+    def update_timestamp(self) -> str:
         """:class:`str`: A human-readable string showing how much time ago the last update was."""
-        return self.options.get("last_updated_timestamp", "unknown")
+        return self.options.get("update_timestamp", "unknown")
+
+    last_update_timestamp = update_timestamp
 
     @property
     def length(self) -> LevelLength:
@@ -348,12 +289,12 @@ class Level(AbstractEntity):
     @property
     def requested_stars(self) -> int:
         """:class:`int`: Amount of stars creator of the level has requested."""
-        return self.options.get("stars_requested", 0)
+        return self.options.get("requested_stars", 0)
 
     @property
     def objects(self) -> int:
         """:class:`int`: Amount of objects the level has in data."""
-        return len(object_split(self.data))
+        return object_count(self.data)
 
     @property
     def object_count(self) -> int:
@@ -366,41 +307,50 @@ class Level(AbstractEntity):
         return TimelyType.from_value(self.options.get("type", 0))
 
     @property
-    def timely_index(self) -> int:
-        """:class:`int`: A number that represents current index of the timely.
+    def timely_id(self) -> int:
+        """:class:`int`: A number that represents current ID of the timely.
         Increments on new dailies/weeklies. If not timely, equals ``-1``.
         """
-        return self.options.get("time_n", -1)
+        return self.options.get("timely_id", -1)
 
     @property
     def cooldown(self) -> int:
         """:class:`int`: Represents a cooldown until next timely. If not timely, equals ``-1``."""
         return self.options.get("cooldown", -1)
 
-    @property
-    def data(self) -> Union[bytes, str]:
-        """Union[:class:`str`, :class:`bytes`]: Level data, represented as a stream."""
-        return self.options.get("data", "")
+    def get_unprocessed_data(self) -> str:
+        return self.options.get("unprocessed_data", "")
 
-    @data.setter
-    def data(self, value: Union[bytes, str]) -> None:
-        """Set ``self.data`` to ``value``."""
-        self.options.update(data=value)
+    def set_unprocessed_data(self, unprocessed_data: str) -> None:
+        self.options.update(unprocessed_data=unprocessed_data)
 
-    def is_timely(self, daily_or_weekly: Optional[str] = None) -> bool:
-        """:class:`bool`: Indicates whether a level is timely/daily/weekly.
-        For instance, let's suppose a *level* is daily. Then, the behavior of this method is:
-        ``level.is_timely() -> True`` and ``level.is_timely('daily') -> True`` but
-        ``level.is_timely('weekly') -> False``."""
-        if self.type is None:  # pragma: no cover
-            return False
+    unprocessed_data = property(get_unprocessed_data, set_unprocessed_data)
 
-        if daily_or_weekly is None:
-            return self.type.value > 0
+    @cache_by("unprocessed_data")
+    def get_data(self) -> str:
+        unprocessed_data = self.unprocessed_data
 
-        assert daily_or_weekly in ("daily", "weekly")
+        if is_level_probably_decoded(unprocessed_data):
+            return unprocessed_data
 
-        return self.type.name.lower() == daily_or_weekly
+        else:
+            return unzip_level_str(unprocessed_data)
+
+    def set_data(self, level_data: str) -> None:
+        if is_level_probably_decoded(level_data):
+            self.unprocessed_data = zip_level_str(level_data)
+
+        else:
+            self.unprocessed_data = level_data
+
+    data = property(get_data, set_data)
+
+    def is_timely(self, timely_type: Optional[Union[int, str, TimelyType]] = None) -> bool:
+        """:class:`bool`: Indicates whether a level is timely/daily/weekly."""
+        if timely_type is None:
+            return self.type is not TimelyType.NOT_TIMELY
+
+        return self.type is TimelyType.from_value(timely_type)
 
     def is_rated(self) -> bool:
         """:class:`bool`: Indicates if a level is rated (has stars)."""
@@ -412,7 +362,7 @@ class Level(AbstractEntity):
 
     def is_featured(self) -> bool:
         """:class:`bool`: Indicates whether a level is featured."""
-        return self.score > 0  # not sure if this is the right way though
+        return self.score > 0
 
     def is_epic(self) -> bool:
         """:class:`bool`: Indicates whether a level is epic."""
@@ -434,20 +384,14 @@ class Level(AbstractEntity):
         """:class:`bool`: Indicates whether level's coins are verified."""
         return bool(self.options.get("verified_coins"))
 
-    def download(self) -> Union[bytes, str]:
-        """Union[:class:`str`, :class:`bytes`]: Returns level data, represented as string."""
-        return self.data
-
-    def has_ldm(self) -> bool:
+    def has_low_detail_mode(self) -> bool:
         return bool(self.options.get("low_detail_mode"))
 
     def open_editor(self) -> Editor:
-        return Editor.launch(self, "data")
+        return Editor.load_from(self, "data")
 
     async def report(self) -> None:
-        """|coro|
-
-        Reports a level.
+        """Reports a level.
 
         Raises
         ------
@@ -457,9 +401,7 @@ class Level(AbstractEntity):
         await self.client.report_level(self)
 
     async def upload(self, **kwargs) -> None:
-        r"""|coro|
-
-        Upload ``self``.
+        r"""Upload ``self``.
 
         Parameters
         ----------
@@ -467,23 +409,18 @@ class Level(AbstractEntity):
             Arguments that :meth:`.Client.upload_level` accepts.
             Defaults are properties of the level.
         """
-        track, song_id = (self.song.id, 0)
+        track, song_id = (0, self.song.id) if self.song.is_custom() else (self.song.id, 0)
 
-        if self.song.is_custom():
-            track, song_id = song_id, track
+        client = self.client_unchecked
 
-        try:
-            client = self.client
-        except Exception:
+        if client is None:
             client = kwargs.pop("from_client", None)
 
-            if client is None:
-                raise MissingAccess(
-                    "Could not find the client to upload level from. "
-                    "Either attach a client to this level or provide <from_client> parameter."
-                ) from None
-
-        password = kwargs.pop("password", self.password)
+        if client is None:
+            raise MissingAccess(
+                "Could not find the client to upload level from. "
+                "Either attach a client to this level or provide <from_client> parameter."
+            )
 
         args = dict(
             name=self.name,
@@ -501,7 +438,7 @@ class Level(AbstractEntity):
             unlisted=False,
             friends_only=False,
             ldm=False,
-            password=password,
+            password=self.password,
             copyable=self.is_copyable(),
             description=self.description,
             data=self.data,
@@ -511,12 +448,10 @@ class Level(AbstractEntity):
 
         uploaded = await client.upload_level(**args)
 
-        self.options = uploaded.options
+        self.options.update(uploaded.options)
 
     async def delete(self) -> None:
-        """|coro|
-
-        Deletes a level.
+        """Deletes a level.
 
         Raises
         ------
@@ -525,10 +460,8 @@ class Level(AbstractEntity):
         """
         await self.client.delete_level(self)
 
-    async def update_description(self, content: Optional[str] = None) -> None:
-        """|coro|
-
-        Updates level description.
+    async def update_description(self, content: str) -> None:
+        """Updates level description.
 
         Parameters
         ----------
@@ -540,15 +473,10 @@ class Level(AbstractEntity):
         :exc:`.MissingAccess`
             Failed to update level's description.
         """
-        if content is None:
-            return
-
         await self.client.update_level_description(self, content)
 
-    async def rate(self, stars: int = 1) -> None:
-        """|coro|
-
-        Sends level rating.
+    async def rate(self, stars: int) -> None:
+        """Sends level rating.
 
         Parameters
         ----------
@@ -563,11 +491,9 @@ class Level(AbstractEntity):
         await self.client.rate_level(self, stars)
 
     async def rate_demon(
-        self, demon_difficulty: Union[int, str, DemonDifficulty] = 1, as_mod: bool = False
+        self, demon_difficulty: Union[int, str, DemonDifficulty], as_mod: bool = False
     ) -> None:
-        """|coro|
-
-        Sends level demon rating.
+        """Sends level demon rating.
 
         Parameters
         ----------
@@ -585,10 +511,8 @@ class Level(AbstractEntity):
 
         await self.client.rate_demon(self, demon_difficulty=demon_difficulty, as_mod=as_mod)
 
-    async def send(self, stars: int = 1, featured: bool = True) -> None:
-        """|coro|
-
-        Sends a level to Geometry Dash Developer and Administrator, *RobTop*.
+    async def send(self, stars: int, featured: bool) -> None:
+        """Sends a level to Geometry Dash Developer and Administrator, *RobTop*.
 
         Parameters
         ----------
@@ -596,7 +520,7 @@ class Level(AbstractEntity):
             Amount of stars to send with.
 
         featured: :class:`bool`
-            Whether to send to feature, or to simply rate.
+            Whether to send for a feature, or for a rate.
 
         Raises
         ------
@@ -606,28 +530,24 @@ class Level(AbstractEntity):
         await self.client.send_level(self, stars=stars, featured=featured)
 
     async def is_alive(self) -> bool:
-        """|coro|
-
-        Checks if a level is still on Geometry Dash servers.
+        """Checks if a level is still on Geometry Dash servers.
 
         Returns
         -------
         :class:`bool`
             ``True`` if a level is still *alive*, and ``False`` otherwise.
-            Also ``False`` if a client is not attached to the level.s
+            Also ``False`` if a client is not attached to the level.
         """
         try:
-            await self.client.search_levels_on_page(query=str(self.id))
+            await self.client.search_levels_on_page(query=self.id)
 
         except MissingAccess:
             return False
 
         return True
 
-    async def refresh(self) -> Optional[Level]:
-        """|coro|
-
-        Refreshes a level. Returns ``None`` on fail.
+    async def update(self, *, get_data: bool = True) -> Optional["Level"]:
+        """Refreshes a level. Returns ``None`` on fail.
 
         .. note::
 
@@ -640,36 +560,40 @@ class Level(AbstractEntity):
             A newly fetched version. ``None`` if failed to fetch.
         """
         try:
-            if self.is_timely():
-                async_func = getattr(self.client, "get_" + self.type.name.lower())
-                new_ver = await async_func()
+            if self.type is TimelyType.DAILY:
+                new = await self.client.get_daily()
 
-                if new_ver.id != self.id:
-                    log.warning(
-                        f"There is a new {self.type.title} Level: {new_ver!r}. Updating to it..."
-                    )
+            elif self.type is TimelyType.WEEKLY:
+                new = await self.client.get_weekly()
 
             else:
-                new_ver = await self.client.get_level(self.id)
+                new = await self.client.get_level(self.id, get_data=get_data)
+
+            if new.id != self.id:
+                log.warning(
+                    f"Level has changed: {self.name} ({self.id}) -> "
+                    f"{new.name} ({new.id}). Updating to it..."
+                )
 
         except MissingAccess:
-            return log.warning("Failed to refresh level: %r. Most likely it was deleted.", self)
+            log.warning("Failed to update the level: %r. Most likely it was deleted.", self)
+            return None
 
-        self.options = new_ver.options
+        self.options.update(new.options)
 
         return self
 
-    async def comment(self, content: str, percentage: int = 0) -> Optional[Comment]:
-        """|coro|
+    refresh = update
 
-        Posts a comment on a level.
+    async def comment(self, content: str, percent: int = 0) -> Optional["Comment"]:
+        """Posts a comment on a level.
 
         Parameters
         ----------
         content: :class:`str`
             Body of the comment to post.
 
-        percentage: :class:`int`
+        percent: :class:`int`
             Percentage to display. Default is ``0``.
 
             .. note::
@@ -687,12 +611,10 @@ class Level(AbstractEntity):
         Optional[:class:`.Comment`]
             Sent comment.
         """
-        return await self.client.comment_level(self, content, percentage)
+        return await self.client.comment_level(self, content, percent)
 
     async def like(self) -> None:
-        """|coro|
-
-        Likes a level.
+        """Likes a level.
 
         Raises
         ------
@@ -702,9 +624,7 @@ class Level(AbstractEntity):
         await self.client.like(self)
 
     async def dislike(self) -> None:
-        """|coro|
-
-        Dislikes a level.
+        """Dislikes a level.
 
         Raises
         ------
@@ -713,34 +633,44 @@ class Level(AbstractEntity):
         """
         await self.client.dislike(self)
 
-    async def get_leaderboard(
-        self, strategy: Union[int, str, LevelLeaderboardStrategy] = 0
-    ) -> List[LevelRecord]:
-        """|coro|
-
-        Retrieves the leaderboard of a level.
+    @async_iterable
+    def get_leaderboard(
+        self, strategy: Union[int, str, LevelLeaderboardStrategy] = LevelLeaderboardStrategy.ALL,
+    ) -> AsyncIterator[User]:
+        """Retrieves the leaderboard of a level.
 
         Parameters
         ----------
         strategy: Union[:class:`int`, :class:`str`, :class:`.LevelLeaderboardStrategy`]
-            A strategy to apply.
+            Strategy to apply when fetching.
 
         Returns
         -------
-        List[:class:`.LevelRecord`]
-            A list of user-like objects.
+        AsyncIterator[:class:`.User`]
+            A list of users.
         """
-        return await self.client.get_level_leaderboard(self, strategy=strategy)
+        return self.client.get_level_leaderboard(self, strategy=strategy)
 
-    async def get_comments(
+    @async_iterable
+    def get_comments(
         self,
-        strategy: Union[int, str, CommentStrategy] = 0,
-        amount: int = 20,
-        exclude: Tuple[Type[BaseException]] = DEFAULT_EXCLUDE,
-    ) -> List[Comment]:
-        """|coro|
+        strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
+        pages: Iterable[int] = ZERO_PAGE,
+        amount: int = COMMENT_PAGE_SIZE,
+        concurrent: bool = CONCURRENT,
+    ) -> AsyncIterator["Comment"]:
+        return self.client.get_level_comments(
+            level=self, strategy=strategy, pages=pages, amount=amount, concurrent=concurrent
+        )
 
-        Retrieves level comments.
+    @async_iterable
+    def get_comments_on_page(
+        self,
+        strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
+        page: int = 0,
+        amount: int = COMMENT_PAGE_SIZE,
+    ) -> AsyncIterator["Comment"]:
+        """Retrieves level comments.
 
         Parameters
         ----------
@@ -749,16 +679,13 @@ class Level(AbstractEntity):
 
         amount: :class:`int`
             Amount of comments to retrieve. Default is ``20``.
-            For ``amount < 0``, ``2 ** 31`` is added, allowing to fetch
+            For ``amount < 0``, ``1 << 31`` is added, allowing to fetch
             a theoretical limit of comments.
-
-        exclude: Tuple[Type[:exc:`BaseException`]]
-            Exceptions to ignore. By default includes only :exc:`.NothingFound`.
 
         Returns
         -------
-        List[:class:`.Comment`]
-            List of comments retrieved.
+        AsyncIterator[:class:`.Comment`]
+            Comments retrieved.
 
         Raises
         ------
@@ -768,20 +695,21 @@ class Level(AbstractEntity):
         :exc:`.NothingFound`
             No comments were found.
         """
-        return await self.client.get_level_comments(
-            self, strategy=strategy, amount=amount, exclude=exclude
+        return self.client.get_level_comments_on_page(
+            level=self, page=page, amount=amount, strategy=strategy
         )
 
 
 @dataclass
 class OfficialLevel:
-    level_id: int = attrib(kw_only=True)
-    song_id: int = attrib(kw_only=True)
-    name: str = attrib(kw_only=True)
-    stars: int = attrib(kw_only=True)
-    difficulty: str = attrib(kw_only=True)
-    coins: int = attrib(kw_only=True)
-    length: str = attrib(kw_only=True)
+    level_id: int = attrib()
+    song_id: int = attrib()
+    name: str = attrib()
+    stars: int = attrib()
+    difficulty: str = attrib()
+    coins: int = attrib()
+    length: str = attrib()
+    game_version: GameVersion = attrib()
 
     def is_auto(self) -> bool:
         return "auto" in self.difficulty
@@ -793,32 +721,36 @@ class OfficialLevel:
         return self.song_id - 1 if server_style else self.song_id  # assume non-server by default
 
     def into_level(
-        self, client: Optional[Client] = None, get_data: bool = True, server_style: bool = False,
+        self, client: Optional["Client"] = None, get_data: bool = True, server_style: bool = False,
     ) -> Level:
+        global official_levels_data
+
         if self.is_demon():
             difficulty = DemonDifficulty.from_name(self.difficulty)
+
         else:
             difficulty = LevelDifficulty.from_name(self.difficulty)
 
         if get_data:
-            data = official_levels_data.get(self.name, "")
+            if not official_levels_data and official_levels_path.exists():
+                official_levels_data = json.loads(official_levels_path.read_text())
 
-            if data:
-                data = Coder.unzip(data)
+            unprocessed_data = official_levels_data.get(self.name, "")
 
         else:
-            data = ""
+            unprocessed_data = ""
 
         return Level(
             id=self.level_id,
             name=self.name,
             description=f"Official Level: {self.name}",
             version=1,
-            creator=AbstractUser(name="RobTop", id=16, account_id=71, client=client),
+            creator=User(name="RobTop", id=16, account_id=71, client=client),
             song=Song.official(
                 self.get_song_id(server_style), client=client, server_style=server_style
             ),
-            data=data,
+            game_version=self.game_version,
+            unprocessed_data=unprocessed_data,
             password=None,
             copyable=False,
             is_demon=self.is_demon(),
@@ -828,7 +760,7 @@ class OfficialLevel:
             coins=self.coins,
             verified_coins=True,
             is_epic=False,
-            original=True,
+            original_id=0,
             low_detail_mode=False,
             downloads=0,
             rating=0,
@@ -838,8 +770,8 @@ class OfficialLevel:
             length=LevelLength.from_name(self.length),
             stars_requested=self.stars,
             object_count=0,
-            type=TimelyType.from_value(0),
-            time_n=-1,
+            type=TimelyType.NOT_TIMELY,
+            timely_id=-1,
             cooldown=-1,
             client=client,
         )
@@ -854,6 +786,7 @@ official_levels = [
         difficulty="easy",
         coins=3,
         length="long",
+        game_version=GameVersion(1, 0),
     ),
     OfficialLevel(
         level_id=2,
@@ -863,6 +796,7 @@ official_levels = [
         difficulty="easy",
         coins=3,
         length="long",
+        game_version=GameVersion(1, 0),
     ),
     OfficialLevel(
         level_id=3,
@@ -872,9 +806,17 @@ official_levels = [
         difficulty="normal",
         coins=3,
         length="long",
+        game_version=GameVersion(1, 0),
     ),
     OfficialLevel(
-        level_id=4, song_id=4, name="Dry Out", stars=4, difficulty="normal", coins=3, length="long",
+        level_id=4,
+        song_id=4,
+        name="Dry Out",
+        stars=4,
+        difficulty="normal",
+        coins=3,
+        length="long",
+        game_version=GameVersion(1, 0),
     ),
     OfficialLevel(
         level_id=5,
@@ -884,6 +826,7 @@ official_levels = [
         difficulty="hard",
         coins=3,
         length="long",
+        game_version=GameVersion(1, 0),
     ),
     OfficialLevel(
         level_id=6,
@@ -893,9 +836,17 @@ official_levels = [
         difficulty="hard",
         coins=3,
         length="long",
+        game_version=GameVersion(1, 0),
     ),
     OfficialLevel(
-        level_id=7, song_id=7, name="Jumper", stars=7, difficulty="harder", coins=3, length="long",
+        level_id=7,
+        song_id=7,
+        name="Jumper",
+        stars=7,
+        difficulty="harder",
+        coins=3,
+        length="long",
+        game_version=GameVersion(1, 0),
     ),
     OfficialLevel(
         level_id=8,
@@ -905,9 +856,17 @@ official_levels = [
         difficulty="harder",
         coins=3,
         length="long",
+        game_version=GameVersion(1, 1),
     ),
     OfficialLevel(
-        level_id=9, song_id=9, name="Cycles", stars=9, difficulty="harder", coins=3, length="long",
+        level_id=9,
+        song_id=9,
+        name="Cycles",
+        stars=9,
+        difficulty="harder",
+        coins=3,
+        length="long",
+        game_version=GameVersion(1, 2),
     ),
     OfficialLevel(
         level_id=10,
@@ -917,6 +876,7 @@ official_levels = [
         difficulty="insane",
         coins=3,
         length="long",
+        game_version=GameVersion(1, 3),
     ),
     OfficialLevel(
         level_id=11,
@@ -926,6 +886,7 @@ official_levels = [
         difficulty="insane",
         coins=3,
         length="long",
+        game_version=GameVersion(1, 4),
     ),
     OfficialLevel(
         level_id=12,
@@ -935,6 +896,7 @@ official_levels = [
         difficulty="insane",
         coins=3,
         length="long",
+        game_version=GameVersion(1, 5),
     ),
     OfficialLevel(
         level_id=13,
@@ -944,6 +906,7 @@ official_levels = [
         difficulty="insane",
         coins=3,
         length="long",
+        game_version=GameVersion(1, 6),
     ),
     OfficialLevel(
         level_id=14,
@@ -953,6 +916,7 @@ official_levels = [
         difficulty="easy_demon",
         coins=3,
         length="long",
+        game_version=GameVersion(1, 6),
     ),
     OfficialLevel(
         level_id=15,
@@ -962,6 +926,7 @@ official_levels = [
         difficulty="insane",
         coins=3,
         length="long",
+        game_version=GameVersion(1, 7),
     ),
     OfficialLevel(
         level_id=16,
@@ -971,6 +936,7 @@ official_levels = [
         difficulty="insane",
         coins=3,
         length="long",
+        game_version=GameVersion(1, 8),
     ),
     OfficialLevel(
         level_id=17,
@@ -980,6 +946,7 @@ official_levels = [
         difficulty="harder",
         coins=3,
         length="long",
+        game_version=GameVersion(1, 9),
     ),
     OfficialLevel(
         level_id=18,
@@ -989,6 +956,7 @@ official_levels = [
         difficulty="easy_demon",
         coins=3,
         length="long",
+        game_version=GameVersion(1, 9),
     ),
     OfficialLevel(
         level_id=19,
@@ -998,6 +966,7 @@ official_levels = [
         difficulty="harder",
         coins=3,
         length="long",
+        game_version=GameVersion(2, 0),
     ),
     OfficialLevel(
         level_id=20,
@@ -1007,6 +976,7 @@ official_levels = [
         difficulty="medium_demon",
         coins=3,
         length="long",
+        game_version=GameVersion(2, 0),
     ),
     OfficialLevel(
         level_id=21,
@@ -1016,6 +986,7 @@ official_levels = [
         difficulty="insane",
         coins=3,
         length="long",
+        game_version=GameVersion(2, 1),
     ),
     OfficialLevel(
         level_id=1001,
@@ -1025,6 +996,7 @@ official_levels = [
         difficulty="easy",
         coins=3,
         length="long",
+        game_version=GameVersion(2, 0),
     ),
     OfficialLevel(
         level_id=1002,
@@ -1034,6 +1006,7 @@ official_levels = [
         difficulty="normal",
         coins=3,
         length="long",
+        game_version=GameVersion(2, 0),
     ),
     OfficialLevel(
         level_id=1003,
@@ -1043,6 +1016,7 @@ official_levels = [
         difficulty="hard",
         coins=3,
         length="long",
+        game_version=GameVersion(2, 0),
     ),
     OfficialLevel(
         level_id=2001,
@@ -1052,6 +1026,7 @@ official_levels = [
         difficulty="easy",
         coins=0,
         length="short",
+        game_version=GameVersion(2, 1),
     ),
     OfficialLevel(
         level_id=2002,
@@ -1061,6 +1036,7 @@ official_levels = [
         difficulty="normal",
         coins=0,
         length="medium",
+        game_version=GameVersion(2, 1),
     ),
     OfficialLevel(
         level_id=2003,
@@ -1070,6 +1046,7 @@ official_levels = [
         difficulty="normal",
         coins=0,
         length="medium",
+        game_version=GameVersion(2, 1),
     ),
     OfficialLevel(
         level_id=2004,
@@ -1079,6 +1056,7 @@ official_levels = [
         difficulty="normal",
         coins=0,
         length="medium",
+        game_version=GameVersion(2, 1),
     ),
     OfficialLevel(
         level_id=2005,
@@ -1088,6 +1066,7 @@ official_levels = [
         difficulty="normal",
         coins=0,
         length="medium",
+        game_version=GameVersion(2, 1),
     ),
     OfficialLevel(
         level_id=2006,
@@ -1097,6 +1076,7 @@ official_levels = [
         difficulty="normal",
         coins=0,
         length="medium",
+        game_version=GameVersion(2, 1),
     ),
     OfficialLevel(
         level_id=2007,
@@ -1106,6 +1086,7 @@ official_levels = [
         difficulty="normal",
         coins=0,
         length="medium",
+        game_version=GameVersion(2, 1),
     ),
     OfficialLevel(
         level_id=2008,
@@ -1115,6 +1096,7 @@ official_levels = [
         difficulty="normal",
         coins=0,
         length="short",
+        game_version=GameVersion(2, 1),
     ),
     OfficialLevel(
         level_id=2009,
@@ -1124,6 +1106,7 @@ official_levels = [
         difficulty="normal",
         coins=0,
         length="medium",
+        game_version=GameVersion(2, 1),
     ),
     OfficialLevel(
         level_id=2010,
@@ -1133,6 +1116,7 @@ official_levels = [
         difficulty="normal",
         coins=0,
         length="medium",
+        game_version=GameVersion(2, 1),
     ),
     OfficialLevel(
         level_id=3001,
@@ -1142,6 +1126,7 @@ official_levels = [
         difficulty="hard",
         coins=0,
         length="short",
+        game_version=GameVersion(2, 1),
     ),
     OfficialLevel(
         level_id=4001,
@@ -1151,6 +1136,7 @@ official_levels = [
         difficulty="normal",
         coins=3,
         length="long",
+        game_version=GameVersion(2, 2),
     ),
     OfficialLevel(
         level_id=4002,
@@ -1160,6 +1146,7 @@ official_levels = [
         difficulty="hard",
         coins=3,
         length="long",
+        game_version=GameVersion(2, 2),
     ),
     OfficialLevel(
         level_id=4003,
@@ -1169,5 +1156,6 @@ official_levels = [
         difficulty="harder",
         coins=3,
         length="long",
+        game_version=GameVersion(2, 2),
     ),
 ]

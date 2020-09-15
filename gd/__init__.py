@@ -6,50 +6,42 @@ __title__ = "gd"
 __author__ = "NeKitDS"
 __copyright__ = "Copyright 2019-2020 NeKitDS"
 __license__ = "MIT"
-__version__ = "1.0.0rc0"
+__version__ = "1.0.0rc1"
 
-from gd.abstractentity import AbstractEntity
-from gd.abstractuser import AbstractUser, LevelRecord
-from gd.client import Client, DAILY, WEEKLY
-from gd.colors import Color
-from gd.colors import colors
-from gd.comment import Comment
+from gd.abstract_entity import *
+from gd.client import *
+from gd.color import *
+from gd.comment import *
+from gd.decorators import *
+from gd.enums import *
 from gd.errors import *
-from gd.friend_request import FriendRequest
-from gd.icon_factory import factory, IconFactory
-from gd.iconset import IconSet
-from gd.level import Level
-from gd.level_packs import Gauntlet, MapPack
+from gd.filters import *
+from gd.friend_request import *
+from gd.http import *
+from gd.icon_factory import *
+from gd.level import *
+from gd.level_packs import *
 from gd.logging import *
-from gd.message import Message
+from gd.message import *
 from gd.model import *
-from gd.rewards import Chest, Quest
-from gd.session import Session
-from gd.song import ArtistInfo, Author, Song
-from gd.user import UserStats, User
+from gd.session import *
+from gd.option import *
+from gd.rewards import *
+from gd.song import *
 from gd.version import *
-from gd.utils.converter import Converter
-from gd.utils.decorators import breakpoint
-from gd.utils.enums import *
-from gd.utils.filters import Filters
-from gd.utils.http_request import HTTPClient
-from gd.utils.params import *
-from gd.utils.parser import Parser
-from gd.utils.routes import Route
-from gd.utils.xml_parser import AioXMLParser, XMLParser
+from gd.xml_parser import *
 
-from gd.utils.crypto.coders import Coder
-from gd.utils.crypto.xor_cipher import XORCipher as xor
-
-from gd._jokes import *  # idk
-
-from gd.utils import tasks
+from gd._jokes import *
 
 from gd import (
     api,  # non-server GD API.
+    crypto,  # cryptography and encoding utilites.
     events,  # event-related functions and classes.
+    http,  # HTTP requests module.
+    json,  # JSON utilities.
     memory,  # functions for interacting with memory.
-    server,  # gd.api merged into gd.py.
-    typing,  # various utils for typing gd.py.
-    utils,  # different useful utils.
+    model_backend,  # backend for gd.py models.
+    server,  # REST API wrapper around gd.py.
+    tasks,  # background tasks implementation
+    utils,  # different useful utilities.
 )

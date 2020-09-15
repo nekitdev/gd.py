@@ -1,3 +1,5 @@
+'''
+
 """API server implementation. Not to be confused with the HTTP requests implementation.
 HTTP Request handler can be found at gd/utils/http_request.py.
 """
@@ -18,6 +20,7 @@ import multidict
 
 from gd.typing import (
     Any,
+    Awaitable,
     Callable,
     Dict,
     Generator,
@@ -27,22 +30,21 @@ from gd.typing import (
     Sequence,
     Tuple,
     Type,
+    TypeVar,
     Union,
-    ref,
 )
 import gd
 
 AUTH_RE = re.compile(r"(?:Token )?(?P<token>[A-Fa-z0-9]+)")
 CHUNK_SIZE = 64 * 1024
-CLIENT = gd.Client(debug=True)
+CLIENT = gd.Client()
 JSON_PREFIX = "json_"
 
 ROOT_PATH = Path(".gd")
 
-Function = Callable[[Any], Any]
-Error = ref("gd.server.Error")
-Cooldown = ref("gd.server.Cooldown")
-CooldownMapping = ref("gd.server.CooldownMapping")
+Handler = Callable[[web.Request], Awaitable[web.Response]]
+T = TypeVar("T")
+U = TypeVar("U")
 
 routes = web.RouteTableDef()
 
@@ -83,7 +85,7 @@ class Error:
             },
         }
 
-    def set_error(self, error: BaseException) -> Error:
+    def set_error(self, error: BaseException) -> "Error":
         to_add = {
             # format message with error object
             "message": self.payload["data"]["message"].format(error=error),
@@ -156,30 +158,30 @@ class LoginManager:
     def __enter__(self) -> None:
         self.info.apply_to_client(self.client)
 
-    def __exit__(self, *exc) -> None:
+    def __exit__(self, *exception) -> None:
         self.client.close()
 
 
-class Forward:
-    def __init__(self, client: gd.Client, request: web.Request) -> None:
-        self.http = client.http
-        self.forwarded_for = request.remote
-        self.backup = self.http.forwarded_for
+# class Forward:
+    # def __init__(self, client: gd.Client, request: web.Request) -> None:
+        # self.http = client.http
+        # self.forwarded_for = request.remote
+        # self.backup = self.http.forwarded_for
 
-    def __enter__(self) -> None:
-        self.http.forwarded_for = self.forwarded_for
+    # def __enter__(self) -> None:
+        # self.http.forwarded_for = self.forwarded_for
 
-    def __exit__(self, *exc) -> None:
-        self.http.forwarded_for = self.backup
-
-
-@web.middleware
-async def forward_middleware(request: web.Request, handler: Function) -> web.Response:
-    with Forward(client=request.app.client, request=request):
-        return await handler(request)
+    # def __exit__(self, *exception) -> None:
+        # self.http.forwarded_for = self.backup
 
 
-def get_original_handler(handler: Function) -> Function:
+# @web.middleware
+# async def forward_middleware(request: web.Request, handler: Handler) -> web.Response:
+    # with Forward(client=request.app.client, request=request):
+        # return await handler(request)
+
+
+def get_original_handler(handler: Handler) -> Handler:
     while hasattr(handler, "keywords"):
         handler = handler.keywords.get("handler")
     return handler
@@ -216,7 +218,7 @@ def get_token(request: web.Request, required: bool) -> Optional[Union[TokenInfo,
 
 
 @web.middleware
-async def auth_middleware(request: web.Request, handler: Function) -> web.Response:
+async def auth_middleware(request: web.Request, handler: Handler) -> web.Response:
     original = get_original_handler(handler)
     required = getattr(original, "required", False)
 
@@ -243,7 +245,7 @@ class Cooldown:
         self.tokens = self.rate
         self.window = 0.0
 
-    def copy(self) -> Cooldown:
+    def copy(self) -> "Cooldown":
         return self.__class__(self.rate, self.per)
 
     def update_tokens(self, current: Optional[float] = None) -> None:
@@ -280,7 +282,7 @@ class CooldownMapping:
         self.cache: Dict[str, Cooldown] = {}
         self.original = original
 
-    def copy(self) -> CooldownMapping:
+    def copy(self) -> "CooldownMapping":
         self_copy = self.__class__(self.original)
         self_copy.cache = self.cache.copy()
         return self_copy
@@ -316,12 +318,12 @@ class CooldownMapping:
         return bucket.update_rate_limit(current)
 
     @classmethod
-    def from_cooldown(cls, rate: int, per: float) -> CooldownMapping:
+    def from_cooldown(cls, rate: int, per: float) -> "CooldownMapping":
         return cls(Cooldown(rate, per))
 
 
-def cooldown(rate: int, per: float) -> Function:
-    def decorator(func: Function) -> Function:
+def cooldown(rate: int, per: float) -> Handler:
+    def decorator(func: Handler) -> Handler:
         func.cooldown = CooldownMapping.from_cooldown(rate, per)
         return func
 
@@ -329,7 +331,7 @@ def cooldown(rate: int, per: float) -> Function:
 
 
 @web.middleware
-async def error_middleware(request: web.Request, handler: Function) -> web.Response:
+async def error_middleware(request: web.Request, handler: Handler) -> web.Response:
     try:
         return await handler(request)
     except web.HTTPError as error:
@@ -337,7 +339,7 @@ async def error_middleware(request: web.Request, handler: Function) -> web.Respo
 
 
 @web.middleware
-async def rate_limit_middleware(request: web.Request, handler: Function) -> web.Response:
+async def rate_limit_middleware(request: web.Request, handler: Handler) -> web.Response:
     cooldown = getattr(get_original_handler(handler), "cooldown", None)
 
     if cooldown:
@@ -355,7 +357,7 @@ async def rate_limit_middleware(request: web.Request, handler: Function) -> web.
 DEFAULT_MIDDLEWARES = [
     rate_limit_middleware,
     auth_middleware,
-    forward_middleware,
+    # forward_middleware,
     error_middleware,
     web.normalize_path_middleware(append_slash=False, remove_slash=True),
 ]
@@ -441,15 +443,16 @@ def start(**kwargs) -> None:
     run(create_app(), **kwargs)
 
 
-def handle_errors(error_dict: Optional[Dict[Type[BaseException], Error]] = None) -> Function:
+def handle_errors(error_dict: Optional[Dict[Type[BaseException], Error]] = None) -> Handler:
     if error_dict is None:
         error_dict = {}
 
-    def decorator(func: Function) -> Function:
+    def decorator(func: Handler) -> Handler:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs) -> web.Response:
             try:
                 return await func(*args, **kwargs)
+
             except BaseException as error:
                 return error_dict.get(type(error), DEFAULT_ERROR).set_error(error).into_resp()
 
@@ -458,8 +461,8 @@ def handle_errors(error_dict: Optional[Dict[Type[BaseException], Error]] = None)
     return decorator
 
 
-def auth_setup(required: bool = True) -> Function:
-    def decorator(func: Function) -> Function:
+def auth_setup(required: bool = True) -> Handler:
+    def decorator(func: Handler) -> Handler:
         func.required = required
         return func
 
@@ -486,7 +489,7 @@ def string_to_enum(string: str, enum: gd.Enum) -> gd.Enum:
     return enum.from_value(string)
 
 
-def get_value(parameter: str, function: Function, default: Any, request: web.Request) -> Any:
+def get_value(parameter: str, function: Callable[[U], T], default: T, request: web.Request) -> T:
     value = request.query.get(parameter)
     if value is None:
         value = default
@@ -652,7 +655,7 @@ async def user_get(request: web.Request) -> web.Response:
     {
         ValueError: Error(400, "Invalid type in payload.", ErrorType.INVALID_TYPE),
         gd.MissingAccess: Error(404, "Requested song not found.", ErrorType.NOT_FOUND),
-        gd.SongRestrictedForUsage: Error(
+        gd.SongRestricted: Error(
             403, "Song is not allowed for use.", ErrorType.ACCESS_RESTRICTED
         ),
     }
@@ -1151,7 +1154,7 @@ async def read_message(request: web.Request) -> web.Response:
         application/json
     """
     message_id = int(request.match_info["id"])
-    message_type = string_to_enum(request.query.get("type", "normal"), gd.MessageOrRequestType)
+    message_type = string_to_enum(request.query.get("type", "normal"), gd.MessageType)
 
     body = await gd.Message(id=message_id, type=message_type, client=request.app.client).read()
 
@@ -1181,7 +1184,7 @@ async def delete_message(request: web.Request) -> web.Response:
         application/json
     """
     message_id = int(request.match_info["id"])
-    message_type = string_to_enum(request.query.get("type", "normal"), gd.MessageOrRequestType)
+    message_type = string_to_enum(request.query.get("type", "normal"), gd.MessageType)
 
     await gd.Message(id=message_id, type=message_type, client=request.app.client).delete()
 
@@ -1276,11 +1279,11 @@ async def delete_friend_request(request: web.Request) -> web.Response:
         application/json
     """
     request_id = int(request.match_info["id"])
-    request_type = string_to_enum(request.query.get("type", "normal"), gd.MessageOrRequestType)
+    request_type = string_to_enum(request.query.get("type", "normal"), gd.FriendRequestType)
     account_id = int(request.query["author_id"])
 
     await gd.FriendRequest(
-        author=gd.AbstractUser(account_id=account_id, client=request.app.client),
+        author=gd.User(account_id=account_id, client=request.app.client),
         id=request_id,
         type=request_type,
         client=request.app.client,
@@ -1314,11 +1317,11 @@ async def accept_friend_request(request: web.Request) -> web.Response:
         application/json
     """
     request_id = int(request.match_info["id"])
-    request_type = string_to_enum(request.query.get("type", "normal"), gd.MessageOrRequestType)
+    request_type = string_to_enum(request.query.get("type", "normal"), gd.FriendRequestType)
     account_id = int(request.query["author_id"])
 
     await gd.FriendRequest(
-        author=gd.AbstractUser(account_id=account_id, client=request.app.client),
+        author=gd.User(account_id=account_id, client=request.app.client),
         id=request_id,
         type=request_type,
         client=request.app.client,
@@ -1369,7 +1372,7 @@ async def un_block_user(request: web.Request) -> web.Response:
     account_id = int(request.match_info["id"])
     unblock = request.match_info["action"].startswith("un")
 
-    user = await gd.AbstractUser(account_id=account_id, client=request.app.client)
+    user = await gd.User(account_id=account_id, client=request.app.client)
 
     if unblock:
         await user.unblock()
@@ -1406,7 +1409,7 @@ async def un_friend_user(request: web.Request) -> web.Response:
     unfriend = request.match_info["action"].startswith("un")
     message = request.query.get("message", "")
 
-    user = gd.AbstractUser(account_id=account_id, client=request.app.client)
+    user = gd.User(account_id=account_id, client=request.app.client)
 
     if unfriend:
         await user.unfriend()
@@ -2450,3 +2453,5 @@ async def search_songs_by_user(request: web.Request) -> web.Response:
     pages = map(int, request.query.get("pages", "0").split(","))
     user_songs = await request.app.client.get_user_songs(query, pages=pages)
     return json_resp(user_songs)
+
+'''

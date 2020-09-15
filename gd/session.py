@@ -1,79 +1,65 @@
-import asyncio
-import json
-import string
-import time  # for perf_counter in ping
-
-from itertools import chain
-from yarl import URL
-
-from gd.typing import (
-    Any,
-    Client,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    Union,
-)
-
-from gd.errors import (
-    MissingAccess,
-    SongRestrictedForUsage,
-    NothingFound,
-    LoginFailure,
-)
-
-from gd.utils.converter import Converter
-from gd.utils.decorators import check_logged_obj
-from gd.utils.enums import (
-    CommentPolicyType,
+from gd.decorators import impl_sync
+from gd.enums import (
+    AccountURLType,
+    CommentState,
     CommentStrategy,
     CommentType,
     DemonDifficulty,
-    FriendRequestPolicyType,
+    FriendRequestState,
+    FriendRequestType,
+    IconType,
     LeaderboardStrategy,
     LevelLeaderboardStrategy,
     LevelLength,
-    MessageOrRequestType,
-    MessagePolicyType,
+    LikeType,
+    MessageState,
+    MessageType,
     RewardType,
-    ShardType,
-    QuestType,
-    SearchStrategy,
+    UserListType,
 )
-from gd.utils.filters import Filters
-from gd.utils.http_request import HTTPClient
-from gd.utils.indexer import Index
-from gd.utils.ng_parser import (
+from gd.filters import Filters
+from gd.http import HTTPClient, URL
+from gd.model import (  # type: ignore
+    ChestsResponseModel,
+    CommentsResponseModel,
+    FeaturedArtistsResponseModel,
+    FriendRequestsResponseModel,
+    GauntletsResponseModel,
+    LeaderboardResponseModel,
+    LevelDownloadResponseModel,
+    LevelLeaderboardResponseModel,
+    LevelSearchResponseModel,
+    LoginIDModel,
+    MapPacksResponseModel,
+    MessageModel,
+    MessagesResponseModel,
+    ProfileUserModel,
+    QuestsResponseModel,
+    SearchUserModel,
+    SearchUserResponseModel,
+    SongModel,
+    TimelyInfoModel,
+    UserListResponseModel,
+)
+from gd.newgrounds_parser import (
     find_song_info,
-    search_song_data,
     extract_info_from_endpoint,
+    search_song_data,
     extract_user_songs,
     extract_users,
 )
-from gd.utils.params import Parameters as Params
-from gd.utils.parser import ExtDict, Parser
-from gd.utils.routes import Route
-from gd.utils.text_tools import make_repr
-from gd.utils.crypto.coders import Coder
+from gd.text_utils import make_repr
+from gd.typing import Any, Dict, Iterable, List, Optional, Union
 
-from gd import api
+from gd.api.database import Database
+from gd.api.loader import SAVE_DELIM, save
+from gd.api.recording import RecordEntry
 
-REWARD_CHALLENGE_CHK_LENGTH = 13
-REWARD_CHALLENGE_SLICE_LENGTH = 5
-QUEST_AMOUNT = 3
-CHEST_AMOUNT = 2
-CHEST_INNER_PARTS = 3
+__all__ = ("Session",)
 
 
+@impl_sync
 class Session:
-    """Implements all requests-related functionality.
-    No docstrings here yet...
-    """
-
     def __init__(self, **http_args) -> None:
         self.http = HTTPClient(**http_args)
 
@@ -81,1433 +67,575 @@ class Session:
         info = {"http": self.http}
         return make_repr(self, info)
 
-    async def ping_server(self, link: str) -> float:
-        start = time.perf_counter()
-        await self.http.normal_request(link)
-        end = time.perf_counter()
-        return round((end - start) * 1000, 2)
+    async def ping(self, url: Union[str, URL]) -> float:
+        return await self.http.ping(url)
 
-    async def get_song(self, song_id: int = 0) -> ExtDict:
-        payload = Params().create_new().put_definer("song", song_id).finish()
-        codes = {
-            -1: MissingAccess(f"No songs were found with ID: {song_id}."),
-            -2: SongRestrictedForUsage(song_id),
-        }
-        resp = await self.http.request(Route.GET_SONG_INFO, payload, error_codes=codes)
-        return Parser().with_split("~|~").should_map().parse(resp)
+    async def login(self, user: str, password: str) -> LoginIDModel:
+        response = await self.http.login(user, password)
+        return LoginIDModel.from_string(response, use_default=True)
 
-    async def test_song(self, song_id: int = 0) -> ExtDict:
-        codes = {-1: MissingAccess(f"Failed to fetch artist info for ID: {song_id}")}
-        payload = Params().create_new("web").put_definer("song", song_id).close()
-        resp = await self.http.request(
-            Route.TEST_SONG, params=payload, method="get", error_codes=codes
+    async def load(self, *, account_id: int, user: str, password: str) -> Database:
+        response = await self.http.load(account_id=account_id, user=user, password=password)
+
+        main_part, levels_part, *_ = response.split(SAVE_DELIM)
+
+        return await save.from_string_async(
+            main_part, levels_part, apply_xor=False, follow_os=False
         )
 
-        data = ExtDict(id=song_id)
+    async def save(self, db: Database, *, account_id: int, user: str, password: str) -> None:
+        parts = await save.to_string_async(db, apply_xor=False, follow_os=False, decode=True)
 
-        try:
-            data.update(extract_info_from_endpoint(resp))
-        except ValueError:
-            raise MissingAccess(f"Failed to load data. Response: {resp!r}.") from None
+        data = SAVE_DELIM.join(parts)  # type: ignore  # they are already strings
 
-        return data
+        await self.http.save(data=data, account_id=account_id, user=user, password=password)
 
-    async def get_ng_song(self, song_id: int = 0) -> ExtDict:
-        # just like get_song(), but gets anything available on NG.
-        link = Route.NEWGROUNDS_SONG_LISTEN + str(song_id)
+    async def get_account_url(self, account_id: int, type: AccountURLType) -> URL:
+        url = await self.http.get_account_url(account_id=account_id, type=type)
+        return URL(url)
 
-        content = await self.http.normal_request(link)
-        html = content.decode().replace("\\", "")
-
-        try:
-            info = find_song_info(html)
-        except ValueError:
-            raise MissingAccess(f"Song was not found by ID: {song_id}") from None
-
-        return ExtDict(
-            name=info.name,
-            author=info.author,
-            id=song_id,
-            size=round(info.size / 1024 / 1024, 2),
-            links=dict(normal=link, download=info.link),
-            custom=True,
-        )
-
-    async def search_page_songs(self, query: str, page: int = 0) -> List[ExtDict]:
-        payload = {"terms": query, "page": page + 1}
-
-        data = await self.http.normal_request(
-            Route.NEWGROUNDS_SEARCH.format(type="audio"), params=payload
-        )
-
-        return search_song_data(data.decode())
-
-    async def search_songs(self, query: str, pages: Iterable[int]) -> List[ExtDict]:
-        to_run = [self.search_page_songs(query=query, page=page) for page in pages]
-
-        return await self.run_many(to_run)
-
-    async def search_page_users(self, query: str, page: int = 0) -> List[ExtDict]:
-        payload = {"terms": query, "page": page + 1}
-
-        data = await self.http.normal_request(
-            Route.NEWGROUNDS_SEARCH.format(type="users"), params=payload
-        )
-
-        return extract_users(data.decode())
-
-    async def search_users(self, query: str, pages: Iterable[int]) -> List[ExtDict]:
-        to_run = [self.search_page_users(query=query, page=page) for page in pages]
-
-        return await self.run_many(to_run)
-
-    async def get_page_user_songs(self, user_name: str, page: int = 0) -> List[ExtDict]:
-        link = URL("https://%s.newgrounds.com/" % user_name) / f"audio/page/{page + 1}"
-
-        data = await self.http.normal_request(link, headers={"X-Requested-With": "XMLHttpRequest"})
-
-        info = extract_user_songs(json.loads(data.decode(errors="replace")))
-
-        for part in info:
-            part.update(author=user_name)
-
-        return info
-
-    async def get_user_songs(self, user_name: str, pages: Iterable[int]) -> List[ExtDict]:
-        to_run = [self.get_page_user_songs(user_name=user_name, page=page) for page in pages]
-
-        return await self.run_many(to_run)
-
-    async def get_user(self, account_id: int = 0, return_only_stats: bool = False) -> ExtDict:
-        payload = Params().create_new().put_definer("user", account_id).finish()
-        codes = {-1: MissingAccess(f"No users were found with ID: {account_id}.")}
-
-        resp = await self.http.request(Route.GET_USER_INFO, payload, error_codes=codes)
-        mapped = Parser().with_split(":").should_map().parse(resp)
-
-        if return_only_stats:
-            return mapped
-
-        another = (
-            Params()
-            .create_new()
-            .put_definer("search", mapped.getcast(Index.USER_PLAYER_ID, 0, int))
-            .put_total(0)
-            .put_page(0)
-            .finish()
-        )
-        some_resp = await self.http.request(Route.USER_SEARCH, another)
-
-        new_resp = (
-            Parser().split("#").take(0).check_empty().split(":").should_map().parse(some_resp)
-        )
-
-        if new_resp is None:
-            raise codes.get(-1)
-
-        mapped.update(
-            {k: new_resp.get(k) for k in (Index.USER_NAME, Index.USER_ICON, Index.USER_ICON_TYPE)}
-        )
-
-        return mapped
-
-    async def search_user(self, query: Union[int, str], return_abstract: bool = False) -> ExtDict:
-
-        payload = (
-            Params().create_new().put_definer("search", query).put_total(0).put_page(0).finish()
-        )
-        codes = {-1: MissingAccess(f"Searching for {query!r} failed.")}
-
-        resp = await self.http.request(Route.USER_SEARCH, payload, error_codes=codes)
-        mapped = Parser().split("#").take(0).check_empty().split(":").should_map().parse(resp)
-
-        if mapped is None:
-            raise codes.get(-1)
-
-        account_id = mapped.getcast(Index.USER_ACCOUNT_ID, 0, int)
-
-        if return_abstract or not account_id:
-            return mapped
-
-        # ok; if we should not return abstract, let's find all other parameters
-        payload = Params().create_new().put_definer("user", account_id).finish()
-
-        resp = await self.http.request(Route.GET_USER_INFO, payload, error_codes=codes)
-        mapped.update(Parser().with_split(":").should_map().parse(resp))
-
-        return mapped
-
-    async def get_level_info(self, level_id: int = 0) -> Tuple[ExtDict, ExtDict, ExtDict]:
-        # level data, creator, song
-        assert level_id >= -2, "Invalid Level ID provided."
-
-        if level_id < 0:
-            type, number, cooldown = await self.get_timely_info(level_id)
-        else:
-            type, number, cooldown = 0, -1, -1
-
-        ext = {"101": type, "102": number, "103": cooldown}
-
-        codes = {-1: MissingAccess(f"Failed to get a level. Given ID: {level_id}")}
-
-        payload = Params().create_new().put_definer("levelid", level_id).finish()
-        resp = await self.http.request(Route.DOWNLOAD_LEVEL, payload, error_codes=codes)
-
-        level_data = Parser().split("#").take(0).split(":").add_ext(ext).should_map().parse(resp)
-
-        real_id = level_data.getcast(Index.LEVEL_ID, 0, int)
-
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("search", real_id)
-            .put_filters(Filters.setup_empty())
-            .finish()
-        )
-        resp = await self.http.request(Route.LEVEL_SEARCH, payload, error_codes=codes)
-
-        if not resp or resp.count("#") < 2:
-            raise codes.get(-1)
-
-        data = resp.split("#")
-
-        # getting song
-        song_data = data[2]
-
-        if not song_data:
-            song = Converter.to_normal_song(level_data.getcast(Index.LEVEL_AUDIO_TRACK, 0, int))
-        else:
-            song = Parser().with_split("~|~").should_map().parse(song_data)
-
-        # getting creator
-        creator_data = data[1]
-
-        if not creator_data:
-            id, name, account_id = (0, "unknown", 0)
-        else:
-            id, name, account_id = creator_data.split(":")
-
-        creator = ExtDict(id=id, name=name, account_id=account_id)
-
-        return level_data, creator, song
-
-    async def get_timely_info(self, type_id: int = -1) -> Tuple[int, int, int]:
-        # Daily: -1, Weekly: -2
-        weekly = ~type_id
-        payload = Params().create_new().put_weekly(weekly).finish()
-        codes = {-1: MissingAccess(f"Failed to fetch a {type!r} level.")}
-        resp = await self.http.request(Route.GET_TIMELY, payload, error_codes=codes)
-
-        try:
-            number, cooldown, *_ = map(int, resp.split("|"))
-        except ValueError:  # unpacking failed or something else
-            raise MissingAccess(
-                "Failed to fetch a timely level. Most likely it is being refreshed."
-            ) from None
-
-        number %= 100000
-        weekly += 1
-
-        return (weekly, number, cooldown)
-
-    async def upload_level(
-        self,
-        data: str,
-        name: str,
-        level_id: int,
-        version: int,
-        length: LevelLength,
-        audio_track: int,
-        desc: str,
-        song_id: int,
-        is_auto: bool,
-        original: int,
-        two_player: bool,
-        objects: int,
-        coins: int,
-        stars: int,
-        unlisted: bool,
-        friends_only: bool,
-        ldm: bool,
-        password: Optional[Union[int, str]],
-        copyable: bool,
-        *,
-        client: Client,
-    ) -> int:
-        data = Coder.zip(data)
-        extra_string = "_".join(map(str, (0 for _ in range(55))))
-        desc = Coder.do_base64(desc)
-
-        upload_seed = Coder.gen_level_upload_seed(data)
-        seed2 = Coder.gen_chk(type="level", values=[upload_seed])
-        seed = Coder.gen_rs()
-
-        pwd = 0
-
-        if copyable and password is None:
-            pwd = 1
-
-        check, add = str(password), 1000000
-
-        if check.isdigit() and int(check) < add:
-            pwd = add + int(password)
-
-        if friends_only:
-            unlisted, unlisted2 = (1, 1)
-        elif unlisted:
-            unlisted, unlisted2 = (1, 0)
-        else:
-            unlisted, unlisted2 = (0, 0)
-
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_definer("levelid", level_id)
-            .put_definer("song", song_id)
-            .put_seed(seed)
-            .put_seed(seed2, suffix=2)
-            .put_seed(0, prefix="wt")
-            .put_seed(0, prefix="wt", suffix=2)
-            .put_password(client.encodedpass)
-            .put_username(client.name)
-            .finish()
-        )
-
-        options = {
-            "level_name": name,
-            "level_desc": desc,
-            "level_version": version,
-            "level_length": length.value,
-            "audio_track": audio_track,
-            "auto": int(is_auto),
-            "original": int(original),
-            "two_player": int(two_player),
-            "objects": objects,
-            "coins": coins,
-            "requested_stars": stars,
-            "unlisted": unlisted,
-            "unlisted2": unlisted2,
-            "ldm": int(ldm),
-            "password": pwd,
-            "level_string": data,
-            "extra_string": extra_string,
-            "level_info": "H4sIAAAAAAAAC_NIrVQoyUgtStVRCMpPSi0qUbDStwYAsgpl1RUAAAA=",
-        }
-
-        payload_cased = {
-            Converter.snake_to_camel(key): str(value) for key, value in options.items()
-        }
-
-        payload.update(payload_cased)
-
-        level_id = await self.http.request(Route.UPLOAD_LEVEL, payload)
-
-        if level_id == -1:
-            raise MissingAccess("Failed to upload a level.")
-
-        return level_id
-
-    async def get_user_list(
-        self, type: int = 0, *, exclude: Tuple[Type[BaseException]] = (), client: Client
-    ) -> List[ExtDict]:
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .put_type(type)
-            .finish()
-        )
-        codes = {
-            -1: MissingAccess("Failed to fetch a user list."),
-            -2: NothingFound("gd.AbstractUser"),
-        }
-
-        resp = await self.http.request(
-            Route.GET_USER_LIST, payload, error_codes=codes, exclude=exclude
-        )
-
-        if resp is None:
-            return []
-
-        resp, parser = resp.split("|"), Parser().with_split(":").should_map()
-
-        return list(map(parser.parse, resp))
-
-    async def get_leaderboard(
-        self, level_id: int, strategy: LevelLeaderboardStrategy, *, client: Client
-    ) -> List[ExtDict]:
-        # timely_type: TimelyType, played: bool = False, timely_index: int = 0, percentage: int = 0,
-        # jumps: int = 0, attempts: int = 0, seconds: int = 0, coins: int = 0
-        # rs = Coder.gen_rs()
-        # seed = Coder.gen_level_lb_seed(jumps, percentage, seconds, played)
-
-        # if str(timely_type) == 'weekly':
-        #     timely_index += 100000
-
-        # values = [
-        #     client.account_id, level_id, percentage, seconds, jumps, attempts,
-        #     percentage, 100 - percentage, 1, coins, timely_index, rs
-        # ]
-
-        # chk = Coder.gen_chk(type='levelscore', values=values)
-
-        params = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_definer("levelid", level_id)
-            .put_password(client.encodedpass)
-            .put_type(strategy.value)
-        )
-
-        # params.put_percent(percentage).put_chk(chk)
-
-        # for index, value in enumerate((
-        #     attempts + 8354, jumps + 3991, seconds + 4085, seed, random.randint(100, 10000),
-        #     "", rs, attempts, coins + 5819, timely_index
-        # ), 1):
-        #     params.put_seed(value, prefix='s', suffix=index)
-
-        payload = params.finish()
-
-        codes = {-1: MissingAccess(f"Failed to get leaderboard of the level by ID: {level_id!r}.")}
-
-        resp = await self.http.request(Route.GET_LEVEL_SCORES, payload, error_codes=codes)
-
-        if not resp:
-            return []
-
-        resp, parser = (
-            resp.split("|"),
-            Parser().with_split(":").add_ext({"101": level_id}).should_map(),
-        )
-
-        return list(map(parser.parse, filter(is_not_empty, resp)))
-
-    async def get_top(
-        self, strategy: LeaderboardStrategy, count: int, *, client: Client
-    ) -> List[ExtDict]:
-        needs_login = strategy.value in (1, 2)
-
-        # special case: map 'players' -> 'top'
-        strategy = strategy.name.lower() if strategy.value else "top"
-
-        params = Params().create_new().put_type(strategy).put_count(count)
-        codes = {-1: MissingAccess(f"Failed to fetch leaderboard for strategy: {strategy!r}.")}
-
-        if needs_login:
-            check_logged_obj(client, "get_top")
-            params.put_definer("accountid", client.account_id).put_password(client.encodedpass)
-
-        payload = params.finish()
-
-        resp = await self.http.request(Route.GET_USER_TOP, payload, error_codes=codes)
-        resp, parser = resp.split("|"), Parser().with_split(":").should_map()
-
-        return list(map(parser.parse, filter(is_not_empty, resp)))
-
-    async def login(self, user: str, password: str) -> Tuple[int, int]:
-        # account_id, id
-        payload = (
-            Params().create_new().put_login_definer(username=user, password=password).finish_login()
-        )
-        codes = {
-            -1: LoginFailure(login=user, password=password),
-            -12: MissingAccess(f"Account {user!r} (password {password!r}) is disabled."),
-        }
-
-        resp = await self.http.request(Route.LOGIN, payload, error_codes=codes)
-
-        account_id, id, *junk = resp.split(",")
-
-        return int(account_id), int(id)
-
-    async def load_save(self, client: Client) -> Optional[api.Database]:
-        link = Route.GD_URL
-
-        payload = (
-            Params()
-            .create_new()
-            .put_username(client.name)
-            .put_definer("password", client.password)
-            .finish_login()
-        )
-        codes = {-11: MissingAccess(f"Failed to load data for client: {client!r}.")}
-
-        resp = await self.http.request(
-            Route.LOAD_DATA, payload, error_codes=codes, custom_base=link
-        )
-
-        try:
-            main, levels, *_ = resp.split(";")
-            db = await api.save.from_string_async(main, levels, xor=False, follow_os=False)
-
-            return db
-
-        except Exception:
-            return
-
-    async def do_save(self, data: str, client: Client) -> None:
-        link = Route.GD_URL
-
-        codes = {
-            -4: MissingAccess("Data is too large."),
-            -5: MissingAccess("Invalid login credentials."),
-            -6: MissingAccess("Something wrong happened."),
-        }
-
-        payload = (
-            Params()
-            .create_new()
-            .put_username(client.name)
-            .put_definer("password", client.password)
-            .put_save_data(data)
-            .finish_login()
-        )
-
-        resp = await self.http.request(
-            Route.SAVE_DATA, payload, custom_base=link, error_codes=codes
-        )
-
-        if resp != 1:
-            raise MissingAccess(f"Failed to do backup for client: {client!r}")
-
-    async def search_levels_on_page(
-        self,
-        page: int = 0,
-        query: str = "",
-        filters: Optional[Filters] = None,
-        user_id: Optional[int] = None,
-        gauntlet: Optional[int] = None,
-        *,
-        exclude: Tuple[Type[BaseException]] = (),
-        client: Client,
-    ) -> Tuple[List[ExtDict], List[ExtDict], List[ExtDict]]:
-        # levels, creators, songs
-        if filters is None:
-            filters = Filters.setup_empty()
-
-        codes = {-1: MissingAccess("No levels were found.")}
-
-        params = Params().create_new()
-
-        if gauntlet is not None:
-            params.put_definer("gauntlet", gauntlet)
-
-        else:
-            params.put_definer("search", query).put_page(page).put_total(0).put_filters(filters)
-
-            if filters.strategy == SearchStrategy.BY_USER:
-
-                if user_id is None:
-                    check_logged_obj(client, "search_levels_on_page(...)")
-
-                    user_id = client.id
-
-                    params.put_definer("accountid", client.account_id).put_password(
-                        client.encodedpass
-                    )
-                    params.put_local(1)
-
-                params.put_definer("search", user_id)  # override the 'str' parameter in request
-
-            elif filters.strategy == SearchStrategy.FRIENDS:
-                check_logged_obj(client, "search_levels_on_page(..., client=client)")
-                params.put_definer("accountid", client.account_id).put_password(client.encodedpass)
-
-        payload = params.finish()
-
-        resp = await self.http.request(
-            Route.LEVEL_SEARCH, payload, exclude=exclude, error_codes=codes
-        )
-
-        if not resp:
-            return [], [], []
-
-        resp, parser = resp.split("#"), Parser().with_split("~|~").should_map()
-
-        try:
-            lvdata, cdata, sdata = resp[:3]
-        except ValueError:
-            return [], [], []
-
-        songs = list(map(parser.parse, filter(is_not_empty, sdata.split("~:~"))))
-
-        creators = [
-            ExtDict(zip(("id", "name", "account_id"), creator.split(":")))
-            for creator in filter(is_not_empty, cdata.split("|"))
-        ]
-
-        parser.with_split(":").add_ext({"101": 0, "102": -1, "103": -1})
-
-        levels = list(map(parser.parse, filter(is_not_empty, lvdata.split("|"))))
-
-        return levels, creators, songs
-
-    async def search_levels(
-        self,
-        query: str = "",
-        filters: Optional[Filters] = None,
-        user_id: Optional[int] = None,
-        pages: Optional[Sequence[int]] = None,
-        gauntlet: Optional[int] = None,
-        *,
-        client: Client,
-    ) -> List[ExtDict]:
-        to_run = [
-            self.search_levels_on_page(
-                query=query,
-                filters=filters,
-                user_id=user_id,
-                page=page,
-                gauntlet=gauntlet,
-                exclude=excluding(Exception),
-                client=client,
-            )
-            for page in pages
-        ]
-        levels, creators, songs = [], [], []
-
-        for (level_part, creator_part, song_part) in await asyncio.gather(*to_run):
-            levels.extend(level_part)
-            creators.extend(creator_part)
-            songs.extend(song_part)
-
-        return levels, creators, songs
-
-    async def report_level(self, level_id: int) -> None:
-        payload = Params().create_new("web").put_definer("levelid", level_id).finish()
-        codes = {-1: MissingAccess(f"Failed to report a level by ID: {level_id!r}.")}
-
-        await self.http.request(Route.REPORT_LEVEL, payload, error_codes=codes)
-
-    async def delete_level(self, level_id: int, *, client: Client) -> None:
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_definer("levelid", level_id)
-            .put_password(client.encodedpass)
-            .finish_level()
-        )
-
-        resp = await self.http.request(Route.DELETE_LEVEL, payload)
-
-        if resp != 1:
-            raise MissingAccess(f"Failed to delete a level by ID: {level_id}.")
-
-    async def update_level_desc(self, level_id: int, content: str, *, client: Client) -> None:
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .put_definer("levelid", level_id)
-            .put_level_desc(content)
-            .finish()
-        )
-
-        resp = await self.http.request(Route.UPDATE_LEVEL_DESC, payload)
-
-        if resp != 1:
-            raise MissingAccess(f"Failed to update description of the level by ID: {level_id}.")
-
-    async def rate_level(self, level_id: int, rating: int, *, client: Client) -> None:
-        assert 0 < rating <= 10, "Invalid star value given."
-
-        rs, udid, uuid = Coder.gen_rs(), Params.gen_udid(), Params.gen_uuid()
-        values = [level_id, rating, rs, client.account_id, udid, uuid]
-        chk = Coder.gen_chk(type="like_rate", values=values)
-
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("levelid", level_id)
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .put_udid(udid)
-            .put_uuid(uuid)
-            .put_definer("stars", rating)
-            .put_rs(rs)
-            .put_chk(chk)
-            .finish()
-        )
-
-        resp = await self.http.request(Route.RATE_LEVEL_STARS, payload)
-
-        if resp != 1:
-            raise MissingAccess(f"Failed to rate level by ID: {level_id}.")
-
-    async def rate_demon(
-        self, level_id: int, demon_rating: DemonDifficulty, mod: bool, *, client: Client
-    ) -> bool:
-        rating_level = demon_rating.value
-
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .put_definer("levelid", level_id)
-            .put_definer("rating", rating_level)
-            .put_mode(int(mod))
-            .finish_mod()
-        )
-        codes = {-2: MissingAccess("Attempt to rate as mod without mod permissions.")}
-
-        resp = await self.http.request(Route.RATE_LEVEL_DEMON, payload, error_codes=codes)
-
-        if not resp:
-            return False
-
-        elif isinstance(resp, int) and resp > 0:
-            return True
-
-    async def send_level(
-        self, level_id: int, rating: int, featured: bool, *, client: Client
-    ) -> None:
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .put_definer("levelid", level_id)
-            .put_definer("stars", rating)
-            .put_feature(int(featured))
-            .finish_mod()
-        )
-        codes = {
-            -2: MissingAccess(f"Missing moderator permissions to send a level by ID: {level_id!r}.")
-        }
-
-        resp = await self.http.request(Route.SUGGEST_LEVEL_STARS, payload, error_codes=codes)
-
-        if resp != 1:
-            raise MissingAccess(f"Failed to send a level by ID: {level_id!r}.")
-
-    async def like(
-        self, item_id: int, typeid: int, special: int, dislike: bool = False, *, client: Client
-    ) -> None:
-        like = dislike ^ 1
-
-        rs, udid, uuid = Coder.gen_rs(), Params.gen_udid(), Params.gen_uuid()
-        values = [special, item_id, like, typeid, rs, client.account_id, udid, uuid]
-        chk = Coder.gen_chk(type="like_rate", values=values)
-
-        payload = (
-            Params()
-            .create_new(game_version=20)
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .put_udid(udid)
-            .put_uuid(uuid)
-            .put_definer("itemid", item_id)
-            .put_like(like)
-            .put_type(typeid)
-            .put_special(special)
-            .put_rs(rs)
-            .put_chk(chk)
-            .finish()
-        )
-
-        resp = await self.http.request(Route.LIKE_ITEM, payload)
-
-        if resp != 1:
-            raise MissingAccess(f"Failed to like an item by ID: {item_id}.")
-
-    async def get_page_messages(
-        self,
-        sent_or_inbox: str,
-        page: int,
-        *,
-        exclude: Tuple[Type[BaseException]] = (),
-        client: Client,
-    ) -> List[ExtDict]:
-        assert sent_or_inbox in ("inbox", "sent")
-        inbox = 0 if sent_or_inbox != "sent" else 1
-
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .put_page(page)
-            .put_total(0)
-            .get_sent(inbox)
-            .finish()
-        )
-        codes = {-1: MissingAccess("Failed to get messages."), -2: NothingFound("gd.Message")}
-
-        resp = await self.http.request(
-            Route.GET_PRIVATE_MESSAGES, payload, error_codes=codes, exclude=exclude
-        )
-        resp = Parser().split("#").take(0).check_empty().split("|").parse(resp)
-
-        if resp is None:
-            return []
-
-        parser = Parser().with_split(":").should_map()
-        return list(map(parser.parse, resp))
-
-    async def get_messages(
-        self, sent_or_inbox: str, pages: Optional[Sequence[int]] = None, *, client: Client
-    ) -> List[ExtDict]:
-        assert sent_or_inbox in ("inbox", "sent")
-
-        to_run = [
-            self.get_page_messages(
-                sent_or_inbox=sent_or_inbox, page=page, exclude=excluding(Exception), client=client
-            )
-            for page in pages
-        ]
-
-        return await self.run_many(to_run)
-
-    async def post_comment(self, content: str, *, client: Client) -> None:
-        to_gen = [client.name, 0, 0, 1]
-
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_username(client.name)
-            .put_password(client.encodedpass)
-            .put_comment(content, to_gen)
-            .comment_for("profile")
-            .finish()
-        )
-        codes = {-1: MissingAccess("Failed to post a comment.")}
-
-        await self.http.request(Route.UPLOAD_ACC_COMMENT, payload, error_codes=codes)
-
-    async def comment_level(
-        self, level_id: int, content: str, percentage: int, *, client: Client
-    ) -> None:
-        if percentage > 100:
-            raise ValueError(f"{percentage}% > 100% percentage arg was received.")
-
-        percentage = round(percentage)  # just in case
-        to_gen = [client.name, level_id, percentage, 0]
-
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_username(client.name)
-            .put_password(client.encodedpass)
-            .put_comment(content, to_gen)
-            .comment_for("level", level_id)
-            .put_percent(percentage)
-            .finish()
-        )
-        codes = {-1: MissingAccess(f"Failed to post a comment on a level by ID: {level_id!r}.")}
-
-        await self.http.request(Route.UPLOAD_COMMENT, payload, error_codes=codes)
-
-    async def delete_comment(
-        self, typeof: CommentType, comment_id: int, level_id: int, *, client: Client
-    ) -> None:
-        cases = {0: Route.DELETE_LEVEL_COMMENT, 1: Route.DELETE_ACC_COMMENT}
-        route = cases.get(typeof.value)
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("commentid", comment_id)
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .comment_for(typeof.name.lower(), level_id)
-            .finish()
-        )
-        resp = await self.http.request(route, payload)
-
-        if resp != 1:
-            raise MissingAccess(f"Failed to delete a comment by ID: {comment_id!r}.")
-
-    async def send_friend_request(
-        self, target_id: int, message: str = "", *, client: Client
-    ) -> None:
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_recipient(target_id)
-            .put_fr_comment(message)
-            .put_password(client.encodedpass)
-            .finish()
-        )
-        resp = await self.http.request(Route.SEND_REQUEST, payload)
-
-        if not resp:  # if request is already sent
-            return
-
-        elif resp != 1:
-            raise MissingAccess(f"Failed to send a friend request to user by ID: {target_id!r}.")
-
-    async def delete_friend_request(
-        self, typeof: MessageOrRequestType, user_id: int, client: Client
-    ) -> None:
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_definer("user", user_id)
-            .put_password(client.encodedpass)
-            .put_is_sender(typeof.name.lower())
-            .finish()
-        )
-        resp = await self.http.request(Route.DELETE_REQUEST, payload)
-
-        if resp != 1:
-            raise MissingAccess(
-                f"Failed to delete a friend request by User (with ID): {user_id!r}."
-            )
-
-    async def accept_friend_request(
-        self, typeof: MessageOrRequestType, request_id: int, user_id: int, client: Client
-    ) -> None:
-        if typeof.value:  # is gd.MessageOrRequestType.SENT
-            raise MissingAccess(
-                "Failed to accept a friend request. Reason: request is sent, not received one."
-            )
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .put_definer("user", user_id)
-            .put_definer("requestid", request_id)
-            .finish()
-        )
-        resp = await self.http.request(Route.ACCEPT_REQUEST, payload)
-
-        if resp != 1:
-            raise MissingAccess(f"Failed to accept a friend request by ID: {request_id!r}.")
-
-    async def read_friend_request(self, request_id: int, client: Client) -> None:
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .put_definer("requestid", request_id)
-            .finish()
-        )
-        resp = await self.http.request(Route.READ_REQUEST, payload)
-
-        if resp != 1:
-            raise MissingAccess(f"Failed to read a friend request by ID: {request_id!r}.")
-
-    async def read_message(
-        self, typeof: MessageOrRequestType, message_id: int, client: Client
-    ) -> str:
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_definer("messageid", message_id)
-            .put_is_sender(typeof.name.lower())
-            .put_password(client.encodedpass)
-            .finish()
-        )
-        codes = {-1: MissingAccess(f"Failed to read a message by ID: {message_id!r}.")}
-        resp = await self.http.request(Route.READ_PRIVATE_MESSAGE, payload, error_codes=codes,)
-        mapped = Parser().with_split(":").should_map().parse(resp)
-
-        return Coder.decode(type="message", string=mapped.get(Index.MESSAGE_BODY, ""))
-
-    async def delete_message(
-        self, typeof: MessageOrRequestType, message_id: int, client: Client
-    ) -> None:
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_definer("messageid", message_id)
-            .put_password(client.encodedpass)
-            .put_is_sender(typeof.name.lower())
-            .finish()
-        )
-        resp = await self.http.request(Route.DELETE_PRIVATE_MESSAGE, payload)
-
-        if resp != 1:
-            raise MissingAccess(f"Failed to delete a message by ID: {message_id!r}.")
-
-    async def get_gauntlets(self) -> List[ExtDict]:
-        payload = Params().create_new().finish()
-
-        resp = await self.http.request(Route.GET_GAUNTLETS, payload)
-
-        splitted = Parser().split("#").take(0).split("|").parse(resp)
-        parser = Parser().with_split(":").should_map()
-
-        return list(map(parser.parse, filter(is_not_empty, splitted)))
-
-    async def get_page_map_packs(
-        self, page: int = 0, *, exclude: Tuple[Type[BaseException]] = (),
-    ) -> List[ExtDict]:
-        payload = Params().create_new().put_page(page).finish()
-
-        resp = await self.http.request(Route.GET_MAP_PACKS, payload)
-
-        splitted = Parser().split("#").take(0).split("|").check_empty().should_map().parse(resp)
-
-        if not splitted:
-            if issubclass(NothingFound, exclude):
-                return []
-            raise NothingFound("gd.MapPack")
-
-        parser = Parser().with_split(":").should_map()
-
-        return list(map(parser.parse, splitted))
-
-    async def get_map_packs(self, pages: Sequence[int]) -> List[ExtDict]:
-        to_run = [
-            self.get_page_map_packs(page=page, exclude=excluding(Exception)) for page in pages
-        ]
-        return await self.run_many(to_run)
-
-    async def get_page_friend_requests(
-        self,
-        sent_or_inbox: str = "inbox",
-        page: int = 0,
-        *,
-        exclude: Tuple[Type[BaseException]] = (),
-        client: Client,
-    ) -> List[ExtDict]:
-        inbox = int(sent_or_inbox == "sent")
-
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", str(client.account_id))
-            .put_password(client.encodedpass)
-            .put_page(page)
-            .put_total(0)
-            .get_sent(inbox)
-            .finish()
-        )
-        codes = {
-            -1: MissingAccess(f"Failed to get friend requests on page {page}."),
-            -2: NothingFound("gd.FriendRequest"),
-        }
-
-        resp = await self.http.request(
-            Route.GET_FRIEND_REQUESTS, payload, error_codes=codes, exclude=exclude
-        )
-        splitted = Parser().split("#").take(0).split("|").check_empty().parse(resp)
-
-        if resp is None:
-            return []
-
-        parser = Parser().split(":").add_ext({"101": inbox}).should_map()
-
-        return list(map(parser.parse, splitted))
-
-    async def get_friend_requests(
-        self, pages: Sequence[int], sent_or_inbox: str = "inbox", *, client: Client
-    ) -> List[ExtDict]:
-        assert sent_or_inbox in ("sent", "inbox")
-
-        to_run = [
-            self.get_page_friend_requests(
-                sent_or_inbox=sent_or_inbox, page=page, exclude=excluding(Exception), client=client
-            )
-            for page in pages
-        ]
-
-        return await self.run_many(to_run)
-
-    async def retrieve_page_comments(
-        self,
-        account_id: int,
-        id: int,
-        type: str = "profile",
-        page: int = 0,
-        *,
-        strategy: CommentStrategy,
-        exclude: Tuple[Type[BaseException]] = (),
-    ) -> List[ExtDict]:
-        assert isinstance(page, int) and page >= 0
-        assert type in ("profile", "level")
-
-        is_level = type == "level"
-
-        typeid = is_level ^ 1
-        definer = "userid" if is_level else "accountid"
-        selfid = id if is_level else account_id
-        route = Route.GET_COMMENT_HISTORY if is_level else Route.GET_ACC_COMMENTS
-
-        parser = Parser().add_ext({"101": typeid}).should_map()
-
-        if is_level:
-            parser.split(":").take(0).split("~")
-        else:
-            parser.with_split("~")
-
-        param_obj = Params().create_new().put_definer(definer, selfid).put_page(page).put_total(0)
-        if is_level:
-            param_obj.put_mode(strategy.value)
-        payload = param_obj.finish()
-
-        codes = {
-            -1: MissingAccess(f"Failed to retrieve comment for user by Account ID: {account_id!r}.")
-        }
-
-        resp = await self.http.request(route, payload, error_codes=codes, exclude=exclude)
-
-        if not resp:
-            return []
-
-        splitted = resp.split("#").pop(0)
-
-        if not splitted:
-            if issubclass(NothingFound, exclude):
-                return []
-            raise NothingFound("gd.Comment")
-
-        return list(map(parser.parse, filter(is_not_empty, splitted.split("|"))))
-
-    async def retrieve_comments(
-        self,
-        account_id: int,
-        id: int,
-        pages: Sequence[int],
-        type: str = "profile",
-        *,
-        strategy: CommentStrategy,
-    ) -> List[ExtDict]:
-        assert type in ("profile", "level")
-
-        to_run = [
-            self.retrieve_page_comments(
-                type=type,
-                account_id=account_id,
-                id=id,
-                page=page,
-                exclude=excluding(Exception),
-                strategy=strategy,
-            )
-            for page in pages
-        ]
-
-        return await self.run_many(to_run)
-
-    async def get_level_comments(
-        self,
-        level_id: int,
-        strategy: CommentStrategy,
-        amount: int,
-        exclude: Tuple[Type[BaseException]] = (),
-    ) -> List[Tuple[ExtDict, ExtDict]]:
-        # comment, user
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("levelid", level_id)
-            .put_page(0)
-            .put_total(0)
-            .put_mode(strategy.value)
-            .put_count(amount)
-            .finish()
-        )
-        codes = {
-            -1: MissingAccess(f"Failed to get comments of a level by ID: {level_id!r}."),
-            -2: NothingFound("gd.Comment"),
-        }
-
-        resp = await self.http.request(
-            Route.GET_COMMENTS, payload, error_codes=codes, exclude=exclude
-        )
-
-        if resp is None:
-            return []
-
-        splitted = Parser().split("#").take(0).split("|").parse(resp)
-        parser = Parser().with_split("~").should_map()
-
-        res = []
-
-        for elem in filter(is_not_empty, splitted):
-            com_data, user_data, *_ = map(parser.parse, elem.split(":"))
-            com_data.update({"1": level_id, "101": 0, "102": 0})
-
-            user_data = ExtDict(
-                account_id=user_data.getcast(Index.USER_ACCOUNT_ID, 0, int),
-                id=com_data.getcast(Index.COMMENT_AUTHOR_ID, 0, int),
-                name=user_data.get(Index.USER_NAME, "unknown"),
-            )
-
-            res.append((com_data, user_data))
-
-        return res
-
-    async def block_user(self, account_id: int, unblock: bool = False, *, client: Client) -> None:
-        route = Route.UNBLOCK_USER if unblock else Route.BLOCK_USER
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .put_definer("user", account_id)
-            .finish()
-        )
-        resp = await self.http.request(route, payload)
-
-        if resp != 1:
-            raise MissingAccess(
-                f"Failed to {'un' if unblock else ''}block a user by Account ID: {account_id!r}."
-            )
-
-    async def unfriend_user(self, account_id: int, *, client: Client) -> None:
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .put_definer("user", account_id)
-            .finish()
-        )
-        resp = await self.http.request(Route.REMOVE_FRIEND, payload)
-
-        if resp != 1:
-            raise MissingAccess(f"Failed to unfriend a user by Account ID: {account_id!r}.")
-
-    async def send_message(
-        self, account_id: int, subject: str, body: str, *, client: Client
-    ) -> None:
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_message(subject, body)
-            .put_recipient(account_id)
-            .put_password(client.encodedpass)
-            .finish()
-        )
-        resp = await self.http.request(Route.SEND_PRIVATE_MESSAGE, payload)
-
-        if resp != 1:
-            raise MissingAccess(
-                f"Failed to send a message to a user by Account ID: {account_id!r}."
-            )
-
-    async def update_profile(self, settings: Dict[str, int], *, client: Client) -> None:
-        settings_cased = {Converter.snake_to_camel(name): value for name, value in settings.items()}
-
-        rs = Coder.gen_rs()
-
-        req_chk_params = [client.account_id]
-        req_chk_params.extend(
-            settings.get(param, 0)
-            for param in (
-                "user_coins",
-                "demons",
-                "stars",
-                "coins",
-                "icon_type",
-                "icon",
-                "diamonds",
-                "acc_icon",
-                "acc_ship",
-                "acc_ball",
-                "acc_bird",
-                "acc_dart",
-                "acc_robot",
-                "acc_glow",
-                "acc_spider",
-                "acc_explosion",
-            )
-        )
-
-        chk = Coder.gen_chk(type="userscore", values=req_chk_params)
-
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .put_username(client.name)
-            .put_seed(rs)
-            .put_seed(chk, suffix=str(2))
-            .finish()
-        )
-
-        payload.update(settings_cased)
-
-        resp = await self.http.request(Route.UPDATE_USER_SCORE, payload)
-
-        if not resp > 0:
-            raise MissingAccess(f"Failed to update profile of a client: {client!r}")
+    async def get_role_id(self, account_id: int, encoded_password: str) -> int:
+        return await self.http.get_role_id(account_id=account_id, encoded_password=encoded_password)
 
     async def update_settings(
         self,
-        message_policy: MessagePolicyType,
-        friend_request_policy: FriendRequestPolicyType,
-        comment_policy: CommentPolicyType,
+        message_state: MessageState,
+        friend_request_state: FriendRequestState,
+        comment_state: CommentState,
         youtube: str,
         twitter: str,
         twitch: str,
         *,
-        client: Client,
+        account_id: int,
+        encoded_password: str,
     ) -> None:
-        payload = (
-            Params()
-            .create_new("web")
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .put_profile_upd(
-                message_policy.value,
-                friend_request_policy.value,
-                comment_policy.value,
-                youtube,
-                twitter,
-                twitch,
-            )
-            .finish_login()
-        )
-        resp = await self.http.request(Route.UPDATE_ACC_SETTINGS, payload)
-
-        if resp != 1:
-            raise MissingAccess(f"Failed to update profile settings of a client: {client!r}.")
-
-    async def get_quests(self, *, client: Client) -> List[ExtDict]:
-        udid, uuid = Params.gen_udid(), Params.gen_uuid()
-        rn = Coder.gen_rs(5, charset=string.digits)
-        chk = Coder.gen_chk(type="challenges", values=[rn])
-
-        codes = {-1: MissingAccess("Failed to get quests.")}
-
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .put_udid(udid)
-            .put_uuid(uuid)
-            .put_chk(chk[:REWARD_CHALLENGE_CHK_LENGTH])
-            .finish()
+        await self.http.update_settings(
+            message_state=message_state,
+            friend_request_state=friend_request_state,
+            comment_state=comment_state,
+            youtube=youtube,
+            twitter=twitter,
+            twitch=twitch,
+            account_id=account_id,
+            encoded_password=encoded_password,
         )
 
-        resp = await self.http.request(Route.GET_CHALLENGES, payload, error_codes=codes)
-
-        resp = Parser().split("|").take(0).check_empty().parse(resp)
-
-        if resp is None:
-            return []
-
-        data = Coder.decode(
-            type="challenges", string=resp[REWARD_CHALLENGE_SLICE_LENGTH:], use_bytes=True
-        )
-        time_left, *quests = data.split(":")[-QUEST_AMOUNT - 1 :]
-
-        time_left = int(time_left)
-        result = []
-
-        for quest in quests:
-            try:
-                id, type, amount, reward, name, *_ = quest.split(",")
-            except ValueError:
-                continue
-
-            result.append(
-                ExtDict(
-                    id=int(id),
-                    type=QuestType.from_value(int(type), "unknown"),
-                    amount=int(amount),
-                    reward=int(reward),
-                    name=name,
-                    seconds=time_left,
-                )
-            )
-
-        return result
-
-    async def get_chests(self, reward_type: RewardType, *, client: Client) -> List[ExtDict]:
-        udid, uuid = Params.gen_udid(), Params.gen_uuid()
-        rn = Coder.gen_rs(5, charset=string.digits)
-        chk = Coder.gen_chk(type="rewards", values=[rn])
-
-        codes = {-1: MissingAccess("Failed to get chests.")}
-
-        payload = (
-            Params()
-            .create_new()
-            .put_definer("accountid", client.account_id)
-            .put_password(client.encodedpass)
-            .put_udid(udid)
-            .put_uuid(uuid)
-            .put_definer("reward", reward_type.value)
-            .put_chk(chk[:REWARD_CHALLENGE_CHK_LENGTH])
-            .put_seed(0, prefix="r", suffix=1)
-            .put_seed(0, prefix="r", suffix=2)
-            .finish()
+    async def update_profile(
+        self,
+        stars: int,
+        diamonds: int,
+        coins: int,
+        user_coins: int,
+        demons: int,
+        icon_type: IconType,
+        icon: int,
+        color_1_id: int,
+        color_2_id: int,
+        has_glow: bool,
+        cube: int,
+        ship: int,
+        ball: int,
+        ufo: int,
+        wave: int,
+        robot: int,
+        spider: int,
+        death_effect: int,
+        special: int = 0,
+        *,
+        account_id: int,
+        name: str,
+        encoded_password: str,
+    ) -> None:
+        await self.http.update_profile(
+            stars=stars,
+            diamonds=diamonds,
+            coins=coins,
+            user_coins=user_coins,
+            demons=demons,
+            icon_type=icon_type,
+            icon=icon,
+            color_1_id=color_1_id,
+            color_2_id=color_2_id,
+            has_glow=has_glow,
+            cube=cube,
+            ship=ship,
+            ball=ball,
+            ufo=ufo,
+            wave=wave,
+            robot=robot,
+            spider=spider,
+            death_effect=death_effect,
+            special=special,
+            account_id=account_id,
+            name=name,
+            encoded_password=encoded_password,
         )
 
-        resp = await self.http.request(Route.GET_REWARDS, payload, error_codes=codes)
+    async def search_user(self, query: Union[int, str]) -> SearchUserModel:
+        response_model = await self.search_users_on_page(query, page=0)
+        return response_model.users[0]
 
-        resp = Parser().split("|").take(0).check_empty().parse(resp)
+    async def search_users_on_page(
+        self, query: Union[int, str], page: int = 0
+    ) -> SearchUserResponseModel:
+        response = await self.http.search_users_on_page(query, page=page)
+        return SearchUserResponseModel.from_string(response, use_default=True)
 
-        if resp is None:
-            return []
-
-        data = Coder.decode(
-            type="rewards", string=resp[REWARD_CHALLENGE_SLICE_LENGTH:], use_bytes=True
+    async def get_user_profile(
+        self,
+        account_id: int,
+        *,
+        client_account_id: Optional[int] = None,
+        encoded_password: Optional[str] = None,
+    ) -> ProfileUserModel:
+        response = await self.http.get_user_profile(
+            account_id, client_account_id=client_account_id, encoded_password=encoded_password
         )
-        chest_parts = data.split(":")[-CHEST_AMOUNT * CHEST_INNER_PARTS - 1 : -1]
+        return ProfileUserModel.from_string(response, use_default=True)
 
-        result = []
+    async def get_user_list(
+        self, type: UserListType, *, account_id: int, encoded_password: str
+    ) -> UserListResponseModel:
+        response = await self.http.get_user_list(
+            type, account_id=account_id, encoded_password=encoded_password
+        )
+        return UserListResponseModel.from_string(response, use_default=True)
 
-        for chest_id, (time_left, chest_info, chest_count) in enumerate(
-            group(chest_parts, CHEST_INNER_PARTS), 1
-        ):
-            try:
-                orbs, diamonds, shard_id, keys, *_ = chest_info.split(",")
-            except ValueError:
-                continue
+    async def get_top(
+        self,
+        strategy: LeaderboardStrategy,
+        count: int,
+        *,
+        account_id: Optional[int] = None,
+        encoded_password: Optional[str] = None,
+    ) -> LeaderboardResponseModel:
+        response = await self.http.get_top(
+            strategy, count, account_id=account_id, encoded_password=encoded_password
+        )
+        return LeaderboardResponseModel.from_string(response, use_default=True)
 
-            result.append(
-                ExtDict(
-                    id=chest_id,
-                    seconds=int(time_left),
-                    count=int(chest_count),
-                    orbs=int(orbs),
-                    diamonds=int(diamonds),
-                    shard_id=int(shard_id),
-                    shard_type=ShardType.from_value(int(shard_id), "unknown"),
-                    keys=int(keys),
-                )
-            )
+    async def search_levels_on_page(
+        self,
+        query: Optional[Union[int, str, Iterable[Any]]] = None,
+        page: int = 0,
+        filters: Optional[Filters] = None,
+        user_id: Optional[int] = None,
+        gauntlet: Optional[int] = None,
+        *,
+        client_account_id: Optional[int] = None,
+        client_user_id: Optional[int] = None,
+        encoded_password: Optional[str] = None,
+    ) -> LevelSearchResponseModel:
+        response = await self.http.search_levels_on_page(
+            query,
+            page=page,
+            filters=filters,
+            user_id=user_id,
+            gauntlet=gauntlet,
+            client_account_id=client_account_id,
+            client_user_id=client_user_id,
+            encoded_password=encoded_password,
+        )
+        return LevelSearchResponseModel.from_string(response, use_default=True)
 
-        return result
+    async def get_timely_info(self, weekly: bool) -> TimelyInfoModel:
+        response = await self.http.get_timely_info(weekly)
+        return TimelyInfoModel.from_string(response, use_default=True)
 
-    async def run_many(self, tasks: List[asyncio.Task]) -> Any:
-        res = await asyncio.gather(*tasks)
+    async def download_level(
+        self,
+        level_id: int,
+        *,
+        account_id: Optional[int] = None,
+        encoded_password: Optional[str] = None,
+    ) -> LevelDownloadResponseModel:
+        response = await self.http.download_level(
+            level_id, account_id=account_id, encoded_password=encoded_password
+        )
+        return LevelDownloadResponseModel.from_string(response, use_default=True)
 
-        res = [elem for elem in res if elem]
+    async def report_level(self, level_id: int) -> None:
+        await self.http.report_level(level_id)
 
-        if all(iterable(elem) for elem in res):
-            res = list(chain.from_iterable(res))
+    async def delete_level(self, level_id: int, *, account_id: int, encoded_password: str) -> None:
+        await self.http.delete_level(
+            level_id, account_id=account_id, encoded_password=encoded_password
+        )
 
-        return res
+    async def update_level_description(
+        self, level_id: int, description: str, *, account_id: int, encoded_password: str
+    ) -> None:
+        await self.http.update_level_description(
+            level_id, description, account_id=account_id, encoded_password=encoded_password
+        )
 
+    async def upload_level(
+        self,
+        name: str = "Unnamed",
+        level_id: int = 0,
+        version: int = 1,
+        length: LevelLength = LevelLength.TINY,  # type: ignore
+        track_id: int = 0,
+        description: str = "",
+        song_id: int = 0,
+        is_auto: bool = False,
+        original: int = 0,
+        two_player: bool = False,
+        objects: int = 0,
+        coins: int = 0,
+        stars: int = 0,
+        unlisted: bool = False,
+        friends_only: bool = False,
+        low_detail_mode: bool = False,
+        password: Optional[Union[int, str]] = None,
+        copyable: bool = False,
+        recording: Iterable[RecordEntry] = (),
+        data: str = "",
+        *,
+        account_id: int,
+        account_name: str,
+        encoded_password: str,
+    ) -> int:
+        return await self.http.upload_level(
+            name=name,
+            level_id=level_id,
+            version=version,
+            length=length,
+            track_id=track_id,
+            description=description,
+            song_id=song_id,
+            is_auto=is_auto,
+            original=original,
+            two_player=two_player,
+            objects=objects,
+            coins=coins,
+            stars=stars,
+            unlisted=unlisted,
+            friends_only=friends_only,
+            low_detail_mode=low_detail_mode,
+            password=password,
+            copyable=copyable,
+            recording=recording,
+            data=data,
+            account_id=account_id,
+            account_name=account_name,
+            encoded_password=encoded_password,
+        )
 
-def excluding(*args: Tuple[Type[BaseException]]) -> Tuple[Type[BaseException]]:
-    return args
+    async def rate_level(
+        self, level_id: int, stars: int, *, account_id: int, encoded_password: str
+    ) -> None:
+        await self.http.rate_level(
+            level_id=level_id,
+            stars=stars,
+            account_id=account_id,
+            encoded_password=encoded_password,
+        )
 
+    async def rate_demon(
+        self,
+        level_id: int,
+        rating: DemonDifficulty,
+        as_mod: bool = False,
+        *,
+        account_id: int,
+        encoded_password: str,
+    ) -> None:
+        await self.http.rate_demon(
+            level_id=level_id,
+            rating=rating,
+            as_mod=as_mod,
+            account_id=account_id,
+            encoded_password=encoded_password,
+        )
 
-def group(some_iterable: Iterable[Any], group_size: int = 2) -> Iterable[Tuple[Any]]:
-    return zip(*(iter(some_iterable),) * group_size)
+    async def send_level(
+        self, level_id: int, stars: int, feature: bool, *, account_id: int, encoded_password: str
+    ) -> None:
+        await self.http.send_level(
+            level_id=level_id,
+            stars=stars,
+            feature=feature,
+            account_id=account_id,
+            encoded_password=encoded_password,
+        )
 
+    async def get_level_top(
+        self,
+        level_id: int,
+        strategy: LevelLeaderboardStrategy,
+        *,
+        account_id: int,
+        encoded_password: str,
+    ) -> LevelLeaderboardResponseModel:
+        response = await self.http.get_level_top(
+            level_id, strategy=strategy, account_id=account_id, encoded_password=encoded_password
+        )
+        return LevelLeaderboardResponseModel.from_string(response, use_default=True)
 
-def iterable(maybe_iterable: Iterable) -> bool:
-    try:
-        iter(maybe_iterable)
-        return True
-    except Exception:
-        return False
+    async def block_or_unblock(
+        self, account_id: int, unblock: bool, *, client_account_id: int, encoded_password: str
+    ) -> None:
+        await self.http.block_or_unblock(
+            account_id=account_id,
+            unblock=unblock,
+            client_account_id=client_account_id,
+            encoded_password=encoded_password,
+        )
 
+    async def unfriend_user(
+        self, account_id: int, *, client_account_id: int, encoded_password: str
+    ) -> None:
+        await self.http.unfriend_user(
+            account_id=account_id,
+            client_account_id=client_account_id,
+            encoded_password=encoded_password,
+        )
 
-def is_not_empty(sequence: Sequence) -> bool:
-    return len(sequence) != 0
+    async def send_message(
+        self,
+        account_id: int,
+        subject: Optional[str] = None,
+        content: Optional[str] = None,
+        *,
+        client_account_id: int,
+        encoded_password: str,
+    ) -> None:
+        await self.http.send_message(
+            account_id=account_id,
+            subject=subject,
+            content=content,
+            client_account_id=client_account_id,
+            encoded_password=encoded_password,
+        )
+
+    async def download_message(
+        self, message_id: int, type: MessageType, *, account_id: int, encoded_password: str
+    ) -> MessageModel:
+        response = await self.http.download_message(
+            message_id, type=type, account_id=account_id, encoded_password=encoded_password
+        )
+        return MessageModel.from_string(response, use_default=True)
+
+    async def delete_message(
+        self, message_id: int, type: MessageType, *, account_id: int, encoded_password: str
+    ) -> None:
+        await self.http.delete_message(
+            message_id, type=type, account_id=account_id, encoded_password=encoded_password
+        )
+
+    async def get_messages_on_page(
+        self, type: MessageType, page: int, *, account_id: int, encoded_password: str
+    ) -> MessagesResponseModel:
+        response = await self.http.get_messages_on_page(
+            type, page, account_id=account_id, encoded_password=encoded_password
+        )
+        return MessagesResponseModel.from_string(response, use_default=True)
+
+    async def send_friend_request(
+        self,
+        account_id: int,
+        message: Optional[str] = None,
+        *,
+        client_account_id: int,
+        encoded_password: str,
+    ) -> None:
+        await self.http.send_friend_request(
+            account_id=account_id,
+            message=message,
+            client_account_id=client_account_id,
+            encoded_password=encoded_password,
+        )
+
+    async def delete_friend_request(
+        self,
+        account_id: int,
+        type: FriendRequestType,
+        *,
+        client_account_id: int,
+        encoded_password: str,
+    ) -> None:
+        await self.http.delete_friend_request(
+            account_id=account_id,
+            type=type,
+            client_account_id=client_account_id,
+            encoded_password=encoded_password,
+        )
+
+    async def accept_friend_request(
+        self,
+        account_id: int,
+        request_id: int,
+        type: FriendRequestType,
+        *,
+        client_account_id: int,
+        encoded_password: str,
+    ) -> None:
+        await self.http.accept_friend_request(
+            account_id=account_id,
+            request_id=request_id,
+            type=type,
+            client_account_id=client_account_id,
+            encoded_password=encoded_password,
+        )
+
+    async def read_friend_request(
+        self, request_id: int, *, account_id: int, encoded_password: str
+    ) -> None:
+        await self.http.read_friend_request(
+            request_id=request_id, account_id=account_id, encoded_password=encoded_password,
+        )
+
+    async def get_friend_requests_on_page(
+        self, type: FriendRequestType, page: int, *, account_id: int, encoded_password: str
+    ) -> FriendRequestsResponseModel:
+        response = await self.http.get_friend_requests_on_page(
+            type, page, account_id=account_id, encoded_password=encoded_password
+        )
+        return FriendRequestsResponseModel.from_string(response, use_default=True)
+
+    async def like_or_dislike(
+        self,
+        type: LikeType,
+        item_id: int,
+        special_id: int,
+        dislike: bool = False,
+        *,
+        account_id: int,
+        encoded_password: str,
+    ) -> None:
+        await self.http.like_or_dislike(
+            type=type,
+            item_id=item_id,
+            special_id=special_id,
+            dislike=dislike,
+            account_id=account_id,
+            encoded_password=encoded_password,
+        )
+
+    async def post_comment(
+        self,
+        type: CommentType,
+        content: Optional[str] = None,
+        level_id: int = 0,
+        percent: int = 0,
+        *,
+        account_id: int,
+        account_name: str,
+        encoded_password: str,
+    ) -> None:
+        await self.http.post_comment(
+            content=content,
+            type=type,
+            level_id=level_id,
+            percent=percent,
+            account_id=account_id,
+            account_name=account_name,
+            encoded_password=encoded_password,
+        )
+
+    async def delete_comment(
+        self,
+        comment_id: int,
+        type: CommentType,
+        level_id: int = 0,
+        *,
+        account_id: int,
+        encoded_password: str,
+    ) -> None:
+        await self.http.delete_comment(
+            comment_id=comment_id,
+            type=type,
+            level_id=level_id,
+            account_id=account_id,
+            encoded_password=encoded_password,
+        )
+
+    async def get_user_comments_on_page(
+        self,
+        account_id: int,
+        user_id: int,
+        type: CommentType,
+        page: int = 0,
+        *,
+        strategy: CommentStrategy,
+    ) -> CommentsResponseModel:
+        response = await self.http.get_user_comments_on_page(
+            account_id=account_id, user_id=user_id, type=type, page=page, strategy=strategy
+        )
+        return CommentsResponseModel.from_string(response, use_default=True)
+
+    async def get_level_comments_on_page(
+        self, level_id: int, amount: int, page: int = 0, *, strategy: CommentStrategy,
+    ) -> CommentsResponseModel:
+        response = await self.http.get_level_comments_on_page(
+            level_id=level_id, amount=amount, page=page, strategy=strategy
+        )
+        return CommentsResponseModel.from_string(response, use_default=True)
+
+    async def get_gauntlets(self) -> GauntletsResponseModel:
+        response = await self.http.get_gauntlets()
+        return GauntletsResponseModel.from_string(response, use_default=True)
+
+    async def get_map_packs_on_page(self, page: int = 0) -> MapPacksResponseModel:
+        response = await self.http.get_map_packs_on_page(page=page)
+        return MapPacksResponseModel.from_string(response, use_default=True)
+
+    async def get_quests(self, account_id: int, encoded_password: str) -> QuestsResponseModel:
+        response = await self.http.get_quests(
+            account_id=account_id, encoded_password=encoded_password
+        )
+        return QuestsResponseModel.from_string(response, use_default=True)
+
+    async def get_chests(
+        self,
+        reward_type: RewardType,
+        chest_1_count: int = 0,
+        chest_2_count: int = 0,
+        *,
+        account_id: int,
+        encoded_password: str,
+    ) -> ChestsResponseModel:
+        response = await self.http.get_chests(
+            reward_type=reward_type,
+            chest_1_count=chest_1_count,
+            chest_2_count=chest_2_count,
+            account_id=account_id,
+            encoded_password=encoded_password,
+        )
+        return ChestsResponseModel.from_string(response, use_default=True)
+
+    async def get_featured_artists_on_page(self, page: int = 0) -> FeaturedArtistsResponseModel:
+        response = await self.http.get_featured_artists_on_page(page=page)
+        return FeaturedArtistsResponseModel.from_string(response, use_default=True)
+
+    async def get_song(self, song_id: int) -> SongModel:
+        response = await self.http.get_song(song_id)
+        return SongModel.from_string(response, use_default=True)
+
+    async def get_ng_song(self, song_id: int) -> SongModel:
+        response = await self.http.get_ng_song(song_id)
+        return SongModel.from_dict(find_song_info(response), id=song_id)
+
+    async def get_artist_info(self, song_id: int) -> Dict[str, Any]:
+        response = await self.http.get_artist_info(song_id)
+
+        artist_info = extract_info_from_endpoint(response)
+        artist_info.update(id=song_id, official=False)  # type: ignore
+
+        return artist_info
+
+    async def search_ng_songs_on_page(self, query: str, page: int = 0) -> List[SongModel]:
+        response = await self.http.search_ng_songs_on_page(query=query, page=page)
+        return list(map(SongModel.from_dict, search_song_data(response)))
+
+    async def search_ng_users_on_page(self, query: str, page: int = 0) -> List[Dict[str, Any]]:
+        response = await self.http.search_ng_users_on_page(query=query, page=page)
+        return list(extract_users(response))
+
+    async def get_ng_user_songs_on_page(self, name: str, page: int = 0) -> List[SongModel]:
+        response = await self.http.get_ng_user_songs_on_page(name=name, page=page)
+        return [
+            SongModel.from_dict(data, author=name)
+            for data in extract_user_songs(response)  # type: ignore
+        ]

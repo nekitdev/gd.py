@@ -1,57 +1,49 @@
-from itertools import chain
-
-from gd.api.enums import GuidelinesColor
-
-from gd.typing import Any, Guidelines, List, Union
+from gd.enums import GuidelinesColor
+from gd.typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple, TypeVar, Union
 
 __all__ = ("Guidelines",)
 
+K = TypeVar("K")
+V = TypeVar("V")
 
-class Guidelines(dict):
-    # TODO: maybe add more functionality here ~ nekit
+Pairs = Iterable[Tuple[K, V]]
+MappingOrPairs = Union[Mapping[K, V], Pairs]
+Number = Union[float, int]
+ColorOrNumber = Union[GuidelinesColor, Number]
+
+
+class Guidelines(Dict[Number, GuidelinesColor]):
+    def __init__(self, guidelines: MappingOrPairs[Number, ColorOrNumber]) -> None:
+        super().__init__()
+
+        self.update(guidelines)
+
     def __repr__(self) -> str:
-        data = {time: enum.name.lower() for time, enum in self.items()}
-        return f"{self.__class__.__name__}({data})"
+        time_to_str = {time: enum.name.lower() for time, enum in self.items()}
+        return f"{self.__class__.__name__}({time_to_str})"
 
-    def __setitem__(self, time: Union[float, int], color: Union[float, GuidelinesColor]) -> None:
-        if isinstance(color, GuidelinesColor):
-            pass
-        elif isinstance(color, (float, int)):
-            color = GuidelinesColor.from_value(color)
-        else:
-            raise ValueError(
-                f"Expected GuidelinesColor, float or int, got {color.__class__.__name__}."
-            )
-        super().__setitem__(time, color)
+    def __setitem__(self, time: Number, color: ColorOrNumber) -> None:
+        super().__setitem__(time, GuidelinesColor.from_value(color))
+
+    def at(self, time: Number) -> Optional[GuidelinesColor]:
+        return self.get(time, None)
 
     def copy(self) -> Any:
         return self.__class__(super().copy())
 
-    @classmethod
-    def new(cls, mapping: Any) -> Guidelines:
-        """Create a new Guidelines mapping."""
-        return cls({key: GuidelinesColor.from_value(value) for key, value in mapping})
-
-    def points(self) -> List[Union[float, int]]:
+    def points(self) -> List[Number]:
         """Get all points with lines on them."""
         return list(self.keys())
 
-    def dump(self, delim: str = "~", pad: int = 1) -> str:
-        """Dump Guidelines object to a string."""
-        return (
-            delim.join(
-                map(
-                    str,
-                    chain.from_iterable(
-                        (maybefloat(key), maybefloat(enum.value)) for key, enum in self.items()
-                    ),
-                )
-            )
-            + delim * pad
-        )
+    def update(  # type: ignore
+        self, guidelines: MappingOrPairs[Number, ColorOrNumber], **ignore_kwargs
+    ) -> None:
+        pairs: Pairs[Number, ColorOrNumber]
 
+        if isinstance(guidelines, Mapping):
+            pairs = guidelines.items()
 
-def maybefloat(number: float) -> Union[float, int]:
-    if number.is_integer():
-        return int(number)
-    return number
+        else:
+            pairs = guidelines
+
+        super().update((time, GuidelinesColor.from_value(color)) for (time, color) in pairs)

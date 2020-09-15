@@ -5,7 +5,7 @@ Rewards
 
 gd.py has interface that allows fetching chests and quests:
 
-.. code-block:: python3
+Example::
 
     client = gd.Client()
 

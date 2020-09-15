@@ -1,5 +1,3 @@
-.. _events:
-
 .. currentmodule:: gd
 
 Event Reference
@@ -9,17 +7,16 @@ gd.py provides a system for handling events, such as new daily levels or weekly 
 
 Example
 -------
-Here is a simple usage example:
 
-.. code-block:: python3
+Here is a simple usage example::
 
     import gd
 
     client = gd.Client()
 
-    @client.listen_for('daily')  # listen_for returns a client.event decorator
+    @client.listen_for("daily")  # listen_for returns a decorator
     async def on_new_daily(level):
-        print('New daily level was set: {!r}.'.format(level))
+        print(f"New daily level was set: {level.name} (ID: {level.id}).")
 
     gd.events.start()
 
@@ -27,6 +24,7 @@ This code snippet will print a message every time a new level is getting daily.
 
 Example Explanation
 -------------------
+
 ``client.listen_for('event_type')`` creates a listener with the ``client``,
 and schedules the loop task.
 
@@ -40,23 +38,23 @@ and schedules the loop task.
 Built-In Listeners
 ------------------
 
-+----------------+-----------------------------------+-------------------------------------------+
-|           name |                    event callback |                            listener class |
-+================+===================================+===========================================+
-| daily          | :meth:`.Client.on_new_daily`      | :class:`.events.TimelyLevelListener`      |
-+----------------+-----------------------------------+-------------------------------------------+
-| weekly         | :meth:`.Client.on_new_weekly`     | :class:`.events.TimelyLevelListener`      |
-+----------------+-----------------------------------+-------------------------------------------+
-| rate           | :meth:`.Client.on_level_rated`    | :class:`.events.RateLevelListener`        |
-+----------------+-----------------------------------+-------------------------------------------+
-| unrate         | :meth:`.Client.on_level_unrated`  | :class:`.events.RateLevelListener`        |
-+----------------+-----------------------------------+-------------------------------------------+
-| friend_request | :meth:`.Client.on_friend_request` | :class:`.events.MessageOrRequestListener` |
-+----------------+-----------------------------------+-------------------------------------------+
-| message        | :meth:`.Client.on_message`        | :class:`.events.MessageOrRequestListener` |
-+----------------+-----------------------------------+-------------------------------------------+
-| level_comment  | :meth:`.Client.on_level_comment`  | :class:`.events.LevelCommentListener`     |
-+----------------+-----------------------------------+-------------------------------------------+
++----------------+--------------------------------------+----------------------------------------------+
+|           name |                       event callback |                               listener class |
++================+======================================+==============================================+
+| daily          | :meth:`~gd.Client.on_new_daily`      | :class:`~gd.events.TimelyLevelListener`      |
++----------------+--------------------------------------+----------------------------------------------+
+| weekly         | :meth:`~gd.Client.on_new_weekly`     | :class:`~gd.events.TimelyLevelListener`      |
++----------------+--------------------------------------+----------------------------------------------+
+| rate           | :meth:`~gd.Client.on_level_rated`    | :class:`~gd.events.RateLevelListener`        |
++----------------+--------------------------------------+----------------------------------------------+
+| unrate         | :meth:`~gd.Client.on_level_unrated`  | :class:`~gd.events.RateLevelListener`        |
++----------------+--------------------------------------+----------------------------------------------+
+| friend_request | :meth:`~gd.Client.on_friend_request` | :class:`~gd.events.MessageOrRequestListener` |
++----------------+--------------------------------------+----------------------------------------------+
+| message        | :meth:`~gd.Client.on_message`        | :class:`~gd.events.MessageOrRequestListener` |
++----------------+--------------------------------------+----------------------------------------------+
+| level_comment  | :meth:`~gd.Client.on_level_comment`  | :class:`~gd.events.LevelCommentListener`     |
++----------------+--------------------------------------+----------------------------------------------+
 
 .. autoclass:: gd.events.TimelyLevelListener
 
@@ -68,6 +66,7 @@ Built-In Listeners
 
 Running Manually
 ----------------
+
 If you wish to run the listener normally (blocking the main thread), you can do the following:
 
 .. code-block:: python3
@@ -118,12 +117,14 @@ This allows for using gd.py, for example, in the discord.py bot:
 
 Event handlers with @client.event
 ---------------------------------
+
 As shown in examples above, new implementation for an event can be registered
-with ``@client.event`` decorator. See :meth:`.Client.event` for more info.
+with ``@client.event`` decorator. See :meth:`~gd.Client.event` for more info.
 
 Event handlers with subclassing gd.Client
 -----------------------------------------
-Another way to write an implementation for ``on_event`` task is to subclass :class:`.Client`.
+
+Another way to write an implementation for ``on_event`` task is to subclass :class:`~gd.Client`.
 
 .. code-block:: python3
 
@@ -135,7 +136,7 @@ Another way to write an implementation for ``on_event`` task is to subclass :cla
 
     client = MyClient()
 
-    client.listen_for('daily')
+    client.listen_for("daily")
 
     gd.events.start()
 
@@ -151,8 +152,6 @@ Functions
 .. autofunction:: start
 
 .. autofunction:: disable
-
-.. autofunction:: cancel_tasks
 
 .. autofunction:: attach_to_loop
 
@@ -173,13 +172,13 @@ The main idea is subclassing ``AbstractListener`` and creating your own ``scan``
     class CustomListener(gd.events.AbstractListener):
         def __init__(self, client, delay=10.0):
             # you can add additional arguments here
-            super().__init__(client=client, delay=delay)  # this line is required
+            super().__init__(client=client, delay=delay)  # call listener init
 
         async def scan(self):
             # do something here
             ...
             # dispatch event
-            dispatcher = self.client.dispatch('event', *args, **kwargs)
+            dispatcher = self.client.dispatch("event", *args, **kwargs)
             # dispatches on_<event> with args and kwargs
             self.loop.create_task(dispatcher)  # schedule execution
 

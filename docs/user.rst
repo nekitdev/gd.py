@@ -11,22 +11,13 @@ Here is a quick example of interacting with users::
     client = gd.Client()
 
     user = await client.get_user(71)
-    # <User account_id=71 id=16 name='RobTop' ...>
+    # <User name='RobTop' id=16 account_id=71>
 
-    for comment in await user.get_comment_history(pages=range(20)):
+    async for comment in user.get_comment_history(pages=range(20)):
         print(comment.id, comment.rating, comment.body)
 
 User
 ----
-
-.. autoclass:: AbstractUser
-    :members:
-
-.. autoclass:: LevelRecord
-    :members:
-
-.. autoclass:: UserStats
-    :members:
 
 .. autoclass:: User
     :members:
@@ -34,13 +25,14 @@ User
 gd.py also provides interface to users' icons and colors::
 
     nekit = await client.get_user(5509312)
-    # <User account_id=5509312 id=17876467 name='NeKitDS' ...>
+    # <User name='NeKitDS' id=17876467 account_id=5509312>
 
-Icon Set and Color
-------------------
+    image = await nekit.generate_full(as_image=True)  # generate full icon set image
 
-.. autoclass:: IconSet
-    :members:
+    image.save("nekit.png")
+
+Color
+-----
 
 .. autoclass:: Color
     :members:

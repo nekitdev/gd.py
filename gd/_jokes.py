@@ -50,7 +50,7 @@ joke_map = {
     "blaze": "stop using mac",
     "devexit": "lol just beat zodiac",
     "italianapkdownloader": "let's hook super mario maker to gd",
-    "mgostih": "smart and rust",
+    "mgostih": "mathematician and rustacean... what a perfect combo",
     "noah": "let's copy osu for all my design",
     "pavlukivan": "new gd codes are out: hold my beer",
     "pizzaroot": "asian student stereotype",

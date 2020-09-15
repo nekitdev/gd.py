@@ -18,10 +18,7 @@ gd.py provides simple API for fetching and working with both of them::
     song = await client.get_song(1)  # or get_ng_song for Newgrounds fetching
     # <Song id=1 name='Chilled 1' author='Recoil'>
 
-    data = await song.download()  # returns song data, as bytes
-
-    with open('test.mp3', 'wb') as file:
-        file.write(data)
+    await song.download("test.mp3", with_bar=True)
 
 Artist Info
 -----------

@@ -1,60 +1,102 @@
-from gd.abstractentity import AbstractEntity
-from gd.abstractuser import AbstractUser
+from gd.abstract_entity import AbstractEntity
+from gd.color import Color
+from gd.enums import CommentType
+from gd.model import CommentModel  # type: ignore
+from gd.text_utils import make_repr
+from gd.typing import Optional, TYPE_CHECKING
+from gd.user import User
 
-from gd.colors import Color
+__all__ = ("Comment",)
 
-from gd.typing import Client, Comment, Union
-
-from gd.utils.enums import CommentType
-from gd.utils.indexer import Index
-from gd.utils.parser import ExtDict
-from gd.utils.text_tools import make_repr
-from gd.utils.crypto.coders import Coder
+if TYPE_CHECKING:
+    from gd.client import Client  # noqa
 
 
 class Comment(AbstractEntity):
     """Class that represents a Profile/Level comment in Geometry Dash.
-    This class is derived from :class:`.AbstractEntity`.
+    This class is derived from :class:`~gd.AbstractEntity`.
+
+    .. container:: operations
+
+        .. describe:: x == y
+
+            Check if two objects are equal. Compared by hash and type.
+
+        .. describe:: x != y
+
+            Check if two objects are not equal.
+
+        .. describe:: str(x)
+            Return content of the comment.
+
+        .. describe:: repr(x)
+            Return representation of the comment, useful for debugging.
+
+        .. describe:: hash(x)
+
+            Returns ``hash(self.hash_str)``.
     """
 
     def __repr__(self) -> str:
-        info = {"author": self.author, "id": self.id, "rating": self.rating}
+        info = {"id": self.id, "author": self.author, "rating": self.rating}
         return make_repr(self, info)
 
     def __str__(self) -> str:
-        return str(self.body)
+        return str(self.content)
 
     @classmethod
-    def from_data(
-        cls, data: ExtDict, author: Union[ExtDict, AbstractUser], client: Client
-    ) -> Comment:
-        if isinstance(author, ExtDict):
-            if any(key.isdigit() for key in author.keys()):
-                author = AbstractUser.from_data(author, client=client)
-            else:
-                author = AbstractUser(**author, client=client)
+    def from_model(
+        cls, model: CommentModel, *, client: Optional["Client"] = None, user: Optional[User] = None
+    ) -> "Comment":
+        """Initialize :class:`~gd.Comment` from :class:`~gd.model.CommentModel`.
 
-        color_string = data.get(Index.COMMENT_COLOR, "255,255,255")
-        color = Color.from_rgb(*map(int, color_string.split(",")))
+        Parameters
+        ----------
+
+        model: :class:`~gd.model.CommentModel`
+            Comment model to use.
+
+        client: :class:`~typing.Optional`[:class:`~gd.Client`]
+            Client to attach.
+
+        user: :class:`~typing.Optional`[:class:`~gd.User`]
+            Author of the comment to use, if not in model.
+
+        Returns
+        -------
+
+        :class:`~gd.Comment`
+            New comment instance.
+        """
+        if user is None:
+            model_user = model.user
+
+            if model_user is None:
+                user = User()
+
+            else:
+                user = User.from_model(model_user)
+
+        comment_model = model.inner
 
         return cls(
-            body=Coder.do_base64(data.get(Index.COMMENT_BODY, ""), encode=False, errors="replace"),
-            rating=data.getcast(Index.COMMENT_RATING, 0, int),
-            timestamp=data.get(Index.COMMENT_TIMESTAMP, "unknown"),
-            id=data.getcast(Index.COMMENT_ID, 0, int),
-            is_spam=bool(data.getcast(Index.COMMENT_IS_SPAM, 0, int)),
-            type=CommentType.from_value(data.getcast(Index.COMMENT_TYPE, 0, int), 0),
-            color=color,
-            level_id=data.getcast(Index.COMMENT_LEVEL_ID, 0, int),
-            level_percentage=data.getcast(Index.COMMENT_LEVEL_PERCENTAGE, -1, int),
-            author=author,
+            id=comment_model.id,
+            content=comment_model.content,
+            rating=comment_model.rating,
+            is_spam=comment_model.is_spam,
+            timestamp=comment_model.timestamp,
+            level_percent=comment_model.level_percent,
+            color=comment_model.color,
+            author=user.attach_client(client),
             client=client,
         )
 
     @property
-    def body(self) -> str:
-        """:class:`str`: Returns body of the comment."""
-        return self.options.get("body", "")
+    def content(self) -> str:
+        """:class:`str`: Content of the comment."""
+        return self.options.get("content", "")
+
+    body = content
 
     @property
     def rating(self) -> int:
@@ -63,36 +105,40 @@ class Comment(AbstractEntity):
 
     @property
     def timestamp(self) -> str:
-        """:class:`str`: A human-readable timestamp representing how long ago the comment was created."""
+        """:class:`str`: A human-readable timestamp representing
+        how much time ago comment was created.
+        """
         return self.options.get("timestamp", "unknown")
 
     @property
-    def author(self) -> AbstractUser:
-        """:class:`.AbstractUser`: An author of the comment."""
-        return self.options.get("author", AbstractUser(client=self.client))
+    def author(self) -> User:
+        """:class:`~gd.User`: An author of the comment."""
+        return self.options.get("author", User(client=self.client_unchecked))
 
     @property
     def type(self) -> CommentType:
-        """:class:`.CommentType`: Whether comment is on profile or on a level."""
+        """:class:`~gd.CommentType`: Whether comment is on profile or on a level."""
         return CommentType.from_value(self.options.get("type", 0))
 
     @property
     def level_id(self) -> int:
-        """:class:`int`: Level ID of a level the comment is on, if present. ``0`` if profile comment."""
+        """:class:`int`: Level ID of a level the comment is on. ``0`` if profile comment."""
         return self.options.get("level_id", 0)
 
     @property
-    def level_percentage(self) -> int:
-        """:class:`int`: Level highscore linked to a comment, if present. ``-1`` if profile comment."""
-        return self.options.get("level_percentage", -1)
+    def level_percent(self) -> int:
+        """:class:`int`: Level highscore linked to a comment. ``-1`` if profile comment."""
+        return self.options.get("level_percent", -1)
 
     @property
     def color(self) -> Color:
-        """:class:`.Color`: Color of the comment. Oftenly equals ``gd.Color(0xffffff)``."""
+        """:class:`~gd.Color`: Color of the comment. Often equals ``gd.Color(0xffffff)``."""
         return self.options.get("color", Color(0xFFFFFF))
 
     def is_spam(self) -> bool:
-        """:class:`bool`: Indicates whether a comment is marked as spam. ``False`` if profile comment."""
+        """:class:`bool`: Indicates whether a comment is marked as spam.
+        ``False`` if profile comment.
+        """
         return self.options.get("is_spam", False)
 
     def is_disliked(self) -> bool:
@@ -100,42 +146,49 @@ class Comment(AbstractEntity):
         return self.rating < 0
 
     async def like(self) -> None:
-        """|coro|
-
-        Likes a comment.
+        """Likes a comment.
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to like a comment.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status codes. (``4XX`` or ``5XX`` and above).
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         await self.client.like(self)
 
     async def dislike(self) -> None:
-        """|coro|
-
-        Dislikes a comment.
+        """Dislikes a comment.
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to dislike a comment.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status codes. (``4XX`` or ``5XX`` and above).
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         await self.client.dislike(self)
 
     async def delete(self) -> None:
-        """|coro|
-
-        Deletes a comment from Geometry Dash servers.
-
-        Obviously, only comments of client logged in using :meth:`.Client.login` can be deleted.
-
-        The normal behaviour of the server is returning 1 if comment was deleted,
-        so the error is raised on response != 1.
+        """Deletes a comment from Geometry Dash servers.
 
         Raises
         ------
-        :exc:`.MissingAccess`
-            Server did not return 1, which means comment was not deleted.
+        :exc:`~gd.MissingAccess`
+            Comment was not deleted.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status codes. (``4XX`` or ``5XX`` and above).
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         await self.client.delete_comment(self)

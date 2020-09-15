@@ -1,13 +1,12 @@
-from gd.typing import Client, Message, Optional, Union
+from gd.abstract_entity import AbstractEntity
+from gd.enums import MessageType
+from gd.model import MessageModel  # type: ignore
+from gd.text_utils import make_repr
+from gd.typing import Optional, TYPE_CHECKING
+from gd.user import User
 
-from gd.abstractentity import AbstractEntity
-from gd.abstractuser import AbstractUser
-
-from gd.utils.enums import MessageOrRequestType
-from gd.utils.indexer import Index
-from gd.utils.parser import ExtDict
-from gd.utils.text_tools import make_repr
-from gd.utils.crypto.coders import Coder
+if TYPE_CHECKING:
+    from gd.client import Client  # noqa
 
 
 class Message(AbstractEntity):
@@ -25,45 +24,45 @@ class Message(AbstractEntity):
         return str(self.subject)
 
     @classmethod
-    def from_data(
-        cls, data: ExtDict, user_2: Union[ExtDict, AbstractUser], client: Client
-    ) -> Message:
-        user_1 = AbstractUser(
-            name=data.get(Index.MESSAGE_SENDER_NAME, "unknown"),
-            id=data.getcast(Index.MESSAGE_SENDER_ID, 0, int),
-            account_id=data.getcast(Index.MESSAGE_SENDER_ACCOUNT_ID, 0, int),
-            client=client,
-        )
-        if isinstance(user_2, ExtDict):
-            user_2 = AbstractUser(**user_2, client=client)
-
-        indicator = data.getcast(Index.MESSAGE_INDICATOR, 0, int)
-        is_normal = indicator ^ 1
-
-        subject = Coder.do_base64(
-            data.get(Index.MESSAGE_SUBJECT, ""), encode=False, errors="replace"
-        )
-
-        return Message(
-            id=data.getcast(Index.MESSAGE_ID, 0, int),
-            timestamp=data.get(Index.MESSAGE_TIMESTAMP, "unknown"),
-            subject=subject,
-            is_read=bool(data.getcast(Index.MESSAGE_IS_READ, 0, int)),
-            author=(user_1 if is_normal else user_2),
-            recipient=(user_2 if is_normal else user_1),
-            type=MessageOrRequestType.from_value(indicator, 0),
+    def from_model(
+        cls,
+        model: MessageModel,
+        *,
+        client: Optional["Client"] = None,
+        other_user: Optional[User] = None,
+        type: MessageType = MessageType.NORMAL,  # type: ignore
+    ) -> "Message":
+        return cls(
+            inner_user=User(
+                name=model.name, id=model.user_id, account_id=model.account_id, client=client,
+            ),
+            id=model.id,
+            subject=model.subject,
+            content=model.content,
+            timestamp=model.timestamp,
+            is_read=model.is_read,
+            is_unread=not model.is_read,
+            other_user=(other_user if other_user else User()).attach_client(client),
             client=client,
         )
 
     @property
-    def author(self) -> AbstractUser:
-        """:class:`.AbstractUser`: An author of the message."""
-        return self.options.get("author", AbstractUser(client=self.client))
+    def author(self) -> User:
+        """:class:`.User`: Author of the message."""
+        return self.inner_user if self.is_normal() else self.other_user
 
     @property
-    def recipient(self) -> AbstractUser:
-        """:class:`.AbstractUser`: A recipient of the message."""
-        return self.options.get("recipient", AbstractUser(client=self.client))
+    def recipient(self) -> User:
+        """:class:`.User`: Recipient of the message."""
+        return self.other_user if self.is_normal() else self.inner_user
+
+    @property
+    def inner_user(self) -> User:
+        return self.options.get("inner_user", User(client=self.client_unchecked))
+
+    @property
+    def other_user(self) -> User:
+        return self.options.get("other_user", User(client=self.client_unchecked))
 
     @property
     def subject(self) -> str:
@@ -76,40 +75,47 @@ class Message(AbstractEntity):
         return self.options.get("timestamp", "unknown")
 
     @property
-    def type(self) -> MessageOrRequestType:
-        """:class:`.MessageOrRequestType`: Whether a message is sent or inbox."""
-        return MessageOrRequestType.from_value(self.options.get("type", 0))
+    def type(self) -> MessageType:
+        """:class:`.MessageType`: Whether a message is sent or incoming."""
+        return MessageType.from_value(self.options.get("type", MessageType.NORMAL))
 
-    @property
-    def body(self) -> Optional[str]:
-        """Optional[:class:`str`]: A body of the message. Requires :meth:`.Message.read`."""
-        return self.options.get("body")
+    def is_normal(self) -> bool:
+        return self.type is MessageType.NORMAL
 
-    @body.setter
-    def body(self, body: str) -> None:
-        """Set ``self.body`` to ``body``."""
-        self.options["body"] = body
+    def get_content(self) -> Optional[str]:
+        """Optional[:class:`str`]: Content of the message. Requires :meth:`.Message.read`."""
+        return self.options.get("content")
+
+    def set_content(self, content: str) -> None:
+        """Set ``self.content`` to ``content``."""
+        self.options.update(content=content)
+
+    content = property(get_content, set_content)
+    body = content
 
     def is_read(self) -> bool:
         """:class:`bool`: Indicates whether message is read or not."""
         return bool(self.options.get("is_read"))
 
-    async def read(self) -> str:
-        """|coro|
+    async def update(self) -> None:
+        message = await self.client.get_message(self.id, self.type)
+        self.options.update(message.options)
 
-        Read a message. Set the body of the message to the content.
+    async def read(self) -> str:
+        """Read a message. Set the body of the message to the content.
 
         Returns
         -------
         :class:`str`
             The content of the message.
         """
-        return await self.client.read_message(self)
+        if self.content is None:
+            await self.update()
 
-    async def reply(self, content: str, schema: Optional[str] = None) -> None:
-        """|coro|
+        return str(self.content)
 
-        Reply to the message. Format the subject according to schema.
+    async def reply(self, content: str, schema: Optional[str] = None) -> Optional["Message"]:
+        """Reply to the message. Format the subject according to schema.
 
         Schema format can only contain ``{message.attr}`` elements.
 
@@ -132,9 +138,7 @@ class Message(AbstractEntity):
         return await self.author.send(subject, content)
 
     async def delete(self) -> None:
-        """|coro|
-
-        Delete a message.
+        """Delete a message.
 
         Raises
         ------

@@ -43,7 +43,7 @@ For example, you can use it in a Discord bot:
             )
 
         embed = (
-            discord.Embed(color=0x7289da).set_author(name="Current Daily")
+            discord.Embed(color=0x7289da, title="Daily", timestamp=ctx.message.created_at)
             .add_field(name="Name", value=daily.name)
             .add_field(name="Difficulty", value=f"{daily.stars} ({daily.difficulty.title})")
             .add_field(name="ID", value=f"{daily.id}")

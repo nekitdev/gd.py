@@ -45,4 +45,4 @@ And launch IPython like this:
 
         # OR
 
-        $ python -m pip install -U gd.py[dev]
+        $ python -m pip install -U gd.py[console]

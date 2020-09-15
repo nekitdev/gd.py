@@ -18,12 +18,12 @@ def gd_group(version: bool) -> None:
 
 @gd_group.command(short_help="Run gd.server web application.")
 def server() -> None:
-    gd.server.start()
+    pass  # gd.server.start()
 
 
 @gd_group.command(short_help="Run IPython console, with aiohttp and gd added to namespace.")
 def console() -> None:
-    from IPython import start_ipython
+    from IPython import start_ipython  # type: ignore
 
     start_ipython(argv=[], user_ns={"aiohttp": aiohttp, "gd": gd})
 

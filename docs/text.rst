@@ -8,35 +8,31 @@ gd.py implements reading, sending and interacting with comments, friend requests
     client = gd.Client()
 
     # we can only read comments if we are not logged in.
-    await client.login('username', 'password')
+    await client.login("username", "password")
 
-    nekit = await client.search_user('NeKitDS')
-    # <User account_id=5509312 id=17876467 name='NeKitDS' ...>
+    nekit = await client.search_user("NeKitDS")
+    # <User name='NeKitDS' id=17876467 account_id=5509312>
 
-    for comment in await nekit.get_comments():
+    async for comment in nekit.get_profile_comments():
         print(comment.body)
 
     # find some featured level by user
-    levels = await nekit.get_levels()
+    level = await nekit.search_levels().find(lambda level: level.is_featured())
 
-    level = gd.utils.find(lambda level: level.is_featured(), levels)
-
-    # if found, print comments and post a comment
+    # if found, print comments
     if level is not None:
-        for comment in level.get_comments():
+        async for comment in level.get_comments():
             print(comment)
 
-        await level.comment('gd.py testing')
-
     # print some messages
-    for message in await client.get_messages():
+    async for message in client.get_messages():
         print(message.author.name, message.subject)
 
     # send a friend request
-    await nekit.send_friend_request('<sent-from-gd.py>')
+    await nekit.send_friend_request("Sent from gd.py")
 
     # post a comment
-    await client.post_comment('This comment is posted using gd.py')
+    await client.post_comment("This comment is posted using gd.py")
 
 Comment
 -------

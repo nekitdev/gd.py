@@ -1,3 +1,5 @@
+# type: ignore
+
 from ctypes import wintypes
 import ctypes
 from pathlib import Path

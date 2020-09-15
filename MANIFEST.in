@@ -1,7 +1,7 @@
 include README.rst
 include LICENSE
 include requirements.txt
-include gd/*.pyx
+include gd/py.typed
 include gd/*.json
 include gd/assets/*
 include examples/*
