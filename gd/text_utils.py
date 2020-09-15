@@ -1,6 +1,6 @@
 import re
 
-from gd.typing import AnyStr, Dict, Optional, TypeVar
+from gd.typing import AnyStr, Dict, Match, Optional, TypeVar
 
 __all__ = (
     "make_repr",
@@ -60,11 +60,11 @@ def make_repr(some_object: T, info: Optional[Dict[K, V]] = None, delim: str = " 
     return f"<{name} {formatted_info}>"
 
 
-def upper_first_group(match: re.Match) -> str:
+def upper_first_group(match: Match) -> str:
     return match.group(1).upper()
 
 
-def lower_first_group(match: re.Match) -> str:
+def lower_first_group(match: Match) -> str:
     return "_" + match.group(1).lower()
 
 

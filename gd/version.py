@@ -26,13 +26,13 @@ version_parts = {"major", "minor", "micro", "releaselevel", "serial"}
 
 version_re = (
     r"^\s*(?:"
-    r"(?P<major>\d+)"
+    r"(?P<major>[0-9]+)"
     r"(?P<split>[\.-])?"
-    r"(?P<minor>\d+)?"
+    r"(?P<minor>[0-9]+)?"
     r"(?P=split)?"
-    r"(?P<micro>\d+)?"
+    r"(?P<micro>[0-9]+)?"
     r"(?P<releaselevel>a|b|rc|f|dev)?"
-    r"(?P<serial>\d+)?"
+    r"(?P<serial>[0-9]+)?"
     r")\s*$"
 )
 
@@ -55,7 +55,7 @@ class VersionInfo(namedtuple("VersionInfo", "major minor micro releaselevel seri
 
     @classmethod
     def from_string(cls, version: str) -> "VersionInfo":
-        match = compiled_re.fullmatch(version)
+        match = compiled_re.match(version)
 
         if match is None:
             raise ValueError(f"Given version, {version!r}, is not valid.")

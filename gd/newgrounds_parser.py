@@ -9,19 +9,11 @@ from xml.etree.ElementTree import Element
 from yarl import URL
 
 from gd.logging import get_logger
-from gd.typing import Dict, Generator, List, Optional, TypeVar, Union
+from gd.typing import Dict, Generator, List, Match, Optional, TypeVar, Union
 
 log = get_logger(__name__)
 
 use_lxml = False
-
-try:
-    re.Match
-    re.Pattern
-
-except AttributeError:
-    re.Match = type(re.compile("").match(""))  # type: ignore
-    re.Pattern = type(re.compile(""))  # type: ignore
 
 try:
     from lxml import html  # type: ignore
@@ -94,7 +86,7 @@ re_info_functions = {
 }
 
 
-def remove_spaces(match: re.Match) -> str:
+def remove_spaces(match: Match) -> str:
     return match.group(0).replace(" ", "")
 
 

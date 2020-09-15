@@ -36,7 +36,16 @@ from gd.session import Session
 from gd.song import ArtistInfo, Author, Song
 from gd.text_utils import make_repr
 from gd.typing import (
-    Any, AsyncIterator, Coroutine, Iterable, Iterator, List, Optional, Type, TypeVar, Union
+    Any,
+    AsyncIterator,
+    Coroutine,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
 )
 from gd.user import User
 
@@ -72,7 +81,7 @@ def filter_exceptions(
 
 def pages_for_amount(amount: int, page_size: int) -> Iterable[int]:
     if amount < 0:
-        raise ValueError(f"Expected non-negative integer.")
+        raise ValueError("Expected non-negative integer.")
 
     page = amount / page_size
 
@@ -798,9 +807,12 @@ class Client:
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[Level]:
         return execute_many(
-            (self.search_levels_on_page(
-                query=query, page=page, filters=filters, user=user, gauntlet=gauntlet
-            ) for page in pages),
+            (
+                self.search_levels_on_page(
+                    query=query, page=page, filters=filters, user=user, gauntlet=gauntlet
+                )
+                for page in pages
+            ),
             ClientException,
             concurrent=concurrent,
         )
@@ -1251,9 +1263,10 @@ class Client:
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[Comment]:
         return execute_many(
-            (self.get_user_comments_on_page(
-                user=user, type=type, page=page, strategy=strategy
-            ) for page in pages),
+            (
+                self.get_user_comments_on_page(user=user, type=type, page=page, strategy=strategy)
+                for page in pages
+            ),
             ClientException,
             concurrent=concurrent,
         )
@@ -1292,9 +1305,12 @@ class Client:
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[Comment]:
         return execute_many(
-            (self.get_level_comments_on_page(
-                level=level, amount=amount, page=page, strategy=strategy
-            ) for page in pages),
+            (
+                self.get_level_comments_on_page(
+                    level=level, amount=amount, page=page, strategy=strategy
+                )
+                for page in pages
+            ),
             ClientException,
             concurrent=concurrent,
         )

@@ -196,7 +196,7 @@ class ProfileUserModel(Model):
     wave_id: int = IntField(index=25, default=0)
     robot_id: int = IntField(index=26, default=0)
     has_glow: bool = BoolField(index=28, default=False)
-    index_29: int = IntField(index=29, default=1)
+    is_not_banned: bool = BoolField(index=29, default=True)
     global_rank: int = IntField(index=30, default=0)
     friend_state: FriendState = EnumField(index=31, enum_type=FriendState, from_field=IntField)
     index_38: int = IntField(index=38, default=0)
@@ -209,6 +209,9 @@ class ProfileUserModel(Model):
     death_effect_id: int = IntField(index=48, default=0)
     role: Role = EnumField(index=49, enum_type=Role, from_field=IntField)
     comments_state: CommentState = EnumField(index=50, enum_type=CommentState, from_field=IntField)
+
+    def is_banned(self) -> bool:
+        return not self.is_not_banned
 
 
 class CreatorModel(Model):
@@ -554,7 +557,12 @@ class LeaderboardResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     users: List[LeaderboardUserModel] = ModelIterField(
-        index=0, model=LeaderboardUserModel, delim="|", use_default=True, transform=list, factory=list
+        index=0,
+        model=LeaderboardUserModel,
+        delim="|",
+        use_default=True,
+        transform=list,
+        factory=list,
     )
 
 
@@ -562,7 +570,12 @@ class LevelLeaderboardResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     users: List[LevelLeaderboardUserModel] = ModelIterField(
-        index=0, model=LevelLeaderboardUserModel, delim="|", use_default=True, transform=list, factory=list
+        index=0,
+        model=LevelLeaderboardUserModel,
+        delim="|",
+        use_default=True,
+        transform=list,
+        factory=list,
     )
 
 
@@ -612,10 +625,14 @@ class ChestsInnerModel(Model):
     udid: str = StrField(index=3, default="")
     account_id: int = IntField(index=4, default=0)
     chest_1_left: int = IntField(index=5, default=0)
-    chest_1: ChestModel = ModelField(index=6, model=ChestModel, use_default=True, factory=ChestModel)
+    chest_1: ChestModel = ModelField(
+        index=6, model=ChestModel, use_default=True, factory=ChestModel
+    )
     chest_1_count: int = IntField(index=7, default=0)
     chest_2_left: int = IntField(index=8, default=0)
-    chest_2: ChestModel = ModelField(index=9, model=ChestModel, use_default=True, factory=ChestModel)
+    chest_2: ChestModel = ModelField(
+        index=9, model=ChestModel, use_default=True, factory=ChestModel
+    )
     chest_2_count: int = IntField(index=10, default=0)
     reward_type: RewardType = EnumField(index=11, enum_type=RewardType, from_field=IntField)
 
@@ -629,9 +646,15 @@ class QuestsInnerModel(Model):
     udid: str = StrField(index=3, default="")
     account_id: int = IntField(index=4, default=0)
     time_left: int = IntField(index=5, default=0)
-    quest_1: QuestModel = ModelField(index=6, model=QuestModel, use_default=True, factory=QuestModel)
-    quest_2: QuestModel = ModelField(index=7, model=QuestModel, use_default=True, factory=QuestModel)
-    quest_3: QuestModel = ModelField(index=8, model=QuestModel, use_default=True, factory=QuestModel)
+    quest_1: QuestModel = ModelField(
+        index=6, model=QuestModel, use_default=True, factory=QuestModel
+    )
+    quest_2: QuestModel = ModelField(
+        index=7, model=QuestModel, use_default=True, factory=QuestModel
+    )
+    quest_3: QuestModel = ModelField(
+        index=8, model=QuestModel, use_default=True, factory=QuestModel
+    )
 
 
 def de_chests(string: str) -> ChestsInnerModel:

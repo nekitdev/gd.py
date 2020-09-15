@@ -380,9 +380,7 @@ class User(AbstractEntity):
         AsyncIterator[:class:`.Level`]
             All levels found.
         """
-        return self.client.search_levels_on_page(
-            page=page, filters=Filters.by_user(), user=self
-        )
+        return self.client.search_levels_on_page(page=page, filters=Filters.by_user(), user=self)
 
     @async_iterable
     def get_levels(
@@ -408,9 +406,7 @@ class User(AbstractEntity):
     def get_profile_comments_on_page(self, page: int = 0) -> AsyncIterator["Comment"]:
         """Gets user's profile comments on a specific page.
         """
-        return self.client.get_user_comments_on_page(
-            user=self, type=CommentType.PROFILE, page=page
-        )
+        return self.client.get_user_comments_on_page(user=self, type=CommentType.PROFILE, page=page)
 
     get_comments_on_page = get_profile_comments_on_page
 
@@ -420,9 +416,7 @@ class User(AbstractEntity):
     ) -> AsyncIterator["Comment"]:
         """Retrieves user's level comments. (history)
         """
-        return self.client.get_user_comments_on_page(
-            user=self, type=CommentType.LEVEL, page=page
-        )
+        return self.client.get_user_comments_on_page(user=self, type=CommentType.LEVEL, page=page)
 
     @async_iterable
     def get_profile_comments(

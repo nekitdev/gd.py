@@ -65,10 +65,6 @@ To install the library, you can just run the following command:
     # Windows
     py -3 -m pip install -U gd.py
 
-gd.py provides an optional *Cython* extension to speed up its parser functions in
-`gd.api <https://github.com/NeKitDS/gd.py/blob/master/gd/api>`_ folder,
-so make sure that you have *Cython* and *C++ Build Tools* installed.
-
 Additional Dependencies
 -----------------------
 

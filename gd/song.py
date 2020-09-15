@@ -161,7 +161,7 @@ class Song(AbstractEntity):
             A song as bytes, if ``file`` was not specified.
         """
         if not self.is_custom():
-            raise MissingAccess(f"Song is official. Can not download.")
+            raise MissingAccess("Song is official. Can not download.")
 
         if not self.download_link:
             # load song from NG if there is no link

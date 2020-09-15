@@ -417,7 +417,7 @@ class HTTPClient:
         return cast(str, response)
 
     async def load(self, *, account_id: int, user: str, password: str) -> str:
-        error_codes = {-11: MissingAccess(f"Failed to load save.")}
+        error_codes = {-11: MissingAccess("Failed to load save.")}
 
         route = Route(
             POST,
@@ -1626,7 +1626,6 @@ class HTTPClient:
             gjp=encoded_password,
             chk=chk,
             secret=self.get_secret("main"),
-
             to_camel=True,
         )
 
@@ -1699,7 +1698,6 @@ class HTTPClient:
             total=0,
             mode=strategy.value,
             secret=self.get_secret("main"),
-
             to_camel=True,
         )
 
@@ -1744,7 +1742,7 @@ class HTTPClient:
         return cast(str, response)
 
     async def get_gauntlets(self) -> str:
-        error_codes = {-1: MissingAccess(f"Failed to get gauntlets.")}
+        error_codes = {-1: MissingAccess("Failed to get gauntlets.")}
 
         route = Route(
             POST,
@@ -1761,7 +1759,7 @@ class HTTPClient:
         return cast(str, response)
 
     async def get_map_packs_on_page(self, page: int = 0) -> str:
-        error_codes = {-1: MissingAccess(f"Failed to get map packs.")}
+        error_codes = {-1: MissingAccess("Failed to get map packs.")}
 
         route = Route(
             POST,

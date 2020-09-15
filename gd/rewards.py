@@ -124,11 +124,7 @@ class Quest(AbstractEntity):
 
     @classmethod
     def from_model(
-        cls,
-        model: QuestModel,
-        *,
-        client: Optional["Client"] = None,
-        seconds: int = 0,
+        cls, model: QuestModel, *, client: Optional["Client"] = None, seconds: int = 0,
     ) -> "Quest":
         return cls(
             id=model.id,

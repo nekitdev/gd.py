@@ -17,7 +17,7 @@ script:
   # run lint
   - flake8
   # run tests and check coverage
-  - coverage run -m pytest ./tests/ --maxfail=3 --disable-warnings
+  - coverage run -m pytest ./tests/ --disable-warnings
 
 after_success:
   # report to coveralls

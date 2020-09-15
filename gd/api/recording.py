@@ -1,6 +1,6 @@
 import re
 
-from gd.typing import Iterable, Iterator, List, Union
+from gd.typing import Iterable, Iterator, List, Match, Union
 from gd.text_utils import concat, make_repr
 
 __all__ = (
@@ -87,7 +87,7 @@ class RecordEntry:
         return concat(_entry_string_generator(self))
 
     @classmethod
-    def from_match(cls, match: re.Match) -> "RecordEntry":
+    def from_match(cls, match: Match) -> "RecordEntry":
         group_dict = match.groupdict()
 
         init_dict = {key: func(group_dict[key]) for key, func in PATTERN_TYPES.items()}
