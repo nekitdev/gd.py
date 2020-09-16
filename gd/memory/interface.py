@@ -752,7 +752,7 @@ class WindowsMemory(MemoryType):
         difficulty: int = self.read(Bool, address + 0x1E4)
         demon_difficulty: int = self.read(UInt32, address + 0x2A0)
 
-        return get_difficulty(difficulty, demon_difficulty, is_demon, is_auto)
+        return get_difficulty(difficulty, demon_difficulty, is_auto, is_demon)
 
     level_difficulty = property(get_level_difficulty)
 
