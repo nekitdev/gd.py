@@ -160,7 +160,8 @@ def _real(parser: XMLParser, element: xml.Element) -> float:
 
 
 def _str(parser: XMLParser, element: xml.Element) -> str:
-    return element.text
+    text = element.text
+    return "" if text is None else text
 
 
 def _recurse(parser: XMLParser, element: xml.Element) -> Dict[str, T]:

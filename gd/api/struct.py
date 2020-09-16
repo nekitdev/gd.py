@@ -175,8 +175,8 @@ class Object(Model):
     # index_18: ... = ?Field(index=18)
     # index_19: ... = ?Field(index=19)
     editor_layer_1: int = IntField(index=20)
-    color_1_id: int = IntField(index=21)
-    color_2_id: int = IntField(index=22)
+    color_1_id: int = IntField(index=21, aliases=("color_1",))
+    color_2_id: int = IntField(index=22, aliases=("color_2",))
     target_color_id: int = IntField(index=23)
     z_layer: ZLayer = EnumField(index=24, enum_type=ZLayer, from_field=IntField)
     z_order: int = IntField(index=25)
@@ -621,7 +621,10 @@ class LevelAPI(Model):
     editor_layer: int = BaseField(index="kI7", de=int, ser=int)
 
     internal_type: InternalType = BaseField(
-        index="kCEK", de=partial(enum_from_value, enum_type=InternalType), ser=enum_to_value
+        index="kCEK",
+        de=partial(enum_from_value, enum_type=InternalType),
+        ser=enum_to_value,
+        default=InternalType.LEVEL,
     )
 
     @cache_by("unprocessed_data")

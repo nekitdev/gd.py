@@ -1,17 +1,8 @@
 [run]
 source = ./gd
-omit =
-    # those are rarely run
-    .gd/events/utils.py
-    */__main__.py
-    # _private are also not run frequently
-    */_*.py
 
 [report]
 exclude_lines =
     pragma: no cover
-
-    def __(\w+)__
-    if self\.debug
 
 ignore_errors = True

@@ -947,22 +947,22 @@ class Model(metaclass=ModelMeta):
         return self
 
     @classmethod
-    def deserialize_data(cls, data: Dict[str, str]) -> Dict[str, T]:
+    def deserialize_data(cls, data: Dict[str, U]) -> Dict[str, T]:
         return deserialize_data(data, cls.INDEX_MAP)
 
     @classmethod
-    def serialize_data(cls, data: Dict[str, T]) -> Dict[str, str]:
+    def serialize_data(cls, data: Dict[str, T]) -> Dict[str, U]:
         return serialize_data(data, cls.INDEX_MAP, cls.ENFORCE_STR)
 
     @classmethod
-    def from_data(cls, data: Dict[str, str], use_default: bool = False) -> "Model":
+    def from_data(cls, data: Dict[str, U], use_default: bool = False) -> "Model":
         self = cls(use_default=use_default)
 
         self.DATA.update(self.deserialize_data(data))
 
         return self
 
-    def to_data(self) -> Dict[str, str]:
+    def to_data(self) -> Dict[str, U]:
         return self.serialize_data(self.DATA)
 
     @classmethod
