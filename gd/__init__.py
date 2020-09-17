@@ -25,7 +25,6 @@ from gd.logging import *
 from gd.message import *
 from gd.model import *
 from gd.session import *
-from gd.option import *
 from gd.rewards import *
 from gd.song import *
 from gd.version import *
