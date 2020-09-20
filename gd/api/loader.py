@@ -5,15 +5,13 @@ from gd.async_utils import run_blocking
 from gd.crypto import (
     DEFAULT_ENCODING,
     DEFAULT_ERRORS,
-    LINUX,
-    MACOS,
-    WINDOWS,
     decode_os_save,
     encode_os_save,
     decode_save,
     encode_save,
 )
 from gd.logging import get_logger
+from gd.platform import LINUX, MACOS, WINDOWS
 from gd.text_utils import make_repr
 from gd.typing import AnyStr, Optional, Tuple, Union
 

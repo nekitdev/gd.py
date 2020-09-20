@@ -7,7 +7,7 @@ import sys
 import time
 
 try:
-    from gd.memory.win import (  # type: ignore
+    from gd.memory.windows import (  # type: ignore
         allocate_memory,
         get_base_address,
         get_handle,

@@ -25,13 +25,38 @@ class StructureMeta(type(ctypes.Structure)):  # type: ignore
         return cls  # type: ignore
 
 
+class UnionMeta(type(ctypes.Union)):
+    def __new__(  # type: ignore
+        meta_cls, name: str, bases: Tuple[Type[Any]], namespace: Dict[str, Any]
+    ) -> Type[ctypes.Union]:
+        cls = super().__new__(meta_cls, name, bases, namespace)
+
+        fields = {}
+
+        for base in reversed(cls.mro()):
+            try:
+                fields.update(cls.__annotations__)
+            except AttributeError:
+                pass
+
+        cls._fields_ = list(fields.items())
+
+        return cls  # type: ignore
+
+
 class Structure(ctypes.Structure, metaclass=StructureMeta):
     """Structure that has ability to populate its fields with annotations."""
 
     pass
 
 
-def func_def(func_ptr: Any) -> Any:
+class Union(ctypes.Union, metaclass=UnionMeta):
+    """Union that has ability to populate its fields with annotations."""
+
+    pass
+
+
+def func_def(func_ptr: Any) -> Callable[[Callable[..., T]], Callable[..., T]]:
     def wrap(func: Callable[..., T]) -> Callable[..., T]:
         try:
             annotations = func.__annotations__

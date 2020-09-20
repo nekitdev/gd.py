@@ -4,11 +4,11 @@ import hashlib
 from itertools import cycle
 import random
 import string
-import sys
 import zlib
 
 from gd.enums import Key, Salt
 from gd.logging import get_logger
+from gd.platform import MACOS
 from gd.typing import AnyStr, List, TypeVar, cast
 
 __all__ = (
@@ -16,10 +16,6 @@ __all__ = (
     "CHARSET",
     "DEFAULT_ENCODING",
     "DEFAULT_ERRORS",
-    "PLATFORM",
-    "LINUX",
-    "MACOS",
-    "WINDOWS",
     "XOR_KEY",
     "Key",
     "Salt",
@@ -100,23 +96,6 @@ XOR_KEY = 11
 CHARSET = string.ascii_letters + string.digits
 
 concat = "".join
-
-# determine platform
-
-PLATFORM = sys.platform
-
-WINDOWS = False
-MACOS = False
-LINUX = False
-
-if PLATFORM.startswith("win"):
-    WINDOWS = True
-
-elif PLATFORM.startswith("darwin"):
-    MACOS = True
-
-else:
-    LINUX = True
 
 
 def decode_base64(data: bytes, urlsafe: bool = True) -> bytes:

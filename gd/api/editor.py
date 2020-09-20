@@ -143,6 +143,7 @@ class Editor:
         header_data, *objects_data = filter(bool, data.split(";"))
 
         header = Header.from_string(header_data)
+
         objects_iter = map(Object.from_string, objects_data)
 
         return cls.from_object_iterable(objects_iter).set_header(header)

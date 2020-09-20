@@ -18,6 +18,7 @@ from gd.typing import (
 __all__ = ("AsyncIter", "async_iter", "async_iterable", "iter_to_async_iter")
 
 T = TypeVar("T")
+U = TypeVar("U")
 
 
 async def iter_to_async_iter(iterable: Iterable[T]) -> AsyncIterator[T]:
@@ -69,6 +70,21 @@ class AsyncIter(Generic[T]):
             if await maybe_coroutine(predicate, item):
                 return item
         return None
+
+    async def map_iter(self, function: Callable[[T], U]) -> AsyncIterator[T]:
+        async for item in self.iterator:
+            yield await maybe_coroutine(function, item)
+
+    async def filter_iter(self, predicate: Callable[[T], U]) -> AsyncIterator[T]:
+        async for item in self.iterator:
+            if await maybe_coroutine(predicate, item):
+                yield item
+
+    async def map(self, function: Callable[[T], U]) -> "AsyncIter[T]":
+        return self.__class__(self.map_iter(function))
+
+    async def filter(self, predicate: Callable[[T], U]) -> "AsyncIter[T]":
+        return self.__class__(self.filter_iter(predicate))
 
     async def flatten(self) -> List[T]:
         return [item async for item in self.iterator]

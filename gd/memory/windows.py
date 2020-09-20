@@ -31,13 +31,13 @@ class ProcessEntry32(Structure):
     size: wintypes.DWORD
     count_usage: wintypes.DWORD
     process_id: wintypes.DWORD
-    default_heap_id: ctypes.POINTER(ctypes.c_ulong)
+    default_heap_id: ctypes.POINTER(wintypes.ULONG)
     module_id: wintypes.DWORD
     count_threads: wintypes.DWORD
     parent_process_id: wintypes.DWORD
     base_priority: wintypes.LONG
     flags: wintypes.DWORD
-    exe_file: ctypes.c_char * wintypes.MAX_PATH
+    exe_file: wintypes.CHAR * wintypes.MAX_PATH
 
     @property
     def name(self) -> str:
@@ -57,8 +57,8 @@ class ModuleEntry32(Structure):
     module_base_address: ctypes.POINTER(wintypes.BYTE)
     module_base_size: wintypes.DWORD
     module_handle: wintypes.HMODULE
-    module_name: ctypes.c_char * MAX_MODULE_NAME32
-    exe_path: ctypes.c_char * wintypes.MAX_PATH
+    module_name: wintypes.CHAR * MAX_MODULE_NAME32
+    exe_path: wintypes.CHAR * wintypes.MAX_PATH
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -224,7 +224,7 @@ def get_system_wow_64_dir_a(string_buffer: wintypes.LPSTR, size: wintypes.UINT) 
 
 
 @func_def(kernel32.TerminateProcess)
-def terminate_process(process_handle: wintypes.HANDLE, exit_code: ctypes.c_uint) -> wintypes.BOOL:
+def terminate_process(process_handle: wintypes.HANDLE, exit_code: wintypes.UINT) -> wintypes.BOOL:
     pass
 
 

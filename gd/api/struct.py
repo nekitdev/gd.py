@@ -566,7 +566,7 @@ class LevelAPI(Model):
     id: int = BaseField(index="k1", de=int, ser=int, default=0)
     name: str = BaseField(index="k2", de=str, ser=str, default="Unnamed")
     description: str = BaseField(index="k3", de=decode_base64_str, ser=encode_base64_str)
-    unprocessed_data: str = BaseField(index="k4", de=str, ser=str, default="")
+    unprocessed_data: str = BaseField(index="k4", de=str, ser=str)
     creator: str = BaseField(index="k5", de=str, ser=str)
     track_id: int = BaseField(index="k8", de=int, ser=int)
     downloads: int = BaseField(index="k11", de=int, ser=int)
