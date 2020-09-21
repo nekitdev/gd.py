@@ -1,4 +1,5 @@
 from gd.abstract_entity import AbstractEntity
+from gd.datetime import datetime
 from gd.enums import FriendRequestType
 from gd.model import FriendRequestModel  # type: ignore
 from gd.text_utils import make_repr
@@ -47,7 +48,7 @@ class FriendRequest(AbstractEntity):
             ),
             id=model.id,
             content=model.content,
-            timestamp=model.timestamp,
+            created_at=model.created_at,
             is_unread=model.is_unread,
             is_read=not model.is_unread,
             other_user=(other_user if other_user else User()).attach_client(client),
@@ -89,9 +90,11 @@ class FriendRequest(AbstractEntity):
     body = content
 
     @property
-    def timestamp(self) -> str:
-        """:class:`str`: A human-readable string representing how long ago request was created."""
-        return self.options.get("timestamp", "unknown")
+    def created_at(self) -> Optional[datetime]:
+        """Optional[:class:`~py:datetime.datetime`]:
+        Timestamp representing when friend request was created.
+        """
+        return self.options.get("created_at")
 
     def is_read(self) -> bool:
         """:class:`bool`: Indicates whether request was read."""

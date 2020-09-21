@@ -2,6 +2,7 @@ from gd.abstract_entity import AbstractEntity
 from gd.async_iter import async_iterable
 from gd.async_utils import run_blocking
 from gd.color import Color
+from gd.datetime import datetime
 from gd.enums import (
     CommentState,
     CommentStrategy,
@@ -206,8 +207,8 @@ class User(AbstractEntity):
         return self.options.get("record_percent", -1)
 
     @property
-    def record_timestamp(self) -> str:
-        return self.options.get("record_timestamp", "unknown")
+    def recorded_at(self) -> Optional[datetime]:
+        return self.options.get("recorded_at")
 
     @property
     def icon_type(self) -> IconType:
@@ -268,11 +269,11 @@ class User(AbstractEntity):
 
     @property
     def color_1(self) -> Color:
-        return Color.at_index(self.color_1_id)
+        return Color.with_id(self.color_1_id)
 
     @property
     def color_2(self) -> Color:
-        return Color.at_index(self.color_2_id)
+        return Color.with_id(self.color_2_id)
 
     def has_glow(self) -> bool:
         return bool(self.options.get("has_glow"))
@@ -289,7 +290,9 @@ class User(AbstractEntity):
         new = await self.get_user()
         self.options.update(new.options)
 
-    async def send(self, subject: str, body: str) -> Optional["Message"]:
+    async def send(
+        self, subject: Optional[str] = None, body: Optional[str] = None
+    ) -> Optional["Message"]:
         """Send the message to ``self``. Requires logged client.
 
         Parameters

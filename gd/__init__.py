@@ -35,6 +35,7 @@ from gd._jokes import *
 from gd import (
     api,  # non-server GD API.
     crypto,  # cryptography and encoding utilites.
+    datetime,  # date and time [de]serializing utilites.
     events,  # event-related functions and classes.
     http,  # HTTP requests module.
     json,  # JSON utilities.

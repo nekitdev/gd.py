@@ -1,5 +1,7 @@
+import traceback
+
 from gd.async_iter import async_iterable
-from gd.async_utils import acquire_loop, gather
+from gd.async_utils import acquire_loop, gather, maybe_coroutine
 from gd.comment import Comment
 from gd.crypto import Key, encode_robtop_str
 from gd.decorators import cache_by, impl_sync, login_check, login_check_object
@@ -38,7 +40,10 @@ from gd.text_utils import make_repr
 from gd.typing import (
     Any,
     AsyncIterator,
+    Awaitable,
+    Callable,
     Coroutine,
+    Dict,
     Iterable,
     Iterator,
     List,
@@ -52,13 +57,21 @@ from gd.user import User
 from gd.api.database import Database
 from gd.api.recording import RecordEntry
 
-from gd.events.listener import AbstractListener
+from gd.events.listener import (
+    AbstractListener,
+    TimelyLevelListener,
+    RateLevelListener,
+    MessageOrRequestListener,
+    LevelCommentListener,
+)
 
 __all__ = ("DAILY", "WEEKLY", "Client")
 
 T = TypeVar("T")
 
 log = get_logger(__name__)
+
+MaybeAsyncFunction = Callable[..., Union[T, Awaitable[T]]]
 
 DAILY = -1
 WEEKLY = -2
@@ -75,7 +88,7 @@ def value_or(value: Optional[T], default: T) -> T:
 
 def filter_exceptions(
     items: Iterable[Union[T, BaseException]], *bases: Type[BaseException]
-) -> Iterable[T]:
+) -> Iterable[Union[T, BaseException]]:
     return (item for item in items if not isinstance(item, bases))
 
 
@@ -95,18 +108,21 @@ async def alist(iterator: AsyncIterator[T]) -> List[T]:
     return [item async for item in iterator]
 
 
-async def execute_many(
+async def run_async_iterators(
     iterators: Iterable[AsyncIterator[T]],
     *ignore_exceptions: Type[BaseException],
     concurrent: bool = CONCURRENT,
 ) -> AsyncIterator[T]:
     if concurrent:
-        returns: List[List[T]] = await gather(
+        results: List[Union[List[T], BaseException]] = await gather(
             (alist(iterator) for iterator in iterators), return_exceptions=True
         )
 
-        for array in filter_exceptions(returns, *ignore_exceptions):
-            for item in array:
+        for result in filter_exceptions(results, *ignore_exceptions):
+            if isinstance(result, BaseException):
+                raise result
+
+            for item in result:
                 yield item
 
     else:
@@ -170,6 +186,7 @@ class Client:
 
         self.load_after_post = load_after_post
         self.listeners: List[AbstractListener] = []
+        self.handlers: Dict[str, List[MaybeAsyncFunction]] = {}
 
         self.db: Database = Database()
 
@@ -314,7 +331,9 @@ class Client:
 
         log.info("Logged in? as %r.", user)
 
-        self.edit(name=user, password=password, account_id=self_user.account_id, id=self_user.id)
+        self.edit(
+            name=user, password=password, account_id=self_user.account_id, id=self_user.id,
+        )
 
     @login_check
     async def load(self) -> Database:
@@ -641,9 +660,9 @@ class Client:
 
     @async_iterable
     def search_users(
-        self, query: Union[int, str], pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
+        self, query: Union[int, str], pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[User]:
-        return execute_many(
+        return run_async_iterators(
             (self.search_users_on_page(query=query, page=page) for page in pages),
             ClientException,
             concurrent=concurrent,
@@ -741,7 +760,7 @@ class Client:
                 login_check_object(self)  # assert client is logged in
 
                 download_model = await self.session.download_level(
-                    level_id, account_id=self.account_id, encoded_password=self.encoded_password
+                    level_id, account_id=self.account_id, encoded_password=self.encoded_password,
                 )
 
             else:
@@ -806,10 +825,10 @@ class Client:
         gauntlet: Optional[int] = None,
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[Level]:
-        return execute_many(
+        return run_async_iterators(
             (
                 self.search_levels_on_page(
-                    query=query, page=page, filters=filters, user=user, gauntlet=gauntlet
+                    query=query, page=page, filters=filters, user=user, gauntlet=gauntlet,
                 )
                 for page in pages
             ),
@@ -896,12 +915,12 @@ class Client:
     @login_check
     async def rate_level(self, level: Level, stars: int) -> None:
         return await self.session.rate_level(
-            level.id, stars, account_id=self.account_id, encoded_password=self.encoded_password
+            level.id, stars, account_id=self.account_id, encoded_password=self.encoded_password,
         )
 
     @login_check
     async def rate_demon(
-        self, level: Level, rating: Union[int, str, DemonDifficulty], as_mod: bool = False
+        self, level: Level, rating: Union[int, str, DemonDifficulty], as_mod: bool = False,
     ) -> None:
         return await self.session.rate_demon(
             level.id,
@@ -1048,7 +1067,7 @@ class Client:
         pages: Iterable[int] = PAGES,
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[Message]:
-        return execute_many(
+        return run_async_iterators(
             (self.get_messages_on_page(type=type, page=page) for page in pages),
             ClientException,
             concurrent=concurrent,
@@ -1107,7 +1126,7 @@ class Client:
     @async_iterable
     @login_check
     async def get_friend_requests_on_page(
-        self, type: Union[int, str, FriendRequestType] = FriendRequestType.NORMAL, page: int = 0
+        self, type: Union[int, str, FriendRequestType] = FriendRequestType.NORMAL, page: int = 0,
     ) -> AsyncIterator[FriendRequest]:
         friend_request_type = FriendRequestType.from_value(type)
 
@@ -1135,7 +1154,7 @@ class Client:
         pages: Iterable[int] = PAGES,
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[FriendRequest]:
-        return execute_many(
+        return run_async_iterators(
             (self.get_friend_requests_on_page(type=type, page=page) for page in pages),
             ClientException,
             concurrent=concurrent,
@@ -1262,7 +1281,7 @@ class Client:
         strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[Comment]:
-        return execute_many(
+        return run_async_iterators(
             (
                 self.get_user_comments_on_page(user=user, type=type, page=page, strategy=strategy)
                 for page in pages
@@ -1304,7 +1323,7 @@ class Client:
         strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[Comment]:
-        return execute_many(
+        return run_async_iterators(
             (
                 self.get_level_comments_on_page(
                     level=level, amount=amount, page=page, strategy=strategy
@@ -1333,7 +1352,7 @@ class Client:
     def get_map_packs(
         self, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator[MapPack]:
-        return execute_many(
+        return run_async_iterators(
             (self.get_map_packs_on_page(page=page) for page in pages),
             ClientException,
             concurrent=concurrent,
@@ -1385,7 +1404,7 @@ class Client:
     def get_featured_artists(
         self, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator[MapPack]:
-        return execute_many(
+        return run_async_iterators(
             (self.get_featured_artists_on_page(page=page) for page in pages),
             ClientException,
             concurrent=concurrent,
@@ -1414,7 +1433,7 @@ class Client:
     def search_ng_songs(
         self, query: str, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator[Song]:
-        return execute_many(
+        return run_async_iterators(
             (self.search_ng_songs_on_page(query=query, page=page) for page in pages),
             ClientException,
             concurrent=concurrent,
@@ -1431,7 +1450,7 @@ class Client:
     def search_ng_users(
         self, query: str, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator[Author]:
-        return execute_many(
+        return run_async_iterators(
             (self.search_ng_users_on_page(query=query, page=page) for page in pages),
             ClientException,
             concurrent=concurrent,
@@ -1448,8 +1467,142 @@ class Client:
     def get_ng_user_songs(
         self, name: str, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator[Song]:
-        return execute_many(
+        return run_async_iterators(
             (self.get_ng_user_songs_on_page(name=name, page=page) for page in pages),
             ClientException,
             concurrent=concurrent,
         )
+
+    async def on_daily(self, level: Level) -> T:
+        """This is the event that is fired when a new daily level is set.
+        See :ref:`events` for more info.
+        """
+        pass
+
+    async def on_weekly(self, level: Level) -> T:
+        """This is the event that is fired when a new weekly demon is assigned.
+        See :ref:`events` for more info.
+        """
+        pass
+
+    async def on_rate(self, level: Level) -> T:
+        """This is the event that is fired when a new level is rated.
+        See :ref:`events` for more info.
+        """
+        pass
+
+    async def on_unrate(self, level: Level) -> T:
+        """This is the event that is fired when a level is unrated.
+        See :ref:`events` for more info.
+        """
+        pass
+
+    async def on_message(self, message: Message) -> T:
+        """This is the event that is fired when a logged in client gets a message.
+        See :ref:`events` for more info.
+        """
+        pass
+
+    async def on_friend_request(self, friend_request: FriendRequest) -> T:
+        """This is the event that is fired when a logged in client gets a friend request.
+        See :ref:`events` for more info.
+        """
+        pass
+
+    async def on_level_comment(self, level: Level, comment: Comment) -> T:
+        """This is the event that is fired when a comment is posted on some level.
+        See :ref:`events` for more info.
+        """
+        pass
+
+    async def dispatch(self, event_name: str, *args, **kwargs) -> None:
+        r"""Dispatch an event given by ``event_name`` with ``*args`` and ``**kwargs``.
+
+        Parameters
+        ----------
+        event_name: :class:`str`
+            Name of event to dispatch without ``on_`` prefix, e.g. ``"new_daily"``.
+
+        \*args
+            Args to call handler with.
+
+        \*\*kwargs
+            Keyword args to call handler with.
+        """
+        name = "on_" + event_name
+
+        log.info(f"Dispatching event {event_name!r}, client: {self!r}")
+
+        try:
+            method = getattr(self, name)
+
+        except AttributeError:
+            pass
+
+        else:
+            try:
+                await maybe_coroutine(method, *args, **kwargs)
+
+            except Exception:
+                traceback.print_exc()
+
+        handlers = self.handlers.get(event_name)
+
+        if handlers is None:
+            return
+
+        for handler in handlers:
+            try:
+                await maybe_coroutine(handler, *args, **kwargs)
+
+            except Exception:
+                traceback.print_exc()
+
+    def event(self, function: MaybeAsyncFunction) -> MaybeAsyncFunction:
+        """
+        A decorator that registers an event to listen to::
+
+            @client.event
+            async def on_level_rated(level: gd.Level) -> None:
+                print(level.name)
+        """
+        setattr(self, function.__name__, function)
+        log.debug("%s has been successfully registered as an event.", function.__name__)
+
+        return function
+
+    def listen(self, event_name: str) -> Callable[[MaybeAsyncFunction], MaybeAsyncFunction]:
+        def inner(function: MaybeAsyncFunction) -> MaybeAsyncFunction:
+            self.handlers.setdefault(event_name, []).append(function)
+            return function
+
+        return inner
+
+    def create_listener(self, event_name: str, *args, **kwargs) -> AbstractListener:
+        kwargs.update(client=self)
+
+        if event_name in {"daily", "weekly"}:
+            listener = TimelyLevelListener(*args, daily=(event_name == "daily"), **kwargs)
+
+        elif event_name in {"rate", "unrate"}:
+            listener = RateLevelListener(*args, rate=(event_name == "rate"), **kwargs)
+
+        elif event_name in {"friend_request", "message"}:
+            listener = MessageOrRequestListener(*args, message=(event_name == "message"), **kwargs)
+
+        elif event_name in {"level_comment"}:
+            listener = LevelCommentListener(*args, **kwargs)
+
+        else:
+            raise TypeError(f"Invalid listener type: {type!r}.")
+
+        return listener
+
+    def apply_listener(self, event_name: str, *args, **kwargs) -> None:
+        self.listeners.append(self.create_listener(event_name, *args, **kwargs))
+
+    def listen_for(
+        self, event_name: str, *args, **kwargs
+    ) -> Callable[[MaybeAsyncFunction], MaybeAsyncFunction]:
+        self.apply_listener(event_name, *args, **kwargs)
+        return self.listen(event_name)

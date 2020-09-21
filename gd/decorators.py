@@ -3,7 +3,16 @@ from functools import wraps
 from gd.async_utils import acquire_loop, maybe_coroutine
 from gd.debug_utils import time_execution_and_print
 from gd.errors import MissingAccess
-from gd.typing import Any, Awaitable, Callable, Optional, Type, TypeVar, Union, TYPE_CHECKING
+from gd.typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    TYPE_CHECKING,
+)
 
 if TYPE_CHECKING:
     from gd.abstract_entity import AbstractEntity  # noqa

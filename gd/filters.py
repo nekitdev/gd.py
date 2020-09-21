@@ -18,6 +18,7 @@ def is_iterable(maybe_iterable: Union[Iterable[T], T]) -> bool:
     try:
         iter(maybe_iterable)  # type: ignore
         return True
+
     except TypeError:  # "T" object is not iterable
         return False
 

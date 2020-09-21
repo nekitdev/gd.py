@@ -264,7 +264,9 @@ class Database:
     ) -> None:
         from gd.api.loader import save  # I hate circular imports.
 
-        save.dump(db=self, main=main, levels=levels, main_file=main_file, levels_file=levels_file)
+        save.dump(
+            db=self, main=main, levels=levels, main_file=main_file, levels_file=levels_file,
+        )
 
     def as_tuple(self) -> Tuple[Part, Part]:
         return (self.main, self.levels)

@@ -2,7 +2,12 @@
 
 from gd.color import Color
 from gd.converters import Password, Version
-from gd.crypto import decode_base64_str, encode_base64_str, unzip_level_str, zip_level_str
+from gd.crypto import (
+    decode_base64_str,
+    encode_base64_str,
+    unzip_level_str,
+    zip_level_str,
+)
 from gd.decorators import cache_by
 from gd.enums import (
     Enum,
@@ -226,7 +231,7 @@ class Object(Model):
     full_rotation_times: int = IntField(index=69)
     lock_object_rotation: bool = BoolField(index=70)
     other_id: int = IntField(
-        index=71, aliases=("follow_group_id", "target_pos_id", "center_id", "secondary_id")
+        index=71, aliases=("follow_group_id", "target_pos_id", "center_id", "secondary_id"),
     )
     x_mod: float = FloatField(index=72)
     y_mod: float = FloatField(index=73)
@@ -404,7 +409,7 @@ Channel = ColorChannel
 
 class ColorCollection(set):
     def __init__(
-        self, iterable: Optional[Iterable[ColorChannel]] = None, use_default: bool = True
+        self, iterable: Optional[Iterable[ColorChannel]] = None, use_default: bool = True,
     ) -> None:
         if use_default:
             super().__init__(DEFAULT_COLORS)
@@ -582,7 +587,7 @@ class LevelAPI(Model):
     )
     likes: int = BaseField(index="k22", de=int, ser=int)
     length: LevelLength = BaseField(
-        index="k23", de=partial(enum_from_value, enum_type=LevelLength), ser=enum_to_value
+        index="k23", de=partial(enum_from_value, enum_type=LevelLength), ser=enum_to_value,
     )
     stars: int = BaseField(index="k26", de=int, ser=int)
     recording_string: str = BaseField(index="k34", de=str, ser=str)
@@ -596,7 +601,7 @@ class LevelAPI(Model):
     index_k47: bool = BaseField(index="k47", de=bool, ser=int, default=True)
     object_count: int = BaseField(index="k48", de=int, ser=int)
     binary_version: Version = BaseField(
-        index="k50", de=Version.from_number, ser=Version.to_number, default=Version(3, 5)
+        index="k50", de=Version.from_number, ser=Version.to_number, default=Version(3, 5),
     )
     first_coint_acquired: bool = BaseField(index="k61", de=bool, ser=int)
     second_coin_acquired: bool = BaseField(index="k62", de=bool, ser=int)

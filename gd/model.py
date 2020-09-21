@@ -1,7 +1,12 @@
 # type: ignore  # static type checkers do not understand this
 
 from gd.color import Color
-from gd.converters import GameVersion, Password, get_difficulty, value_to_level_difficulty
+from gd.converters import (
+    GameVersion,
+    Password,
+    get_difficulty,
+    value_to_level_difficulty,
+)
 from gd.crypto import (
     Key,
     decode_robtop_str,
@@ -11,6 +16,7 @@ from gd.crypto import (
     unzip_level_str,
     zip_level_str,
 )
+from gd.datetime import datetime
 from gd.decorators import cache_by
 
 from gd.enums import (
@@ -39,6 +45,7 @@ from gd.model_backend import (
     ModelField,
     ModelIterField,
     RobTopStrField,
+    RobTopTimeField,
     StrField,
     URLField,
     Field,
@@ -115,7 +122,7 @@ class LevelLeaderboardUserModel(Model):
     coins: int = IntField(index=13, default=0)
     icon_type: IconType = EnumField(index=14, enum_type=IconType, from_field=IntField)
     has_glow: bool = BoolField(index=15, false="0", true="2", default=False)
-    timestamp: str = StrField(index=42, default="unknown")
+    recorded_at: datetime = RobTopTimeField(index=42)
 
 
 class SearchUserModel(Model):
@@ -261,8 +268,8 @@ class LevelModel(Model):
     score: int = IntField(index=19, default=0)
     is_auto: bool = BoolField(index=25, false="", true="1", default=False)
     password_field: Password = Field(index=27, de=Password.from_robtop, ser=Password.to_robtop)
-    upload_timestamp: str = StrField(index=28, default="unknown")
-    update_timestamp: str = StrField(index=29, default="unknown")
+    uploaded_at: datetime = RobTopTimeField(index=28)
+    updated_at: datetime = RobTopTimeField(index=29)
     original_id: int = IntField(index=30, default=0)
     two_player: bool = BoolField(index=31, default=False)
     custom_song_id: int = IntField(index=35, default=0)
@@ -368,7 +375,7 @@ class CommentInnerModel(Model):
     rating: int = IntField(index=4, default=0)
     id: int = IntField(index=6, default=0)
     is_spam: bool = BoolField(index=7, default=False)
-    timestamp: str = StrField(index=9, default="unknown")
+    created_at: datetime = RobTopTimeField(index=9)
     level_percent: int = IntField(index=10, default=0)
     mod_level: int = IntField(index=11, default=0)
     color: Color = ColorField(index=12, factory=lambda: Color(0xFFFFFF))
@@ -406,7 +413,7 @@ class FriendRequestModel(Model):
     account_id: int = IntField(index=16, default=0)
     id: int = IntField(index=32, default=0)
     content: str = Base64Field(index=35, default="")
-    timestamp: str = StrField(index=37, default="unknown")
+    created_at: datetime = RobTopTimeField(index=37)
     is_unread: bool = BoolField(index=41, false="", true="1", default=True)
 
 
@@ -419,7 +426,7 @@ class MessageModel(Model):
     subject: str = Base64Field(index=4, default="")
     content: str = RobTopStrField(index=5, key=Key.MESSAGE)
     name: str = StrField(index=6, default="Unknown")
-    timestamp: str = StrField(index=7, default="unknown")
+    created_at: datetime = RobTopTimeField(index=7)
     is_read: bool = BoolField(index=8, default=False)
     is_sent: bool = BoolField(index=9, default=False)
 
@@ -499,7 +506,7 @@ class SearchUserResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     users: List[SearchUserModel] = ModelIterField(
-        index=0, model=SearchUserModel, delim="|", use_default=True, transform=list, factory=list
+        index=0, model=SearchUserModel, delim="|", use_default=True, transform=list, factory=list,
     )
     page: PageModel = ModelField(index=1, model=PageModel, factory=PageModel)
 
@@ -515,13 +522,13 @@ class LevelSearchResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     levels: List[LevelModel] = ModelIterField(
-        index=0, model=LevelModel, delim="|", use_default=True, transform=list, factory=list
+        index=0, model=LevelModel, delim="|", use_default=True, transform=list, factory=list,
     )
     creators: List[CreatorModel] = ModelIterField(
-        index=1, model=CreatorModel, delim="|", use_default=True, transform=list, factory=list
+        index=1, model=CreatorModel, delim="|", use_default=True, transform=list, factory=list,
     )
     songs: List[SongModel] = ModelIterField(
-        index=2, model=SongModel, delim="~:~", use_default=True, transform=list, factory=list
+        index=2, model=SongModel, delim="~:~", use_default=True, transform=list, factory=list,
     )
     page: PageModel = ModelField(index=3, use_default=True, model=PageModel, factory=PageModel)
     hash: str = StrField(index=4, default="")
@@ -531,7 +538,7 @@ class FeaturedArtistsResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     featured_artists: List[SongModel] = ModelIterField(
-        index=0, model=SongModel, delim="|", use_default=True, transform=list, factory=list
+        index=0, model=SongModel, delim="|", use_default=True, transform=list, factory=list,
     )
     page: PageModel = ModelField(index=1, use_default=True, model=PageModel, factory=PageModel)
 
@@ -540,7 +547,7 @@ class UserListResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     users: List[ListUserModel] = ModelIterField(
-        index=0, model=ListUserModel, delim="|", use_default=True, transform=list, factory=list
+        index=0, model=ListUserModel, delim="|", use_default=True, transform=list, factory=list,
     )
 
 
@@ -548,7 +555,7 @@ class CommentsResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     comments: List[CommentModel] = ModelIterField(
-        index=0, model=CommentModel, delim="|", use_default=True, transform=list, factory=list
+        index=0, model=CommentModel, delim="|", use_default=True, transform=list, factory=list,
     )
     page: PageModel = ModelField(index=1, use_default=True, model=PageModel, factory=PageModel)
 
@@ -583,7 +590,12 @@ class FriendRequestsResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     friend_requests: List[FriendRequestModel] = ModelIterField(
-        index=0, model=FriendRequestModel, delim="|", use_default=True, transform=list, factory=list
+        index=0,
+        model=FriendRequestModel,
+        delim="|",
+        use_default=True,
+        transform=list,
+        factory=list,
     )
     page: PageModel = ModelField(index=1, use_default=True, model=PageModel, factory=PageModel)
 
@@ -592,7 +604,7 @@ class MessagesResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     messages: List[MessageModel] = ModelIterField(
-        index=0, model=MessageModel, delim="|", use_default=True, transform=list, factory=list
+        index=0, model=MessageModel, delim="|", use_default=True, transform=list, factory=list,
     )
     page: PageModel = ModelField(index=1, use_default=True, model=PageModel, factory=PageModel)
 
@@ -601,7 +613,7 @@ class MapPacksResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     map_packs: List[MapPackModel] = ModelIterField(
-        index=0, model=MapPackModel, delim="|", use_default=True, transform=list, factory=list
+        index=0, model=MapPackModel, delim="|", use_default=True, transform=list, factory=list,
     )
     page: PageModel = ModelField(index=1, use_default=True, model=PageModel, factory=PageModel)
     hash: str = StrField(index=2, default="")

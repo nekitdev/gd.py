@@ -7,7 +7,13 @@ import aiohttp
 from gd import __version__
 from gd.typing import Optional, Union
 
-__all__ = ("VersionInfo", "make_version_info", "python_version", "version_re", "version_info")
+__all__ = (
+    "VersionInfo",
+    "make_version_info",
+    "python_version",
+    "version_re",
+    "version_info",
+)
 
 short_to_long_names = {
     "a": "alpha",

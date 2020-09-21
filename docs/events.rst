@@ -1,3 +1,5 @@
+.. _events:
+
 .. currentmodule:: gd
 
 Event Reference

@@ -12,6 +12,7 @@ from gd.crypto import (
     decode_robtop_str,
     encode_robtop_str,
 )
+from gd.datetime import de_human_delta, ser_human_delta
 from gd.errors import DeError, SerError
 from gd.map_property import map_property
 
@@ -49,6 +50,7 @@ __all__ = (
     "ModelField",
     "ModelIterField",
     "RobTopStrField",
+    "RobTopTimeField",
     "StrField",
     "URLField",
     "IndexParser",
@@ -128,6 +130,23 @@ def attempt(function: Callable[..., T], default: T) -> Callable[..., T]:
             return default
 
     return wrapper
+
+
+def attempt_chain(*functions: Callable[..., T], raise_error: bool = True) -> Callable[..., T]:
+    def chainer(*args, **kwargs) -> Optional[T]:
+        for function in functions:
+            try:
+                return function(*args, **kwargs)
+
+            except Exception:
+                pass
+
+        if raise_error:
+            raise ValueError("All functions in the chain failed.")
+
+        return None
+
+    return chainer
 
 
 def identity(some: T) -> T:
@@ -481,7 +500,9 @@ class IterableField(Field):
 
         super().__init__(
             index=index,
-            de=partial(de_iterable, delim=delim, de=de, transform=transform, skip_empty=skip_empty),
+            de=partial(
+                de_iterable, delim=delim, de=de, transform=transform, skip_empty=skip_empty,
+            ),
             ser=partial(ser_iterable, delim=delim, ser=ser),
             name=name,
             type=type,
@@ -660,6 +681,29 @@ class RobTopStrField(Field):
             ser=partial(encode_robtop_str, key=key),
             name=name,
             type=str,
+            default=default,
+            factory=factory,
+            doc=doc,
+            aliases=aliases,
+        )
+
+
+class RobTopTimeField(Field):
+    def __init__(
+        self,
+        index: Union[int, str],
+        name: Optional[str] = None,
+        default: Union[T, NULL] = null,
+        factory: Optional[Callable[[], T]] = None,
+        doc: Optional[str] = None,
+        aliases: Iterable[str] = (),
+    ) -> None:
+        super().__init__(
+            index=index,
+            de=attempt_chain(de_human_delta, raise_error=False,),  # try from several formats
+            ser=ser_human_delta,  # serialize to human delta
+            name=name,
+            type=bool,
             default=default,
             factory=factory,
             doc=doc,

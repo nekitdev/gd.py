@@ -7,6 +7,7 @@ from gd.abstract_entity import AbstractEntity
 from gd.async_iter import async_iterable
 from gd.converters import GameVersion
 from gd.crypto import unzip_level_str, zip_level_str
+from gd.datetime import datetime
 from gd.decorators import cache_by
 from gd.enums import (
     DemonDifficulty,
@@ -22,7 +23,16 @@ from gd.model import LevelModel  # type: ignore
 from gd.search_utils import get
 from gd.text_utils import is_level_probably_decoded, make_repr, object_count
 from gd.song import Song
-from gd.typing import Any, AsyncIterator, Dict, Iterable, Optional, Union, TYPE_CHECKING, cast
+from gd.typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    Iterable,
+    Optional,
+    Union,
+    TYPE_CHECKING,
+    cast,
+)
 from gd.user import User
 
 from gd.api.editor import Editor
@@ -102,8 +112,8 @@ class Level(AbstractEntity):
             password=model.password,
             copyable=model.copyable,
             difficulty=model.difficulty,
-            upload_timestamp=model.upload_timestamp,
-            update_timestamp=model.update_timestamp,
+            uploaded_at=model.uploaded_at,
+            updated_at=model.updated_at,
             original_id=model.original_id,
             two_player=model.two_player,
             extra_string=model.extra_string,
@@ -267,18 +277,20 @@ class Level(AbstractEntity):
         return self.options.get("original_id", 0)
 
     @property
-    def upload_timestamp(self) -> str:
-        """:class:`str`: A human-readable string representing
-        how much time ago level was uploaded.
+    def uploaded_at(self) -> Optional[datetime]:
+        """Optional[:class:`~py:datetime.datetime`]:
+        Timestamp representing when the level was uploaded.
         """
-        return self.options.get("upload_timestamp", "unknown")
+        return self.options.get("uploaded_at")
 
     @property
-    def update_timestamp(self) -> str:
-        """:class:`str`: A human-readable string showing how much time ago the last update was."""
-        return self.options.get("update_timestamp", "unknown")
+    def updated_at(self) -> Optional[datetime]:
+        """Optional[:class:`~py:datetime.datetime`]:
+        Timestamp representing when the level was last updated.
+        """
+        return self.options.get("updated_at")
 
-    last_update_timestamp = update_timestamp
+    last_updated_at = updated_at
 
     @property
     def length(self) -> LevelLength:
@@ -664,7 +676,7 @@ class Level(AbstractEntity):
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator["Comment"]:
         return self.client.get_level_comments(
-            level=self, strategy=strategy, pages=pages, amount=amount, concurrent=concurrent
+            level=self, strategy=strategy, pages=pages, amount=amount, concurrent=concurrent,
         )
 
     @async_iterable

@@ -106,7 +106,7 @@ class SaveUtils:
             Loaded Database. If any of the files not found, returns an empty ``gd.api.Database()``.
         """
         return await run_blocking(
-            self.local_load, main=main, levels=levels, main_file=main_file, levels_file=levels_file
+            self.local_load, main=main, levels=levels, main_file=main_file, levels_file=levels_file,
         )
 
     def load(
@@ -247,11 +247,11 @@ class SaveUtils:
             Applied when ``levels`` is a directory.
         """
         self.local_dump(
-            db=db, main=main, levels=levels, main_file=main_file, levels_file=levels_file
+            db=db, main=main, levels=levels, main_file=main_file, levels_file=levels_file,
         )
 
     async def to_string_async(
-        self, db: Database, apply_xor: bool = False, follow_os: bool = False, decode: bool = False
+        self, db: Database, apply_xor: bool = False, follow_os: bool = False, decode: bool = False,
     ) -> Union[Tuple[bytes, bytes], Tuple[str, str]]:
         """Asynchronously dump a save into strings.
 
@@ -290,7 +290,7 @@ class SaveUtils:
         return (main, levels)
 
     def to_string(
-        self, db: Database, apply_xor: bool = False, follow_os: bool = False, decode: bool = False
+        self, db: Database, apply_xor: bool = False, follow_os: bool = False, decode: bool = False,
     ) -> Union[Tuple[bytes, bytes], Tuple[str, str]]:
         """Dump a save into strings.
 
@@ -356,7 +356,7 @@ class SaveUtils:
             Database object containing loaded data.
         """
         return await run_blocking(
-            self.load_parts, main=main, levels=levels, apply_xor=apply_xor, follow_os=follow_os
+            self.load_parts, main=main, levels=levels, apply_xor=apply_xor, follow_os=follow_os,
         )
 
     def from_string(
@@ -453,7 +453,7 @@ class SaveUtils:
             self.encode_if_str(db.main.dump()), apply_xor=apply_xor, follow_os=follow_os
         )
         levels = self.encode_stream(
-            self.encode_if_str(db.levels.dump()), apply_xor=apply_xor, follow_os=follow_os
+            self.encode_if_str(db.levels.dump()), apply_xor=apply_xor, follow_os=follow_os,
         )
 
         return (main, levels)

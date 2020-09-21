@@ -177,7 +177,7 @@ class SerError(DataException):
     """Exception that is raised when serializing data fails."""
 
     def __init__(
-        self, data: T, index: U, field: Optional["Field"], origin: Optional[BaseException]
+        self, data: T, index: U, field: Optional["Field"], origin: Optional[BaseException],
     ) -> None:
         self._data = data
         self._index = index
@@ -216,7 +216,7 @@ class DeError(DataException):
     """Exception that is raised if deserializing data fails."""
 
     def __init__(
-        self, data: str, index: U, field: Optional["Field"], origin: Optional[BaseException]
+        self, data: str, index: U, field: Optional["Field"], origin: Optional[BaseException],
     ) -> None:
         self._data = data
         self._index = index

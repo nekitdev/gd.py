@@ -44,7 +44,7 @@ def _entry_string_generator(entry: "RecordEntry") -> Iterator[str]:
 
 class RecordEntry:
     def __init__(
-        self, time: float = 0.0, prev: bool = False, next: bool = False, dual: bool = False
+        self, time: float = 0.0, prev: bool = False, next: bool = False, dual: bool = False,
     ) -> None:
         self._time = time
         self._prev = prev
@@ -52,7 +52,12 @@ class RecordEntry:
         self._dual = dual
 
     def __repr__(self) -> str:
-        info = {"time": self.time, "prev": self.prev, "next": self.next, "dual": self.dual}
+        info = {
+            "time": self.time,
+            "prev": self.prev,
+            "next": self.next,
+            "dual": self.dual,
+        }
 
         return make_repr(self, info)
 

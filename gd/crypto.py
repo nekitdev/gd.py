@@ -148,13 +148,13 @@ def cyclic_xor(stream: bytes, key: bytes) -> bytes:
 
 
 def xor_str(
-    string: str, key: int, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
+    string: str, key: int, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS,
 ) -> str:
     return xor(string.encode(encoding, errors), key).decode(encoding, errors)
 
 
 def cyclic_xor_str(
-    string: str, key: str, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
+    string: str, key: str, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS,
 ) -> str:
     return cyclic_xor(string.encode(encoding, errors), key.encode(encoding, errors)).decode(
         encoding, errors
@@ -214,13 +214,13 @@ def encode_robtop(data: bytes, key: Key) -> bytes:
 
 
 def decode_robtop_str(
-    string: str, key: Key, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
+    string: str, key: Key, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS,
 ) -> str:
     return decode_robtop(string.encode(encoding, errors), key).decode(encoding, errors)
 
 
 def encode_robtop_str(
-    string: str, key: Key, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
+    string: str, key: Key, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS,
 ) -> str:
     return encode_robtop(string.encode(encoding, errors), key).decode(encoding, errors)
 
@@ -239,7 +239,7 @@ def decode_mac_save(
 
 
 def encode_mac_save(
-    save_data: bytes, apply_xor: bool = True  # apply_xor is here, again, for compatibility
+    save_data: bytes, apply_xor: bool = True,  # apply_xor is here, again, for compatibility
 ) -> bytes:
     required = len(save_data) % ECB_PAD
 
@@ -326,7 +326,11 @@ def inflate(data: bytes) -> bytes:
         pass
 
     # fallback and do some other attempts
-    for wbits in (zlib.MAX_WBITS | Z_AUTO_HEADER, zlib.MAX_WBITS | Z_GZIP_HEADER, zlib.MAX_WBITS):
+    for wbits in (
+        zlib.MAX_WBITS | Z_AUTO_HEADER,
+        zlib.MAX_WBITS | Z_GZIP_HEADER,
+        zlib.MAX_WBITS,
+    ):
         try:
             decompressor = zlib.decompressobj(wbits=wbits)
 

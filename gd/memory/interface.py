@@ -22,7 +22,14 @@ except Exception:  # noqa
     pass
 
 from gd.converters import get_difficulty
-from gd.enums import LevelDifficulty, DemonDifficulty, LevelType, Gamemode, SpeedConstant, Scene
+from gd.enums import (
+    LevelDifficulty,
+    DemonDifficulty,
+    LevelType,
+    Gamemode,
+    SpeedConstant,
+    Scene,
+)
 from gd.text_utils import make_repr
 from gd.typing import (
     Any,
@@ -367,7 +374,7 @@ class WindowsMemory(MemoryType):
         buffer = ctypes.create_string_buffer(size)
 
         read_process_memory(
-            self.process_handle, ctypes.c_void_p(address), ctypes.byref(buffer), size, None
+            self.process_handle, ctypes.c_void_p(address), ctypes.byref(buffer), size, None,
         )
 
         return Buffer(buffer.raw)
@@ -381,7 +388,7 @@ class WindowsMemory(MemoryType):
         data = buffer.into_buffer()
 
         write_process_memory(
-            self.process_handle, ctypes.c_void_p(address), ctypes.byref(data), len(data), None
+            self.process_handle, ctypes.c_void_p(address), ctypes.byref(data), len(data), None,
         )
 
     def write(self, type: Type, value: T, address: int = 0) -> None:

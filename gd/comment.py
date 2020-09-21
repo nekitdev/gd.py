@@ -1,5 +1,6 @@
 from gd.abstract_entity import AbstractEntity
 from gd.color import Color
+from gd.datetime import datetime
 from gd.enums import CommentType
 from gd.model import CommentModel  # type: ignore
 from gd.text_utils import make_repr
@@ -84,7 +85,7 @@ class Comment(AbstractEntity):
             content=comment_model.content,
             rating=comment_model.rating,
             is_spam=comment_model.is_spam,
-            timestamp=comment_model.timestamp,
+            created_at=comment_model.created_at,
             level_percent=comment_model.level_percent,
             color=comment_model.color,
             author=user.attach_client(client),
@@ -104,11 +105,11 @@ class Comment(AbstractEntity):
         return self.options.get("rating", 0)
 
     @property
-    def timestamp(self) -> str:
-        """:class:`str`: A human-readable timestamp representing
-        how much time ago comment was created.
+    def created_at(self) -> Optional[datetime]:
+        """Optional[:class:`~py:datetime.datetime`]:
+        Timestamp representing when the comment was created.
         """
-        return self.options.get("timestamp", "unknown")
+        return self.options.get("created_at")
 
     @property
     def author(self) -> User:

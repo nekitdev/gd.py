@@ -47,8 +47,8 @@ def shutdown_loops() -> None:
     """Shutdown all loops used for event listening."""
     for loop in _loops:
         try:
-            loop.call_soon_threadsafe(loop.stop)  # in case it is in a thread
             shutdown_loop(loop)
+
         except Exception:  # noqa
             pass  # sorry
 

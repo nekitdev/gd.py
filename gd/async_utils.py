@@ -9,7 +9,6 @@ from gd.typing import (
     AsyncIterator,
     Awaitable,
     Callable,
-    Coroutine,
     List,
     Optional,
     Set,
@@ -124,14 +123,14 @@ async def wait(
 
 
 def run(
-    coro: Coroutine[None, None, T],
+    awaitable: Awaitable[T],
     *,
     loop: Optional[asyncio.AbstractEventLoop] = None,
     shutdown: bool = True,
     debug: bool = False,
     set_to_none: bool = False,
 ) -> T:
-    """Run a |coroutine_link|_.
+    """Run a :ref:`coroutine<coroutine>`.
 
     This function runs the passed coroutine, taking care
     of the event loop and shutting down asynchronous generators.
@@ -161,7 +160,7 @@ def run(
 
     Parameters
     ----------
-    coro: |coroutine_link|_
+    awaitable: Awaitable[``T``]
         Coroutine to run.
 
     loop: Optional[:class:`asyncio.AbstractEventLoop`]
@@ -175,12 +174,14 @@ def run(
 
     set_to_none: :class:`bool`
         Indicates if the loop should be set to None after execution.
+
+    Returns
+    -------
+    ``T``
+        Whatever the coroutine returns.
     """
     if asyncio._get_running_loop() is not None:
         raise RuntimeError("Can not perform run() in a running event loop.")
-
-    if not asyncio.iscoroutine(coro):
-        raise ValueError(f"A coroutine was expected, got {coro!r}.")
 
     if loop is None:
         loop = asyncio.new_event_loop()
@@ -188,7 +189,7 @@ def run(
     try:
         asyncio.set_event_loop(loop)
         loop.set_debug(debug)
-        return loop.run_until_complete(coro)
+        return loop.run_until_complete(awaitable)
 
     finally:
         if shutdown:
@@ -242,6 +243,8 @@ def shutdown_loop(loop: asyncio.AbstractEventLoop) -> None:
     if loop.is_closed():
         return
 
+    loop.call_soon_threadsafe(loop.stop)  # in case it is in a thread
+
     try:
         cancel_all_tasks(loop)
         loop.run_until_complete(loop.shutdown_asyncgens())
@@ -263,7 +266,7 @@ async def maybe_coroutine(function: Callable[..., Union[Awaitable[T], T]], *args
         return cast(T, value)
 
 
-def acquire_loop(running: bool = False) -> asyncio.AbstractEventLoop:
+def acquire_loop(running: bool = False, enforce_running: bool = False) -> asyncio.AbstractEventLoop:
     """Gracefully acquire a loop.
 
     The function tries to get an event loop via :func:`asyncio.get_event_loop`.
@@ -273,33 +276,40 @@ def acquire_loop(running: bool = False) -> asyncio.AbstractEventLoop:
     ----------
     running: :class:`bool`
         Indicates if the function should get a loop that is already running.
+
+    enforce_running: :class:`bool`
+        If ``running`` is ``True``, indicates if :exc:`RuntimeError`
+        should be raised if there is no current loop running.
     """
     loop: Optional[asyncio.AbstractEventLoop]
 
-    try:
-        loop = asyncio._get_running_loop()
-
-    except Exception:  # an error might occur actually
-        loop = None
-
-    if running and loop is not None:
-        return loop
-
-    else:
+    if running:
         try:
-            loop = asyncio.get_event_loop()
+            loop = asyncio._get_running_loop()
 
-            if loop.is_running() and not running:
-                # loop is running while we have to get the non-running one,
-                # let us raise an error to go into <except> clause.
-                raise ValueError("Current event loop is already running.")
+        except Exception:  # an error might occur actually
+            loop = None
 
-            if loop.is_closed():
-                # same here, fall into <except> clause if the loop is closed
-                raise ValueError("Current event loop is closed.")
+        if loop is not None:
+            return loop
 
-        except Exception:
-            loop = asyncio.new_event_loop()
+        if enforce_running:
+            raise RuntimeError("No running event loop.")
+
+    try:
+        loop = asyncio.get_event_loop()
+
+        if loop.is_running() and not running:
+            # loop is running while we have to get the non-running one,
+            # let us raise an error to go into <except> clause.
+            raise ValueError("Current event loop is already running.")
+
+        if loop.is_closed():
+            # same here, fall into <except> clause if the loop is closed
+            raise ValueError("Current event loop is closed.")
+
+    except Exception:
+        loop = asyncio.new_event_loop()
 
     return loop
 

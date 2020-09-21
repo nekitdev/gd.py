@@ -7,7 +7,7 @@ import uuid
 import aiohttp
 from yarl import URL
 
-from gd.async_utils import shutdown_loop
+from gd.async_utils import acquire_loop, shutdown_loop
 from gd.converters import GameVersion, Password, Version
 from gd.crypto import (
     Key,
@@ -52,7 +52,12 @@ from gd.errors import (
 )
 from gd.filters import Filters
 from gd.logging import get_logger
-from gd.text_utils import is_level_probably_decoded, make_repr, object_count, snake_to_camel
+from gd.text_utils import (
+    is_level_probably_decoded,
+    make_repr,
+    object_count,
+    snake_to_camel,
+)
 from gd.typing import (
     Any,
     Dict,
@@ -260,14 +265,27 @@ class HTTPClient:
         if self.session:
             self.session.timeout = self.create_timeout()
 
-    async def create_session(self) -> aiohttp.ClientSession:
-        return aiohttp.ClientSession(
-            skip_auto_headers=self.DEFAULT_SKIP_HEADERS, timeout=self.create_timeout()
-        )
-
     async def close(self) -> None:
         if self.session is not None:
             await self.session.close()
+
+    async def create_session(self) -> aiohttp.ClientSession:
+        return aiohttp.ClientSession(
+            skip_auto_headers=self.DEFAULT_SKIP_HEADERS, timeout=self.create_timeout(),
+        )
+
+    async def ensure_session(self) -> None:
+        if self.session is None:
+            self.session = await self.create_session()
+
+        loop = acquire_loop(running=True, enforce_running=True)
+
+        maybe_loop = getattr(self.session, "_loop", None)  # XXX: keep up with aiohttp's internals
+
+        if maybe_loop is not None and maybe_loop is not loop:
+            await self.close()
+
+            self.session = await self.create_session()
 
     async def request(
         self,
@@ -277,6 +295,7 @@ class HTTPClient:
         error_codes: Optional[Mapping[int, BaseException]] = None,
         headers: Optional[Dict[str, Any]] = None,
         base_url: Optional[Union[str, URL]] = None,
+        retries: int = 2,
     ) -> Optional[ResponseData]:
         url = URL(self.url if base_url is None else base_url)
 
@@ -299,9 +318,18 @@ class HTTPClient:
         read: bool = True,
         error_codes: Optional[Mapping[int, BaseException]] = None,
         headers: Optional[Dict[str, Any]] = None,
+        retries: int = 2,
     ) -> Optional[ResponseData]:
-        if self.session is None:
-            self.session = await self.create_session()
+        await self.ensure_session()
+
+        if retries < 0:
+            attempt_left = -1
+
+        elif retries == 0:
+            attempt_left = 1
+
+        else:
+            attempt_left = retries + 1
 
         if headers is None:
             headers = {}
@@ -313,46 +341,53 @@ class HTTPClient:
             headers.setdefault("X-Forwarded-For", self.forwarded_for)
 
         lock = asyncio.Lock()
+        error: Optional[BaseException] = None
 
-        try:
-            async with lock, self.session.request(  # type: ignore
-                url=url,
-                method=method,
-                data=data,
-                params=params,
-                proxy=self.proxy,
-                proxy_auth=self.proxy_auth,
-                headers=headers,
-            ) as response:
+        while attempt_left:
+            try:
+                async with lock, self.session.request(  # type: ignore
+                    url=url,
+                    method=method,
+                    data=data,
+                    params=params,
+                    proxy=self.proxy,
+                    proxy_auth=self.proxy_auth,
+                    headers=headers,
+                ) as response:
 
-                log.debug("%s %s has returned %d", method, url, response.status)
+                    log.debug("%s %s has returned %d", method, url, response.status)
 
-                if not read:
-                    return None
+                    if not read:
+                        return None
 
-                response_data = await read_data(response, raw=raw, json=json)
+                    response_data = await read_data(response, raw=raw, json=json)
 
-                if 200 <= response.status < 300:  # successful
+                    if 200 <= response.status < 300:  # successful
 
-                    log.debug("%s %s has received %s", method, url, response_data)
+                        log.debug("%s %s has received %s", method, url, response_data)
 
-                    if isinstance(response_data, (bytes, str)):
+                        if isinstance(response_data, (bytes, str)):
 
-                        if error_codes and is_error_code(response_data):
-                            error_code = int(response_data)
+                            if error_codes and is_error_code(response_data):
+                                error_code = int(response_data)
 
-                            raise error_codes.get(error_code, unexpected_error_code(error_code))
+                                raise error_codes.get(error_code, unexpected_error_code(error_code))
 
-                    return response_data
+                        return response_data
 
-                if response.status >= 400:
-                    raise HTTPStatusError(response.status, response.reason)
+                    if response.status >= 400:
+                        error = HTTPStatusError(response.status, response.reason)
 
-        except VALID_ERRORS as error:
-            raise HTTPError(error) from None
+            except VALID_ERRORS as valid_error:
+                error = HTTPError(valid_error)
 
-        finally:
-            await asyncio.sleep(0)  # let underlying connections close
+            finally:
+                await asyncio.sleep(0)  # let underlying connections close
+
+            attempt_left -= 1
+
+        if error:
+            raise error
 
     @staticmethod
     def gen_udid(id: Optional[int] = None, low: int = 1, high: int = 1_000_000_000) -> str:
@@ -1093,7 +1128,7 @@ class HTTPClient:
         return int_or(cast(str, response), 0)
 
     async def send_level(
-        self, level_id: int, stars: int, feature: bool, *, account_id: int, encoded_password: str
+        self, level_id: int, stars: int, feature: bool, *, account_id: int, encoded_password: str,
     ) -> int:
         error_codes = {
             -1: MissingAccess(f"Failed to send a level by ID: {level_id}."),
@@ -1198,7 +1233,7 @@ class HTTPClient:
         return cast(str, response)
 
     async def block_or_unblock(
-        self, account_id: int, unblock: bool, *, client_account_id: int, encoded_password: str
+        self, account_id: int, unblock: bool, *, client_account_id: int, encoded_password: str,
     ) -> int:
         if unblock:
             endpoint = "/database/unblockGJUser20.php"
@@ -1292,7 +1327,7 @@ class HTTPClient:
         return int_or(cast(str, response), 0)
 
     async def download_message(
-        self, message_id: int, type: MessageType, *, account_id: int, encoded_password: str
+        self, message_id: int, type: MessageType, *, account_id: int, encoded_password: str,
     ) -> str:
         error_codes = {-1: MissingAccess(f"Failed to read a message by ID: {message_id}.")}
 
@@ -1317,7 +1352,7 @@ class HTTPClient:
         return cast(str, response)
 
     async def delete_message(
-        self, message_id: int, type: MessageType, *, account_id: int, encoded_password: str
+        self, message_id: int, type: MessageType, *, account_id: int, encoded_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(f"Failed to delete a message by ID: {message_id}.")}
 
@@ -1499,7 +1534,7 @@ class HTTPClient:
         return int_or(cast(str, response), 0)
 
     async def get_friend_requests_on_page(
-        self, type: FriendRequestType, page: int, *, account_id: int, encoded_password: str
+        self, type: FriendRequestType, page: int, *, account_id: int, encoded_password: str,
     ) -> str:
         error_codes = {
             -1: MissingAccess(f"Failed to get friend requests on page {page}."),
@@ -1898,14 +1933,14 @@ class HTTPClient:
 
     async def search_ng_songs_on_page(self, query: str, page: int = 0) -> str:
         response = await self.fetch(
-            GET, NEWGROUNDS_SEARCH.format(type="audio"), params=dict(terms=query, page=page + 1)
+            GET, NEWGROUNDS_SEARCH.format(type="audio"), params=dict(terms=query, page=page + 1),
         )
 
         return cast(str, response)
 
     async def search_ng_users_on_page(self, query: str, page: int = 0) -> str:
         response = await self.fetch(
-            GET, NEWGROUNDS_SEARCH.format(type="users"), params=dict(terms=query, page=page + 1)
+            GET, NEWGROUNDS_SEARCH.format(type="users"), params=dict(terms=query, page=page + 1),
         )
 
         return cast(str, response)

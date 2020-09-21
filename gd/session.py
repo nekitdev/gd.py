@@ -189,7 +189,7 @@ class Session:
         encoded_password: Optional[str] = None,
     ) -> ProfileUserModel:
         response = await self.http.get_user_profile(
-            account_id, client_account_id=client_account_id, encoded_password=encoded_password
+            account_id, client_account_id=client_account_id, encoded_password=encoded_password,
         )
         return ProfileUserModel.from_string(response, use_default=True)
 
@@ -266,7 +266,7 @@ class Session:
         self, level_id: int, description: str, *, account_id: int, encoded_password: str
     ) -> None:
         await self.http.update_level_description(
-            level_id, description, account_id=account_id, encoded_password=encoded_password
+            level_id, description, account_id=account_id, encoded_password=encoded_password,
         )
 
     async def upload_level(
@@ -350,7 +350,7 @@ class Session:
         )
 
     async def send_level(
-        self, level_id: int, stars: int, feature: bool, *, account_id: int, encoded_password: str
+        self, level_id: int, stars: int, feature: bool, *, account_id: int, encoded_password: str,
     ) -> None:
         await self.http.send_level(
             level_id=level_id,
@@ -369,12 +369,12 @@ class Session:
         encoded_password: str,
     ) -> LevelLeaderboardResponseModel:
         response = await self.http.get_level_top(
-            level_id, strategy=strategy, account_id=account_id, encoded_password=encoded_password
+            level_id, strategy=strategy, account_id=account_id, encoded_password=encoded_password,
         )
         return LevelLeaderboardResponseModel.from_string(response, use_default=True)
 
     async def block_or_unblock(
-        self, account_id: int, unblock: bool, *, client_account_id: int, encoded_password: str
+        self, account_id: int, unblock: bool, *, client_account_id: int, encoded_password: str,
     ) -> None:
         await self.http.block_or_unblock(
             account_id=account_id,
@@ -410,18 +410,18 @@ class Session:
         )
 
     async def download_message(
-        self, message_id: int, type: MessageType, *, account_id: int, encoded_password: str
+        self, message_id: int, type: MessageType, *, account_id: int, encoded_password: str,
     ) -> MessageModel:
         response = await self.http.download_message(
-            message_id, type=type, account_id=account_id, encoded_password=encoded_password
+            message_id, type=type, account_id=account_id, encoded_password=encoded_password,
         )
         return MessageModel.from_string(response, use_default=True)
 
     async def delete_message(
-        self, message_id: int, type: MessageType, *, account_id: int, encoded_password: str
+        self, message_id: int, type: MessageType, *, account_id: int, encoded_password: str,
     ) -> None:
         await self.http.delete_message(
-            message_id, type=type, account_id=account_id, encoded_password=encoded_password
+            message_id, type=type, account_id=account_id, encoded_password=encoded_password,
         )
 
     async def get_messages_on_page(
@@ -487,7 +487,7 @@ class Session:
         )
 
     async def get_friend_requests_on_page(
-        self, type: FriendRequestType, page: int, *, account_id: int, encoded_password: str
+        self, type: FriendRequestType, page: int, *, account_id: int, encoded_password: str,
     ) -> FriendRequestsResponseModel:
         response = await self.http.get_friend_requests_on_page(
             type, page, account_id=account_id, encoded_password=encoded_password
@@ -561,7 +561,7 @@ class Session:
         strategy: CommentStrategy,
     ) -> CommentsResponseModel:
         response = await self.http.get_user_comments_on_page(
-            account_id=account_id, user_id=user_id, type=type, page=page, strategy=strategy
+            account_id=account_id, user_id=user_id, type=type, page=page, strategy=strategy,
         )
         return CommentsResponseModel.from_string(response, use_default=True)
 

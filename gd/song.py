@@ -306,8 +306,7 @@ async def download(
         file = open(file, "wb")
         close = True
 
-    if http_client.session is None:
-        http_client.session = await http_client.create_session()
+    await http_client.ensure_session()
 
     async with http_client.session.request(  # type: ignore
         url=url, method=method, **kwargs

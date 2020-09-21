@@ -1,4 +1,5 @@
 from gd.abstract_entity import AbstractEntity
+from gd.datetime import datetime
 from gd.enums import MessageType
 from gd.model import MessageModel  # type: ignore
 from gd.text_utils import make_repr
@@ -7,6 +8,8 @@ from gd.user import User
 
 if TYPE_CHECKING:
     from gd.client import Client  # noqa
+
+__all__ = ("Message",)
 
 
 class Message(AbstractEntity):
@@ -39,7 +42,7 @@ class Message(AbstractEntity):
             id=model.id,
             subject=model.subject,
             content=model.content,
-            timestamp=model.timestamp,
+            created_at=model.created_at,
             is_read=model.is_read,
             is_unread=not model.is_read,
             other_user=(other_user if other_user else User()).attach_client(client),
@@ -70,9 +73,11 @@ class Message(AbstractEntity):
         return self.options.get("subject", "")
 
     @property
-    def timestamp(self) -> str:
-        """:class:`str`: A human-readable string representing how long ago message was created."""
-        return self.options.get("timestamp", "unknown")
+    def created_at(self) -> Optional[datetime]:
+        """Optional[:class:`~py:datetime.datetime`]:
+        Timestamp representing when the message was created.
+        """
+        return self.options.get("created_at")
 
     @property
     def type(self) -> MessageType:

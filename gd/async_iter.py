@@ -5,6 +5,7 @@ from gd.typing import (
     Any,
     AsyncIterable,
     AsyncIterator,
+    Awaitable,
     Callable,
     Generic,
     Generator,
@@ -55,35 +56,41 @@ class AsyncIter(Generic[T]):
             for attr, value in attrs.items():
                 nested = attr.split("__")
 
-                for attribute in nested:
-                    item = getattr(item, attribute)
+                actual_item = item
 
-                if item != value:
+                for attribute in nested:
+                    actual_item = getattr(actual_item, attribute)
+
+                if actual_item != value:
                     return False
 
             return True
 
         return await self.find(predicate)
 
-    async def find(self, predicate: Callable[[T], bool]) -> Optional[T]:
+    async def find(self, predicate: Callable[[T], Union[bool, Awaitable[bool]]]) -> Optional[T]:
         async for item in self.iterator:
             if await maybe_coroutine(predicate, item):
                 return item
         return None
 
-    async def map_iter(self, function: Callable[[T], U]) -> AsyncIterator[T]:
+    async def map_iter(self, function: Callable[[T], Union[U, Awaitable[U]]]) -> AsyncIterator[U]:
         async for item in self.iterator:
             yield await maybe_coroutine(function, item)
 
-    async def filter_iter(self, predicate: Callable[[T], U]) -> AsyncIterator[T]:
+    async def filter_iter(
+        self, predicate: Callable[[T], Union[bool, Awaitable[bool]]]
+    ) -> AsyncIterator[T]:
         async for item in self.iterator:
             if await maybe_coroutine(predicate, item):
                 yield item
 
-    async def map(self, function: Callable[[T], U]) -> "AsyncIter[T]":
+    async def map(self, function: Callable[[T], Union[U, Awaitable[U]]]) -> "AsyncIter[U]":
         return self.__class__(self.map_iter(function))
 
-    async def filter(self, predicate: Callable[[T], U]) -> "AsyncIter[T]":
+    async def filter(
+        self, predicate: Callable[[T], Union[bool, Awaitable[bool]]]
+    ) -> "AsyncIter[T]":
         return self.__class__(self.filter_iter(predicate))
 
     async def flatten(self) -> List[T]:

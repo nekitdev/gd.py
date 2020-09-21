@@ -52,7 +52,7 @@ from typing import (
     overload,
 )
 
-from typing_extensions import AsyncContextManager, NoReturn, Protocol
+from typing_extensions import AsyncContextManager, NoReturn, Protocol, runtime_checkable
 
 __all__ = (
     "AbstractSet",
@@ -108,5 +108,6 @@ __all__ = (
     "get_type_hints",
     "no_type_check",
     "no_type_check_decorator",
+    "runtime_checkable",
     "overload",
 )

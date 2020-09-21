@@ -4,7 +4,16 @@ from operator import attrgetter
 from gd.enums import Speed
 from gd.errors import EditorError
 from gd.text_utils import make_repr
-from gd.typing import Dict, Iterable, Iterator, List, Optional, Set, Union, TYPE_CHECKING
+from gd.typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Union,
+    TYPE_CHECKING,
+)
 
 from gd.api.struct import (  # type: ignore
     SPEEDS,

@@ -11,8 +11,6 @@ from gd.text_utils import make_repr
 from gd.typing import (
     Any,
     AsyncIterator,
-    Iterable,
-    Iterator,
     List,
     Optional,
     Sequence,
@@ -24,9 +22,7 @@ __all__ = (
     "AbstractListener",
     "TimelyLevelListener",
     "RateLevelListener",
-    "MessageListener",
     "MessageOrRequestListener",
-    "RequestListener",
     "LevelCommentListener",
     "get_loop",
     "set_loop",
@@ -135,7 +131,7 @@ class TimelyLevelListener(AbstractListener):
 
         self.get_timely = client.get_daily if daily else client.get_weekly
 
-        self.to_call = "new_daily" if daily else "new_weekly"
+        self.to_call = "daily" if daily else "weekly"
 
     async def scan(self) -> None:
         """Scan for either daily or weekly levels."""
@@ -168,7 +164,7 @@ class RateLevelListener(AbstractListener):
         self.filters = Filters(strategy="awarded")
         self.pages = pages
 
-        self.to_call = "level_rated" if rate else "level_unrated"
+        self.to_call = "rate" if rate else "unrate"
 
         self.ensure = ensure
         self.find_new = rate
@@ -199,9 +195,7 @@ class RateLevelListener(AbstractListener):
                 self.loop.create_task(dispatcher)
 
 
-async def rating_differ(iterable: Iterable[Level], find_new: bool = True) -> AsyncIterator[Level]:
-    not_refreshed: List[Level] = list(iterable)
-
+async def rating_differ(not_refreshed: List[Level], find_new: bool = True) -> AsyncIterator[Level]:
     refreshed: List[Optional[Level]] = await gather(
         level.refresh(get_data=False) for level in not_refreshed
     )
@@ -272,8 +266,8 @@ class LevelCommentListener(AbstractListener):
 
     def __init__(
         self,
-        client: "Client",
         level_id: int,
+        client: "Client",
         delay: float = 10.0,
         amount: int = 1000,
         refresh: bool = True,
@@ -311,7 +305,7 @@ class LevelCommentListener(AbstractListener):
             self.loop.create_task(dispatcher)
 
 
-def differ(before: Sequence[T], after: Sequence[T], find_new: bool = True) -> Iterator[T]:
+def differ(before: Sequence[T], after: Sequence[T], find_new: bool = True) -> Sequence[T]:
     sequence_not_in, sequence_in = (before, after) if find_new else (after, before)
 
     set_not_in = set(sequence_not_in)
@@ -328,4 +322,4 @@ def differ(before: Sequence[T], after: Sequence[T], find_new: bool = True) -> It
 
         sequence_in = sequence_in[:index]
 
-    return (item for item in sequence_in if item not in set_not_in)
+    return [item for item in sequence_in if item not in set_not_in]
