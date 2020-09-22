@@ -27,6 +27,7 @@ from gd.model import *
 from gd.session import *
 from gd.rewards import *
 from gd.song import *
+from gd.user import *
 from gd.version import *
 from gd.xml_parser import *
 

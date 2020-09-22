@@ -1,8 +1,10 @@
 import asyncio
+from functools import partial
 import signal
 import traceback
 
 from gd.async_utils import acquire_loop, shutdown_loop, gather
+from gd.comment import Comment
 from gd.enums import TimelyType
 from gd.filters import Filters
 from gd.level import Level
@@ -11,12 +13,15 @@ from gd.text_utils import make_repr
 from gd.typing import (
     Any,
     AsyncIterator,
+    Callable,
+    Iterable,
     List,
     Optional,
     Sequence,
     TypeVar,
     TYPE_CHECKING,
 )
+from gd.user import User
 
 __all__ = (
     "AbstractListener",
@@ -24,6 +29,7 @@ __all__ = (
     "RateLevelListener",
     "MessageOrRequestListener",
     "LevelCommentListener",
+    "UserCommentListener",
     "get_loop",
     "set_loop",
     "run_loop",
@@ -79,7 +85,11 @@ def run_loop(loop: asyncio.AbstractEventLoop) -> None:
 
     finally:
         log.info("Cleaning up tasks.")
-        shutdown_loop(loop)
+
+        try:
+            shutdown_loop(loop)
+        except Exception:  # noqa
+            pass  # uwu
 
 
 class AbstractListener:
@@ -104,7 +114,7 @@ class AbstractListener:
         traceback.print_exc()
 
     async def setup(self) -> None:
-        """This function is used to do some preparations before starting listeners."""
+        """This function is used to do some preparations before running scan iteration."""
         pass
 
     async def scan(self) -> None:
@@ -124,7 +134,7 @@ class AbstractListener:
 
 
 class TimelyLevelListener(AbstractListener):
-    """Listens for a new daily or weekly level."""
+    """Listens for new daily or weekly levels."""
 
     def __init__(self, client: "Client", daily: bool, delay: float = 10.0) -> None:
         super().__init__(client=client, delay=delay)
@@ -149,7 +159,7 @@ class TimelyLevelListener(AbstractListener):
 
 
 class RateLevelListener(AbstractListener):
-    """Listens for a new rated or unrated level."""
+    """Listens for new rated or unrated levels."""
 
     def __init__(
         self,
@@ -216,7 +226,7 @@ async def rating_differ(not_refreshed: List[Level], find_new: bool = True) -> As
 
 
 class MessageOrRequestListener(AbstractListener):
-    """Listens for a new friend request or message."""
+    """Listens for new friend requests or messages."""
 
     def __init__(
         self,
@@ -236,7 +246,7 @@ class MessageOrRequestListener(AbstractListener):
 
     async def scan(self) -> None:
         """Scan for new friend requests or messages."""
-        new = await self.get_entities()  # type: ignore
+        new = await self.get_entities(pages=range(self.pages))  # type: ignore
 
         if not new:
             return
@@ -257,12 +267,8 @@ class MessageOrRequestListener(AbstractListener):
             self.loop.create_task(dispatcher)
 
 
-MessageListener = MessageOrRequestListener
-RequestListener = MessageOrRequestListener
-
-
 class LevelCommentListener(AbstractListener):
-    """Listens for a new comment on a level."""
+    """Listens for new comments on given level."""
 
     def __init__(
         self,
@@ -283,7 +289,7 @@ class LevelCommentListener(AbstractListener):
         self.level = Level(id=level_id, type=self.timely_type, client=self.client)
 
     async def scan(self) -> None:
-        """Scan for new comments on a level."""
+        """Scan for new comments on given level."""
         new = await self.level.get_comments(amount=self.amount)
 
         if not new:
@@ -302,6 +308,74 @@ class LevelCommentListener(AbstractListener):
 
         for comment in difference:
             dispatcher = self.client.dispatch(self.to_call, self.level, comment)
+            self.loop.create_task(dispatcher)
+
+
+class UserCommentListener(AbstractListener):
+    """Listens for new comments by given user."""
+
+    def __init__(
+        self,
+        account_id: Optional[int] = None,
+        id: Optional[int] = None,
+        name: Optional[int] = None,
+        profile: bool = True,
+        *,
+        client: "Client",
+        delay: float = 10.0,
+        pages: int = 5,
+    ) -> None:
+        super().__init__(client=client, delay=delay)
+
+        self.pages = pages
+        self.to_call = "user_comment"
+
+        if account_id is None:
+            if id is None:
+                if name is None:
+
+                    raise ValueError("No user selectors were provided")
+
+                else:
+                    self.find_user = partial(self.client.search_user, name)
+
+            else:
+                self.find_user = partial(self.client.search_user, id)
+
+        else:
+            self.find_user = partial(self.client.get_user, account_id)
+
+        self.get_user_comments: Callable[[User, Iterable[int], bool], AsyncIterator[Comment]] = (
+            User.get_profile_comments if profile else User.get_comment_history
+        )
+        self.user: Optional[User] = None
+
+        self.profile = profile
+
+    async def setup(self) -> None:
+        """Find user to fetch the comments of."""
+        self.user = await self.find_user()
+
+    async def scan(self) -> None:
+        """Scan for new comments by user."""
+        if self.user is None:
+            return
+
+        new = await self.get_user_comments(self.user, pages=range(self.pages))
+
+        if not new:
+            return
+
+        if not self.cache:
+            self.cache = new
+            return
+
+        difference = differ(self.cache, new, find_new=True)
+
+        self.cache = new
+
+        for comment in difference:
+            dispatcher = self.client.dispatch(self.to_call, self.user, comment)
             self.loop.create_task(dispatcher)
 
 

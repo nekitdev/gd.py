@@ -63,6 +63,7 @@ from gd.events.listener import (
     RateLevelListener,
     MessageOrRequestListener,
     LevelCommentListener,
+    UserCommentListener,
 )
 
 __all__ = ("DAILY", "WEEKLY", "Client")
@@ -1592,6 +1593,9 @@ class Client:
 
         elif event_name in {"level_comment"}:
             listener = LevelCommentListener(*args, **kwargs)
+
+        elif event_name in {"user_comment"}:
+            listener = UserCommentListener(*args, **kwargs)
 
         else:
             raise TypeError(f"Invalid listener type: {type!r}.")

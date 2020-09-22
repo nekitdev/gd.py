@@ -36,6 +36,8 @@ if TYPE_CHECKING:
     from gd.level import Level  # noqa
     from gd.message import Message  # noqa
 
+__all__ = ("User",)
+
 PAGES = range(10)
 CONCURRENT = True
 

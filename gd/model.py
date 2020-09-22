@@ -370,6 +370,7 @@ class LevelModel(Model):
 class CommentInnerModel(Model):
     PARSER = IndexParser("~", map_like=True)
 
+    level_id: int = IntField(index=1, default=0)
     content: str = Base64Field(index=2, default="")
     author_id: int = IntField(index=3, default=0)
     rating: int = IntField(index=4, default=0)

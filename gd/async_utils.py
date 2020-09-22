@@ -243,7 +243,7 @@ def shutdown_loop(loop: asyncio.AbstractEventLoop) -> None:
     if loop.is_closed():
         return
 
-    loop.call_soon_threadsafe(loop.stop)  # in case it is in a thread
+    loop.stop()
 
     try:
         cancel_all_tasks(loop)

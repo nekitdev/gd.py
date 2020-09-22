@@ -11,6 +11,7 @@ __all__ = ("Comment",)
 
 if TYPE_CHECKING:
     from gd.client import Client  # noqa
+    from gd.level import Level  # noqa
 
 
 class Comment(AbstractEntity):
@@ -82,6 +83,7 @@ class Comment(AbstractEntity):
 
         return cls(
             id=comment_model.id,
+            level_id=comment_model.level_id,
             content=comment_model.content,
             rating=comment_model.rating,
             is_spam=comment_model.is_spam,
@@ -145,6 +147,9 @@ class Comment(AbstractEntity):
     def is_disliked(self) -> bool:
         """:class:`bool`: Indicates whether a comment is disliked or not."""
         return self.rating < 0
+
+    async def get_level(self, get_data: bool = True) -> "Level":
+        return await self.client.get_level(self.level_id, get_data=get_data)
 
     async def like(self) -> None:
         """Likes a comment.
