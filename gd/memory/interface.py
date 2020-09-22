@@ -939,7 +939,7 @@ class WindowsMemory(MemoryType):
                 0x68,
                 0x30,
                 0x32,
-                0x69,
+                0xBA,
                 0x00,
                 0x8B,
                 0xB0,
