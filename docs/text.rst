@@ -10,8 +10,8 @@ gd.py implements reading, sending and interacting with comments, friend requests
     # we can only read comments if we are not logged in.
     await client.login("username", "password")
 
-    nekit = await client.search_user("NeKitDS")
-    # <User name='NeKitDS' id=17876467 account_id=5509312>
+    nekit = await client.search_user("nekitdev")
+    # <User name='nekitdev' id=17876467 account_id=5509312>
 
     async for comment in nekit.get_profile_comments():
         print(comment.body)

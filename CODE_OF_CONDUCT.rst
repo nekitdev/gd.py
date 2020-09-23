@@ -10,7 +10,7 @@ The purpose of gd.py project is to provide interaction with the servers and/or c
 The following is expected from all users:
 
 - Use this API for its general purpose.
-- Report any security risks to `NeKitDS <https://github.com/NeKitDS>`_.
+- Report any security risks to `nekitdev <https://github.com/nekitdev>`_.
 
 3. Unaccepted Behavior
 ----------------------
@@ -18,7 +18,7 @@ The following behavior is considered breaking this Code of Conduct:
 
 - Using the project as a weapon meant to DDoS, raid or in any other form attack and/or damage the servers.
 - Logging any private data, including passwords, messages and other elements.
-- Not following all the conditions defined by the `license <https://github.com/NeKitDS/gd.py/blob/master/LICENSE>`_.
+- Not following all the conditions defined by the `license <https://github.com/nekitdev/gd.py/blob/master/LICENSE>`_.
 
 4. Consequences of Unaccepted Behavior
 --------------------------------------
@@ -30,11 +30,11 @@ If a user ignores the warning they will be banned from this project.
 
 5. Reporting Guidelines
 -----------------------
-If you notice anyone violating this Code of Conduct you are expected to address `NeKitDS <https://github.com/NeKitDS>`_ with proof.
+If you notice anyone violating this Code of Conduct you are expected to address `nekitdev <https://github.com/nekitdev>`_ with proof.
 
 6. Addressing Grievances
 ------------------------
-If you think you have been falsely accused of violating the Code of Conduct you should notify `NeKitDS <https://github.com/NeKitDS>`_ with info about the accusation and your reason why you think it's false.
+If you think you have been falsely accused of violating the Code of Conduct you should notify `nekitdev <https://github.com/nekitdev>`_ with info about the accusation and your reason why you think it's false.
 
 7. Scope
 --------
@@ -44,7 +44,7 @@ We expect all users (contributors, paid or otherwise; sponsors; and others) to a
 ---------------
 In case you need to contact the owner of this API, you can do this via:
 
-- Discord: **NeKitDS#0001**
+- Discord: **nekitdev#0001**
 
 9. Licenses and Attribution
 ---------------------------

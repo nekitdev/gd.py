@@ -63,7 +63,7 @@ def get(iterable: Iterable[T], **attributes: U) -> Optional[Union[T, List[T]]]:
     .. code-block:: python3
 
         friends = await client.get_friends()
-        nekit = gd.search_utils.get(friends, name="NeKitDS")
+        nekit = gd.search_utils.get(friends, name="nekitdev")
 
     """
     find_all = attributes.pop("find_all", cast(U, False))

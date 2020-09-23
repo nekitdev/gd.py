@@ -25,7 +25,7 @@ User
 gd.py also provides interface to users' icons and colors::
 
     nekit = await client.get_user(5509312)
-    # <User name='NeKitDS' id=17876467 account_id=5509312>
+    # <User name='nekitdev' id=17876467 account_id=5509312>
 
     image = await nekit.generate_full(as_image=True)  # generate full icon set image
 

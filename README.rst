@@ -5,8 +5,8 @@ gd.py
     :target: https://opensource.org/licenses/MIT
     :alt: Project License
 
-.. image:: https://travis-ci.com/NeKitDS/gd.py.svg?branch=master
-    :target: https://travis-ci.com/NeKitDS/gd.py
+.. image:: https://travis-ci.com/nekitdev/gd.py.svg?branch=master
+    :target: https://travis-ci.com/nekitdev/gd.py
     :alt: Build Status
 
 .. image:: https://img.shields.io/pypi/v/gd.py.svg
@@ -18,7 +18,7 @@ gd.py
     :alt: Required Python Versions
 
 .. image:: https://img.shields.io/pypi/status/gd.py.svg
-    :target: https://github.com/NeKitDS/gd.py/blob/master/gd
+    :target: https://github.com/nekitdev/gd.py/blob/master/gd
     :alt: Project Development Status
 
 .. image:: https://img.shields.io/pypi/dw/gd.py.svg
@@ -30,11 +30,11 @@ gd.py
     :alt: Documentation Status
 
 .. image:: https://api.codacy.com/project/badge/Grade/4bd8cfe7a66e4250bc23b21c4e0626b6
-    :target: https://app.codacy.com/project/NeKitDS/gd.py/dashboard
+    :target: https://app.codacy.com/project/nekitdev/gd.py/dashboard
     :alt: Code Quality [Codacy]
 
-.. image:: https://img.shields.io/coveralls/github/NeKitDS/gd.py
-    :target: https://coveralls.io/github/NeKitDS/gd.py
+.. image:: https://img.shields.io/coveralls/github/nekitdev/gd.py
+    :target: https://coveralls.io/github/nekitdev/gd.py
     :alt: Code Coverage
 
 .. image:: https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.herokuapp.com%2Fnekit%2Fpledges
@@ -97,7 +97,7 @@ You can install latest development version from GitHub:
 
 .. code:: sh
 
-    $ git clone https://github.com/NeKitDS/gd.py.git
+    $ git clone https://github.com/nekitdev/gd.py.git
     $ cd gd.py
     $ python3 -m pip install -U .[all]
 
@@ -136,15 +136,15 @@ Credits
 
 Thanks to `Alex1304 <https://github.com/Alex1304>`_ for inspiring the creation of this library.
 
-Credits to `Rapptz <https://github.com/Rapptz>`_ and `discord.py <https://github.com/Rapptz/discord.py>`_ library developers; `tasks <https://github.com/Rapptz/discord.py/blob/master/discord/ext/tasks>`_ package in discord.py is a base for `tasks.py <https://github.com/NeKitDS/gd.py/blob/master/gd/utils/tasks.py>`_ file.
+Credits to `Rapptz <https://github.com/Rapptz>`_ and `discord.py <https://github.com/Rapptz/discord.py>`_ library developers; `tasks <https://github.com/Rapptz/discord.py/blob/master/discord/ext/tasks>`_ package in discord.py is a base for `tasks.py <https://github.com/nekitdev/gd.py/blob/master/gd/utils/tasks.py>`_ file.
 
 Authors
 -------
 
-This project is mainly developed by `NeKitDS <https://github.com/NeKitDS>`_.
+This project is mainly developed by `nekitdev <https://github.com/nekitdev>`_.
 Big thanks to `cos8o <https://github.com/cos8o>`_ and `SMJS <https://github.com/SMJSGaming>`_ for helping
 to make several requests. Also thanks to `cos8o <https://github.com/cos8o>`_ again for developing `GDCrypto <https://github.com/cos8o/GDCrypto>`_ library,
-which was used as a base for `crypto <https://github.com/NeKitDS/gd.py/blob/master/gd/utils/crypto>`_ package.
+which was used as a base for `crypto <https://github.com/nekitdev/gd.py/blob/master/gd/utils/crypto>`_ package.
 
 Links
 -----

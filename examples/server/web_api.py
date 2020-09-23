@@ -1,6 +1,6 @@
 """Simple web server with aiohttp, which can retrieve info about users and return JSON responses.
 See "https://docs.aiohttp.org/en/stable/web_quickstart.html" for more information.
-Author: NeKitDS
+Author: nekitdev
 """
 
 from aiohttp import web

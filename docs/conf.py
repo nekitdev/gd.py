@@ -42,7 +42,7 @@ master_doc = "index"
 
 # General information about the project
 project = "gd.py"
-copyright = "2019-2020, NeKitDS"
+copyright = "2019-2020, nekitdev"
 
 release = str(version_info)
 

@@ -1,5 +1,5 @@
 """An example showing the use of listeners.
-Author: NeKitDS
+Author: nekitdev
 """
 
 import gd

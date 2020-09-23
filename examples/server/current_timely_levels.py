@@ -1,5 +1,5 @@
 """Example that shows getting current daily/weekly levels.
-Author: NeKitDS.
+Author: nekitdev.
 """
 
 import gd

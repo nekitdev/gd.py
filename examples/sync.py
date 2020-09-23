@@ -1,5 +1,5 @@
 """Example that shows running asynchronous functions synchronously.
-Author: NeKitDS.
+Author: nekitdev.
 """
 
 import gd

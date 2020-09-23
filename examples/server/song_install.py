@@ -1,5 +1,5 @@
 """Example that shows downloading a song.
-Author: NeKitDS.
+Author: nekitdev.
 """
 
 import gd

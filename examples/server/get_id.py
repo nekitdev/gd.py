@@ -1,5 +1,5 @@
 """Simple example showing user searching.
-Author: NeKitDS
+Author: nekitdev
 """
 
 import gd

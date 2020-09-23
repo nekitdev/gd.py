@@ -1,5 +1,5 @@
 """Example that shows memory reading. Loops are implemented synchronously.
-Author: NeKitDS
+Author: nekitdev
 """
 
 import random

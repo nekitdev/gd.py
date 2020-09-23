@@ -56,12 +56,12 @@ for requires in extras_require.values():
 
 setup(
     name="gd.py",
-    author="NeKitDS",
+    author="nekitdev",
     author_email="gdpy13@gmail.com",
-    url="https://github.com/NeKitDS/gd.py",
+    url="https://github.com/nekitdev/gd.py",
     project_urls={
         "Documentation": "https://gdpy.readthedocs.io/en/latest",
-        "Issue tracker": "https://github.com/NeKitDS/gd.py/issues",
+        "Issue tracker": "https://github.com/nekitdev/gd.py/issues",
     },
     version=version,
     packages=["gd", "gd.events", "gd.api", "gd.memory"],

@@ -1,5 +1,5 @@
 """Example of sending a message to a user.
-Author: NeKitDS.
+Author: nekitdev.
 """
 
 import gd

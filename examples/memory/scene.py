@@ -1,5 +1,5 @@
 """Example that shows simple memory reading. Task loops are implemented asynchronously.
-Author: NeKitDS
+Author: nekitdev
 """
 
 import gd

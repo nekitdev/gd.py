@@ -113,7 +113,7 @@ DEFAULT_ERROR = Error(
     (
         "Unexcepted error has occured. "
         "If you think this is a bug, please report it. "
-        "Link: [https://github.com/NeKitDS/gd.py/issues]"
+        "Link: [https://github.com/nekitdev/gd.py/issues]"
     ),
     ErrorType.DEFAULT,
 )
