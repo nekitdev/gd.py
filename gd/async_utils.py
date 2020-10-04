@@ -5,8 +5,6 @@ import inspect
 
 from gd.logging import get_logger
 from gd.typing import (
-    AsyncIterable,
-    AsyncIterator,
     Awaitable,
     Callable,
     List,
@@ -27,8 +25,6 @@ __all__ = (
     "shutdown_loop",
     "maybe_coroutine",
     "acquire_loop",
-    "aiter",
-    "anext",
 )
 
 log = get_logger(__name__)
@@ -312,11 +308,3 @@ def acquire_loop(running: bool = False, enforce_running: bool = False) -> asynci
         loop = asyncio.new_event_loop()
 
     return loop
-
-
-def aiter(async_iterable: AsyncIterable[T]) -> AsyncIterator[T]:
-    return async_iterable.__aiter__()
-
-
-async def anext(async_iterator: AsyncIterator[T]) -> T:
-    return await async_iterator.__anext__()
