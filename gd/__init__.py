@@ -31,8 +31,6 @@ from gd.user import *
 from gd.version import *
 from gd.xml_parser import *
 
-from gd._jokes import *
-
 from gd import (
     api,  # non-server GD API.
     crypto,  # cryptography and encoding utilites.
