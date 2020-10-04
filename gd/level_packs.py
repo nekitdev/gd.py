@@ -70,7 +70,7 @@ class Gauntlet(AbstractEntity):
         """
         levels: List["Level"] = await self.client.search_levels_on_page(
             query=self.level_ids, filters=Filters.search_many()
-        ).flatten()
+        ).list()
 
         self.options.update(levels=tuple(levels))
 

@@ -531,7 +531,7 @@ class User(AbstractEntity):
         Union[:class:`bytes`, :class:`PIL.Image.Image`]
             Bytes or an image, based on ``as_image``.
         """
-        images = await self.generate_many(*types, as_image=True).flatten()
+        images = await self.generate_many(*types, as_image=True).list()
         result = await run_blocking(connect_images, images)
 
         if as_image:
