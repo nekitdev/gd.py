@@ -205,8 +205,8 @@ class User(AbstractEntity):
         return self.role >= Role.from_value(role)
 
     @property
-    def record_percent(self) -> int:
-        return self.options.get("record_percent", -1)
+    def percent(self) -> int:
+        return self.options.get("percent", -1)
 
     @property
     def recorded_at(self) -> Optional[datetime]:
