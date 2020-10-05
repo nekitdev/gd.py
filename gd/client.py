@@ -1,7 +1,7 @@
 import traceback
 
-from gd.async_iter import async_iterable
-from gd.async_utils import acquire_loop, gather, maybe_coroutine
+from gd.async_iter import async_iter, async_iterable
+from gd.async_utils import acquire_loop, maybe_coroutine
 from gd.comment import Comment
 from gd.crypto import Key, encode_robtop_str
 from gd.decorators import cache_by, impl_sync, login_check, login_check_object
@@ -39,6 +39,7 @@ from gd.song import ArtistInfo, Author, Song
 from gd.text_utils import make_repr
 from gd.typing import (
     Any,
+    AsyncIterable,
     AsyncIterator,
     Awaitable,
     Callable,
@@ -69,6 +70,7 @@ from gd.events.listener import (
 __all__ = ("DAILY", "WEEKLY", "Client")
 
 T = TypeVar("T")
+AnyIterable = Union[AsyncIterable[T], Iterable[T]]
 
 log = get_logger(__name__)
 
@@ -87,12 +89,6 @@ def value_or(value: Optional[T], default: T) -> T:
     return default if value is None else value
 
 
-def filter_exceptions(
-    items: Iterable[Union[T, BaseException]], *bases: Type[BaseException]
-) -> Iterable[Union[T, BaseException]]:
-    return (item for item in items if not isinstance(item, bases))
-
-
 def pages_for_amount(amount: int, page_size: int) -> Iterable[int]:
     if amount < 0:
         raise ValueError("Expected non-negative integer.")
@@ -105,35 +101,12 @@ def pages_for_amount(amount: int, page_size: int) -> Iterable[int]:
     return range(int(page))
 
 
-async def alist(iterator: AsyncIterator[T]) -> List[T]:
-    return [item async for item in iterator]
-
-
-async def run_async_iterators(
-    iterators: Iterable[AsyncIterator[T]],
+def run_async_iterators(
+    iterators: AnyIterable[AnyIterable[T]],
     *ignore_exceptions: Type[BaseException],
     concurrent: bool = CONCURRENT,
 ) -> AsyncIterator[T]:
-    if concurrent:
-        results: List[Union[List[T], BaseException]] = await gather(
-            (alist(iterator) for iterator in iterators), return_exceptions=True
-        )
-
-        for result in filter_exceptions(results, *ignore_exceptions):
-            if isinstance(result, BaseException):
-                raise result
-
-            for item in result:
-                yield item
-
-    else:
-        for iterator in iterators:
-            try:
-                async for item in iterator:
-                    yield item
-
-            except ignore_exceptions:
-                continue
+    return async_iter(iterators).run_iterators(*ignore_exceptions, concurrent=concurrent).unwrap()
 
 
 @impl_sync

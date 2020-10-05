@@ -2,7 +2,7 @@ from functools import wraps
 
 import iters
 
-from gd.typing import Any, AsyncIterable, Callable, Coroutine, List, TypeVar
+from gd.typing import Any, AsyncIterable, Callable, Generator, List, TypeVar
 
 __all__ = ("AsyncIter", "async_iter", "async_iterable", "async_next")
 
@@ -10,7 +10,7 @@ T = TypeVar("T")
 
 
 class AsyncIter(iters.AsyncIter[T]):
-    def __await__(self) -> Coroutine[Any, None, List[T]]:
+    def __await__(self) -> Generator[Any, None, List[T]]:
         # await iterator -> await iterator.list()
         return self.list().__await__()
 

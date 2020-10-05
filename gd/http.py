@@ -2,6 +2,7 @@ import asyncio
 import atexit
 import random
 import time
+import types
 import uuid
 
 import aiohttp
@@ -65,8 +66,7 @@ from gd.typing import (
     Mapping,
     Optional,
     Set,
-    # Tuple,
-    # Type,
+    Type,
     Union,
     cast,
 )
@@ -230,12 +230,12 @@ class HTTPClient:
     ) -> None:
         self.session: Optional[aiohttp.ClientSession] = None
 
-        self.url = URL(url)
+        self.set_url(url)
 
         self.proxy = proxy
         self.proxy_auth = proxy_auth
 
-        self.timeout = timeout
+        self.timeout_value = timeout
 
         self.game_version = game_version
         self.binary_version = binary_version
@@ -248,7 +248,7 @@ class HTTPClient:
 
     def __repr__(self) -> str:
         info = {
-            "url": self.url,
+            "url": self.str_url,
             "timeout": self.timeout,
             "game_version": self.game_version,
             "binary_version": self.binary_version,
@@ -256,14 +256,30 @@ class HTTPClient:
         }
         return make_repr(self, info)
 
+    def change(self, **attrs) -> "HTTPClientContextManager":
+        return HTTPClientContextManager(self, **attrs)
+
+    def get_url(self) -> URL:
+        return URL(self.str_url)
+
+    def set_url(self, url: Union[str, URL]) -> None:
+        self.str_url = str(url)
+
+    url = property(get_url, set_url)
+
     def create_timeout(self) -> aiohttp.ClientTimeout:
         return aiohttp.ClientTimeout(total=self.timeout)
 
+    def get_timeout(self) -> Union[float, int]:
+        return self.timeout_value
+
     def set_timeout(self, timeout: Union[float, int]) -> None:
-        self.timeout = timeout
+        self.timeout_value = timeout
 
         if self.session:
             self.session.timeout = self.create_timeout()
+
+    timeout = property(get_timeout, set_timeout)
 
     async def close(self) -> None:
         if self.session is not None:
@@ -1954,3 +1970,41 @@ class HTTPClient:
         )
 
         return cast(Mapping[str, Any], response)
+
+
+class HTTPClientContextManager:
+    def __init__(self, http_client: HTTPClient, **attrs) -> None:
+        self.attrs = attrs
+        self.saved_attrs: Dict[str, Any] = {}
+        self.http_client = http_client
+
+    def __repr__(self) -> str:
+        info = {"http_client": self.http_client}
+        info.update(self.attrs)
+        return make_repr(self, info)
+
+    def apply(self) -> None:
+        http_client = self.http_client
+        attrs = self.attrs
+        saved_attrs = self.saved_attrs
+
+        for attr, value in attrs.items():
+            saved_attrs[attr] = getattr(http_client, attr, None)  # save attribute value
+            setattr(http_client, attr, value)  # update attribute value
+
+    def discard(self) -> None:
+        http_client = self.http_client
+        saved_attrs = self.saved_attrs
+
+        for saved_attr, saved_value in saved_attrs.items():
+            setattr(http_client, saved_attr, saved_value)  # restore old attribute values
+
+    def __enter__(self) -> HTTPClient:
+        self.apply()
+
+        return self.http_client
+
+    def __exit__(
+        self, error_type: Type[BaseException], error: BaseException, traceback: types.TracebackType
+    ) -> None:
+        self.discard()
