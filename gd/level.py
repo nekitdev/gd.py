@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from attr import attrib, dataclass
+from iters import iter
 
 from gd.abstract_entity import AbstractEntity
 from gd.async_iter import async_iterable
@@ -20,7 +21,6 @@ from gd.enums import (
 from gd.errors import MissingAccess
 from gd.logging import get_logger
 from gd.model import LevelModel  # type: ignore
-from gd.search_utils import get
 from gd.text_utils import is_level_probably_decoded, make_repr, object_count
 from gd.song import Song
 from gd.typing import (
@@ -178,10 +178,10 @@ class Level(AbstractEntity):
             Official level that was found.
         """
         if id is not None:
-            official_level = get(official_levels, level_id=id)
+            official_level = iter(official_levels).get(level_id=id)
 
         elif name is not None:
-            official_level = get(official_levels, name=name)
+            official_level = iter(official_levels).get(name=name)
 
         elif index is not None:
             try:

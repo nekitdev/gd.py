@@ -33,18 +33,17 @@ if TYPE_CHECKING:
 def get_time_length(
     dx: float, start: Speed = Speed.NORMAL, speed_changes: Iterable[Object] = (),  # type: ignore
 ) -> float:
-    """Compute the time (in seconds) to travel from ``x1`` to ``x2`` on x axis,
-    respecting speed portals.
+    """Compute the time (in seconds) to travel from ``0`` to ``dx``, respecting speed portals.
 
     Parameters
     ----------
     dx: :class:`float`
         Distance to stop calculating at.
 
-    start: :class:`.api.Speed`
+    start: :class:`~gd.api.Speed`
         Speed at the start (from the level header).
 
-    speed_changes: Iterable[:class:`.api.Object`]
+    speed_changes: Iterable[:class:`~gd.api.Object`]
         Speed changes in the level, ordered by x position.
 
     Returns
@@ -125,6 +124,10 @@ class Editor:
     def load_from(
         cls, callback: Union["Level", LevelAPI], attribute: str  # type: ignore
     ) -> "Editor":
+        """Load the editor from :class:`~gd.Level` or :class:`~gd.api.LevelAPI`,
+        and set a callback to dumb the editor to it.
+        This method is intented to be used internally.
+        """
         self = cls.from_string(getattr(callback, attribute))
 
         self._set_callback(callback, attribute)
@@ -133,12 +136,14 @@ class Editor:
 
     @classmethod
     def from_object_iterable(cls, objects: Iterable[Object], **header_args) -> "Editor":
+        """Create the editor from ``objects``, constructing header with ``header_args``."""
         self = cls(**header_args)
         self.objects = list(objects)
         return self
 
     @classmethod
     def from_string(cls, data: Union[bytes, str]) -> "Editor":
+        """Create the editor from ``data`` string."""
         if isinstance(data, bytes):
             try:
                 data = data.decode()
@@ -261,6 +266,7 @@ class Editor:
         return self.header.colors
 
     def set_colors(self, colors: ColorCollection) -> "Editor":
+        """Set colors of the Editor instance to ``colors``."""
         self.header.colors = colors
         return self
 
@@ -271,6 +277,7 @@ class Editor:
         return self.header.colors.copy()
 
     def clone_colors(self) -> ColorCollection:
+        """Clone colors of the Editor instance."""
         return self.header.colors.clone()
 
     def add_colors(self, *colors: ColorChannel) -> "Editor":
@@ -279,6 +286,7 @@ class Editor:
         return self
 
     def remove_colors(self, *colors: ColorChannel) -> "Editor":
+        """Remove colors from the Editor."""
         self.header.colors.remove(colors)
         return self
 
@@ -287,6 +295,7 @@ class Editor:
         return self.objects
 
     def set_objects(self, objects: List[Object]) -> "Editor":
+        """Set objects of the Editor instance to ``objects``."""
         self.objects = objects
         return self
 
@@ -296,6 +305,7 @@ class Editor:
         return self
 
     def remove_objects(self, *objects: Object) -> "Editor":
+        """Remove objects from the Editor instance."""
         objects_to_remove = set(objects)
 
         self.objects = [

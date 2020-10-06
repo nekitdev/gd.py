@@ -1,6 +1,5 @@
 from gd.enums import GuidelinesColor
 from gd.typing import (
-    Any,
     Dict,
     Iterable,
     List,
@@ -33,12 +32,15 @@ class Guidelines(Dict[Number, GuidelinesColor]):
         return f"{self.__class__.__name__}({time_to_str})"
 
     def __setitem__(self, time: Number, color: ColorOrNumber) -> None:
+        """Set a guideline at ``time`` with color of ``color``."""
         super().__setitem__(time, GuidelinesColor.from_value(color))
 
     def at(self, time: Number) -> Optional[GuidelinesColor]:
+        """Get a guideline at ``time``, returning ``None`` if not found."""
         return self.get(time, None)
 
-    def copy(self) -> Any:
+    def copy(self) -> "Guidelines":
+        """Create a copy of guidelines."""
         return self.__class__(super().copy())
 
     def points(self) -> List[Number]:
@@ -48,6 +50,7 @@ class Guidelines(Dict[Number, GuidelinesColor]):
     def update(  # type: ignore
         self, guidelines: MappingOrPairs[Number, ColorOrNumber], **ignore_kwargs
     ) -> None:
+        """Update guidelines with ``guidelines``. Keyword arguments are ignored."""
         pairs: Pairs[Number, ColorOrNumber]
 
         if isinstance(guidelines, Mapping):

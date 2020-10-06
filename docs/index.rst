@@ -25,7 +25,10 @@ Documentation Contents
     song
     level
     rewards
-    game_api
+    save
+    editor
+    guidelines
+    recording
     memory
     utils
     exceptions

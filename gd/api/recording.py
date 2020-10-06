@@ -22,7 +22,7 @@ RECORD_ENTRY_PATTERN = re.compile(
 PATTERN_TYPES = {"time": float, "prev": bool, "next": bool, "dual": bool}
 
 
-def _trunc_if_int(value: float) -> Union[float, int]:
+def _truncate_if_int(value: float) -> Union[float, int]:
     truncated = int(value)
     return value if value != truncated else truncated
 
@@ -31,7 +31,7 @@ def _entry_string_generator(entry: "RecordEntry") -> Iterator[str]:
     if entry.prev:
         yield "1;"
 
-    yield f"{_trunc_if_int(entry.time)};"
+    yield f"{_truncate_if_int(entry.time)};"
 
     if entry.next:
         yield "1"
@@ -63,22 +63,27 @@ class RecordEntry:
 
     @property
     def time(self) -> float:
+        """Time delta from the start of the level until this entry."""
         return self._time
 
     @property
     def prev(self) -> bool:
+        """Whether input was previously activated."""
         return self._prev
 
     @property
     def next(self) -> bool:
+        """Whether input should be activated."""
         return self._next
 
     @property
     def dual(self) -> bool:
+        """Whether input should be applied to the second player, and not first."""
         return self._dual
 
     @classmethod
     def from_string(cls, string: str) -> "RecordEntry":
+        """Create record entry from string."""
         match = RECORD_ENTRY_PATTERN.match(string)
 
         if match is None:
@@ -93,6 +98,7 @@ class RecordEntry:
 
     @classmethod
     def from_match(cls, match: Match) -> "RecordEntry":
+        """Create record from a regular expression match. Intended for internal use."""
         group_dict = match.groupdict()
 
         init_dict = {key: func(group_dict[key]) for key, func in PATTERN_TYPES.items()}
@@ -101,12 +107,15 @@ class RecordEntry:
 
 
 def iter_record_entries(string: str) -> Iterator[RecordEntry]:
+    """Return an iterator over record entries, constructed from the string."""
     yield from map(RecordEntry.from_match, RECORD_ENTRY_PATTERN.finditer(string))
 
 
 def list_record_entries(string: str) -> List[RecordEntry]:
+    """Same as :func:`~gd.api.iter_record_entries`, but returns a list instead."""
     return list(iter_record_entries(string))
 
 
 def dump_record_entries(entries: Iterable[RecordEntry]) -> str:
+    """Dump iterable of record entries to string."""
     return concat(map(RecordEntry.to_string, entries))

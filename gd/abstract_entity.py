@@ -61,21 +61,22 @@ class AbstractEntity:
         return {key: value for key, value in self.to_dict().items() if key not in ignore}
 
     def update_inner(self, **options: Any) -> "AbstractEntity":
+        """Update ``self.options`` with ``options``."""
         self.options.update(options)
         return self
 
     @classmethod
     def from_model(cls, model: Model, *args, **kwargs) -> "AbstractEntity":
+        """Create new entity from given ``model``, ``args`` and ``kwargs``."""
         raise NotImplementedError
 
     @classmethod
     def from_models(cls, *models: Model, **kwargs) -> "AbstractEntity":
-        to_merge = (cls.from_model(model, **kwargs) for model in models)
-
+        """Create new entity from given ``models`` by calling ``from_model`` with ``kwargs``."""
         self = cls()
 
-        for self_part in to_merge:
-            self.options.update(self_part.options)
+        for model in models:
+            self.options.update(cls.from_model(model, **kwargs).options)
 
         return self
 
@@ -83,6 +84,7 @@ class AbstractEntity:
     def from_dicts(
         cls, *data: Dict[str, Any], client: Optional["Client"] = None, **kwargs
     ) -> "AbstractEntity":
+        """Create new entity from dictionaries in ``data``, with ``client`` and ``kwargs``."""
         self = cls(client=client)
 
         for part in data:
@@ -95,10 +97,12 @@ class AbstractEntity:
     from_dict = from_dicts
 
     def to_dict(self) -> Dict[str, Any]:
+        """Convert the entity to a dictionary."""
         return {key: value for key, value in self.options.items() if key not in DATA_IGNORE}
 
     @property
     def hash_str(self) -> str:
+        """String used for hashing, with format: ``<Class(ID->id)>``."""
         return f"<{self.__class__.__name__}(ID->{self.id})>"
 
     @property
@@ -120,7 +124,7 @@ class AbstractEntity:
 
     @property
     def client_unchecked(self) -> Optional["Client"]:
-        """:class:`~gd.Client`, optional: Client attached to this object."""
+        """Optional[:class:`~gd.Client`]: Client attached to this object."""
         return self.options.get("client")
 
     def attach_client(self, client: Optional["Client"] = None) -> "AbstractEntity":
@@ -128,13 +132,11 @@ class AbstractEntity:
 
         Parameters
         ----------
-
-        client: :class:`gd.Client`, optional
+        client: Optional[:class:`gd.Client`]
             Client to attach. If ``None`` or not given, will be detached.
 
         Returns
         -------
-
         :class:`~gd.AbstractEntity`
             This abstract entity.
         """
@@ -150,7 +152,6 @@ class AbstractEntity:
 
         Returns
         -------
-
         :class:`~gd.AbstractEntity`
             This abstract entity.
         """

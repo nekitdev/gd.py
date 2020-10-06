@@ -2,9 +2,9 @@ from collections import UserList
 from pathlib import Path
 
 from attr import attrib, dataclass
+from iters import iter
 
 from gd.json import dumps
-from gd.search_utils import get
 from gd.text_utils import make_repr
 from gd.typing import AnyStr, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
 from gd.xml_parser import XMLParser
@@ -12,7 +12,7 @@ from gd.xml_parser import XMLParser
 from gd.api.struct import LevelAPI  # type: ignore
 from gd.api.utils import MAIN_DEFAULTS, LEVELS_DEFAULTS
 
-__all__ = ("Part", "Database", "LevelCollection")
+__all__ = ("Part", "Database", "LevelStore", "LevelValues", "LevelCollection")
 
 PathLike = Union[str, Path]
 
@@ -23,22 +23,26 @@ T = TypeVar("T")
 
 
 @dataclass
-class Batch:
+class LevelStore:
+    """Values that particular completed levels in the save."""
+
     completed: List[int] = attrib()
     stars: List[int] = attrib()
     demons: List[int] = attrib()
 
     @classmethod
-    def create_empty(cls) -> "Batch":
+    def create_empty(cls) -> "LevelStore":
         return cls(completed=[], stars=[], demons=[])
 
 
 @dataclass
-class Values:
+class LevelValues:
+    """Values that represent completed levels in the save."""
+
     official: List[int] = attrib()
-    normal: Batch = attrib()
-    timely: Batch = attrib()
-    gauntlet: Batch = attrib()
+    normal: LevelStore = attrib()
+    timely: LevelStore = attrib()
+    gauntlet: LevelStore = attrib()
     packs: List[int] = attrib()
 
     def get_prefixes(self) -> Dict[str, List[int]]:
@@ -59,12 +63,12 @@ class Values:
         }
 
     @classmethod
-    def create_empty(cls) -> "Values":
+    def create_empty(cls) -> "LevelValues":
         return cls(
             official=[],
-            normal=Batch.create_empty(),
-            timely=Batch.create_empty(),
-            gauntlet=Batch.create_empty(),
+            normal=LevelStore.create_empty(),
+            timely=LevelStore.create_empty(),
+            gauntlet=LevelStore.create_empty(),
             packs=[],
         )
 
@@ -135,66 +139,82 @@ class Database:
         return {"main": self.main, "levels": self.levels}
 
     def is_empty(self) -> bool:
+        """Check if the database is empty."""
         return self.main == MAIN_DEFAULTS and self.levels == LEVELS_DEFAULTS
 
     def get_user_name(self) -> str:
+        """Player name."""
         return self.main.get("GJA_001", "unknown")
 
     def set_user_name(self, user_name: str) -> None:
+        """Set player name to ``user_name``."""
         self.main.set("GJA_001", user_name)
 
     user_name = property(get_user_name, set_user_name)
 
     def get_password(self) -> str:
+        """Player password."""
         return self.main.get("GJA_002", "unknown")
 
     def set_password(self, password: str) -> None:
+        """Set player password to ``password``."""
         self.main.set("GJA_002", password)
 
     password = property(get_password, set_password)
 
     def get_account_id(self) -> int:
+        """Player Account ID, same as ``account_id`` of users."""
         return self.main.get("GJA_003", 0)
 
     def set_account_id(self, account_id: int) -> None:
+        """Set player Account ID to ``account_id``."""
         self.main.set("GJA_003", account_id)
 
     account_id = property(get_account_id, set_account_id)
 
     def get_user_id(self) -> int:
+        """Player User ID, same as ``id`` of users."""
         return self.main.get("playerUserID", 0)
 
     def set_user_id(self, user_id: int) -> None:
+        """Set player User ID to ``user_id``."""
         self.main.set("playerUserID", user_id)
 
     user_id = property(get_user_id, set_user_id)
 
     def get_udid(self) -> str:
+        """Player UDID."""
         return self.main.get("playerUDID", "S0")
 
     def set_udid(self, udid: str) -> None:
+        """Set player UDID to ``user_id``."""
         self.main.set("playerUDID", udid)
 
     udid = property(get_udid, set_udid)
 
     def get_bootups(self) -> int:
+        """Count of game bootups."""
         return self.main.get("bootups", 0)
 
     def set_bootups(self, bootups: int) -> None:
+        """Set bootups to ``bootups``."""
         self.main.set("bootups", bootups)
 
     bootups = property(get_bootups, set_bootups)
 
     def get_followed(self) -> List[int]:
+        """List of followed users."""
         return list(map(int, self.main.get("GLM_06", {}).keys()))
 
     def set_followed(self, followed: Iterable[int]) -> None:
+        """Set followed users to ``followed``."""
         self.main.set("GLM_06", {str(account_id): 1 for account_id in followed})
 
     followed = property(get_followed, set_followed)
 
-    def get_values(self) -> Values:  # O(nm), thanks rob
-        values = Values.create_empty()
+    def get_values(self) -> LevelValues:  # O(nm), thanks rob
+        """:class:`~gd.api.database.LevelValues` that represent completed levels."""
+        values = LevelValues.create_empty()
         prefixes = values.get_prefixes()
 
         for string in self.main.get("GS_completed", {}).keys():
@@ -207,7 +227,8 @@ class Database:
 
         return values
 
-    def set_values(self, values: Values) -> None:
+    def set_values(self, values: LevelValues) -> None:
+        """Set :class:`~gd.api.database.LevelValues` to ``values``."""
         mapping = {}
         prefixes = values.get_prefixes()
 
@@ -224,19 +245,19 @@ class Database:
         )
 
     def load_saved_levels(self) -> "LevelCollection":
-        """Load "Saved Levels" into :class:`.api.LevelCollection`."""
+        """Load "Saved Levels" into :class:`~gd.api.LevelCollection`."""
         return self.to_levels(self.main.get("GLM_03", {}).values(), "dump_saved_levels")
 
     def dump_saved_levels(self, levels: "LevelCollection") -> None:
-        """Dump "Saved Levels" from :class:`.api.LevelCollection`."""
+        """Dump "Saved Levels" from :class:`~gd.api.LevelCollection`."""
         self.main.set("GLM_03", {str(level.id): level.to_data() for level in levels})
 
     def load_my_levels(self) -> "LevelCollection":
-        """Load "My Levels" into :class:`.api.LevelCollection`."""
+        """Load "My Levels" into :class:`~gd.api.LevelCollection`."""
         return self.to_levels(self.levels.get("LLM_01", {}).values(), "dump_my_levels")
 
     def dump_my_levels(self, levels: "LevelCollection", *, prefix: str = "k_") -> None:
-        """Dump "My Levels" from :class:`.api.LevelCollection`."""
+        """Dump "My Levels" from :class:`~gd.api.LevelCollection`."""
         store = {"_isArr": True}
 
         store.update({f"{prefix}{index}": level.to_data() for index, level in enumerate(levels)})
@@ -251,6 +272,7 @@ class Database:
         main_file: PathLike = MAIN,
         levels_file: PathLike = LEVELS,
     ) -> "Database":
+        """Load the database. See :meth:`~gd.api.SaveUtils.load` for more."""
         from gd.api.loader import save  # ...
 
         return save.load(main=main, levels=levels, main_file=main_file, levels_file=levels_file)
@@ -262,6 +284,7 @@ class Database:
         main_file: PathLike = MAIN,
         levels_file: PathLike = LEVELS,
     ) -> None:
+        """Dump the database back. See :meth:`~gd.api.SaveUtils.dump` for more."""
         from gd.api.loader import save  # I hate circular imports.
 
         save.dump(
@@ -273,6 +296,8 @@ class Database:
 
 
 class LevelCollection(UserList):
+    """Collection of :class:`~gd.api.LevelAPI` objects."""
+
     def __init__(self, *args) -> None:
         if len(args) == 1:
             maybe_args = args[0]
@@ -286,7 +311,8 @@ class LevelCollection(UserList):
         self._funcname: Optional[str] = None
 
     def get_by_name(self, name: str) -> Optional[LevelAPI]:
-        return get(self, name=name)
+        """Fetch a level by ``name``. Returns ``None`` if not found."""
+        return iter(self).get(name=name)
 
     @classmethod
     def launch(cls, callback: Database, funcname: str, iterable: Iterable[T]) -> "LevelCollection":
@@ -298,6 +324,9 @@ class LevelCollection(UserList):
         return self
 
     def dump(self, database: Optional[Database] = None) -> None:
+        """Dump levels to ``database``, if provided.
+        Otherwise, try to dump back to the database that created this collection.
+        """
         if database is None:
             database = self._callback  # type: ignore
 

@@ -1,5 +1,7 @@
 # type: ignore
 
+from iters import iter
+
 from gd.color import Color
 from gd.converters import Password, Version
 from gd.crypto import (
@@ -30,7 +32,6 @@ from gd.enums import (
     ZLayer,
 )
 from gd.index_parser import IndexParser
-from gd.search_utils import get
 from gd.text_utils import is_level_probably_decoded
 from gd.typing import (
     TYPE_CHECKING,
@@ -454,7 +455,7 @@ class ColorCollection(set):
         else:
             id = directive_or_id
 
-        return get(self, id=id)
+        return iter(self).get(id=id)
 
     def __or__(self, other: Set[ColorChannel]) -> "ColorCollection":
         return self.__class__(super().__or__(other))
