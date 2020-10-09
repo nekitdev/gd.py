@@ -13,6 +13,33 @@ if TYPE_CHECKING:
 
 
 class Chest(AbstractEntity):
+    """Class that represents reward chests in Geometry Dash.
+    This class is derived from :class:`~gd.AbstractEntity`.
+
+    .. container:: operations
+
+        .. describe:: x == y
+
+            Check if two objects are equal. Compared by hash and type.
+
+        .. describe:: x != y
+
+            Check if two objects are not equal.
+
+        .. describe:: str(x)
+
+            Return human-readable representation of the chest,
+            like ``Chest; count: 13, new in 00:00:42.000000``.
+
+        .. describe:: repr(x)
+
+            Return representation of the chest, useful for debugging.
+
+        .. describe:: hash(x)
+
+            Returns ``hash(self.hash_str)``.
+    """
+
     def __init__(self, **options) -> None:
         super().__init__(**options)
         self.requested_at: datetime = datetime.utcnow()
@@ -69,7 +96,7 @@ class Chest(AbstractEntity):
 
     @property
     def shard_type(self) -> ShardType:
-        """:class:`.ShardType`: Type of the shard the chest will give."""
+        """:class:`~gd.ShardType`: Type of the shard the chest will give."""
         return ShardType.from_value(self.shard_id)
 
     @property
@@ -99,6 +126,33 @@ class Chest(AbstractEntity):
 
 
 class Quest(AbstractEntity):
+    """Class that represents quests, or challenges, in Geometry Dash.
+    This class is derived from :class:`~gd.AbstractEntity`.
+
+    .. container:: operations
+
+        .. describe:: x == y
+
+            Check if two objects are equal. Compared by hash and type.
+
+        .. describe:: x != y
+
+            Check if two objects are not equal.
+
+        .. describe:: str(x)
+
+            Return human-readable representation of the quest,
+            like ``Quest Name; collect: 100 orbs, reward: 10, new in 00:00:13.000000``.
+
+        .. describe:: repr(x)
+
+            Return representation of the quest, useful for debugging.
+
+        .. describe:: hash(x)
+
+            Returns ``hash(self.hash_str)``.
+    """
+
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.requested_at: datetime = datetime.utcnow()
@@ -137,7 +191,7 @@ class Quest(AbstractEntity):
 
     @property
     def type(self) -> QuestType:
-        """:class:`.QuestType`: Type of a quest requirement."""
+        """:class:`~gd.QuestType`: Type of a quest requirement."""
         return QuestType.from_value(self.options.get("type", 0))
 
     @property

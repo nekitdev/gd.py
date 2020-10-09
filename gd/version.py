@@ -9,6 +9,7 @@ from gd.typing import Optional, Union
 
 __all__ = (
     "VersionInfo",
+    "aiohttp_version",
     "make_version_info",
     "python_version",
     "version_re",
@@ -56,11 +57,22 @@ def parse_value(key: str, value: Optional[str]) -> Union[int, str]:
 
 
 class VersionInfo(namedtuple("VersionInfo", "major minor micro releaselevel serial")):
+    """Named tuple that represents version info, similar to :obj:`sys.version_info`.
+
+    .. container:: operations
+
+        .. describe:: str(v)
+
+            Return human-friendly version format.
+            For example, ``VersionInfo(1, 0, 0, "alpha", 1)`` is ``1.0.0a1``.
+    """
+
     def __str__(self) -> str:
         return self.to_string()
 
     @classmethod
     def from_string(cls, version: str) -> "VersionInfo":
+        """Create :class:`~gd.VersionInfo` from ``version`` string."""
         match = compiled_re.match(version)
 
         if match is None:
@@ -75,12 +87,14 @@ class VersionInfo(namedtuple("VersionInfo", "major minor micro releaselevel seri
         return cls(**parts)  # type: ignore
 
     def to_string(self) -> str:
+        """Convert :class:`~gd.VersionInfo` to string."""
         short_release = long_to_short_names.get(self.releaselevel)
 
         return f"{self.major}.{self.minor}.{self.micro}{short_release}{self.serial}"
 
 
 def make_version_info(string: str) -> VersionInfo:
+    """Same as :meth:`~gd.VersionInfo.from_string`."""
     return VersionInfo.from_string(string)
 
 

@@ -57,6 +57,28 @@ log = get_logger(__name__)
 class Level(AbstractEntity):
     """Class that represents a Geometry Dash Level.
     This class is derived from :class:`~gd.AbstractEntity`.
+
+    .. container:: operations
+
+        .. describe:: x == y
+
+            Check if two objects are equal. Compared by hash and type.
+
+        .. describe:: x != y
+
+            Check if two objects are not equal.
+
+        .. describe:: str(x)
+
+            Return name of the level.
+
+        .. describe:: repr(x)
+
+            Return representation of the level, useful for debugging.
+
+        .. describe:: hash(x)
+
+            Returns ``hash(self.hash_str)``.
     """
 
     def __init__(self, *, client: Optional["Client"] = None, **options) -> None:
@@ -154,7 +176,7 @@ class Level(AbstractEntity):
         index: Optional[:class:`int`]
             Index (position) of the official level.
 
-        client: Optional[:class:`.Client`]
+        client: Optional[:class:`~gd.Client`]
             Client to attach to the level.
 
         get_data: :class:`bool`
@@ -174,7 +196,7 @@ class Level(AbstractEntity):
 
         Returns
         -------
-        :class:`.Level`
+        :class:`~gd.Level`
             Official level that was found.
         """
         if id is not None:
@@ -231,17 +253,19 @@ class Level(AbstractEntity):
 
     @property
     def creator(self) -> User:
-        """:class:`.User`: Creator of the level."""
+        """:class:`~gd.User`: Creator of the level."""
         return self.options.get("creator", User(client=self.client_unchecked))
 
     @property
     def song(self) -> Song:
-        """:class:`.Song`: Song used in the level."""
+        """:class:`~gd.Song`: Song used in the level."""
         return self.options.get("song", Song(client=self.client_unchecked))
 
     @property
     def difficulty(self) -> Union[DemonDifficulty, LevelDifficulty]:
-        """Union[:class:`.LevelDifficulty`, :class:`.DemonDifficulty`]: Difficulty of the level."""
+        """Union[:class:`~gd.LevelDifficulty`, :class:`~gd.DemonDifficulty`]: Difficulty
+        of the level.
+        """
         difficulty = self.options.get("difficulty", -1)
 
         if self.is_demon():
@@ -253,7 +277,7 @@ class Level(AbstractEntity):
     @property
     def password(self) -> Optional[int]:
         """Optional[:class:`int`]: The password to copy the level.
-        See :meth:`.Level.is_copyable`.
+        See :meth:`~gd.Level.is_copyable`.
         """
         return self.options.get("password")
 
@@ -278,14 +302,14 @@ class Level(AbstractEntity):
 
     @property
     def uploaded_at(self) -> Optional[datetime]:
-        """Optional[:class:`~py:datetime.datetime`]:
+        """Optional[:class:`~datetime.datetime`]:
         Timestamp representing when the level was uploaded.
         """
         return self.options.get("uploaded_at")
 
     @property
     def updated_at(self) -> Optional[datetime]:
-        """Optional[:class:`~py:datetime.datetime`]:
+        """Optional[:class:`~datetime.datetime`]:
         Timestamp representing when the level was last updated.
         """
         return self.options.get("updated_at")
@@ -294,7 +318,7 @@ class Level(AbstractEntity):
 
     @property
     def length(self) -> LevelLength:
-        """:class:`.LevelLength`: A type that represents length of the level."""
+        """:class:`~gd.LevelLength`: A type that represents length of the level."""
         return LevelLength.from_value(self.options.get("length", -1))
 
     @property
@@ -319,7 +343,7 @@ class Level(AbstractEntity):
 
     @property
     def type(self) -> TimelyType:
-        """:class:`.TimelyType`: A type that shows whether a level is Daily/Weekly."""
+        """:class:`~gd.TimelyType`: A type that shows whether a level is Daily/Weekly."""
         return TimelyType.from_value(self.options.get("type", 0))
 
     @property
@@ -411,8 +435,14 @@ class Level(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to report a level.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         await self.client.report_level(self)
 
@@ -422,8 +452,19 @@ class Level(AbstractEntity):
         Parameters
         ----------
         \*\*kwargs
-            Arguments that :meth:`.Client.upload_level` accepts.
+            Arguments that :meth:`~gd.Client.upload_level` accepts.
             Defaults are properties of the level.
+
+        Raises
+        ------
+        :exc:`~gd.MissingAccess`
+            Failed to upload the level.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         track, song_id = (0, self.song.id) if self.song.is_custom() else (self.song.id, 0)
 
@@ -471,8 +512,14 @@ class Level(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to delete a level.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         await self.client.delete_level(self)
 
@@ -486,8 +533,14 @@ class Level(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to update level's description.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         await self.client.update_level_description(self, content)
 
@@ -501,7 +554,7 @@ class Level(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to rate a level.
         """
         await self.client.rate_level(self, stars)
@@ -513,7 +566,7 @@ class Level(AbstractEntity):
 
         Parameters
         ----------
-        demon_difficulty: Union[:class:`int`, :class:`str`, :class:`.DemonDifficulty`]
+        demon_difficulty: Union[:class:`int`, :class:`str`, :class:`~gd.DemonDifficulty`]
             Demon difficulty to rate a level with.
 
         as_mod: :class:`bool`
@@ -521,8 +574,14 @@ class Level(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             If attempted to rate a level as moderator without required permissions.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
 
         await self.client.rate_demon(self, demon_difficulty=demon_difficulty, as_mod=as_mod)
@@ -540,8 +599,14 @@ class Level(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Missing required moderator permissions.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         await self.client.send_level(self, stars=stars, featured=featured)
 
@@ -572,7 +637,7 @@ class Level(AbstractEntity):
 
         Returns
         -------
-        :class:`.Level`
+        :class:`~gd.Level`
             A newly fetched version. ``None`` if failed to fetch.
         """
         try:
@@ -619,12 +684,18 @@ class Level(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to post a level comment.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
 
         Returns
         -------
-        Optional[:class:`.Comment`]
+        Optional[:class:`~gd.Comment`]
             Sent comment.
         """
         return await self.client.comment_level(self, content, percent)
@@ -634,8 +705,14 @@ class Level(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to like a level.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         await self.client.like(self)
 
@@ -644,8 +721,14 @@ class Level(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to dislike a level.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         await self.client.dislike(self)
 
@@ -657,12 +740,23 @@ class Level(AbstractEntity):
 
         Parameters
         ----------
-        strategy: Union[:class:`int`, :class:`str`, :class:`.LevelLeaderboardStrategy`]
+        strategy: Union[:class:`int`, :class:`str`, :class:`~gd.LevelLeaderboardStrategy`]
             Strategy to apply when fetching.
+
+        Raises
+        ------
+        :exc:`~gd.MissingAccess`
+            Failed to get leaderboard of the level.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
 
         Returns
         -------
-        AsyncIterator[:class:`.User`]
+        AsyncIterator[:class:`~gd.User`]
             A list of users.
         """
         return self.client.get_level_leaderboard(self, strategy=strategy)
@@ -675,6 +769,40 @@ class Level(AbstractEntity):
         amount: int = COMMENT_PAGE_SIZE,
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator["Comment"]:
+        """Retrieves level comments.
+
+        Parameters
+        ----------
+        strategy: Union[:class:`int`, :class:`str`, :class:`~gd.CommentStrategy`]
+            A strategy to apply when searching.
+
+        pages: Iterable[:class:`int`]
+            Pages to search at. By default, only page ``0``.
+
+        amount: :class:`int`
+            Amount of comments to retrieve. Default is ``20``.
+            For ``amount < 0``, ``1 << 31`` is added, allowing to fetch
+            a theoretical limit of comments.
+
+        concurrent: :class:`bool`
+            Whether to fetch pages concurrently. ``True`` by default.
+
+        Returns
+        -------
+        AsyncIterator[:class:`~gd.Comment`]
+            Comments retrieved.
+
+        Raises
+        ------
+        :exc:`~gd.MissingAccess`
+            Failed to fetch comments.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
+        """
         return self.client.get_level_comments(
             level=self, strategy=strategy, pages=pages, amount=amount, concurrent=concurrent,
         )
@@ -690,7 +818,7 @@ class Level(AbstractEntity):
 
         Parameters
         ----------
-        strategy: Union[:class:`int`, :class:`str`, :class:`.CommentStrategy`]
+        strategy: Union[:class:`int`, :class:`str`, :class:`~gd.CommentStrategy`]
             A strategy to apply when searching.
 
         amount: :class:`int`
@@ -700,16 +828,22 @@ class Level(AbstractEntity):
 
         Returns
         -------
-        AsyncIterator[:class:`.Comment`]
+        AsyncIterator[:class:`~gd.Comment`]
             Comments retrieved.
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to fetch comments.
 
-        :exc:`.NothingFound`
+        :exc:`~gd.NothingFound`
             No comments were found.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         return self.client.get_level_comments_on_page(
             level=self, page=page, amount=amount, strategy=strategy
@@ -718,6 +852,10 @@ class Level(AbstractEntity):
 
 @dataclass
 class OfficialLevel:
+    """Simple dataclass to hold information about official levels.
+    Use :meth:`~gd.OfficialLevel.into_level` for converting to :class:`~gd.Level`.
+    """
+
     level_id: int = attrib()
     song_id: int = attrib()
     name: str = attrib()
@@ -728,17 +866,40 @@ class OfficialLevel:
     game_version: GameVersion = attrib()
 
     def is_auto(self) -> bool:
+        """Check whether the official level is auto."""
         return "auto" in self.difficulty
 
     def is_demon(self) -> bool:
+        """Check whether the official level is demon."""
         return "demon" in self.difficulty
 
     def get_song_id(self, server_style: bool = False) -> int:
+        """Get correct song ID from ``self.song_id``.
+        ``server_style`` indicates whether the song ID should match one on the server.
+        """
         return self.song_id - 1 if server_style else self.song_id  # assume non-server by default
 
     def into_level(
         self, client: Optional["Client"] = None, get_data: bool = True, server_style: bool = False,
     ) -> Level:
+        """Convert :class:`~gd.OfficialLevel` dataclass into :class:`~gd.Level`.
+
+        Parameters
+        ----------
+        client: Optional[:class:`~gd.Client`]
+            Client to attach. ``None`` by default.
+
+        get_data: :class:`bool`
+            Whether to decode and attach level data. ``True`` by default.
+
+        server_style: :class:`bool`
+            Whether song ID should match one on the server.
+
+        Returns
+        -------
+        :class:`~gd.Level`
+            Level created from the dataclass.
+        """
         global official_levels_data
 
         if self.is_demon():

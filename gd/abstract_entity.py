@@ -102,7 +102,7 @@ class AbstractEntity:
 
     @property
     def hash_str(self) -> str:
-        """String used for hashing, with format: ``<Class(ID->id)>``."""
+        """:class:`str`: String used for hashing, with format: ``<Class(ID->id)>``."""
         return f"<{self.__class__.__name__}(ID->{self.id})>"
 
     @property

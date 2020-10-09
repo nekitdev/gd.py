@@ -86,23 +86,23 @@ class SaveUtils:
         Parameters
         ----------
 
-        main: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+        main: Optional[Union[:class:`str`, :class:`~pathlib.Path`]]
             Path to a file/directory containing main part of the save.
 
-        levels: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+        levels: Optional[Union[:class:`str`, :class:`~pathlib.Path`]]
             Path to a file/directory containing levels part of the save.
 
-        main_file: Union[:class:`str`, :class:`pathlib.Path`]
+        main_file: Union[:class:`str`, :class:`~pathlib.Path`]
             Path to a file containing main part of the save.
             Applied when ``main`` is a directory.
 
-        levels_file: Union[:class:`str`, :class:`pathlib.Path`]
+        levels_file: Union[:class:`str`, :class:`~pathlib.Path`]
             Path to a file containing levels part of the save.
             Applied when ``levels`` is a directory.
 
         Returns
         -------
-        :class:`.api.Database`
+        :class:`~gd.api.Database`
             Loaded Database. If any of the files not found, returns an empty ``gd.api.Database()``.
         """
         return await run_blocking(
@@ -132,23 +132,23 @@ class SaveUtils:
         Parameters
         ----------
 
-        main: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+        main: Optional[Union[:class:`str`, :class:`~pathlib.Path`]]
             Path to a file/directory containing main part of the save.
 
-        levels: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+        levels: Optional[Union[:class:`str`, :class:`~pathlib.Path`]]
             Path to a file/directory containing levels part of the save.
 
-        main_file: Union[:class:`str`, :class:`pathlib.Path`]
+        main_file: Union[:class:`str`, :class:`~pathlib.Path`]
             Path to a file containing main part of the save.
             Applied when ``main`` is a directory.
 
-        levels_file: Union[:class:`str`, :class:`pathlib.Path`]
+        levels_file: Union[:class:`str`, :class:`~pathlib.Path`]
             Path to a file containing levels part of the save.
             Applied when ``levels`` is a directory.
 
         Returns
         -------
-        :class:`.api.Database`
+        :class:`~gd.api.Database`
             Loaded Database. If any of the files not found, returns an empty ``gd.api.Database()``.
         """
         return self.local_load(
@@ -179,20 +179,20 @@ class SaveUtils:
         Parameters
         ----------
 
-        db: :class:`.api.Database`
+        db: :class:`~gd.api.Database`
             Database object to dump.
 
-        main: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+        main: Optional[Union[:class:`str`, :class:`~pathlib.Path`]]
             Path to a file/directory containing main part of the save.
 
-        levels: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+        levels: Optional[Union[:class:`str`, :class:`~pathlib.Path`]]
             Path to a file/directory containing levels part of the save.
 
-        main_file: Union[:class:`str`, :class:`pathlib.Path`]
+        main_file: Union[:class:`str`, :class:`~pathlib.Path`]
             Path to a file containing main part of the save.
             Applied when ``main`` is a directory.
 
-        levels_file: Union[:class:`str`, :class:`pathlib.Path`]
+        levels_file: Union[:class:`str`, :class:`~pathlib.Path`]
             Path to a file containing levels part of the save.
             Applied when ``levels`` is a directory.
         """
@@ -229,20 +229,20 @@ class SaveUtils:
         Parameters
         ----------
 
-        db: :class:`.api.Database`
+        db: :class:`~gd.api.Database`
             Database object to dump.
 
-        main: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+        main: Optional[Union[:class:`str`, :class:`~pathlib.Path`]]
             Path to a file/directory containing main part of the save.
 
-        levels: Optional[Union[:class:`str`, :class:`pathlib.Path`]]
+        levels: Optional[Union[:class:`str`, :class:`~pathlib.Path`]]
             Path to a file/directory containing levels part of the save.
 
-        main_file: Union[:class:`str`, :class:`pathlib.Path`]
+        main_file: Union[:class:`str`, :class:`~pathlib.Path`]
             Path to a file containing main part of the save.
             Applied when ``main`` is a directory.
 
-        levels_file: Union[:class:`str`, :class:`pathlib.Path`]
+        levels_file: Union[:class:`str`, :class:`~pathlib.Path`]
             Path to a file containing levels part of the save.
             Applied when ``levels`` is a directory.
         """
@@ -260,7 +260,7 @@ class SaveUtils:
         Parameters
         ----------
 
-        db: :class:`.api.Database`
+        db: :class:`~gd.api.Database`
             Database object to dump.
 
         apply_xor: :class:`bool`
@@ -299,7 +299,7 @@ class SaveUtils:
         Parameters
         ----------
 
-        db: :class:`.api.Database`
+        db: :class:`~gd.api.Database`
             Database object to dump.
 
         apply_xor: :class:`bool`
@@ -352,7 +352,7 @@ class SaveUtils:
 
         Returns
         -------
-        :class:`.api.Database`
+        :class:`~gd.api.Database`
             Database object containing loaded data.
         """
         return await run_blocking(
@@ -385,7 +385,7 @@ class SaveUtils:
 
         Returns
         -------
-        :class:`.api.Database`
+        :class:`~gd.api.Database`
             Database object containing loaded data.
         """
         return self.load_parts(main=main, levels=levels, apply_xor=apply_xor, follow_os=follow_os)
@@ -411,7 +411,7 @@ class SaveUtils:
 
         Returns
         -------
-        :class:`.api.Database`
+        :class:`~gd.api.Database`
             Database object containing loaded data.
         """
         return Database(main, levels)

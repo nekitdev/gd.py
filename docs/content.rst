@@ -38,16 +38,19 @@ Comment
 -------
 
 .. autoclass:: Comment
+    :inherited-members:
     :members:
 
 Friend Request
 --------------
 
 .. autoclass:: FriendRequest
+    :inherited-members:
     :members:
 
 Message
 -------
 
 .. autoclass:: Message
+    :inherited-members:
     :members:

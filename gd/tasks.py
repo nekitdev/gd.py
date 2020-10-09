@@ -61,6 +61,7 @@ class ExponentialBackoff:
     base: :class:`int`
         The base delay in seconds. The first retry-delay will be up to
         this many seconds.
+
     integral: :class:`bool`
         Set to ``True`` if whole periods of base is desirable, otherwise any
         number in between may be returned.
@@ -75,11 +76,11 @@ class ExponentialBackoff:
         self._last_invocation = time.monotonic()
 
         # Use our own random instance to avoid messing with global one
-        rand = random.Random()
-        rand.seed()
+        random_object = random.Random()
+        random_object.seed()
 
         self._randfunc: Union[Callable[[int, int], int], Callable[[float, float], float]] = (
-            rand.randrange if integral else rand.uniform
+            random_object.randrange if integral else random_object.uniform
         )
 
     def delay(self) -> Union[float, int]:
@@ -107,7 +108,7 @@ class ExponentialBackoff:
 class Loop:
     """A background task helper that abstracts the loop and reconnection logic for you.
 
-    The main interface to create this is through :func:`loop`.
+    The main interface to create this is through :func:`~gd.tasks.loop`.
     """
 
     def __init__(
@@ -115,12 +116,12 @@ class Loop:
         seconds: Union[float, int],
         hours: Union[float, int],
         minutes: Union[float, int],
-        coro: Callable[..., Awaitable[T]],
+        coroutine: Callable[..., Awaitable[T]],
         count: Optional[int],
         reconnect: bool,
         loop: Optional[asyncio.AbstractEventLoop],
     ) -> None:
-        self.coro = coro
+        self.coroutine = coroutine
         self.reconnect = reconnect
         self.loop = loop or acquire_loop()
         self.count = count
@@ -145,20 +146,20 @@ class Loop:
 
         self.change_interval(seconds=seconds, minutes=minutes, hours=hours)
 
-        if not inspect.iscoroutinefunction(self.coro):
-            raise TypeError(f"Expected coroutine function, not {type(self.coro).__name__!r}.")
+        if not inspect.iscoroutinefunction(self.coroutine):
+            raise TypeError(f"Expected coroutine function, not {type(self.coroutine).__name__!r}.")
 
     async def _call_loop_function(self, name: str) -> None:
-        coro = getattr(self, "_" + name)
+        coroutine = getattr(self, "_" + name)
 
-        if coro is None:
+        if coroutine is None:
             return
 
         if self._injected is not None:
-            await coro(self._injected)
+            await coroutine(self._injected)
 
         else:
-            await coro()
+            await coroutine()
 
     async def _loop(self, *args, **kwargs) -> None:
         backoff = ExponentialBackoff()
@@ -168,7 +169,7 @@ class Loop:
         try:
             while True:
                 try:
-                    await self.coro(*args, **kwargs)
+                    await self.coroutine(*args, **kwargs)
 
                 except self._valid_exception:
 
@@ -222,19 +223,19 @@ class Loop:
         r"""Starts the internal task in the event loop.
 
         Parameters
-        ------------
+        ----------
         \*args
             The arguments to to use.
         \*\*kwargs
             The keyword arguments to use.
 
         Raises
-        --------
-        RuntimeError
+        ------
+        :exc:`RuntimeError`
             A task has already been launched and is running.
 
         Returns
-        ---------
+        -------
         :class:`asyncio.Task`
             The task that has been created.
         """
@@ -252,7 +253,7 @@ class Loop:
     def stop(self) -> None:
         r"""Gracefully stops the task from running.
 
-        Unlike :meth:`cancel`\, this allows the task to finish its
+        Unlike :meth:`~gd.tasks.Loop.cancel`, this allows the task to finish its
         current iteration before gracefully exiting.
 
         .. note::
@@ -262,8 +263,8 @@ class Loop:
             it succeeds.
 
             If this is undesirable, either remove the error handling
-            before stopping via :meth:`clear_exception_types` or
-            use :meth:`cancel` instead.
+            before stopping via :meth:`~gd.tasks.Loop.clear_exception_types` or
+            use :meth:`~gd.tasks.Loop.cancel` instead.
         """
         if self._task is not None and not self._task.done():
             self._stop_next_iteration = True
@@ -282,7 +283,7 @@ class Loop:
         .. note::
 
             Due to the way this function works, the task is not
-            returned like :meth:`start`.
+            returned like :meth:`~gd.tasks.Loop.start`.
 
         Parameters
         ------------
@@ -315,7 +316,7 @@ class Loop:
 
         Raises
         --------
-        TypeError
+        :exc:`TypeError`
             The exception passed is either not a class or not inherited from :class:`BaseException`.
         """
         if not inspect.isclass(exception):
@@ -372,29 +373,29 @@ class Loop:
         """:class:`bool`: Whether the internal task has failed."""
         return self._has_failed
 
-    def before_loop(self, coro: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+    def before_loop(self, coroutine: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
         """A decorator that registers a coroutine to be called before the loop starts running.
 
         The coroutine must take no arguments (except ``self`` in a class context).
 
         Parameters
         ------------
-        coro: :ref:`coroutine <coroutine>`
+        coroutine: :ref:`coroutine <coroutine>`
             The coroutine to register before the loop runs.
 
         Raises
         -------
-        TypeError
+        :exc:`TypeError`
             The function was not a coroutine.
         """
 
-        if not inspect.iscoroutinefunction(coro):
-            raise TypeError(f"Expected coroutine function, received {type(coro).__name__!r}.")
+        if not inspect.iscoroutinefunction(coroutine):
+            raise TypeError(f"Expected coroutine function, received {type(coroutine).__name__!r}.")
 
-        self._before_loop = coro
-        return coro
+        self._before_loop = coroutine
+        return coroutine
 
-    def after_loop(self, coro: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+    def after_loop(self, coroutine: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
         """A decorator that register a coroutine to be called after the loop finished running.
 
         The coroutine must take no arguments (except ``self`` in a class context).
@@ -403,24 +404,24 @@ class Loop:
 
             This coroutine is called even during cancellation. If it is desirable
             to tell apart whether something was cancelled or not, check to see
-            whether :meth:`is_being_cancelled` is ``True`` or not.
+            whether :meth:`~gd.tasks.Loop.is_being_cancelled` is ``True`` or not.
 
         Parameters
         ------------
-        coro: :ref:`coroutine <coroutine>`
+        coroutine: :ref:`coroutine <coroutine>`
             The coroutine to register after the loop finishes.
 
         Raises
         -------
-        TypeError
+        :exc:`TypeError`
             The function was not a coroutine.
         """
 
-        if not inspect.iscoroutinefunction(coro):
-            raise TypeError(f"Expected coroutine function, received {type(coro).__name__!r}.")
+        if not inspect.iscoroutinefunction(coroutine):
+            raise TypeError(f"Expected coroutine function, received {type(coroutine).__name__!r}.")
 
-        self._after_loop = coro
-        return coro
+        self._after_loop = coroutine
+        return coroutine
 
     def change_interval(
         self,
@@ -435,20 +436,22 @@ class Loop:
 
             This only applies on the next loop iteration.
             If it is desirable for the change of interval
-            to be applied right away, cancel the task with :meth:`cancel`.
+            to be applied right away, cancel the task with :meth:`~gd.tasks.Loop.cancel`.
 
         Parameters
         ------------
         seconds: :class:`float`
             The number of seconds between every iteration.
+
         minutes: :class:`float`
             The number of minutes between every iteration.
+
         hours: :class:`float`
             The number of hours between every iteration.
 
         Raises
         -------
-        ValueError
+        :exc:`ValueError`
             An invalid value was given.
         """
 
@@ -485,16 +488,21 @@ def loop(
     ------------
     seconds: :class:`float`
         The number of seconds between every iteration.
+
     minutes: :class:`float`
         The number of minutes between every iteration.
+
     hours: :class:`float`
         The number of hours between every iteration.
+
     count: Optional[:class:`int`]
         The number of loops to do, ``None`` if it should be an
         infinite loop.
+
     reconnect: :class:`bool`
         Whether to handle errors and restart the task
         using an exponential back-off algorithm.
+
     loop: :class:`asyncio.AbstractEventLoop`
         The loop to use to register the task, if not given
         defaults to :func:`asyncio.get_event_loop`.
@@ -509,13 +517,13 @@ def loop(
 
     Returns
     -------
-    :class:`Loop`
+    :class:`~gd.tasks.Loop`
         The loop helper that handles the background task.
     """
 
     def decorator(function: Callable[..., Awaitable[T]]) -> Loop:
         return Loop(
-            coro=function,
+            coroutine=function,
             seconds=seconds,
             minutes=minutes,
             hours=hours,

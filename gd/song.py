@@ -3,9 +3,10 @@ from pathlib import Path
 from attr import attrib, dataclass
 import tqdm  # type: ignore
 
-from gd.typing import Any, Dict, IO, Iterable, List, Optional, Union, TYPE_CHECKING
+from gd.typing import Any, AsyncIterator, Dict, IO, Iterable, Optional, Union, TYPE_CHECKING
 
 from gd.abstract_entity import AbstractEntity
+from gd.async_iter import async_iterable
 from gd.errors import MissingAccess
 from gd.http import HTTPClient, NEWGROUNDS_SONG_LISTEN, URL
 from gd.model import SongModel  # type: ignore
@@ -19,7 +20,7 @@ __all__ = ("ArtistInfo", "Author", "Song")
 
 class Song(AbstractEntity):
     """Class that represents Geometry Dash/Newgrounds songs.
-    This class is derived from :class:`.AbstractEntity`.
+    This class is derived from :class:`~gd.AbstractEntity`.
     """
 
     def __repr__(self) -> str:
@@ -87,7 +88,7 @@ class Song(AbstractEntity):
         )
 
     def get_author(self) -> "Author":
-        """:class:`.Author`: Author of the song."""
+        """:class:`~gd.Author`: Author of the song."""
         if not self.is_custom():
             raise MissingAccess("Can not get author of an official song.")
 
@@ -100,6 +101,17 @@ class Song(AbstractEntity):
         ----------
         from_ng: :class:`bool`
             Whether to fetch song from Newgrounds.
+
+        Raises
+        ------
+        :exc:`~gd.MissingAccess`
+            Failed to find the song.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         if from_ng:
             new = await self.client.get_ng_song(self.id)
@@ -119,12 +131,18 @@ class Song(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to find artist info.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
 
         Returns
         -------
-        :class:`.ArtistInfo`
+        :class:`~gd.ArtistInfo`
             Fetched info about an artist.
         """
         if not self.is_custom():  # pragma: no cover
@@ -148,12 +166,23 @@ class Song(AbstractEntity):
 
         Parameters
         ----------
-        file: Optional[Union[:class:`str`, :class:`pathlib.Path`, IO]]
+        file: Optional[Union[:class:`str`, :class:`~pathlib.Path`, IO]]
             File-like or Path-like object to write song to, instead of returning bytes.
 
         with_bar: :class:`bool`
             Whether to show a progress bar while downloading.
             Requires ``tqdm`` to be installed.
+
+        Raises
+        ------
+        :exc:`~gd.MissingAccess`
+            Can not download the song because it is official or not found.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
 
         Returns
         -------
@@ -223,20 +252,35 @@ class ArtistInfo(AbstractEntity):
         return bool(self.options.get("official"))
 
     def get_author(self) -> "Author":
-        """:class:`.Author`: Author of the song."""
+        """:class:`~gd.Author` of the song."""
         if self.is_official():
             raise MissingAccess("Can not get author of an official song.")
 
         return Author(name=self.artist, client=self.client)
 
+    author = property(get_author)
+
     async def update(self) -> None:
+        """Update artist info.
+
+        Raises
+        ------
+        :exc:`~gd.MissingAccess`
+            Failed to find artist info.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
+        """
         new = await self.client.get_artist_info(self.id)
         self.options.update(new.options)
 
 
 class Author(AbstractEntity):
     """Class that represents an author on Newgrounds.
-    This class is derived from :class:`.AbstractEntity`.
+    This class is derived from :class:`~gd.AbstractEntity`.
     """
 
     def __repr__(self) -> str:
@@ -253,7 +297,7 @@ class Author(AbstractEntity):
 
     @property
     def link(self) -> URL:
-        """:class:`yarl.URL`: URL to author's page."""
+        """:class:`~yarl.URL`: URL to author's page."""
         return URL(self.options.get("link", f"https://{self.name}.newgrounds.com/"))
 
     @property
@@ -261,7 +305,8 @@ class Author(AbstractEntity):
         """:class:`str`: Name of the author."""
         return self.options.get("name", "")
 
-    async def get_page_songs(self, page: int = 0) -> List[Song]:
+    @async_iterable
+    def get_page_songs(self, page: int = 0) -> AsyncIterator[Song]:
         """Get songs on the page.
 
         Parameters
@@ -269,14 +314,26 @@ class Author(AbstractEntity):
         page: :class:`int`
             Page of songs to look at.
 
+        Raises
+        ------
+        :exc:`~gd.MissingAccess`
+            Failed to find songs.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
+
         Returns
         -------
-        List[:class:`.Song`]
-            Songs found. Can be empty.
+        AsyncIterator[:class:`~gd.Song`]
+            Songs found.
         """
-        return await self.client.get_ng_user_songs_on_page(self, page=page)
+        return self.client.get_ng_user_songs_on_page(self, page=page)
 
-    async def get_songs(self, pages: Iterable[int] = range(10)) -> List[Song]:
+    @async_iterable
+    def get_songs(self, pages: Iterable[int] = range(10)) -> AsyncIterator[Song]:
         """Get songs on the pages.
 
         Parameters
@@ -284,24 +341,69 @@ class Author(AbstractEntity):
         pages: Iterable[:class:`int`]
             Pages of songs to look at.
 
+        Raises
+        ------
+        :exc:`~gd.MissingAccess`
+            Failed to find songs.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
+
         Returns
         -------
-        List[:class:`.Song`]
-            Songs found. Can be empty.
+        AsyncIterator[:class:`~gd.Song`]
+            Songs found.
         """
-        return await self.client.get_ng_user_songs(self, pages=pages)
+        return self.client.get_ng_user_songs(self, pages=pages)
 
 
 async def download(
     http_client: HTTPClient,
     method: str,
-    url: str,
+    url: Union[URL, str],
     chunk_size: int = 64 * 1024,
     with_bar: bool = False,
     close: bool = False,
     file: Optional[Union[str, Path, IO]] = None,
     **kwargs,
 ) -> Optional[bytes]:
+    r"""Download the file at ``url`` with ``method``.
+
+    Parameters
+    ----------
+    http_client: :class:`~gd.HTTPClient`
+        HTTP client to use for downloading.
+
+    method: :class:`str`
+        HTTP method to send request with. Most of the time, ``GET``.
+
+    url: Union[:class:`~yarl.URL`, :class:`str`]
+        URL to request file from.
+
+    chunk_size: :class:`int`
+        Amount of data to read for one chunk. ``-1`` to read until EOF.
+
+    with_bar: :class:`bool`
+        Whether to show progress bar when downloading. ``False`` by default.
+
+    close: :class:`bool`
+        Whether to close the underlying ``file`` after finishing.
+
+    file: Optional[Union[:class:`str`, :class:`~pathlib.Path`, IO]]
+        File to write downloaded data to. If not given,
+        this function returns all the data as the result.
+
+    \*\*kwargs
+        Keywoard arguments to pass to :meth:`aiohttp.ClientSession.request`.
+
+    Returns
+    -------
+    Optional[:class:`bytes`]
+        Data downloaded, if ``file`` is not given or ``None``. Otherwise, returns ``None``.
+    """
     if isinstance(file, (str, Path)):
         file = open(file, "wb")
         close = True
@@ -319,6 +421,7 @@ async def download(
 
         while True:
             chunk = await response.content.read(chunk_size)
+
             if not chunk:
                 break
 

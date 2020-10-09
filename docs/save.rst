@@ -42,6 +42,7 @@ Example of working with it::
     # {"LLM_01": {...}, "LLM_02": ..., ...}
 
 .. autoclass:: Part
+    :inherited-members:
     :members:
 
 .. autoclass:: Database
@@ -57,10 +58,12 @@ Level Collection
 ----------------
 
 .. autoclass:: LevelCollection
+    :inherited-members:
     :members:
 
 LevelAPI
 --------
 
 .. autoclass:: LevelAPI
+    :inherited-members:
     :members:

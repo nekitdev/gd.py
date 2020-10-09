@@ -38,8 +38,10 @@ For example, you can use it in a Discord bot:
             # couldn"t fetch a daily level
             return await ctx.send(
                 embed=discord.Embed(
+                    title="Error Occured",
                     description="Failed to get a daily level.",
-                    title="Error Occured", color=0xde3e35)
+                    color=0xFF5555,
+                )
             )
 
         embed = (

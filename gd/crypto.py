@@ -99,6 +99,21 @@ concat = "".join
 
 
 def decode_base64(data: bytes, urlsafe: bool = True) -> bytes:
+    """Decode Base64, correctly padding the data.
+
+    Parameters
+    ----------
+    data: :class:`bytes`
+        Stream to decode Base64 from.
+
+    urlsafe: :class:`bool`
+        Whether to use URL-safe decoding.
+
+    Returns
+    -------
+    :class:`bytes`
+        Decoded data.
+    """
     required = len(data) % BASE64_PAD
 
     if required:  # handle padding
@@ -115,6 +130,21 @@ def decode_base64(data: bytes, urlsafe: bool = True) -> bytes:
 
 
 def encode_base64(data: bytes, urlsafe: bool = True) -> bytes:
+    """Encode Base64, correctly padding the data.
+
+    Parameters
+    ----------
+    data: :class:`bytes`
+        Stream to encode Base64 from.
+
+    urlsafe: :class:`bool`
+        Whether to use URL-safe encode.
+
+    Returns
+    -------
+    :class:`bytes`
+        Encoded data.
+    """
     if urlsafe:
         return urlsafe_b64encode(data)
 
@@ -127,6 +157,30 @@ def decode_base64_str(
     encoding: str = DEFAULT_ENCODING,
     errors: str = DEFAULT_ERRORS,
 ) -> str:
+    """Decode Base64, correctly padding the string.
+
+    This is similar to :func:`~gd.crypto.decode_base64`,
+    except it operates on strings with their encoding.
+
+    Parameters
+    ----------
+    string: :class:`str`
+        String to decode Base64 from.
+
+    urlsafe: :class:`bool`
+        Whether to use URL-safe decoding.
+
+    encoding: :class:`str`
+        Encoding to use, ``utf-8`` by default.
+
+    errors: :class:`str`
+        Errors handling to use, ``strict`` by default.
+
+    Returns
+    -------
+    :class:`str`
+        Decoded string.
+    """
     return decode_base64(string.encode(encoding, errors), urlsafe).decode(encoding, errors)
 
 
@@ -136,14 +190,70 @@ def encode_base64_str(
     encoding: str = DEFAULT_ENCODING,
     errors: str = DEFAULT_ERRORS,
 ) -> str:
+    """Encode Base64, correctly padding the string.
+
+    This is similar to :func:`~gd.crypto.encode_base64`,
+    except it operates on strings with their encoding.
+
+    Parameters
+    ----------
+    string: :class:`str`
+        String to encode Base64 from.
+
+    urlsafe: :class:`bool`
+        Whether to use URL-safe encoding.
+
+    encoding: :class:`str`
+        Encoding to use, ``utf-8`` by default.
+
+    errors: :class:`str`
+        Errors handling to use, ``strict`` by default.
+
+    Returns
+    -------
+    :class:`str`
+        Encoded string.
+    """
     return encode_base64(string.encode(encoding, errors), urlsafe).decode(encoding, errors)
 
 
 def xor(stream: bytes, key: int) -> bytes:
+    """Apply XOR cipher to ``stream`` with ``key``.
+    Applying this operation twice decodes ``stream`` back to the initial state.
+
+    Parameters
+    ----------
+    stream: :class:`bytes`
+        Data to apply XOR on.
+
+    key: :class:`int`
+        Key to use. Type ``u8`` (or ``byte``) should be used, in ``[0; 255]`` range.
+
+    Returns
+    -------
+    :class:`bytes`
+        Data after XOR applied.
+    """
     return bytes(byte ^ key for byte in stream)
 
 
 def cyclic_xor(stream: bytes, key: bytes) -> bytes:
+    """Apply cyclic XOR cipher to ``stream`` with ``key``.
+    Applying this operation twice decodes ``stream`` back to the initial state.
+
+    Parameters
+    ----------
+    stream: :class:`bytes`
+        Data to apply XOR on.
+
+    key: :class:`bytes`
+        Key to use. It is cycled and zipped with ``stream``.
+
+    Returns
+    -------
+    :class:`bytes`
+        Data after XOR applied.
+    """
     return bytes(byte ^ key_byte for (byte, key_byte) in zip(stream, cycle(key)))
 
 

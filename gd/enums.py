@@ -93,6 +93,8 @@ class Flag(enums.StrFormat, enums.Order, JSON, enums.Flag):
 
 
 class Key(Enum):
+    """An enumeration for keys used in ciphering."""
+
     MESSAGE = 14251
     QUESTS = 19847
     LEVEL_PASSWORD = 26364
@@ -106,10 +108,12 @@ class Key(Enum):
 
     def __init__(self, value: int) -> None:
         self.string = str(value)
-        self.bytes = str(value).encode("utf-8")
+        self.bytes = self.string.encode("utf-8")
 
 
 class Salt(Enum):
+    """An enumeration for salts used in hashing."""
+
     LEVEL = "xI25fpAapCQg"
     COMMENT = "xPT6iUrtws0J"
     LIKE_RATE = "ysg6pUrtjn0J"
@@ -123,6 +127,8 @@ class Salt(Enum):
 
 
 class Secret(Enum):
+    """An enumeration for request secrets."""
+
     MAIN = "Wmfd2893gb7"
     LEVEL = "Wmfv2898gc9"
     LOGIN = "Wmfv3899gc9"
@@ -130,6 +136,8 @@ class Secret(Enum):
 
 
 class AccountURLType(Enum):
+    """An enumeration for Account URL types."""
+
     UNKNOWN = 0
     SAVE = 1
     LOAD = 2

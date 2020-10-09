@@ -1,6 +1,6 @@
 from gd.crypto import Key, decode_robtop_str, encode_robtop_str
 from gd.enums import DemonDifficulty, LevelDifficulty
-from gd.typing import Optional, Union
+from gd.typing import Any, Optional, Tuple, Union
 
 from gd.text_utils import make_repr
 
@@ -13,17 +13,69 @@ __all__ = (
 
 
 class Version:
+    """Class that represents version of anything.
+
+    .. container:: operations
+
+        .. describe:: x == y
+
+            Check if two versions are equal.
+
+        .. describe:: x != y
+
+            Check if two versions are not equal.
+
+        .. describe:: x > y
+
+            Check if one version is strictly greater than another.
+
+        .. describe:: x >= y
+
+            Check if one version is greater than or equal to another.
+
+        .. describe:: x < y
+
+            Check if one version is strictly lower than another.
+
+        .. describe:: x <= y
+
+            Check if one version is lower than or equal to another.
+
+        .. describe:: str(x)
+
+            Return short representation of the version; for ``Version(x, y)``, return ``x.y``.
+
+        .. describe:: repr(x)
+
+            Return representation of the version, useful for debugging.
+
+    Parameters
+    ----------
+    major: :class:`int`
+        Major part of the version.
+
+    minor: :class:`int`
+        Minor part of the version.
+    """
+
     def __init__(self, major: int, minor: int) -> None:
         self._major = major
         self._minor = minor
 
     @property
     def major(self) -> int:
+        """:class:`int`: Major part of the version."""
         return self._major
 
     @property
     def minor(self) -> int:
+        """:class:`int`: Minor part of the version."""
         return self._minor
+
+    @property
+    def parts(self) -> Tuple[int]:
+        """Tuple[:class:`int`]: All parts of the version, as tuple object."""
+        return (self._major, self._minor)
 
     def __repr__(self) -> str:
         info = {"major": self.major, "minor": self.minor}
@@ -32,18 +84,53 @@ class Version:
     def __str__(self) -> str:
         return f"{self.major}.{self.minor}"
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+
+        return (self.major, self.minor) == (other.major, other.minor)
+
+    def __ne__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+
+        return (self.major, self.minor) != (other.major, other.minor)
+
+    def __lt__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+
+        return (self.major, self.minor) < (other.major, other.minor)
+
+    def __gt__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+
+        return (self.major, self.minor) > (other.major, other.minor)
+
+    def __le__(self, other: Any) -> bool:
+        return self < other or self == other
+
+    def __ge__(self, other: Any) -> bool:
+        return self > other or self == other
+
     @classmethod
     def from_number(cls, number: int) -> "Version":
+        """Create a version from number, e.g. ``21`` -> ``2.1``."""
         major, minor = divmod(number, 10)
         return cls(major, minor)
 
     def to_number(self) -> int:
+        """Convert the version to a number, e.g. ``1.9`` -> ``19``."""
         return self.major * 10 + self.minor
 
 
 class GameVersion(Version):
+    """Derived from :class:`~gd.Version`, contains additional features to convert game version."""
+
     @classmethod
     def from_robtop_number(cls, number: int) -> "GameVersion":
+        """Convert RobTop's ``number`` to :class:`~gd.GameVersion`."""
         if 0 < number < 8:
             return cls(1, number - 1)
 
@@ -58,6 +145,7 @@ class GameVersion(Version):
         return cls(major, minor)
 
     def to_robtop_number(self) -> int:
+        """Convert :class:`~gd.GameVersion` to a RobTop's number."""
         major = self._major
         minor = self._minor
 
@@ -72,13 +160,38 @@ class GameVersion(Version):
 
     @classmethod
     def from_robtop(cls, string: str) -> "GameVersion":
+        """Same as :meth:`~gd.GameVersion.from_robtop_number`, but operates on ``string``."""
         return cls.from_robtop_number(int(string))
 
     def to_robtop(self) -> str:
+        """Same as :meth:`~gd.GameVersion.to_robtop_number`, but returns a string."""
         return str(self.to_robtop_number())
 
 
 class Password:
+    """Class that represents passwords.
+
+    .. container:: operations
+
+        .. describe:: str(x)
+
+            Return a human-friendly description of the password.
+            For example, ``copyable, password 101010``.
+
+        .. describe:: repr(x)
+
+            Return representation of the password, useful for debugging.
+
+    Parameters
+    ----------
+    password: Optional[Union[:class:`int`, :class:`str`]]
+        Actual password, as a number or a string.
+
+    copyable: :class:`bool`
+        Whether passwords implies that something is copyable.
+        If ``True`` and ``password`` is ``None``, free copy is assumed.
+    """
+
     _ADD = 1_000_000
 
     def __init__(self, password: Optional[Union[int, str]] = None, copyable: bool = True) -> None:
@@ -107,14 +220,17 @@ class Password:
 
     @property
     def copyable(self) -> bool:
+        """:class:`bool`: Whether password implies that something is copyable."""
         return self._copyable
 
     @property
     def password(self) -> Optional[int]:
+        """Optional[:class:`int`]: Actual password, ``None`` if not given."""
         return self._password
 
     @classmethod
     def from_robtop_number(cls, number: int) -> "Password":
+        """Create :class:`~gd.Password` from ``number``."""
         if number == 0:
             return cls(None, False)
 
@@ -124,6 +240,7 @@ class Password:
         return cls(number % cls._ADD, True)
 
     def to_robtop_number(self) -> int:
+        """Convert :class:`~gd.Password` to a number."""
         if self._copyable:
             if self._password is None:
                 return 1
@@ -136,6 +253,7 @@ class Password:
 
     @classmethod
     def from_robtop(cls, string: str) -> "Password":
+        """Same as :meth:`~gd.Password.from_robtop_number`, except it attempts decoding."""
         try:
             password = decode_robtop_str(string, Key.LEVEL_PASSWORD)  # type: ignore
 
@@ -148,10 +266,11 @@ class Password:
         else:
             return cls(None, False)
 
-    def to_robtop(self) -> str:
+    def to_robtop(self, encode: bool = True) -> str:
+        """Same as :meth:`~gd.Password.to_robtop_number`, except it optionally applies encoding."""
         number = self.to_robtop_number()
 
-        if not number:
+        if not number or not encode:
             return str(number)
 
         else:
@@ -188,6 +307,27 @@ def value_to_demon_difficulty(value: int) -> DemonDifficulty:
 def get_difficulty(
     level_difficulty: int, demon_difficulty: int, is_auto: bool, is_demon: bool
 ) -> Union[LevelDifficulty, DemonDifficulty]:
+    """Get level difficulty from given parameters.
+
+    Parameters
+    ----------
+    level_difficulty: :class:`int`
+        Number that represents level difficulty.
+
+    demon_difficulty: :class:`int`
+        Number that represents level demon difficulty.
+
+    is_auto: :class:`bool`
+        Whether the level is auto.
+
+    is_demon: :class:`bool`
+        Whether the level is demon.
+
+    Returns
+    -------
+    Union[:class:`~gd.LevelDifficulty`, :class:`~gd.DemonDifficulty`]
+        Level or demon difficulty, based on parameters.
+    """
     if is_auto:
         return LevelDifficulty.AUTO  # type: ignore
 

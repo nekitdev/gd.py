@@ -64,7 +64,7 @@ setup(
         "Issue tracker": "https://github.com/nekitdev/gd.py/issues",
     },
     version=version,
-    packages=["gd", "gd.events", "gd.api", "gd.memory"],
+    packages=["gd", "gd.events", "gd.api", "gd.image", "gd.memory", "gd.server"],
     license="MIT",
     description="Geometry Dash API Wrapper for Python",
     long_description=readme,

@@ -57,34 +57,40 @@ Editor
 ------
 
 .. autoclass:: Editor
+    :inherited-members:
     :members:
 
 Header
 ------
 
 .. autoclass:: Header
+    :inherited-members:
     :members:
 
 HSV
 ---
 
 .. autoclass:: HSV
+    :inherited-members:
     :members:
 
 ColorChannel
 ------------
 
 .. autoclass:: ColorChannel
+    :inherited-members:
     :members:
 
 ColorCollection
 ---------------
 
 .. autoclass:: ColorCollection
+    :inherited-members:
     :members:
 
 Object
 ------
 
 .. autoclass:: Object
+    :inherited-members:
     :members:

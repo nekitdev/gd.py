@@ -131,7 +131,7 @@ class User(AbstractEntity):
 
     @property
     def role(self) -> Role:
-        """:class:`.Role`: A status level of the user."""
+        """:class:`~gd.Role`: A status level of the user."""
         return Role.from_value(self.options.get("role", 0))
 
     @property
@@ -173,22 +173,22 @@ class User(AbstractEntity):
 
     @property
     def message_state(self) -> MessageState:
-        """:class:`.MessageState`: A type indicating user's message inbox state."""
+        """:class:`~gd.MessageState`: A type indicating user's message inbox state."""
         return MessageState.from_value(self.options.get("message_state", 0))
 
     @property
     def friend_request_state(self) -> FriendRequestState:
-        """:class:`.FriendRequestState`: A type indicating user's friend requests state."""
+        """:class:`~gd.FriendRequestState`: A type indicating user's friend requests state."""
         return FriendRequestState.from_value(self.options.get("friend_request_state", 0))
 
     @property
     def comment_state(self) -> CommentState:
-        """:class:`.CommentState`: A type indicating user's comment history policy."""
+        """:class:`~gd.CommentState`: A type indicating user's comment history policy."""
         return CommentState.from_value(self.options.get("comment_state", 0))
 
     @property
     def friend_state(self) -> FriendState:
-        """:class:`.FriendState`: A type indicating relation between client and user."""
+        """:class:`~gd.FriendState`: A type indicating relation between client and user."""
         return FriendState.from_value(self.options.get("friend_state", 0))
 
     def is_mod(self, role: Optional[Union[int, str, Role]] = None) -> bool:
@@ -206,14 +206,19 @@ class User(AbstractEntity):
 
     @property
     def percent(self) -> int:
+        """:class:`int`: Record percentage. ``-1`` if not in the level leaderboard."""
         return self.options.get("percent", -1)
 
     @property
     def recorded_at(self) -> Optional[datetime]:
+        """Optional[:class:`datetime.datetime`]: Record timestamp.
+        ``None`` if not in the level leaderboard.
+        """
         return self.options.get("recorded_at")
 
     @property
     def icon_type(self) -> IconType:
+        """:class:`~gd.IconType`: Type of user's main icon."""
         return IconType.from_value(self.options.get("icon_type", 0))
 
     @property
@@ -263,21 +268,26 @@ class User(AbstractEntity):
 
     @property
     def color_1_id(self) -> int:
+        """:class:`int`: ID of user's primary color."""
         return self.options.get("color_1_id", 0)
 
     @property
     def color_2_id(self) -> int:
+        """:class:`int`: ID of user's secondary color."""
         return self.options.get("color_2_id", 3)
 
     @property
     def color_1(self) -> Color:
+        """:class:`~gd.Color`: User's primary color."""
         return Color.with_id(self.color_1_id)
 
     @property
     def color_2(self) -> Color:
+        """:class:`~gd.Color`: User's secondary color."""
         return Color.with_id(self.color_2_id)
 
     def has_glow(self) -> bool:
+        """Whether the user has glow outline enabled."""
         return bool(self.options.get("has_glow"))
 
     has_glow_outline = has_glow
@@ -286,9 +296,40 @@ class User(AbstractEntity):
         return getattr(self, IconType.from_value(icon_type).name.lower())
 
     async def get_user(self) -> "User":
+        """Get the user by :attr:`~gd.User.account_id`.
+
+        Raises
+        ------
+        :exc:`~gd.MissingAccess`
+            Failed to find the user.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
+
+        Returns
+        -------
+        :class:`~gd.User`
+            Fetched user.
+        """
         return await self.client.get_user(self.account_id)
 
     async def update(self) -> None:
+        """Update the user.
+
+        Raises
+        ------
+        :exc:`~gd.MissingAccess`
+            Failed to find the user.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
+        """
         new = await self.get_user()
         self.options.update(new.options)
 
@@ -307,12 +348,18 @@ class User(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to send a message.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
 
         Returns
         -------
-        Optional[:class:`.Message`]
+        Optional[:class:`~gd.Message`]
             Sent message.
         """
         return await self.client.send_message(self, subject, body)
@@ -322,8 +369,14 @@ class User(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to block a user.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         await self.client.block(self)
 
@@ -332,8 +385,14 @@ class User(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to unblock a user.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         await self.client.unblock(self)
 
@@ -342,7 +401,7 @@ class User(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to unfriend a user.
         """
         await self.client.unfriend(self)
@@ -361,12 +420,18 @@ class User(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to send a friend request to user.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
 
         Returns
         -------
-        Optional[:class:`.FriendRequest`]
+        Optional[:class:`~gd.FriendRequest`]
             Sent friend request.
         """
         return await self.client.send_friend_request(self, message)
@@ -380,9 +445,20 @@ class User(AbstractEntity):
         page: :class:`int`
             Page to look for levels at.
 
+        Raises
+        ------
+        :exc:`~gd.MissingAccess`
+            Failed to get levels on page.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
+
         Returns
         -------
-        AsyncIterator[:class:`.Level`]
+        AsyncIterator[:class:`~gd.Level`]
             All levels found.
         """
         return self.client.search_levels_on_page(page=page, filters=Filters.by_user(), user=self)
@@ -398,6 +474,14 @@ class User(AbstractEntity):
         pages: Iterable[:class:`int`]
             Pages to look at, represented as a finite iterable.
 
+        Raises
+        ------
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
+
         Returns
         -------
         AsyncIterator[:class:`.Level`]
@@ -410,6 +494,27 @@ class User(AbstractEntity):
     @async_iterable
     def get_profile_comments_on_page(self, page: int = 0) -> AsyncIterator["Comment"]:
         """Gets user's profile comments on a specific page.
+
+        Parameters
+        ----------
+        page: :class:`int`
+            Page to search on.
+
+        Raises
+        ------
+        :exc:`~gd.MissingAccess`
+            Failed to get profile comments on page.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
+
+        Returns
+        -------
+        AsyncIterator[:class:`~gd.Comment`]
+            Comments found.
         """
         return self.client.get_user_comments_on_page(user=self, type=CommentType.PROFILE, page=page)
 
@@ -420,14 +525,56 @@ class User(AbstractEntity):
         self, strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT, page: int = 0,
     ) -> AsyncIterator["Comment"]:
         """Retrieves user's level comments. (history)
+
+        Parameters
+        ----------
+        page: :class:`int`
+            Page to search on.
+
+        Raises
+        ------
+        :exc:`~gd.MissingAccess`
+            Failed to get comment history on page.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
+
+        Returns
+        -------
+        AsyncIterator[:class:`~gd.Comment`]
+            Comments found.
         """
         return self.client.get_user_comments_on_page(user=self, type=CommentType.LEVEL, page=page)
 
     @async_iterable
     def get_profile_comments(
-        self, pages: Optional[Iterable[int]] = PAGES, concurrent: bool = CONCURRENT
+        self, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator["Comment"]:
         """Gets user's profile comments on specific pages.
+
+        Parameters
+        ----------
+        pages: Iterable[:class:`int`]
+            Pages to search on.
+
+        concurrent: :class:`bool`
+            Whether to run comment searching concurrently or sequentially.
+
+        Raises
+        ------
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
+
+        Returns
+        -------
+        AsyncIterator[:class:`~gd.Comment`]
+            Comments found.
         """
         return self.client.get_user_comments(
             user=self, type=CommentType.PROFILE, pages=pages, concurrent=concurrent
@@ -439,10 +586,31 @@ class User(AbstractEntity):
     def get_comment_history(
         self,
         strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
-        pages: Optional[Iterable[int]] = PAGES,
+        pages: Iterable[int] = PAGES,
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator["Comment"]:
         """Gets user's level (history) comments on specific pages.
+
+        Parameters
+        ----------
+        pages: Iterable[:class:`int`]
+            Pages to search on.
+
+        concurrent: :class:`bool`
+            Whether to run comment searching concurrently or sequentially.
+
+        Raises
+        ------
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
+
+        Returns
+        -------
+        AsyncIterator[:class:`~gd.Comment`]
+            Comments found.
         """
         return self.client.get_user_comments(
             user=self, type=CommentType.LEVEL, pages=pages, concurrent=concurrent
@@ -455,15 +623,15 @@ class User(AbstractEntity):
 
         Parameters
         ----------
-        type: Optional[Union[:class:`int`, :class:`str`, :class:`.IconType`]]
+        type: Optional[Union[:class:`int`, :class:`str`, :class:`~gd.IconType`]]
             Type of an icon to generate. If not given or ``"icon"``, picks current icon.
 
         as_image: :class:`bool`
-            Whether to return an image or bytes of an image.
+            Whether to return an image or bytes of an image. ``False`` by default.
 
         Returns
         -------
-        Union[:class:`bytes`, :class:`PIL.Image.Image`]
+        Union[:class:`bytes`, :class:`~PIL.Image.Image`]
             Bytes or an image, based on ``as_image``.
         """
         if type == "icon":
@@ -495,15 +663,15 @@ class User(AbstractEntity):
 
         Parameters
         ----------
-        \*types: Union[:class:`int`, :class:`str`, :class:`.IconType`]
+        \*types: Union[:class:`int`, :class:`str`, :class:`~gd.IconType`]
             Types of icons to generate. If ``"icon"`` is given, picks current main icon.
 
         as_image: :class:`bool`
-            Whether to return images or bytes of images.
+            Whether to return images or bytes of images. ``False`` by default.
 
         Returns
         -------
-        Union[AsyncIterator[:class:`bytes`], AsyncIterator[:class:`PIL.Image.Image`]]
+        Union[AsyncIterator[:class:`bytes`], AsyncIterator[:class:`~PIL.Image.Image`]]
             Bytes or images, based on ``as_image``.
         """
         if not types:
@@ -520,7 +688,7 @@ class User(AbstractEntity):
 
         Parameters
         ----------
-        \*types: Iterable[Optional[Union[:class:`int`, :class:`str`, :class:`.IconType`]]]
+        \*types: Iterable[Optional[Union[:class:`int`, :class:`str`, :class:`~gd.IconType`]]]
             Types of icons to generate. If ``"icon"`` is given, picks current main icon.
 
         as_image: :class:`bool`
@@ -528,7 +696,7 @@ class User(AbstractEntity):
 
         Returns
         -------
-        Union[:class:`bytes`, :class:`PIL.Image.Image`]
+        Union[:class:`bytes`, :class:`~PIL.Image.Image`]
             Bytes or an image, based on ``as_image``.
         """
         images = await self.generate_many(*types, as_image=True).list()
@@ -549,7 +717,7 @@ class User(AbstractEntity):
 
         Returns
         -------
-        Union[:class:`bytes`, :class:`PIL.Image.Image`]
+        Union[:class:`bytes`, :class:`~PIL.Image.Image`]
             Bytes or an image, based on ``as_image``.
         """
         return await self.generate_image(*self.ALL_TYPES, as_image=as_image)

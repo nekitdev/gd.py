@@ -20,6 +20,7 @@ User
 ----
 
 .. autoclass:: User
+    :inherited-members:
     :members:
 
 gd.py also provides interface to users' icons and colors::

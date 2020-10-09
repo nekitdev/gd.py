@@ -16,7 +16,29 @@ if TYPE_CHECKING:
 
 class Gauntlet(AbstractEntity):
     """Class that represents *The Lost Gauntlet* in Geometry Dash.
-    This class is derived from :class:`.AbstractEntity`.
+    This class is derived from :class:`~gd.AbstractEntity`.
+
+    .. container:: operations
+
+        .. describe:: x == y
+
+            Check if two objects are equal. Compared by hash and type.
+
+        .. describe:: x != y
+
+            Check if two objects are not equal.
+
+        .. describe:: str(x)
+
+            Return name of the gauntlet.
+
+        .. describe:: repr(x)
+
+            Return representation of the gauntlet, useful for debugging.
+
+        .. describe:: hash(x)
+
+            Returns ``hash(self.hash_str)``.
     """
 
     def __repr__(self) -> str:
@@ -53,19 +75,19 @@ class Gauntlet(AbstractEntity):
 
     @property
     def levels(self) -> Tuple["Level"]:
-        """Tuple[:class:`.Level`]: Tuple containing levels of the Gauntlet.
+        """Tuple[:class:`~gd.Level`]: Tuple containing levels of the Gauntlet.
 
-        Can be retrieved with :meth:`.Gauntlet.get_levels`.
+        Can be retrieved with :meth:`~gd.Gauntlet.get_levels`.
         """
         return self.options.get("levels", ())
 
     @async_iterable
     async def get_levels(self) -> AsyncIterator["Level"]:
-        """Retrieves levels of a Level Pack.
+        """Retrieves levels of a Level Pack. Also updates inner ``levels`` attribute.
 
         Returns
         -------
-        AsyncIterator[:class:`.Level`]
+        AsyncIterator[:class:`~gd.Level`]
             Levels that are found.
         """
         levels: List["Level"] = await self.client.search_levels_on_page(
@@ -80,7 +102,29 @@ class Gauntlet(AbstractEntity):
 
 class MapPack(Gauntlet):
     """Class that represents *Map Pack* in Geometry Dash.
-    This class is derived from :class:`.Gauntlet`.
+    This class is derived from :class:`~gd.Gauntlet`.
+
+    .. container:: operations
+
+        .. describe:: x == y
+
+            Check if two objects are equal. Compared by hash and type.
+
+        .. describe:: x != y
+
+            Check if two objects are not equal.
+
+        .. describe:: str(x)
+
+            Return name of the map pack.
+
+        .. describe:: repr(x)
+
+            Return representation of the map pack, useful for debugging.
+
+        .. describe:: hash(x)
+
+            Returns ``hash(self.hash_str)``.
     """
 
     def __repr__(self) -> str:
@@ -120,15 +164,15 @@ class MapPack(Gauntlet):
 
     @property
     def difficulty(self) -> LevelDifficulty:
-        """:class:`.LevelDifficulty`: Average difficulty of a map pack."""
+        """:class:`~gd.LevelDifficulty`: Average difficulty of a map pack."""
         return LevelDifficulty.from_value(self.options.get("difficulty", -1))
 
     @property
     def color(self) -> Color:
-        """:class:`.Color`: Color of a map pack."""
+        """:class:`~gd.Color`: Color of a map pack."""
         return self.options.get("color", Color(0xFFFFFF))
 
     @property
     def other_color(self) -> Color:
-        """:class:`.Color`: Other color of a map pack."""
+        """:class:`~gd.Color`: Other color of a map pack."""
         return self.options.get("other_color", Color(0xFFFFFF))

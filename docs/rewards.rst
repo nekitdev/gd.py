@@ -21,10 +21,12 @@ Chest
 -----
 
 .. autoclass:: Chest
+    :inherited-members:
     :members:
 
 Quest
 -----
 
 .. autoclass:: Quest
+    :inherited-members:
     :members:

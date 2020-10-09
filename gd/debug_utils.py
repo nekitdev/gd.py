@@ -17,6 +17,8 @@ T = TypeVar("T")
 
 
 class TimerWithElapsed:
+    """Simple timer that keeps track of when it was created."""
+
     def __init__(self) -> None:
         self.created_at = self.get_current()
 
@@ -28,6 +30,7 @@ class TimerWithElapsed:
 
 
 def breakpoint(message: Optional[str] = None, *, prompt: str = "(dbg) ") -> None:
+    """Drop into the debugger at the call site."""
     debugger = pdb.Pdb()
 
     debugger.prompt = prompt
@@ -44,13 +47,33 @@ def breakpoint(message: Optional[str] = None, *, prompt: str = "(dbg) ") -> None
 
 
 def print_source(some_object: Any) -> None:
+    """Attempt to find and print source of the object, and do nothing on fail."""
     try:
         print(inspect.getsource(some_object))
+
     except Exception:
         pass
 
 
 def time_execution(function: Callable[..., T], *args, **kwargs) -> Tuple[T, timedelta]:
+    r"""Execute given ``function`` with ``args`` and ``kwargs`` and measure elapsed time.
+
+    Parameters
+    ----------
+    function: Callable[..., ``T``]
+        Function to call.
+
+    \*args
+        Arguments to call function with.
+
+    \*\*kwargs
+        Keyword arguments to call function with.
+
+    Returns
+    -------
+    Tuple[``T``, :class:`datetime.timedelta`]
+        Tuple: result of the ``function`` and time elapsed.
+    """
     timer = TimerWithElapsed()
 
     result = function(*args, **kwargs)
@@ -59,6 +82,26 @@ def time_execution(function: Callable[..., T], *args, **kwargs) -> Tuple[T, time
 
 
 def time_execution_and_print(function: Callable[..., T], *args, **kwargs) -> T:
+    r"""Execute given ``function`` with ``args`` and ``kwargs`` and print elapsed time.
+
+    Prints a message like ``Executed function_name in 0:00:00.001000``.
+
+    Parameters
+    ----------
+    function: Callable[..., ``T``]
+        Function to call.
+
+    \*args
+        Arguments to call function with.
+
+    \*\*kwargs
+        Keyword arguments to call function with.
+
+    Returns
+    -------
+    ``T``
+        Result that the ``function`` returns.
+    """
     result, elapsed = time_execution(function, *args, **kwargs)
 
     name = getattr(function, "__qualname__", repr(function))
@@ -69,4 +112,11 @@ def time_execution_and_print(function: Callable[..., T], *args, **kwargs) -> T:
 
 
 def unreachable() -> NoReturn:
+    """Indicates the code that is unreachable.
+
+    Raises
+    ------
+    :exc:`RuntimeError`
+        Error that is raised when, for some reason, ``unreachable()`` function was executed.
+    """
     raise RuntimeError("Reached code marked as unreachable.")

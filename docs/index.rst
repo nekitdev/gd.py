@@ -21,21 +21,23 @@ Documentation Contents
     client
     entity
     user
-    text
+    content
     song
     level
     rewards
+    datetime
     save
     editor
     guidelines
     recording
     memory
-    utils
     exceptions
     enums
     events
-    advanced
     console
+    advanced
+    decorators
+    debug
 
 Additional Information
 -----------------------

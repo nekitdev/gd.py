@@ -1,4 +1,0 @@
-.. currentmodule:: gd
-
-Utils
-=====

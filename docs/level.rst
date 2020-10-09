@@ -19,7 +19,22 @@ Level
 -----
 
 .. autoclass:: Level
+    :inherited-members:
     :members:
+
+Difficulty
+----------
+
+.. autofunction:: get_difficulty
+
+Password
+--------
+
+.. autoclass:: Password
+    :members:
+
+Searching
+---------
 
 gd.py also provides a convenient way of searching for different levels::
 
@@ -46,9 +61,7 @@ Here is an example of fetching levels of a Fire gauntlet::
 
     client = gd.Client()
 
-    gauntlets = await client.get_gauntlets()
-
-    fire_gauntlet = gd.utils.get(gauntlets, name='Fire Gauntlet')
+    fire_gauntlet = await client.get_gauntlets().get(name="Fire Gauntlet")
 
     for level in await fire_gauntlet.get_levels():
         print(level.id, level.rating, level.name)
@@ -57,7 +70,9 @@ Level Packs
 -----------
 
 .. autoclass:: MapPack
+    :inherited-members:
     :members:
 
 .. autoclass:: Gauntlet
+    :inherited-members:
     :members:

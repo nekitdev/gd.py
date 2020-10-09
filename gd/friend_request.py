@@ -15,7 +15,29 @@ if TYPE_CHECKING:
 
 class FriendRequest(AbstractEntity):
     """Class that represents a friend request.
-    This class is derived from :class:`.AbstractEntity`.
+    This class is derived from :class:`~gd.AbstractEntity`.
+
+    .. container:: operations
+
+        .. describe:: x == y
+
+            Check if two objects are equal. Compared by hash and type.
+
+        .. describe:: x != y
+
+            Check if two objects are not equal.
+
+        .. describe:: str(x)
+
+            Return content of the friend request.
+
+        .. describe:: repr(x)
+
+            Return representation of the friend request, useful for debugging.
+
+        .. describe:: hash(x)
+
+            Returns ``hash(self.hash_str)``.
     """
 
     def __repr__(self) -> str:
@@ -58,12 +80,12 @@ class FriendRequest(AbstractEntity):
 
     @property
     def author(self) -> User:
-        """:class:`.User`: Author of the friend request."""
+        """:class:`~gd.User`: Author of the friend request."""
         return self.inner_user if self.is_normal() else self.other_user
 
     @property
     def recipient(self) -> User:
-        """:class:`.User`: Recipient of the friend request."""
+        """:class:`~gd.User`: Recipient of the friend request."""
         return self.other_user if self.is_normal() else self.inner_user
 
     @property
@@ -76,7 +98,7 @@ class FriendRequest(AbstractEntity):
 
     @property
     def type(self) -> FriendRequestType:
-        """:class:`.FriendRequestType`: Whether request is incoming or sent."""
+        """:class:`~gd.FriendRequestType`: Whether request is incoming or sent."""
         return FriendRequestType.from_value(self.options.get("type", FriendRequestType.NORMAL))
 
     @property
@@ -91,7 +113,7 @@ class FriendRequest(AbstractEntity):
 
     @property
     def created_at(self) -> Optional[datetime]:
-        """Optional[:class:`~py:datetime.datetime`]:
+        """Optional[:class:`~datetime.datetime`]:
         Timestamp representing when friend request was created.
         """
         return self.options.get("created_at")
@@ -105,8 +127,14 @@ class FriendRequest(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to read a request.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         await self.client.read_friend_request(self)
 
@@ -115,8 +143,14 @@ class FriendRequest(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to delete a request.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         await self.client.delete_friend_request(self)
 
@@ -125,7 +159,13 @@ class FriendRequest(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`~gd.MissingAccess`
             Failed to accept a request.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         await self.client.accept_friend_request(self)

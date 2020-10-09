@@ -16,11 +16,32 @@ def float_to_byte_channel(value: float) -> int:
 
 
 class Color:
-    """Represents a Color. This class is similar
-    to a (red, green, blue) :class:`tuple`.
+    """Represents a Color.
+
+    .. container:: operations
+
+        .. describe:: x == y
+
+            Check if two colors are equal.
+
+        .. describe:: x != y
+
+            Check if two colors are not equal.
+
+        .. describe:: str(x)
+
+            Return hex of the color, e.g. ``#ffffff``.
+
+        .. describe:: repr(x)
+
+            Return representation of the color, useful for debugging.
+
+        .. describe:: hash(x)
+
+            Returns ``hash(self.value)``.
 
     Attributes
-    ------------
+    ----------
     value: :class:`int`
         The raw integer colour value.
     """
@@ -168,6 +189,9 @@ class Color:
         return "\x1b[0m"
 
     def ansi_escape(self, string: Optional[str] = None) -> str:
+        """Color ``string`` using ANSI representation of the color.
+        If not given, :meth:`~gd.Color.to_hex` is used.
+        """
         if string is None:
             string = self.to_hex()
 
@@ -177,25 +201,28 @@ class Color:
 
     @classmethod
     def from_hex(cls, hex_str: str) -> "Color":
-        return cls(int(hex_str, 16))
+        """Constructs :class:`~gd.Color` from hex string, e.g. ``0x7289da`` or ``#000000``."""
+        return cls(int(hex_str.replace("#", ""), 16))
 
     @classmethod
     def from_rgb(cls, r: int, g: int, b: int) -> "Color":
-        """Constructs a :class:`Color` from an RGB tuple."""
+        """Constructs a :class:`~gd.Color` from an RGB tuple."""
         return cls((r << DOUBLE_SIZE) + (g << SIZE) + b)
 
     @classmethod
     def from_hsv(cls, h: float, s: float, v: float) -> "Color":
-        """Constructs a :class:`Color` from an HSV (HSB) tuple."""
+        """Constructs a :class:`~gd.Color` from an HSV (HSB) tuple."""
         rgb = colorsys.hsv_to_rgb(h, s, v)
         return cls.from_rgb(*map(float_to_byte_channel, rgb))
 
     @classmethod
     def from_rgb_string(cls, string: str, delim: str = ",") -> "Color":
+        """Constructs a :class:`~gd.Color` from RGB string, e.g. ``255,255,255``."""
         return cls.from_rgb(*map(int, string.split(delim)))
 
     @classmethod
     def with_id(cls, id: int) -> "Color":
+        """Creates a :class:`~gd.Color` with in-game ID of ``id``."""
         maybe_color = cls.ID_TO_COLOR.get(id)
 
         if maybe_color is None:
@@ -205,11 +232,13 @@ class Color:
 
     @classmethod
     def iter_colors(cls) -> Iterator["Color"]:
+        """Returns an iterator over all in-game colors."""
         for value in cls.COLOR_TO_ID:
             yield cls(value)
 
     @classmethod
     def list_colors(cls) -> List["Color"]:
+        """Same as :meth:`~gd.Color.iter_colors`, but returns a list."""
         return list(cls.iter_colors())
 
 

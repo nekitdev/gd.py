@@ -12,6 +12,7 @@ from gd.abstract_entity import *
 from gd.client import *
 from gd.color import *
 from gd.comment import *
+from gd.converters import *
 from gd.decorators import *
 from gd.enums import *
 from gd.errors import *

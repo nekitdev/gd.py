@@ -26,7 +26,7 @@ def is_iterable(maybe_iterable: Union[Iterable[T], T]) -> bool:
 class Filters:
     """Class that adds ability to create custom filters to apply when searching for levels.
 
-    Attributes
+    Parameters
     ----------
     """
 

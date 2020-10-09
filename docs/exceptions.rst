@@ -10,48 +10,63 @@ Exception List
 --------------
 
 .. autoclass:: GDException
+    :inherited-members:
     :members:
 
 .. autoclass:: HTTPException
+    :inherited-members:
     :members:
 
 .. autoclass:: HTTPError
+    :inherited-members:
     :members:
 
 .. autoclass:: HTTPStatusError
+    :inherited-members:
     :members:
 
 .. autoclass:: ClientException
+    :inherited-members:
     :members:
 
 .. autoclass:: MissingAccess
+    :inherited-members:
     :members:
 
 .. autoclass:: SongRestricted
+    :inherited-members:
     :members:
 
 .. autoclass:: LoginFailure
+    :inherited-members:
     :members:
 
 .. autoclass:: NothingFound
+    :inherited-members:
     :members:
 
 .. autoclass:: NotLoggedError
+    :inherited-members:
     :members:
 
 .. autoclass:: DataException
+    :inherited-members:
     :members:
 
 .. autoclass:: DeError
+    :inherited-members:
     :members:
 
 .. autoclass:: SerError
+    :inherited-members:
     :members:
 
 .. autoclass:: XMLError
+    :inherited-members:
     :members:
 
 .. autoclass:: EditorError
+    :inherited-members:
     :members:
 
 Exception Hierarchy

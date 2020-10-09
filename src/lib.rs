@@ -5,12 +5,42 @@ use pyo3::wrap_pyfunction;
 pub mod utils;
 
 
+/// Apply XOR cipher to ``stream`` with ``key``.
+/// Applying this operation twice decodes ``stream`` back to the initial state.
+///
+/// Parameters
+/// ----------
+/// stream: :class:`bytes`
+///     Data to apply XOR on.
+///
+/// key: :class:`int`
+///     Key to use. Type ``u8`` (or ``byte``) should be used, in ``[0; 255]`` range.
+///
+/// Returns
+/// -------
+/// :class:`bytes`
+///     Data after XOR applied.
 #[pyfunction]
 fn cyclic_xor<'p>(py: Python<'p>, data: &[u8], key: &[u8]) -> PyResult<&'p PyBytes> {
     Ok(PyBytes::new(py, &utils::cyclic_xor(data, key)))
 }
 
 
+/// Apply cyclic XOR cipher to ``stream`` with ``key``.
+/// Applying this operation twice decodes ``stream`` back to the initial state.
+///
+/// Parameters
+/// ----------
+/// stream: :class:`bytes`
+///     Data to apply XOR on.
+///
+/// key: :class:`bytes`
+///     Key to use. It is cycled and zipped with ``stream``.
+///
+/// Returns
+/// -------
+/// :class:`bytes`
+///     Data after XOR applied.
 #[pyfunction]
 fn xor<'p>(py: Python<'p>, data: &[u8], key: u8) -> PyResult<&'p PyBytes> {
     Ok(PyBytes::new(py, &utils::xor(data, key)))

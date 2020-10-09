@@ -24,16 +24,19 @@ Artist Info
 -----------
 
 .. autoclass:: ArtistInfo
+    :inherited-members:
     :members:
 
 Author
 ------
 
 .. autoclass:: Author
+    :inherited-members:
     :members:
 
 Song
 ----
 
 .. autoclass:: Song
+    :inherited-members:
     :members:

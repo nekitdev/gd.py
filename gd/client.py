@@ -327,7 +327,7 @@ class Client:
             Failed to load the save.
 
         :exc:`~gd.HTTPStatusError`
-            Server returned error status codes. (``4XX`` or ``5XX`` and above).
+            Server returned error status code.
 
         :exc:`~gd.HTTPError`
             Failed to process the request.
@@ -367,7 +367,7 @@ class Client:
             Failed to save the database, or it is empty (i.e. not changed).
 
         :exc:`~gd.HTTPStatusError`
-            Server returned error status codes. (``4XX`` or ``5XX`` and above).
+            Server returned error status code.
 
         :exc:`~gd.HTTPError`
             Failed to process the request.

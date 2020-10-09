@@ -8,8 +8,6 @@ __all__ = (
     "datetime",
     "time",
     "timedelta",
-    "de_human_delta",
-    "ser_human_delta",
     "from_human_delta",
     "to_human_delta",
 )
@@ -47,6 +45,18 @@ SECONDS_TO_TIME_NAME = {seconds: time_name for time_name, seconds in TIME_NAME_T
 
 
 def de_human_delta(string: str) -> datetime:
+    """Convert human time delta to datetime object.
+
+    Parameters
+    ----------
+    string: :class:`str`
+        Human time delta, like ``13 hours ago`` or ``in 42 seconds``.
+
+    Returns
+    -------
+    :class:`datetime.datetime`
+        Datetime object from string.
+    """
     match = HUMAN_TIME.match(string)
 
     if match is None:
@@ -71,6 +81,29 @@ def de_human_delta(string: str) -> datetime:
 
 
 def ser_human_delta(datetime_object: Optional[datetime], distance_only: bool = True) -> str:
+    """Convert datetime object to human delta.
+
+    Parameters
+    ----------
+    datetime_object: Optional[:class:`datetime.datetime`]
+        Datetime object to convert to string. If ``None``, ``unknown`` is used.
+
+    distance_only: :class:`bool`
+        Whether to display distance only.
+
+        +---------------+--------------------+-------------------+
+        | distance_only |          past time |       future time |
+        +===============+====================+===================+
+        | ``False``     | ``30 minutes ago`` | ``in 10 seconds`` |
+        +---------------+--------------------+-------------------+
+        | ``True``      | ``-30 minutes``    | ``10 seconds``    |
+        +---------------+--------------------+-------------------+
+
+    Returns
+    -------
+    :class:`str`
+        Human time delta, like ``13 hours ago`` or ``42 seconds``.
+    """
     if datetime_object is None:
         if distance_only:
             return "unknown"

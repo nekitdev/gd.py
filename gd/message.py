@@ -14,7 +14,29 @@ __all__ = ("Message",)
 
 class Message(AbstractEntity):
     """Class that represents private messages in Geometry Dash.
-    This class is derived from :class:`.AbstractEntity`.
+    This class is derived from :class:`~gd.AbstractEntity`.
+
+    .. container:: operations
+
+        .. describe:: x == y
+
+            Check if two objects are equal. Compared by hash and type.
+
+        .. describe:: x != y
+
+            Check if two objects are not equal.
+
+        .. describe:: str(x)
+
+            Return content of the message. Empty if the message was not read yet.
+
+        .. describe:: repr(x)
+
+            Return representation of the message, useful for debugging.
+
+        .. describe:: hash(x)
+
+            Returns ``hash(self.hash_str)``.
     """
 
     SCHEMA = "Re: {message.subject}"
@@ -24,7 +46,10 @@ class Message(AbstractEntity):
         return make_repr(self, info)
 
     def __str__(self) -> str:
-        return str(self.subject)
+        if self.content is None:
+            return ""
+
+        return str(self.content)
 
     @classmethod
     def from_model(
@@ -51,12 +76,12 @@ class Message(AbstractEntity):
 
     @property
     def author(self) -> User:
-        """:class:`.User`: Author of the message."""
+        """:class:`~gd.User`: Author of the message."""
         return self.inner_user if self.is_normal() else self.other_user
 
     @property
     def recipient(self) -> User:
-        """:class:`.User`: Recipient of the message."""
+        """:class:`~gd.User`: Recipient of the message."""
         return self.other_user if self.is_normal() else self.inner_user
 
     @property
@@ -74,21 +99,21 @@ class Message(AbstractEntity):
 
     @property
     def created_at(self) -> Optional[datetime]:
-        """Optional[:class:`~py:datetime.datetime`]:
+        """Optional[:class:`~datetime.datetime`]:
         Timestamp representing when the message was created.
         """
         return self.options.get("created_at")
 
     @property
     def type(self) -> MessageType:
-        """:class:`.MessageType`: Whether a message is sent or incoming."""
+        """:class:`~gd.MessageType`: Whether a message is sent or incoming."""
         return MessageType.from_value(self.options.get("type", MessageType.NORMAL))
 
     def is_normal(self) -> bool:
         return self.type is MessageType.NORMAL
 
     def get_content(self) -> Optional[str]:
-        """Optional[:class:`str`]: Content of the message. Requires :meth:`.Message.read`."""
+        """Optional[:class:`str`]: Content of the message. Requires :meth:`~gd.Message.read`."""
         return self.options.get("content")
 
     def set_content(self, content: str) -> None:
@@ -109,6 +134,17 @@ class Message(AbstractEntity):
     async def read(self) -> str:
         """Read a message. Set the body of the message to the content.
 
+        Raises
+        ------
+        :exc:`~gd.MissingAccess`
+            Failed to read a message.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
+
         Returns
         -------
         :class:`str`
@@ -122,7 +158,7 @@ class Message(AbstractEntity):
     async def reply(self, content: str, schema: Optional[str] = None) -> Optional["Message"]:
         """Reply to the message. Format the subject according to schema.
 
-        Schema format can only contain ``{message.attr}`` elements.
+        Schema format can only contain ``{message.attribute}`` elements.
 
         Content also allows schema format.
 
@@ -131,9 +167,25 @@ class Message(AbstractEntity):
         .. code-block:: python3
 
             await message.reply(
-                content='Replying to message by {message.author.name}.'
-                schema='Re: {message.subject} ({message.rating})'
+                content="Replying to message by {message.author.name}."
+                schema="Re: {message.subject} ({message.rating})"
             )
+
+        Raises
+        ------
+        :exc:`~gd.MissingAccess`
+            Failed to read a message.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
+
+        Returns
+        -------
+        Optional[:class:`~gd.Message`]
+            Sent message, or ``None`` if :attr:`~gd.Client.load_after_post` is ``False``.
         """
         if schema is None:
             schema = self.SCHEMA
@@ -147,7 +199,13 @@ class Message(AbstractEntity):
 
         Raises
         ------
-        :exc:`.MissingAccess`
+        :exc:`gd.MissingAccess`
             Failed to delete a message.
+
+        :exc:`~gd.HTTPStatusError`
+            Server returned error status code.
+
+        :exc:`~gd.HTTPError`
+            Failed to process the request.
         """
         await self.client.delete_message(self)

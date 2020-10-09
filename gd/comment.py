@@ -29,9 +29,11 @@ class Comment(AbstractEntity):
             Check if two objects are not equal.
 
         .. describe:: str(x)
+
             Return content of the comment.
 
         .. describe:: repr(x)
+
             Return representation of the comment, useful for debugging.
 
         .. describe:: hash(x)
@@ -58,15 +60,14 @@ class Comment(AbstractEntity):
         model: :class:`~gd.model.CommentModel`
             Comment model to use.
 
-        client: :class:`~typing.Optional`[:class:`~gd.Client`]
+        client: Optional[:class:`~gd.Client`]
             Client to attach.
 
-        user: :class:`~typing.Optional`[:class:`~gd.User`]
+        user: Optional[:class:`~gd.User`]
             Author of the comment to use, if not in model.
 
         Returns
         -------
-
         :class:`~gd.Comment`
             New comment instance.
         """
@@ -108,7 +109,7 @@ class Comment(AbstractEntity):
 
     @property
     def created_at(self) -> Optional[datetime]:
-        """Optional[:class:`~py:datetime.datetime`]:
+        """Optional[:class:`~datetime.datetime`]:
         Timestamp representing when the comment was created.
         """
         return self.options.get("created_at")
@@ -160,7 +161,7 @@ class Comment(AbstractEntity):
             Failed to like a comment.
 
         :exc:`~gd.HTTPStatusError`
-            Server returned error status codes. (``4XX`` or ``5XX`` and above).
+            Server returned error status code.
 
         :exc:`~gd.HTTPError`
             Failed to process the request.
@@ -176,7 +177,7 @@ class Comment(AbstractEntity):
             Failed to dislike a comment.
 
         :exc:`~gd.HTTPStatusError`
-            Server returned error status codes. (``4XX`` or ``5XX`` and above).
+            Server returned error status code.
 
         :exc:`~gd.HTTPError`
             Failed to process the request.
@@ -192,7 +193,7 @@ class Comment(AbstractEntity):
             Comment was not deleted.
 
         :exc:`~gd.HTTPStatusError`
-            Server returned error status codes. (``4XX`` or ``5XX`` and above).
+            Server returned error status code.
 
         :exc:`~gd.HTTPError`
             Failed to process the request.
