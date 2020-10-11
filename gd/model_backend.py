@@ -303,8 +303,8 @@ class BaseField:
         info = {
             "index": self.index,
             "name": self.name,
-            "ser": getattr(self.ser, "__qualname__", self.ser),
             "de": getattr(self.de, "__qualname__", self.de),
+            "ser": getattr(self.ser, "__qualname__", self.ser),
             "type": getattr(self.type, "__name__", self.type),
             "default": repr(self.default),
             "aliases": self.aliases,
@@ -915,8 +915,9 @@ def create_class_backend(
             for field in FIELDS:
                 for field_name in (field.name, *field.aliases):
                     namespace[field_name] = map_property(
-                        name=field_name, attr=DATA, key=field.index, type=field.type, doc=field.doc,
+                        name=field_name, attr=DATA, key=field.index, type=field.type, doc=field.doc
                     )
+
             del field_name
             del field
 
@@ -1016,9 +1017,9 @@ class Model(metaclass=ModelMeta):
         if parser is None:
             raise RuntimeError("Attempt to use parsing when PARSER is undefined.")
 
-        data = cls.from_data(parser.parse(string), use_default=use_default)
+        self = cls.from_data(parser.parse(string), use_default=use_default)
 
-        return data
+        return self
 
     def to_string(self) -> str:
         parser = self.PARSER

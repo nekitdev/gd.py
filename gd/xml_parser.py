@@ -1,177 +1,280 @@
-from pathlib import Path
-
 try:
     from lxml import etree as xml  # type: ignore
 except ImportError:
     from xml.etree import ElementTree as xml
 
-from gd.typing import Any, AnyStr, Dict, IO, TypeVar, Union
-from gd.errors import XMLError
-
-__all__ = ("XMLParser", "xml")
+from gd.text_utils import make_repr
+from gd.typing import (
+    Any, AnyStr, Callable, Dict, Iterable, List, Mapping, Optional, TypeVar, Union, cast
+)
 
 T = TypeVar("T")
+
+
+class NoDefault:
+    pass
+
+
+NoDefaultOr = Union[NoDefault, T]
+
+no_default = NoDefault()
 
 XML_CHAR_REF_REPLACE = "xmlcharrefreplace"
 XML_ENCODING = "utf-8"
 
-PLIST_VERSION = "1.0"
 GJ_VERSION = "2.0"
+PLIST_VERSION = "1.0"
+XML_VERSION = "1.0"
 
-DECLARATION = '<?xml version="1.0"?>'
-DECLARATION_BYTES = DECLARATION.encode(XML_ENCODING)
-
-LONG_TO_SHORT_NAME = {
-    "dict": "d",
-    "key": "k",
-    "true": "t",
-    "false": "f",
-    "integer": "i",
-    "real": "r",
-    "string": "s",
-}
-SHORT_TO_LONG_NAME = {value: key for key, value in LONG_TO_SHORT_NAME.items()}
-
-SKIP = {False, None}
-TYPES = {float: "r", int: "i", str: "s"}
+DECLARATION = f"<?xml version=\"{XML_VERSION}\"?>"
+DECLARATION_DATA = DECLARATION.encode(XML_ENCODING)
 
 
 class XMLParser:
-    def __init__(self, use_plist: bool = True) -> None:
-        self._attrib = {"version": PLIST_VERSION, "gjver": GJ_VERSION}
-        self._use_plist = use_plist
+    def __init__(self, plist: bool = False, **plist_attrs) -> None:
+        self.plist = plist
 
-    def load_file(
-        self, file_or_path: Union[IO, Path, str], encoding: str = XML_ENCODING,
-    ) -> Dict[str, T]:
-        try:
-            return self._load(xml.parse(file_or_path, encoding=encoding))
+        self.plist_attrs = {"version": PLIST_VERSION, "gjver": GJ_VERSION}
+        self.plist_attrs.update(plist_attrs)
 
-        except Exception as error:  # noqa
-            raise XMLError("Failed to parse XML file.") from error
+    def __repr__(self) -> str:
+        info = {"plist": self.plist}
+        info.update(self.plist_attrs)
+        return make_repr(self, info)
 
-    def load(self, xml_string: AnyStr) -> Dict[str, T]:
-        try:
-            return self._load(xml.fromstring(xml_string))
+    def load(self, string: AnyStr, default: NoDefaultOr[T] = no_default) -> T:
+        element = xml.fromstring(string)
 
-        except Exception as error:  # noqa
-            raise XMLError("Failed to parse XML string.") from error
+        if element.tag == "plist":
+            self.plist = True
 
-    def dump_file(
-        self,
-        some_dict: Dict[str, T],
-        file_or_path: Union[IO, Path, str],
-        encoding: str = XML_ENCODING,
-    ) -> None:
-        file: IO
-
-        if isinstance(file_or_path, (Path, str)):
-            file = open(file_or_path, "w", encoding=encoding, errors=XML_CHAR_REF_REPLACE)
-            close = True
-
-        else:
-            file = file_or_path
-            close = False
-
-        try:
-            file.write(DECLARATION)  # type: ignore
-        except Exception:  # noqa
             try:
-                file.write(DECLARATION.encode(encoding=encoding))  # type: ignore
-            except Exception:  # noqa
-                pass
+                element = element[0]
 
-        if close:
-            file.close()
-
-        xml.ElementTree(self._dump(some_dict)).write(file_or_path, encoding=encoding)
-
-    def dump(self, some_dict: Dict[str, T]) -> bytes:
-        return DECLARATION_BYTES + xml.tostring(self._dump(some_dict))
-
-    def dump_string(self, some_dict: Dict[str, T], encoding: str = XML_ENCODING) -> str:
-        return DECLARATION + xml.tostring(self._dump(some_dict)).decode(
-            encoding=encoding, errors=XML_CHAR_REF_REPLACE
-        )
-
-    def _load(self, root: xml.Element) -> Dict[str, T]:
-        if root.tag == "plist":
-            try:
-                root = root[0]
-                self._attrib.update(root.attrib)
             except IndexError:
                 return {}
 
-        return self.iterate_xml(root)
+        try:
+            return self.parse_value(element)
 
-    def _dump(self, some_dict: Dict[str, T]) -> xml.Element:
-        if self._use_plist:
-            root = xml.Element("plist", attrib=self._attrib)
-            element = xml.SubElement(root, "dict")
+        except Exception:
+            if default is no_default:
+                raise
+
+            return cast(T, default)
+
+    def dump_as_bytes(self, value: T, ignore_false: bool = True, short: bool = True) -> bytes:
+        if self.plist:
+            root = xml.Element("plist", attrib=self.plist_attrs)
+            element = self.unparse_value(value, root, ignore_false=ignore_false, short=short)
+
         else:
-            element = root = xml.Element("dict")
+            root = element = self.unparse_value(value, ignore_false=ignore_false, short=short)
 
-        self.iterate_dict(element, some_dict)
+        if element is None:
+            return DECLARATION_DATA
 
-        return root
+        return DECLARATION_DATA + xml.tostring(root)
 
-    def iterate_xml(self, element: xml.Element) -> Dict[str, T]:
-        element_it = iter(element)
+    def dump(
+        self, value: T, encoding: str = XML_ENCODING, ignore_false: bool = True, short: bool = True
+    ) -> str:
+        return self.dump_as_bytes(value, ignore_false=ignore_false, short=short).decode(
+            encoding=encoding, errors=XML_CHAR_REF_REPLACE
+        )
 
-        groups = zip(element_it, element_it)
+    def unparse_value(
+        self,
+        value: Optional[T],
+        root_element: Optional[xml.Element] = None,
+        *,
+        short: bool = True,
+        ignore_false: bool = True,
+    ) -> Optional[xml.Element]:
+        return (
+            self.unparse_value_short(value, root_element, ignore_false=ignore_false)
+            if short else self.unparse_value_long(value, root_element, ignore_false=ignore_false)
+        )
 
-        return {key.text: _process(self, inner.tag, inner) for key, inner in groups}
+    def unparse_value_long(
+        self,
+        value: Optional[T],
+        root_element: Optional[xml.Element] = None,
+        *,
+        ignore_false: bool = True,
+    ) -> Optional[xml.Element]:
+        if value is None:
+            return None
 
-    def iterate_dict(self, element: xml.Element, some_dict: Dict[str, T]) -> None:
-        for key, value in some_dict.items():
-            if value is None or value is False:  # exactly bool here
-                continue
+        if ignore_false and value is False:
+            return None
 
-            k = xml.SubElement(element, "k")
-            k.text = key
+        if isinstance(value, str):
+            element = xml.Element("string")
+            element.text = value
 
-            if isinstance(value, dict):
-                sub = xml.SubElement(element, "d")
-                self.iterate_dict(sub, value)
+        elif isinstance(value, float):
+            truncated = int(value)
 
-            elif value is True:
-                xml.SubElement(element, "t")
+            element = xml.Element("real")
+            element.text = str(value if truncated != value else truncated)
 
-            else:
-                sub = xml.SubElement(element, TYPES.get(type(value), "s"))
+        elif isinstance(value, bool):
+            element = xml.Element("true") if value else xml.Element("false")
 
-                if isinstance(value, float) and value.is_integer():
-                    value = int(value)  # type: ignore
+        elif isinstance(value, int):
+            element = xml.Element("integer")
+            element.text = str(value)
 
-                sub.text = str(value)
+        elif isinstance(value, Mapping):
+            element = xml.Element("dict")
+
+            for key, map_value in value.items():
+                xml.SubElement(element, "key").text = key
+
+                self.unparse_value_long(map_value, element)
+
+        elif isinstance(value, Iterable):
+            element = xml.Element("array")
+
+            for item in value:
+                self.unparse_value_long(item, element)
+
+        else:
+            raise ValueError(
+                f"Expected mapping, iterable, bool, float, int or str, got {type(value).__name__}."
+            )
+
+        if root_element is not None:
+            root_element.append(element)
+
+        return element
+
+    def unparse_value_short(
+        self,
+        value: Optional[T],
+        root_element: Optional[xml.Element] = None,
+        *,
+        first_shot: bool = True,
+        ignore_false: bool = False,
+    ) -> Optional[xml.Element]:
+        if value is None:
+            return None
+
+        if ignore_false and value is False:
+            return None
+
+        if isinstance(value, str):
+            element = xml.Element("s")
+            element.text = value
+
+        elif isinstance(value, float):
+            truncated = int(value)
+
+            element = xml.Element("r")
+            element.text = str(value if truncated != value else truncated)
+
+        elif isinstance(value, bool):
+            element = xml.Element("t") if value else xml.Element("f")
+
+        elif isinstance(value, int):
+            element = xml.Element("i")
+            element.text = str(value)
+
+        elif isinstance(value, Mapping):
+            element = xml.Element("dict" if first_shot else "d")
+
+            for key, map_value in value.items():
+                xml.SubElement(element, "k").text = key
+
+                self.unparse_value_short(map_value, element, first_shot=False)
+
+        elif isinstance(value, Iterable):
+            element = xml.Element("a")
+
+            for item in value:
+                self.unparse_value_short(item, element, first_shot=False)
+
+        else:
+            raise ValueError(
+                f"Expected mapping, iterable, bool, float, int or str, got {type(value).__name__}."
+            )
+
+        if root_element is not None:
+            root_element.append(element)
+
+        return element
+
+    @staticmethod
+    def parse_value(element: xml.Element) -> T:
+        return PARSE.get(element.tag, parse_str)(element)  # type: ignore
 
 
-def _bool(parser: XMLParser, element: xml.Element) -> bool:
-    # accepts either "t" or "f"
-    return element.tag == "t"
+def parse_array(elements: xml.Element) -> List[T]:
+    return [
+        PARSE.get(element.tag, parse_str)(element) for element in elements  # type: ignore
+    ]
 
 
-def _int(parser: XMLParser, element: xml.Element) -> int:
-    return int(element.text)
+def parse_dict(elements: xml.Element) -> Dict[str, T]:
+    if not len(elements):
+        return {}
+
+    elements_iter = iter(elements)
+
+    groups = zip(elements_iter, elements_iter)
+
+    return {  # inline
+        key.text: PARSE.get(element.tag, parse_str)(element)  # type: ignore
+        for key, element in groups
+    }
 
 
-def _real(parser: XMLParser, element: xml.Element) -> float:
-    return float(element.text)
+def parse_false(element: xml.Element) -> bool:
+    return False
 
 
-def _str(parser: XMLParser, element: xml.Element) -> str:
-    text = element.text
-    return "" if text is None else text
+def parse_float(element: xml.Element) -> float:
+    string = element.text
+
+    if string is None:
+        return 0.0
+
+    return float(string)
 
 
-def _recurse(parser: XMLParser, element: xml.Element) -> Dict[str, T]:
-    return parser.iterate_xml(element)
+def parse_int(element: xml.Element) -> int:
+    string = element.text
+
+    if string is None:
+        return 0
+
+    return int(string)
 
 
-DEFAULT = _str
-FUNCTIONS = {"d": _recurse, "f": _bool, "i": _int, "r": _real, "s": _str, "t": _bool}
-FUNCTIONS.update({SHORT_TO_LONG_NAME[short_name]: func for short_name, func in FUNCTIONS.items()})
+def parse_str(element: xml.Element) -> str:
+    string = element.text
+
+    return "" if string is None else string
 
 
-def _process(parser: XMLParser, tag: str, element: xml.Element) -> Any:
-    return FUNCTIONS.get(tag, DEFAULT)(parser, element)
+def parse_true(element: xml.Element) -> bool:
+    return True
+
+
+PARSE: Dict[str, Callable[[xml.Element], Any]] = {
+    "a": parse_array,
+    "array": parse_array,
+    "d": parse_dict,
+    "dict": parse_dict,
+    "f": parse_float,
+    "false": parse_float,
+    "i": parse_int,
+    "integer": parse_int,
+    "r": parse_float,
+    "real": parse_float,
+    "s": parse_str,
+    "string": parse_str,
+    "t": parse_true,
+    "true": parse_true,
+}
