@@ -39,7 +39,7 @@ class XMLParser:
 
     def __repr__(self) -> str:
         info = {"plist": self.plist}
-        info.update(self.plist_attrs)
+
         return make_repr(self, info)
 
     def load(self, string: AnyStr, default: NoDefaultOr[T] = no_default) -> T:
@@ -52,7 +52,7 @@ class XMLParser:
                 element = element[0]
 
             except IndexError:
-                return {}
+                return cast(T, {})
 
         try:
             return self.parse_value(element)
