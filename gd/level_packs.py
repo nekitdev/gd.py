@@ -5,7 +5,7 @@ from gd.enums import GauntletID, LevelDifficulty
 from gd.filters import Filters
 from gd.model import GauntletModel, MapPackModel  # type: ignore
 from gd.text_utils import make_repr
-from gd.typing import Any, AsyncIterator, Dict, List, Optional, Tuple, TYPE_CHECKING
+from gd.typing import Any, AsyncIterator, Dict, Iterable, List, Optional, Tuple, TYPE_CHECKING
 
 __all__ = ("Gauntlet", "MapPack")
 
@@ -53,11 +53,13 @@ class Gauntlet(AbstractEntity):
     def __str__(self) -> str:
         return str(self.name)
 
-    def __json__(self) -> Dict[str, Any]:
-        return dict(super().__json__(), levels=self.levels)
+    def __json__(self, ignore: Optional[Iterable[str]] = None) -> Dict[str, Any]:
+        return dict(super().__json__(ignore=ignore), levels=self.levels)
 
     @classmethod
-    def from_model(cls, model: GauntletModel, *, client: Optional["Client"] = None) -> "Gauntlet":
+    def from_model(  # type: ignore[override]
+        cls, model: GauntletModel, *, client: Optional["Client"] = None
+    ) -> "Gauntlet":
         gauntlet_id = GauntletID.from_value(model.id, GauntletID.UNKNOWN)
         name = f"{gauntlet_id.title} Gauntlet"
 
@@ -139,7 +141,9 @@ class MapPack(Gauntlet):
         return make_repr(self, info)
 
     @classmethod
-    def from_model(cls, model: MapPackModel, *, client: Optional["Client"] = None) -> "MapPack":
+    def from_model(  # type: ignore[override]
+        cls, model: MapPackModel, *, client: Optional["Client"] = None
+    ) -> "MapPack":
         return cls(
             id=model.id,
             name=model.name,

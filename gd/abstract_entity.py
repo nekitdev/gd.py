@@ -2,9 +2,11 @@ from gd.decorators import impl_sync
 from gd.errors import ClientException
 from gd.model import Model  # type: ignore
 from gd.text_utils import make_repr
-from gd.typing import Any, Dict, Iterable, Optional, TYPE_CHECKING
+from gd.typing import Any, Dict, Iterable, Optional, Type, TypeVar, TYPE_CHECKING
 
 __all__ = ("AbstractEntity",)
+
+T = TypeVar("T", bound="AbstractEntity")
 
 DATA_IGNORE = {"client"}
 
@@ -60,18 +62,18 @@ class AbstractEntity:
 
         return {key: value for key, value in self.to_dict().items() if key not in ignore}
 
-    def update_inner(self, **options: Any) -> "AbstractEntity":
+    def update_inner(self: T, **options: Any) -> T:
         """Update ``self.options`` with ``options``."""
         self.options.update(options)
         return self
 
     @classmethod
-    def from_model(cls, model: Model, *args, **kwargs) -> "AbstractEntity":
+    def from_model(cls: Type[T], model: Model, *args, **kwargs) -> T:
         """Create new entity from given ``model``, ``args`` and ``kwargs``."""
         raise NotImplementedError
 
     @classmethod
-    def from_models(cls, *models: Model, **kwargs) -> "AbstractEntity":
+    def from_models(cls: Type[T], *models: Model, **kwargs) -> T:
         """Create new entity from given ``models`` by calling ``from_model`` with ``kwargs``."""
         self = cls()
 
@@ -82,8 +84,8 @@ class AbstractEntity:
 
     @classmethod
     def from_dicts(
-        cls, *data: Dict[str, Any], client: Optional["Client"] = None, **kwargs
-    ) -> "AbstractEntity":
+        cls: Type[T], *data: Dict[str, Any], client: Optional["Client"] = None, **kwargs
+    ) -> T:
         """Create new entity from dictionaries in ``data``, with ``client`` and ``kwargs``."""
         self = cls(client=client)
 
@@ -127,7 +129,7 @@ class AbstractEntity:
         """Optional[:class:`~gd.Client`]: Client attached to this object."""
         return self.options.get("client")
 
-    def attach_client(self, client: Optional["Client"] = None) -> "AbstractEntity":
+    def attach_client(self: T, client: Optional["Client"] = None) -> T:
         """Attach ``client`` to ``self``.
 
         Parameters
@@ -143,7 +145,7 @@ class AbstractEntity:
         self.options.update(client=client)
         return self
 
-    def detach_client(self) -> "AbstractEntity":
+    def detach_client(self: T) -> T:
         """Detach ``client`` to ``self``.
 
         Same as calling::

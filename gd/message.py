@@ -52,7 +52,7 @@ class Message(AbstractEntity):
         return str(self.content)
 
     @classmethod
-    def from_model(
+    def from_model(  # type: ignore[override]
         cls,
         model: MessageModel,
         *,

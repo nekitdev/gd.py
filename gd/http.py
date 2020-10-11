@@ -321,7 +321,7 @@ class HTTPClient:
 
         args["params" if route.are_params else "data"] = route.parameters
 
-        return await self.fetch(**args)
+        return await self.fetch(**args)  # type: ignore[arg-type]
 
     async def fetch(
         self,
@@ -404,6 +404,8 @@ class HTTPClient:
 
         if error:
             raise error
+
+        return None
 
     @staticmethod
     def gen_udid(id: Optional[int] = None, low: int = 1, high: int = 1_000_000_000) -> str:

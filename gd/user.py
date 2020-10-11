@@ -51,7 +51,7 @@ class User(AbstractEntity):
         return str(self.name)
 
     @classmethod
-    def from_model(
+    def from_model(  # type: ignore[override]
         cls,
         model: Union[
             CommentUserModel,

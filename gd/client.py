@@ -148,11 +148,11 @@ class Client:
     id: :class:`int`
         ID of the client. ``0`` if not logged in.
 
-    name: Optional[:class:`str`]
-        Name of the client. ``None`` if not logged in.
+    name: :class:`str`
+        Name of the client. Empty string if not logged in.
 
-    password: Optional[:class:`str`]
-        Password of the client. ``None`` if not logged in.
+    password: :class:`str`
+        Password of the client. Empty string if not logged in.
     """
 
     def __init__(self, *, load_after_post: bool = True, **http_args) -> None:
@@ -167,8 +167,8 @@ class Client:
         self.account_id = 0
         self.id = 0
 
-        self.name: Optional[str] = None
-        self.password: Optional[str] = None
+        self.name: str = ""
+        self.password: str = ""
 
     def __repr__(self) -> str:
         info = {
@@ -237,16 +237,13 @@ class Client:
         """:class:`~gd.HTTPClient`: Same as :attr:`gd.Session.http`."""
         return self.session.http
 
-    @property
+    @property  # type: ignore[misc]
     @cache_by("password")
-    def encoded_password(self) -> Optional[str]:
-        """Optional[:class:`str`]: Encoded password for the client."""
-        if self.password is None:
-            return None
-
+    def encoded_password(self) -> str:
+        """:class:`str`: Encoded password for the client."""
         return encode_robtop_str(self.password, Key.ACCOUNT_PASSWORD)  # type: ignore
 
-    @property
+    @property  # type: ignore[misc]
     @login_check
     def user(self) -> User:
         """:class:`~gd.User`: User representing current client."""
@@ -906,7 +903,7 @@ class Client:
 
     @login_check
     async def send_level(self, level: Level, stars: int, feature: bool) -> None:
-        return await self.session.rate_level(
+        return await self.session.rate_level(  # type: ignore
             level.id,
             stars,
             feature,
@@ -987,6 +984,8 @@ class Client:
             message.content = content
 
             return message
+
+        return None
 
     @login_check
     async def get_message(self, message_id: int, type: MessageType) -> Message:
@@ -1069,6 +1068,8 @@ class Client:
                 return None
 
             return friend_request
+
+        return None
 
     @login_check
     async def delete_friend_request(self, friend_request: FriendRequest) -> None:
@@ -1157,7 +1158,7 @@ class Client:
             raise TypeError(f"Expected Comment or User, got {type(entity).__name__!r}.")
 
         return await self.session.like_or_dislike(
-            type=like_type,
+            type=like_type,  # type: ignore
             item_id=entity.id,
             special_id=special_id,
             dislike=dislike,
@@ -1170,7 +1171,7 @@ class Client:
         self, level: Level, content: Optional[str] = None, percent: int = 0
     ) -> Optional[Comment]:
         await self.session.post_comment(
-            type=CommentType.LEVEL,
+            type=CommentType.LEVEL,  # type: ignore
             content=content,
             level_id=level.id,
             percent=percent,
@@ -1191,10 +1192,12 @@ class Client:
 
             return comment
 
+        return None
+
     @login_check
     async def post_comment(self, content: Optional[str] = None) -> Optional[Comment]:
         await self.session.post_comment(
-            type=CommentType.PROFILE,
+            type=CommentType.PROFILE,  # type: ignore
             content=content,
             level_id=0,
             percent=0,
@@ -1214,6 +1217,8 @@ class Client:
                 return None
 
             return comment
+
+        return None
 
     @login_check
     async def delete_comment(self, comment: Comment) -> None:
@@ -1348,7 +1353,7 @@ class Client:
     @login_check
     async def get_chests(
         self,
-        reward_type: RewardType = RewardType.GET_INFO,
+        reward_type: RewardType = RewardType.GET_INFO,  # type: ignore
         chest_1_count: int = 0,
         chest_2_count: int = 0,
     ) -> AsyncIterator[Chest]:
@@ -1379,7 +1384,7 @@ class Client:
         self, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator[MapPack]:
         return run_async_iterators(
-            (self.get_featured_artists_on_page(page=page) for page in pages),
+            (self.get_featured_artists_on_page(page=page) for page in pages),  # type: ignore
             ClientException,
             concurrent=concurrent,
         )
@@ -1394,7 +1399,7 @@ class Client:
 
     async def get_artist_info(self, song_id: int) -> ArtistInfo:
         artist_info = await self.session.get_artist_info(song_id)
-        return ArtistInfo.from_dict(artist_info, client=self)
+        return ArtistInfo.from_dict(artist_info, client=self)  # type: ignore
 
     @async_iterable
     async def search_ng_songs_on_page(self, query: str, page: int = 0) -> AsyncIterator[Song]:
@@ -1418,7 +1423,7 @@ class Client:
         data = await self.session.search_ng_users_on_page(query=query, page=page)
 
         for part in data:
-            yield Author.from_dict(part, client=self)
+            yield Author.from_dict(part, client=self)  # type: ignore
 
     @async_iterable
     def search_ng_users(
@@ -1553,16 +1558,21 @@ class Client:
         return inner
 
     def create_listener(self, event_name: str, *args, **kwargs) -> AbstractListener:
+        listener: AbstractListener
+
         kwargs.update(client=self)
 
         if event_name in {"daily", "weekly"}:
-            listener = TimelyLevelListener(*args, daily=(event_name == "daily"), **kwargs)
+            kwargs.update(daily=(event_name == "daily"))
+            listener = TimelyLevelListener(*args, **kwargs)
 
         elif event_name in {"rate", "unrate"}:
-            listener = RateLevelListener(*args, rate=(event_name == "rate"), **kwargs)
+            kwargs.update(rate=(event_name == "rate"))
+            listener = RateLevelListener(*args, **kwargs)
 
         elif event_name in {"friend_request", "message"}:
-            listener = MessageOrRequestListener(*args, message=(event_name == "message"), **kwargs)
+            kwargs.update(message=(event_name == "message"))
+            listener = MessageOrRequestListener(*args, **kwargs)
 
         elif event_name in {"level_comment"}:
             listener = LevelCommentListener(*args, **kwargs)

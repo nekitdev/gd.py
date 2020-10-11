@@ -31,7 +31,7 @@ class Song(AbstractEntity):
         return str(self.name)
 
     @classmethod
-    def from_model(
+    def from_model(  # type: ignore[override]
         cls, model: SongModel, *, client: Optional["Client"] = None, custom: bool = True
     ) -> "Song":
         return cls(
@@ -218,8 +218,8 @@ class ArtistInfo(AbstractEntity):
         }
         return make_repr(self, info)
 
-    def __json__(self) -> Dict[str, Any]:
-        return dict(super().__json__(), exists=self.exists)
+    def __json__(self, ignore: Optional[Iterable[str]] = None) -> Dict[str, Any]:
+        return dict(super().__json__(ignore=ignore), exists=self.exists)
 
     @property
     def artist(self) -> str:

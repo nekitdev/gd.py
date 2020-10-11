@@ -5,7 +5,7 @@ except ImportError:
 
 from gd.text_utils import make_repr
 from gd.typing import (
-    Any, AnyStr, Callable, Dict, Iterable, List, Mapping, Optional, TypeVar, Union, cast
+    Any, Callable, Dict, Iterable, List, Mapping, Optional, TypeVar, Union, cast
 )
 
 T = TypeVar("T")
@@ -14,6 +14,8 @@ T = TypeVar("T")
 class NoDefault:
     pass
 
+
+AnyString = Union[bytes, str]
 
 NoDefaultOr = Union[NoDefault, T]
 
@@ -42,7 +44,7 @@ class XMLParser:
 
         return make_repr(self, info)
 
-    def load(self, string: AnyStr, default: NoDefaultOr[T] = no_default) -> T:
+    def load(self, string: AnyString, default: NoDefaultOr[T] = no_default) -> T:
         element = xml.fromstring(string)
 
         if element.tag == "plist":

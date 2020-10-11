@@ -6,7 +6,7 @@ from iters import iter
 
 from gd.json import dumps
 from gd.text_utils import make_repr
-from gd.typing import AnyStr, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
+from gd.typing import Dict, Iterable, List, Optional, Tuple, TypeVar, Union
 from gd.xml_parser import XMLParser
 
 from gd.api.struct import LevelAPI  # type: ignore
@@ -14,6 +14,7 @@ from gd.api.utils import MAIN_DEFAULTS, LEVELS_DEFAULTS
 
 __all__ = ("Part", "Database", "LevelStore", "LevelValues", "LevelCollection")
 
+AnyString = Union[bytes, str]
 PathLike = Union[str, Path]
 
 MAIN = "CCGameManager.dat"
@@ -85,7 +86,7 @@ def is_dict(some: T) -> bool:
 
 class Part(dict):
     @classmethod
-    def new(cls, stream: AnyStr, default: Optional[Dict[str, T]] = None) -> "Part":
+    def new(cls, stream: AnyString, default: Optional[Dict[str, T]] = None) -> "Part":
         self = cls()
 
         try:
@@ -117,17 +118,17 @@ class Part(dict):
         """Same as self[key] = value."""
         self[key] = value
 
-    def dump(self) -> bytes:
+    def dump_as_bytes(self) -> bytes:
         """Dump the part and return xml data."""
-        return self.parser.dump(self)
+        return self.parser.dump_as_bytes(self)
 
-    def dump_string(self) -> str:
+    def dump(self) -> str:
         """Dump the part and return xml string."""
-        return self.parser.dump_string(self)
+        return self.parser.dump(self)
 
 
 class Database:
-    def __init__(self, main: Optional[AnyStr] = None, levels: Optional[AnyStr] = None) -> None:
+    def __init__(self, main: Optional[AnyString] = None, levels: Optional[AnyString] = None) -> None:
         self.main = Part.new(main, MAIN_DEFAULTS) if main else Part(MAIN_DEFAULTS)
         self.levels = Part.new(levels, LEVELS_DEFAULTS) if levels else Part(LEVELS_DEFAULTS)
 

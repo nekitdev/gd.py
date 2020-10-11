@@ -3,6 +3,7 @@ from functools import partial
 import signal
 import traceback
 
+from gd.async_iter import AsyncIter
 from gd.async_utils import acquire_loop, shutdown_loop, gather
 from gd.comment import Comment
 from gd.enums import TimelyType
@@ -345,7 +346,7 @@ class UserCommentListener(AbstractListener):
         else:
             self.find_user = partial(self.client.get_user, account_id)
 
-        self.get_user_comments: Callable[[User, Iterable[int], bool], AsyncIterator[Comment]] = (
+        self.get_user_comments: Callable[[User, Iterable[int], bool], AsyncIter[Comment]] = (
             User.get_profile_comments if profile else User.get_comment_history
         )
         self.user: Optional[User] = None
@@ -361,7 +362,9 @@ class UserCommentListener(AbstractListener):
         if self.user is None:
             return
 
-        new = await self.get_user_comments(self.user, pages=range(self.pages))
+        new = await self.get_user_comments(
+            self.user, pages=range(self.pages)  # type: ignore[call-arg]
+        ).list()
 
         if not new:
             return
@@ -379,7 +382,7 @@ class UserCommentListener(AbstractListener):
             self.loop.create_task(dispatcher)
 
 
-def differ(before: Sequence[T], after: Sequence[T], find_new: bool = True) -> Sequence[T]:
+def differ(before: Sequence[T], after: Sequence[T], find_new: bool = True) -> List[T]:
     sequence_not_in, sequence_in = (before, after) if find_new else (after, before)
 
     set_not_in = set(sequence_not_in)

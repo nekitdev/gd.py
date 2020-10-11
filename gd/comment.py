@@ -49,7 +49,7 @@ class Comment(AbstractEntity):
         return str(self.content)
 
     @classmethod
-    def from_model(
+    def from_model(  # type: ignore[override]
         cls, model: CommentModel, *, client: Optional["Client"] = None, user: Optional[User] = None
     ) -> "Comment":
         """Initialize :class:`~gd.Comment` from :class:`~gd.model.CommentModel`.

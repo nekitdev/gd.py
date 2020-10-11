@@ -350,7 +350,7 @@ class Session:
         )
 
     async def send_level(
-        self, level_id: int, stars: int, feature: bool, *, account_id: int, encoded_password: str,
+        self, level_id: int, stars: int, feature: bool, *, account_id: int, encoded_password: str
     ) -> None:
         await self.http.send_level(
             level_id=level_id,

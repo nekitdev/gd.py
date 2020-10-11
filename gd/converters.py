@@ -73,8 +73,8 @@ class Version:
         return self._minor
 
     @property
-    def parts(self) -> Tuple[int]:
-        """Tuple[:class:`int`]: All parts of the version, as tuple object."""
+    def parts(self) -> Tuple[int, int]:
+        """Tuple[:class:`int`, :class:`int`]: All parts of the version, as tuple object."""
         return (self._major, self._minor)
 
     def __repr__(self) -> str:

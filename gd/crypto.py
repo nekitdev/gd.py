@@ -260,12 +260,44 @@ def cyclic_xor(stream: bytes, key: bytes) -> bytes:
 def xor_str(
     string: str, key: int, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS,
 ) -> str:
+    """Apply XOR cipher to ``string`` with ``key``.
+    Applying this operation twice decodes ``string`` back to the initial state.
+
+    Parameters
+    ----------
+    string: :class:`str`
+        String to apply XOR on.
+
+    key: :class:`int`
+        Key to use. Type ``u8`` (or ``byte``) should be used, in ``[0; 255]`` range.
+
+    Returns
+    -------
+    :class:`str`
+        String after XOR applied.
+    """
     return xor(string.encode(encoding, errors), key).decode(encoding, errors)
 
 
 def cyclic_xor_str(
     string: str, key: str, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS,
 ) -> str:
+    """Apply cyclic XOR cipher to ``string`` with ``key``.
+    Applying this operation twice decodes ``string`` back to the initial state.
+
+    Parameters
+    ----------
+    string: :class:`str`
+        String to apply XOR on.
+
+    key: :class:`str`
+        Key to use. It is cycled and zipped with ``string``.
+
+    Returns
+    -------
+    :class:`str`
+        String after XOR applied.
+    """
     return cyclic_xor(string.encode(encoding, errors), key.encode(encoding, errors)).decode(
         encoding, errors
     )

@@ -13,12 +13,13 @@ from gd.crypto import (
 from gd.logging import get_logger
 from gd.platform import LINUX, MACOS, WINDOWS
 from gd.text_utils import make_repr
-from gd.typing import AnyStr, Optional, Tuple, Union
+from gd.typing import Optional, Tuple, Union
 
 from gd.api.database import Database
 
 __all__ = ("MAIN", "LEVELS", "PATH", "SAVE_DELIM", "SaveUtils", "create_db", "save")
 
+AnyString = Union[bytes, str]
 PathLike = Union[str, Path]
 
 MAIN = "CCGameManager.dat"
@@ -328,8 +329,8 @@ class SaveUtils:
 
     async def from_string_async(
         self,
-        main: AnyStr = "",
-        levels: AnyStr = "",
+        main: AnyString = "",
+        levels: AnyString = "",
         apply_xor: bool = False,
         follow_os: bool = False,
     ) -> Database:
@@ -361,8 +362,8 @@ class SaveUtils:
 
     def from_string(
         self,
-        main: AnyStr = "",
-        levels: AnyStr = "",
+        main: AnyString = "",
+        levels: AnyString = "",
         apply_xor: bool = False,
         follow_os: bool = False,
     ) -> Database:
@@ -390,7 +391,7 @@ class SaveUtils:
         """
         return self.load_parts(main=main, levels=levels, apply_xor=apply_xor, follow_os=follow_os)
 
-    def create_db(self, main: AnyStr = "", levels: AnyStr = "") -> Database:
+    def create_db(self, main: AnyString = "", levels: AnyString = "") -> Database:  # type: ignore
         """Create a database from string parts.
 
         This method should be used if you already have XML strings, or it can be used
@@ -424,7 +425,7 @@ class SaveUtils:
         encoder = encode_os_save if follow_os else encode_save
         return encoder(stream, apply_xor=apply_xor)
 
-    def encode_if_str(self, bytes_or_str: AnyStr) -> bytes:
+    def encode_if_str(self, bytes_or_str: AnyString) -> bytes:
         if isinstance(bytes_or_str, str):
             return bytes_or_str.encode(DEFAULT_ENCODING, DEFAULT_ERRORS)
 
@@ -432,8 +433,8 @@ class SaveUtils:
 
     def load_parts(
         self,
-        main: AnyStr = "",
-        levels: AnyStr = "",
+        main: AnyString = "",  # type: ignore
+        levels: AnyString = "",  # type: ignore
         apply_xor: bool = False,
         follow_os: bool = False,
     ) -> Database:

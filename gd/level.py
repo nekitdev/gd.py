@@ -98,13 +98,15 @@ class Level(AbstractEntity):
     def __str__(self) -> str:
         return str(self.name)
 
-    def __json__(self) -> Dict[str, Any]:
+    def __json__(self, ignore: Optional[Iterable[str]] = None) -> Dict[str, Any]:
         return dict(
-            super().__json__(), featured=self.is_featured(), was_unfeatured=self.was_unfeatured(),
+            super().__json__(ignore=ignore),
+            featured=self.is_featured(),
+            was_unfeatured=self.was_unfeatured(),
         )
 
     @classmethod
-    def from_model(
+    def from_model(  # type: ignore[override]
         cls,
         model: LevelModel,
         *,
