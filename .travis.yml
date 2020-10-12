@@ -1,60 +1,89 @@
 language: python
 
-python:
-  - "3.6"
-  - "3.7"
-  - "3.8"
-
 jobs:
   include:
-    # perform a linux build
-    - name: Linux Build
+    - name: "Tests"
+      python:
+        - "3.6"
+        - "3.7"
+        - "3.8"
+      script:
+        # run lint
+        - python3 -m flake8
+        # run tests and check coverage
+        - python3 -m coverage run -m pytest ./tests/ --disable-warnings
+      after_success:
+        - python3 -m coveralls
+
+    - name: "Simple Build"
+      if: tag IS present
+      script:
+        - python3 setup.py sdist
+        - python3 -m twine upload sdist
+
+    - name: "Linux x86_64 Build"
+      if: tag IS present
       services: docker
+      env:
+        - CIBW_BUILD="*-manylinux_x86_64"
 
-    # and a mac build
-    - name: MacOS Build
+    - name: "Linux i686 Build"
+      if: tag IS present
+      services: docker
+      env:
+        - CIBW_BUILD="*-manylinux_i686"
+
+    - name: "Linux ARMv8"
+      if: tag IS present
+      services: docker
+      arch: arm64
+
+    - name: "macOS"
+      if: tag IS present
       os: osx
-      language: shell
+      osx_image: xcode11
 
-    # and a windows build
-    - name: Windows Build
+    - name: "Windows"
+      if: tag IS present
       os: windows
-      language: shell
-
       before_install:
-        # install python
         - choco install python --version 3.8.0
-        # add python to path
-        - export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
-        # python -> python3
         - ln -s /c/Python38/python.exe /c/Python38/python3.exe
+      env:
+        - PATH=/c/Python38:/c/Python38/Scripts:$PATH
+        - RUSTFLAGS="-C target-feature=+crt-static"
+        - CIBW_BEFORE_BUILD="python -m pip install --upgrade pip"
+
+env:
+  global:
+    - CIBW_BEFORE_ALL_LINUX="curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable"
+    - CIBW_BUILD_VERBOSITY=1
+    - CIBW_ENVIRONMENT='PATH="$PATH:$HOME/.cargo/bin"'
+    - CIBW_SKIP="cp27-* cp34-* cp35-* pp*"
+    - TWINE_USERNAME="__token__"
+
+before_install:
+  - |
+    if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+        sudo apt-get -y install python3-pip
+    fi
 
 install:
+  # install pip, wheel and setuptools
+  - python3 -m pip install --upgrade pip wheel setuptools setuptools_rust
   # install gd.py with required plugins
   - python3 -m pip install --upgrade .[image,lint,speedups,test]
   # install coveralls
   - python3 -m pip install --upgrade coveralls
   # install cibuildwheel
   - python3 -m pip install --upgrade cibuildwheel
-  # install setuptools_rust
-  - python3 -m pip install --upgrade setuptools_rust
 
 script:
-  # run lint
-  - python3 -m flake8
-  # run tests and check coverage
-  - python3 -m coverage run -m pytest ./tests/ --disable-warnings
-  # configure wheel builder
-  - export CIBW_BEFORE_BUILD="source ./ci/install_rust.sh"
-  - export CIBW_ENVIRONMENT="PATH='$HOME/rust/bin:$PATH'"
-  # build wheels
   - python3 -m cibuildwheel --output-dir built_wheels
 
 after_success:
-  # report to coveralls
-  - python3 -m coveralls
-  # if the release was tagged, upload wheels
+  # if the release was tagged, build upload wheels
   - if [[ $TRAVIS_TAG ]]; then
       python3 -m pip install --upgrade twine
-      python3 -m twine upload built_wheels/*.whl
+      python3 -m twine upload built_wheels/*
     fi
