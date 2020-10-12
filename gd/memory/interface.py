@@ -213,7 +213,7 @@ class Buffer(metaclass=BufferMeta):
 
     def to_hex(self, delim: str = " ", bytes_per_delim: int = 1) -> str:
         """Convert current bytes to byte-format string, like ``6A 14 8B CB FF``."""
-        return self.data.hex(delim, bytes_per_delim).upper()
+        return self.data.hex(delim, bytes_per_delim).upper()  # type: ignore  # FIXME: python 3.6
 
     @classmethod
     def from_byte_array(cls, array: Sequence[int]) -> "Buffer":

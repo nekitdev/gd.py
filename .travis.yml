@@ -1,8 +1,7 @@
 language: python
-
 jobs:
   include:
-    - name: "Tests"
+    - name: "Tests on 3.6"
       python:
         - "3.6"
         - "3.7"
@@ -44,10 +43,12 @@ jobs:
       # if: tag IS present
       os: osx
       osx_image: xcode11
+      language: shell
 
     - name: "Windows"
       # if: tag IS present
       os: windows
+      language: shell
       before_install:
         - choco install python --version 3.8.0
         - ln -s /c/Python38/python.exe /c/Python38/python3.exe
@@ -58,7 +59,7 @@ jobs:
 
 env:
   global:
-    - CIBW_BEFORE_ALL_LINUX="curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable"
+    - CIBW_BEFORE_ALL_LINUX="curl --tlsv1.2 https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y"
     - CIBW_BUILD_VERBOSITY=1
     - CIBW_ENVIRONMENT='PATH="$PATH:$HOME/.cargo/bin"'
     - CIBW_SKIP="cp27-* cp34-* cp35-* pp*"
@@ -72,7 +73,7 @@ before_install:
 
 install:
   # install pip, wheel and setuptools
-  - python3 -m pip install --upgrade pip wheel setuptools setuptools_rust
+  - python3 -m pip install --upgrade pip wheel setuptools setuptools_rust twine
   # install gd.py with required plugins
   - python3 -m pip install --upgrade .[image,lint,speedups,test]
   # install coveralls
@@ -86,6 +87,5 @@ script:
 after_success:
   # if the release was tagged, build upload wheels
   - if [[ $TRAVIS_TAG ]]; then
-      python3 -m pip install --upgrade twine
       python3 -m twine upload built_wheels/*
     fi

@@ -209,7 +209,7 @@ def cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
         Event loop to cancel tasks in.
     """
     try:
-        to_cancel = asyncio.all_tasks(loop)
+        to_cancel = asyncio.all_tasks(loop)  # type: ignore
     except AttributeError:  # py < 3.7
         to_cancel = asyncio.Task.all_tasks(loop)
 

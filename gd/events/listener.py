@@ -362,8 +362,8 @@ class UserCommentListener(AbstractListener):
         if self.user is None:
             return
 
-        new = await self.get_user_comments(
-            self.user, pages=range(self.pages)  # type: ignore[call-arg]
+        new = await self.get_user_comments(  # type: ignore
+            self.user, pages=range(self.pages)  # type: ignore
         ).list()
 
         if not new:
