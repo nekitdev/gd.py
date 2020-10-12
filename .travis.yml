@@ -23,36 +23,38 @@ jobs:
 
       before_install:
         # install python
-        # - choco install python --version 3.8.0
+        - choco install python --version 3.8.0
         # add python to path
-        # - export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
+        - export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
+        # python -> python3
+        - ln -s /c/Python38/python.exe /c/Python38/python3.exe
 
 install:
   # install gd.py with required plugins
-  - pip install --upgrade .[image,lint,speedups,test]
+  - python3 -m pip install --upgrade .[image,lint,speedups,test]
   # install coveralls
-  - pip install --upgrade coveralls
+  - python3 -m pip install --upgrade coveralls
   # install cibuildwheel
-  - pip install --upgrade cibuildwheel
+  - python3 -m pip install --upgrade cibuildwheel
   # install setuptools_rust
-  - pip install --upgrade setuptools_rust
+  - python3 -m pip install --upgrade setuptools_rust
 
 script:
   # run lint
-  - flake8
+  - python3 -m flake8
   # run tests and check coverage
-  - coverage run -m pytest ./tests/ --disable-warnings
+  - python3 -m coverage run -m pytest ./tests/ --disable-warnings
   # configure wheel builder
   - export CIBW_BEFORE_BUILD="source ./ci/install_rust.sh"
   - export CIBW_ENVIRONMENT="PATH='$HOME/rust/bin:$PATH'"
   # build wheels
-  - cibuildwheel --output-dir built_wheels
+  - python3 -m cibuildwheel --output-dir built_wheels
 
 after_success:
   # report to coveralls
-  - coveralls
+  - python3 -m coveralls
   # if the release was tagged, upload wheels
   - if [[ $TRAVIS_TAG ]]; then
-      pip install --upgrade twine
-      twine upload built_wheels/*.whl
+      python3 -m pip install --upgrade twine
+      python3 -m twine upload built_wheels/*.whl
     fi
