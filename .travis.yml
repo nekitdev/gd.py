@@ -35,12 +35,17 @@ install:
   - pip install --upgrade coveralls
   # install cibuildwheel
   - pip install --upgrade cibuildwheel
+  # install setuptools_rust
+  - pip install --upgrade setuptools_rust
 
 script:
   # run lint
   - flake8
   # run tests and check coverage
   - coverage run -m pytest ./tests/ --disable-warnings
+  # configure wheel builder
+  - export CIBW_BEFORE_BUILD="source ./ci/install_rust.sh"
+  - export CIBW_ENVIRONMENT="PATH='$HOME/rust/bin:$PATH'"
   # build wheels
   - cibuildwheel --output-dir built_wheels
 
