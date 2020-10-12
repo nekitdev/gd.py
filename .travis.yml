@@ -4,21 +4,51 @@ python:
   - "3.6"
   - "3.7"
   - "3.8"
+  - "3.9"
+
+jobs:
+  include:
+    # perform a linux build
+    - name: Linux Build
+      services: docker
+
+    # and a mac build
+    - name: MacOS Build
+      os: osx
+      language: shell
+
+    # and a windows build
+    - name: Windows Build
+      os: windows
+      language: shell
+
+      before_install:
+        # install python
+        # - choco install python --version 3.8.0
+        # add python to path
+        # - export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
 
 install:
-  # install cython
-  - pip install -U Cython
-  # install gd.py with asyncio pytest plugin
-  - pip install -U .[image,lint,speedups,test]
+  # install gd.py with required plugins
+  - pip install --upgrade .[image,lint,speedups,test]
   # install coveralls
-  - pip install -U coveralls
+  - pip install --upgrade coveralls
+  # install cibuildwheel
+  - pip install --upgrade cibuildwheel
 
 script:
   # run lint
   - flake8
   # run tests and check coverage
   - coverage run -m pytest ./tests/ --disable-warnings
+  # build wheels
+  - cibuildwheel --output-dir built_wheels
 
 after_success:
   # report to coveralls
   - coveralls
+  # if the release was tagged, upload wheels
+  - if [[ $TRAVIS_TAG ]]; then
+      pip install --upgrade twine
+      twine upload built_wheels/*.whl
+    fi
