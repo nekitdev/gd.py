@@ -10,41 +10,43 @@ jobs:
       script:
         # run lint
         - python3 -m flake8
+        # run type checker
+        - python3 -m mypy .
         # run tests and check coverage
         - python3 -m coverage run -m pytest ./tests/ --disable-warnings
       after_success:
         - python3 -m coveralls
 
     - name: "Simple Build"
-      if: tag IS present
+      # if: tag IS present
       script:
         - python3 setup.py sdist
         - python3 -m twine upload sdist
 
     - name: "Linux x86_64 Build"
-      if: tag IS present
+      # if: tag IS present
       services: docker
       env:
         - CIBW_BUILD="*-manylinux_x86_64"
 
     - name: "Linux i686 Build"
-      if: tag IS present
+      # if: tag IS present
       services: docker
       env:
         - CIBW_BUILD="*-manylinux_i686"
 
     - name: "Linux ARMv8"
-      if: tag IS present
+      # if: tag IS present
       services: docker
       arch: arm64
 
     - name: "macOS"
-      if: tag IS present
+      # if: tag IS present
       os: osx
       osx_image: xcode11
 
     - name: "Windows"
-      if: tag IS present
+      # if: tag IS present
       os: windows
       before_install:
         - choco install python --version 3.8.0

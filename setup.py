@@ -45,7 +45,7 @@ extras_require = {
     "console": ["ipython"],
     "docs": ["sphinx", "sphinx_rtd_theme", "sphinxcontrib_websupport"],
     "image": ["Pillow"],
-    "lint": ["black", "flake8"],
+    "lint": ["black", "flake8", "mypy"],
     "speedups": ["lxml"],
     "test": ["coverage", "pytest-asyncio"],
 }
