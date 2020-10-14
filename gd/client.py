@@ -237,13 +237,13 @@ class Client:
         """:class:`~gd.HTTPClient`: Same as :attr:`gd.Session.http`."""
         return self.session.http
 
-    @property  # type: ignore[misc]
+    @property  # type: ignore
     @cache_by("password")
     def encoded_password(self) -> str:
         """:class:`str`: Encoded password for the client."""
         return encode_robtop_str(self.password, Key.ACCOUNT_PASSWORD)  # type: ignore
 
-    @property  # type: ignore[misc]
+    @property  # type: ignore
     @login_check
     def user(self) -> User:
         """:class:`~gd.User`: User representing current client."""

@@ -57,7 +57,7 @@ class Gauntlet(AbstractEntity):
         return dict(super().__json__(ignore=ignore), levels=self.levels)
 
     @classmethod
-    def from_model(  # type: ignore[override]
+    def from_model(  # type: ignore
         cls, model: GauntletModel, *, client: Optional["Client"] = None
     ) -> "Gauntlet":
         gauntlet_id = GauntletID.from_value(model.id, GauntletID.UNKNOWN)
@@ -141,7 +141,7 @@ class MapPack(Gauntlet):
         return make_repr(self, info)
 
     @classmethod
-    def from_model(  # type: ignore[override]
+    def from_model(  # type: ignore
         cls, model: MapPackModel, *, client: Optional["Client"] = None
     ) -> "MapPack":
         return cls(

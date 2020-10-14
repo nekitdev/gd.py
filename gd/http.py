@@ -321,7 +321,7 @@ class HTTPClient:
 
         args["params" if route.are_params else "data"] = route.parameters
 
-        return await self.fetch(**args)  # type: ignore[arg-type]
+        return await self.fetch(**args)  # type: ignore
 
     async def fetch(
         self,

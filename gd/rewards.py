@@ -61,7 +61,7 @@ class Chest(AbstractEntity):
         return f"Chest; count: {self.count}, new in {self.delta}"
 
     @classmethod
-    def from_model(  # type: ignore[override]
+    def from_model(  # type: ignore
         cls,
         model: ChestModel,
         *,
@@ -177,7 +177,7 @@ class Quest(AbstractEntity):
         )
 
     @classmethod
-    def from_model(  # type: ignore[override]
+    def from_model(  # type: ignore
         cls, model: QuestModel, *, client: Optional["Client"] = None, seconds: int = 0,
     ) -> "Quest":
         return cls(

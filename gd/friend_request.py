@@ -48,7 +48,7 @@ class FriendRequest(AbstractEntity):
         return str(self.content)
 
     @classmethod
-    def from_model(  # type: ignore[override]
+    def from_model(  # type: ignore
         cls,
         model: FriendRequestModel,
         *,

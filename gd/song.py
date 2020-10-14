@@ -31,7 +31,7 @@ class Song(AbstractEntity):
         return str(self.name)
 
     @classmethod
-    def from_model(  # type: ignore[override]
+    def from_model(  # type: ignore
         cls, model: SongModel, *, client: Optional["Client"] = None, custom: bool = True
     ) -> "Song":
         return cls(

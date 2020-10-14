@@ -106,7 +106,7 @@ class Level(AbstractEntity):
         )
 
     @classmethod
-    def from_model(  # type: ignore[override]
+    def from_model(  # type: ignore
         cls,
         model: LevelModel,
         *,
