@@ -1835,7 +1835,7 @@ class HTTPClient:
         udid = self.gen_udid()
         uuid = self.gen_uuid()
 
-        chk = gen_rs_and_encode_number(length=5, key=Key.CHESTS)  # type: ignore
+        chk = gen_rs_and_encode_number(length=5, key=Key.QUESTS)  # type: ignore
 
         route = Route(
             POST,
@@ -1870,7 +1870,7 @@ class HTTPClient:
         udid = self.gen_udid()
         uuid = self.gen_uuid()
 
-        chk = gen_rs_and_encode_number(length=5, key=Key.QUESTS)  # type: ignore
+        chk = gen_rs_and_encode_number(length=5, key=Key.CHESTS)  # type: ignore
 
         route = Route(
             POST,
