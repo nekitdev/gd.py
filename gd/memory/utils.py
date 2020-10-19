@@ -5,7 +5,7 @@ from gd.typing import Any, Callable, Dict, Tuple, Type, TypeVar
 
 T = TypeVar("T")
 
-__all__ = ("Structure", "Union", "func_def")
+__all__ = ("Structure", "Union", "extern_func")
 
 
 class StructureMeta(type(ctypes.Structure)):  # type: ignore
@@ -58,7 +58,7 @@ class Union(ctypes.Union, metaclass=UnionMeta):
     pass
 
 
-def func_def(func_ptr: Any) -> Callable[[Callable[..., T]], Callable[..., T]]:
+def extern_func(func_ptr: Any) -> Callable[[Callable[..., T]], Callable[..., T]]:
     def wrap(func: Callable[..., T]) -> Callable[..., T]:
         try:
             annotations = func.__annotations__

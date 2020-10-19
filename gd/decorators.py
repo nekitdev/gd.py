@@ -1,7 +1,7 @@
 from functools import wraps
 
 from gd.async_utils import acquire_loop, maybe_coroutine
-from gd.debug_utils import time_execution_and_print
+from gd.code_utils import time_execution_and_print
 from gd.errors import MissingAccess
 from gd.typing import (
     Any,

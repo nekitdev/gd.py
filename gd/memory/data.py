@@ -1,13 +1,15 @@
 import struct
 
 from enums import Enum  # type: ignore
+from iters import iter
 
 from gd.text_utils import make_repr
 from gd.typing import Generic, TypeVar, Union, cast
 
 __all__ = (
     "ByteOrder",
-    "Type",
+    "Data",
+    "get_pointer_type",
     "boolean",
     "char",
     "int8",
@@ -24,9 +26,13 @@ __all__ = (
 )
 
 ENCODING = "utf-8"
-NULL_BYTE = br"\0"
+NULL_BYTE = b"\x00"
 
 T = TypeVar("T")
+
+
+def read_until_terminator(data: bytes, sentinel: int = 0) -> bytes:
+    return cast(bytes, iter(data).take_while(lambda byte: byte != sentinel).collect(bytes))
 
 
 class ByteOrder(Enum):
@@ -35,7 +41,7 @@ class ByteOrder(Enum):
     BIG_ENDIAN = ">"
 
 
-class Type(Generic[T]):
+class Data(Generic[T]):
     def __init__(self, name: str, format: str) -> None:
         self._name = name
         self._format = format
@@ -57,7 +63,11 @@ class Type(Generic[T]):
         return ByteOrder.from_value(order).value + self.format
 
     def from_bytes(self, data: bytes, order: Union[str, ByteOrder] = ByteOrder.NATIVE) -> T:
-        unpacked = struct.unpack(self.create_format(order), data)
+        try:
+            unpacked = struct.unpack(self.create_format(order), data)
+
+        except struct.error as error:
+            raise ValueError(f"Can not convert data to {self.name}. Error: {error}.")
 
         if len(unpacked) == 1:
             return cast(T, unpacked[0])
@@ -65,7 +75,11 @@ class Type(Generic[T]):
         return cast(T, unpacked)
 
     def to_bytes(self, value: T, order: Union[str, ByteOrder] = ByteOrder.NATIVE) -> bytes:
-        return struct.pack(self.create_format(order), value)
+        try:
+            return struct.pack(self.create_format(order), value)
+
+        except struct.error as error:
+            raise ValueError(f"Can not convert {self.name} to data. Error: {error}.")
 
     @property
     def name(self) -> str:
@@ -88,34 +102,57 @@ class Type(Generic[T]):
         return self._size << 3
 
 
-class String(Type[str]):
+class String(Data[str]):
     def __init__(self) -> None:
         super().__init__("string", "")
 
     def from_bytes(self, data: bytes, order: Union[str, ByteOrder] = ByteOrder.NATIVE) -> str:
-        return data.decode(ENCODING)
+        return read_until_terminator(data).decode(ENCODING)
 
-    def to_bytes(self, value: str, order: Union[str, ByteOrder] = ByteOrder.NATIVE) -> bytes:
+    def to_bytes(
+        self, value: str, order: Union[str, ByteOrder] = ByteOrder.NATIVE, null: bool = True
+    ) -> bytes:
+        if null:
+            return value.encode(ENCODING) + NULL_BYTE
+
         return value.encode(ENCODING)
 
 
-boolean: Type[bool] = Type("boolean", "?")
+def get_pointer_type(bits: int, signed: bool = False) -> Data[int]:
+    if signed:
+        choose_from = all_int
 
-char: Type[bytes] = Type("char", "c")
+    else:
+        choose_from = all_uint
 
-int8: Type[int] = Type("int8", "b")
-uint8: Type[int] = Type("uint8", "B")
+    for pointer_type in choose_from:
+        if pointer_type.bits == bits:
+            return pointer_type
 
-int16: Type[int] = Type("int16", "h")
-uint16: Type[int] = Type("uint16", "H")
+    else:
+        raise ValueError("Can not find pointer type that matches given bits.")
 
-int32: Type[int] = Type("int32", "l")
-uint32: Type[int] = Type("uint32", "L")
 
-int64: Type[int] = Type("int64", "q")
-uint64: Type[int] = Type("uint64", "Q")
+boolean: Data[bool] = Data("boolean", "?")
 
-float32: Type[float] = Type("float32", "f")
-float64: Type[float] = Type("float64", "d")
+char: Data[bytes] = Data("char", "c")
 
-string: Type[str] = String()
+int8: Data[int] = Data("int8", "b")
+uint8: Data[int] = Data("uint8", "B")
+
+int16: Data[int] = Data("int16", "h")
+uint16: Data[int] = Data("uint16", "H")
+
+int32: Data[int] = Data("int32", "l")
+uint32: Data[int] = Data("uint32", "L")
+
+int64: Data[int] = Data("int64", "q")
+uint64: Data[int] = Data("uint64", "Q")
+
+all_int = (int8, int16, int32, int64)
+all_uint = (uint8, uint16, uint32, uint64)
+
+float32: Data[float] = Data("float32", "f")
+float64: Data[float] = Data("float64", "d")
+
+string: Data[str] = String()

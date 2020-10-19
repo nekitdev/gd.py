@@ -10,6 +10,7 @@ __all__ = (
     "print_source",
     "time_execution",
     "time_execution_and_print",
+    "unimplemented",
     "unreachable",
 )
 
@@ -111,12 +112,23 @@ def time_execution_and_print(function: Callable[..., T], *args, **kwargs) -> T:
     return result
 
 
+def unimplemented(*args, **kwargs) -> NoReturn:
+    """Indicates that the code is unimplemented.
+
+    Raises
+    ------
+    :exc:`NotImplementedError`
+        Error that is raised when this function is called.
+    """
+    raise NotImplementedError("Function that was called is not implemented.")
+
+
 def unreachable() -> NoReturn:
     """Indicates the code that is unreachable.
 
     Raises
     ------
     :exc:`RuntimeError`
-        Error that is raised when, for some reason, ``unreachable()`` function was executed.
+        Error that is raised when, for some reason, this function is called.
     """
     raise RuntimeError("Reached code marked as unreachable.")

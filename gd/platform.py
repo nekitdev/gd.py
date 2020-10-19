@@ -14,5 +14,5 @@ if PLATFORM.startswith("win"):
 elif PLATFORM.startswith("darwin"):
     MACOS = True
 
-else:
+elif PLATFORM.startswith("linux"):
     LINUX = True
