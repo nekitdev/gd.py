@@ -15,6 +15,7 @@ __all__ = (
     "open_process",
     "close_process",
     "get_process_id_from_name",
+    "get_process_id_from_window_title",
     "inject_dll",
     "terminate_process",
     "protect_process_memory",
@@ -275,8 +276,14 @@ def get_process_id_from_name(process_name: str) -> int:
         raise LookupError(f"Can not find process: {process_name!r}.")
 
 
+def get_process_id_from_window_title(window_title: str) -> int:
+    raise NotImplementedError(
+        "get_process_id_from_window_title(window_title) is not yet implemented for MacOS."
+    )
+
+
 def inject_dll(process_id: int, path: Union[str, Path]) -> bool:
-    return False
+    raise NotImplementedError("inject_dll(process_id, path) is not yet implemented for MacOS.")
 
 
 def terminate_process(process_handle: int) -> bool:

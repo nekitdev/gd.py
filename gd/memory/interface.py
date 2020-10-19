@@ -1,3 +1,6 @@
+from gd.platform import LINUX, MACOS, WINDOWS
+from gd.typing import Type
+
 from gd.memory.data import Data
 # from gd.memory.internal import (
 #     allocate_memory as os_allocate_memory,
@@ -7,6 +10,7 @@ from gd.memory.data import Data
 #     open_process as os_open_process,
 #     close_process as os_close_process,
 #     get_process_id_from_name as os_get_process_id_from_name,
+#     get_process_id_from_window_title as os_get_process_id_from_window_title,
 #     inject_dll as os_inject_dll,
 #     terminate_process as os_terminate_process,
 #     protect_process_memory as os_protect_process_memory,
@@ -19,6 +23,7 @@ from gd.memory.data import Data
 #     linux_open_process,
 #     linux_close_process,
 #     linux_get_process_id_from_name,
+#     linux_get_process_id_from_window_title,
 #     linux_inject_dll,
 #     linux_terminate_process,
 #     linux_protect_process_memory,
@@ -31,6 +36,7 @@ from gd.memory.data import Data
 #     macos_open_process,
 #     macos_close_process,
 #     macos_get_process_id_from_name,
+#     macos_get_process_id_from_window_title,
 #     macos_inject_dll,
 #     macos_terminate_process,
 #     macos_protect_process_memory,
@@ -43,6 +49,7 @@ from gd.memory.data import Data
 #     windows_open_process,
 #     windows_close_process,
 #     windows_get_process_id_from_name,
+#     window_get_process_id_from_window_title,
 #     windows_inject_dll,
 #     windows_terminate_process,
 #     windows_protect_process_memory,
@@ -50,8 +57,10 @@ from gd.memory.data import Data
 #     windows_write_process_memory,
 # )
 
+# __all__ = ("State", "OSState", "LinuxState", "MacOSState", "WindowsState")
 
-class State:
+
+class OSState:
     def __init__(
         self,
         process_name: str,
@@ -87,7 +96,29 @@ class State:
         return self._base_address
 
 
-class Layer:
-    def __init__(self, address: int, state: State) -> None:
-        self._address = address
-        self._state = state
+class LinuxState(OSState):
+    pass
+
+
+class MacOSState(OSState):
+    pass
+
+
+class WindowsState(OSState):
+    pass
+
+
+State: Type[OSState]
+
+
+if LINUX:
+    State = LinuxState
+
+elif MACOS:
+    State = MacOSState
+
+elif WINDOWS:
+    State = WindowsState
+
+else:
+    State = OSState

@@ -51,6 +51,12 @@ Functions
         ...
 
 
+:func:`get_process_id_from_window_title` is used to get process ID from window title::
+
+    def get_process_id_from_window_title(window_title: str) -> int:
+        ...
+
+
 :func:`inject_dll` is used to inject DLL into process::
 
     def inject_dll(process_id: int, path: Union[Path, str]) -> bool:
@@ -92,6 +98,7 @@ try:
         open_process as linux_open_process,
         close_process as linux_close_process,
         get_process_id_from_name as linux_get_process_id_from_name,
+        get_process_id_from_window_title as linux_get_process_id_from_window_title,
         inject_dll as linux_inject_dll,
         terminate_process as linux_terminate_process,
         protect_process_memory as linux_protect_process_memory,
@@ -107,6 +114,7 @@ except ImportError:
     linux_open_process = unimplemented
     linux_close_process = unimplemented
     linux_get_process_id_from_name = unimplemented
+    linux_get_process_id_from_window_title = unimplemented
     linux_inject_dll = unimplemented
     linux_terminate_process = unimplemented
     linux_protect_process_memory = unimplemented
@@ -122,6 +130,7 @@ try:
         open_process as macos_open_process,
         close_process as macos_close_process,
         get_process_id_from_name as macos_get_process_id_from_name,
+        get_process_id_from_window_title as macos_get_process_id_from_window_title,
         inject_dll as macos_inject_dll,
         terminate_process as macos_terminate_process,
         protect_process_memory as macos_protect_process_memory,
@@ -137,6 +146,7 @@ except ImportError:
     macos_open_process = unimplemented
     macos_close_process = unimplemented
     macos_get_process_id_from_name = unimplemented
+    macos_get_process_id_from_window_title = unimplemented
     macos_inject_dll = unimplemented
     macos_terminate_process = unimplemented
     macos_protect_process_memory = unimplemented
@@ -152,6 +162,7 @@ try:
         open_process as windows_open_process,
         close_process as windows_close_process,
         get_process_id_from_name as windows_get_process_id_from_name,
+        get_process_id_from_window_title as windows_get_process_id_from_window_title,
         inject_dll as windows_inject_dll,
         terminate_process as windows_terminate_process,
         protect_process_memory as windows_protect_process_memory,
@@ -167,6 +178,7 @@ except ImportError:
     windows_open_process = unimplemented
     windows_close_process = unimplemented
     windows_get_process_id_from_name = unimplemented
+    windowss_get_process_id_from_window_title = unimplemented
     windows_inject_dll = unimplemented
     windows_terminate_process = unimplemented
     windows_protect_process_memory = unimplemented
@@ -182,6 +194,7 @@ if LINUX:
     open_process = linux_open_process
     close_process = linux_close_process
     get_process_id_from_name = linux_get_process_id_from_name
+    get_process_id_from_window_title = linux_get_process_id_from_window_title
     inject_dll = linux_inject_dll
     terminate_process = linux_terminate_process
     protect_process_memory = linux_protect_process_memory
@@ -197,6 +210,7 @@ elif MACOS:
     open_process = macos_open_process
     close_process = macos_close_process
     get_process_id_from_name = macos_get_process_id_from_name
+    get_process_id_from_window_title = macos_get_process_id_from_window_title
     inject_dll = macos_inject_dll
     terminate_process = macos_terminate_process
     protect_process_memory = macos_protect_process_memory
@@ -211,6 +225,7 @@ elif WINDOWS:
     open_process = windows_open_process
     close_process = windows_close_process
     get_process_id_from_name = windows_get_process_id_from_name
+    get_process_id_from_window_title = windows_get_process_id_from_window_title
     inject_dll = windows_inject_dll
     terminate_process = windows_terminate_process
     protect_process_memory = windows_protect_process_memory
@@ -222,6 +237,20 @@ else:
 
     warnings.warn("Memory API is not supported on this system.", Warning)
 
+    allocate_memory = unimplemented
+    free_memory = unimplemented
+    get_base_address = unimplemented
+    get_base_address_from_handle = unimplemented
+    open_process = unimplemented
+    close_process = unimplemented
+    get_process_id_from_name = unimplemented
+    get_process_id_from_window_title = unimplemented
+    inject_dll = unimplemented
+    terminate_process = unimplemented
+    protect_process_memory = unimplemented
+    read_process_memory = unimplemented
+    write_process_memory = unimplemented
+
 
 __all__ = (  # noqa
     "allocate_memory",
@@ -231,6 +260,7 @@ __all__ = (  # noqa
     "open_process",
     "close_process",
     "get_process_id_from_name",
+    "get_process_id_from_window_title",
     "inject_dll",
     "terminate_process",
     "protect_process_memory",
@@ -243,6 +273,7 @@ __all__ = (  # noqa
     "linux_open_process",
     "linux_close_process",
     "linux_get_process_id_from_name",
+    "linux_get_process_id_from_window_title",
     "linux_inject_dll",
     "linux_terminate_process",
     "linux_protect_process_memory",
@@ -255,6 +286,7 @@ __all__ = (  # noqa
     "macos_open_process",
     "macos_close_process",
     "macos_get_process_id_from_name",
+    "macos_get_process_id_from_window_title",
     "macos_inject_dll",
     "macos_terminate_process",
     "macos_protect_process_memory",
@@ -267,6 +299,7 @@ __all__ = (  # noqa
     "windows_open_process",
     "windows_close_process",
     "windows_get_process_id_from_name",
+    "windows_get_process_id_from_window_title",
     "windows_inject_dll",
     "windows_terminate_process",
     "windows_protect_process_memory",

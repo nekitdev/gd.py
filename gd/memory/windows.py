@@ -17,6 +17,7 @@ __all__ = (
     "open_process",
     "close_process",
     "get_process_id_from_name",
+    "get_process_id_from_window_title",
     "inject_dll",
     "terminate_process",
     "protect_process_memory",
@@ -475,6 +476,16 @@ def get_process_id_from_name(name: str) -> int:
         raise LookupError(f"Can not find process: {name!r}.")
 
     return process.process_id
+
+
+def get_process_id_from_window_title(window_title: str) -> int:
+    window = _find_window(None, ctypes.c_char_p(window_title.encode(ENCODING)))
+
+    process_id = wintypes.DWORD(0)
+
+    _get_window_process_id(window, ctypes.byref(process_id))
+
+    return process_id.value
 
 
 def open_process(process_id: int) -> int:
