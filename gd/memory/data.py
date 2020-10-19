@@ -1,12 +1,14 @@
+import ctypes
 import struct
 
 from enums import Enum  # type: ignore
 from iters import iter
 
 from gd.text_utils import make_repr
-from gd.typing import Generic, TypeVar, Union, cast
+from gd.typing import Any, Generic, Sequence, TypeVar, Union, cast
 
 __all__ = (
+    "Buffer",
     "ByteOrder",
     "Data",
     "get_pointer_type",
@@ -25,8 +27,9 @@ __all__ = (
     "string",
 )
 
+EMPTY_BYTES = bytes(0)
 ENCODING = "utf-8"
-NULL_BYTE = b"\x00"
+NULL_BYTE = bytes(1)
 
 T = TypeVar("T")
 
@@ -99,12 +102,16 @@ class Data(Generic[T]):
 
     @property
     def bits(self):
-        return self._size << 3
+        return bytes_to_bits(self._size)
 
 
 class String(Data[str]):
+    _SIZE = 16
+
     def __init__(self) -> None:
         super().__init__("string", "")
+
+        self._size = self._SIZE
 
     def from_bytes(self, data: bytes, order: Union[str, ByteOrder] = ByteOrder.NATIVE) -> str:
         return read_until_terminator(data).decode(ENCODING)
@@ -133,21 +140,58 @@ def get_pointer_type(bits: int, signed: bool = False) -> Data[int]:
         raise ValueError("Can not find pointer type that matches given bits.")
 
 
+def bytes_to_bits(count: int) -> int:
+    return count << 3
+
+
+def bits_to_bytes(count: int) -> int:
+    return count >> 3
+
+
+_byte: Data[int] = Data("byte", "b")
+_ubyte: Data[int] = Data("ubyte", "B")
+
+_short: Data[int] = Data("short", "h")
+_ushort: Data[int] = Data("ushort", "H")
+
+_int: Data[int] = Data("int", "i")
+_uint: Data[int] = Data("uint", "I")
+
+_long: Data[int] = Data("long", "l")
+_ulong: Data[int] = Data("ulong", "L")
+
+_longlong: Data[int] = Data("longlong", "q")
+_ulonglong: Data[int] = Data("ulonglong", "Q")
+
+_int_size_to_format = {
+    _int_type.size: _int_type.format
+    for _int_type in (_byte, _short, _int, _long, _longlong)
+}
+
+_uint_size_to_format = {
+    _uint_type.size: _uint_type.format
+    for _uint_type in (_ubyte, _ushort, _uint, _ulong, _ulonglong)
+}
+
 boolean: Data[bool] = Data("boolean", "?")
 
 char: Data[bytes] = Data("char", "c")
 
-int8: Data[int] = Data("int8", "b")
-uint8: Data[int] = Data("uint8", "B")
+try:
+    int8: Data[int] = Data("int8", _int_size_to_format[bits_to_bytes(8)])
+    uint8: Data[int] = Data("uint8", _uint_size_to_format[bits_to_bytes(8)])
 
-int16: Data[int] = Data("int16", "h")
-uint16: Data[int] = Data("uint16", "H")
+    int16: Data[int] = Data("int16", _int_size_to_format[bits_to_bytes(16)])
+    uint16: Data[int] = Data("uint16", _uint_size_to_format[bits_to_bytes(16)])
 
-int32: Data[int] = Data("int32", "l")
-uint32: Data[int] = Data("uint32", "L")
+    int32: Data[int] = Data("int32", _int_size_to_format[bits_to_bytes(32)])
+    uint32: Data[int] = Data("uint32", _uint_size_to_format[bits_to_bytes(32)])
 
-int64: Data[int] = Data("int64", "q")
-uint64: Data[int] = Data("uint64", "Q")
+    int64: Data[int] = Data("int64", _int_size_to_format[bits_to_bytes(64)])
+    uint64: Data[int] = Data("uint64", _uint_size_to_format[bits_to_bytes(64)])
+
+except KeyError as error:
+    raise OSError(f"Can not find integer type of size {error}.")
 
 all_int = (int8, int16, int32, int64)
 all_uint = (uint8, uint16, uint32, uint64)
@@ -156,3 +200,66 @@ float32: Data[float] = Data("float32", "f")
 float64: Data[float] = Data("float64", "d")
 
 string: Data[str] = String()
+
+_bytes_from_hex = bytes.fromhex
+_bytes_to_hex_std = bytes.hex
+
+
+def _bytes_to_hex(data: bytes, step: int = 1) -> str:
+    return " ".join(
+        _bytes_to_hex_std(data[index : index + step]) for index in range(0, len(data), step)
+    )
+
+
+class BufferMeta(type):
+    def __getitem__(cls, item: Union[int, Sequence[int]]) -> "Buffer":
+        if isinstance(item, Sequence):
+            return cls.from_byte_array(item)
+
+        return cls.from_byte_array([item])
+
+    def from_byte_array(cls, array: Sequence[int]) -> "Buffer":
+        raise NotImplementedError("This function is implemented in the actual class.")
+
+
+class Buffer(metaclass=BufferMeta):
+    def __init__(self, data: bytes = EMPTY_BYTES) -> None:
+        self._data = data
+
+    def __str__(self) -> str:
+        return self.to_hex().upper()
+
+    def __repr__(self) -> str:
+        info = {"data": repr(self.to_hex().upper())}
+        return make_repr(self, info)
+
+    @classmethod
+    def from_value(
+        cls, type: Data[T], value: T, byte_order: Union[str, ByteOrder] = ByteOrder.NATIVE
+    ) -> "Buffer":
+        return cls(type.to_bytes(value, byte_order))
+
+    def to_value(
+        self, type: Data[T], byte_order: Union[str, ByteOrder] = ByteOrder.NATIVE
+    ) -> T:
+        return type.from_bytes(self._data, byte_order)
+
+    @classmethod
+    def from_byte_array(cls, array: Sequence[int]) -> "Buffer":
+        return cls(bytes(array))
+
+    def to_byte_array(self) -> Sequence[int]:
+        return list(self._data)
+
+    @classmethod
+    def from_hex(cls, hex_string: str) -> "Buffer":
+        return cls(_bytes_from_hex(hex_string))
+
+    def to_hex(self, step: int = 1) -> str:
+        return _bytes_to_hex(self._data, step)
+
+    def into_buffer(self) -> Any:
+        return ctypes.create_string_buffer(self._data, len(self._data))
+
+    def unwrap(self) -> bytes:
+        return self._data

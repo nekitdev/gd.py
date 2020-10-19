@@ -9,6 +9,7 @@ Functions
     def allocate_memory(process_handle: int, address: int, size: int, flags: int) -> int:
         # allocate "size" bytes with "flags" permissions,
         # trying to start at "address", then return address to memory
+        # note: "flags" should default to RWX (read, write, execute) permissions
         ...
 
 
@@ -70,7 +71,9 @@ Functions
 
 
 :func:`protect_process_memory` is used to override memory protection::
+
     def protect_process_memory(process_handle: int, address: int, size: int, flags: int) -> int:
+        # note: "flags" should default to RWX (read, write, execute) permissions
         ...
 
 
