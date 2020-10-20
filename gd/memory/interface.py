@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from gd.platform import LINUX, MACOS, WINDOWS
-from gd.typing import Optional, Type, TypeVar, Union, cast
+from gd.typing import Type, TypeVar, Union
 
 from gd.memory.data import (
     Buffer,
@@ -22,19 +22,19 @@ from gd.memory.data import (
 )
 
 from gd.memory.internal import (
-    allocate_memory as os_allocate_memory,
-    free_memory as os_free_memory,
-    get_base_address as os_get_base_address,
-    get_base_address_from_handle as os_get_base_address_from_handle,
-    open_process as os_open_process,
-    close_process as os_close_process,
-    get_process_id_from_name as os_get_process_id_from_name,
-    get_process_id_from_window_title as os_get_process_id_from_window_title,
-    inject_dll as os_inject_dll,
-    terminate_process as os_terminate_process,
-    protect_process_memory as os_protect_process_memory,
-    read_process_memory as os_read_process_memory,
-    write_process_memory as os_write_process_memory,
+    allocate_memory as system_allocate_memory,
+    free_memory as system_free_memory,
+    get_base_address as system_get_base_address,
+    get_base_address_from_handle as system_get_base_address_from_handle,
+    open_process as system_open_process,
+    close_process as system_close_process,
+    get_process_id_from_name as system_get_process_id_from_name,
+    get_process_id_from_window_title as system_get_process_id_from_window_title,
+    inject_dll as system_inject_dll,
+    terminate_process as system_terminate_process,
+    protect_process_memory as system_protect_process_memory,
+    read_process_memory as system_read_process_memory,
+    write_process_memory as system_write_process_memory,
     linux_allocate_memory,
     linux_free_memory,
     # linux_get_base_address,
@@ -76,17 +76,15 @@ from gd.memory.internal import (
     windows_write_process_memory,
 )
 
-__all__ = ("State", "OSState", "LinuxState", "MacOSState", "WindowsState")
+__all__ = ("State", "SystemState", "LinuxState", "MacOSState", "WindowsState")
 
 DEFAULT_WINDOW_TITLE = "Geometry Dash"
 
-LayerT = TypeVar("LayerT", bound="Layer")
+AddressT = TypeVar("AddressT", bound="Address")
 T = TypeVar("T")
 
 
-class OSState:
-    GAME_MANAGER_OFFSET = 0
-
+class SystemState:
     def __init__(
         self,
         process_name: str,
@@ -122,65 +120,65 @@ class OSState:
 
     def load(self) -> None:
         try:
-            self.process_id = os_get_process_id_from_name(self.process_name)
+            self.process_id = system_get_process_id_from_name(self.process_name)
 
         except LookupError:
-            self.process_id = os_get_process_id_from_window_title(self.window_title)
+            self.process_id = system_get_process_id_from_window_title(self.window_title)
 
             if not self.process_id:
                 raise
 
-        self.process_handle = os_open_process(self.process_id)
+        self.process_handle = system_open_process(self.process_id)
 
         try:
-            self.base_address = os_get_base_address_from_handle(self.process_handle)
+            self.base_address = system_get_base_address_from_handle(self.process_handle)
 
         except NotImplementedError:
             pass
 
-        self.base_address = os_get_base_address(self.process_id, self.process_name)
+        self.base_address = system_get_base_address(self.process_id, self.process_name)
 
         self.loaded = True
 
     reload = load
 
     def allocate_memory(self, address: int, size: int) -> int:
-        return os_allocate_memory(self.process_handle, address, size)
+        return system_allocate_memory(self.process_handle, address, size)
 
     def free_memory(self, address: int, size: int) -> None:
-        return os_free_memory(self.process_handle, address, size)
+        return system_free_memory(self.process_handle, address, size)
 
     def protect_at(self, address: int, size: int) -> None:
-        return os_protect_process_memory(self.process_handle, address, size)
+        return system_protect_process_memory(self.process_handle, address, size)
 
-    def raw_read_at(self, address: int, size: int) -> bytes:
-        return os_read_process_memory(self.process_handle, address, size)
+    def read_at(self, address: int, size: int) -> bytes:
+        return system_read_process_memory(self.process_handle, address, size)
 
-    def raw_write_at(self, address: int, data: bytes) -> int:
-        return os_write_process_memory(self.process_handle, address, data)
+    def write_at(self, address: int, data: bytes) -> int:
+        return system_write_process_memory(self.process_handle, address, data)
 
     def inject_dll(self, path: Union[str, Path]) -> bool:
-        return os_inject_dll(self.process_id, path)
+        return system_inject_dll(self.process_id, path)
 
     def close(self) -> None:
-        return os_close_process(self.process_handle)
+        return system_close_process(self.process_handle)
 
     def terminate(self) -> bool:
-        return os_terminate_process(self.process_handle)
+        return system_terminate_process(self.process_handle)
 
     # END REGION
 
-    def read_at(self, address: int, size: int) -> Buffer:
-        return Buffer(self.raw_read_at(address, size))
+    def read_buffer(self, size: int, address: int) -> Buffer:
+        return Buffer(self.read_at(address, size))
 
-    def write_at(self, buffer: Buffer, address: int) -> int:
-        return self.raw_write_at(address, buffer.unwrap())
+    def write_buffer(self, buffer: Buffer, address: int) -> int:
+        return self.write_at(address, buffer.unwrap())
 
     def read(self, type: Data[T], address: int) -> T:
-        return type.from_bytes(self.raw_read_at(address, type.size))
+        return type.from_bytes(self.read_at(address, type.size))
 
     def write(self, type: Data[T], value: T, address: int) -> int:
-        return self.raw_write_at(address, type.to_bytes(value))
+        return self.write_at(address, type.to_bytes(value))
 
     def read_pointer(self, address: int) -> int:
         return self.read(self.pointer_type, address)
@@ -261,15 +259,15 @@ class OSState:
 
         if size < string.size:
             try:
-                return string.from_bytes(self.raw_read_at(address, size))
+                return string.from_bytes(self.read_at(address, size))
             except UnicodeDecodeError:  # failed to read, let's try to interpret as a pointer
                 pass
 
         address = self.read_pointer(address)
 
-        return string.from_bytes(self.raw_read_at(address, size))
+        return string.from_bytes(self.read_at(address, size))
 
-    def write_string(self, value: str, address: int) -> None:
+    def write_string(self, value: str, address: int) -> int:
         size_address = address + string.size
 
         data = string.to_bytes(value)
@@ -281,16 +279,13 @@ class OSState:
         if size > string.size:
             address = self.allocate_memory(0, size)
 
-        self.raw_write_at(address, data)
+        return self.write_at(address, data)
 
-    def get_game_manager(self) -> "GameManagerLayer":
-        if not self.GAME_MANAGER_OFFSET:
-            raise TypeError(f"GAME_MANAGER_OFFSET not defined for {self.__class__.__name__}.")
-
-        return GameManagerLayer(self.base_address + self.GAME_MANAGER_OFFSET, self)
+    def get_address(self) -> "Address":
+        return Address(self.base_address, self)
 
 
-class LinuxState(OSState):
+class LinuxState(SystemState):
     def load(self) -> None:
         self.process_id = linux_get_process_id_from_name(self.process_name)
 
@@ -325,7 +320,7 @@ class LinuxState(OSState):
         return linux_terminate_process(self.process_handle)
 
 
-class MacOSState(OSState):
+class MacOSState(SystemState):
     def load(self) -> None:
         self.process_id = macos_get_process_id_from_name(self.process_name)
 
@@ -360,9 +355,7 @@ class MacOSState(OSState):
         return macos_terminate_process(self.process_handle)
 
 
-class WindowsState(OSState):
-    GAME_MANAGER_OFFSET = 0x3222D0
-
+class WindowsState(SystemState):
     def load(self) -> None:
         try:
             self.process_id = windows_get_process_id_from_name(self.process_name)
@@ -406,7 +399,7 @@ class WindowsState(OSState):
         return windows_terminate_process(self.process_handle)
 
 
-State: Type[OSState]
+State: Type[SystemState]
 
 
 if LINUX:
@@ -419,47 +412,121 @@ elif WINDOWS:
     State = WindowsState
 
 else:
-    State = OSState
+    State = SystemState
 
 
-class Layer:
-    def __init__(self, address: int, state: OSState) -> None:
-        self._address = address
-        self._state = state
+class Address:
+    def __init__(self, address: int, state: SystemState) -> None:
+        self.address = address
+        self.state = state
 
-    @property
-    def address(self) -> int:
-        return self._address
+    def add(self: AddressT, value: int) -> AddressT:
+        return self.__class__(self.address + value, self.state)
 
-    @property
-    def state(self) -> OSState:
-        return self._state
+    def sub(self: AddressT, value: int) -> AddressT:
+        return self.__class__(self.address - value, self.state)
 
-    def compute_offset(self, offset: int) -> int:
-        return self.state.read_pointer(self.address) + offset
+    def cast(self: AddressT, cls: Type[AddressT]) -> AddressT:
+        return cls(self.address, self.state)
 
-    def offset(self, value: int, *, cls: Optional[Type[LayerT]] = None) -> LayerT:
-        if cls is None:
-            cls = cast(Type[LayerT], self.__class__)
+    def follow_pointer(self: AddressT) -> AddressT:
+        return self.__class__(self.read_pointer(), self.state)
 
-        return cls(self.compute_offset(value), self.state)
+    def offset(self: AddressT, value: int) -> AddressT:
+        return self.follow_pointer().add(value)
 
+    def read_at(self, size: int) -> bytes:
+        return self.state.read_at(self.address, size)
 
-class GameManagerLayer(Layer):
-    def get_game_layer(self) -> "GameLayer":
-        return self.offset(0x164, cls=GameLayer)
+    def write_at(self, data: bytes) -> int:
+        return self.state.write_at(self.address, data)
 
+    def read_buffer(self, size: int) -> Buffer:
+        return self.state.read_buffer(size, self.address)
 
-class GameLayer(Layer):
-    def get_level_settings(self) -> "LevelSettingsLayer":
-        return self.offset(0x22C, cls=LevelSettingsLayer)
+    def write_buffer(self, data: Buffer) -> int:
+        return self.state.write_buffer(data, self.address)
 
+    def read(self, type: Data[T]) -> T:
+        return self.state.read(type, self.address)
 
-class LevelSettingsLayer(Layer):
-    def get_level(self) -> "LevelLayer":
-        return self.offset(0x114, cls=LevelLayer)
+    def write(self, type: Data[T], value: T) -> int:
+        return self.state.write(type, value, self.address)
 
+    def read_pointer(self) -> int:
+        return self.state.read_pointer(self.address)
 
-class LevelLayer(Layer):
-    def get_name(self) -> str:
-        return self.state.read_string(self.compute_offset(0xFC))
+    def write_pointer(self, value: int) -> int:
+        return self.state.write_pointer(value, self.address)
+
+    def read_bool(self) -> bool:
+        return self.state.read_bool(self.address)
+
+    def write_bool(self, value: bool) -> int:
+        return self.state.write_bool(value, self.address)
+
+    def read_int8(self) -> int:
+        return self.state.read_int8(self.address)
+
+    def write_int8(self, value: int) -> int:
+        return self.state.write_int8(value, self.address)
+
+    def read_uint8(self) -> int:
+        return self.state.read_uint8(self.address)
+
+    def write_uint8(self, value: int) -> int:
+        return self.state.write_uint8(value, self.address)
+
+    def read_int16(self) -> int:
+        return self.state.read_int16(self.address)
+
+    def write_int16(self, value: int) -> int:
+        return self.state.write_int16(value, self.address)
+
+    def read_uint16(self) -> int:
+        return self.state.read_uint16(self.address)
+
+    def write_uint16(self, value: int) -> int:
+        return self.state.write_uint16(value, self.address)
+
+    def read_int32(self) -> int:
+        return self.state.read_int32(self.address)
+
+    def write_int32(self, value: int) -> int:
+        return self.state.write_int32(value, self.address)
+
+    def read_uint32(self) -> int:
+        return self.state.read_uint32(self.address)
+
+    def write_uint32(self, value: int) -> int:
+        return self.state.write_uint32(value, self.address)
+
+    def read_int64(self) -> int:
+        return self.state.read_int64(self.address)
+
+    def write_int64(self, value: int) -> int:
+        return self.state.write_int64(value, self.address)
+
+    def read_uint64(self) -> int:
+        return self.state.read_uint64(self.address)
+
+    def write_uint64(self, value: int) -> int:
+        return self.state.write_uint64(value, self.address)
+
+    def read_float32(self) -> float:
+        return self.state.read_float32(self.address)
+
+    def write_float32(self, value: float) -> int:
+        return self.state.write_float32(value, self.address)
+
+    def read_float64(self) -> float:
+        return self.state.read_float64(self.address)
+
+    def write_float64(self, value: float) -> int:
+        return self.state.write_float64(value, self.address)
+
+    def read_string(self) -> str:
+        return self.state.read_string(self.address)
+
+    def write_string(self, value: str) -> int:
+        return self.state.write_string(value, self.address)

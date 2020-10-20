@@ -181,7 +181,7 @@ except ImportError:
     windows_open_process = unimplemented
     windows_close_process = unimplemented
     windows_get_process_id_from_name = unimplemented
-    windowss_get_process_id_from_window_title = unimplemented
+    windows_get_process_id_from_window_title = unimplemented
     windows_inject_dll = unimplemented
     windows_terminate_process = unimplemented
     windows_protect_process_memory = unimplemented
