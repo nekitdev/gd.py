@@ -316,7 +316,7 @@ class User(AbstractEntity):
         """
         return await self.client.get_user(self.account_id)
 
-    async def update(self) -> None:
+    async def update(self) -> "User":
         """Update the user.
 
         Raises
@@ -329,9 +329,17 @@ class User(AbstractEntity):
 
         :exc:`~gd.HTTPError`
             Failed to process the request.
+
+        Returns
+        -------
+        :class:`~gd.User`
+            Refreshed user. (``self``)
         """
         new = await self.get_user()
+
         self.options.update(new.options)
+
+        return self
 
     async def send(
         self, subject: Optional[str] = None, body: Optional[str] = None

@@ -37,8 +37,12 @@ try:
 except AttributeError:
     raise ImportError("Can not define memory functions for Windows.") from None
 
-kernel32 = ctypes.WinDLL("kernel32.dll")  # type: ignore
-user32 = ctypes.WinDLL("user32.dll")  # type: ignore
+try:
+    kernel32 = ctypes.WinDLL("kernel32.dll")  # type: ignore
+    user32 = ctypes.WinDLL("user32.dll")  # type: ignore
+
+except OSError:
+    raise ImportError("Can not define memory functions for Windows.") from None
 
 ENCODING = "utf-8"
 
@@ -509,7 +513,7 @@ def free_memory(process_handle: int, address: int, size: int) -> None:
 
 
 def terminate_process(process_handle: int) -> bool:
-    return _terminate_process(process_handle, 0)
+    return bool(_terminate_process(process_handle, 0))
 
 
 def protect_process_memory(process_handle: int, address: int, size: int, flags: int) -> int:

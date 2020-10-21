@@ -75,10 +75,13 @@ from gd.memory.internal import (
     windows_read_process_memory,
     windows_write_process_memory,
 )
+# from gd.memory.offsets import linux_offsets, macos_offsets, windows_offsets
 
-__all__ = ("State", "SystemState", "LinuxState", "MacOSState", "WindowsState")
+__all__ = ("Address", "State", "SystemState", "LinuxState", "MacOSState", "WindowsState")
 
 DEFAULT_WINDOW_TITLE = "Geometry Dash"
+MACOS_STRING_SIZE_OFFSET = -0x18
+WINDOWS_STRING_SIZE_OFFSET = 0x10
 
 AddressT = TypeVar("AddressT", bound="Address")
 T = TypeVar("T")
@@ -166,6 +169,12 @@ class SystemState:
     def terminate(self) -> bool:
         return system_terminate_process(self.process_handle)
 
+    def read_string(self, address: int) -> str:
+        raise NotImplementedError("read_string(address) is not implemented in base state.")
+
+    def write_string(self, value: str, address: int) -> int:
+        raise NotImplementedError("write_string(value, address) is not implemented in base state.")
+
     # END REGION
 
     def read_buffer(self, size: int, address: int) -> Buffer:
@@ -252,35 +261,6 @@ class SystemState:
     def write_float64(self, value: float, address: int) -> int:
         return self.write(float64, value, address)
 
-    def read_string(self, address: int) -> str:
-        size_address = address + string.size
-
-        size: int = self.read_pointer(size_address)
-
-        if size < string.size:
-            try:
-                return string.from_bytes(self.read_at(address, size))
-            except UnicodeDecodeError:  # failed to read, let's try to interpret as a pointer
-                pass
-
-        address = self.read_pointer(address)
-
-        return string.from_bytes(self.read_at(address, size))
-
-    def write_string(self, value: str, address: int) -> int:
-        size_address = address + string.size
-
-        data = string.to_bytes(value)
-
-        size = len(data)
-
-        self.write_pointer(size, size_address)
-
-        if size > string.size:
-            address = self.allocate_memory(0, size)
-
-        return self.write_at(address, data)
-
     def get_address(self) -> "Address":
         return Address(self.base_address, self)
 
@@ -354,6 +334,39 @@ class MacOSState(SystemState):
     def terminate(self) -> bool:
         return macos_terminate_process(self.process_handle)
 
+    def read_string(self, address: int) -> str:
+        address = self.read_pointer(address)  # in MacOS, string is pointing to actual structure
+
+        size_address = address + MACOS_STRING_SIZE_OFFSET
+
+        size = self.read_pointer(size_address)
+
+        return string.from_bytes(self.read_at(address, size))
+
+    def write_string(self, value: str, address: int) -> int:
+        actual_address = address
+
+        address = self.read_pointer(address)  # see above
+
+        size_address = address + MACOS_STRING_SIZE_OFFSET
+
+        previous_size = self.read_pointer(size_address)
+
+        data = string.to_bytes(value)
+
+        size = len(data) - 1  # account for null terminator
+
+        if size > previous_size:
+            address = self.allocate_memory(0, size)
+
+            self.write_pointer(address, actual_address)
+
+            size_address = address + MACOS_STRING_SIZE_OFFSET
+
+        self.write_pointer(size, size_address)
+
+        return self.write_at(address, data)
+
 
 class WindowsState(SystemState):
     def load(self) -> None:
@@ -397,6 +410,39 @@ class WindowsState(SystemState):
 
     def terminate(self) -> bool:
         return windows_terminate_process(self.process_handle)
+
+    def read_string(self, address: int) -> str:
+        size_address = address + WINDOWS_STRING_SIZE_OFFSET
+
+        size = self.read_pointer(size_address)
+
+        if size < WINDOWS_STRING_SIZE_OFFSET:
+            try:
+                return string.from_bytes(self.read_at(address, size))
+            except UnicodeDecodeError:  # failed to read, let's try to interpret as a pointer
+                pass
+
+        address = self.read_pointer(address)
+
+        return string.from_bytes(self.read_at(address, size))
+
+    def write_string(self, value: str, address: int) -> int:
+        size_address = address + WINDOWS_STRING_SIZE_OFFSET
+
+        data = string.to_bytes(value)
+
+        size = len(data) - 1  # account for null terminator
+
+        self.write_pointer(size, size_address)
+
+        if size > WINDOWS_STRING_SIZE_OFFSET:
+            new_address = self.allocate_memory(0, size)
+
+            self.write_pointer(new_address, address)
+
+            address = new_address
+
+        return self.write_at(address, data)
 
 
 State: Type[SystemState]

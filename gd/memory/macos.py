@@ -23,12 +23,11 @@ __all__ = (
     "write_process_memory",
 )
 
-libc_name = ctypes.util.find_library("c")
+try:
+    libc = ctypes.CDLL("libc.dylib")  # type: ignore
 
-if libc_name is None:
-    raise ImportError("Can not define memory functions for MacOS.")
-
-libc = ctypes.CDLL(libc_name)  # type: ignore
+except OSError:
+    raise ImportError("Can not define memory functions for MacOS.") from None
 
 ENCODING = "utf-8"
 

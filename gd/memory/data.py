@@ -106,12 +106,8 @@ class Data(Generic[T]):
 
 
 class String(Data[str]):
-    _SIZE = 16
-
     def __init__(self) -> None:
         super().__init__("string", "")
-
-        self._size = self._SIZE
 
     def from_bytes(self, data: bytes, order: Union[str, ByteOrder] = ByteOrder.NATIVE) -> str:
         return read_until_terminator(data).decode(ENCODING)
