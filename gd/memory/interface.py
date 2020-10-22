@@ -3,6 +3,8 @@ from pathlib import Path
 from gd.platform import LINUX, MACOS, WINDOWS
 from gd.typing import Type, TypeVar, Union
 
+from gd.text_utils import make_repr
+
 from gd.memory.data import (
     Buffer,
     Data,
@@ -75,15 +77,30 @@ from gd.memory.internal import (
     windows_read_process_memory,
     windows_write_process_memory,
 )
-# from gd.memory.offsets import linux_offsets, macos_offsets, windows_offsets
+from gd.memory.offsets import offsets, linux_offsets, macos_offsets, windows_offsets
 
-__all__ = ("Address", "State", "SystemState", "LinuxState", "MacOSState", "WindowsState")
+__all__ = (
+    "Address",
+    "GameManager",
+    "PlayLayer",
+    "EditorLayer",
+    "LevelSettingsLayer",
+    "GameLevel",
+    "State",
+    "SystemState",
+    "LinuxState",
+    "MacOSState",
+    "WindowsState",
+)
 
 DEFAULT_WINDOW_TITLE = "Geometry Dash"
+
 MACOS_STRING_SIZE_OFFSET = -0x18
 WINDOWS_STRING_SIZE_OFFSET = 0x10
 
 AddressT = TypeVar("AddressT", bound="Address")
+AddressU = TypeVar("AddressU", bound="Address")
+
 T = TypeVar("T")
 
 
@@ -108,6 +125,16 @@ class SystemState:
 
         if load:
             self.load()
+
+    def __repr__(self) -> str:
+        info = {
+            "process_id": self.process_id,
+            "process_handle": hex(self.process_handle),
+            "base_address": hex(self.base_address),
+            "pointer_type": self.pointer_type,
+        }
+
+        return make_repr(self, info)
 
     def unload(self) -> None:
         self.process_id = 0
@@ -263,6 +290,14 @@ class SystemState:
 
     def get_address(self) -> "Address":
         return Address(self.base_address, self)
+
+    address = property(get_address)
+
+    def get_game_manager(self) -> "GameManager":
+        address = self.get_address()
+        return address.add_and_follow(address.offsets.game_manager).cast(GameManager)
+
+    game_manager = property(get_game_manager)
 
 
 class LinuxState(SystemState):
@@ -462,9 +497,22 @@ else:
 
 
 class Address:
+    OFFSETS = {
+        LinuxState: linux_offsets,
+        MacOSState: macos_offsets,
+        WindowsState: windows_offsets,
+        SystemState: offsets,
+    }
+
     def __init__(self, address: int, state: SystemState) -> None:
         self.address = address
         self.state = state
+        self.offsets = self.OFFSETS[type(state)]
+
+    def __repr__(self) -> str:
+        info = {"address": hex(self.address), "state": self.state}
+
+        return make_repr(self, info)
 
     def add(self: AddressT, value: int) -> AddressT:
         return self.__class__(self.address + value, self.state)
@@ -472,14 +520,23 @@ class Address:
     def sub(self: AddressT, value: int) -> AddressT:
         return self.__class__(self.address - value, self.state)
 
-    def cast(self: AddressT, cls: Type[AddressT]) -> AddressT:
+    def cast(self: AddressT, cls: Type[AddressU]) -> AddressU:
         return cls(self.address, self.state)
 
     def follow_pointer(self: AddressT) -> AddressT:
         return self.__class__(self.read_pointer(), self.state)
 
-    def offset(self: AddressT, value: int) -> AddressT:
+    def follow_and_add(self: AddressT, value: int) -> AddressT:
         return self.follow_pointer().add(value)
+
+    def follow_and_sub(self: AddressT, value: int) -> AddressT:
+        return self.follow_pointer().sub(value)
+
+    def add_and_follow(self: AddressT, value: int) -> AddressT:
+        return self.add(value).follow_pointer()
+
+    def sub_and_follow(self: AddressT, value: int) -> AddressT:
+        return self.sub(value).follow_pointer()
 
     def read_at(self, size: int) -> bytes:
         return self.state.read_at(self.address, size)
@@ -576,3 +633,44 @@ class Address:
 
     def write_string(self, value: str) -> int:
         return self.state.write_string(value, self.address)
+
+
+class GameManager(Address):
+    def get_play_layer(self) -> "PlayLayer":
+        return self.add_and_follow(self.offsets.play_layer).cast(PlayLayer)
+
+    play_layer = property(get_play_layer)
+
+    def get_editor_layer(self) -> "EditorLayer":
+        return self.add_and_follow(self.offsets.editor_layer).cast(EditorLayer)
+
+    editor_layer = property(get_editor_layer)
+
+
+class BaseGameLayer(Address):
+    def get_level_settings(self) -> "LevelSettingsLayer":
+        return self.add_and_follow(self.offsets.level_settings).cast(LevelSettingsLayer)
+
+    level_settings = property(get_level_settings)
+
+
+class PlayLayer(BaseGameLayer):
+    pass
+
+
+class EditorLayer(BaseGameLayer):
+    pass
+
+
+class LevelSettingsLayer(Address):
+    def get_level(self) -> "GameLevel":
+        return self.add_and_follow(self.offsets.level).cast(GameLevel)
+
+    level = property(get_level)
+
+
+class GameLevel(Address):
+    def get_name(self) -> str:
+        return self.add(self.offsets.level_name).read_string()
+
+    name = property(get_name)
