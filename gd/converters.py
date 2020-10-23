@@ -1,6 +1,6 @@
 from gd.crypto import Key, decode_robtop_str, encode_robtop_str
 from gd.enums import DemonDifficulty, LevelDifficulty
-from gd.typing import Any, Optional, Tuple, Union
+from gd.typing import Any, Dict, Optional, Tuple, Union
 
 from gd.text_utils import make_repr
 
@@ -61,6 +61,9 @@ class Version:
     def __init__(self, major: int, minor: int) -> None:
         self._major = major
         self._minor = minor
+
+    def __json__(self) -> str:
+        return str(self)
 
     @property
     def major(self) -> int:
@@ -205,6 +208,9 @@ class Password:
                 raise ValueError(f"Password is too large: {password}.")
 
         self._copyable = bool(copyable)
+
+    def __json__(self) -> Dict[str, Union[Optional[int], bool]]:
+        return {"password": self.password, "copyable": self.copyable}
 
     def __str__(self) -> str:
         if self.copyable:

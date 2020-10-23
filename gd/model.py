@@ -285,19 +285,35 @@ class LevelModel(Model):
     index_46: str = StrField(index=46, default="")
     index_47: str = StrField(index=47, default="")
 
-    @property
-    def password(self) -> Optional[int]:
+    def get_password(self) -> Optional[int]:
         if self.password_field is None:
             return None
 
         return self.password_field.password
 
-    @property
-    def copyable(self) -> bool:
+    def set_password(self, password: Optional[int]) -> None:
+        if self.password_field is None:
+            self.password_field = Password(password)
+
+        else:
+            self.password_field.password = password
+
+    password = property(get_password, set_password)
+
+    def get_copyable(self) -> bool:
         if self.password_field is None:
             return False
 
         return self.password_field.copyable
+
+    def set_copyable(self, copyable: bool) -> None:
+        if self.password_field is None:
+            self.password_field = Password(None, copyable)
+
+        else:
+            self.password_field.copyable = copyable
+
+    copyable = property(get_copyable, set_copyable)
 
     @property
     def timely_id(self) -> int:

@@ -593,7 +593,7 @@ class LevelAPI(Model):
     stars: int = BaseField(index="k26", de=int, ser=int)
     recording_string: str = BaseField(index="k34", de=str, ser=str)
     jumps: int = BaseField(index="k36", de=int, ser=int)
-    password: Password = BaseField(
+    password_field: Password = BaseField(
         index="k41", de=Password.from_robtop_number, ser=Password.to_robtop_number
     )
     original_id: int = BaseField(index="k42", de=int, ser=int)
@@ -632,6 +632,36 @@ class LevelAPI(Model):
         ser=enum_to_value,
         default=InternalType.LEVEL,
     )
+
+    def get_password(self) -> Optional[int]:
+        if self.password_field is None:
+            return None
+
+        return self.password_field.password
+
+    def set_password(self, password: Optional[int]) -> None:
+        if self.password_field is None:
+            self.password_field = Password(password)
+
+        else:
+            self.password_field.password = password
+
+    password = property(get_password, set_password)
+
+    def get_copyable(self) -> bool:
+        if self.password_field is None:
+            return False
+
+        return self.password_field.copyable
+
+    def set_copyable(self, copyable: bool) -> None:
+        if self.password_field is None:
+            self.password_field = Password(None, copyable)
+
+        else:
+            self.password_field.copyable = copyable
+
+    copyable = property(get_copyable, set_copyable)
 
     @cache_by("unprocessed_data")
     def get_data(self) -> str:
@@ -676,3 +706,9 @@ class LevelAPI(Model):
         from gd.api.editor import Editor
 
         return Editor.load_from(self, "data")
+
+    def to_dict(self) -> Dict[str, T]:
+        result = super().to_dict()
+        result.update(password=self.password, copyable=self.copyable)
+
+        return result
