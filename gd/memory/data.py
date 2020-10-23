@@ -11,7 +11,23 @@ __all__ = (
     "Buffer",
     "ByteOrder",
     "Data",
+    "get_int_type",
     "get_pointer_type",
+    "get_size_type",
+    "c_bool",
+    "c_char",
+    "c_float",
+    "c_double",
+    "c_byte",
+    "c_ubyte",
+    "c_short",
+    "c_ushort",
+    "c_int",
+    "c_uint",
+    "c_long",
+    "c_ulong",
+    "c_longlong",
+    "c_ulonglong",
     "boolean",
     "char",
     "int8",
@@ -22,6 +38,8 @@ __all__ = (
     "uint32",
     "int64",
     "uint64",
+    "usize",
+    "isize",
     "float32",
     "float64",
     "string",
@@ -121,19 +139,22 @@ class String(Data[str]):
         return value.encode(ENCODING)
 
 
-def get_pointer_type(bits: int, signed: bool = False) -> Data[int]:
+def get_int_type(bits: int, signed: bool = False) -> Data[int]:
     if signed:
-        choose_from = all_int
+        choose_from = _all_int
 
     else:
-        choose_from = all_uint
+        choose_from = _all_uint
 
     for pointer_type in choose_from:
         if pointer_type.bits == bits:
             return pointer_type
 
-    else:
-        raise ValueError("Can not find pointer type that matches given bits.")
+    raise ValueError("Can not find type that matches given bits.")
+
+
+get_pointer_type = get_int_type
+get_size_type = get_int_type
 
 
 def bytes_to_bits(count: int) -> int:
@@ -144,32 +165,43 @@ def bits_to_bytes(count: int) -> int:
     return count >> 3
 
 
-_byte: Data[int] = Data("byte", "b")
-_ubyte: Data[int] = Data("ubyte", "B")
+SIZE = ctypes.sizeof(ctypes.c_void_p)
+SIZE_BITS = bytes_to_bits(SIZE)
 
-_short: Data[int] = Data("short", "h")
-_ushort: Data[int] = Data("ushort", "H")
 
-_int: Data[int] = Data("int", "i")
-_uint: Data[int] = Data("uint", "I")
+c_bool: Data[bool] = Data("bool", "?")
 
-_long: Data[int] = Data("long", "l")
-_ulong: Data[int] = Data("ulong", "L")
+c_char: Data[bytes] = Data("char", "c")
 
-_longlong: Data[int] = Data("longlong", "q")
-_ulonglong: Data[int] = Data("ulonglong", "Q")
+c_float: Data[float] = Data("float", "f")
+c_double: Data[float] = Data("double", "d")
+
+c_byte: Data[int] = Data("byte", "b")
+c_ubyte: Data[int] = Data("ubyte", "B")
+
+c_short: Data[int] = Data("short", "h")
+c_ushort: Data[int] = Data("ushort", "H")
+
+c_int: Data[int] = Data("int", "i")
+c_uint: Data[int] = Data("uint", "I")
+
+c_long: Data[int] = Data("long", "l")
+c_ulong: Data[int] = Data("ulong", "L")
+
+c_longlong: Data[int] = Data("longlong", "q")
+c_ulonglong: Data[int] = Data("ulonglong", "Q")
 
 _int_size_to_format = {
     _int_type.size: _int_type.format
-    for _int_type in (_byte, _short, _int, _long, _longlong)
+    for _int_type in (c_byte, c_short, c_int, c_long, c_longlong)
 }
 
 _uint_size_to_format = {
     _uint_type.size: _uint_type.format
-    for _uint_type in (_ubyte, _ushort, _uint, _ulong, _ulonglong)
+    for _uint_type in (c_ubyte, c_ushort, c_uint, c_ulong, c_ulonglong)
 }
 
-boolean: Data[bool] = Data("boolean", "?")
+boolean: Data[bool] = Data("bool", "?")
 
 char: Data[bytes] = Data("char", "c")
 
@@ -189,8 +221,11 @@ try:
 except KeyError as error:
     raise OSError(f"Can not find integer type of size {error}.")
 
-all_int = (int8, int16, int32, int64)
-all_uint = (uint8, uint16, uint32, uint64)
+_all_int = (int8, int16, int32, int64)
+_all_uint = (uint8, uint16, uint32, uint64)
+
+isize: Data[int] = get_size_type(SIZE_BITS, signed=True)
+usize: Data[int] = get_size_type(SIZE_BITS, signed=False)
 
 float32: Data[float] = Data("float32", "f")
 float64: Data[float] = Data("float64", "d")

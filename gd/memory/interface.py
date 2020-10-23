@@ -21,6 +21,7 @@ from gd.memory.data import (
     float64,
     string,
     get_pointer_type,
+    get_size_type,
 )
 
 from gd.memory.internal import (
@@ -108,14 +109,17 @@ class SystemState:
     def __init__(
         self,
         process_name: str,
-        bitness: int,
+        bits: int,
         window_title: str = DEFAULT_WINDOW_TITLE,
         load: bool = True,
     ) -> None:
         self.process_name = process_name
         self.window_title = window_title
 
-        self.pointer_type = get_pointer_type(bitness)
+        self.bits = bits
+
+        self.pointer_type = get_pointer_type(bits)
+        self.size_type = get_size_type(bits)
 
         self.process_id = 0
         self.process_handle = 0
@@ -221,6 +225,12 @@ class SystemState:
 
     def write_pointer(self, value: int, address: int) -> int:
         return self.write(self.pointer_type, value, address)
+
+    def read_size(self, address: int) -> int:
+        return self.read(self.size_type, address)
+
+    def write_size(self, value: int, address: int) -> int:
+        return self.write(self.size_type, value, address)
 
     def read_bool(self, address: int) -> bool:
         return self.read(boolean, address)
@@ -374,7 +384,7 @@ class MacOSState(SystemState):
 
         size_address = address + MACOS_STRING_SIZE_OFFSET
 
-        size = self.read_pointer(size_address)
+        size = self.read_size(size_address)
 
         return string.from_bytes(self.read_at(address, size))
 
@@ -385,7 +395,7 @@ class MacOSState(SystemState):
 
         size_address = address + MACOS_STRING_SIZE_OFFSET
 
-        previous_size = self.read_pointer(size_address)
+        previous_size = self.read_size(size_address)
 
         data = string.to_bytes(value)
 
@@ -398,7 +408,7 @@ class MacOSState(SystemState):
 
             size_address = address + MACOS_STRING_SIZE_OFFSET
 
-        self.write_pointer(size, size_address)
+        self.write_size(size, size_address)
 
         return self.write_at(address, data)
 
@@ -449,7 +459,7 @@ class WindowsState(SystemState):
     def read_string(self, address: int) -> str:
         size_address = address + WINDOWS_STRING_SIZE_OFFSET
 
-        size = self.read_pointer(size_address)
+        size = self.read_size(size_address)
 
         if size < WINDOWS_STRING_SIZE_OFFSET:
             try:
@@ -457,7 +467,7 @@ class WindowsState(SystemState):
             except UnicodeDecodeError:  # failed to read, let's try to interpret as a pointer
                 pass
 
-        address = self.read_pointer(address)
+        address = self.read_size(address)
 
         return string.from_bytes(self.read_at(address, size))
 
@@ -468,7 +478,7 @@ class WindowsState(SystemState):
 
         size = len(data) - 1  # account for null terminator
 
-        self.write_pointer(size, size_address)
+        self.write_size(size, size_address)
 
         if size > WINDOWS_STRING_SIZE_OFFSET:
             new_address = self.allocate_memory(0, size)
@@ -561,6 +571,12 @@ class Address:
 
     def write_pointer(self, value: int) -> int:
         return self.state.write_pointer(value, self.address)
+
+    def read_size(self) -> int:
+        return self.state.read_size(self.address)
+
+    def write_size(self, value: int) -> int:
+        return self.state.write_size(value, self.address)
 
     def read_bool(self) -> bool:
         return self.state.read_bool(self.address)
