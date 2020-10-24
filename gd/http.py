@@ -235,7 +235,7 @@ class HTTPClient:
         self.proxy = proxy
         self.proxy_auth = proxy_auth
 
-        self.timeout_value = timeout
+        self.timeout = timeout
 
         self.game_version = game_version
         self.binary_version = binary_version
@@ -270,25 +270,12 @@ class HTTPClient:
     def create_timeout(self) -> aiohttp.ClientTimeout:
         return aiohttp.ClientTimeout(total=self.timeout)
 
-    def get_timeout(self) -> Union[float, int]:
-        return self.timeout_value
-
-    def set_timeout(self, timeout: Union[float, int]) -> None:
-        self.timeout_value = timeout
-
-        if self.session:
-            self.session.timeout = self.create_timeout()
-
-    timeout = property(get_timeout, set_timeout)
-
     async def close(self) -> None:
         if self.session is not None:
             await self.session.close()
 
     async def create_session(self) -> aiohttp.ClientSession:
-        return aiohttp.ClientSession(
-            skip_auto_headers=self.DEFAULT_SKIP_HEADERS, timeout=self.create_timeout(),
-        )
+        return aiohttp.ClientSession(skip_auto_headers=self.DEFAULT_SKIP_HEADERS)
 
     async def ensure_session(self) -> None:
         if self.session is None:
@@ -369,6 +356,7 @@ class HTTPClient:
                     proxy=self.proxy,
                     proxy_auth=self.proxy_auth,
                     headers=headers,
+                    timeout=self.create_timeout(),
                 ) as response:
 
                     log.debug("%s %s has returned %d", method, url, response.status)
