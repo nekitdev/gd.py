@@ -82,8 +82,8 @@ class JSON(enums.Trait):
 
 
 class BetterTitle(enums.Trait):
-    FORCE_UPPER: Set[str] = {}
-    FORCE_LOWER: Set[str] = {}
+    FORCE_UPPER: Set[str] = set()
+    FORCE_LOWER: Set[str] = set()
 
     @property
     def title(self) -> str:
@@ -214,7 +214,7 @@ class Role(Enum):
     ELDER_MODERATOR = 2
 
 
-class LevelLength(Enum, ignore="FORCE_UPPER"):
+class LevelLength(Enum, ignore="FORCE_UPPER"):  # type: ignore
     """An enumeration for level lengths."""
 
     FORCE_UPPER = {"NA", "XL"}
@@ -240,7 +240,7 @@ class LevelLength(Enum, ignore="FORCE_UPPER"):
         return None
 
 
-class LevelDifficulty(Enum, ignore="FORCE_UPPER"):
+class LevelDifficulty(Enum, ignore="FORCE_UPPER"):  # type: ignore
     """An enumeration for level difficulties."""
 
     FORCE_UPPER = {"NA"}
@@ -257,7 +257,7 @@ class LevelDifficulty(Enum, ignore="FORCE_UPPER"):
     UNKNOWN = NA
 
 
-class DemonDifficulty(Enum, ignore="FORCE_UPPER"):
+class DemonDifficulty(Enum, ignore="FORCE_UPPER"):  # type: ignore
     """An enumeration for demon difficulties."""
 
     FORCE_UPPER = {"NA"}
