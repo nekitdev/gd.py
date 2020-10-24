@@ -21,7 +21,7 @@ try:
 except Exception:  # noqa
     pass
 
-from gd.converters import get_difficulty
+from gd.converters import get_actual_difficulty
 from gd.enums import (
     LevelDifficulty,
     DemonDifficulty,
@@ -759,7 +759,7 @@ class WindowsMemory(MemoryType):
         difficulty: int = self.read(Bool, address + 0x1E4)
         demon_difficulty: int = self.read(UInt32, address + 0x2A0)
 
-        return get_difficulty(difficulty, demon_difficulty, is_auto, is_demon)
+        return get_actual_difficulty(difficulty, demon_difficulty, is_auto, is_demon)
 
     level_difficulty = property(get_level_difficulty)
 

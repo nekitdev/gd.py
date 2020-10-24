@@ -71,8 +71,8 @@ class FriendRequest(AbstractEntity):
             id=model.id,
             content=model.content,
             created_at=model.created_at,
-            is_unread=model.is_unread,
-            is_read=not model.is_unread,
+            unread=model.unread,
+            read=model.read,
             other_user=(other_user if other_user else User()).attach_client(client),
             type=type,
             client=client,
@@ -120,7 +120,7 @@ class FriendRequest(AbstractEntity):
 
     def is_read(self) -> bool:
         """:class:`bool`: Indicates whether request was read."""
-        return self.options.get("is_read", False)
+        return bool(self.options.get("read"))
 
     async def read(self) -> None:
         """Read a friend request. Sets ``is_read`` to ``True`` on success.

@@ -14,20 +14,6 @@ __all__ = (
     "get_int_type",
     "get_pointer_type",
     "get_size_type",
-    "c_bool",
-    "c_char",
-    "c_float",
-    "c_double",
-    "c_byte",
-    "c_ubyte",
-    "c_short",
-    "c_ushort",
-    "c_int",
-    "c_uint",
-    "c_long",
-    "c_ulong",
-    "c_longlong",
-    "c_ulonglong",
     "boolean",
     "char",
     "int8",
@@ -38,8 +24,8 @@ __all__ = (
     "uint32",
     "int64",
     "uint64",
-    "usize",
-    "isize",
+    "uintsize",
+    "intsize",
     "float32",
     "float64",
     "string",
@@ -168,37 +154,29 @@ def bits_to_bytes(count: int) -> int:
 SIZE = ctypes.sizeof(ctypes.c_void_p)
 SIZE_BITS = bytes_to_bits(SIZE)
 
+_byte: Data[int] = Data("byte", "b")
+_ubyte: Data[int] = Data("ubyte", "B")
 
-c_bool: Data[bool] = Data("bool", "?")
+_short: Data[int] = Data("short", "h")
+_ushort: Data[int] = Data("ushort", "H")
 
-c_char: Data[bytes] = Data("char", "c")
+_int: Data[int] = Data("int", "i")
+_uint: Data[int] = Data("uint", "I")
 
-c_float: Data[float] = Data("float", "f")
-c_double: Data[float] = Data("double", "d")
+_long: Data[int] = Data("long", "l")
+_ulong: Data[int] = Data("ulong", "L")
 
-c_byte: Data[int] = Data("byte", "b")
-c_ubyte: Data[int] = Data("ubyte", "B")
-
-c_short: Data[int] = Data("short", "h")
-c_ushort: Data[int] = Data("ushort", "H")
-
-c_int: Data[int] = Data("int", "i")
-c_uint: Data[int] = Data("uint", "I")
-
-c_long: Data[int] = Data("long", "l")
-c_ulong: Data[int] = Data("ulong", "L")
-
-c_longlong: Data[int] = Data("longlong", "q")
-c_ulonglong: Data[int] = Data("ulonglong", "Q")
+_longlong: Data[int] = Data("longlong", "q")
+_ulonglong: Data[int] = Data("ulonglong", "Q")
 
 _int_size_to_format = {
     _int_type.size: _int_type.format
-    for _int_type in (c_byte, c_short, c_int, c_long, c_longlong)
+    for _int_type in (_byte, _short, _int, _long, _longlong)
 }
 
 _uint_size_to_format = {
     _uint_type.size: _uint_type.format
-    for _uint_type in (c_ubyte, c_ushort, c_uint, c_ulong, c_ulonglong)
+    for _uint_type in (_ubyte, _ushort, _uint, _ulong, _ulonglong)
 }
 
 boolean: Data[bool] = Data("bool", "?")
@@ -224,8 +202,8 @@ except KeyError as error:
 _all_int = (int8, int16, int32, int64)
 _all_uint = (uint8, uint16, uint32, uint64)
 
-isize: Data[int] = get_size_type(SIZE_BITS, signed=True)
-usize: Data[int] = get_size_type(SIZE_BITS, signed=False)
+intsize: Data[int] = get_size_type(SIZE_BITS, signed=True)
+uintsize: Data[int] = get_size_type(SIZE_BITS, signed=False)
 
 float32: Data[float] = Data("float32", "f")
 float64: Data[float] = Data("float64", "d")

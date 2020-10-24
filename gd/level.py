@@ -129,10 +129,10 @@ class Level(AbstractEntity):
             game_version=model.game_version,
             rating=model.rating,
             length=model.length,
-            is_demon=model.is_demon,
+            demon=model.demon,
             stars=model.stars,
             score=model.score,
-            is_auto=model.is_auto,
+            auto=model.auto,
             password=model.password,
             copyable=model.copyable,
             difficulty=model.difficulty,
@@ -145,7 +145,7 @@ class Level(AbstractEntity):
             verified_coins=model.verified_coins,
             requested_stars=model.requested_stars,
             low_detail_mode=model.low_detail_mode,
-            is_epic=model.is_epic,
+            epic=model.epic,
             object_count=model.object_count,
             timely_id=(timely_id if timely_id > 0 else model.timely_id),
             type=type,
@@ -408,15 +408,15 @@ class Level(AbstractEntity):
 
     def is_epic(self) -> bool:
         """:class:`bool`: Indicates whether a level is epic."""
-        return bool(self.options.get("is_epic"))
+        return bool(self.options.get("epic"))
 
     def is_demon(self) -> bool:
         """:class:`bool`: Indicates whether a level is demon."""
-        return bool(self.options.get("is_demon"))
+        return bool(self.options.get("demon"))
 
     def is_auto(self) -> bool:
         """:class:`bool`: Indicates whether a level is auto."""
-        return bool(self.options.get("is_auto"))
+        return bool(self.options.get("auto"))
 
     def is_original(self) -> bool:
         """:class:`bool`: Indicates whether a level is original."""
@@ -932,13 +932,13 @@ class OfficialLevel:
             unprocessed_data=unprocessed_data,
             password=None,
             copyable=False,
-            is_demon=self.is_demon(),
-            is_auto=self.is_auto(),
+            demon=self.is_demon(),
+            auto=self.is_auto(),
             difficulty=difficulty,
             stars=self.stars,
             coins=self.coins,
             verified_coins=True,
-            is_epic=False,
+            epic=False,
             original_id=0,
             low_detail_mode=False,
             downloads=0,

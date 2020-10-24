@@ -1,5 +1,8 @@
 from pathlib import Path
 
+from gd.converters import get_actual_difficulty
+from gd.decorators import cache_by
+from gd.enums import DemonDifficulty, LevelDifficulty, LevelType
 from gd.platform import LINUX, MACOS, WINDOWS
 from gd.typing import Type, TypeVar, Union
 
@@ -130,6 +133,68 @@ class SystemState:
         if load:
             self.load()
 
+    @property  # type: ignore
+    @cache_by("bits")
+    def byte_type(self) -> Data[int]:
+        return int8
+
+    @property  # type: ignore
+    @cache_by("bits")
+    def ubyte_type(self) -> Data[int]:
+        return uint8
+
+    @property  # type: ignore
+    @cache_by("bits")
+    def short_type(self) -> Data[int]:
+        return int16
+
+    @property  # type: ignore
+    @cache_by("bits")
+    def ushort_type(self) -> Data[int]:
+        return uint16
+
+    @property  # type: ignore
+    @cache_by("bits")
+    def int_type(self) -> Data[int]:
+        if self.bits >= 32:
+            return int32
+
+        return int16
+
+    @property  # type: ignore
+    @cache_by("bits")
+    def uint_type(self) -> Data[int]:
+        if self.bits >= 32:
+            return uint32
+
+        return uint16
+
+    @property  # type: ignore
+    @cache_by("bits")
+    def long_type(self) -> Data[int]:
+        if self.bits >= 64:
+            return int64
+
+        return int32
+
+    @property  # type: ignore
+    @cache_by("bits")
+    def ulong_type(self) -> Data[int]:
+        if self.bits >= 64:
+            return uint64
+
+        return uint32
+
+    @property  # type: ignore
+    @cache_by("bits")
+    def longlong_type(self) -> Data[int]:
+        return int64
+
+    @property  # type: ignore
+    @cache_by("bits")
+    def ulonglong_type(self) -> Data[int]:
+        return uint64
+
     def __repr__(self) -> str:
         info = {
             "process_id": self.process_id,
@@ -182,7 +247,7 @@ class SystemState:
     def free_memory(self, address: int, size: int) -> None:
         return system_free_memory(self.process_handle, address, size)
 
-    def protect_at(self, address: int, size: int) -> None:
+    def protect_at(self, address: int, size: int) -> int:
         return system_protect_process_memory(self.process_handle, address, size)
 
     def read_at(self, address: int, size: int) -> bytes:
@@ -286,6 +351,66 @@ class SystemState:
     def write_uint64(self, value: int, address: int) -> int:
         return self.write(uint64, value, address)
 
+    def read_byte(self, address: int) -> int:
+        return self.read(self.byte_type, address)
+
+    def write_byte(self, value: int, address: int) -> int:
+        return self.write(self.byte_type, value, address)
+
+    def read_ubyte(self, address: int) -> int:
+        return self.read(self.ubyte_type, address)
+
+    def write_ubyte(self, value: int, address: int) -> int:
+        return self.write(self.ubyte_type, value, address)
+
+    def read_short(self, address: int) -> int:
+        return self.read(self.short_type, address)
+
+    def write_short(self, value: int, address: int) -> int:
+        return self.write(self.short_type, value, address)
+
+    def read_ushort(self, address: int) -> int:
+        return self.read(self.ushort_type, address)
+
+    def write_ushort(self, value: int, address: int) -> int:
+        return self.write(self.ushort_type, value, address)
+
+    def read_int(self, address: int) -> int:
+        return self.read(self.int_type, address)
+
+    def write_int(self, value: int, address: int) -> int:
+        return self.write(self.int_type, value, address)
+
+    def read_uint(self, address: int) -> int:
+        return self.read(self.uint_type, address)
+
+    def write_uint(self, value: int, address: int) -> int:
+        return self.write(self.uint_type, value, address)
+
+    def read_long(self, address: int) -> int:
+        return self.read(self.long_type, address)
+
+    def write_long(self, value: int, address: int) -> int:
+        return self.write(self.long_type, value, address)
+
+    def read_ulong(self, address: int) -> int:
+        return self.read(self.ulong_type, address)
+
+    def write_ulong(self, value: int, address: int) -> int:
+        return self.write(self.ulong_type, value, address)
+
+    def read_longlong(self, address: int) -> int:
+        return self.read(self.longlong_type, address)
+
+    def write_longlong(self, value: int, address: int) -> int:
+        return self.write(self.longlong_type, value, address)
+
+    def read_ulonglong(self, address: int) -> int:
+        return self.read(self.ulonglong_type, address)
+
+    def write_ulonglong(self, value: int, address: int) -> int:
+        return self.write(self.ulonglong_type, value, address)
+
     def read_float32(self, address: int) -> float:
         return self.read(float32, address)
 
@@ -326,7 +451,7 @@ class LinuxState(SystemState):
     def free_memory(self, address: int, size: int) -> None:
         return linux_free_memory(self.process_handle, address, size)
 
-    def protect_at(self, address: int, size: int) -> None:
+    def protect_at(self, address: int, size: int) -> int:
         return linux_protect_process_memory(self.process_handle, address, size)
 
     def raw_read_at(self, address: int, size: int) -> bytes:
@@ -361,7 +486,7 @@ class MacOSState(SystemState):
     def free_memory(self, address: int, size: int) -> None:
         return macos_free_memory(self.process_handle, address, size)
 
-    def protect_at(self, address: int, size: int) -> None:
+    def protect_at(self, address: int, size: int) -> int:
         return macos_protect_process_memory(self.process_handle, address, size)
 
     def raw_read_at(self, address: int, size: int) -> bytes:
@@ -438,7 +563,7 @@ class WindowsState(SystemState):
     def free_memory(self, address: int, size: int) -> None:
         return windows_free_memory(self.process_handle, address, size)
 
-    def protect_at(self, address: int, size: int) -> None:
+    def protect_at(self, address: int, size: int) -> int:
         return windows_protect_process_memory(self.process_handle, address, size)
 
     def raw_read_at(self, address: int, size: int) -> bytes:
@@ -548,6 +673,9 @@ class Address:
     def sub_and_follow(self: AddressT, value: int) -> AddressT:
         return self.sub(value).follow_pointer()
 
+    def protect_at(self, size: int) -> int:
+        return self.state.protect_at(self.address, size)
+
     def read_at(self, size: int) -> bytes:
         return self.state.read_at(self.address, size)
 
@@ -632,6 +760,66 @@ class Address:
     def write_uint64(self, value: int) -> int:
         return self.state.write_uint64(value, self.address)
 
+    def read_byte(self) -> int:
+        return self.state.read_byte(self.address)
+
+    def write_byte(self, value: int) -> int:
+        return self.state.write_byte(value, self.address)
+
+    def read_ubyte(self) -> int:
+        return self.state.read_ubyte(self.address)
+
+    def write_ubyte(self, value: int) -> int:
+        return self.state.write_ubyte(value, self.address)
+
+    def read_short(self) -> int:
+        return self.state.read_short(self.address)
+
+    def write_short(self, value: int) -> int:
+        return self.state.write_short(value, self.address)
+
+    def read_ushort(self) -> int:
+        return self.state.read_ushort(self.address)
+
+    def write_ushort(self, value: int) -> int:
+        return self.state.write_ushort(value, self.address)
+
+    def read_int(self) -> int:
+        return self.state.read_int(self.address)
+
+    def write_int(self, value: int) -> int:
+        return self.state.write_int(value, self.address)
+
+    def read_uint(self) -> int:
+        return self.state.read_uint(self.address)
+
+    def write_uint(self, value: int) -> int:
+        return self.state.write_uint(value, self.address)
+
+    def read_long(self) -> int:
+        return self.state.read_long(self.address)
+
+    def write_long(self, value: int) -> int:
+        return self.state.write_long(value, self.address)
+
+    def read_ulong(self) -> int:
+        return self.state.read_ulong(self.address)
+
+    def write_ulong(self, value: int) -> int:
+        return self.state.write_ulong(value, self.address)
+
+    def read_longlong(self) -> int:
+        return self.state.read_longlong(self.address)
+
+    def write_longlong(self, value: int) -> int:
+        return self.state.write_longlong(value, self.address)
+
+    def read_ulonglong(self) -> int:
+        return self.state.read_ulonglong(self.address)
+
+    def write_ulonglong(self, value: int) -> int:
+        return self.state.write_ulonglong(value, self.address)
+
     def read_float32(self) -> float:
         return self.state.read_float32(self.address)
 
@@ -686,7 +874,176 @@ class LevelSettingsLayer(Address):
 
 
 class GameLevel(Address):
+    def get_id(self) -> int:
+        return self.add(self.offsets.level_id).read_uint()
+
+    def set_id(self, value: int) -> None:
+        self.add(self.offsets.level_id).write_uint(value)
+
+    id = property(get_id, set_id)
+
     def get_name(self) -> str:
         return self.add(self.offsets.level_name).read_string()
 
-    name = property(get_name)
+    def set_name(self, value: str) -> None:
+        self.add(self.offsets.level_name).write_string(value)
+
+    name = property(get_name, set_name)
+
+    def get_creator_name(self) -> str:
+        return self.add(self.offsets.level_creator_name).read_string()
+
+    def set_creator_name(self, value: str) -> None:
+        self.add(self.offsets.level_creator_name).write_string(value)
+
+    creator_name = property(get_creator_name, set_creator_name)
+
+    def get_difficulty_numerator(self) -> int:
+        return self.add(self.offsets.level_difficulty_numerator).read_uint()
+
+    def set_difficulty_numerator(self, value: int) -> None:
+        self.add(self.offsets.level_difficulty_numerator).write_uint(value)
+
+    difficulty_numerator = property(get_difficulty_numerator, set_difficulty_numerator)
+
+    def get_difficulty_denominator(self) -> int:
+        return self.add(self.offsets.level_difficulty_denominator).read_uint()
+
+    def set_difficulty_denominator(self, value: int) -> None:
+        self.add(self.offsets.level_difficulty_denominator).write_uint(value)
+
+    difficulty_denominator = property(get_difficulty_denominator, set_difficulty_denominator)
+
+    @property
+    def level_difficulty(self) -> int:
+        if self.difficulty_denominator:
+            return self.difficulty_numerator // self.difficulty_denominator
+
+        return 0
+
+    def get_attempts(self) -> int:
+        return self.add(self.offsets.level_attempts).read_uint()
+
+    def set_attempts(self, value: int) -> None:
+        self.add(self.offsets.level_attempts).write_uint(value)
+
+    attempts = property(get_attempts, set_attempts)
+
+    def get_jumps(self) -> int:
+        return self.add(self.offsets.level_jumps).read_uint()
+
+    def set_jumps(self, value: int) -> None:
+        self.add(self.offsets.level_jumps).write_uint(value)
+
+    jumps = property(get_jumps, set_jumps)
+
+    def get_normal_percent(self) -> int:
+        return self.add(self.offsets.level_normal_percent).read_uint()
+
+    def set_normal_percent(self, value: int) -> None:
+        self.add(self.offsets.level_normal_percent).write_uint(value)
+
+    normal_percent = property(get_normal_percent, set_normal_percent)
+
+    def get_practice_percent(self) -> int:
+        return self.add(self.offsets.level_practice_percent).read_uint()
+
+    def set_practice_percent(self, value: int) -> None:
+        self.add(self.offsets.level_practice_percent).write_uint(value)
+
+    practice_percent = property(get_practice_percent, set_practice_percent)
+
+    def get_score(self) -> int:
+        return self.add(self.offsets.level_score).read_int()
+
+    def set_score(self, value: int) -> None:
+        self.add(self.offsets.level_score).write_int(value)
+
+    score = property(get_score, set_score)
+
+    def is_featured(self) -> bool:
+        return self.score > 0
+
+    def was_unfeatured(self) -> bool:
+        return self.score < 0
+
+    def get_epic(self) -> bool:
+        return self.add(self.offsets.level_epic).read_bool()
+
+    def set_epic(self, value: bool) -> None:
+        self.add(self.offsets.level_epic).write_bool(value)
+
+    epic = property(get_epic, set_epic)
+
+    def is_epic(self) -> bool:
+        return self.epic
+
+    def get_demon(self) -> bool:
+        return self.add(self.offsets.level_demon).read_bool()
+
+    def set_demon(self, value: bool) -> None:
+        self.add(self.offsets.level_demon).write_bool(value)
+
+    demon = property(get_demon, set_demon)
+
+    def is_demon(self) -> bool:
+        return self.demon
+
+    def get_demon_difficulty(self) -> int:
+        return self.add(self.offsets.level_demon_difficulty).read_uint()
+
+    def set_demon_difficulty(self, value: int) -> None:
+        self.add(self.offsets.level_demon_difficulty).write_uint(value)
+
+    demon_difficulty = property(get_demon_difficulty, set_demon_difficulty)
+
+    def get_stars(self) -> int:
+        return self.add(self.offsets.level_stars).read_uint()
+
+    def set_stars(self, value: int) -> None:
+        self.add(self.offsets.level_stars).write_uint(value)
+
+    stars = property(get_stars, set_stars)
+
+    def is_rated(self) -> bool:
+        return self.stars > 0
+
+    def get_auto(self) -> bool:
+        return self.add(self.offsets.level_auto).read_bool()
+
+    def set_auto(self, value: bool) -> None:
+        self.add(self.offsets.level_auto).write_bool(value)
+
+    auto = property(get_auto, set_auto)
+
+    def is_auto(self) -> bool:
+        return self.auto
+
+    def get_difficulty(self) -> Union[LevelDifficulty, DemonDifficulty]:
+        return get_actual_difficulty(
+            level_difficulty=self.level_difficulty,
+            demon_difficulty=self.demon_difficulty,
+            is_auto=self.is_auto(),
+            is_demon=self.is_demon(),
+        )
+
+    def set_difficulty(self, difficulty: Union[LevelDifficulty, DemonDifficulty]) -> None:
+        ...
+
+    difficulty = property(get_difficulty, set_difficulty)
+
+    def get_level_type_value(self) -> int:
+        return self.add(self.offsets.level_level_type_value).read_uint()
+
+    def set_level_type_value(self, value: int) -> None:
+        self.add(self.offsets.level_level_type_value).write_uint(value)
+
+    level_type_value = property(get_level_type_value, set_level_type_value)
+
+    def get_level_type(self) -> LevelType:
+        return LevelType.from_value(self.level_type_value, 0)
+
+    def set_level_type(self, level_type: Union[int, str, LevelType]) -> None:
+        self.level_type_value = LevelType.from_value(level_type).value
+
+    level_type = property(get_level_type, set_level_type)

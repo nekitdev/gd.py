@@ -8,7 +8,7 @@ __all__ = (
     "GameVersion",
     "Password",
     "Version",
-    "get_difficulty",
+    "get_actual_difficulty",
 )
 
 
@@ -310,10 +310,10 @@ def value_to_demon_difficulty(value: int) -> DemonDifficulty:
     return VALUE_TO_DEMON_DIFFICULTY.get(value, DemonDifficulty.HARD_DEMON)  # type: ignore
 
 
-def get_difficulty(
+def get_actual_difficulty(
     level_difficulty: int, demon_difficulty: int, is_auto: bool, is_demon: bool
 ) -> Union[LevelDifficulty, DemonDifficulty]:
-    """Get level difficulty from given parameters.
+    """Get real level difficulty from given parameters.
 
     Parameters
     ----------

@@ -196,7 +196,7 @@ class Object(Model):
     # index_33: ... = ?Field(index=33)
     group_parent: bool = BoolField(index=34)
     opacity: float = FloatField(index=35)
-    is_trigger: bool = BoolField(index=36)
+    trigger: bool = BoolField(index=36)
     # index_37: ... = ?Field(index=37)
     # index_38: ... = ?Field(index=38)
     # index_39: ... = ?Field(index=39)

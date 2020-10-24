@@ -87,7 +87,7 @@ class Comment(AbstractEntity):
             level_id=comment_model.level_id,
             content=comment_model.content,
             rating=comment_model.rating,
-            is_spam=comment_model.is_spam,
+            spam=comment_model.spam,
             created_at=comment_model.created_at,
             level_percent=comment_model.level_percent,
             color=comment_model.color,
@@ -143,7 +143,7 @@ class Comment(AbstractEntity):
         """:class:`bool`: Indicates whether a comment is marked as spam.
         ``False`` if profile comment.
         """
-        return self.options.get("is_spam", False)
+        return bool(self.options.get("spam"))
 
     def is_disliked(self) -> bool:
         """:class:`bool`: Indicates whether a comment is disliked or not."""

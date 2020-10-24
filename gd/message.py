@@ -68,8 +68,8 @@ class Message(AbstractEntity):
             subject=model.subject,
             content=model.content,
             created_at=model.created_at,
-            is_read=model.is_read,
-            is_unread=not model.is_read,
+            read=model.read,
+            unread=model.unread,
             other_user=(other_user if other_user else User()).attach_client(client),
             client=client,
         )
@@ -125,7 +125,7 @@ class Message(AbstractEntity):
 
     def is_read(self) -> bool:
         """:class:`bool`: Indicates whether message is read or not."""
-        return bool(self.options.get("is_read"))
+        return bool(self.options.get("read"))
 
     async def update(self) -> None:
         message = await self.client.get_message(self.id, self.type)

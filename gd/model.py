@@ -4,7 +4,7 @@ from gd.color import Color
 from gd.converters import (
     GameVersion,
     Password,
-    get_difficulty,
+    get_actual_difficulty,
     value_to_level_difficulty,
 )
 from gd.crypto import (
@@ -203,7 +203,7 @@ class ProfileUserModel(Model):
     wave_id: int = IntField(index=25, default=0)
     robot_id: int = IntField(index=26, default=0)
     has_glow: bool = BoolField(index=28, default=False)
-    is_not_banned: bool = BoolField(index=29, default=True)
+    not_banned: bool = BoolField(index=29, default=True)
     global_rank: int = IntField(index=30, default=0)
     friend_state: FriendState = EnumField(index=31, enum_type=FriendState, from_field=IntField)
     new_messages: int = IntField(index=38, default=0)
@@ -217,8 +217,23 @@ class ProfileUserModel(Model):
     role: Role = EnumField(index=49, enum_type=Role, from_field=IntField)
     comments_state: CommentState = EnumField(index=50, enum_type=CommentState, from_field=IntField)
 
+    @property
+    def banned(self) -> bool:
+        return not self.not_banned
+
+    @banned.setter
+    def banned(self, value: bool) -> None:
+        self.not_banned = not value
+
+    @banned.deleter
+    def banned(self) -> None:
+        del self.not_banned
+
     def is_banned(self) -> bool:
-        return not self.is_not_banned
+        return self.banned
+
+    def is_not_banned(self) -> bool:
+        return self.not_banned
 
 
 class CreatorModel(Model):
@@ -263,10 +278,10 @@ class LevelModel(Model):
     )
     rating: int = IntField(index=14, default=0)
     length: LevelLength = EnumField(index=15, enum_type=LevelLength, from_field=IntField)
-    is_demon: bool = BoolField(index=17, false="", true="1", default=False)
+    demon: bool = BoolField(index=17, false="", true="1", default=False)
     stars: int = IntField(index=18, default=0)
     score: int = IntField(index=19, default=0)
-    is_auto: bool = BoolField(index=25, false="", true="1", default=False)
+    auto: bool = BoolField(index=25, false="", true="1", default=False)
     password_field: Password = Field(index=27, de=Password.from_robtop, ser=Password.to_robtop)
     uploaded_at: datetime = RobTopTimeField(index=28)
     updated_at: datetime = RobTopTimeField(index=29)
@@ -279,11 +294,29 @@ class LevelModel(Model):
     requested_stars: int = IntField(index=39, default=0)
     low_detail_mode: bool = BoolField(index=40, false="", true="1", default=False)
     real_timely_id: int = IntField(index=41, default=0)
-    is_epic: bool = BoolField(index=42, default=False)
+    epic: bool = BoolField(index=42, default=False)
     demon_difficulty: int = IntField(index=43, default=0)
     object_count: int = IntField(index=45, default=0)
     index_46: str = StrField(index=46, default="")
     index_47: str = StrField(index=47, default="")
+
+    def is_auto(self) -> bool:
+        return self.auto
+
+    def is_demon(self) -> bool:
+        return self.demon
+
+    def is_epic(self) -> bool:
+        return self.epic
+
+    def is_rated(self) -> bool:
+        return self.stars > 0
+
+    def is_featured(self) -> bool:
+        return self.score > 0
+
+    def was_unfeatured(self) -> bool:
+        return self.score < 0
 
     def get_password(self) -> Optional[int]:
         if self.password_field is None:
@@ -337,19 +370,23 @@ class LevelModel(Model):
 
     @property
     def level_difficulty(self) -> int:
-        if not self.difficulty_denominator:
-            return 0
+        if self.difficulty_denominator:
+            return self.difficulty_numerator // self.difficulty_denominator
 
-        return self.difficulty_numerator // self.difficulty_denominator
+        return 0
 
-    @property
-    def difficulty(self) -> Union[LevelDifficulty, DemonDifficulty]:
-        return get_difficulty(
+    def get_difficulty(self) -> Union[LevelDifficulty, DemonDifficulty]:
+        return get_actual_difficulty(
             level_difficulty=self.level_difficulty,
             demon_difficulty=self.demon_difficulty,
-            is_auto=self.is_auto,
-            is_demon=self.is_demon,
+            is_auto=self.is_auto(),
+            is_demon=self.is_demon(),
         )
+
+    def set_difficulty(self, difficulty: Union[LevelDifficulty, DemonDifficulty]) -> None:
+        ...
+
+    difficulty = property(get_difficulty, set_difficulty)
 
     def to_dict(self) -> Dict[str, T]:
         result = super().to_dict()
@@ -391,11 +428,14 @@ class CommentInnerModel(Model):
     author_id: int = IntField(index=3, default=0)
     rating: int = IntField(index=4, default=0)
     id: int = IntField(index=6, default=0)
-    is_spam: bool = BoolField(index=7, default=False)
+    spam: bool = BoolField(index=7, default=False)
     created_at: datetime = RobTopTimeField(index=9)
     level_percent: int = IntField(index=10, default=0)
     mod_level: int = IntField(index=11, default=0)
     color: Color = ColorField(index=12, factory=lambda: Color(0xFFFFFF))
+
+    def is_spam(self) -> bool:
+        return self.spam
 
 
 class CommentUserModel(Model):
@@ -431,7 +471,22 @@ class FriendRequestModel(Model):
     id: int = IntField(index=32, default=0)
     content: str = Base64Field(index=35, default="")
     created_at: datetime = RobTopTimeField(index=37)
-    is_unread: bool = BoolField(index=41, false="", true="1", default=True)
+    unread: bool = BoolField(index=41, false="", true="1", default=True)
+
+    @property
+    def read(self) -> bool:
+        return not self.unread
+
+    @read.setter
+    def read(self, value: bool) -> None:
+        self.unread = not value
+
+    @read.deleter
+    def read(self) -> None:
+        del self.unread
+
+    def is_read(self) -> bool:
+        return self.read
 
 
 class MessageModel(Model):
@@ -444,8 +499,17 @@ class MessageModel(Model):
     content: str = RobTopStrField(index=5, key=Key.MESSAGE)
     name: str = StrField(index=6, default="Unknown")
     created_at: datetime = RobTopTimeField(index=7)
-    is_read: bool = BoolField(index=8, default=False)
-    is_sent: bool = BoolField(index=9, default=False)
+    read: bool = BoolField(index=8, default=False)
+    sent: bool = BoolField(index=9, default=False)
+
+    def is_read(self) -> bool:
+        return self.read
+
+    def is_normal(self) -> bool:
+        return not self.is_sent()
+
+    def is_sent(self) -> bool:
+        return self.sent
 
 
 class MapPackModel(Model):
