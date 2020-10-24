@@ -1,10 +1,11 @@
 import enums  # type: ignore
 
 from gd.decorators import patch
-from gd.typing import Dict, Optional, TypeVar
+from gd.typing import Dict, Optional, Set, TypeVar
 
 __all__ = (
     "JSON",
+    "BetterTitle",
     "Enum",
     "Flag",
     "Key",
@@ -80,13 +81,31 @@ class JSON(enums.Trait):
         return {"name": self.title, "value": self.value}
 
 
-class Enum(enums.StrFormat, enums.Order, JSON, enums.Enum):
+class BetterTitle(enums.Trait):
+    FORCE_UPPER: Set[str] = {}
+    FORCE_LOWER: Set[str] = {}
+
+    @property
+    def title(self) -> str:
+        name = self.name
+        title = super().title
+
+        if name in self.FORCE_UPPER:
+            return title.upper()
+
+        if name in self.FORCE_LOWER:
+            return title.lower()
+
+        return title
+
+
+class Enum(enums.StrFormat, enums.Order, BetterTitle, JSON, enums.Enum):
     """Normalized generic enum that has ordering and string formatting."""
 
     pass
 
 
-class Flag(enums.StrFormat, enums.Order, JSON, enums.Flag):
+class Flag(enums.StrFormat, enums.Order, BetterTitle, JSON, enums.Flag):
     """Normalized generic flag that has ordering and string formatting."""
 
     pass
@@ -195,16 +214,18 @@ class Role(Enum):
     ELDER_MODERATOR = 2
 
 
-class LevelLength(Enum):
+class LevelLength(Enum, ignore="FORCE_UPPER"):
     """An enumeration for level lengths."""
+
+    FORCE_UPPER = {"NA", "XL"}
 
     NA = -1
     TINY = 0
     SHORT = 1
     MEDIUM = 2
     LONG = 3
-    EXTRA_LONG = 4
-    XL = EXTRA_LONG
+    XL = 4
+    EXTRA_LONG = XL
 
     UNKNOWN = NA
 
@@ -219,8 +240,10 @@ class LevelLength(Enum):
         return None
 
 
-class LevelDifficulty(Enum):
+class LevelDifficulty(Enum, ignore="FORCE_UPPER"):
     """An enumeration for level difficulties."""
+
+    FORCE_UPPER = {"NA"}
 
     NA = -1
     AUTO = -3
@@ -234,8 +257,10 @@ class LevelDifficulty(Enum):
     UNKNOWN = NA
 
 
-class DemonDifficulty(Enum):
+class DemonDifficulty(Enum, ignore="FORCE_UPPER"):
     """An enumeration for demon difficulties."""
+
+    FORCE_UPPER = {"NA"}
 
     NA = -1
     EASY_DEMON = 1
