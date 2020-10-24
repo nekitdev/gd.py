@@ -2,8 +2,8 @@ from collections.abc import Mapping, Sequence, Set
 from functools import partial
 import json
 
-from yarl import URL
-
+from gd.datetime import datetime, timedelta
+from gd.http import URL
 from gd.typing import Any, Dict, Optional, TypeVar, Union, cast
 
 __all__ = ("NamedDict", "default", "dump", "dumps", "load", "loads")
@@ -57,6 +57,9 @@ def default(some_object: T) -> Any:
 
     elif isinstance(some_object, Mapping):
         return dict(some_object)
+
+    elif isinstance(some_object, (datetime, timedelta)):
+        return str(some_object)
 
     elif isinstance(some_object, URL):
         return str(some_object)

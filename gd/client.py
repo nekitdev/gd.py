@@ -746,7 +746,7 @@ class Client:
         level.options.update(timely_id=timely_id, type=type, cooldown=cooldown)
 
         if level_model is not None:
-            level.options.update(level_model.to_dict())
+            level.options.update(Level.from_model(level_model).options)
 
         return level
 
