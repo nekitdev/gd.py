@@ -70,6 +70,18 @@ Functions
         ...
 
 
+:func:`get_process_bits` is used to determine process bitness::
+
+    def get_process_bits(process_id: int) -> int:
+        ...  # return process bits here
+
+
+:func:`get_process_bits_from_handle` is same as above, except it uses process handle instead::
+
+    def get_process_bits_from_handle(process_handle: int) -> int:
+        ...  # return process bits here
+
+
 :func:`protect_process_memory` is used to override memory protection::
 
     def protect_process_memory(process_handle: int, address: int, size: int, flags: int) -> int:
@@ -98,6 +110,8 @@ try:
         free_memory as linux_free_memory,
         get_base_address as linux_get_base_address,
         get_base_address_from_handle as linux_get_base_address_from_handle,
+        get_process_bits as linux_get_process_bits,
+        get_process_bits_from_handle as linux_get_process_bits_from_handle,
         open_process as linux_open_process,
         close_process as linux_close_process,
         get_process_id_from_name as linux_get_process_id_from_name,
@@ -114,6 +128,8 @@ except ImportError:
     linux_free_memory = unimplemented
     linux_get_base_address = unimplemented
     linux_get_base_address_from_handle = unimplemented
+    linux_get_process_bits = unimplemented
+    linux_get_process_bits_from_handle = unimplemented
     linux_open_process = unimplemented
     linux_close_process = unimplemented
     linux_get_process_id_from_name = unimplemented
@@ -130,6 +146,8 @@ try:
         free_memory as macos_free_memory,
         get_base_address as macos_get_base_address,
         get_base_address_from_handle as macos_get_base_address_from_handle,
+        get_process_bits as macos_get_process_bits,
+        get_process_bits_from_handle as macos_get_process_bits_from_handle,
         open_process as macos_open_process,
         close_process as macos_close_process,
         get_process_id_from_name as macos_get_process_id_from_name,
@@ -146,6 +164,8 @@ except ImportError:
     macos_free_memory = unimplemented
     macos_get_base_address = unimplemented
     macos_get_base_address_from_handle = unimplemented
+    macos_get_process_bits = unimplemented
+    macos_get_process_bits_from_handle = unimplemented
     macos_open_process = unimplemented
     macos_close_process = unimplemented
     macos_get_process_id_from_name = unimplemented
@@ -162,6 +182,8 @@ try:
         free_memory as windows_free_memory,
         get_base_address as windows_get_base_address,
         get_base_address_from_handle as windows_get_base_address_from_handle,
+        get_process_bits as windows_get_process_bits,
+        get_process_bits_from_handle as windows_get_process_bits_from_handle,
         open_process as windows_open_process,
         close_process as windows_close_process,
         get_process_id_from_name as windows_get_process_id_from_name,
@@ -178,6 +200,8 @@ except ImportError:
     windows_free_memory = unimplemented
     windows_get_base_address = unimplemented
     windows_get_base_address_from_handle = unimplemented
+    windows_get_process_bits = unimplemented
+    windows_get_process_bits_from_handle = unimplemented
     windows_open_process = unimplemented
     windows_close_process = unimplemented
     windows_get_process_id_from_name = unimplemented
@@ -194,6 +218,8 @@ if LINUX:
     free_memory = linux_free_memory
     get_base_address = linux_get_base_address
     get_base_address_from_handle = linux_get_base_address_from_handle
+    get_process_bits = linux_get_process_bits
+    get_process_bits_from_handle = linux_get_process_bits_from_handle
     open_process = linux_open_process
     close_process = linux_close_process
     get_process_id_from_name = linux_get_process_id_from_name
@@ -210,6 +236,8 @@ elif MACOS:
     free_memory = macos_free_memory
     get_base_address = macos_get_base_address
     get_base_address_from_handle = macos_get_base_address_from_handle
+    get_process_bits = macos_get_process_bits
+    get_process_bits_from_handle = macos_get_process_bits_from_handle
     open_process = macos_open_process
     close_process = macos_close_process
     get_process_id_from_name = macos_get_process_id_from_name
@@ -225,6 +253,8 @@ elif WINDOWS:
     free_memory = windows_free_memory
     get_base_address = windows_get_base_address
     get_base_address_from_handle = windows_get_base_address_from_handle
+    get_process_bits = windows_get_process_bits
+    get_process_bits_from_handle = windows_get_process_bits_from_handle
     open_process = windows_open_process
     close_process = windows_close_process
     get_process_id_from_name = windows_get_process_id_from_name
@@ -244,6 +274,8 @@ else:
     free_memory = unimplemented
     get_base_address = unimplemented
     get_base_address_from_handle = unimplemented
+    get_process_bits = unimplemented
+    get_process_bits_from_handle = unimplemented
     open_process = unimplemented
     close_process = unimplemented
     get_process_id_from_name = unimplemented
@@ -260,6 +292,8 @@ __all__ = (  # noqa
     "free_memory",
     "get_base_address",
     "get_base_address_from_handle",
+    "get_process_bits",
+    "get_process_bits_from_handle",
     "open_process",
     "close_process",
     "get_process_id_from_name",
@@ -273,6 +307,8 @@ __all__ = (  # noqa
     "linux_free_memory",
     "linux_get_base_address",
     "linux_get_base_address_from_handle",
+    "linux_get_process_bits",
+    "linux_get_process_bits_from_handle",
     "linux_open_process",
     "linux_close_process",
     "linux_get_process_id_from_name",
@@ -286,6 +322,8 @@ __all__ = (  # noqa
     "macos_free_memory",
     "macos_get_base_address",
     "macos_get_base_address_from_handle",
+    "macos_get_process_bits",
+    "macos_get_process_bits_from_handle",
     "macos_open_process",
     "macos_close_process",
     "macos_get_process_id_from_name",
@@ -299,6 +337,8 @@ __all__ = (  # noqa
     "windows_free_memory",
     "windows_get_base_address",
     "windows_get_base_address_from_handle",
+    "windows_get_process_bits",
+    "windows_get_process_bits_from_handle",
     "windows_open_process",
     "windows_close_process",
     "windows_get_process_id_from_name",

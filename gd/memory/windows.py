@@ -6,6 +6,7 @@ import types
 
 import pefile  # to parse some headers uwu ~ nekit
 
+from gd.memory.data import SIZE_BITS
 from gd.memory.utils import Structure, extern_func
 from gd.typing import Dict, Iterator, Optional, Type, Union
 
@@ -14,6 +15,8 @@ __all__ = (
     "free_memory",
     "get_base_address",
     "get_base_address_from_handle",
+    "get_process_bits",
+    "get_process_bits_from_handle",
     "open_process",
     "close_process",
     "get_process_id_from_name",
@@ -444,6 +447,20 @@ def _inject_dll(process_id: int, path: Union[str, Path]) -> int:
     _close_handle(thread_handle)
 
     return thread_id.value
+
+
+def get_process_bits(process_id: int) -> int:
+    return get_process_bits_from_handle(open_process(process_id))
+
+
+def get_process_bits_from_handle(process_handle: int) -> int:
+    if SIZE_BITS >= 64:
+        if _is_wow_64_process(process_handle):
+            return 32
+
+        return 64
+
+    return 32
 
 
 def get_base_address(process_id: int, module_name: str) -> int:

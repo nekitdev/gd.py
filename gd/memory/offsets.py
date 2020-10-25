@@ -1,5 +1,6 @@
 from gd.json import NamedDict
 from gd.platform import LINUX, MACOS, WINDOWS
+from gd.typing import TypeVar, cast
 
 __all__ = (
     "offsets",
@@ -8,48 +9,99 @@ __all__ = (
     "windows_offsets",
 )
 
+OffsetT = TypeVar("OffsetT", int, "Offsets")
 
-class Offsets(NamedDict[str, int]):
-    def __getattr__(self, attr: str) -> int:
+
+class Offsets(NamedDict[str, OffsetT]):
+    def __getattr__(self, attr: str) -> OffsetT:
         try:
-            return super().__getattr__(attr)
+            return cast(OffsetT, super().__getattr__(attr))
 
         except (AttributeError, KeyError):
             raise LookupError(f"Can not find offset {attr!r} in offsets.") from None
 
 
 windows_offsets: Offsets = Offsets(
-    game_manager=0x3222D0,
-    play_layer=0x164,
-    editor_layer=0x168,
-    player=0x224,
-    level_settings=0x22C,
-    level=0x114,
-    level_id=0xF8,
-    level_name=0xFC,
-    level_creator_name=0x144,
-    level_difficulty_denominator=0x1E0,
-    level_difficulty_numerator=0x1E4,
-    level_attempts=0x218,
-    level_jumps=0x224,
-    level_normal_percent=0x248,
-    level_practice_percent=0x26C,
-    level_score=0x27C,
-    level_epic=0x280,
-    level_demon=0x29C,
-    level_demon_difficulty=0x2A0,
-    level_stars=0x2AC,
-    level_auto=0x2B0,
-    level_level_type_value=0x364,
+    game_manager=Offsets(
+        play_layer=0x164,
+        editor_layer=0x168,
+        user_name=0x198,
+        scene=0x1DC,
+        offset=0x3222D0,
+    ),
+    account_manager=Offsets(
+        password=0xF0,
+        user_name=0x108,
+        offset=0x3222D8,
+    ),
+    base_game_layer=Offsets(
+        player=0x224,
+        level_settings=0x22C,
+    ),
+    play_layer=Offsets(
+        dead=0x39C,
+        level_length=0x3B4,
+        practice_mode=0x495,
+        attempt=0x4A8,
+    ),
+    editor_layer=Offsets(
+        object_count=0x3A0,
+    ),
+    level_settings=Offsets(
+        level=0x114,
+    ),
+    level=Offsets(
+        id=0xF8,
+        name=0xFC,
+        description=0x114,
+        creator_name=0x144,
+        unprocessed_data=0x12C,
+        difficulty_denominator=0x1E0,
+        difficulty_numerator=0x1E4,
+        attempts=0x218,
+        jumps=0x224,
+        normal_percent=0x248,
+        practice_percent=0x26C,
+        score=0x27C,
+        epic=0x280,
+        demon=0x29C,
+        demon_difficulty=0x2A0,
+        stars=0x2AC,
+        auto=0x2B0,
+        level_type=0x364,
+    ),
+    player=Offsets(
+        gamemodes=0x638,
+        flipped_gravity=0x63E,
+        size=0x644,
+        speed=0x648,
+    ),
+    node=Offsets(
+        x=0x34,
+        y=0x38,
+    ),
 )
 
 macos_offsets: Offsets = Offsets(
-    game_manager=0x69E398,
-    play_layer=0x180,
-    editor_layer=0x188,
-    level_settings=0x390,
-    level=0x150,
-    level_name=0x138,
+    game_manager=Offsets(
+        play_layer=0x180,
+        editor_layer=0x188,
+        offset=0x3222D0,
+    ),
+    play_layer=Offsets(
+        level_settings=0x390,
+    ),
+    editor_layer=Offsets(
+        level_settings=0x390,
+    ),
+    level_settings=Offsets(
+        level=0x150,
+    ),
+    level=Offsets(
+        name=0x138,
+    ),
+    player=Offsets(
+    ),
 )
 
 linux_offsets: Offsets = Offsets()

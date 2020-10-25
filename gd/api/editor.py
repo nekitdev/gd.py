@@ -28,6 +28,7 @@ __all__ = ("Editor", "get_time_length")
 
 if TYPE_CHECKING:
     from gd.level import Level  # noqa
+    from gd.memory.interface import GameLevel  # noqa
 
 
 def get_time_length(
@@ -122,10 +123,10 @@ class Editor:
 
     @classmethod
     def load_from(
-        cls, callback: Union["Level", LevelAPI], attribute: str  # type: ignore
+        cls, callback: Union["GameLevel", "Level", LevelAPI], attribute: str  # type: ignore
     ) -> "Editor":
-        """Load the editor from :class:`~gd.Level` or :class:`~gd.api.LevelAPI`,
-        and set a callback to dumb the editor to it.
+        """Load the editor from :class:`~gd.Level`, :class:`~gd.api.LevelAPI`
+        or :class:`~gd.memory.GameLevel`, and set a callback to dumb the editor to it.
         This method is intented to be used internally.
         """
         self = cls.from_string(getattr(callback, attribute))

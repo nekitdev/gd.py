@@ -1,12 +1,15 @@
 from pathlib import Path
 
 from gd.converters import get_actual_difficulty
+from gd.crypto import unzip_level_str, zip_level_str
 from gd.decorators import cache_by
-from gd.enums import DemonDifficulty, LevelDifficulty, LevelType
+from gd.enums import DemonDifficulty, Gamemode, LevelDifficulty, LevelType, Scene, SpeedConstant
 from gd.platform import LINUX, MACOS, WINDOWS
-from gd.typing import Type, TypeVar, Union
+from gd.typing import Callable, List, Type, TypeVar, Union
 
-from gd.text_utils import make_repr
+from gd.text_utils import is_level_probably_decoded, make_repr
+
+from gd.api.editor import Editor
 
 from gd.memory.data import (
     Buffer,
@@ -32,6 +35,8 @@ from gd.memory.internal import (
     free_memory as system_free_memory,
     get_base_address as system_get_base_address,
     get_base_address_from_handle as system_get_base_address_from_handle,
+    get_process_bits as system_get_process_bits,
+    # get_process_bits_from_handle as system_get_process_bits_from_handle,
     open_process as system_open_process,
     close_process as system_close_process,
     get_process_id_from_name as system_get_process_id_from_name,
@@ -45,6 +50,8 @@ from gd.memory.internal import (
     linux_free_memory,
     # linux_get_base_address,
     linux_get_base_address_from_handle,
+    linux_get_process_bits,
+    # linux_get_process_bits_from_handle,
     linux_open_process,
     linux_close_process,
     linux_get_process_id_from_name,
@@ -58,6 +65,8 @@ from gd.memory.internal import (
     macos_free_memory,
     # macos_get_base_address,
     macos_get_base_address_from_handle,
+    macos_get_process_bits,
+    # macos_get_process_bits_from_handle,
     macos_open_process,
     macos_close_process,
     macos_get_process_id_from_name,
@@ -71,6 +80,8 @@ from gd.memory.internal import (
     windows_free_memory,
     windows_get_base_address,
     # windows_get_base_address_from_handle,
+    # window_get_process_bits,
+    windows_get_process_bits_from_handle,
     windows_open_process,
     windows_close_process,
     windows_get_process_id_from_name,
@@ -85,19 +96,25 @@ from gd.memory.offsets import offsets, linux_offsets, macos_offsets, windows_off
 
 __all__ = (
     "Address",
-    "GameManager",
-    "PlayLayer",
-    "EditorLayer",
-    "LevelSettingsLayer",
-    "GameLevel",
     "State",
     "SystemState",
     "LinuxState",
     "MacOSState",
     "WindowsState",
+    "GameLevel",
+    "get_state",
+    "get_system_state",
+    "get_linux_state",
+    "get_macos_state",
+    "get_windows_state",
 )
 
 DEFAULT_WINDOW_TITLE = "Geometry Dash"
+
+DEFAULT_SYSTEM_NAME = "Geometry Dash"
+DEFAULT_LINUX_NAME = "Geometry Dash"
+DEFAULT_MACOS_NAME = "Geometry Dash"
+DEFAULT_WINDOWS_NAME = "GeometryDash.exe"
 
 MACOS_STRING_SIZE_OFFSET = -0x18
 WINDOWS_STRING_SIZE_OFFSET = 0x10
@@ -107,12 +124,14 @@ AddressU = TypeVar("AddressU", bound="Address")
 
 T = TypeVar("T")
 
+GAMEMODE_STATE = ("Cube", "Ship", "UFO", "Ball", "Wave", "Robot", "Spider")
+
 
 class SystemState:
     def __init__(
         self,
         process_name: str,
-        bits: int,
+        bits: int = 0,
         window_title: str = DEFAULT_WINDOW_TITLE,
         load: bool = True,
     ) -> None:
@@ -120,10 +139,6 @@ class SystemState:
         self.window_title = window_title
 
         self.bits = bits
-
-        self.pointer_type = get_pointer_type(bits)
-        self.size_type = get_size_type(bits)
-
         self.process_id = 0
         self.process_handle = 0
         self.base_address = 0
@@ -226,6 +241,12 @@ class SystemState:
 
             if not self.process_id:
                 raise
+
+        if not self.bits:
+            self.bits = system_get_process_bits(self.process_id)
+
+        self.pointer_type = get_pointer_type(self.bits)
+        self.size_type = get_size_type(self.bits)
 
         self.process_handle = system_open_process(self.process_id)
 
@@ -414,14 +435,22 @@ class SystemState:
     def read_float32(self, address: int) -> float:
         return self.read(float32, address)
 
+    read_float = read_float32
+
     def write_float32(self, value: float, address: int) -> int:
         return self.write(float32, value, address)
+
+    write_float = write_float32
 
     def read_float64(self, address: int) -> float:
         return self.read(float64, address)
 
+    read_double = read_float64
+
     def write_float64(self, value: float, address: int) -> int:
         return self.write(float64, value, address)
+
+    write_double = write_float64
 
     def get_address(self) -> "Address":
         return Address(self.base_address, self)
@@ -430,14 +459,26 @@ class SystemState:
 
     def get_game_manager(self) -> "GameManager":
         address = self.get_address()
-        return address.add_and_follow(address.offsets.game_manager).cast(GameManager)
+        return address.add_and_follow(address.offsets.game_manager.offset).cast(GameManager)
 
     game_manager = property(get_game_manager)
+
+    def get_account_manager(self) -> "AccountManager":
+        address = self.get_address()
+        return address.add_and_follow(address.offsets.account_manager.offset).cast(AccountManager)
+
+    account_manager = property(get_account_manager)
 
 
 class LinuxState(SystemState):
     def load(self) -> None:
         self.process_id = linux_get_process_id_from_name(self.process_name)
+
+        if not self.bits:
+            self.bits = linux_get_process_bits(self.process_id)
+
+        self.pointer_type = get_pointer_type(self.bits)
+        self.size_type = get_size_type(self.bits)
 
         self.process_handle = linux_open_process(self.process_id)
 
@@ -473,6 +514,12 @@ class LinuxState(SystemState):
 class MacOSState(SystemState):
     def load(self) -> None:
         self.process_id = macos_get_process_id_from_name(self.process_name)
+
+        if not self.bits:
+            self.bits = macos_get_process_bits(self.process_id)
+
+        self.pointer_type = get_pointer_type(self.bits)
+        self.size_type = get_size_type(self.bits)
 
         self.process_handle = macos_open_process(self.process_id)
 
@@ -551,6 +598,12 @@ class WindowsState(SystemState):
 
         self.process_handle = windows_open_process(self.process_id)
 
+        if not self.bits:
+            self.bits = windows_get_process_bits_from_handle(self.process_handle)
+
+        self.pointer_type = get_pointer_type(self.bits)
+        self.size_type = get_size_type(self.bits)
+
         self.base_address = windows_get_base_address(self.process_id, self.process_name)
 
         self.loaded = True
@@ -615,20 +668,65 @@ class WindowsState(SystemState):
         return self.write_at(address, data)
 
 
+def get_linux_state(
+    process_name: str = DEFAULT_LINUX_NAME,
+    bits: int = 0,
+    window_title: str = DEFAULT_WINDOW_TITLE,
+    *,
+    load: bool = True,
+) -> LinuxState:
+    return LinuxState(process_name=process_name, bits=bits, window_title=window_title, load=load)
+
+
+def get_macos_state(
+    process_name: str = DEFAULT_MACOS_NAME,
+    bits: int = 0,
+    window_title: str = DEFAULT_WINDOW_TITLE,
+    *,
+    load: bool = True,
+) -> MacOSState:
+    return MacOSState(process_name=process_name, bits=bits, window_title=window_title, load=load)
+
+
+def get_windows_state(
+    process_name: str = DEFAULT_WINDOWS_NAME,
+    bits: int = 0,
+    window_title: str = DEFAULT_WINDOW_TITLE,
+    *,
+    load: bool = True,
+) -> WindowsState:
+    return WindowsState(process_name=process_name, bits=bits, window_title=window_title, load=load)
+
+
+def get_system_state(
+    process_name: str = DEFAULT_SYSTEM_NAME,
+    bits: int = 0,
+    window_title: str = DEFAULT_WINDOW_TITLE,
+    *,
+    load: bool = True,
+) -> SystemState:
+    return SystemState(process_name=process_name, bits=bits, window_title=window_title, load=load)
+
+
 State: Type[SystemState]
 
+get_state: Callable[..., SystemState]
 
 if LINUX:
     State = LinuxState
+    get_state = get_linux_state
 
 elif MACOS:
     State = MacOSState
+    get_state = get_macos_state
 
 elif WINDOWS:
     State = WindowsState
+    get_state = get_windows_state
 
 else:
     State = SystemState
+    get_state = get_system_state
 
 
 class Address:
@@ -648,6 +746,12 @@ class Address:
         info = {"address": hex(self.address), "state": self.state}
 
         return make_repr(self, info)
+
+    def __bool__(self) -> bool:
+        return bool(self.address)
+
+    def is_null(self) -> bool:
+        return not self.address
 
     def add(self: AddressT, value: int) -> AddressT:
         return self.__class__(self.address + value, self.state)
@@ -820,6 +924,18 @@ class Address:
     def write_ulonglong(self, value: int) -> int:
         return self.state.write_ulonglong(value, self.address)
 
+    def read_float(self) -> float:
+        return self.state.read_float(self.address)
+
+    def write_float(self, value: float) -> int:
+        return self.state.write_float(value, self.address)
+
+    def read_double(self) -> float:
+        return self.state.read_double(self.address)
+
+    def write_double(self, value: float) -> int:
+        return self.state.write_double(value, self.address)
+
     def read_float32(self) -> float:
         return self.state.read_float32(self.address)
 
@@ -840,77 +956,291 @@ class Address:
 
 
 class GameManager(Address):
+    def get_scene_value(self) -> int:
+        return self.add(self.offsets.game_manager.scene).read_uint()
+
+    scene_value = property(get_scene_value)
+
+    def get_scene(self) -> Scene:
+        return Scene.from_value(self.scene_value, -1)
+
+    scene = property(get_scene)
+
     def get_play_layer(self) -> "PlayLayer":
-        return self.add_and_follow(self.offsets.play_layer).cast(PlayLayer)
+        return self.add_and_follow(self.offsets.game_manager.play_layer).cast(PlayLayer)
 
     play_layer = property(get_play_layer)
 
     def get_editor_layer(self) -> "EditorLayer":
-        return self.add_and_follow(self.offsets.editor_layer).cast(EditorLayer)
+        return self.add_and_follow(self.offsets.game_manager.editor_layer).cast(EditorLayer)
 
     editor_layer = property(get_editor_layer)
 
 
+class AccountManager(Address):
+    def get_password(self) -> str:
+        return self.add(self.offsets.account_manager.password).read_string()
+
+    def set_password(self, value: str) -> None:
+        self.add(self.offsets.account_manager.password).write_string(value)
+
+    password = property(get_password, set_password)
+
+    def get_user_name(self) -> str:
+        return self.add(self.offsets.account_manager.user_name).read_string()
+
+    def set_user_name(self, value: str) -> None:
+        self.add(self.offsets.account_manager.user_name).write_string(value)
+
+    user_name = property(get_user_name, set_user_name)
+
+
 class BaseGameLayer(Address):
+    def get_player(self) -> "Player":
+        return self.add_and_follow(self.offsets.base_game_layer.player).cast(Player)
+
+    player = property(get_player)
+
     def get_level_settings(self) -> "LevelSettingsLayer":
-        return self.add_and_follow(self.offsets.level_settings).cast(LevelSettingsLayer)
+        return self.add_and_follow(
+            self.offsets.base_game_layer.level_settings
+        ).cast(LevelSettingsLayer)
 
     level_settings = property(get_level_settings)
 
 
 class PlayLayer(BaseGameLayer):
-    pass
+    def get_practice_mode(self) -> bool:
+        return self.add(self.offsets.play_layer.practice_mode).read_bool()
+
+    practice_mode = property(get_practice_mode)
+
+    def is_practice_mode(self) -> bool:
+        return self.practice_mode
+
+    def get_attempt(self) -> int:
+        return self.add(self.offsets.play_layer.attempt).read_int()
+
+    def set_attempt(self, value: int) -> None:
+        self.add(self.offsets.play_layer.attempt).write_int(value)
+
+    attempt = property(get_attempt, set_attempt)
+
+    def get_dead(self) -> bool:
+        return self.add(self.offsets.play_layer.dead).read_bool()
+
+    dead = property(get_dead)
+
+    def is_dead(self) -> bool:
+        return self.dead
+
+    def get_level_length(self) -> float:
+        return self.add(self.offsets.play_layer.level_length).read_float()
+
+    def set_level_length(self, value: float) -> None:
+        self.add(self.offsets.play_layer.level_length).read_float()
+
+    level_length = property(get_level_length, set_level_length)
+
+    def get_percent(self, total: float = 100.0) -> float:
+        level_length = self.level_length
+
+        if level_length:
+            player = self.player
+
+            if player.is_null():
+                return 0.0
+
+            result = player.x / level_length * total
+
+            return result if result < total else total
+
+        return 0.0
+
+    percent = property(get_percent)
 
 
 class EditorLayer(BaseGameLayer):
-    pass
+    def get_object_count(self) -> int:
+        return self.add(self.offsets.editor_layer.object_count).read_uint()
+
+    object_count = property(get_object_count)
 
 
 class LevelSettingsLayer(Address):
     def get_level(self) -> "GameLevel":
-        return self.add_and_follow(self.offsets.level).cast(GameLevel)
+        return self.add_and_follow(self.offsets.level_settings.level).cast(GameLevel)
 
     level = property(get_level)
 
 
+class Player(Address):
+    def get_gamemodes(self) -> List[bool]:
+        return list(map(bool, self.add(self.offsets.player.gamemodes).read_at(6)))
+
+    def set_gamemodes(self, gamemodes: List[bool]) -> None:
+        self.add(self.offsets.player.gamemodes).write_buffer(Buffer.from_byte_array(gamemodes))
+
+    gamemodes = property(get_gamemodes, set_gamemodes)
+
+    def get_gamemode(self) -> Gamemode:
+        try:
+            index = self.gamemodes.index(True) + 1
+
+        except ValueError:
+            index = 0
+
+        return Gamemode.from_name(GAMEMODE_STATE[index])
+
+    def set_gamemode(self, gamemode: Union[int, str, Gamemode]) -> None:
+        gamemodes = [False, False, False, False, False, False]
+
+        try:
+            index = GAMEMODE_STATE.index(Gamemode.from_value(gamemode).title)
+
+        except ValueError:
+            pass
+
+        else:
+            gamemodes[index] = True
+
+        self.gamemodes = gamemodes
+
+    gamemode = property(get_gamemode, set_gamemode)
+
+    def get_flipped_gravity(self) -> bool:
+        return self.add(self.offsets.player.flipped_gravity).read_bool()
+
+    def set_flipped_gravity(self, value: bool) -> None:
+        self.add(self.offsets.player.flipped_gravity).write_bool(value)
+
+    flipped_gravity = property(get_flipped_gravity, set_flipped_gravity)
+
+    def flip_gravity(self) -> None:
+        self.flipped_gravity = not self.flipped_gravity
+
+    def get_size(self) -> float:
+        return self.add(self.offsets.player.size).read_float()
+
+    def set_size(self, value: float) -> None:
+        self.add(self.offsets.player.size).write_float(value)
+
+    size = property(get_size, set_size)
+
+    def get_speed_value(self) -> float:
+        return self.add(self.offsets.player.speed).read_float()
+
+    def set_speed_value(self, value: float) -> None:
+        self.add(self.offsets.player.speed).write_float(value)
+
+    speed_value = property(get_speed_value, set_speed_value)
+
+    def get_speed(self) -> SpeedConstant:
+        return SpeedConstant.from_value(self.speed_value)
+
+    def set_speed(self, value: Union[float, str, SpeedConstant], reverse: bool = False) -> None:
+        speed_value = SpeedConstant.from_value(value).value
+
+        if reverse:
+            speed_value = -speed_value
+
+        self.speed_value = speed_value
+
+    speed = property(get_speed, set_speed)
+
+    def get_x(self) -> float:
+        return self.add(self.offsets.node.x).read_float()
+
+    def set_x(self, value: float) -> None:
+        self.add(self.offsets.node.x).write_float(value)
+
+    x = property(get_x, set_x)
+
+    def get_y(self) -> float:
+        return self.add(self.offsets.node.y).read_float()
+
+    def set_y(self, value: float) -> None:
+        self.add(self.offsets.node.y).write_float(value)
+
+    y = property(get_y, set_y)
+
+
 class GameLevel(Address):
     def get_id(self) -> int:
-        return self.add(self.offsets.level_id).read_uint()
+        return self.add(self.offsets.level.id).read_uint()
 
     def set_id(self, value: int) -> None:
-        self.add(self.offsets.level_id).write_uint(value)
+        self.add(self.offsets.level.id).write_uint(value)
 
     id = property(get_id, set_id)
 
     def get_name(self) -> str:
-        return self.add(self.offsets.level_name).read_string()
+        return self.add(self.offsets.level.name).read_string()
 
     def set_name(self, value: str) -> None:
-        self.add(self.offsets.level_name).write_string(value)
+        self.add(self.offsets.level.name).write_string(value)
 
     name = property(get_name, set_name)
 
+    def get_unprocessed_data(self) -> str:
+        return self.add(self.offsets.level.unprocessed_data).read_string()
+
+    def set_unprocessed_data(self, value: str) -> None:
+        self.add(self.offsets.level.unprocessed_data).write_string(value)
+
+    unprocessed_data = property(get_unprocessed_data, set_unprocessed_data)
+
+    @cache_by("unprocessed_data")
+    def get_data(self) -> str:
+        unprocessed_data = self.unprocessed_data
+
+        if is_level_probably_decoded(unprocessed_data):
+            return unprocessed_data
+
+        else:
+            return unzip_level_str(unprocessed_data)
+
+    def set_data(self, level_data: str) -> None:
+        if is_level_probably_decoded(level_data):
+            self.unprocessed_data = zip_level_str(level_data)
+
+        else:
+            self.unprocessed_data = level_data
+
+    data = property(get_data, set_data)
+
+    def open_editor(self) -> Editor:
+        return Editor.load_from(self, "data")
+
+    def get_description(self) -> str:
+        return self.add(self.offsets.level.description).read_string()
+
+    def set_description(self, value: str) -> None:
+        self.add(self.offsets.level.description).write_string(value)
+
+    description = property(get_description, set_description)
+
     def get_creator_name(self) -> str:
-        return self.add(self.offsets.level_creator_name).read_string()
+        return self.add(self.offsets.level.creator_name).read_string()
 
     def set_creator_name(self, value: str) -> None:
-        self.add(self.offsets.level_creator_name).write_string(value)
+        self.add(self.offsets.level.creator_name).write_string(value)
 
     creator_name = property(get_creator_name, set_creator_name)
 
     def get_difficulty_numerator(self) -> int:
-        return self.add(self.offsets.level_difficulty_numerator).read_uint()
+        return self.add(self.offsets.level.difficulty_numerator).read_uint()
 
     def set_difficulty_numerator(self, value: int) -> None:
-        self.add(self.offsets.level_difficulty_numerator).write_uint(value)
+        self.add(self.offsets.level.difficulty_numerator).write_uint(value)
 
     difficulty_numerator = property(get_difficulty_numerator, set_difficulty_numerator)
 
     def get_difficulty_denominator(self) -> int:
-        return self.add(self.offsets.level_difficulty_denominator).read_uint()
+        return self.add(self.offsets.level.difficulty_denominator).read_uint()
 
     def set_difficulty_denominator(self, value: int) -> None:
-        self.add(self.offsets.level_difficulty_denominator).write_uint(value)
+        self.add(self.offsets.level.difficulty_denominator).write_uint(value)
 
     difficulty_denominator = property(get_difficulty_denominator, set_difficulty_denominator)
 
@@ -922,42 +1252,42 @@ class GameLevel(Address):
         return 0
 
     def get_attempts(self) -> int:
-        return self.add(self.offsets.level_attempts).read_uint()
+        return self.add(self.offsets.level.attempts).read_uint()
 
     def set_attempts(self, value: int) -> None:
-        self.add(self.offsets.level_attempts).write_uint(value)
+        self.add(self.offsets.level.attempts).write_uint(value)
 
     attempts = property(get_attempts, set_attempts)
 
     def get_jumps(self) -> int:
-        return self.add(self.offsets.level_jumps).read_uint()
+        return self.add(self.offsets.level.jumps).read_uint()
 
     def set_jumps(self, value: int) -> None:
-        self.add(self.offsets.level_jumps).write_uint(value)
+        self.add(self.offsets.level.jumps).write_uint(value)
 
     jumps = property(get_jumps, set_jumps)
 
     def get_normal_percent(self) -> int:
-        return self.add(self.offsets.level_normal_percent).read_uint()
+        return self.add(self.offsets.level.normal_percent).read_uint()
 
     def set_normal_percent(self, value: int) -> None:
-        self.add(self.offsets.level_normal_percent).write_uint(value)
+        self.add(self.offsets.level.normal_percent).write_uint(value)
 
     normal_percent = property(get_normal_percent, set_normal_percent)
 
     def get_practice_percent(self) -> int:
-        return self.add(self.offsets.level_practice_percent).read_uint()
+        return self.add(self.offsets.level.practice_percent).read_uint()
 
     def set_practice_percent(self, value: int) -> None:
-        self.add(self.offsets.level_practice_percent).write_uint(value)
+        self.add(self.offsets.level.practice_percent).write_uint(value)
 
     practice_percent = property(get_practice_percent, set_practice_percent)
 
     def get_score(self) -> int:
-        return self.add(self.offsets.level_score).read_int()
+        return self.add(self.offsets.level.score).read_int()
 
     def set_score(self, value: int) -> None:
-        self.add(self.offsets.level_score).write_int(value)
+        self.add(self.offsets.level.score).write_int(value)
 
     score = property(get_score, set_score)
 
@@ -968,10 +1298,10 @@ class GameLevel(Address):
         return self.score < 0
 
     def get_epic(self) -> bool:
-        return self.add(self.offsets.level_epic).read_bool()
+        return self.add(self.offsets.level.epic).read_bool()
 
     def set_epic(self, value: bool) -> None:
-        self.add(self.offsets.level_epic).write_bool(value)
+        self.add(self.offsets.level.epic).write_bool(value)
 
     epic = property(get_epic, set_epic)
 
@@ -979,10 +1309,10 @@ class GameLevel(Address):
         return self.epic
 
     def get_demon(self) -> bool:
-        return self.add(self.offsets.level_demon).read_bool()
+        return self.add(self.offsets.level.demon).read_bool()
 
     def set_demon(self, value: bool) -> None:
-        self.add(self.offsets.level_demon).write_bool(value)
+        self.add(self.offsets.level.demon).write_bool(value)
 
     demon = property(get_demon, set_demon)
 
@@ -990,18 +1320,18 @@ class GameLevel(Address):
         return self.demon
 
     def get_demon_difficulty(self) -> int:
-        return self.add(self.offsets.level_demon_difficulty).read_uint()
+        return self.add(self.offsets.level.demon_difficulty).read_uint()
 
     def set_demon_difficulty(self, value: int) -> None:
-        self.add(self.offsets.level_demon_difficulty).write_uint(value)
+        self.add(self.offsets.level.demon_difficulty).write_uint(value)
 
     demon_difficulty = property(get_demon_difficulty, set_demon_difficulty)
 
     def get_stars(self) -> int:
-        return self.add(self.offsets.level_stars).read_uint()
+        return self.add(self.offsets.level.stars).read_uint()
 
     def set_stars(self, value: int) -> None:
-        self.add(self.offsets.level_stars).write_uint(value)
+        self.add(self.offsets.level.stars).write_uint(value)
 
     stars = property(get_stars, set_stars)
 
@@ -1009,10 +1339,10 @@ class GameLevel(Address):
         return self.stars > 0
 
     def get_auto(self) -> bool:
-        return self.add(self.offsets.level_auto).read_bool()
+        return self.add(self.offsets.level.auto).read_bool()
 
     def set_auto(self, value: bool) -> None:
-        self.add(self.offsets.level_auto).write_bool(value)
+        self.add(self.offsets.level.auto).write_bool(value)
 
     auto = property(get_auto, set_auto)
 
@@ -1033,10 +1363,10 @@ class GameLevel(Address):
     difficulty = property(get_difficulty, set_difficulty)
 
     def get_level_type_value(self) -> int:
-        return self.add(self.offsets.level_level_type_value).read_uint()
+        return self.add(self.offsets.level.level_type).read_uint()
 
     def set_level_type_value(self, value: int) -> None:
-        self.add(self.offsets.level_level_type_value).write_uint(value)
+        self.add(self.offsets.level.level_type).write_uint(value)
 
     level_type_value = property(get_level_type_value, set_level_type_value)
 

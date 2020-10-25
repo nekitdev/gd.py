@@ -12,6 +12,8 @@ __all__ = (
     "free_memory",
     "get_base_address",
     "get_base_address_from_handle",
+    "get_process_bits",
+    "get_process_bits_from_handle",
     "open_process",
     "close_process",
     "get_process_id_from_name",
@@ -36,7 +38,11 @@ KERN_SUCCESS = 0
 MAX_PATH_LEN = 1024
 
 PROC_ALL_PIDS = 1
+PROC_FLAG_LP64 = 0x10
 PROC_PIDPATHINFO_MAXSIZE = MAX_PATH_LEN * 4
+PROC_PIDT_SHORTBSDINFO = 13
+
+MAX_SHORT_PROCESS_NAME_LENGTH = 16
 
 VM_PROT_READ = 0b001
 VM_PROT_WRITE = 0b010
@@ -90,16 +96,42 @@ class vm_region_submap_info_64(Structure):
     pages_reusable: ctypes.c_uint
 
 
+class proc_bsdshortinfo(Structure):
+    process_id: ctypes.uint
+    parent_process_id: ctypes.uint
+    persistent_process_id: ctypes.uint
+    status: ctypes.uint
+    short_process_name: ctypes.c_char * MAX_SHORT_PROCESS_NAME_LENGTH
+    flags: ctypes.uint
+    user_id: ctypes.uint
+    group_id: ctypes.uint
+    real_user_id: ctypes.uint
+    real_group_id: ctypes.uint
+    serial_version_user_id: ctypes.uint
+    serial_version_group_id: ctypes.uint
+
+
 @extern_func(libc.proc_listpids)
 def _proc_listpids(
-    type: ctypes.c_uint32, type_info: ctypes.c_uint32, buffer: ctypes.c_void_p, size: ctypes.c_int
+    type: ctypes.c_uint, type_info: ctypes.c_uint, buffer: ctypes.c_void_p, size: ctypes.c_uint
 ) -> ctypes.c_int:
     pass
 
 
 @extern_func(libc.proc_pidpath)
 def _proc_pidpath(
-    process_id: ctypes.c_int, path_buffer: ctypes.c_void_p, size: ctypes.c_uint32
+    process_id: ctypes.c_int, path_buffer: ctypes.c_void_p, size: ctypes.c_uint
+) -> ctypes.c_int:
+    pass
+
+
+@extern_func(libc.proc_pidinfo)
+def _proc_pidinfo(
+    process_id: ctypes.c_int,
+    type: ctypes.c_int,
+    argument: ctypes.c_uint64,
+    buffer: ctypes.c_void_p,
+    size: ctypes.c_uint,
 ) -> ctypes.c_int:
     pass
 
@@ -273,6 +305,25 @@ def get_process_id_from_name(process_name: str) -> int:
 
     else:
         raise LookupError(f"Can not find process: {process_name!r}.")
+
+
+def get_process_bits(process_id: int) -> int:
+    process_info = proc_bsdshortinfo()
+
+    _proc_pidinfo(
+        process_id, PROC_PIDT_SHORTBSDINFO, 0, ctypes.byref(process_info), ctypes.sizeof(process_info)
+    )
+
+    if process_info.flags & PROC_FLAG_LP64:
+        return 64
+
+    return 32
+
+
+def get_process_bits_from_handle(process_handle: int) -> int:
+    raise NotImplementedError(
+        "get_process_bits_from_handle(process_handle) is not yet implemented for MacOS."
+    )
 
 
 def get_process_id_from_window_title(window_title: str) -> int:

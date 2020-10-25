@@ -5,7 +5,6 @@ from gd.typing import Dict, Optional, Set, TypeVar
 
 __all__ = (
     "JSON",
-    "BetterTitle",
     "Enum",
     "Flag",
     "Key",
@@ -64,6 +63,8 @@ __all__ = (
     "InternalType",
 )
 
+UPPER_TITLE: Set[str] = {"NA", "UFO", "XL"}
+
 T = TypeVar("T")
 
 
@@ -82,19 +83,13 @@ class JSON(enums.Trait):
 
 
 class BetterTitle(enums.Trait):
-    FORCE_UPPER: Set[str] = set()
-    FORCE_LOWER: Set[str] = set()
-
     @property
     def title(self) -> str:
         name = self.name
         title = super().title
 
-        if name in self.FORCE_UPPER:
+        if name in UPPER_TITLE:
             return title.upper()
-
-        if name in self.FORCE_LOWER:
-            return title.lower()
 
         return title
 
@@ -214,10 +209,8 @@ class Role(Enum):
     ELDER_MODERATOR = 2
 
 
-class LevelLength(Enum, ignore="FORCE_UPPER"):  # type: ignore
+class LevelLength(Enum):
     """An enumeration for level lengths."""
-
-    FORCE_UPPER = {"NA", "XL"}
 
     NA = -1
     TINY = 0
@@ -240,10 +233,8 @@ class LevelLength(Enum, ignore="FORCE_UPPER"):  # type: ignore
         return None
 
 
-class LevelDifficulty(Enum, ignore="FORCE_UPPER"):  # type: ignore
+class LevelDifficulty(Enum):
     """An enumeration for level difficulties."""
-
-    FORCE_UPPER = {"NA"}
 
     NA = -1
     AUTO = -3
@@ -257,10 +248,8 @@ class LevelDifficulty(Enum, ignore="FORCE_UPPER"):  # type: ignore
     UNKNOWN = NA
 
 
-class DemonDifficulty(Enum, ignore="FORCE_UPPER"):  # type: ignore
+class DemonDifficulty(Enum):
     """An enumeration for demon difficulties."""
-
-    FORCE_UPPER = {"NA"}
 
     NA = -1
     EASY_DEMON = 1
