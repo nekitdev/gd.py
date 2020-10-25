@@ -109,6 +109,7 @@ class proc_bsdshortinfo(Structure):
     real_group_id: ctypes.c_uint
     serial_version_user_id: ctypes.c_uint
     serial_version_group_id: ctypes.c_uint
+    reserved_for_future_use: ctypes.c_uint
 
 
 @extern_func(libc.proc_listpids)
