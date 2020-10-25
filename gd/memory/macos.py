@@ -65,13 +65,13 @@ natural_t = ctypes.c_uint
 
 pid_t = ctypes.c_int
 
-uintptr_t = ctypes.c_ulong
+c_uintptr_t = ctypes.c_ulong
 
 vm_behavior_t = ctypes.c_int
 vm_inherit_t = ctypes.c_uint
 vm_map_t = mach_port_t
 vm_map_read_t = mach_port_t
-vm_offset_t = uintptr_t
+vm_offset_t = c_uintptr_t
 vm_prot_t = ctypes.c_int
 vm_task_entry_t = mach_port_t
 
@@ -97,18 +97,18 @@ class vm_region_submap_info_64(Structure):
 
 
 class proc_bsdshortinfo(Structure):
-    process_id: ctypes.uint
-    parent_process_id: ctypes.uint
-    persistent_process_id: ctypes.uint
-    status: ctypes.uint
+    process_id: ctypes.c_uint
+    parent_process_id: ctypes.c_uint
+    persistent_process_id: ctypes.c_uint
+    status: ctypes.c_uint
     short_process_name: ctypes.c_char * MAX_SHORT_PROCESS_NAME_LENGTH
-    flags: ctypes.uint
-    user_id: ctypes.uint
-    group_id: ctypes.uint
-    real_user_id: ctypes.uint
-    real_group_id: ctypes.uint
-    serial_version_user_id: ctypes.uint
-    serial_version_group_id: ctypes.uint
+    flags: ctypes.c_uint
+    user_id: ctypes.c_uint
+    group_id: ctypes.c_uint
+    real_user_id: ctypes.c_uint
+    real_group_id: ctypes.c_uint
+    serial_version_user_id: ctypes.c_uint
+    serial_version_group_id: ctypes.c_uint
 
 
 @extern_func(libc.proc_listpids)
