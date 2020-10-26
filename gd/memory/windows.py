@@ -21,6 +21,7 @@ __all__ = (
     "close_process",
     "get_process_id_from_name",
     "get_process_id_from_window_title",
+    "get_process_name_from_id",
     "inject_dll",
     "terminate_process",
     "protect_process_memory",
@@ -79,6 +80,10 @@ class ProcessEntry32(Structure):
     base_priority: wintypes.LONG
     flags: wintypes.DWORD
     exe_file: wintypes.CHAR * wintypes.MAX_PATH
+
+    @property
+    def id(self) -> int:
+        return self.process_id
 
     @property
     def name(self) -> str:
@@ -482,6 +487,20 @@ def get_base_address_from_handle(process_handle: int) -> int:
     raise NotImplementedError(
         "get_base_address_from_handle(process_handle) is not implemented on Windows."
     )
+
+
+def get_process_name_from_id(process_id: int) -> str:
+    processes = _iter_processes()
+
+    for process in processes:
+        if process.id == process_id:
+            processes.close()
+            break
+
+    else:
+        raise LookupError(f"Can not find process name with ID: {process_id!r}.")
+
+    return process.name
 
 
 def get_process_id_from_name(name: str) -> int:

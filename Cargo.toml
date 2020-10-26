@@ -11,6 +11,13 @@ path = "src/lib.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
+base64 = ">=0.13.0"
+dtoa = ">=0.4.5"
+itoa = ">=0.4.5"
+
+[dependencies.serde]
+version = ">=1.0.115"
+features = ["derive"]
 
 [dependencies.pyo3]
 version = ">=0.8.5"

@@ -56,6 +56,7 @@ from gd.memory.internal import (
     linux_close_process,
     linux_get_process_id_from_name,
     # linux_get_process_id_from_window_title,
+    # linux_get_process_name_from_id,
     linux_inject_dll,
     linux_terminate_process,
     linux_protect_process_memory,
@@ -71,6 +72,7 @@ from gd.memory.internal import (
     macos_close_process,
     macos_get_process_id_from_name,
     # macos_get_process_id_from_window_title,
+    # macos_get_process_name_from_id,
     macos_inject_dll,
     macos_terminate_process,
     macos_protect_process_memory,
@@ -86,6 +88,7 @@ from gd.memory.internal import (
     windows_close_process,
     windows_get_process_id_from_name,
     windows_get_process_id_from_window_title,
+    windows_get_process_name_from_id,
     windows_inject_dll,
     windows_terminate_process,
     windows_protect_process_memory,
@@ -595,6 +598,8 @@ class WindowsState(SystemState):
 
             if not self.process_id:
                 raise
+
+            self.process_name = windows_get_process_name_from_id(self.process_id)
 
         self.process_handle = windows_open_process(self.process_id)
 

@@ -18,6 +18,7 @@ __all__ = (
     "close_process",
     "get_process_id_from_name",
     "get_process_id_from_window_title",
+    "get_process_name_from_id",
     "inject_dll",
     "terminate_process",
     "protect_process_memory",
@@ -306,6 +307,22 @@ def get_process_id_from_name(process_name: str) -> int:
 
     else:
         raise LookupError(f"Can not find process: {process_name!r}.")
+
+
+def get_process_name_from_id(process_id: int) -> str:
+    path_size = PROC_PIDPATHINFO_MAXSIZE
+    path_buffer = ctypes.create_string_buffer(path_size)
+
+    _proc_pidpath(process_id, path_buffer, path_size)
+
+    path_value = path_buffer.value
+
+    if path_value:
+        path = Path(path_value.decode(ENCODING))
+
+        return path.name
+
+    raise LookupError(f"Can not find process name from ID: {process_id!r}.")
 
 
 def get_process_bits(process_id: int) -> int:
