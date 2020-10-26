@@ -745,7 +745,7 @@ else:
 
 
 class Address:
-    OFFSETS = {
+    OFFSETS: Dict[str, Dict[int, Offsets]] = {
         LinuxState: {
             32: linux_offsets_x32,
             64: linux_offsets_x64,
