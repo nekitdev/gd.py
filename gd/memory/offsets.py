@@ -49,7 +49,10 @@ windows_offsets_x32: Offsets = Offsets(
         attempt=0x4A8,
     ),
     editor_layer=Offsets(
+        editor_ui=0x380,
         object_count=0x3A0,
+    ),
+    editor_ui=Offsets(
     ),
     level_settings=Offsets(
         level=0x114,
