@@ -95,7 +95,17 @@ from gd.memory.internal import (
     windows_read_process_memory,
     windows_write_process_memory,
 )
-from gd.memory.offsets import offsets, linux_offsets, macos_offsets, windows_offsets
+from gd.memory.offsets import (
+    Offsets,
+    offsets_x32,
+    offsets_x64,
+    linux_offsets_x32,
+    linux_offsets_x64,
+    macos_offsets_x32,
+    macos_offsets_x64,
+    windows_offsets_x32,
+    windows_offsets_x64,
+)
 
 __all__ = (
     "Address",
@@ -736,16 +746,28 @@ else:
 
 class Address:
     OFFSETS = {
-        LinuxState: linux_offsets,
-        MacOSState: macos_offsets,
-        WindowsState: windows_offsets,
-        SystemState: offsets,
+        LinuxState: {
+            32: linux_offsets_x32,
+            64: linux_offsets_x64,
+        },
+        MacOSState: {
+            32: macos_offsets_x32,
+            64: macos_offsets_x64,
+        },
+        WindowsState: {
+            32: windows_offsets_x32,
+            64: windows_offsets_x64,
+        },
+        SystemState: {
+            32: offsets_x32,
+            64: offsets_x64,
+        },
     }
 
     def __init__(self, address: int, state: SystemState) -> None:
         self.address = address
         self.state = state
-        self.offsets = self.OFFSETS[type(state)]
+        self.offsets = self.OFFSETS[type(state)][state.bits]
 
     def __repr__(self) -> str:
         info = {"address": hex(self.address), "state": self.state}

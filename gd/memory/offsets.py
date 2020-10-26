@@ -3,10 +3,14 @@ from gd.platform import LINUX, MACOS, WINDOWS
 from gd.typing import TypeVar, cast
 
 __all__ = (
-    "offsets",
-    "linux_offsets",
-    "macos_offsets",
-    "windows_offsets",
+    "offsets_x32",
+    "offsets_x64",
+    "linux_offsets_x32",
+    "linux_offsets_x64",
+    "macos_offsets_x32",
+    "macos_offsets_x64",
+    "windows_offsets_x32",
+    "windows_offsets_x64",
 )
 
 OffsetT = TypeVar("OffsetT", int, "Offsets")
@@ -21,7 +25,7 @@ class Offsets(NamedDict[str, OffsetT]):
             raise LookupError(f"Can not find offset {attr!r} in offsets.") from None
 
 
-windows_offsets: Offsets = Offsets(
+windows_offsets_x32: Offsets = Offsets(
     game_manager=Offsets(
         play_layer=0x164,
         editor_layer=0x168,
@@ -82,7 +86,11 @@ windows_offsets: Offsets = Offsets(
     ),
 )
 
-macos_offsets: Offsets = Offsets(
+windows_offsets_x64: Offsets = Offsets()
+
+macos_offsets_x32: Offsets = Offsets()
+
+macos_offsets_x64: Offsets = Offsets(
     game_manager=Offsets(
         play_layer=0x180,
         editor_layer=0x188,
@@ -104,18 +112,23 @@ macos_offsets: Offsets = Offsets(
     ),
 )
 
-linux_offsets: Offsets = Offsets()
+linux_offsets_x32: Offsets = Offsets()
+linux_offsets_x64: Offsets = Offsets()
 
-offsets: Offsets = Offsets()
+offsets_x32: Offsets = Offsets()
+offsets_x64: Offsets = Offsets()
 
 if LINUX:
-    offsets = linux_offsets
+    offsets_x32 = linux_offsets_x32
+    offsets_x64 = linux_offsets_x64
 
 elif MACOS:
-    offsets = macos_offsets
+    offsets_x32 = macos_offsets_x32
+    offsets_x64 = macos_offsets_x64
 
 elif WINDOWS:
-    offsets = windows_offsets
+    offsets_x32 = windows_offsets_x32
+    offsets_x64 = windows_offsets_x64
 
 else:
     pass

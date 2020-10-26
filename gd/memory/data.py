@@ -24,8 +24,8 @@ __all__ = (
     "uint32",
     "int64",
     "uint64",
-    "uintsize",
-    "intsize",
+    "uint_size",
+    "int_size",
     "float32",
     "float64",
     "string",
@@ -202,8 +202,8 @@ except KeyError as error:
 _all_int = (int8, int16, int32, int64)
 _all_uint = (uint8, uint16, uint32, uint64)
 
-intsize: Data[int] = get_size_type(SIZE_BITS, signed=True)
-uintsize: Data[int] = get_size_type(SIZE_BITS, signed=False)
+int_size: Data[int] = get_size_type(SIZE_BITS, signed=True)
+uint_size: Data[int] = get_size_type(SIZE_BITS, signed=False)
 
 float32: Data[float] = Data("float32", "f")
 float64: Data[float] = Data("float64", "d")
