@@ -5,7 +5,7 @@ from gd.crypto import unzip_level_str, zip_level_str
 from gd.decorators import cache_by
 from gd.enums import DemonDifficulty, Gamemode, LevelDifficulty, LevelType, Scene, SpeedConstant
 from gd.platform import LINUX, MACOS, WINDOWS
-from gd.typing import Callable, List, Type, TypeVar, Union
+from gd.typing import Callable, Dict, List, Type, TypeVar, Union
 
 from gd.text_utils import is_level_probably_decoded, make_repr
 
