@@ -1,7 +1,7 @@
 import ctypes
 import functools
 
-from gd.typing import Any, Callable, Dict, Tuple, Type, TypeVar
+from gd.typing import Any, Callable, Dict, Tuple, Type, TypeVar, get_type_hints
 
 T = TypeVar("T")
 
@@ -17,10 +17,7 @@ class StructureMeta(type(ctypes.Structure)):  # type: ignore
         fields = {}
 
         for base in reversed(cls.mro()):
-            try:
-                fields.update(cls.__annotations__)
-            except AttributeError:
-                pass
+            fields.update(get_type_hints(base))
 
         cls._fields_ = list(fields.items())
 
@@ -36,10 +33,7 @@ class UnionMeta(type(ctypes.Union)):  # type: ignore
         fields = {}
 
         for base in reversed(cls.mro()):
-            try:
-                fields.update(cls.__annotations__)
-            except AttributeError:
-                pass
+            fields.update(get_type_hints(base))
 
         cls._fields_ = list(fields.items())
 
@@ -60,22 +54,17 @@ class Union(ctypes.Union, metaclass=UnionMeta):
 
 def extern_func(func_ptr: Any) -> Callable[[Callable[..., T]], Callable[..., T]]:
     def wrap(func: Callable[..., T]) -> Callable[..., T]:
-        try:
-            annotations = func.__annotations__
+        annotations = get_type_hints(func)
 
-        except AttributeError:
-            pass
+        return_type = annotations.pop("return", None)
 
-        else:
-            return_type = annotations.pop("return", None)
+        if return_type:
+            func_ptr.restype = return_type
 
-            if return_type:
-                func_ptr.restype = return_type
+        arg_types = list(annotations.values())
 
-            arg_types = list(annotations.values())
-
-            if arg_types:
-                func_ptr.argtypes = arg_types
+        if arg_types:
+            func_ptr.argtypes = arg_types
 
         @functools.wraps(func)
         def handle_call(*args) -> T:

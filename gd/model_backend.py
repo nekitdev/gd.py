@@ -30,6 +30,7 @@ from gd.typing import (
     Type,
     TypeVar,
     Union,
+    get_type_hints,
 )
 
 from gd.enums import Enum
@@ -83,7 +84,6 @@ __all__ = (
 )
 
 # DO NOT CHANGE
-ANNOTATIONS = "__annotations__"
 DATA = "DATA"
 
 K = TypeVar("K")
@@ -864,7 +864,6 @@ class ModelMeta(type):
         if is_normal:
             return super().__new__(meta_cls, cls_name, bases, cls_dict)
 
-        annotations = cls_dict.get(ANNOTATIONS, {})
         fields = cls_dict.fields
 
         for name, field in fields.items():  # process names
@@ -874,6 +873,8 @@ class ModelMeta(type):
         cls = create_class_backend(meta_cls, bases, cls_dict, fields)
 
         write_class_name(cls, cls_name)
+
+        annotations = get_type_hints(cls)
 
         for name, field in fields.items():  # process types
             field_type = annotations.get(name, field._type)
