@@ -204,13 +204,13 @@ class Session:
     async def get_top(
         self,
         strategy: LeaderboardStrategy,
-        count: int,
+        amount: int,
         *,
         account_id: Optional[int] = None,
         encoded_password: Optional[str] = None,
     ) -> LeaderboardResponseModel:
         response = await self.http.get_top(
-            strategy, count, account_id=account_id, encoded_password=encoded_password
+            strategy, amount, account_id=account_id, encoded_password=encoded_password
         )
         return LeaderboardResponseModel.from_string(response, use_default=True)
 

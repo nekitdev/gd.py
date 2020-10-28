@@ -502,8 +502,23 @@ class MessageModel(Model):
     read: bool = BoolField(index=8, default=False)
     sent: bool = BoolField(index=9, default=False)
 
+    @property
+    def unread(self) -> bool:
+        return not self.read
+
+    @unread.setter
+    def unread(self, value: bool) -> None:
+        self.read = not value
+
+    @unread.deleter
+    def unread(self) -> None:
+        del self.read
+
     def is_read(self) -> bool:
         return self.read
+
+    def is_unread(self) -> bool:
+        return self.unread
 
     def is_normal(self) -> bool:
         return not self.is_sent()

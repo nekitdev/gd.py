@@ -747,7 +747,7 @@ class HTTPClient:
     async def get_top(
         self,
         strategy: LeaderboardStrategy,
-        count: int = 100,
+        amount: int = 100,
         *,
         account_id: Optional[int] = None,
         encoded_password: Optional[str] = None,
@@ -763,7 +763,7 @@ class HTTPClient:
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             type=strategy.name.lower(),
-            count=count,
+            count=amount,
             secret=self.get_secret("main"),
             to_camel=True,
         )

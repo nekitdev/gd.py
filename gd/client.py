@@ -665,11 +665,11 @@ class Client:
 
     @async_iterable
     async def get_top(
-        self, strategy: Union[int, str, LeaderboardStrategy], count: int = 100
+        self, strategy: Union[int, str, LeaderboardStrategy], amount: int = 100
     ) -> AsyncIterator[User]:
         response_model = await self.session.get_top(
             LeaderboardStrategy.from_value(strategy),
-            count,
+            amount,
             account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
@@ -746,7 +746,17 @@ class Client:
         level.options.update(timely_id=timely_id, type=type, cooldown=cooldown)
 
         if level_model is not None:
-            level.options.update(Level.from_model(level_model).options)
+            level.options.update(
+                Level.from_model(
+                    level_model,
+                    creator=level.creator,
+                    song=level.song,
+                    type=level.type,
+                    timely_id=level.timely_id,
+                    cooldown=level.cooldown,
+                    client=self,
+                ).options
+            )
 
         return level
 
