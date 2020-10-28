@@ -71,7 +71,12 @@ def is_save_probably_decoded(string: str) -> bool:
     return _XML_OPEN_TAG in string and _XML_CLOSE_TAG in string
 
 
-def make_repr(some_object: T, info: Optional[Dict[K, V]] = None, delim: str = " ") -> str:
+def make_repr(
+    some_object: T,
+    info: Optional[Dict[K, V]] = None,
+    delim: str = " ",
+    name: Optional[str] = None,
+) -> str:
     """Create a nice representation of an object.
 
     Parameters
@@ -85,15 +90,16 @@ def make_repr(some_object: T, info: Optional[Dict[K, V]] = None, delim: str = " 
     delim: :class:`str`
         Delimiter to split parts of ``info`` with.
 
+    name: Optional[:class:`str`]
+        Name to use in ``repr()``. If not given, ``some_object.__class__.__name__`` is used.
+
     Returns
     -------
     :class:`str`
         ``repr()`` of ``some_object``.
     """
-    if info is None:
-        info = {}
-
-    name = some_object.__class__.__name__
+    if name is None:
+        name = some_object.__class__.__name__
 
     if not info:
         return f"<{name}>"
