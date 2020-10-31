@@ -1,0 +1,1991 @@
+@media (prefers-color-scheme: dark) {
+    html {
+        background-color: #181a1b !important;
+    }
+
+    html, body, input, textarea, select, button {
+        background-color: #181a1b !important;
+    }
+
+    html, body, input, textarea, select, button {
+        border-color: #736b5e !important;
+        color: #e8e6e3 !important;
+    }
+
+    a {
+        color: #3391ff !important;
+    }
+
+    table {
+        border-color: #545b5e !important;
+    }
+
+    ::placeholder {
+        color: #b2aba1 !important;
+    }
+
+    input:-webkit-autofill,
+    textarea:-webkit-autofill,
+    select:-webkit-autofill {
+        background-color: #555b00 !important;
+        color: #e8e6e3 !important;
+    }
+
+    ::selection {
+        background-color: #004daa !important;
+        color: #e8e6e3 !important;
+    }
+
+    ::-moz-selection {
+        background-color: #004daa !important;
+        color: #e8e6e3 !important;
+    }
+
+    /* Invert Style */
+    .jfk-bubble.gtx-bubble, embed[type="application/pdf"] {
+        filter: invert(100%) hue-rotate(180deg) contrast(90%) !important;
+    }
+
+    /* Override Style */
+    .vimvixen-hint {
+        background-color: #7b5300 !important;
+        border-color: #d8b013 !important;
+        color: #f3e8c8 !important;
+    }
+
+    ::placeholder {
+        opacity: 0.5 !important;
+    }
+
+    /* Variables Style */
+    :root {
+        --darkreader-neutral-background: #181a1b;
+        --darkreader-neutral-text: #e8e6e3;
+        --darkreader-selection-background: #004daa;
+        --darkreader-selection-text: #e8e6e3;
+    }
+
+    /* Modified CSS */
+    a:hover,
+    a:active {
+        outline-color: initial !important;
+    }
+
+    abbr[title] {
+        border-bottom-color: initial !important;
+    }
+
+    ins {
+        background-image: initial;
+        background-color: rgb(112, 112, 0) !important;
+        color: rgb(232, 230, 227) !important;
+        text-decoration-color: initial !important;
+    }
+
+    mark {
+        background-image: initial;
+        background-color: rgb(204, 204, 0) !important;
+        color: rgb(232, 230, 227) !important;
+    }
+
+    ul,
+    ol,
+    dl {
+        list-style-image: none;
+    }
+
+    li {
+        list-style-image: initial;
+    }
+
+    img {
+        border-color: initial !important;
+    }
+
+    fieldset {
+        border-color: initial !important;
+    }
+
+    legend {
+        border-color: initial !important;
+    }
+
+    .chromeframe {
+        background-image: initial;
+        background-color: rgb(53, 57, 59) !important;
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .ir {
+        border-color: initial !important;
+        background-color: transparent !important;
+    }
+
+    .visuallyhidden {
+        border-color: initial !important;
+    }
+
+    .fa-border {
+        border-color: rgb(53, 57, 59) !important;
+    }
+
+    .fa-inverse {
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .sr-only {
+        border-color: initial !important;
+    }
+
+    .fa::before,
+    .wy-menu-vertical li span.toctree-expand::before,
+    .wy-menu-vertical li.on a span.toctree-expand::before,
+    .wy-menu-vertical li.current > a span.toctree-expand::before,
+    .rst-content .admonition-title::before,
+    .rst-content h1 .headerlink::before,
+    .rst-content h2 .headerlink::before,
+    .rst-content h3 .headerlink::before,
+    .rst-content h4 .headerlink::before,
+    .rst-content h5 .headerlink::before,
+    .rst-content h6 .headerlink::before,
+    .rst-content dl dt .headerlink::before,
+    .rst-content p.caption .headerlink::before,
+    .rst-content table > caption .headerlink::before,
+    .rst-content .code-block-caption .headerlink::before,
+    .rst-content tt.download span:first-child::before,
+    .rst-content code.download span:first-child::before,
+    .icon::before,
+    .wy-dropdown .caret::before,
+    .wy-inline-validate.wy-inline-validate-success .wy-input-context::before,
+    .wy-inline-validate.wy-inline-validate-danger .wy-input-context::before,
+    .wy-inline-validate.wy-inline-validate-warning .wy-input-context::before,
+    .wy-inline-validate.wy-inline-validate-info .wy-input-context::before {
+        text-decoration-color: inherit !important;
+    }
+
+    a .fa,
+    a .wy-menu-vertical li span.toctree-expand,
+    .wy-menu-vertical li a span.toctree-expand,
+    .wy-menu-vertical li.on a span.toctree-expand,
+    .wy-menu-vertical li.current > a span.toctree-expand,
+    a .rst-content .admonition-title,
+    .rst-content a .admonition-title,
+    a .rst-content h1 .headerlink,
+    .rst-content h1 a .headerlink,
+    a .rst-content h2 .headerlink,
+    .rst-content h2 a .headerlink,
+    a .rst-content h3 .headerlink,
+    .rst-content h3 a .headerlink,
+    a .rst-content h4 .headerlink,
+    .rst-content h4 a .headerlink,
+    a .rst-content h5 .headerlink,
+    .rst-content h5 a .headerlink,
+    a .rst-content h6 .headerlink,
+    .rst-content h6 a .headerlink,
+    a .rst-content dl dt .headerlink,
+    .rst-content dl dt a .headerlink,
+    a .rst-content p.caption .headerlink,
+    .rst-content p.caption a .headerlink,
+    a .rst-content table > caption .headerlink,
+    .rst-content table > caption a .headerlink,
+    a .rst-content .code-block-caption .headerlink,
+    .rst-content .code-block-caption a .headerlink,
+    a .rst-content tt.download span:first-child,
+    .rst-content tt.download a span:first-child,
+    a .rst-content code.download span:first-child,
+    .rst-content code.download a span:first-child,
+    a .icon {
+        text-decoration-color: inherit !important;
+    }
+
+    .wy-alert,
+    .rst-content .note,
+    .rst-content .attention,
+    .rst-content .caution,
+    .rst-content .danger,
+    .rst-content .error,
+    .rst-content .hint,
+    .rst-content .important,
+    .rst-content .tip,
+    .rst-content .warning,
+    .rst-content .seealso,
+    .rst-content .admonition-todo,
+    .rst-content .admonition {
+        background-image: initial;
+        background-color: rgb(32, 35, 36) !important;
+    }
+
+    .wy-alert-title,
+    .rst-content .admonition-title {
+        color: rgb(232, 230, 227) !important;
+        background-image: initial;
+        background-color: rgb(29, 91, 131) !important;
+    }
+
+    .wy-alert.wy-alert-danger,
+    .rst-content .wy-alert-danger.note,
+    .rst-content .wy-alert-danger.attention,
+    .rst-content .wy-alert-danger.caution,
+    .rst-content .danger,
+    .rst-content .error,
+    .rst-content .wy-alert-danger.hint,
+    .rst-content .wy-alert-danger.important,
+    .rst-content .wy-alert-danger.tip,
+    .rst-content .wy-alert-danger.warning,
+    .rst-content .wy-alert-danger.seealso,
+    .rst-content .wy-alert-danger.admonition-todo,
+    .rst-content .wy-alert-danger.admonition {
+        background-image: initial;
+        background-color: rgb(52, 12, 8) !important;
+    }
+
+    .wy-alert.wy-alert-danger .wy-alert-title,
+    .rst-content .wy-alert-danger.note .wy-alert-title,
+    .rst-content .wy-alert-danger.attention .wy-alert-title,
+    .rst-content .wy-alert-danger.caution .wy-alert-title,
+    .rst-content .danger .wy-alert-title,
+    .rst-content .error .wy-alert-title,
+    .rst-content .wy-alert-danger.hint .wy-alert-title,
+    .rst-content .wy-alert-danger.important .wy-alert-title,
+    .rst-content .wy-alert-danger.tip .wy-alert-title,
+    .rst-content .wy-alert-danger.warning .wy-alert-title,
+    .rst-content .wy-alert-danger.seealso .wy-alert-title,
+    .rst-content .wy-alert-danger.admonition-todo .wy-alert-title,
+    .rst-content .wy-alert-danger.admonition .wy-alert-title,
+    .wy-alert.wy-alert-danger .rst-content .admonition-title,
+    .rst-content .wy-alert.wy-alert-danger .admonition-title,
+    .rst-content .wy-alert-danger.note .admonition-title,
+    .rst-content .wy-alert-danger.attention .admonition-title,
+    .rst-content .wy-alert-danger.caution .admonition-title,
+    .rst-content .danger .admonition-title,
+    .rst-content .error .admonition-title,
+    .rst-content .wy-alert-danger.hint .admonition-title,
+    .rst-content .wy-alert-danger.important .admonition-title,
+    .rst-content .wy-alert-danger.tip .admonition-title,
+    .rst-content .wy-alert-danger.warning .admonition-title,
+    .rst-content .wy-alert-danger.seealso .admonition-title,
+    .rst-content .wy-alert-danger.admonition-todo .admonition-title,
+    .rst-content .wy-alert-danger.admonition .admonition-title {
+        background-image: initial;
+        background-color: rgb(108, 22, 13) !important;
+    }
+
+    .wy-alert.wy-alert-warning,
+    .rst-content .wy-alert-warning.note,
+    .rst-content .attention,
+    .rst-content .caution,
+    .rst-content .wy-alert-warning.danger,
+    .rst-content .wy-alert-warning.error,
+    .rst-content .wy-alert-warning.hint,
+    .rst-content .wy-alert-warning.important,
+    .rst-content .wy-alert-warning.tip,
+    .rst-content .warning,
+    .rst-content .wy-alert-warning.seealso,
+    .rst-content .admonition-todo,
+    .rst-content .wy-alert-warning.admonition {
+        background-image: initial;
+        background-color: rgb(82, 53, 0) !important;
+    }
+
+    .wy-alert.wy-alert-warning .wy-alert-title,
+    .rst-content .wy-alert-warning.note .wy-alert-title,
+    .rst-content .attention .wy-alert-title,
+    .rst-content .caution .wy-alert-title,
+    .rst-content .wy-alert-warning.danger .wy-alert-title,
+    .rst-content .wy-alert-warning.error .wy-alert-title,
+    .rst-content .wy-alert-warning.hint .wy-alert-title,
+    .rst-content .wy-alert-warning.important .wy-alert-title,
+    .rst-content .wy-alert-warning.tip .wy-alert-title,
+    .rst-content .warning .wy-alert-title,
+    .rst-content .wy-alert-warning.seealso .wy-alert-title,
+    .rst-content .admonition-todo .wy-alert-title,
+    .rst-content .wy-alert-warning.admonition .wy-alert-title,
+    .wy-alert.wy-alert-warning .rst-content .admonition-title,
+    .rst-content .wy-alert.wy-alert-warning .admonition-title,
+    .rst-content .wy-alert-warning.note .admonition-title,
+    .rst-content .attention .admonition-title,
+    .rst-content .caution .admonition-title,
+    .rst-content .wy-alert-warning.danger .admonition-title,
+    .rst-content .wy-alert-warning.error .admonition-title,
+    .rst-content .wy-alert-warning.hint .admonition-title,
+    .rst-content .wy-alert-warning.important .admonition-title,
+    .rst-content .wy-alert-warning.tip .admonition-title,
+    .rst-content .warning .admonition-title,
+    .rst-content .wy-alert-warning.seealso .admonition-title,
+    .rst-content .admonition-todo .admonition-title,
+    .rst-content .wy-alert-warning.admonition .admonition-title {
+        background-image: initial;
+        background-color: rgb(123, 65, 14) !important;
+    }
+
+    .wy-alert.wy-alert-info,
+    .rst-content .note,
+    .rst-content .wy-alert-info.attention,
+    .rst-content .wy-alert-info.caution,
+    .rst-content .wy-alert-info.danger,
+    .rst-content .wy-alert-info.error,
+    .rst-content .wy-alert-info.hint,
+    .rst-content .wy-alert-info.important,
+    .rst-content .wy-alert-info.tip,
+    .rst-content .wy-alert-info.warning,
+    .rst-content .seealso,
+    .rst-content .wy-alert-info.admonition-todo,
+    .rst-content .wy-alert-info.admonition {
+        background-image: initial;
+        background-color: rgb(32, 35, 36) !important;
+    }
+
+    .wy-alert.wy-alert-info .wy-alert-title,
+    .rst-content .note .wy-alert-title,
+    .rst-content .wy-alert-info.attention .wy-alert-title,
+    .rst-content .wy-alert-info.caution .wy-alert-title,
+    .rst-content .wy-alert-info.danger .wy-alert-title,
+    .rst-content .wy-alert-info.error .wy-alert-title,
+    .rst-content .wy-alert-info.hint .wy-alert-title,
+    .rst-content .wy-alert-info.important .wy-alert-title,
+    .rst-content .wy-alert-info.tip .wy-alert-title,
+    .rst-content .wy-alert-info.warning .wy-alert-title,
+    .rst-content .seealso .wy-alert-title,
+    .rst-content .wy-alert-info.admonition-todo .wy-alert-title,
+    .rst-content .wy-alert-info.admonition .wy-alert-title,
+    .wy-alert.wy-alert-info .rst-content .admonition-title,
+    .rst-content .wy-alert.wy-alert-info .admonition-title,
+    .rst-content .note .admonition-title,
+    .rst-content .wy-alert-info.attention .admonition-title,
+    .rst-content .wy-alert-info.caution .admonition-title,
+    .rst-content .wy-alert-info.danger .admonition-title,
+    .rst-content .wy-alert-info.error .admonition-title,
+    .rst-content .wy-alert-info.hint .admonition-title,
+    .rst-content .wy-alert-info.important .admonition-title,
+    .rst-content .wy-alert-info.tip .admonition-title,
+    .rst-content .wy-alert-info.warning .admonition-title,
+    .rst-content .seealso .admonition-title,
+    .rst-content .wy-alert-info.admonition-todo .admonition-title,
+    .rst-content .wy-alert-info.admonition .admonition-title {
+        background-image: initial;
+        background-color: rgb(29, 91, 131) !important;
+    }
+
+    .wy-alert.wy-alert-success,
+    .rst-content .wy-alert-success.note,
+    .rst-content .wy-alert-success.attention,
+    .rst-content .wy-alert-success.caution,
+    .rst-content .wy-alert-success.danger,
+    .rst-content .wy-alert-success.error,
+    .rst-content .hint,
+    .rst-content .important,
+    .rst-content .tip,
+    .rst-content .wy-alert-success.warning,
+    .rst-content .wy-alert-success.seealso,
+    .rst-content .wy-alert-success.admonition-todo,
+    .rst-content .wy-alert-success.admonition {
+        background-image: initial;
+        background-color: rgb(9, 66, 58) !important;
+    }
+
+    .wy-alert.wy-alert-success .wy-alert-title,
+    .rst-content .wy-alert-success.note .wy-alert-title,
+    .rst-content .wy-alert-success.attention .wy-alert-title,
+    .rst-content .wy-alert-success.caution .wy-alert-title,
+    .rst-content .wy-alert-success.danger .wy-alert-title,
+    .rst-content .wy-alert-success.error .wy-alert-title,
+    .rst-content .hint .wy-alert-title,
+    .rst-content .important .wy-alert-title,
+    .rst-content .tip .wy-alert-title,
+    .rst-content .wy-alert-success.warning .wy-alert-title,
+    .rst-content .wy-alert-success.seealso .wy-alert-title,
+    .rst-content .wy-alert-success.admonition-todo .wy-alert-title,
+    .rst-content .wy-alert-success.admonition .wy-alert-title,
+    .wy-alert.wy-alert-success .rst-content .admonition-title,
+    .rst-content .wy-alert.wy-alert-success .admonition-title,
+    .rst-content .wy-alert-success.note .admonition-title,
+    .rst-content .wy-alert-success.attention .admonition-title,
+    .rst-content .wy-alert-success.caution .admonition-title,
+    .rst-content .wy-alert-success.danger .admonition-title,
+    .rst-content .wy-alert-success.error .admonition-title,
+    .rst-content .hint .admonition-title,
+    .rst-content .important .admonition-title,
+    .rst-content .tip .admonition-title,
+    .rst-content .wy-alert-success.warning .admonition-title,
+    .rst-content .wy-alert-success.seealso .admonition-title,
+    .rst-content .wy-alert-success.admonition-todo .admonition-title,
+    .rst-content .wy-alert-success.admonition .admonition-title {
+        background-image: initial;
+        background-color: rgb(21, 150, 125) !important;
+    }
+
+    .wy-alert.wy-alert-neutral,
+    .rst-content .wy-alert-neutral.note,
+    .rst-content .wy-alert-neutral.attention,
+    .rst-content .wy-alert-neutral.caution,
+    .rst-content .wy-alert-neutral.danger,
+    .rst-content .wy-alert-neutral.error,
+    .rst-content .wy-alert-neutral.hint,
+    .rst-content .wy-alert-neutral.important,
+    .rst-content .wy-alert-neutral.tip,
+    .rst-content .wy-alert-neutral.warning,
+    .rst-content .wy-alert-neutral.seealso,
+    .rst-content .wy-alert-neutral.admonition-todo,
+    .rst-content .wy-alert-neutral.admonition {
+        background-image: initial;
+        background-color: rgb(27, 36, 36) !important;
+    }
+
+    .wy-alert.wy-alert-neutral .wy-alert-title,
+    .rst-content .wy-alert-neutral.note .wy-alert-title,
+    .rst-content .wy-alert-neutral.attention .wy-alert-title,
+    .rst-content .wy-alert-neutral.caution .wy-alert-title,
+    .rst-content .wy-alert-neutral.danger .wy-alert-title,
+    .rst-content .wy-alert-neutral.error .wy-alert-title,
+    .rst-content .wy-alert-neutral.hint .wy-alert-title,
+    .rst-content .wy-alert-neutral.important .wy-alert-title,
+    .rst-content .wy-alert-neutral.tip .wy-alert-title,
+    .rst-content .wy-alert-neutral.warning .wy-alert-title,
+    .rst-content .wy-alert-neutral.seealso .wy-alert-title,
+    .rst-content .wy-alert-neutral.admonition-todo .wy-alert-title,
+    .rst-content .wy-alert-neutral.admonition .wy-alert-title,
+    .wy-alert.wy-alert-neutral .rst-content .admonition-title,
+    .rst-content .wy-alert.wy-alert-neutral .admonition-title,
+    .rst-content .wy-alert-neutral.note .admonition-title,
+    .rst-content .wy-alert-neutral.attention .admonition-title,
+    .rst-content .wy-alert-neutral.caution .admonition-title,
+    .rst-content .wy-alert-neutral.danger .admonition-title,
+    .rst-content .wy-alert-neutral.error .admonition-title,
+    .rst-content .wy-alert-neutral.hint .admonition-title,
+    .rst-content .wy-alert-neutral.important .admonition-title,
+    .rst-content .wy-alert-neutral.tip .admonition-title,
+    .rst-content .wy-alert-neutral.warning .admonition-title,
+    .rst-content .wy-alert-neutral.seealso .admonition-title,
+    .rst-content .wy-alert-neutral.admonition-todo .admonition-title,
+    .rst-content .wy-alert-neutral.admonition .admonition-title {
+        color: rgb(192, 186, 178) !important;
+        background-image: initial;
+        background-color: rgb(40, 43, 45) !important;
+    }
+
+    .wy-alert.wy-alert-neutral a,
+    .rst-content .wy-alert-neutral.note a,
+    .rst-content .wy-alert-neutral.attention a,
+    .rst-content .wy-alert-neutral.caution a,
+    .rst-content .wy-alert-neutral.danger a,
+    .rst-content .wy-alert-neutral.error a,
+    .rst-content .wy-alert-neutral.hint a,
+    .rst-content .wy-alert-neutral.important a,
+    .rst-content .wy-alert-neutral.tip a,
+    .rst-content .wy-alert-neutral.warning a,
+    .rst-content .wy-alert-neutral.seealso a,
+    .rst-content .wy-alert-neutral.admonition-todo a,
+    .rst-content .wy-alert-neutral.admonition a {
+        color: rgb(84, 164, 217) !important;
+    }
+
+    .wy-tray-container li {
+        background-image: initial;
+        background-color: transparent !important;
+        color: rgb(232, 230, 227) !important;
+        box-shadow: rgba(0, 0, 0, 0.1) 0px 5px 5px 0px;
+    }
+
+    .wy-tray-container li.wy-tray-item-success {
+        background-image: initial;
+        background-color: rgb(31, 139, 77) !important;
+    }
+
+    .wy-tray-container li.wy-tray-item-info {
+        background-image: initial;
+        background-color: rgb(33, 102, 148) !important;
+    }
+
+    .wy-tray-container li.wy-tray-item-warning {
+        background-image: initial;
+        background-color: rgb(178, 94, 20) !important;
+    }
+
+    .wy-tray-container li.wy-tray-item-danger {
+        background-image: initial;
+        background-color: rgb(162, 33, 20) !important;
+    }
+
+    .btn {
+        color: rgb(232, 230, 227) !important;
+        border-color: rgba(140, 130, 115, 0.1) !important;
+        background-color: rgb(31, 139, 77) !important;
+        text-decoration-color: initial !important;
+        box-shadow: rgba(24, 26, 27, 0.5) 0px 1px 2px -1px inset,
+        rgba(0, 0, 0, 0.1) 0px -2px 0px 0px inset;
+    }
+
+    .btn-hover {
+        background-image: initial;
+        background-color: rgb(37, 114, 165) !important;
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .btn:hover {
+        background-image: initial;
+        background-color: rgb(35, 156, 86) !important;
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .btn:focus {
+        background-image: initial;
+        background-color: rgb(35, 156, 86) !important;
+        outline-color: initial !important;
+    }
+
+    .btn:active {
+        box-shadow: rgba(0, 0, 0, 0.05) 0px -1px 0px 0px inset,
+        rgba(0, 0, 0, 0.1) 0px 2px 0px 0px inset;
+    }
+
+    .btn:visited {
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .btn:disabled {
+        background-image: none;
+        box-shadow: none;
+    }
+
+    .btn-disabled {
+        background-image: none;
+        box-shadow: none;
+    }
+
+    .btn-disabled:hover,
+    .btn-disabled:focus,
+    .btn-disabled:active {
+        background-image: none;
+        box-shadow: none;
+    }
+
+    .btn-info {
+        background-color: rgb(33, 102, 148) !important;
+    }
+
+    .btn-info:hover {
+        background-color: rgb(37, 114, 165) !important;
+    }
+
+    .btn-neutral {
+        background-color: rgb(27, 36, 36) !important;
+        color: rgb(192, 186, 178) !important;
+    }
+
+    .btn-neutral:hover {
+        color: rgb(192, 186, 178) !important;
+        background-color: rgb(34, 44, 44) !important;
+    }
+
+    .btn-neutral:visited {
+        color: rgb(192, 186, 178) !important;
+    }
+
+    .btn-success {
+        background-color: rgb(31, 139, 77) !important;
+    }
+
+    .btn-success:hover {
+        background-color: rgb(27, 122, 68) !important;
+    }
+
+    .btn-danger {
+        background-color: rgb(162, 33, 20) !important;
+    }
+
+    .btn-danger:hover {
+        background-color: rgb(149, 30, 18) !important;
+    }
+
+    .btn-warning {
+        background-color: rgb(178, 94, 20) !important;
+    }
+
+    .btn-warning:hover {
+        background-color: rgb(165, 87, 18) !important;
+    }
+
+    .btn-invert {
+        background-color: rgb(26, 28, 29) !important;
+    }
+
+    .btn-invert:hover {
+        background-color: rgb(35, 38, 40) !important;
+    }
+
+    .btn-link {
+        color: rgb(84, 164, 217) !important;
+        box-shadow: none;
+        background-color: transparent !important;
+        border-color: transparent !important;
+    }
+
+    .btn-link:hover {
+        box-shadow: none;
+        background-color: transparent !important;
+        color: rgb(79, 162, 216) !important;
+    }
+
+    .btn-link:active {
+        box-shadow: none;
+        background-color: transparent !important;
+        color: rgb(79, 162, 216) !important;
+    }
+
+    .btn-link:visited {
+        color: rgb(164, 103, 188) !important;
+    }
+
+    .wy-dropdown-menu {
+        background-image: initial;
+        background-color: rgb(26, 28, 29) !important;
+        border-color: rgb(60, 65, 67) !important;
+        box-shadow: rgba(0, 0, 0, 0.1) 0px 2px 2px 0px;
+    }
+
+    .wy-dropdown-menu > dd > a {
+        color: rgb(192, 186, 178) !important;
+    }
+
+    .wy-dropdown-menu > dd > a:hover {
+        background-image: initial;
+        background-color: rgb(33, 102, 148) !important;
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .wy-dropdown-menu > dd.divider {
+        border-top-color: rgb(60, 65, 67) !important;
+    }
+
+    .wy-dropdown-menu > dd.call-to-action {
+        background-image: initial;
+        background-color: rgb(40, 43, 45) !important;
+    }
+
+    .wy-dropdown-menu > dd.call-to-action:hover {
+        background-image: initial;
+        background-color: rgb(40, 43, 45) !important;
+    }
+
+    .wy-dropdown-menu > dd.call-to-action .btn {
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .wy-dropdown.wy-dropdown-bubble .wy-dropdown-menu {
+        background-image: initial;
+        background-color: rgb(26, 28, 29) !important;
+    }
+
+    .wy-dropdown.wy-dropdown-bubble .wy-dropdown-menu a:hover {
+        background-image: initial;
+        background-color: rgb(33, 102, 148) !important;
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .wy-dropdown-arrow::before {
+        border-bottom-color: rgb(51, 55, 57) !important;
+        border-left-color: transparent !important;
+        border-right-color: transparent !important;
+    }
+
+    fieldset {
+        border-color: initial !important;
+    }
+
+    legend {
+        border-color: initial !important;
+    }
+
+    label {
+        color: rgb(200, 195, 188) !important;
+    }
+
+    .wy-control-group.wy-control-group-required > label::after {
+        color: rgb(233, 88, 73) !important;
+    }
+
+    .wy-form-message-inline {
+        color: rgb(168, 160, 149) !important;
+    }
+
+    .wy-form-message {
+        color: rgb(168, 160, 149) !important;
+    }
+
+    input[type="text"], input[type="password"], input[type="email"], input[type="url"], input[type="date"], input[type="month"], input[type="time"], input[type="datetime"], input[type="datetime-local"], input[type="week"], input[type="number"], input[type="search"], input[type="tel"], input[type="color"] {
+        border-color: rgb(62, 68, 70) !important;
+        box-shadow: rgb(43, 47, 49) 0px 1px 3px inset;
+    }
+
+    input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focus, input[type="url"]:focus, input[type="date"]:focus, input[type="month"]:focus, input[type="time"]:focus, input[type="datetime"]:focus, input[type="datetime-local"]:focus, input[type="week"]:focus, input[type="number"]:focus, input[type="search"]:focus, input[type="tel"]:focus, input[type="color"]:focus {
+        outline-color: initial !important;
+        border-color: rgb(123, 114, 101) !important;
+    }
+
+    input.no-focus:focus {
+        border-color: rgb(62, 68, 70) !important;
+    }
+
+    input[type="file"]:focus, input[type="radio"]:focus, input[type="checkbox"]:focus {
+        outline-color: rgb(13, 113, 167) !important;
+    }
+
+    input[type="text"][disabled], input[type="password"][disabled], input[type="email"][disabled], input[type="url"][disabled], input[type="date"][disabled], input[type="month"][disabled], input[type="time"][disabled], input[type="datetime"][disabled], input[type="datetime-local"][disabled], input[type="week"][disabled], input[type="number"][disabled], input[type="search"][disabled], input[type="tel"][disabled], input[type="color"][disabled] {
+        background-color: rgb(27, 29, 30) !important;
+    }
+
+    input:focus:invalid,
+    textarea:focus:invalid,
+    select:focus:invalid {
+        color: rgb(233, 88, 73) !important;
+        border-color: rgb(149, 31, 18) !important;
+    }
+
+    input:focus:invalid:focus,
+    textarea:focus:invalid:focus,
+    select:focus:invalid:focus {
+        border-color: rgb(149, 31, 18) !important;
+    }
+
+    input[type="file"]:focus:invalid:focus, input[type="radio"]:focus:invalid:focus, input[type="checkbox"]:focus:invalid:focus {
+        outline-color: rgb(149, 31, 18) !important;
+    }
+
+    select,
+    textarea {
+        border-color: rgb(62, 68, 70) !important;
+        box-shadow: rgb(43, 47, 49) 0px 1px 3px inset;
+    }
+
+    select {
+        border-color: rgb(62, 68, 70) !important;
+        background-color: rgb(24, 26, 27) !important;
+    }
+
+    select:focus,
+    textarea:focus {
+        outline-color: initial !important;
+    }
+
+    select[disabled],
+    textarea[disabled],
+    input[readonly],
+    select[readonly],
+    textarea[readonly] {
+        background-color: rgb(27, 29, 30) !important;
+    }
+
+    .wy-checkbox,
+    .wy-radio {
+        color: rgb(192, 186, 178) !important;
+    }
+
+    .wy-input-prefix .wy-input-context,
+    .wy-input-suffix .wy-input-context {
+        background-color: rgb(27, 36, 36) !important;
+        border-color: rgb(62, 68, 70) !important;
+        color: rgb(168, 160, 149) !important;
+    }
+
+    .wy-input-suffix .wy-input-context {
+        border-left-color: initial !important;
+    }
+
+    .wy-input-prefix .wy-input-context {
+        border-right-color: initial !important;
+    }
+
+    .wy-switch::before {
+        background-image: initial;
+        background-color: rgb(53, 57, 59) !important;
+    }
+
+    .wy-switch::after {
+        background-image: initial;
+        background-color: rgb(82, 88, 92) !important;
+    }
+
+    .wy-switch span {
+        color: rgb(200, 195, 188) !important;
+    }
+
+    .wy-switch.active::before {
+        background-image: initial;
+        background-color: rgb(24, 106, 58) !important;
+    }
+
+    .wy-switch.active::after {
+        background-image: initial;
+        background-color: rgb(31, 139, 77) !important;
+    }
+
+    .wy-control-group.wy-control-group-error .wy-form-message,
+    .wy-control-group.wy-control-group-error > label {
+        color: rgb(233, 88, 73) !important;
+    }
+
+    .wy-control-group.wy-control-group-error input[type="text"], .wy-control-group.wy-control-group-error input[type="password"], .wy-control-group.wy-control-group-error input[type="email"], .wy-control-group.wy-control-group-error input[type="url"], .wy-control-group.wy-control-group-error input[type="date"], .wy-control-group.wy-control-group-error input[type="month"], .wy-control-group.wy-control-group-error input[type="time"], .wy-control-group.wy-control-group-error input[type="datetime"], .wy-control-group.wy-control-group-error input[type="datetime-local"], .wy-control-group.wy-control-group-error input[type="week"], .wy-control-group.wy-control-group-error input[type="number"], .wy-control-group.wy-control-group-error input[type="search"], .wy-control-group.wy-control-group-error input[type="tel"], .wy-control-group.wy-control-group-error input[type="color"] {
+        border-color: rgb(149, 31, 18) !important;
+    }
+
+    .wy-control-group.wy-control-group-error textarea {
+        border-color: rgb(149, 31, 18) !important;
+    }
+
+    .wy-inline-validate.wy-inline-validate-success .wy-input-context {
+        color: rgb(92, 218, 145) !important;
+    }
+
+    .wy-inline-validate.wy-inline-validate-danger .wy-input-context {
+        color: rgb(233, 88, 73) !important;
+    }
+
+    .wy-inline-validate.wy-inline-validate-warning .wy-input-context {
+        color: rgb(232, 138, 54) !important;
+    }
+
+    .wy-inline-validate.wy-inline-validate-info .wy-input-context {
+        color: rgb(84, 164, 217) !important;
+    }
+
+    .wy-table caption,
+    .rst-content table.docutils caption,
+    .rst-content table.field-list caption {
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .wy-table thead,
+    .rst-content table.docutils thead,
+    .rst-content table.field-list thead {
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .wy-table thead th,
+    .rst-content table.docutils thead th,
+    .rst-content table.field-list thead th {
+        border-bottom-color: rgb(56, 61, 63) !important;
+    }
+
+    .wy-table td,
+    .rst-content table.docutils td,
+    .rst-content table.field-list td {
+        background-color: transparent !important;
+    }
+
+    .wy-table-secondary {
+        color: rgb(152, 143, 129) !important;
+    }
+
+    .wy-table-tertiary {
+        color: rgb(152, 143, 129) !important;
+    }
+
+    .wy-table-odd td,
+    .wy-table-striped tr:nth-child(2n-1) td,
+    .rst-content table.docutils:not(.field-list) tr:nth-child(2n-1) td {
+        background-color: rgb(27, 36, 36) !important;
+    }
+
+    .wy-table-backed {
+        background-color: rgb(27, 36, 36) !important;
+    }
+
+    .wy-table-bordered-all,
+    .rst-content table.docutils {
+        border-color: rgb(56, 61, 63) !important;
+    }
+
+    .wy-table-bordered-all td,
+    .rst-content table.docutils td {
+        border-bottom-color: rgb(56, 61, 63) !important;
+        border-left-color: rgb(56, 61, 63) !important;
+    }
+
+    .wy-table-bordered {
+        border-color: rgb(56, 61, 63) !important;
+    }
+
+    .wy-table-bordered-rows td {
+        border-bottom-color: rgb(56, 61, 63) !important;
+    }
+
+    .wy-table-horizontal td,
+    .wy-table-horizontal th {
+        border-bottom-color: rgb(56, 61, 63) !important;
+    }
+
+    a {
+        color: rgb(84, 164, 217) !important;
+        text-decoration-color: initial !important;
+    }
+
+    a:hover {
+        color: rgb(68, 156, 214) !important;
+    }
+
+    a:visited {
+        color: rgb(164, 103, 188) !important;
+    }
+
+    body {
+        color: rgb(192, 186, 178) !important;
+        background-image: initial;
+        background-color: rgb(33, 35, 37) !important;
+    }
+
+    .wy-text-strike {
+        text-decoration-color: initial !important;
+    }
+
+    .wy-text-warning {
+        color: rgb(232, 138, 54) !important;
+    }
+
+    a.wy-text-warning:hover {
+        color: rgb(236, 157, 87) !important;
+    }
+
+    .wy-text-info {
+        color: rgb(84, 164, 217) !important;
+    }
+
+    a.wy-text-info:hover {
+        color: rgb(79, 162, 216) !important;
+    }
+
+    .wy-text-success {
+        color: rgb(92, 218, 145) !important;
+    }
+
+    a.wy-text-success:hover {
+        color: rgb(73, 214, 133) !important;
+    }
+
+    .wy-text-danger {
+        color: rgb(233, 88, 73) !important;
+    }
+
+    a.wy-text-danger:hover {
+        color: rgb(237, 118, 104) !important;
+    }
+
+    .wy-text-neutral {
+        color: rgb(192, 186, 178) !important;
+    }
+
+    a.wy-text-neutral:hover {
+        color: rgb(176, 169, 159) !important;
+    }
+
+    hr {
+        border-right-color: initial !important;
+        border-bottom-color: initial !important;
+        border-left-color: initial !important;
+        border-top-color: rgb(56, 61, 63) !important;
+    }
+
+    code,
+    .rst-content tt,
+    .rst-content code {
+        background-image: initial;
+        background-color: rgb(24, 26, 27) !important;
+        border-color: rgb(56, 61, 63) !important;
+        color: rgb(233, 88, 73) !important;
+    }
+
+    .wy-plain-list-disc,
+    .rst-content .section ul,
+    .rst-content .toctree-wrapper ul,
+    article ul {
+        list-style-image: initial;
+    }
+
+    .wy-plain-list-disc li,
+    .rst-content .section ul li,
+    .rst-content .toctree-wrapper ul li,
+    article ul li {
+        list-style-image: initial;
+    }
+
+    .wy-plain-list-disc li li,
+    .rst-content .section ul li li,
+    .rst-content .toctree-wrapper ul li li,
+    article ul li li {
+        list-style-image: initial;
+    }
+
+    .wy-plain-list-disc li li li,
+    .rst-content .section ul li li li,
+    .rst-content .toctree-wrapper ul li li li,
+    article ul li li li {
+        list-style-image: initial;
+    }
+
+    .wy-plain-list-disc li ol li,
+    .rst-content .section ul li ol li,
+    .rst-content .toctree-wrapper ul li ol li,
+    article ul li ol li {
+        list-style-image: initial;
+    }
+
+    .wy-plain-list-decimal,
+    .rst-content .section ol,
+    .rst-content ol.arabic,
+    article ol {
+        list-style-image: initial;
+    }
+
+    .wy-plain-list-decimal li,
+    .rst-content .section ol li,
+    .rst-content ol.arabic li,
+    article ol li {
+        list-style-image: initial;
+    }
+
+    .wy-plain-list-decimal li ul li,
+    .rst-content .section ol li ul li,
+    .rst-content ol.arabic li ul li,
+    article ol li ul li {
+        list-style-image: initial;
+    }
+
+    .wy-breadcrumbs li code,
+    .wy-breadcrumbs li .rst-content tt,
+    .rst-content .wy-breadcrumbs li tt {
+        border-color: initial !important;
+        background-image: none;
+        background-color: initial !important;
+    }
+
+    .wy-breadcrumbs li code.literal,
+    .wy-breadcrumbs li .rst-content tt.literal,
+    .rst-content .wy-breadcrumbs li tt.literal {
+        color: rgb(192, 186, 178) !important;
+    }
+
+    .wy-breadcrumbs-extra {
+        color: rgb(184, 178, 169) !important;
+    }
+
+    .wy-menu a:hover {
+        text-decoration-color: initial !important;
+    }
+
+    .wy-menu-horiz li:hover {
+        background-image: initial;
+        background-color: rgba(24, 26, 27, 0.1) !important;
+    }
+
+    .wy-menu-horiz li.divide-left {
+        border-left-color: rgb(119, 110, 98) !important;
+    }
+
+    .wy-menu-horiz li.divide-right {
+        border-right-color: rgb(119, 110, 98) !important;
+    }
+
+    .wy-menu-vertical header,
+    .wy-menu-vertical p.caption {
+        color: rgb(99, 161, 201) !important;
+    }
+
+    .wy-menu-vertical li.divide-top {
+        border-top-color: rgb(119, 110, 98) !important;
+    }
+
+    .wy-menu-vertical li.divide-bottom {
+        border-bottom-color: rgb(119, 110, 98) !important;
+    }
+
+    .wy-menu-vertical li.current {
+        background-image: initial;
+        background-color: rgb(40, 43, 45) !important;
+    }
+
+    .wy-menu-vertical li.current a {
+        color: rgb(152, 143, 129) !important;
+        border-right-color: rgb(63, 69, 71) !important;
+    }
+
+    .wy-menu-vertical li.current a:hover {
+        background-image: initial;
+        background-color: rgb(47, 51, 53) !important;
+    }
+
+    .wy-menu-vertical li code,
+    .wy-menu-vertical li .rst-content tt,
+    .rst-content .wy-menu-vertical li tt {
+        border-color: initial !important;
+        background-image: inherit;
+        background-color: inherit !important;
+        color: inherit !important;
+    }
+
+    .wy-menu-vertical li span.toctree-expand {
+        color: rgb(183, 177, 168) !important;
+    }
+
+    .wy-menu-vertical li.on a,
+    .wy-menu-vertical li.current > a {
+        color: rgb(192, 186, 178) !important;
+        background-image: initial;
+        background-color: rgb(26, 28, 29) !important;
+        border-color: initial !important;
+    }
+
+    .wy-menu-vertical li.on a:hover,
+    .wy-menu-vertical li.current > a:hover {
+        background-image: initial;
+        background-color: rgb(26, 28, 29) !important;
+    }
+
+    .wy-menu-vertical li.on a:hover span.toctree-expand,
+    .wy-menu-vertical li.current > a:hover span.toctree-expand {
+        color: rgb(152, 143, 129) !important;
+    }
+
+    .wy-menu-vertical li.on a span.toctree-expand,
+    .wy-menu-vertical li.current > a span.toctree-expand {
+        color: rgb(200, 195, 188) !important;
+    }
+
+    .wy-menu-vertical li.toctree-l1.current > a {
+        border-bottom-color: rgb(63, 69, 71) !important;
+        border-top-color: rgb(63, 69, 71) !important;
+    }
+
+    .wy-menu-vertical li.toctree-l2 a,
+    .wy-menu-vertical li.toctree-l3 a,
+    .wy-menu-vertical li.toctree-l4 a {
+        color: rgb(192, 186, 178) !important;
+    }
+
+    .wy-menu-vertical li.toctree-l2.current > a {
+        background-image: initial;
+        background-color: rgb(54, 59, 61) !important;
+    }
+
+    .wy-menu-vertical li.toctree-l2.current li.toctree-l3 > a {
+        background-image: initial;
+        background-color: rgb(54, 59, 61) !important;
+    }
+
+    .wy-menu-vertical li.toctree-l2 a:hover span.toctree-expand {
+        color: rgb(152, 143, 129) !important;
+    }
+
+    .wy-menu-vertical li.toctree-l2 span.toctree-expand {
+        color: rgb(174, 167, 156) !important;
+    }
+
+    .wy-menu-vertical li.toctree-l3.current > a {
+        background-image: initial;
+        background-color: rgb(61, 66, 69) !important;
+    }
+
+    .wy-menu-vertical li.toctree-l3.current li.toctree-l4 > a {
+        background-image: initial;
+        background-color: rgb(61, 66, 69) !important;
+    }
+
+    .wy-menu-vertical li.toctree-l3 a:hover span.toctree-expand {
+        color: rgb(152, 143, 129) !important;
+    }
+
+    .wy-menu-vertical li.toctree-l3 span.toctree-expand {
+        color: rgb(166, 158, 146) !important;
+    }
+
+    .wy-menu-vertical li ul li a {
+        color: rgb(208, 204, 198) !important;
+    }
+
+    .wy-menu-vertical a {
+        color: rgb(208, 204, 198) !important;
+    }
+
+    .wy-menu-vertical a:hover {
+        background-color: rgb(57, 62, 64) !important;
+    }
+
+    .wy-menu-vertical a:hover span.toctree-expand {
+        color: rgb(208, 204, 198) !important;
+    }
+
+    .wy-menu-vertical a:active {
+        background-color: rgb(33, 102, 148) !important;
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .wy-menu-vertical a:active span.toctree-expand {
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .wy-side-nav-search {
+        background-color: rgb(33, 102, 148) !important;
+        color: rgb(230, 228, 225) !important;
+    }
+
+    .wy-side-nav-search input[type="text"] {
+        border-color: rgb(35, 111, 160) !important;
+    }
+
+    .wy-side-nav-search img {
+        background-color: rgb(33, 102, 148) !important;
+    }
+
+    .wy-side-nav-search > a,
+    .wy-side-nav-search .wy-dropdown > a {
+        color: rgb(230, 228, 225) !important;
+    }
+
+    .wy-side-nav-search > a:hover,
+    .wy-side-nav-search .wy-dropdown > a:hover {
+        background-image: initial;
+        background-color: rgba(24, 26, 27, 0.1) !important;
+    }
+
+    .wy-side-nav-search > a img.logo,
+    .wy-side-nav-search .wy-dropdown > a img.logo {
+        background-image: initial;
+        background-color: transparent !important;
+    }
+
+    .wy-side-nav-search > div.version {
+        color: rgba(232, 230, 227, 0.3) !important;
+    }
+
+    .wy-nav .wy-menu-vertical header {
+        color: rgb(84, 164, 217) !important;
+    }
+
+    .wy-nav .wy-menu-vertical a {
+        color: rgb(184, 178, 169) !important;
+    }
+
+    .wy-nav .wy-menu-vertical a:hover {
+        background-color: rgb(33, 102, 148) !important;
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .wy-body-for-nav {
+        background-image: initial;
+        background-color: rgb(26, 28, 29) !important;
+    }
+
+    .wy-nav-side {
+        color: rgb(169, 161, 150) !important;
+        background-image: initial;
+        background-color: rgb(38, 41, 43) !important;
+    }
+
+    .wy-nav-top {
+        background-image: initial;
+        background-color: rgb(33, 102, 148) !important;
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .wy-nav-top a {
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .wy-nav-top img {
+        background-color: rgb(33, 102, 148) !important;
+    }
+
+    .wy-nav-content-wrap {
+        background-image: initial;
+        background-color: rgb(26, 28, 29) !important;
+    }
+
+    .wy-body-mask {
+        background-image: initial;
+        background-color: rgba(0, 0, 0, 0.2) !important;
+    }
+
+    footer {
+        color: rgb(152, 143, 129) !important;
+    }
+
+    footer span.commit code,
+    footer span.commit .rst-content tt,
+    .rst-content footer span.commit tt {
+        background-image: none;
+        background-color: initial !important;
+        border-color: initial !important;
+        color: rgb(152, 143, 129) !important;
+    }
+
+    #search-results .search li {
+        border-bottom-color: rgb(56, 61, 63) !important;
+    }
+
+    #search-results .search li:first-child {
+        border-top-color: rgb(56, 61, 63) !important;
+    }
+
+    #search-results .context {
+        color: rgb(152, 143, 129) !important;
+    }
+
+    .wy-body-for-nav {
+        background-image: initial;
+        background-color: rgb(26, 28, 29) !important;
+    }
+
+    @media screen and (min-width: 1100px) {
+        .wy-nav-content-wrap {
+            background-image: initial;
+            background-color: rgba(0, 0, 0, 0.05) !important;
+        }
+
+        .wy-nav-content {
+            background-image: initial;
+            background-color: rgb(26, 28, 29) !important;
+        }
+    }
+    .rst-versions {
+        color: rgb(230, 228, 225) !important;
+        background-image: initial;
+        background-color: rgb(23, 24, 25) !important;
+    }
+
+    .rst-versions a {
+        color: rgb(84, 164, 217) !important;
+        text-decoration-color: initial !important;
+    }
+
+    .rst-versions .rst-current-version {
+        background-color: rgb(29, 31, 32) !important;
+        color: rgb(92, 218, 145) !important;
+    }
+
+    .rst-versions .rst-current-version .fa,
+    .rst-versions .rst-current-version .wy-menu-vertical li span.toctree-expand,
+    .wy-menu-vertical li .rst-versions .rst-current-version span.toctree-expand,
+    .rst-versions .rst-current-version .rst-content .admonition-title,
+    .rst-content .rst-versions .rst-current-version .admonition-title,
+    .rst-versions .rst-current-version .rst-content h1 .headerlink,
+    .rst-content h1 .rst-versions .rst-current-version .headerlink,
+    .rst-versions .rst-current-version .rst-content h2 .headerlink,
+    .rst-content h2 .rst-versions .rst-current-version .headerlink,
+    .rst-versions .rst-current-version .rst-content h3 .headerlink,
+    .rst-content h3 .rst-versions .rst-current-version .headerlink,
+    .rst-versions .rst-current-version .rst-content h4 .headerlink,
+    .rst-content h4 .rst-versions .rst-current-version .headerlink,
+    .rst-versions .rst-current-version .rst-content h5 .headerlink,
+    .rst-content h5 .rst-versions .rst-current-version .headerlink,
+    .rst-versions .rst-current-version .rst-content h6 .headerlink,
+    .rst-content h6 .rst-versions .rst-current-version .headerlink,
+    .rst-versions .rst-current-version .rst-content dl dt .headerlink,
+    .rst-content dl dt .rst-versions .rst-current-version .headerlink,
+    .rst-versions .rst-current-version .rst-content p.caption .headerlink,
+    .rst-content p.caption .rst-versions .rst-current-version .headerlink,
+    .rst-versions .rst-current-version .rst-content table > caption .headerlink,
+    .rst-content table > caption .rst-versions .rst-current-version .headerlink,
+    .rst-versions .rst-current-version .rst-content .code-block-caption .headerlink,
+    .rst-content .code-block-caption .rst-versions .rst-current-version .headerlink,
+    .rst-versions .rst-current-version .rst-content tt.download span:first-child,
+    .rst-content tt.download .rst-versions .rst-current-version span:first-child,
+    .rst-versions .rst-current-version .rst-content code.download span:first-child,
+    .rst-content code.download .rst-versions .rst-current-version span:first-child,
+    .rst-versions .rst-current-version .icon {
+        color: rgb(230, 228, 225) !important;
+    }
+
+    .rst-versions .rst-current-version.rst-out-of-date {
+        background-color: rgb(162, 33, 20) !important;
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .rst-versions .rst-current-version.rst-active-old-version {
+        background-color: rgb(192, 156, 11) !important;
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .rst-versions .rst-other-versions {
+        color: rgb(152, 143, 129) !important;
+    }
+
+    .rst-versions .rst-other-versions hr {
+        border-right-color: initial !important;
+        border-bottom-color: initial !important;
+        border-left-color: initial !important;
+        border-top-color: rgb(119, 111, 98) !important;
+    }
+
+    .rst-versions .rst-other-versions dd a {
+        color: rgb(230, 228, 225) !important;
+    }
+
+    .rst-versions.rst-badge {
+        border-color: initial !important;
+    }
+
+    .rst-content abbr[title] {
+        text-decoration-color: initial !important;
+    }
+
+    .rst-content.style-external-links a.reference.external::after {
+        color: rgb(184, 178, 169) !important;
+    }
+
+    .rst-content pre.literal-block, .rst-content div[class^="highlight"] {
+        border-color: rgb(56, 61, 63) !important;
+    }
+
+    .rst-content pre.literal-block div[class^="highlight"], .rst-content div[class^="highlight"] div[class^="highlight"] {
+        border-color: initial !important;
+    }
+
+    .rst-content .linenodiv pre {
+        border-right-color: rgb(54, 59, 61) !important;
+    }
+
+    .rst-content .admonition table {
+        border-color: rgba(140, 130, 115, 0.1) !important;
+    }
+
+    .rst-content .admonition table td,
+    .rst-content .admonition table th {
+        background-image: initial !important;
+        background-color: transparent !important;
+        border-color: rgba(140, 130, 115, 0.1) !important;
+    }
+
+    .rst-content .section ol.loweralpha,
+    .rst-content .section ol.loweralpha li {
+        list-style-image: initial;
+    }
+
+    .rst-content .section ol.upperalpha,
+    .rst-content .section ol.upperalpha li {
+        list-style-image: initial;
+    }
+
+    .rst-content .toc-backref {
+        color: rgb(192, 186, 178) !important;
+    }
+
+    .rst-content .sidebar {
+        background-image: initial;
+        background-color: rgb(27, 36, 36) !important;
+        border-color: rgb(56, 61, 63) !important;
+    }
+
+    .rst-content .sidebar .sidebar-title {
+        background-image: initial;
+        background-color: rgb(40, 43, 45) !important;
+    }
+
+    .rst-content .highlighted {
+        background-image: initial;
+        background-color: rgb(192, 156, 11) !important;
+    }
+
+    .rst-content table.docutils.citation,
+    .rst-content table.docutils.footnote {
+        background-image: none;
+        background-color: initial !important;
+        border-color: initial !important;
+        color: rgb(152, 143, 129) !important;
+    }
+
+    .rst-content table.docutils.citation td,
+    .rst-content table.docutils.citation tr,
+    .rst-content table.docutils.footnote td,
+    .rst-content table.docutils.footnote tr {
+        border-color: initial !important;
+        background-color: transparent !important;
+    }
+
+    .rst-content table.docutils.citation tt,
+    .rst-content table.docutils.citation code,
+    .rst-content table.docutils.footnote tt,
+    .rst-content table.docutils.footnote code {
+        color: rgb(178, 172, 162) !important;
+    }
+
+    .rst-content table.docutils th {
+        border-color: rgb(56, 61, 63) !important;
+    }
+
+    .rst-content table.field-list {
+        border-color: initial !important;
+    }
+
+    .rst-content table.field-list td {
+        border-color: initial !important;
+    }
+
+    .rst-content tt,
+    .rst-content tt,
+    .rst-content code {
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .rst-content tt.literal,
+    .rst-content tt.literal,
+    .rst-content code.literal {
+        color: rgb(233, 88, 73) !important;
+    }
+
+    .rst-content tt.xref,
+    a .rst-content tt,
+    .rst-content tt.xref,
+    .rst-content code.xref,
+    a .rst-content tt,
+    a .rst-content code {
+        color: rgb(192, 186, 178) !important;
+    }
+
+    .rst-content a tt,
+    .rst-content a tt,
+    .rst-content a code {
+        color: rgb(84, 164, 217) !important;
+    }
+
+    .rst-content dl:not(.docutils) dt {
+        background-image: initial;
+        background-color: rgb(32, 35, 36) !important;
+        color: rgb(84, 164, 217) !important;
+        border-top-color: rgb(28, 89, 128) !important;
+    }
+
+    .rst-content dl:not(.docutils) dt::before {
+        color: rgb(109, 178, 223) !important;
+    }
+
+    .rst-content dl:not(.docutils) dt .headerlink {
+        color: rgb(192, 186, 178) !important;
+    }
+
+    .rst-content dl:not(.docutils) dl dt {
+        border-top-color: initial !important;
+        border-right-color: initial !important;
+        border-bottom-color: initial !important;
+        border-left-color: rgb(62, 68, 70) !important;
+        background-image: initial;
+        background-color: rgb(32, 35, 37) !important;
+        color: rgb(178, 172, 162) !important;
+    }
+
+    .rst-content dl:not(.docutils) dl dt .headerlink {
+        color: rgb(192, 186, 178) !important;
+    }
+
+    .rst-content dl:not(.docutils) tt.descname,
+    .rst-content dl:not(.docutils) tt.descclassname,
+    .rst-content dl:not(.docutils) tt.descname,
+    .rst-content dl:not(.docutils) code.descname,
+    .rst-content dl:not(.docutils) tt.descclassname,
+    .rst-content dl:not(.docutils) code.descclassname {
+        background-color: transparent !important;
+        border-color: initial !important;
+    }
+
+    .rst-content dl:not(.docutils) .optional {
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .rst-content .viewcode-link,
+    .rst-content .viewcode-back {
+        color: rgb(92, 218, 145) !important;
+    }
+
+    .rst-content tt.download,
+    .rst-content code.download {
+        background-image: inherit;
+        background-color: inherit !important;
+        color: inherit !important;
+        border-color: inherit !important;
+    }
+
+    .rst-content .guilabel {
+        border-color: rgb(27, 84, 122) !important;
+        background-image: initial;
+        background-color: rgb(32, 35, 36) !important;
+    }
+
+    span[id*="MathJax-Span"] {
+        color: rgb(192, 186, 178) !important;
+    }
+
+    .highlight .hll {
+        background-color: rgb(82, 82, 0) !important;
+    }
+
+    .highlight {
+        background-image: initial;
+        background-color: rgba(0, 0, 0, 0.2) !important;
+    }
+
+    .highlight .c {
+        color: rgb(119, 179, 195) !important;
+    }
+
+    .highlight .err {
+        border-color: rgb(179, 0, 0) !important;
+    }
+
+    .highlight .k {
+        color: rgb(126, 255, 163) !important;
+    }
+
+    .highlight .o {
+        color: rgb(168, 160, 149) !important;
+    }
+
+    .highlight .ch {
+        color: rgb(119, 179, 195) !important;
+    }
+
+    .highlight .cm {
+        color: rgb(119, 179, 195) !important;
+    }
+
+    .highlight .cp {
+        color: rgb(126, 255, 163) !important;
+    }
+
+    .highlight .cpf {
+        color: rgb(119, 179, 195) !important;
+    }
+
+    .highlight .c1 {
+        color: rgb(119, 179, 195) !important;
+    }
+
+    .highlight .cs {
+        color: rgb(119, 179, 195) !important;
+        background-color: rgb(60, 0, 0) !important;
+    }
+
+    .highlight .gd {
+        color: rgb(255, 92, 92) !important;
+    }
+
+    .highlight .gr {
+        color: rgb(255, 26, 26) !important;
+    }
+
+    .highlight .gh {
+        color: rgb(127, 174, 255) !important;
+    }
+
+    .highlight .gi {
+        color: rgb(92, 255, 92) !important;
+    }
+
+    .highlight .go {
+        color: rgb(200, 195, 188) !important;
+    }
+
+    .highlight .gp {
+        color: rgb(246, 147, 68) !important;
+    }
+
+    .highlight .gu {
+        color: rgb(255, 114, 255) !important;
+    }
+
+    .highlight .gt {
+        color: rgb(71, 160, 255) !important;
+    }
+
+    .highlight .kc {
+        color: rgb(126, 255, 163) !important;
+    }
+
+    .highlight .kd {
+        color: rgb(126, 255, 163) !important;
+    }
+
+    .highlight .kn {
+        color: rgb(126, 255, 163) !important;
+    }
+
+    .highlight .kp {
+        color: rgb(126, 255, 163) !important;
+    }
+
+    .highlight .kr {
+        color: rgb(126, 255, 163) !important;
+    }
+
+    .highlight .kt {
+        color: rgb(255, 137, 103) !important;
+    }
+
+    .highlight .m {
+        color: rgb(125, 222, 174) !important;
+    }
+
+    .highlight .s {
+        color: rgb(123, 166, 202) !important;
+    }
+
+    .highlight .na {
+        color: rgb(123, 166, 202) !important;
+    }
+
+    .highlight .nb {
+        color: rgb(126, 255, 163) !important;
+    }
+
+    .highlight .nc {
+        color: rgb(81, 194, 242) !important;
+    }
+
+    .highlight .no {
+        color: rgb(103, 177, 215) !important;
+    }
+
+    .highlight .nd {
+        color: rgb(178, 172, 162) !important;
+    }
+
+    .highlight .ni {
+        color: rgb(217, 100, 73) !important;
+    }
+
+    .highlight .ne {
+        color: rgb(126, 255, 163) !important;
+    }
+
+    .highlight .nf {
+        color: rgb(131, 186, 249) !important;
+    }
+
+    .highlight .nl {
+        color: rgb(137, 193, 255) !important;
+    }
+
+    .highlight .nn {
+        color: rgb(81, 194, 242) !important;
+    }
+
+    .highlight .nt {
+        color: rgb(138, 191, 249) !important;
+    }
+
+    .highlight .nv {
+        color: rgb(190, 103, 215) !important;
+    }
+
+    .highlight .ow {
+        color: rgb(126, 255, 163) !important;
+    }
+
+    .highlight .w {
+        color: rgb(189, 183, 175) !important;
+    }
+
+    .highlight .mb {
+        color: rgb(125, 222, 174) !important;
+    }
+
+    .highlight .mf {
+        color: rgb(125, 222, 174) !important;
+    }
+
+    .highlight .mh {
+        color: rgb(125, 222, 174) !important;
+    }
+
+    .highlight .mi {
+        color: rgb(125, 222, 174) !important;
+    }
+
+    .highlight .mo {
+        color: rgb(125, 222, 174) !important;
+    }
+
+    .highlight .sa {
+        color: rgb(123, 166, 202) !important;
+    }
+
+    .highlight .sb {
+        color: rgb(123, 166, 202) !important;
+    }
+
+    .highlight .sc {
+        color: rgb(123, 166, 202) !important;
+    }
+
+    .highlight .dl {
+        color: rgb(123, 166, 202) !important;
+    }
+
+    .highlight .sd {
+        color: rgb(123, 166, 202) !important;
+    }
+
+    .highlight .s2 {
+        color: rgb(123, 166, 202) !important;
+    }
+
+    .highlight .se {
+        color: rgb(123, 166, 202) !important;
+    }
+
+    .highlight .sh {
+        color: rgb(123, 166, 202) !important;
+    }
+
+    .highlight .si {
+        color: rgb(117, 168, 209) !important;
+    }
+
+    .highlight .sx {
+        color: rgb(246, 147, 68) !important;
+    }
+
+    .highlight .sr {
+        color: rgb(133, 182, 224) !important;
+    }
+
+    .highlight .s1 {
+        color: rgb(123, 166, 202) !important;
+    }
+
+    .highlight .ss {
+        color: rgb(188, 230, 128) !important;
+    }
+
+    .highlight .bp {
+        color: rgb(126, 255, 163) !important;
+    }
+
+    .highlight .fm {
+        color: rgb(131, 186, 249) !important;
+    }
+
+    .highlight .vc {
+        color: rgb(190, 103, 215) !important;
+    }
+
+    .highlight .vg {
+        color: rgb(190, 103, 215) !important;
+    }
+
+    .highlight .vi {
+        color: rgb(190, 103, 215) !important;
+    }
+
+    .highlight .vm {
+        color: rgb(190, 103, 215) !important;
+    }
+
+    .highlight .il {
+        color: rgb(125, 222, 174) !important;
+    }
+
+    .rst-other-versions a {
+        border-color: initial !important;
+    }
+
+    .ethical-sidebar .ethical-image-link,
+    .ethical-footer .ethical-image-link {
+        border-color: initial !important;
+    }
+
+    .ethical-sidebar,
+    .ethical-footer {
+        background-color: rgb(34, 36, 38) !important;
+        border-color: rgb(62, 68, 70) !important;
+        color: rgb(226, 223, 219) !important;
+    }
+
+    .ethical-sidebar ul {
+        list-style-image: initial;
+    }
+
+    .ethical-sidebar ul li {
+        background-color: rgb(5, 77, 121) !important;
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .ethical-sidebar a,
+    .ethical-sidebar a:visited,
+    .ethical-sidebar a:hover,
+    .ethical-sidebar a:active,
+    .ethical-footer a,
+    .ethical-footer a:visited,
+    .ethical-footer a:hover,
+    .ethical-footer a:active {
+        color: rgb(226, 223, 219) !important;
+        text-decoration-color: initial !important;
+        border-bottom-color: initial !important;
+    }
+
+    .ethical-callout a {
+        color: rgb(161, 153, 141) !important;
+        text-decoration-color: initial !important;
+    }
+
+    .ethical-fixedfooter {
+        background-color: rgb(34, 36, 38) !important;
+        border-top-color: rgb(66, 72, 74) !important;
+        color: rgb(192, 186, 178) !important;
+    }
+
+    .ethical-fixedfooter .ethical-text::before {
+        background-color: rgb(61, 140, 64) !important;
+        color: rgb(232, 230, 227) !important;
+    }
+
+    .ethical-fixedfooter .ethical-callout {
+        color: rgb(168, 160, 149) !important;
+    }
+
+    .ethical-fixedfooter a,
+    .ethical-fixedfooter a:hover,
+    .ethical-fixedfooter a:active,
+    .ethical-fixedfooter a:visited {
+        color: rgb(192, 186, 178) !important;
+        text-decoration-color: initial !important;
+    }
+
+    .ethical-rtd .ethical-sidebar {
+        color: rgb(184, 178, 169) !important;
+    }
+
+    .ethical-alabaster a.ethical-image-link {
+        border-color: initial !important;
+    }
+
+    .ethical-dark-theme .ethical-sidebar {
+        background-color: rgb(58, 62, 65) !important;
+        border-color: rgb(75, 81, 84) !important;
+        color: rgb(193, 188, 180) !important;
+    }
+
+    .ethical-dark-theme a,
+    .ethical-dark-theme a:visited {
+        color: rgb(216, 213, 208) !important;
+        border-bottom-color: initial !important;
+    }
+
+    .ethical-dark-theme .ethical-callout a {
+        color: rgb(184, 178, 169) !important;
+    }
+
+    .keep-us-sustainable {
+        border-color: rgb(87, 133, 38) !important;
+    }
+
+    .keep-us-sustainable a,
+    .keep-us-sustainable a:hover,
+    .keep-us-sustainable a:visited {
+        text-decoration-color: initial !important;
+    }
+
+    .wy-body-for-nav .keep-us-sustainable {
+        color: rgb(184, 178, 169) !important;
+    }
+
+    .wy-body-for-nav .keep-us-sustainable a {
+        color: rgb(222, 219, 215) !important;
+    }
+}

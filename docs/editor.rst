@@ -85,7 +85,6 @@ ColorCollection
 ---------------
 
 .. autoclass:: ColorCollection
-    :inherited-members:
     :members:
 
 Object

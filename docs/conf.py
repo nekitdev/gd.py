@@ -13,6 +13,8 @@
 import os
 import sys
 
+from sphinx.application import Sphinx
+
 from gd.version import version_info
 
 sys.path.insert(0, os.path.abspath(".."))
@@ -43,6 +45,7 @@ master_doc = "index"
 # General information about the project
 project = "gd.py"
 copyright = "2019-2020, nekitdev"
+author = "nekitdev"
 
 release = str(version_info)
 
@@ -53,7 +56,7 @@ language = "en"
 exclude_patterns = ["build"]
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = "friendly"  # we need to use "monokai" for dark theme I think ~ nekit
+pygments_style = "sphinx"
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -61,3 +64,8 @@ pygments_style = "friendly"  # we need to use "monokai" for dark theme I think ~
 # a list of builtin themes.
 
 html_theme = "sphinx_rtd_theme"
+html_static_path = ["static"]
+
+
+def setup(app: Sphinx) -> None:
+    app.add_css_file("css/dark.css")

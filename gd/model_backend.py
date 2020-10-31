@@ -1052,15 +1052,10 @@ class Model(metaclass=ModelMeta):
         return map_index_to_name(self.DATA, self.INDEX_TO_NAME, allow_missing)
 
     def __copy__(self) -> "Model":
-        cls = self.__class__
-        return cls.with_data(self.DATA)
+        return self.__class__.with_data(self.DATA)
 
     def __deepcopy__(self, memo: Optional[Dict[str, U]] = None) -> "Model":
-        cls = self.__class__
-        return cls.with_data(recurse_copy(self.DATA, memo))
+        return self.__class__.with_data(recurse_copy(self.DATA, memo))
 
-    def copy(self) -> "Model":
-        return self.__copy__()
-
-    def clone(self) -> "Model":
-        return self.__deepcopy__()
+    copy = __copy__
+    clone = __deepcopy__

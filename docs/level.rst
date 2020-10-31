@@ -25,7 +25,7 @@ Level
 Difficulty
 ----------
 
-.. autofunction:: get_difficulty
+.. autofunction:: get_actual_difficulty
 
 Password
 --------

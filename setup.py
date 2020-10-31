@@ -43,7 +43,7 @@ extras_require = {
     "all": [],  # extended afterwards
     "crypto": ["pycryptodome"],
     "console": ["ipython"],
-    "docs": ["sphinx", "sphinx_rtd_theme", "sphinxcontrib_websupport"],
+    "docs": ["sphinx", "sphinx_rtd_theme<0.5.0", "sphinxcontrib_websupport"],
     "image": ["Pillow"],
     "lint": ["black", "flake8", "mypy"],
     "speedups": ["lxml"],
