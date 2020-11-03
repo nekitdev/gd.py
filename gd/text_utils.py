@@ -75,7 +75,6 @@ def make_repr(
     some_object: T,
     info: Optional[Dict[K, V]] = None,
     delim: str = " ",
-    name: Optional[str] = None,
 ) -> str:
     """Create a nice representation of an object.
 
@@ -90,16 +89,12 @@ def make_repr(
     delim: :class:`str`
         Delimiter to split parts of ``info`` with.
 
-    name: Optional[:class:`str`]
-        Name to use in ``repr()``. If not given, ``some_object.__class__.__name__`` is used.
-
     Returns
     -------
     :class:`str`
         ``repr()`` of ``some_object``.
     """
-    if name is None:
-        name = some_object.__class__.__name__
+    name = some_object.__class__.__name__
 
     if not info:
         return f"<{name}>"

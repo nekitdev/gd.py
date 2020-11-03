@@ -52,7 +52,9 @@ from typing import (
     overload,
 )
 
-from typing_extensions import AsyncContextManager, NoReturn, Protocol, runtime_checkable
+from typing_extensions import AsyncContextManager, Literal, NoReturn, Protocol, runtime_checkable
+
+JSON = Union[None, str, bool, int, float, Mapping[str, Any], Sequence[Any]]
 
 __all__ = (
     "AbstractSet",
@@ -76,11 +78,13 @@ __all__ = (
     "Generic",
     "Hashable",
     "IO",
+    "JSON",
     "ItemsView",
     "Iterable",
     "Iterator",
     "KeysView",
     "List",
+    "Literal",
     "Mapping",
     "MappingView",
     "Match",

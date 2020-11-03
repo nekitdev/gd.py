@@ -133,6 +133,8 @@ class Salt(Enum):
     LIKE_RATE = "ysg6pUrtjn0J"
     USER_LEADERBOARD = "xI35fsAapCRg"
     LEVEL_LEADERBOARD = "yPg6pUrtWn0J"
+    QUESTS = "oC36fpYaPtdg"
+    CHESTS = "pC26fpYaQCtg"
     EMPTY = ""
 
     def __init__(self, string: str) -> None:

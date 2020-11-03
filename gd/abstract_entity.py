@@ -146,7 +146,7 @@ class AbstractEntity:
         return self
 
     def detach_client(self: T) -> T:
-        """Detach ``client`` to ``self``.
+        """Detach ``client`` from ``self``.
 
         Same as calling::
 

@@ -9,7 +9,7 @@ import zlib
 from gd.enums import Key, Salt
 from gd.logging import get_logger
 from gd.platform import MACOS
-from gd.typing import AnyStr, List, TypeVar, cast
+from gd.typing import AnyStr, List, TypeVar
 
 __all__ = (
     "AES_KEY",
@@ -35,6 +35,10 @@ __all__ = (
     "encode_save_str",
     "decode_os_save",
     "encode_os_save",
+    "sha1",
+    "sha1_str",
+    "sha1_with_salt",
+    "sha1_str_with_salt",
     "zip_level",
     "unzip_level",
     "zip_level_str",
@@ -399,6 +403,24 @@ else:
     decode_os_save, encode_os_save = decode_save, encode_save
 
 
+def sha1(stream: bytes) -> str:
+    return hashlib.sha1(stream).hexdigest()
+
+
+def sha1_with_salt(stream: bytes, salt: Salt) -> str:
+    return hashlib.sha1(stream + salt.bytes).hexdigest()
+
+
+def sha1_str(string: str) -> str:
+    return hashlib.sha1(string.encode(DEFAULT_ENCODING, DEFAULT_ERRORS)).hexdigest()
+
+
+def sha1_str_with_salt(string: str, salt: Salt) -> str:
+    return hashlib.sha1(
+        (string + salt.string).encode(DEFAULT_ENCODING, DEFAULT_ERRORS)
+    ).hexdigest()
+
+
 def decode_bytes_else_str(value: T) -> str:
     if isinstance(value, bytes):
         return value.decode(DEFAULT_ENCODING, DEFAULT_ERRORS)
@@ -407,13 +429,9 @@ def decode_bytes_else_str(value: T) -> str:
 
 
 def gen_chk(values: List[T], key: Key, salt: Salt) -> str:
-    values.append(cast(T, salt.string))
-
     string = concat(map(decode_bytes_else_str, values))
 
-    return encode_robtop_str(
-        hashlib.sha1(string.encode(DEFAULT_ENCODING, DEFAULT_ERRORS)).hexdigest(), key,
-    )
+    return encode_robtop_str(sha1_str_with_salt(string, salt), key)
 
 
 def zip_level(level_data: bytes) -> bytes:

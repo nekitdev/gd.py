@@ -348,6 +348,12 @@ class BaseField:
     def aliases(self) -> Tuple[str]:
         return self._aliases
 
+    def deserialize(self, value: U) -> T:
+        return self.de(value)
+
+    def serialize(self, value: T) -> U:
+        return self.ser(value)
+
 
 class Field(BaseField):
     def __init__(

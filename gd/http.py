@@ -63,6 +63,7 @@ from gd.typing import (
     Any,
     Dict,
     Iterable,
+    JSON,
     Mapping,
     Optional,
     Set,
@@ -103,7 +104,7 @@ CONNECT = "CONNECT"
 OPTIONS = "OPTIONS"
 TRACE = "TRACE"
 
-ResponseData = Union[bytes, str, Mapping[Any, Any]]
+ResponseData = Union[bytes, str, JSON]
 
 COMMENT_TO_ADD = 1 << 31
 
@@ -1804,7 +1805,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJGauntlets21.php",
+            "/database/getGJMapPacks21.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
