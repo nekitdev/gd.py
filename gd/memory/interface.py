@@ -777,6 +777,19 @@ class Address:
     def __bool__(self) -> bool:
         return bool(self.address)
 
+    def offset(self: AddressT, *offsets) -> AddressT:
+        offset_iter = iter(offsets)
+
+        address = self
+
+        if offsets:
+            address = address.add(next(offset_iter))
+
+        for offset in offset_iter:
+            address = address.follow_and_add(offset)
+
+        return address
+
     def is_null(self) -> bool:
         return not self.address
 
