@@ -57,7 +57,7 @@ for requires in extras_require.values():
 setup(
     name="gd.py",
     author="nekitdev",
-    author_email="gdpy13@gmail.com",
+    author_email="nekitdevofficial@gmail.com",
     url="https://github.com/nekitdev/gd.py",
     project_urls={
         "Documentation": "https://gdpy.readthedocs.io/en/latest",
