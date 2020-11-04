@@ -15,9 +15,10 @@ from gd.decorators import cache_by
 from gd.json import NamedDict
 from gd.logging import get_logger
 from gd.text_utils import make_repr
-from gd.typing import Any, Callable, Dict, Optional, TypeVar, Union
+from gd.typing import Any, Callable, Dict, Iterator, Optional, TypeVar, Union
 
 from gd.image.geometry import Point, Size, Rectangle
+from gd.image.metadata import Metadata
 from gd.image.sprite import Sprite
 
 log = get_logger(__name__)
@@ -28,6 +29,29 @@ PathLike = Union[Path, str]
 
 DEFAULT_IMAGE_SUFFIX = ".png"
 DEFAULT_PLIST_SUFFIX = ".plist"
+
+remove_braces = str.maketrans({"{": "", "}": ""})
+delimiter = ","
+
+
+def simple_array_parse(string: str, function: Callable[[str], T]) -> Iterator[T]:
+    yield from map(function, string.translate(remove_braces).split(delimiter))
+
+
+def get_metadata(metadata_dict: NamedDict[str, Any]) -> Metadata:
+    format = metadata_dict.format
+    pixel_format = metadata_dict.pixelFormat
+    premultiply_alpha = bool(metadata_dict.premultiplyAlpha)
+    file_name = metadata_dict.textureFileName
+    (width, height) = simple_array_parse(metadata_dict.size, float)
+
+    return Metadata(
+        format=format,
+        pixel_format=pixel_format,
+        premultiply_alpha=premultiply_alpha,
+        file_name=file_name,
+        size=Size(width, height),
+    )
 
 
 def get_sprite_format_0(sprite_dict: NamedDict[str, Any], name: str) -> Sprite:
@@ -50,15 +74,52 @@ def get_sprite_format_0(sprite_dict: NamedDict[str, Any], name: str) -> Sprite:
 
 
 def get_sprite_format_1(sprite_dict: NamedDict[str, Any], name: str) -> Sprite:
-    ...
+    (x, y, width, height) = simple_array_parse(sprite_dict.frame, float)
+    (offset_x, offset_y) = simple_array_parse(sprite_dict.offset, float)
+    (source_width, source_height) = simple_array_parse(sprite_dict.sourceSize, float)
+
+    return Sprite(
+        name=name,
+        relative_offset=Point(offset_x, offset_y),
+        size=Size(width, height),
+        source_size=Size(source_width, source_height),
+        rectangle=Rectangle(Point(x, y), Size(width, height)),
+    )
 
 
 def get_sprite_format_2(sprite_dict: NamedDict[str, Any], name: str) -> Sprite:
-    ...
+    (x, y, width, height) = simple_array_parse(sprite_dict.frame, float)
+    (offset_x, offset_y) = simple_array_parse(sprite_dict.offset, float)
+    (source_width, source_height) = simple_array_parse(sprite_dict.sourceSize, float)
+    rotated = bool(sprite_dict.rotated)
+
+    return Sprite(
+        name=name,
+        relative_offset=Point(offset_x, offset_y),
+        size=Size(width, height),
+        source_size=Size(source_width, source_height),
+        rectangle=Rectangle(Point(x, y), Size(width, height)),
+        rotated=rotated,
+    )
 
 
 def get_sprite_format_3(sprite_dict: NamedDict[str, Any], name: str) -> Sprite:
-    ...
+    (width, height) = simple_array_parse(sprite_dict.spriteSize, float)
+    (offset_x, offset_y) = simple_array_parse(sprite_dict.spriteOffset, float)
+    (source_width, source_height) = simple_array_parse(sprite_dict.spriteSourceSize, float)
+    (x, y, real_width, real_height) = simple_array_parse(sprite_dict.textureRect, float)
+    rotated = bool(sprite_dict.textureRotated)
+    aliases = set(sprite_dict.aliases)
+
+    return Sprite(
+        name=name,
+        aliases=aliases,
+        relative_offset=Point(offset_x, offset_y),
+        size=Size(width, height),
+        source_size=Size(source_width, source_height),
+        rectangle=Rectangle(Point(x, y), Size(real_width, real_height)),
+        rotated=rotated,
+    )
 
 
 get_sprite_format: Dict[int, Callable[[NamedDict[str, Any], str], Sprite]] = {
@@ -96,9 +157,30 @@ class Sheet:
         return make_repr(self, info)
 
     @property  # type: ignore
-    @cache_by("image_path", "sheet_path", "loaded")
-    def sheet(self) -> Dict[str, Sprite]:
-        ...
+    @cache_by("plist_path", "loaded")
+    def metadata(self) -> Metadata:
+        self.assure_loaded()
+
+        return get_metadata(self.plist.metadata)
+
+    @property  # type: ignore
+    @cache_by("image_path", "plist_path", "loaded")
+    def sprites(self) -> Dict[str, Sprite]:
+        self.assure_loaded()
+
+        format = self.metadata.format
+
+        get_sprite: Optional[
+            Callable[[NamedDict[str, Any], str], Sprite]
+        ] = get_sprite_format.get(format)
+
+        if get_sprite is None:
+            raise LookupError(f"Do not know how to parse sprite plist format {format!r}.")
+
+        return {
+            name: get_sprite(sprite_dict, name).attach_sheet(self)
+            for name, sprite_dict in self.plist.frames.items()
+        }
 
     def get_image(self) -> "PIL.Image.Image":
         result = self.image_unchecked
@@ -147,9 +229,7 @@ class Sheet:
             self.image = PIL.Image.open(self.image_path)
 
             with open(self.plist_path, "rb") as plist_file:
-                self.plist = plistlib.load(  # do not convert right away
-                    plist_file, use_builtin_types=False, dict_type=NamedDict
-                )
+                self.plist = plistlib.load(plist_file, dict_type=NamedDict)
 
             self.image.load()
 

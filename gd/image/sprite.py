@@ -1,5 +1,11 @@
 from attr import attrib, dataclass
 
+try:
+    import PIL.Image  # type: ignore
+
+except ImportError:
+    pass
+
 from gd.typing import Optional, Set, TypeVar, TYPE_CHECKING
 
 from gd.image.geometry import Point, Size, Rectangle
@@ -105,3 +111,15 @@ class Sprite:
             copy_level=self.next_copy_level,
             sheet_unchecked=self.sheet_unchecked,
         )
+
+    def get_image(self) -> "PIL.Image.Image":
+        (x, y), (width, height) = self.rectangle.as_tuple()
+
+        image = self.sheet.image.crop((x, y, x + width, y + height))
+
+        if self.is_rotated():
+            image = image.rotate(90, resample=PIL.Image.BICUBIC, expand=True)
+
+        return image
+
+    image = property(get_image)

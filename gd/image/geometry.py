@@ -1,6 +1,6 @@
 from attr import attrib, dataclass
 
-from typing import Any, Dict, Optional, TypeVar
+from typing import Any, Dict, Optional, Tuple, TypeVar
 
 __all__ = ("Point", "Size", "Rectangle")
 
@@ -43,6 +43,12 @@ class Point:
 
     def __floordiv__(self: P, other: Any) -> P:
         return self.__class__(self.x // other, self.y // other)
+
+    __radd__ = __add__
+    __rsub__ = __sub__
+    __rmul__ = __mul__
+    __rtruediv__ = __truediv__
+    __rfloordiv__ = __floordiv__
 
     def __iadd__(self: P, other: Any) -> P:
         if isinstance(other, self.__class__):
@@ -96,6 +102,9 @@ class Point:
 
         return self
 
+    def as_tuple(self) -> Tuple[float, float]:
+        return (self.x, self.y)
+
 
 @dataclass
 class Size:
@@ -147,6 +156,9 @@ class Size:
         self.height //= other
 
         return self
+
+    def as_tuple(self) -> Tuple[float, float]:
+        return (self.width, self.height)
 
 
 @dataclass
@@ -230,3 +242,6 @@ class Rectangle:
     @property
     def lower_right(self) -> Point:
         return self.origin.__class__(self.max_x, self.max_y)
+
+    def as_tuple(self) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+        return ((self.x, self.y), (self.width, self.height))
