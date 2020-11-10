@@ -612,6 +612,7 @@ class LevelAPI(Model):
     timely_id: int = BaseField(index="k74", de=int, ser=int)
     unlisted: bool = BaseField(index="k79", de=bool, ser=bool)
     editor_seconds: int = BaseField(index="k80", de=int, ser=int)
+    copies_seconds: int = BaseField(index="k81", de=int, ser=int)
     folder: int = BaseField(index="k84", de=int, ser=int)
 
     x: float = BaseField(index="kI1", de=float, ser=float)

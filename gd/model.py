@@ -98,7 +98,7 @@ class SongModel(Model):
     size: float = FloatField(index=5, default=0.0)
     youtube_video_id: str = StrField(index=6, default="")
     youtube_channel_id: str = StrField(index=7, default="")
-    index_9: int = IntField(index=9, default=0)
+    index_8: str = StrField(index=8, default="")
     download_link: str = URLField(index=10, default="")
 
 
@@ -297,8 +297,8 @@ class LevelModel(Model):
     epic: bool = BoolField(index=42, default=False)
     demon_difficulty: int = IntField(index=43, default=0)
     object_count: int = IntField(index=45, default=0)
-    index_46: str = StrField(index=46, default="")
-    index_47: str = StrField(index=47, default="")
+    editor_seconds: int = Field(index=46, de=attempt(int, 0), ser=str, default=0)
+    copies_seconds: int = Field(index=47, de=attempt(int, 0), ser=str, default=0)
 
     def is_auto(self) -> bool:
         return self.auto
