@@ -422,9 +422,9 @@ class HTTPClient:
             finally:
                 await asyncio.sleep(0)  # let underlying connections close
 
-                await self.call_after_request_hook()
-
             attempt_left -= 1
+
+        await self.call_after_request_hook()
 
         if error:
             raise error
