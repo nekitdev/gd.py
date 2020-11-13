@@ -8,7 +8,7 @@ import uuid
 import aiohttp
 from yarl import URL
 
-from gd.async_utils import acquire_loop, shutdown_loop
+from gd.async_utils import acquire_loop, maybe_coroutine, shutdown_loop
 from gd.converters import GameVersion, Password, Version
 from gd.crypto import (
     Key,
@@ -61,6 +61,8 @@ from gd.text_utils import (
 )
 from gd.typing import (
     Any,
+    Awaitable,
+    Callable,
     Dict,
     Iterable,
     JSON,
@@ -68,6 +70,7 @@ from gd.typing import (
     Optional,
     Set,
     Type,
+    TypeVar,
     Union,
     cast,
 )
@@ -104,6 +107,9 @@ CONNECT = "CONNECT"
 OPTIONS = "OPTIONS"
 TRACE = "TRACE"
 
+T = TypeVar("T")
+
+RequestHook = Callable[["HTTPClient"], Union[T, Awaitable[T]]]
 ResponseData = Union[bytes, str, JSON]
 
 COMMENT_TO_ADD = 1 << 31
@@ -245,6 +251,9 @@ class HTTPClient:
         self.forwarded_for = forwarded_for
         self.use_user_agent = use_user_agent
 
+        self._before_request: Optional[RequestHook] = None
+        self._after_request: Optional[RequestHook] = None
+
         CLIENTS.add(self)
 
     def __repr__(self) -> str:
@@ -271,6 +280,28 @@ class HTTPClient:
     def create_timeout(self) -> aiohttp.ClientTimeout:
         return aiohttp.ClientTimeout(total=self.timeout)
 
+    def before_request(self, request_hook: RequestHook) -> RequestHook:
+        self._before_request = request_hook
+
+        return request_hook
+
+    def after_request(self, request_hook: RequestHook) -> RequestHook:
+        self._after_request = request_hook
+
+        return request_hook
+
+    async def call_before_request_hook(self) -> Optional[T]:
+        if self._before_request:
+            return await maybe_coroutine(self._before_request, self)
+
+        return None
+
+    async def call_after_request_hook(self) -> Optional[T]:
+        if self._after_request:
+            return await maybe_coroutine(self._after_request, self)
+
+        return None
+
     async def close(self) -> None:
         if self.session is not None:
             await self.session.close()
@@ -291,7 +322,7 @@ class HTTPClient:
 
             self.session = await self.create_session()
 
-    async def request(
+    async def request_route(
         self,
         route: Route,
         raw: bool = False,
@@ -309,9 +340,9 @@ class HTTPClient:
 
         args["params" if route.are_params else "data"] = route.parameters
 
-        return await self.fetch(**args)  # type: ignore
+        return await self.request(**args)  # type: ignore
 
-    async def fetch(
+    async def request(
         self,
         method: str,
         url: Union[str, URL],
@@ -325,6 +356,8 @@ class HTTPClient:
         retries: int = 2,
     ) -> Optional[ResponseData]:
         await self.ensure_session()
+
+        await self.call_before_request_hook()
 
         if retries < 0:
             attempt_left = -1
@@ -389,6 +422,8 @@ class HTTPClient:
             finally:
                 await asyncio.sleep(0)  # let underlying connections close
 
+                await self.call_after_request_hook()
+
             attempt_left -= 1
 
         if error:
@@ -426,7 +461,7 @@ class HTTPClient:
         start = time.perf_counter()
 
         try:
-            await self.fetch(GET, url, read=False)
+            await self.request(GET, url, read=False)
 
         except Exception:  # noqa
             pass
@@ -454,7 +489,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -475,7 +510,7 @@ class HTTPClient:
 
         base_url = await self.get_account_url(account_id, type=AccountURLType.LOAD)  # type: ignore
 
-        response = await self.request(route, error_codes=error_codes, base_url=base_url)
+        response = await self.request_route(route, error_codes=error_codes, base_url=base_url)
 
         return cast(str, response)
 
@@ -502,7 +537,7 @@ class HTTPClient:
 
         base_url = await self.get_account_url(account_id, type=AccountURLType.SAVE)  # type: ignore
 
-        response = await self.request(route, error_codes=error_codes, base_url=base_url)
+        response = await self.request_route(route, error_codes=error_codes, base_url=base_url)
 
         return int_or(cast(str, response), 0)
 
@@ -522,7 +557,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -541,7 +576,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -574,7 +609,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -667,7 +702,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -687,7 +722,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -716,7 +751,7 @@ class HTTPClient:
         if client_account_id is not None and encoded_password is not None:
             route.update(account_id=client_account_id, gjp=encoded_password, to_camel=True)
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -741,7 +776,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -775,7 +810,7 @@ class HTTPClient:
 
             route.update(account_id=account_id, gjp=encoded_password, to_camel=True)
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -845,7 +880,7 @@ class HTTPClient:
 
                 route.update(account_id=client_account_id, gjp=encoded_password)
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -863,7 +898,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -909,7 +944,7 @@ class HTTPClient:
                 to_camel=True,
             )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -918,7 +953,7 @@ class HTTPClient:
 
         route = Route(POST, "/database/reportGJLevel.php", level_id=level_id, to_camel=True)
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -938,7 +973,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -960,7 +995,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -1059,7 +1094,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -1095,7 +1130,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -1130,7 +1165,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -1157,7 +1192,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -1235,7 +1270,7 @@ class HTTPClient:
         #     chk=chk,
         # )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -1267,7 +1302,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -1291,7 +1326,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -1329,7 +1364,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -1354,7 +1389,7 @@ class HTTPClient:
         if type is MessageType.SENT:
             route.update(is_sender=1, to_camel=True)
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -1379,7 +1414,7 @@ class HTTPClient:
         if type is MessageType.SENT:
             route.update(is_sender=1, to_camel=True)
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -1408,7 +1443,7 @@ class HTTPClient:
         if type is MessageType.SENT:
             route.update(get_sent=1, to_camel=True)
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -1441,7 +1476,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         if not response:
             return 1
@@ -1478,7 +1513,7 @@ class HTTPClient:
         if type is FriendRequestType.SENT:
             route.update(is_sender=1, to_camel=True)
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -1514,7 +1549,7 @@ class HTTPClient:
         if type is FriendRequestType.SENT:
             route.update(is_sender=1, to_camel=True)
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -1536,7 +1571,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -1565,7 +1600,7 @@ class HTTPClient:
         if type is FriendRequestType.SENT:
             route.update(get_sent=1, to_camel=True)
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -1619,7 +1654,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -1671,7 +1706,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -1707,7 +1742,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(cast(str, response), 0)
 
@@ -1749,7 +1784,7 @@ class HTTPClient:
         else:
             route.update(account_id=account_id, to_camel=True)
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -1779,7 +1814,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -1796,7 +1831,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -1814,7 +1849,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -1841,7 +1876,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -1879,7 +1914,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -1898,7 +1933,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
@@ -1919,12 +1954,12 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
     async def get_ng_song(self, song_id: int) -> str:
-        response = await self.fetch(GET, NEWGROUNDS_SONG_LISTEN.format(song_id=song_id))
+        response = await self.request(GET, NEWGROUNDS_SONG_LISTEN.format(song_id=song_id))
         return cast(str, response).replace("\\", "")
 
     async def get_artist_info(self, song_id: int) -> str:
@@ -1934,26 +1969,26 @@ class HTTPClient:
             GET, "/database/testSong.php", song_id=song_id, are_params=True, to_camel=True,
         )
 
-        response = await self.request(route, error_codes=error_codes)
+        response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
     async def search_ng_songs_on_page(self, query: str, page: int = 0) -> str:
-        response = await self.fetch(
+        response = await self.request(
             GET, NEWGROUNDS_SEARCH.format(type="audio"), params=dict(terms=query, page=page + 1),
         )
 
         return cast(str, response)
 
     async def search_ng_users_on_page(self, query: str, page: int = 0) -> str:
-        response = await self.fetch(
+        response = await self.request(
             GET, NEWGROUNDS_SEARCH.format(type="users"), params=dict(terms=query, page=page + 1),
         )
 
         return cast(str, response)
 
     async def get_ng_user_songs_on_page(self, name: str, page: int = 0) -> Mapping[str, Any]:
-        response = await self.fetch(
+        response = await self.request(
             GET,
             NEWGROUNDS_SONG_PAGE.format(name=name, page=page + 1),
             json=True,

@@ -9,9 +9,7 @@ try:
 except ImportError:
     pass
 
-# from gd.color import Color, COLOR_1, COLOR_2
 from gd.decorators import cache_by
-# from gd.enums import IconType
 from gd.json import NamedDict
 from gd.logging import get_logger
 from gd.text_utils import make_repr
@@ -259,7 +257,8 @@ class Sheet:
         path: PathLike,
         image_suffix: str = DEFAULT_IMAGE_SUFFIX,
         plist_suffix: str = DEFAULT_PLIST_SUFFIX,
+        load: bool = True,
     ) -> "Sheet":
         path = Path(path)
 
-        return cls(path.with_suffix(image_suffix), path.with_suffix(plist_suffix))
+        return cls(path.with_suffix(image_suffix), path.with_suffix(plist_suffix), load=load)
