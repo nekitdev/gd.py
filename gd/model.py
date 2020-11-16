@@ -132,7 +132,7 @@ class SearchUserModel(Model):
     id: int = IntField(index=2, default=0)
     stars: int = IntField(index=3, default=0)
     demons: int = IntField(index=4, default=0)
-    index_6: str = StrField(index=6, default="")  # ideally, user leaderboard place, but empty str
+    place: int = Field(index=6, de=attempt(int, 0), ser=str, default=0)
     cp: int = IntField(index=8, default=0)
     icon_id: int = IntField(index=9, default=0)
     color_1_id: int = IntField(index=10, default=0)

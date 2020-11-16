@@ -190,7 +190,7 @@ class Filters:
 
         if self.song_id is not None:
             parameters["song"] = self.song_id
-            parameters["is_custom"] = int(self.use_custom_song)
+            parameters["custom_song"] = int(self.use_custom_song)
 
         return parameters
 
