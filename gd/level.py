@@ -29,6 +29,7 @@ from gd.typing import (
     Dict,
     Iterable,
     Optional,
+    Type,
     Union,
     TYPE_CHECKING,
     cast,
@@ -147,6 +148,8 @@ class Level(AbstractEntity):
             low_detail_mode=model.low_detail_mode,
             epic=model.epic,
             object_count=model.object_count,
+            editor_seconds=model.editor_seconds,
+            copies_seconds=model.copies_seconds,
             timely_id=(timely_id if timely_id > 0 else model.timely_id),
             type=type,
             cooldown=cooldown,
@@ -360,6 +363,14 @@ class Level(AbstractEntity):
         """:class:`int`: Represents a cooldown until next timely. If not timely, equals ``-1``."""
         return self.options.get("cooldown", -1)
 
+    @property
+    def editor_seconds(self) -> int:
+        return self.options.get("editor_seconds", 0)
+
+    @property
+    def copies_seconds(self) -> int:
+        return self.options.get("copies_seconds", 0)
+
     def get_unprocessed_data(self) -> str:
         return self.options.get("unprocessed_data", "")
 
@@ -429,6 +440,9 @@ class Level(AbstractEntity):
     def has_low_detail_mode(self) -> bool:
         return bool(self.options.get("low_detail_mode"))
 
+    def has_two_player(self) -> bool:
+        return bool(self.options.get("two_player"))
+
     def open_editor(self) -> Editor:
         return Editor.load_from(self, "data")
 
@@ -468,7 +482,7 @@ class Level(AbstractEntity):
         :exc:`~gd.HTTPError`
             Failed to process the request.
         """
-        track, song_id = (0, self.song.id) if self.song.is_custom() else (self.song.id, 0)
+        track_id, song_id = (0, self.song.id) if self.song.is_custom() else (self.song.id, 0)
 
         client = self.client_unchecked
 
@@ -486,20 +500,22 @@ class Level(AbstractEntity):
             id=self.id,
             version=self.version,
             length=abs(self.length.value),
-            track=track,
+            track_id=track_id,
             song_id=song_id,
-            two_player=False,
+            two_player=self.has_two_player(),
             is_auto=self.is_auto(),
             original=self.original_id,
             objects=self.objects,
             coins=self.coins,
-            star_amount=self.stars,
+            stars=self.stars,
             unlisted=False,
             friends_only=False,
-            ldm=False,
+            low_detail_mode=self.has_low_detail_mode(),
             password=self.password,
             copyable=self.is_copyable(),
             description=self.description,
+            editor_seconds=self.editor_seconds,
+            copies_seconds=self.copies_seconds,
             data=self.data,
         )
 
@@ -882,7 +898,11 @@ class OfficialLevel:
         return self.song_id - 1 if server_style else self.song_id  # assume non-server by default
 
     def into_level(
-        self, client: Optional["Client"] = None, get_data: bool = True, server_style: bool = False,
+        self,
+        client: Optional["Client"] = None,
+        get_data: bool = True,
+        server_style: bool = False,
+        cls: Type[Level] = Level,
     ) -> Level:
         """Convert :class:`~gd.OfficialLevel` dataclass into :class:`~gd.Level`.
 
@@ -919,38 +939,42 @@ class OfficialLevel:
         else:
             unprocessed_data = ""
 
-        return Level(
+        return cls(
             id=self.level_id,
             name=self.name,
             description=f"Official Level: {self.name}",
+            unprocessed_data=unprocessed_data,
             version=1,
             creator=User(name="RobTop", id=16, account_id=71, client=client),
             song=Song.official(
                 self.get_song_id(server_style), client=client, server_style=server_style
             ),
+            downloads=0,
             game_version=self.game_version,
-            unprocessed_data=unprocessed_data,
+            rating=0,
+            length=LevelLength.from_name(self.length),
+            demon=self.is_demon(),
+            stars=self.stars,
+            score=1,
+            auto=self.is_auto(),
             password=None,
             copyable=False,
-            demon=self.is_demon(),
-            auto=self.is_auto(),
             difficulty=difficulty,
-            stars=self.stars,
+            uploaded_at=None,
+            updated_at=None,
+            original_id=0,
+            two_player=False,
+            extra_string="",
             coins=self.coins,
             verified_coins=True,
-            epic=False,
-            original_id=0,
+            requested_stars=self.stars,
             low_detail_mode=False,
-            downloads=0,
-            rating=0,
-            score=1,
-            uploaded_timestamp="unknown",
-            last_updated_timestamp="unknown",
-            length=LevelLength.from_name(self.length),
-            stars_requested=self.stars,
+            epic=False,
             object_count=0,
-            type=TimelyType.NOT_TIMELY,
+            editor_seconds=0,
+            copies_seconds=0,
             timely_id=-1,
+            type=TimelyType.NOT_TIMELY,
             cooldown=-1,
             client=client,
         )

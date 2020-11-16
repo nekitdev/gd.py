@@ -1,7 +1,7 @@
 from gd.abstract_entity import AbstractEntity
 from gd.async_iter import async_iterable
 from gd.async_utils import run_blocking
-from gd.color import Color
+from gd.color import Color, COLOR_1, COLOR_2
 from gd.datetime import datetime
 from gd.enums import (
     CommentState,
@@ -25,7 +25,7 @@ from gd.model import (  # type: ignore
     SearchUserModel,
 )
 from gd.text_utils import make_repr
-from gd.typing import AsyncIterator, Iterable, Optional, Union, TYPE_CHECKING
+from gd.typing import Any, AsyncIterator, Dict, Iterable, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import PIL.Image  # type: ignore  # noqa
@@ -49,6 +49,16 @@ class User(AbstractEntity):
 
     def __str__(self) -> str:
         return str(self.name)
+
+    def __json__(self, ignore: Optional[Iterable[str]] = None) -> Dict[str, Any]:
+        return dict(
+            super().__json__(ignore=ignore),
+            youtube_link=self.youtube_link,
+            twitter_link=self.twitter_link,
+            twitch_link=self.twitch_link,
+            color_1=self.color_1,
+            color_2=self.color_2,
+        )
 
     @classmethod
     def from_model(  # type: ignore
@@ -205,6 +215,15 @@ class User(AbstractEntity):
         return self.role >= Role.from_value(role)
 
     @property
+    def banned(self) -> bool:
+        """:class:`bool`: Indicates whether the user is banned."""
+        return bool(self.options.get("banned"))
+
+    def is_banned(self) -> bool:
+        """Indicates whether the user is banned."""
+        return self.banned
+
+    @property
     def percent(self) -> int:
         """:class:`int`: Record percentage. ``-1`` if not in the level leaderboard."""
         return self.options.get("percent", -1)
@@ -279,12 +298,12 @@ class User(AbstractEntity):
     @property
     def color_1(self) -> Color:
         """:class:`~gd.Color`: User's primary color."""
-        return Color.with_id(self.color_1_id)
+        return Color.with_id(self.color_1_id, default=COLOR_1)
 
     @property
     def color_2(self) -> Color:
         """:class:`~gd.Color`: User's secondary color."""
-        return Color.with_id(self.color_2_id)
+        return Color.with_id(self.color_2_id, default=COLOR_2)
 
     def has_glow(self) -> bool:
         """Whether the user has glow outline enabled."""

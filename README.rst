@@ -75,6 +75,7 @@ There are many dependencies that either extend functionality of the library or a
 - ``docs`` are used to build docs;
 - ``image`` installs PIL/Pillow for icon generating;
 - ``lint`` adds formatters and linters to check improve code style;
+- ``server`` is used for creating REST API around the library;
 - ``speedups`` provides packages to speed the library up;
 - ``test`` is required to run tests and check coverage.
 
@@ -136,7 +137,7 @@ Credits
 
 Thanks to `Alex1304 <https://github.com/Alex1304>`_ for inspiring the creation of this library.
 
-Credits to `Rapptz <https://github.com/Rapptz>`_ and `discord.py <https://github.com/Rapptz/discord.py>`_ library developers; `tasks <https://github.com/Rapptz/discord.py/blob/master/discord/ext/tasks>`_ package in discord.py is a base for `tasks.py <https://github.com/nekitdev/gd.py/blob/master/gd/utils/tasks.py>`_ file.
+Credits to `Rapptz <https://github.com/Rapptz>`_ and `discord.py <https://github.com/Rapptz/discord.py>`_ library developers; `tasks <https://github.com/Rapptz/discord.py/blob/master/discord/ext/tasks>`_ package in discord.py is a base for `gd.tasks <https://github.com/nekitdev/gd.py/blob/master/gd/tasks.py>`_ module.
 
 Authors
 -------
@@ -144,7 +145,7 @@ Authors
 This project is mainly developed by `nekitdev <https://github.com/nekitdev>`_.
 Big thanks to `cos8o <https://github.com/cos8o>`_ and `SMJS <https://github.com/SMJSGaming>`_ for helping
 to make several requests. Also thanks to `cos8o <https://github.com/cos8o>`_ again for developing `GDCrypto <https://github.com/cos8o/GDCrypto>`_ library,
-which was used as a base for `crypto <https://github.com/nekitdev/gd.py/blob/master/gd/utils/crypto>`_ package.
+which was used as a base for `gd.crypto <https://github.com/nekitdev/gd.py/blob/master/gd/crypto.py>`_ module.
 
 Links
 -----

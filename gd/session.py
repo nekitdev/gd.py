@@ -272,7 +272,7 @@ class Session:
     async def upload_level(
         self,
         name: str = "Unnamed",
-        level_id: int = 0,
+        id: int = 0,
         version: int = 1,
         length: LevelLength = LevelLength.TINY,  # type: ignore
         track_id: int = 0,
@@ -290,6 +290,8 @@ class Session:
         password: Optional[Union[int, str]] = None,
         copyable: bool = False,
         recording: Iterable[RecordEntry] = (),
+        editor_seconds: int = 0,
+        copies_seconds: int = 0,
         data: str = "",
         *,
         account_id: int,
@@ -298,7 +300,7 @@ class Session:
     ) -> int:
         return await self.http.upload_level(
             name=name,
-            level_id=level_id,
+            id=id,
             version=version,
             length=length,
             track_id=track_id,
@@ -316,6 +318,8 @@ class Session:
             password=password,
             copyable=copyable,
             recording=recording,
+            editor_seconds=editor_seconds,
+            copies_seconds=copies_seconds,
             data=data,
             account_id=account_id,
             account_name=account_name,

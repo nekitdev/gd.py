@@ -217,6 +217,11 @@ class ProfileUserModel(Model):
     role: Role = EnumField(index=49, enum_type=Role, from_field=IntField)
     comments_state: CommentState = EnumField(index=50, enum_type=CommentState, from_field=IntField)
 
+    def to_dict(self) -> Dict[str, T]:
+        result = super().to_dict()
+        result.update(banned=self.banned)
+        return result
+
     @property
     def banned(self) -> bool:
         return not self.not_banned
@@ -473,6 +478,11 @@ class FriendRequestModel(Model):
     created_at: datetime = RobTopTimeField(index=37)
     unread: bool = BoolField(index=41, false="", true="1", default=True)
 
+    def to_dict(self) -> Dict[str, T]:
+        result = super().to_dict()
+        result.update(read=self.read)
+        return result
+
     @property
     def read(self) -> bool:
         return not self.unread
@@ -501,6 +511,11 @@ class MessageModel(Model):
     created_at: datetime = RobTopTimeField(index=7)
     read: bool = BoolField(index=8, default=False)
     sent: bool = BoolField(index=9, default=False)
+
+    def to_dict(self) -> Dict[str, T]:
+        result = super().to_dict()
+        result.update(unread=self.unread)
+        return result
 
     @property
     def unread(self) -> bool:
@@ -541,6 +556,11 @@ class MapPackModel(Model):
     color: Color = ColorField(index=7, factory=lambda: Color(0xFFFFFF))
     other_color: Color = ColorField(index=8, factory=lambda: Color(0xFFFFFF))
 
+    def to_dict(self) -> Dict[str, T]:
+        result = super().to_dict()
+        result.update(difficulty=self.difficulty)
+        return result
+
     @property
     def difficulty(self) -> LevelDifficulty:
         return value_to_level_difficulty(self.level_difficulty)
@@ -579,6 +599,11 @@ class TimelyInfoModel(Model):
 
     real_timely_id: int = IntField(index=0, default=0)
     cooldown: int = IntField(index=1, default=0)
+
+    def to_dict(self) -> Dict[str, T]:
+        result = super().to_dict()
+        result.update(timely_id=self.timely_id, type=self.type)
+        return result
 
     @property
     def timely_id(self) -> int:

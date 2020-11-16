@@ -46,8 +46,9 @@ extras_require = {
     "docs": ["sphinx", "sphinx_rtd_theme<0.5.0", "sphinxcontrib_websupport"],
     "image": ["Pillow"],
     "lint": ["black", "flake8", "mypy"],
+    "server": ["aiohttp_apispec", "aiohttp_remotes"],
     "speedups": ["lxml"],
-    "test": ["coverage", "pytest-asyncio"],
+    "test": ["coverage", "pytest_asyncio"],
 }
 
 for requires in extras_require.values():

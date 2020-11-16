@@ -98,6 +98,6 @@ def make_version_info(string: str) -> VersionInfo:
     return VersionInfo.from_string(string)
 
 
-version_info = make_version_info(__version__)
-aiohttp_version = make_version_info(aiohttp.__version__)
-python_version = VersionInfo(*sys.version_info)
+version_info: VersionInfo = make_version_info(__version__)
+aiohttp_version: VersionInfo = make_version_info(aiohttp.__version__)
+python_version: VersionInfo = VersionInfo(*sys.version_info)

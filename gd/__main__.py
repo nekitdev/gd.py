@@ -18,7 +18,7 @@ def gd_group(version: bool) -> None:
 
 @gd_group.command(short_help="Run gd.server web application.")
 def server() -> None:
-    pass  # gd.server.start()
+    gd.server.run_sync()
 
 
 @gd_group.command(short_help="Run IPython console, with aiohttp and gd added to namespace.")

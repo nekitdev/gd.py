@@ -221,14 +221,17 @@ class Color:
         return cls.from_rgb(*map(int, string.split(delim)))
 
     @classmethod
-    def with_id(cls, id: int) -> "Color":
+    def with_id(cls, id: int, default: Optional["Color"] = None) -> "Color":
         """Creates a :class:`~gd.Color` with in-game ID of ``id``."""
-        maybe_color = cls.ID_TO_COLOR.get(id)
+        color = cls.ID_TO_COLOR.get(id)
 
-        if maybe_color is None:
-            raise ValueError(f"ID is not present: {id}.")
+        if color is None:
+            if default is None:
+                raise ValueError(f"ID is not present: {id}.")
 
-        return Color(maybe_color)
+            return default
+
+        return Color(color)
 
     @classmethod
     def iter_colors(cls) -> Iterator["Color"]:

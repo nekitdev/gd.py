@@ -1002,7 +1002,7 @@ class HTTPClient:
     async def upload_level(
         self,
         name: str = "Unnamed",
-        level_id: int = 0,
+        id: int = 0,
         version: int = 1,
         length: LevelLength = LevelLength.TINY,  # type: ignore
         track_id: int = 0,
@@ -1020,6 +1020,8 @@ class HTTPClient:
         password: Optional[Union[int, str]] = None,
         copyable: bool = False,
         recording: Iterable[RecordEntry] = (),
+        editor_seconds: int = 0,
+        copies_seconds: int = 0,
         data: str = "",
         *,
         account_id: int,
@@ -1063,7 +1065,7 @@ class HTTPClient:
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
-            level_id=level_id,
+            level_id=id,
             level_name=name,
             level_desc=description,
             level_version=version,
@@ -1085,8 +1087,8 @@ class HTTPClient:
             level_info=recording_str,
             seed=seed,
             seed2=other_seed,
-            wt=0,  # XXX: check what these are used for
-            wt2=0,  # XXX: check what these are actually for
+            wt=editor_seconds,
+            wt2=copies_seconds,
             account_id=account_id,
             user_name=account_name,
             gjp=encoded_password,
