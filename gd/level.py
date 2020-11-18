@@ -8,7 +8,7 @@ from gd.abstract_entity import AbstractEntity
 from gd.async_iter import async_iterable
 from gd.converters import GameVersion
 from gd.crypto import unzip_level_str, zip_level_str
-from gd.datetime import datetime
+from gd.datetime import datetime, timedelta
 from gd.decorators import cache_by
 from gd.enums import (
     DemonDifficulty,
@@ -99,12 +99,17 @@ class Level(AbstractEntity):
     def __str__(self) -> str:
         return str(self.name)
 
-    def __json__(self, ignore: Optional[Iterable[str]] = None) -> Dict[str, Any]:
-        return dict(
-            super().__json__(ignore=ignore),
+    def to_dict(self) -> Dict[str, Any]:
+        result = super().to_dict()
+
+        result.update(
+            editor_time=self.editor_time,
+            copies_time=self.copies_time,
             featured=self.is_featured(),
             was_unfeatured=self.was_unfeatured(),
         )
+
+        return result
 
     @classmethod
     def from_model(  # type: ignore
@@ -370,6 +375,14 @@ class Level(AbstractEntity):
     @property
     def copies_seconds(self) -> int:
         return self.options.get("copies_seconds", 0)
+
+    @property
+    def editor_time(self) -> timedelta:
+        return timedelta(seconds=self.editor_seconds)
+
+    @property
+    def copies_time(self) -> timedelta:
+        return timedelta(seconds=self.copies_seconds)
 
     def get_unprocessed_data(self) -> str:
         return self.options.get("unprocessed_data", "")

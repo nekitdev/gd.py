@@ -38,6 +38,7 @@ if TYPE_CHECKING:
 
 __all__ = ("User",)
 
+COLOR_FIELDS = {"color_1_id", "color_2_id"}
 PAGES = range(10)
 CONCURRENT = True
 
@@ -50,15 +51,23 @@ class User(AbstractEntity):
     def __str__(self) -> str:
         return str(self.name)
 
-    def __json__(self, ignore: Optional[Iterable[str]] = None) -> Dict[str, Any]:
-        return dict(
-            super().__json__(ignore=ignore),
-            youtube_link=self.youtube_link,
-            twitter_link=self.twitter_link,
-            twitch_link=self.twitch_link,
-            color_1=self.color_1,
-            color_2=self.color_2,
-        )
+    def to_dict(self) -> Dict[str, Any]:
+        result = super().to_dict()
+
+        if self.youtube or self.twitter or self.twitch:
+            result.update(
+                youtube_link=self.youtube_link,
+                twitter_link=self.twitter_link,
+                twitch_link=self.twitch_link,
+            )
+
+        if self.options.keys() & COLOR_FIELDS:  # if color fields are actually present
+            result.update(
+                color_1=self.color_1,
+                color_2=self.color_2,
+            )
+
+        return result
 
     @classmethod
     def from_model(  # type: ignore

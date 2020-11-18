@@ -1,3 +1,7 @@
-from gd.server.core import *
-from gd.server.user import *
-from gd.server.utils import *
+try:
+    from gd.server.core import *
+    from gd.server.user import *
+    from gd.server.utils import *
+
+except ImportError:
+    pass

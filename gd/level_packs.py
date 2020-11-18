@@ -5,7 +5,7 @@ from gd.enums import GauntletID, LevelDifficulty
 from gd.filters import Filters
 from gd.model import GauntletModel, MapPackModel  # type: ignore
 from gd.text_utils import make_repr
-from gd.typing import Any, AsyncIterator, Dict, Iterable, List, Optional, Tuple, TYPE_CHECKING
+from gd.typing import Any, AsyncIterator, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 __all__ = ("Gauntlet", "MapPack")
 
@@ -53,8 +53,12 @@ class Gauntlet(AbstractEntity):
     def __str__(self) -> str:
         return str(self.name)
 
-    def __json__(self, ignore: Optional[Iterable[str]] = None) -> Dict[str, Any]:
-        return dict(super().__json__(ignore=ignore), levels=self.levels)
+    def to_dict(self) -> Dict[str, Any]:
+        result = super().to_dict()
+
+        result.update(levels=self.levels)
+
+        return result
 
     @classmethod
     def from_model(  # type: ignore

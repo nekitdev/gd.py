@@ -2,7 +2,7 @@ from gd.decorators import impl_sync
 from gd.errors import ClientException
 from gd.model import Model  # type: ignore
 from gd.text_utils import make_repr
-from gd.typing import Any, Dict, Iterable, Optional, Type, TypeVar, TYPE_CHECKING
+from gd.typing import Any, Dict, Optional, Type, TypeVar, TYPE_CHECKING
 
 __all__ = ("AbstractEntity",)
 
@@ -56,11 +56,8 @@ class AbstractEntity:
 
         return self.id != other.id
 
-    def __json__(self, ignore: Optional[Iterable[str]] = None) -> Dict[str, Any]:
-        if ignore is None:
-            ignore = set()
-
-        return {key: value for key, value in self.to_dict().items() if key not in ignore}
+    def __json__(self) -> Dict[str, Any]:
+        return self.to_dict()
 
     def update_inner(self: AbstractEntityT, **options: Any) -> AbstractEntityT:
         """Update ``self.options`` with ``options``."""
