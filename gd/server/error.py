@@ -6,7 +6,7 @@ from multidict import istr
 from gd.async_utils import maybe_coroutine
 from gd.enums import Enum
 from gd.typing import (
-    Any, Awaitable, Callable, Mapping, Optional, Protocol, Type, TypeVar, Union, cast
+    Any, Awaitable, Callable, Mapping, Optional, Protocol, Type, TypeVar, Union
 )
 from gd.server.utils import json_response
 
