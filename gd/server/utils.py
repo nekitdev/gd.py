@@ -1,38 +1,54 @@
 from functools import partial
+import re
 
 from aiohttp import web
 
-from gd.typing import Any, Callable, Mapping, TypeVar
-import gd
+from gd.json import dumps
+from gd.typing import Any, Iterable, Mapping, Optional, TypeVar
+
+from gd.server.typing import Handler
 
 __all__ = (
     "parameter",
+    "get_original_handler",
+    "get_pages",
     "html_response",
     "json_response",
     "text_response",
-    "unwrap_partial",
 )
 
+DELIM = ","
+RANGE = re.compile(
+    r"(?P<start>-*[0-9]+)\.\.(?P<inclusive>=)?(?P<stop>-*[0-9]+)(?:\.\.(?P<step>-*[0-9]+))?"
+)
+
+T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
 
 json_prefix = "json_"
 json_prefix_length = len(json_prefix)
 
 
-def unwrap_partial(function: Callable[..., T_co], strict: bool = True) -> Callable[..., T_co]:
+def get_original_handler(handler: Handler, strict: bool = True) -> Handler:
     if strict:
-        while isinstance(function, partial):
-            function = function.func  # type: ignore
+        while isinstance(handler, partial):
+            handler = handler.keywords.get("handler")  # type: ignore
 
-        return function
+            if handler is None:
+                raise TypeError("Can not retrieve original handler.")
+
+        return handler
 
     else:
         while True:
             try:
-                function = function.func  # type: ignore
+                handler = handler.keywords.get("handler")  # type: ignore
+
+                if handler is None:
+                    raise TypeError("Can not retrieve original handler.")
 
             except AttributeError:
-                return function
+                return handler
 
 
 def parameter(where: str, **kwargs) -> Mapping[str, Any]:
@@ -61,9 +77,7 @@ def json_response(*args, **kwargs) -> web.Response:
             else:
                 actual_kwargs[key] = value
 
-    dumps = partial(gd.json.dumps, **json_kwargs)
-
-    actual_kwargs.setdefault("dumps", dumps)
+    actual_kwargs.setdefault("dumps", partial(dumps, **json_kwargs))
 
     return web.json_response(*args, **actual_kwargs)
 
@@ -72,3 +86,24 @@ def text_response(*args, **kwargs) -> web.Response:
     kwargs.setdefault("content_type", "text/plain")
 
     return web.Response(*args, **kwargs)
+
+
+def int_or(string: Optional[str], default: int) -> int:
+    return default if string is None else int(string)
+
+
+def get_pages(string: str) -> Iterable[int]:
+    match = RANGE.fullmatch(string)
+
+    if match is None:
+        return map(int, filter(bool, string.split(DELIM)))
+
+    start = int_or(match.group("start"), 0)
+    stop = int_or(match.group("stop"), 0)
+
+    if match.group("inclusive"):
+        stop += 1
+
+    step = int_or(match.group("step"), 1)
+
+    return range(start, stop, step)

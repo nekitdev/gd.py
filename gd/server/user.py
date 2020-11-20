@@ -4,7 +4,7 @@ from gd.typing import Optional, Union
 from gd.server.core import client, docs, routes, web
 from gd.server.error import Error, ErrorHandler, ErrorType, error_handler, error_handling
 from gd.server.types import int_type, str_type
-from gd.server.utils import json_response, parameter
+from gd.server.utils import get_pages, json_response, parameter
 
 __all__ = ("get_user", "search_user")
 
@@ -98,12 +98,24 @@ async def search_user(request: web.Request) -> web.Response:
             required=True,
         ),
     ],
-    responses={200: dict(description="Users fetched from the server. Can be empty.")}
+    responses={
+        200: dict(description="Users fetched from the server. Can be empty."),
+        422: dict(description="Invalid pages parameter was passed."),
+    }
 )
 @routes.get("/api/search/users/{query}")
+@error_handling({ValueError: handle_value_error})
 async def search_users(request: web.Request) -> web.Response:
     query = request.match_info["query"]
 
-    users = await client.search_users(query).list()
+    pages_string = request.query.get("pages")
+
+    if pages_string:
+        pages = get_pages(pages_string)
+
+        users = await client.search_users(query, pages=pages).list()
+
+    else:
+        users = await client.search_users(query).list()
 
     return json_response(users)
