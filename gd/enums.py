@@ -94,13 +94,13 @@ class BetterTitle(enums.Trait):
         return title
 
 
-class Enum(enums.StrFormat, enums.Order, BetterTitle, JSON, enums.Enum):
+class Enum(enums.StrFormat, enums.Order, JSON, enums.Enum):
     """Normalized generic enum that has ordering and string formatting."""
 
     pass
 
 
-class Flag(enums.StrFormat, enums.Order, BetterTitle, JSON, enums.Flag):
+class Flag(enums.StrFormat, enums.Order, JSON, enums.Flag):
     """Normalized generic flag that has ordering and string formatting."""
 
     pass
@@ -159,7 +159,7 @@ class AccountURLType(Enum):
     LOAD = 2
 
 
-class IconType(Enum):
+class IconType(BetterTitle, Enum):
     """An enumeration of icon types."""
 
     CUBE = 0
@@ -211,7 +211,7 @@ class Role(Enum):
     ELDER_MODERATOR = 2
 
 
-class LevelLength(Enum):
+class LevelLength(BetterTitle, Enum):
     """An enumeration for level lengths."""
 
     NA = -1
@@ -235,7 +235,7 @@ class LevelLength(Enum):
         return None
 
 
-class LevelDifficulty(Enum):
+class LevelDifficulty(BetterTitle, Enum):
     """An enumeration for level difficulties."""
 
     NA = -1
@@ -250,7 +250,7 @@ class LevelDifficulty(Enum):
     UNKNOWN = NA
 
 
-class DemonDifficulty(Enum):
+class DemonDifficulty(BetterTitle, Enum):
     """An enumeration for demon difficulties."""
 
     NA = -1
@@ -577,7 +577,7 @@ class PickupItemMode(Enum):
     TOGGLE_TRIGGER = 2
 
 
-class Gamemode(Enum):
+class Gamemode(BetterTitle, Enum):
     """An enumeration representing different game modes."""
 
     CUBE = 0
@@ -600,7 +600,7 @@ class LevelType(Enum):
     ONLINE = 4
 
 
-class PortalType(Enum):
+class PortalType(BetterTitle, Enum):
     """An enumeration representing IDs of portal or speed change objects."""
 
     CUBE = 12
