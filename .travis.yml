@@ -96,7 +96,7 @@ install:
   # install pip, wheel and setuptools
   - python3 -m pip install --upgrade pip wheel setuptools setuptools_rust twine
   # install gd.py with required plugins
-  - python3 -m pip install --upgrade .[image,lint,speedups,test]
+  - python3 -m pip install --upgrade .[image,lint,server,speedups,test]
   # install coveralls
   - python3 -m pip install --upgrade coveralls
   # install cibuildwheel
