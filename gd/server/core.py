@@ -1,54 +1,89 @@
-try:
-    from aiohttp_apispec import docs, request_schema, setup_aiohttp_apispec  # type: ignore
-    from marshmallow import Schema, fields  # type: ignore
-
-except ImportError as error:
-    raise ImportError("Can not define REST API.") from error
-
+from aiohttp_apispec import setup_aiohttp_apispec  # type: ignore
+from aiohttp_remotes import ForwardedRelaxed, XForwardedRelaxed, setup as setup_aiohttp_remotes
 from aiohttp import web
 
+from gd.typing import Iterable, Optional, Protocol
 import gd
 
-web.run_app_async = web._run_app  # type: ignore  # idk why they made it internal
-
 __all__ = (
-    "Schema",
-    "app",
-    "client",
-    "docs",
-    "fields",
-    "request_schema",
-    "run_async",
+    "create_app",
+    "create_app_sync",
+    "routes",
+    "run_app",
+    "run_app_sync",
+    "run",
     "run_sync",
     "web",
 )
 
-client = gd.Client()
+
+class Tool(Protocol):
+    async def setup(self, app: web.Application) -> None:
+        ...
+
+
+DEFAULT_TOOLS: Iterable[Tool] = (ForwardedRelaxed(), XForwardedRelaxed())
+
+run_app = web._run_app  # type: ignore  # idk why they made it internal
+run_app_sync = web.run_app
 
 routes = web.RouteTableDef()
 
-app = web.Application()
 
-setup_aiohttp_apispec(
-    app=app,
-    title="Documentation for gd.py API",
-    version=str(gd.version_info),
-    url="/api/docs/swagger.json",
-    swagger_path="/api/docs",
-)
+async def create_app(
+    *,
+    client: Optional[gd.Client] = None,
+    docs_title: str = "Documentation for GD API",
+    docs_version: str = str(gd.version_info),
+    docs_json_url: str = "/api/docs/swagger.json",
+    docs_url: str = "/api/docs",
+    tools: Iterable[Tool] = DEFAULT_TOOLS,
+    **app_kwargs,
+) -> web.Application:
+    app = web.Application(**app_kwargs)
 
+    setup_aiohttp_apispec(
+        app=app, title=docs_title, version=docs_version, url=docs_json_url, swagger_path=docs_url
+    )
 
-def prepare_app() -> None:
+    await setup_aiohttp_remotes(app, *tools)
+
+    if client is None:
+        client = gd.Client()
+
+    app.client = client
+
     app.add_routes(routes)
 
-
-def run_sync(**kwargs) -> None:
-    prepare_app()
-
-    web.run_app(app, **kwargs)
+    return app
 
 
-async def run_async(**kwargs) -> None:
-    prepare_app()
+def create_app_sync(
+    *,
+    client: Optional[gd.Client] = None,
+    docs_title: str = "Documentation for GD API",
+    docs_version: str = str(gd.version_info),
+    docs_json_url: str = "/api/docs/swagger.json",
+    docs_url: str = "/api/docs",
+    tools: Iterable[Tool] = DEFAULT_TOOLS,
+    **app_kwargs,
+) -> web.Application:
+    return gd.utils.acquire_loop().run_until_complete(
+        create_app(
+            client=client,
+            docs_title=docs_title,
+            docs_version=docs_version,
+            docs_json_url=docs_json_url,
+            docs_url=docs_url,
+            tools=tools,
+            **app_kwargs,
+        )
+    )
 
-    await web.run_app_async(app, **kwargs)  # type: ignore
+
+async def run(**run_kwargs) -> None:
+    await run_app(await create_app(), **run_kwargs)
+
+
+def run_sync(**run_kwargs) -> None:
+    run_app_sync(create_app_sync(), **run_kwargs)

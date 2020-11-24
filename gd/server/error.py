@@ -58,7 +58,6 @@ class Error:
         message: Optional[FormatOrStr] = None,
         headers: Optional[Headers] = None,
         include_error: bool = True,
-        **error_info,
     ) -> None:
         self.status_code = status_code
         self.error_type = ErrorType.from_value(error_type)
@@ -66,7 +65,6 @@ class Error:
         self.message = message
         self.headers = headers
         self.include_error = include_error
-        self.error_info = error_info
 
     def get_error(self) -> BaseException:
         error_unchecked = self.error_unchecked
@@ -105,7 +103,6 @@ class Error:
             "error_name": self.error_type.title,
             "error_code": self.error_type.value,
             "message": self.message,
-            "error_info": self.error_info,
             "error": error,
         }
 

@@ -1,7 +1,8 @@
 from gd.errors import MissingAccess
 from gd.typing import Optional, Union
 
-from gd.server.core import client, docs, routes, web
+from gd.server.core import routes, web
+from gd.server.docs import docs
 from gd.server.error import Error, ErrorHandler, ErrorType, error_handler, error_handling
 from gd.server.types import int_type, str_type
 from gd.server.utils import get_pages, json_response, parameter
@@ -46,10 +47,12 @@ def handle_missing_access(
 @error_handling(
     {
         ValueError: handle_value_error,
-        MissingAccess: handle_missing_access(404, ErrorType.NOT_FOUND),
+        MissingAccess: handle_missing_access(404, ErrorType.NOT_FOUND, "User was not found."),
     }
 )
 async def get_user(request: web.Request) -> web.Response:
+    client = request.app.client  # type: ignore
+
     account_id = int(request.match_info["account_id"])
 
     user = await client.get_user(account_id)
@@ -76,8 +79,12 @@ async def get_user(request: web.Request) -> web.Response:
     }
 )
 @routes.get("/api/search/user/{query}")
-@error_handling({MissingAccess: handle_missing_access(404, ErrorType.NOT_FOUND)})
+@error_handling(
+    {MissingAccess: handle_missing_access(404, ErrorType.NOT_FOUND, "User was not found.")}
+)
 async def search_user(request: web.Request) -> web.Response:
+    client = request.app.client  # type: ignore
+
     query = request.match_info["query"]
 
     user = await client.search_user(query)
@@ -98,14 +105,12 @@ async def search_user(request: web.Request) -> web.Response:
             required=True,
         ),
     ],
-    responses={
-        200: dict(description="Users fetched from the server. Can be empty."),
-        422: dict(description="Invalid pages parameter was passed."),
-    }
+    responses={200: dict(description="Users fetched from the server. Can be empty.")}
 )
 @routes.get("/api/search/users/{query}")
-@error_handling({ValueError: handle_value_error})
 async def search_users(request: web.Request) -> web.Response:
+    client = request.app.client  # type: ignore
+
     query = request.match_info["query"]
 
     pages_string = request.query.get("pages")
