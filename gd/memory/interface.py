@@ -3,9 +3,11 @@ from pathlib import Path
 from gd.converters import get_actual_difficulty
 from gd.crypto import unzip_level_str, zip_level_str
 from gd.decorators import cache_by
-from gd.enums import DemonDifficulty, Gamemode, LevelDifficulty, LevelType, Scene, SpeedConstant
+from gd.enums import (
+    DemonDifficulty, Gamemode, LevelDifficulty, LevelType, Protection, Scene, SpeedConstant
+)
 from gd.platform import LINUX, MACOS, WINDOWS
-from gd.typing import Callable, Dict, List, Type, TypeVar, Union
+from gd.typing import Callable, Dict, List, Type, TypeVar, Union, cast
 
 from gd.text_utils import is_level_probably_decoded, make_repr
 
@@ -121,6 +123,8 @@ __all__ = (
     "get_macos_state",
     "get_windows_state",
 )
+
+DEFAULT_PROTECTION = cast(Protection, Protection.READ | Protection.WRITE | Protection.EXECUTE)
 
 DEFAULT_WINDOW_TITLE = "Geometry Dash"
 
@@ -275,14 +279,16 @@ class SystemState:
 
     reload = load
 
-    def allocate_memory(self, address: int, size: int) -> int:
-        return system_allocate_memory(self.process_handle, address, size)
+    def allocate_memory(
+        self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION
+    ) -> int:
+        return system_allocate_memory(self.process_handle, address, size, flags)
 
     def free_memory(self, address: int, size: int) -> None:
         return system_free_memory(self.process_handle, address, size)
 
-    def protect_at(self, address: int, size: int) -> int:
-        return system_protect_process_memory(self.process_handle, address, size)
+    def protect_at(self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION) -> int:
+        return system_protect_process_memory(self.process_handle, address, size, flags)
 
     def read_at(self, address: int, size: int) -> bytes:
         return system_read_process_memory(self.process_handle, address, size)
@@ -499,14 +505,16 @@ class LinuxState(SystemState):
 
         self.loaded = True
 
-    def allocate_memory(self, address: int, size: int) -> int:
-        return linux_allocate_memory(self.process_handle, address, size)
+    def allocate_memory(
+        self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION
+    ) -> int:
+        return linux_allocate_memory(self.process_handle, address, size, flags)
 
     def free_memory(self, address: int, size: int) -> None:
         return linux_free_memory(self.process_handle, address, size)
 
-    def protect_at(self, address: int, size: int) -> int:
-        return linux_protect_process_memory(self.process_handle, address, size)
+    def protect_at(self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION) -> int:
+        return linux_protect_process_memory(self.process_handle, address, size, flags)
 
     def raw_read_at(self, address: int, size: int) -> bytes:
         return linux_read_process_memory(self.process_handle, address, size)
@@ -540,14 +548,16 @@ class MacOSState(SystemState):
 
         self.loaded = True
 
-    def allocate_memory(self, address: int, size: int) -> int:
-        return macos_allocate_memory(self.process_handle, address, size)
+    def allocate_memory(
+        self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION
+    ) -> int:
+        return macos_allocate_memory(self.process_handle, address, size, flags)
 
     def free_memory(self, address: int, size: int) -> None:
         return macos_free_memory(self.process_handle, address, size)
 
-    def protect_at(self, address: int, size: int) -> int:
-        return macos_protect_process_memory(self.process_handle, address, size)
+    def protect_at(self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION) -> int:
+        return macos_protect_process_memory(self.process_handle, address, size, flags)
 
     def raw_read_at(self, address: int, size: int) -> bytes:
         return macos_read_process_memory(self.process_handle, address, size)
@@ -625,14 +635,16 @@ class WindowsState(SystemState):
 
     reload = load
 
-    def allocate_memory(self, address: int, size: int) -> int:
-        return windows_allocate_memory(self.process_handle, address, size)
+    def allocate_memory(
+        self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION
+    ) -> int:
+        return windows_allocate_memory(self.process_handle, address, size, flags)
 
     def free_memory(self, address: int, size: int) -> None:
         return windows_free_memory(self.process_handle, address, size)
 
-    def protect_at(self, address: int, size: int) -> int:
-        return windows_protect_process_memory(self.process_handle, address, size)
+    def protect_at(self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION) -> int:
+        return windows_protect_process_memory(self.process_handle, address, size, flags)
 
     def raw_read_at(self, address: int, size: int) -> bytes:
         return windows_read_process_memory(self.process_handle, address, size)

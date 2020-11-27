@@ -61,6 +61,7 @@ __all__ = (
     "SpeedMagic",
     "GuidelinesColor",
     "InternalType",
+    "Protection",
 )
 
 UPPER_TITLE: Set[str] = {"NA", "UFO", "XL"}
@@ -835,3 +836,14 @@ class InternalType(Enum):
     CHALLENGE = 7
     REWARD_ITEM = 8
     REWARD = 9
+
+
+class Protection(Flag):
+    NONE = 0
+    READ = 1
+    WRITE = 2
+    EXECUTE = 4
+
+    R = READ
+    W = WRITE
+    E = EXECUTE

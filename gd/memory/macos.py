@@ -5,6 +5,8 @@ import ctypes
 from pathlib import Path
 
 from gd.memory.utils import Structure, extern_func
+
+from gd.enums import Protection
 from gd.typing import Iterator, Union
 
 __all__ = (
@@ -45,9 +47,26 @@ PROC_PIDT_SHORTBSDINFO = 13
 
 MAX_SHORT_PROCESS_NAME_LENGTH = 16
 
-VM_PROT_READ = 0b001
-VM_PROT_WRITE = 0b010
-VM_PROT_EXECUTE = 0b100
+VM_PROT_NONE = 0x00
+VM_PROT_READ = 0x01
+VM_PROT_WRITE = 0x02
+VM_PROT_EXECUTE = 0x04
+
+NONE = Protection.NONE
+READ = Protection.READ
+WRITE = Protection.WRITE
+EXECUTE = Protection.EXECUTE
+
+PROTECTION_FLAGS = {
+    NONE: VM_PROT_NONE,
+    READ: VM_PROT_READ,
+    WRITE: VM_PROT_WRITE,
+    EXECUTE: VM_PROT_EXECUTE,
+    READ | WRITE: VM_PROT_READ | VM_PROT_WRITE,
+    READ | EXECUTE: VM_PROT_READ | VM_PROT_EXECUTE,
+    WRITE | EXECUTE: VM_PROT_WRITE | VM_PROT_EXECUTE,
+    READ | WRITE | EXECUTE: VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE,
+}
 
 boolean_t = ctypes.c_uint
 
@@ -236,12 +255,12 @@ def allocate_memory(
     process_handle: int,
     address: int,  # ignored, as such functionality is not provided
     size: int,
-    flags: int = VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE,
+    flags: Protection = READ | WRITE | EXECUTE,
 ) -> int:
     actual_address = mach_vm_address_t(0)
 
     _mach_vm_allocate(
-        process_handle, ctypes.byref(actual_address), size, flags
+        process_handle, ctypes.byref(actual_address), size, PROTECTION_FLAGS[flags]
     )
 
     return actual_address.value
@@ -358,8 +377,10 @@ def terminate_process(process_handle: int) -> bool:
     return not _task_terminate(process_handle)
 
 
-def protect_process_memory(process_handle: int, address: int, size: int, flags: int) -> int:
-    _mach_vm_protect(process_handle, address, size, 0, flags)
+def protect_process_memory(
+    process_handle: int, address: int, size: int, flags: Protection = READ | WRITE | EXECUTE
+) -> int:
+    _mach_vm_protect(process_handle, address, size, 0, PROTECTION_FLAGS[flags])
 
     return 0
 

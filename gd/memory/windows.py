@@ -8,6 +8,8 @@ import pefile  # to parse some headers uwu ~ nekit
 
 from gd.memory.data import SIZE_BITS
 from gd.memory.utils import Structure, extern_func
+
+from gd.enums import Protection
 from gd.typing import Dict, Iterator, Optional, Type, Union
 
 __all__ = (
@@ -58,8 +60,29 @@ MEM_RESERVE = 0x1000
 MEM_COMMIT = 0x2000
 MEM_RELEASE = 0x8000
 
+PAGE_NOACCESS = 0x01
+PAGE_READONLY = 0x02
 PAGE_READWRITE = 0x04
+
+PAGE_EXECUTE = 0x10
+PAGE_EXECUTE_READ = 0x20
 PAGE_EXECUTE_READWRITE = 0x40
+
+NONE = Protection.NONE
+READ = Protection.READ
+WRITE = Protection.WRITE
+EXECUTE = Protection.EXECUTE
+
+PROTECTION_FLAGS = {
+    NONE: PAGE_NOACCESS,
+    READ: PAGE_READONLY,
+    WRITE: PAGE_READWRITE,
+    EXECUTE: PAGE_EXECUTE,
+    READ | WRITE: PAGE_READWRITE,
+    READ | EXECUTE: PAGE_EXECUTE_READ,
+    WRITE | EXECUTE: PAGE_EXECUTE_READWRITE,
+    READ | WRITE | EXECUTE: PAGE_EXECUTE_READWRITE,
+}
 
 PROCESS_ALL_ACCESS = 0x100000 | 0x0F0000 | 0x000FFF
 
@@ -537,10 +560,13 @@ def close_process(process_handle: int) -> None:
 
 
 def allocate_memory(
-    process_handle: int, address: int, size: int, flags: int = PAGE_EXECUTE_READWRITE
+    process_handle: int,
+    address: int,
+    size: int,
+    flags: Protection = READ | WRITE | EXECUTE,
 ) -> int:
     return _virtual_alloc(
-        process_handle, address, size, MEM_RESERVE | MEM_COMMIT, flags
+        process_handle, address, size, MEM_RESERVE | MEM_COMMIT, PROTECTION_FLAGS[flags]
     )
 
 
@@ -552,10 +578,17 @@ def terminate_process(process_handle: int) -> bool:
     return bool(_terminate_process(process_handle, 0))
 
 
-def protect_process_memory(process_handle: int, address: int, size: int, flags: int) -> int:
+def protect_process_memory(
+    process_handle: int,
+    address: int,
+    size: int,
+    flags: Protection = READ | WRITE | EXECUTE,
+) -> int:
     old_protect = wintypes.DWORD(0)
 
-    _virtual_protect(process_handle, address, size, flags, ctypes.byref(old_protect))
+    _virtual_protect(
+        process_handle, address, size, PROTECTION_FLAGS[flags], ctypes.byref(old_protect)
+    )
 
     return old_protect.value
 
