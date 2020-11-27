@@ -28,7 +28,7 @@ import inspect
 import random
 import time
 
-from gd.async_utils import acquire_loop
+from gd.async_utils import get_maybe_running_loop
 from gd.errors import GDException
 from gd.logging import get_logger
 from gd.typing import Awaitable, Callable, Optional, Tuple, Type, TypeVar, Union
@@ -123,8 +123,9 @@ class Loop:
     ) -> None:
         self.coroutine = coroutine
         self.reconnect = reconnect
-        self.loop = loop or acquire_loop()
+        self.loop = loop or get_maybe_running_loop()
         self.count = count
+
         self._current_loop = 0
         self._injected: Optional[S] = None  # type: ignore
         self._task: Optional[asyncio.Task] = None

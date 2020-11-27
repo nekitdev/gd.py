@@ -4,7 +4,7 @@ import signal
 import traceback
 
 from gd.async_iter import AsyncIter
-from gd.async_utils import acquire_loop, shutdown_loop, gather
+from gd.async_utils import gather, get_maybe_running_loop, get_running_loop, shutdown_loop
 from gd.comment import Comment
 from gd.enums import TimelyType
 from gd.filters import Filters
@@ -102,7 +102,7 @@ class AbstractListener:
 
         self.cache: Any = None
 
-        self.loop: asyncio.AbstractEventLoop = acquire_loop(running=True)
+        self.loop: asyncio.AbstractEventLoop = get_maybe_running_loop()
 
         all_listeners.append(self)
 
@@ -127,11 +127,11 @@ class AbstractListener:
         await self.setup()
 
         try:
-            self.loop = acquire_loop(running=True)
+            self.loop = get_running_loop()
             await self.scan()
 
-        except Exception as exc:
-            await self.on_error(exc)
+        except Exception as error:
+            await self.on_error(error)
 
 
 class TimelyLevelListener(AbstractListener):

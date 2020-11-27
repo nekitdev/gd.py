@@ -68,7 +68,7 @@ def create_app_sync(
     tools: Iterable[Tool] = DEFAULT_TOOLS,
     **app_kwargs,
 ) -> web.Application:
-    return gd.utils.acquire_loop().run_until_complete(
+    return gd.utils.get_not_running_loop().run_until_complete(
         create_app(
             client=client,
             docs_title=docs_title,

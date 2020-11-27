@@ -8,7 +8,7 @@ import uuid
 import aiohttp
 from yarl import URL
 
-from gd.async_utils import acquire_loop, maybe_coroutine, shutdown_loop
+from gd.async_utils import get_running_loop, maybe_coroutine, shutdown_loop
 from gd.converters import GameVersion, Password, Version
 from gd.crypto import (
     Key,
@@ -313,7 +313,7 @@ class HTTPClient:
         if self.session is None:
             self.session = await self.create_session()
 
-        loop = acquire_loop(running=True, enforce_running=True)
+        loop = get_running_loop()
 
         maybe_loop = getattr(self.session, "_loop", None)  # XXX: keep up with aiohttp's internals
 

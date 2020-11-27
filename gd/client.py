@@ -1,7 +1,7 @@
 import traceback
 
 from gd.async_iter import async_iter, async_iterable
-from gd.async_utils import acquire_loop, maybe_coroutine
+from gd.async_utils import get_not_running_loop, maybe_coroutine
 from gd.comment import Comment
 from gd.crypto import Key, encode_robtop_str
 from gd.decorators import cache_by, impl_sync, login_check, login_check_object
@@ -221,7 +221,7 @@ class Client:
         ``T``
             Whatever the given :ref:`coroutine<coroutine>` returns.
         """
-        return acquire_loop().run_until_complete(coroutine)
+        return get_not_running_loop().run_until_complete(coroutine)
 
     @property
     def database(self) -> Database:

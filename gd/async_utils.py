@@ -25,6 +25,10 @@ __all__ = (
     "shutdown_loop",
     "maybe_coroutine",
     "acquire_loop",
+    "get_loop",
+    "get_maybe_running_loop",
+    "get_not_running_loop",
+    "get_running_loop",
 )
 
 log = get_logger(__name__)
@@ -210,6 +214,7 @@ def cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
     """
     try:
         to_cancel = asyncio.all_tasks(loop)  # type: ignore
+
     except AttributeError:  # py < 3.7
         to_cancel = asyncio.Task.all_tasks(loop)
 
@@ -308,3 +313,18 @@ def acquire_loop(running: bool = False, enforce_running: bool = False) -> asynci
         loop = asyncio.new_event_loop()
 
     return loop
+
+
+get_loop = acquire_loop
+
+
+def get_not_running_loop() -> asyncio.AbstractEventLoop:
+    return get_loop(running=False)
+
+
+def get_maybe_running_loop() -> asyncio.AbstractEventLoop:
+    return get_loop(running=True)
+
+
+def get_running_loop() -> asyncio.AbstractEventLoop:
+    return get_loop(running=True, enforce_running=True)

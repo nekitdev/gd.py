@@ -1,6 +1,6 @@
 from functools import wraps
 
-from gd.async_utils import acquire_loop, maybe_coroutine
+from gd.async_utils import get_not_running_loop, maybe_coroutine
 from gd.code_utils import time_execution_and_print
 from gd.errors import MissingAccess
 from gd.typing import (
@@ -88,15 +88,18 @@ def sync(function: Callable[..., Union[Awaitable[T], T]]) -> Callable[..., Union
     """Wrap ``function`` to be called synchronously."""
     @wraps(function)
     def syncer(*args, **kwargs) -> T:
-        return acquire_loop().run_until_complete(maybe_coroutine(function, *args, **kwargs))
+        return get_not_running_loop().run_until_complete(
+            maybe_coroutine(function, *args, **kwargs)
+        )
 
     return syncer
 
 
 def impl_sync(cls: Type[T]) -> Type[T]:
-    """Implement ``sync_name`` functions for class ``cls`` to synchronously call methods."""
+    """Implement ``sync_<name>`` functions for class ``cls`` to synchronously call methods."""
     try:
         old_get = cls.__getattr__  # type: ignore
+
     except AttributeError:
 
         def old_get(instance: T, name: str) -> None:
@@ -126,6 +129,7 @@ def login_check(function: Callable[..., T]) -> Callable[..., T]:
     @wraps(function)
     def wrapper(client_or_entity: Union["AbstractEntity", "Client"], *args, **kwargs) -> T:
         login_check_object(client_or_entity)
+
         return function(client_or_entity, *args, **kwargs)
 
     return wrapper
