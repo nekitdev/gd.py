@@ -8,6 +8,7 @@ from gd.enums import Enum
 from gd.typing import (
     Any, Awaitable, Callable, Mapping, Optional, Protocol, Type, TypeVar, Union
 )
+from gd.server.typing import AsyncHandler, Handler
 from gd.server.utils import json_response
 
 __all__ = (
@@ -43,7 +44,7 @@ class ErrorType(Enum):
     NOT_FOUND = 13004
     FAILED = 13005
     LOGIN_FAILED = 13006
-    RATE_LIMIT_EXCEEDED = 13007
+    RATE_LIMITED = 13007
 
     INVALID_AUTH = 13101
     MISSING_AUTH = 13102
@@ -58,6 +59,7 @@ class Error:
         message: Optional[FormatOrStr] = None,
         headers: Optional[Headers] = None,
         include_error: bool = True,
+        **error_info,
     ) -> None:
         self.status_code = status_code
         self.error_type = ErrorType.from_value(error_type)
@@ -65,6 +67,7 @@ class Error:
         self.message = message
         self.headers = headers
         self.include_error = include_error
+        self.error_info = error_info
 
     def get_error(self) -> BaseException:
         error_unchecked = self.error_unchecked
@@ -106,6 +109,9 @@ class Error:
             "error": error,
         }
 
+        if self.error_info:
+            data.update(self.error_info)
+
         return data
 
     def into_response(self, **kwargs) -> web.Response:
@@ -140,10 +146,6 @@ def error_handler(handler: ErrorHandler) -> ErrorHandler:
 @error_handler
 def default_error_handler(request: web.Request, error: BaseException) -> Error:
     return Error(error=error)
-
-
-Handler = Callable[[web.Request], Union[web.StreamResponse, Awaitable[web.StreamResponse]]]
-AsyncHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
 
 
 async def call_default_handler(request: web.Request, error: BaseException) -> web.StreamResponse:
