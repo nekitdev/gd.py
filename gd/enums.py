@@ -62,6 +62,7 @@ __all__ = (
     "GuidelinesColor",
     "InternalType",
     "Protection",
+    "ByteOrder",
 )
 
 UPPER_TITLE: Set[str] = {"NA", "UFO", "XL"}
@@ -847,3 +848,9 @@ class Protection(Flag):
     R = READ
     W = WRITE
     E = EXECUTE
+
+
+class ByteOrder(Enum):
+    LITTLE = "<"
+    NATIVE = "="
+    BIG = ">"
