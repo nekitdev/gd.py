@@ -1,4 +1,5 @@
 from functools import wraps
+from operator import attrgetter
 
 from gd.async_utils import get_not_running_loop, maybe_coroutine
 from gd.code_utils import time_execution_and_print
@@ -47,9 +48,11 @@ def benchmark(function: Callable[..., T]) -> Callable[..., T]:
 def cache_by(*names: str) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """Cache ``function`` result by object's attributes given by ``names``."""
     def decorator(function: Callable[..., T]) -> Callable[..., T]:
+        get_attrs = tuple(attrgetter(name) for name in names)
+
         @wraps(function)
         def wrapper(self, *args, **kwargs) -> T:
-            actual = tuple(getattr(self, name) for name in names)
+            actual = tuple(get_attr(self) for get_attr in get_attrs)
 
             try:
                 cached = function._cached  # type: ignore

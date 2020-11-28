@@ -588,7 +588,7 @@ class Gamemode(BetterTitle, Enum):
     WAVE = 4
     ROBOT = 5
     SPIDER = 6
-    SWING_COPTER = 7  # ?
+    # SWING_COPTER = 7
 
 
 class LevelType(Enum):

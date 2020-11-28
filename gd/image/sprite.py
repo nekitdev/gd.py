@@ -35,26 +35,6 @@ class Sprite:
     def __str__(self) -> str:
         return self.name_with_copy
 
-    def invert_size(self: SP) -> SP:
-        self.size.invert()
-        self.source_size.invert()
-        self.rectangle.invert_size()
-
-        return self
-
-    def inverted_size(self: SP) -> SP:
-        return self.__class__(
-            name=self.name,
-            aliases=self.aliases,
-            relative_offset=self.relative_offset,
-            size=self.size.inverted(),
-            source_size=self.source_size.inverted(),
-            rectangle=self.rectangle.inverted_size(),
-            rotated=self.rotated,
-            copy_level=self.next_copy_level,
-            sheet_unchecked=self.sheet_unchecked,
-        )
-
     @property
     def name_with_copy(self) -> str:
         return self.name + COPY_SUFFIX * self.copy_level
@@ -66,8 +46,8 @@ class Sprite:
     @property
     def offset(self) -> Point:
         return self.relative_offset.__class__(
-            self.relative_offset.x + (self.source_size.width - self.rectangle.width) / 2,
-            self.relative_offset.y - (self.source_size.height - self.rectangle.height) / 2,
+            self.relative_offset.x + (self.source_size.width - self.size.width) / 2,
+            self.relative_offset.y - (self.source_size.height - self.size.height) / 2,
         )
 
     def get_sheet(self) -> "Sheet":
@@ -113,11 +93,16 @@ class Sprite:
         )
 
     def get_image(self) -> "PIL.Image.Image":
-        (x, y), (width, height) = self.rectangle.as_tuple()
+        x, y, width, height = self.rectangle.as_box()
+
+        is_rotated = self.is_rotated()
+
+        if is_rotated:
+            width, height = height, width
 
         image = self.sheet.image.crop((x, y, x + width, y + height))
 
-        if self.is_rotated():
+        if is_rotated:
             image = image.rotate(90, resample=PIL.Image.BICUBIC, expand=True)
 
         return image

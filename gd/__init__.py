@@ -19,7 +19,6 @@ from gd.errors import *
 from gd.filters import *
 from gd.friend_request import *
 from gd.http import *
-from gd.icon_factory import *
 from gd.level import *
 from gd.level_packs import *
 from gd.logging import *
@@ -38,6 +37,7 @@ from gd import (
     datetime,  # date and time [de]serializing utilites.
     events,  # event-related functions and classes.
     http,  # HTTP requests module.
+    image,  # sprites handling and icon factory.
     json,  # JSON utilities.
     memory,  # functions for interacting with memory.
     model_backend,  # backend for gd.py models.

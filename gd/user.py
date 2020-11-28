@@ -14,7 +14,6 @@ from gd.enums import (
     MessageState,
 )
 from gd.filters import Filters
-from gd.icon_factory import connect_images, factory, to_bytes
 from gd.model import (  # type: ignore
     CommentUserModel,
     CreatorModel,
@@ -26,6 +25,8 @@ from gd.model import (  # type: ignore
 )
 from gd.text_utils import make_repr
 from gd.typing import Any, AsyncIterator, Dict, Iterable, Optional, Union, TYPE_CHECKING
+
+from gd.image.icon_factory import IconFactory, connect_images, to_bytes
 
 if TYPE_CHECKING:
     import PIL.Image  # type: ignore  # noqa
@@ -39,6 +40,7 @@ if TYPE_CHECKING:
 __all__ = ("User",)
 
 COLOR_FIELDS = {"color_1_id", "color_2_id"}
+ICON_FACTORY: Optional[IconFactory] = None
 PAGES = range(10)
 CONCURRENT = True
 
@@ -653,7 +655,7 @@ class User(AbstractEntity):
         )
 
     async def generate(
-        self, type: Union[int, str, IconType] = "icon", as_image: bool = False,
+        self, type: Union[int, str, IconType] = "icon", as_image: bool = True,
     ) -> Union[bytes, "PIL.Image.Image"]:
         """Generate an image of an icon.
 
@@ -663,13 +665,15 @@ class User(AbstractEntity):
             Type of an icon to generate. If not given or ``"icon"``, picks current icon.
 
         as_image: :class:`bool`
-            Whether to return an image or bytes of an image. ``False`` by default.
+            Whether to return an image or bytes of an image. ``True`` by default.
 
         Returns
         -------
         Union[:class:`bytes`, :class:`~PIL.Image.Image`]
             Bytes or an image, based on ``as_image``.
         """
+        global ICON_FACTORY
+
         if type == "icon":
             icon_type, icon_id = self.icon_type, self.icon
 
@@ -677,8 +681,14 @@ class User(AbstractEntity):
             icon_type = IconType.from_value(type)
             icon_id = self.get_id_by_type(icon_type)
 
-        result = await run_blocking(
-            factory.generate,  # type: ignore
+        if ICON_FACTORY is None:
+            try:
+                ICON_FACTORY = IconFactory.default()
+
+            except Exception as error:  # noqa
+                raise RuntimeError("Can not create IconFactory instance.") from error
+
+        result = await ICON_FACTORY.generate_async(
             icon_type=icon_type,
             icon_id=icon_id,
             color_1=self.color_1,
@@ -693,7 +703,7 @@ class User(AbstractEntity):
 
     @async_iterable
     async def generate_many(
-        self, *types: Union[int, str, IconType], as_image: bool = False,
+        self, *types: Union[int, str, IconType], as_image: bool = True,
     ) -> Union[AsyncIterator[bytes], AsyncIterator["PIL.Image.Image"]]:
         r"""Generate images of icons.
 
@@ -703,7 +713,7 @@ class User(AbstractEntity):
             Types of icons to generate. If ``"icon"`` is given, picks current main icon.
 
         as_image: :class:`bool`
-            Whether to return images or bytes of images. ``False`` by default.
+            Whether to return images or bytes of images. ``True`` by default.
 
         Returns
         -------
@@ -718,7 +728,7 @@ class User(AbstractEntity):
             yield image
 
     async def generate_image(
-        self, *types: Union[int, str, IconType], as_image: bool = False,
+        self, *types: Union[int, str, IconType], as_image: bool = True,
     ) -> Union[bytes, "PIL.Image.Image"]:
         r"""Generate images of icons and connect them into one image.
 
@@ -743,7 +753,7 @@ class User(AbstractEntity):
 
         return await run_blocking(to_bytes, result)
 
-    async def generate_full(self, as_image: bool = False) -> Union[bytes, "PIL.Image.Image"]:
+    async def generate_full(self, as_image: bool = True) -> Union[bytes, "PIL.Image.Image"]:
         """Generate an image of the full icon set.
 
         Parameters

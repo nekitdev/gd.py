@@ -1,6 +1,6 @@
 from attr import attrib, dataclass
 
-from typing import Any, Dict, Optional, Tuple, TypeVar
+from typing import Any, Tuple, TypeVar
 
 __all__ = ("Point", "Size", "Rectangle")
 
@@ -13,15 +13,6 @@ R = TypeVar("R", bound="Rectangle")
 class Point:
     x: float = attrib(default=0.0, converter=float)
     y: float = attrib(default=0.0, converter=float)
-
-    def __copy__(self: P) -> P:
-        return self.__class__(self.x, self.y)
-
-    def __deepcopy__(self: P, memo: Optional[Dict[str, Any]] = None) -> P:
-        return self.__class__(self.x, self.y)
-
-    copy = __copy__
-    clone = __deepcopy__
 
     def __add__(self: P, other: Any) -> P:
         if isinstance(other, self.__class__):
@@ -111,25 +102,6 @@ class Size:
     width: float = attrib(default=0.0, converter=float)
     height: float = attrib(default=0.0, converter=float)
 
-    def __copy__(self: S) -> S:
-        return self.__class__(self.width, self.height)
-
-    def __deepcopy__(self: S, memo: Optional[Dict[str, Any]] = None) -> S:
-        return self.__class__(self.width, self.height)
-
-    copy = __copy__
-    clone = __deepcopy__
-
-    def invert(self: S) -> S:
-        self.width, self.height = self.height, self.width
-
-        return self
-
-    def inverted(self: S) -> S:
-        return self.__class__(self.height, self.width)
-
-    __invert__ = inverted
-
     def __mul__(self: S, other: Any) -> S:
         return self.__class__(self.width * other, self.height * other)
 
@@ -165,23 +137,6 @@ class Size:
 class Rectangle:
     origin: Point = attrib(factory=Point)
     size: Size = attrib(factory=Size)
-
-    def __copy__(self: R) -> R:
-        return self.__class__(self.origin.__copy__(), self.size.__copy__())
-
-    def __deepcopy__(self: R, memo: Optional[Dict[str, Any]] = None) -> R:
-        return self.__class__(self.origin.__deepcopy__(memo), self.size.__deepcopy__(memo))
-
-    copy = __copy__
-    clone = __deepcopy__
-
-    def invert_size(self: R) -> R:
-        self.size.invert()
-
-        return self
-
-    def inverted_size(self: R) -> R:
-        return self.__class__(self.origin, self.size.inverted())
 
     @property
     def x(self) -> float:
@@ -245,3 +200,6 @@ class Rectangle:
 
     def as_tuple(self) -> Tuple[Tuple[float, float], Tuple[float, float]]:
         return ((self.x, self.y), (self.width, self.height))
+
+    def as_box(self) -> Tuple[float, float, float, float]:
+        return (self.x, self.y, self.width, self.height)

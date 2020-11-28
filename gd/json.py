@@ -1,9 +1,9 @@
 from collections.abc import Mapping, Sequence, Set
 from functools import partial
 import json
+from yarl import URL
 
 from gd.datetime import datetime, timedelta
-from gd.http import URL
 from gd.typing import Any, Dict, Optional, TypeVar, Union, cast
 
 __all__ = ("NamedDict", "default", "dump", "dumps", "load", "loads")
