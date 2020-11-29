@@ -603,7 +603,7 @@ ICON_EXTRAS = {  # icon_type -> (((extra, ...), copy_level), ...)
 factory: Optional[IconFactory]
 
 try:
-    factory = IconFactory.default()
+    factory = IconFactory.default(load=False)
 
 except Exception as error:  # noqa
     factory = None
