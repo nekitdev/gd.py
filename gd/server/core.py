@@ -1,9 +1,10 @@
-from aiohttp_apispec import setup_aiohttp_apispec  # type: ignore
-from aiohttp_remotes import ForwardedRelaxed, XForwardedRelaxed, setup as setup_aiohttp_remotes
 from aiohttp import web
+from aiohttp_apispec import setup_aiohttp_apispec  # type: ignore
+from aiohttp_remotes import ForwardedRelaxed, XForwardedRelaxed
+from aiohttp_remotes import setup as setup_aiohttp_remotes
 
-from gd.typing import Iterable, Optional, Protocol
 import gd
+from gd.typing import Iterable, Optional, Protocol
 
 __all__ = (
     "create_app",

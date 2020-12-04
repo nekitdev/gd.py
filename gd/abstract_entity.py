@@ -2,7 +2,7 @@ from gd.decorators import impl_sync
 from gd.errors import ClientException
 from gd.model import Model  # type: ignore
 from gd.text_utils import make_repr
-from gd.typing import Any, Dict, Optional, Type, TypeVar, TYPE_CHECKING
+from gd.typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar
 
 __all__ = ("AbstractEntity",)
 
@@ -81,7 +81,10 @@ class AbstractEntity:
 
     @classmethod
     def from_dicts(
-        cls: Type[AbstractEntityT], *data: Dict[str, Any], client: Optional["Client"] = None, **kwargs
+        cls: Type[AbstractEntityT],
+        *data: Dict[str, Any],
+        client: Optional["Client"] = None,
+        **kwargs,
     ) -> AbstractEntityT:
         """Create new entity from dictionaries in ``data``, with ``client`` and ``kwargs``."""
         self = cls(client=client)
@@ -140,6 +143,7 @@ class AbstractEntity:
             This abstract entity.
         """
         self.options.update(client=client)
+
         return self
 
     def detach_client(self: AbstractEntityT) -> AbstractEntityT:
@@ -155,4 +159,5 @@ class AbstractEntity:
             This abstract entity.
         """
         self.attach_client(None)
+
         return self

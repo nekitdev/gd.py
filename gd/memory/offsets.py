@@ -27,36 +27,14 @@ class Offsets(NamedDict[str, OffsetT]):
 
 windows_offsets_x32: Offsets = Offsets(
     game_manager=Offsets(
-        play_layer=0x164,
-        editor_layer=0x168,
-        user_name=0x198,
-        scene=0x1DC,
-        offset=0x3222D0,
+        play_layer=0x164, editor_layer=0x168, user_name=0x198, scene=0x1DC, offset=0x3222D0,
     ),
-    account_manager=Offsets(
-        password=0xF0,
-        user_name=0x108,
-        offset=0x3222D8,
-    ),
-    base_game_layer=Offsets(
-        player=0x224,
-        level_settings=0x22C,
-    ),
-    play_layer=Offsets(
-        dead=0x39C,
-        level_length=0x3B4,
-        practice_mode=0x495,
-        attempt=0x4A8,
-    ),
-    editor_layer=Offsets(
-        editor_ui=0x380,
-        object_count=0x3A0,
-    ),
-    editor_ui=Offsets(
-    ),
-    level_settings=Offsets(
-        level=0x114,
-    ),
+    account_manager=Offsets(password=0xF0, user_name=0x108, offset=0x3222D8,),
+    base_game_layer=Offsets(player=0x224, level_settings=0x22C,),
+    play_layer=Offsets(dead=0x39C, level_length=0x3B4, practice_mode=0x495, attempt=0x4A8,),
+    editor_layer=Offsets(editor_ui=0x380, object_count=0x3A0,),
+    editor_ui=Offsets(),
+    level_settings=Offsets(level=0x114,),
     level=Offsets(
         id=0xF8,
         name=0xFC,
@@ -77,16 +55,8 @@ windows_offsets_x32: Offsets = Offsets(
         auto=0x2B0,
         level_type=0x364,
     ),
-    player=Offsets(
-        gamemodes=0x638,
-        flipped_gravity=0x63E,
-        size=0x644,
-        speed=0x648,
-    ),
-    node=Offsets(
-        x=0x34,
-        y=0x38,
-    ),
+    player=Offsets(gamemodes=0x638, flipped_gravity=0x63E, size=0x644, speed=0x648,),
+    node=Offsets(x=0x34, y=0x38,),
 )
 
 windows_offsets_x64: Offsets = Offsets()
@@ -94,25 +64,12 @@ windows_offsets_x64: Offsets = Offsets()
 macos_offsets_x32: Offsets = Offsets()
 
 macos_offsets_x64: Offsets = Offsets(
-    game_manager=Offsets(
-        play_layer=0x180,
-        editor_layer=0x188,
-        offset=0x3222D0,
-    ),
-    play_layer=Offsets(
-        level_settings=0x390,
-    ),
-    editor_layer=Offsets(
-        level_settings=0x390,
-    ),
-    level_settings=Offsets(
-        level=0x150,
-    ),
-    level=Offsets(
-        name=0x138,
-    ),
-    player=Offsets(
-    ),
+    game_manager=Offsets(play_layer=0x180, editor_layer=0x188, offset=0x3222D0,),
+    play_layer=Offsets(level_settings=0x390,),
+    editor_layer=Offsets(level_settings=0x390,),
+    level_settings=Offsets(level=0x150,),
+    level=Offsets(name=0x138,),
+    player=Offsets(),
 )
 
 linux_offsets_x32: Offsets = Offsets()

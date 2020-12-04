@@ -3,7 +3,7 @@ from gd.datetime import datetime
 from gd.enums import MessageType
 from gd.model import MessageModel  # type: ignore
 from gd.text_utils import make_repr
-from gd.typing import Optional, TYPE_CHECKING
+from gd.typing import TYPE_CHECKING, Optional
 from gd.user import User
 
 if TYPE_CHECKING:

@@ -71,11 +71,7 @@ def is_save_probably_decoded(string: str) -> bool:
     return _XML_OPEN_TAG in string and _XML_CLOSE_TAG in string
 
 
-def make_repr(
-    some_object: T,
-    info: Optional[Dict[K, V]] = None,
-    delim: str = " ",
-) -> str:
+def make_repr(some_object: T, info: Optional[Dict[K, V]] = None, delim: str = " ",) -> str:
     """Create a nice representation of an object.
 
     Parameters

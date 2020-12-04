@@ -1,16 +1,15 @@
 from pathlib import Path
 
-from attr import attrib, dataclass
 import tqdm  # type: ignore
-
-from gd.typing import Any, AsyncIterator, Dict, IO, Iterable, Optional, Union, TYPE_CHECKING
+from attr import attrib, dataclass
 
 from gd.abstract_entity import AbstractEntity
 from gd.async_iter import async_iterable
 from gd.errors import MissingAccess
-from gd.http import HTTPClient, NEWGROUNDS_SONG_LISTEN, URL
+from gd.http import NEWGROUNDS_SONG_LISTEN, URL, HTTPClient
 from gd.model import SongModel  # type: ignore
 from gd.text_utils import make_repr
+from gd.typing import IO, TYPE_CHECKING, Any, AsyncIterator, Dict, Iterable, Optional, Union
 
 if TYPE_CHECKING:
     from gd.client import Client  # noqa

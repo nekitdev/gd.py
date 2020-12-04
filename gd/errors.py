@@ -1,4 +1,4 @@
-from gd.typing import Any, Optional, TypeVar, TYPE_CHECKING
+from gd.typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 __all__ = (
     "GDException",

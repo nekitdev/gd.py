@@ -1,6 +1,7 @@
+import json
 from collections.abc import Mapping, Sequence, Set
 from functools import partial
-import json
+
 from yarl import URL
 
 from gd.datetime import datetime, timedelta

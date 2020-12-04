@@ -1,12 +1,11 @@
-from functools import partial
 import re
+from functools import partial
 
 from aiohttp import web
 
 from gd.json import dumps
-from gd.typing import Any, Iterable, Mapping, Optional, TypeVar
-
 from gd.server.typing import Handler
+from gd.typing import Any, Iterable, Mapping, Optional, TypeVar
 
 __all__ = (
     "parameter",

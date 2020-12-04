@@ -1,12 +1,11 @@
 # type: ignore
 
-import ctypes.util
 import ctypes
+import ctypes.util
 from pathlib import Path
 
-from gd.memory.utils import Structure, extern_func
-
 from gd.enums import Protection
+from gd.memory.utils import Structure, extern_func
 from gd.typing import Iterator, Union
 
 __all__ = (
@@ -230,9 +229,7 @@ def _mach_vm_allocate(
 
 @extern_func(libc.mach_vm_deallocate)
 def _mach_vm_deallocate(
-    task: vm_map_t,
-    address: mach_vm_address_t,
-    size: mach_vm_size_t,
+    task: vm_map_t, address: mach_vm_address_t, size: mach_vm_size_t,
 ) -> kern_return_t:
     pass
 
@@ -259,9 +256,7 @@ def allocate_memory(
 ) -> int:
     actual_address = mach_vm_address_t(0)
 
-    _mach_vm_allocate(
-        process_handle, ctypes.byref(actual_address), size, PROTECTION_FLAGS[flags]
-    )
+    _mach_vm_allocate(process_handle, ctypes.byref(actual_address), size, PROTECTION_FLAGS[flags])
 
     return actual_address.value
 
@@ -348,7 +343,11 @@ def get_process_bits(process_id: int) -> int:
     process_info = proc_bsdshortinfo()
 
     _proc_pidinfo(
-        process_id, PROC_PIDT_SHORTBSDINFO, 0, ctypes.byref(process_info), ctypes.sizeof(process_info)
+        process_id,
+        PROC_PIDT_SHORTBSDINFO,
+        0,
+        ctypes.byref(process_info),
+        ctypes.sizeof(process_info),
     )
 
     if process_info.flags & PROC_FLAG_LP64:

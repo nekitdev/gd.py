@@ -1,5 +1,5 @@
-from datetime import date, datetime, time, timedelta  # re-export these
 import re
+from datetime import date, datetime, time, timedelta  # re-export these
 
 from gd.typing import Optional
 

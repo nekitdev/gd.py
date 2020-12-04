@@ -6,9 +6,8 @@ try:
 except ImportError:
     pass
 
-from gd.typing import Optional, Set, TypeVar, TYPE_CHECKING
-
-from gd.image.geometry import Point, Size, Rectangle
+from gd.image.geometry import Point, Rectangle, Size
+from gd.typing import TYPE_CHECKING, Optional, Set, TypeVar
 
 __all__ = ("Sprite",)
 

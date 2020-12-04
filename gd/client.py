@@ -1,5 +1,7 @@
 import traceback
 
+from gd.api.database import Database
+from gd.api.recording import RecordEntry
 from gd.async_iter import async_iter, async_iterable
 from gd.async_utils import get_not_running_loop, maybe_coroutine
 from gd.comment import Comment
@@ -7,8 +9,8 @@ from gd.crypto import Key, encode_robtop_str
 from gd.decorators import cache_by, impl_sync, login_check, login_check_object
 from gd.enums import (
     AccountURLType,
-    CommentStrategy,
     CommentState,
+    CommentStrategy,
     CommentType,
     DemonDifficulty,
     FriendRequestState,
@@ -25,9 +27,17 @@ from gd.enums import (
     UserListType,
 )
 from gd.errors import ClientException, MissingAccess, NothingFound
+from gd.events.listener import (
+    AbstractListener,
+    LevelCommentListener,
+    MessageOrRequestListener,
+    RateLevelListener,
+    TimelyLevelListener,
+    UserCommentListener,
+)
 from gd.filters import Filters
 from gd.friend_request import FriendRequest
-from gd.http import HTTPClient, URL
+from gd.http import URL, HTTPClient
 from gd.level import Level
 from gd.level_packs import Gauntlet, MapPack
 from gd.logging import get_logger
@@ -54,18 +64,6 @@ from gd.typing import (
     Union,
 )
 from gd.user import User
-
-from gd.api.database import Database
-from gd.api.recording import RecordEntry
-
-from gd.events.listener import (
-    AbstractListener,
-    TimelyLevelListener,
-    RateLevelListener,
-    MessageOrRequestListener,
-    LevelCommentListener,
-    UserCommentListener,
-)
 
 __all__ = ("DAILY", "WEEKLY", "Client")
 
@@ -534,7 +532,8 @@ class Client:
         message_state: Optional[Union[:class:`int`, :class:`str`, :class:`~gd.MessageState`]]
             Message state to set. See :class:`~gd.MessageState`.
 
-        friend_request_state: Optional[Union[:class:`int`, :class:`str`, :class:`~gd.FriendRequestState`]]
+        friend_request_state: Optional[Union[\
+            :class:`int`, :class:`str`, :class:`~gd.FriendRequestState`]]
             Friend request state to set. See :class:`~gd.FriendRequestState`.
 
         comment_state: Optional[Union[:class:`int`, :class:`str`, :class:`~gd.CommentState`]]

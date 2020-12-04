@@ -1,37 +1,36 @@
 from pathlib import Path
 
+from gd.api.editor import Editor
 from gd.converters import get_actual_difficulty
 from gd.crypto import unzip_level_str, zip_level_str
 from gd.decorators import cache_by
 from gd.enums import (
-    DemonDifficulty, Gamemode, LevelDifficulty, LevelType, Protection, Scene, SpeedConstant
+    DemonDifficulty,
+    Gamemode,
+    LevelDifficulty,
+    LevelType,
+    Protection,
+    Scene,
+    SpeedConstant,
 )
-from gd.platform import LINUX, MACOS, WINDOWS
-from gd.typing import Callable, Dict, List, Type, TypeVar, Union, cast
-
-from gd.text_utils import is_level_probably_decoded, make_repr
-
-from gd.api.editor import Editor
-
-from gd.memory.data import (
+from gd.memory._data import (
     Buffer,
     Data,
     boolean,
-    int8,
-    uint8,
-    int16,
-    uint16,
-    int32,
-    uint32,
-    int64,
-    uint64,
     float32,
     float64,
-    string,
     get_pointer_type,
     get_size_type,
+    int8,
+    int16,
+    int32,
+    int64,
+    string,
+    uint8,
+    uint16,
+    uint32,
+    uint64,
 )
-
 from gd.memory.internal import (
     allocate_memory as system_allocate_memory,
     free_memory as system_free_memory,
@@ -99,15 +98,18 @@ from gd.memory.internal import (
 )
 from gd.memory.offsets import (
     Offsets,
-    offsets_x32,
-    offsets_x64,
     linux_offsets_x32,
     linux_offsets_x64,
     macos_offsets_x32,
     macos_offsets_x64,
+    offsets_x32,
+    offsets_x64,
     windows_offsets_x32,
     windows_offsets_x64,
 )
+from gd.platform import LINUX, MACOS, WINDOWS
+from gd.text_utils import is_level_probably_decoded, make_repr
+from gd.typing import Callable, Dict, List, Type, TypeVar, Union, cast
 
 __all__ = (
     "Address",
@@ -758,22 +760,10 @@ else:
 
 class Address:
     OFFSETS: Dict[Type[SystemState], Dict[int, Offsets]] = {
-        LinuxState: {
-            32: linux_offsets_x32,
-            64: linux_offsets_x64,
-        },
-        MacOSState: {
-            32: macos_offsets_x32,
-            64: macos_offsets_x64,
-        },
-        WindowsState: {
-            32: windows_offsets_x32,
-            64: windows_offsets_x64,
-        },
-        SystemState: {
-            32: offsets_x32,
-            64: offsets_x64,
-        },
+        LinuxState: {32: linux_offsets_x32, 64: linux_offsets_x64},
+        MacOSState: {32: macos_offsets_x32, 64: macos_offsets_x64},
+        WindowsState: {32: windows_offsets_x32, 64: windows_offsets_x64},
+        SystemState: {32: offsets_x32, 64: offsets_x64},
     }
 
     def __init__(self, address: int, state: SystemState) -> None:
@@ -1054,9 +1044,9 @@ class BaseGameLayer(Address):
     player = property(get_player)
 
     def get_level_settings(self) -> "LevelSettingsLayer":
-        return self.add_and_follow(
-            self.offsets.base_game_layer.level_settings
-        ).cast(LevelSettingsLayer)
+        return self.add_and_follow(self.offsets.base_game_layer.level_settings).cast(
+            LevelSettingsLayer
+        )
 
     level_settings = property(get_level_settings)
 

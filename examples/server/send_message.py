@@ -2,8 +2,9 @@
 Author: nekitdev.
 """
 
-import gd
 import random  # for fun
+
+import gd
 
 client = gd.Client()  # initialize client
 

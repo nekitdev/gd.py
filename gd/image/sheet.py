@@ -1,6 +1,6 @@
 import gc
-from pathlib import Path
 import plistlib  # we use plistlib since we assume valid plist files. ~ nekit
+from pathlib import Path
 
 try:
     import PIL.Image  # type: ignore
@@ -10,14 +10,13 @@ except ImportError:
     pass
 
 from gd.decorators import cache_by
+from gd.image.geometry import Point, Rectangle, Size
+from gd.image.metadata import Metadata
+from gd.image.sprite import Sprite
 from gd.json import NamedDict
 from gd.logging import get_logger
 from gd.text_utils import make_repr
 from gd.typing import Any, Callable, Dict, Iterator, Optional, TypeVar, Union
-
-from gd.image.geometry import Point, Size, Rectangle
-from gd.image.metadata import Metadata
-from gd.image.sprite import Sprite
 
 log = get_logger(__name__)
 
@@ -168,9 +167,9 @@ class Sheet:
 
         format = self.metadata.format
 
-        get_sprite: Optional[
-            Callable[[NamedDict[str, Any], str], Sprite]
-        ] = get_sprite_format.get(format)
+        get_sprite: Optional[Callable[[NamedDict[str, Any], str], Sprite]] = get_sprite_format.get(
+            format
+        )
 
         if get_sprite is None:
             raise LookupError(f"Do not know how to parse sprite plist format {format!r}.")

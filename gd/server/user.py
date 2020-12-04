@@ -1,11 +1,10 @@
 from gd.errors import MissingAccess
-from gd.typing import Optional, Union
-
 from gd.server.core import routes, web
 from gd.server.docs import docs
 from gd.server.error import Error, ErrorHandler, ErrorType, error_handler, error_handling
 from gd.server.types import int_type, str_type
 from gd.server.utils import get_pages, json_response, parameter
+from gd.typing import Optional, Union
 
 __all__ = ("get_user", "search_user")
 
@@ -41,7 +40,7 @@ def handle_missing_access(
         200: dict(description="User fetched from the server."),
         404: dict(description="User was not found."),
         422: dict(description="Invalid Account ID was passed."),
-    }
+    },
 )
 @routes.get("/api/user/{account_id}")
 @error_handling(
@@ -76,7 +75,7 @@ async def get_user(request: web.Request) -> web.Response:
     responses={
         200: dict(description="User fetched from the server."),
         404: dict(description="User was not found."),
-    }
+    },
 )
 @routes.get("/api/search/user/{query}")
 @error_handling(
@@ -105,7 +104,7 @@ async def search_user(request: web.Request) -> web.Response:
             required=True,
         ),
     ],
-    responses={200: dict(description="Users fetched from the server. Can be empty.")}
+    responses={200: dict(description="Users fetched from the server. Can be empty.")},
 )
 @routes.get("/api/search/users/{query}")
 async def search_users(request: web.Request) -> web.Response:

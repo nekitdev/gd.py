@@ -1,12 +1,7 @@
 # type: ignore  # static type checkers do not understand this
 
 from gd.color import Color
-from gd.converters import (
-    GameVersion,
-    Password,
-    get_actual_difficulty,
-    value_to_level_difficulty,
-)
+from gd.converters import GameVersion, Password, get_actual_difficulty, value_to_level_difficulty
 from gd.crypto import (
     Key,
     decode_robtop_str,
@@ -18,42 +13,39 @@ from gd.crypto import (
 )
 from gd.datetime import datetime
 from gd.decorators import cache_by
-
 from gd.enums import (
-    IconType,
     CommentState,
-    FriendState,
+    DemonDifficulty,
     FriendRequestState,
+    FriendState,
+    IconType,
+    LevelDifficulty,
+    LevelLength,
     MessageState,
+    QuestType,
     RewardType,
     Role,
-    LevelLength,
-    LevelDifficulty,
-    DemonDifficulty,
     TimelyType,
-    QuestType,
 )
-
 from gd.model_backend import (
     Base64Field,
     BoolField,
     ColorField,
     EnumField,
+    Field,
     FloatField,
+    IndexParser,
     IntField,
     IterableField,
+    Model,
     ModelField,
     ModelIterField,
     RobTopStrField,
     RobTopTimeField,
     StrField,
     URLField,
-    Field,
-    IndexParser,
-    Model,
     attempt,
 )
-
 from gd.text_utils import is_level_probably_decoded
 from gd.typing import Dict, List, Optional, Tuple, TypeVar, Union
 

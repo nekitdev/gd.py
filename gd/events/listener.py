@@ -1,7 +1,7 @@
 import asyncio
-from functools import partial
 import signal
 import traceback
+from functools import partial
 
 from gd.async_iter import AsyncIter
 from gd.async_utils import gather, get_maybe_running_loop, get_running_loop, shutdown_loop
@@ -12,6 +12,7 @@ from gd.level import Level
 from gd.logging import get_logger
 from gd.text_utils import make_repr
 from gd.typing import (
+    TYPE_CHECKING,
     Any,
     AsyncIterator,
     Callable,
@@ -20,7 +21,6 @@ from gd.typing import (
     Optional,
     Sequence,
     TypeVar,
-    TYPE_CHECKING,
 )
 from gd.user import User
 

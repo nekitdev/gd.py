@@ -1,14 +1,5 @@
 from gd.enums import GuidelinesColor
-from gd.typing import (
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from gd.typing import Dict, Iterable, List, Mapping, Optional, Tuple, TypeVar, Union
 
 __all__ = ("Guidelines",)
 

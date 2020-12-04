@@ -1,8 +1,7 @@
 import colorsys
 
-from gd.typing import Any, Dict, Iterator, List, Optional, Tuple, Union
-
 from gd.text_utils import make_repr
+from gd.typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 __all__ = ("COLOR_1", "COLOR_2", "Color")
 

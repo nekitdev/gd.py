@@ -23,10 +23,11 @@ DEALINGS IN THE SOFTWARE.
 """
 
 import asyncio
-import aiohttp
 import inspect
 import random
 import time
+
+import aiohttp
 
 from gd.async_utils import get_maybe_running_loop
 from gd.errors import GDException

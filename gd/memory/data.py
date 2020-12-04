@@ -1,21 +1,33 @@
 import ctypes
-import struct
+from struct import calcsize, pack, unpack
 
-from enums import Enum  # type: ignore
-from iters import iter
-
+from gd.decorators import cache_by
+from gd.enums import ByteOrder
 from gd.text_utils import make_repr
-from gd.typing import Any, Generic, Sequence, TypeVar, Union, cast
+from gd.typing import Any, Dict, Generic, Sequence, Tuple, Type, TypeVar, Union, cast
 
 __all__ = (
+    "BYTE_BITS",
+    "SIZE_BITS",
     "Buffer",
-    "ByteOrder",
     "Data",
-    "get_int_type",
-    "get_pointer_type",
-    "get_size_type",
+    "TypeHandler",
+    "c_byte",
+    "c_ubyte",
+    "c_short",
+    "c_ushort",
+    "c_int",
+    "c_uint",
+    "c_long",
+    "c_ulong",
+    "c_longlong",
+    "c_ulonglong",
+    "c_float",
+    "c_double",
+    "c_bool",
     "boolean",
-    "char",
+    "float32",
+    "float64",
     "int8",
     "uint8",
     "int16",
@@ -24,200 +36,127 @@ __all__ = (
     "uint32",
     "int64",
     "uint64",
-    "uint_size",
-    "int_size",
-    "float32",
-    "float64",
-    "string",
+    "intptr",
+    "uintptr",
+    "intsize",
+    "uintsize",
+    "get_c_int_type",
+    "get_c_uint_type",
+    "get_intptr",
+    "get_uintptr",
+    "get_intsize",
+    "get_uintsize",
 )
-
-EMPTY_BYTES = bytes(0)
-ENCODING = "utf-8"
-NULL_BYTE = bytes(1)
 
 T = TypeVar("T")
 
-
-def read_until_terminator(data: bytes, sentinel: int = 0) -> bytes:
-    return cast(bytes, iter(data).take_while(lambda byte: byte != sentinel).collect(bytes))
-
-
-class ByteOrder(Enum):
-    NATIVE = "="
-    LITTLE_ENDIAN = "<"
-    BIG_ENDIAN = ">"
-
-
-class Data(Generic[T]):
-    def __init__(self, name: str, format: str) -> None:
-        self._name = name
-        self._format = format
-        self._size = struct.calcsize(format)
-
-        cls = self.__class__
-
-        if not hasattr(cls, name):
-            setattr(cls, name, self)
-
-    def __repr__(self) -> str:
-        info = {"name": repr(self.name), "size": self.size}
-        return make_repr(self, info)
-
-    def __str__(self) -> str:
-        return self.name
-
-    def create_format(self, order: Union[str, ByteOrder] = ByteOrder.NATIVE) -> str:
-        return ByteOrder.from_value(order).value + self.format
-
-    def from_bytes(self, data: bytes, order: Union[str, ByteOrder] = ByteOrder.NATIVE) -> T:
-        try:
-            unpacked = struct.unpack(self.create_format(order), data)
-
-        except struct.error as error:
-            raise ValueError(f"Can not convert data to {self.name}. Error: {error}.")
-
-        if len(unpacked) == 1:
-            return cast(T, unpacked[0])
-
-        return cast(T, unpacked)
-
-    def to_bytes(self, value: T, order: Union[str, ByteOrder] = ByteOrder.NATIVE) -> bytes:
-        try:
-            return struct.pack(self.create_format(order), value)
-
-        except struct.error as error:
-            raise ValueError(f"Can not convert {self.name} to data. Error: {error}.")
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def format(self) -> str:
-        return self._format
-
-    @property
-    def size(self) -> int:
-        return self._size
-
-    @property
-    def bytes(self) -> int:
-        return self._size
-
-    @property
-    def bits(self):
-        return bytes_to_bits(self._size)
-
-
-class String(Data[str]):
-    def __init__(self) -> None:
-        super().__init__("string", "")
-
-    def from_bytes(self, data: bytes, order: Union[str, ByteOrder] = ByteOrder.NATIVE) -> str:
-        return read_until_terminator(data).decode(ENCODING)
-
-    def to_bytes(
-        self, value: str, order: Union[str, ByteOrder] = ByteOrder.NATIVE, null: bool = True
-    ) -> bytes:
-        if null:
-            return value.encode(ENCODING) + NULL_BYTE
-
-        return value.encode(ENCODING)
-
-
-def get_int_type(bits: int, signed: bool = False) -> Data[int]:
-    if signed:
-        choose_from = _all_int
-
-    else:
-        choose_from = _all_uint
-
-    for pointer_type in choose_from:
-        if pointer_type.bits == bits:
-            return pointer_type
-
-    raise ValueError("Can not find type that matches given bits.")
-
-
-get_pointer_type = get_int_type
-get_size_type = get_int_type
-
-
-def bytes_to_bits(count: int) -> int:
-    return count << 3
-
-
-def bits_to_bytes(count: int) -> int:
-    return count >> 3
-
-
-SIZE = ctypes.sizeof(ctypes.c_void_p)
-SIZE_BITS = bytes_to_bits(SIZE)
-
-_byte: Data[int] = Data("byte", "b")
-_ubyte: Data[int] = Data("ubyte", "B")
-
-_short: Data[int] = Data("short", "h")
-_ushort: Data[int] = Data("ushort", "H")
-
-_int: Data[int] = Data("int", "i")
-_uint: Data[int] = Data("uint", "I")
-
-_long: Data[int] = Data("long", "l")
-_ulong: Data[int] = Data("ulong", "L")
-
-_longlong: Data[int] = Data("longlong", "q")
-_ulonglong: Data[int] = Data("ulonglong", "Q")
-
-_int_size_to_format = {
-    _int_type.size: _int_type.format
-    for _int_type in (_byte, _short, _int, _long, _longlong)
-}
-
-_uint_size_to_format = {
-    _uint_type.size: _uint_type.format
-    for _uint_type in (_ubyte, _ushort, _uint, _ulong, _ulonglong)
-}
-
-boolean: Data[bool] = Data("bool", "?")
-
-char: Data[bytes] = Data("char", "c")
-
-try:
-    int8: Data[int] = Data("int8", _int_size_to_format[bits_to_bytes(8)])
-    uint8: Data[int] = Data("uint8", _uint_size_to_format[bits_to_bytes(8)])
-
-    int16: Data[int] = Data("int16", _int_size_to_format[bits_to_bytes(16)])
-    uint16: Data[int] = Data("uint16", _uint_size_to_format[bits_to_bytes(16)])
-
-    int32: Data[int] = Data("int32", _int_size_to_format[bits_to_bytes(32)])
-    uint32: Data[int] = Data("uint32", _uint_size_to_format[bits_to_bytes(32)])
-
-    int64: Data[int] = Data("int64", _int_size_to_format[bits_to_bytes(64)])
-    uint64: Data[int] = Data("uint64", _uint_size_to_format[bits_to_bytes(64)])
-
-except KeyError as error:
-    raise OSError(f"Can not find integer type of size {error}.")
-
-_all_int = (int8, int16, int32, int64)
-_all_uint = (uint8, uint16, uint32, uint64)
-
-int_size: Data[int] = get_size_type(SIZE_BITS, signed=True)
-uint_size: Data[int] = get_size_type(SIZE_BITS, signed=False)
-
-float32: Data[float] = Data("float32", "f")
-float64: Data[float] = Data("float64", "d")
-
-string: Data[str] = String()
+BYTE_BITS = 8
 
 _bytes_from_hex = bytes.fromhex
-_bytes_to_hex_std = bytes.hex
 
 
 def _bytes_to_hex(data: bytes, step: int = 1) -> str:
-    return " ".join(
-        _bytes_to_hex_std(data[index : index + step]) for index in range(0, len(data), step)
-    )
+    return " ".join(data[index : index + step].hex() for index in range(0, len(data), step))
+
+
+class DataMeta(type):
+    _name: str = ""
+    _format: str = ""
+    _size: int = 0
+
+    def __new__(
+        meta_cls,
+        cls_name: str,
+        bases: Tuple[Type[Any], ...],
+        cls_dict: Dict[str, Any],
+        name: str,
+        format: str = "",
+    ) -> "DataMeta":
+        cls = cast(DataMeta, super().__new__(meta_cls, cls_name, bases, cls_dict))
+
+        cls._name = name
+
+        cls._format = format
+        cls._size = calcsize(format)
+
+        return cls
+
+    def __repr__(cls) -> str:
+        return cls.name
+
+    def create_format(cls, order: Union[str, ByteOrder]) -> str:
+        return ByteOrder.from_value(order).value + cls.format
+
+    @property
+    def name(cls) -> str:
+        return cls._name
+
+    @property
+    def format(cls) -> str:
+        return cls._format
+
+    @property
+    def size(cls) -> int:
+        return cls._size
+
+    @property
+    def bits(cls) -> int:
+        return cls._size * BYTE_BITS
+
+
+class Data(Generic[T], metaclass=DataMeta, name="Data"):
+    def __init__(self, value: T) -> None:
+        self._value = value
+
+    def __repr__(self) -> str:
+        return f"{self.name}({self.value!r})"
+
+    @classmethod
+    def from_bytes(cls, data: bytes, order: Union[str, ByteOrder] = ByteOrder.NATIVE) -> "Data[T]":
+        return cls(cls.value_from_bytes(data, order))
+
+    def to_bytes(self, order: Union[str, ByteOrder] = ByteOrder.NATIVE) -> bytes:
+        return self.value_to_bytes(self.value, order)
+
+    @classmethod
+    def value_from_bytes(cls, data: bytes, order: Union[str, ByteOrder] = ByteOrder.NATIVE) -> T:
+        result = unpack(cls.create_format(order), data)
+
+        if len(result) == 1:
+            (result,) = result
+
+        return cast(T, result)
+
+    @classmethod
+    def value_to_bytes(cls, value: T, order: Union[str, ByteOrder] = ByteOrder.NATIVE) -> bytes:
+        return pack(cls.create_format(order), value)
+
+    @property
+    def value(self) -> T:
+        return self._value
+
+    @property
+    def type(self) -> Type["Data[T]"]:
+        return self.__class__
+
+    @property
+    def name(self) -> str:
+        return self.type._name
+
+    @property
+    def format(self) -> str:
+        return self.type._format
+
+    @property
+    def size(self) -> int:
+        return self.type._size
+
+    @property
+    def bits(self) -> int:
+        return self.type._size * BYTE_BITS
+
+
+EMPTY_BYTES = bytes(0)
 
 
 class BufferMeta(type):
@@ -242,23 +181,27 @@ class Buffer(metaclass=BufferMeta):
         info = {"data": repr(self.to_hex().upper())}
         return make_repr(self, info)
 
+    @property
+    def data(self) -> bytes:
+        return self._data
+
     @classmethod
     def from_value(
-        cls, type: Data[T], value: T, byte_order: Union[str, ByteOrder] = ByteOrder.NATIVE
+        cls, type: Type[Data[T]], value: T, byte_order: Union[str, ByteOrder] = ByteOrder.NATIVE
     ) -> "Buffer":
-        return cls(type.to_bytes(value, byte_order))
+        return cls(type.value_to_bytes(value, byte_order))
 
     def to_value(
-        self, type: Data[T], byte_order: Union[str, ByteOrder] = ByteOrder.NATIVE
+        self, type: Type[Data[T]], byte_order: Union[str, ByteOrder] = ByteOrder.NATIVE
     ) -> T:
-        return type.from_bytes(self._data, byte_order)
+        return type.value_from_bytes(self.data, byte_order)
 
     @classmethod
     def from_byte_array(cls, array: Sequence[int]) -> "Buffer":
         return cls(bytes(array))
 
     def to_byte_array(self) -> Sequence[int]:
-        return list(self._data)
+        return list(self.data)
 
     @classmethod
     def from_hex(cls, hex_string: str) -> "Buffer":
@@ -268,7 +211,281 @@ class Buffer(metaclass=BufferMeta):
         return _bytes_to_hex(self._data, step)
 
     def into_buffer(self) -> Any:
-        return ctypes.create_string_buffer(self._data, len(self._data))
+        return ctypes.create_string_buffer(self.data, len(self.data))
 
-    def unwrap(self) -> bytes:
-        return self._data
+    def into(self) -> bytes:
+        return self.data
+
+
+class c_ptr(Data[int], name="c_ptr", format="P"):
+    pass
+
+
+SIZE_BITS = cast(int, c_ptr.bits)
+
+
+class c_byte(Data[int], name="c_byte", format="b"):
+    pass
+
+
+class c_ubyte(Data[int], name="c_ubyte", format="B"):
+    pass
+
+
+class c_short(Data[int], name="c_short", format="h"):
+    pass
+
+
+class c_ushort(Data[int], name="c_ushort", format="H"):
+    pass
+
+
+class c_int(Data[int], name="c_int", format="i"):
+    pass
+
+
+class c_uint(Data[int], name="c_uint", format="I"):
+    pass
+
+
+class c_long(Data[int], name="c_long", format="l"):
+    pass
+
+
+class c_ulong(Data[int], name="c_ulong", format="L"):
+    pass
+
+
+class c_longlong(Data[int], name="c_longlong", format="q"):
+    pass
+
+
+class c_ulonglong(Data[int], name="c_ulonglong", format="Q"):
+    pass
+
+
+c_int_types = (c_byte, c_short, c_int, c_long, c_longlong)
+c_uint_types = (c_ubyte, c_ushort, c_uint, c_ulong, c_ulonglong)
+
+
+def get_c_int_type(bits: int) -> Type[Data[int]]:
+    for c_int_type in c_int_types:
+        if c_int_type.bits == bits:
+            return c_int_type
+
+    raise LookupError(f"Can not find C signed integer type with {bits} bits.")
+
+
+def get_c_uint_type(bits: int) -> Type[Data[int]]:
+    for c_uint_type in c_uint_types:
+        if c_uint_type.bits == bits:
+            return c_uint_type
+
+    raise LookupError(f"Can not find C unsigned integer type with {bits} bits.")
+
+
+try:
+
+    class int8(Data[int], name="int8", format=get_c_int_type(8).format):
+        pass
+
+    class uint8(Data[int], name="uint8", format=get_c_uint_type(8).format):
+        pass
+
+    class int16(Data[int], name="int16", format=get_c_int_type(16).format):
+        pass
+
+    class uint16(Data[int], name="uint16", format=get_c_uint_type(16).format):
+        pass
+
+    class int32(Data[int], name="int32", format=get_c_int_type(32).format):
+        pass
+
+    class uint32(Data[int], name="uint32", format=get_c_uint_type(32).format):
+        pass
+
+    class int64(Data[int], name="int64", format=get_c_int_type(64).format):
+        pass
+
+    class uint64(Data[int], name="uint64", format=get_c_uint_type(64).format):
+        pass
+
+
+except KeyError as error:
+    raise LookupError("Can not find all integer types.") from error
+
+
+def get_intptr(bits: int = SIZE_BITS) -> Type[Data[int]]:
+    return get_c_int_type(bits)
+
+
+def get_uintptr(bits: int = SIZE_BITS) -> Type[Data[int]]:
+    return get_c_uint_type(bits)
+
+
+def get_intsize(bits: int = SIZE_BITS) -> Type[Data[int]]:
+    return get_c_int_type(bits)
+
+
+def get_uintsize(bits: int = SIZE_BITS) -> Type[Data[int]]:
+    return get_c_uint_type(bits)
+
+
+intptr = get_intptr()
+uintptr = get_uintptr()
+
+intsize = get_intsize()
+uintsize = get_uintsize()
+
+
+class c_float(Data[float], name="c_float", format="f"):
+    pass
+
+
+class c_double(Data[float], name="c_double", format="d"):
+    pass
+
+
+class float32(Data[float], name="float32", format=c_float.format):
+    pass
+
+
+class float64(Data[float], name="float64", format=c_double.format):
+    pass
+
+
+class c_bool(Data[bool], name="c_bool", format="?"):
+    pass
+
+
+class boolean(Data[bool], name="boolean", format=c_bool.format):
+    pass
+
+
+class TypeHandler:
+    def __init__(self, bits: int) -> None:
+        self.bits = bits
+
+    @property
+    def byte_t(self) -> Type[Data[int]]:
+        return int8
+
+    @property
+    def ubyte_t(self) -> Type[Data[int]]:
+        return uint8
+
+    @property
+    def short_t(self) -> Type[Data[int]]:
+        return int16
+
+    @property
+    def ushort_t(self) -> Type[Data[int]]:
+        return uint16
+
+    @property
+    def int_t(self) -> Type[Data[int]]:
+        if self.bits < 32:
+            return int16
+
+        return int32
+
+    @property
+    def uint_t(self) -> Type[Data[int]]:
+        if self.bits < 32:
+            return uint16
+
+        return uint32
+
+    @property
+    def long_t(self) -> Type[Data[int]]:
+        if self.bits > 32:
+            return int64
+
+        return int32
+
+    @property
+    def ulong_t(self) -> Type[Data[int]]:
+        if self.bits > 32:
+            return uint64
+
+        return uint32
+
+    @property
+    def longlong_t(self) -> Type[Data[int]]:
+        return int64
+
+    @property
+    def ulonglong_t(self) -> Type[Data[int]]:
+        return uint64
+
+    @property
+    def int8_t(self) -> Type[Data[int]]:
+        return int8
+
+    @property
+    def uint8_t(self) -> Type[Data[int]]:
+        return uint8
+
+    @property
+    def int16_t(self) -> Type[Data[int]]:
+        return int16
+
+    @property
+    def uint16_t(self) -> Type[Data[int]]:
+        return uint16
+
+    @property
+    def int32_t(self) -> Type[Data[int]]:
+        return int32
+
+    @property
+    def uint32_t(self) -> Type[Data[int]]:
+        return uint32
+
+    @property
+    def int64_t(self) -> Type[Data[int]]:
+        return int64
+
+    @property
+    def uint64_t(self) -> Type[Data[int]]:
+        return uint64
+
+    @property  # type: ignore
+    @cache_by("bits")
+    def intptr_t(self) -> Type[Data[int]]:
+        return get_intptr(self.bits)
+
+    @property  # type: ignore
+    @cache_by("bits")
+    def uintptr_t(self) -> Type[Data[int]]:
+        return get_uintptr(self.bits)
+
+    @property  # type: ignore
+    @cache_by("bits")
+    def intsize_t(self) -> Type[Data[int]]:
+        return get_intsize(self.bits)
+
+    @property  # type: ignore
+    @cache_by("bits")
+    def uintsize_t(self) -> Type[Data[int]]:
+        return get_uintsize(self.bits)
+
+    @property
+    def float_t(self) -> Type[Data[float]]:
+        return c_float
+
+    @property
+    def double_t(self) -> Type[Data[float]]:
+        return c_double
+
+    @property
+    def float32_t(self) -> Type[Data[float]]:
+        return float32
+
+    @property
+    def float64_t(self) -> Type[Data[float]]:
+        return float64
+
+    @property
+    def bool_t(self) -> Type[Data[bool]]:
+        return c_bool

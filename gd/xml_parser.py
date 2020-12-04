@@ -4,9 +4,9 @@ except ImportError:
     from xml.etree import ElementTree as xml
 
 from gd.text_utils import make_repr
-from gd.typing import (
-    Any, Callable, Dict, Iterable, List, Mapping, Optional, TypeVar, Union, cast
-)
+from gd.typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, TypeVar, Union, cast
+
+__all__ = ("NoDefault", "NoDefaultOr", "XMLParser", "no_default")
 
 T = TypeVar("T")
 
@@ -28,7 +28,7 @@ GJ_VERSION = "2.0"
 PLIST_VERSION = "1.0"
 XML_VERSION = "1.0"
 
-DECLARATION = f"<?xml version=\"{XML_VERSION}\"?>"
+DECLARATION = f'<?xml version="{XML_VERSION}"?>'
 DECLARATION_DATA = DECLARATION.encode(XML_ENCODING)
 
 
@@ -95,7 +95,8 @@ class XMLParser:
     ) -> Optional[xml.Element]:
         return (
             self.unparse_value_short(value, root_element, ignore_false=ignore_false)
-            if short else self.unparse_value_long(value, root_element, ignore_false=ignore_false)
+            if short
+            else self.unparse_value_long(value, root_element, ignore_false=ignore_false)
         )
 
     def unparse_value_long(

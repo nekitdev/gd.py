@@ -1,18 +1,17 @@
-from gd.typing import Any, Iterable, TypeVar, Union
-from gd.errors import EditorError
-
 from gd.enums import (
-    SpecialBlockType,
-    TriggerType,
-    PortalType,
-    SpeedChange,
+    Easing,
+    MiscType,
     OrbType,
     PadType,
-    Easing,
-    ZLayer,
+    PortalType,
+    SpecialBlockType,
     SpecialColorID,
-    MiscType,
+    SpeedChange,
+    TriggerType,
+    ZLayer,
 )
+from gd.errors import EditorError
+from gd.typing import Any, Iterable, TypeVar, Union
 
 __all__ = ("get_id", "get_dir")
 

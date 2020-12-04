@@ -8,15 +8,15 @@ import uuid
 import aiohttp
 from yarl import URL
 
+from gd.api.recording import RecordEntry, dump_record_entries
 from gd.async_utils import get_running_loop, maybe_coroutine, shutdown_loop
 from gd.converters import GameVersion, Password, Version
-from gd.crypto import (
+from gd.crypto import (  # gen_leaderboard_seed,
     Key,
     Salt,
     encode_base64_str,
     encode_robtop_str,
     gen_chk,
-    # gen_leaderboard_seed,
     gen_level_seed,
     gen_rs,
     gen_rs_and_encode_number,
@@ -53,19 +53,14 @@ from gd.errors import (
 )
 from gd.filters import Filters
 from gd.logging import get_logger
-from gd.text_utils import (
-    is_level_probably_decoded,
-    make_repr,
-    object_count,
-    snake_to_camel,
-)
+from gd.text_utils import is_level_probably_decoded, make_repr, object_count, snake_to_camel
 from gd.typing import (
+    JSON,
     Any,
     Awaitable,
     Callable,
     Dict,
     Iterable,
-    JSON,
     Mapping,
     Optional,
     Set,
@@ -75,8 +70,6 @@ from gd.typing import (
     cast,
 )
 from gd.version import aiohttp_version, python_version, version_info
-
-from gd.api.recording import RecordEntry, dump_record_entries
 
 __all__ = ("Route", "HTTPClient")
 
@@ -305,6 +298,8 @@ class HTTPClient:
     async def close(self) -> None:
         if self.session is not None:
             await self.session.close()
+
+            self.session = None
 
     async def create_session(self) -> aiohttp.ClientSession:
         return aiohttp.ClientSession(skip_auto_headers=self.DEFAULT_SKIP_HEADERS)

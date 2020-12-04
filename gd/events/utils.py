@@ -2,17 +2,9 @@ import asyncio
 import atexit
 import threading
 
-from gd.events.listener import (
-    run_loop,
-    get_loop,
-    shutdown_loop,
-    all_listeners,
-    set_loop,
-)
-
-from gd.typing import List, Optional
-
 from gd import tasks
+from gd.events.listener import all_listeners, get_loop, run_loop, set_loop, shutdown_loop
+from gd.typing import List, Optional
 
 __all__ = (
     "attach_to_loop",

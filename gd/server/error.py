@@ -5,11 +5,9 @@ from multidict import istr
 
 from gd.async_utils import maybe_coroutine
 from gd.enums import Enum
-from gd.typing import (
-    Any, Awaitable, Callable, Mapping, Optional, Protocol, Type, TypeVar, Union
-)
 from gd.server.typing import AsyncHandler, Handler
 from gd.server.utils import json_response
+from gd.typing import Any, Awaitable, Callable, Mapping, Optional, Protocol, Type, TypeVar, Union
 
 __all__ = (
     "Error",
@@ -103,8 +101,8 @@ class Error:
             error = None
 
         data = {
-            "error_name": self.error_type.title,
-            "error_code": self.error_type.value,
+            "name": self.error_type.title,
+            "code": self.error_type.value,
             "message": self.message,
             "error": error,
         }
@@ -149,9 +147,7 @@ def default_error_handler(request: web.Request, error: BaseException) -> Error:
 
 
 async def call_default_handler(request: web.Request, error: BaseException) -> web.StreamResponse:
-    return error_into_response(
-        await maybe_coroutine(default_error_handler, request, error)
-    )
+    return error_into_response(await maybe_coroutine(default_error_handler, request, error))
 
 
 def error_handling(
@@ -160,10 +156,8 @@ def error_handling(
     def wrapper(handler: Handler) -> AsyncHandler:
         @wraps(handler)
         async def actual_handler(request: web.Request) -> web.StreamResponse:
-            handler_coroutine = maybe_coroutine(handler, request)
-
             try:
-                return await handler_coroutine
+                return await maybe_coroutine(handler, request)
 
             except BaseException as error:  # noqa  # this is intentional
                 for error_class, error_handler in handlers.items():

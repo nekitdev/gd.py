@@ -1,28 +1,18 @@
 from itertools import count
 from operator import attrgetter
 
+from gd.api.struct import (  # type: ignore
+    SPEEDS,
+    ColorChannel,
+    ColorCollection,
+    Header,
+    LevelAPI,
+    Object,
+)
 from gd.enums import Speed
 from gd.errors import EditorError
 from gd.text_utils import make_repr
-from gd.typing import (
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Set,
-    Union,
-    TYPE_CHECKING,
-)
-
-from gd.api.struct import (  # type: ignore
-    SPEEDS,
-    Object,
-    ColorChannel,
-    Header,
-    ColorCollection,
-    LevelAPI,
-)
+from gd.typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Set, Union
 
 __all__ = ("Editor", "get_time_length")
 

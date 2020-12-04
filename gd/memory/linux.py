@@ -1,7 +1,7 @@
 # type: ignore
 
-import ctypes.util
 import ctypes
+import ctypes.util
 
 libc_name = ctypes.util.find_library("c")
 

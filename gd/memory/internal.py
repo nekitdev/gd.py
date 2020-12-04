@@ -1,110 +1,62 @@
 """Internal memory interfaces for different platforms.
-
 Every module should define several functions and constants.
-
 Functions
 ---------
 :func:`allocate_memory` is used for allocating memory::
-
     def allocate_memory(process_handle: int, address: int, size: int, flags: gd.Protection) -> int:
         # allocate "size" bytes with "flags" permissions,
         # trying to start at "address", then return address to memory
         # note: "flags" should default to RWX (read, write, execute) permissions
         ...
-
-
 :func:`free_memory` is used for freeing memory::
-
     def free_memory(process_handle: int, address: int, size: int) -> None:
         ...  # free "size" bytes, starting at "address"
-
-
 :func:`get_base_address` is used for fetching base address of some module::
-
     # "process_id" and "module_name" as a workaround for windows
     # getting process handle and fetching using that may be needed
     def get_base_address(process_id: int, module_name: str) -> int:
         ...  # return base address
-
-
 :func:`get_base_address_from_handle` is used for fetching base address of the process by handle::
-
     # this function is not implemented, for example, on windows
     def get_base_address_from_handle(process_handle: int) -> int:
         ...  # return base address
-
-
 :func:`open_process` is used for getting process handle to use::
-
     def open_process(process_id: int) -> int:
         ...  # return handle to the process with ID of "process_id"
-
-
 :func:`close_process` is used for closing process handle after use::
-
     def close_process(process_handle: int) -> None:
         ...  # can do nothing, if shutdown is not needed
-
-
 :func:`get_process_id_from_name` is used to get process ID from process name::
-
     def get_process_id_from_name(process_name: str) -> int:
         ...
-
-
 :func:`get_process_id_from_window_title` is used to get process ID from window title::
-
     def get_process_id_from_window_title(window_title: str) -> int:
         ...
-
-
 :func:`get_process_name_from_id` is used to get process name from process ID::
-
     def get_process_name_from_id(process_id: int) -> str:
         ...
-
-
 :func:`inject_dll` is used to inject DLL into process::
-
     def inject_dll(process_id: int, path: Union[Path, str]) -> bool:
         ...
-
-
 :func:`terminate_process` is used to terminate the process::
-
     def terminate_process(process_handle: int) -> bool:
         ...
-
-
 :func:`get_process_bits` is used to determine process bitness::
-
     def get_process_bits(process_id: int) -> int:
         ...  # return process bits here
-
-
 :func:`get_process_bits_from_handle` is same as above, except it uses process handle instead::
-
     def get_process_bits_from_handle(process_handle: int) -> int:
         ...  # return process bits here
-
-
 :func:`protect_process_memory` is used to override memory protection::
-
     def protect_process_memory(
         process_handle: int, address: int, size: int, flags: gd.Protection
     ) -> int:
         # note: "flags" should default to read, write and execute permissions
         ...
-
-
 :func:`read_process_memory` is used to read memory of the process::
-
     def read_process_memory(process_handle: int, address: int, size: int) -> bytes:
         ...  # return data that was read
-
-
 :func:`write_process_memory` is used to write memory to the process::
-
     def write_process_memory(process_handle: int, address: int, data: bytes) -> int:
         ...  # return how many bytes were written
 """

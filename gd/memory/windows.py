@@ -1,15 +1,14 @@
 # type: ignore
 
 import ctypes
-from pathlib import Path
 import types
+from pathlib import Path
 
 import pefile  # to parse some headers uwu ~ nekit
 
+from gd.enums import Protection
 from gd.memory.data import SIZE_BITS
 from gd.memory.utils import Structure, extern_func
-
-from gd.enums import Protection
 from gd.typing import Dict, Iterator, Optional, Type, Union
 
 __all__ = (
@@ -560,10 +559,7 @@ def close_process(process_handle: int) -> None:
 
 
 def allocate_memory(
-    process_handle: int,
-    address: int,
-    size: int,
-    flags: Protection = READ | WRITE | EXECUTE,
+    process_handle: int, address: int, size: int, flags: Protection = READ | WRITE | EXECUTE,
 ) -> int:
     return _virtual_alloc(
         process_handle, address, size, MEM_RESERVE | MEM_COMMIT, PROTECTION_FLAGS[flags]
@@ -579,10 +575,7 @@ def terminate_process(process_handle: int) -> bool:
 
 
 def protect_process_memory(
-    process_handle: int,
-    address: int,
-    size: int,
-    flags: Protection = READ | WRITE | EXECUTE,
+    process_handle: int, address: int, size: int, flags: Protection = READ | WRITE | EXECUTE,
 ) -> int:
     old_protect = wintypes.DWORD(0)
 
@@ -598,9 +591,7 @@ def read_process_memory(process_handle: int, address: int, size: int) -> bytes:
 
     bytes_read = ctypes.c_size_t(0)
 
-    _read_process_memory(
-        process_handle, address, buffer, size, ctypes.byref(bytes_read)
-    )
+    _read_process_memory(process_handle, address, buffer, size, ctypes.byref(bytes_read))
 
     return buffer.raw
 
@@ -612,9 +603,7 @@ def write_process_memory(process_handle: int, address: int, data: bytes) -> int:
 
     bytes_written = ctypes.c_size_t(0)
 
-    _write_process_memory(
-        process_handle, address, buffer, size, ctypes.byref(bytes_written)
-    )
+    _write_process_memory(process_handle, address, buffer, size, ctypes.byref(bytes_written))
 
     return bytes_written.value
 

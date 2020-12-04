@@ -1,13 +1,12 @@
-from functools import wraps
 import time
+from functools import wraps
 
 from aiohttp import web
 
 from gd.async_utils import maybe_coroutine
-from gd.typing import Callable, Dict, Optional, Type, TypeVar
-
 from gd.server.error import Error, ErrorType, error_into_response
 from gd.server.typing import AsyncHandler, Handler
+from gd.typing import Callable, Dict, Optional, Type, TypeVar
 
 __all__ = (
     "ConstructKey",
@@ -147,7 +146,7 @@ def cooldown(
     per: float,
     by: ConstructKey,
     cls: Type[CooldownMapping] = CooldownMapping,
-    retry_after_precision: int = 2
+    retry_after_precision: int = 2,
 ) -> Callable[[Handler], AsyncHandler]:
     def wrapper(handler: Handler) -> AsyncHandler:
         cooldown_mapping = cls.from_cooldown(rate, per, by)
@@ -165,4 +164,5 @@ def cooldown(
                 )
 
         return actual_handler
+
     return wrapper

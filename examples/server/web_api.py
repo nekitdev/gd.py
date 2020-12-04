@@ -4,6 +4,7 @@ Author: nekitdev
 """
 
 from aiohttp import web
+
 import gd
 
 # create our client instance

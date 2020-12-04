@@ -2,18 +2,22 @@
 
 from iters import iter
 
+from gd.api.guidelines import Guidelines
+from gd.api.hsv import HSV
+from gd.api.recording import (
+    RecordEntry,
+    dump_record_entries,
+    iter_record_entries,
+    list_record_entries,
+)
+from gd.api.utils import get_dir, get_id
 from gd.color import Color
 from gd.converters import Password, Version
-from gd.crypto import (
-    decode_base64_str,
-    encode_base64_str,
-    unzip_level_str,
-    zip_level_str,
-)
+from gd.crypto import decode_base64_str, encode_base64_str, unzip_level_str, zip_level_str
 from gd.decorators import cache_by
 from gd.enums import (
-    Enum,
     Easing,
+    Enum,
     Gamemode,
     InstantCountComparison,
     InternalType,
@@ -32,6 +36,21 @@ from gd.enums import (
     ZLayer,
 )
 from gd.index_parser import IndexParser
+from gd.model_backend import (
+    Base64Field,
+    BaseField,
+    BoolField,
+    EnumField,
+    FloatField,
+    IntField,
+    IterableField,
+    MappingField,
+    Model,
+    ModelField,
+    ModelIterField,
+    StrField,
+    partial,
+)
 from gd.text_utils import is_level_probably_decoded
 from gd.typing import (
     TYPE_CHECKING,
@@ -47,32 +66,6 @@ from gd.typing import (
     Type,
     TypeVar,
     Union,
-)
-
-from gd.api.guidelines import Guidelines
-from gd.api.hsv import HSV
-from gd.api.recording import (
-    RecordEntry,
-    dump_record_entries,
-    iter_record_entries,
-    list_record_entries,
-)
-from gd.api.utils import get_id, get_dir
-
-from gd.model_backend import (
-    BaseField,
-    Base64Field,
-    BoolField,
-    EnumField,
-    FloatField,
-    IntField,
-    IterableField,
-    MappingField,
-    ModelField,
-    ModelIterField,
-    StrField,
-    Model,
-    partial,
 )
 
 __all__ = (

@@ -1,20 +1,9 @@
 import asyncio
 import functools
-
 import inspect
 
 from gd.logging import get_logger
-from gd.typing import (
-    Awaitable,
-    Callable,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from gd.typing import Awaitable, Callable, List, Optional, Set, Tuple, TypeVar, Union, cast
 
 __all__ = (
     "run_blocking",

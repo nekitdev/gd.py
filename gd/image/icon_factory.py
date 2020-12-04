@@ -1,3 +1,8 @@
+# TODO: consider rewriting several aspects like offset calculation.
+# Other than that, I feel that things are generally fine here.
+# Perhaps we should not generate all icon names automatically like it is done now;
+# Instead, we could create different functions for each icon type, and work in them.
+
 import io
 from pathlib import Path
 
@@ -9,19 +14,33 @@ except ImportError:
     pass
 
 from gd.async_utils import run_blocking
-from gd.color import Color, COLOR_1, COLOR_2
+from gd.color import COLOR_1, COLOR_2, Color
 from gd.decorators import cache_by
 from gd.enums import IconType
+from gd.image.sheet import DEFAULT_IMAGE_SUFFIX, DEFAULT_PLIST_SUFFIX, Sheet
+from gd.image.sprite import Sprite
 from gd.logging import get_logger
 from gd.typing import (
-    Dict, Iterator, List, MutableMapping, Optional, Protocol, Sequence, Tuple, TypeVar, Union, cast
+    Dict,
+    Iterator,
+    List,
+    MutableMapping,
+    Optional,
+    Protocol,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
 )
 
-from gd.image.sheet import Sheet, DEFAULT_IMAGE_SUFFIX, DEFAULT_PLIST_SUFFIX
-from gd.image.sprite import Sprite
-
 __all__ = (
-    "IconFactory", "connect_images", "factory", "generate_icon_names", "get_icon_name", "to_bytes"
+    "IconFactory",
+    "connect_images",
+    "factory",
+    "generate_icon_names",
+    "get_icon_name",
+    "to_bytes",
 )
 
 T_co = TypeVar("T_co", covariant=True)
@@ -506,37 +525,11 @@ def get_image_and_offset(
 
 
 ICON_EXTRAS = {  # icon_type -> (((extra, ...), copy_level), ...)
-    IconType.CUBE: (
-        (("glow",), 0),
-        ((2,), 0),
-        ((), 0),
-        (("extra",), 0),
-    ),
-    IconType.SHIP: (
-        (("glow",), 0),
-        ((2,), 0),
-        ((), 0),
-        (("extra",), 0),
-    ),
-    IconType.BALL: (
-        (("glow",), 0),
-        ((2,), 0),
-        ((), 0),
-        (("extra",), 0),
-    ),
-    IconType.UFO: (
-        (("glow",), 0),
-        ((3,), 0),
-        ((2,), 0),
-        ((), 0),
-        (("extra",), 0),
-    ),
-    IconType.WAVE: (
-        (("glow",), 0),
-        ((2,), 0),
-        ((), 0),
-        (("extra",), 0),
-    ),
+    IconType.CUBE: ((("glow",), 0), ((2,), 0), ((), 0), (("extra",), 0),),
+    IconType.SHIP: ((("glow",), 0), ((2,), 0), ((), 0), (("extra",), 0),),
+    IconType.BALL: ((("glow",), 0), ((2,), 0), ((), 0), (("extra",), 0),),
+    IconType.UFO: ((("glow",), 0), ((3,), 0), ((2,), 0), ((), 0), (("extra",), 0),),
+    IconType.WAVE: ((("glow",), 0), ((2,), 0), ((), 0), (("extra",), 0),),
     IconType.ROBOT: (
         (("03", 2, "glow"), 1),
         (("03", "glow"), 1),

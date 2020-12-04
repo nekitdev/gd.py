@@ -1,10 +1,10 @@
-from base64 import b64decode, b64encode, urlsafe_b64decode, urlsafe_b64encode
 import gzip
 import hashlib
-from itertools import cycle
 import random
 import string
 import zlib
+from base64 import b64decode, b64encode, urlsafe_b64decode, urlsafe_b64encode
+from itertools import cycle
 
 from gd.enums import Key, Salt
 from gd.logging import get_logger
@@ -416,9 +416,7 @@ def sha1_str(string: str) -> str:
 
 
 def sha1_str_with_salt(string: str, salt: Salt) -> str:
-    return hashlib.sha1(
-        (string + salt.string).encode(DEFAULT_ENCODING, DEFAULT_ERRORS)
-    ).hexdigest()
+    return hashlib.sha1((string + salt.string).encode(DEFAULT_ENCODING, DEFAULT_ERRORS)).hexdigest()
 
 
 def decode_bytes_else_str(value: T) -> str:

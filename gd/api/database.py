@@ -4,13 +4,12 @@ from pathlib import Path
 from attr import attrib, dataclass
 from iters import iter
 
+from gd.api.struct import LevelAPI  # type: ignore
+from gd.api.utils import LEVELS_DEFAULTS, MAIN_DEFAULTS
 from gd.json import dumps
 from gd.text_utils import make_repr
 from gd.typing import Dict, Iterable, List, Optional, Tuple, TypeVar, Union
 from gd.xml_parser import XMLParser
-
-from gd.api.struct import LevelAPI  # type: ignore
-from gd.api.utils import MAIN_DEFAULTS, LEVELS_DEFAULTS
 
 __all__ = ("Part", "Database", "LevelStore", "LevelValues", "LevelCollection")
 
@@ -128,7 +127,9 @@ class Part(dict):
 
 
 class Database:
-    def __init__(self, main: Optional[AnyString] = None, levels: Optional[AnyString] = None) -> None:
+    def __init__(
+        self, main: Optional[AnyString] = None, levels: Optional[AnyString] = None
+    ) -> None:
         self.main = Part.new(main, MAIN_DEFAULTS) if main else Part(MAIN_DEFAULTS)
         self.levels = Part.new(levels, LEVELS_DEFAULTS) if levels else Part(LEVELS_DEFAULTS)
 

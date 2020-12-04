@@ -1,6 +1,6 @@
-from gd.enums import Enum, LevelDifficulty, DemonDifficulty, SearchStrategy, LevelLength
+from gd.enums import DemonDifficulty, Enum, LevelDifficulty, LevelLength, SearchStrategy
 from gd.text_utils import make_repr
-from gd.typing import Dict, Iterable, Optional, TypeVar, Union, TYPE_CHECKING
+from gd.typing import TYPE_CHECKING, Dict, Iterable, Optional, TypeVar, Union
 
 __all__ = ("Filters", "join_with_wrap")
 

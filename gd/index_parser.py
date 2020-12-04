@@ -1,8 +1,7 @@
 import itertools
 
-from gd.typing import Dict, Generator, Iterable, Iterator, List, Tuple, TypeVar, Union
-
 from gd.text_utils import make_repr
+from gd.typing import Dict, Generator, Iterable, Iterator, List, Tuple, TypeVar, Union
 
 __all__ = ("IndexParser", "chain_from_iterable", "group", "iter_split")
 

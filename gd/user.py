@@ -1,19 +1,20 @@
 from gd.abstract_entity import AbstractEntity
 from gd.async_iter import async_iterable
 from gd.async_utils import run_blocking
-from gd.color import Color, COLOR_1, COLOR_2
+from gd.color import COLOR_1, COLOR_2, Color
 from gd.datetime import datetime
 from gd.enums import (
     CommentState,
     CommentStrategy,
     CommentType,
-    FriendState,
     FriendRequestState,
+    FriendState,
     IconType,
-    Role,
     MessageState,
+    Role,
 )
 from gd.filters import Filters
+from gd.image.icon_factory import IconFactory, connect_images, to_bytes
 from gd.model import (  # type: ignore
     CommentUserModel,
     CreatorModel,
@@ -24,9 +25,7 @@ from gd.model import (  # type: ignore
     SearchUserModel,
 )
 from gd.text_utils import make_repr
-from gd.typing import Any, AsyncIterator, Dict, Iterable, Optional, Union, TYPE_CHECKING
-
-from gd.image.icon_factory import IconFactory, connect_images, to_bytes
+from gd.typing import TYPE_CHECKING, Any, AsyncIterator, Dict, Iterable, Optional, Union
 
 if TYPE_CHECKING:
     import PIL.Image  # type: ignore  # noqa
@@ -65,8 +64,7 @@ class User(AbstractEntity):
 
         if self.options.keys() & COLOR_FIELDS:  # if color fields are actually present
             result.update(
-                color_1=self.color_1,
-                color_2=self.color_2,
+                color_1=self.color_1, color_2=self.color_2,
             )
 
         return result

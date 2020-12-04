@@ -1,6 +1,6 @@
-from attr import attrib, dataclass
-
 from typing import Any, Tuple, TypeVar
+
+from attr import attrib, dataclass
 
 __all__ = ("Point", "Size", "Rectangle")
 

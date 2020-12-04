@@ -1,6 +1,6 @@
-from collections import namedtuple
 import re
 import sys
+from collections import namedtuple
 
 import aiohttp
 

@@ -1,4 +1,6 @@
 from typing import (
+    IO,
+    TYPE_CHECKING,
     AbstractSet,
     Any,
     AnyStr,
@@ -18,7 +20,6 @@ from typing import (
     Generator,
     Generic,
     Hashable,
-    IO,
     ItemsView,
     Iterable,
     Iterator,
@@ -37,7 +38,6 @@ from typing import (
     Sequence,
     Set,
     Sized,
-    TYPE_CHECKING,
     Text,
     TextIO,
     Tuple,

@@ -1,7 +1,7 @@
 import re
 
-from gd.typing import Iterable, Iterator, List, Match, Union
 from gd.text_utils import concat, make_repr
+from gd.typing import Iterable, Iterator, List, Match, Union
 
 __all__ = (
     "RECORD_ENTRY_PATTERN",

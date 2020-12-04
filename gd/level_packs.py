@@ -5,7 +5,7 @@ from gd.enums import GauntletID, LevelDifficulty
 from gd.filters import Filters
 from gd.model import GauntletModel, MapPackModel  # type: ignore
 from gd.text_utils import make_repr
-from gd.typing import Any, AsyncIterator, Dict, List, Optional, Tuple, TYPE_CHECKING
+from gd.typing import TYPE_CHECKING, Any, AsyncIterator, Dict, List, Optional, Tuple
 
 __all__ = ("Gauntlet", "MapPack")
 

@@ -2,8 +2,8 @@
 
 # HTML, RE and XML parsing never looks clean... ~ nekit
 
-from itertools import chain
 import re
+from itertools import chain
 from xml.etree.ElementTree import Element
 
 from yarl import URL

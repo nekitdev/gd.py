@@ -1,8 +1,7 @@
 from gd.crypto import Key, decode_robtop_str, encode_robtop_str
 from gd.enums import DemonDifficulty, LevelDifficulty
-from gd.typing import Any, Dict, Optional, Tuple, Union
-
 from gd.text_utils import make_repr
+from gd.typing import Any, Dict, Optional, Tuple, Union
 
 __all__ = (
     "GameVersion",

@@ -8,14 +8,16 @@ from gd.color import Color
 from gd.crypto import (
     Key,
     decode_base64_str,
-    encode_base64_str,
     decode_robtop_str,
+    encode_base64_str,
     encode_robtop_str,
 )
 from gd.datetime import de_human_delta, ser_human_delta
+from gd.enums import Enum
 from gd.errors import DeError, SerError
+from gd.index_parser import IndexParser, chain_from_iterable, group
 from gd.map_property import map_property
-
+from gd.text_utils import make_repr
 from gd.typing import (
     Callable,
     Dict,
@@ -32,10 +34,6 @@ from gd.typing import (
     Union,
     get_type_hints,
 )
-
-from gd.enums import Enum
-from gd.index_parser import IndexParser, chain_from_iterable, group
-from gd.text_utils import make_repr
 
 __all__ = (
     "BaseField",

@@ -5,38 +5,27 @@ from attr import attrib, dataclass
 from iters import iter
 
 from gd.abstract_entity import AbstractEntity
+from gd.api.editor import Editor
 from gd.async_iter import async_iterable
 from gd.converters import GameVersion
 from gd.crypto import unzip_level_str, zip_level_str
 from gd.datetime import datetime, timedelta
 from gd.decorators import cache_by
 from gd.enums import (
+    CommentStrategy,
     DemonDifficulty,
     LevelDifficulty,
-    CommentStrategy,
+    LevelLeaderboardStrategy,
     LevelLength,
     TimelyType,
-    LevelLeaderboardStrategy,
 )
 from gd.errors import MissingAccess
 from gd.logging import get_logger
 from gd.model import LevelModel  # type: ignore
-from gd.text_utils import is_level_probably_decoded, make_repr, object_count
 from gd.song import Song
-from gd.typing import (
-    Any,
-    AsyncIterator,
-    Dict,
-    Iterable,
-    Optional,
-    Type,
-    Union,
-    TYPE_CHECKING,
-    cast,
-)
+from gd.text_utils import is_level_probably_decoded, make_repr, object_count
+from gd.typing import TYPE_CHECKING, Any, AsyncIterator, Dict, Iterable, Optional, Type, Union, cast
 from gd.user import User
-
-from gd.api.editor import Editor
 
 if TYPE_CHECKING:
     from gd.client import Client  # noqa
