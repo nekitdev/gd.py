@@ -1,14 +1,19 @@
-max-line-length: 120
+max-line-length: 100
 
 # I hate prospector ~ nekit
 
 pylint:
-    run: false
+  run: false
+
 pyflakes:
-    run: false
+  run: false
+
 pep8:
-    run: false
+  run: false
+
 mccabe:
-    run: false
+  run: false
+
 pydocstyle:
-    run: false
+  run: false
+

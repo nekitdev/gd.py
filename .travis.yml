@@ -1,17 +1,17 @@
 language: python
 jobs:
   include:
-    - name: "Tests on 3.6"
-      python: "3.6"
-      script:
-        # run lint
-        - python3 -m flake8
-        # run type checker
-        - python3 -m mypy .
-        # run tests and check coverage
-        - python3 -m coverage run -m pytest ./tests/ --disable-warnings
-      after_success:
-        - python3 -m coveralls
+    # - name: "Tests on 3.6"
+    #   python: "3.6"
+    #   script:
+    #     # run lint
+    #     - python3 -m flake8
+    #     # run type checker
+    #     - python3 -m mypy .
+    #     # run tests and check coverage
+    #     - python3 -m coverage run -m pytest ./tests/ --disable-warnings
+    #   after_success:
+    #     - python3 -m coveralls
 
     - name: "Tests on 3.7"
       python: "3.7"
