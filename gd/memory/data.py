@@ -1,10 +1,10 @@
 import ctypes
 from struct import calcsize, pack, unpack
 
-from gd.decorators import cache_by
+from gd.decorators import cache_by, classproperty
 from gd.enums import ByteOrder
 from gd.text_utils import make_repr
-from gd.typing import Any, Dict, Generic, Sequence, Tuple, Type, TypeVar, Union, cast
+from gd.typing import Any, Generic, Sequence, Type, TypeVar, Union, cast
 
 __all__ = (
     "BYTE_BITS",
@@ -59,52 +59,37 @@ def _bytes_to_hex(data: bytes, step: int = 1) -> str:
     return " ".join(data[index : index + step].hex() for index in range(0, len(data), step))
 
 
-class DataMeta(type):
+class Data(Generic[T]):
     _name: str = ""
     _format: str = ""
     _size: int = 0
 
-    def __new__(
-        meta_cls,
-        cls_name: str,
-        bases: Tuple[Type[Any], ...],
-        cls_dict: Dict[str, Any],
-        name: str,
-        format: str = "",
-    ) -> "DataMeta":
-        cls = cast(DataMeta, super().__new__(meta_cls, cls_name, bases, cls_dict))
-
+    def __init_subclass__(cls, name: str, format: str = "") -> None:
         cls._name = name
 
         cls._format = format
         cls._size = calcsize(format)
 
-        return cls
-
-    def __repr__(cls) -> str:
-        return cls.name
-
-    def create_format(cls, order: Union[str, ByteOrder]) -> str:
-        return ByteOrder.from_value(order).value + cls.format
-
-    @property
+    @classproperty
     def name(cls) -> str:
         return cls._name
 
-    @property
+    @classproperty
     def format(cls) -> str:
         return cls._format
 
-    @property
+    @classproperty
     def size(cls) -> int:
         return cls._size
 
-    @property
+    @classproperty
     def bits(cls) -> int:
         return cls._size * BYTE_BITS
 
+    @classmethod
+    def create_format(cls, order: Union[str, ByteOrder] = ByteOrder.NATIVE) -> str:
+        return ByteOrder.from_value(order).value + cls.format
 
-class Data(Generic[T], metaclass=DataMeta, name="Data"):
     def __init__(self, value: T) -> None:
         self._value = value
 
@@ -137,23 +122,7 @@ class Data(Generic[T], metaclass=DataMeta, name="Data"):
 
     @property
     def type(self) -> Type["Data[T]"]:
-        return self.__class__
-
-    @property
-    def name(self) -> str:
-        return self.type._name
-
-    @property
-    def format(self) -> str:
-        return self.type._format
-
-    @property
-    def size(self) -> int:
-        return self.type._size
-
-    @property
-    def bits(self) -> int:
-        return self.type._size * BYTE_BITS
+        return type(self)
 
 
 EMPTY_BYTES = bytes(0)

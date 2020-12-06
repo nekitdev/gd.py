@@ -4,7 +4,9 @@ from operator import attrgetter
 from gd.async_utils import get_not_running_loop, maybe_coroutine
 from gd.code_utils import time_execution_and_print
 from gd.errors import MissingAccess
-from gd.typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Type, TypeVar, Union
+from gd.typing import (
+    TYPE_CHECKING, Any, Awaitable, Callable, Generic, Optional, Type, TypeVar, Union
+)
 
 if TYPE_CHECKING:
     from gd.abstract_entity import AbstractEntity  # noqa
@@ -13,16 +15,62 @@ if TYPE_CHECKING:
 __all__ = (
     "benchmark",
     "cache_by",
-    "impl_sync",
+    "classproperty",
     "login_check",
     "login_check_object",
     "patch",
     "run_once",
     "sync",
+    "synchronize",
 )
 
 T = TypeVar("T")
 U = TypeVar("U")
+
+
+class ClassProperty(Generic[T]):
+    """Decorator that converts a method with a single class argument into a property
+    that can be accessed directly from the class.
+
+    Example
+    -------
+    >>> class Class:
+    ...     @classproperty
+    ...     def value(cls) -> int:
+    ...         return 42
+    ...
+    >>> Class.value
+    42
+    >>> instance = Class()
+    >>> instance.value
+    42
+    """
+
+    def __init__(self, method: Optional[Callable[[Any], T]] = None) -> None:
+        self.get = method
+
+    def __get__(self, instance: Optional[Any], owner: Optional[Type[Any]] = None) -> T:
+        if owner is None:
+            if instance is None:
+                raise RuntimeError("Both instance and owner are None.")
+
+            cls = type(instance)
+
+        else:
+            cls = owner
+
+        if self.get is None:
+            raise RuntimeError("Can not read class property.")
+
+        return self.get(cls)
+
+    def getter(self, method: Callable[[Any], T]) -> "ClassProperty[T]":
+        self.get = method
+
+        return self
+
+
+classproperty = ClassProperty
 
 
 def benchmark(function: Callable[..., T]) -> Callable[..., T]:
@@ -90,7 +138,7 @@ def sync(function: Callable[..., Union[Awaitable[T], T]]) -> Callable[..., Union
     return syncer
 
 
-def impl_sync(cls: Type[T]) -> Type[T]:
+def synchronize(cls: Type[T]) -> Type[T]:
     """Implement ``sync_<name>`` functions for class ``cls`` to synchronously call methods."""
     try:
         old_get = cls.__getattr__  # type: ignore

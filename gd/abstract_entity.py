@@ -1,4 +1,4 @@
-from gd.decorators import impl_sync
+from gd.decorators import synchronize
 from gd.errors import ClientException
 from gd.model import Model  # type: ignore
 from gd.text_utils import make_repr
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from gd.client import Client
 
 
-@impl_sync
+@synchronize
 class AbstractEntity:
     """Class that represents Abstract Entity. This is a base for many gd.py objects.
 

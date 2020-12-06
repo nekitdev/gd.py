@@ -6,7 +6,7 @@ from gd.async_iter import async_iter, async_iterable
 from gd.async_utils import get_not_running_loop, maybe_coroutine
 from gd.comment import Comment
 from gd.crypto import Key, encode_robtop_str
-from gd.decorators import cache_by, impl_sync, login_check, login_check_object
+from gd.decorators import cache_by, synchronize, login_check, login_check_object
 from gd.enums import (
     AccountURLType,
     CommentState,
@@ -107,7 +107,7 @@ def run_async_iterators(
     return async_iter(iterators).run_iterators(*ignore_exceptions, concurrent=concurrent).unwrap()
 
 
-@impl_sync
+@synchronize
 class Client:
     r"""Main class in gd.py, used for interacting with the servers of Geometry Dash.
 

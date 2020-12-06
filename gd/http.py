@@ -22,7 +22,7 @@ from gd.crypto import (  # gen_leaderboard_seed,
     gen_rs_and_encode_number,
     zip_level_str,
 )
-from gd.decorators import impl_sync
+from gd.decorators import synchronize
 from gd.enums import (
     AccountURLType,
     CommentState,
@@ -207,7 +207,7 @@ def close_all_clients_sync() -> None:
 atexit.register(close_all_clients_sync)
 
 
-@impl_sync
+@synchronize
 class HTTPClient:
     USER_AGENT = f"python/{python_version} aiohttp/{aiohttp_version} gd.py/{version_info}"
     REQUEST_LOG = "{method} {url} has returned {status}"

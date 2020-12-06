@@ -1,7 +1,7 @@
 from gd.api.database import Database
 from gd.api.loader import SAVE_DELIM, save
 from gd.api.recording import RecordEntry
-from gd.decorators import impl_sync
+from gd.decorators import synchronize
 from gd.enums import (
     AccountURLType,
     CommentState,
@@ -57,7 +57,7 @@ from gd.typing import Any, Dict, Iterable, List, Optional, Union
 __all__ = ("Session",)
 
 
-@impl_sync
+@synchronize
 class Session:
     def __init__(self, **http_args) -> None:
         self.http = HTTPClient(**http_args)
