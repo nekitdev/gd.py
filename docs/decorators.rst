@@ -7,9 +7,7 @@ Decorators
 
 .. autodecorator:: cache_by
 
-.. autoclass:: classproperty
-
-.. autodecorator:: synchronize
+.. autodecorator:: classproperty
 
 .. autodecorator:: login_check
 
@@ -20,3 +18,5 @@ Decorators
 .. autodecorator:: run_once
 
 .. autodecorator:: sync
+
+.. autodecorator:: synchronize

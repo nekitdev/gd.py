@@ -29,23 +29,6 @@ U = TypeVar("U")
 
 
 class ClassProperty(Generic[T]):
-    """Decorator that converts a method with a single class argument into a property
-    that can be accessed directly from the class.
-
-    Example
-    -------
-    >>> class Class:
-    ...     @classproperty
-    ...     def value(cls) -> int:
-    ...         return 42
-    ...
-    >>> Class.value
-    42
-    >>> instance = Class()
-    >>> instance.value
-    42
-    """
-
     def __init__(self, method: Optional[Callable[[Any], T]] = None) -> None:
         self.get = method
 
@@ -70,7 +53,24 @@ class ClassProperty(Generic[T]):
         return self
 
 
-classproperty = ClassProperty
+def classproperty(method: Optional[Callable[[Any], T]] = None) -> ClassProperty[T]:
+    """Decorator that converts a method with a single class argument into a property
+    that can be accessed directly from the class.
+
+    Example
+    -------
+    >>> class Class:
+    ...     @classproperty
+    ...     def value(cls) -> int:
+    ...         return 42
+    ...
+    >>> Class.value
+    42
+    >>> instance = Class()
+    >>> instance.value
+    42
+    """
+    return ClassProperty(method)
 
 
 def benchmark(function: Callable[..., T]) -> Callable[..., T]:

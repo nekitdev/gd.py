@@ -1,7 +1,7 @@
 .. currentmodule:: gd.utils
 
-Debugging
-=========
+Debugging and Code Utilities
+============================
 
 .. autofunction:: breakpoint
 

@@ -37,7 +37,7 @@ Documentation Contents
     console
     advanced
     decorators
-    debug
+    code
 
 Additional Information
 -----------------------
