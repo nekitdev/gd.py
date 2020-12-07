@@ -23,7 +23,6 @@ from gd.enums import (
     MessageState,
     MessageType,
     RewardType,
-    TimelyType,
     UserListType,
 )
 from gd.errors import ClientException, MissingAccess, NothingFound
@@ -714,14 +713,8 @@ class Client:
                 bool(~level_id)  # -1 -> 0; -2 -> 1; then call bool
             )
 
-            timely_id, type, cooldown = (
-                timely_model.timely_id,
-                timely_model.type,
-                timely_model.cooldown,
-            )
-
         else:
-            timely_id, type, cooldown = 0, TimelyType.NOT_TIMELY, -1
+            timely_model = None
 
         level_model = None
 
@@ -730,7 +723,7 @@ class Client:
                 login_check_object(self)  # assert client is logged in
 
                 download_model = await self.session.download_level(
-                    level_id, account_id=self.account_id, encoded_password=self.encoded_password,
+                    level_id, account_id=self.account_id, encoded_password=self.encoded_password
                 )
 
             else:
@@ -741,8 +734,6 @@ class Client:
             level_id = level_model.id
 
         level: Level = await self.search_levels_on_page(query=level_id).next()
-
-        level.options.update(timely_id=timely_id, type=type, cooldown=cooldown)
 
         if level_model is not None:
             level.options.update(
@@ -755,6 +746,13 @@ class Client:
                     cooldown=level.cooldown,
                     client=self,
                 ).options
+            )
+
+        if timely_model is not None:
+            level.options.update(
+                timely_id=timely_model.timely_id,
+                type=timely_model.type,
+                cooldown=timely_model.cooldown,
             )
 
         return level

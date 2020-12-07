@@ -108,8 +108,8 @@ class Level(AbstractEntity):
         client: Optional["Client"] = None,
         creator: Optional[User] = None,
         song: Optional[Song] = None,
-        type: TimelyType = TimelyType.NOT_TIMELY,  # type: ignore
-        timely_id: int = -1,
+        type: Optional[TimelyType] = None,
+        timely_id: int = 0,
         cooldown: int = -1,
     ) -> "Level":
         return cls(
@@ -145,7 +145,7 @@ class Level(AbstractEntity):
             editor_seconds=model.editor_seconds,
             copies_seconds=model.copies_seconds,
             timely_id=(timely_id if timely_id > 0 else model.timely_id),
-            type=type,
+            type=(model.type if type is None else type),
             cooldown=cooldown,
             client=client,
         )
@@ -406,6 +406,10 @@ class Level(AbstractEntity):
             return self.type is not TimelyType.NOT_TIMELY
 
         return self.type is TimelyType.from_value(timely_type)
+
+    def is_current_timely(self, timely_type: Optional[Union[int, str, TimelyType]] = None) -> bool:
+        """:class:`bool`: Indicates whether a level is current timely/daily/weekly level."""
+        return self.is_timely(timely_type) and self.cooldown > 0
 
     def is_rated(self) -> bool:
         """:class:`bool`: Indicates if a level is rated (has stars)."""
