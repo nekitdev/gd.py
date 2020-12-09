@@ -1,12 +1,15 @@
 import inspect
 import pdb
+import sys
 from datetime import datetime, timedelta
+from types import FrameType
 
 from gd.typing import Any, Callable, NoReturn, Optional, Tuple, TypeVar
 
 __all__ = (
     "TimerWithElapsed",
     "breakpoint",
+    "get_frame",
     "print_source",
     "time_execution",
     "time_execution_and_print",
@@ -30,6 +33,42 @@ class TimerWithElapsed:
         return self.get_current() - self.created_at
 
 
+get_frame = getattr(sys, "_getframe", None)
+
+if get_frame is None:
+    class GetFrame(Exception):
+        pass
+
+    def get_frame(level: int = 0) -> FrameType:
+        try:
+            raise GetFrame()
+
+        except GetFrame as error:
+            traceback = error.__traceback__
+
+            if traceback is None:
+                raise ValueError("No traceback to get the frame from.")
+
+            current_frame = traceback.tb_frame
+
+            if current_frame is None:
+                raise ValueError("Can not get current frame.")
+
+            frame = current_frame.f_back
+
+            if frame is None:
+                raise ValueError("Can not get caller frame.")
+
+            if level:
+                for _ in range(level):
+                    frame = frame.f_back
+
+                    if frame is None:
+                        raise ValueError("Call stack is not deep enough.") from None
+
+            return frame
+
+
 def breakpoint(message: Optional[str] = None, *, prompt: str = "(dbg) ") -> None:
     """Drop into the debugger at the call site."""
     debugger = pdb.Pdb()
@@ -39,7 +78,7 @@ def breakpoint(message: Optional[str] = None, *, prompt: str = "(dbg) ") -> None
     if message is not None:
         debugger.message(message)
 
-    frame = inspect.currentframe()
+    frame = get_frame()
 
     if frame is not None:
         debugger.set_trace(frame.f_back)

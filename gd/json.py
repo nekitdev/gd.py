@@ -59,7 +59,10 @@ def default(some_object: T) -> Any:
     elif isinstance(some_object, Mapping):
         return dict(some_object)
 
-    elif isinstance(some_object, (datetime, timedelta)):
+    elif isinstance(some_object, datetime):
+        return some_object.isoformat()
+
+    elif isinstance(some_object, timedelta):
         return str(some_object)
 
     elif isinstance(some_object, URL):
