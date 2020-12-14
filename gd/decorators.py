@@ -5,7 +5,15 @@ from gd.async_utils import get_not_running_loop, maybe_coroutine
 from gd.code_utils import time_execution_and_print
 from gd.errors import MissingAccess
 from gd.typing import (
-    TYPE_CHECKING, Any, Awaitable, Callable, Generic, Optional, Type, TypeVar, Union
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Callable,
+    Generic,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
 )
 
 if TYPE_CHECKING:
@@ -29,7 +37,7 @@ U = TypeVar("U")
 
 
 class ClassProperty(Generic[T]):
-    def __init__(self, method: Optional[Callable[[Any], T]] = None) -> None:
+    def __init__(self, method: Optional[Callable[..., T]] = None) -> None:
         self.get = method
 
     def __get__(self, instance: Optional[Any], owner: Optional[Type[Any]] = None) -> T:
@@ -47,13 +55,13 @@ class ClassProperty(Generic[T]):
 
         return self.get(cls)
 
-    def getter(self, method: Callable[[Any], T]) -> "ClassProperty[T]":
+    def getter(self, method: Callable[..., T]) -> "ClassProperty[T]":
         self.get = method
 
         return self
 
 
-def classproperty(method: Optional[Callable[[Any], T]] = None) -> ClassProperty[T]:
+def classproperty(method: Optional[Callable[..., T]] = None) -> ClassProperty[T]:
     """Decorator that converts a method with a single class argument into a property
     that can be accessed directly from the class.
 

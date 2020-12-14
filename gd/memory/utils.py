@@ -10,7 +10,7 @@ __all__ = ("Structure", "Union", "extern_func")
 
 class StructureMeta(type(ctypes.Structure)):  # type: ignore
     def __new__(  # type: ignore
-        meta_cls, name: str, bases: Tuple[Type[Any]], namespace: Dict[str, Any]
+        meta_cls, name: str, bases: Tuple[Type[Any], ...], namespace: Dict[str, Any]
     ) -> Type[ctypes.Structure]:
         cls = super().__new__(meta_cls, name, bases, namespace)
 
@@ -26,7 +26,7 @@ class StructureMeta(type(ctypes.Structure)):  # type: ignore
 
 class UnionMeta(type(ctypes.Union)):  # type: ignore
     def __new__(  # type: ignore
-        meta_cls, name: str, bases: Tuple[Type[Any]], namespace: Dict[str, Any]
+        meta_cls, name: str, bases: Tuple[Type[Any], ...], namespace: Dict[str, Any]
     ) -> Type[ctypes.Union]:
         cls = super().__new__(meta_cls, name, bases, namespace)
 

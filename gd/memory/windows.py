@@ -7,8 +7,8 @@ from pathlib import Path
 import pefile  # to parse some headers uwu ~ nekit
 
 from gd.enums import Protection
-from gd.memory.data import SIZE_BITS
 from gd.memory.utils import Structure, extern_func
+from gd.platform import system_bits
 from gd.typing import Dict, Iterator, Optional, Type, Union
 
 __all__ = (
@@ -481,7 +481,7 @@ def get_process_bits(process_id: int) -> int:
 
 
 def get_process_bits_from_handle(process_handle: int) -> int:
-    if SIZE_BITS >= 64:
+    if system_bits >= 64:
         if _is_wow_64_process(process_handle):
             return 32
 

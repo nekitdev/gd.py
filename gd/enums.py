@@ -854,3 +854,12 @@ class ByteOrder(Enum):
     LITTLE = "<"
     NATIVE = "="
     BIG = ">"
+
+
+class Platform(Enum):
+    UNKNOWN = 0
+    ANDROID = 1
+    IOS = 2
+    LINUX = 3
+    MACOS = 4
+    WINDOWS = 5

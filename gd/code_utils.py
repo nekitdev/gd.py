@@ -36,6 +36,7 @@ class TimerWithElapsed:
 get_frame = getattr(sys, "_getframe", None)
 
 if get_frame is None:
+
     class GetFrame(Exception):
         pass
 
