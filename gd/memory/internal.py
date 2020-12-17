@@ -110,7 +110,7 @@ Functions
 """
 
 from gd.code_utils import unimplemented
-from gd.platform import LINUX, MACOS, WINDOWS
+from gd.platform import ANDROID, IOS, LINUX, MACOS, WINDOWS
 
 try:
     from gd.memory.linux import (  # type: ignore
@@ -227,7 +227,7 @@ except ImportError:
     windows_write_process_memory = unimplemented
 
 
-if LINUX:
+if ANDROID or LINUX:
     allocate_memory = linux_allocate_memory
     free_memory = linux_free_memory
     get_base_address = linux_get_base_address
@@ -246,7 +246,7 @@ if LINUX:
     write_process_memory = linux_write_process_memory
 
 
-elif MACOS:
+elif IOS or MACOS:
     allocate_memory = macos_allocate_memory
     free_memory = macos_free_memory
     get_base_address = macos_get_base_address

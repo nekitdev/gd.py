@@ -73,3 +73,7 @@ float32_t = MarkerType("float32_t")
 float64_t = MarkerType("float64_t")
 
 bool_t = MarkerType("bool_t")
+
+
+# MarkerStruct
+# MarkerUnion

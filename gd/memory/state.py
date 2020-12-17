@@ -2,6 +2,7 @@ from pathlib import Path
 
 from gd.decorators import cache_by
 from gd.enums import Protection
+from gd.memory.address import Address
 from gd.memory.buffer import Buffer
 from gd.memory.internal import (
     allocate_memory as system_allocate_memory,
@@ -69,9 +70,8 @@ from gd.memory.internal import (
     windows_write_process_memory,
 )
 from gd.memory.object import Object
-from gd.memory.pointer import Address
 from gd.memory.types import TypeHandler
-from gd.platform import LINUX, MACOS, WINDOWS, Platform, system_platform
+from gd.platform import ANDROID, IOS, LINUX, MACOS, WINDOWS, Platform, system_platform
 from gd.text_utils import make_repr
 from gd.typing import Callable, Type, TypeVar, Union, cast
 
@@ -454,11 +454,11 @@ State: Type[BaseState]
 
 get_state: Callable[..., BaseState]
 
-if LINUX:
+if ANDROID or LINUX:
     State = LinuxState
     get_state = get_linux_state
 
-elif MACOS:
+elif IOS or MACOS:
     State = MacOSState
     get_state = get_macos_state
 
