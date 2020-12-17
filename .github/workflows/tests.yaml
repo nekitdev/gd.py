@@ -1,0 +1,40 @@
+name: tests
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8, 3.9]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install Dependencies
+      run: |
+        # install pip, setuptools and setuptools_rust, which are required to build
+        python -m pip install --upgrade pip setuptools setuptools_rust
+        # install gd.py with all required dependencies
+        python -m pip install --upgrade .[image,lint,server,speedups,test]
+        # install coveralls for reporting coverage
+        python -m pip install --upgrade coveralls
+
+    - name: Lint with flake8
+      run: |
+        # check for warnings and errors
+        python -m flake8 . --count --statistics
+
+    - name: Test with pytest and Check Coverage
+      run: |
+        # disable warnings as they arise from other dependencies
+        python -m coverage run -m pytest ./tests/ --disable-warnings
+
+    - name: Report Coverage
+      run: |
+        python -m coveralls

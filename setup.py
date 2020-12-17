@@ -12,10 +12,10 @@ except ImportError:
 
     print("Can not find setuptools-rust. Attempting installation...")
 
-    error = subprocess.call([sys.executable, "-m", "pip", "install", "setuptools-rust"])
+    error = subprocess.call([sys.executable, "-m", "pip", "install", "setuptools_rust"])
 
     if error:
-        print("Can not install setuptools-rust. Manual installation required.")
+        print("Can not install setuptools_rust. Manual installation required.")
         raise SystemExit(error)
 
     else:
@@ -74,10 +74,11 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require=extras_require,
-    python_requires=">=3.7",
+    python_requires=">=3.6",
     classifiers=[
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

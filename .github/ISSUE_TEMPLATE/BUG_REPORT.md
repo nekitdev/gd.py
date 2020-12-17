@@ -19,7 +19,6 @@ about: Report broken, unexpected or incorrect behaviour
 
 <!-- What actually happened. If there is a traceback, please show the entire output. -->
 
-
 ### Checklist
 
 <!-- Put an x inside [ ] to check it, like so: [x] -->
@@ -30,5 +29,4 @@ about: Report broken, unexpected or incorrect behaviour
 
 ### System Information
 
-<!-- Run `python -m gd -v` and paste this information below. -->
-<!-- This command is available in v0.8.0 or higher. If you are unable to run this command, paste basic info (ie. Python version, library version, and your operating system -->
+<!-- Run `python -m gd --version` and paste this information below. -->
