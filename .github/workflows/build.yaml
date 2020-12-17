@@ -26,6 +26,7 @@ jobs:
           python -m pip install --upgrade cibuildwheel
 
       - name: Build
+        run: |
           python setup.py sdist bdist_wheel
           python -m cibuildwheel --output-dir built_wheels
 
