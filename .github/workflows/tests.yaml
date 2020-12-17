@@ -32,6 +32,11 @@ jobs:
         # check for warnings and errors
         python -m flake8 . --count --statistics
 
+    - name: Check Types with mypy
+      run: |
+        # check for type errors
+        python -m mypy .
+
     - name: Test with pytest and Check Coverage
       run: |
         # disable warnings as they arise from other dependencies
