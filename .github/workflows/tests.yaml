@@ -40,3 +40,6 @@ jobs:
     - name: Report Coverage
       run: |
         python -m coveralls
+
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
