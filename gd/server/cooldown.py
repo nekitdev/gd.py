@@ -5,7 +5,7 @@ from aiohttp import web
 
 from gd.async_utils import maybe_coroutine
 from gd.server.error import Error, ErrorType, error_into_response
-from gd.server.typing import AsyncHandler, Handler
+from gd.server.typing import Handler
 from gd.typing import Callable, Dict, Optional, Type, TypeVar
 
 __all__ = (
@@ -147,8 +147,8 @@ def cooldown(
     by: ConstructKey,
     cls: Type[CooldownMapping] = CooldownMapping,
     retry_after_precision: int = 2,
-) -> Callable[[Handler], AsyncHandler]:
-    def wrapper(handler: Handler) -> AsyncHandler:
+) -> Callable[[Handler], Handler]:
+    def wrapper(handler: Handler) -> Handler:
         cooldown_mapping = cls.from_cooldown(rate, per, by)
 
         @wraps(handler)

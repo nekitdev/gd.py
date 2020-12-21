@@ -5,7 +5,7 @@ from gd.typing import Any, Callable, Dict, Tuple, Type, TypeVar, get_type_hints
 
 T = TypeVar("T")
 
-__all__ = ("Structure", "Union", "extern_func")
+__all__ = ("Structure", "Union", "extern_fn")
 
 
 class StructureMeta(type(ctypes.Structure)):  # type: ignore
@@ -52,23 +52,23 @@ class Union(ctypes.Union, metaclass=UnionMeta):
     pass
 
 
-def extern_func(func_ptr: Any) -> Callable[[Callable[..., T]], Callable[..., T]]:
-    def wrap(func: Callable[..., T]) -> Callable[..., T]:
-        annotations = get_type_hints(func)
+def extern_fn(function_pointer: Any) -> Callable[[Callable[..., T]], Callable[..., T]]:
+    def wrap(function: Callable[..., T]) -> Callable[..., T]:
+        annotations = get_type_hints(function)
 
         return_type = annotations.pop("return", None)
 
         if return_type:
-            func_ptr.restype = return_type
+            function_pointer.restype = return_type
 
-        arg_types = list(annotations.values())
+        argument_types = list(annotations.values())
 
-        if arg_types:
-            func_ptr.argtypes = arg_types
+        if argument_types:
+            function_pointer.argtypes = argument_types
 
-        @functools.wraps(func)
+        @functools.wraps(function)
         def handle_call(*args) -> T:
-            return func_ptr(*args)
+            return function_pointer(*args)
 
         return handle_call
 

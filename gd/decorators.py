@@ -136,7 +136,7 @@ def cache_by(*names: str) -> Callable[[Callable[..., T]], Callable[..., T]]:
     return decorator
 
 
-def sync(function: Callable[..., Union[Awaitable[T], T]]) -> Callable[..., Union[Awaitable[T], T]]:
+def sync(function: Callable[..., Union[Awaitable[T], T]]) -> Callable[..., T]:
     """Wrap ``function`` to be called synchronously."""
 
     @wraps(function)
@@ -149,16 +149,16 @@ def sync(function: Callable[..., Union[Awaitable[T], T]]) -> Callable[..., Union
 def synchronize(cls: Type[T]) -> Type[T]:
     """Implement ``sync_<name>`` functions for class ``cls`` to synchronously call methods."""
     try:
-        old_get = cls.__getattr__  # type: ignore
+        old_get_attribute = cls.__getattr__  # type: ignore
 
     except AttributeError:
 
-        def old_get(instance: T, name: str) -> None:
+        def old_get_attribute(instance: T, name: str) -> None:
             raise AttributeError(f"{type(instance).__name__!r} has no attribute {name!r}")
 
     lookup = "sync_"
 
-    def get_impl(instance: T, name: str) -> Any:
+    def get_attribute(instance: T, name: str) -> Any:
         if name.startswith(lookup):
 
             name = name[len(lookup) :]  # skip lookup part in name
@@ -166,9 +166,9 @@ def synchronize(cls: Type[T]) -> Type[T]:
             return sync(getattr(instance, name))
 
         else:
-            return old_get(instance, name)
+            return old_get_attribute(instance, name)
 
-    cls.__getattr__ = get_impl  # type: ignore
+    cls.__getattr__ = get_attribute  # type: ignore
 
     return cls
 

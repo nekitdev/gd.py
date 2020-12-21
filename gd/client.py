@@ -2,8 +2,8 @@ import traceback
 
 from gd.api.database import Database
 from gd.api.recording import RecordEntry
-from gd.async_iter import async_iter, async_iterable
-from gd.async_utils import get_not_running_loop, maybe_coroutine
+from gd.async_iters import async_iter, awaitable_iterator
+from gd.async_utils import get_not_running_loop, maybe_await, maybe_coroutine
 from gd.comment import Comment
 from gd.crypto import Key, encode_robtop_str
 from gd.decorators import cache_by, synchronize, login_check, login_check_object
@@ -52,7 +52,6 @@ from gd.typing import (
     AsyncIterator,
     Awaitable,
     Callable,
-    Coroutine,
     Dict,
     Iterable,
     Iterator,
@@ -72,6 +71,7 @@ AnyIterable = Union[AsyncIterable[T], Iterable[T]]
 log = get_logger(__name__)
 
 MaybeAsyncFunction = Callable[..., Union[T, Awaitable[T]]]
+MaybeAwaitable = Union[Awaitable[T], T]
 
 DAILY = -1
 WEEKLY = -2
@@ -205,20 +205,20 @@ class Client:
         """
         return bool(self.account_id and self.id and self.name and self.password)
 
-    def run(self, coroutine: Coroutine[None, None, T]) -> T:
-        """Run given :ref:`coroutine<coroutine>` and return the result.
+    def run(self, maybe_awaitable: MaybeAwaitable[T]) -> T:
+        """Run given maybe awaitable object and return the result.
 
         Parameters
         ----------
-        coroutine: Coroutine[``None``, ``None``, ``T``]
-            Coroutine to run.
+        maybe_awaitable: Union[Awaitable[``T``], ``T``]
+            Maybe awaitable object to execute.
 
         Returns
         -------
         ``T``
-            Whatever the given :ref:`coroutine<coroutine>` returns.
+            Result of the execution.
         """
-        return get_not_running_loop().run_until_complete(coroutine)
+        return get_not_running_loop().run_until_complete(maybe_await(maybe_awaitable))
 
     @property
     def database(self) -> Database:
@@ -295,7 +295,7 @@ class Client:
         password: :class:`str`
             Password of an account.
         """
-        self_user = await self.search_user(user, abstract=True)
+        self_user = await self.search_user(user, simple=True)
 
         log.info("Logged in? as %r.", user)
 
@@ -556,7 +556,7 @@ class Client:
             Will cause no effect.
         """
         if set_as_user is None:
-            user = await self.get_user(self.account_id, profile=True)
+            user = await self.get_user(self.account_id, simple=True)
 
         else:
             user = set_as_user
@@ -575,7 +575,7 @@ class Client:
         )
 
     async def get_user(
-        self, account_id: int, profile: bool = False, friend_state: bool = False
+        self, account_id: int, simple: bool = False, friend_state: bool = False
     ) -> User:
         if friend_state:  # if we need to find friend state
             login_check_object(self)  # assert client is logged in
@@ -589,7 +589,7 @@ class Client:
         else:  # otherwise, just request normally
             profile_model = await self.session.get_user_profile(account_id)
 
-        if profile:  # if only profile is needed, return right away
+        if simple:  # if only profile is needed, return right away
             return User.from_model(profile_model, client=self)
 
         search_model = await self.session.search_user(profile_model.id)  # search by ID
@@ -597,11 +597,11 @@ class Client:
         return User.from_models(search_model, profile_model, client=self)
 
     async def search_user(
-        self, query: Union[int, str], abstract: bool = False, friend_state: bool = False
+        self, query: Union[int, str], simple: bool = False, friend_state: bool = False
     ) -> User:
         search_model = await self.session.search_user(query)  # search using query
 
-        if abstract:  # if only abstract info is required, return right away
+        if simple:  # if only simple is required, return right away
             return User.from_model(search_model, client=self)
 
         if friend_state:  # if friend state is requested
@@ -618,7 +618,7 @@ class Client:
 
         return User.from_models(search_model, profile_model, client=self)
 
-    @async_iterable
+    @awaitable_iterator
     async def search_users_on_page(
         self, query: Union[int, str], page: int = 0
     ) -> AsyncIterator[User]:
@@ -627,7 +627,7 @@ class Client:
         for model in response_model.users:
             yield User.from_model(model, client=self)
 
-    @async_iterable
+    @awaitable_iterator
     def search_users(
         self, query: Union[int, str], pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[User]:
@@ -637,7 +637,7 @@ class Client:
             concurrent=concurrent,
         )
 
-    @async_iterable
+    @awaitable_iterator
     @login_check
     async def get_user_list(self, type: Union[int, str, UserListType]) -> AsyncIterator[User]:
         try:
@@ -661,7 +661,7 @@ class Client:
     def get_blocked(self) -> AsyncIterator[User]:
         return self.get_user_list(UserListType.BLOCKED)
 
-    @async_iterable
+    @awaitable_iterator
     async def get_top(
         self, strategy: Union[int, str, LeaderboardStrategy], amount: int = 100
     ) -> AsyncIterator[User]:
@@ -757,7 +757,7 @@ class Client:
 
         return level
 
-    @async_iterable
+    @awaitable_iterator
     async def search_levels_on_page(
         self,
         query: Optional[Union[int, str, Iterable[Any]]] = None,
@@ -793,7 +793,7 @@ class Client:
         for level in self.levels_from_model(response_model):
             yield level
 
-    @async_iterable
+    @awaitable_iterator
     def search_levels(
         self,
         query: Optional[Union[int, str]] = None,
@@ -922,7 +922,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @async_iterable
+    @awaitable_iterator
     @login_check
     async def get_level_top(
         self,
@@ -1022,7 +1022,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @async_iterable
+    @awaitable_iterator
     @login_check
     async def get_messages_on_page(
         self, type: Union[int, str, MessageType] = MessageType.NORMAL, page: int = 0
@@ -1043,7 +1043,7 @@ class Client:
         for model in response_model.messages:
             yield Message.from_model(model, client=self, other_user=self.user, type=message_type)
 
-    @async_iterable
+    @awaitable_iterator
     @login_check
     def get_messages(
         self,
@@ -1109,7 +1109,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @async_iterable
+    @awaitable_iterator
     @login_check
     async def get_friend_requests_on_page(
         self, type: Union[int, str, FriendRequestType] = FriendRequestType.NORMAL, page: int = 0,
@@ -1132,7 +1132,7 @@ class Client:
                 model, client=self, other_user=self.user, type=friend_request_type
             )
 
-    @async_iterable
+    @awaitable_iterator
     @login_check
     def get_friend_requests(
         self,
@@ -1241,7 +1241,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @async_iterable
+    @awaitable_iterator
     async def get_user_comments_on_page(
         self,
         user: User,
@@ -1261,7 +1261,7 @@ class Client:
         for model in response_model.comments:
             yield Comment.from_model(model, client=self, user=user)
 
-    @async_iterable
+    @awaitable_iterator
     def get_user_comments(
         self,
         user: User,
@@ -1280,7 +1280,7 @@ class Client:
             concurrent=concurrent,
         )
 
-    @async_iterable
+    @awaitable_iterator
     async def get_level_comments_on_page(
         self,
         level: Level,
@@ -1303,7 +1303,7 @@ class Client:
         for model in response_model.comments:
             yield Comment.from_model(model, client=self)
 
-    @async_iterable
+    @awaitable_iterator
     def get_level_comments(
         self,
         level: Level,
@@ -1324,21 +1324,21 @@ class Client:
             concurrent=concurrent,
         )
 
-    @async_iterable
+    @awaitable_iterator
     async def get_gauntlets(self) -> AsyncIterator[Gauntlet]:
         response_model = await self.session.get_gauntlets()
 
         for model in response_model.gauntlets:
             yield Gauntlet.from_model(model, client=self)
 
-    @async_iterable
+    @awaitable_iterator
     async def get_map_packs_on_page(self, page: int = 0) -> AsyncIterator[MapPack]:
         response_model = await self.session.get_map_packs_on_page(page=page)
 
         for model in response_model.map_packs:
             yield MapPack.from_model(model, client=self)
 
-    @async_iterable
+    @awaitable_iterator
     def get_map_packs(
         self, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator[MapPack]:
@@ -1348,7 +1348,7 @@ class Client:
             concurrent=concurrent,
         )
 
-    @async_iterable
+    @awaitable_iterator
     @login_check
     async def get_quests(self) -> AsyncIterator[Quest]:
         response_model = await self.session.get_quests(
@@ -1360,7 +1360,7 @@ class Client:
 
             yield Quest.from_model(quest_model, seconds=model.time_left, client=self)
 
-    @async_iterable
+    @awaitable_iterator
     @login_check
     async def get_chests(
         self,
@@ -1383,14 +1383,14 @@ class Client:
         ):
             yield Chest.from_model(chest_model, seconds=time_left, count=count, client=self)
 
-    @async_iterable
+    @awaitable_iterator
     async def get_featured_artists_on_page(self, page: int = 0) -> AsyncIterator[Song]:
         response_model = await self.session.get_featured_artists_on_page(page=page)
 
         for model in response_model.featured_artists:
             yield Song.from_model(model, custom=True, client=self)
 
-    @async_iterable
+    @awaitable_iterator
     def get_featured_artists(
         self, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator[MapPack]:
@@ -1412,14 +1412,14 @@ class Client:
         artist_info = await self.session.get_artist_info(song_id)
         return ArtistInfo.from_dict(artist_info, client=self)  # type: ignore
 
-    @async_iterable
+    @awaitable_iterator
     async def search_ng_songs_on_page(self, query: str, page: int = 0) -> AsyncIterator[Song]:
         models = await self.session.search_ng_songs_on_page(query=query, page=page)
 
         for model in models:
             yield Song.from_model(model, custom=True, client=self)
 
-    @async_iterable
+    @awaitable_iterator
     def search_ng_songs(
         self, query: str, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator[Song]:
@@ -1429,14 +1429,14 @@ class Client:
             concurrent=concurrent,
         )
 
-    @async_iterable
+    @awaitable_iterator
     async def search_ng_users_on_page(self, query: str, page: int = 0) -> AsyncIterator[Author]:
         data = await self.session.search_ng_users_on_page(query=query, page=page)
 
         for part in data:
             yield Author.from_dict(part, client=self)  # type: ignore
 
-    @async_iterable
+    @awaitable_iterator
     def search_ng_users(
         self, query: str, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator[Author]:
@@ -1446,14 +1446,14 @@ class Client:
             concurrent=concurrent,
         )
 
-    @async_iterable
+    @awaitable_iterator
     async def get_ng_user_songs_on_page(self, name: str, page: int = 0) -> AsyncIterator[Song]:
         models = await self.session.get_ng_user_songs_on_page(name=name, page=page)
 
         for model in models:
             yield Song.from_model(model, custom=True, client=self)
 
-    @async_iterable
+    @awaitable_iterator
     def get_ng_user_songs(
         self, name: str, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator[Song]:

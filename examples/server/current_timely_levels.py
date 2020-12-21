@@ -10,7 +10,7 @@ client = gd.Client()  # an entry point to gd API
 # run() only once.
 
 
-async def coro():
+async def main():
     # getting daily...
     daily = await client.get_daily()
 
@@ -22,4 +22,4 @@ async def coro():
 
 
 # run a coroutine
-client.run(coro())
+client.run(main())

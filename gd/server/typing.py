@@ -1,13 +1,8 @@
 from aiohttp import web
 
-from gd.typing import Awaitable, Callable, TypeVar, Union
+from gd.typing import Awaitable, Callable
 
-__all__ = ("AsyncHandler", "Handler", "Middleware")
+__all__ = ("Handler", "Middleware")
 
-T = TypeVar("T")
-
-MaybeAwaitable = Union[T, Awaitable[T]]
-
-AsyncHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
-Handler = Callable[[web.Request], MaybeAwaitable[web.StreamResponse]]
-Middleware = Callable[[web.Request, Handler], MaybeAwaitable[web.StreamResponse]]
+Handler = Callable[[web.Request], Awaitable[web.StreamResponse]]
+Middleware = Callable[[web.Request, Handler], Awaitable[web.StreamResponse]]

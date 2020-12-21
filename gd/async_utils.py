@@ -12,6 +12,7 @@ __all__ = (
     "gather",
     "cancel_all_tasks",
     "shutdown_loop",
+    "maybe_await",
     "maybe_coroutine",
     "acquire_loop",
     "get_loop",
@@ -23,6 +24,8 @@ __all__ = (
 log = get_logger(__name__)
 
 T = TypeVar("T")
+
+MaybeAwaitable = Union[Awaitable[T], T]
 
 
 async def run_blocking(func: Callable[..., T], *args, **kwargs) -> T:
@@ -246,14 +249,15 @@ def shutdown_loop(loop: asyncio.AbstractEventLoop) -> None:
         loop.close()
 
 
-async def maybe_coroutine(function: Callable[..., Union[Awaitable[T], T]], *args, **kwargs) -> T:
-    value = function(*args, **kwargs)
+async def maybe_await(maybe_awaitable: MaybeAwaitable[T]) -> T:
+    if inspect.isawaitable(maybe_awaitable):
+        return await cast(Awaitable[T], maybe_awaitable)  # is awaitable
 
-    if inspect.isawaitable(value):
-        return await cast(Awaitable[T], value)
+    return cast(T, maybe_awaitable)  # is not awaitable
 
-    else:
-        return cast(T, value)
+
+def maybe_coroutine(function: Callable[..., MaybeAwaitable[T]], *args, **kwargs) -> Awaitable[T]:
+    return maybe_await(function(*args, **kwargs))
 
 
 def acquire_loop(running: bool = False, enforce_running: bool = False) -> asyncio.AbstractEventLoop:

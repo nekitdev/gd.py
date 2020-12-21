@@ -5,9 +5,9 @@ from multidict import istr
 
 from gd.async_utils import maybe_coroutine
 from gd.enums import Enum
-from gd.server.typing import AsyncHandler, Handler
+from gd.server.typing import Handler
 from gd.server.utils import json_response
-from gd.typing import Any, Awaitable, Callable, Mapping, Optional, Protocol, Type, TypeVar, Union
+from gd.typing import Any, Awaitable, Callable, Mapping, Optional, Protocol, Type, Union
 
 __all__ = (
     "Error",
@@ -20,18 +20,16 @@ __all__ = (
     "error_into_response",
 )
 
-T_co = TypeVar("T_co", covariant=True)
 
-
-class FormatOrStr(Protocol[T_co]):
-    def __str__(self: T_co) -> str:
+class ToString(Protocol):
+    def __str__(self) -> str:
         ...
 
-    def __format__(self: T_co, format_spec: str) -> str:
+    def __format__(self, format_spec: str) -> str:
         ...
 
 
-Headers = Mapping[Union[istr, str], FormatOrStr]
+Headers = Mapping[Union[istr, str], ToString]
 
 
 class ErrorType(Enum):
@@ -54,7 +52,7 @@ class Error:
         status_code: int = 500,
         error_type: Union[int, str, ErrorType] = ErrorType.DEFAULT,
         error: Optional[BaseException] = None,
-        message: Optional[FormatOrStr] = None,
+        message: Optional[ToString] = None,
         headers: Optional[Headers] = None,
         include_error: bool = True,
         **error_info,
@@ -152,8 +150,8 @@ async def call_default_handler(request: web.Request, error: BaseException) -> we
 
 def error_handling(
     handlers: Mapping[Type[BaseException], ErrorHandler], strict: bool = True
-) -> Callable[[Handler], AsyncHandler]:
-    def wrapper(handler: Handler) -> AsyncHandler:
+) -> Callable[[Handler], Handler]:
+    def wrapper(handler: Handler) -> Handler:
         @wraps(handler)
         async def actual_handler(request: web.Request) -> web.StreamResponse:
             try:

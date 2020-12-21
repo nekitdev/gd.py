@@ -155,6 +155,26 @@ except KeyError as error:
     raise LookupError("Can not find all integer types.") from error
 
 
+int_types = (int8, int16, int32, int64)
+uint_types = (uint8, uint16, uint32, uint64)
+
+
+def get_int_type(bits: int) -> Type[Data[int]]:
+    for int_type in int_types:
+        if int_type.bits == bits:
+            return int_type
+
+    raise LookupError(f"Can not find signed integer type with {bits} bits.")
+
+
+def get_uint_type(bits: int) -> Type[Data[int]]:
+    for uint_type in uint_types:
+        if uint_type.bits == bits:
+            return uint_type
+
+    raise LookupError(f"Can not find unsigned integer type with {bits} bits.")
+
+
 def get_intptr(bits: int) -> Type[Data[int]]:
     return get_c_int_type(bits)
 

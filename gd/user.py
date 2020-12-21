@@ -1,5 +1,5 @@
 from gd.abstract_entity import AbstractEntity
-from gd.async_iter import async_iterable
+from gd.async_iters import awaitable_iterator
 from gd.async_utils import run_blocking
 from gd.color import COLOR_1, COLOR_2, Color
 from gd.datetime import datetime
@@ -472,7 +472,7 @@ class User(AbstractEntity):
         """
         return await self.client.send_friend_request(self, message)
 
-    @async_iterable
+    @awaitable_iterator
     def get_levels_on_page(self, page: int = 0) -> AsyncIterator["Level"]:
         """Fetches user's levels on a given page.
 
@@ -499,7 +499,7 @@ class User(AbstractEntity):
         """
         return self.client.search_levels_on_page(page=page, filters=Filters.by_user(), user=self)
 
-    @async_iterable
+    @awaitable_iterator
     def get_levels(
         self, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator["Level"]:
@@ -527,7 +527,7 @@ class User(AbstractEntity):
             pages=pages, filters=Filters.by_user(), user=self, concurrent=concurrent
         )
 
-    @async_iterable
+    @awaitable_iterator
     def get_profile_comments_on_page(self, page: int = 0) -> AsyncIterator["Comment"]:
         """Gets user's profile comments on a specific page.
 
@@ -556,7 +556,7 @@ class User(AbstractEntity):
 
     get_comments_on_page = get_profile_comments_on_page
 
-    @async_iterable
+    @awaitable_iterator
     def get_comment_history_on_page(
         self, strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT, page: int = 0,
     ) -> AsyncIterator["Comment"]:
@@ -585,7 +585,7 @@ class User(AbstractEntity):
         """
         return self.client.get_user_comments_on_page(user=self, type=CommentType.LEVEL, page=page)
 
-    @async_iterable
+    @awaitable_iterator
     def get_profile_comments(
         self, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator["Comment"]:
@@ -618,7 +618,7 @@ class User(AbstractEntity):
 
     get_comments = get_profile_comments
 
-    @async_iterable
+    @awaitable_iterator
     def get_comment_history(
         self,
         strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
@@ -699,7 +699,7 @@ class User(AbstractEntity):
 
         return await run_blocking(to_bytes, result)
 
-    @async_iterable
+    @awaitable_iterator
     async def generate_many(
         self, *types: Union[int, str, IconType], as_image: bool = True,
     ) -> Union[AsyncIterator[bytes], AsyncIterator["PIL.Image.Image"]]:

@@ -13,7 +13,7 @@ async def main():
 
     # look up and print IDs if found
     try:
-        user = await client.find_user(name)
+        user = await client.search_user(name, simple=True)
 
         if not user.is_registered():
             print(f"Hey there, {user.name}! Seems like you are unregistered...".format(user))

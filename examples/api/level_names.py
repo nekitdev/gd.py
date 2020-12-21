@@ -1,8 +1,8 @@
 import gd
 
-db = gd.api.save.load()  # load local database (save)
+database = gd.api.save.load()  # load local database (save)
 
-levels = db.load_my_levels()  # load levels from "My Levels"
+levels = database.load_my_levels()  # load levels from "My Levels"
 
 # align indexes using the largest one
 index_align = len(str(len(levels)))

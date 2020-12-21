@@ -43,14 +43,12 @@ __all__ = (
     "to_bytes",
 )
 
-T_co = TypeVar("T_co", covariant=True)
 
-
-class FormatOrStr(Protocol[T_co]):
-    def __str__(self: T_co) -> str:
+class ToString(Protocol):
+    def __str__(self) -> str:
         ...
 
-    def __format__(self: T_co, format_spec: str) -> str:
+    def __format__(self, format_spec: str) -> str:
         ...
 
 
@@ -102,8 +100,8 @@ icon_type_names = {
 def get_icon_name(
     icon_type: IconType,
     icon_id: int,
-    *extras: FormatOrStr,
-    trail: Optional[FormatOrStr] = DEFAULT_TRAIL,
+    *extras: ToString,
+    trail: Optional[ToString] = DEFAULT_TRAIL,
     format: str = DEFAULT_FORMAT,
     copy_level: int = 0,
 ) -> str:
@@ -134,7 +132,7 @@ def get_icon_name(
     return name
 
 
-def get_icon_name_prefix(icon_type: IconType, icon_id: int, *extras: FormatOrStr) -> str:
+def get_icon_name_prefix(icon_type: IconType, icon_id: int, *extras: ToString) -> str:
     icon_type_name = icon_type_names.get(icon_type)  # type: ignore
 
     if icon_type_name is None:
@@ -150,7 +148,7 @@ def get_icon_name_prefix(icon_type: IconType, icon_id: int, *extras: FormatOrStr
 def generate_icon_names(
     icon_type: IconType,
     icon_id: int,
-    trail: Optional[FormatOrStr] = DEFAULT_TRAIL,
+    trail: Optional[ToString] = DEFAULT_TRAIL,
     format: str = DEFAULT_FORMAT,
 ) -> Iterator[str]:
     for extras, copy_level in ICON_EXTRAS.get(icon_type, ()):

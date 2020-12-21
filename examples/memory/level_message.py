@@ -78,6 +78,7 @@ def main() -> None:  # we use a function to have nice try ... except
                 if memory.is_dead():
                     if show_message:
                         print(f"{random.choice(messages)} ({mode} {memory.get_percent()}%)")
+
                     show_message = False
 
                 else:
@@ -86,6 +87,7 @@ def main() -> None:  # we use a function to have nice try ... except
                 if memory.get_percent() == complete_percent:
                     if show_completed:
                         print(f"Completed {level_name} in {mode} mode (ID: {level_id})")
+
                     show_completed = False
 
                 else:

@@ -6,7 +6,7 @@ from iters import iter
 
 from gd.abstract_entity import AbstractEntity
 from gd.api.editor import Editor
-from gd.async_iter import async_iterable
+from gd.async_iters import awaitable_iterator
 from gd.converters import GameVersion
 from gd.crypto import unzip_level_str, zip_level_str
 from gd.datetime import datetime, timedelta
@@ -756,7 +756,7 @@ class Level(AbstractEntity):
         """
         await self.client.dislike(self)
 
-    @async_iterable
+    @awaitable_iterator
     def get_leaderboard(
         self, strategy: Union[int, str, LevelLeaderboardStrategy] = LevelLeaderboardStrategy.ALL,
     ) -> AsyncIterator[User]:
@@ -785,7 +785,7 @@ class Level(AbstractEntity):
         """
         return self.client.get_level_leaderboard(self, strategy=strategy)
 
-    @async_iterable
+    @awaitable_iterator
     def get_comments(
         self,
         strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
@@ -831,7 +831,7 @@ class Level(AbstractEntity):
             level=self, strategy=strategy, pages=pages, amount=amount, concurrent=concurrent,
         )
 
-    @async_iterable
+    @awaitable_iterator
     def get_comments_on_page(
         self,
         strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,

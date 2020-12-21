@@ -5,7 +5,7 @@ import ctypes.util
 from pathlib import Path
 
 from gd.enums import Protection
-from gd.memory.utils import Structure, extern_func
+from gd.memory.utils import Structure, extern_fn
 from gd.typing import Iterator, Union
 
 __all__ = (
@@ -131,21 +131,21 @@ class proc_bsdshortinfo(Structure):
     reserved_for_future_use: ctypes.c_uint
 
 
-@extern_func(libc.proc_listpids)
+@extern_fn(libc.proc_listpids)
 def _proc_listpids(
     type: ctypes.c_uint, type_info: ctypes.c_uint, buffer: ctypes.c_void_p, size: ctypes.c_uint
 ) -> ctypes.c_int:
     pass
 
 
-@extern_func(libc.proc_pidpath)
+@extern_fn(libc.proc_pidpath)
 def _proc_pidpath(
     process_id: ctypes.c_int, path_buffer: ctypes.c_void_p, size: ctypes.c_uint
 ) -> ctypes.c_int:
     pass
 
 
-@extern_func(libc.proc_pidinfo)
+@extern_fn(libc.proc_pidinfo)
 def _proc_pidinfo(
     process_id: ctypes.c_int,
     type: ctypes.c_int,
@@ -156,24 +156,24 @@ def _proc_pidinfo(
     pass
 
 
-@extern_func(libc.mach_task_self)
+@extern_fn(libc.mach_task_self)
 def _mach_task_self() -> mach_port_t:
     pass
 
 
-@extern_func(libc.task_terminate)
+@extern_fn(libc.task_terminate)
 def _task_terminate(task: mach_port_t) -> kern_return_t:
     pass
 
 
-@extern_func(libc.task_for_pid)
+@extern_fn(libc.task_for_pid)
 def _task_for_pid(
     port: mach_port_t, process_id: pid_t, target_port: ctypes.POINTER(mach_port_t)
 ) -> kern_return_t:
     pass
 
 
-@extern_func(libc.mach_vm_region_recurse)
+@extern_fn(libc.mach_vm_region_recurse)
 def _mach_vm_region_recurse(
     task: vm_map_read_t,
     address: ctypes.POINTER(mach_vm_address_t),
@@ -185,7 +185,7 @@ def _mach_vm_region_recurse(
     pass
 
 
-@extern_func(libc.mach_vm_protect)
+@extern_fn(libc.mach_vm_protect)
 def _mach_vm_protect(
     task: vm_task_entry_t,
     address: mach_vm_address_t,
@@ -196,7 +196,7 @@ def _mach_vm_protect(
     pass
 
 
-@extern_func(libc.mach_vm_read_overwrite)
+@extern_fn(libc.mach_vm_read_overwrite)
 def _mach_vm_read_overwrite(
     task: vm_map_read_t,
     address: mach_vm_address_t,
@@ -207,7 +207,7 @@ def _mach_vm_read_overwrite(
     pass
 
 
-@extern_func(libc.mach_vm_write)
+@extern_fn(libc.mach_vm_write)
 def _mach_vm_write(
     task: vm_map_t,
     address: mach_vm_address_t,
@@ -217,7 +217,7 @@ def _mach_vm_write(
     pass
 
 
-@extern_func(libc.mach_vm_allocate)
+@extern_fn(libc.mach_vm_allocate)
 def _mach_vm_allocate(
     task: vm_map_t,
     address: ctypes.POINTER(mach_vm_address_t),
@@ -227,7 +227,7 @@ def _mach_vm_allocate(
     pass
 
 
-@extern_func(libc.mach_vm_deallocate)
+@extern_fn(libc.mach_vm_deallocate)
 def _mach_vm_deallocate(
     task: vm_map_t, address: mach_vm_address_t, size: mach_vm_size_t,
 ) -> kern_return_t:

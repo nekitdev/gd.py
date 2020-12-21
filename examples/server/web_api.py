@@ -19,7 +19,7 @@ def json_resp(item: object, **kwargs) -> str:
     kwargs.update(content_type="application/json")
     # gd.py introduces gd.utils.dump method, used
     # for conveniently converting its objects to
-    # JSON-resizable dictionaries
+    # JSON-serializable objects
     return web.Response(text=gd.utils.dumps(item, indent=4), **kwargs)
 
 

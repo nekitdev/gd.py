@@ -3,7 +3,7 @@ import signal
 import traceback
 from functools import partial
 
-from gd.async_iter import AsyncIter
+from gd.async_iters import AwaitableIterator
 from gd.async_utils import gather, get_maybe_running_loop, get_running_loop, shutdown_loop
 from gd.comment import Comment
 from gd.enums import TimelyType
@@ -346,7 +346,9 @@ class UserCommentListener(AbstractListener):
         else:
             self.find_user = partial(self.client.get_user, account_id)
 
-        self.get_user_comments: Callable[[User, Iterable[int], bool], AsyncIter[Comment]] = (
+        self.get_user_comments: Callable[
+            [User, Iterable[int], bool], AwaitableIterator[Comment]
+        ] = (
             User.get_profile_comments if profile else User.get_comment_history
         )
         self.user: Optional[User] = None

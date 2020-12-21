@@ -1,5 +1,5 @@
 from gd.abstract_entity import AbstractEntity
-from gd.async_iter import async_iterable
+from gd.async_iters import awaitable_iterator
 from gd.color import Color
 from gd.enums import GauntletID, LevelDifficulty
 from gd.filters import Filters
@@ -87,7 +87,7 @@ class Gauntlet(AbstractEntity):
         """
         return self.options.get("levels", ())
 
-    @async_iterable
+    @awaitable_iterator
     async def get_levels(self) -> AsyncIterator["Level"]:
         """Retrieves levels of a Level Pack. Also updates inner ``levels`` attribute.
 

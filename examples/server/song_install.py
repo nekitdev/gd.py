@@ -17,6 +17,7 @@ async def main() -> None:
 
         except ValueError:
             print("Invalid type. Expected an integer.")
+
         except gd.MissingAccess:
             print("Song was not found.")
 

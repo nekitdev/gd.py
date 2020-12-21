@@ -7,7 +7,7 @@ from pathlib import Path
 import pefile  # to parse some headers uwu ~ nekit
 
 from gd.enums import Protection
-from gd.memory.utils import Structure, extern_func
+from gd.memory.utils import Structure, extern_fn
 from gd.platform import system_bits
 from gd.typing import Dict, Iterator, Optional, Type, Union
 
@@ -164,44 +164,44 @@ class SecurityAttributes(Structure):
 LPSECURITY_ATTRIBUTES = ctypes.POINTER(SecurityAttributes)
 
 
-@extern_func(kernel32.CreateToolhelp32Snapshot)
+@extern_fn(kernel32.CreateToolhelp32Snapshot)
 def _create_snapshot(flags: wintypes.DWORD, process_id: wintypes.DWORD) -> wintypes.HANDLE:
     pass
 
 
-@extern_func(kernel32.Process32First)
+@extern_fn(kernel32.Process32First)
 def _process_first(handle: wintypes.HANDLE, entry_ptr: LPPROCESSENTRY32) -> wintypes.BOOL:
     pass
 
 
-@extern_func(kernel32.Process32Next)
+@extern_fn(kernel32.Process32Next)
 def _process_next(handle: wintypes.HANDLE, entry_ptr: LPPROCESSENTRY32) -> wintypes.BOOL:
     pass
 
 
-@extern_func(kernel32.Module32First)
+@extern_fn(kernel32.Module32First)
 def _module_first(handle: wintypes.HANDLE, entry_ptr: LPMODULEENTRY32) -> wintypes.BOOL:
     pass
 
 
-@extern_func(kernel32.Module32Next)
+@extern_fn(kernel32.Module32Next)
 def _module_next(handle: wintypes.HANDLE, entry_ptr: LPMODULEENTRY32) -> wintypes.BOOL:
     pass
 
 
-@extern_func(kernel32.CloseHandle)
+@extern_fn(kernel32.CloseHandle)
 def _close_handle(handle: wintypes.HANDLE) -> wintypes.BOOL:
     pass
 
 
-@extern_func(kernel32.OpenProcess)
+@extern_fn(kernel32.OpenProcess)
 def _open_process(
     access: wintypes.DWORD, inherit_handle: wintypes.BOOL, process_id: wintypes.DWORD
 ) -> wintypes.HANDLE:
     pass
 
 
-@extern_func(kernel32.ReadProcessMemory)
+@extern_fn(kernel32.ReadProcessMemory)
 def _read_process_memory(
     handle: wintypes.HANDLE,
     base_address: wintypes.LPVOID,
@@ -212,7 +212,7 @@ def _read_process_memory(
     pass
 
 
-@extern_func(kernel32.WriteProcessMemory)
+@extern_fn(kernel32.WriteProcessMemory)
 def _write_process_memory(
     handle: wintypes.HANDLE,
     base_address: wintypes.LPVOID,
@@ -223,7 +223,7 @@ def _write_process_memory(
     pass
 
 
-@extern_func(kernel32.VirtualAllocEx)
+@extern_fn(kernel32.VirtualAllocEx)
 def _virtual_alloc(
     handle: wintypes.HANDLE,
     address: wintypes.LPVOID,
@@ -234,7 +234,7 @@ def _virtual_alloc(
     pass
 
 
-@extern_func(kernel32.VirtualFreeEx)
+@extern_fn(kernel32.VirtualFreeEx)
 def _virtual_free(
     handle: wintypes.HANDLE,
     address: wintypes.LPVOID,
@@ -244,43 +244,43 @@ def _virtual_free(
     pass
 
 
-@extern_func(kernel32.WaitForSingleObject)
+@extern_fn(kernel32.WaitForSingleObject)
 def _wait_for_single_object(
     handle: wintypes.HANDLE, time_milliseconds: wintypes.DWORD
 ) -> wintypes.DWORD:
     pass
 
 
-@extern_func(kernel32.TerminateProcess)
+@extern_fn(kernel32.TerminateProcess)
 def _terminate_process(handle: wintypes.HANDLE, exit_code: wintypes.UINT) -> wintypes.BOOL:
     pass
 
 
-@extern_func(user32.FindWindowA)
+@extern_fn(user32.FindWindowA)
 def _find_window(class_name: wintypes.LPCSTR, title: wintypes.LPCSTR) -> wintypes.HWND:
     pass
 
 
-@extern_func(user32.GetWindowThreadProcessId)
+@extern_fn(user32.GetWindowThreadProcessId)
 def _get_window_process_id(
     handle: wintypes.HWND, process_id_ptr: wintypes.LPDWORD
 ) -> wintypes.DWORD:
     pass
 
 
-@extern_func(kernel32.IsWow64Process)
+@extern_fn(kernel32.IsWow64Process)
 def _is_wow_64_process_via_ptr(handle: wintypes.HANDLE, bool_ptr: wintypes.PBOOL) -> wintypes.BOOL:
     pass
 
 
-@extern_func(kernel32.GetSystemWow64DirectoryA)
+@extern_fn(kernel32.GetSystemWow64DirectoryA)
 def _get_system_wow_64_directory(
     string_buffer: wintypes.LPSTR, size: wintypes.UINT
 ) -> wintypes.UINT:
     pass
 
 
-@extern_func(kernel32.CreateRemoteThread)
+@extern_fn(kernel32.CreateRemoteThread)
 def _create_remote_thread(
     handle: wintypes.HANDLE,
     thread_attributes: LPSECURITY_ATTRIBUTES,
@@ -293,19 +293,19 @@ def _create_remote_thread(
     pass
 
 
-@extern_func(kernel32.GetModuleHandleA)
+@extern_fn(kernel32.GetModuleHandleA)
 def _get_module_handle(module_name: wintypes.LPCSTR) -> wintypes.HMODULE:
     pass
 
 
-@extern_func(kernel32.GetProcAddress)
+@extern_fn(kernel32.GetProcAddress)
 def _get_proc_address(
     module_handle: wintypes.HMODULE, proc_name: wintypes.LPCSTR
 ) -> wintypes.LPVOID:
     pass
 
 
-@extern_func(kernel32.VirtualProtectEx)
+@extern_fn(kernel32.VirtualProtectEx)
 def _virtual_protect(
     handle: wintypes.HANDLE,
     address: wintypes.LPVOID,

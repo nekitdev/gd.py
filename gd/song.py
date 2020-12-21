@@ -4,7 +4,7 @@ import tqdm  # type: ignore
 from attr import attrib, dataclass
 
 from gd.abstract_entity import AbstractEntity
-from gd.async_iter import async_iterable
+from gd.async_iters import awaitable_iterator
 from gd.errors import MissingAccess
 from gd.http import NEWGROUNDS_SONG_LISTEN, URL, HTTPClient
 from gd.model import SongModel  # type: ignore
@@ -308,7 +308,7 @@ class Author(AbstractEntity):
         """:class:`str`: Name of the author."""
         return self.options.get("name", "")
 
-    @async_iterable
+    @awaitable_iterator
     def get_page_songs(self, page: int = 0) -> AsyncIterator[Song]:
         """Get songs on the page.
 
@@ -335,7 +335,7 @@ class Author(AbstractEntity):
         """
         return self.client.get_ng_user_songs_on_page(self, page=page)
 
-    @async_iterable
+    @awaitable_iterator
     def get_songs(self, pages: Iterable[int] = range(10)) -> AsyncIterator[Song]:
         """Get songs on the pages.
 

@@ -16,6 +16,7 @@ async def coro():
         input("Please enter your GD username: "),
         input("Enter corresponding password: "),
     )
+
     await client.login(user=username, password=password)
 
     # get all friends...
@@ -35,10 +36,10 @@ async def coro():
 
     # send a message to them
     try:
-        await target.send(subject="Hello!", body="This is a message sent using gd.py library! :)")
+        await target.send(subject="Hello!", body="This is a message sent using gd.py library!")
 
         # print that message was successfully sent
-        print(f"Successfully sent a message to {target}! :)")
+        print(f"Successfully sent a message to {target}!")
 
     # check if an error occured
     except gd.ClientException:  # if a user has their messages closed or other error occured
