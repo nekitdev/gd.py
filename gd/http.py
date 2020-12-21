@@ -75,8 +75,8 @@ __all__ = ("Route", "HTTPClient")
 
 log = get_logger(__name__)
 
-BASE = "http://www.boomlings.com/"
-GD_BASE = "http://geometrydash.com/"
+BASE = "http://www.boomlings.com/database"
+GD_BASE = "http://geometrydash.com/database"
 NEWGROUNDS_SONG_LISTEN = "https://www.newgrounds.com/audio/listen/{song_id}"
 NEWGROUNDS_SONG_PAGE = "https://{name}.newgrounds.com/audio/page/{page}"
 NEWGROUNDS_SEARCH = "https://www.newgrounds.com/search/conduct/{type}"
@@ -473,7 +473,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/accounts/loginGJAccount.php",
+            "/accounts/loginGJAccount.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -493,7 +493,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/accounts/syncGJAccountNew.php",
+            "/accounts/syncGJAccountNew.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -519,7 +519,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/accounts/backupGJAccountNew.php",
+            "/accounts/backupGJAccountNew.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -545,7 +545,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getAccountURL.php",
+            "/getAccountURL.php",
             account_id=account_id,
             type=type.value,
             secret=self.get_secret("main"),
@@ -561,7 +561,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/requestUserAccess.php",
+            "/requestUserAccess.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -591,7 +591,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/updateGJAccSettings20.php",
+            "/updateGJAccSettings20.php",
             account_id=account_id,
             gjp=encoded_password,
             secret=self.get_secret("login"),
@@ -665,7 +665,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/updateGJUserScore22.php",
+            "/updateGJUserScore22.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -706,7 +706,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJUsers20.php",
+            "/getGJUsers20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -734,7 +734,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJUserInfo20.php",
+            "/getGJUserInfo20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -760,7 +760,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJUserList20.php",
+            "/getGJUserList20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -789,7 +789,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJScores20.php",
+            "/getGJScores20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -834,7 +834,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJLevels21.php",
+            "/getGJLevels21.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -884,7 +884,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJDailyLevel.php",
+            "/getGJDailyLevel.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -908,7 +908,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/downloadGJLevel22.php",
+            "/downloadGJLevel22.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -946,7 +946,7 @@ class HTTPClient:
     async def report_level(self, level_id: int) -> int:
         error_codes = {-1: MissingAccess(f"Failed to report level with ID: {level_id}.")}
 
-        route = Route(POST, "/database/reportGJLevel.php", level_id=level_id, to_camel=True)
+        route = Route(POST, "/reportGJLevel.php", level_id=level_id, to_camel=True)
 
         response = await self.request_route(route, error_codes=error_codes)
 
@@ -957,7 +957,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/deleteGJLevelUser20.php",
+            "/deleteGJLevelUser20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -979,7 +979,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/updateGJDesc20.php",
+            "/updateGJDesc20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1056,7 +1056,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/uploadGJLevel21.php",
+            "/uploadGJLevel21.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1111,7 +1111,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/rateGJStars211.php",
+            "/rateGJStars211.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1149,7 +1149,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/rateGJDemon21.php",
+            "/rateGJDemon21.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1176,7 +1176,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/suggestGJStars20.php",
+            "/suggestGJStars20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1240,7 +1240,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJLevelScores211.php",
+            "/getGJLevelScores211.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1275,11 +1275,11 @@ class HTTPClient:
         self, account_id: int, unblock: bool, *, client_account_id: int, encoded_password: str,
     ) -> int:
         if unblock:
-            endpoint = "/database/unblockGJUser20.php"
+            endpoint = "/unblockGJUser20.php"
             string = "unblock"
 
         else:
-            endpoint = "/database/blockGJUser20.php"
+            endpoint = "/blockGJUser20.php"
             string = "block"
 
         error_codes = {
@@ -1312,7 +1312,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/removeGJFriend20.php",
+            "/removeGJFriend20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1348,7 +1348,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/uploadGJMessage20.php",
+            "/uploadGJMessage20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1372,7 +1372,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/downloadGJMessage20.php",
+            "/downloadGJMessage20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1397,7 +1397,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/deleteGJMessages20.php",
+            "/deleteGJMessages20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1425,7 +1425,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJMessages20.php",
+            "/getGJMessages20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1461,7 +1461,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/uploadFriendRequest20.php",
+            "/uploadFriendRequest20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1496,7 +1496,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/deleteGJFriendRequests20.php",
+            "/deleteGJFriendRequests20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1531,7 +1531,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/acceptGJFriendRequest20.php",
+            "/acceptGJFriendRequest20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1557,7 +1557,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/readGJFriendRequest20.php",
+            "/readGJFriendRequest20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1582,7 +1582,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJFriendRequests20.php",
+            "/getGJFriendRequests20.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1633,7 +1633,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/likeGJItem211.php",
+            "/likeGJItem211.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1680,10 +1680,10 @@ class HTTPClient:
         )
 
         if type is CommentType.LEVEL:
-            endpoint = "/database/uploadGJComment21.php"
+            endpoint = "/uploadGJComment21.php"
 
         else:
-            endpoint = "/database/uploadGJAccComment20.php"
+            endpoint = "/uploadGJAccComment20.php"
 
         route = Route(
             POST,
@@ -1719,10 +1719,10 @@ class HTTPClient:
         error_codes = {-1: MissingAccess(f"Failed to delete a comment by ID: {comment_id}.")}
 
         if type is CommentType.LEVEL:
-            endpoint = "/database/deleteGJComment20.php"
+            endpoint = "/deleteGJComment20.php"
 
         else:
-            endpoint = "/database/deleteGJAccComment20.php"
+            endpoint = "/deleteGJAccComment20.php"
 
         route = Route(
             POST,
@@ -1757,10 +1757,10 @@ class HTTPClient:
         }
 
         if type is CommentType.LEVEL:
-            endpoint = "/database/getGJCommentHistory.php"
+            endpoint = "/getGJCommentHistory.php"
 
         else:
-            endpoint = "/database/getGJAccountComments20.php"
+            endpoint = "/getGJAccountComments20.php"
 
         route = Route(
             POST,
@@ -1798,7 +1798,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJComments21.php",
+            "/getGJComments21.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1820,7 +1820,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJGauntlets21.php",
+            "/getGJGauntlets21.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1837,7 +1837,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJMapPacks21.php",
+            "/getGJMapPacks21.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1860,7 +1860,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJChallenges.php",
+            "/getGJChallenges.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1895,7 +1895,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJRewards.php",
+            "/getGJRewards.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1920,7 +1920,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJTopArtists.php",
+            "/getGJTopArtists.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1942,7 +1942,7 @@ class HTTPClient:
 
         route = Route(
             POST,
-            "/database/getGJSongInfo.php",
+            "/getGJSongInfo.php",
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1963,7 +1963,7 @@ class HTTPClient:
         error_codes = {-1: MissingAccess(f"Failed to fetch artist info for ID: {song_id}")}
 
         route = Route(
-            GET, "/database/testSong.php", song_id=song_id, are_params=True, to_camel=True,
+            GET, "/testSong.php", song_id=song_id, are_params=True, to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
