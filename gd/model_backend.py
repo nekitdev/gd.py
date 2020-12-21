@@ -12,7 +12,7 @@ from gd.crypto import (
     encode_base64_str,
     encode_robtop_str,
 )
-from gd.datetime import de_human_delta, ser_human_delta
+from gd.datetime import de_human_delta, ser_human_delta, datetime
 from gd.enums import Enum
 from gd.errors import DeError, SerError
 from gd.index_parser import IndexParser, chain_from_iterable, group
@@ -130,21 +130,16 @@ def attempt(function: Callable[..., T], default: T) -> Callable[..., T]:
     return wrapper
 
 
-def attempt_chain(*functions: Callable[..., T], raise_error: bool = True) -> Callable[..., T]:
-    def chainer(*args, **kwargs) -> Optional[T]:
-        for function in functions:
-            try:
-                return function(*args, **kwargs)
+def attempt_or(function: Callable[..., T], factory: Callable[[], T]) -> Callable[..., T]:
+    @wraps(function)
+    def wrapper(*args, **kwargs) -> T:
+        try:
+            return function(*args, **kwargs)
 
-            except Exception:
-                pass
+        except Exception:  # noqa
+            return factory()
 
-        if raise_error:
-            raise ValueError("All functions in the chain failed.")
-
-        return None
-
-    return chainer
+    return wrapper
 
 
 def identity(some: T) -> T:
@@ -274,6 +269,13 @@ de_url = unquote
 ser_url = partial(quote, safe="")
 
 
+def compose(function: Callable[[T], U], other: Callable[..., T]) -> Callable[..., U]:
+    def composer(*args, **kwargs) -> U:
+        return function(other(*args, **kwargs))
+
+    return composer
+
+
 class BaseField:
     def __init__(
         self,
@@ -283,11 +285,29 @@ class BaseField:
         name: Optional[str] = None,
         type: Type[T] = object,
         default: Union[T, NULL] = null,
+        use_default_on_fail: bool = False,
         factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
         aliases: Iterable[str] = (),
     ) -> None:
         self._index = str(index)
+
+        if use_default_on_fail:
+            if default is null:
+                if factory is None:
+                    raise ValueError(
+                        "use_default_on_fail is specified, "
+                        "while default and factory are not present."
+                    )
+
+                else:
+                    de = attempt_or(de, factory)
+                    ser = attempt_or(ser, compose(ser, factory))
+
+            else:
+                de = attempt(de, default)
+                ser = attempt(ser, ser(default))
+
         self._de = de
         self._ser = ser
         self._name = name
@@ -362,6 +382,7 @@ class Field(BaseField):
         name: Optional[str] = None,
         type: Type[T] = object,
         default: Union[T, NULL] = null,
+        use_default_on_fail: bool = False,
         factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
         aliases: Iterable[str] = (),
@@ -373,6 +394,7 @@ class Field(BaseField):
             name=name,
             type=type,
             default=default,
+            use_default_on_fail=use_default_on_fail,
             factory=factory,
             doc=doc,
             aliases=aliases,
@@ -387,6 +409,7 @@ class Base64Field(Field):
         default: Union[T, NULL] = null,
         factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
+        use_default_on_fail: bool = False,
         aliases: Iterable[str] = (),
     ) -> None:
         super().__init__(
@@ -396,6 +419,7 @@ class Base64Field(Field):
             name=name,
             type=str,
             default=default,
+            use_default_on_fail=use_default_on_fail,
             factory=factory,
             doc=doc,
             aliases=aliases,
@@ -410,6 +434,7 @@ class BoolField(Field):
         false: str = "0",
         true: str = "1",
         default: Union[T, NULL] = null,
+        use_default_on_fail: bool = False,
         factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
         aliases: Iterable[str] = (),
@@ -421,6 +446,7 @@ class BoolField(Field):
             name=name,
             type=bool,
             default=default,
+            use_default_on_fail=use_default_on_fail,
             factory=factory,
             doc=doc,
             aliases=aliases,
@@ -433,6 +459,7 @@ class ColorField(Field):
         index: Union[int, str],
         name: Optional[str] = None,
         default: Union[T, NULL] = null,
+        use_default_on_fail: bool = False,
         factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
         aliases: Iterable[str] = (),
@@ -444,6 +471,7 @@ class ColorField(Field):
             name=name,
             type=Color,
             default=default,
+            use_default_on_fail=use_default_on_fail,
             factory=factory,
             doc=doc,
             aliases=aliases,
@@ -460,6 +488,7 @@ class EnumField(Field):
         from_field: Optional[Type[Field]] = None,
         name: Optional[str] = None,
         default: Union[T, NULL] = null,
+        use_default_on_fail: bool = False,
         factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
         aliases: Iterable[str] = (),
@@ -475,6 +504,7 @@ class EnumField(Field):
             name=name,
             type=enum_type,
             default=default,
+            use_default_on_fail=use_default_on_fail,
             factory=factory,
             doc=doc,
             aliases=aliases,
@@ -494,6 +524,7 @@ class IterableField(Field):
         name: Optional[str] = None,
         type: Type[U] = object,
         default: Union[U, NULL] = null,
+        use_default_on_fail: bool = False,
         factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
         aliases: Iterable[str] = (),
@@ -511,6 +542,7 @@ class IterableField(Field):
             name=name,
             type=type,
             default=default,
+            use_default_on_fail=use_default_on_fail,
             factory=factory,
             doc=doc,
             aliases=aliases,
@@ -529,6 +561,7 @@ class ModelIterField(IterableField):
         name: Optional[str] = None,
         type: Type[U] = object,
         default: Union[U, NULL] = null,
+        use_default_on_fail: bool = False,
         factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
         aliases: Iterable[str] = (),
@@ -543,6 +576,7 @@ class ModelIterField(IterableField):
             name=name,
             type=type,
             default=default,
+            use_default_on_fail=use_default_on_fail,
             factory=factory,
             doc=doc,
             aliases=aliases,
@@ -565,6 +599,7 @@ class MappingField(Field):
         name: Optional[str] = None,
         type: Type[U] = object,
         default: Union[U, NULL] = null,
+        use_default_on_fail: bool = False,
         factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
         aliases: Iterable[str] = (),
@@ -591,6 +626,7 @@ class MappingField(Field):
             name=name,
             type=type,
             default=default,
+            use_default_on_fail=use_default_on_fail,
             factory=factory,
             doc=doc,
             aliases=aliases,
@@ -603,6 +639,7 @@ class FloatField(Field):
         index: Union[int, str],
         name: Optional[str] = None,
         default: Union[T, NULL] = null,
+        use_default_on_fail: bool = False,
         factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
         aliases: Iterable[str] = (),
@@ -614,6 +651,7 @@ class FloatField(Field):
             name=name,
             type=float,
             default=default,
+            use_default_on_fail=use_default_on_fail,
             factory=factory,
             doc=doc,
             aliases=aliases,
@@ -626,6 +664,7 @@ class IntField(Field):
         index: Union[int, str],
         name: Optional[str] = None,
         default: Union[T, NULL] = null,
+        use_default_on_fail: bool = False,
         factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
         aliases: Iterable[str] = (),
@@ -637,6 +676,7 @@ class IntField(Field):
             name=name,
             type=int,
             default=default,
+            use_default_on_fail=use_default_on_fail,
             factory=factory,
             doc=doc,
             aliases=aliases,
@@ -651,6 +691,7 @@ class ModelField(Field):
         use_default: bool = False,
         name: Optional[str] = None,
         default: Union[T, NULL] = null,
+        use_default_on_fail: bool = False,
         factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
         aliases: Iterable[str] = (),
@@ -662,6 +703,7 @@ class ModelField(Field):
             name=name,
             type=model,
             default=default,
+            use_default_on_fail=use_default_on_fail,
             factory=factory,
             doc=doc,
             aliases=aliases,
@@ -675,6 +717,7 @@ class RobTopStrField(Field):
         key: Key,
         name: Optional[str] = None,
         default: Union[T, NULL] = null,
+        use_default_on_fail: bool = False,
         factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
         aliases: Iterable[str] = (),
@@ -686,6 +729,7 @@ class RobTopStrField(Field):
             name=name,
             type=str,
             default=default,
+            use_default_on_fail=use_default_on_fail,
             factory=factory,
             doc=doc,
             aliases=aliases,
@@ -693,23 +737,27 @@ class RobTopStrField(Field):
 
 
 class RobTopTimeField(Field):
+    # TODO: update this to be able to read time from different timestamps
+
     def __init__(
         self,
         index: Union[int, str],
         name: Optional[str] = None,
-        default: Union[T, NULL] = null,
-        factory: Optional[Callable[[], T]] = None,
+        # default: Union[T, NULL] = null,
+        # use_default_on_fail: bool = False,
+        # factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
         aliases: Iterable[str] = (),
     ) -> None:
         super().__init__(
             index=index,
-            de=attempt_chain(de_human_delta, raise_error=False,),  # try from several formats
+            de=de_human_delta,  # try from human delta
             ser=ser_human_delta,  # serialize to human delta
             name=name,
-            type=bool,
-            default=default,
-            factory=factory,
+            type=Optional[datetime],
+            default=None,
+            use_default_on_fail=True,
+            # factory=factory,
             doc=doc,
             aliases=aliases,
         )
@@ -721,6 +769,7 @@ class StrField(Field):
         index: Union[int, str],
         name: Optional[str] = None,
         default: Union[T, NULL] = null,
+        use_default_on_fail: bool = False,
         factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
         aliases: Iterable[str] = (),
@@ -732,6 +781,7 @@ class StrField(Field):
             name=name,
             type=str,
             default=default,
+            use_default_on_fail=use_default_on_fail,
             factory=factory,
             doc=doc,
             aliases=aliases,
@@ -744,6 +794,7 @@ class URLField(Field):
         index: Union[int, str],
         name: Optional[str] = None,
         default: Union[T, NULL] = null,
+        use_default_on_fail: bool = False,
         factory: Optional[Callable[[], T]] = None,
         doc: Optional[str] = None,
         aliases: Iterable[str] = (),
@@ -755,6 +806,7 @@ class URLField(Field):
             name=name,
             type=str,
             default=default,
+            use_default_on_fail=use_default_on_fail,
             factory=factory,
             doc=doc,
             aliases=aliases,

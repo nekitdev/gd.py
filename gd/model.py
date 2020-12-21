@@ -44,7 +44,6 @@ from gd.model_backend import (
     RobTopTimeField,
     StrField,
     URLField,
-    attempt,
 )
 from gd.text_utils import is_level_probably_decoded
 from gd.typing import Dict, List, Optional, Tuple, TypeVar, Union
@@ -124,7 +123,7 @@ class SearchUserModel(Model):
     id: int = IntField(index=2, default=0)
     stars: int = IntField(index=3, default=0)
     demons: int = IntField(index=4, default=0)
-    place: int = Field(index=6, de=attempt(int, 0), ser=str, default=0)
+    place: int = IntField(index=6, default=0, use_default_on_fail=True)
     cp: int = IntField(index=8, default=0)
     icon_id: int = IntField(index=9, default=0)
     color_1_id: int = IntField(index=10, default=0)
@@ -251,9 +250,9 @@ class SaveModel(Model):
 class PageModel(Model):
     PARSER = IndexParser(":", map_like=False)
 
-    total: int = Field(index=0, de=attempt(int, 0), ser=str, default=0)
-    page_start: int = Field(index=1, de=attempt(int, 0), ser=str, default=0)
-    page_end: int = Field(index=2, de=attempt(int, 0), ser=str, default=0)
+    total: int = IntField(index=0, default=0, use_default_on_fail=True)
+    page_start: int = IntField(index=1, default=0, use_default_on_fail=True)
+    page_end: int = IntField(index=2, default=0, use_default_on_fail=True)
 
 
 class LevelModel(Model):
@@ -294,8 +293,8 @@ class LevelModel(Model):
     epic: bool = BoolField(index=42, default=False)
     demon_difficulty: int = IntField(index=43, default=0)
     object_count: int = IntField(index=45, default=0)
-    editor_seconds: int = Field(index=46, de=attempt(int, 0), ser=str, default=0)
-    copies_seconds: int = Field(index=47, de=attempt(int, 0), ser=str, default=0)
+    editor_seconds: int = IntField(index=46, default=0, use_default_on_fail=True)
+    copies_seconds: int = IntField(index=47, default=0, use_default_on_fail=True)
 
     def is_auto(self) -> bool:
         return self.auto
