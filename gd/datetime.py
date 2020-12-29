@@ -304,11 +304,11 @@ class date(std_date, instance_hook):
     __add__ = hook_method(std_date.__add__)
     __radd__ = hook_method(std_date.__radd__)
 
-    @overload  # type: ignore
-    def __sub__(self: D, other: std_timedelta) -> D:  # noqa
+    @overload  # type: ignore  # noqa
+    def __sub__(self: D, other: std_timedelta) -> D:
         ...
 
-    @overload
+    @overload  # noqa
     def __sub__(self: D, other: std_date) -> timedelta:  # noqa
         ...
 
@@ -360,12 +360,12 @@ class datetime(std_datetime, instance_hook):
     __add__ = hook_method(std_datetime.__add__)
     __radd__ = hook_method(std_datetime.__radd__)
 
-    @overload  # type: ignore
-    def __sub__(self: DT, other: std_datetime) -> timedelta:  # noqa
+    @overload  # type: ignore  # noqa
+    def __sub__(self: DT, other: std_datetime) -> timedelta:
         ...
 
-    @overload
-    def __sub__(self: DT, other: std_timedelta) -> DT:  # noqa
+    @overload  # noqa
+    def __sub__(self: DT, other: std_timedelta) -> DT:
         ...
 
     def __sub__(self: DT, other: Union[std_datetime, std_timedelta]) -> Union[DT, timedelta]:  # noqa
