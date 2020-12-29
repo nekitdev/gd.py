@@ -13,6 +13,7 @@ from gd.client import *
 from gd.color import *
 from gd.comment import *
 from gd.converters import *
+from gd.datetime import *
 from gd.decorators import *
 from gd.enums import *
 from gd.errors import *
@@ -33,7 +34,6 @@ from gd.xml_parser import *
 
 from gd import api  # non-server GD API.
 from gd import crypto  # cryptography and encoding utilites.
-from gd import datetime  # date and time [de]serializing utilites.
 from gd import events  # event-related functions and classes.
 from gd import http  # HTTP requests module.
 from gd import image  # sprites handling and icon factory.

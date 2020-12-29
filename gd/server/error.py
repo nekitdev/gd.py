@@ -1,10 +1,10 @@
 from functools import wraps
 
-from aiohttp import web
 from multidict import istr
 
 from gd.async_utils import maybe_coroutine
 from gd.enums import Enum
+from gd.server.common import web
 from gd.server.typing import Handler
 from gd.server.utils import json_response
 from gd.typing import Any, Awaitable, Callable, Mapping, Optional, Protocol, Type, Union
@@ -155,7 +155,7 @@ def error_handling(
         @wraps(handler)
         async def actual_handler(request: web.Request) -> web.StreamResponse:
             try:
-                return await maybe_coroutine(handler, request)
+                return await handler(request)
 
             except BaseException as error:  # noqa  # this is intentional
                 for error_class, error_handler in handlers.items():

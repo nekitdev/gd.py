@@ -26,13 +26,54 @@ class Address:
         self._signed = signed
 
     def __repr__(self) -> str:
-        info = {
-            "address": hex(self.address),
-            "signed": self.signed,
-            "state": self.state,
-        }
+        info = {"address": hex(self.address), "signed": self.signed}
 
         return make_repr(self, info)
+
+    def __int__(self) -> int:
+        return self.address
+
+    def __bool__(self) -> bool:
+        return bool(self.address)
+
+    def __hash__(self) -> int:
+        return self.address
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, self.__class__):
+            return self.state is other.state and self.address == other.address
+
+        return NotImplemented
+
+    def __ne__(self, other: Any) -> bool:
+        if isinstance(other, self.__class__):
+            return self.state is other.state and self.address != other.address
+
+        return NotImplemented
+
+    def __gt__(self, other: Any) -> bool:
+        if isinstance(other, self.__class__):
+            return self.state is other.state and self.address > other.address
+
+        return NotImplemented
+
+    def __lt__(self, other: Any) -> bool:
+        if isinstance(other, self.__class__):
+            return self.state is other.state and self.address < other.address
+
+        return NotImplemented
+
+    def __ge__(self, other: Any) -> bool:
+        if isinstance(other, self.__class__):
+            return self.state is other.state and self.address >= other.address
+
+        return NotImplemented
+
+    def __le__(self, other: Any) -> bool:
+        if isinstance(other, self.__class__):
+            return self.state is other.state and self.address <= other.address
+
+        return NotImplemented
 
     @classmethod
     def create_from(cls: Type[AddressT], other: AddressU) -> AddressT:

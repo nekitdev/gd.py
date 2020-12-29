@@ -246,6 +246,12 @@ class Client:
         """:class:`~gd.User`: User representing current client."""
         return User(account_id=self.account_id, id=self.id, name=self.name, client=self)
 
+    async def ping_server(self) -> float:
+        return await self.ping(self.http.url)
+
+    async def ping(self, url: Union[str, URL]) -> float:
+        return await self.session.ping(url)
+
     async def login(self, user: str, password: str) -> None:
         """Login into an account and update client's settings.
 

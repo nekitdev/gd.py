@@ -1,6 +1,6 @@
 from gd.errors import MissingAccess
-from gd.server.core import routes, web
-from gd.server.docs import docs
+from gd.server.routes import get
+from gd.server.common import docs, web
 from gd.server.error import Error, ErrorHandler, ErrorType, error_handler, error_handling
 from gd.server.types import int_type, str_type
 from gd.server.utils import get_pages, json_response, parameter
@@ -42,7 +42,7 @@ def handle_missing_access(
         422: dict(description="Invalid Account ID was passed."),
     },
 )
-@routes.get("/api/user/{account_id}")
+@get("/user/{account_id}", version=1)
 @error_handling(
     {
         ValueError: handle_value_error,
@@ -77,7 +77,7 @@ async def get_user(request: web.Request) -> web.Response:
         404: dict(description="User was not found."),
     },
 )
-@routes.get("/api/search/user/{query}")
+@get("/search/user/{query}", version=1)
 @error_handling(
     {MissingAccess: handle_missing_access(404, ErrorType.NOT_FOUND, "User was not found.")}
 )
@@ -106,7 +106,7 @@ async def search_user(request: web.Request) -> web.Response:
     ],
     responses={200: dict(description="Users fetched from the server. Can be empty.")},
 )
-@routes.get("/api/search/users/{query}")
+@get("/search/users/{query}", version=1)
 async def search_users(request: web.Request) -> web.Response:
     client = request.app.client  # type: ignore
 

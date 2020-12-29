@@ -1,7 +1,7 @@
 try:
+    from gd.server.common import *
     from gd.server.cooldown import *
     from gd.server.core import *
-    from gd.server.docs import *
     from gd.server.error import *
     from gd.server.fields import *
     from gd.server.middlewares import *

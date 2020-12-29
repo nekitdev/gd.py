@@ -1,9 +1,7 @@
 import time
 from functools import wraps
 
-from aiohttp import web
-
-from gd.async_utils import maybe_coroutine
+from gd.server.common import web
 from gd.server.error import Error, ErrorType, error_into_response
 from gd.server.typing import Handler
 from gd.typing import Callable, Dict, Optional, Type, TypeVar
@@ -156,7 +154,7 @@ def cooldown(
             retry_after = cooldown_mapping.update_rate_limit(request)
 
             if retry_after is None:
-                return await maybe_coroutine(handler, request)
+                return await handler(request)
 
             else:
                 return error_into_response(

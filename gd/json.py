@@ -4,7 +4,7 @@ from functools import partial
 
 from yarl import URL
 
-from gd.datetime import datetime, timedelta
+from gd.datetime import std_date, std_time, std_timedelta
 from gd.typing import Any, Dict, Optional, TypeVar, Union, cast
 
 __all__ = ("NamedDict", "default", "dump", "dumps", "load", "loads")
@@ -59,13 +59,13 @@ def default(some_object: T) -> Any:
     elif isinstance(some_object, Mapping):
         return dict(some_object)
 
-    elif isinstance(some_object, datetime):
-        return some_object.isoformat()
-
-    elif isinstance(some_object, timedelta):
+    elif isinstance(some_object, URL):
         return str(some_object)
 
-    elif isinstance(some_object, URL):
+    elif isinstance(some_object, (std_date, std_time)):
+        return some_object.isoformat()
+
+    elif isinstance(some_object, std_timedelta):
         return str(some_object)
 
     else:

@@ -1,17 +1,17 @@
-from aiohttp import web
 from aiohttp_apispec import setup_aiohttp_apispec  # type: ignore
 from aiohttp_remotes import ForwardedRelaxed, XForwardedRelaxed
 from aiohttp_remotes import setup as setup_aiohttp_remotes
 
 import gd
 
+from gd.server.common import web
+from gd.server.routes import routes
 from gd.server.typing import Middleware
 from gd.typing import Iterable, Optional, Protocol
 
 __all__ = (
     "create_app",
     "create_app_sync",
-    "routes",
     "run_app",
     "run_app_sync",
     "run",
@@ -32,8 +32,6 @@ DEFAULT_TOOLS: Iterable[Tool] = (ForwardedRelaxed(), XForwardedRelaxed())
 
 run_app = web._run_app  # type: ignore  # idk why they made it internal
 run_app_sync = web.run_app
-
-routes = web.RouteTableDef()
 
 
 async def create_app(
