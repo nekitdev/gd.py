@@ -1,6 +1,10 @@
 import re
 from datetime import (
-    date as std_date, datetime as std_datetime, time as std_time, timedelta as std_timedelta
+    date as std_date,
+    datetime as std_datetime,
+    time as std_time,
+    timedelta as std_timedelta,
+    tzinfo,
 )
 from functools import wraps
 
@@ -9,10 +13,10 @@ from gd.typing import (
     Iterator,
     Optional,
     Protocol,
+    Tuple,
     Type,
     TypeVar,
     Union,
-    cast,
     no_type_check,
     overload,
     runtime_checkable,
@@ -23,6 +27,7 @@ __all__ = (
     "datetime",
     "time",
     "timedelta",
+    "tzinfo",
     "std_date",
     "std_datetime",
     "std_time",
@@ -86,7 +91,7 @@ U_contra = TypeVar("U_contra", contravariant=True)
 
 
 @runtime_checkable
-class instance_hook(Protocol[T_co, U_contra]):
+class instance_cast(Protocol[T_co, U_contra]):
     @classmethod
     def create_from_instance(cls: Type[T_co], instance: U_contra) -> T_co:
         raise NotImplementedError(
@@ -94,51 +99,32 @@ class instance_hook(Protocol[T_co, U_contra]):
         )
 
 
-F = TypeVar("F")
-I = TypeVar("I")
 R = TypeVar("R")
+S = TypeVar("S")
 
 
 def hook_method(
-    function: Callable[..., R],
-    hook: Optional[Type[instance_hook[I, F]]] = None,
-    check_instance: bool = False,
-) -> Callable[..., R]:
+    function: Callable[..., R], hook: Optional[Type[instance_cast[S, R]]] = None
+) -> Callable[..., S]:
     @wraps(function)
-    def wrapper(self: instance_hook[I, F], *args, **kwargs) -> R:
+    def wrapper(self: instance_cast[S, R], *args, **kwargs) -> S:
         cls = type(self)
 
         instance = function(self, *args, **kwargs)
 
-        if check_instance:
-            return cast(
-                R,
-                instance if isinstance(instance, cls)
-                else cls.create_from_instance(cast(F, instance))
-            )
-
-        return cast(R, cls.create_from_instance(cast(F, instance)))
+        return cls.create_from_instance(instance)
 
     return wrapper
 
 
 def hook_class_method(
-    function: Callable[..., R],
-    hook: Optional[Type[instance_hook[I, F]]] = None,
-    check_instance: bool = False,
-) -> Callable[..., R]:
+    function: Callable[..., R], hook: Optional[Type[instance_cast[S, R]]] = None
+) -> Callable[..., S]:
     @wraps(function)
-    def wrapper(cls: Type[instance_hook[I, F]], *args, **kwargs) -> R:
+    def wrapper(cls: Type[instance_cast[S, R]], *args, **kwargs) -> S:
         instance = function(cls, *args, **kwargs)
 
-        if check_instance:
-            return cast(
-                R,
-                instance if isinstance(instance, cls)
-                else cls.create_from_instance(cast(F, instance))
-            )
-
-        return cast(R, cls.create_from_instance(cast(F, instance)))
+        return cls.create_from_instance(instance)
 
     return wrapper
 
@@ -149,28 +135,31 @@ TD = TypeVar("TD", bound="timedelta")
 T = TypeVar("T", bound="time")
 
 
-class timedelta(std_timedelta, instance_hook):
+class timedelta(std_timedelta, instance_cast):
     def __json__(self) -> str:
         return str(self)
 
-    __add__ = hook_method(std_timedelta.__add__)
-    __radd__ = hook_method(std_timedelta.__radd__)
+    __add__: Callable[[TD, std_timedelta], TD] = hook_method(std_timedelta.__add__)
+    __radd__: Callable[[TD, std_timedelta], TD] = hook_method(std_timedelta.__radd__)
 
-    __sub__ = hook_method(std_timedelta.__sub__)
-    __rsub__ = hook_method(std_timedelta.__rsub__)
+    __sub__: Callable[[TD, std_timedelta], TD] = hook_method(std_timedelta.__sub__)
+    __rsub__: Callable[[TD, std_timedelta], TD] = hook_method(std_timedelta.__rsub__)
 
-    __mul__ = hook_method(std_timedelta.__mul__)
-    __rmul__ = hook_method(std_timedelta.__rmul__)
+    __mul__: Callable[[TD, float], TD] = hook_method(std_timedelta.__mul__)
+    __rmul__: Callable[[TD, float], TD] = hook_method(std_timedelta.__rmul__)
 
-    __mod__ = hook_method(std_timedelta.__mod__)
+    __mod__: Callable[[TD, std_timedelta], TD] = hook_method(std_timedelta.__mod__)
 
-    __divmod__ = hook_method(std_timedelta.__divmod__)
+    def __divmod__(self: TD, other: std_timedelta) -> Tuple[int, TD]:
+        delta, remainder = super().__divmod__(other)
 
-    __abs__ = hook_method(std_timedelta.__abs__)
+        return (delta, type(self).create_from_instance(remainder))
 
-    __pos__ = hook_method(std_timedelta.__pos__)
+    __abs__: Callable[[TD], TD] = hook_method(std_timedelta.__abs__)
 
-    __neg__ = hook_method(std_timedelta.__neg__)
+    __pos__: Callable[[TD], TD] = hook_method(std_timedelta.__pos__)
+
+    __neg__: Callable[[TD], TD] = hook_method(std_timedelta.__neg__)
 
     @classmethod
     def create_from_instance(cls: Type[TD], instance: std_timedelta) -> TD:
@@ -297,12 +286,12 @@ timedelta.max = timedelta.create_from_instance(std_timedelta.max)
 timedelta.resolution = timedelta.create_from_instance(std_timedelta.resolution)
 
 
-class date(std_date, instance_hook):
+class date(std_date, instance_cast):
     def __json__(self) -> str:
         return self.isoformat()
 
-    __add__ = hook_method(std_date.__add__)
-    __radd__ = hook_method(std_date.__radd__)
+    __add__: Callable[[D, std_timedelta], D] = hook_method(std_date.__add__)
+    __radd__: Callable[[D, std_timedelta], D] = hook_method(std_date.__radd__)
 
     @overload  # type: ignore  # noqa
     def __sub__(self: D, other: std_timedelta) -> D:  # noqa
@@ -333,7 +322,7 @@ date.max = date.create_from_instance(std_date.max)
 date.resolution = timedelta.create_from_instance(std_date.resolution)
 
 
-class time(std_time, instance_hook):
+class time(std_time, instance_cast):
     def __json__(self) -> str:
         return self.isoformat()
 
@@ -353,12 +342,12 @@ time.max = time.create_from_instance(std_time.max)
 time.resolution = timedelta.create_from_instance(std_time.resolution)
 
 
-class datetime(std_datetime, instance_hook):
+class datetime(std_datetime, instance_cast):
     def __json__(self) -> str:
         return self.isoformat()
 
-    __add__ = hook_method(std_datetime.__add__)
-    __radd__ = hook_method(std_datetime.__radd__)
+    __add__: Callable[[DT, std_timedelta], DT] = hook_method(std_datetime.__add__)
+    __radd__: Callable[[DT, std_timedelta], DT] = hook_method(std_datetime.__radd__)
 
     @overload  # type: ignore  # noqa
     def __sub__(self: DT, other: std_datetime) -> timedelta:
@@ -461,21 +450,40 @@ class datetime(std_datetime, instance_hook):
 
         return timedelta.to_human(self.utcnow() - self, distance_only=distance_only, simple=simple)
 
-    date = hook_method(std_datetime.date, date)
+    combine: Callable[
+        [Type[DT], date, time, Optional[tzinfo]], DT
+    ] = hook_class_method(std_datetime.combine)  # type: ignore
 
-    timetz = hook_method(std_datetime.timetz, time)
-    time = hook_method(std_datetime.time, time)
+    date: Callable[[DT], date] = hook_method(std_datetime.date, date)
 
-    now = hook_class_method(std_datetime.now)  # type: ignore
+    timetz: Callable[[DT], time] = hook_method(std_datetime.timetz, time)
+    time: Callable[[DT], time] = hook_method(std_datetime.time, time)
 
-    combine = hook_class_method(std_datetime.combine)
+    now: Callable[[Type[DT]], DT] = hook_class_method(std_datetime.now)  # type: ignore
 
-    astimezone = hook_method(std_datetime.astimezone)
+    astimezone: Callable[
+        [DT, Optional[tzinfo]], DT
+    ] = hook_method(std_datetime.astimezone)  # type: ignore
 
-    strptime = hook_class_method(std_datetime.strptime)
+    strptime: Callable[
+        [Type[DT], str, str], DT
+    ] = hook_class_method(std_datetime.strptime)  # type: ignore
 
-    utcoffset = hook_method(std_datetime.utcoffset, timedelta)
-    dst = hook_method(std_datetime.dst, timedelta)
+    def utcoffset(self: DT) -> Optional[timedelta]:
+        instance = super().utcoffset()
+
+        if isinstance(instance, std_timedelta):
+            return timedelta.create_from_instance(instance)
+
+        return instance
+
+    def dst(self: DT) -> Optional[timedelta]:
+        instance = super().dst()
+
+        if isinstance(instance, std_timedelta):
+            return timedelta.create_from_instance(instance)
+
+        return instance
 
 
 de_human_delta = datetime.from_human_delta
