@@ -305,7 +305,7 @@ class date(std_date, instance_hook):
     __radd__ = hook_method(std_date.__radd__)
 
     @overload  # type: ignore  # noqa
-    def __sub__(self: D, other: std_timedelta) -> D:
+    def __sub__(self: D, other: std_timedelta) -> D:  # noqa
         ...
 
     @overload  # noqa
@@ -365,7 +365,7 @@ class datetime(std_datetime, instance_hook):
         ...
 
     @overload  # noqa
-    def __sub__(self: DT, other: std_timedelta) -> DT:
+    def __sub__(self: DT, other: std_timedelta) -> DT:  # noqa
         ...
 
     def __sub__(self: DT, other: Union[std_datetime, std_timedelta]) -> Union[DT, timedelta]:  # noqa

@@ -39,7 +39,7 @@ async def create_app(
     client: Optional[gd.Client] = None,
     docs_title: str = "Documentation for GD API",
     docs_version: str = str(gd.version_info),
-    docs_json_url: str = "/api/docs/info.json",
+    docs_info_url: str = "/api/docs/info.json",
     docs_url: str = "/api/docs",
     default_middlewares: Iterable[Middleware] = DEFAULT_MIDDLEWARES,
     tools: Iterable[Tool] = DEFAULT_TOOLS,
@@ -50,7 +50,7 @@ async def create_app(
     app.middlewares.extend(default_middlewares)
 
     setup_aiohttp_apispec(
-        app=app, title=docs_title, version=docs_version, url=docs_json_url, swagger_path=docs_url
+        app=app, title=docs_title, version=docs_version, url=docs_info_url, swagger_path=docs_url
     )
 
     await setup_aiohttp_remotes(app, *tools)
@@ -70,7 +70,7 @@ def create_app_sync(
     client: Optional[gd.Client] = None,
     docs_title: str = "Documentation for GD API",
     docs_version: str = str(gd.version_info),
-    docs_json_url: str = "/api/docs/info.json",
+    docs_info_url: str = "/api/docs/info.json",
     docs_url: str = "/api/docs",
     default_middlewares: Iterable[Middleware] = DEFAULT_MIDDLEWARES,
     tools: Iterable[Tool] = DEFAULT_TOOLS,
@@ -81,7 +81,7 @@ def create_app_sync(
             client=client,
             docs_title=docs_title,
             docs_version=docs_version,
-            docs_json_url=docs_json_url,
+            docs_info_url=docs_info_url,
             docs_url=docs_url,
             default_middlewares=default_middlewares,
             tools=tools,
