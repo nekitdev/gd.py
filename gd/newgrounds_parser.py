@@ -8,6 +8,7 @@ from xml.etree.ElementTree import Element
 
 from yarl import URL
 
+from gd.errors import MissingAccess
 from gd.logging import get_logger
 from gd.typing import Dict, Generator, List, Match, Optional, TypeVar, Union
 
@@ -107,14 +108,14 @@ def find_song_info(text: str) -> Dict[str, Union[int, str]]:
         }
 
     except AttributeError:
-        raise ValueError("Song info was not found.") from None
+        raise MissingAccess("Song info was not found.") from None
 
 
 def extract_info_from_endpoint(text: str) -> Dict[str, Union[bool, str]]:
     match = re_info.match(text)
 
     if match is None:
-        raise ValueError("Artist info was not found.")
+        raise MissingAccess("Artist info was not found.")
 
     return {
         name: function(match.group(group))  # type: ignore

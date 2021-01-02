@@ -27,7 +27,7 @@ from gd.server.handler import Error, ErrorType, request_handler
 from gd.server.types import int_type, str_type
 from gd.server.utils import parse_pages, json_response, parameter
 
-__all__ = ("get_user", "search_user")
+__all__ = ("get_user", "search_user", "search_users")
 
 
 @docs(

@@ -624,7 +624,7 @@ class Session:
         response = await self.http.get_artist_info(song_id)
 
         artist_info = extract_info_from_endpoint(response)
-        artist_info.update(id=song_id, official=False)  # type: ignore
+        artist_info.update(id=song_id, custom=True)  # type: ignore
 
         return artist_info
 

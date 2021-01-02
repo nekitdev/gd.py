@@ -83,7 +83,7 @@ class Song(AbstractEntity):
         song = songs.get(id, OfficialSong(author="DJVI", name="Unknown"))
 
         return cls(
-            id=id, name=song.name, size=0.0, author=song.author, custom=False, client=client,
+            id=id, name=song.name, size=0.0, author=song.author, custom=False, client=client
         )
 
     def get_author(self) -> "Author":
@@ -152,7 +152,7 @@ class Song(AbstractEntity):
                 whitelisted=True,
                 scouted=True,
                 api=True,
-                official=True,
+                custom=False,
                 client=self.client_unchecked,
             )
 
@@ -251,12 +251,12 @@ class ArtistInfo(AbstractEntity):
         """:class:`bool`: Whether the external API is allowed."""
         return bool(self.options.get("api"))
 
-    def is_official(self) -> bool:
-        return bool(self.options.get("official"))
+    def is_custom(self) -> bool:
+        return bool(self.options.get("custom", True))
 
     def get_author(self) -> "Author":
         """:class:`~gd.Author` of the song."""
-        if self.is_official():
+        if not self.is_custom():
             raise MissingAccess("Can not get author of an official song.")
 
         return Author(name=self.artist, client=self.client)

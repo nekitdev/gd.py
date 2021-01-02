@@ -5,6 +5,7 @@ try:
     from gd.server.handler import *
     from gd.server.middlewares import *
     from gd.server.routes import *
+    from gd.server.song import *
     from gd.server.typing import *
     from gd.server.user import *
     from gd.server.utils import *
