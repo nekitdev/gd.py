@@ -21,8 +21,10 @@ pub mod utils;
 /// :class:`bytes`
 ///     Data after XOR applied.
 #[pyfunction]
-fn cyclic_xor<'p>(py: Python<'p>, data: &[u8], key: &[u8]) -> PyResult<&'p PyBytes> {
-    Ok(PyBytes::new(py, &utils::cyclic_xor(data, key)))
+fn cyclic_xor<'p>(py: Python<'p>, data: Vec<u8>, key: &[u8]) -> PyResult<&'p PyBytes> {
+    utils::cyclic_xor_inplace(&mut data, key);
+
+    Ok(PyBytes::new(py, &data))
 }
 
 
@@ -42,8 +44,10 @@ fn cyclic_xor<'p>(py: Python<'p>, data: &[u8], key: &[u8]) -> PyResult<&'p PyByt
 /// :class:`bytes`
 ///     Data after XOR applied.
 #[pyfunction]
-fn xor<'p>(py: Python<'p>, data: &[u8], key: u8) -> PyResult<&'p PyBytes> {
-    Ok(PyBytes::new(py, &utils::xor(data, key)))
+fn xor<'p>(py: Python<'p>, data: Vec<u8>, key: u8) -> PyResult<&'p PyBytes> {
+    utils::xor_inplace(&mut data, key);
+
+    Ok(PyBytes::new(py, &data))
 }
 
 

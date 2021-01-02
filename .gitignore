@@ -106,11 +106,11 @@ venv.bak/
 # Sublime Text setup
 *.sublime-workspace
 
+# Cargo.lock file
+Cargo.lock
+
 # compiled rust
 /target
-
-# Cython-generated C++ files
-/gd/*.cpp
 
 # gd.server folder
 .gd/

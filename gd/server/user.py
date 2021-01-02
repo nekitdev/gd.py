@@ -1,27 +1,33 @@
+# Request handler decorators in the order they should be used:
+#
+# - decorators that modify or wrap functions they decorate;
+# - decorators which leave functions they decorate untouched;
+# - @request_handler() decorator (may be placed before transparent decorators);
+# - @route(...) decorators that register routes and handlers;
+# - @docs(...) decorator;
+#
+# If said order is followed, everything will work as intended.
+#
+# For example:
+#
+#     @docs(...)
+#     @get("/path")
+#     @request_handler()
+#     async def handler(request: web.Request) -> web.Response:
+#         ...
+#
+#     @handler.error
+#     async def handler_error(request: web.Request, error: Exception) -> Error:
+#         ...
+
 from gd.errors import MissingAccess
 from gd.server.routes import get
 from gd.server.common import docs, web
-from gd.server.error import Error, ErrorHandler, ErrorType, error_handler, error_handling
+from gd.server.handler import Error, ErrorType, request_handler
 from gd.server.types import int_type, str_type
-from gd.server.utils import get_pages, json_response, parameter
-from gd.typing import Optional, Union
+from gd.server.utils import parse_pages, json_response, parameter
 
 __all__ = ("get_user", "search_user")
-
-
-@error_handler
-def handle_value_error(request: web.Request, error: BaseException) -> Error:
-    return Error(422, ErrorType.INVALID_ENTITY, error=error)
-
-
-def handle_missing_access(
-    status_code: int, error_type: Union[int, str, ErrorType], message: Optional[str] = None
-) -> ErrorHandler:
-    @error_handler
-    def actual_handler(request: web.Request, error: BaseException) -> Error:
-        return Error(status_code, error_type, error=error, message=message)
-
-    return actual_handler
 
 
 @docs(
@@ -43,12 +49,7 @@ def handle_missing_access(
     },
 )
 @get("/user/{account_id}", version=1)
-@error_handling(
-    {
-        ValueError: handle_value_error,
-        MissingAccess: handle_missing_access(404, ErrorType.NOT_FOUND, "User was not found."),
-    }
-)
+@request_handler()
 async def get_user(request: web.Request) -> web.Response:
     client = request.app.client  # type: ignore
 
@@ -57,6 +58,17 @@ async def get_user(request: web.Request) -> web.Response:
     user = await client.get_user(account_id)
 
     return json_response(user)
+
+
+@get_user.error
+async def get_user_error(request: web.Request, error: Exception) -> Error:
+    if isinstance(error, ValueError):
+        return Error(422, ErrorType.INVALID_ENTITY, "Can not parse <account_id> to int.")
+
+    if isinstance(error, MissingAccess):
+        return Error(404, ErrorType.NOT_FOUND, "User was not found.")
+
+    return Error(message="Some unexpected error has occurred.")
 
 
 @docs(
@@ -78,9 +90,7 @@ async def get_user(request: web.Request) -> web.Response:
     },
 )
 @get("/search/user/{query}", version=1)
-@error_handling(
-    {MissingAccess: handle_missing_access(404, ErrorType.NOT_FOUND, "User was not found.")}
-)
+@request_handler()
 async def search_user(request: web.Request) -> web.Response:
     client = request.app.client  # type: ignore
 
@@ -89,6 +99,14 @@ async def search_user(request: web.Request) -> web.Response:
     user = await client.search_user(query)
 
     return json_response(user)
+
+
+@search_user.error
+async def search_user_error(request: web.Request, error: Exception) -> Error:
+    if isinstance(error, MissingAccess):
+        return Error(404, ErrorType.NOT_FOUND, "User was not found.")
+
+    return Error(message="Some unexpected error has occured.")
 
 
 @docs(
@@ -107,6 +125,7 @@ async def search_user(request: web.Request) -> web.Response:
     responses={200: dict(description="Users fetched from the server. Can be empty.")},
 )
 @get("/search/users/{query}", version=1)
+@request_handler()
 async def search_users(request: web.Request) -> web.Response:
     client = request.app.client  # type: ignore
 
@@ -114,12 +133,20 @@ async def search_users(request: web.Request) -> web.Response:
 
     pages_string = request.query.get("pages")
 
-    if pages_string:
-        pages = get_pages(pages_string)
+    if pages_string is None:
+        users = await client.search_users(query).list()
+
+    else:
+        pages = parse_pages(pages_string)
 
         users = await client.search_users(query, pages=pages).list()
 
-    else:
-        users = await client.search_users(query).list()
-
     return json_response(users)
+
+
+@search_users.error
+async def search_users_error(request: web.Request, error: Exception) -> Error:
+    if isinstance(error, ValueError):
+        return Error(422, ErrorType.INVALID_ENTITY, "Can not parse <pages> parameter.")
+
+    return Error(message="Some unexpected error has occurred.")

@@ -3,26 +3,28 @@ from functools import partial
 
 from aiohttp import web
 
+from gd.enums import Enum
 from gd.json import dumps
 from gd.server.typing import Handler
-from gd.typing import Any, Iterable, Mapping, Optional, TypeVar
+from gd.typing import Any, Callable, Iterable, Mapping, Optional, Type, TypeVar, cast
 
 __all__ = (
     "parameter",
     "get_original_handler",
-    "get_pages",
+    "parse_bool",
+    "parse_enum",
+    "parse_pages",
     "html_response",
     "json_response",
     "text_response",
 )
 
+T = TypeVar("T")
+
 DELIM = ","
 RANGE = re.compile(
     r"(?P<start>-*[0-9]+)\.\.(?P<inclusive>=)?(?P<stop>-*[0-9]+)(?:\.\.(?P<step>-*[0-9]+))?"
 )
-
-T = TypeVar("T")
-T_co = TypeVar("T_co", covariant=True)
 
 json_prefix = "json_"
 json_prefix_length = len(json_prefix)
@@ -52,6 +54,7 @@ def get_original_handler(handler: Handler, strict: bool = True) -> Handler:
 
 def parameter(where: str, **kwargs) -> Mapping[str, Any]:
     kwargs.setdefault("in", where)
+
     return kwargs
 
 
@@ -91,7 +94,39 @@ def int_or(string: Optional[str], default: int) -> int:
     return default if string is None else int(string)
 
 
-def get_pages(string: str) -> Iterable[int]:
+def parse_bool(
+    string: str,
+    true: Iterable[str] = {"yes", "y", "true", "t", "1"},
+    false: Iterable[str] = {"no", "n", "false", "f", "0"},
+) -> bool:
+    string = string.casefold()
+
+    if string in true:
+        return True
+
+    elif string in false:
+        return False
+
+    else:
+        raise ValueError(f"Invalid string given: {string!r}.")
+
+
+def parse_enum(
+    string: str, enum: Type[Enum], convert: Optional[Callable[[str], T]] = None
+) -> Enum:
+    if convert is None:
+        return enum.from_value(string)
+
+    try:
+        value = convert(string)
+
+    except Exception:  # noqa
+        value = cast(T, string)
+
+    return enum.from_value(value)
+
+
+def parse_pages(string: str) -> Iterable[int]:
     match = RANGE.fullmatch(string)
 
     if match is None:

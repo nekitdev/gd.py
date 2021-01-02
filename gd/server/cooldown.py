@@ -2,7 +2,7 @@ import time
 from functools import wraps
 
 from gd.server.common import web
-from gd.server.error import Error, ErrorType, error_into_response
+from gd.server.handler import Error, ErrorType
 from gd.server.typing import Handler
 from gd.typing import Callable, Dict, Optional, Type, TypeVar
 
@@ -112,9 +112,13 @@ class CooldownMapping:
 
     @classmethod
     def from_cooldown(
-        cls: Type[CooldownMappingT], rate: int, per: float, by: ConstructKey
+        cls: Type[CooldownMappingT],
+        rate: int,
+        per: float,
+        by: ConstructKey,
+        cooldown_cls: Type[Cooldown] = Cooldown,
     ) -> CooldownMappingT:
-        return cls(Cooldown(rate, per), by)
+        return cls(cooldown_cls(rate, per), by)
 
 
 def create_cooldown_error(retry_after: float) -> Error:
@@ -136,18 +140,19 @@ def cooldown_token(request: web.Request) -> str:
 
 
 def cooldown_remote_and_token(request: web.Request) -> str:
-    return f"{request.remote}#{request.token}"  # type: ignore
+    return f"{request.remote}_{request.token}"  # type: ignore
 
 
 def cooldown(
     rate: int,
     per: float,
     by: ConstructKey,
-    cls: Type[CooldownMapping] = CooldownMapping,
+    cls: Type[Cooldown] = Cooldown,
+    mapping: Type[CooldownMapping] = CooldownMapping,
     retry_after_precision: int = 2,
 ) -> Callable[[Handler], Handler]:
     def wrapper(handler: Handler) -> Handler:
-        cooldown_mapping = cls.from_cooldown(rate, per, by)
+        cooldown_mapping = mapping.from_cooldown(rate, per, by, cooldown_cls=cls)
 
         @wraps(handler)
         async def actual_handler(request: web.Request) -> web.StreamResponse:
@@ -157,9 +162,9 @@ def cooldown(
                 return await handler(request)
 
             else:
-                return error_into_response(
-                    create_cooldown_error(round(retry_after, retry_after_precision))
-                )
+                return create_cooldown_error(
+                    round(retry_after, retry_after_precision)
+                ).into_response()
 
         return actual_handler
 

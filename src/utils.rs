@@ -1,12 +1,12 @@
 #[inline]
-pub fn cyclic_xor(data: &[u8], key: &[u8]) -> Vec<u8> {
-    data.iter().zip(
+pub fn cyclic_xor_inplace(data: &mut [u8], key: &[u8]) {
+    data.iter_mut().zip(
         key.as_ref().iter().cycle()
-    ).map(|(byte, key_byte)| byte ^ key_byte).collect()
+    ).for_each(|(byte, key_byte)| *byte ^= key_byte)
 }
 
 
 #[inline]
-pub fn xor(data: &[u8], key: u8) -> Vec<u8> {
-    data.iter().map(|byte| byte ^ key).collect()
+pub fn xor_inplace(data: &mut [u8], key: u8) {
+    data.iter_mut().for_each(|byte| *byte ^= key)
 }
