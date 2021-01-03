@@ -5,6 +5,7 @@ from aiohttp_remotes import setup as setup_aiohttp_remotes
 import gd
 
 from gd.server.common import web
+from gd.server.middlewares import status_error_middleware
 from gd.server.routes import routes
 from gd.server.typing import Middleware
 from gd.typing import Iterable, Optional, Protocol
@@ -26,6 +27,7 @@ class Tool(Protocol):
 
 
 DEFAULT_MIDDLEWARES: Iterable[Middleware] = (
+    status_error_middleware(),
     web.normalize_path_middleware(append_slash=False, remove_slash=True),
 )
 DEFAULT_TOOLS: Iterable[Tool] = (ForwardedRelaxed(), XForwardedRelaxed())
@@ -41,13 +43,13 @@ async def create_app(
     docs_version: str = str(gd.version_info),
     docs_info_url: str = "/api/docs/info.json",
     docs_url: str = "/api/docs",
-    default_middlewares: Iterable[Middleware] = DEFAULT_MIDDLEWARES,
+    middlewares: Iterable[Middleware] = DEFAULT_MIDDLEWARES,
     tools: Iterable[Tool] = DEFAULT_TOOLS,
     **app_kwargs,
 ) -> web.Application:
     app = web.Application(**app_kwargs)
 
-    app.middlewares.extend(default_middlewares)
+    app.middlewares.extend(middlewares)
 
     setup_aiohttp_apispec(
         app=app, title=docs_title, version=docs_version, url=docs_info_url, swagger_path=docs_url
@@ -72,7 +74,7 @@ def create_app_sync(
     docs_version: str = str(gd.version_info),
     docs_info_url: str = "/api/docs/info.json",
     docs_url: str = "/api/docs",
-    default_middlewares: Iterable[Middleware] = DEFAULT_MIDDLEWARES,
+    middlewares: Iterable[Middleware] = DEFAULT_MIDDLEWARES,
     tools: Iterable[Tool] = DEFAULT_TOOLS,
     **app_kwargs,
 ) -> web.Application:
@@ -83,7 +85,7 @@ def create_app_sync(
             docs_version=docs_version,
             docs_info_url=docs_info_url,
             docs_url=docs_url,
-            default_middlewares=default_middlewares,
+            middlewares=middlewares,
             tools=tools,
             **app_kwargs,
         )

@@ -7,13 +7,17 @@ from gd.typing import (
 )
 
 __all__ = (
+    "HTTP_STATUS_TO_ERROR_TYPE",
+    # error handling
     "Error",
     "ErrorHandler",
     "ErrorResult",
     "default_error_handler",
     "fail_error_handler",
+    # request handling
     "RequestHandler",
     "request_handler",
+    # utils for handling dynamic typing
     "error_result_into_response",
     "handler_into_request_handler",
 )
@@ -31,6 +35,14 @@ class ErrorType(Enum):
 
     INVALID_AUTHENTICATION = 13101
     MISSING_AUTHENTICATION = 13102
+
+
+HTTP_STATUS_TO_ERROR_TYPE = {
+    403: ErrorType.FORBIDDEN,
+    404: ErrorType.NOT_FOUND,
+    422: ErrorType.INVALID_ENTITY,
+    429: ErrorType.RATE_LIMITED,
+}
 
 
 class Error:
