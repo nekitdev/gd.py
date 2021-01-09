@@ -21,11 +21,12 @@
 #         ...
 
 from gd.errors import MissingAccess, SongRestricted
-from gd.server.routes import get
 from gd.server.common import docs, web
 from gd.server.handler import Error, ErrorType, request_handler
-from gd.server.types import int_type
-from gd.server.utils import json_response, parameter
+from gd.server.routes import get
+from gd.server.types import bool_type, int_type
+from gd.server.utils import json_response, parameter, parse_bool
+from gd.song import Song
 
 __all__ = ("get_artist_info", "get_song")
 
@@ -71,6 +72,100 @@ async def get_song_error(request: web.Request, error: Exception) -> Error:
 
     if isinstance(error, MissingAccess):
         return Error(404, ErrorType.NOT_FOUND, "Song was not found.")
+
+    return Error(message="Some unexpected error has occurred.")
+
+
+@docs(
+    tags=["get_official_song"],
+    summary="Get official song given by ID.",
+    parameters=[
+        parameter(
+            "path",
+            description="ID of the song.",
+            name="id",
+            schema=dict(type=int_type, example=1),
+            required=True,
+        ),
+        parameter(
+            "query",
+            description=(
+                "Whether the song should have server-side ID, or client-side one. "
+                "This parameter is true by default."
+            ),
+            name="server_style",
+            schema=dict(type=bool_type, example="true"),
+            required=False,
+        ),
+    ],
+    responses={
+        200: dict(description="Official song fetched."),
+        422: dict(description="Invalid ID or style was passed."),
+    },
+)
+@get("/song/official/{id}", version=1)
+@request_handler()
+async def get_official_song(request: web.Request) -> web.Response:
+    id = int(request.match_info["id"])
+    server_style = parse_bool(request.query.get("server_style", "true"))
+
+    song = Song.official(id, server_style=server_style)
+
+    return json_response(song)
+
+
+@get_official_song.error
+async def get_official_song_error(request: web.Request, error: Exception) -> Error:
+    if isinstance(error, ValueError):
+        return Error(422, ErrorType.INVALID_ENTITY, "Can not parse <id> or <server_style>.")
+
+    return Error(message="Some unexpected error has occurred.")
+
+
+@docs(
+    tags=["get_official_song_info"],
+    summary="Get official song and artist information given by ID.",
+    parameters=[
+        parameter(
+            "path",
+            description="ID of the song.",
+            name="id",
+            schema=dict(type=int_type, example=1),
+            required=True,
+        ),
+        parameter(
+            "query",
+            description=(
+                "Whether the song should have server-side ID, or client-side one. "
+                "This parameter is true by default."
+            ),
+            name="server_style",
+            schema=dict(type=bool_type, example="true"),
+            required=False,
+        ),
+    ],
+    responses={
+        200: dict(description="Official song artist information."),
+        422: dict(description="Invalid ID or style was passed."),
+    },
+)
+@get("/song/official/{id}/info", version=1)
+@request_handler()
+async def get_official_song_info(request: web.Request) -> web.Response:
+    id = int(request.match_info["id"])
+    server_style = parse_bool(request.query.get("server_style", "true"))
+
+    song = Song.official(id, server_style=server_style)
+
+    artist_info = await song.get_artist_info()
+
+    return json_response(artist_info)
+
+
+@get_official_song_info.error
+async def get_official_song_info_error(request: web.Request, error: Exception) -> Error:
+    if isinstance(error, ValueError):
+        return Error(422, ErrorType.INVALID_ENTITY, "Can not parse <id> or <server_style>.")
 
     return Error(message="Some unexpected error has occurred.")
 

@@ -116,8 +116,10 @@ async def read_data(
 ) -> ResponseData:
     if raw:
         return await response.read()
+
     elif json:
         return await response.json(encoding=encoding, content_type=None)
+
     else:
         return await response.text(encoding=encoding)
 

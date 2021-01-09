@@ -21,9 +21,9 @@
 #         ...
 
 from gd.errors import MissingAccess
-from gd.server.routes import get
 from gd.server.common import docs, web
 from gd.server.handler import Error, ErrorType, request_handler
+from gd.server.routes import get
 from gd.server.types import int_type, str_type
 from gd.server.utils import parse_pages, json_response, parameter
 
