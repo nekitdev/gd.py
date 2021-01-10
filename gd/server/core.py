@@ -32,7 +32,7 @@ DEFAULT_MIDDLEWARES: Iterable[Middleware] = (
 )
 DEFAULT_TOOLS: Iterable[Tool] = (ForwardedRelaxed(), XForwardedRelaxed())
 
-run_app = web._run_app  # type: ignore  # idk why they made it internal
+run_app = web._run_app  # type: ignore  # idk why it was made internal
 run_app_sync = web.run_app
 
 
