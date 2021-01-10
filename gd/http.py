@@ -47,6 +47,7 @@ from gd.errors import (
     HTTPError,
     HTTPStatusError,
     LoginFailure,
+    LoginRequired,
     MissingAccess,
     NothingFound,
     SongRestricted,
@@ -467,10 +468,10 @@ class HTTPClient:
 
         return (end - start) * 1000
 
-    async def login(self, user: str, password: str) -> str:
+    async def login(self, name: str, password: str) -> str:
         error_codes = {
-            -1: LoginFailure(login=user, password=password),
-            -12: MissingAccess(f"Account {user!r} (password {password!r}) is disabled."),
+            -1: LoginFailure(name=name, password=password),
+            -12: MissingAccess(f"Account {name!r} (password {password!r}) is disabled."),
         }
 
         route = Route(
@@ -479,7 +480,7 @@ class HTTPClient:
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
-            user_name=user,
+            user_name=name,
             password=password,
             udid=self.gen_udid(),
             secret=self.get_secret("login"),
@@ -490,7 +491,7 @@ class HTTPClient:
 
         return cast(str, response)
 
-    async def load(self, *, account_id: int, user: str, password: str) -> str:
+    async def load(self, *, account_id: int, name: str, password: str) -> str:
         error_codes = {-11: MissingAccess("Failed to load save.")}
 
         route = Route(
@@ -499,7 +500,7 @@ class HTTPClient:
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
-            user_name=user,
+            user_name=name,
             password=password,
             secret=self.get_secret("login"),
             to_camel=True,
@@ -511,7 +512,7 @@ class HTTPClient:
 
         return cast(str, response)
 
-    async def save(self, data: str, *, account_id: int, user: str, password: str) -> int:
+    async def save(self, data: str, *, account_id: int, name: str, password: str) -> int:
         error_codes = {
             -1: MissingAccess("Failed to save."),
             -4: MissingAccess("Data is too large."),
@@ -526,7 +527,7 @@ class HTTPClient:
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             save_data=data,
-            user_name=user,
+            user_name=name,
             password=password,
             secret=self.get_secret("login"),
             to_camel=True,
@@ -802,8 +803,8 @@ class HTTPClient:
         )
 
         if strategy.requires_login():
-            if account_id is None or encoded_password is None:
-                raise MissingAccess(f"{strategy!r} strategy requires logged in Client.")
+            if not account_id or not encoded_password:
+                raise LoginRequired(f"{strategy!r} strategy requires logged in Client.")
 
             route.update(account_id=account_id, gjp=encoded_password, to_camel=True)
 

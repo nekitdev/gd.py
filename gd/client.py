@@ -1,4 +1,5 @@
 import traceback
+import types
 
 from gd.api.database import Database
 from gd.api.recording import RecordEntry
@@ -53,6 +54,7 @@ from gd.typing import (
     Awaitable,
     Callable,
     Dict,
+    Generator,
     Iterable,
     Iterator,
     List,
@@ -252,12 +254,54 @@ class Client:
     async def ping(self, url: Union[str, URL]) -> float:
         return await self.session.ping(url)
 
-    async def login(self, user: str, password: str) -> None:
-        """Login into an account and update client's settings.
+    async def logout(self) -> None:
+        """Logout from account.
 
         Example
         -------
         >>> await client.login("user", "password")
+        >>> await client.logout()
+        >>> client.id
+        0
+        """
+        self.db = Database()
+
+        self.account_id = 0
+        self.id = 0
+
+        self.name = ""
+        self.password = ""
+
+    def login(self, name: str, password: str) -> "LoginContextManager":
+        """:async-with:
+
+        Return context manager that can be used to temporarily log in,
+        logging out on exit.
+
+        Awaiting on the context manager will act the same as actually logging in.
+
+        Example
+        -------
+        >>> async with client.login("user", "password"):
+        ...     async for friend in client.get_friends():
+        ...         print(friend)
+
+        Parameters
+        ----------
+        name: :class:`str`
+            Name of an account.
+
+        password: :class:`str`
+            Password of an account.
+        """
+        return LoginContextManager(self, name, password, unsafe=False)
+
+    async def do_login(self, name: str, password: str) -> None:
+        """Login into an account and update client's settings.
+
+        Example
+        -------
+        >>> await client.do_login("user", "password")
         >>> client.name
         "user"
         >>> client.password
@@ -265,25 +309,25 @@ class Client:
 
         Parameters
         ----------
-        user: :class:`str`
+        name: :class:`str`
             Name of an account.
 
         password: :class:`str`
             Password of an account.
         """
-        model = await self.session.login(user, password)
+        model = await self.session.login(name, password)
 
-        log.info("Logged in as %r.", user)
+        log.info("Logged in as %r.", name)
 
-        self.edit(account_id=model.account_id, id=model.id, name=user, password=password)
+        self.edit(account_id=model.account_id, id=model.id, name=name, password=password)
 
-    async def unsafe_login(self, user: str, password: str) -> None:
-        """Login into an account and update client's settings.
+    def unsafe_login(self, name: str, password: str) -> "LoginContextManager":
+        """:async-with:
 
-        This function is not *safe*, because it does not use login endpoint.
+        Return context manager that can be used to temporarily log in *unsafely*,
+        logging out on exit.
 
-        Instead, it assumes that credentials are correct,
-        and only searches for ID and Account ID.
+        Awaiting on the context manager will act the same as actually logging in.
 
         Example
         -------
@@ -295,19 +339,43 @@ class Client:
 
         Parameters
         ----------
-        user: :class:`str`
+        name: :class:`str`
             Name of an account.
 
         password: :class:`str`
             Password of an account.
         """
-        self_user = await self.search_user(user, simple=True)
+        return LoginContextManager(self, name, password, unsafe=True)
 
-        log.info("Logged in? as %r.", user)
+    async def do_unsafe_login(self, name: str, password: str) -> None:
+        """Login into an account and update client's settings.
 
-        self.edit(
-            name=user, password=password, account_id=self_user.account_id, id=self_user.id,
-        )
+        This function is not *safe*, because it does not use login endpoint.
+
+        Instead, it assumes that credentials are correct,
+        and only searches for ID and Account ID.
+
+        Example
+        -------
+        >>> await client.do_unsafe_login("user", "password")
+        >>> client.name
+        "user"
+        >>> client.password
+        "password"
+
+        Parameters
+        ----------
+        name: :class:`str`
+            Name of an account.
+
+        password: :class:`str`
+            Password of an account.
+        """
+        user = await self.search_user(name, simple=True)
+
+        log.info("Logged in? as %r.", name)
+
+        self.edit(name=name, password=password, account_id=user.account_id, id=user.id)
 
     @login_check
     async def load(self) -> Database:
@@ -338,7 +406,7 @@ class Client:
             Loaded database.
         """
         db = await self.session.load(
-            account_id=self.account_id, user=self.name, password=self.password
+            account_id=self.account_id, name=self.name, password=self.password
         )
 
         self.db = db
@@ -379,7 +447,7 @@ class Client:
             db = self.db
 
         await self.session.save(
-            db, account_id=self.account_id, user=self.name, password=self.password
+            db, account_id=self.account_id, name=self.name, password=self.password
         )
 
     async def get_account_url(self, account_id: int, type: AccountURLType) -> URL:
@@ -1610,3 +1678,50 @@ class Client:
     ) -> Callable[[MaybeAsyncFunction], MaybeAsyncFunction]:
         self.apply_listener(event_name, *args, **kwargs)
         return self.listen(event_name)
+
+
+class LoginContextManager:
+    def __init__(self, client: Client, user: str, password: str, unsafe: bool = False) -> None:
+        self._client = client
+        self._user = user
+        self._password = password
+        self._unsafe = unsafe
+
+    @property
+    def client(self) -> Client:
+        return self._client
+
+    @property
+    def user(self) -> str:
+        return self._user
+
+    @property
+    def password(self) -> str:
+        return self._password
+
+    @property
+    def unsafe(self) -> bool:
+        return self._unsafe
+
+    async def login(self) -> None:
+        if self.unsafe:
+            await self.client.do_unsafe_login(self.user, self.password)
+
+        else:
+            await self.client.do_login(self.user, self.password)
+
+    async def logout(self) -> None:
+        await self.client.logout()
+
+    def __await__(self) -> Generator[Any, None, None]:
+        return self.login().__await__()
+
+    async def __aenter__(self) -> Client:
+        await self.login()
+
+        return self.client
+
+    async def __aexit__(
+        self, error_type: Type[BaseException], error: BaseException, traceback: types.TracebackType
+    ) -> None:
+        await self.logout()

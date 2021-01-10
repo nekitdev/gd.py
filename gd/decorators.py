@@ -3,7 +3,7 @@ from operator import attrgetter
 
 from gd.async_utils import get_not_running_loop, maybe_coroutine
 from gd.code_utils import time_execution_and_print
-from gd.errors import MissingAccess
+from gd.errors import LoginRequired
 from gd.typing import (
     TYPE_CHECKING,
     Any,
@@ -192,7 +192,7 @@ def login_check_object(client_or_entity: Union["AbstractEntity", "Client"]) -> N
     client: "Client" = getattr(client_or_entity, "client", client_or_entity)
 
     if not client.is_logged():
-        raise MissingAccess("Client is not logged in.")
+        raise LoginRequired("Client is not logged in.")
 
 
 def run_once(function: Callable[..., T]) -> Callable[..., T]:

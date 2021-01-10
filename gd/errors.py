@@ -9,8 +9,8 @@ __all__ = (
     "MissingAccess",
     "SongRestricted",
     "LoginFailure",
+    "LoginRequired",
     "NothingFound",
-    "NotLoggedError",
     "DataException",
     "DeError",
     "SerError",
@@ -110,21 +110,27 @@ class LoginFailure(ClientException):
     when trying to log in.
     """
 
-    def __init__(self, login: str, password: str) -> None:
-        self._login = login
+    def __init__(self, name: str, password: str) -> None:
+        self._name = name
         self._password = password
 
-        super().__init__(f"Failed to login with credentials: {login!r} -> {password!r}.")
+        super().__init__(f"Failed to login with credentials: {name!r} -> {password!r}.")
 
     @property
-    def login(self) -> str:
+    def name(self) -> str:
         """Username that was wrong or password did not match."""
-        return self._login
+        return self._name
 
     @property
     def password(self) -> str:
         """Password that login was failed with."""
         return self._password
+
+
+class LoginRequired(ClientException):
+    """Exception that is raised when the client is not logged in when required."""
+
+    pass
 
 
 class NothingFound(ClientException):
@@ -146,27 +152,6 @@ class NothingFound(ClientException):
     def instance_name(self) -> str:
         """Name of the class instances of which were not found."""
         return self._instance_name
-
-
-class NotLoggedError(ClientException):
-    """Exception that is raised when a function that requires logged in user is called
-    while :class:`Client` is not logged.
-    """
-
-    def __init__(self, function_name: Optional[str] = None) -> None:
-        self._function_name = function_name
-
-        if function_name is None:
-            message = "Login is required but is missing."
-        else:
-            message = f"{function_name!r} requires client to be logged."
-
-        super().__init__(message)
-
-    @property
-    def function_name(self) -> Optional[str]:
-        """Name of the function that requires login."""
-        return self._function_name
 
 
 class DataException(GDException):

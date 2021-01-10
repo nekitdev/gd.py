@@ -69,12 +69,12 @@ class Session:
     async def ping(self, url: Union[str, URL]) -> float:
         return await self.http.ping(url)
 
-    async def login(self, user: str, password: str) -> LoginIDModel:
-        response = await self.http.login(user, password)
+    async def login(self, name: str, password: str) -> LoginIDModel:
+        response = await self.http.login(name, password)
         return LoginIDModel.from_string(response, use_default=True)
 
-    async def load(self, *, account_id: int, user: str, password: str) -> Database:
-        response = await self.http.load(account_id=account_id, user=user, password=password)
+    async def load(self, *, account_id: int, name: str, password: str) -> Database:
+        response = await self.http.load(account_id=account_id, name=name, password=password)
 
         main_part, levels_part, *_ = response.split(SAVE_DELIM)
 
@@ -82,12 +82,12 @@ class Session:
             main_part, levels_part, apply_xor=False, follow_os=False
         )
 
-    async def save(self, db: Database, *, account_id: int, user: str, password: str) -> None:
+    async def save(self, db: Database, *, account_id: int, name: str, password: str) -> None:
         parts = await save.to_string_async(db, apply_xor=False, follow_os=False, decode=True)
 
         data = SAVE_DELIM.join(parts)  # type: ignore  # they are already strings
 
-        await self.http.save(data=data, account_id=account_id, user=user, password=password)
+        await self.http.save(data=data, account_id=account_id, name=name, password=password)
 
     async def get_account_url(self, account_id: int, type: AccountURLType) -> URL:
         url = await self.http.get_account_url(account_id=account_id, type=type)

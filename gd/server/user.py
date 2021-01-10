@@ -20,12 +20,13 @@
 #     async def handler_error(request: web.Request, error: Exception) -> Error:
 #         ...
 
-from gd.errors import MissingAccess
+from gd.enums import LeaderboardStrategy
+from gd.errors import LoginRequired, MissingAccess
 from gd.server.common import docs, web
 from gd.server.handler import Error, ErrorType, request_handler
 from gd.server.routes import get
 from gd.server.types import int_type, str_type
-from gd.server.utils import parse_pages, json_response, parameter
+from gd.server.utils import parse_pages, json_response, parameter, parse_enum
 
 __all__ = ("get_user", "search_user", "search_users")
 
@@ -148,5 +149,59 @@ async def search_users(request: web.Request) -> web.Response:
 async def search_users_error(request: web.Request, error: Exception) -> Error:
     if isinstance(error, ValueError):
         return Error(422, ErrorType.INVALID_ENTITY, "Can not parse <pages> parameter.")
+
+    return Error(message="Some unexpected error has occurred.")
+
+
+@docs(
+    tags=["get_leaderboard"],
+    summary="Get user leaderboard.",
+    description="Get user leaderboard with given strategy.",
+    parameters=[
+        parameter(
+            "query",
+            description="Amount of users to fetch. Default is 100.",
+            name="amount",
+            schema=dict(type=int_type, example=100),
+            required=False,
+        ),
+        parameter(
+            "query",
+            description="Strategy of the leaderboard. Default is top.",
+            name="strategy",
+            schema=dict(type=str_type, example="top"),
+            required=False,
+        ),
+    ],
+    responses={
+        200: dict(description="Users fetched from the server. Can be empty."),
+        401: dict(description="Authorization is required but is missing."),
+        422: dict(description="Given strategy or amount is invalid."),
+    },
+)
+@get("/leaderboard/users", version=1)
+@get("/top/users", version=1)
+@request_handler()
+async def get_leaderboard(request: web.Request) -> web.Response:
+    client = request.app.client  # type: ignore
+
+    amount = int(request.query.get("amount", 100))
+    strategy = parse_enum(request.query.get("strategy", "top"), LeaderboardStrategy, int)
+
+    leaderboard = await client.get_leaderboard(strategy, amount=amount).list()
+
+    return json_response(leaderboard)
+
+
+@get_leaderboard.error
+async def get_leaderboard_error(request: web.Request, error: Exception) -> Error:
+    if isinstance(error, ValueError):
+        return Error(422, ErrorType.INVALID_ENTITY, "Can not parse <amount> or <strategy>.")
+
+    if isinstance(error, LoginRequired):
+        return Error(401, ErrorType.UNAUTHORIZED, "Authorization is required but is missing.")
+
+    if isinstance(error, MissingAccess):
+        return Error(404, ErrorType.NOT_FOUND, "Can not fetch the leaderboard.")
 
     return Error(message="Some unexpected error has occurred.")
