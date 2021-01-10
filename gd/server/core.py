@@ -7,7 +7,7 @@ import gd
 from gd.server.common import web
 from gd.server.middlewares import status_error_middleware
 from gd.server.routes import routes
-from gd.server.token import Token, TokenDatabase
+from gd.server.token import TokenDatabase
 from gd.server.typing import Middleware
 from gd.typing import Iterable, Optional, Protocol
 
@@ -63,7 +63,7 @@ async def create_app(
 
     app.client = client
 
-    app.token_database = app.token_db = TokenDatabase()
+    app.token_database = TokenDatabase()
 
     app.add_routes(routes)
 
