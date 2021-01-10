@@ -25,10 +25,61 @@ from gd.errors import LoginRequired, MissingAccess
 from gd.server.common import docs, web
 from gd.server.handler import Error, ErrorType, request_handler
 from gd.server.routes import get
-from gd.server.types import int_type, str_type
-from gd.server.utils import parse_pages, json_response, parameter, parse_enum
+from gd.server.token import token
+from gd.server.types import bool_type, int_type, str_type
+from gd.server.utils import json_response, parameter, parse_bool, parse_enum, parse_pages
 
 __all__ = ("get_user", "search_user", "search_users")
+
+ME = "@me"
+
+
+@docs(
+    tags=["get_self"],
+    summary="Get user currently logged in.",
+    parameters=[
+        parameter(
+            "query",
+            description="Whether to return simple information, or load fully. Default is false.",
+            name="simple",
+            schema=dict(type=bool_type, example="false"),
+            required=False,
+        ),
+    ],
+    responses={
+        200: dict(description="User fetched from the server."),
+        401: dict(description="Unauthorized."),
+        404: dict(description="User was not found."),
+        422: dict(description="Invalid parameters were passed."),
+    },
+)
+@get(f"/user/{ME}", version=1)
+@request_handler()
+@token(required=True)
+async def get_self(request: web.Request) -> web.Response:
+    client = request.app.client  # type: ignore
+    token = request.token  # type: ignore
+
+    simple = parse_bool(request.query.get("simple", "false"))
+
+    async with token.into(client):
+        user = client.user
+
+        if not simple:
+            await user.update()
+
+        return json_response(user)
+
+
+@get_self.error
+async def get_self_error(request: web.Request, error: Exception) -> Error:
+    if isinstance(error, ValueError):
+        return Error(422, ErrorType.INVALID_ENTITY, "Can not parse <simple>.")
+
+    if isinstance(error, MissingAccess):
+        return Error(404, ErrorType.NOT_FOUND, "User was not found.")
+
+    return Error(message="Some unexpected error has occurred.")
 
 
 @docs(
@@ -42,11 +93,18 @@ __all__ = ("get_user", "search_user", "search_users")
             schema=dict(type=int_type, example=1),
             required=True,
         ),
+        parameter(
+            "query",
+            description="Whether to return simple information, or load fully. Default is false.",
+            name="simple",
+            schema=dict(type=bool_type, example="false"),
+            required=False,
+        )
     ],
     responses={
         200: dict(description="User fetched from the server."),
         404: dict(description="User was not found."),
-        422: dict(description="Invalid Account ID was passed."),
+        422: dict(description="Invalid parameters were passed."),
     },
 )
 @get("/user/{account_id}", version=1)
@@ -55,8 +113,9 @@ async def get_user(request: web.Request) -> web.Response:
     client = request.app.client  # type: ignore
 
     account_id = int(request.match_info["account_id"])
+    simple = parse_bool(request.query.get("simple", "false"))
 
-    user = await client.get_user(account_id)
+    user = await client.get_user(account_id, simple=simple)
 
     return json_response(user)
 
@@ -64,7 +123,7 @@ async def get_user(request: web.Request) -> web.Response:
 @get_user.error
 async def get_user_error(request: web.Request, error: Exception) -> Error:
     if isinstance(error, ValueError):
-        return Error(422, ErrorType.INVALID_ENTITY, "Can not parse <account_id> to int.")
+        return Error(422, ErrorType.INVALID_ENTITY, "Can not parse <account_id> or <simple>.")
 
     if isinstance(error, MissingAccess):
         return Error(404, ErrorType.NOT_FOUND, "User was not found.")
@@ -84,10 +143,18 @@ async def get_user_error(request: web.Request, error: Exception) -> Error:
             schema=dict(type=str_type, example="Player"),
             required=True,
         ),
+        parameter(
+            "query",
+            description="Whether to return simple information, or load fully. Default is false.",
+            name="simple",
+            schema=dict(type=bool_type, example="false"),
+            required=False,
+        )
     ],
     responses={
         200: dict(description="User fetched from the server."),
         404: dict(description="User was not found."),
+        422: dict(description="Invalid parameters were passed."),
     },
 )
 @get("/search/user/{query}", version=1)
@@ -96,14 +163,18 @@ async def search_user(request: web.Request) -> web.Response:
     client = request.app.client  # type: ignore
 
     query = request.match_info["query"]
+    simple = parse_bool(request.query.get("simple", "false"))
 
-    user = await client.search_user(query)
+    user = await client.search_user(query, simple=simple)
 
     return json_response(user)
 
 
 @search_user.error
 async def search_user_error(request: web.Request, error: Exception) -> Error:
+    if isinstance(error, ValueError):
+        return Error(422, ErrorType.INVALID_ENTITY, "Can not parse <simple> to bool.")
+
     if isinstance(error, MissingAccess):
         return Error(404, ErrorType.NOT_FOUND, "User was not found.")
 
@@ -121,7 +192,7 @@ async def search_user_error(request: web.Request, error: Exception) -> Error:
             name="query",
             schema=dict(type=str_type, example="Player"),
             required=True,
-        ),
+        )
     ],
     responses={200: dict(description="Users fetched from the server. Can be empty.")},
 )

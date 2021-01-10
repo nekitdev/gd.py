@@ -1,4 +1,5 @@
 try:
+    from gd.server.auth import *
     from gd.server.common import *
     from gd.server.cooldown import *
     from gd.server.core import *

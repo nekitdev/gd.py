@@ -41,7 +41,7 @@ __all__ = ("get_artist_info", "get_song")
             name="id",
             schema=dict(type=int_type, example=1),
             required=True,
-        ),
+        )
     ],
     responses={
         200: dict(description="Song fetched from the server."),
@@ -180,7 +180,7 @@ async def get_official_song_info_error(request: web.Request, error: Exception) -
             name="id",
             schema=dict(type=int_type, example=1),
             required=True,
-        ),
+        )
     ],
     responses={
         200: dict(description="Artist information fetched from the server."),
