@@ -32,7 +32,7 @@ __all__ = (
     "RewardType",
     "ShardType",
     "QuestType",
-    "UserListType",
+    "RelationshipType",
     "Scene",
     "PlayerColor",
     "CustomParticleGrouping",
@@ -407,7 +407,7 @@ class QuestType(Enum):
     STARS = 3
 
 
-class UserListType(Enum):
+class RelationshipType(Enum):
     FRIENDS = 0
     BLOCKED = 1
 

@@ -54,6 +54,8 @@ async def login(request: web.Request) -> web.Response:
     else:
         status = 200  # old token is used, so we return simple "ok" status
 
+    await client.session.login(name, password)  # attempt login to check credentials
+
     await token.load(client, force=True)
 
     return json_response(dict(token=str(token)), status=status)
@@ -66,8 +68,6 @@ async def login_error(request: web.Request, error: Exception) -> Error:
 
     if isinstance(error, LoginFailure):
         return Error(401, ErrorType.LOGIN_FAILED, f"{error}")
-
-    raise
 
     return Error(message="Some unexpected error has occured.")
 

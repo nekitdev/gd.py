@@ -24,7 +24,7 @@ from gd.enums import (
     MessageState,
     MessageType,
     RewardType,
-    UserListType,
+    RelationshipType,
 )
 from gd.errors import ClientException, MissingAccess, NothingFound
 from gd.events.listener import (
@@ -713,10 +713,12 @@ class Client:
 
     @awaitable_iterator
     @login_check
-    async def get_user_list(self, type: Union[int, str, UserListType]) -> AsyncIterator[User]:
+    async def get_relationships(
+        self, type: Union[int, str, RelationshipType]
+    ) -> AsyncIterator[User]:
         try:
-            response_model = await self.session.get_user_list(
-                UserListType.from_value(type),
+            response_model = await self.session.get_relationships(
+                RelationshipType.from_value(type),
                 account_id=self.account_id,
                 encoded_password=self.encoded_password,
             )
@@ -729,11 +731,11 @@ class Client:
 
     @login_check
     def get_friends(self) -> AsyncIterator[User]:
-        return self.get_user_list(UserListType.FRIENDS)
+        return self.get_relationships(RelationshipType.FRIENDS)
 
     @login_check
     def get_blocked(self) -> AsyncIterator[User]:
-        return self.get_user_list(UserListType.BLOCKED)
+        return self.get_relationships(RelationshipType.BLOCKED)
 
     @awaitable_iterator
     async def get_top(
@@ -1061,7 +1063,7 @@ class Client:
                 content = ""
 
             messages = self.get_messages_on_page(type=MessageType.SENT)
-            message = await messages.get(subject=subject, recipient=user)
+            message = await messages.get(subject=subject, recipient__account_id=user.account_id)
 
             if message is None:
                 return None
@@ -1147,7 +1149,7 @@ class Client:
                 message = ""
 
             friend_requests = self.get_friend_requests_on_page(type=FriendRequestType.SENT)
-            friend_request = await friend_requests.get(recipient=user)
+            friend_request = await friend_requests.get(recipient__account_id=user.account_id)
 
             if friend_request is None:
                 return None

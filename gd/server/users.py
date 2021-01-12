@@ -29,9 +29,7 @@ from gd.server.token import token
 from gd.server.types import bool_type, int_type, str_type
 from gd.server.utils import json_response, parameter, parse_bool, parse_enum, parse_pages
 
-__all__ = ("get_user", "search_user", "search_users")
-
-ME = "@me"
+__all__ = ("get_leaderboard", "get_self", "get_user", "search_user", "search_users")
 
 
 @docs(
@@ -53,7 +51,7 @@ ME = "@me"
         422: dict(description="Invalid parameters were passed."),
     },
 )
-@get(f"/user/{ME}", version=1)
+@get("/users/@me", version=1)
 @request_handler()
 @token(required=True)
 async def get_self(request: web.Request) -> web.Response:
@@ -107,7 +105,7 @@ async def get_self_error(request: web.Request, error: Exception) -> Error:
         422: dict(description="Invalid parameters were passed."),
     },
 )
-@get("/user/{account_id}", version=1)
+@get("/users/{account_id}", version=1)
 @request_handler()
 async def get_user(request: web.Request) -> web.Response:
     client = request.app.client  # type: ignore
@@ -157,7 +155,7 @@ async def get_user_error(request: web.Request, error: Exception) -> Error:
         422: dict(description="Invalid parameters were passed."),
     },
 )
-@get("/search/user/{query}", version=1)
+@get("/users/find/{query}", version=1)
 @request_handler()
 async def search_user(request: web.Request) -> web.Response:
     client = request.app.client  # type: ignore
@@ -196,7 +194,7 @@ async def search_user_error(request: web.Request, error: Exception) -> Error:
     ],
     responses={200: dict(description="Users fetched from the server. Can be empty.")},
 )
-@get("/search/users/{query}", version=1)
+@get("/users/search/{query}", version=1)
 @request_handler()
 async def search_users(request: web.Request) -> web.Response:
     client = request.app.client  # type: ignore
@@ -250,8 +248,8 @@ async def search_users_error(request: web.Request, error: Exception) -> Error:
         422: dict(description="Given strategy or amount is invalid."),
     },
 )
-@get("/leaderboard/users", version=1)
-@get("/top/users", version=1)
+@get("/users/leaderboard", version=1)
+@get("/users/top", version=1)
 @request_handler()
 async def get_leaderboard(request: web.Request) -> web.Response:
     client = request.app.client  # type: ignore

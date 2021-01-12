@@ -18,7 +18,7 @@ from gd.enums import (
     MessageState,
     MessageType,
     RewardType,
-    UserListType,
+    RelationshipType,
 )
 from gd.filters import Filters
 from gd.http import URL, HTTPClient
@@ -192,10 +192,10 @@ class Session:
         )
         return ProfileUserModel.from_string(response, use_default=True)
 
-    async def get_user_list(
-        self, type: UserListType, *, account_id: int, encoded_password: str
+    async def get_relationships(
+        self, type: RelationshipType, *, account_id: int, encoded_password: str
     ) -> UserListResponseModel:
-        response = await self.http.get_user_list(
+        response = await self.http.get_relationships(
             type, account_id=account_id, encoded_password=encoded_password
         )
         return UserListResponseModel.from_string(response, use_default=True)

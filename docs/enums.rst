@@ -55,7 +55,7 @@ This library has a lot of enums, listed below.
 
 .. autoclass:: QuestType
 
-.. autoclass:: UserListType
+.. autoclass:: RelationshipType
 
 .. autoclass:: Scene
 

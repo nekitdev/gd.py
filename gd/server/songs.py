@@ -50,7 +50,7 @@ __all__ = ("get_artist_info", "get_song")
         422: dict(description="Invalid ID was passed."),
     },
 )
-@get("/song/{id}", version=1)
+@get("/songs/{id}", version=1)
 @request_handler()
 async def get_song(request: web.Request) -> web.Response:
     client = request.app.client  # type: ignore
@@ -103,7 +103,7 @@ async def get_song_error(request: web.Request, error: Exception) -> Error:
         422: dict(description="Invalid ID or style was passed."),
     },
 )
-@get("/song/official/{id}", version=1)
+@get("/songs/official/{id}", version=1)
 @request_handler()
 async def get_official_song(request: web.Request) -> web.Response:
     id = int(request.match_info["id"])
@@ -149,7 +149,7 @@ async def get_official_song_error(request: web.Request, error: Exception) -> Err
         422: dict(description="Invalid ID or style was passed."),
     },
 )
-@get("/song/official/{id}/info", version=1)
+@get("/songs/official/{id}/info", version=1)
 @request_handler()
 async def get_official_song_info(request: web.Request) -> web.Response:
     id = int(request.match_info["id"])
@@ -188,7 +188,7 @@ async def get_official_song_info_error(request: web.Request, error: Exception) -
         422: dict(description="Invalid ID was passed."),
     },
 )
-@get("/song/{id}/info", version=1)
+@get("/songs/{id}/info", version=1)
 @request_handler()
 async def get_artist_info(request: web.Request) -> web.Response:
     client = request.app.client  # type: ignore

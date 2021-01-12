@@ -41,7 +41,7 @@ from gd.enums import (
     RewardType,
     SearchStrategy,
     Secret,
-    UserListType,
+    RelationshipType,
 )
 from gd.errors import (
     HTTPError,
@@ -753,8 +753,8 @@ class HTTPClient:
 
         return cast(str, response)
 
-    async def get_user_list(
-        self, type: UserListType, *, account_id: int, encoded_password: str
+    async def get_relationships(
+        self, type: RelationshipType, *, account_id: int, encoded_password: str
     ) -> str:
         error_codes = {
             -1: MissingAccess(f"Failed to fetch {type.name.lower()} users."),
