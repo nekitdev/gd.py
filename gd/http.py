@@ -41,7 +41,7 @@ from gd.enums import (
     RewardType,
     SearchStrategy,
     Secret,
-    RelationshipType,
+    SimpleRelationshipType,
 )
 from gd.errors import (
     HTTPError,
@@ -754,7 +754,7 @@ class HTTPClient:
         return cast(str, response)
 
     async def get_relationships(
-        self, type: RelationshipType, *, account_id: int, encoded_password: str
+        self, type: SimpleRelationshipType, *, account_id: int, encoded_password: str
     ) -> str:
         error_codes = {
             -1: MissingAccess(f"Failed to fetch {type.name.lower()} users."),
@@ -1386,7 +1386,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        if type is MessageType.SENT:
+        if type is MessageType.OUTGOING:
             route.update(is_sender=1, to_camel=True)
 
         response = await self.request_route(route, error_codes=error_codes)
@@ -1411,7 +1411,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        if type is MessageType.SENT:
+        if type is MessageType.OUTGOING:
             route.update(is_sender=1, to_camel=True)
 
         response = await self.request_route(route, error_codes=error_codes)
@@ -1440,7 +1440,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        if type is MessageType.SENT:
+        if type is MessageType.OUTGOING:
             route.update(get_sent=1, to_camel=True)
 
         response = await self.request_route(route, error_codes=error_codes)
@@ -1510,7 +1510,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        if type is FriendRequestType.SENT:
+        if type is FriendRequestType.OUTGOING:
             route.update(is_sender=1, to_camel=True)
 
         response = await self.request_route(route, error_codes=error_codes)
@@ -1546,7 +1546,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        if type is FriendRequestType.SENT:
+        if type is FriendRequestType.OUTGOING:
             route.update(is_sender=1, to_camel=True)
 
         response = await self.request_route(route, error_codes=error_codes)
@@ -1597,7 +1597,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        if type is FriendRequestType.SENT:
+        if type is FriendRequestType.OUTGOING:
             route.update(get_sent=1, to_camel=True)
 
         response = await self.request_route(route, error_codes=error_codes)

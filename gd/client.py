@@ -24,7 +24,7 @@ from gd.enums import (
     MessageState,
     MessageType,
     RewardType,
-    RelationshipType,
+    SimpleRelationshipType,
 )
 from gd.errors import ClientException, MissingAccess, NothingFound
 from gd.events.listener import (
@@ -714,11 +714,11 @@ class Client:
     @awaitable_iterator
     @login_check
     async def get_relationships(
-        self, type: Union[int, str, RelationshipType]
+        self, type: Union[int, str, SimpleRelationshipType]
     ) -> AsyncIterator[User]:
         try:
             response_model = await self.session.get_relationships(
-                RelationshipType.from_value(type),
+                SimpleRelationshipType.from_value(type),
                 account_id=self.account_id,
                 encoded_password=self.encoded_password,
             )
@@ -731,11 +731,11 @@ class Client:
 
     @login_check
     def get_friends(self) -> AsyncIterator[User]:
-        return self.get_relationships(RelationshipType.FRIENDS)
+        return self.get_relationships(SimpleRelationshipType.FRIENDS)
 
     @login_check
     def get_blocked(self) -> AsyncIterator[User]:
-        return self.get_relationships(RelationshipType.BLOCKED)
+        return self.get_relationships(SimpleRelationshipType.BLOCKED)
 
     @awaitable_iterator
     async def get_top(
@@ -1062,8 +1062,8 @@ class Client:
             if content is None:
                 content = ""
 
-            messages = self.get_messages_on_page(type=MessageType.SENT)
-            message = await messages.get(subject=subject, recipient__account_id=user.account_id)
+            messages = self.get_messages_on_page(type=MessageType.OUTGOING)
+            message = await messages.get(subject=subject, recipient=user)
 
             if message is None:
                 return None
@@ -1101,7 +1101,7 @@ class Client:
     @awaitable_iterator
     @login_check
     async def get_messages_on_page(
-        self, type: Union[int, str, MessageType] = MessageType.NORMAL, page: int = 0
+        self, type: Union[int, str, MessageType] = MessageType.INCOMING, page: int = 0
     ) -> AsyncIterator[Message]:
         message_type = MessageType.from_value(type)
 
@@ -1123,7 +1123,7 @@ class Client:
     @login_check
     def get_messages(
         self,
-        type: Union[int, str, MessageType] = MessageType.NORMAL,
+        type: Union[int, str, MessageType] = MessageType.INCOMING,
         pages: Iterable[int] = PAGES,
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[Message]:
@@ -1148,8 +1148,8 @@ class Client:
             if message is None:
                 message = ""
 
-            friend_requests = self.get_friend_requests_on_page(type=FriendRequestType.SENT)
-            friend_request = await friend_requests.get(recipient__account_id=user.account_id)
+            friend_requests = self.get_friend_requests_on_page(type=FriendRequestType.OUTGOING)
+            friend_request = await friend_requests.get(recipient=user)
 
             if friend_request is None:
                 return None
@@ -1188,7 +1188,7 @@ class Client:
     @awaitable_iterator
     @login_check
     async def get_friend_requests_on_page(
-        self, type: Union[int, str, FriendRequestType] = FriendRequestType.NORMAL, page: int = 0,
+        self, type: Union[int, str, FriendRequestType] = FriendRequestType.INCOMING, page: int = 0,
     ) -> AsyncIterator[FriendRequest]:
         friend_request_type = FriendRequestType.from_value(type)
 
@@ -1212,7 +1212,7 @@ class Client:
     @login_check
     def get_friend_requests(
         self,
-        type: Union[int, str, FriendRequestType] = FriendRequestType.NORMAL,
+        type: Union[int, str, FriendRequestType] = FriendRequestType.INCOMING,
         pages: Iterable[int] = PAGES,
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[FriendRequest]:

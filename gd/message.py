@@ -58,7 +58,7 @@ class Message(AbstractEntity):
         *,
         client: Optional["Client"] = None,
         other_user: Optional[User] = None,
-        type: MessageType = MessageType.NORMAL,  # type: ignore
+        type: MessageType = MessageType.INCOMING,  # type: ignore
     ) -> "Message":
         return cls(
             inner_user=User(
@@ -107,10 +107,10 @@ class Message(AbstractEntity):
     @property
     def type(self) -> MessageType:
         """:class:`~gd.MessageType`: Whether a message is sent or incoming."""
-        return MessageType.from_value(self.options.get("type", MessageType.NORMAL))
+        return MessageType.from_value(self.options.get("type", MessageType.INCOMING))
 
     def is_normal(self) -> bool:
-        return self.type is MessageType.NORMAL
+        return self.type is MessageType.INCOMING
 
     def get_content(self) -> Optional[str]:
         """Optional[:class:`str`]: Content of the message. Requires :meth:`~gd.Message.read`."""

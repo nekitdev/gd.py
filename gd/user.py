@@ -52,6 +52,18 @@ class User(AbstractEntity):
     def __str__(self) -> str:
         return str(self.name)
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+
+        return self.account_id == other.account_id or self.id == other.id
+
+    def __ne__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+
+        return self.account_id != other.account_id and self.id != other.id
+
     def to_dict(self) -> Dict[str, Any]:
         result = super().to_dict()
 

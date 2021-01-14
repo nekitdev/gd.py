@@ -33,6 +33,7 @@ __all__ = (
     "ShardType",
     "QuestType",
     "RelationshipType",
+    "SimpleRelationshipType",
     "Scene",
     "PlayerColor",
     "CustomParticleGrouping",
@@ -194,8 +195,8 @@ class FriendState(Enum):
 
     NOT_FRIEND = 0
     FRIEND = 1
-    SENT = 3
-    RECEIVED = 4
+    OUTGOING_REQUEST = 3
+    INCOMING_REQUEST = 4
 
 
 class FriendRequestState(Enum):
@@ -283,21 +284,21 @@ class CommentType(Enum):
 class FriendRequestType(Enum):
     """An enumeration for friend request objects."""
 
-    NORMAL = 0
-    SENT = 1
+    INCOMING = 0
+    OUTGOING = 1
 
-    INCOMING = NORMAL
-    INBOX = NORMAL
+    INBOX = INCOMING
+    SENT = OUTGOING
 
 
 class MessageType(Enum):
     """An enumeration for message objects."""
 
-    NORMAL = 0
-    SENT = 1
+    INCOMING = 0
+    OUTGOING = 1
 
-    INCOMING = NORMAL
-    INBOX = NORMAL
+    INBOX = INCOMING
+    SENT = OUTGOING
 
 
 class CommentStrategy(Enum):
@@ -408,8 +409,17 @@ class QuestType(Enum):
 
 
 class RelationshipType(Enum):
-    FRIENDS = 0
+    FRIEND = 1
+    BLOCKED = 2
+    INCOMING_REQUEST = 3
+    OUTGOING_REQUEST = 4
+
+
+class SimpleRelationshipType(Enum):
+    FRIEND = 0
     BLOCKED = 1
+
+    FRIENDS = FRIEND
 
 
 class Scene(Enum):

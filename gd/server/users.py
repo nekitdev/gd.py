@@ -190,7 +190,14 @@ async def search_user_error(request: web.Request, error: Exception) -> Error:
             name="query",
             schema=dict(type=str_type, example="Player"),
             required=True,
-        )
+        ),
+        parameter(
+            "query",
+            description="Pages to look on. If not provided, default values are used.",
+            name="pages",
+            schema=dict(type=str_type),
+            required=False,
+        ),
     ],
     responses={200: dict(description="Users fetched from the server. Can be empty.")},
 )

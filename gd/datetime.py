@@ -6,20 +6,16 @@ from datetime import (
     timedelta as std_timedelta,
     tzinfo,
 )
-from functools import wraps
 
 from gd.typing import (
-    Callable,
     Iterator,
     Optional,
-    Protocol,
     Tuple,
     Type,
     TypeVar,
     Union,
     no_type_check,
     overload,
-    runtime_checkable,
 )
 
 __all__ = (
@@ -40,7 +36,7 @@ AND_DELIM = " and "
 HUMAN_TIME_COMPLEX = re.compile(
     r"(?:(?P<future>in)[ ]+)?"
     r"(?:"
-    r"(?P<delta>-?[0-9]+)[ ]+"
+    r"(?P<delta>[0-9]+)[ ]+"
     r"(?P<time>(?:year|month|week|day|hour|minute|second))s?"
     r"(?:(?:,|[ ]+and)[ ]+)?"
     r")+"
@@ -49,13 +45,13 @@ HUMAN_TIME_COMPLEX = re.compile(
 
 HUMAN_TIME_SIMPLE = re.compile(
     r"(?:(?P<future>in)[ ]+)?"
-    r"(?P<delta>-?[0-9]+)[ ]+"
+    r"(?P<delta>[0-9]+)[ ]+"
     r"(?P<time>(?:year|month|week|day|hour|minute|second))s?"
     r"(?:[ ]+(?P<past>ago))?"
 )
 
 HUMAN_TIME = re.compile(
-    r"(?P<delta>-?[0-9]+)[ ]+"
+    r"(?P<delta>[0-9]+)[ ]+"
     r"(?P<time>(?:year|month|week|day|hour|minute|second))s?"
 )
 
@@ -86,80 +82,50 @@ SECONDS_TO_TIME_NAME = {seconds: time_name for time_name, seconds in TIME_NAME_T
 SORTED_SECONDS_TO_TIME_NAME = sorted(SECONDS_TO_TIME_NAME.items(), reverse=True)
 
 
-T_co = TypeVar("T_co", covariant=True)
-U_contra = TypeVar("U_contra", contravariant=True)
-
-
-@runtime_checkable
-class instance_cast(Protocol[T_co, U_contra]):
-    @classmethod
-    def create_from_instance(cls: Type[T_co], instance: U_contra) -> T_co:
-        raise NotImplementedError(
-            "Derived classes should implement create_from_instance(instance)."
-        )
-
-
-R = TypeVar("R")
-S = TypeVar("S")
-
-
-def hook_method(
-    function: Callable[..., R], hook: Optional[Type[instance_cast[S, R]]] = None
-) -> Callable[..., S]:
-    @wraps(function)
-    def wrapper(self: instance_cast[S, R], *args, **kwargs) -> S:
-        cls = type(self)
-
-        instance = function(self, *args, **kwargs)
-
-        return cls.create_from_instance(instance)
-
-    return wrapper
-
-
-def hook_class_method(
-    function: Callable[..., R], hook: Optional[Type[instance_cast[S, R]]] = None
-) -> Callable[..., S]:
-    @wraps(function)
-    def wrapper(cls: Type[instance_cast[S, R]], *args, **kwargs) -> S:
-        instance = function(cls, *args, **kwargs)
-
-        return cls.create_from_instance(instance)
-
-    return wrapper
-
-
 D = TypeVar("D", bound="date")
 DT = TypeVar("DT", bound="datetime")
 TD = TypeVar("TD", bound="timedelta")
 T = TypeVar("T", bound="time")
 
 
-class timedelta(std_timedelta, instance_cast):
+class timedelta(std_timedelta):
     def __json__(self) -> str:
         return str(self)
 
-    __add__: Callable[[TD, std_timedelta], TD] = hook_method(std_timedelta.__add__)
-    __radd__: Callable[[TD, std_timedelta], TD] = hook_method(std_timedelta.__radd__)
+    def __add__(self: TD, other: std_timedelta) -> TD:
+        return self.create_from_instance(super().__add__(other))
 
-    __sub__: Callable[[TD, std_timedelta], TD] = hook_method(std_timedelta.__sub__)
-    __rsub__: Callable[[TD, std_timedelta], TD] = hook_method(std_timedelta.__rsub__)
+    def __radd__(self: TD, other: std_timedelta) -> TD:
+        return self.create_from_instance(super().__radd__(other))
 
-    __mul__: Callable[[TD, float], TD] = hook_method(std_timedelta.__mul__)
-    __rmul__: Callable[[TD, float], TD] = hook_method(std_timedelta.__rmul__)
+    def __sub__(self: TD, other: std_timedelta) -> TD:
+        return self.create_from_instance(super().__sub__(other))
 
-    __mod__: Callable[[TD, std_timedelta], TD] = hook_method(std_timedelta.__mod__)
+    def __rsub__(self: TD, other: std_timedelta) -> TD:
+        return self.create_from_instance(super().__rsub__(other))
+
+    def __mul__(self: TD, other: float) -> TD:
+        return self.create_from_instance(super().__mul__(other))
+
+    def __rmul__(self: TD, other: float) -> TD:
+        return self.create_from_instance(super().__rmul__(other))
+
+    def __mod__(self: TD, other: std_timedelta) -> TD:
+        return self.create_from_instance(super().__mod__(other))
 
     def __divmod__(self: TD, other: std_timedelta) -> Tuple[int, TD]:
         delta, remainder = super().__divmod__(other)
 
         return (delta, type(self).create_from_instance(remainder))
 
-    __abs__: Callable[[TD], TD] = hook_method(std_timedelta.__abs__)
+    def __abs__(self: TD) -> TD:
+        return self.create_from_instance(super().__abs__())
 
-    __pos__: Callable[[TD], TD] = hook_method(std_timedelta.__pos__)
+    def __pos__(self: TD) -> TD:
+        return self.create_from_instance(super().__pos__())
 
-    __neg__: Callable[[TD], TD] = hook_method(std_timedelta.__neg__)
+    def __neg__(self: TD) -> TD:
+        return self.create_from_instance(super().__neg__())
 
     @classmethod
     def create_from_instance(cls: Type[TD], instance: std_timedelta) -> TD:
@@ -186,8 +152,12 @@ class timedelta(std_timedelta, instance_cast):
         is_future = match.group("future") is not None
         is_past = match.group("past") is not None
 
-        if is_future and is_past:
-            raise ValueError("Attempt to convert time that is both past and future.")
+        if is_future:
+            if is_past:
+                raise ValueError("Attempt to convert time that is both past and future.")
+
+        else:
+            is_past = not is_future
 
         seconds = 0
 
@@ -212,21 +182,18 @@ class timedelta(std_timedelta, instance_cast):
             return "unknown ago"
 
         seconds = round(self.total_seconds())
-        abs_seconds = abs(seconds)
+        absolute_seconds = abs(seconds)
 
         if simple:
             for unit_seconds, name in SORTED_SECONDS_TO_TIME_NAME:
-                if abs_seconds >= unit_seconds:
+                if absolute_seconds >= unit_seconds:
                     break
 
-            delta = abs_seconds // unit_seconds
+            delta = absolute_seconds // unit_seconds
 
             end = "" if delta == 1 else "s"
 
             if distance_only:
-                if seconds < 0:
-                    delta = -delta
-
                 return f"{delta} {name}{end}"
 
             if seconds > 0:
@@ -234,19 +201,16 @@ class timedelta(std_timedelta, instance_cast):
 
             return f"{delta} {name}{end} ago"
 
-        return self.get_delta_string(abs_seconds, seconds, distance_only=distance_only)
+        return self.get_delta_string(seconds, distance_only=distance_only)
 
     @classmethod
     def get_delta_string(
         cls,
-        abs_seconds: int,
         seconds: int,
         distance_only: bool = False,
         with_and: bool = True,
     ) -> str:
-        string = DELIM.join(
-            cls.get_delta_strings(abs_seconds, seconds, distance_only=distance_only)
-        )
+        string = DELIM.join(cls.get_delta_strings(seconds))
 
         if with_and:
             string = AND_DELIM.join(string.rsplit(DELIM, 1))
@@ -260,24 +224,19 @@ class timedelta(std_timedelta, instance_cast):
         return f"{string} ago"
 
     @classmethod
-    def get_delta_strings(
-        cls, abs_seconds: int, seconds: int, distance_only: bool = False
-    ) -> Iterator[str]:
-        negate_delta = seconds < 0 and distance_only
+    def get_delta_strings(cls, seconds: int) -> Iterator[str]:
+        absolute_seconds = abs(seconds)
 
         for unit_seconds, name in SORTED_SECONDS_TO_TIME_NAME:
-            delta = abs_seconds // unit_seconds
-            abs_seconds %= unit_seconds
+            delta = absolute_seconds // unit_seconds
+            absolute_seconds %= unit_seconds
 
             if delta:
                 end = "" if delta == 1 else "s"
 
-                if negate_delta:
-                    delta = -delta
-
                 yield f"{delta} {name}{end}"
 
-            elif not abs_seconds:
+            elif not seconds:
                 break
 
 
@@ -286,12 +245,15 @@ timedelta.max = timedelta.create_from_instance(std_timedelta.max)
 timedelta.resolution = timedelta.create_from_instance(std_timedelta.resolution)
 
 
-class date(std_date, instance_cast):
+class date(std_date):
     def __json__(self) -> str:
         return self.isoformat()
 
-    __add__: Callable[[D, std_timedelta], D] = hook_method(std_date.__add__)
-    __radd__: Callable[[D, std_timedelta], D] = hook_method(std_date.__radd__)
+    def __add__(self: D, other: std_timedelta) -> D:
+        return self.create_from_instance(super().__add__(other))
+
+    def __radd__(self: D, other: std_timedelta) -> D:
+        return self.create_from_instance(super().__radd__(other))
 
     @overload  # type: ignore  # noqa
     def __sub__(self: D, other: std_timedelta) -> D:  # noqa
@@ -322,7 +284,7 @@ date.max = date.create_from_instance(std_date.max)
 date.resolution = timedelta.create_from_instance(std_date.resolution)
 
 
-class time(std_time, instance_cast):
+class time(std_time):
     def __json__(self) -> str:
         return self.isoformat()
 
@@ -342,12 +304,15 @@ time.max = time.create_from_instance(std_time.max)
 time.resolution = timedelta.create_from_instance(std_time.resolution)
 
 
-class datetime(std_datetime, instance_cast):
+class datetime(std_datetime):
     def __json__(self) -> str:
         return self.isoformat()
 
-    __add__: Callable[[DT, std_timedelta], DT] = hook_method(std_datetime.__add__)
-    __radd__: Callable[[DT, std_timedelta], DT] = hook_method(std_datetime.__radd__)
+    def __add__(self: DT, other: std_timedelta) -> DT:
+        return self.create_from_instance(super().__add__(other))
+
+    def __radd__(self: DT, other: std_timedelta) -> DT:
+        return self.create_from_instance(super().__radd__(other))
 
     @overload  # type: ignore  # noqa
     def __sub__(self: DT, other: std_datetime) -> timedelta:
@@ -422,7 +387,7 @@ class datetime(std_datetime, instance_cast):
             +===============+====================+===================+
             | ``False``     | ``30 minutes ago`` | ``in 10 seconds`` |
             +---------------+--------------------+-------------------+
-            | ``True``      | ``-30 minutes``    | ``10 seconds``    |
+            | ``True``      | ``30 minutes``     | ``10 seconds``    |
             +---------------+--------------------+-------------------+
 
         simple: :class:`bool`
@@ -435,9 +400,9 @@ class datetime(std_datetime, instance_cast):
             +---------------+-----------+---------------------------------------+
             | ``False``     | ``True``  | ``1 hour ago``                        |
             +---------------+-----------+---------------------------------------+
-            | ``True``      | ``False`` | ``-1 hour, -1 minute and -1 second``  |
+            | ``True``      | ``False`` | ``1 hour, 1 minute and 1 second``     |
             +---------------+-----------+---------------------------------------+
-            | ``True``      | ``True``  | ``-1 hour``                           |
+            | ``True``      | ``True``  | ``1 hour``                            |
             +---------------+-----------+---------------------------------------+
 
         Returns
@@ -448,26 +413,44 @@ class datetime(std_datetime, instance_cast):
         if self is None:
             return timedelta.to_human(self, distance_only=distance_only, simple=simple)
 
-        return timedelta.to_human(self.utcnow() - self, distance_only=distance_only, simple=simple)
+        self_now = self.utcnow()
 
-    combine: Callable[
-        [Type[DT], date, time, Optional[tzinfo]], DT
-    ] = hook_class_method(std_datetime.combine)  # type: ignore
+        offset = self.utcoffset()
 
-    date: Callable[[DT], date] = hook_method(std_datetime.date, date)
+        if offset is not None:
+            self_now += offset
 
-    timetz: Callable[[DT], time] = hook_method(std_datetime.timetz, time)
-    time: Callable[[DT], time] = hook_method(std_datetime.time, time)
+        return (self_now - self).to_human(distance_only=distance_only, simple=simple)
 
-    now: Callable[[Type[DT]], DT] = hook_class_method(std_datetime.now)  # type: ignore
+    @classmethod
+    def combine(
+        cls: Type[DT], date: std_date, time: std_time, tz: Optional[tzinfo] = None
+    ) -> DT:
+        return cls.create_from_instance(super().combine(date, time, tz))
 
-    astimezone: Callable[
-        [DT, Optional[tzinfo]], DT
-    ] = hook_method(std_datetime.astimezone)  # type: ignore
+    def date(self) -> date:
+        return date.create_from_instance(super().date())
 
-    strptime: Callable[
-        [Type[DT], str, str], DT
-    ] = hook_class_method(std_datetime.strptime)  # type: ignore
+    def timetz(self) -> time:
+        return time.create_from_instance(super().timetz())
+
+    def time(self) -> time:
+        return time.create_from_instance(super().time())
+
+    @classmethod
+    def now(cls: Type[DT], tz: Optional[tzinfo] = None) -> DT:
+        return cls.create_from_instance(super().now(tz))
+
+    @classmethod
+    def utcnow(cls: Type[DT]) -> DT:
+        return cls.create_from_instance(super().utcnow())
+
+    def astimezone(self: DT, tz: Optional[tzinfo] = None) -> DT:
+        return self.create_from_instance(super().astimezone(tz))
+
+    @classmethod
+    def strptime(cls: Type[DT], date_string: str, format: str) -> DT:
+        return cls.create_from_instance(super().strptime(date_string, format))
 
     def utcoffset(self: DT) -> Optional[timedelta]:
         instance = super().utcoffset()

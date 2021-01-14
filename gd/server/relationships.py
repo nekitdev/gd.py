@@ -1,11 +1,11 @@
-from gd.enums import RelationshipType
+from gd.enums import FriendRequestType, RelationshipType
 from gd.errors import MissingAccess
 from gd.server.common import docs, web
 from gd.server.handler import Error, ErrorType, request_handler
 from gd.server.routes import get
 from gd.server.token import token
 from gd.server.types import str_type
-from gd.server.utils import json_response, parameter, parse_enum
+from gd.server.utils import json_response, parameter, parse_enum, parse_pages
 
 __all__ = ("get_relationships",)
 
@@ -17,11 +17,18 @@ __all__ = ("get_relationships",)
     parameters=[
         parameter(
             "query",
-            description="Type of the relationship, default is friends.",
+            description="Type of the relationship, default is friend.",
             name="type",
-            schema=dict(type=str_type, default="friends"),
+            schema=dict(type=str_type, default="friend"),
             required=False,
-        )
+        ),
+        parameter(
+            "query",
+            description="Pages to look on. If not provided, default values are used.",
+            name="pages",
+            schema=dict(type=str_type),
+            required=False,
+        ),
     ],
     responses={
         200: dict(description="Relationships fetched from the server. Can be empty."),
@@ -37,10 +44,37 @@ async def get_relationships(request: web.Request) -> web.Response:
     client = request.app.client  # type: ignore
     token = request.token  # type: ignore
 
-    type = parse_enum(request.query.get("type", "friends"), RelationshipType, int)
+    type = parse_enum(request.query.get("type", "friend"), RelationshipType, int)
+    pages_string = request.query.get("pages")
 
     async with token.into(client):
-        relationships = await client.get_relationships(type=type).list()
+        if type is RelationshipType.FRIEND:
+            relationships = await client.get_friends()
+
+        if type is RelationshipType.BLOCKED:
+            relationships = await client.get_blocked()
+
+        if type is RelationshipType.INCOMING_REQUEST:
+            if pages_string is None:
+                relationships = await client.get_friend_requests(type=FriendRequestType.INCOMING)
+
+            else:
+                pages = parse_pages(pages_string)
+
+                relationships = await client.get_friend_requests(
+                    type=FriendRequestType.INCOMING, pages=pages
+                )
+
+        if type is RelationshipType.OUTGOING_REQUEST:
+            if pages_string is None:
+                relationships = await client.get_friend_requests(type=FriendRequestType.OUTGOING)
+
+            else:
+                pages = parse_pages(pages_string)
+
+                relationships = await client.get_friend_requests(
+                    type=FriendRequestType.OUTGOING, pages=pages
+                )
 
     return json_response(relationships)
 

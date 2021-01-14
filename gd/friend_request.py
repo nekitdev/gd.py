@@ -54,7 +54,7 @@ class FriendRequest(AbstractEntity):
         *,
         client: Optional["Client"] = None,
         other_user: Optional[User] = None,
-        type: FriendRequestType = FriendRequestType.NORMAL,  # type: ignore
+        type: FriendRequestType = FriendRequestType.INCOMING,  # type: ignore
     ) -> "FriendRequest":
         return cls(
             inner_user=User(
@@ -99,7 +99,7 @@ class FriendRequest(AbstractEntity):
     @property
     def type(self) -> FriendRequestType:
         """:class:`~gd.FriendRequestType`: Whether request is incoming or sent."""
-        return FriendRequestType.from_value(self.options.get("type", FriendRequestType.NORMAL))
+        return FriendRequestType.from_value(self.options.get("type", FriendRequestType.INCOMING))
 
     @property
     def content(self) -> str:
@@ -107,7 +107,7 @@ class FriendRequest(AbstractEntity):
         return self.options.get("content", "")
 
     def is_normal(self) -> bool:
-        return self.type is FriendRequestType.NORMAL
+        return self.type is FriendRequestType.INCOMING
 
     body = content
 
