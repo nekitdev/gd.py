@@ -23,6 +23,7 @@ def get(
     version: Optional[int] = None,
     prefix: str = "/api",
     version_format: str = "v{}",
+    routes: web.RouteTableDef = routes,
     **kwargs,
 ) -> Callable[[Handler], Handler]:
     return routes.get(get_route(route, version, prefix, version_format), **kwargs)
@@ -33,6 +34,7 @@ def post(
     version: Optional[int] = None,
     prefix: str = "/api",
     version_format: str = "v{}",
+    routes: web.RouteTableDef = routes,
     **kwargs,
 ) -> Callable[[Handler], Handler]:
     return routes.post(get_route(route, version, prefix, version_format), **kwargs)
@@ -43,6 +45,7 @@ def head(
     version: Optional[int] = None,
     prefix: str = "/api",
     version_format: str = "v{}",
+    routes: web.RouteTableDef = routes,
     **kwargs,
 ) -> Callable[[Handler], Handler]:
     return routes.head(get_route(route, version, prefix, version_format), **kwargs)
@@ -53,6 +56,7 @@ def put(
     version: Optional[int] = None,
     prefix: str = "/api",
     version_format: str = "v{}",
+    routes: web.RouteTableDef = routes,
     **kwargs,
 ) -> Callable[[Handler], Handler]:
     return routes.put(get_route(route, version, prefix, version_format), **kwargs)
@@ -63,6 +67,7 @@ def patch(
     version: Optional[int] = None,
     prefix: str = "/api",
     version_format: str = "v{}",
+    routes: web.RouteTableDef = routes,
     **kwargs,
 ) -> Callable[[Handler], Handler]:
     return routes.patch(get_route(route, version, prefix, version_format), **kwargs)
@@ -73,9 +78,11 @@ def delete(
     version: Optional[int] = None,
     prefix: str = "/api",
     version_format: str = "v{}",
+    routes: web.RouteTableDef = routes,
     **kwargs,
 ) -> Callable[[Handler], Handler]:
     return routes.delete(get_route(route, version, prefix, version_format), **kwargs)
 
 
-static = routes.static
+def static(*, routes: web.RouteTableDef = routes, **kwargs) -> None:
+    return routes.static(**kwargs)

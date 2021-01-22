@@ -1,3 +1,5 @@
+# CHECK: make GDToken instead of Token, and leave Token not-server-bound
+
 import re
 import secrets
 import types
@@ -9,9 +11,17 @@ from gd.server.common import web
 from gd.server.handler import Error, ErrorType
 from gd.server.typing import Handler
 from gd.text_utils import make_repr
-from gd.typing import Any, Callable, Dict, Iterable, Literal, Optional, Type, overload
+from gd.typing import Any, Callable, Dict, Iterator, Literal, Optional, Type, TypeVar, overload
 
-__all__ = ("Token", "TokenContextManager", "TokenDatabase", "get_token_from_request", "token")
+__all__ = (
+    "ServerToken",
+    "ServerTokenContextManager",
+    "ServerTokenDatabase",
+    "Token",
+    "TokenDatabase",
+    "get_token_from_request",
+    "token",
+)
 
 AUTHORIZATION = "Authorization"
 
@@ -23,26 +33,8 @@ TOKEN_LENGTH = 32
 
 
 class Token:
-    def __init__(
-        self,
-        name: str,
-        password: str,
-        account_id: int = 0,
-        id: int = 0,
-        token: Optional[str] = None,
-    ) -> None:
-        self._name = name
-        self._password = password
-
-        self._account_id = account_id
-        self._id = id
-
-        if token is None:
-            token = self.create_token()
-
-        self._token = token
-
-        self._loaded = bool(name and password and account_id and id)
+    def __init__(self) -> None:
+        self._token = self.generate_token()
 
     def __repr__(self) -> str:
         info = {"token": self.token}
@@ -62,6 +54,25 @@ class Token:
         return self.token != other
 
     @property
+    def token(self) -> str:
+        return self._token
+
+    @staticmethod
+    def generate_token(length: int = TOKEN_LENGTH) -> str:
+        return TOKEN_GENERATOR(length)
+
+
+class ServerToken(Token):
+    def __init__(self, name: str, password: str, account_id: int = 0, id: int = 0) -> None:
+        super().__init__()
+
+        self._name = name
+        self._password = password
+
+        self._account_id = account_id
+        self._id = id
+
+    @property
     def name(self) -> str:
         return self._name
 
@@ -77,38 +88,37 @@ class Token:
     def id(self) -> int:
         return self._id
 
-    @property
-    def token(self) -> str:
-        return self._token
-
-    @staticmethod
-    def create_token(length: int = TOKEN_LENGTH) -> str:
-        return TOKEN_GENERATOR(length)
-
     def is_loaded(self) -> bool:
         return bool(self.name and self.password and self.account_id and self.id)
 
-    async def load(self, client: Client, force: bool = False) -> None:
-        if self.is_loaded():
-            if force:
-                user = await client.get_user(self.account_id, simple=True)
+    async def load(self, client: Client, force: bool = False) -> bool:
+        try:
+            if self.is_loaded():
+                if force:
+                    user = await client.get_user(self.account_id, simple=True)
+
+                else:
+                    return True
 
             else:
-                return
+                user = await client.search_user(self.name, simple=True)
+
+        except Exception:
+            return False
 
         else:
-            user = await client.search_user(self.name, simple=True)
+            self._name = user.name
+            self._account_id = user.account_id
+            self._id = user.id
 
-        self._name = user.name
-        self._account_id = user.account_id
-        self._id = user.id
+            return True
 
-    def into(self, client: Client, force: bool = False) -> "TokenContextManager":
-        return TokenContextManager(client, self, force=force)
+    def into(self, client: Client, force: bool = False) -> "ServerTokenContextManager":
+        return ServerTokenContextManager(client, self, force=force)
 
 
-class TokenContextManager:
-    def __init__(self, client: Client, token: Token, force: bool = False) -> None:
+class ServerTokenContextManager:
+    def __init__(self, client: Client, token: ServerToken, force: bool = False) -> None:
         self._client = client
         self._token = token
         self._force = force
@@ -118,7 +128,7 @@ class TokenContextManager:
         return self._client
 
     @property
-    def token(self) -> Token:
+    def token(self) -> ServerToken:
         return self._token
 
     @property
@@ -149,38 +159,46 @@ class TokenContextManager:
         await self.logout()
 
 
-class TokenDatabase(Dict[str, Token]):
-    def __init__(self, cls: Type[Token] = Token) -> None:
+TokenT = TypeVar("TokenT", bound="Token")
+
+
+class TokenDatabase(Dict[str, TokenT]):
+    def __init__(self, cls: Type[TokenT] = Token) -> None:  # type: ignore
         self.cls = cls
 
-    @property
-    def plain_tokens(self) -> Iterable[str]:
-        return self.keys()
+    def __repr__(self) -> str:
+        tokens = ", ".join(self.short_tokens)
+        return f"<{self.__class__.__name__} ({tokens})>"
+
+    def copy(self) -> "TokenDatabase[TokenT]":
+        cls = self.__class__
+
+        self_copy = cls(self.cls)
+
+        self_copy.update(self)
+
+        return self_copy
 
     @property
-    def tokens(self) -> Iterable[Token]:
-        return self.values()
+    def short_tokens(self) -> Iterator[str]:
+        _length = 7
+
+        for token in self.plain_tokens:
+            yield token[:_length]
+
+    @property
+    def plain_tokens(self) -> Iterator[str]:
+        yield from self.keys()
+
+    @property
+    def tokens(self) -> Iterator[TokenT]:
+        yield from self.values()
 
     def contains(self, token: str) -> bool:
         return token in self
 
-    def get_user(self, name: str, password: str) -> Optional[Token]:
-        return iter(self.tokens).get(name=name, password=password)
-
-    def insert(self, name: str, password: str) -> str:
-        cls = self.cls
-
-        token = cls.create_token()
-
-        self[token] = cls(name=name, password=password, token=token)
-
-        return token
-
-    def insert_and_get(self, name: str, password: str) -> Token:
-        token = self.cls(name=name, password=password)
-
+    def insert(self, token: TokenT) -> TokenT:
         self[token.token] = token
-
         return token
 
     def remove(self, token: str) -> None:
@@ -189,6 +207,21 @@ class TokenDatabase(Dict[str, Token]):
 
         except KeyError:
             pass
+
+
+class ServerTokenDatabase(TokenDatabase[ServerToken]):
+    def __init__(self, cls: Type[ServerToken] = ServerToken) -> None:
+        super().__init__(ServerToken)
+
+    def get_user(self, name: str, password: str) -> Optional[ServerToken]:
+        return iter(self.tokens).get(name=name, password=password)
+
+    def register(
+        self, name: str, password: str, account_id: int = 0, id: int = 0
+    ) -> ServerToken:
+        return super().insert(
+            self.cls(name=name, password=password, account_id=account_id, id=id)
+        )
 
 
 @overload  # noqa

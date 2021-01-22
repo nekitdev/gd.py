@@ -48,7 +48,7 @@ async def login(request: web.Request) -> web.Response:
     token = token_database.get_user(name, password)
 
     if token is None:
-        token = token_database.insert_and_get(name, password)
+        token = token_database.register(name, password)
         status = 201  # new token was inserted, so we return "created" status
 
     else:

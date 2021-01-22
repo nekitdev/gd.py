@@ -1,13 +1,15 @@
 """Somewhat useful 'python -m gd' implementation"""
 
+import asyncio
 import platform
 import sys
-from typing import Any, Generator
 
 import aiohttp
 import click
 
 import gd
+
+from gd.typing import Any, Iterator
 
 
 @click.option("--version", "-v", is_flag=True, help="Show different versions of software.")
@@ -19,21 +21,23 @@ def gd_group(version: bool) -> None:
 
 @gd_group.command(short_help="Run gd.server web application.")
 def server() -> None:
-    gd.server.run_sync()
+    gd.server.run_gd_sync()
 
 
-@gd_group.command(short_help="Run IPython console, with aiohttp and gd added to namespace.")
+@gd_group.command(
+    short_help="Run IPython console, with aiohttp, asyncio and gd added to namespace."
+)
 def console() -> None:
     from IPython import start_ipython  # type: ignore
 
-    start_ipython(argv=[], user_ns={"aiohttp": aiohttp, "gd": gd})
+    start_ipython(argv=[], user_ns=dict(aiohttp=aiohttp, asyncio=asyncio, gd=gd))
 
 
 def version_from_info(version_info: Any) -> str:
     return "v{0.major}.{0.minor}.{0.micro}-{0.releaselevel}".format(version_info)
 
 
-def collect_versions() -> Generator[str, None, None]:
+def collect_versions() -> Iterator[str]:
     yield f"- python {version_from_info(sys.version_info)}"
     yield f"- gd.py {version_from_info(gd.version_info)}"
     yield f"- aiohttp v{aiohttp.__version__}"
