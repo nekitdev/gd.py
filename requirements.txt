@@ -1,6 +1,6 @@
 aiohttp>=3.4.0  # networking
 click>=7.1.0  # command line interface
-enums.py>=0.3.0  # enumerations
+enums.py>=0.5.0  # enumerations
 html5lib>=1.0.1  # parsing html
 iters.py>=0.4.0  # rich iterators
 pefile>=2019.4.18  # parsing executable header

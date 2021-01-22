@@ -85,6 +85,12 @@ You can install some extras like this:
 
     python -m pip install gd.py[image,speedups]
 
+Install recommended ones:
+
+.. code:: sh
+
+    python -m pip install gd.py[prelude]
+
 Or install all of them:
 
 .. code:: sh

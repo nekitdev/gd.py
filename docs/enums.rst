@@ -109,6 +109,6 @@ This library has a lot of enums, listed below.
 
 .. autoclass:: SpeedMagic
 
-.. autoclass:: GuidelinesColor
+.. autoclass:: GuidelineColor
 
 .. autoclass:: InternalType

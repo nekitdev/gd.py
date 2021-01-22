@@ -230,7 +230,7 @@ def de_mapping(
 
 
 def ser_mapping(
-    mapping: Mapping[K, V], delim: str, ser_key: Callable[[K], str], ser_value: Callable[[V], str],
+    mapping: Mapping[K, V], delim: str, ser_key: Callable[[K], str], ser_value: Callable[[V], str]
 ) -> str:
     return delim.join(
         chain_from_iterable((ser_key(key), ser_value(value)) for key, value in mapping.items())

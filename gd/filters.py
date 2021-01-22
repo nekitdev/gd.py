@@ -1,4 +1,5 @@
 from gd.enums import DemonDifficulty, Enum, LevelDifficulty, LevelLength, SearchStrategy
+from gd.iter_utils import is_iterable
 from gd.text_utils import make_repr
 from gd.typing import TYPE_CHECKING, Dict, Iterable, Optional, TypeVar, Union
 
@@ -14,21 +15,8 @@ T = TypeVar("T")
 SPECIAL = {SearchStrategy.BY_USER, SearchStrategy.FEATURED, SearchStrategy.HALL_OF_FAME}
 
 
-def is_iterable(maybe_iterable: Union[Iterable[T], T]) -> bool:
-    try:
-        iter(maybe_iterable)  # type: ignore
-        return True
-
-    except TypeError:  # "T" object is not iterable
-        return False
-
-
 class Filters:
-    """Class that adds ability to create custom filters to apply when searching for levels.
-
-    Parameters
-    ----------
-    """
+    """Class that adds ability to create custom filters to apply when searching for levels."""
 
     def __init__(
         self,
@@ -154,12 +142,12 @@ class Filters:
 
     @classmethod
     def client_followed(cls, client: "Client", *args, **kwargs) -> "Filters":
-        return cls.with_followed(client.db.followed, *args, **kwargs)  # type: ignore
+        return cls.with_followed(client.database.followed, *args, **kwargs)  # type: ignore
 
     @classmethod
     def client_completed(cls, client: "Client", *args, **kwargs) -> "Filters":
         return cls.with_completed(  # type: ignore
-            client.db.values.normal.completed, *args, **kwargs
+            client.database.values.normal.completed, *args, **kwargs
         )
 
     def to_parameters(self) -> Dict[str, T]:

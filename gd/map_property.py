@@ -1,5 +1,4 @@
-import sys
-
+from gd.code_utils import get_frame
 from gd.typing import Any, Dict, Optional, TypeVar
 
 __all__ = ("map_property", "is_null")
@@ -45,7 +44,7 @@ def map_property(
         namespace = {}
 
         try:  # ayy frame hacks! ~ nekit
-            frame = sys._getframe(1)
+            frame = get_frame(1)
 
             namespace.update(frame.f_globals)
             namespace.update(frame.f_locals)
@@ -67,5 +66,5 @@ def map_property(
     return some_property
 
 
-def is_null(some: T) -> bool:
+def is_null(some: Optional[T]) -> bool:
     return some is None

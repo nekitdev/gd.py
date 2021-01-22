@@ -1,14 +1,14 @@
-from collections import UserList
+from collections import UserList as ListDerive
 from pathlib import Path
 
 from attr import attrib, dataclass
 from iters import iter
 
 from gd.api.struct import LevelAPI  # type: ignore
-from gd.api.utils import LEVELS_DEFAULTS, MAIN_DEFAULTS
+from gd.iter_utils import extract_iterable_from_tuple
 from gd.json import dumps
-from gd.text_utils import make_repr
-from gd.typing import Dict, Iterable, List, Optional, Tuple, TypeVar, Union
+from gd.text_utils import make_repr, snake_to_camel
+from gd.typing import Any, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
 from gd.xml_parser import XMLParser
 
 __all__ = ("Part", "Database", "LevelStore", "LevelValues", "LevelCollection")
@@ -16,10 +16,16 @@ __all__ = ("Part", "Database", "LevelStore", "LevelValues", "LevelCollection")
 AnyString = Union[bytes, str]
 PathLike = Union[str, Path]
 
+IS_ARRAY = snake_to_camel("_is_arr")
+
 MAIN = "CCGameManager.dat"
 LEVELS = "CCLocalLevels.dat"
 
 T = TypeVar("T")
+
+
+def is_dict(some: Any) -> bool:
+    return isinstance(some, dict)
 
 
 @dataclass
@@ -76,16 +82,13 @@ class LevelValues:
 def remove_prefix(string: str, prefix: str) -> str:
     if string.startswith(prefix):
         return string[len(prefix) :]
+
     return string
-
-
-def is_dict(some: T) -> bool:
-    return isinstance(some, dict)
 
 
 class Part(dict):
     @classmethod
-    def new(cls, stream: AnyString, default: Optional[Dict[str, T]] = None) -> "Part":
+    def load(cls, stream: AnyString, default: Optional[Dict[str, T]] = None) -> "Part":
         self = cls()
 
         try:
@@ -101,13 +104,15 @@ class Part(dict):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+
         self.parser = XMLParser()
 
     def __str__(self) -> str:
         return dumps(self, indent=4)
 
     def __repr__(self) -> str:
-        info = {"outer_len": len(self)}
+        info = {"length": len(self)}
+
         return make_repr(self, info)
 
     def copy(self) -> "Part":
@@ -130,19 +135,29 @@ class Database:
     def __init__(
         self, main: Optional[AnyString] = None, levels: Optional[AnyString] = None
     ) -> None:
-        self.main = Part.new(main, MAIN_DEFAULTS) if main else Part(MAIN_DEFAULTS)
-        self.levels = Part.new(levels, LEVELS_DEFAULTS) if levels else Part(LEVELS_DEFAULTS)
+        self.main = Part.load(main) if main else Part()
+        self.levels = Part.load(levels) if levels else Part()
 
     def __repr__(self) -> str:
         info = {"main": repr(self.main), "levels": repr(self.levels)}
+
         return make_repr(self, info)
 
     def __json__(self) -> Dict[str, Part]:
         return {"main": self.main, "levels": self.levels}
 
+    def __bool__(self) -> bool:
+        if self.main:
+            return True
+
+        if self.levels:
+            return True
+
+        return False
+
     def is_empty(self) -> bool:
         """Check if the database is empty."""
-        return self.main == MAIN_DEFAULTS and self.levels == LEVELS_DEFAULTS
+        return not self
 
     def get_user_name(self) -> str:
         """Player name."""
@@ -241,30 +256,42 @@ class Database:
 
     values = property(get_values, set_values)
 
-    def to_levels(self, level_dicts: Iterable[Dict[str, T]], func_name: str) -> "LevelCollection":
+    def to_levels(self, raw_levels: Iterable[Dict[str, T]], function: str) -> "LevelCollection":
         return LevelCollection.launch(
-            self, func_name, map(LevelAPI.from_data, filter(is_dict, level_dicts))
+            self, function, map(LevelAPI.from_data, filter(is_dict, raw_levels))
         )
 
     def load_saved_levels(self) -> "LevelCollection":
-        """Load "Saved Levels" into :class:`~gd.api.LevelCollection`."""
+        """Load saved levels into :class:`~gd.api.LevelCollection`."""
         return self.to_levels(self.main.get("GLM_03", {}).values(), "dump_saved_levels")
 
+    get_saved_levels = load_saved_levels
+
     def dump_saved_levels(self, levels: "LevelCollection") -> None:
-        """Dump "Saved Levels" from :class:`~gd.api.LevelCollection`."""
+        """Dump saved levels from :class:`~gd.api.LevelCollection`."""
         self.main.set("GLM_03", {str(level.id): level.to_data() for level in levels})
 
-    def load_my_levels(self) -> "LevelCollection":
-        """Load "My Levels" into :class:`~gd.api.LevelCollection`."""
-        return self.to_levels(self.levels.get("LLM_01", {}).values(), "dump_my_levels")
+    set_saved_levels = dump_saved_levels
 
-    def dump_my_levels(self, levels: "LevelCollection", *, prefix: str = "k_") -> None:
-        """Dump "My Levels" from :class:`~gd.api.LevelCollection`."""
-        store = {"_isArr": True}
+    saved_levels = property(get_saved_levels, set_saved_levels)
 
-        store.update({f"{prefix}{index}": level.to_data() for index, level in enumerate(levels)})
+    def load_created_levels(self) -> "LevelCollection":
+        """Load created levels into :class:`~gd.api.LevelCollection`."""
+        return self.to_levels(self.levels.get("LLM_01", {}).values(), "dump_created_levels")
+
+    get_created_levels = load_created_levels
+
+    def dump_created_levels(self, levels: "LevelCollection") -> None:
+        """Dump created levels from :class:`~gd.api.LevelCollection`."""
+        store = {IS_ARRAY: True}
+
+        store.update({f"k_{index}": level.to_data() for index, level in enumerate(levels)})
 
         self.levels.set("LLM_01", store)
+
+    set_created_levels = dump_created_levels
+
+    created_levels = property(get_created_levels, set_created_levels)
 
     @classmethod
     def load(
@@ -290,38 +317,32 @@ class Database:
         from gd.api.loader import save  # I hate circular imports.
 
         save.dump(
-            db=self, main=main, levels=levels, main_file=main_file, levels_file=levels_file,
+            self, main=main, levels=levels, main_file=main_file, levels_file=levels_file
         )
 
     def as_tuple(self) -> Tuple[Part, Part]:
         return (self.main, self.levels)
 
 
-class LevelCollection(UserList):
+class LevelCollection(ListDerive):
     """Collection of :class:`~gd.api.LevelAPI` objects."""
 
     def __init__(self, *args) -> None:
-        if len(args) == 1:
-            maybe_args = args[0]
-
-            if is_iterable(maybe_args):
-                args = maybe_args
-
-        super().__init__(args)
+        super().__init__(extract_iterable_from_tuple(args))  # type: ignore
 
         self._callback: Optional[Database] = None
-        self._funcname: Optional[str] = None
+        self._function: Optional[str] = None
 
     def get_by_name(self, name: str) -> Optional[LevelAPI]:
         """Fetch a level by ``name``. Returns ``None`` if not found."""
         return iter(self).get(name=name)
 
     @classmethod
-    def launch(cls, callback: Database, funcname: str, iterable: Iterable[T]) -> "LevelCollection":
+    def launch(cls, callback: Database, function: str, iterable: Iterable[T]) -> "LevelCollection":
         self = cls(iterable)
 
         self._callback = callback
-        self._funcname = funcname
+        self._function = function
 
         return self
 
@@ -332,13 +353,4 @@ class LevelCollection(UserList):
         if database is None:
             database = self._callback  # type: ignore
 
-        getattr(database, self._funcname)(self)  # type: ignore
-
-
-def is_iterable(maybe_iterable: Union[Iterable[T], T]) -> bool:
-    try:
-        iter(maybe_iterable)  # type: ignore
-        return True
-
-    except TypeError:
-        return False
+        getattr(database, self._function)(self)  # type: ignore

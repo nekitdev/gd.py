@@ -1,15 +1,12 @@
 # type: ignore
 
+from builtins import iter as std_iter
+
 from iters import iter
 
 from gd.api.guidelines import Guidelines
 from gd.api.hsv import HSV
-from gd.api.recording import (
-    RecordEntry,
-    dump_record_entries,
-    iter_record_entries,
-    list_record_entries,
-)
+from gd.api.recording import Recording, RecordingEntry
 from gd.api.utils import get_dir, get_id
 from gd.color import Color
 from gd.converters import Password, Version
@@ -36,6 +33,7 @@ from gd.enums import (
     ZLayer,
 )
 from gd.index_parser import IndexParser
+from gd.iter_utils import is_iterable
 from gd.model_backend import (
     Base64Field,
     BaseField,
@@ -58,7 +56,6 @@ from gd.typing import (
     Dict,
     Iterable,
     Iterator,
-    List,
     Mapping,
     Optional,
     Set,
@@ -89,7 +86,7 @@ IntoColor = Union[Color, Tuple[int, int, int], str, int]
 SPEEDS = {}
 
 for speed in Speed:
-    name = speed.name.lower()
+    name = speed.name.casefold()
 
     magic = SpeedMagic.from_name(name)
     speed_change = SpeedChange.from_name(name)
@@ -110,26 +107,18 @@ KU = TypeVar("KU")
 VU = TypeVar("VU")
 
 
-def is_iterable(maybe_iterable: Union[Iterable[T], T]) -> bool:
-    try:
-        iter(maybe_iterable)  # type: ignore
-        return True
-    except TypeError:  # "T" object is not iterable
-        return False
-
-
 def color_from(color: IntoColor) -> Color:
     if isinstance(color, Color):
         return color
+
+    elif isinstance(color, int):
+        return Color(color)
 
     elif isinstance(color, str):
         return Color.from_hex(color)
 
     elif is_iterable(color):
         return Color.from_rgb(*color)
-
-    elif isinstance(color, int):
-        return Color(color)
 
     else:
         raise ValueError(
@@ -138,7 +127,7 @@ def color_from(color: IntoColor) -> Color:
 
 
 def map_key_value(
-    mapping: Mapping[KT, VT], key_func: Callable[[KT], KU], value_func: Callable[[VT], VU],
+    mapping: Mapping[KT, VT], key_func: Callable[[KT], KU], value_func: Callable[[VT], VU]
 ) -> Mapping[KU, VU]:
     return {key_func(key): value_func(value) for key, value in mapping.items()}
 
@@ -445,6 +434,7 @@ class ColorCollection(set):
     def get(self, directive_or_id: Union[int, str]) -> Optional[ColorChannel]:
         if isinstance(directive_or_id, str):
             id = get_id(get_dir(directive_or_id, "color"))
+
         else:
             id = directive_or_id
 
@@ -679,22 +669,24 @@ class LevelAPI(Model):
 
     data = property(get_data, set_data)
 
-    def get_recording(self) -> List[RecordEntry]:
+    @cache_by("recording_string")
+    def get_recording(self) -> Recording:
         if self.recording_string is None:
-            return []
+            return Recording()
 
-        return list_record_entries(unzip_level_str(self.recording_string))
+        return Recording.from_string(unzip_level_str(self.recording_string))
 
-    def set_recording(self, recording: Iterable[RecordEntry]) -> None:
-        self.recording_string = zip_level_str(dump_record_entries(recording))
+    def set_recording(self, recording: Iterable[RecordingEntry]) -> None:
+        self.recording_string = zip_level_str(Recording.collect_string(recording))
 
     recording = property(get_recording, set_recording)
 
-    def iter_recording(self) -> Iterator[RecordEntry]:
+    @cache_by("recording_string")
+    def iter_recording(self) -> Iterator[RecordingEntry]:
         if self.recording_string is None:
-            return iter(())
+            return std_iter(())
 
-        return iter_record_entries(unzip_level_str(self.recording_string))
+        return Recording.iter_string(unzip_level_str(self.recording_string))
 
     def open_editor(self) -> "Editor":
         from gd.api.editor import Editor

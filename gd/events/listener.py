@@ -60,11 +60,11 @@ def get_loop() -> asyncio.AbstractEventLoop:
     return loop
 
 
-def set_loop(new_loop: asyncio.AbstractEventLoop) -> None:
-    """Set loop for running listeners to new_loop."""
+def set_loop(other_loop: asyncio.AbstractEventLoop) -> None:
+    """Set loop for running listeners to other_loop."""
     global loop
 
-    loop = new_loop
+    loop = other_loop
 
 
 def run_loop(loop: asyncio.AbstractEventLoop) -> None:
@@ -89,6 +89,7 @@ def run_loop(loop: asyncio.AbstractEventLoop) -> None:
 
         try:
             shutdown_loop(loop)
+
         except Exception:  # noqa
             pass  # uwu
 
@@ -182,18 +183,20 @@ class RateLevelListener(AbstractListener):
 
     async def scan(self) -> None:
         """Scan for rated/unrated levels."""
-        new = await self.client.search_levels(filters=self.filters, pages=range(self.pages))
+        fetched = await self.client.search_levels(
+            filters=self.filters, pages=range(self.pages)
+        ).list()
 
-        if not new:  # servers are probably broken, abort
+        if not fetched:  # servers are probably broken, abort
             return
 
         if not self.cache:
-            self.cache = new
+            self.cache = fetched
             return
 
-        difference = differ(self.cache, new, self.find_new)
+        difference = differ(self.cache, fetched, self.find_new)
 
-        self.cache = new
+        self.cache = fetched
 
         if self.ensure:
             async for level in rating_differ(difference, self.find_new):
@@ -247,21 +250,21 @@ class MessageOrRequestListener(AbstractListener):
 
     async def scan(self) -> None:
         """Scan for new friend requests or messages."""
-        new = await self.get_entities(pages=range(self.pages))  # type: ignore
+        fetched = await self.get_entities(pages=range(self.pages))  # type: ignore
 
-        if not new:
+        if not fetched:
             return
 
         if not self.cache:
-            self.cache = new
+            self.cache = fetched
             return
 
-        difference = differ(self.cache, new, find_new=True)
+        difference = differ(self.cache, fetched, find_new=True)
 
         if self.read:
             await gather(entity.read() for entity in difference)
 
-        self.cache = new
+        self.cache = fetched
 
         for entity in difference:
             dispatcher = self.client.dispatch(self.to_call, entity)
@@ -291,18 +294,18 @@ class LevelCommentListener(AbstractListener):
 
     async def scan(self) -> None:
         """Scan for new comments on given level."""
-        new = await self.level.get_comments(amount=self.amount)
+        fetched = await self.level.get_comments(amount=self.amount)
 
-        if not new:
+        if not fetched:
             return
 
         if not self.cache:
-            self.cache = new
+            self.cache = fetched
             return
 
-        difference = differ(self.cache, new, find_new=True)
+        difference = differ(self.cache, fetched, find_new=True)
 
-        self.cache = new
+        self.cache = fetched
 
         if difference and self.refresh:
             await self.level.refresh()
@@ -334,7 +337,6 @@ class UserCommentListener(AbstractListener):
         if account_id is None:
             if id is None:
                 if name is None:
-
                     raise ValueError("No user selectors were provided")
 
                 else:
@@ -364,20 +366,20 @@ class UserCommentListener(AbstractListener):
         if self.user is None:
             return
 
-        new = await self.get_user_comments(  # type: ignore
+        fetched = await self.get_user_comments(  # type: ignore
             self.user, pages=range(self.pages)  # type: ignore
         ).list()
 
-        if not new:
+        if not fetched:
             return
 
         if not self.cache:
-            self.cache = new
+            self.cache = fetched
             return
 
-        difference = differ(self.cache, new, find_new=True)
+        difference = differ(self.cache, fetched, find_new=True)
 
-        self.cache = new
+        self.cache = fetched
 
         for comment in difference:
             dispatcher = self.client.dispatch(self.to_call, self.user, comment)

@@ -22,13 +22,16 @@ if TYPE_CHECKING:
 
 
 def get_time_length(
-    dx: float, start: Speed = Speed.NORMAL, speed_changes: Iterable[Object] = (),  # type: ignore
+    distance: float,
+    start: Speed = Speed.NORMAL,  # type: ignore
+    speed_changes: Iterable[Object] = (),
 ) -> float:
-    """Compute the time (in seconds) to travel from ``0`` to ``dx``, respecting speed portals.
+    """Compute the time (in seconds) to travel
+    from ``0`` to ``distance``, respecting speed portals.
 
     Parameters
     ----------
-    dx: :class:`float`
+    distance: :class:`float`
         Distance to stop calculating at.
 
     start: :class:`~gd.api.Speed`
@@ -40,12 +43,12 @@ def get_time_length(
     Returns
     -------
     :class:`float`
-        Calculated time (seconds).
+        Calculated time (in seconds).
     """
     speed = SPEEDS[start.value]
 
     if not speed_changes:
-        return dx / speed
+        return distance / speed
 
     last_x = 0.0
     total = 0.0
@@ -53,7 +56,7 @@ def get_time_length(
     for speed_change in speed_changes:
         x = speed_change.x
 
-        if x > dx:
+        if x > distance:
             break
 
         segment = x - last_x
@@ -64,7 +67,7 @@ def get_time_length(
 
         last_x = x
 
-    return (dx - last_x) / speed + total
+    return (distance - last_x) / speed + total
 
 
 def find_next(
@@ -119,7 +122,7 @@ class Editor:
         or :class:`~gd.memory.GameLevel`, and set a callback to dumb the editor to it.
         This method is intented to be used internally.
         """
-        self = cls.from_string(getattr(callback, attribute))
+        self = cls.load(getattr(callback, attribute))  # type: ignore
 
         self._set_callback(callback, attribute)
 
@@ -133,7 +136,9 @@ class Editor:
         return self
 
     @classmethod
-    def from_string(cls, data: Union[bytes, str]) -> "Editor":
+    def from_string(
+        cls, data: Union[bytes, str], delim: str = ";", ignore_empty: bool = True
+    ) -> "Editor":
         """Create the editor from ``data`` string."""
         if isinstance(data, bytes):
             try:
@@ -145,16 +150,22 @@ class Editor:
         if not data:
             return cls()
 
-        header_data, *objects_data = filter(bool, data.split(";"))
+        data_iter = iter(data.split(delim))
 
-        header = Header.from_string(header_data)
+        if ignore_empty:
+            data_iter = filter(bool, data_iter)
 
-        objects_iter = map(Object.from_string, objects_data)
+        header_data, *objects_data = data_iter
 
-        return cls.from_object_iterable(objects_iter).set_header(header)
+        return cls.from_object_iterable(
+            map(Object.from_string, objects_data)
+        ).set_header(Header.from_string(header_data))
+
+    load = from_string
 
     def __repr__(self) -> str:
-        info = {"object_count": len(self.objects), "header": "<...>"}
+        info = {"object_count": len(self.objects)}
+
         return make_repr(self, info)
 
     def __len__(self) -> int:
@@ -329,10 +340,8 @@ class Editor:
 
     def copy(self) -> "Editor":
         """Return a copy of the Editor instance."""
-        cls = self.__class__
-        return cls.from_object_iterable(self.copy_objects()).set_header(self.copy_header())
+        return self.from_object_iterable(self.copy_objects()).set_header(self.copy_header())
 
     def clone(self) -> "Editor":
         """Return a clone of the Editor instance."""
-        cls = self.__class__
-        return cls.from_object_iterable(self.clone_objects()).set_header(self.clone_header())
+        return self.from_object_iterable(self.clone_objects()).set_header(self.clone_header())

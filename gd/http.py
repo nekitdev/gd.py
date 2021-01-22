@@ -8,7 +8,7 @@ import uuid
 import aiohttp
 from yarl import URL
 
-from gd.api.recording import RecordEntry, dump_record_entries
+from gd.api.recording import Recording, RecordingEntry
 from gd.async_utils import get_running_loop, maybe_coroutine, shutdown_loop
 from gd.converters import GameVersion, Password, Version
 from gd.crypto import (  # gen_leaderboard_seed,
@@ -1017,7 +1017,7 @@ class HTTPClient:
         low_detail_mode: bool = False,
         password: Optional[Union[int, str]] = None,
         copyable: bool = False,
-        recording: Iterable[RecordEntry] = (),
+        recording: Iterable[RecordingEntry] = (),
         editor_seconds: int = 0,
         copies_seconds: int = 0,
         data: str = "",
@@ -1055,7 +1055,7 @@ class HTTPClient:
         elif unlisted:
             just_unlisted = 1
 
-        recording_str = zip_level_str(dump_record_entries(recording))
+        recording_str = zip_level_str(Recording.collect_string(recording))
 
         route = Route(
             POST,

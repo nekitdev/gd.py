@@ -42,6 +42,7 @@ readme = (root / "README.rst").read_text("utf-8")
 
 extras_require = {
     "all": [],  # extended afterwards
+    "prelude": [],  # updated later
     "crypto": ["pycryptodome"],
     "console": ["ipython"],
     "docs": ["sphinx", "sphinx_rtd_theme<0.5.0", "sphinxcontrib_websupport"],
@@ -52,9 +53,17 @@ extras_require = {
     "test": ["coverage", "pytest_asyncio"],
 }
 
-for requires in extras_require.values():
-    extras_require["all"].extend(requires)  # type: ignore
+all_extras = extras_require["all"]
 
+for extras in extras_require.values():
+    all_extras.extend(extras)  # type: ignore
+
+prelude_extras = extras_require["prelude"]
+prelude = ["crypto", "console", "image", "server", "speedups"]
+
+for extra in prelude:
+    extras = extras_require[extra]
+    prelude_extras.extend(extras)  # type: ignore
 
 setup(
     name="gd.py",

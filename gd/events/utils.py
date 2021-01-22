@@ -18,6 +18,8 @@ __all__ = (
 )
 
 # these are used internally
+_GD_EVENT_RUNNING = "_gd_event_running"
+
 _current_thread = 1
 _loops: List[asyncio.AbstractEventLoop] = []
 _tasks: List[tasks.Loop] = []
@@ -76,7 +78,7 @@ def enable(loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
     if loop is None:
         loop = get_loop()
 
-    if getattr(loop, "gd_event_running", False):
+    if getattr(loop, _GD_EVENT_RUNNING, False):
         return
 
     _loops.append(loop)
@@ -88,7 +90,7 @@ def enable(loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
 
         task.start()
 
-    loop.gd_event_running = True  # type: ignore
+    setattr(loop, _GD_EVENT_RUNNING, True)
 
 
 def attach_to_loop(loop: asyncio.AbstractEventLoop) -> None:
@@ -105,6 +107,7 @@ def run(loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
 
     try:
         run_loop(loop)
+
     except KeyboardInterrupt:
         pass
 

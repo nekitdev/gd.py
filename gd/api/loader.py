@@ -16,7 +16,7 @@ from gd.platform import LINUX, MACOS, WINDOWS
 from gd.text_utils import make_repr
 from gd.typing import Optional, Tuple, Union
 
-__all__ = ("MAIN", "LEVELS", "PATH", "SAVE_DELIM", "SaveUtils", "create_db", "save")
+__all__ = ("MAIN", "LEVELS", "PATH", "SAVE_DELIM", "SaveManager", "create_database", "save")
 
 AnyString = Union[bytes, str]
 PathLike = Union[str, Path]
@@ -26,7 +26,7 @@ LEVELS = "CCLocalLevels.dat"
 
 PATH = Path()
 
-LOCAL_APP_DATA = os.getenv("localappdata", "")
+LOCAL_APP_DATA = os.getenv("localappdata", "~/AppData/Local")
 
 SAVE_DELIM = ";"
 
@@ -41,10 +41,7 @@ log = get_logger(__name__)
 
 try:
     if WINDOWS:
-        if not LOCAL_APP_DATA:
-            raise FileNotFoundError("Can not find Local AppData folder.")
-
-        PATH = Path(WINDOWS_DIR)
+        PATH = Path(WINDOWS_DIR).expanduser()
 
     elif MACOS:
         PATH = Path(MACOS_DIR).expanduser()
@@ -59,7 +56,7 @@ except Exception:  # noqa
     log.error("Can not find relevant GD PATH.", exc_info=True)
 
 
-class SaveUtils:
+class SaveManager:
     def __repr__(self) -> str:
         return make_repr(self)
 
@@ -157,7 +154,7 @@ class SaveUtils:
 
     async def dump_async(
         self,
-        db: Database,
+        database: Database,
         main: Optional[PathLike] = None,
         levels: Optional[PathLike] = None,
         main_file: PathLike = MAIN,
@@ -179,7 +176,7 @@ class SaveUtils:
         Parameters
         ----------
 
-        db: :class:`~gd.api.Database`
+        database: :class:`~gd.api.Database`
             Database object to dump.
 
         main: Optional[Union[:class:`str`, :class:`~pathlib.Path`]]
@@ -198,7 +195,7 @@ class SaveUtils:
         """
         await run_blocking(
             self.local_dump,
-            db=db,
+            database,
             main=main,
             levels=levels,
             main_file=main_file,
@@ -207,7 +204,7 @@ class SaveUtils:
 
     def dump(
         self,
-        db: Database,
+        database: Database,
         main: Optional[PathLike] = None,
         levels: Optional[PathLike] = None,
         main_file: PathLike = MAIN,
@@ -229,7 +226,7 @@ class SaveUtils:
         Parameters
         ----------
 
-        db: :class:`~gd.api.Database`
+        database: :class:`~gd.api.Database`
             Database object to dump.
 
         main: Optional[Union[:class:`str`, :class:`~pathlib.Path`]]
@@ -247,11 +244,15 @@ class SaveUtils:
             Applied when ``levels`` is a directory.
         """
         self.local_dump(
-            db=db, main=main, levels=levels, main_file=main_file, levels_file=levels_file,
+            database, main=main, levels=levels, main_file=main_file, levels_file=levels_file
         )
 
     async def to_string_async(
-        self, db: Database, apply_xor: bool = False, follow_os: bool = False, decode: bool = False,
+        self,
+        database: Database,
+        apply_xor: bool = False,
+        follow_os: bool = False,
+        decode: bool = False,
     ) -> Union[Tuple[bytes, bytes], Tuple[str, str]]:
         """Asynchronously dump a save into strings.
 
@@ -260,7 +261,7 @@ class SaveUtils:
         Parameters
         ----------
 
-        db: :class:`~gd.api.Database`
+        database: :class:`~gd.api.Database`
             Database object to dump.
 
         apply_xor: :class:`bool`
@@ -278,7 +279,7 @@ class SaveUtils:
             A ``(main, levels)`` tuple, containing strings or bytes depending on ``decode``.
         """
         main, levels = await run_blocking(
-            self.dump_parts, db=db, apply_xor=apply_xor, follow_os=follow_os
+            self.dump_parts, database, apply_xor=apply_xor, follow_os=follow_os
         )
 
         if decode:
@@ -290,7 +291,11 @@ class SaveUtils:
         return (main, levels)
 
     def to_string(
-        self, db: Database, apply_xor: bool = False, follow_os: bool = False, decode: bool = False,
+        self,
+        database: Database,
+        apply_xor: bool = False,
+        follow_os: bool = False,
+        decode: bool = False,
     ) -> Union[Tuple[bytes, bytes], Tuple[str, str]]:
         """Dump a save into strings.
 
@@ -299,7 +304,7 @@ class SaveUtils:
         Parameters
         ----------
 
-        db: :class:`~gd.api.Database`
+        database: :class:`~gd.api.Database`
             Database object to dump.
 
         apply_xor: :class:`bool`
@@ -316,7 +321,7 @@ class SaveUtils:
         Union[Tuple[:class:`bytes`, :class:`bytes`], Tuple[:class:`str`, :class:`str`]]
             A ``(main, levels)`` tuple, containing strings or bytes depending on ``decode``.
         """
-        main, levels = self.dump_parts(db=db, apply_xor=apply_xor, follow_os=follow_os)
+        main, levels = self.dump_parts(database, apply_xor=apply_xor, follow_os=follow_os)
 
         if decode:
             return (
@@ -390,7 +395,9 @@ class SaveUtils:
         """
         return self.load_parts(main=main, levels=levels, apply_xor=apply_xor, follow_os=follow_os)
 
-    def create_db(self, main: AnyString = "", levels: AnyString = "") -> Database:  # type: ignore
+    def create_database(
+        self, main: AnyString = "", levels: AnyString = ""  # type: ignore
+    ) -> Database:
         """Create a database from string parts.
 
         This method should be used if you already have XML strings, or it can be used
@@ -398,7 +405,7 @@ class SaveUtils:
 
         .. code-block:: python3
 
-            db = gd.api.save.make_db()  # or supply arguments
+            database = gd.api.save.create_database()  # or supply arguments
 
         Parameters
         ----------
@@ -416,12 +423,18 @@ class SaveUtils:
         """
         return Database(main, levels)
 
-    def decode_stream(self, stream: bytes, apply_xor: bool = True, follow_os: bool = True) -> bytes:
+    def decode_stream(
+        self, stream: bytes, apply_xor: bool = True, follow_os: bool = True
+    ) -> bytes:
         decoder = decode_os_save if follow_os else decode_save
+
         return decoder(stream, apply_xor=apply_xor)
 
-    def encode_stream(self, stream: bytes, apply_xor: bool = True, follow_os: bool = True) -> bytes:
+    def encode_stream(
+        self, stream: bytes, apply_xor: bool = True, follow_os: bool = True
+    ) -> bytes:
         encoder = encode_os_save if follow_os else encode_save
+
         return encoder(stream, apply_xor=apply_xor)
 
     def encode_if_str(self, bytes_or_str: AnyString) -> bytes:
@@ -447,13 +460,13 @@ class SaveUtils:
         return Database(main_decoded, levels_decoded)
 
     def dump_parts(
-        self, db: Database, apply_xor: bool = False, follow_os: bool = False
+        self, database: Database, apply_xor: bool = False, follow_os: bool = False
     ) -> Tuple[bytes, bytes]:
         main = self.encode_stream(
-            self.encode_if_str(db.main.dump()), apply_xor=apply_xor, follow_os=follow_os
+            self.encode_if_str(database.main.dump()), apply_xor=apply_xor, follow_os=follow_os
         )
         levels = self.encode_stream(
-            self.encode_if_str(db.levels.dump()), apply_xor=apply_xor, follow_os=follow_os,
+            self.encode_if_str(database.levels.dump()), apply_xor=apply_xor, follow_os=follow_os
         )
 
         return (main, levels)
@@ -490,11 +503,11 @@ class SaveUtils:
             return self.load_parts(main_stream, levels_stream, apply_xor=True, follow_os=True)
 
         except OSError:
-            return self.create_db()
+            return self.create_database()
 
     def local_dump(
         self,
-        db: Database,
+        database: Database,
         main: Optional[PathLike] = None,
         levels: Optional[PathLike] = None,
         main_file: PathLike = MAIN,
@@ -503,7 +516,7 @@ class SaveUtils:
         main_path = self.get_path(main, main_file)
         levels_path = self.get_path(levels, levels_file)
 
-        main_stream, levels_stream = self.dump_parts(db, apply_xor=True, follow_os=True)
+        main_stream, levels_stream = self.dump_parts(database, apply_xor=True, follow_os=True)
 
         with open(main_path, "wb") as file:
             file.write(main_stream)
@@ -512,5 +525,5 @@ class SaveUtils:
             file.write(levels_stream)
 
 
-save = SaveUtils()
-create_db = save.create_db
+save = SaveManager()
+create_database = save.create_database

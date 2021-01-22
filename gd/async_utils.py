@@ -1,7 +1,8 @@
 import asyncio
 import functools
-import inspect
+from inspect import isawaitable as is_awaitable
 
+from gd.iter_utils import extract_iterable_from_tuple
 from gd.logging import get_logger
 from gd.typing import Awaitable, Callable, List, Optional, Set, Tuple, TypeVar, Union, cast
 
@@ -28,7 +29,11 @@ T = TypeVar("T")
 MaybeAwaitable = Union[Awaitable[T], T]
 
 
-async def run_blocking(func: Callable[..., T], *args, **kwargs) -> T:
+def is_not_awaitable(maybe_awaitable: MaybeAwaitable) -> bool:
+    return not is_awaitable(maybe_awaitable)
+
+
+async def run_blocking(function: Callable[..., T], *args, **kwargs) -> T:
     """|coro|
 
     Run some blocking function in an event loop.
@@ -48,39 +53,35 @@ async def run_blocking(func: Callable[..., T], *args, **kwargs) -> T:
 
         image = await run_blocking(make_image)
     """
-    loop = acquire_loop(running=True)
+    loop = get_running_loop()
 
-    asyncio.set_event_loop(loop)
-
-    return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
+    return await loop.run_in_executor(None, functools.partial(function, *args, **kwargs))
 
 
 async def gather(
-    *awaitables, loop: Optional[asyncio.AbstractEventLoop] = None, return_exceptions: bool = False,
+    *awaitables, loop: Optional[asyncio.AbstractEventLoop] = None, return_exceptions: bool = False
 ) -> List[T]:
     """A function that is calling :func:`asyncio.gather`.
 
-    Used for less imports inside and outside gd.py.
+    Used for less imports inside and outside this library.
 
     One small addition is that a sequence of awaitables can be given
     as the only positional argument.
 
     This way, :func:`asyncio.gather` will be run on that sequence.
     """
-    if len(awaitables) == 1:
-        maybe_awaitables = awaitables[0]
-
-        if not inspect.isawaitable(maybe_awaitables):
-            awaitables = maybe_awaitables
-
-    return await asyncio.gather(*awaitables, loop=loop, return_exceptions=return_exceptions)
+    return await asyncio.gather(
+        *extract_iterable_from_tuple(awaitables, check=is_not_awaitable),
+        loop=loop,
+        return_exceptions=return_exceptions,
+    )
 
 
 async def wait(
     *futures,
     loop: Optional[asyncio.AbstractEventLoop] = None,
     timeout: Optional[Union[float, int]] = None,
-    return_when: str = "ALL_COMPLETED",
+    return_when: str = asyncio.ALL_COMPLETED,
 ) -> Tuple[Set[asyncio.Future], Set[asyncio.Future]]:
     """A function that is calling :func:`asyncio.wait`.
 
@@ -105,13 +106,12 @@ async def wait(
         This does not raise :exc:`TimeoutError`! Futures that aren't done
         when the timeout occurs are returned in the second set.
     """
-    if len(futures) == 1:
-        maybe_futures = futures[0]
-
-        if not inspect.isawaitable(maybe_futures):
-            futures = maybe_futures
-
-    return await asyncio.wait(futures, loop=loop, timeout=timeout, return_when=return_when)
+    return await asyncio.wait(
+        extract_iterable_from_tuple(futures, check=is_not_awaitable),
+        loop=loop,
+        timeout=timeout,
+        return_when=return_when,
+    )
 
 
 def run(
@@ -240,18 +240,21 @@ def shutdown_loop(loop: asyncio.AbstractEventLoop) -> None:
 
     try:
         cancel_all_tasks(loop)
+
         loop.run_until_complete(loop.shutdown_asyncgens())
 
-    except Exception as error:
-        log.warning(f"{type(error).__name__} was raised. {error}")
+    except Exception:
+        log.exception("An error has occurred during loop shutdown.")
 
     finally:
         loop.close()
 
 
 async def maybe_await(maybe_awaitable: MaybeAwaitable[T]) -> T:
-    if inspect.isawaitable(maybe_awaitable):
-        return await cast(Awaitable[T], maybe_awaitable)  # is awaitable
+    if is_awaitable(maybe_awaitable):
+        awaitable = cast(Awaitable[T], maybe_awaitable)  # is awaitable
+
+        return await awaitable
 
     return cast(T, maybe_awaitable)  # is not awaitable
 
@@ -260,8 +263,8 @@ def maybe_coroutine(function: Callable[..., MaybeAwaitable[T]], *args, **kwargs)
     return maybe_await(function(*args, **kwargs))
 
 
-def acquire_loop(running: bool = False, enforce_running: bool = False) -> asyncio.AbstractEventLoop:
-    """Gracefully acquire a loop.
+def get_loop(running: bool = False, enforce_running: bool = False) -> asyncio.AbstractEventLoop:
+    """Gracefully fetch a loop.
 
     The function tries to get an event loop via :func:`asyncio.get_event_loop`.
     On fail, returns a new loop using :func:`asyncio.new_event_loop`.
@@ -308,16 +311,16 @@ def acquire_loop(running: bool = False, enforce_running: bool = False) -> asynci
     return loop
 
 
-get_loop = acquire_loop
-
-
 def get_not_running_loop() -> asyncio.AbstractEventLoop:
-    return get_loop(running=False)
+    return get_loop(running=False, enforce_running=False)
 
 
 def get_maybe_running_loop() -> asyncio.AbstractEventLoop:
-    return get_loop(running=True)
+    return get_loop(running=True, enforce_running=False)
 
 
 def get_running_loop() -> asyncio.AbstractEventLoop:
     return get_loop(running=True, enforce_running=True)
+
+
+acquire_loop = get_loop

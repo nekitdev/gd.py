@@ -9,6 +9,7 @@ from itertools import cycle
 from gd.enums import Key, Salt
 from gd.logging import get_logger
 from gd.platform import MACOS
+from gd.text_utils import concat
 from gd.typing import AnyStr, List, TypeVar
 
 __all__ = (
@@ -98,8 +99,6 @@ XOR_KEY = 11
 # charset and concat
 
 CHARSET = string.ascii_letters + string.digits
-
-concat = "".join
 
 
 def decode_base64(data: bytes, urlsafe: bool = True) -> bytes:

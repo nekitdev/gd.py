@@ -2,7 +2,7 @@ import traceback
 import types
 
 from gd.api.database import Database
-from gd.api.recording import RecordEntry
+from gd.api.recording import RecordingEntry
 from gd.async_iters import async_iter, awaitable_iterator
 from gd.async_utils import get_not_running_loop, maybe_await, maybe_coroutine
 from gd.comment import Comment
@@ -137,9 +137,9 @@ class Client:
     session: :class:`~gd.Session`
         Session used processing requests and responses.
 
-    db: :class:`~gd.api.Database`
+    database: :class:`~gd.api.Database`
         Client's database, used for working with saves.
-        There is an alias for it called ``database``.
+        There is an alias for it called ``db``.
 
     account_id: :class:`int`
         Account ID of the client. ``0`` if not logged in.
@@ -161,7 +161,7 @@ class Client:
         self.listeners: List[AbstractListener] = []
         self.handlers: Dict[str, List[MaybeAsyncFunction]] = {}
 
-        self.db: Database = Database()
+        self.database: Database = Database()
 
         self.account_id = 0
         self.id = 0
@@ -223,13 +223,13 @@ class Client:
         return get_not_running_loop().run_until_complete(maybe_await(maybe_awaitable))
 
     @property
-    def database(self) -> Database:
-        """:class:`~gd.api.Database`: Same as :attr:`~gd.Client.db`."""
-        return self.db
+    def db(self) -> Database:
+        """:class:`~gd.api.Database`: Same as :attr:`~gd.Client.database`."""
+        return self.database
 
-    @database.setter
-    def database(self, db: Database) -> None:
-        self.db = db
+    @db.setter
+    def db(self, database: Database) -> None:
+        self.database = database
 
     @property
     def http(self) -> HTTPClient:
@@ -264,7 +264,7 @@ class Client:
         >>> client.id
         0
         """
-        self.db = Database()
+        self.database = Database()
 
         self.account_id = 0
         self.id = 0
@@ -381,13 +381,13 @@ class Client:
     async def load(self) -> Database:
         """Load cloud save and process it.
 
-        This returns a :class:`~gd.api.Database`, and sets ``client.db`` to it.
+        This returns a :class:`~gd.api.Database`, and sets ``client.database`` to it.
 
         Example
         -------
         >>> await client.login("user", "password")
-        >>> db = await client.load()  # load current save
-        >>> print(db.user_name)  # print current user name
+        >>> database = await client.load()  # load current save
+        >>> print(database.user_name)  # print current user name
 
         Raises
         ------
@@ -405,29 +405,29 @@ class Client:
         :class:`~gd.api.Database`
             Loaded database.
         """
-        db = await self.session.load(
+        database = await self.session.load(
             account_id=self.account_id, name=self.name, password=self.password
         )
 
-        self.db = db
+        self.database = database
 
-        return db
+        return database
 
     @login_check
-    async def save(self, db: Optional[Database] = None) -> None:
+    async def save(self, database: Optional[Database] = None) -> None:
         """Send save to the cloud.
 
         Example
         -------
         >>> await client.login("user", "password")
         >>> await client.load()  # load current save
-        >>> client.db.set_bootups(0)  # set "bootups" value to "0"
+        >>> client.database.set_bootups(0)  # set "bootups" value to "0"
         >>> await client.save()
 
         Parameters
         ----------
-        db: Optional[:class:`~gd.api.Database`]
-            Database to save. If not given or ``None``, tries to use :attr:`~gd.Client.db`.
+        database: Optional[:class:`~gd.api.Database`]
+            Database to save. If not given or ``None``, tries to use :attr:`~gd.Client.database`.
 
         Raises
         ------
@@ -440,14 +440,14 @@ class Client:
         :exc:`~gd.HTTPError`
             Failed to process the request.
         """
-        if db is None:
-            if self.db.is_empty():
+        if database is None:
+            if self.database.is_empty():
                 raise MissingAccess("No database to save.")
 
-            db = self.db
+            database = self.database
 
         await self.session.save(
-            db, account_id=self.account_id, name=self.name, password=self.password
+            database, account_id=self.account_id, name=self.name, password=self.password
         )
 
     async def get_account_url(self, account_id: int, type: AccountURLType) -> URL:
@@ -922,7 +922,7 @@ class Client:
         low_detail_mode: bool = False,
         password: Optional[Union[int, str]] = None,
         copyable: bool = False,
-        recording: Iterable[RecordEntry] = (),
+        recording: Iterable[RecordingEntry] = (),
         editor_seconds: int = 0,
         copies_seconds: int = 0,
         data: str = "",

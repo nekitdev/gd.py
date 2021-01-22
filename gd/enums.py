@@ -60,7 +60,7 @@ __all__ = (
     "Speed",
     "SpeedConstant",
     "SpeedMagic",
-    "GuidelinesColor",
+    "GuidelineColor",
     "InternalType",
     "Protection",
     "ByteOrder",
@@ -816,7 +816,7 @@ class SpeedMagic(float, Enum):
     DEFAULT = NORMAL  # -> x 1
 
 
-class GuidelinesColor(enums.StrFormat, JSON, float, enums.Enum):
+class GuidelineColor(float, Enum):
     """An enumeration representing guidelines colors."""
 
     DEFAULT = 0.0
@@ -826,16 +826,12 @@ class GuidelinesColor(enums.StrFormat, JSON, float, enums.Enum):
     GREEN = 1.0
 
     @classmethod
-    def enum_missing(cls, value: float) -> Optional["GuidelinesColor"]:
+    def enum_missing(cls, value: float) -> Optional["GuidelineColor"]:
         try:
-            if 0 < value < 0.8:
-                return cls.TRANSPARENT  # type: ignore
+            if 0.8 < value < 1.0:
+                return cls.ORANGE  # type: ignore
 
-            elif value > 1:
-                return cls.GREEN  # type: ignore
-
-            else:
-                return None
+            return cls.TRANSPARENT  # type: ignore
 
         except TypeError:
             return None

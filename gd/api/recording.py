@@ -1,20 +1,21 @@
+from collections import UserList as ListDerive
 import re
 
 from gd.text_utils import concat, make_repr
-from gd.typing import Iterable, Iterator, List, Match, Union
+from gd.typing import Iterable, Iterator, Match, Type, TypeVar, Union
 
 __all__ = (
-    "RECORD_ENTRY_PATTERN",
-    "RecordEntry",
-    "iter_record_entries",
-    "list_record_entries",
-    "dump_record_entries",
+    "RECORDING_ENTRY_PATTERN",
+    "RecordingEntry",
+    "Recording",
 )
 
-# [1;]n[.m];[1];[;]
-RECORD_ENTRY_PATTERN = re.compile(
+RecordingEntryT = TypeVar("RecordingEntryT", bound="RecordingEntry")
+
+# [1;]n[.d];[1];[;]
+RECORDING_ENTRY_PATTERN = re.compile(
     r"(?:(?P<prev>1);)?"  # [1;]
-    r"(?P<time>[0-9]+(?:\.[0-9]*)?);"  # n[.m];
+    r"(?P<time>[0-9]+(?:\.[0-9]*)?);"  # n[.d];
     r"(?P<next>1)?;"  # [1];
     r"(?P<dual>;)?"  # [;]
 )
@@ -22,27 +23,13 @@ RECORD_ENTRY_PATTERN = re.compile(
 PATTERN_TYPES = {"time": float, "prev": bool, "next": bool, "dual": bool}
 
 
-def _truncate_if_int(value: float) -> Union[float, int]:
-    truncated = int(value)
-    return value if value != truncated else truncated
+def _serialize_float(value: float) -> Union[float, int]:
+    int_value = int(value)
+
+    return value if value != int_value else int_value
 
 
-def _entry_string_generator(entry: "RecordEntry") -> Iterator[str]:
-    if entry.prev:
-        yield "1;"
-
-    yield f"{_truncate_if_int(entry.time)};"
-
-    if entry.next:
-        yield "1"
-
-    yield ";"
-
-    if entry.dual:
-        yield ";"
-
-
-class RecordEntry:
+class RecordingEntry:
     def __init__(
         self, time: float = 0.0, prev: bool = False, next: bool = False, dual: bool = False,
     ) -> None:
@@ -81,41 +68,70 @@ class RecordEntry:
         """Whether input should be applied to the second player, and not first."""
         return self._dual
 
+    def _to_string_iterator(self) -> Iterator[str]:
+        if self.prev:
+            yield "1;"
+
+        yield f"{_serialize_float(self.time)};"
+
+        if self.next:
+            yield "1"
+
+        yield ";"
+
+        if self.dual:
+            yield ";"
+
     @classmethod
-    def from_string(cls, string: str) -> "RecordEntry":
+    def from_string(cls: Type[RecordingEntryT], string: str) -> RecordingEntryT:
         """Create record entry from string."""
-        match = RECORD_ENTRY_PATTERN.match(string)
+        match = RECORDING_ENTRY_PATTERN.match(string)
 
         if match is None:
             raise ValueError(
-                f"Pattern {RECORD_ENTRY_PATTERN.pattern} is not matched by the string: {string!r}"
+                f"Pattern {RECORDING_ENTRY_PATTERN.pattern} "
+                f"is not matched by the string: {string!r}."
             )
 
         return cls.from_match(match)
 
     def to_string(self) -> str:
-        return concat(_entry_string_generator(self))
+        return concat(self._to_string_iterator())
 
     @classmethod
-    def from_match(cls, match: Match) -> "RecordEntry":
+    def from_match(cls: Type[RecordingEntryT], match: Match) -> RecordingEntryT:
         """Create record from a regular expression match. Intended for internal use."""
-        group_dict = match.groupdict()
+        mapping = match.groupdict()
 
-        init_dict = {key: func(group_dict[key]) for key, func in PATTERN_TYPES.items()}
+        init_args = {
+            name: function(mapping.get(name, 0)) for name, function in PATTERN_TYPES.items()
+        }
 
-        return cls(**init_dict)  # type: ignore
-
-
-def iter_record_entries(string: str) -> Iterator[RecordEntry]:
-    """Return an iterator over record entries, constructed from the string."""
-    yield from map(RecordEntry.from_match, RECORD_ENTRY_PATTERN.finditer(string))
+        return cls(**init_args)  # type: ignore
 
 
-def list_record_entries(string: str) -> List[RecordEntry]:
-    """Same as :func:`~gd.api.iter_record_entries`, but returns a list instead."""
-    return list(iter_record_entries(string))
+RecordingT = TypeVar("RecordingT", bound="Recording")
 
 
-def dump_record_entries(entries: Iterable[RecordEntry]) -> str:
-    """Dump iterable of record entries to string."""
-    return concat(map(RecordEntry.to_string, entries))
+class Recording(ListDerive):
+    @staticmethod
+    def iter_string(
+        string: str, cls: Type[RecordingEntryT] = RecordingEntry  # type: ignore
+    ) -> Iterator[RecordingEntryT]:
+        iterator = RECORDING_ENTRY_PATTERN.finditer(string)
+
+        yield from map(cls.from_match, iterator)
+
+    @staticmethod
+    def collect_string(
+        recording: Iterable[RecordingEntryT],
+        cls: Type[RecordingEntryT] = RecordingEntry,  # type: ignore
+    ) -> str:
+        return concat(map(cls.to_string, recording))
+
+    @classmethod
+    def from_string(cls: Type[RecordingT], string: str) -> RecordingT:
+        return cls(cls.iter_string(string))
+
+    def to_string(self, cls: Type[RecordingEntryT] = RecordingEntry) -> str:  # type: ignore
+        return concat(self.collect_string(self, cls))

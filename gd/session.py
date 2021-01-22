@@ -1,6 +1,6 @@
 from gd.api.database import Database
 from gd.api.loader import SAVE_DELIM, save
-from gd.api.recording import RecordEntry
+from gd.api.recording import RecordingEntry
 from gd.decorators import synchronize
 from gd.enums import (
     AccountURLType,
@@ -82,8 +82,8 @@ class Session:
             main_part, levels_part, apply_xor=False, follow_os=False
         )
 
-    async def save(self, db: Database, *, account_id: int, name: str, password: str) -> None:
-        parts = await save.to_string_async(db, apply_xor=False, follow_os=False, decode=True)
+    async def save(self, database: Database, *, account_id: int, name: str, password: str) -> None:
+        parts = await save.to_string_async(database, apply_xor=False, follow_os=False, decode=True)
 
         data = SAVE_DELIM.join(parts)  # type: ignore  # they are already strings
 
@@ -288,7 +288,7 @@ class Session:
         low_detail_mode: bool = False,
         password: Optional[Union[int, str]] = None,
         copyable: bool = False,
-        recording: Iterable[RecordEntry] = (),
+        recording: Iterable[RecordingEntry] = (),
         editor_seconds: int = 0,
         copies_seconds: int = 0,
         data: str = "",
