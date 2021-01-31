@@ -208,12 +208,12 @@ class Client:
         """
         return bool(self.account_id and self.id and self.name and self.password)
 
-    @overload
-    def run(self, maybe_awaitable: Awaitable[T]) -> T:
+    @overload  # noqa
+    def run(self, maybe_awaitable: Awaitable[T]) -> T:  # noqa
         ...
 
-    @overload
-    def run(self, maybe_awaitable: T) -> T:
+    @overload  # noqa
+    def run(self, maybe_awaitable: T) -> T:  # noqa
         ...
 
     def run(self, maybe_awaitable: MaybeAwaitable[T]) -> T:
