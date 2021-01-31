@@ -216,7 +216,7 @@ class Client:
     def run(self, maybe_awaitable: T) -> T:  # noqa
         ...
 
-    def run(self, maybe_awaitable: MaybeAwaitable[T]) -> T:
+    def run(self, maybe_awaitable: MaybeAwaitable[T]) -> T:  # noqa
         """Run given maybe awaitable object and return the result.
 
         Parameters
