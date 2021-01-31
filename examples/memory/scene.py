@@ -1,3 +1,5 @@
+# type: ignore
+
 """Example that shows simple memory reading. Task loops are implemented asynchronously.
 Author: nekitdev
 """

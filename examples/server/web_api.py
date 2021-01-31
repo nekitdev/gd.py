@@ -3,6 +3,8 @@ See "https://docs.aiohttp.org/en/stable/web_quickstart.html" for more informatio
 Author: nekitdev
 """
 
+from functools import partial
+
 from aiohttp import web
 
 import gd
@@ -13,18 +15,11 @@ client = gd.Client()
 # create a sequence of route table definitions
 routes = web.RouteTableDef()
 
-
-def json_resp(item: object, **kwargs) -> str:
-    # enforce <application/json> content type
-    kwargs.update(content_type="application/json")
-    # gd.py introduces gd.utils.dump method, used
-    # for conveniently converting its objects to
-    # JSON-serializable objects
-    return web.Response(text=gd.utils.dumps(item, indent=4), **kwargs)
+json_response = partial(web.json_response, dumps=partial(gd.utils.dumps, indent=4))
 
 
 # let our app listen to GET requests
-@routes.get("/api/user/{query}")
+@routes.get("/api/users/{query}")
 async def get_user(request):
     try:
         query = request.match_info.get("query")
@@ -40,11 +35,13 @@ async def get_user(request):
         else:
             user = await client.search_user(query)
 
-        return json_resp(user)
+        return json_response(user)
 
     # return 404 if we have not found any users
     except Exception:
-        raise json_resp({"error": f"Failed to find a user by the query: {query!r}"}, status=404)
+        raise json_response(
+            {"error": f"Failed to find a user by the query: {query!r}"}, status=404
+        )
 
 
 # initialize an application
@@ -53,7 +50,7 @@ app = web.Application()
 # add routes
 app.add_routes(routes)
 
-print("Go to http://127.0.0.1:8080/api/user/RobTop to see info about RobTop.")
+print("Go to http://127.0.0.1:8080/api/users/RobTop to see info about RobTop.")
 
 # run the app
 web.run_app(app)

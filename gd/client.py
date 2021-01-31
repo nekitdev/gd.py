@@ -62,6 +62,7 @@ from gd.typing import (
     Type,
     TypeVar,
     Union,
+    overload,
 )
 from gd.user import User
 
@@ -206,6 +207,14 @@ class Client:
             ``True`` if client is logged in, ``False`` otherwise.
         """
         return bool(self.account_id and self.id and self.name and self.password)
+
+    @overload
+    def run(self, maybe_awaitable: Awaitable[T]) -> T:
+        ...
+
+    @overload
+    def run(self, maybe_awaitable: T) -> T:
+        ...
 
     def run(self, maybe_awaitable: MaybeAwaitable[T]) -> T:
         """Run given maybe awaitable object and return the result.

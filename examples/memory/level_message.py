@@ -1,3 +1,5 @@
+# type: ignore
+
 """Example that shows memory reading. Loops are implemented synchronously.
 Author: nekitdev
 """
@@ -58,6 +60,7 @@ def main() -> None:  # we use a function to have nice try ... except
         except RuntimeError:
             if show_error:
                 print("Geometry Dash is closed.")
+
             show_error = False
 
             time.sleep(1)
@@ -96,5 +99,6 @@ def main() -> None:  # we use a function to have nice try ... except
 
 try:
     main()
+
 except KeyboardInterrupt:
     pass

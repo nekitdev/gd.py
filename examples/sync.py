@@ -10,10 +10,10 @@ robtop = client.run(client.get_user(71))  # you can use client.run(...)
 
 print(f"Using client.run(...): {robtop}")
 
-robtop = client.sync_search_user("RobTop")  # or client.sync_<name>(...)
+robtop = client.sync_search_user("RobTop")  # type: ignore  # or client.sync_<name>(...)
 
 print(f"Using client.sync_<name>(...): {robtop}")
 
-robtop = robtop.sync_get_user()  # or even this!
+robtop = robtop.sync_get_user()  # type: ignore  # or even this!
 
 print(f"Using AbstractEntity.sync_<name>(...): {robtop}")
