@@ -7,6 +7,8 @@ Decorators
 
 .. autodecorator:: cache_by
 
+.. autodecorator:: cached_property
+
 .. autodecorator:: classproperty
 
 .. autodecorator:: login_check

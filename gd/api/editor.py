@@ -95,7 +95,8 @@ class Editor:
     def __init__(self, *objects: Object, **header_args) -> None:
         self.header = Header(**header_args)
         self.objects = list(objects)
-        self._set_callback()
+
+        self._reset_callback()
 
     def __json__(self) -> Dict[str, Union[Header, List[Object]]]:
         return dict(header=self.header, objects=self.objects)
@@ -108,7 +109,10 @@ class Editor:
         self._callback = callback
         self._attribute = attribute
 
-    def dump_back(self) -> None:
+    def _reset_callback(self) -> None:
+        self._set_callback()
+
+    def to_callback(self) -> None:
         if self._callback is None or self._attribute is None:
             return
 

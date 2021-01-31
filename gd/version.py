@@ -5,11 +5,13 @@ from collections import namedtuple
 import aiohttp
 
 from gd import __version__
+from gd.decorators import cache_by
 from gd.typing import Optional, Union
 
 __all__ = (
     "VersionInfo",
     "aiohttp_version",
+    "create_version_info",
     "make_version_info",
     "python_version",
     "version_re",
@@ -20,16 +22,17 @@ short_to_long_names = {
     "a": "alpha",
     "b": "beta",
     "rc": "candidate",
-    "f": "final",
     "dev": "developer",
+    "f": "final",
 }
 long_to_short_names = {
     long_name: short_name for short_name, long_name in short_to_long_names.items()
 }
 
+
 default_level = "final"
 
-version_parts = {"major", "minor", "micro", "releaselevel", "serial"}
+version_parts = {"major", "minor", "micro", "release_level", "serial"}
 
 version_re = (
     r"^\s*(?:"
@@ -38,7 +41,7 @@ version_re = (
     r"(?P<minor>[0-9]+)?"
     r"(?P=split)?"
     r"(?P<micro>[0-9]+)?"
-    r"(?P<releaselevel>a|b|rc|f|dev)?"
+    r"(?P<release_level>a|b|rc|f|dev)?"
     r"(?P<serial>[0-9]+)?"
     r")\s*$"
 )
@@ -47,7 +50,7 @@ compiled_re = re.compile(version_re, re.MULTILINE)
 
 
 def parse_value(key: str, value: Optional[str]) -> Union[int, str]:
-    if key == "releaselevel":
+    if key == "release_level":
         if value is None:
             return default_level
 
@@ -56,7 +59,7 @@ def parse_value(key: str, value: Optional[str]) -> Union[int, str]:
     return 0 if value is None else int(value)
 
 
-class VersionInfo(namedtuple("VersionInfo", "major minor micro releaselevel serial")):
+class VersionInfo(namedtuple("VersionInfo", "major minor micro release_level serial")):
     """Named tuple that represents version info, similar to :obj:`sys.version_info`.
 
     .. container:: operations
@@ -69,6 +72,9 @@ class VersionInfo(namedtuple("VersionInfo", "major minor micro releaselevel seri
 
     def __str__(self) -> str:
         return self.to_string()
+
+    def __int__(self) -> int:
+        return self.number
 
     @classmethod
     def from_string(cls, version: str) -> "VersionInfo":
@@ -86,18 +92,23 @@ class VersionInfo(namedtuple("VersionInfo", "major minor micro releaselevel seri
 
         return cls(**parts)  # type: ignore
 
+    @property  # type: ignore
+    @cache_by("release_level")
+    def release_letter(self) -> str:
+        return long_to_short_names.get(self.release_level, "f")
+
     def to_string(self) -> str:
         """Convert :class:`~gd.VersionInfo` to string."""
-        short_release = long_to_short_names.get(self.releaselevel)
-
-        return f"{self.major}.{self.minor}.{self.micro}{short_release}{self.serial}"
+        return f"{self.major}.{self.minor}.{self.micro}{self.release_letter}{self.serial}"
 
 
-def make_version_info(string: str) -> VersionInfo:
+def create_version_info(string: str) -> VersionInfo:
     """Same as :meth:`~gd.VersionInfo.from_string`."""
     return VersionInfo.from_string(string)
 
 
-version_info: VersionInfo = make_version_info(__version__)
-aiohttp_version: VersionInfo = make_version_info(aiohttp.__version__)
+make_version_info = create_version_info
+
+version_info: VersionInfo = create_version_info(__version__)
+aiohttp_version: VersionInfo = create_version_info(aiohttp.__version__)
 python_version: VersionInfo = VersionInfo(*sys.version_info)

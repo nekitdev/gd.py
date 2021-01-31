@@ -523,11 +523,11 @@ def get_image_and_offset(
 
 
 ICON_EXTRAS = {  # icon_type -> (((extra, ...), copy_level), ...)
-    IconType.CUBE: ((("glow",), 0), ((2,), 0), ((), 0), (("extra",), 0),),
-    IconType.SHIP: ((("glow",), 0), ((2,), 0), ((), 0), (("extra",), 0),),
-    IconType.BALL: ((("glow",), 0), ((2,), 0), ((), 0), (("extra",), 0),),
-    IconType.UFO: ((("glow",), 0), ((3,), 0), ((2,), 0), ((), 0), (("extra",), 0),),
-    IconType.WAVE: ((("glow",), 0), ((2,), 0), ((), 0), (("extra",), 0),),
+    IconType.CUBE: ((("glow",), 0), ((2,), 0), ((), 0), (("extra",), 0)),
+    IconType.SHIP: ((("glow",), 0), ((2,), 0), ((), 0), (("extra",), 0)),
+    IconType.BALL: ((("glow",), 0), ((2,), 0), ((), 0), (("extra",), 0)),
+    IconType.UFO: ((("glow",), 0), ((3,), 0), ((2,), 0), ((), 0), (("extra",), 0)),
+    IconType.WAVE: ((("glow",), 0), ((2,), 0), ((), 0), (("extra",), 0)),
     IconType.ROBOT: (
         (("03", 2, "glow"), 1),
         (("03", "glow"), 1),

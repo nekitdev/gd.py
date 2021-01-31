@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 __all__ = (
     "benchmark",
     "cache_by",
+    "cached_property",
     "classproperty",
     "login_check",
     "login_check_object",
@@ -33,17 +34,94 @@ __all__ = (
 )
 
 T = TypeVar("T")
-U = TypeVar("U")
 
 
-class ClassProperty(Generic[T]):
-    def __init__(self, method: Optional[Callable[..., T]] = None) -> None:
+class CachedProperty:
+    def __init__(self, method: Optional[Callable[..., Any]] = None) -> None:
+        self.method = method
+
+    @property
+    def __doc__(self) -> Optional[str]:
+        return self.method.__doc__
+
+    @property
+    def __name__(self) -> str:
+        if self.method is None:
+            raise AttributeError("Can not read name of the property.")
+
+        try:
+            return self.method.__name__
+
+        except AttributeError:
+            return f"unknown_{id(self):x}"
+
+    def __get__(self, instance: Optional[Any], owner: Optional[Type[Any]] = None) -> Any:
+        if instance is None:
+            return self
+
+        if self.method is None:
+            raise AttributeError("Can not read cached property.")
+
+        value = self.method(instance)
+
+        setattr(instance, self.name, value)
+
+        return value
+
+    def getter(self, method: Callable[..., Any]) -> "CachedProperty":
+        self.method = method
+
+        return self
+
+
+def cached_property(method: Optional[Callable[..., Any]] = None) -> CachedProperty:
+    """Decorator that converts a method with a single instance argument into a property
+    that caches itself after being called.
+
+    When cached property is accessed, it executes underlying method,
+    replacing itself in the instance with the call result.
+
+    Example
+    -------
+    >>> class Class:
+    ...     @cached_property
+    ...     def value(self) -> int:
+    ...         print("called")
+    ...         return 42
+    ...
+    >>> instance = Class()
+    >>> instance.value
+    called
+    42
+    >>> instance.value
+    42
+    """
+    return CachedProperty(method)
+
+
+class ClassProperty:
+    def __init__(self, method: Optional[Callable[..., Any]] = None) -> None:
         self.get = method
 
-    def __get__(self, instance: Optional[Any], owner: Optional[Type[Any]] = None) -> T:
+    @property
+    def __doc__(self) -> Optional[str]:
+        return self.get.__doc__
+
+    @property
+    def __name__(self) -> str:
+        if self.get is None:
+            raise AttributeError("Can not read name of the property.")
+
+        try:
+            return self.get.__name__
+
+        except AttributeError:
+            return f"unknown_{id(self):x}"
+
+    def __get__(self, instance: Optional[Any], owner: Optional[Type[Any]] = None) -> Any:
         if owner is None:
             if instance is None:
-                raise RuntimeError("Both instance and owner are None.")
+                raise RuntimeError("Both instance and owner are not present.")
 
             cls = type(instance)
 
@@ -51,17 +129,17 @@ class ClassProperty(Generic[T]):
             cls = owner
 
         if self.get is None:
-            raise RuntimeError("Can not read class property.")
+            raise AttributeError("Can not read class property.")
 
         return self.get(cls)
 
-    def getter(self, method: Callable[..., T]) -> "ClassProperty[T]":
+    def getter(self, method: Callable[..., Any]) -> "ClassProperty":
         self.get = method
 
         return self
 
 
-def classproperty(method: Optional[Callable[..., T]] = None) -> ClassProperty[T]:
+def classproperty(method: Optional[Callable[..., Any]] = None) -> ClassProperty:
     """Decorator that converts a method with a single class argument into a property
     that can be accessed directly from the class.
 

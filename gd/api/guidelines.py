@@ -113,11 +113,18 @@ class Guidelines(Dict[float, float]):
         self._init_timestamps()
 
     def __repr__(self) -> str:
-        timestamp_to_value = ", ".join(
-            f"{timestamp} -> {value}" for timestamp, value in self.items()
-        )
+        return f"{self.__class__.__name__}({self._timestamp_string})"
 
-        return f"{self.__class__.__name__}({timestamp_to_value})"
+    @property
+    def _timestamp_string(self) -> str:
+        _casefold = str.casefold
+
+        _color = GuidelineColor
+
+        return ", ".join(
+            f"{_timestamp} -> {_casefold(_color(_value).name)}"
+            for _timestamp, _value in self.items()
+        )
 
     def _init_timestamps(self) -> None:
         self._timestamps = sorted(self.keys())
@@ -218,13 +225,11 @@ class Guidelines(Dict[float, float]):
 
     @property
     def guidelines_ordered(self) -> Iterator[GuidelineT]:
-        for timestamp in self.timestamps:
-            yield self.get_ref(timestamp)
+        yield from map(self.get_ref, self.timestamps)
 
     @property
     def raw_guidelines(self) -> Iterator[float]:
-        for value in self.values():
-            yield value
+        yield from self.values()
 
     @property
     def guidelines(self) -> Iterator[GuidelineT]:
