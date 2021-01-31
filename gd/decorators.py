@@ -4,17 +4,7 @@ from operator import attrgetter
 from gd.async_utils import get_not_running_loop, maybe_coroutine
 from gd.code_utils import time_execution_and_print
 from gd.errors import LoginRequired
-from gd.typing import (
-    TYPE_CHECKING,
-    Any,
-    Awaitable,
-    Callable,
-    Generic,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-)
+from gd.typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional, Type, TypeVar, Union
 
 if TYPE_CHECKING:
     from gd.abstract_entity import AbstractEntity  # noqa
