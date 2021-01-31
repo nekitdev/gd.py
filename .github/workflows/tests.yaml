@@ -23,7 +23,7 @@ jobs:
         # install pip, setuptools and setuptools_rust, which are required to build
         python -m pip install --upgrade pip setuptools setuptools_rust wheel
         # install gd.py with all required dependencies
-        python -m pip install --upgrade .[prelude,test]
+        python -m pip install --upgrade .[prelude,lint,test]
         # install coveralls for reporting coverage
         python -m pip install --upgrade coveralls
 

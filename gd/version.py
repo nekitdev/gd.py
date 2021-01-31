@@ -73,9 +73,6 @@ class VersionInfo(namedtuple("VersionInfo", "major minor micro release_level ser
     def __str__(self) -> str:
         return self.to_string()
 
-    def __int__(self) -> int:
-        return self.number
-
     @classmethod
     def from_string(cls, version: str) -> "VersionInfo":
         """Create :class:`~gd.VersionInfo` from ``version`` string."""

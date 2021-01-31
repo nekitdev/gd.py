@@ -40,9 +40,7 @@ class CachedProperty:
     def __init__(self, method: Optional[Callable[..., Any]] = None) -> None:
         self.method = method
 
-    @property
-    def __doc__(self) -> Optional[str]:
-        return self.method.__doc__
+        self.__doc__ = method.__doc__
 
     @property
     def __name__(self) -> str:
@@ -64,12 +62,14 @@ class CachedProperty:
 
         value = self.method(instance)
 
-        setattr(instance, self.name, value)
+        setattr(instance, self.__name__, value)
 
         return value
 
     def getter(self, method: Callable[..., Any]) -> "CachedProperty":
         self.method = method
+
+        self.__doc__ = method.__doc__
 
         return self
 
@@ -103,9 +103,7 @@ class ClassProperty:
     def __init__(self, method: Optional[Callable[..., Any]] = None) -> None:
         self.get = method
 
-    @property
-    def __doc__(self) -> Optional[str]:
-        return self.get.__doc__
+        self.__doc__ = method.__doc__
 
     @property
     def __name__(self) -> str:
@@ -135,6 +133,8 @@ class ClassProperty:
 
     def getter(self, method: Callable[..., Any]) -> "ClassProperty":
         self.get = method
+
+        self.__doc__ = method.__doc__
 
         return self
 

@@ -225,7 +225,8 @@ class Guidelines(Dict[float, float]):
 
     @property
     def guidelines_ordered(self) -> Iterator[GuidelineT]:
-        yield from map(self.get_ref, self.timestamps)
+        for timestamp in self.timestamps:
+            yield self.get_ref(timestamp)
 
     @property
     def raw_guidelines(self) -> Iterator[float]:
