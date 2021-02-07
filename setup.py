@@ -1,7 +1,7 @@
-import pathlib
 import re
 import sys
 
+from pathlib import Path
 from setuptools import setup  # type: ignore
 
 try:
@@ -22,7 +22,7 @@ except ImportError:
         from setuptools_rust import Binding, RustExtension  # type: ignore
 
 
-root = pathlib.Path(__file__).parent
+root = Path(__file__).parent
 
 requirements = (root / "requirements.txt").read_text("utf-8").strip().splitlines()
 
@@ -75,9 +75,9 @@ setup(
         "Issue tracker": "https://github.com/nekitdev/gd.py/issues",
     },
     version=version,
-    packages=["gd", "gd.events", "gd.api", "gd.image", "gd.memory", "gd.server"],
+    packages=["gd", "gd.api", "gd.events", "gd.image", "gd.memory", "gd.server"],
     license="MIT",
-    description="Geometry Dash API Wrapper for Python",
+    description="Geometry Dash API Wrapper for Python.",
     long_description=readme,
     long_description_content_type="text/x-rst",
     include_package_data=True,

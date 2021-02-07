@@ -2,6 +2,7 @@ from pathlib import Path
 
 import tqdm  # type: ignore
 from attr import attrib, dataclass
+from iters import iter
 
 from gd.abstract_entity import AbstractEntity
 from gd.async_iters import awaitable_iterator
@@ -14,7 +15,14 @@ from gd.typing import IO, TYPE_CHECKING, Any, AsyncIterator, Dict, Iterable, Opt
 if TYPE_CHECKING:
     from gd.client import Client  # noqa
 
-__all__ = ("ArtistInfo", "Author", "Song")
+__all__ = (
+    "ArtistInfo",
+    "Author",
+    "Song",
+    "default_song",
+    "official_client_songs",
+    "official_server_songs",
+)
 
 
 class Song(AbstractEntity):
@@ -77,13 +85,47 @@ class Song(AbstractEntity):
 
     @classmethod
     def official(
-        cls, id: int, server_style: bool = True, *, client: Optional["Client"] = None
+        cls,
+        id: Optional[int] = None,
+        name: Optional[str] = None,
+        index: Optional[int] = None,
+        server_style: bool = True,
+        return_default: bool = True,
+        *,
+        client: Optional["Client"] = None,
     ) -> "Song":
-        songs = OFFICIAL_SERVER_SONGS if server_style else OFFICIAL_CLIENT_SONGS
-        song = songs.get(id, OfficialSong(author="DJVI", name="Unknown"))
+        official_songs = official_server_songs if server_style else official_client_songs
+
+        if id is not None:
+            official_song = iter(official_songs).get(id=id)
+
+        elif name is not None:
+            official_song = iter(official_songs).get(name=name)
+
+        elif index is not None:
+            try:
+                official_song = official_songs[index]
+
+            except (IndexError, ValueError, TypeError):
+                official_song = None
+
+        else:
+            raise ValueError("Expected either of queries: id, name or index.")
+
+        if official_song is None:
+            if return_default:
+                official_song = get_default_song(id)
+
+            else:
+                raise LookupError("Could not find official level by given query.")
 
         return cls(
-            id=id, name=song.name, size=0.0, author=song.author, custom=False, client=client
+            id=official_song.id,
+            name=official_song.name,
+            size=0.0,
+            author=official_song.author,
+            custom=False,
+            client=client,
         )
 
     def get_author(self) -> "Author":
@@ -450,52 +492,64 @@ async def download(
 
 @dataclass
 class OfficialSong:
+    id: int = attrib()
     author: str = attrib()
     name: str = attrib()
 
 
-OFFICIAL_CLIENT_SONGS = {
-    0: OfficialSong(author="OcularNebula", name="Practice: Stay Inside Me"),
-    1: OfficialSong(author="ForeverBound", name="Stereo Madness"),
-    2: OfficialSong(author="DJVI", name="Back On Track"),
-    3: OfficialSong(author="Step", name="Polargeist"),
-    4: OfficialSong(author="DJVI", name="Dry Out"),
-    5: OfficialSong(author="DJVI", name="Base After Base"),
-    6: OfficialSong(author="DJVI", name="Cant Let Go"),
-    7: OfficialSong(author="Waterflame", name="Jumper"),
-    8: OfficialSong(author="Waterflame", name="Time Machine"),
-    9: OfficialSong(author="DJVI", name="Cycles"),
-    10: OfficialSong(author="DJVI", name="xStep"),
-    11: OfficialSong(author="Waterflame", name="Clutterfunk"),
-    12: OfficialSong(author="DJ-Nate", name="Theory of Everything"),
-    13: OfficialSong(author="Waterflame", name="Electroman Adventures"),
-    14: OfficialSong(author="DJ-Nate", name="Clubstep"),
-    15: OfficialSong(author="DJ-Nate", name="Electrodynamix"),
-    16: OfficialSong(author="Waterflame", name="Hexagon Force"),
-    17: OfficialSong(author="Waterflame", name="Blast Processing"),
-    18: OfficialSong(author="DJ-Nate", name="Theory of Everything 2"),
-    19: OfficialSong(author="Waterflame", name="Geometrical Dominator"),
-    20: OfficialSong(author="F-777", name="Deadlocked"),
-    21: OfficialSong(author="MDK", name="Fingerdash"),
-    22: OfficialSong(author="F-777", name="The Seven Seas"),
-    23: OfficialSong(author="F-777", name="Viking Arena"),
-    24: OfficialSong(author="F-777", name="Airborne Robots"),
-    25: OfficialSong(author="RobTop", name="Secret"),  # aka DJRubRub, LOL
-    26: OfficialSong(author="Dex Arson", name="Payload"),
-    27: OfficialSong(author="Dex Arson", name="Beast Mode"),
-    28: OfficialSong(author="Dex Arson", name="Machina"),
-    29: OfficialSong(author="Dex Arson", name="Years"),
-    30: OfficialSong(author="Dex Arson", name="Frontlines"),
-    31: OfficialSong(author="Waterflame", name="Space Pirates"),
-    32: OfficialSong(author="Waterflame", name="Striker"),
-    33: OfficialSong(author="Dex Arson", name="Embers"),
-    34: OfficialSong(author="Dex Arson", name="Round 1"),
-    35: OfficialSong(author="F-777", name="Monster Dance Off"),
-    36: OfficialSong(author="MDK", name="Press Start"),
-    37: OfficialSong(author="Bossfight", name="Nock Em"),
-    38: OfficialSong(author="Boom Kitty", name="Power Trip"),
-}
+default_song = OfficialSong(id=0, author="DJVI", name="Unknown")
 
-OFFICIAL_SERVER_SONGS = {
-    song_id - 1: official_song for song_id, official_song in OFFICIAL_CLIENT_SONGS.items()
-}
+
+def get_default_song(id: Optional[int] = None) -> OfficialSong:
+    if id is None:
+        return default_song
+
+    return OfficialSong(id=id, author=default_song.author, name=default_song.name)
+
+
+official_client_songs = (
+    OfficialSong(id=0, author="OcularNebula", name="Practice: Stay Inside Me"),
+    OfficialSong(id=1, author="ForeverBound", name="Stereo Madness"),
+    OfficialSong(id=2, author="DJVI", name="Back On Track"),
+    OfficialSong(id=3, author="Step", name="Polargeist"),
+    OfficialSong(id=4, author="DJVI", name="Dry Out"),
+    OfficialSong(id=5, author="DJVI", name="Base After Base"),
+    OfficialSong(id=6, author="DJVI", name="Cant Let Go"),
+    OfficialSong(id=7, author="Waterflame", name="Jumper"),
+    OfficialSong(id=8, author="Waterflame", name="Time Machine"),
+    OfficialSong(id=9, author="DJVI", name="Cycles"),
+    OfficialSong(id=10, author="DJVI", name="xStep"),
+    OfficialSong(id=11, author="Waterflame", name="Clutterfunk"),
+    OfficialSong(id=12, author="DJ-Nate", name="Theory of Everything"),
+    OfficialSong(id=13, author="Waterflame", name="Electroman Adventures"),
+    OfficialSong(id=14, author="DJ-Nate", name="Clubstep"),
+    OfficialSong(id=15, author="DJ-Nate", name="Electrodynamix"),
+    OfficialSong(id=16, author="Waterflame", name="Hexagon Force"),
+    OfficialSong(id=17, author="Waterflame", name="Blast Processing"),
+    OfficialSong(id=18, author="DJ-Nate", name="Theory of Everything 2"),
+    OfficialSong(id=19, author="Waterflame", name="Geometrical Dominator"),
+    OfficialSong(id=20, author="F-777", name="Deadlocked"),
+    OfficialSong(id=21, author="MDK", name="Fingerdash"),
+    OfficialSong(id=22, author="F-777", name="The Seven Seas"),
+    OfficialSong(id=23, author="F-777", name="Viking Arena"),
+    OfficialSong(id=24, author="F-777", name="Airborne Robots"),
+    OfficialSong(id=25, author="RobTop", name="Secret"),  # aka DJRubRub, LOL
+    OfficialSong(id=26, author="Dex Arson", name="Payload"),
+    OfficialSong(id=27, author="Dex Arson", name="Beast Mode"),
+    OfficialSong(id=28, author="Dex Arson", name="Machina"),
+    OfficialSong(id=29, author="Dex Arson", name="Years"),
+    OfficialSong(id=30, author="Dex Arson", name="Frontlines"),
+    OfficialSong(id=31, author="Waterflame", name="Space Pirates"),
+    OfficialSong(id=32, author="Waterflame", name="Striker"),
+    OfficialSong(id=33, author="Dex Arson", name="Embers"),
+    OfficialSong(id=34, author="Dex Arson", name="Round 1"),
+    OfficialSong(id=35, author="F-777", name="Monster Dance Off"),
+    OfficialSong(id=36, author="MDK", name="Press Start"),
+    OfficialSong(id=37, author="Bossfight", name="Nock Em"),
+    OfficialSong(id=38, author="Boom Kitty", name="Power Trip"),
+)
+
+official_server_songs = tuple(
+    OfficialSong(id=official_song.id - 1, author=official_song.author, name=official_song.name)
+    for official_song in official_client_songs
+)

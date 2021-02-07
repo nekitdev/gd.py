@@ -207,7 +207,8 @@ class Level(AbstractEntity):
         elif index is not None:
             try:
                 official_level = official_levels[index]
-            except (IndexError, TypeError):
+
+            except (IndexError, ValueError, TypeError):
                 official_level = None
 
         else:
@@ -986,7 +987,7 @@ class OfficialLevel:
         )
 
 
-official_levels = [
+official_levels = (
     OfficialLevel(
         level_id=1,
         song_id=1,
@@ -1367,4 +1368,4 @@ official_levels = [
         length="long",
         game_version=GameVersion(2, 2),
     ),
-]
+)

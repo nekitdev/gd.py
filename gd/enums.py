@@ -853,6 +853,7 @@ class Protection(Flag):
 
     R = READ
     W = WRITE
+    X = EXECUTE
     E = EXECUTE
 
 
