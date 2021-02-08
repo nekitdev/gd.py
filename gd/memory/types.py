@@ -1,11 +1,11 @@
 from gd.decorators import cache_by
-from gd.memory.data import Data, data
-from gd.platform import system_bits
+from gd.memory.data import Data
+from gd.platform import Platform, system_bits, system_platform
 from gd.text_utils import make_repr
-from gd.typing import Type, TypeVar
+from gd.typing import Any, Type, TypeVar
 
 __all__ = (
-    "TypeHandler",
+    "Types",
     "c_byte",
     "c_ubyte",
     "c_short",
@@ -44,57 +44,55 @@ __all__ = (
 
 T = TypeVar("T")
 
-BYTE_BITS = 8
+
+class c_byte(Data[int], name="c_byte", format="b"):
+    def __init__(self, value: int = 0) -> None:
+        self._value = value
 
 
-@data(name="c_byte", format="b")
-class c_byte(Data[int]):
-    pass
+class c_ubyte(Data[int], name="c_ubyte", format="B"):
+    def __init__(self, value: int = 0) -> None:
+        self._value = value
 
 
-@data(name="c_ubyte", format="B")
-class c_ubyte(Data[int]):
-    pass
+class c_short(Data[int], name="c_short", format="h"):
+    def __init__(self, value: int = 0) -> None:
+        self._value = value
 
 
-@data(name="c_short", format="h")
-class c_short(Data[int]):
-    pass
+class c_ushort(Data[int], name="c_ushort", format="H"):
+    def __init__(self, value: int = 0) -> None:
+        self._value = value
 
 
-@data(name="c_ushort", format="H")
-class c_ushort(Data[int]):
-    pass
+class c_int(Data[int], name="c_int", format="i"):
+    def __init__(self, value: int = 0) -> None:
+        self._value = value
 
 
-@data(name="c_int", format="i")
-class c_int(Data[int]):
-    pass
+class c_uint(Data[int], name="c_uint", format="I"):
+    def __init__(self, value: int = 0) -> None:
+        self._value = value
 
 
-@data(name="c_uint", format="I")
-class c_uint(Data[int]):
-    pass
+class c_long(Data[int], name="c_long", format="l"):
+    def __init__(self, value: int = 0) -> None:
+        self._value = value
 
 
-@data(name="c_long", format="l")
-class c_long(Data[int]):
-    pass
+class c_ulong(Data[int], name="c_ulong", format="L"):
+    def __init__(self, value: int = 0) -> None:
+        self._value = value
 
 
-@data(name="c_ulong", format="L")
-class c_ulong(Data[int]):
-    pass
+class c_longlong(Data[int], name="c_longlong", format="q"):
+    def __init__(self, value: int = 0) -> None:
+        self._value = value
 
 
-@data(name="c_longlong", format="q")
-class c_longlong(Data[int]):
-    pass
-
-
-@data(name="c_ulonglong", format="Q")
-class c_ulonglong(Data[int]):
-    pass
+class c_ulonglong(Data[int], name="c_ulonglong", format="Q"):
+    def __init__(self, value: int = 0) -> None:
+        self._value = value
 
 
 c_int_types = (c_byte, c_short, c_int, c_long, c_longlong)
@@ -118,37 +116,37 @@ def get_c_uint_type(bits: int) -> Type[Data[int]]:
 
 
 try:
-    @data(name="int8", format=get_c_int_type(8).format)
-    class int8(Data[int]):
-        pass
+    class int8(Data[int], name="int8", format=get_c_int_type(8).format):
+        def __init__(self, value: int = 0) -> None:
+            self._value = value
 
-    @data(name="uint8", format=get_c_uint_type(8).format)
-    class uint8(Data[int]):
-        pass
+    class uint8(Data[int], name="uint8", format=get_c_uint_type(8).format):
+        def __init__(self, value: int = 0) -> None:
+            self._value = value
 
-    @data(name="int16", format=get_c_int_type(16).format)
-    class int16(Data[int]):
-        pass
+    class int16(Data[int], name="int16", format=get_c_int_type(16).format):
+        def __init__(self, value: int = 0) -> None:
+            self._value = value
 
-    @data(name="uint16", format=get_c_uint_type(16).format)
-    class uint16(Data[int]):
-        pass
+    class uint16(Data[int], name="uint16", format=get_c_uint_type(16).format):
+        def __init__(self, value: int = 0) -> None:
+            self._value = value
 
-    @data(name="int32", format=get_c_int_type(32).format)
-    class int32(Data[int]):
-        pass
+    class int32(Data[int], name="int32", format=get_c_int_type(32).format):
+        def __init__(self, value: int = 0) -> None:
+            self._value = value
 
-    @data(name="uint32", format=get_c_uint_type(32).format)
-    class uint32(Data[int]):
-        pass
+    class uint32(Data[int], name="uint32", format=get_c_uint_type(32).format):
+        def __init__(self, value: int = 0) -> None:
+            self._value = value
 
-    @data(name="int64", format=get_c_int_type(64).format)
-    class int64(Data[int]):
-        pass
+    class int64(Data[int], name="int64", format=get_c_int_type(64).format):
+        def __init__(self, value: int = 0) -> None:
+            self._value = value
 
-    @data(name="uint64", format=get_c_uint_type(64).format)
-    class uint64(Data[int]):
-        pass
+    class uint64(Data[int], name="uint64", format=get_c_uint_type(64).format):
+        def __init__(self, value: int = 0) -> None:
+            self._value = value
 
 
 except KeyError as error:
@@ -176,19 +174,19 @@ def get_uint_type(bits: int) -> Type[Data[int]]:
 
 
 def get_intptr(bits: int) -> Type[Data[int]]:
-    return get_c_int_type(bits)
+    return get_int_type(bits)
 
 
 def get_uintptr(bits: int) -> Type[Data[int]]:
-    return get_c_uint_type(bits)
+    return get_uint_type(bits)
 
 
 def get_intsize(bits: int) -> Type[Data[int]]:
-    return get_c_int_type(bits)
+    return get_int_type(bits)
 
 
 def get_uintsize(bits: int) -> Type[Data[int]]:
-    return get_c_uint_type(bits)
+    return get_uint_type(bits)
 
 
 intptr = get_intptr(system_bits)
@@ -198,44 +196,48 @@ intsize = get_intsize(system_bits)
 uintsize = get_uintsize(system_bits)
 
 
-@data(name="c_float", format="f")
-class c_float(Data[float]):
-    pass
+class c_float(Data[float], name="c_float", format="f"):
+    def __init__(self, value: float = 0.0) -> None:
+        self._value = value
 
 
-@data(name="c_double", format="d")
-class c_double(Data[float]):
-    pass
+class c_double(Data[float], name="c_double", format="d"):
+    def __init__(self, value: float = 0.0) -> None:
+        self._value = value
 
 
-@data(name="float32", format=c_float.format)
-class float32(Data[float]):
-    pass
+class float32(Data[float], name="float32", format=c_float.format):
+    def __init__(self, value: float = 0.0) -> None:
+        self._value = value
 
 
-@data(name="float64", format=c_double.format)
-class float64(Data[float]):
-    pass
+class float64(Data[float], name="float64", format=c_double.format):
+    def __init__(self, value: float = 0.0) -> None:
+        self._value = value
 
 
-@data(name="c_bool", format="?")
-class c_bool(Data[bool]):
-    pass
+class c_bool(Data[bool], name="c_bool", format="?"):
+    def __init__(self, value: bool = False) -> None:
+        self._value = value
 
 
-@data(name="boolean", format=c_bool.format)
-class boolean(Data[bool]):
-    pass
+class boolean(Data[bool], name="boolean", format=c_bool.format):
+    def __init__(self, value: bool = False) -> None:
+        self._value = value
 
 
-class TypeHandler:
-    def __init__(self, bits: int) -> None:
+class Types:
+    def __init__(self, bits: int = system_bits, platform: Platform = system_platform) -> None:
         self.bits = bits
+        self.platform = platform
 
     def __repr__(self) -> str:
         info = {"bits": self.bits}
 
         return make_repr(self, info)
+
+    def get(self, name: str) -> Type[Data[Any]]:
+        return getattr(self, name)
 
     @property
     def byte_t(self) -> Type[Data[int]]:

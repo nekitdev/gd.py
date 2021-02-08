@@ -1,6 +1,6 @@
 from typing import Any, Callable, Iterable, Tuple, TypeVar, Union, cast, overload
 
-__all__ = ("extract_iterable_from_tuple", "is_iterable")
+__all__ = ("extract_iterable_from_tuple", "is_iterable", "item_to_tuple")
 
 T = TypeVar("T")
 
@@ -15,6 +15,23 @@ def is_iterable(maybe_iterable: Union[Iterable[T], T], use_iter: bool = True) ->
             return False
 
     return isinstance(maybe_iterable, Iterable)
+
+
+@overload  # noqa
+def item_to_tuple(item: Iterable[T]) -> Tuple[T, ...]:  # noqa
+    ...
+
+
+@overload  # noqa
+def item_to_tuple(item: T) -> Tuple[T, ...]:  # noqa
+    ...
+
+
+def item_to_tuple(item: Union[T, Iterable[T]]) -> Tuple[T, ...]:  # noqa
+    if is_iterable(item):
+        return tuple(cast(Iterable[T], item))
+
+    return (cast(T, item),)
 
 
 @overload  # noqa

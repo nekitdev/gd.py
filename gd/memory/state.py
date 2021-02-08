@@ -2,7 +2,6 @@ from pathlib import Path
 
 from gd.decorators import cache_by
 from gd.enums import Protection
-from gd.memory.address import Address
 from gd.memory.buffer import Buffer
 from gd.memory.internal import (
     allocate_memory as system_allocate_memory,
@@ -69,14 +68,15 @@ from gd.memory.internal import (
     windows_read_process_memory,
     windows_write_process_memory,
 )
-from gd.memory.object import Object
-from gd.memory.types import TypeHandler
+from gd.memory.pointer import Pointer
+from gd.memory.traits import Read, Write
+from gd.memory.types import Types
 from gd.platform import ANDROID, IOS, LINUX, MACOS, WINDOWS, Platform, system_platform
 from gd.text_utils import make_repr
 from gd.typing import Callable, Type, TypeVar, Union, cast
 
 __all__ = (
-    "Address",
+    "Pointer",
     "BaseState",
     "LinuxState",
     "MacOSState",
@@ -98,7 +98,15 @@ DEFAULT_WINDOWS_NAME = "GeometryDash.exe"
 
 
 class BaseState:
-    platform = Platform.UNKNOWN
+    process_name: str
+    window_title: str
+    bits: int
+    process_id: int
+    process_handle: int
+    base_address: int
+    loaded: bool
+
+    platform = cast(Platform, Platform.UNKNOWN)
 
     def __init__(
         self,
@@ -120,15 +128,15 @@ class BaseState:
         if load:
             self.load()
 
-    def get_address(self, address_class: Type[Address] = Address) -> Address:
-        return address_class(self.base_address, self)
+    def get_pointer(self, pointer_class: Type[Pointer] = Pointer) -> Pointer:
+        return pointer_class(self, self.base_address)
 
-    address = property(get_address)
+    pointer = property(get_pointer)
 
     @property  # type: ignore
     @cache_by("bits")
-    def types(self) -> TypeHandler:
-        return TypeHandler(self.bits)
+    def types(self) -> Types:
+        return Types(self.bits, self.platform)
 
     def __repr__(self) -> str:
         info = {
@@ -157,14 +165,14 @@ class BaseState:
 
     reload = load
 
-    def allocate_memory(
+    def allocate_at(
         self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION
     ) -> int:
         raise NotImplementedError(
             "Derived classes should implement allocate_memory(address, size, flags) method."
         )
 
-    def free_memory(self, address: int, size: int) -> None:
+    def free_at(self, address: int, size: int) -> None:
         raise NotImplementedError(
             "Derived classes should implement free_memory(address, size) method."
         )
@@ -199,21 +207,21 @@ class BaseState:
     def write_buffer(self, buffer: Buffer, address: int) -> int:
         return self.write_at(address, buffer.into())
 
-    def read(self, type: Type[Object[T]], address: int) -> T:
-        return type.value_from_bytes(self.read_at(address, type.size))
+    def read(self, type: Type[Read[T]], address: int) -> Read[T]:
+        return type.read(self, address)
 
-    def write(self, type: Type[Object[T]], value: T, address: int) -> int:
-        return self.write_at(address, type.value_to_bytes(value))
+    def read_value(self, type: Type[Read[T]], address: int) -> T:
+        return type.read_value(self, address)
 
-    def read_object(self, type: Type[Object[T]], address: int) -> Object[T]:
-        return type.from_bytes(self.read_at(address, type.size))
+    def write(self, object: Write[T], address: int) -> None:
+        object.write(self, address)
 
-    def write_object(self, object: Object[T], address: int) -> int:
-        return self.write_at(address, object.to_bytes())
+    def write_value(self, type: Type[Write[T]], value: T, address: int) -> None:
+        type.write_value(value, self, address)
 
 
 class SystemState(BaseState):
-    platform = system_platform
+    platform = cast(Platform, system_platform)
 
     def load(self) -> None:
         try:
@@ -242,12 +250,12 @@ class SystemState(BaseState):
 
     reload = load
 
-    def allocate_memory(
+    def allocate_at(
         self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION
     ) -> int:
         return system_allocate_memory(self.process_handle, address, size, flags)
 
-    def free_memory(self, address: int, size: int) -> None:
+    def free_at(self, address: int, size: int) -> None:
         return system_free_memory(self.process_handle, address, size)
 
     def protect_at(self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION) -> int:
@@ -270,7 +278,7 @@ class SystemState(BaseState):
 
 
 class LinuxState(BaseState):
-    platform = Platform.LINUX
+    platform = cast(Platform, Platform.LINUX)
 
     def load(self) -> None:
         self.process_id = linux_get_process_id_from_name(self.process_name)
@@ -286,12 +294,12 @@ class LinuxState(BaseState):
 
     reload = load
 
-    def allocate_memory(
+    def allocate_at(
         self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION
     ) -> int:
         return linux_allocate_memory(self.process_handle, address, size, flags)
 
-    def free_memory(self, address: int, size: int) -> None:
+    def free_at(self, address: int, size: int) -> None:
         return linux_free_memory(self.process_handle, address, size)
 
     def protect_at(self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION) -> int:
@@ -314,7 +322,7 @@ class LinuxState(BaseState):
 
 
 class MacOSState(BaseState):
-    platform = Platform.MACOS
+    platform = cast(Platform, Platform.MACOS)
 
     def load(self) -> None:
         self.process_id = macos_get_process_id_from_name(self.process_name)
@@ -330,12 +338,12 @@ class MacOSState(BaseState):
 
     reload = load
 
-    def allocate_memory(
+    def allocate_at(
         self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION
     ) -> int:
         return macos_allocate_memory(self.process_handle, address, size, flags)
 
-    def free_memory(self, address: int, size: int) -> None:
+    def free_at(self, address: int, size: int) -> None:
         return macos_free_memory(self.process_handle, address, size)
 
     def protect_at(self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION) -> int:
@@ -358,7 +366,7 @@ class MacOSState(BaseState):
 
 
 class WindowsState(BaseState):
-    platform = Platform.WINDOWS
+    platform = cast(Platform, Platform.WINDOWS)
 
     def load(self) -> None:
         try:
@@ -383,12 +391,12 @@ class WindowsState(BaseState):
 
     reload = load
 
-    def allocate_memory(
+    def allocate_at(
         self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION
     ) -> int:
         return windows_allocate_memory(self.process_handle, address, size, flags)
 
-    def free_memory(self, address: int, size: int) -> None:
+    def free_at(self, address: int, size: int) -> None:
         return windows_free_memory(self.process_handle, address, size)
 
     def protect_at(self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION) -> int:

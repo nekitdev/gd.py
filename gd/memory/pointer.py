@@ -1,28 +1,22 @@
 from gd.decorators import cache_by
+from gd.iter_utils import item_to_tuple
 from gd.memory.data import Data
 from gd.text_utils import make_repr
-from gd.typing import TYPE_CHECKING, Any, Iterable, Tuple, Type, TypeVar, Union
+from gd.typing import TYPE_CHECKING, Any, Type, TypeVar
 
 if TYPE_CHECKING:
-    from gd.memory.state import BaseState
+    from gd.memory.state import BaseState  # noqa
 
-AddressT = TypeVar("AddressT", bound="Address")
-AddressU = TypeVar("AddressU", bound="Address")
+__all__ = ("Pointer",)
 
-T = TypeVar("T")
-
-
-def item_to_tuple(item: Union[T, Iterable[T]]) -> Tuple[T, ...]:
-    if isinstance(item, Iterable):
-        return tuple(item)
-
-    return (item,)
+PointerT = TypeVar("PointerT", bound="Pointer")
+PointerU = TypeVar("PointerU", bound="Pointer")
 
 
-class Address:
-    def __init__(self, address: int, state: "BaseState", signed: bool = False) -> None:
-        self._address = address
+class Pointer:
+    def __init__(self, state: "BaseState", address: int, signed: bool = False) -> None:
         self._state = state
+        self._address = address
         self._signed = signed
 
     def __repr__(self) -> str:
@@ -76,8 +70,11 @@ class Address:
         return NotImplemented
 
     @classmethod
-    def create_from(cls: Type[AddressT], other: AddressU) -> AddressT:
+    def create_from(cls: Type[PointerT], other: PointerU) -> PointerT:
         return cls(address=other.address, state=other.state, signed=other.signed)
+
+    def copy(self: PointerT) -> PointerT:
+        return self.create_from(self)
 
     @property  # type: ignore
     @cache_by("signed")
@@ -114,26 +111,34 @@ class Address:
     def value_address(self) -> int:
         return self.state.read(self.pointer_type, self.address)
 
-    def add_inplace(self: AddressT, value: int) -> AddressT:
+    @classmethod
+    def read(cls: Type[PointerT], state: "BaseState", address: int) -> PointerT:
+        return cls.read_value(state, address)
+
+    @classmethod
+    def read_value(cls: Type[PointerT], state: "BaseState", address: int) -> PointerT:
+        return cls(state, address)
+
+    def add_inplace(self: PointerT, value: int) -> PointerT:
         self.address += value
 
         return self
 
     __iadd__ = add_inplace
 
-    def sub_inplace(self: AddressT, value: int) -> AddressT:
+    def sub_inplace(self: PointerT, value: int) -> PointerT:
         self.address -= value
 
         return self
 
     __isub__ = sub_inplace
 
-    def follow_inplace(self: AddressT) -> AddressT:
+    def follow_inplace(self: PointerT) -> PointerT:
         self.address = self.value_address
 
         return self
 
-    def offset_inplace(self: AddressT, *offsets: int) -> AddressT:
+    def offset_inplace(self: PointerT, *offsets: int) -> PointerT:
         if offsets:
             offset_iter = iter(offsets)
 
@@ -144,8 +149,8 @@ class Address:
 
         return self
 
-    def add(self: AddressT, value: int) -> AddressT:
-        other = self.create_from(self)
+    def add(self: PointerT, value: int) -> PointerT:
+        other = self.copy()
 
         other.add_inplace(value)
 
@@ -153,8 +158,8 @@ class Address:
 
     __add__ = add
 
-    def sub(self: AddressT, value: int) -> AddressT:
-        other = self.create_from(self)
+    def sub(self: PointerT, value: int) -> PointerT:
+        other = self.copy()
 
         other.sub_inplace(value)
 
@@ -162,22 +167,22 @@ class Address:
 
     __sub__ = sub
 
-    def follow(self: AddressT) -> AddressT:
-        other = self.create_from(self)
+    def follow(self: PointerT) -> PointerT:
+        other = self.copy()
 
         other.follow_inplace()
 
         return other
 
-    def offset(self: AddressT, *offsets: int) -> AddressT:
-        other = self.create_from(self)
+    def offset(self: PointerT, *offsets: int) -> PointerT:
+        other = self.copy()
 
         other.offset_inplace(*offsets)
 
         return other
 
-    def __getitem__(self: AddressT, offsets: Any) -> AddressT:
+    def __getitem__(self: PointerT, offsets: Any) -> PointerT:
         return self.offset(*item_to_tuple(offsets))
 
-    def cast(self: AddressT, cls: Type[AddressU]) -> AddressU:
+    def cast(self: PointerT, cls: Type[PointerU]) -> PointerU:
         return cls.create_from(self)

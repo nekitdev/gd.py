@@ -3,10 +3,8 @@ import platform  # machine
 import struct  # bitness
 import sys  # platform
 
-from attr import attrib, dataclass
-
 from gd.enums import Platform
-from gd.typing import Union, cast
+from gd.typing import cast
 
 __all__ = (
     "ANDROID",
@@ -16,12 +14,8 @@ __all__ = (
     "MACOS",
     "WINDOWS",
     "Platform",
-    "PlatformPair",
-    "byte_bits",
-    "platform_pair",
     "system_bits",
     "system_platform",
-    "system_platform_pair",
     "system_platform_raw",
 )
 
@@ -81,37 +75,3 @@ system_platform = cast(
 
 byte_bits = 8
 system_bits = struct.calcsize("P") * byte_bits
-
-
-def platform_from_value(value: Union[str, Platform]) -> Platform:
-    return Platform.from_value(value)
-
-
-@dataclass(repr=False)
-class PlatformPair:
-    platform: Platform = attrib(converter=platform_from_value, default=system_platform)
-    bits: int = attrib(converter=int, default=system_bits)
-
-    def __repr__(self) -> str:
-        return self.to_string()
-
-    def __str__(self) -> str:
-        return self.to_string()
-
-    @classmethod
-    def from_string(cls, string: str) -> "PlatformPair":
-        platform_string, delim, bits_string = string.partition(_DELIM)
-
-        if not delim:
-            raise ValueError(f"Can not convert {string!r} to platform pair.")
-
-        return cls(platform_string, bits_string)
-
-    def to_string(self) -> str:
-        return f"{self.platform.name.casefold()}{_DELIM}{self.bits}"
-
-
-platform_pair = PlatformPair
-
-
-system_platform_pair = platform_pair(system_platform, system_bits)
