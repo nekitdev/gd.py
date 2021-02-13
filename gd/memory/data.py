@@ -2,7 +2,7 @@ from struct import calcsize as get_size, pack, unpack
 
 from gd.enums import ByteOrder
 from gd.memory.utils import bits
-from gd.typing import TYPE_CHECKING, Generic, Type, TypeVar, Union, cast
+from gd.typing import TYPE_CHECKING, Any, Dict, Generic, Tuple, Type, TypeVar, Union, cast
 
 if TYPE_CHECKING:
     from gd.memory.state import BaseState
@@ -17,6 +17,23 @@ class DataType(type(Generic)):  # type: ignore
     _format: str
     _size: int
     _order: ByteOrder
+
+    def __new__(
+        meta_cls,
+        cls_name: str,
+        bases: Tuple[Type[Any], ...],
+        cls_dict: Dict[str, Any],
+        name: str = "",
+        format: str = "",
+        **kwargs,
+    ) -> "DataType":
+        cls = super().__new__(meta_cls, cls_name, bases, cls_dict, **kwargs)
+
+        cls._name = name
+        cls._format = format
+        cls._size = get_size(format)
+
+        return cls  # type: ignore
 
     @property
     def name(cls) -> str:
@@ -52,11 +69,6 @@ class Data(Generic[T], metaclass=DataType):
     _format: str = ""
     _size: int = 0
     _order: ByteOrder = ByteOrder.NATIVE  # type: ignore
-
-    def __init_subclass__(cls, name: str, format: str) -> None:
-        cls._name = name
-        cls._format = format
-        cls._size = get_size(format)
 
     def __init__(self, value: T) -> None:
         self.value = value

@@ -84,7 +84,8 @@ NEWGROUNDS_SONG_LISTEN = "https://www.newgrounds.com/audio/listen/{song_id}"
 NEWGROUNDS_SONG_PAGE = "https://{name}.newgrounds.com/audio/page/{page}"
 NEWGROUNDS_SEARCH = "https://www.newgrounds.com/search/conduct/{type}"
 
-XML_HTTP_REQUEST = "XMLHttpRequest"
+# I might sound stupid but I really like "XMLHTTPRequest", and so I wrote this ~ nekit
+XML_HTTP_REQUEST = "XML" + "HTTP".title() + "Request"
 
 CLIENTS: Set["HTTPClient"] = set()
 
