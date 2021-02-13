@@ -50,6 +50,7 @@ from gd.typing import Dict, List, Optional, Tuple, TypeVar, Union
 
 __all__ = (
     "ChestModel",
+    "CommentBannedModel",
     "CommentInnerModel",
     "CommentModel",
     "CommentUserModel",
@@ -670,6 +671,16 @@ class CommentsResponseModel(Model):
         index=0, model=CommentModel, delim="|", use_default=True, transform=list, factory=list,
     )
     page: PageModel = ModelField(index=1, use_default=True, model=PageModel, factory=PageModel)
+
+
+class CommentBannedModel(Model):
+    PARSER = IndexParser("_", map_like=False)
+
+    TEMPORARY = "temp"
+
+    string: str = StrField(index=0, default=TEMPORARY)
+    timeout: Optional[int] = IntField(index=1, default=None)
+    reason: Optional[str] = StrField(index=2, default=None)
 
 
 class LeaderboardResponseModel(Model):

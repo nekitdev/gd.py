@@ -44,6 +44,7 @@ from gd.enums import (
     SimpleRelationshipType,
 )
 from gd.errors import (
+    CommentBanned,
     HTTPError,
     HTTPStatusError,
     LoginFailure,
@@ -54,6 +55,7 @@ from gd.errors import (
 )
 from gd.filters import Filters
 from gd.logging import get_logger
+from gd.model import CommentBannedModel  # type: ignore
 from gd.text_utils import is_level_probably_decoded, make_repr, object_count, snake_to_camel
 from gd.typing import (
     JSON,
@@ -1669,7 +1671,12 @@ class HTTPClient:
         account_name: str,
         encoded_password: str,
     ) -> int:  # XXX: We might want to use two separate functions in case of API update.
-        error_codes = {-1: MissingAccess(f"Failed to post a {type.name.lower()} comment.")}
+        type_name = type.name.casefold()
+
+        error_codes = {
+            -1: MissingAccess(f"Failed to post a {type_name} comment."),
+            -10: CommentBanned(timeout=None),
+        }
 
         if content is None:
             content = ""
@@ -1706,9 +1713,14 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = cast(str, await self.request_route(route, error_codes=error_codes))
 
-        return int_or(cast(str, response), 0)
+        if CommentBannedModel.maybe_in(response):
+            ban = CommentBannedModel.from_string(response)
+
+            raise CommentBanned(timeout=ban.timeout, reason=ban.reason)
+
+        return int_or(response, 0)
 
     async def delete_comment(
         self,

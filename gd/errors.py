@@ -8,6 +8,7 @@ __all__ = (
     "ClientException",
     "MissingAccess",
     "SongRestricted",
+    "CommentBanned",
     "LoginFailure",
     "LoginRequired",
     "NothingFound",
@@ -125,6 +126,43 @@ class LoginFailure(ClientException):
     def password(self) -> str:
         """Password that login was failed with."""
         return self._password
+
+
+class CommentBanned(ClientException):
+    """Exception that is raised when the client is temporarily or permanently
+    banned from commenting.
+    """
+
+    PERMANENT = "Permanently banned from posting comments. Reason: {reason}"
+    TEMPORARY = "Banned for {timeout}s from posting comments. Reason: {reason}"
+    DEFAULT_REASON = "Not provided."
+
+    def __init__(self, timeout: Optional[int] = None, reason: Optional[str] = None) -> None:
+        self._timeout = timeout
+        self._reason = reason
+
+        super().__init__(self.message)
+
+    @property
+    def message(self) -> str:
+        timeout = self.timeout
+        reason = self.reason
+
+        if reason is None:
+            reason = self.DEFAULT_REASON
+
+        if timeout is None:
+            return self.PERMANENT.format(reason=reason)
+
+        return self.TEMPORARY.format(timeout=timeout, reason=reason)
+
+    @property
+    def timeout(self) -> Optional[int]:
+        return self._timeout
+
+    @property
+    def reason(self) -> Optional[str]:
+        return self._reason
 
 
 class LoginRequired(ClientException):
