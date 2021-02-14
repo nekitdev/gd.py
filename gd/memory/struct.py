@@ -15,7 +15,7 @@ from gd.typing import (
     Tuple,
     Type,
     TypeVar,
-    Union,
+    Union as TypeUnion,
     cast,
     get_type_hints,
     overload,
@@ -26,9 +26,10 @@ if TYPE_CHECKING:
 
 __all__ = (
     "Marker",
-    "MarkerBase",
-    "MarkerStruct",
-    "MarkerUnion",
+    "Struct",
+    "Union",
+    "Array",
+    "MutArray",
     "MemoryBase",
     "MemoryStruct",
     "MemoryUnion",
@@ -61,55 +62,143 @@ __all__ = (
     "bool_t",
 )
 
-M = TypeVar("M", bound="MemoryBase")
+M = TypeVar("M", bound="Memory")
 S = TypeVar("S", bound="Sized")
 T = TypeVar("T")
 
 
-class Marker:
-    def __init__(self, name: str) -> None:
-        self._name = name
-
-    def __repr__(self) -> str:
-        return self.name
+class MarkerMeta(type):
+    def __repr__(cls) -> str:
+        return cls.__name__
 
     @property
-    def name(self) -> str:
-        return self._name
+    def name(cls) -> str:
+        return cls.__name__
 
 
-byte_t = Marker("byte_t")
-ubyte_t = Marker("ubyte_t")
-short_t = Marker("short_t")
-ushort_t = Marker("ushort_t")
-int_t = Marker("int_t")
-uint_t = Marker("uint_t")
-long_t = Marker("long_t")
-ulong_t = Marker("ulong_t")
-longlong_t = Marker("longlong_t")
-ulonglong_t = Marker("ulonglong_t")
+class Marker(metaclass=MarkerMeta):
+    def __init__(self) -> None:
+        raise TypeError("Markers can not be initialized.")
 
-int8_t = Marker("int8_t")
-uint8_t = Marker("uint8_t")
-int16_t = Marker("int16_t")
-uint16_t = Marker("uint16_t")
-int32_t = Marker("int32_t")
-uint32_t = Marker("uint32_t")
-int64_t = Marker("int64_t")
-uint64_t = Marker("uint64_t")
 
-intptr_t = Marker("intptr_t")
-uintptr_t = Marker("uintptr_t")
-intsize_t = Marker("intsize_t")
-uintsize_t = Marker("uintsize_t")
+# C INT TYPES
 
-float_t = Marker("float_t")
-double_t = Marker("double_t")
+class byte_t(Marker):
+    pass
 
-float32_t = Marker("float32_t")
-float64_t = Marker("float64_t")
 
-bool_t = Marker("bool_t")
+class ubyte_t(Marker):
+    pass
+
+
+class short_t(Marker):
+    pass
+
+
+class ushort_t(Marker):
+    pass
+
+
+class int_t(Marker):
+    pass
+
+
+class uint_t(Marker):
+    pass
+
+
+class long_t(Marker):
+    pass
+
+
+class ulong_t(Marker):
+    pass
+
+
+class longlong_t(Marker):
+    pass
+
+
+class ulonglong_t(Marker):
+    pass
+
+
+# INT TYPES
+
+class int8_t(Marker):
+    pass
+
+
+class uint8_t(Marker):
+    pass
+
+
+class int16_t(Marker):
+    pass
+
+
+class uint16_t(Marker):
+    pass
+
+
+class int32_t(Marker):
+    pass
+
+
+class uint32_t(Marker):
+    pass
+
+
+class int64_t(Marker):
+    pass
+
+
+class uint64_t(Marker):
+    pass
+
+
+# POINTER / SIZE TYPES
+
+class intptr_t(Marker):
+    pass
+
+
+class uintptr_t(Marker):
+    pass
+
+
+class intsize_t(Marker):
+    pass
+
+
+class uintsize_t(Marker):
+    pass
+
+
+# C FLOAT TYPES
+
+class float_t(Marker):
+    pass
+
+
+class double_t(Marker):
+    pass
+
+
+# FLOAT TYPES
+
+class float32_t(Marker):
+    pass
+
+
+class float64_t(Marker):
+    pass
+
+
+# BOOL TYPE
+
+class bool_t(Marker):
+    pass
 
 
 class ReadSized(Read[T], Sized):
@@ -159,7 +248,7 @@ class Field(BaseField[ReadSized[T]]):
 
     def __get__(  # noqa
         self, instance: Optional[Any], owner: Optional[Type[Any]] = None
-    ) -> Union[T, "Field[T]"]:
+    ) -> TypeUnion[T, "Field[T]"]:
         if instance is None:
             return self
 
@@ -254,18 +343,31 @@ class Context:
 
 
 class MemoryType(type):
-    _fields: Dict[str, Field]
     _bits: int
     _platform: Platform
     _size: int
 
+    def __new__(
+        meta_cls,
+        cls_name: str,
+        bases: Tuple[Type[Any], ...],
+        cls_dict: Dict[str, Any],
+        size: int = 0,
+        bits: int = system_bits,
+        platform: TypeUnion[int, str, Platform] = system_platform,
+    ) -> "MemoryType":
+        cls = super().__new__(meta_cls, cls_name, bases, cls_dict)
+
+        cls._size = size  # type: ignore
+
+        cls._bits = bits  # type: ignore
+        cls._platform = Platform.from_value(platform)  # type: ignore
+
+        return cls  # type: ignore
+
     @property
     def size(cls) -> int:
         return cls._size
-
-    @property
-    def fields(cls) -> Dict[str, Field]:
-        return cls._fields
 
     @property
     def bits(cls) -> int:
@@ -276,8 +378,36 @@ class MemoryType(type):
         return cls._platform
 
 
-class MemoryBase(metaclass=MemoryType):
+class MemoryBaseType(MemoryType):
     _fields: Dict[str, Field]
+
+    def __new__(
+        meta_cls,
+        cls_name: str,
+        bases: Tuple[Type[Any], ...],
+        cls_dict: Dict[str, Any],
+        size: int = 0,
+        fields: Optional[Dict[str, Field]] = None,
+        bits: int = system_bits,
+        platform: TypeUnion[int, str, Platform] = system_platform,
+    ) -> "MemoryBaseType":
+        cls = super().__new__(
+            meta_cls, cls_name, bases, cls_dict, size=size, bits=bits, platform=platform
+        )
+
+        if fields is None:
+            fields = {}
+
+        cls._fields = fields  # type: ignore
+
+        return cls  # type: ignore
+
+    @property
+    def fields(cls) -> Dict[str, Field]:
+        return cls._fields
+
+
+class Memory(metaclass=MemoryType):
     _bits: int
     _platform: Platform
     _size: int
@@ -296,10 +426,6 @@ class MemoryBase(metaclass=MemoryType):
         return self._size
 
     @class_property
-    def fields(self) -> Dict[str, Field]:
-        return self._fields
-
-    @class_property
     def bits(self) -> int:
         return self._bits
 
@@ -308,7 +434,7 @@ class MemoryBase(metaclass=MemoryType):
         return self._platform
 
     @property
-    def type(self) -> MemoryType:
+    def type(self: M) -> Type[M]:
         return type(self)
 
     @property
@@ -326,6 +452,27 @@ class MemoryBase(metaclass=MemoryType):
     @classmethod
     def read_value(cls: Type[M], state: "BaseState", address: int) -> M:
         return cls(state, address)
+
+
+# class MemoryArrayType(MemoryType):
+#     _type: Type[S]
+#     _length: Optional[int]
+
+#     @property
+#     def type(cls) -> Type[S]:
+#         return cls._type
+
+#     @property
+#     def length(cls) -> Optional[int]:
+#         return cls._length
+
+
+class MemoryBase(Memory, metaclass=MemoryBaseType):
+    _fields: Dict[str, Field]
+
+    @class_property
+    def fields(self) -> Dict[str, Field]:
+        return self._fields
 
 
 class MemoryStruct(MemoryBase):
@@ -356,13 +503,13 @@ class MarkerType(type):
         return cls  # type: ignore
 
     def create(
-        cls, bits: int = system_bits, platform: Union[int, str, Platform] = system_platform
+        cls, bits: int = system_bits, platform: TypeUnion[int, str, Platform] = system_platform
     ) -> Type[MemoryBase]:
-        if not cls._derive:
+        if not cls.derive:
             raise TypeError(f"Can not derive memory from {cls.__name__}.")
 
         ctx = Context(
-            bits=bits, platform=Platform.from_value(platform), offset=cls._offset
+            bits=bits, platform=Platform.from_value(platform), offset=cls.offset
         )
 
         return visit_any(ctx, cls, return_field=False)
@@ -392,12 +539,40 @@ class MarkerBase(metaclass=MarkerType, derive=False):
         return self._offset
 
 
-class MarkerStruct(MarkerBase, derive=False):
+class Struct(MarkerBase, derive=False):
     pass
 
 
-class MarkerUnion(MarkerBase, derive=False):
+class Union(MarkerBase, derive=False):
     pass
+
+
+class Array:
+    def __init__(self, type: Any, length: Optional[int] = None) -> None:
+        self._type = type
+        self._length = length
+
+    def __repr__(self) -> str:
+        if self.length is None:
+            f"{self.__class__.__name__}({self.type!r})"
+
+        return f"{self.__class__.__name__}({self.type!r}, {self.length})"
+
+    @property
+    def type(self) -> Any:
+        return self._type
+
+    @property
+    def length(self) -> Optional[int]:
+        return self._length
+
+    def is_mutable(self) -> bool:
+        return False
+
+
+class MutArray(Array):
+    def is_mutable(self) -> bool:
+        return True
 
 
 @overload  # noqa
@@ -413,19 +588,22 @@ def visit_any(ctx: Context, some: Any, return_field: Literal[False]) -> Type[Mem
 @overload  # noqa
 def visit_any(  # noqa
     ctx: Context, some: Any, return_field: bool
-) -> Union[Type[MemoryBase], Field[T]]:
+) -> TypeUnion[Type[MemoryBase], Field[T]]:
     ...
 
 
 def visit_any(  # noqa
     ctx: Context, some: Any, return_field: bool = True
-) -> Union[Type[MemoryBase], Field[T]]:
+) -> TypeUnion[Type[MemoryBase], Field[T]]:
     if is_class(some):
-        if issubclass(some, MarkerStruct):
-            return visit_struct(ctx, cast(Type[MarkerStruct], some), return_field=return_field)
+        if issubclass(some, Struct):
+            return visit_struct(ctx, cast(Type[Struct], some), return_field=return_field)
 
-        if issubclass(some, MarkerUnion):
-            return visit_union(ctx, cast(Type[MarkerUnion], some), return_field=return_field)
+        if issubclass(some, Union):
+            return visit_union(ctx, cast(Type[Union], some), return_field=return_field)
+
+        if issubclass(some, Marker):
+            return visit_marker(ctx, some)
 
         if is_sized(some):
             if issubclass(some, Read):
@@ -440,8 +618,8 @@ def visit_any(  # noqa
     if not return_field:
         raise ValueError("Expected return_field to be true.")
 
-    if isinstance(some, Marker):
-        return visit_marker(ctx, some)
+    # if isinstance(some, Array):
+    #     return visit_array(ctx, some)
 
     if isinstance(some, str):
         return visit_name(ctx, some)
@@ -451,29 +629,31 @@ def visit_any(  # noqa
 
 @overload  # noqa
 def visit_struct(  # noqa
-    ctx: Context, marker_struct: Type[MarkerStruct], return_field: Literal[True]
+    ctx: Context, marker_struct: Type[Struct], return_field: Literal[True]
 ) -> Field[T]:
     ...
 
 
 @overload  # noqa
 def visit_struct(  # noqa
-    ctx: Context, marker_struct: Type[MarkerStruct], return_field: Literal[False]
+    ctx: Context, marker_struct: Type[Struct], return_field: Literal[False]
 ) -> Type[MemoryStruct]:
     ...
 
 
 @overload  # noqa
 def visit_struct(  # noqa
-    ctx: Context, marker_struct: Type[MarkerStruct], return_field: bool
-) -> Union[Type[MemoryStruct], Field[T]]:
+    ctx: Context, marker_struct: Type[Struct], return_field: bool
+) -> TypeUnion[Type[MemoryStruct], Field[T]]:
     ...
 
 
 def visit_struct(  # noqa
-    ctx: Context, marker_struct: Type[MarkerStruct], return_field: bool = True
-) -> Union[Type[MemoryStruct], Field[T]]:
+    ctx: Context, marker_struct: Type[Struct], return_field: bool = True
+) -> TypeUnion[Type[MemoryStruct], Field[T]]:
     fields: Dict[str, Field] = {}
+
+    offset = ctx.offset
 
     size = 0
 
@@ -489,22 +669,21 @@ def visit_struct(  # noqa
 
         fields[name] = field
 
-        ctx.offset += field.size
-        size += field.size
+        field_size = field.size
+
+        ctx.offset += field_size
+        size += field_size
+
+    ctx.offset = offset
 
     ctx.size += size
 
-    class struct(MemoryStruct):
+    class struct(MemoryStruct, size=size, fields=fields, bits=ctx.bits, platform=ctx.platform):
         pass
 
     name = marker_struct.__name__
 
     struct.__qualname__ = struct.__name__ = name
-
-    struct._fields = fields
-    struct._size = size
-    struct._bits = ctx.bits
-    struct._platform = ctx.platform
 
     for name, field in fields.items():
         if hasattr(struct, name):
@@ -520,28 +699,28 @@ def visit_struct(  # noqa
 
 @overload  # noqa
 def visit_union(  # noqa
-    ctx: Context, marker_union: Type[MarkerUnion], return_field: Literal[True]
+    ctx: Context, marker_union: Type[Union], return_field: Literal[True]
 ) -> Field[T]:
     ...
 
 
 @overload  # noqa
 def visit_union(  # noqa
-    ctx: Context, marker_union: Type[MarkerUnion], return_field: Literal[False]
+    ctx: Context, marker_union: Type[Union], return_field: Literal[False]
 ) -> Type[MemoryUnion]:
     ...
 
 
 @overload  # noqa
 def visit_union(  # noqa
-    ctx: Context, marker_union: Type[MarkerUnion], return_field: bool
-) -> Union[Type[MemoryUnion], Field[T]]:
+    ctx: Context, marker_union: Type[Union], return_field: bool
+) -> TypeUnion[Type[MemoryUnion], Field[T]]:
     ...
 
 
 def visit_union(  # noqa
-    ctx: Context, marker_union: Type[MarkerUnion], return_field: bool = True
-) -> Union[Type[MemoryUnion], Field[T]]:
+    ctx: Context, marker_union: Type[Union], return_field: bool = True
+) -> TypeUnion[Type[MemoryUnion], Field[T]]:
     fields: Dict[str, Field] = {}
 
     size = 0
@@ -563,20 +742,14 @@ def visit_union(  # noqa
         if field_size > size:
             size = field_size
 
-    ctx.offset += size
     ctx.size += size
 
-    class union(MemoryUnion):
+    class union(MemoryUnion, size=size, fields=fields, bits=ctx.bits, platform=ctx.platform):
         pass
 
     name = marker_union.__name__
 
     union.__qualname__ = union.__name__ = name
-
-    union._fields = fields
-    union._size = size
-    union._bits = ctx.bits
-    union._platform = ctx.platform
 
     for name, field in fields.items():
         if hasattr(union, name):
@@ -598,7 +771,7 @@ def visit_read_write_sized(ctx: Context, type: Type[ReadWriteSized[T]]) -> MutFi
     return ctx.create_mut_field(type)
 
 
-def visit_marker(ctx: Context, marker: Marker) -> MutField[T]:
+def visit_marker(ctx: Context, marker: Type[Marker]) -> MutField[T]:
     return visit_name(ctx, marker.name)
 
 

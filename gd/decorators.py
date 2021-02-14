@@ -1,4 +1,4 @@
-from functools import wraps
+from functools import lru_cache, wraps
 from operator import attrgetter
 
 from gd.async_utils import get_not_running_loop, maybe_coroutine
@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 __all__ = (
     "benchmark",
+    "cache",
     "cache_by",
     "login_check",
     "login_check_object",
@@ -36,41 +37,45 @@ def benchmark(function: Callable[..., T]) -> Callable[..., T]:
     return inner
 
 
+cache = lru_cache(None)
+
+
 def cache_by(*names: str) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """Cache ``function`` result by object's attributes given by ``names``."""
 
+    if not names:
+        raise ValueError("@cache_by requires at least one name to be provided.")
+
     def decorator(function: Callable[..., T]) -> Callable[..., T]:
         get_attrs = tuple(attrgetter(name) for name in names)
+
+        name = function.__name__
+
+        if not name.isidentifier():
+            name = f"unnamed_{id(function):x}"
+
+        cached_attr = f"_{name}_cached"
+        cached_by_attr = f"_{name}_cached_by"
 
         @wraps(function)
         def wrapper(self, *args, **kwargs) -> T:
             actual = tuple(get_attr(self) for get_attr in get_attrs)
 
             try:
-                cached = function._cached  # type: ignore
+                cached = getattr(self, cached_attr)
+                cached_by = getattr(self, cached_by_attr)
 
             except AttributeError:
-                result = function(self, *args, **kwargs)
-
-                function._cached = result  # type: ignore
-
-                return result
-
-            try:
-                cached_by = function._cached_by  # type: ignore
-
-            except AttributeError:
-                function._cached_by = actual  # type: ignore
+                pass
 
             else:
                 if actual == cached_by:
                     return cached
 
-            function._cached_by = actual  # type: ignore
-
             result = function(self, *args, **kwargs)
 
-            function._cached = result  # type: ignore
+            setattr(self, cached_attr, result)
+            setattr(self, cached_by_attr, actual)
 
             return result
 

@@ -6,4 +6,3 @@ from gd.memory.internal import *
 from gd.memory.struct import *
 from gd.memory.traits import *
 from gd.memory.types import *
-from gd.memory.utils import *
