@@ -43,7 +43,7 @@ class Write(Protocol[T_contra]):
 
 
 class SizedType(type(Protocol)):  # type: ignore
-    @class_property
+    @property
     def size(cls) -> int:
         raise NotImplementedError(
             "Classes derived from Sized must implement size property in class."

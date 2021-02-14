@@ -259,19 +259,19 @@ class MemoryType(type):
     _platform: Platform
     _size: int
 
-    @class_property
+    @property
     def size(cls) -> int:
         return cls._size
 
-    @class_property
+    @property
     def fields(cls) -> Dict[str, Field]:
         return cls._fields
 
-    @class_property
+    @property
     def bits(cls) -> int:
         return cls._bits
 
-    @class_property
+    @property
     def platform(cls) -> Platform:
         return cls._platform
 
@@ -370,11 +370,11 @@ class MarkerType(type):
     def __getitem__(cls, item: Any) -> Type[MemoryBase]:
         return cls.create(*item_to_tuple(item))
 
-    @class_property
+    @property
     def derive(cls) -> bool:
         return cls._derive
 
-    @class_property
+    @property
     def offset(cls) -> int:
         return cls._offset
 

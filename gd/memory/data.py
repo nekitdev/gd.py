@@ -35,19 +35,19 @@ class DataType(type(Generic)):  # type: ignore
 
         return cls  # type: ignore
 
-    @class_property
+    @property
     def name(cls) -> str:
         return cls._name
 
-    @class_property
+    @property
     def format(cls) -> str:
         return cls._format
 
-    @class_property
+    @property
     def size(cls) -> int:
         return cls._size
 
-    @class_property
+    @property
     def bits(cls) -> int:
         return bits(cls.size)
 
@@ -57,9 +57,9 @@ class DataType(type(Generic)):  # type: ignore
     def set_order(cls, order: Union[str, ByteOrder]) -> None:
         cls._order = ByteOrder.from_value(order)
 
-    order = class_property(get_order, set_order)
+    order = property(get_order, set_order)
 
-    @class_property
+    @property
     def pack_format(cls) -> str:
         return cls.order.value + cls.format
 
