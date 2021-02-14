@@ -1,5 +1,6 @@
 from inspect import isclass as is_class
 
+from gd.memory.utils import class_property
 from gd.typing import TYPE_CHECKING, Any, Protocol, Type, TypeVar, runtime_checkable
 
 if TYPE_CHECKING:
@@ -42,7 +43,7 @@ class Write(Protocol[T_contra]):
 
 
 class SizedType(type(Protocol)):  # type: ignore
-    @property
+    @class_property
     def size(cls) -> int:
         raise NotImplementedError(
             "Classes derived from Sized must implement size property in class."
@@ -50,8 +51,8 @@ class SizedType(type(Protocol)):  # type: ignore
 
 
 class Sized(Protocol[T_co], metaclass=SizedType):
-    @property
-    def size(self: T_co) -> int:  # type: ignore
+    @class_property
+    def size(self: T_co) -> int:
         raise NotImplementedError("Classes derived from Sized must implement size property.")
 
 

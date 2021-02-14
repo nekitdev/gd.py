@@ -1,7 +1,7 @@
 from struct import calcsize as get_size, pack, unpack
 
 from gd.enums import ByteOrder
-from gd.memory.utils import bits
+from gd.memory.utils import bits, class_property
 from gd.typing import TYPE_CHECKING, Any, Dict, Generic, Tuple, Type, TypeVar, Union, cast
 
 if TYPE_CHECKING:
@@ -35,19 +35,19 @@ class DataType(type(Generic)):  # type: ignore
 
         return cls  # type: ignore
 
-    @property
+    @class_property
     def name(cls) -> str:
         return cls._name
 
-    @property
+    @class_property
     def format(cls) -> str:
         return cls._format
 
-    @property
+    @class_property
     def size(cls) -> int:
         return cls._size
 
-    @property
+    @class_property
     def bits(cls) -> int:
         return bits(cls.size)
 
@@ -57,9 +57,9 @@ class DataType(type(Generic)):  # type: ignore
     def set_order(cls, order: Union[str, ByteOrder]) -> None:
         cls._order = ByteOrder.from_value(order)
 
-    order = property(get_order, set_order)
+    order = class_property(get_order, set_order)
 
-    @property
+    @class_property
     def pack_format(cls) -> str:
         return cls.order.value + cls.format
 
@@ -84,27 +84,27 @@ class Data(Generic[T], metaclass=DataType):
 
     value = property(get_value, set_value)
 
-    @property
+    @class_property
     def name(self) -> str:
-        return cast(str, self.__class__.name)
+        return self._name
 
-    @property
+    @class_property
     def format(self) -> str:
-        return cast(str, self.__class__.format)
+        return self._format
 
-    @property
+    @class_property
     def size(self) -> int:
-        return cast(int, self.__class__.size)
+        return self._size
 
-    @property
+    @class_property
     def bits(self) -> int:
         return bits(self.size)
 
-    def get_order(cls) -> ByteOrder:
-        return cls._order
+    def get_order(self) -> ByteOrder:
+        return self._order
 
-    def set_order(cls, order: Union[str, ByteOrder]) -> None:
-        cls._order = ByteOrder.from_value(order)
+    def set_order(self, order: Union[str, ByteOrder]) -> None:
+        self._order = ByteOrder.from_value(order)
 
     order = property(get_order, set_order)
 

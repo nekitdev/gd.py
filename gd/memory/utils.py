@@ -1,11 +1,19 @@
 import ctypes
 import functools
 
-from gd.typing import Any, Callable, Dict, Tuple, Type, TypeVar, get_type_hints
+from gd.typing import Any, Callable, Dict, Optional, Tuple, Type, TypeVar, cast, get_type_hints
 
 T = TypeVar("T")
 
 __all__ = ("Structure", "Union", "bits", "extern_fn")
+
+
+def class_property(
+    get_function: Optional[Callable[..., T]] = None,
+    set_function: Optional[Callable[..., None]] = None,
+    del_function: Optional[Callable[..., None]] = None,
+) -> T:
+    return cast(T, property(get_function, set_function, del_function))
 
 
 def bits(size: int, *, byte_bits: int = 8) -> int:

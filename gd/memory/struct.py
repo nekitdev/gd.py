@@ -2,6 +2,7 @@ from gd.iter_utils import item_to_tuple
 from gd.memory.data import Data
 from gd.memory.traits import Read, Write, Sized, is_class, is_sized
 from gd.memory.types import Types
+from gd.memory.utils import class_property
 from gd.platform import Platform, system_bits, system_platform
 from gd.text_utils import make_repr
 from gd.typing import (
@@ -139,7 +140,7 @@ class BaseField(Generic[S]):
 
     @property
     def size(self) -> int:
-        return cast(int, self.type.size)
+        return self.type.size
 
 
 class Field(BaseField[ReadSized[T]]):
@@ -258,24 +259,29 @@ class MemoryType(type):
     _platform: Platform
     _size: int
 
-    @property
+    @class_property
     def size(cls) -> int:
         return cls._size
 
-    @property
+    @class_property
     def fields(cls) -> Dict[str, Field]:
         return cls._fields
 
-    @property
+    @class_property
     def bits(cls) -> int:
         return cls._bits
 
-    @property
+    @class_property
     def platform(cls) -> Platform:
         return cls._platform
 
 
 class MemoryBase(metaclass=MemoryType):
+    _fields: Dict[str, Field]
+    _bits: int
+    _platform: Platform
+    _size: int
+
     def __init__(self, state: "BaseState", address: int) -> None:
         self._state = state
         self._address = address
@@ -285,21 +291,21 @@ class MemoryBase(metaclass=MemoryType):
 
         return make_repr(self, info)
 
-    @property
+    @class_property
     def size(self) -> int:
-        return cast(int, self.__class__.size)
+        return self._size
 
-    @property
+    @class_property
     def fields(self) -> Dict[str, Field]:
-        return cast(Dict[str, Field], self.__class__.fields)
+        return self._fields
 
-    @property
+    @class_property
     def bits(self) -> int:
-        return cast(int, self.__class__.bits)
+        return self._bits
 
-    @property
+    @class_property
     def platform(self) -> Platform:
-        return cast(Platform, self.__class__.platform)
+        return self._platform
 
     @property
     def type(self) -> MemoryType:
@@ -364,23 +370,26 @@ class MarkerType(type):
     def __getitem__(cls, item: Any) -> Type[MemoryBase]:
         return cls.create(*item_to_tuple(item))
 
-    @property
+    @class_property
     def derive(cls) -> bool:
         return cls._derive
 
-    @property
+    @class_property
     def offset(cls) -> int:
         return cls._offset
 
 
 class MarkerBase(metaclass=MarkerType, derive=False):
-    @property
-    def derive(self) -> bool:
-        return cast(bool, self.__class__.derive)
+    _derive: bool
+    _offset: int
 
-    @property
+    @class_property
+    def derive(self) -> bool:
+        return self._derive
+
+    @class_property
     def offset(self) -> int:
-        return cast(int, self.__class__.offset)
+        return self._offset
 
 
 class MarkerStruct(MarkerBase, derive=False):
