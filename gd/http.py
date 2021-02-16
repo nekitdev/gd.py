@@ -78,8 +78,12 @@ __all__ = ("Route", "HTTPClient")
 
 log = get_logger(__name__)
 
+DATABASE = "database"
+ROOT = "/"
+
 BASE = "http://www.boomlings.com/database"
 GD_BASE = "http://geometrydash.com/database"
+
 NEWGROUNDS_SONG_LISTEN = "https://www.newgrounds.com/audio/listen/{song_id}"
 NEWGROUNDS_SONG_PAGE = "https://{name}.newgrounds.com/audio/page/{page}"
 NEWGROUNDS_SEARCH = "https://www.newgrounds.com/search/conduct/{type}"
@@ -542,7 +546,7 @@ class HTTPClient:
 
         return int_or(cast(str, response), 0)
 
-    async def get_account_url(self, account_id: int, type: AccountURLType) -> str:
+    async def get_account_url(self, account_id: int, type: AccountURLType) -> URL:
         error_codes = {
             -1: MissingAccess(
                 f"Failed to find {type.name.lower()} URL for Account ID: {account_id}."
@@ -560,7 +564,12 @@ class HTTPClient:
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        url = URL(cast(str, response))
+
+        if url.path == ROOT:
+            return url / DATABASE
+
+        return url
 
     async def get_role_id(self, account_id: int, encoded_password: str) -> int:
         error_codes = {-1: MissingAccess("No role found.")}
