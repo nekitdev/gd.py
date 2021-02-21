@@ -1,11 +1,12 @@
-from gd.decorators import cache_by
 from gd.memory.data import Data
+from gd.memory.traits import Sized
 from gd.platform import Platform, system_bits, system_platform
 from gd.text_utils import make_repr
-from gd.typing import Any, Type, TypeVar
+from gd.typing import Callable, Dict, Type, TypeVar
 
 __all__ = (
     "Types",
+    "register",
     "c_byte",
     "c_ubyte",
     "c_short",
@@ -226,139 +227,207 @@ class boolean(Data[bool], name="boolean", format=c_bool.format):
         self._value = value
 
 
+S = TypeVar("S", bound=Sized)
+
+GetType = Callable[[int, Platform], Type[S]]
+
+
+def get_type_wrap(type: Type[S]) -> GetType[S]:
+    def get_type(bits: int, platform: Platform) -> Type[S]:
+        return type
+
+    return get_type
+
+
 class Types:
+    TYPES: Dict[str, GetType] = {}
+
     def __init__(self, bits: int = system_bits, platform: Platform = system_platform) -> None:
         self.bits = bits
         self.platform = platform
 
     def __repr__(self) -> str:
-        info = {"bits": self.bits}
+        info = {"bits": self.bits, "platform": self.platform.name.casefold()}
 
         return make_repr(self, info)
 
-    def get(self, name: str) -> Type[Data[Any]]:
-        return getattr(self, name)
+    def get(self, name: str) -> Type[S]:
+        return self.fetch(name)(self.bits, self.platform)
 
-    @property
-    def byte_t(self) -> Type[Data[int]]:
-        return int8
+    __getattr__ = get
 
-    @property
-    def ubyte_t(self) -> Type[Data[int]]:
-        return uint8
+    @classmethod
+    def _register(cls, name: str, get_type: GetType[S]) -> GetType[S]:
+        return cls.TYPES.setdefault(name, get_type)
 
-    @property
-    def short_t(self) -> Type[Data[int]]:
+    @classmethod
+    def register(cls, name: str) -> Callable[[GetType[S]], GetType[S]]:
+        def decorator(get_type: GetType[S]) -> GetType[S]:
+            return cls._register(name, get_type)
+
+        return decorator
+
+    @classmethod
+    def register_function(cls, get_type: GetType[S]) -> GetType[S]:
+        return cls._register(get_type.__name__, get_type)
+
+    @classmethod
+    def register_type(cls, name: str, type: Type[S]) -> GetType[S]:
+        return cls._register(name, get_type_wrap(type))
+
+    @classmethod
+    def fetch(cls, name: str) -> GetType[S]:
+        if name in cls.TYPES:
+            return cls.TYPES[name]
+
+        raise LookupError(f"Can not find any types for {name!r}.")
+
+
+register = Types.register_function
+
+
+@register
+def byte_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return int8
+
+
+@register
+def ubyte_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return uint8
+
+
+@register
+def short_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return int16
+
+
+@register
+def ushort_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return uint16
+
+
+@register
+def int_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    if bits < 32:
         return int16
 
-    @property
-    def ushort_t(self) -> Type[Data[int]]:
+    return int32
+
+
+@register
+def uint_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    if bits < 32:
         return uint16
 
-    @property
-    def int_t(self) -> Type[Data[int]]:
-        if self.bits < 32:
-            return int16
+    return uint32
 
-        return int32
 
-    @property
-    def uint_t(self) -> Type[Data[int]]:
-        if self.bits < 32:
-            return uint16
-
-        return uint32
-
-    @property
-    def long_t(self) -> Type[Data[int]]:
-        if self.bits > 32:
-            return int64
-
-        return int32
-
-    @property
-    def ulong_t(self) -> Type[Data[int]]:
-        if self.bits > 32:
-            return uint64
-
-        return uint32
-
-    @property
-    def longlong_t(self) -> Type[Data[int]]:
+@register
+def long_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    if bits > 32:
         return int64
 
-    @property
-    def ulonglong_t(self) -> Type[Data[int]]:
+    return int32
+
+
+@register
+def ulong_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    if bits > 32:
         return uint64
 
-    @property
-    def int8_t(self) -> Type[Data[int]]:
-        return int8
+    return uint32
 
-    @property
-    def uint8_t(self) -> Type[Data[int]]:
-        return uint8
 
-    @property
-    def int16_t(self) -> Type[Data[int]]:
-        return int16
+@register
+def longlong_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return int64
 
-    @property
-    def uint16_t(self) -> Type[Data[int]]:
-        return uint16
 
-    @property
-    def int32_t(self) -> Type[Data[int]]:
-        return int32
+@register
+def ulonglong_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return uint64
 
-    @property
-    def uint32_t(self) -> Type[Data[int]]:
-        return uint32
 
-    @property
-    def int64_t(self) -> Type[Data[int]]:
-        return int64
+@register
+def int8_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return int8
 
-    @property
-    def uint64_t(self) -> Type[Data[int]]:
-        return uint64
 
-    @property  # type: ignore
-    @cache_by("bits")
-    def intptr_t(self) -> Type[Data[int]]:
-        return get_intptr(self.bits)
+@register
+def uint8_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return uint8
 
-    @property  # type: ignore
-    @cache_by("bits")
-    def uintptr_t(self) -> Type[Data[int]]:
-        return get_uintptr(self.bits)
 
-    @property  # type: ignore
-    @cache_by("bits")
-    def intsize_t(self) -> Type[Data[int]]:
-        return get_intsize(self.bits)
+@register
+def int16_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return int16
 
-    @property  # type: ignore
-    @cache_by("bits")
-    def uintsize_t(self) -> Type[Data[int]]:
-        return get_uintsize(self.bits)
 
-    @property
-    def float_t(self) -> Type[Data[float]]:
-        return c_float
+@register
+def uint16_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return uint16
 
-    @property
-    def double_t(self) -> Type[Data[float]]:
-        return c_double
 
-    @property
-    def float32_t(self) -> Type[Data[float]]:
-        return float32
+@register
+def int32_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return int32
 
-    @property
-    def float64_t(self) -> Type[Data[float]]:
-        return float64
 
-    @property
-    def bool_t(self) -> Type[Data[bool]]:
-        return c_bool
+@register
+def uint32_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return uint32
+
+
+@register
+def int64_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return int64
+
+
+@register
+def uint64_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return uint64
+
+
+@register
+def intptr_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return get_intptr(bits)
+
+
+@register
+def uintptr_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return get_uintptr(bits)
+
+
+@register
+def intsize_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return get_intsize(bits)
+
+
+@register
+def uintsize_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return get_uintsize(bits)
+
+
+@register
+def float_t(bits: int, platform: Platform) -> Type[Data[float]]:
+    return c_float
+
+
+@register
+def double_t(bits: int, platform: Platform) -> Type[Data[float]]:
+    return c_double
+
+
+@register
+def float32_t(bits: int, platform: Platform) -> Type[Data[float]]:
+    return float32
+
+
+@register
+def float64_t(bits: int, platform: Platform) -> Type[Data[float]]:
+    return float64
+
+
+@register
+def bool_t(bits: int, platform: Platform) -> Type[Data[bool]]:
+    return c_bool

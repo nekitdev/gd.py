@@ -1,10 +1,10 @@
-import os  # environment
 import platform  # machine
 import struct  # bitness
 import sys  # platform
+import sysconfig  # config vars
 
 from gd.enums import Platform
-from gd.typing import cast
+from gd.typing import Tuple, cast
 
 __all__ = (
     "ANDROID",
@@ -14,6 +14,8 @@ __all__ = (
     "MACOS",
     "WINDOWS",
     "Platform",
+    "platform_from_string",
+    "platform_to_string",
     "system_bits",
     "system_platform",
     "system_platform_raw",
@@ -22,10 +24,29 @@ __all__ = (
 _DELIM = "_x"
 
 
-_ANDROID_ARGUMENT = "ANDROID_ARGUMENT"
+def platform_from_string(string: str) -> Tuple[int, Platform]:
+    platform_string, delim, bits_string = string.partition(_DELIM)
+
+    if not delim:
+        raise ValueError(f"Can not parse {string!r} to platform.")
+
+    return int(bits_string), Platform.from_name(platform_string)
+
+
+def platform_to_string(bits: int, platform: Platform) -> str:
+    return f"{platform.name.casefold()}{_DELIM}{bits}"
+
+
+_ANDROID_API_LEVEL = sysconfig.get_config_vars().get("ANDROID_API_LEVEL")
+
+if _ANDROID_API_LEVEL is None:
+    _ANDROID_API_LEVEL = 0
+
+if _ANDROID_API_LEVEL > 0:
+    sys.platform = "android"
+
 _IOS_PREFIXES = ("iPad", "iPhone", "iPod")
 
-_ENVIRONMENT = os.environ
 _MACHINE = platform.machine()
 
 
@@ -39,9 +60,6 @@ WINDOWS = False
 
 system_platform_raw = sys.platform
 
-
-if _ANDROID_ARGUMENT in _ENVIRONMENT:
-    system_platform_raw = "android"
 
 if system_platform_raw.startswith(("win", "cygwin")):
     WINDOWS = True

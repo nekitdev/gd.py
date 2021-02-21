@@ -1,5 +1,4 @@
-from gd.iter_utils import item_to_tuple
-from gd.memory.data import Data
+from gd.iter_utils import is_iterable, item_to_tuple
 from gd.memory.traits import Read, Write, Sized, is_class, is_sized
 from gd.memory.types import Types
 from gd.memory.utils import class_property
@@ -10,6 +9,8 @@ from gd.typing import (
     Any,
     Dict,
     Generic,
+    Iterable,
+    Iterator,
     Literal,
     Optional,
     Tuple,
@@ -18,6 +19,7 @@ from gd.typing import (
     Union as TypeUnion,
     cast,
     get_type_hints,
+    no_type_check,
     overload,
 )
 
@@ -30,6 +32,9 @@ __all__ = (
     "Union",
     "Array",
     "MutArray",
+    "Memory",
+    "MemoryArray",
+    "MemoryMutArray",
     "MemoryBase",
     "MemoryStruct",
     "MemoryUnion",
@@ -61,6 +66,8 @@ __all__ = (
     "float64_t",
     "bool_t",
 )
+
+ANNOTATIONS = "__annotations__"
 
 M = TypeVar("M", bound="Memory")
 S = TypeVar("S", bound="Sized")
@@ -324,21 +331,7 @@ class Context:
     def types(self) -> Types:
         return Types(self.bits, self.platform)
 
-    def create_field(self, type: Type[ReadSized[T]], offset: Optional[int] = None) -> Field[T]:
-        if offset is None:
-            offset = self.offset
-
-        return Field(type, offset)
-
-    def create_mut_field(
-        self, type: Type[ReadWriteSized[T]], offset: Optional[int] = None
-    ) -> MutField[T]:
-        if offset is None:
-            offset = self.offset
-
-        return MutField(type, offset)
-
-    def get_type(self, name: str) -> Type[Data[Any]]:
+    def get_type(self, name: str) -> Type[Sized]:
         return self.types.get(name)
 
 
@@ -454,17 +447,156 @@ class Memory(metaclass=MemoryType):
         return cls(state, address)
 
 
-# class MemoryArrayType(MemoryType):
-#     _type: Type[S]
-#     _length: Optional[int]
+class MemoryArrayType(MemoryType):
+    _type: Type[Sized]
+    _length: Optional[int]
 
-#     @property
-#     def type(cls) -> Type[S]:
-#         return cls._type
+    def __new__(
+        meta_cls,
+        cls_name: str,
+        bases: Tuple[Type[Any], ...],
+        cls_dict: Dict[str, Any],
+        type: Optional[Type[Sized]] = None,
+        length: Optional[int] = None,
+        bits: int = system_bits,
+        platform: TypeUnion[int, str, Platform] = system_platform,
+    ) -> "MemoryArrayType":
+        cls = super().__new__(
+            meta_cls, cls_name, bases, cls_dict, bits=bits, platform=platform
+        )
 
-#     @property
-#     def length(cls) -> Optional[int]:
-#         return cls._length
+        if type is not None:
+            cls._type = type  # type: ignore
+
+        cls._length = length  # type: ignore
+
+        return cls  # type: ignore
+
+    @property
+    def size(cls) -> int:
+        if cls.length is None:
+            raise TypeError("Array is unsized.")
+
+        return cls.type.size * cls.length
+
+    @property
+    def type(cls) -> Type[Sized]:
+        return cls._type
+
+    @property
+    def length(cls) -> Optional[int]:
+        return cls._length
+
+
+class MemoryBaseArray(Generic[S], Memory, metaclass=MemoryArrayType):
+    _type: Type[S]
+    _length: Optional[int]
+
+    def __init__(self, state: "BaseState", address: int) -> None:
+        self._state = state
+        self._address = address
+
+    def __len__(self) -> int:
+        if self.length is None:
+            raise TypeError("Array is unsized.")
+
+        return self.length
+
+    def calculate_address(self, index: int) -> int:
+        return self.address + index * self.type.size
+
+    @class_property
+    def type(self) -> Type[S]:  # type: ignore
+        return self._type
+
+    @class_property
+    def length(self) -> Optional[int]:
+        return self._length
+
+    @property
+    def state(self) -> "BaseState":
+        return self._state
+
+    @property
+    def address(self) -> int:
+        return self._address
+
+
+class MemoryArray(MemoryBaseArray[ReadSized[T]]):
+    _type: Type[ReadSized[T]]  # type: ignore
+
+    @class_property
+    def type(self) -> Type[ReadSized[T]]:  # type: ignore
+        return self._type
+
+    @overload  # noqa
+    def __getitem__(self, item: int) -> T:  # noqa
+        ...
+
+    @overload  # noqa
+    def __getitem__(self, item: slice) -> Iterator[T]:  # noqa
+        ...
+
+    def __getitem__(self, item: TypeUnion[int, slice]) -> TypeUnion[T, Iterator[T]]:  # noqa
+        if isinstance(item, int):
+            return self.read_at(item)
+
+        if isinstance(item, slice):
+            return self.read_iter(range(item.start, item.stop, item.step))
+
+        raise TypeError("Expected either slices or integer indexes.")
+
+    def read_at(self, index: int) -> T:
+        if self.length is None or index < self.length:
+            return self.state.read_value(self.type, self.calculate_address(index))
+
+        raise IndexError("Index is out of bounds.")
+
+    def read_iter(self, index_iter: Iterable[int]) -> Iterator[T]:
+        for index in index_iter:
+            yield self.read_at(index)
+
+
+class MemoryMutArray(MemoryArray[T], MemoryBaseArray[ReadWriteSized[T]]):
+    _type: Type[ReadWriteSized[T]]  # type: ignore
+
+    @class_property
+    def type(self) -> Type[ReadWriteSized[T]]:  # type: ignore
+        return self._type
+
+    @overload  # noqa
+    def __setitem__(self, item: int, value: T) -> None:  # noqa
+        ...
+
+    @overload  # noqa
+    def __setitem__(self, item: slice, value: Iterable[T]) -> None:  # noqa
+        ...
+
+    def __setitem__(  # noqa
+        self, item: TypeUnion[int, slice], value: TypeUnion[T, Iterable[T]]
+    ) -> None:
+        if isinstance(item, int):
+            return self.write_at(item, cast(T, value))
+
+        if isinstance(item, slice):
+            if is_iterable(value):
+                return self.write_iter(
+                    range(item.start, item.stop, item.step), cast(Iterable[T], value)
+                )
+
+            raise ValueError("Expected iterable value with slices.")
+
+        raise TypeError("Expected either slices or integer indexes.")
+
+    def write_at(self, index: int, value: T) -> None:
+        if self.length is None or index < self.length:
+            return self.state.write_value(self.type, value, self.calculate_address(index))
+
+        raise IndexError("Index is out of bounds.")
+
+    def write_iter(self, index_iter: Iterable[int], value_iter: Iterable[T]) -> None:
+        for index, value in zip(index_iter, value_iter):
+            self.write_at(index, value)
 
 
 class MemoryBase(Memory, metaclass=MemoryBaseType):
@@ -485,7 +617,6 @@ class MemoryUnion(MemoryBase):
 
 class MarkerType(type):
     _derive: bool
-    _offset: int
 
     def __new__(
         meta_cls,
@@ -493,50 +624,108 @@ class MarkerType(type):
         bases: Tuple[Type[Any], ...],
         cls_dict: Dict[str, Any],
         derive: bool = True,
-        offset: int = 0,
     ) -> "MarkerType":
         cls = super().__new__(meta_cls, cls_name, bases, cls_dict)
 
         cls._derive = derive  # type: ignore
-        cls._offset = offset  # type: ignore
 
         return cls  # type: ignore
 
     def create(
         cls, bits: int = system_bits, platform: TypeUnion[int, str, Platform] = system_platform
-    ) -> Type[MemoryBase]:
+    ) -> Type[Memory]:
         if not cls.derive:
             raise TypeError(f"Can not derive memory from {cls.__name__}.")
 
-        ctx = Context(
-            bits=bits, platform=Platform.from_value(platform), offset=cls.offset
-        )
+        ctx = Context(bits=bits, platform=Platform.from_value(platform))
 
-        return visit_any(ctx, cls, return_field=False)
+        return cast(Type[Memory], visit_any(ctx, cls))
 
-    def __getitem__(cls, item: Any) -> Type[MemoryBase]:
+    def __getitem__(cls, item: Any) -> Type[Memory]:
         return cls.create(*item_to_tuple(item))
 
     @property
     def derive(cls) -> bool:
         return cls._derive
 
+
+class ArrayType(MarkerType):
+    _type: Any
+    _length: Optional[int]
+
+    def __new__(
+        meta_cls,
+        cls_name: str,
+        bases: Tuple[Type[Any], ...],
+        cls_dict: Dict[str, Any],
+        derive: bool = True,
+        type: Optional[Any] = None,
+        length: Optional[int] = None,
+    ) -> "ArrayType":
+        cls = super().__new__(meta_cls, cls_name, bases, cls_dict, derive=derive)
+
+        if type is not None:
+            cls._type = type  # type: ignore
+
+        cls._length = length  # type: ignore
+
+        return cls  # type: ignore
+
+    def __repr__(cls) -> str:
+        try:
+            if cls.length is None:
+                return f"{cls.__name__}({cls.type!r})"
+
+            return f"{cls.__name__}({cls.type!r}, {cls.length})"
+
+        except AttributeError:
+            return cls.__name__
+
+    @no_type_check
+    def __call__(cls, type: Any, length: Optional[int] = None) -> "ArrayType":
+        class array(cls, type=type, length=length):
+            pass
+
+        array.__qualname__ = array.__name__ = cls.__name__
+
+        return array
+
     @property
-    def offset(cls) -> int:
-        return cls._offset
+    def type(cls) -> Any:
+        return cls._type
+
+    @property
+    def length(cls) -> Optional[int]:
+        return cls._length
+
+
+class ArrayBase(metaclass=ArrayType, derive=False):
+    _type: Optional[Any]
+    _length: Optional[int]
+
+    @class_property
+    def type(self) -> Any:
+        self._type
+
+    @class_property
+    def length(self) -> Optional[int]:
+        return self._length
+
+
+class Array(ArrayBase, derive=False):
+    pass
+
+
+class MutArray(Array, derive=False):
+    pass
 
 
 class MarkerBase(metaclass=MarkerType, derive=False):
     _derive: bool
-    _offset: int
 
     @class_property
     def derive(self) -> bool:
         return self._derive
-
-    @class_property
-    def offset(self) -> int:
-        return self._offset
 
 
 class Struct(MarkerBase, derive=False):
@@ -547,125 +736,68 @@ class Union(MarkerBase, derive=False):
     pass
 
 
-class Array:
-    def __init__(self, type: Any, length: Optional[int] = None) -> None:
-        self._type = type
-        self._length = length
-
-    def __repr__(self) -> str:
-        if self.length is None:
-            f"{self.__class__.__name__}({self.type!r})"
-
-        return f"{self.__class__.__name__}({self.type!r}, {self.length})"
-
-    @property
-    def type(self) -> Any:
-        return self._type
-
-    @property
-    def length(self) -> Optional[int]:
-        return self._length
-
-    def is_mutable(self) -> bool:
-        return False
-
-
-class MutArray(Array):
-    def is_mutable(self) -> bool:
-        return True
-
-
-@overload  # noqa
-def visit_any(ctx: Context, some: Any, return_field: Literal[True]) -> Field[T]:  # noqa
-    ...
-
-
-@overload  # noqa
-def visit_any(ctx: Context, some: Any, return_field: Literal[False]) -> Type[MemoryBase]:  # noqa
-    ...
-
-
-@overload  # noqa
-def visit_any(  # noqa
-    ctx: Context, some: Any, return_field: bool
-) -> TypeUnion[Type[MemoryBase], Field[T]]:
-    ...
-
-
-def visit_any(  # noqa
-    ctx: Context, some: Any, return_field: bool = True
-) -> TypeUnion[Type[MemoryBase], Field[T]]:
+def visit_any(ctx: Context, some: Any) -> Type[Sized]:
     if is_class(some):
         if issubclass(some, Struct):
-            return visit_struct(ctx, cast(Type[Struct], some), return_field=return_field)
+            return visit_struct(ctx, cast(Type[Struct], some))
 
         if issubclass(some, Union):
-            return visit_union(ctx, cast(Type[Union], some), return_field=return_field)
+            return visit_union(ctx, cast(Type[Union], some))
+
+        if issubclass(some, Array):
+            if issubclass(some, MutArray):
+                return visit_mut_array(ctx, some)
+
+            return visit_array(ctx, some)
 
         if issubclass(some, Marker):
             return visit_marker(ctx, some)
 
         if is_sized(some):
             if issubclass(some, Read):
-                if not return_field:
-                    raise ValueError("Expected return_field to be true.")
-
                 if issubclass(some, Write):
                     return visit_read_write_sized(ctx, some)
 
                 return visit_read_sized(ctx, some)
 
-    if not return_field:
-        raise ValueError("Expected return_field to be true.")
-
-    # if isinstance(some, Array):
-    #     return visit_array(ctx, some)
-
-    if isinstance(some, str):
-        return visit_name(ctx, some)
-
     raise TypeError(f"{some!r} is not valid as type for fields.")
 
 
-@overload  # noqa
-def visit_struct(  # noqa
-    ctx: Context, marker_struct: Type[Struct], return_field: Literal[True]
-) -> Field[T]:
-    ...
+def create_field(ctx: Context, some: Type[Sized], offset: Optional[int] = None) -> Field[T]:
+    if offset is None:
+        offset = ctx.offset
+
+    if is_class(some):
+        if is_sized(some):
+            if issubclass(some, Read):
+                if issubclass(some, Write):
+                    return MutField(cast(Type[ReadWriteSized[T]], some), offset)
+
+                return Field(cast(Type[ReadSized[T]], some), offset)
+
+    raise TypeError(f"Can not create field from {some!r}.")
 
 
-@overload  # noqa
-def visit_struct(  # noqa
-    ctx: Context, marker_struct: Type[Struct], return_field: Literal[False]
-) -> Type[MemoryStruct]:
-    ...
-
-
-@overload  # noqa
-def visit_struct(  # noqa
-    ctx: Context, marker_struct: Type[Struct], return_field: bool
-) -> TypeUnion[Type[MemoryStruct], Field[T]]:
-    ...
-
-
-def visit_struct(  # noqa
-    ctx: Context, marker_struct: Type[Struct], return_field: bool = True
-) -> TypeUnion[Type[MemoryStruct], Field[T]]:
+def visit_struct(ctx: Context, marker_struct: Type[Struct]) -> Type[MemoryStruct]:
     fields: Dict[str, Field] = {}
 
     offset = ctx.offset
 
     size = 0
 
+    annotations = getattr(marker_struct, ANNOTATIONS, {}).copy()
+
     for name, annotation in get_type_hints(marker_struct).items():
         try:
-            field = visit_any(ctx, annotation)  # type: ignore
+            field = create_field(ctx, visit_any(ctx, annotation))  # type: ignore
 
         except TypeError:
             continue
 
         if name in fields:
             raise ValueError(f"Repeated field: {name!r}.")
+
+        annotations.pop(name)
 
         fields[name] = field
 
@@ -678,62 +810,43 @@ def visit_struct(  # noqa
 
     ctx.size += size
 
-    class struct(MemoryStruct, size=size, fields=fields, bits=ctx.bits, platform=ctx.platform):
-        pass
+    @no_type_check
+    class struct(  # type: ignore
+        MemoryStruct, size=size, fields=fields, bits=ctx.bits, platform=ctx.platform
+    ):
+        vars().update(vars(marker_struct))
 
-    name = marker_struct.__name__
+    setattr(struct, ANNOTATIONS, annotations)
 
-    struct.__qualname__ = struct.__name__ = name
+    struct.__qualname__ = struct.__name__ = marker_struct.__name__
 
     for name, field in fields.items():
         if hasattr(struct, name):
-            raise ValueError(f"Field has invalid name: {name!r}.")
+            raise ValueError(f"Field attempts to overwrite name: {name!r}.")
 
         setattr(struct, name, field)
-
-    if return_field:
-        return visit_read_sized(ctx, cast(Type[ReadSized[struct]], struct))  # type: ignore
 
     return struct
 
 
-@overload  # noqa
-def visit_union(  # noqa
-    ctx: Context, marker_union: Type[Union], return_field: Literal[True]
-) -> Field[T]:
-    ...
-
-
-@overload  # noqa
-def visit_union(  # noqa
-    ctx: Context, marker_union: Type[Union], return_field: Literal[False]
-) -> Type[MemoryUnion]:
-    ...
-
-
-@overload  # noqa
-def visit_union(  # noqa
-    ctx: Context, marker_union: Type[Union], return_field: bool
-) -> TypeUnion[Type[MemoryUnion], Field[T]]:
-    ...
-
-
-def visit_union(  # noqa
-    ctx: Context, marker_union: Type[Union], return_field: bool = True
-) -> TypeUnion[Type[MemoryUnion], Field[T]]:
+def visit_union(ctx: Context, marker_union: Type[Union]) -> Type[MemoryUnion]:
     fields: Dict[str, Field] = {}
 
     size = 0
 
+    annotations = getattr(marker_union, ANNOTATIONS, {}).copy()
+
     for name, annotation in get_type_hints(marker_union).items():
         try:
-            field = visit_any(ctx, annotation)  # type: ignore
+            field = create_field(ctx, visit_any(ctx, annotation))  # type: ignore
 
         except TypeError:
             continue
 
         if name in fields:
             raise ValueError(f"Repeated field: {name!r}.")
+
+        annotations.pop(name)
 
         fields[name] = field
 
@@ -744,36 +857,68 @@ def visit_union(  # noqa
 
     ctx.size += size
 
-    class union(MemoryUnion, size=size, fields=fields, bits=ctx.bits, platform=ctx.platform):
-        pass
+    @no_type_check
+    class union(  # type: ignore
+        MemoryUnion, size=size, fields=fields, bits=ctx.bits, platform=ctx.platform
+    ):
+        vars().update(vars(marker_union))
 
-    name = marker_union.__name__
+    setattr(union, ANNOTATIONS, annotations)
 
-    union.__qualname__ = union.__name__ = name
+    union.__qualname__ = union.__name__ = marker_union.__name__
 
     for name, field in fields.items():
         if hasattr(union, name):
-            raise ValueError(f"Field has invalid name: {name!r}.")
+            raise ValueError(f"Field attempts to overwrite name: {name!r}.")
 
         setattr(union, name, field)
-
-    if return_field:
-        return visit_read_sized(ctx, cast(Type[ReadSized[union]], union))  # type: ignore
 
     return union
 
 
-def visit_read_sized(ctx: Context, type: Type[ReadSized[T]]) -> Field[T]:
-    return ctx.create_field(type)
+def visit_array(ctx: Context, marker_array: Type[Array]) -> Type[MemoryArray]:
+    type = visit_any(ctx, marker_array.type)
+
+    @no_type_check
+    class array(  # type: ignore
+        MemoryArray,
+        type=type,
+        length=marker_array.length,
+        bits=ctx.bits,
+        platform=ctx.platform,
+    ):
+        vars().update(vars(marker_array))
+
+    array.__qualname__ = array.__name__ = marker_array.__name__
+
+    return array
 
 
-def visit_read_write_sized(ctx: Context, type: Type[ReadWriteSized[T]]) -> MutField[T]:
-    return ctx.create_mut_field(type)
+def visit_mut_array(ctx: Context, marker_mut_array: Type[MutArray]) -> Type[MemoryMutArray]:
+    type = visit_any(ctx, marker_mut_array.type)
+
+    @no_type_check
+    class mut_array(  # type: ignore
+        MemoryMutArray,
+        type=type,
+        length=marker_mut_array.length,
+        bits=ctx.bits,
+        platform=ctx.platform,
+    ):
+        vars().update(vars(marker_mut_array))
+
+    mut_array.__qualname__ = mut_array.__name__ = marker_mut_array.__name__
+
+    return mut_array
 
 
-def visit_marker(ctx: Context, marker: Type[Marker]) -> MutField[T]:
-    return visit_name(ctx, marker.name)
+def visit_read_sized(ctx: Context, type: Type[ReadSized[T]]) -> Type[ReadSized[T]]:
+    return type
 
 
-def visit_name(ctx: Context, name: str) -> MutField[T]:
-    return visit_read_write_sized(ctx, cast(Type[ReadWriteSized[T]], ctx.get_type(name)))
+def visit_read_write_sized(ctx: Context, type: Type[ReadWriteSized[T]]) -> Type[ReadWriteSized[T]]:
+    return type
+
+
+def visit_marker(ctx: Context, marker: Type[Marker]) -> Type[Sized]:
+    return visit_any(ctx, ctx.get_type(marker.name))
