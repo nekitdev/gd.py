@@ -32,7 +32,11 @@ __all__ = (
     "Union",
     "Array",
     "MutArray",
+    "Pointer",
+    "Void",
+    "void",
     "Memory",
+    "MemoryPointer",
     "MemoryArray",
     "MemoryMutArray",
     "MemoryBase",
@@ -280,26 +284,12 @@ class MutField(Field[T], BaseField[ReadWriteSized[T]]):
 
 
 class Context:
-    def __init__(
-        self,
-        bits: int,
-        platform: Platform = system_platform,
-        offset: int = 0,
-        size: int = 0,
-    ) -> None:
+    def __init__(self, bits: int, platform: Platform = system_platform) -> None:
         self._bits = bits
         self._platform = platform
 
-        self._offset = offset
-        self._size = size
-
     def __repr__(self) -> str:
-        info = {
-            "bits": self.bits,
-            "platform": self.platform.name.casefold(),
-            "offset": self.offset,
-            "size": self.size,
-        }
+        info = {"bits": self.bits, "platform": self.platform.name.casefold()}
 
         return make_repr(self, info)
 
@@ -311,22 +301,6 @@ class Context:
     def platform(self) -> Platform:
         return self._platform
 
-    def get_offset(self) -> int:
-        return self._offset
-
-    def set_offset(self, offset: int) -> None:
-        self._offset = offset
-
-    offset = property(get_offset, set_offset)
-
-    def get_size(self) -> int:
-        return self._size
-
-    def set_size(self, size: int) -> None:
-        self._size = size
-
-    size = property(get_size, set_size)
-
     @property
     def types(self) -> Types:
         return Types(self.bits, self.platform)
@@ -335,7 +309,7 @@ class Context:
         return self.types.get(name)
 
 
-class MemoryType(type):
+class MemoryType(type(Generic)):  # type: ignore
     _bits: int
     _platform: Platform
     _size: int
@@ -348,8 +322,9 @@ class MemoryType(type):
         size: int = 0,
         bits: int = system_bits,
         platform: TypeUnion[int, str, Platform] = system_platform,
+        **kwargs,
     ) -> "MemoryType":
-        cls = super().__new__(meta_cls, cls_name, bases, cls_dict)
+        cls = super().__new__(meta_cls, cls_name, bases, cls_dict, **kwargs)
 
         cls._size = size  # type: ignore
 
@@ -427,10 +402,6 @@ class Memory(metaclass=MemoryType):
         return self._platform
 
     @property
-    def type(self: M) -> Type[M]:
-        return type(self)
-
-    @property
     def state(self) -> "BaseState":
         return self._state
 
@@ -445,6 +416,259 @@ class Memory(metaclass=MemoryType):
     @classmethod
     def read_value(cls: Type[M], state: "BaseState", address: int) -> M:
         return cls(state, address)
+
+
+class VoidType(MemoryType):
+    def __new__(
+        meta_cls,
+        cls_name: str,
+        bases: Tuple[Type[Any], ...],
+        cls_dict: Dict[str, Any],
+        bits: int = system_bits,
+        platform: TypeUnion[int, str, Platform] = system_platform,
+    ) -> "MemoryPointerType":
+        return super().__new__(  # type: ignore
+            meta_cls, cls_name, bases, cls_dict, bits=bits, platform=platform
+        )
+
+    @property
+    def size(cls) -> int:
+        return 0
+
+
+class Void(metaclass=VoidType):
+    @class_property
+    def size(self) -> int:
+        return 0
+
+
+void = Void
+
+
+class MemoryPointerType(MemoryType):
+    _type: Type[Sized]
+    _pointer_type: Type[ReadWriteSized[int]]
+
+    def __new__(
+        meta_cls,
+        cls_name: str,
+        bases: Tuple[Type[Any], ...],
+        cls_dict: Dict[str, Any],
+        type: Optional[Type[Sized]] = None,
+        pointer_type: Optional[Type[ReadWriteSized[int]]] = None,
+        bits: int = system_bits,
+        platform: TypeUnion[int, str, Platform] = system_platform,
+    ) -> "MemoryPointerType":
+        cls = super().__new__(
+            meta_cls, cls_name, bases, cls_dict, bits=bits, platform=platform
+        )
+
+        if type is not None:
+            cls._type = type  # type: ignore
+
+        if pointer_type is not None:
+            cls._pointer_type = pointer_type  # type: ignore
+
+        return cls  # type: ignore
+
+    @property
+    def pointer_type(cls) -> Type[ReadWriteSized[int]]:
+        return cls._pointer_type
+
+    @property
+    def type(cls) -> Type[Sized]:
+        return cls._type
+
+    @property
+    def size(cls) -> int:
+        return cls.pointer_type.size
+
+
+PointerT = TypeVar("PointerT", bound="MemoryPointer")
+PointerU = TypeVar("PointerU", bound="MemoryPointer")
+
+
+class MemoryPointerBase(Generic[S], Memory, metaclass=MemoryPointerType):
+    _type: Type[S]
+    _pointer_type: Type[ReadWriteSized[int]]
+
+    @class_property
+    def pointer_type(self) -> Type[ReadWriteSized[int]]:
+        return self._pointer_type
+
+    @class_property
+    def type(self) -> Type[S]:
+        return self._type
+
+    @class_property
+    def size(self) -> int:
+        return self.pointer_type.size
+
+
+class MemoryPointer(MemoryPointerBase[ReadSized[T]]):
+    _type: Type[ReadSized[T]]
+
+    @class_property
+    def type(self) -> Type[ReadSized[T]]:  # type: ignore
+        return self._type
+
+    def __repr__(self) -> str:
+        info = {"type": self.type, "pointer_type": self.pointer_type}
+
+        return make_repr(self, info)
+
+    def __int__(self) -> int:
+        return self.address
+
+    def __bool__(self) -> bool:
+        return bool(self.address)
+
+    def __hash__(self) -> int:
+        return self.address
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, self.__class__):
+            return self.state is other.state and self.address == other.address
+
+        return NotImplemented
+
+    def __ne__(self, other: Any) -> bool:
+        if isinstance(other, self.__class__):
+            return self.state is other.state and self.address != other.address
+
+        return NotImplemented
+
+    def __gt__(self, other: Any) -> bool:
+        if isinstance(other, self.__class__):
+            return self.state is other.state and self.address > other.address
+
+        return NotImplemented
+
+    def __lt__(self, other: Any) -> bool:
+        if isinstance(other, self.__class__):
+            return self.state is other.state and self.address < other.address
+
+        return NotImplemented
+
+    def __ge__(self, other: Any) -> bool:
+        if isinstance(other, self.__class__):
+            return self.state is other.state and self.address >= other.address
+
+        return NotImplemented
+
+    def __le__(self, other: Any) -> bool:
+        if isinstance(other, self.__class__):
+            return self.state is other.state and self.address <= other.address
+
+        return NotImplemented
+
+    def get_address(self) -> int:
+        return self._address
+
+    def set_address(self, address: int) -> None:
+        self._address = address
+
+    address = class_property(get_address, set_address)
+
+    def is_null(self) -> bool:
+        return not self.value_address
+
+    @property
+    def value(self) -> T:
+        address = self.value_address
+
+        if address:
+            return self.state.read_value(self.type, address)
+
+        raise RuntimeError("Can not dereference null pointer.")
+
+    @property
+    def value_unchecked(self) -> T:
+        return self.state.read_value(self.type, self.value_address)
+
+    @property
+    def value_address(self) -> int:
+        return self.state.read_value(self.pointer_type, self.address)
+
+    @classmethod
+    def create_from(cls: Type[PointerT], other: PointerU) -> PointerT:
+        return cls(address=other.address, state=other.state)
+
+    def copy(self: PointerT) -> PointerT:
+        return self.create_from(self)
+
+    def add_inplace(self: PointerT, value: int) -> PointerT:
+        self.address += value
+
+        return self
+
+    __iadd__ = add_inplace
+
+    def sub_inplace(self: PointerT, value: int) -> PointerT:
+        self.address -= value
+
+        return self
+
+    __isub__ = sub_inplace
+
+    def follow_inplace(self: PointerT) -> PointerT:
+        self.address = self.value_address
+
+        return self
+
+    def offset_inplace(self: PointerT, *offsets: int) -> PointerT:
+        if offsets:
+            offset_iter = iter(offsets)
+
+            self.add_inplace(next(offset_iter))
+
+            for offset in offset_iter:
+                self.follow_inplace().add_inplace(offset)
+
+        return self
+
+    def add(self: PointerT, value: int) -> PointerT:
+        other = self.copy()
+
+        other.add_inplace(value)
+
+        return other
+
+    __add__ = add
+
+    def sub(self: PointerT, value: int) -> PointerT:
+        other = self.copy()
+
+        other.sub_inplace(value)
+
+        return other
+
+    __sub__ = sub
+
+    def follow(self: PointerT) -> PointerT:
+        other = self.copy()
+
+        other.follow_inplace()
+
+        return other
+
+    def offset(self: PointerT, *offsets: int) -> PointerT:
+        other = self.copy()
+
+        other.offset_inplace(*offsets)
+
+        return other
+
+    def cast(self: PointerT, cls: Type[PointerU]) -> PointerU:
+        return cls.create_from(self)
+
+
+class MemoryMutPointer(MemoryPointer[T], MemoryPointerBase[ReadWriteSized[T]]):
+    _type: Type[ReadWriteSized[T]]  # type: ignore
+
+    @class_property
+    def type(self) -> Type[ReadWriteSized[T]]:  # type: ignore
+        return self._type
 
 
 class MemoryArrayType(MemoryType):
@@ -649,6 +873,70 @@ class MarkerType(type):
         return cls._derive
 
 
+class PointerType(MarkerType):
+    _type: Any
+    _signed: bool
+
+    def __new__(
+        meta_cls,
+        cls_name: str,
+        bases: Tuple[Type[Any], ...],
+        cls_dict: Dict[str, Any],
+        derive: bool = True,
+        type: Optional[Any] = None,
+        signed: bool = False,
+    ) -> "PointerType":
+        cls = super().__new__(meta_cls, cls_name, bases, cls_dict, derive=derive)
+
+        if type is not None:
+            cls._type = type  # type: ignore
+
+        cls._signed = signed  # type: ignore
+
+        return cls  # type: ignore
+
+    def __repr__(cls) -> str:
+        try:
+            return f"{cls.__name__}({cls.type!r})"
+
+        except AttributeError:
+            return cls.__name__
+
+    @no_type_check
+    def __call__(cls, type: Any, signed: bool = False) -> "PointerType":
+        class pointer(cls, type=type, signed=signed):
+            pass
+
+        pointer.__qualname__ = pointer.__name__ = cls.__name__
+
+        return pointer
+
+    @property
+    def type(cls) -> Any:
+        return cls._type
+
+    @property
+    def signed(cls) -> bool:
+        return cls._signed
+
+
+class Pointer(metaclass=PointerType):
+    _type: Any
+    _signed: bool
+
+    @class_property
+    def type(self) -> Any:
+        return self._type
+
+    @class_property
+    def signed(self) -> bool:
+        return self._signed
+
+
+class MutPointer(Pointer):
+    pass
+
+
 class ArrayType(MarkerType):
     _type: Any
     _length: Optional[int]
@@ -744,6 +1032,12 @@ def visit_any(ctx: Context, some: Any) -> Type[Sized]:
         if issubclass(some, Union):
             return visit_union(ctx, cast(Type[Union], some))
 
+        if issubclass(some, Pointer):
+            if issubclass(some, MutPointer):
+                return visit_mut_pointer(ctx, some)
+
+            return visit_pointer(ctx, some)
+
         if issubclass(some, Array):
             if issubclass(some, MutArray):
                 return visit_mut_array(ctx, some)
@@ -763,10 +1057,7 @@ def visit_any(ctx: Context, some: Any) -> Type[Sized]:
     raise TypeError(f"{some!r} is not valid as type for fields.")
 
 
-def create_field(ctx: Context, some: Type[Sized], offset: Optional[int] = None) -> Field[T]:
-    if offset is None:
-        offset = ctx.offset
-
+def create_field(ctx: Context, some: Type[Sized], offset: int) -> Field[T]:
     if is_class(some):
         if is_sized(some):
             if issubclass(some, Read):
@@ -781,15 +1072,14 @@ def create_field(ctx: Context, some: Type[Sized], offset: Optional[int] = None) 
 def visit_struct(ctx: Context, marker_struct: Type[Struct]) -> Type[MemoryStruct]:
     fields: Dict[str, Field] = {}
 
-    offset = ctx.offset
+    annotations = getattr(marker_struct, ANNOTATIONS, {}).copy()
 
     size = 0
-
-    annotations = getattr(marker_struct, ANNOTATIONS, {}).copy()
+    offset = 0
 
     for name, annotation in get_type_hints(marker_struct).items():
         try:
-            field = create_field(ctx, visit_any(ctx, annotation))  # type: ignore
+            field = create_field(ctx, visit_any(ctx, annotation), offset)  # type: ignore
 
         except TypeError:
             continue
@@ -801,14 +1091,8 @@ def visit_struct(ctx: Context, marker_struct: Type[Struct]) -> Type[MemoryStruct
 
         fields[name] = field
 
-        field_size = field.size
-
-        ctx.offset += field_size
-        size += field_size
-
-    ctx.offset = offset
-
-    ctx.size += size
+        offset += field.size
+        size += field.size
 
     @no_type_check
     class struct(  # type: ignore
@@ -850,12 +1134,8 @@ def visit_union(ctx: Context, marker_union: Type[Union]) -> Type[MemoryUnion]:
 
         fields[name] = field
 
-        field_size = field.size
-
-        if field_size > size:
-            size = field_size
-
-    ctx.size += size
+        if field.size > size:
+            size = field.size
 
     @no_type_check
     class union(  # type: ignore
@@ -876,7 +1156,49 @@ def visit_union(ctx: Context, marker_union: Type[Union]) -> Type[MemoryUnion]:
     return union
 
 
-def visit_array(ctx: Context, marker_array: Type[Array]) -> Type[MemoryArray]:
+def visit_pointer(ctx: Context, marker_pointer: Type[Pointer]) -> Type[MemoryPointer[T]]:
+    type = visit_any(ctx, marker_pointer.type)
+
+    types = ctx.types
+
+    pointer_type = types.intptr_t if marker_pointer.signed else types.uintptr_t  # type: ignore
+
+    @no_type_check
+    class pointer(  # type: ignore
+        MemoryPointer, type=type, pointer_type=pointer_type, bits=ctx.bits, platform=ctx.platform
+    ):
+        vars().update(vars(marker_pointer))
+
+    pointer.__qualname__ = pointer.__name__ = marker_pointer.__name__
+
+    return pointer
+
+
+def visit_mut_pointer(
+    ctx: Context, marker_mut_pointer: Type[MutPointer]
+) -> Type[MemoryMutPointer[T]]:
+    type = visit_any(ctx, marker_mut_pointer.type)
+
+    types = ctx.types
+
+    pointer_type = types.intptr_t if marker_mut_pointer.signed else types.uintptr_t  # type: ignore
+
+    @no_type_check
+    class mut_pointer(  # type: ignore
+        MemoryMutPointer,
+        type=type,
+        pointer_type=pointer_type,
+        bits=ctx.bits,
+        platform=ctx.platform,
+    ):
+        vars().update(vars(marker_mut_pointer))
+
+    mut_pointer.__qualname__ = mut_pointer.__name__ = marker_mut_pointer.__name__
+
+    return mut_pointer
+
+
+def visit_array(ctx: Context, marker_array: Type[Array]) -> Type[MemoryArray[T]]:
     type = visit_any(ctx, marker_array.type)
 
     @no_type_check
@@ -894,7 +1216,7 @@ def visit_array(ctx: Context, marker_array: Type[Array]) -> Type[MemoryArray]:
     return array
 
 
-def visit_mut_array(ctx: Context, marker_mut_array: Type[MutArray]) -> Type[MemoryMutArray]:
+def visit_mut_array(ctx: Context, marker_mut_array: Type[MutArray]) -> Type[MemoryMutArray[T]]:
     type = visit_any(ctx, marker_mut_array.type)
 
     @no_type_check

@@ -68,7 +68,6 @@ from gd.memory.internal import (
     windows_read_process_memory,
     windows_write_process_memory,
 )
-from gd.memory.pointer import Pointer
 from gd.memory.traits import Read, Write
 from gd.memory.types import Types
 from gd.platform import ANDROID, IOS, LINUX, MACOS, WINDOWS, Platform, system_platform
@@ -76,13 +75,17 @@ from gd.text_utils import make_repr
 from gd.typing import Callable, Type, TypeVar, Union, cast
 
 __all__ = (
-    "Pointer",
     "BaseState",
     "LinuxState",
     "MacOSState",
     "SystemState",
     "WindowsState",
     "State",
+    "get_linux_state",
+    "get_macos_state",
+    "get_system_state",
+    "get_windows_state",
+    "get_state",
 )
 
 T = TypeVar("T")
@@ -127,11 +130,6 @@ class BaseState:
 
         if load:
             self.load()
-
-    def get_pointer(self, pointer_class: Type[Pointer] = Pointer) -> Pointer:
-        return pointer_class(self, self.base_address)
-
-    pointer = property(get_pointer)
 
     @property  # type: ignore
     @cache_by("bits")
