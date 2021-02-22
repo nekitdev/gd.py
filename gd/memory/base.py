@@ -19,9 +19,10 @@ class MemoryBaseType(MemoryType):
         fields: Optional[Dict[str, Field]] = None,
         bits: int = system_bits,
         platform: Union[int, str, Platform] = system_platform,
+        **kwargs,
     ) -> "MemoryBaseType":
         cls = super().__new__(
-            meta_cls, cls_name, bases, cls_dict, size=size, bits=bits, platform=platform
+            meta_cls, cls_name, bases, cls_dict, size=size, bits=bits, platform=platform, **kwargs
         )
 
         if fields is None:

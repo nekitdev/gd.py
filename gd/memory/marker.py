@@ -1,7 +1,7 @@
 from gd.iter_utils import item_to_tuple
 from gd.memory.memory import Memory
 from gd.memory.utils import class_property
-from gd.platform import Platform, system_bits, system_platform
+from gd.platform import Platform, platform_from_string, system_bits, system_platform
 from gd.typing import (
     TYPE_CHECKING,
     Any,
@@ -33,6 +33,8 @@ __all__ = (
     "MutRef",
     "ref",
     "mut_ref",
+    "Fill",
+    "fill",
     "Struct",
     "Union",
     "byte_t",
@@ -63,6 +65,7 @@ __all__ = (
     "float64_t",
     "bool_t",
     "char_t",
+    "string_t",
 )
 
 
@@ -206,6 +209,12 @@ class char_t(Marker):
     pass
 
 
+# STRING TYPE
+
+class string_t(Marker):
+    pass
+
+
 class MarkerType(type(Generic)):  # type: ignore
     _derive: bool
 
@@ -270,8 +279,9 @@ class PointerType(MarkerType):
         derive: bool = True,
         type: Optional[Any] = None,
         signed: bool = False,
+        **kwargs,
     ) -> "PointerType":
-        cls = super().__new__(meta_cls, cls_name, bases, cls_dict, derive=derive)
+        cls = super().__new__(meta_cls, cls_name, bases, cls_dict, derive=derive, **kwargs)
 
         if type is not None:
             cls._type = type  # type: ignore
@@ -358,8 +368,9 @@ class ArrayType(MarkerType):
         derive: bool = True,
         type: Optional[Any] = None,
         length: Optional[int] = None,
+        **kwargs,
     ) -> "ArrayType":
-        cls = super().__new__(meta_cls, cls_name, bases, cls_dict, derive=derive)
+        cls = super().__new__(meta_cls, cls_name, bases, cls_dict, derive=derive, **kwargs)
 
         if type is not None:
             cls._type = type  # type: ignore
@@ -425,17 +436,97 @@ def mut_array(type: Any, length: Optional[int] = None) -> Type[MutArray]:
     return MutArray.new(type, length)
 
 
-class BaseType(MarkerType):
+class FillType(MarkerType):
+    _fill: Dict[Tuple[int, Platform], int]
+
+    def __new__(
+        meta_cls,
+        cls_name: str,
+        bases: Tuple[Type[Any], ...],
+        cls_dict: Dict[str, Any],
+        derive: bool = True,
+        fill: Optional[Dict[Tuple[int, Platform], int]] = None,
+        **kwargs,
+    ) -> "FillType":
+        cls = super().__new__(meta_cls, cls_name, bases, cls_dict, **kwargs)
+
+        if fill is None:
+            fill = {}
+
+        cls._fill = fill  # type: ignore
+
+        return cls
+
+    @no_type_check
+    def new(cls, **fills: int) -> "FillType":
+        class offset(
+            cls, fill={platform_from_string(string): fill for string, fill in fills.items()}
+        ):
+            pass
+
+        offset.__qualname__ = offset.__name__ = cls.__name__
+
+        return offset
+
+    @property
+    def fill(self) -> Dict[Tuple[int, Platform], int]:
+        return self._fill
+
+
+class Fill(metaclass=FillType):
+    _fill: Dict[Tuple[int, Platform], int]
+
+    @class_property
+    def fill(self) -> Dict[Tuple[int, Platform], int]:
+        return self._fill
+
+
+def fill(**fills: int) -> Type[Fill]:
+    return Fill.new(**fills)
+
+
+class Union(metaclass=MarkerType, derive=False):
     pass
 
 
-class Base(metaclass=BaseType, derive=False):
-    pass
+class StructType(MarkerType):
+    _vtable: bool
+    _packed: bool
+
+    def __new__(
+        meta_cls,
+        cls_name: str,
+        bases: Tuple[Type[Any], ...],
+        cls_dict: Dict[str, Any],
+        derive: bool = True,
+        vtable: bool = False,
+        packed: bool = False,
+        **kwargs,
+    ) -> "StructType":
+        cls = super().__new__(meta_cls, cls_name, bases, cls_dict, derive=derive, **kwargs)
+
+        cls._vtable = vtable  # type: ignore
+        cls._packed = packed  # type: ignore
+
+        return cls
+
+    @property
+    def vtable(cls) -> bool:
+        return cls._vtable
+
+    @property
+    def packed(cls) -> bool:
+        return cls._packed
 
 
-class Struct(Base, derive=False):
-    pass
+class Struct(metaclass=StructType, derive=False):
+    _vtable: bool
+    _packed: bool
 
+    @class_property
+    def vtable(self) -> bool:
+        return self._vtable
 
-class Union(Base, derive=False):
-    pass
+    @class_property
+    def packed(self) -> bool:
+        return self._packed

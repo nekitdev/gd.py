@@ -4,7 +4,19 @@ from gd.memory.common_traits import ReadSized, ReadWriteSized
 from gd.memory.context import Context
 from gd.memory.field import Field, MutField
 from gd.memory.marker import (
-    Marker, Array, MutArray, Pointer, MutPointer, Ref, MutRef, Struct, Union
+    Marker,
+    Array,
+    MutArray,
+    Pointer,
+    MutPointer,
+    Ref,
+    MutRef,
+    Fill,
+    Struct,
+    Union,
+    array,
+    char_t,
+    uintptr_t,
 )
 from gd.memory.pointer_ref import MemoryPointer, MemoryMutPointer, MemoryRef, MemoryMutRef
 from gd.memory.traits import Read, Write, Sized, is_class, is_sized
@@ -28,10 +40,39 @@ if TYPE_CHECKING:
 __all__ = ("Visitor",)
 
 ANNOTATIONS = "__annotations__"
-NO_TYPE_CHECK = "__no_type_check__"
+BASES = "__bases__"
+MRO = "__mro__"
+
+MERGED_METACLASS = "merged_metaclass"
+
+ARRAY_TYPE = "array_type"
+MUT_ARRAY_TYPE = "mut_array_type"
+POINTER_TYPE = "pointer_type"
+MUT_POINTER_TYPE = "mut_pointer_type"
+REF_TYPE = "ref_type"
+MUT_REF_TYPE = "mut_ref_type"
+STRUCT_TYPE = "struct_type"
+UNION_TYPE = "union_type"
+VOID_TYPE = "void_type"
+
+VTABLE = "vtable"
 
 T = TypeVar("T")
 V = TypeVar("V", bound="Visitor")
+
+
+def vtable_name(name: str) -> str:
+    return f"__{VTABLE}_{name}__"
+
+
+@no_type_check
+def merge_metaclass(*types: Type[Any], name: str = MERGED_METACLASS) -> Type[Type[Any]]:
+    class merged_metaclass(*map(type, types)):
+        pass
+
+    merged_metaclass.__qualname__ = merged_metaclass.__name__ = name
+
+    return merged_metaclass
 
 
 class InvalidMemoryType(TypeError):
@@ -93,6 +134,11 @@ class Visitor:
 
                 return self.visit_union(union)
 
+            if issubclass(some, Fill):
+                fill = cast(Type[Fill], some)
+
+                return self.visit_fill(fill)
+
             if issubclass(some, Ref):
                 if issubclass(some, MutRef):
                     return self.visit_mut_ref(some)
@@ -123,67 +169,61 @@ class Visitor:
 
         raise InvalidMemoryType(f"{some!r} is not valid as memory type.")
 
-    def get_type_for_hints(self, type: Type[Any]) -> Type[Any]:
-        if getattr(type, NO_TYPE_CHECK, None):
-            class hint_type:
-                pass
+    def visit_fill(self, fill: Type[Fill]) -> Type[Sized]:
+        length = fill.fill.get((self.context.bits, self.context.platform), 0)
 
-            hint_type.__qualname__ = hint_type.__name__ = type.__name__
-
-            return hint_type
-
-        return type
+        return self.visit_array(array(char_t, length))
 
     # Things we should implement are listed below:
 
-    # offset(...) -> Offset(...) for dynamic offsets in relation to platforms and their bitness.
-    # For example, _offset: offset(windows_x32=4, windows_x64=8)
-    # is somewhat similar to _offset: uintptr_t.
+    # Maybe we could implement Void (or void) type, which is going to be similar to C void.
 
-    # Perhaps Base, which Struct and Union inherit from, should have compute_offset function,
-    # which can be used to compute initial offset, having default version of:
-
-    # @staticmethod
-    # def compute_offset(ctx: Context) -> int:
-    #     return 0
-
-    # It can be used for weird structures like std::string in libstdc++
-
-    # class std_long_string(Struct):
-    #     capacity: uintsize_t
-    #     length: uintsize_t
-    #     refcount: int_t
-    #     content: mut_array(char_t)  # <- this will fail, by the way
-
-    #     @staticmethod
-    #     def compute_offset(ctx: Context) -> int:
-    #         types = ctx.types
-    #         size = types.int_t.size + types.uintsize_t.size * 2
-    #         return -size
-
-    # With such function, content will have offset of 0, which is exactly what we need.
-
-    # Then we can have the following:
-
-    # class std_string(Struct):
-    #     pointer: mut_pointer(std_long_string)
-
-    # And our std_string is going to be approximately the same as std::string.
-
-    # Maybe we could also implement This (or this) type, which would be used
-    # as some way for fields to reference the structure or union they are in.
+    # We do not yet have vtable optimization, and this will cause invalid layouts
+    # when we are going to deal with complex virtual inheritance, so this needs to be fixed.
 
     def visit_struct(self, marker_struct: Type[Struct]) -> Type[MemoryStruct]:
+        # get all bases via resolving the MRO
+
+        bases = getattr(marker_struct, MRO)
+
+        # if struct has inherited annotations, and does not define any on its own, reset
+
+        _, main_base, *_ = bases
+
+        if getattr(marker_struct, ANNOTATIONS, {}) == getattr(main_base, ANNOTATIONS, {}):
+            setattr(marker_struct, ANNOTATIONS, {})
+
+        # fetch annotations
+
+        annotations = {}
+
+        for base in reversed(bases):
+            # account for vtables
+
+            if getattr(base, VTABLE, None):
+                annotations[vtable_name(base.__name__)] = uintptr_t
+
+            annotations.update(getattr(base, ANNOTATIONS, {}))
+
+        # XXX: implement vtable optimization
+
+        class annotation_holder:
+            pass
+
+        setattr(annotation_holder, ANNOTATIONS, annotations)
+
+        # initialize variables used in fetching fields, size and offsets
+
         fields: Dict[str, Field] = {}
 
-        annotations = getattr(marker_struct, ANNOTATIONS, {}).copy()
-
         offset = 0
+
+        max_size = 0
         size = 0
 
-        for name, annotation in get_type_hints(
-            self.get_type_for_hints(marker_struct)
-        ).items():
+        # iterate through annotations and figure out all the fields
+
+        for name, annotation in get_type_hints(annotation_holder).items():
             try:
                 field: Field[Any] = self.create_field(
                     self.visit_any(annotation), offset  # type: ignore
@@ -192,29 +232,43 @@ class Visitor:
             except InvalidMemoryType:
                 continue
 
-            if name in fields:
-                raise ValueError(f"Repeated field: {name!r}.")
-
-            annotations[name] = field.type
-
             fields[name] = field
+
+            if field.size > max_size:
+                max_size = field.size
 
             offset += field.size
             size += field.size
 
+        # if layout is not packed, increase size until it is divisible by largest field size
+
+        packed = marker_struct.packed
+
+        if not packed and size % max_size:
+            size = (size // max_size + 1) * max_size
+
+        # create actual struct type
+
         @no_type_check
         class struct(  # type: ignore
             MemoryStruct,
+            marker_struct,  # type: ignore
+            metaclass=merge_metaclass(  # type: ignore
+                MemoryStruct, marker_struct, name=STRUCT_TYPE
+            ),
+            derive=False,
             size=size,
             fields=fields,
             bits=self.context.bits,
             platform=self.context.platform,
         ):
-            vars().update(vars(marker_struct))
+            pass
 
-        setattr(struct, ANNOTATIONS, annotations)
+        # fix struct name
 
         struct.__qualname__ = struct.__name__ = marker_struct.__name__
+
+        # attach fields
 
         for name, field in fields.items():
             if hasattr(struct, name):
@@ -225,16 +279,28 @@ class Visitor:
         return struct
 
     def visit_union(self, marker_union: Type[Union]) -> Type[MemoryUnion]:
+        # initialize variables needed to get fields and size
+
         fields: Dict[str, Field] = {}
 
         offset = 0
         size = 0
 
-        annotations = getattr(marker_union, ANNOTATIONS, {}).copy()
+        # acquire all annotations
 
-        for name, annotation in get_type_hints(
-            self.get_type_for_hints(marker_union)
-        ).items():
+        annotations = {}
+
+        for base in getattr(marker_union, MRO):
+            annotations.update(getattr(base, ANNOTATIONS, {}))
+
+        class annotation_holder:
+            pass
+
+        setattr(annotation_holder, ANNOTATIONS, annotations)
+
+        # iterate through annotations
+
+        for name, annotation in get_type_hints(annotation_holder).items():
             try:
                 field: Field[Any] = self.create_field(
                     self.visit_any(annotation), offset  # type: ignore
@@ -242,11 +308,6 @@ class Visitor:
 
             except InvalidMemoryType:
                 continue
-
-            if name in fields:
-                raise ValueError(f"Repeated field: {name!r}.")
-
-            annotations[name] = field.type
 
             fields[name] = field
 
@@ -256,12 +317,17 @@ class Visitor:
         @no_type_check
         class union(  # type: ignore
             MemoryUnion,
+            marker_union,  # type: ignore
+            metaclass=merge_metaclass(  # type: ignore
+                MemoryUnion, marker_union, name=UNION_TYPE
+            ),
+            derive=False,
             size=size,
             fields=fields,
             bits=self.context.bits,
             platform=self.context.platform,
         ):
-            vars().update(vars(marker_union))
+            pass
 
         setattr(union, ANNOTATIONS, annotations)
 
@@ -285,12 +351,17 @@ class Visitor:
         @no_type_check
         class pointer(  # type: ignore
             MemoryPointer,
+            marker_pointer,  # type: ignore
+            metaclass=merge_metaclass(  # type: ignore
+                MemoryPointer, marker_pointer, name=POINTER_TYPE
+            ),
+            derive=False,
             type=type,
             pointer_type=pointer_type,
             bits=self.context.bits,
             platform=self.context.platform,
         ):
-            vars().update(vars(marker_pointer))
+            pass
 
         pointer.__qualname__ = pointer.__name__ = marker_pointer.__name__
 
@@ -308,12 +379,17 @@ class Visitor:
         @no_type_check
         class mut_pointer(  # type: ignore
             MemoryMutPointer,
+            marker_mut_pointer,  # type: ignore
+            metaclass=merge_metaclass(  # type: ignore
+                MemoryMutPointer, marker_mut_pointer, name=MUT_POINTER_TYPE
+            ),
+            derive=False,
             type=type,
             pointer_type=pointer_type,
             bits=self.context.bits,
             platform=self.context.platform,
         ):
-            vars().update(vars(marker_mut_pointer))
+            pass
 
         mut_pointer.__qualname__ = mut_pointer.__name__ = marker_mut_pointer.__name__
 
@@ -329,12 +405,17 @@ class Visitor:
         @no_type_check
         class ref(  # type: ignore
             MemoryRef,
+            marker_ref,  # type: ignore
+            metaclass=merge_metaclass(  # type: ignore
+                MemoryRef, marker_ref, name=REF_TYPE
+            ),
+            derive=False,
             type=type,
             pointer_type=pointer_type,
             bits=self.context.bits,
             platform=self.context.platform,
         ):
-            vars().update(vars(marker_ref))
+            pass
 
         ref.__qualname__ = ref.__name__ = marker_ref.__name__
 
@@ -352,12 +433,17 @@ class Visitor:
         @no_type_check
         class mut_ref(  # type: ignore
             MemoryMutRef,
+            marker_mut_ref,  # type: ignore
+            metaclass=merge_metaclass(  # type: ignore
+                MemoryMutRef, marker_mut_ref, name=MUT_REF_TYPE
+            ),
+            derive=False,
             type=type,
             pointer_type=pointer_type,
             bits=self.context.bits,
             platform=self.context.platform,
         ):
-            vars().update(vars(marker_mut_ref))
+            pass
 
         mut_ref.__qualname__ = mut_ref.__name__ = marker_mut_ref.__name__
 
@@ -369,12 +455,17 @@ class Visitor:
         @no_type_check
         class array(  # type: ignore
             MemoryArray,
+            marker_array,  # type: ignore
+            metaclass=merge_metaclass(  # type: ignore
+                MemoryArray, marker_array, name=ARRAY_TYPE
+            ),
+            derive=False,
             type=type,
             length=marker_array.length,
             bits=self.context.bits,
             platform=self.context.platform,
         ):
-            vars().update(vars(marker_array))
+            pass
 
         array.__qualname__ = array.__name__ = marker_array.__name__
 
@@ -386,12 +477,17 @@ class Visitor:
         @no_type_check
         class mut_array(  # type: ignore
             MemoryMutArray,
+            marker_mut_array,  # type: ignore
+            metaclass=merge_metaclass(  # type: ignore
+                MemoryMutArray, marker_mut_array, name=MUT_ARRAY_TYPE
+            ),
+            derive=False,
             type=type,
             length=marker_mut_array.length,
             bits=self.context.bits,
             platform=self.context.platform,
         ):
-            vars().update(vars(marker_mut_array))
+            pass
 
         mut_array.__qualname__ = mut_array.__name__ = marker_mut_array.__name__
 

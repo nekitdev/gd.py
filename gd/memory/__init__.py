@@ -11,3 +11,5 @@ from gd.memory.marker import *
 from gd.memory.pointer_ref import *
 from gd.memory.traits import *
 from gd.memory.types import *
+
+from gd.memory.string import *
