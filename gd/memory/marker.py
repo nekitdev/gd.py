@@ -425,7 +425,7 @@ def mut_array(type: Any, length: Optional[int] = None) -> Type[MutArray]:
     return MutArray.new(type, length)
 
 
-class BaseType(metaclass=MarkerType):
+class BaseType(MarkerType):
     pass
 
 

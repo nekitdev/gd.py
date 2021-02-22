@@ -18,7 +18,7 @@ __all__ = ("Editor", "get_time_length")
 
 if TYPE_CHECKING:
     from gd.level import Level  # noqa
-    from gd.memory.interface import GameLevel  # noqa
+    from gd.memory._interface import GameLevel  # noqa
 
 
 def get_time_length(

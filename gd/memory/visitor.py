@@ -134,6 +134,45 @@ class Visitor:
 
         return type
 
+    # Things we should implement are listed below:
+
+    # offset(...) -> Offset(...) for dynamic offsets in relation to platforms and their bitness.
+    # For example, _offset: offset(windows_x32=4, windows_x64=8)
+    # is somewhat similar to _offset: uintptr_t.
+
+    # Perhaps Base, which Struct and Union inherit from, should have compute_offset function,
+    # which can be used to compute initial offset, having default version of:
+
+    # @staticmethod
+    # def compute_offset(ctx: Context) -> int:
+    #     return 0
+
+    # It can be used for weird structures like std::string in libstdc++
+
+    # class std_long_string(Struct):
+    #     capacity: uintsize_t
+    #     length: uintsize_t
+    #     refcount: int_t
+    #     content: mut_array(char_t)  # <- this will fail, by the way
+
+    #     @staticmethod
+    #     def compute_offset(ctx: Context) -> int:
+    #         types = ctx.types
+    #         size = types.int_t.size + types.uintsize_t.size * 2
+    #         return -size
+
+    # With such function, content will have offset of 0, which is exactly what we need.
+
+    # Then we can have the following:
+
+    # class std_string(Struct):
+    #     pointer: mut_pointer(std_long_string)
+
+    # And our std_string is going to be approximately the same as std::string.
+
+    # Maybe we could also implement This (or this) type, which would be used
+    # as some way for fields to reference the structure or union they are in.
+
     def visit_struct(self, marker_struct: Type[Struct]) -> Type[MemoryStruct]:
         fields: Dict[str, Field] = {}
 
@@ -151,7 +190,6 @@ class Visitor:
                 )
 
             except InvalidMemoryType:
-                print("[X]", name, "->", annotation)  # XXX: remove this
                 continue
 
             if name in fields:
