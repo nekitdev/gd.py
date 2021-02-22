@@ -113,11 +113,11 @@ class Data(Generic[T], metaclass=DataType):
         return self.order.value + self.format
 
     @classmethod
-    def read(cls: Type["Data[T]"], state: "BaseState", address: int) -> "Data[T]":
-        return cls(cls.read_value(state, address))
+    def read_from(cls: Type["Data[T]"], state: "BaseState", address: int) -> "Data[T]":
+        return cls(cls.read_value_from(state, address))
 
     @classmethod
-    def read_value(cls, state: "BaseState", address: int) -> T:
+    def read_value_from(cls, state: "BaseState", address: int) -> T:
         result = unpack(cast(str, cls.pack_format), state.read_at(address, cast(int, cls.size)))
 
         if len(result) == 1:
@@ -125,9 +125,9 @@ class Data(Generic[T], metaclass=DataType):
 
         return cast(T, result)
 
-    def write(self, state: "BaseState", address: int) -> None:
-        self.write_value(self.value, state, address)
+    def write_to(self, state: "BaseState", address: int) -> None:
+        self.write_value_to(self.value, state, address)
 
     @classmethod
-    def write_value(cls, value: T, state: "BaseState", address: int) -> None:
+    def write_value_to(cls, value: T, state: "BaseState", address: int) -> None:
         state.write_at(address, pack(cast(str, cls.pack_format), value))

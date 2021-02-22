@@ -206,16 +206,16 @@ class BaseState:
         return self.write_at(address, buffer.into())
 
     def read(self, type: Type[Read[T]], address: int) -> Read[T]:
-        return type.read(self, address)
+        return type.read_from(self, address)
 
     def read_value(self, type: Type[Read[T]], address: int) -> T:
-        return type.read_value(self, address)
+        return type.read_value_from(self, address)
 
     def write(self, object: Write[T], address: int) -> None:
-        object.write(self, address)
+        object.write_to(self, address)
 
     def write_value(self, type: Type[Write[T]], value: T, address: int) -> None:
-        type.write_value(value, self, address)
+        type.write_value_to(value, self, address)
 
 
 class SystemState(BaseState):

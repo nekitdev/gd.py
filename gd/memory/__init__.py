@@ -1,8 +1,13 @@
+from gd.memory._interface import *  # XXX: this is deprecated, and going to be removed soon
+
+from gd.memory.array import *
+from gd.memory.base import *
 from gd.memory.buffer import *
+from gd.memory.context import *
 from gd.memory.data import *
-from gd.memory.enums import *
-from gd.memory.interface import *
 from gd.memory.internal import *
-from gd.memory.struct import *
+from gd.memory.memory import *
+from gd.memory.marker import *
+from gd.memory.pointer_ref import *
 from gd.memory.traits import *
 from gd.memory.types import *

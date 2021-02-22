@@ -16,29 +16,31 @@ T_contra = TypeVar("T_contra", contravariant=True)
 @runtime_checkable
 class Read(Protocol[T_co]):
     @classmethod
-    def read(cls: Type[T], state: "BaseState", address: int) -> T:
+    def read_from(cls: Type[T], state: "BaseState", address: int) -> T:
         raise NotImplementedError(
-            "Classes derived from Read must implement read(state, address) class method."
+            "Classes derived from Read must implement read_from(state, address) class method."
         )
 
     @classmethod
-    def read_value(cls, state: "BaseState", address: int) -> T_co:
+    def read_value_from(cls, state: "BaseState", address: int) -> T_co:
         raise NotImplementedError(
-            "Classes derived from Read must implement read_value(state, address) class method."
+            "Classes derived from Read must implement "
+            "read_value_from(state, address) class method."
         )
 
 
 @runtime_checkable
 class Write(Protocol[T_contra]):
-    def write(self: T, state: "BaseState", address: int) -> None:
+    def write_to(self: T, state: "BaseState", address: int) -> None:
         raise NotImplementedError(
-            "Classes derived from Write must implement write(state, address) method."
+            "Classes derived from Write must implement write_to(state, address) method."
         )
 
     @classmethod
-    def write_value(cls, value: T_contra, state: "BaseState", address: int) -> None:
+    def write_value_to(cls, value: T_contra, state: "BaseState", address: int) -> None:
         raise NotImplementedError(
-            "Classes derived from Write must implement write_value(state, address) class method."
+            "Classes derived from Write must implement "
+            "write_value_to(value, state, address) class method."
         )
 
 

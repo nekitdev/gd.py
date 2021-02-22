@@ -419,6 +419,11 @@ def double_t(bits: int, platform: Platform) -> Type[Data[float]]:
 
 
 @register
+def char_t(bits: int, platform: Platform) -> Type[Data[int]]:
+    return uint8
+
+
+@register
 def float32_t(bits: int, platform: Platform) -> Type[Data[float]]:
     return float32
 
