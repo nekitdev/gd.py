@@ -401,9 +401,11 @@ class WindowsState(BaseState):
         return windows_protect_process_memory(self.process_handle, address, size, flags)
 
     def read_at(self, address: int, size: int) -> bytes:
+        print(hex(address), size)
         return windows_read_process_memory(self.process_handle, address, size)
 
     def write_at(self, address: int, data: bytes) -> int:
+        print(hex(address), data.hex())
         return windows_write_process_memory(self.process_handle, address, data)
 
     def inject_dll(self, path: Union[str, Path]) -> bool:

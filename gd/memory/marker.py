@@ -10,6 +10,7 @@ from gd.typing import (
     Optional,
     Tuple,
     Type,
+    TypeVar,
     Union as TypeUnion,
     cast,
     no_type_check,
@@ -37,6 +38,8 @@ __all__ = (
     "fill",
     "Struct",
     "Union",
+    "Void",
+    "void",
     "byte_t",
     "ubyte_t",
     "short_t",
@@ -530,3 +533,17 @@ class Struct(metaclass=StructType, derive=False):
     @class_property
     def packed(self) -> bool:
         return self._packed
+
+
+V = TypeVar("V", bound="Void")
+
+
+class Void(metaclass=MarkerType, derive=False):
+    def __new__(cls: Type[V], *ignored_args, **ignored_kwargs) -> V:
+        raise TypeError("Can not instantiate void.")
+
+    def __init_subclass__(cls, **ignored) -> None:
+        raise TypeError("Can not derive from void.")
+
+
+void = Void

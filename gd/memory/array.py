@@ -1,3 +1,5 @@
+import sys
+
 from gd.iter_utils import is_iterable
 from gd.memory.common_traits import ReadSized, ReadWriteSized
 from gd.memory.memory import MemoryType, Memory
@@ -125,7 +127,9 @@ class MemoryArray(MemoryBaseArray[ReadSized[T]]):
             return self.read_at(item)
 
         if isinstance(item, slice):
-            return self.read_iter(range(item.start, item.stop, item.step))
+            start, stop, step = item.indices(self.length or sys.maxsize)
+
+            return self.read_iter(range(start, stop, step))
 
         raise TypeError("Expected either slices or integer indexes.")
 
@@ -169,8 +173,10 @@ class MemoryMutArray(MemoryArray[T], MemoryBaseArray[ReadWriteSized[T]]):
 
         if isinstance(item, slice):
             if is_iterable(value):
+                start, stop, step = item.indices(self.length or sys.maxsize)
+
                 return self.write_iter(
-                    range(item.start, item.stop, item.step), cast(Iterable[T], value)
+                    range(start, stop, step), cast(Iterable[T], value)
                 )
 
             raise ValueError("Expected iterable value with slices.")

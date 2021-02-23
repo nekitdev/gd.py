@@ -14,12 +14,14 @@ from gd.memory.marker import (
     Fill,
     Struct,
     Union,
+    Void,
     array,
     char_t,
     uintptr_t,
 )
 from gd.memory.pointer_ref import MemoryPointer, MemoryMutPointer, MemoryRef, MemoryMutRef
 from gd.memory.traits import Read, Write, Sized, is_class, is_sized
+from gd.memory.void import MemoryVoid
 from gd.platform import Platform, system_bits, system_platform
 from gd.typing import (
     TYPE_CHECKING,
@@ -53,7 +55,6 @@ REF_TYPE = "ref_type"
 MUT_REF_TYPE = "mut_ref_type"
 STRUCT_TYPE = "struct_type"
 UNION_TYPE = "union_type"
-VOID_TYPE = "void_type"
 
 VTABLE = "vtable"
 
@@ -124,6 +125,13 @@ class Visitor:
 
     def visit_any(self, some: Any) -> Type[Sized]:
         if is_class(some):
+            if is_sized(some):
+                if issubclass(some, Read):
+                    if issubclass(some, Write):
+                        return self.visit_read_write_sized(some)
+
+                    return self.visit_read_sized(some)
+
             if issubclass(some, Struct):
                 struct = cast(Type[Struct], some)
 
@@ -133,6 +141,9 @@ class Visitor:
                 union = cast(Type[Union], some)
 
                 return self.visit_union(union)
+
+            if issubclass(some, Void):
+                return self.visit_void(some)
 
             if issubclass(some, Fill):
                 fill = cast(Type[Fill], some)
@@ -160,13 +171,6 @@ class Visitor:
             if issubclass(some, Marker):
                 return self.visit_marker(some)
 
-            if is_sized(some):
-                if issubclass(some, Read):
-                    if issubclass(some, Write):
-                        return self.visit_read_write_sized(some)
-
-                    return self.visit_read_sized(some)
-
         raise InvalidMemoryType(f"{some!r} is not valid as memory type.")
 
     def visit_fill(self, fill: Type[Fill]) -> Type[Sized]:
@@ -176,10 +180,14 @@ class Visitor:
 
     # Things we should implement are listed below:
 
-    # Maybe we could implement Void (or void) type, which is going to be similar to C void.
+    # Maybe we could implement This (or this) type,
+    # which is going to be used for recursive definitions.
 
     # We do not yet have vtable optimization, and this will cause invalid layouts
     # when we are going to deal with complex virtual inheritance, so this needs to be fixed.
+
+    # Just like with vtables, we do not have padding implemented, which is going to result
+    # in invalid layouts.
 
     def visit_struct(self, marker_struct: Type[Struct]) -> Type[MemoryStruct]:
         # get all bases via resolving the MRO
@@ -239,13 +247,6 @@ class Visitor:
 
             offset += field.size
             size += field.size
-
-        # if layout is not packed, increase size until it is divisible by largest field size
-
-        packed = marker_struct.packed
-
-        if not packed and size % max_size:
-            size = (size // max_size + 1) * max_size
 
         # create actual struct type
 
@@ -492,6 +493,17 @@ class Visitor:
         mut_array.__qualname__ = mut_array.__name__ = marker_mut_array.__name__
 
         return mut_array
+
+    def visit_void(self, marker_void: Type[Void]) -> Type[MemoryVoid]:
+        @no_type_check
+        class void(  # type: ignore
+            MemoryVoid, _root=True, bits=self.context.bits, platform=self.context.platform
+        ):
+            pass
+
+        void.__qualname__ = void.__name__ = marker_void.__name__
+
+        return void
 
     def visit_read_sized(self, type: Type[ReadSized[T]]) -> Type[ReadSized[T]]:
         return type

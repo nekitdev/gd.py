@@ -66,7 +66,7 @@ class MutField(Field[T], BaseField[ReadWriteSized[T]]):
         super().__init__(type, offset)  # type: ignore
 
     def __set__(self, instance: Any, value: T) -> None:
-        self.type.write_value_to(value, instance.state, instance.address)
+        self.type.write_value_to(value, instance.state, instance.address + self.offset)
 
     def __delete__(self, instance: Any) -> None:
         raise AttributeError("Can not delete field.")
