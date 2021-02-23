@@ -6,9 +6,9 @@ from itertools import count
 import iters
 
 from gd.decorators import cache_by
-from gd.memory.array import MemoryArray
-from gd.memory.base import MemoryStruct
 from gd.memory.marker import Struct, Union, mut_array, mut_pointer, char_t, int_t, uintsize_t
+from gd.memory.memory_array import MemoryArray
+from gd.memory.memory_base import MemoryStruct
 from gd.memory.types import Types
 from gd.platform import Platform
 from gd.typing import TYPE_CHECKING, Type

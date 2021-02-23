@@ -1,5 +1,3 @@
-from gd.memory.array import MemoryArray, MemoryMutArray
-from gd.memory.base import MemoryStruct, MemoryUnion
 from gd.memory.common_traits import ReadSized, ReadWriteSized
 from gd.memory.context import Context
 from gd.memory.field import Field, MutField
@@ -19,9 +17,11 @@ from gd.memory.marker import (
     char_t,
     uintptr_t,
 )
-from gd.memory.pointer_ref import MemoryPointer, MemoryMutPointer, MemoryRef, MemoryMutRef
+from gd.memory.memory_array import MemoryArray, MemoryMutArray
+from gd.memory.memory_base import MemoryStruct, MemoryUnion
+from gd.memory.memory_pointer_ref import MemoryPointer, MemoryMutPointer, MemoryRef, MemoryMutRef
+from gd.memory.memory_void import MemoryVoid
 from gd.memory.traits import Read, Write, Sized, is_class, is_sized
-from gd.memory.void import MemoryVoid
 from gd.platform import Platform, system_bits, system_platform
 from gd.typing import (
     TYPE_CHECKING,

@@ -96,7 +96,7 @@ from gd.memory.internal import (
     windows_read_process_memory,
     windows_write_process_memory,
 )
-from gd.memory.offsets import (
+from gd.memory._offsets import (
     Offsets,
     linux_offsets_x32,
     linux_offsets_x64,
