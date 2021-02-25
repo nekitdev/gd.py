@@ -1,4 +1,3 @@
-from gd.memory.common_traits import ReadSized, ReadWriteSized
 from gd.memory.context import Context
 from gd.memory.field import Field, MutField
 from gd.memory.marker import (
@@ -9,24 +8,25 @@ from gd.memory.marker import (
     MutPointer,
     Ref,
     MutRef,
-    Fill,
+    DynamicFill,
     Struct,
     Union,
     Void,
-    array,
-    char_t,
+    fill,
     uintptr_t,
 )
 from gd.memory.memory_array import MemoryArray, MemoryMutArray
 from gd.memory.memory_base import MemoryStruct, MemoryUnion
 from gd.memory.memory_pointer_ref import MemoryPointer, MemoryMutPointer, MemoryRef, MemoryMutRef
 from gd.memory.memory_void import MemoryVoid
-from gd.memory.traits import Read, Write, Sized, is_class, is_sized
+from gd.memory.traits import Read, Write, Normal, ReadNormal, ReadWriteNormal, is_class, is_normal
 from gd.platform import Platform, system_bits, system_platform
 from gd.typing import (
     TYPE_CHECKING,
     Any,
     Dict,
+    List,
+    Tuple,
     Type,
     TypeVar,
     Union as TypeUnion,
@@ -56,10 +56,16 @@ MUT_REF_TYPE = "mut_ref_type"
 STRUCT_TYPE = "struct_type"
 UNION_TYPE = "union_type"
 
+FINAL = "final"
+PAD = "pad"
 VTABLE = "vtable"
 
 T = TypeVar("T")
 V = TypeVar("V", bound="Visitor")
+
+
+def pad_name(name: str) -> str:
+    return f"__{PAD}_{name}__"
 
 
 def vtable_name(name: str) -> str:
@@ -101,31 +107,31 @@ class Visitor:
         return self._context
 
     @overload  # noqa
-    def create_field(self, some: Type[ReadWriteSized[T]], offset: int) -> MutField[T]:  # noqa
+    def create_field(self, some: Type[ReadWriteNormal[T]], offset: int) -> MutField[T]:  # noqa
         ...
 
     @overload  # noqa
-    def create_field(self, some: Type[ReadSized[T]], offset: int) -> Field[T]:  # noqa
+    def create_field(self, some: Type[ReadNormal[T]], offset: int) -> Field[T]:  # noqa
         ...
 
     def create_field(self, some: Type[Any], offset: int = 0) -> Field[T]:  # noqa
         if is_class(some):
-            if is_sized(some):
+            if is_normal(some):
                 if issubclass(some, Read):
                     if issubclass(some, Write):
-                        mut_type = cast(Type[ReadWriteSized[T]], some)
+                        mut_type = cast(Type[ReadWriteNormal[T]], some)
 
                         return MutField(mut_type, offset)
 
-                    type = cast(Type[ReadSized[T]], some)
+                    type = cast(Type[ReadNormal[T]], some)
 
                     return Field(type, offset)
 
         raise InvalidMemoryType(f"Can not create field from {some!r}.")
 
-    def visit_any(self, some: Any) -> Type[Sized]:
+    def visit_any(self, some: Any) -> Type[Normal]:
         if is_class(some):
-            if is_sized(some):
+            if is_normal(some):
                 if issubclass(some, Read):
                     if issubclass(some, Write):
                         return self.visit_read_write_sized(some)
@@ -145,10 +151,10 @@ class Visitor:
             if issubclass(some, Void):
                 return self.visit_void(some)
 
-            if issubclass(some, Fill):
-                fill = cast(Type[Fill], some)
+            if issubclass(some, DynamicFill):
+                dynamic_fill = cast(Type[DynamicFill], some)
 
-                return self.visit_fill(fill)
+                return self.visit_dynamic_fill(dynamic_fill)
 
             if issubclass(some, Ref):
                 if issubclass(some, MutRef):
@@ -173,10 +179,10 @@ class Visitor:
 
         raise InvalidMemoryType(f"{some!r} is not valid as memory type.")
 
-    def visit_fill(self, fill: Type[Fill]) -> Type[Sized]:
-        length = fill.fill.get((self.context.bits, self.context.platform), 0)
-
-        return self.visit_array(array(char_t, length))
+    def visit_dynamic_fill(self, dynamic_fill: Type[DynamicFill]) -> Type[Normal]:
+        return self.visit_array(
+            fill(dynamic_fill.fill.get((self.context.bits, self.context.platform), 0))
+        )
 
     # Things we should implement are listed below:
 
@@ -222,31 +228,92 @@ class Visitor:
 
         # initialize variables used in fetching fields, size and offsets
 
-        fields: Dict[str, Field] = {}
+        field_array: List[Tuple[str, Field]] = []
 
-        offset = 0
-
-        max_size = 0
-        size = 0
+        alignment = 0
 
         # iterate through annotations and figure out all the fields
 
         for name, annotation in get_type_hints(annotation_holder).items():
             try:
-                field: Field[Any] = self.create_field(
-                    self.visit_any(annotation), offset  # type: ignore
-                )
+                field: Field[Any] = self.create_field(self.visit_any(annotation))  # type: ignore
 
             except InvalidMemoryType:
                 continue
 
-            fields[name] = field
+            field_array.append((name, field))
 
-            if field.size > max_size:
-                max_size = field.size
+            if field.alignment > alignment:
+                alignment = field.alignment
 
-            offset += field.size
-            size += field.size
+        # if structure is not packed
+
+        if not marker_struct.packed:
+
+            # copy original fields in order to iterate properly
+
+            original_fields = dict(field_array)
+
+            index = 0
+
+            for main_name, main_field in original_fields.items():
+                temp_size = 0
+
+                # calculate size of all fields preceding current field
+
+                for _, field in field_array:
+                    if field is main_field:
+                        break
+
+                    temp_size += field.size
+
+                remain_size = temp_size % main_field.alignment
+
+                # if size is not divisible by alignment of the field, pad accordingly
+
+                if remain_size:
+                    pad_size = main_field.alignment - remain_size
+
+                    name = pad_name(main_name)
+
+                    field_array.insert(
+                        index,
+                        (name, self.create_field(self.visit_array(fill(pad_size))))  # type: ignore
+                    )
+
+                    index += 1
+
+                index += 1
+
+            # update fields, setting their offsets and computing total size along
+
+            fields: Dict[str, Field] = dict(field_array)
+
+            offset = 0
+            size = 0
+
+            for field in fields.values():
+                field.offset = offset
+
+                offset += field.size
+                size += field.size
+
+                field.freeze()  # freeze the field so it can not be mutated
+
+            # last padding: we need the structure size to be divisible
+            # by the size of the largest member in it
+
+            remain_size = size % alignment
+
+            if remain_size:
+                pad_size = alignment - remain_size
+
+                fields[pad_name(FINAL)] = self.create_field(
+                    self.visit_array(fill(pad_size)), offset  # type: ignore
+                )
+
+                offset += pad_size
+                size += pad_size
 
         # create actual struct type
 
@@ -259,6 +326,7 @@ class Visitor:
             ),
             derive=False,
             size=size,
+            alignment=alignment,
             fields=fields,
             bits=self.context.bits,
             platform=self.context.platform,
@@ -284,7 +352,7 @@ class Visitor:
 
         fields: Dict[str, Field] = {}
 
-        offset = 0
+        alignment = 0
         size = 0
 
         # acquire all annotations
@@ -303,9 +371,7 @@ class Visitor:
 
         for name, annotation in get_type_hints(annotation_holder).items():
             try:
-                field: Field[Any] = self.create_field(
-                    self.visit_any(annotation), offset  # type: ignore
-                )
+                field: Field[Any] = self.create_field(self.visit_any(annotation))  # type: ignore
 
             except InvalidMemoryType:
                 continue
@@ -314,6 +380,9 @@ class Visitor:
 
             if field.size > size:
                 size = field.size
+
+            if field.alignment > alignment:
+                alignment = field.alignment
 
         @no_type_check
         class union(  # type: ignore
@@ -324,6 +393,7 @@ class Visitor:
             ),
             derive=False,
             size=size,
+            alignment=alignment,
             fields=fields,
             bits=self.context.bits,
             platform=self.context.platform,
@@ -505,11 +575,11 @@ class Visitor:
 
         return void
 
-    def visit_read_sized(self, type: Type[ReadSized[T]]) -> Type[ReadSized[T]]:
+    def visit_read_sized(self, type: Type[ReadNormal[T]]) -> Type[ReadNormal[T]]:
         return type
 
-    def visit_read_write_sized(self, type: Type[ReadWriteSized[T]]) -> Type[ReadWriteSized[T]]:
+    def visit_read_write_sized(self, type: Type[ReadWriteNormal[T]]) -> Type[ReadWriteNormal[T]]:
         return type
 
-    def visit_marker(self, marker: Type[Marker]) -> Type[Sized]:
+    def visit_marker(self, marker: Type[Marker]) -> Type[Normal]:
         return self.visit_any(self.context.get_type(marker.name))

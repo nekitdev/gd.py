@@ -1,39 +1,65 @@
-from gd.memory.common_traits import ReadSized, ReadWriteSized
-from gd.memory.traits import Sized
+from gd.memory.traits import Normal, ReadNormal, ReadWriteNormal
 from gd.text_utils import make_repr
 from gd.typing import Any, Generic, Literal, Optional, Type, TypeVar, Union, overload
 
 __all__ = ("Field", "MutField")
 
-S = TypeVar("S", bound=Sized)
+N = TypeVar("N", bound=Normal)
 T = TypeVar("T")
 
 
-class BaseField(Generic[S]):
-    def __init__(self, type: Type[S], offset: int) -> None:
+class BaseField(Generic[N]):
+    def __init__(self, type: Type[N], offset: int, frozen: bool = False) -> None:
         self._type = type
         self._offset = offset
+        self._frozen = frozen
 
     def __repr__(self) -> str:
         info = {"offset": self.offset, "size": self.size, "type": self.type.__name__}
 
         return make_repr(self, info)
 
-    @property
-    def offset(self) -> int:
+    def get_offset(self) -> int:
         return self._offset
 
-    @property
-    def type(self) -> Type[S]:
+    def set_offset(self, offset: int) -> None:
+        if self._frozen:
+            raise TypeError("Can not update this field.")
+
+        self._offset = offset
+
+    offset = property(get_offset, set_offset)
+
+    def get_type(self) -> Type[N]:
         return self._type
 
-    @property
-    def size(self) -> int:
+    def set_type(self, type: Type[N]) -> None:
+        if self._frozen:
+            raise TypeError("Can not update this field.")
+
+        self._type = type
+
+    type = property(get_type, set_type)
+
+    def get_size(self) -> int:
         return self.type.size
 
+    size = property(get_size)
 
-class Field(BaseField[ReadSized[T]]):
-    def __init__(self, type: Type[ReadSized[T]], offset: int) -> None:
+    def get_alignment(self) -> int:
+        return self.type.alignment
+
+    alignment = property(get_alignment)
+
+    def freeze(self) -> None:
+        self._frozen = True
+
+    def unfreeze(self) -> None:
+        self._frozen = False
+
+
+class Field(BaseField[ReadNormal[T]]):
+    def __init__(self, type: Type[ReadNormal[T]], offset: int) -> None:
         super().__init__(type, offset)
 
     @overload  # noqa
@@ -61,8 +87,8 @@ class Field(BaseField[ReadSized[T]]):
         raise AttributeError("Can not delete field.")
 
 
-class MutField(Field[T], BaseField[ReadWriteSized[T]]):
-    def __init__(self, type: Type[ReadWriteSized[T]], offset: int) -> None:
+class MutField(Field[T], BaseField[ReadWriteNormal[T]]):
+    def __init__(self, type: Type[ReadWriteNormal[T]], offset: int) -> None:
         super().__init__(type, offset)  # type: ignore
 
     def __set__(self, instance: Any, value: T) -> None:

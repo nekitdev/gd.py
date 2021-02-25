@@ -5,6 +5,7 @@ from gd.typing import Any, Dict, Tuple, Type, Union
 __all__ = ("VOID_SIZE", "MemoryVoidType", "MemoryVoid")
 
 VOID_SIZE = 0
+VOID_ALIGNMENT = 0
 
 
 class MemoryVoidType(MemoryType):
@@ -23,6 +24,7 @@ class MemoryVoidType(MemoryType):
             bases,
             cls_dict,
             size=VOID_SIZE,
+            alignment=VOID_ALIGNMENT,
             bits=bits,
             platform=platform,
             **kwargs,

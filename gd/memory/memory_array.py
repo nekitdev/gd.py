@@ -1,9 +1,8 @@
 import sys
 
 from gd.iter_utils import is_iterable
-from gd.memory.common_traits import ReadSized, ReadWriteSized
 from gd.memory.memory import MemoryType, Memory
-from gd.memory.traits import Sized
+from gd.memory.traits import Normal, ReadNormal, ReadWriteNormal
 from gd.memory.utils import class_property
 from gd.platform import Platform, system_bits, system_platform
 from gd.typing import (
@@ -27,12 +26,12 @@ if TYPE_CHECKING:
 
 __all__ = ("MemoryArrayType", "MemoryArray", "MemoryMutArray")
 
-S = TypeVar("S", bound=Sized)
+N = TypeVar("N", bound=Normal)
 T = TypeVar("T")
 
 
 class MemoryArrayType(MemoryType):
-    _type: Type[Sized]
+    _type: Type[Normal]
     _length: Optional[int]
 
     def __new__(
@@ -40,7 +39,7 @@ class MemoryArrayType(MemoryType):
         cls_name: str,
         bases: Tuple[Type[Any], ...],
         cls_dict: Dict[str, Any],
-        type: Optional[Type[Sized]] = None,
+        type: Optional[Type[Normal]] = None,
         length: Optional[int] = None,
         bits: int = system_bits,
         platform: Union[int, str, Platform] = system_platform,
@@ -65,7 +64,11 @@ class MemoryArrayType(MemoryType):
         return cls.type.size * cls.length
 
     @property
-    def type(cls) -> Type[Sized]:
+    def alignment(cls) -> int:
+        return cls.type.alignment
+
+    @property
+    def type(cls) -> Type[Normal]:
         return cls._type
 
     @property
@@ -73,8 +76,8 @@ class MemoryArrayType(MemoryType):
         return cls._length
 
 
-class MemoryBaseArray(Generic[S], Memory, metaclass=MemoryArrayType):
-    _type: Type[S]
+class MemoryBaseArray(Generic[N], Memory, metaclass=MemoryArrayType):
+    _type: Type[N]
     _length: Optional[int]
 
     def __init__(self, state: "BaseState", address: int) -> None:
@@ -91,8 +94,19 @@ class MemoryBaseArray(Generic[S], Memory, metaclass=MemoryArrayType):
         return self.address + index * self.type.size
 
     @class_property
-    def type(self) -> Type[S]:  # type: ignore
+    def type(self) -> Type[N]:  # type: ignore
         return self._type
+
+    @class_property
+    def size(self) -> int:
+        if self.length is None:
+            raise TypeError("Array is unsized.")
+
+        return self.type.size * self.length
+
+    @class_property
+    def alignment(self) -> int:
+        return self.type.alignment
 
     @class_property
     def length(self) -> Optional[int]:
@@ -107,11 +121,11 @@ class MemoryBaseArray(Generic[S], Memory, metaclass=MemoryArrayType):
         return self._address
 
 
-class MemoryArray(MemoryBaseArray[ReadSized[T]]):
-    _type: Type[ReadSized[T]]  # type: ignore
+class MemoryArray(MemoryBaseArray[ReadNormal[T]]):
+    _type: Type[ReadNormal[T]]  # type: ignore
 
     @class_property
-    def type(self) -> Type[ReadSized[T]]:  # type: ignore
+    def type(self) -> Type[ReadNormal[T]]:  # type: ignore
         return self._type
 
     @overload  # noqa
@@ -150,11 +164,11 @@ class MemoryArray(MemoryBaseArray[ReadSized[T]]):
         return self.read_iter(range(self.length))
 
 
-class MemoryMutArray(MemoryArray[T], MemoryBaseArray[ReadWriteSized[T]]):
-    _type: Type[ReadWriteSized[T]]  # type: ignore
+class MemoryMutArray(MemoryArray[T], MemoryBaseArray[ReadWriteNormal[T]]):
+    _type: Type[ReadWriteNormal[T]]  # type: ignore
 
     @class_property
-    def type(self) -> Type[ReadWriteSized[T]]:  # type: ignore
+    def type(self) -> Type[ReadWriteNormal[T]]:  # type: ignore
         return self._type
 
     @overload  # noqa

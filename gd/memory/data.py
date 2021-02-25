@@ -16,6 +16,7 @@ class DataType(type(Generic)):  # type: ignore
     _name: str
     _format: str
     _size: int
+    _alignment: int
     _order: ByteOrder
 
     def __new__(
@@ -25,13 +26,17 @@ class DataType(type(Generic)):  # type: ignore
         cls_dict: Dict[str, Any],
         name: str = "",
         format: str = "",
+        alignment: int = 0,
         **kwargs,
     ) -> "DataType":
         cls = super().__new__(meta_cls, cls_name, bases, cls_dict, **kwargs)
 
+        size = get_size(format)
+
         cls._name = name
         cls._format = format
-        cls._size = get_size(format)
+        cls._size = size
+        cls._alignment = alignment or size
 
         return cls  # type: ignore
 
@@ -46,6 +51,10 @@ class DataType(type(Generic)):  # type: ignore
     @property
     def size(cls) -> int:
         return cls._size
+
+    @property
+    def alignment(cls) -> int:
+        return cls._alignment
 
     @property
     def bits(cls) -> int:
@@ -68,6 +77,7 @@ class Data(Generic[T], metaclass=DataType):
     _name: str = ""
     _format: str = ""
     _size: int = 0
+    _alignment: int = 0
     _order: ByteOrder = ByteOrder.NATIVE  # type: ignore
 
     def __init__(self, value: T) -> None:
@@ -95,6 +105,10 @@ class Data(Generic[T], metaclass=DataType):
     @class_property
     def size(self) -> int:
         return self._size
+
+    @class_property
+    def alignment(self) -> int:
+        return self._alignment
 
     @class_property
     def bits(self) -> int:

@@ -16,13 +16,22 @@ class MemoryBaseType(MemoryType):
         bases: Tuple[Type[Any], ...],
         cls_dict: Dict[str, Any],
         size: int = 0,
+        alignment: int = 0,
         fields: Optional[Dict[str, Field]] = None,
         bits: int = system_bits,
         platform: Union[int, str, Platform] = system_platform,
         **kwargs,
     ) -> "MemoryBaseType":
         cls = super().__new__(
-            meta_cls, cls_name, bases, cls_dict, size=size, bits=bits, platform=platform, **kwargs
+            meta_cls,
+            cls_name,
+            bases,
+            cls_dict,
+            size=size,
+            alignment=alignment,
+            bits=bits,
+            platform=platform,
+            **kwargs,
         )
 
         if fields is None:

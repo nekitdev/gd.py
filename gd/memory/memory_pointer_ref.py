@@ -1,6 +1,5 @@
-from gd.memory.common_traits import ReadSized, ReadWriteSized
 from gd.memory.memory import MemoryType, Memory
-from gd.memory.traits import Sized
+from gd.memory.traits import Normal, ReadNormal, ReadWriteNormal
 from gd.memory.utils import class_property
 from gd.platform import Platform, system_bits, system_platform
 from gd.text_utils import make_repr
@@ -11,21 +10,21 @@ if TYPE_CHECKING:
 
 __all__ = ("MemoryPointer", "MemoryMutPointer", "MemoryRef", "MemoryMutRef")
 
-S = TypeVar("S", bound=Sized)
+N = TypeVar("N", bound=Normal)
 T = TypeVar("T")
 
 
 class MemoryPointerType(MemoryType):
-    _type: Type[Sized]
-    _pointer_type: Type[ReadWriteSized[int]]
+    _type: Type[Normal]
+    _pointer_type: Type[ReadWriteNormal[int]]
 
     def __new__(
         meta_cls,
         cls_name: str,
         bases: Tuple[Type[Any], ...],
         cls_dict: Dict[str, Any],
-        type: Optional[Type[Sized]] = None,
-        pointer_type: Optional[Type[ReadWriteSized[int]]] = None,
+        type: Optional[Type[Normal]] = None,
+        pointer_type: Optional[Type[ReadWriteNormal[int]]] = None,
         bits: int = system_bits,
         platform: Union[int, str, Platform] = system_platform,
         **kwargs,
@@ -43,47 +42,55 @@ class MemoryPointerType(MemoryType):
         return cls  # type: ignore
 
     @property
-    def pointer_type(cls) -> Type[ReadWriteSized[int]]:
+    def pointer_type(cls) -> Type[ReadWriteNormal[int]]:
         return cls._pointer_type
 
     @property
-    def type(cls) -> Type[Sized]:
+    def type(cls) -> Type[Normal]:
         return cls._type
 
     @property
     def size(cls) -> int:
         return cls.pointer_type.size
 
+    @property
+    def alignment(cls) -> int:
+        return cls.pointer_type.alignment
+
 
 PointerT = TypeVar("PointerT", bound="MemoryPointer")
 PointerU = TypeVar("PointerU", bound="MemoryPointer")
 
 
-class MemoryPointerBase(Generic[S], Memory, metaclass=MemoryPointerType):
-    _type: Type[S]
-    _pointer_type: Type[ReadWriteSized[int]]
+class MemoryPointerBase(Generic[N], Memory, metaclass=MemoryPointerType):
+    _type: Type[N]
+    _pointer_type: Type[ReadWriteNormal[int]]
 
     @class_property
-    def pointer_type(self) -> Type[ReadWriteSized[int]]:
+    def pointer_type(self) -> Type[ReadWriteNormal[int]]:
         return self._pointer_type
 
     @class_property
-    def type(self) -> Type[S]:
+    def type(self) -> Type[N]:
         return self._type
 
     @class_property
     def size(self) -> int:
         return self.pointer_type.size
 
+    @class_property
+    def alignment(self) -> int:
+        return self.pointer_type.alignment
+
     def write_to(self, state: "BaseState", address: int) -> None:
         ...
 
 
-class MemoryPointer(MemoryPointerBase[ReadSized[T]]):
-    _type: Type[ReadSized[T]]
+class MemoryPointer(MemoryPointerBase[ReadNormal[T]]):
+    _type: Type[ReadNormal[T]]
 
     @class_property
-    def type(self) -> Type[ReadSized[T]]:  # type: ignore
+    def type(self) -> Type[ReadNormal[T]]:  # type: ignore
         return self._type
 
     def __repr__(self) -> str:
@@ -238,11 +245,11 @@ class MemoryPointer(MemoryPointerBase[ReadSized[T]]):
         return cls.create_from(self)
 
 
-class MemoryMutPointer(MemoryPointer[T], MemoryPointerBase[ReadWriteSized[T]]):
-    _type: Type[ReadWriteSized[T]]  # type: ignore
+class MemoryMutPointer(MemoryPointer[T], MemoryPointerBase[ReadWriteNormal[T]]):
+    _type: Type[ReadWriteNormal[T]]  # type: ignore
 
     @class_property
-    def type(self) -> Type[ReadWriteSized[T]]:  # type: ignore
+    def type(self) -> Type[ReadWriteNormal[T]]:  # type: ignore
         return self._type
 
     def read(self) -> T:

@@ -34,7 +34,8 @@ __all__ = (
     "MutRef",
     "ref",
     "mut_ref",
-    "Fill",
+    "DynamicFill",
+    "dynamic_fill",
     "fill",
     "Struct",
     "Union",
@@ -439,7 +440,7 @@ def mut_array(type: Any, length: Optional[int] = None) -> Type[MutArray]:
     return MutArray.new(type, length)
 
 
-class FillType(MarkerType):
+class DynamicFillType(MarkerType):
     _fill: Dict[Tuple[int, Platform], int]
 
     def __new__(
@@ -450,7 +451,7 @@ class FillType(MarkerType):
         derive: bool = True,
         fill: Optional[Dict[Tuple[int, Platform], int]] = None,
         **kwargs,
-    ) -> "FillType":
+    ) -> "DynamicFillType":
         cls = super().__new__(meta_cls, cls_name, bases, cls_dict, **kwargs)
 
         if fill is None:
@@ -461,7 +462,7 @@ class FillType(MarkerType):
         return cls
 
     @no_type_check
-    def new(cls, **fills: int) -> "FillType":
+    def new(cls, **fills: int) -> "DynamicFillType":
         class offset(
             cls, fill={platform_from_string(string): fill for string, fill in fills.items()}
         ):
@@ -476,7 +477,7 @@ class FillType(MarkerType):
         return self._fill
 
 
-class Fill(metaclass=FillType):
+class DynamicFill(metaclass=DynamicFillType):
     _fill: Dict[Tuple[int, Platform], int]
 
     @class_property
@@ -484,8 +485,12 @@ class Fill(metaclass=FillType):
         return self._fill
 
 
-def fill(**fills: int) -> Type[Fill]:
-    return Fill.new(**fills)
+def dynamic_fill(**fills: int) -> Type[DynamicFill]:
+    return DynamicFill.new(**fills)
+
+
+def fill(length: int) -> Type[Array]:
+    return array(char_t, length)
 
 
 class Union(metaclass=MarkerType, derive=False):

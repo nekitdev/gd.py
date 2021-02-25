@@ -6,7 +6,19 @@ from gd.typing import TYPE_CHECKING, Any, Protocol, Type, TypeVar, runtime_check
 if TYPE_CHECKING:
     from gd.memory.state import BaseState  # noqa
 
-__all__ = ("Sized", "Read", "Write", "is_class", "is_sized")
+__all__ = (
+    "Normal",
+    "Read",
+    "Write",
+    # common traits
+    "Normal",
+    "ReadNormal",
+    "ReadWriteNormal",
+    "WriteNormal",
+    # useful functions
+    "is_class",
+    "is_normal",
+)
 
 T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
@@ -44,18 +56,42 @@ class Write(Protocol[T_contra]):
         )
 
 
-class SizedType(type(Protocol)):  # type: ignore
+class NormalType(type(Protocol)):  # type: ignore
     @property
     def size(cls) -> int:
         raise NotImplementedError(
-            "Classes derived from Sized must implement size property in class."
+            "Classes derived from Normal must implement size property in class."
+        )
+
+    @property
+    def alignment(cls) -> int:
+        raise NotImplementedError(
+            "Classes derived from Normal must implement alignment property in class."
         )
 
 
-class Sized(Protocol[T_co], metaclass=SizedType):
+class Normal(Protocol[T_co], metaclass=NormalType):
     @class_property
     def size(self: T_co) -> int:
-        raise NotImplementedError("Classes derived from Sized must implement size property.")
+        raise NotImplementedError("Classes derived from Normal must implement size property.")
+
+    @class_property
+    def alignment(self: T_co) -> int:
+        raise NotImplementedError(
+            "Classes derived from Normal must implement alignment property."
+        )
+
+
+class ReadNormal(Read[T], Normal[T]):
+    pass
+
+
+class ReadWriteNormal(Read[T], Write[T], Normal[T]):
+    pass
+
+
+class WriteNormal(Write[T], Normal[T]):
+    pass
 
 
 def is_sized(some: Any) -> bool:
@@ -66,5 +102,21 @@ def is_sized(some: Any) -> bool:
         else:
             return isinstance(some.size, int) and is_sized(some.__class__)
 
-    except (AttributeError, NotImplementedError):
+    except Exception:
         return False
+
+
+def is_aligned(some: Any) -> bool:
+    try:
+        if is_class(some):
+            return isinstance(some.alignment, int)
+
+        else:
+            return isinstance(some.alignment, int) and is_aligned(some.__class__)
+
+    except Exception:
+        return False
+
+
+def is_normal(some: Any) -> bool:
+    return is_sized(some) and is_aligned(some)

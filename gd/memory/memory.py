@@ -15,6 +15,7 @@ class MemoryType(type(Generic)):  # type: ignore
     _bits: int
     _platform: Platform
     _size: int
+    _alignment: int
 
     def __new__(
         meta_cls,
@@ -22,6 +23,7 @@ class MemoryType(type(Generic)):  # type: ignore
         bases: Tuple[Type[Any], ...],
         cls_dict: Dict[str, Any],
         size: int = 0,
+        alignment: int = 0,
         bits: int = system_bits,
         platform: Union[int, str, Platform] = system_platform,
         **kwargs,
@@ -29,6 +31,7 @@ class MemoryType(type(Generic)):  # type: ignore
         cls = super().__new__(meta_cls, cls_name, bases, cls_dict, **kwargs)
 
         cls._size = size  # type: ignore
+        cls._alignment = alignment  # type: ignore
 
         cls._bits = bits  # type: ignore
         cls._platform = Platform.from_value(platform)  # type: ignore
@@ -38,6 +41,10 @@ class MemoryType(type(Generic)):  # type: ignore
     @property
     def size(cls) -> int:
         return cls._size
+
+    @property
+    def alignment(cls) -> int:
+        return cls._alignment
 
     @property
     def bits(cls) -> int:
@@ -52,6 +59,7 @@ class Memory(metaclass=MemoryType):
     _bits: int
     _platform: Platform
     _size: int
+    _alignment: int
 
     def __init__(self, state: "BaseState", address: int) -> None:
         self._state = state
@@ -65,6 +73,10 @@ class Memory(metaclass=MemoryType):
     @class_property
     def size(self) -> int:
         return self._size
+
+    @class_property
+    def alignment(self) -> int:
+        return self._alignment
 
     @class_property
     def bits(self) -> int:
