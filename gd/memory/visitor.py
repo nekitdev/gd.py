@@ -184,16 +184,8 @@ class Visitor:
             fill(dynamic_fill.fill.get((self.context.bits, self.context.platform), 0))
         )
 
-    # Things we should implement are listed below:
-
     # Maybe we could implement This (or this) type,
     # which is going to be used for recursive definitions.
-
-    # We do not yet have vtable optimization, and this will cause invalid layouts
-    # when we are going to deal with complex virtual inheritance, so this needs to be fixed.
-
-    # Just like with vtables, we do not have padding implemented, which is going to result
-    # in invalid layouts.
 
     def visit_struct(self, marker_struct: Type[Struct]) -> Type[MemoryStruct]:
         # get all bases via resolving the MRO
@@ -212,10 +204,17 @@ class Visitor:
         annotations = {}
 
         for base in reversed(bases):
-            # account for vtables
+            # XXX: we need to do something in case of ambiguity
 
             if getattr(base, VTABLE, None):
-                annotations[vtable_name(base.__name__)] = uintptr_t
+                if not any(
+                    issubclass(other_base, Struct)
+                    and other_base is not Struct
+                    and other_base is not base
+                    and issubclass(base, other_base)
+                    for other_base in reversed(bases)
+                ):
+                    annotations[vtable_name(base.__name__)] = uintptr_t
 
             annotations.update(getattr(base, ANNOTATIONS, {}))
 
@@ -303,17 +302,18 @@ class Visitor:
             # last padding: we need the structure size to be divisible
             # by the size of the largest member in it
 
-            remain_size = size % alignment
+            if alignment:
+                remain_size = size % alignment
 
-            if remain_size:
-                pad_size = alignment - remain_size
+                if remain_size:
+                    pad_size = alignment - remain_size
 
-                fields[pad_name(FINAL)] = self.create_field(
-                    self.visit_array(fill(pad_size)), offset  # type: ignore
-                )
+                    fields[pad_name(FINAL)] = self.create_field(
+                        self.visit_array(fill(pad_size)), offset  # type: ignore
+                    )
 
-                offset += pad_size
-                size += pad_size
+                    offset += pad_size
+                    size += pad_size
 
         # create actual struct type
 
