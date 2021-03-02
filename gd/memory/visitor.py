@@ -1,4 +1,5 @@
 from gd.memory.context import Context
+from gd.memory.export import is_export
 from gd.memory.field import Field, MutField
 from gd.memory.marker import (
     Marker,
@@ -45,17 +46,6 @@ ANNOTATIONS = "__annotations__"
 BASES = "__bases__"
 MRO = "__mro__"
 
-MERGED_METACLASS = "merged_metaclass"
-
-ARRAY_TYPE = "array_type"
-MUT_ARRAY_TYPE = "mut_array_type"
-POINTER_TYPE = "pointer_type"
-MUT_POINTER_TYPE = "mut_pointer_type"
-REF_TYPE = "ref_type"
-MUT_REF_TYPE = "mut_ref_type"
-STRUCT_TYPE = "struct_type"
-UNION_TYPE = "union_type"
-
 FINAL = "final"
 PAD = "pad"
 VTABLE = "vtable"
@@ -70,16 +60,6 @@ def pad_name(name: str) -> str:
 
 def vtable_name(name: str) -> str:
     return f"__{VTABLE}_{name}__"
-
-
-@no_type_check
-def merge_metaclass(*types: Type[Any], name: str = MERGED_METACLASS) -> Type[Type[Any]]:
-    class merged_metaclass(*map(type, types)):
-        pass
-
-    merged_metaclass.__qualname__ = merged_metaclass.__name__ = name
-
-    return merged_metaclass
 
 
 class InvalidMemoryType(TypeError):
@@ -183,6 +163,13 @@ class Visitor:
         return self.visit_array(
             fill(dynamic_fill.fill.get((self.context.bits, self.context.platform), 0))
         )
+
+    @classmethod
+    def export_members(cls, export_class: Type[Any], import_class: Type[Any]) -> None:
+        for base in getattr(export_class, MRO):
+            for name, member in vars(base).items():
+                if is_export(member):
+                    setattr(import_class, name, member)
 
     # Maybe we could implement This (or this) type,
     # which is going to be used for recursive definitions.
@@ -322,12 +309,7 @@ class Visitor:
 
         @no_type_check
         class struct(  # type: ignore
-            marker_struct,  # type: ignore
             MemoryStruct,
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryStruct, marker_struct, name=STRUCT_TYPE
-            ),
-            derive=False,
             size=size,
             alignment=alignment,
             fields=fields,
@@ -335,6 +317,8 @@ class Visitor:
             platform=self.context.platform,
         ):
             pass
+
+        self.export_members(marker_struct, struct)
 
         # fix struct name
 
@@ -389,12 +373,7 @@ class Visitor:
 
         @no_type_check
         class union(  # type: ignore
-            marker_union,  # type: ignore
             MemoryUnion,
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryUnion, marker_union, name=UNION_TYPE
-            ),
-            derive=False,
             size=size,
             alignment=alignment,
             fields=fields,
@@ -403,7 +382,7 @@ class Visitor:
         ):
             pass
 
-        setattr(union, ANNOTATIONS, annotations)
+        self.export_members(marker_union, union)
 
         union.__qualname__ = union.__name__ = marker_union.__name__
 
@@ -425,17 +404,14 @@ class Visitor:
         @no_type_check
         class pointer(  # type: ignore
             MemoryPointer,
-            marker_pointer,  # type: ignore
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryPointer, marker_pointer, name=POINTER_TYPE
-            ),
-            derive=False,
             type=type,
             pointer_type=pointer_type,
             bits=self.context.bits,
             platform=self.context.platform,
         ):
             pass
+
+        self.export_members(marker_pointer, pointer)
 
         pointer.__qualname__ = pointer.__name__ = marker_pointer.__name__
 
@@ -453,17 +429,14 @@ class Visitor:
         @no_type_check
         class mut_pointer(  # type: ignore
             MemoryMutPointer,
-            marker_mut_pointer,  # type: ignore
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryMutPointer, marker_mut_pointer, name=MUT_POINTER_TYPE
-            ),
-            derive=False,
             type=type,
             pointer_type=pointer_type,
             bits=self.context.bits,
             platform=self.context.platform,
         ):
             pass
+
+        self.export_members(marker_mut_pointer, mut_pointer)
 
         mut_pointer.__qualname__ = mut_pointer.__name__ = marker_mut_pointer.__name__
 
@@ -479,17 +452,14 @@ class Visitor:
         @no_type_check
         class ref(  # type: ignore
             MemoryRef,
-            marker_ref,  # type: ignore
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryRef, marker_ref, name=REF_TYPE
-            ),
-            derive=False,
             type=type,
             pointer_type=pointer_type,
             bits=self.context.bits,
             platform=self.context.platform,
         ):
             pass
+
+        self.export_members(marker_ref, ref)
 
         ref.__qualname__ = ref.__name__ = marker_ref.__name__
 
@@ -507,17 +477,14 @@ class Visitor:
         @no_type_check
         class mut_ref(  # type: ignore
             MemoryMutRef,
-            marker_mut_ref,  # type: ignore
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryMutRef, marker_mut_ref, name=MUT_REF_TYPE
-            ),
-            derive=False,
             type=type,
             pointer_type=pointer_type,
             bits=self.context.bits,
             platform=self.context.platform,
         ):
             pass
+
+        self.export_members(marker_mut_ref, mut_ref)
 
         mut_ref.__qualname__ = mut_ref.__name__ = marker_mut_ref.__name__
 
@@ -529,17 +496,14 @@ class Visitor:
         @no_type_check
         class array(  # type: ignore
             MemoryArray,
-            marker_array,  # type: ignore
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryArray, marker_array, name=ARRAY_TYPE
-            ),
-            derive=False,
             type=type,
             length=marker_array.length,
             bits=self.context.bits,
             platform=self.context.platform,
         ):
             pass
+
+        self.export_members(marker_array, array)
 
         array.__qualname__ = array.__name__ = marker_array.__name__
 
@@ -551,17 +515,14 @@ class Visitor:
         @no_type_check
         class mut_array(  # type: ignore
             MemoryMutArray,
-            marker_mut_array,  # type: ignore
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryMutArray, marker_mut_array, name=MUT_ARRAY_TYPE
-            ),
-            derive=False,
             type=type,
             length=marker_mut_array.length,
             bits=self.context.bits,
             platform=self.context.platform,
         ):
             pass
+
+        self.export_members(marker_mut_array, mut_array)
 
         mut_array.__qualname__ = mut_array.__name__ = marker_mut_array.__name__
 

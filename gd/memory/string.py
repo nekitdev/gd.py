@@ -2,6 +2,7 @@
 
 from itertools import islice as iter_slice
 
+from gd.memory.export import export
 from gd.memory.marker import Struct, Union, mut_array, mut_pointer, char_t, int_t, uintsize_t
 from gd.memory.memory_array import MemoryArray
 from gd.memory.memory_base import MemoryStruct
@@ -42,6 +43,7 @@ class msvc_std_string(Struct):
     length: uintsize_t
     capacity: uintsize_t
 
+    @export
     def get_value(self) -> str:
         content = self.content
         capacity = self.capacity
@@ -60,6 +62,7 @@ class msvc_std_string(Struct):
         except (RuntimeError, UnicodeDecodeError):  # null pointer or can not decode
             return EMPTY_STRING
 
+    @export
     def set_value(self, value: str) -> None:
         content = self.content
         capacity = self.capacity
@@ -95,20 +98,23 @@ class msvc_std_string(Struct):
 
             return content.pointer.value.write(data)
 
-    value = property(get_value, set_value)
+    value = export(property(get_value, set_value))
 
     """
     # XXX: should this be here?
 
+    @export
     @classmethod
     def read_value_from(cls, state: "BaseState", address: int) -> str:
         string = cls(state, address)
 
         return string.value
 
+    @export
     def write_to(self, state: "BaseState", address: int) -> None:
         ...
 
+    @export
     @classmethod
     def write_value_to(cls, value: str, state: "BaseState", address: int) -> None:
         string = cls(state, address)
