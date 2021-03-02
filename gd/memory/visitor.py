@@ -19,7 +19,7 @@ from gd.memory.memory_array import MemoryArray, MemoryMutArray
 from gd.memory.memory_base import MemoryStruct, MemoryUnion
 from gd.memory.memory_pointer_ref import MemoryPointer, MemoryMutPointer, MemoryRef, MemoryMutRef
 from gd.memory.memory_void import MemoryVoid
-from gd.memory.traits import Read, Write, Normal, ReadNormal, ReadWriteNormal, is_class, is_normal
+from gd.memory.traits import Read, Write, Layout, ReadLayout, ReadWriteLayout, is_class, is_normal
 from gd.platform import Platform, system_bits, system_platform
 from gd.typing import (
     TYPE_CHECKING,
@@ -107,11 +107,11 @@ class Visitor:
         return self._context
 
     @overload  # noqa
-    def create_field(self, some: Type[ReadWriteNormal[T]], offset: int) -> MutField[T]:  # noqa
+    def create_field(self, some: Type[ReadWriteLayout[T]], offset: int) -> MutField[T]:  # noqa
         ...
 
     @overload  # noqa
-    def create_field(self, some: Type[ReadNormal[T]], offset: int) -> Field[T]:  # noqa
+    def create_field(self, some: Type[ReadLayout[T]], offset: int) -> Field[T]:  # noqa
         ...
 
     def create_field(self, some: Type[Any], offset: int = 0) -> Field[T]:  # noqa
@@ -119,17 +119,17 @@ class Visitor:
             if is_normal(some):
                 if issubclass(some, Read):
                     if issubclass(some, Write):
-                        mut_type = cast(Type[ReadWriteNormal[T]], some)
+                        mut_type = cast(Type[ReadWriteLayout[T]], some)
 
                         return MutField(mut_type, offset)
 
-                    type = cast(Type[ReadNormal[T]], some)
+                    type = cast(Type[ReadLayout[T]], some)
 
                     return Field(type, offset)
 
         raise InvalidMemoryType(f"Can not create field from {some!r}.")
 
-    def visit_any(self, some: Any) -> Type[Normal]:
+    def visit_any(self, some: Any) -> Type[Layout]:
         if is_class(some):
             if is_normal(some):
                 if issubclass(some, Read):
@@ -179,13 +179,15 @@ class Visitor:
 
         raise InvalidMemoryType(f"{some!r} is not valid as memory type.")
 
-    def visit_dynamic_fill(self, dynamic_fill: Type[DynamicFill]) -> Type[Normal]:
+    def visit_dynamic_fill(self, dynamic_fill: Type[DynamicFill]) -> Type[Layout]:
         return self.visit_array(
             fill(dynamic_fill.fill.get((self.context.bits, self.context.platform), 0))
         )
 
     # Maybe we could implement This (or this) type,
     # which is going to be used for recursive definitions.
+
+    # XXX: improvement of subclassing is highly recommended.
 
     def visit_struct(self, marker_struct: Type[Struct]) -> Type[MemoryStruct]:
         # get all bases via resolving the MRO
@@ -214,6 +216,7 @@ class Visitor:
                     and issubclass(base, other_base)
                     for other_base in reversed(bases)
                 ):
+                    # XXX: it is not really base name, though
                     annotations[vtable_name(base.__name__)] = uintptr_t
 
             annotations.update(getattr(base, ANNOTATIONS, {}))
@@ -319,8 +322,8 @@ class Visitor:
 
         @no_type_check
         class struct(  # type: ignore
-            MemoryStruct,
             marker_struct,  # type: ignore
+            MemoryStruct,
             metaclass=merge_metaclass(  # type: ignore
                 MemoryStruct, marker_struct, name=STRUCT_TYPE
             ),
@@ -386,8 +389,8 @@ class Visitor:
 
         @no_type_check
         class union(  # type: ignore
-            MemoryUnion,
             marker_union,  # type: ignore
+            MemoryUnion,
             metaclass=merge_metaclass(  # type: ignore
                 MemoryUnion, marker_union, name=UNION_TYPE
             ),
@@ -575,11 +578,11 @@ class Visitor:
 
         return void
 
-    def visit_read_sized(self, type: Type[ReadNormal[T]]) -> Type[ReadNormal[T]]:
+    def visit_read_sized(self, type: Type[ReadLayout[T]]) -> Type[ReadLayout[T]]:
         return type
 
-    def visit_read_write_sized(self, type: Type[ReadWriteNormal[T]]) -> Type[ReadWriteNormal[T]]:
+    def visit_read_write_sized(self, type: Type[ReadWriteLayout[T]]) -> Type[ReadWriteLayout[T]]:
         return type
 
-    def visit_marker(self, marker: Type[Marker]) -> Type[Normal]:
+    def visit_marker(self, marker: Type[Marker]) -> Type[Layout]:
         return self.visit_any(self.context.get_type(marker.name))

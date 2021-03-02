@@ -58,7 +58,7 @@ class CCArray(CCObject):
     data: mut_pointer(CCArrayStruct)
 
 
-class CCNode(CCObject):
+class CCNode(CCObject, vtable=True):
     rotation_x: float_t
     rotation_y: float_t
     scale_x: float_t
@@ -119,3 +119,46 @@ class CCNode(CCObject):
     script_type: int_t  # enum
 
     component_container: mut_pointer(void)  # CCComponentContainer
+
+
+class CCTouchDelegate(Struct, vtable=True):
+    pass
+
+
+class CCAccelerometerDelegate(Struct, vtable=True):
+    pass
+
+
+class CCKeypadDelegate(Struct, vtable=True):
+    pass
+
+
+class CCKeyboardDelegate(Struct, vtable=True):
+    pass
+
+
+class CCMouseDelegate(Struct, vtable=True):
+    pass
+
+
+class CCLayer(
+    CCMouseDelegate,
+    CCKeyboardDelegate,
+    CCKeypadDelegate,
+    CCAccelerometerDelegate,
+    CCTouchDelegate,
+    CCNode,
+    vtable=True,
+):
+    touch_enabled: bool_t
+    accelerometer_enabled: bool_t
+    keypad_enabled: bool_t
+    keyboard_enabled: bool_t
+    mouse_enabled: bool_t
+
+    script_touch_handler_entry: mut_pointer(void)  # CCTouchScriptHandlerEntry
+    script_keypad_handler_entry: mut_pointer(void)  # CCScriptHandlerEntry
+    script_accelerometer_handler_entry: mut_pointer(void)  # CCScriptHandlerEntry
+
+    touch_priority: int_t
+    touch_mode: int_t  # enum

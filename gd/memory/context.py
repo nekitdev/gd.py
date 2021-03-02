@@ -1,4 +1,4 @@
-from gd.memory.traits import Normal
+from gd.memory.traits import Layout
 from gd.memory.types import Types
 from gd.platform import Platform, system_bits, system_platform
 from gd.text_utils import make_repr
@@ -40,5 +40,5 @@ class Context:
     def types(self) -> Types:
         return Types(self.bits, self.platform)
 
-    def get_type(self, name: str) -> Type[Normal]:
+    def get_type(self, name: str) -> Type[Layout]:
         return self.types.get(name)

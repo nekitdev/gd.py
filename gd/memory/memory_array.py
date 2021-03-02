@@ -2,7 +2,7 @@ import sys
 
 from gd.iter_utils import is_iterable
 from gd.memory.memory import MemoryType, Memory
-from gd.memory.traits import Normal, ReadNormal, ReadWriteNormal
+from gd.memory.traits import Layout, ReadLayout, ReadWriteLayout
 from gd.memory.utils import class_property
 from gd.platform import Platform, system_bits, system_platform
 from gd.typing import (
@@ -26,12 +26,12 @@ if TYPE_CHECKING:
 
 __all__ = ("MemoryArrayType", "MemoryArray", "MemoryMutArray")
 
-N = TypeVar("N", bound=Normal)
+N = TypeVar("N", bound=Layout)
 T = TypeVar("T")
 
 
 class MemoryArrayType(MemoryType):
-    _type: Type[Normal]
+    _type: Type[Layout]
     _length: Optional[int]
 
     def __new__(
@@ -39,7 +39,7 @@ class MemoryArrayType(MemoryType):
         cls_name: str,
         bases: Tuple[Type[Any], ...],
         cls_dict: Dict[str, Any],
-        type: Optional[Type[Normal]] = None,
+        type: Optional[Type[Layout]] = None,
         length: Optional[int] = None,
         bits: int = system_bits,
         platform: Union[int, str, Platform] = system_platform,
@@ -68,7 +68,7 @@ class MemoryArrayType(MemoryType):
         return cls.type.alignment
 
     @property
-    def type(cls) -> Type[Normal]:
+    def type(cls) -> Type[Layout]:
         return cls._type
 
     @property
@@ -121,11 +121,11 @@ class MemoryBaseArray(Generic[N], Memory, metaclass=MemoryArrayType):
         return self._address
 
 
-class MemoryArray(MemoryBaseArray[ReadNormal[T]]):
-    _type: Type[ReadNormal[T]]  # type: ignore
+class MemoryArray(MemoryBaseArray[ReadLayout[T]]):
+    _type: Type[ReadLayout[T]]  # type: ignore
 
     @class_property
-    def type(self) -> Type[ReadNormal[T]]:  # type: ignore
+    def type(self) -> Type[ReadLayout[T]]:  # type: ignore
         return self._type
 
     @overload  # noqa
@@ -164,11 +164,11 @@ class MemoryArray(MemoryBaseArray[ReadNormal[T]]):
         return self.read_iter(range(self.length))
 
 
-class MemoryMutArray(MemoryArray[T], MemoryBaseArray[ReadWriteNormal[T]]):
-    _type: Type[ReadWriteNormal[T]]  # type: ignore
+class MemoryMutArray(MemoryArray[T], MemoryBaseArray[ReadWriteLayout[T]]):
+    _type: Type[ReadWriteLayout[T]]  # type: ignore
 
     @class_property
-    def type(self) -> Type[ReadWriteNormal[T]]:  # type: ignore
+    def type(self) -> Type[ReadWriteLayout[T]]:  # type: ignore
         return self._type
 
     @overload  # noqa

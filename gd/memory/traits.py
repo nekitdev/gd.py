@@ -7,14 +7,14 @@ if TYPE_CHECKING:
     from gd.memory.state import BaseState  # noqa
 
 __all__ = (
-    "Normal",
+    "Layout",
     "Read",
     "Write",
     # common traits
-    "Normal",
-    "ReadNormal",
-    "ReadWriteNormal",
-    "WriteNormal",
+    "Layout",
+    "ReadLayout",
+    "ReadWriteLayout",
+    "WriteLayout",
     # useful functions
     "is_class",
     "is_normal",
@@ -56,41 +56,41 @@ class Write(Protocol[T_contra]):
         )
 
 
-class NormalType(type(Protocol)):  # type: ignore
+class LayoutType(type(Protocol)):  # type: ignore
     @property
     def size(cls) -> int:
         raise NotImplementedError(
-            "Classes derived from Normal must implement size property in class."
+            "Classes derived from Layout must implement size property in class."
         )
 
     @property
     def alignment(cls) -> int:
         raise NotImplementedError(
-            "Classes derived from Normal must implement alignment property in class."
+            "Classes derived from Layout must implement alignment property in class."
         )
 
 
-class Normal(Protocol[T_co], metaclass=NormalType):
+class Layout(Protocol[T_co], metaclass=LayoutType):
     @class_property
     def size(self: T_co) -> int:
-        raise NotImplementedError("Classes derived from Normal must implement size property.")
+        raise NotImplementedError("Classes derived from Layout must implement size property.")
 
     @class_property
     def alignment(self: T_co) -> int:
         raise NotImplementedError(
-            "Classes derived from Normal must implement alignment property."
+            "Classes derived from Layout must implement alignment property."
         )
 
 
-class ReadNormal(Read[T], Normal[T]):
+class ReadLayout(Read[T], Layout[T]):
     pass
 
 
-class ReadWriteNormal(Read[T], Write[T], Normal[T]):
+class ReadWriteLayout(Read[T], Write[T], Layout[T]):
     pass
 
 
-class WriteNormal(Write[T], Normal[T]):
+class WriteLayout(Write[T], Layout[T]):
     pass
 
 

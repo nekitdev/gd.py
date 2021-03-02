@@ -1,10 +1,10 @@
-from gd.memory.traits import Normal, ReadNormal, ReadWriteNormal
+from gd.memory.traits import Layout, ReadLayout, ReadWriteLayout
 from gd.text_utils import make_repr
 from gd.typing import Any, Generic, Literal, Optional, Type, TypeVar, Union, overload
 
 __all__ = ("Field", "MutField")
 
-N = TypeVar("N", bound=Normal)
+N = TypeVar("N", bound=Layout)
 T = TypeVar("T")
 
 
@@ -58,8 +58,8 @@ class BaseField(Generic[N]):
         self._frozen = False
 
 
-class Field(BaseField[ReadNormal[T]]):
-    def __init__(self, type: Type[ReadNormal[T]], offset: int) -> None:
+class Field(BaseField[ReadLayout[T]]):
+    def __init__(self, type: Type[ReadLayout[T]], offset: int) -> None:
         super().__init__(type, offset)
 
     @overload  # noqa
@@ -87,8 +87,8 @@ class Field(BaseField[ReadNormal[T]]):
         raise AttributeError("Can not delete field.")
 
 
-class MutField(Field[T], BaseField[ReadWriteNormal[T]]):
-    def __init__(self, type: Type[ReadWriteNormal[T]], offset: int) -> None:
+class MutField(Field[T], BaseField[ReadWriteLayout[T]]):
+    def __init__(self, type: Type[ReadWriteLayout[T]], offset: int) -> None:
         super().__init__(type, offset)  # type: ignore
 
     def __set__(self, instance: Any, value: T) -> None:

@@ -1,5 +1,5 @@
 from gd.memory.data import Data
-from gd.memory.traits import Normal
+from gd.memory.traits import Layout
 from gd.platform import Platform, system_bits, system_platform
 from gd.text_utils import make_repr
 from gd.typing import Callable, Dict, Type, TypeVar
@@ -227,7 +227,7 @@ class boolean(Data[bool], name="boolean", format=c_bool.format):
         self._value = value
 
 
-N = TypeVar("N", bound=Normal)
+N = TypeVar("N", bound=Layout)
 
 GetType = Callable[[int, Platform], Type[N]]
 

@@ -1,7 +1,7 @@
 # type: ignore
 
-from gd.memory.cocos import CCNode, CCPoint
-from gd.memory.marker import mut_pointer, bool_t, float_t, int_t, string_t, void
+from gd.memory.cocos import CCLayer, CCNode, CCPoint
+from gd.memory.marker import Struct, mut_pointer, bool_t, float_t, int_t, string_t, void
 
 
 class GameLevel(CCNode):
@@ -199,3 +199,19 @@ class GameLevel(CCNode):
     high_detail: bool_t
 
     progress_string: string_t
+
+
+class TriggerEffectDelegate(Struct, vtable=True):
+    pass
+
+
+class BaseGameManager(CCNode, vtable=True):
+    ...
+
+
+class GameManager(BaseGameManager, vtable=True):
+    ...
+
+
+class BaseGameLayer(TriggerEffectDelegate, CCLayer, vtable=True):
+    ...
