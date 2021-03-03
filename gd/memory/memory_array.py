@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 __all__ = ("MemoryArrayType", "MemoryArray", "MemoryMutArray")
 
-N = TypeVar("N", bound=Layout)
+L = TypeVar("L", bound=Layout)
 T = TypeVar("T")
 
 
@@ -76,8 +76,8 @@ class MemoryArrayType(MemoryType):
         return cls._length
 
 
-class MemoryBaseArray(Generic[N], Memory, metaclass=MemoryArrayType):
-    _type: Type[N]
+class MemoryBaseArray(Generic[L], Memory, metaclass=MemoryArrayType):
+    _type: Type[L]
     _length: Optional[int]
 
     def __init__(self, state: "BaseState", address: int) -> None:
@@ -94,7 +94,7 @@ class MemoryBaseArray(Generic[N], Memory, metaclass=MemoryArrayType):
         return self.address + index * self.type.size
 
     @class_property
-    def type(self) -> Type[N]:  # type: ignore
+    def type(self) -> Type[L]:  # type: ignore
         return self._type
 
     @class_property

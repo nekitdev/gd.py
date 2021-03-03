@@ -20,7 +20,7 @@ from gd.memory.memory_array import MemoryArray, MemoryMutArray
 from gd.memory.memory_base import MemoryStruct, MemoryUnion
 from gd.memory.memory_pointer_ref import MemoryPointer, MemoryMutPointer, MemoryRef, MemoryMutRef
 from gd.memory.memory_void import MemoryVoid
-from gd.memory.traits import Read, Write, Layout, ReadLayout, ReadWriteLayout, is_class, is_normal
+from gd.memory.traits import Read, Write, Layout, ReadLayout, ReadWriteLayout, is_class, is_layout
 from gd.platform import Platform, system_bits, system_platform
 from gd.typing import (
     TYPE_CHECKING,
@@ -96,7 +96,7 @@ class Visitor:
 
     def create_field(self, some: Type[Any], offset: int = 0) -> Field[T]:  # noqa
         if is_class(some):
-            if is_normal(some):
+            if is_layout(some):
                 if issubclass(some, Read):
                     if issubclass(some, Write):
                         mut_type = cast(Type[ReadWriteLayout[T]], some)
@@ -111,7 +111,7 @@ class Visitor:
 
     def visit_any(self, some: Any) -> Type[Layout]:
         if is_class(some):
-            if is_normal(some):
+            if is_layout(some):
                 if issubclass(some, Read):
                     if issubclass(some, Write):
                         return self.visit_read_write_sized(some)

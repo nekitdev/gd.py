@@ -123,7 +123,7 @@ class msvc_std_string(Struct):
     """
 
 
-class std_string_info(Struct):
+class std_string_content(Struct):
     capacity: uintsize_t
     length: uintsize_t
     ref_count: int_t

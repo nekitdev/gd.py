@@ -4,12 +4,12 @@ from gd.typing import Any, Generic, Literal, Optional, Type, TypeVar, Union, ove
 
 __all__ = ("Field", "MutField")
 
-N = TypeVar("N", bound=Layout)
+L = TypeVar("L", bound=Layout)
 T = TypeVar("T")
 
 
-class BaseField(Generic[N]):
-    def __init__(self, type: Type[N], offset: int, frozen: bool = False) -> None:
+class BaseField(Generic[L]):
+    def __init__(self, type: Type[L], offset: int, frozen: bool = False) -> None:
         self._type = type
         self._offset = offset
         self._frozen = frozen
@@ -30,10 +30,10 @@ class BaseField(Generic[N]):
 
     offset = property(get_offset, set_offset)
 
-    def get_type(self) -> Type[N]:
+    def get_type(self) -> Type[L]:
         return self._type
 
-    def set_type(self, type: Type[N]) -> None:
+    def set_type(self, type: Type[L]) -> None:
         if self._frozen:
             raise TypeError("Can not update this field.")
 

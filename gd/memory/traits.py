@@ -17,7 +17,7 @@ __all__ = (
     "WriteLayout",
     # useful functions
     "is_class",
-    "is_normal",
+    "is_layout",
 )
 
 T = TypeVar("T")
@@ -118,5 +118,5 @@ def is_aligned(some: Any) -> bool:
         return False
 
 
-def is_normal(some: Any) -> bool:
+def is_layout(some: Any) -> bool:
     return is_sized(some) and is_aligned(some)

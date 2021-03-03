@@ -39,6 +39,8 @@ __all__ = (
     "fill",
     "Struct",
     "Union",
+    "This",
+    "this",
     "Void",
     "void",
     "byte_t",
@@ -540,15 +542,26 @@ class Struct(metaclass=StructType, derive=False):
         return self._packed
 
 
-V = TypeVar("V", bound="Void")
+S = TypeVar("S", bound="Special")
 
 
-class Void(metaclass=MarkerType, derive=False):
-    def __new__(cls: Type[V], *ignored_args, **ignored_kwargs) -> V:
-        raise TypeError("Can not instantiate void.")
+class Special(metaclass=MarkerType, derive=False):
+    def __new__(cls: Type[S], *ignored_args, **ignored_kwargs) -> S:
+        raise TypeError(f"Can not instantiate {cls.__name__}.")
 
     def __init_subclass__(cls, **ignored) -> None:
-        raise TypeError("Can not derive from void.")
+        raise TypeError(f"Can not derive from {cls.__name__}.")
+
+
+class Void(Special, derive=False):
+    pass
 
 
 void = Void
+
+
+class This(Special, derive=False):
+    pass
+
+
+this = This

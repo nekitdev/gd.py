@@ -227,13 +227,13 @@ class boolean(Data[bool], name="boolean", format=c_bool.format):
         self._value = value
 
 
-N = TypeVar("N", bound=Layout)
+L = TypeVar("L", bound=Layout)
 
-GetType = Callable[[int, Platform], Type[N]]
+GetType = Callable[[int, Platform], Type[L]]
 
 
-def get_type_wrap(type: Type[N]) -> GetType[N]:
-    def get_type(bits: int, platform: Platform) -> Type[N]:
+def get_type_wrap(type: Type[L]) -> GetType[L]:
+    def get_type(bits: int, platform: Platform) -> Type[L]:
         return type
 
     return get_type
@@ -251,32 +251,32 @@ class Types:
 
         return make_repr(self, info)
 
-    def get(self, name: str) -> Type[N]:
+    def get(self, name: str) -> Type[L]:
         return self.fetch(name)(self.bits, self.platform)
 
     __getattr__ = get
 
     @classmethod
-    def _register(cls, name: str, get_type: GetType[N]) -> GetType[N]:
+    def _register(cls, name: str, get_type: GetType[L]) -> GetType[L]:
         return cls.TYPES.setdefault(name, get_type)
 
     @classmethod
-    def register(cls, name: str) -> Callable[[GetType[N]], GetType[N]]:
-        def decorator(get_type: GetType[N]) -> GetType[N]:
+    def register(cls, name: str) -> Callable[[GetType[L]], GetType[L]]:
+        def decorator(get_type: GetType[L]) -> GetType[L]:
             return cls._register(name, get_type)
 
         return decorator
 
     @classmethod
-    def register_function(cls, get_type: GetType[N]) -> GetType[N]:
+    def register_function(cls, get_type: GetType[L]) -> GetType[L]:
         return cls._register(get_type.__name__, get_type)
 
     @classmethod
-    def register_type(cls, name: str, type: Type[N]) -> GetType[N]:
+    def register_type(cls, name: str, type: Type[L]) -> GetType[L]:
         return cls._register(name, get_type_wrap(type))
 
     @classmethod
-    def fetch(cls, name: str) -> GetType[N]:
+    def fetch(cls, name: str) -> GetType[L]:
         if name in cls.TYPES:
             return cls.TYPES[name]
 

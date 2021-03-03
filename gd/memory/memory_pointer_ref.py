@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 __all__ = ("MemoryPointer", "MemoryMutPointer", "MemoryRef", "MemoryMutRef")
 
-N = TypeVar("N", bound=Layout)
+L = TypeVar("L", bound=Layout)
 T = TypeVar("T")
 
 
@@ -62,8 +62,8 @@ PointerT = TypeVar("PointerT", bound="MemoryPointer")
 PointerU = TypeVar("PointerU", bound="MemoryPointer")
 
 
-class MemoryPointerBase(Generic[N], Memory, metaclass=MemoryPointerType):
-    _type: Type[N]
+class MemoryPointerBase(Generic[L], Memory, metaclass=MemoryPointerType):
+    _type: Type[L]
     _pointer_type: Type[ReadWriteLayout[int]]
 
     @class_property
@@ -71,7 +71,7 @@ class MemoryPointerBase(Generic[N], Memory, metaclass=MemoryPointerType):
         return self._pointer_type
 
     @class_property
-    def type(self) -> Type[N]:
+    def type(self) -> Type[L]:
         return self._type
 
     @class_property
