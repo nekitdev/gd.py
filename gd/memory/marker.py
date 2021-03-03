@@ -502,6 +502,7 @@ class Union(metaclass=MarkerType, derive=False):
 class StructType(MarkerType):
     _vtable: bool
     _packed: bool
+    _origin: int
 
     def __new__(
         meta_cls,
@@ -511,12 +512,14 @@ class StructType(MarkerType):
         derive: bool = True,
         vtable: bool = False,
         packed: bool = False,
+        origin: int = 0,
         **kwargs,
     ) -> "StructType":
         cls = super().__new__(meta_cls, cls_name, bases, cls_dict, derive=derive, **kwargs)
 
         cls._vtable = vtable  # type: ignore
         cls._packed = packed  # type: ignore
+        cls._origin = origin  # type: ignore
 
         return cls
 
@@ -528,10 +531,15 @@ class StructType(MarkerType):
     def packed(cls) -> bool:
         return cls._packed
 
+    @property
+    def origin(cls) -> int:
+        return cls._origin
+
 
 class Struct(metaclass=StructType, derive=False):
     _vtable: bool
     _packed: bool
+    _origin: int
 
     @class_property
     def vtable(self) -> bool:
@@ -541,6 +549,10 @@ class Struct(metaclass=StructType, derive=False):
     def packed(self) -> bool:
         return self._packed
 
+    @class_property
+    def origin(self) -> int:
+        return self._origin
+
 
 S = TypeVar("S", bound="Special")
 
@@ -549,18 +561,19 @@ class Special(metaclass=MarkerType, derive=False):
     def __new__(cls: Type[S], *ignored_args, **ignored_kwargs) -> S:
         raise TypeError(f"Can not instantiate {cls.__name__}.")
 
-    def __init_subclass__(cls, **ignored) -> None:
-        raise TypeError(f"Can not derive from {cls.__name__}.")
+    def __init_subclass__(cls, _special: bool = False, **ignored) -> None:
+        if not _special:
+            raise TypeError(f"Can not derive from {cls.__name__}.")
 
 
-class Void(Special, derive=False):
+class Void(Special, _special=True, derive=False):
     pass
 
 
 void = Void
 
 
-class This(Special, derive=False):
+class This(Special, _special=True, derive=False):
     pass
 
 
