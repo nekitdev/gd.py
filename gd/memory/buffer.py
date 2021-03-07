@@ -1,61 +1,103 @@
 import ctypes
 
-from gd.text_utils import make_repr
-from gd.typing import Any, Sequence, Union
+from gd.typing import Any, Iterator, Sequence, Type, TypeVar, Union
 
-__all__ = ("Buffer",)
+__all__ = ("Buffer", "MutBuffer", "buffer", "mut_buffer")
 
-EMPTY_BYTES = bytes(0)
+B = TypeVar("B", bound="Buffer")
+MB = TypeVar("MB", bound="MutBuffer")
 
-_bytes_from_hex = bytes.fromhex
-
-
-def _bytes_to_hex(data: bytes, step: int = 1) -> str:
-    return " ".join(data[index : index + step].hex() for index in range(0, len(data), step))
+_concat = " ".join
+_from_hex = bytes.fromhex
+_hex = bytes.hex
 
 
-class BufferMeta(type):
-    def __getitem__(cls, item: Union[int, Sequence[int]]) -> "Buffer":
+def _slice(data: bytes, step: int = 1) -> Iterator[bytes]:
+    for index in range(0, len(data), step):
+        yield data[index : index + step]
+
+
+def _to_hex(data: bytes, step: int = 1) -> str:
+    return _concat(map(_hex, _slice(data, step)))
+
+
+_mut_from_hex = bytearray.fromhex
+_mut_hex = bytearray.hex
+
+
+def _mut_slice(data: bytearray, step: int = 1) -> Iterator[bytearray]:
+    for index in range(0, len(data), step):
+        yield data[index : index + step]
+
+
+def _mut_to_hex(data: bytearray, step: int = 1) -> str:
+    return _concat(map(_mut_hex, _mut_slice(data, step)))
+
+
+class BufferType(type):
+    def __getitem__(cls: Type[B], item: Union[int, Sequence[int]]) -> B:  # type: ignore
         if isinstance(item, Sequence):
             return cls.from_byte_array(item)
 
         return cls.from_byte_array([item])
 
-    def from_byte_array(cls, array: Sequence[int]) -> "Buffer":
+    def from_byte_array(cls: Type[B], array: Sequence[int]) -> B:  # type: ignore
         raise NotImplementedError("This function is implemented in the actual class.")
 
 
-class Buffer(metaclass=BufferMeta):
-    def __init__(self, data: bytes = EMPTY_BYTES) -> None:
-        self._data = data
+class BufferBase(metaclass=BufferType):
+    pass
 
+
+class Buffer(BufferBase, bytes):
     def __str__(self) -> str:
         return self.to_hex().upper()
 
     def __repr__(self) -> str:
-        info = {"data": repr(self.to_hex().upper())}
-        return make_repr(self, info)
-
-    @property
-    def data(self) -> bytes:
-        return self._data
+        return f"<{self.__class__.__name__}[{self.to_hex().upper()}]>"
 
     @classmethod
-    def from_byte_array(cls, array: Sequence[int]) -> "Buffer":
-        return cls(bytes(array))
+    def from_byte_array(cls: Type[B], array: Sequence[int]) -> B:
+        return cls(array)
 
     def to_byte_array(self) -> Sequence[int]:
-        return list(self.data)
+        return list(self)
 
     @classmethod
-    def from_hex(cls, hex_string: str) -> "Buffer":
-        return cls(_bytes_from_hex(hex_string))
+    def from_hex(cls: Type[B], hex_string: str) -> B:
+        return cls(_from_hex(hex_string))
 
     def to_hex(self, step: int = 1) -> str:
-        return _bytes_to_hex(self._data, step)
+        return _to_hex(self, step)
 
-    def into_buffer(self) -> Any:
-        return ctypes.create_string_buffer(self.data, len(self.data))
+    def into(self) -> Any:
+        return ctypes.create_string_buffer(self, len(self))
 
-    def into(self) -> bytes:
-        return self.data
+
+class MutBuffer(BufferBase, bytearray):
+    def __str__(self) -> str:
+        return self.to_hex().upper()
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}[{self.to_hex().upper()}]>"
+
+    @classmethod
+    def from_byte_array(cls: Type[MB], array: Sequence[int]) -> MB:
+        return cls(array)
+
+    def to_byte_array(self) -> Sequence[int]:
+        return list(self)
+
+    @classmethod
+    def from_hex(cls: Type[MB], hex_string: str) -> MB:
+        return cls(_mut_from_hex(hex_string))
+
+    def to_hex(self, step: int = 1) -> str:
+        return _mut_to_hex(self, step)
+
+    def into(self) -> Any:
+        return ctypes.create_string_buffer(self, len(self))
+
+
+buffer = Buffer
+mut_buffer = MutBuffer

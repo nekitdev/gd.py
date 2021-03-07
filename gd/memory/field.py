@@ -4,6 +4,7 @@ from gd.typing import Any, Generic, Literal, Optional, Type, TypeVar, Union, ove
 
 __all__ = ("Field", "MutField")
 
+UNSIZED = "unsized"
 L = TypeVar("L", bound=Layout)
 T = TypeVar("T")
 
@@ -15,7 +16,13 @@ class BaseField(Generic[L]):
         self._frozen = frozen
 
     def __repr__(self) -> str:
-        info = {"offset": self.offset, "size": self.size, "type": self.type.__name__}
+        try:
+            size = self.size
+
+        except TypeError:
+            size = UNSIZED
+
+        info = {"offset": self.offset, "size": size, "type": self.type.__name__}
 
         return make_repr(self, info)
 

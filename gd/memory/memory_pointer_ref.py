@@ -8,10 +8,14 @@ from gd.typing import TYPE_CHECKING, Any, Dict, Generic, Optional, Tuple, Type, 
 if TYPE_CHECKING:
     from gd.memory.state import BaseState  # noqa
 
-__all__ = ("MemoryPointer", "MemoryMutPointer", "MemoryRef", "MemoryMutRef")
+__all__ = ("NullPointerError", "MemoryPointer", "MemoryMutPointer", "MemoryRef", "MemoryMutRef")
 
 L = TypeVar("L", bound=Layout)
 T = TypeVar("T")
+
+
+class NullPointerError(RuntimeError):
+    pass
 
 
 class MemoryPointerType(MemoryType):
@@ -160,7 +164,7 @@ class MemoryPointer(MemoryPointerBase[ReadLayout[T]]):
         if address:
             return self.type.read_value_from(self.state, address)
 
-        raise RuntimeError("Can not dereference null pointer.")
+        raise NullPointerError("Can not dereference null pointer.")
 
     value = property(read)
 
@@ -261,7 +265,7 @@ class MemoryMutPointer(MemoryPointer[T], MemoryPointerBase[ReadWriteLayout[T]]):
         if address:
             return self.type.write_value_to(value, self.state, address)
 
-        raise RuntimeError("Can not dereference null pointer.")
+        raise NullPointerError("Can not dereference null pointer.")
 
     value = property(read, write)
 

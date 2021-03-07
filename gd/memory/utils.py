@@ -5,7 +5,7 @@ from gd.typing import Any, Callable, Dict, Optional, Tuple, Type, TypeVar, cast,
 
 T = TypeVar("T")
 
-__all__ = ("Structure", "Union", "bits", "extern_fn")
+__all__ = ("Structure", "Union", "bits", "closest_power_of_two", "extern_fn")
 
 
 def class_property(
@@ -18,6 +18,15 @@ def class_property(
 
 def bits(size: int, *, byte_bits: int = 8) -> int:
     return size * byte_bits
+
+
+def closest_power_of_two(value: int) -> int:
+    result = 1
+
+    while result < value:
+        result *= 2
+
+    return result
 
 
 class StructureMeta(type(ctypes.Structure)):  # type: ignore

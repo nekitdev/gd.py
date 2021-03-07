@@ -102,8 +102,11 @@ def is_sized(some: Any) -> bool:
         else:
             return isinstance(some.size, int) and is_sized(some.__class__)
 
-    except Exception:
+    except (AttributeError, NotImplementedError):
         return False
+
+    except Exception:
+        return True
 
 
 def is_aligned(some: Any) -> bool:
@@ -114,8 +117,11 @@ def is_aligned(some: Any) -> bool:
         else:
             return isinstance(some.alignment, int) and is_aligned(some.__class__)
 
-    except Exception:
+    except (AttributeError, NotImplementedError):
         return False
+
+    except Exception:
+        return True
 
 
 def is_layout(some: Any) -> bool:

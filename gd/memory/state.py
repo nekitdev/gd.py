@@ -2,7 +2,7 @@ from pathlib import Path
 
 from gd.decorators import cache_by
 from gd.enums import Protection
-from gd.memory.buffer import Buffer
+from gd.memory.buffer import Buffer, MutBuffer, buffer, mut_buffer
 from gd.memory.internal import (
     allocate_memory as system_allocate_memory,
     free_memory as system_free_memory,
@@ -68,19 +68,21 @@ from gd.memory.internal import (
     windows_read_process_memory,
     windows_write_process_memory,
 )
-from gd.memory.traits import Read, Write
+from gd.memory.traits import Layout, Read, Write
 from gd.memory.types import Types
-from gd.platform import ANDROID, IOS, LINUX, MACOS, WINDOWS, Platform, system_platform
+from gd.platform import ANDROID, IOS, LINUX, MACOS, WINDOWS, Platform, system_bits, system_platform
 from gd.text_utils import make_repr
-from gd.typing import Callable, Type, TypeVar, Union, cast
+from gd.typing import Callable, Dict, Type, TypeVar, Union, cast
 
 __all__ = (
     "BaseState",
+    "BufferState",
     "LinuxState",
     "MacOSState",
     "SystemState",
     "WindowsState",
     "State",
+    "get_buffer_state",
     "get_linux_state",
     "get_macos_state",
     "get_system_state",
@@ -98,6 +100,13 @@ DEFAULT_SYSTEM_NAME = "Geometry Dash"
 DEFAULT_LINUX_NAME = "Geometry Dash"
 DEFAULT_MACOS_NAME = "Geometry Dash"
 DEFAULT_WINDOWS_NAME = "GeometryDash.exe"
+
+DEFAULT_BUFFER_NAME = "Buffer"
+DEFAULT_BUFFER_TITLE = "Buffer"
+
+DEFAULT_BUFFER_BITS = system_bits
+
+DEFAULT_BUFFER_SIZE = 1 << 10
 
 
 class BaseState:
@@ -153,26 +162,26 @@ class BaseState:
 
         self.loaded = False
 
+    def load(self) -> None:
+        self.loaded = True
+
+    reload = load
+
     def is_loaded(self) -> bool:
         return self.loaded
 
     # REGION: TO BE IMPLEMENTED IN SUBCLASSES
 
-    def load(self) -> None:
-        raise NotImplementedError("Derived classes should implement load() method.")
-
-    reload = load
-
     def allocate_at(
         self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION
     ) -> int:
         raise NotImplementedError(
-            "Derived classes should implement allocate_memory(address, size, flags) method."
+            "Derived classes should implement allocate_at(address, size, flags) method."
         )
 
     def free_at(self, address: int, size: int) -> None:
         raise NotImplementedError(
-            "Derived classes should implement free_memory(address, size) method."
+            "Derived classes should implement allocate_at(address, size) method."
         )
 
     def protect_at(self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION) -> int:
@@ -200,10 +209,22 @@ class BaseState:
     # END REGION
 
     def read_buffer(self, size: int, address: int) -> Buffer:
-        return Buffer(self.read_at(address, size))
+        return buffer(self.read_at(address, size))
 
     def write_buffer(self, buffer: Buffer, address: int) -> int:
-        return self.write_at(address, buffer.into())
+        return self.write_at(address, buffer)
+
+    def read_mut_buffer(self, size: int, address: int) -> MutBuffer:
+        return mut_buffer(self.read_at(address, size))
+
+    def write_mut_buffer(self, mut_buffer: MutBuffer, address: int) -> int:
+        return self.write_at(address, mut_buffer)
+
+    def allocate(self, size: int, flags: Protection = DEFAULT_PROTECTION) -> int:
+        return self.allocate_at(0, size, flags)
+
+    def allocate_for(self, type: Type[Layout], flags: Protection = DEFAULT_PROTECTION) -> int:
+        return self.allocate(type.size, flags)
 
     def read(self, type: Type[Read[T]], address: int) -> Read[T]:
         return type.read_from(self, address)
@@ -216,6 +237,47 @@ class BaseState:
 
     def write_value(self, type: Type[Write[T]], value: T, address: int) -> None:
         type.write_value_to(value, self, address)
+
+
+class BufferState(BaseState):
+    # XXX: implement reading, writing, reserving and [de]allocation logic
+
+    platform = cast(Platform, system_platform)
+
+    def __init__(
+        self,
+        process_name: str = DEFAULT_BUFFER_NAME,
+        bits: int = DEFAULT_BUFFER_BITS,
+        window_title: str = DEFAULT_BUFFER_TITLE,
+        size: int = DEFAULT_BUFFER_SIZE,
+        load: bool = True,
+    ) -> None:
+        super().__init__(
+            process_name=process_name, bits=bits, window_title=window_title, load=load
+        )
+
+        self._buffer = mut_buffer(size)
+
+        self._reserved: Dict[int, int] = {}  # address -> size
+
+    @property
+    def buffer(self) -> MutBuffer:
+        return self._buffer
+
+    @property
+    def reserved(self) -> Dict[int, int]:
+        return self._reserved
+
+    @property
+    def size(self) -> int:
+        return len(self.buffer)
+
+    def _reset(self) -> None:
+        self._buffer = mut_buffer(self.size)
+
+        self._reserved.clear()
+
+    ...
 
 
 class SystemState(BaseState):
@@ -244,7 +306,7 @@ class SystemState(BaseState):
 
         self.base_address = system_get_base_address(self.process_id, self.process_name)
 
-        self.loaded = True
+        super().load()
 
     reload = load
 
@@ -288,7 +350,7 @@ class LinuxState(BaseState):
 
         self.base_address = linux_get_base_address_from_handle(self.process_handle)
 
-        self.loaded = True
+        super().load()
 
     reload = load
 
@@ -332,7 +394,7 @@ class MacOSState(BaseState):
 
         self.base_address = macos_get_base_address_from_handle(self.process_handle)
 
-        self.loaded = True
+        super().load()
 
     reload = load
 
@@ -385,7 +447,7 @@ class WindowsState(BaseState):
 
         self.base_address = windows_get_base_address(self.process_id, self.process_name)
 
-        self.loaded = True
+        super().load()
 
     reload = load
 
@@ -414,6 +476,19 @@ class WindowsState(BaseState):
 
     def terminate(self) -> bool:
         return windows_terminate_process(self.process_handle)
+
+
+def get_buffer_state(
+    process_name: str = DEFAULT_BUFFER_NAME,
+    bits: int = DEFAULT_BUFFER_BITS,
+    window_title: str = DEFAULT_BUFFER_TITLE,
+    size: int = DEFAULT_BUFFER_SIZE,
+    *,
+    load: bool = True,
+) -> BufferState:
+    return BufferState(
+        process_name=process_name, bits=bits, window_title=window_title, size=size, load=load
+    )
 
 
 def get_linux_state(

@@ -23,6 +23,24 @@ class Export(Generic[T]):
         except AttributeError:
             return self.value
 
+    def __set__(self, instance: Any, value: Any) -> None:
+        try:
+            return self.value.__set__(instance, value)  # type: ignore
+
+        except AttributeError:
+            pass
+
+        raise AttributeError("Attribute is read-only.")
+
+    def __delete__(self, instance: Any) -> None:
+        try:
+            return self.value.__delete__(instance)  # type: ignore
+
+        except AttributeError:
+            pass
+
+        raise AttributeError("Attribute is read-only.")
+
 
 def export(some: T) -> Export[T]:
     return Export(some)

@@ -174,18 +174,20 @@ class Visitor:
     # Maybe we could implement This (or this) type,
     # which is going to be used for recursive definitions.
 
-    # XXX: improvement of subclassing is highly recommended.
-
     def visit_struct(self, marker_struct: Type[Struct]) -> Type[MemoryStruct]:
         # get all bases via resolving the MRO
 
         bases = getattr(marker_struct, MRO)
 
+        # get direct (main) base
+
+        direct_bases = getattr(marker_struct, BASES)
+
+        direct_base, *_ = direct_bases
+
         # if struct has inherited annotations, and does not define any on its own, reset
 
-        _, main_base, *_ = bases
-
-        if getattr(marker_struct, ANNOTATIONS, {}) == getattr(main_base, ANNOTATIONS, {}):
+        if getattr(marker_struct, ANNOTATIONS, {}) == getattr(direct_base, ANNOTATIONS, {}):
             setattr(marker_struct, ANNOTATIONS, {})
 
         # fetch annotations
@@ -278,16 +280,46 @@ class Visitor:
 
             fields: Dict[str, Field] = dict(field_array)
 
-            offset = 0
             size = 0
 
-            for field in fields.values():
-                field.offset = offset
+            if fields:
+                origin = marker_struct.origin
 
-                offset += field.size
-                size += field.size
+                actual_fields = list(fields.values())
 
-                field.freeze()  # freeze the field so it can not be mutated
+                before_origin, after_origin = actual_fields[:origin], actual_fields[origin:]
+
+                # go through fields before the origin
+
+                offset = 0
+
+                for field in reversed(before_origin):
+                    try:
+                        offset -= field.size
+                        size += field.size
+
+                    except TypeError:
+                        pass
+
+                    field.offset = offset
+
+                    field.freeze()  # freeze the field so it can not be mutated
+
+                # now to process the origin and everything after it
+
+                offset = 0
+
+                for field in after_origin:
+                    field.offset = offset
+
+                    try:
+                        offset += field.size
+                        size += field.size
+
+                    except TypeError:
+                        pass
+
+                    field.freeze()  # freeze the field so it can not be mutated
 
             # last padding: we need the structure size to be divisible
             # by the size of the largest member in it
