@@ -7,7 +7,7 @@ from gd.crypto import (
     decode_robtop_str,
     encode_robtop_str,
     fix_song_encoding,
-    gen_rs,
+    generate_rs,
     unzip_level_str,
     zip_level_str,
 )
@@ -407,12 +407,12 @@ class LevelModel(Model):
         else:
             return unzip_level_str(unprocessed_data)
 
-    def set_data(self, level_data: str) -> None:
-        if is_level_probably_decoded(level_data):
-            self.unprocessed_data = zip_level_str(level_data)
+    def set_data(self, data: str) -> None:
+        if is_level_probably_decoded(data):
+            self.unprocessed_data = zip_level_str(data)
 
         else:
-            self.unprocessed_data = level_data
+            self.unprocessed_data = data
 
     data = property(get_data, set_data)
 
@@ -801,11 +801,11 @@ def de_quests(string: str) -> QuestsInnerModel:
 
 
 def ser_chests(model: ChestsInnerModel) -> str:
-    return gen_rs(CHEST_SLICE) + encode_robtop_str(model.to_string(), Key.CHESTS)
+    return generate_rs(CHEST_SLICE) + encode_robtop_str(model.to_string(), Key.CHESTS)
 
 
 def ser_quests(model: QuestsInnerModel) -> str:
-    return gen_rs(QUEST_SLICE) + encode_robtop_str(model.to_string(), Key.QUESTS)
+    return generate_rs(QUEST_SLICE) + encode_robtop_str(model.to_string(), Key.QUESTS)
 
 
 class ChestsResponseModel(Model):

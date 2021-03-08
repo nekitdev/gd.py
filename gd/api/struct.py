@@ -660,12 +660,12 @@ class LevelAPI(Model):
         else:
             return unzip_level_str(unprocessed_data)
 
-    def set_data(self, level_data: str) -> None:
-        if is_level_probably_decoded(level_data):
-            self.unprocessed_data = zip_level_str(level_data)
+    def set_data(self, data: str) -> None:
+        if is_level_probably_decoded(data):
+            self.unprocessed_data = zip_level_str(data)
 
         else:
-            self.unprocessed_data = level_data
+            self.unprocessed_data = data
 
     data = property(get_data, set_data)
 

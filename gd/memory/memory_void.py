@@ -32,6 +32,4 @@ class MemoryVoidType(MemoryType):
 
 
 class MemoryVoid(Memory, metaclass=MemoryVoidType):
-    def __init_subclass__(cls, _root: bool = False, **ignored) -> None:
-        if not _root:
-            raise TypeError("Can not derive from void.")
+    pass

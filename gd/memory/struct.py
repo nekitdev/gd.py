@@ -1,7 +1,10 @@
 # type: ignore
 
+# from gd.crypto import unzip_level_str, zip_level_str
+# from gd.decorators import cache_by
 from gd.memory.cocos import CCLayer, CCNode, CCPoint
 from gd.memory.marker import Struct, mut_pointer, bool_t, float_t, int_t, string_t, void
+# from gd.text_utils import is_level_probably_decoded
 
 
 class GameLevel(CCNode):
@@ -14,7 +17,7 @@ class GameLevel(CCNode):
     name: string_t
     description: string_t
 
-    uncompressed_data: string_t
+    unprocessed_data: string_t
 
     user_name: string_t
 
@@ -200,12 +203,39 @@ class GameLevel(CCNode):
 
     progress_string: string_t
 
+    # @cache_by("unprocessed_data")
+    # def get_data(self) -> str:
+    #     unprocessed_data = self.unprocessed_data
+
+    #     if unprocessed_data is None:
+    #         return ""
+
+    #     if is_level_probably_decoded(unprocessed_data):
+    #         return unprocessed_data
+
+    #     else:
+    #         return unzip_level_str(unprocessed_data)
+
+    # def set_data(self, data: str) -> None:
+    #     if is_level_probably_decoded(data):
+    #         self.unprocessed_data = zip_level_str(data)
+
+    #     else:
+    #         self.unprocessed_data = data
+
+    # data = property(get_data, set_data)
+
 
 class TriggerEffectDelegate(Struct, vtable=True):
     pass
 
 
 class BaseGameManager(CCNode, vtable=True):
+    file_name: string_t
+
+    setup: bool_t
+    saved: bool_t
+
     ...
 
 

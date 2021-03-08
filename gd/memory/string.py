@@ -1,10 +1,9 @@
 # type: ignore
 
-from itertools import islice as iter_slice
+# from itertools import islice as iter_slice
 
-from gd.memory.export import export
 from gd.memory.marker import Struct, Union, mut_array, mut_pointer, char_t, intsize_t, uintsize_t
-from gd.memory.memory_array import MemoryArray
+# from gd.memory.memory_array import MemoryArray
 from gd.memory.memory_base import MemoryStruct
 from gd.memory.types import Types
 from gd.memory.utils import closest_power_of_two
@@ -21,8 +20,8 @@ EMPTY_STRING = ""
 NULL_BYTE = bytes(1)
 
 
-def to_bytes(array: MemoryArray[int], length: int) -> bytes:
-    return bytes(iter_slice(array, length))
+# def to_bytes(array: MemoryArray[int], length: int) -> bytes:
+#     return bytes(iter_slice(array, length))
 
 
 class std_string_content(Union):
@@ -42,13 +41,17 @@ class std_string(Struct):
 
         if capacity < content.size:
             try:
-                return to_bytes(content.inline, length).decode()
+                # return to_bytes(content.inline, length).decode()  # <- optimization required
+
+                return self.state.read_at(content.inline.address, length).decode()
 
             except UnicodeDecodeError:
                 pass
 
         try:
-            return to_bytes(content.pointer.value, length).decode()
+            # return to_bytes(content.pointer.value, length).decode()  # <- optimization required
+
+            return self.state.read_at(content.pointer.value_address, length).decode()
 
         except UnicodeDecodeError:
             return EMPTY_STRING
@@ -69,7 +72,9 @@ class std_string(Struct):
             if length < content.size:
                 self.capacity = content.size - 1
 
-                return content.inline.write(data)
+                # return content.inline.write(data)  # <- optimization required
+
+                self.state.write_at(content.inline.address, data)
 
             else:
                 size = closest_power_of_two(size)
@@ -80,7 +85,9 @@ class std_string(Struct):
 
                 self.capacity = size - 1
 
-                return content.pointer.value.write(data)
+                # return content.pointer.value.write(data)  # <- optimization required
+
+                self.state.write_at(content.pointer.value_address, data)
 
         else:
             if capacity < content.size:
@@ -88,23 +95,20 @@ class std_string(Struct):
 
             return content.pointer.value.write(data)
 
-    value = export(property(get_value, set_value))
+    value = property(get_value, set_value)
 
     """
     # XXX: should this be here?
 
-    @export
     @classmethod
     def read_value_from(cls, state: "BaseState", address: int) -> str:
         string = cls(state, address)
 
         return string.value
 
-    @export
     def write_to(self, state: "BaseState", address: int) -> None:
         ...
 
-    @export
     @classmethod
     def write_value_to(cls, value: str, state: "BaseState", address: int) -> None:
         string = cls(state, address)
@@ -128,7 +132,11 @@ class old_std_string(Struct):
         long_string = self.pointer.value
 
         try:
-            return to_bytes(long_string.content, long_string.length).decode()
+            # return to_bytes(  # <- optimization required
+            #     long_string.content, long_string.length
+            # ).decode()
+
+            return self.state.read_at(long_string.content.address, long_string.length)
 
         except UnicodeDecodeError:
             return EMPTY_STRING
@@ -161,25 +169,24 @@ class old_std_string(Struct):
 
         long_string.length = length
 
-        return long_string.content.write(data)
+        # return long_string.content.write(data)  # <- optimization required
 
-    value = export(property(get_value, set_value))
+        self.state.write_at(long_string.content.address, data)
+
+    value = property(get_value, set_value)
 
     """
     # XXX: should this be here?
 
-    @export
     @classmethod
     def read_value_from(cls, state: "BaseState", address: int) -> str:
         string = cls(state, address)
 
         return string.value
 
-    @export
     def write_to(self, state: "BaseState", address: int) -> None:
         ...
 
-    @export
     @classmethod
     def write_value_to(cls, value: str, state: "BaseState", address: int) -> None:
         string = cls(state, address)

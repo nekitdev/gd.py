@@ -554,26 +554,38 @@ class Struct(metaclass=StructType, derive=False):
         return self._origin
 
 
+class SpecialType(MarkerType):
+    def __new__(
+        meta_cls,
+        cls_name: str,
+        bases: Tuple[Type[Any], ...],
+        cls_dict: Dict[str, Any],
+        derive: bool = False,
+        special: bool = False,
+        **kwargs,
+    ) -> "SpecialType":
+        if not special:
+            raise TypeError("Can not derive from this type.")
+
+        return super().__new__(meta_cls, cls_name, bases, cls_dict, derive=derive, **kwargs)
+
+
 S = TypeVar("S", bound="Special")
 
 
-class Special(metaclass=MarkerType, derive=False):
+class Special(metaclass=SpecialType, special=True, derive=False):
     def __new__(cls: Type[S], *ignored_args, **ignored_kwargs) -> S:
         raise TypeError(f"Can not instantiate {cls.__name__}.")
 
-    def __init_subclass__(cls, _special: bool = False, **ignored) -> None:
-        if not _special:
-            raise TypeError(f"Can not derive from {cls.__name__}.")
 
-
-class Void(Special, _special=True, derive=False):
+class Void(Special, special=True, derive=False):
     pass
 
 
 void = Void
 
 
-class This(Special, _special=True, derive=False):
+class This(Special, special=True, derive=False):
     pass
 
 

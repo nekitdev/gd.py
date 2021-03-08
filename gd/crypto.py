@@ -44,11 +44,11 @@ __all__ = (
     "unzip_level",
     "zip_level_str",
     "unzip_level_str",
-    "gen_chk",
-    "gen_rs",
-    "gen_rs_and_encode_number",
-    "gen_level_seed",
-    "gen_leaderboard_seed",
+    "generate_chk",
+    "generate_rs",
+    "generate_rs_and_encode_number",
+    "generate_level_seed",
+    "generate_leaderboard_seed",
     "deflate",
     "inflate",
     "fix_song_encoding",
@@ -340,13 +340,13 @@ def encode_save_str(
     return encode_save(string.encode(encoding, errors), apply_xor).decode(encoding, errors)
 
 
-def gen_rs_and_encode_number(
+def generate_rs_and_encode_number(
     length: int = 5, start: int = 1_000, stop: int = 1_000_000, *, key: Key,
 ) -> str:
-    return gen_rs(length) + encode_robtop_str(str(random.randrange(start, stop)), key)
+    return generate_rs(length) + encode_robtop_str(str(random.randrange(start, stop)), key)
 
 
-def gen_rs(length: int = 10, charset: str = CHARSET) -> str:
+def generate_rs(length: int = 10, charset: str = CHARSET) -> str:
     return concat(random.choices(charset, k=length))
 
 
@@ -425,40 +425,40 @@ def decode_bytes_else_str(value: T) -> str:
     return str(value)
 
 
-def gen_chk(values: List[T], key: Key, salt: Salt) -> str:
+def generate_chk(values: List[T], key: Key, salt: Salt) -> str:
     string = concat(map(decode_bytes_else_str, values))
 
     return encode_robtop_str(sha1_str_with_salt(string, salt), key)
 
 
-def zip_level(level_data: bytes) -> bytes:
-    return encode_save(level_data, apply_xor=False)
+def zip_level(data: bytes) -> bytes:
+    return encode_save(data, apply_xor=False)
 
 
-def unzip_level(level_data: bytes) -> bytes:
-    return decode_save(level_data, apply_xor=False)
+def unzip_level(data: bytes) -> bytes:
+    return decode_save(data, apply_xor=False)
 
 
 def zip_level_str(
-    level_data: str, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
+    data: str, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
 ) -> str:
-    return encode_save_str(level_data, apply_xor=False, encoding=encoding, errors=errors)
+    return encode_save_str(data, apply_xor=False, encoding=encoding, errors=errors)
 
 
 def unzip_level_str(
-    level_data: str, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
+    data: str, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
 ) -> str:
-    return decode_save_str(level_data, apply_xor=False, encoding=encoding, errors=errors)
+    return decode_save_str(data, apply_xor=False, encoding=encoding, errors=errors)
 
 
-def gen_level_seed(level_data: AnyStr, chars: int = 50) -> AnyStr:
-    if len(level_data) < chars:
-        return level_data
+def generate_level_seed(data: AnyStr, chars: int = 50) -> AnyStr:
+    if len(data) < chars:
+        return data
 
-    return level_data[:: len(level_data) // chars][:chars]
+    return data[:: len(data) // chars][:chars]
 
 
-def gen_leaderboard_seed(
+def generate_leaderboard_seed(
     cls, jumps: int = 0, percentage: int = 0, seconds: int = 0, has_played: bool = True
 ) -> int:
     return (

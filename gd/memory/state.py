@@ -70,19 +70,17 @@ from gd.memory.internal import (
 )
 from gd.memory.traits import Layout, Read, Write
 from gd.memory.types import Types
-from gd.platform import ANDROID, IOS, LINUX, MACOS, WINDOWS, Platform, system_bits, system_platform
+from gd.platform import ANDROID, IOS, LINUX, MACOS, WINDOWS, Platform, system_platform
 from gd.text_utils import make_repr
-from gd.typing import Callable, Dict, Type, TypeVar, Union, cast
+from gd.typing import Callable, Type, TypeVar, Union, cast
 
 __all__ = (
     "BaseState",
-    "BufferState",
     "LinuxState",
     "MacOSState",
     "SystemState",
     "WindowsState",
     "State",
-    "get_buffer_state",
     "get_linux_state",
     "get_macos_state",
     "get_system_state",
@@ -100,13 +98,6 @@ DEFAULT_SYSTEM_NAME = "Geometry Dash"
 DEFAULT_LINUX_NAME = "Geometry Dash"
 DEFAULT_MACOS_NAME = "Geometry Dash"
 DEFAULT_WINDOWS_NAME = "GeometryDash.exe"
-
-DEFAULT_BUFFER_NAME = "Buffer"
-DEFAULT_BUFFER_TITLE = "Buffer"
-
-DEFAULT_BUFFER_BITS = system_bits
-
-DEFAULT_BUFFER_SIZE = 1 << 10
 
 
 class BaseState:
@@ -237,47 +228,6 @@ class BaseState:
 
     def write_value(self, type: Type[Write[T]], value: T, address: int) -> None:
         type.write_value_to(value, self, address)
-
-
-class BufferState(BaseState):
-    # XXX: implement reading, writing, reserving and [de]allocation logic
-
-    platform = cast(Platform, system_platform)
-
-    def __init__(
-        self,
-        process_name: str = DEFAULT_BUFFER_NAME,
-        bits: int = DEFAULT_BUFFER_BITS,
-        window_title: str = DEFAULT_BUFFER_TITLE,
-        size: int = DEFAULT_BUFFER_SIZE,
-        load: bool = True,
-    ) -> None:
-        super().__init__(
-            process_name=process_name, bits=bits, window_title=window_title, load=load
-        )
-
-        self._buffer = mut_buffer(size)
-
-        self._reserved: Dict[int, int] = {}  # address -> size
-
-    @property
-    def buffer(self) -> MutBuffer:
-        return self._buffer
-
-    @property
-    def reserved(self) -> Dict[int, int]:
-        return self._reserved
-
-    @property
-    def size(self) -> int:
-        return len(self.buffer)
-
-    def _reset(self) -> None:
-        self._buffer = mut_buffer(self.size)
-
-        self._reserved.clear()
-
-    ...
 
 
 class SystemState(BaseState):
@@ -476,19 +426,6 @@ class WindowsState(BaseState):
 
     def terminate(self) -> bool:
         return windows_terminate_process(self.process_handle)
-
-
-def get_buffer_state(
-    process_name: str = DEFAULT_BUFFER_NAME,
-    bits: int = DEFAULT_BUFFER_BITS,
-    window_title: str = DEFAULT_BUFFER_TITLE,
-    size: int = DEFAULT_BUFFER_SIZE,
-    *,
-    load: bool = True,
-) -> BufferState:
-    return BufferState(
-        process_name=process_name, bits=bits, window_title=window_title, size=size, load=load
-    )
 
 
 def get_linux_state(

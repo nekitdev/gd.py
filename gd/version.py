@@ -2,18 +2,14 @@ import re
 import sys
 from collections import namedtuple
 
-import aiohttp
-
 from gd import __version__
-from gd.decorators import cache_by
 from gd.typing import Optional, Union
 
 __all__ = (
     "VersionInfo",
     "create_version_info",
     "make_version_info",
-    "python_version",
-    "version_re",
+    "python_version_info",
     "version_info",
 )
 
@@ -27,7 +23,6 @@ short_to_long_names = {
 long_to_short_names = {
     long_name: short_name for short_name, long_name in short_to_long_names.items()
 }
-
 
 default_level = "final"
 
@@ -47,9 +42,11 @@ version_re = (
 
 compiled_re = re.compile(version_re, re.MULTILINE)
 
+release_level_literal = "release_level"
+
 
 def parse_value(key: str, value: Optional[str]) -> Union[int, str]:
-    if key == "release_level":
+    if key == release_level_literal:
         if value is None:
             return default_level
 
@@ -89,12 +86,14 @@ class VersionInfo(namedtuple("VersionInfo", "major minor micro release_level ser
         return cls(**parts)  # type: ignore
 
     @property  # type: ignore
-    @cache_by("release_level")
     def release_letter(self) -> str:
         return long_to_short_names.get(self.release_level, "f")
 
     def to_string(self) -> str:
         """Convert :class:`~gd.VersionInfo` to string."""
+        if self.release_level == default_level and not self.serial:
+            return f"{self.major}.{self.minor}.{self.micro}"
+
         return f"{self.major}.{self.minor}.{self.micro}{self.release_letter}{self.serial}"
 
 
@@ -106,4 +105,4 @@ def create_version_info(string: str) -> VersionInfo:
 make_version_info = create_version_info
 
 version_info: VersionInfo = create_version_info(__version__)
-python_version: VersionInfo = VersionInfo(*sys.version_info)
+python_version_info: VersionInfo = VersionInfo(*sys.version_info)

@@ -11,15 +11,15 @@ from yarl import URL
 from gd.api.recording import Recording, RecordingEntry
 from gd.async_utils import get_running_loop, maybe_coroutine, shutdown_loop
 from gd.converters import GameVersion, Password, Version
-from gd.crypto import (  # gen_leaderboard_seed,
+from gd.crypto import (  # generate_leaderboard_seed,
     Key,
     Salt,
     encode_base64_str,
     encode_robtop_str,
-    gen_chk,
-    gen_level_seed,
-    gen_rs,
-    gen_rs_and_encode_number,
+    generate_chk,
+    generate_level_seed,
+    generate_rs,
+    generate_rs_and_encode_number,
     zip_level_str,
 )
 from gd.decorators import synchronize
@@ -72,7 +72,7 @@ from gd.typing import (
     Union,
     cast,
 )
-from gd.version import python_version, version_info
+from gd.version import python_version_info, version_info
 
 __all__ = ("Route", "HTTPClient")
 
@@ -219,7 +219,7 @@ atexit.register(close_all_clients_sync)
 
 @synchronize
 class HTTPClient:
-    USER_AGENT = f"python/{python_version} gd.py/{version_info}"
+    USER_AGENT = f"python/{python_version_info} gd.py/{version_info}"
     REQUEST_LOG = "{method} {url} has returned {status}"
     SUCCESS_LOG = "{method} {url} has received {data}"
 
@@ -437,17 +437,17 @@ class HTTPClient:
         return None
 
     @staticmethod
-    def gen_udid(id: Optional[int] = None, low: int = 1, high: int = 1_000_000_000) -> str:
+    def generate_udid(id: Optional[int] = None, low: int = 1, high: int = 1_000_000_000) -> str:
         if id is None:
             id = random.randint(low, high)
         return f"S{id}"
 
     @staticmethod
-    def gen_uuid() -> str:
+    def generate_uuid() -> str:
         return f"{uuid.uuid4()}"
 
     @staticmethod
-    def gen_extra_string(amount: int = 55) -> str:
+    def generate_extra_string(amount: int = 55) -> str:
         return "_".join(map(str, (0 for _ in range(amount))))
 
     def get_game_version(self) -> int:
@@ -489,7 +489,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             user_name=name,
             password=password,
-            udid=self.gen_udid(),
+            udid=self.generate_udid(),
             secret=self.get_secret("login"),
             to_camel=True,
         )
@@ -652,9 +652,9 @@ class HTTPClient:
         error_codes = {
             -1: MissingAccess(f"Failed to update profile of a user by Account ID: {account_id}.")
         }
-        rs = gen_rs()
+        rs = generate_rs()
 
-        chk = gen_chk(
+        chk = generate_chk(
             values=[
                 account_id,
                 user_coins,
@@ -934,11 +934,11 @@ class HTTPClient:
 
         if account_id is not None and encoded_password is not None:
             inc = 1
-            rs = gen_rs()
-            udid = self.gen_udid()
-            uuid = self.gen_uuid()
+            rs = generate_rs()
+            udid = self.generate_udid()
+            uuid = self.generate_uuid()
 
-            chk = gen_chk(
+            chk = generate_chk(
                 values=[level_id, inc, rs, account_id, udid, uuid],
                 key=Key.LEVEL,  # type: ignore
                 salt=Salt.LEVEL,  # type: ignore
@@ -1046,14 +1046,16 @@ class HTTPClient:
 
             data = zip_level_str(data)
 
-        extra_string = self.gen_extra_string()
+        extra_string = self.generate_extra_string()
 
         description = encode_base64_str(description)
 
-        level_seed = gen_level_seed(data)
+        level_seed = generate_level_seed(data)
 
-        seed = gen_rs()
-        other_seed = gen_chk(values=[level_seed], key=Key.LEVEL, salt=Salt.LEVEL)  # type: ignore
+        seed = generate_rs()
+        other_seed = generate_chk(
+            values=[level_seed], key=Key.LEVEL, salt=Salt.LEVEL  # type: ignore
+        )
 
         level_password = Password(password, copyable)
 
@@ -1114,11 +1116,11 @@ class HTTPClient:
         self, level_id: int, stars: int, *, account_id: int, encoded_password: str
     ) -> int:
         error_codes = {-1: MissingAccess(f"Failed to rate level by ID: {level_id}.")}
-        udid = self.gen_udid()
-        uuid = self.gen_uuid()
-        rs = gen_rs()
+        udid = self.generate_udid()
+        uuid = self.generate_uuid()
+        rs = generate_rs()
 
-        chk = gen_chk(
+        chk = generate_chk(
             values=[level_id, stars, rs, account_id, udid, uuid],
             key=Key.LIKE_RATE,  # type: ignore
             salt=Salt.LIKE_RATE,  # type: ignore
@@ -1229,12 +1231,12 @@ class HTTPClient:
             -1: MissingAccess(f"Failed to get leaderboard of the level by ID: {level_id}.")
         }
 
-        # seed = gen_leaderboard_seed(jumps, percentage, seconds, played)
+        # seed = generate_leaderboard_seed(jumps, percentage, seconds, played)
 
         # if timely_type is TimelyType.WEEKLY:
         #     timely_id += 100_000
 
-        # chk = gen_chk(
+        # chk = generate_chk(
         #     values=[
         #         account_id,
         #         level_id,
@@ -1634,13 +1636,13 @@ class HTTPClient:
 
         like = not dislike
 
-        udid = self.gen_udid()
-        uuid = self.gen_uuid()
-        rs = gen_rs()
+        udid = self.generate_udid()
+        uuid = self.generate_uuid()
+        rs = generate_rs()
 
         int_like = int(like)
 
-        chk = gen_chk(
+        chk = generate_chk(
             values=[special_id, item_id, int_like, type_id, rs, account_id, udid, uuid],
             key=Key.LIKE_RATE,  # type: ignore
             salt=Salt.LIKE_RATE,  # type: ignore
@@ -1693,7 +1695,7 @@ class HTTPClient:
 
         content = encode_base64_str(content)
 
-        chk = gen_chk(
+        chk = generate_chk(
             values=[account_name, content, level_id, percent, type.value],
             key=Key.COMMENT,  # type: ignore
             salt=Salt.COMMENT,  # type: ignore
@@ -1878,10 +1880,10 @@ class HTTPClient:
     async def get_quests(self, account_id: int, encoded_password: str) -> str:
         error_codes = {-1: MissingAccess("Failed to get quests.")}
 
-        udid = self.gen_udid()
-        uuid = self.gen_uuid()
+        udid = self.generate_udid()
+        uuid = self.generate_uuid()
 
-        chk = gen_rs_and_encode_number(length=5, key=Key.QUESTS)  # type: ignore
+        chk = generate_rs_and_encode_number(length=5, key=Key.QUESTS)  # type: ignore
 
         route = Route(
             POST,
@@ -1913,10 +1915,10 @@ class HTTPClient:
     ) -> str:
         error_codes = {-1: MissingAccess("Failed to get chests.")}
 
-        udid = self.gen_udid()
-        uuid = self.gen_uuid()
+        udid = self.generate_udid()
+        uuid = self.generate_uuid()
 
-        chk = gen_rs_and_encode_number(length=5, key=Key.CHESTS)  # type: ignore
+        chk = generate_rs_and_encode_number(length=5, key=Key.CHESTS)  # type: ignore
 
         route = Route(
             POST,
