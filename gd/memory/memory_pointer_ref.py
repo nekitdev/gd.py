@@ -8,7 +8,7 @@ from gd.typing import TYPE_CHECKING, Any, Dict, Generic, Optional, Tuple, Type, 
 if TYPE_CHECKING:
     from gd.memory.state import BaseState  # noqa
 
-__all__ = ("NullPointerError", "MemoryPointer", "MemoryMutPointer", "MemoryRef", "MemoryMutRef")
+__all__ = ("MemoryPointer", "MemoryMutPointer", "MemoryRef", "MemoryMutRef")
 
 L = TypeVar("L", bound=Layout)
 T = TypeVar("T")

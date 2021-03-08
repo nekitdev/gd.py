@@ -10,7 +10,6 @@ from gd.typing import Optional, Union
 
 __all__ = (
     "VersionInfo",
-    "aiohttp_version",
     "create_version_info",
     "make_version_info",
     "python_version",
@@ -107,5 +106,4 @@ def create_version_info(string: str) -> VersionInfo:
 make_version_info = create_version_info
 
 version_info: VersionInfo = create_version_info(__version__)
-aiohttp_version: VersionInfo = create_version_info(aiohttp.__version__)
 python_version: VersionInfo = VersionInfo(*sys.version_info)

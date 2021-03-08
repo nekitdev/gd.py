@@ -51,7 +51,7 @@ class CCObject(CCCopying):
 class CCArrayStruct(Struct):
     length: uint_t
     capacity: uint_t
-    array: mut_pointer(mut_array(CCObject))
+    array: mut_pointer(mut_array(mut_pointer(CCObject)))
 
 
 class CCArray(CCObject):

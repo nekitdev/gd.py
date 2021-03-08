@@ -72,7 +72,7 @@ from gd.typing import (
     Union,
     cast,
 )
-from gd.version import aiohttp_version, python_version, version_info
+from gd.version import python_version, version_info
 
 __all__ = ("Route", "HTTPClient")
 
@@ -219,7 +219,7 @@ atexit.register(close_all_clients_sync)
 
 @synchronize
 class HTTPClient:
-    USER_AGENT = f"python/{python_version} aiohttp/{aiohttp_version} gd.py/{version_info}"
+    USER_AGENT = f"python/{python_version} gd.py/{version_info}"
     REQUEST_LOG = "{method} {url} has returned {status}"
     SUCCESS_LOG = "{method} {url} has received {data}"
 
