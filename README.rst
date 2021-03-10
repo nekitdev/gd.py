@@ -18,7 +18,7 @@ gd.py
     :alt: Required Python Versions
 
 .. image:: https://img.shields.io/pypi/status/gd.py.svg
-    :target: https://github.com/nekitdev/gd.py/blob/master/gd
+    :target: https://github.com/nekitdev/gd.py/tree/master/gd
     :alt: Project Development Status
 
 .. image:: https://img.shields.io/pypi/dw/gd.py.svg

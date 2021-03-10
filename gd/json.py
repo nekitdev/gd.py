@@ -14,37 +14,35 @@ K = TypeVar("K")
 V = TypeVar("V")
 
 
-def is_dunder_soft(string: str) -> bool:
-    return string.startswith("__") and string.endswith("__")
-
-
 class NamedDict(Dict[K, V]):
     """Improved version of stdlib dictionary, which implements attribute key access."""
 
     def copy(self) -> Dict[K, V]:
         return self.__class__(self)
 
-    def __setattr__(self, attr: str, value: V) -> None:
+    def __setattr__(self, name: str, value: V) -> None:
         self_dict = self.__dict__
 
-        if attr in self_dict:
-            self_dict[attr] = value
+        if name in self_dict:
+            self_dict[name] = value
 
         else:
-            self[cast(K, attr)] = value
+            self[cast(K, name)] = value
 
-    def __getattr__(self, attr: str) -> V:
-        if is_dunder_soft(attr):
-            if attr not in self:
-                raise AttributeError(attr)
+    def __getattr__(self, name: str) -> V:
+        key = cast(K, name)
 
-        return self[cast(K, attr)]
+        if key in self:
+            return self[key]
+
+        raise AttributeError(name)
 
     def get(  # type: ignore
         self, key: K, default: Union[Optional[V], T] = None
     ) -> Union[Optional[V], T]:
         try:
             return self[key]
+
         except KeyError:
             return default
 

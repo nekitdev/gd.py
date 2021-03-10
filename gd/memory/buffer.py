@@ -98,9 +98,6 @@ class MutBuffer(BufferBase, bytearray):
     def into(self) -> Any:
         return ctypes.create_string_buffer(self, len(self))
 
-    def pad(self, size: int) -> None:
-        self.extend(type(self)(size))
-
 
 buffer = Buffer
 mut_buffer = MutBuffer
