@@ -13,9 +13,10 @@ from gd.typing import Iterable, Optional, Protocol, Type
 __all__ = (
     "Tool",
     "create_app",
-    "create_app_sync",
-    "create_gd_app",
-    "create_gd_app_sync",
+    "setup_app",
+    "setup_app_sync",
+    "setup_gd_app",
+    "setup_gd_app_sync",
     "run_app",
     "run_app_sync",
     "run",
@@ -42,7 +43,12 @@ run_app = web._run_app  # type: ignore  # no idea why it was made internal
 run_app_sync = web.run_app
 
 
-async def create_app(
+def create_app(**app_kwargs) -> web.Application:
+    return web.Application(**app_kwargs)
+
+
+async def setup_app(
+    app: web.Application,
     *,
     docs_title: str = "API Documentation",
     docs_version: str = str(gd.version_info),
@@ -52,10 +58,7 @@ async def create_app(
     tools: Iterable[Tool] = DEFAULT_TOOLS,
     token_database: Type[TokenDatabase] = TokenDatabase,
     token: Type[Token] = Token,
-    **app_kwargs,
 ) -> web.Application:
-    app = web.Application(**app_kwargs)
-
     app.middlewares.extend(middlewares)
 
     setup_aiohttp_apispec(
@@ -69,7 +72,8 @@ async def create_app(
     return app
 
 
-def create_app_sync(
+def setup_app_sync(
+    app: web.Application,
     *,
     docs_title: str = "API Documentation",
     docs_version: str = str(gd.version_info),
@@ -79,11 +83,10 @@ def create_app_sync(
     tools: Iterable[Tool] = DEFAULT_TOOLS,
     token_database: Type[TokenDatabase] = TokenDatabase,
     token: Type[Token] = Token,
-    default: bool = False,
-    **app_kwargs,
 ) -> web.Application:
     return gd.utils.get_not_running_loop().run_until_complete(
-        create_app(
+        setup_app(
+            app,
             docs_title=docs_title,
             docs_version=docs_version,
             docs_info_url=docs_info_url,
@@ -91,14 +94,12 @@ def create_app_sync(
             middlewares=middlewares,
             tools=tools,
             token_database=token_database,
-            token=token,
-            default=default,
-            **app_kwargs,
         )
     )
 
 
-async def create_gd_app(
+async def setup_gd_app(
+    app: web.Application,
     *,
     client: Optional[gd.Client] = None,
     docs_title: str = "GD API Documentation",
@@ -109,9 +110,9 @@ async def create_gd_app(
     tools: Iterable[Tool] = DEFAULT_GD_TOOLS,
     token_database: Type[ServerTokenDatabase] = ServerTokenDatabase,
     token: Type[ServerToken] = ServerToken,
-    **app_kwargs,
 ) -> web.Application:
-    app = await create_app(
+    await setup_app(
+        app,
         docs_title=docs_title,
         docs_version=docs_version,
         docs_info_url=docs_info_url,
@@ -120,7 +121,6 @@ async def create_gd_app(
         tools=tools,
         token_database=token_database,
         token=token,
-        **app_kwargs,
     )
 
     if client is None:
@@ -133,7 +133,8 @@ async def create_gd_app(
     return app
 
 
-def create_gd_app_sync(
+def setup_gd_app_sync(
+    app: web.Application,
     *,
     client: Optional[gd.Client] = None,
     docs_title: str = "GD API Documentation",
@@ -144,10 +145,10 @@ def create_gd_app_sync(
     tools: Iterable[Tool] = DEFAULT_GD_TOOLS,
     token_database: Type[ServerTokenDatabase] = ServerTokenDatabase,
     token: Type[ServerToken] = ServerToken,
-    **app_kwargs,
 ) -> web.Application:
     return gd.utils.get_not_running_loop().run_until_complete(
-        create_gd_app(
+        setup_gd_app(
+            app,
             client=client,
             docs_title=docs_title,
             docs_version=docs_version,
@@ -157,22 +158,21 @@ def create_gd_app_sync(
             tools=tools,
             token_database=token_database,
             token=token,
-            **app_kwargs,
         )
     )
 
 
 async def run(**run_kwargs) -> None:
-    await run_app(await create_app(), **run_kwargs)
+    await run_app(await setup_app(create_app()), **run_kwargs)
 
 
 async def run_gd(**run_kwargs) -> None:
-    await run_app(await create_gd_app(), **run_kwargs)
+    await run_app(await setup_gd_app(create_app()), **run_kwargs)
 
 
 def run_sync(**run_kwargs) -> None:
-    run_app_sync(create_app_sync(), **run_kwargs)
+    run_app_sync(setup_app_sync(create_app()), **run_kwargs)
 
 
 def run_gd_sync(**run_kwargs) -> None:
-    run_app_sync(create_gd_app_sync(), **run_kwargs)
+    run_app_sync(setup_gd_app_sync(create_app()), **run_kwargs)

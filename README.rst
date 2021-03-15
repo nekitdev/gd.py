@@ -37,10 +37,6 @@ gd.py
     :target: https://coveralls.io/github/nekitdev/gd.py
     :alt: Code Coverage
 
-.. image:: https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.herokuapp.com%2Fnekit%2Fpledges
-    :target: https://patreon.com/nekit
-    :alt: Patreon Page [Support]
-
 gd.py is a library that provides its users ability to interact with servers, client and memory of Geometry Dash.
 
 Key Features
