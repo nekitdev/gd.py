@@ -1,5 +1,3 @@
-# CHECK: make GDToken instead of Token, and leave Token not-server-bound
-
 import re
 import secrets
 import types

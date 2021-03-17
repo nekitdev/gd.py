@@ -96,6 +96,10 @@ class VersionInfo(namedtuple("VersionInfo", "major minor micro release_level ser
 
         return f"{self.major}.{self.minor}.{self.micro}{self.release_letter}{self.serial}"
 
+    @property
+    def releaselevel(self) -> str:
+        return self.release_level
+
 
 def create_version_info(string: str) -> VersionInfo:
     """Same as :meth:`~gd.VersionInfo.from_string`."""
