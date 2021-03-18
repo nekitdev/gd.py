@@ -97,7 +97,6 @@ class std_string(Struct):
 
     value = property(get_value, set_value)
 
-    """
     # XXX: should this be here?
 
     @classmethod
@@ -114,7 +113,6 @@ class std_string(Struct):
         string = cls(state, address)
 
         string.value = value
-    """
 
 
 class old_std_long_string(Struct, origin=3):
@@ -175,7 +173,6 @@ class old_std_string(Struct):
 
     value = property(get_value, set_value)
 
-    """
     # XXX: should this be here?
 
     @classmethod
@@ -192,7 +189,6 @@ class old_std_string(Struct):
         string = cls(state, address)
 
         string.value = value
-    """
 
 
 @Types.register_function

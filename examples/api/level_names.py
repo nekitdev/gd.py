@@ -2,7 +2,7 @@ import gd
 
 database = gd.api.save.load()  # load local database (save)
 
-levels = database.load_created_levels()  # load created levels
+levels = database.get_created_levels()  # get created levels
 
 # align indexes using the largest one
 index_align = len(str(len(levels)))

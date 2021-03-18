@@ -50,7 +50,7 @@ app = web.Application()
 # add routes
 app.add_routes(routes)
 
-print("Go to http://127.0.0.1:8080/api/users/RobTop to see info about RobTop.")
+print("Go to http://localhost:8080/api/users/RobTop to see info about RobTop.")
 
 # run the app
 web.run_app(app)
