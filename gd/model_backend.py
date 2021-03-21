@@ -290,8 +290,8 @@ ser_url = partial(quote, safe=EMPTY)
 
 
 common_pattern = re.compile(
-    fr"(?P<day>[0-9]+).(?P<month>[0-9]+).(?P<year>[0-9]+) "
-    fr"(?P<hour>[0-9]+).(?P<minute>[0-9]+)"
+    r"(?P<day>[0-9]+).(?P<month>[0-9]+).(?P<year>[0-9]+) "
+    r"(?P<hour>[0-9]+).(?P<minute>[0-9]+)"
 )
 
 

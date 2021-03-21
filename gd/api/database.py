@@ -53,22 +53,25 @@ class LevelValues:
     gauntlet: LevelStore = attrib()
     packs: List[int] = attrib()
 
-    def get_prefixes(self) -> Dict[str, List[int]]:
+    def get_type_to_array(self) -> Dict[str, List[int]]:
         values, normal, timely, gauntlet = self, self.normal, self.timely, self.gauntlet
 
         return {
-            "n_": values.official,
-            "c_": normal.completed,
-            "d_": timely.completed,
-            "g_": gauntlet.completed,
-            "star_": normal.stars,
-            "dstar_": timely.stars,
-            "gstar_": gauntlet.stars,
-            "demon_": normal.demons,
-            "ddemon_": timely.demons,
-            "gdemon_": gauntlet.demons,
-            "pack_": values.packs,
+            "n": values.official,
+            "c": normal.completed,
+            "d": timely.completed,
+            "g": gauntlet.completed,
+            "star": normal.stars,
+            "dstar": timely.stars,
+            "gstar": gauntlet.stars,
+            "demon": normal.demons,
+            "ddemon": timely.demons,
+            "gdemon": gauntlet.demons,
+            "pack": values.packs,
         }
+
+    def get_prefix_to_array(self) -> Dict[str, List[int]]:
+        return {f"{type}_": array for type, array in self.get_type_to_array().items()}
 
     @classmethod
     def create_empty(cls) -> "LevelValues":
@@ -234,10 +237,10 @@ class Database:
     def get_values(self) -> LevelValues:  # O(nm), thanks rob
         """:class:`~gd.api.database.LevelValues` that represent completed levels."""
         values = LevelValues.create_empty()
-        prefixes = values.get_prefixes()
+        prefix_to_array = values.get_prefix_to_array()
 
         for string in self.main.get("GS_completed", {}).keys():
-            for prefix, array in prefixes.items():
+            for prefix, array in prefix_to_array.items():
                 id_string = remove_prefix(string, prefix)
 
                 if id_string != string:
@@ -249,9 +252,9 @@ class Database:
     def set_values(self, values: LevelValues) -> None:
         """Set :class:`~gd.api.database.LevelValues` to ``values``."""
         mapping = {}
-        prefixes = values.get_prefixes()
+        prefix_to_array = values.get_prefix_to_array()
 
-        for prefix, array in prefixes.items():
+        for prefix, array in prefix_to_array.items():
             mapping.update({f"{prefix}{value_id}": 1 for value_id in array})
 
         self.main.set("GS_completed", mapping)
