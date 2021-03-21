@@ -5,7 +5,10 @@ import time
 import types
 import uuid
 
+from pathlib import Path
+
 import aiohttp
+import tqdm  # type: ignore
 from yarl import URL
 
 from gd.api.recording import Recording, RecordingEntry
@@ -63,6 +66,7 @@ from gd.typing import (
     Awaitable,
     Callable,
     Dict,
+    IO,
     Iterable,
     Mapping,
     Optional,
@@ -107,6 +111,8 @@ DELETE = "DELETE"
 CONNECT = "CONNECT"
 OPTIONS = "OPTIONS"
 TRACE = "TRACE"
+
+CHUNK_SIZE = 64 * 1024
 
 T = TypeVar("T")
 
@@ -326,6 +332,88 @@ class HTTPClient:
             await self.close()
 
             self.session = await self.create_session()
+
+    async def download(
+        self,
+        url: Union[URL, str],
+        method: str = GET,
+        chunk_size: int = CHUNK_SIZE,
+        with_bar: bool = False,
+        close: bool = False,
+        file: Optional[Union[str, Path, IO]] = None,
+        **kwargs,
+    ) -> Optional[bytes]:
+        r"""Download the file at ``url`` with ``method``.
+
+        Parameters
+        ----------
+        method: :class:`str`
+            HTTP method to send request with. Default is ``GET``.
+
+        url: Union[:class:`~yarl.URL`, :class:`str`]
+            URL to request file from.
+
+        chunk_size: :class:`int`
+            Amount of data to read for one chunk. ``-1`` to read until EOF.
+
+        with_bar: :class:`bool`
+            Whether to show progress bar when downloading. ``False`` by default.
+
+        close: :class:`bool`
+            Whether to close the underlying ``file`` after finishing.
+
+        file: Optional[Union[:class:`str`, :class:`~pathlib.Path`, IO]]
+            File to write downloaded data to. If not given,
+            this function returns all the data as the result.
+
+        \*\*kwargs
+            Keywoard arguments to pass to :meth:`aiohttp.ClientSession.request`.
+
+        Returns
+        -------
+        Optional[:class:`bytes`]
+            Data downloaded, if ``file`` is not given or ``None``. Otherwise, returns ``None``.
+        """
+        if isinstance(file, (str, Path)):
+            file = open(file, "wb")
+            close = True
+
+        await self.ensure_session()
+
+        async with self.session.request(  # type: ignore
+            url=url, method=method, **kwargs
+        ) as response:
+            if file is None:
+                result = bytes()
+
+            if with_bar:
+                bar = tqdm.tqdm(total=response.content_length, unit="b", unit_scale=True)
+
+            while True:
+                chunk = await response.content.read(chunk_size)
+
+                if not chunk:
+                    break
+
+                if file is None:
+                    result += chunk
+
+                else:
+                    file.write(chunk)
+
+                if with_bar:
+                    bar.update(len(chunk))
+
+            if with_bar:
+                bar.close()
+
+        if close and file:
+            file.close()
+
+        if file is None:
+            return result
+
+        return None
 
     async def request_route(
         self,

@@ -11,17 +11,15 @@ from gd.enums import (
     ZLayer,
 )
 from gd.errors import EditorError
-from gd.typing import Any, Iterable, TypeVar, Union
+from gd.typing import Any
 
 __all__ = ("get_id", "get_dir")
-
-T = TypeVar("T")
 
 clear_space_and_underscore = str.maketrans({"_": "", " ": ""})
 
 
-def lower_string(string: str) -> str:
-    return string.lower().translate(clear_space_and_underscore)
+def casefold_string(string: str) -> str:
+    return string.casefold().translate(clear_space_and_underscore)
 
 
 def get_id(string: str, into_enum: bool = False, delim: str = ":") -> Any:
@@ -52,7 +50,7 @@ def get_id(string: str, into_enum: bool = False, delim: str = ":") -> Any:
     :exc:`.EditorError`
         Failed to convert directive to the value.
     """
-    type_of, delim, name = lower_string(string).partition(delim)
+    type_of, delim, name = casefold_string(string).partition(delim)
 
     if not delim:
         raise ValueError(f"Invalid directive was provided: {string!r}")
@@ -87,7 +85,7 @@ dir_enums = {
 
 supported = {
     name: {
-        lower_string(member_name): member.value  # type: ignore
+        casefold_string(member_name): member.value  # type: ignore
         for member_name, member in enum.members.items()  # type: ignore
     }
     for name, enum in dir_enums.items()
@@ -109,15 +107,6 @@ supported.get("speed", {}).update(
         for mental_mul, speed in speeds.items()
     }
 )
-
-
-def is_iterable(maybe_iterable: Union[Iterable[T], T]) -> bool:
-    try:
-        iter(maybe_iterable)  # type: ignore
-        return True
-
-    except TypeError:  # "T" object is not iterable
-        return False
 
 
 def get_dir(string: str, begin: str, delim: str = ":") -> str:

@@ -81,12 +81,12 @@ class FriendRequest(AbstractEntity):
     @property
     def author(self) -> User:
         """:class:`~gd.User`: Author of the friend request."""
-        return self.inner_user if self.is_normal() else self.other_user
+        return self.inner_user if self.is_incoming() else self.other_user
 
     @property
     def recipient(self) -> User:
         """:class:`~gd.User`: Recipient of the friend request."""
-        return self.other_user if self.is_normal() else self.inner_user
+        return self.other_user if self.is_incoming() else self.inner_user
 
     @property
     def inner_user(self) -> User:
@@ -106,8 +106,11 @@ class FriendRequest(AbstractEntity):
         """:class:`str`: Friend request message."""
         return self.options.get("content", "")
 
-    def is_normal(self) -> bool:
+    def is_incoming(self) -> bool:
         return self.type is FriendRequestType.INCOMING
+
+    def is_outgoing(self) -> bool:
+        return self.type is FriendRequestType.OUTGOING
 
     body = content
 

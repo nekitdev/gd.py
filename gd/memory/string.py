@@ -1,3 +1,5 @@
+# DOCUMENT + REWRITE
+
 # type: ignore
 
 # from itertools import islice as iter_slice

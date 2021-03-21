@@ -1,3 +1,5 @@
+# DOCUMENT
+
 from pathlib import Path
 
 from gd.decorators import cache_by

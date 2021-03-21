@@ -1,3 +1,5 @@
+# DOCUMENT
+
 import sys
 
 from gd.iter_utils import is_iterable

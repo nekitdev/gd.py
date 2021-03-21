@@ -96,6 +96,7 @@ def html_parse(text: str) -> Element:
 
     if use_lxml:
         return html.fromstring(text)
+
     else:
         return parse(text, "etree", False)
 

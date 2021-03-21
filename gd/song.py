@@ -1,13 +1,12 @@
 from pathlib import Path
 
-import tqdm  # type: ignore
 from attr import attrib, dataclass
 from iters import iter
 
 from gd.abstract_entity import AbstractEntity
 from gd.async_iters import awaitable_iterator
 from gd.errors import MissingAccess
-from gd.http import NEWGROUNDS_SONG_LISTEN, URL, HTTPClient
+from gd.http import NEWGROUNDS_SONG_LISTEN, URL
 from gd.model import SongModel  # type: ignore
 from gd.text_utils import make_repr
 from gd.typing import IO, TYPE_CHECKING, Any, AsyncIterator, Dict, Iterable, Optional, Union
@@ -234,12 +233,10 @@ class Song(AbstractEntity):
             raise MissingAccess("Song is official. Can not download.")
 
         if not self.download_link:
-            # load song from NG if there is no link
+            # load song from newgrounds if there is no link
             await self.update(from_ng=True)
 
-        return await download(
-            self.client.http, "GET", self.download_link, file=file, with_bar=with_bar
-        )
+        return await self.client.http.download(self.download_link, file=file, with_bar=with_bar)
 
 
 class ArtistInfo(AbstractEntity):
@@ -294,6 +291,7 @@ class ArtistInfo(AbstractEntity):
         return bool(self.options.get("api"))
 
     def is_custom(self) -> bool:
+        """:class:`bool`: Whether the song is custom."""
         return bool(self.options.get("custom", True))
 
     def get_author(self) -> "Author":
@@ -403,91 +401,6 @@ class Author(AbstractEntity):
             Songs found.
         """
         return self.client.get_ng_user_songs(self, pages=pages)
-
-
-async def download(
-    http_client: HTTPClient,
-    method: str,
-    url: Union[URL, str],
-    chunk_size: int = 64 * 1024,
-    with_bar: bool = False,
-    close: bool = False,
-    file: Optional[Union[str, Path, IO]] = None,
-    **kwargs,
-) -> Optional[bytes]:
-    r"""Download the file at ``url`` with ``method``.
-
-    Parameters
-    ----------
-    http_client: :class:`~gd.HTTPClient`
-        HTTP client to use for downloading.
-
-    method: :class:`str`
-        HTTP method to send request with. Most of the time, ``GET``.
-
-    url: Union[:class:`~yarl.URL`, :class:`str`]
-        URL to request file from.
-
-    chunk_size: :class:`int`
-        Amount of data to read for one chunk. ``-1`` to read until EOF.
-
-    with_bar: :class:`bool`
-        Whether to show progress bar when downloading. ``False`` by default.
-
-    close: :class:`bool`
-        Whether to close the underlying ``file`` after finishing.
-
-    file: Optional[Union[:class:`str`, :class:`~pathlib.Path`, IO]]
-        File to write downloaded data to. If not given,
-        this function returns all the data as the result.
-
-    \*\*kwargs
-        Keywoard arguments to pass to :meth:`aiohttp.ClientSession.request`.
-
-    Returns
-    -------
-    Optional[:class:`bytes`]
-        Data downloaded, if ``file`` is not given or ``None``. Otherwise, returns ``None``.
-    """
-    if isinstance(file, (str, Path)):
-        file = open(file, "wb")
-        close = True
-
-    await http_client.ensure_session()
-
-    async with http_client.session.request(  # type: ignore
-        url=url, method=method, **kwargs
-    ) as response:
-        if file is None:
-            result = bytes()
-
-        if with_bar:
-            bar = tqdm.tqdm(total=response.content_length, unit="b", unit_scale=True)
-
-        while True:
-            chunk = await response.content.read(chunk_size)
-
-            if not chunk:
-                break
-
-            if file is None:
-                result += chunk
-            else:
-                file.write(chunk)
-
-            if with_bar:
-                bar.update(len(chunk))
-
-        if with_bar:
-            bar.close()
-
-    if close and file:
-        file.close()
-
-    if file is None:
-        return result
-
-    return None
 
 
 @dataclass

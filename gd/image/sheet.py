@@ -1,3 +1,5 @@
+# DOCUMENT
+
 import gc
 import plistlib  # we use plistlib since we assume valid plist files. ~ nekit
 from pathlib import Path

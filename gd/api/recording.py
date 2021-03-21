@@ -1,3 +1,5 @@
+# DOCUMENT
+
 from collections import UserList as ListDerive
 import re
 
@@ -68,7 +70,7 @@ class RecordingEntry:
         """Whether input should be applied to the second player, and not first."""
         return self._dual
 
-    def _to_string_iterator(self) -> Iterator[str]:
+    def to_string_iterator(self) -> Iterator[str]:
         if self.prev:
             yield "1;"
 
@@ -96,7 +98,7 @@ class RecordingEntry:
         return cls.from_match(match)
 
     def to_string(self) -> str:
-        return concat(self._to_string_iterator())
+        return concat(self.to_string_iterator())
 
     @classmethod
     def from_match(cls: Type[RecordingEntryT], match: Match) -> RecordingEntryT:

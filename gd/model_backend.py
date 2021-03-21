@@ -1,5 +1,7 @@
 # type: ignore  # static type checker will not understand this either
 
+import re
+
 from copy import deepcopy as recurse_copy
 from functools import partial, wraps
 from urllib.parse import quote, unquote
@@ -79,10 +81,13 @@ __all__ = (
     "ser_str",
     "de_url",
     "ser_url",
+    "de_timestamp",
+    "ser_timestamp",
 )
 
 # DO NOT CHANGE
 DATA = "DATA"
+EMPTY = ""
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -116,6 +121,21 @@ class RECURSE(Singleton):
 
 
 recurse = RECURSE()
+
+
+def try_several(*functions: Callable[..., T]) -> Callable[..., T]:
+    def decorator(*args, **kwargs) -> T:
+        for function in functions:
+            try:
+                return function(*args, **kwargs)
+
+            except Exception:
+                pass
+
+        else:
+            raise ValueError("All attempts have failed.")
+
+    return decorator
 
 
 def attempt(function: Callable[..., T], default: T) -> Callable[..., T]:
@@ -266,7 +286,32 @@ ser_base64_str = encode_base64_str
 
 
 de_url = unquote
-ser_url = partial(quote, safe="")
+ser_url = partial(quote, safe=EMPTY)
+
+
+common_pattern = re.compile(
+    fr"(?P<day>[0-9]+).(?P<month>[0-9]+).(?P<year>[0-9]+) "
+    fr"(?P<hour>[0-9]+).(?P<minute>[0-9]+)"
+)
+
+
+def de_common(string: str) -> datetime:
+    match = common_pattern.match(string)
+
+    if match is None:
+        raise ValueError(f"{string!r} does not match the common pattern.")
+
+    mapping = {name: int(value) for name, value in match.groupdict().items()}
+
+    return datetime(**mapping)
+
+
+def de_timestamp(string: str) -> datetime:
+    return datetime.fromtimestamp(int(string))
+
+
+def ser_timestamp(value: datetime) -> datetime:
+    return value.timestamp()
 
 
 def compose(function: Callable[[T], U], other: Callable[..., T]) -> Callable[..., U]:
@@ -751,13 +796,13 @@ class RobTopTimeField(Field):
     ) -> None:
         super().__init__(
             index=index,
-            de=de_human_delta,  # try from human delta
-            ser=ser_human_delta,  # serialize to human delta
+            de=try_several(de_human_delta, de_common, de_timestamp),
+            ser=ser_human_delta,
             name=name,
             type=Optional[datetime],
-            default=None,
-            use_default_on_fail=True,
-            # factory=factory,
+            default=None,  # special
+            use_default_on_fail=True,  # special
+            # factory=factory,  # special
             doc=doc,
             aliases=aliases,
         )

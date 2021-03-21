@@ -1,3 +1,5 @@
+# DOCUMENT
+
 from gd.memory.memory import MemoryType, Memory
 from gd.memory.traits import Layout, ReadLayout, ReadWriteLayout
 from gd.memory.utils import class_property

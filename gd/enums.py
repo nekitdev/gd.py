@@ -841,8 +841,8 @@ class InternalType(Enum):
     LEVEL = 4
     SONG = 6
     CHALLENGE = 7
-    REWARD_ITEM = 8
-    REWARD = 9
+    REWARD = 8
+    REWARD_OBJECT = 9
 
 
 class Protection(Flag):

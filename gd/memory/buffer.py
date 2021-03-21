@@ -1,3 +1,5 @@
+# DOCUMENT
+
 import ctypes
 
 from gd.typing import Any, Iterator, Sequence, Type, TypeVar, Union

@@ -1,3 +1,5 @@
+# DOCUMENT + ENSURE
+
 from gd.memory.data import Data
 from gd.memory.traits import Layout
 from gd.platform import Platform, system_bits, system_platform

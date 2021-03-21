@@ -1,3 +1,5 @@
+# DOCUMENT
+
 from gd.iter_utils import item_to_tuple
 from gd.memory.memory import Memory
 from gd.memory.utils import class_property

@@ -1,3 +1,5 @@
+# DOCUMENT
+
 from gd.memory.utils import class_property
 from gd.platform import Platform, system_bits, system_platform
 from gd.text_utils import make_repr

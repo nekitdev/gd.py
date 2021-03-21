@@ -1,8 +1,22 @@
-from typing import Any, Callable, Iterable, Tuple, TypeVar, Union, cast, overload
+from typing import Any, Callable, Dict, Iterable, Mapping, Tuple, TypeVar, Union, cast, overload
 
-__all__ = ("extract_iterable_from_tuple", "is_iterable", "item_to_tuple")
+__all__ = ("extract_iterable_from_tuple", "is_iterable", "item_to_tuple", "mapping_merge")
+
+KT = TypeVar("KT")
+VT = TypeVar("VT")
 
 T = TypeVar("T")
+
+
+def mapping_merge(*mappings: Mapping[KT, VT], **arguments: VT) -> Dict[KT, VT]:
+    final: Dict[KT, VT] = {}
+
+    for mapping in mappings:
+        final.update(mapping)
+
+    final.update(arguments)  # type: ignore
+
+    return final
 
 
 def is_iterable(maybe_iterable: Union[Iterable[T], T], use_iter: bool = True) -> bool:

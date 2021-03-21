@@ -1,5 +1,7 @@
 # type: ignore
 
+# DOCUMENT
+
 from builtins import iter as std_iter
 
 from iters import iter

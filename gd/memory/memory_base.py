@@ -1,3 +1,5 @@
+# DOCUMENT
+
 from gd.memory.field import Field
 from gd.memory.memory import MemoryType, Memory
 from gd.memory.utils import class_property

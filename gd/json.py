@@ -5,7 +5,7 @@ from functools import partial
 from yarl import URL
 
 from gd.datetime import std_date, std_time, std_timedelta
-from gd.typing import Any, Dict, Optional, TypeVar, Union, cast
+from gd.typing import Any, Dict, TypeVar, cast
 
 __all__ = ("NamedDict", "default", "dump", "dumps", "load", "loads")
 
@@ -21,30 +21,14 @@ class NamedDict(Dict[K, V]):
         return self.__class__(self)
 
     def __setattr__(self, name: str, value: V) -> None:
-        self_dict = self.__dict__
-
-        if name in self_dict:
-            self_dict[name] = value
-
-        else:
-            self[cast(K, name)] = value
+        self[cast(K, name)] = value
 
     def __getattr__(self, name: str) -> V:
-        key = cast(K, name)
-
-        if key in self:
-            return self[key]
-
-        raise AttributeError(name)
-
-    def get(  # type: ignore
-        self, key: K, default: Union[Optional[V], T] = None
-    ) -> Union[Optional[V], T]:
         try:
-            return self[key]
+            return self[cast(K, name)]
 
         except KeyError:
-            return default
+            raise AttributeError(name)
 
 
 def default(some_object: T) -> Any:

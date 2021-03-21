@@ -1,3 +1,5 @@
+# DOCUMENT + FINISH
+
 # type: ignore
 
 from gd.api.editor import Editor

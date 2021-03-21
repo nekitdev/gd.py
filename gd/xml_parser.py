@@ -3,6 +3,7 @@ try:
 except ImportError:
     from xml.etree import ElementTree as xml
 
+from gd.iter_utils import mapping_merge
 from gd.text_utils import make_repr
 from gd.typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, TypeVar, Union, cast
 
@@ -33,11 +34,12 @@ DECLARATION_DATA = DECLARATION.encode(XML_ENCODING)
 
 
 class XMLParser:
+    PLIST_ATTRS = {"version": PLIST_VERSION, "gjver": GJ_VERSION}
+
     def __init__(self, plist: bool = False, **plist_attrs) -> None:
         self.plist = plist
 
-        self.plist_attrs = {"version": PLIST_VERSION, "gjver": GJ_VERSION}
-        self.plist_attrs.update(plist_attrs)
+        self.plist_attrs = mapping_merge(self.PLIST_ATTRS, plist_attrs)
 
     def __repr__(self) -> str:
         info = {"plist": self.plist}
@@ -240,19 +242,13 @@ def parse_false(element: xml.Element) -> bool:
 def parse_float(element: xml.Element) -> float:
     string = element.text
 
-    if string is None:
-        return 0.0
-
-    return float(string)
+    return 0.0 if string is None else float(string)
 
 
 def parse_int(element: xml.Element) -> int:
     string = element.text
 
-    if string is None:
-        return 0
-
-    return int(string)
+    return 0 if string is None else int(string)
 
 
 def parse_str(element: xml.Element) -> str:

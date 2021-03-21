@@ -1,3 +1,5 @@
+# DOCUMENT
+
 from bisect import bisect_left, bisect_right, insort_left
 
 from gd.decorators import cache_by

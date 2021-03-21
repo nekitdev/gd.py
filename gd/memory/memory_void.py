@@ -1,3 +1,5 @@
+# DOCUMENT
+
 from gd.memory.memory import MemoryType, Memory
 from gd.platform import Platform, system_bits, system_platform
 from gd.typing import Any, Dict, Tuple, Type, Union

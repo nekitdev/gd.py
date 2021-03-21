@@ -527,7 +527,7 @@ class MessageModel(Model):
     def is_unread(self) -> bool:
         return self.unread
 
-    def is_normal(self) -> bool:
+    def is_incoming(self) -> bool:
         return not self.is_sent()
 
     def is_sent(self) -> bool:

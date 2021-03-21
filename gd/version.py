@@ -97,7 +97,7 @@ class VersionInfo(namedtuple("VersionInfo", "major minor micro release_level ser
         return f"{self.major}.{self.minor}.{self.micro}{self.release_letter}{self.serial}"
 
     @property
-    def releaselevel(self) -> str:
+    def releaselevel(self) -> str:  # alias to be compatible with the sys.version_info
         return self.release_level
 
 

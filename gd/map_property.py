@@ -111,8 +111,8 @@ def compile_method(
 def map_property(
     name: str,
     attr: str,
-    type: Type[T],
     key: U,
+    type: Type[T],
     default: Optional[T] = None,
     *,
     doc: Optional[str] = None,

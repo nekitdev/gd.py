@@ -1,7 +1,7 @@
 import itertools
 
 from gd.text_utils import make_repr
-from gd.typing import Dict, Generator, Iterable, Iterator, List, Tuple, TypeVar, Union
+from gd.typing import Dict, Iterable, Iterator, List, Tuple, TypeVar, Union
 
 __all__ = ("IndexParser", "chain_from_iterable", "group", "iter_split")
 
@@ -10,13 +10,15 @@ T = TypeVar("T")
 chain_from_iterable = itertools.chain.from_iterable
 
 
-def group(iterable: Iterable[T], into_number: int = 2) -> Iterator[Tuple[T, ...]]:
-    iterators = (iter(iterable),) * into_number
+def group(iterable: Iterable[T], number: int = 2) -> Iterator[Tuple[T, ...]]:
+    iterators = (iter(iterable),) * number
+
     return zip(*iterators)
 
 
-def iter_split(string: str, delim: str) -> Generator[str, None, None]:
+def iter_split(string: str, delim: str) -> Iterator[str]:
     length = len(delim)
+
     start = 0
 
     while True:

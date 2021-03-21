@@ -73,6 +73,7 @@ class Level(AbstractEntity):
 
     def __init__(self, *, client: Optional["Client"] = None, **options) -> None:
         options.setdefault("unprocessed_data", zip_level_str(options.get("data", "")))
+
         super().__init__(client=client, **options)
 
     def __repr__(self) -> str:

@@ -452,6 +452,8 @@ class datetime(std_datetime):
     def strptime(cls: Type[DT], date_string: str, format: str) -> DT:
         return cls.create_from_instance(super().strptime(date_string, format))
 
+    parse = strptime
+
     def utcoffset(self: DT) -> Optional[timedelta]:
         instance = super().utcoffset()
 
