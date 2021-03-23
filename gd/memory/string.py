@@ -1,4 +1,4 @@
-# DOCUMENT + REWRITE
+# DOCUMENT (+ OPTIMIZE BETTER?)
 
 # type: ignore
 
@@ -7,7 +7,7 @@
 from gd.memory.marker import Struct, Union, mut_array, mut_pointer, char_t, intsize_t, uintsize_t
 # from gd.memory.memory_array import MemoryArray
 from gd.memory.memory_base import MemoryStruct
-from gd.memory.types import Types
+from gd.memory.types import types
 from gd.memory.utils import closest_power_of_two
 from gd.platform import Platform
 from gd.typing import TYPE_CHECKING, Type
@@ -45,7 +45,7 @@ class std_string(Struct):
             try:
                 # return to_bytes(content.inline, length).decode()  # <- optimization required
 
-                return self.state.read_at(content.inline.address, length).decode()
+                return self.state.read_at(content.inline.address, length).decode()  # optimized
 
             except UnicodeDecodeError:
                 pass
@@ -53,7 +53,7 @@ class std_string(Struct):
         try:
             # return to_bytes(content.pointer.value, length).decode()  # <- optimization required
 
-            return self.state.read_at(content.pointer.value_address, length).decode()
+            return self.state.read_at(content.pointer.value_address, length).decode()  # optimized
 
         except UnicodeDecodeError:
             return EMPTY_STRING
@@ -76,7 +76,7 @@ class std_string(Struct):
 
                 # return content.inline.write(data)  # <- optimization required
 
-                self.state.write_at(content.inline.address, data)
+                self.state.write_at(content.inline.address, data)  # optimized
 
             else:
                 size = closest_power_of_two(size)
@@ -89,7 +89,7 @@ class std_string(Struct):
 
                 # return content.pointer.value.write(data)  # <- optimization required
 
-                self.state.write_at(content.pointer.value_address, data)
+                self.state.write_at(content.pointer.value_address, data)  # optimized
 
         else:
             if capacity < content.size:
@@ -136,7 +136,7 @@ class old_std_string(Struct):
             #     long_string.content, long_string.length
             # ).decode()
 
-            return self.state.read_at(long_string.content.address, long_string.length)
+            return self.state.read_at(long_string.content.address, long_string.length)  # optimized
 
         except UnicodeDecodeError:
             return EMPTY_STRING
@@ -171,7 +171,7 @@ class old_std_string(Struct):
 
         # return long_string.content.write(data)  # <- optimization required
 
-        self.state.write_at(long_string.content.address, data)
+        self.state.write_at(long_string.content.address, data)  # optimized
 
     value = property(get_value, set_value)
 
@@ -193,8 +193,10 @@ class old_std_string(Struct):
         string.value = value
 
 
-@Types.register_function
+@types.register_function
 def string_t(bits: int, platform: Platform) -> Type[MemoryStruct]:
+    # XXX: on later versions of std libraries the struct used is std_string
+
     if platform is Platform.WINDOWS:
         return std_string.create(bits, platform)
 

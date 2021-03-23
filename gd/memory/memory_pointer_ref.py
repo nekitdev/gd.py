@@ -68,7 +68,7 @@ PointerT = TypeVar("PointerT", bound="MemoryPointer")
 PointerU = TypeVar("PointerU", bound="MemoryPointer")
 
 
-class MemoryPointerBase(Generic[L], Memory, metaclass=MemoryPointerType):
+class MemoryBasePointer(Generic[L], Memory, metaclass=MemoryPointerType):
     _type: Type[L]
     _pointer_type: Type[ReadWriteLayout[int]]
 
@@ -92,7 +92,7 @@ class MemoryPointerBase(Generic[L], Memory, metaclass=MemoryPointerType):
         ...
 
 
-class MemoryPointer(MemoryPointerBase[ReadLayout[T]]):
+class MemoryPointer(MemoryBasePointer[ReadLayout[T]]):
     _type: Type[ReadLayout[T]]
 
     @class_property
@@ -251,7 +251,7 @@ class MemoryPointer(MemoryPointerBase[ReadLayout[T]]):
         return cls.create_from(self)
 
 
-class MemoryMutPointer(MemoryPointer[T], MemoryPointerBase[ReadWriteLayout[T]]):
+class MemoryMutPointer(MemoryPointer[T], MemoryBasePointer[ReadWriteLayout[T]]):
     _type: Type[ReadWriteLayout[T]]  # type: ignore
 
     @class_property

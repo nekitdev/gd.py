@@ -58,7 +58,7 @@ async def login(request: web.Request) -> web.Response:
 
     await token.load(client, force=True)
 
-    return json_response(dict(token=str(token)), status=status)
+    return json_response(dict(token=token.string), status=status)
 
 
 @login.error

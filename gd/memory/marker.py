@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from gd.memory.visitor import Visitor  # noqa
 
 __all__ = (
+    "SimpleMarker",
     "Marker",
     "Array",
     "MutArray",
@@ -77,7 +78,7 @@ __all__ = (
 )
 
 
-class MarkerMeta(type):
+class SimpleMarkerType(type):
     def __repr__(cls) -> str:
         return cls.__name__
 
@@ -86,140 +87,140 @@ class MarkerMeta(type):
         return cls.__name__
 
 
-class Marker(metaclass=MarkerMeta):
+class SimpleMarker(metaclass=SimpleMarkerType):
     def __init__(self) -> None:
         raise TypeError("Markers can not be initialized.")
 
 
 # C INT TYPES
 
-class byte_t(Marker):
+class byte_t(SimpleMarker):
     pass
 
 
-class ubyte_t(Marker):
+class ubyte_t(SimpleMarker):
     pass
 
 
-class short_t(Marker):
+class short_t(SimpleMarker):
     pass
 
 
-class ushort_t(Marker):
+class ushort_t(SimpleMarker):
     pass
 
 
-class int_t(Marker):
+class int_t(SimpleMarker):
     pass
 
 
-class uint_t(Marker):
+class uint_t(SimpleMarker):
     pass
 
 
-class long_t(Marker):
+class long_t(SimpleMarker):
     pass
 
 
-class ulong_t(Marker):
+class ulong_t(SimpleMarker):
     pass
 
 
-class longlong_t(Marker):
+class longlong_t(SimpleMarker):
     pass
 
 
-class ulonglong_t(Marker):
+class ulonglong_t(SimpleMarker):
     pass
 
 
 # INT TYPES
 
-class int8_t(Marker):
+class int8_t(SimpleMarker):
     pass
 
 
-class uint8_t(Marker):
+class uint8_t(SimpleMarker):
     pass
 
 
-class int16_t(Marker):
+class int16_t(SimpleMarker):
     pass
 
 
-class uint16_t(Marker):
+class uint16_t(SimpleMarker):
     pass
 
 
-class int32_t(Marker):
+class int32_t(SimpleMarker):
     pass
 
 
-class uint32_t(Marker):
+class uint32_t(SimpleMarker):
     pass
 
 
-class int64_t(Marker):
+class int64_t(SimpleMarker):
     pass
 
 
-class uint64_t(Marker):
+class uint64_t(SimpleMarker):
     pass
 
 
 # POINTER / SIZE TYPES
 
-class intptr_t(Marker):
+class intptr_t(SimpleMarker):
     pass
 
 
-class uintptr_t(Marker):
+class uintptr_t(SimpleMarker):
     pass
 
 
-class intsize_t(Marker):
+class intsize_t(SimpleMarker):
     pass
 
 
-class uintsize_t(Marker):
+class uintsize_t(SimpleMarker):
     pass
 
 
 # C FLOAT TYPES
 
-class float_t(Marker):
+class float_t(SimpleMarker):
     pass
 
 
-class double_t(Marker):
+class double_t(SimpleMarker):
     pass
 
 
 # FLOAT TYPES
 
-class float32_t(Marker):
+class float32_t(SimpleMarker):
     pass
 
 
-class float64_t(Marker):
+class float64_t(SimpleMarker):
     pass
 
 
 # BOOL TYPE
 
-class bool_t(Marker):
+class bool_t(SimpleMarker):
     pass
 
 
 # CHAR TYPE
 
-class char_t(Marker):
+class char_t(SimpleMarker):
     pass
 
 
 # STRING TYPE
 
-class string_t(Marker):
+class string_t(SimpleMarker):
     pass
 
 
@@ -275,6 +276,14 @@ class MarkerType(type(Generic)):  # type: ignore
         return cls._derive
 
 
+class Marker(metaclass=MarkerType):
+    _derive: bool
+
+    @class_property
+    def derive(self) -> bool:
+        return self._derive
+
+
 class PointerType(MarkerType):
     _type: Any
     _signed: bool
@@ -323,7 +332,7 @@ class PointerType(MarkerType):
         return cls._signed
 
 
-class Pointer(metaclass=PointerType):
+class PointerBase(Marker, metaclass=PointerType):
     _type: Any
     _signed: bool
 
@@ -334,6 +343,10 @@ class Pointer(metaclass=PointerType):
     @class_property
     def signed(self) -> bool:
         return self._signed
+
+
+class Pointer(PointerBase):
+    pass
 
 
 class MutPointer(Pointer):
@@ -415,7 +428,7 @@ class ArrayType(MarkerType):
         return cls._length
 
 
-class ArrayBase(metaclass=ArrayType, derive=False):
+class ArrayBase(Marker, metaclass=ArrayType, derive=False):
     _type: Any
     _length: Optional[int]
 
@@ -481,7 +494,7 @@ class DynamicFillType(MarkerType):
         return self._fill
 
 
-class DynamicFill(metaclass=DynamicFillType):
+class DynamicFill(Marker, metaclass=DynamicFillType):
     _fill: Dict[Tuple[int, Platform], int]
 
     @class_property
@@ -497,7 +510,7 @@ def fill(length: int) -> Type[Array]:
     return array(char_t, length)
 
 
-class Union(metaclass=MarkerType, derive=False):
+class Union(Marker, metaclass=MarkerType, derive=False):
     pass
 
 
@@ -538,7 +551,7 @@ class StructType(MarkerType):
         return cls._origin
 
 
-class Struct(metaclass=StructType, derive=False):
+class Struct(Marker, metaclass=StructType, derive=False):
     _vtable: bool
     _packed: bool
     _origin: int
@@ -575,7 +588,7 @@ class SpecialType(MarkerType):
 S = TypeVar("S", bound="Special")
 
 
-class Special(metaclass=SpecialType, special=True, derive=False):
+class Special(Marker, metaclass=SpecialType, special=True, derive=False):
     def __new__(cls: Type[S], *ignored_args, **ignored_kwargs) -> S:
         raise TypeError(f"Can not instantiate {cls.__name__}.")
 

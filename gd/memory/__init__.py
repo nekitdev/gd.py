@@ -18,6 +18,6 @@ from gd.memory.memory import *
 from gd.memory.memory_array import *
 from gd.memory.memory_base import *
 from gd.memory.memory_pointer_ref import *
-from gd.memory.memory_void import *
+from gd.memory.memory_special import *
 
 from gd.memory.string import *

@@ -1,6 +1,8 @@
 # type: ignore
 
-from gd.memory.marker import Struct, mut_array, mut_pointer, bool_t, float_t, int_t, uint_t, void
+from gd.memory.marker import (
+    Struct, mut_array, mut_pointer, bool_t, float_t, int_t, uint_t, this, void
+)
 
 
 class CCPoint(Struct):
@@ -51,6 +53,9 @@ class CCObject(CCCopying):
 class CCArrayStruct(Struct):
     length: uint_t
     capacity: uint_t
+    # this is actually CCObject double pointer,
+    # but since we do not have indexing or iterating pointers implemented,
+    # we instead make it point to an array of pointers
     array: mut_pointer(mut_array(mut_pointer(CCObject)))
 
 
@@ -88,7 +93,7 @@ class CCNode(CCObject, vtable=True):
 
     children: mut_pointer(CCArray)
 
-    parent: mut_pointer(void)  # CCNode <- recursive reference!
+    parent: mut_pointer(this)
 
     user_data: mut_pointer(void)  # void
     user_object: mut_pointer(CCObject)

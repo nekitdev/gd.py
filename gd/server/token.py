@@ -23,40 +23,43 @@ __all__ = (
 
 AUTHORIZATION = "Authorization"
 
-TOKEN_FORMAT = r"[0-9a-f]+"
-TOKEN_HEADER = re.compile(fr"(?:Bearer )?(?P<token>{TOKEN_FORMAT})")
+TOKEN_FORMAT = r"[0-9a-zA-Z_]+"
 
 TOKEN_GENERATOR = secrets.token_hex
+
+TOKEN_HEADER = re.compile(fr"(?:Bearer )?(?P<token>{TOKEN_FORMAT})")
+
 TOKEN_LENGTH = 32
+TOKEN_LENGTH_SHORT = 8
 
 
 class Token:
     def __init__(self) -> None:
-        self._token = self.generate_token()
+        self._string = self.generate_string()
 
     def __repr__(self) -> str:
-        info = {"token": self.token}
+        info = {"string": self.string}
 
         return make_repr(self, info)
 
     def __str__(self) -> str:
-        return self.token
+        return self.string
 
     def __hash__(self) -> int:
-        return hash(self.token)
+        return hash(self.string)
 
     def __eq__(self, other: Any) -> bool:
-        return self.token == other
+        return self.string == other
 
     def __ne__(self, other: Any) -> bool:
-        return self.token != other
+        return self.string != other
 
     @property
-    def token(self) -> str:
-        return self._token
+    def string(self) -> str:
+        return self._string
 
     @staticmethod
-    def generate_token(length: int = TOKEN_LENGTH) -> str:
+    def generate_string(length: int = TOKEN_LENGTH) -> str:
         return TOKEN_GENERATOR(length)
 
 
@@ -179,10 +182,10 @@ class TokenDatabase(Dict[str, TokenT]):
 
     @property
     def short_tokens(self) -> Iterator[str]:
-        _length = 7
+        length = TOKEN_LENGTH_SHORT
 
         for token in self.plain_tokens:
-            yield token[:_length]
+            yield token[:length]
 
     @property
     def plain_tokens(self) -> Iterator[str]:
@@ -196,7 +199,8 @@ class TokenDatabase(Dict[str, TokenT]):
         return token in self
 
     def insert(self, token: TokenT) -> TokenT:
-        self[token.token] = token
+        self[token.string] = token
+
         return token
 
     def remove(self, token: str) -> None:

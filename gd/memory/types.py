@@ -1,4 +1,4 @@
-# DOCUMENT + ENSURE
+# DOCUMENT
 
 from gd.memory.data import Data
 from gd.memory.traits import Layout
@@ -8,7 +8,7 @@ from gd.typing import Callable, Dict, Type, TypeVar
 
 __all__ = (
     "Types",
-    "register",
+    "types",
     "c_byte",
     "c_ubyte",
     "c_short",
@@ -285,30 +285,30 @@ class Types:
         raise LookupError(f"Can not find any types for {name!r}.")
 
 
-register = Types.register_function
+types = Types
 
 
-@register
+@types.register_function
 def byte_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return int8
 
 
-@register
+@types.register_function
 def ubyte_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return uint8
 
 
-@register
+@types.register_function
 def short_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return int16
 
 
-@register
+@types.register_function
 def ushort_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return uint16
 
 
-@register
+@types.register_function
 def int_t(bits: int, platform: Platform) -> Type[Data[int]]:
     if bits < 32:
         return int16
@@ -316,7 +316,7 @@ def int_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return int32
 
 
-@register
+@types.register_function
 def uint_t(bits: int, platform: Platform) -> Type[Data[int]]:
     if bits < 32:
         return uint16
@@ -324,7 +324,7 @@ def uint_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return uint32
 
 
-@register
+@types.register_function
 def long_t(bits: int, platform: Platform) -> Type[Data[int]]:
     if bits > 32:
         return int64
@@ -332,7 +332,7 @@ def long_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return int32
 
 
-@register
+@types.register_function
 def ulong_t(bits: int, platform: Platform) -> Type[Data[int]]:
     if bits > 32:
         return uint64
@@ -340,101 +340,101 @@ def ulong_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return uint32
 
 
-@register
+@types.register_function
 def longlong_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return int64
 
 
-@register
+@types.register_function
 def ulonglong_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return uint64
 
 
-@register
+@types.register_function
 def int8_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return int8
 
 
-@register
+@types.register_function
 def uint8_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return uint8
 
 
-@register
+@types.register_function
 def int16_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return int16
 
 
-@register
+@types.register_function
 def uint16_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return uint16
 
 
-@register
+@types.register_function
 def int32_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return int32
 
 
-@register
+@types.register_function
 def uint32_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return uint32
 
 
-@register
+@types.register_function
 def int64_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return int64
 
 
-@register
+@types.register_function
 def uint64_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return uint64
 
 
-@register
+@types.register_function
 def intptr_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return get_intptr(bits)
 
 
-@register
+@types.register_function
 def uintptr_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return get_uintptr(bits)
 
 
-@register
+@types.register_function
 def intsize_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return get_intsize(bits)
 
 
-@register
+@types.register_function
 def uintsize_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return get_uintsize(bits)
 
 
-@register
+@types.register_function
 def float_t(bits: int, platform: Platform) -> Type[Data[float]]:
     return c_float
 
 
-@register
+@types.register_function
 def double_t(bits: int, platform: Platform) -> Type[Data[float]]:
     return c_double
 
 
-@register
+@types.register_function
 def char_t(bits: int, platform: Platform) -> Type[Data[int]]:
     return uint8
 
 
-@register
+@types.register_function
 def float32_t(bits: int, platform: Platform) -> Type[Data[float]]:
     return float32
 
 
-@register
+@types.register_function
 def float64_t(bits: int, platform: Platform) -> Type[Data[float]]:
     return float64
 
 
-@register
+@types.register_function
 def bool_t(bits: int, platform: Platform) -> Type[Data[bool]]:
     return c_bool

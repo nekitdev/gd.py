@@ -1,9 +1,11 @@
 # DOCUMENT + FINISH
 
+from functools import wraps
+
 from gd.memory.context import Context
 from gd.memory.field import Field, MutField
 from gd.memory.marker import (
-    Marker,
+    SimpleMarker,
     Array,
     MutArray,
     Pointer,
@@ -11,16 +13,19 @@ from gd.memory.marker import (
     Ref,
     MutRef,
     DynamicFill,
+    This,
     Struct,
     Union,
     Void,
     fill,
     uintptr_t,
 )
-from gd.memory.memory_array import MemoryArray, MemoryMutArray
-from gd.memory.memory_base import MemoryStruct, MemoryUnion
-from gd.memory.memory_pointer_ref import MemoryPointer, MemoryMutPointer, MemoryRef, MemoryMutRef
-from gd.memory.memory_void import MemoryVoid
+from gd.memory.memory_array import MemoryBaseArray, MemoryArray, MemoryMutArray
+from gd.memory.memory_base import MemoryBase, MemoryStruct, MemoryUnion
+from gd.memory.memory_pointer_ref import (
+    MemoryBasePointer, MemoryPointer, MemoryMutPointer, MemoryRef, MemoryMutRef
+)
+from gd.memory.memory_special import MemoryThis, MemoryVoid
 from gd.memory.traits import Read, Write, Layout, ReadLayout, ReadWriteLayout, is_class, is_layout
 from gd.platform import Platform, platform_to_string, system_bits, system_platform
 from gd.typing import (
@@ -61,6 +66,7 @@ POINTER_TYPE = "pointer_type"
 MUT_POINTER_TYPE = "mut_pointer_type"
 REF_TYPE = "ref_type"
 MUT_REF_TYPE = "mut_ref_type"
+THIS_TYPE = "this_type"
 VOID_TYPE = "void_type"
 
 T = TypeVar("T")
@@ -96,6 +102,7 @@ UNNAMED = "unnamed"
 
 
 def visitor_cache(visit: Callable[[V, Any], T]) -> Callable[[V, Any], T]:
+    @wraps(visit)
     def visit_function(visitor: V, some: Any) -> T:
         visitor_cache_key = VISITOR_CACHE_KEY.format(
             name=getattr(some, NAME, UNNAMED),
@@ -174,6 +181,9 @@ class Visitor:
 
                 return self.visit_union(union)
 
+            if issubclass(some, This):
+                return self.visit_this(some)
+
             if issubclass(some, Void):
                 return self.visit_void(some)
 
@@ -200,8 +210,8 @@ class Visitor:
 
                 return self.visit_array(some)
 
-            if issubclass(some, Marker):
-                return self.visit_marker(some)
+            if issubclass(some, SimpleMarker):
+                return self.visit_simple_marker(some)
 
         raise InvalidMemoryType(f"{some!r} is not valid as memory type.")
 
@@ -212,9 +222,6 @@ class Visitor:
         return self.visit_array(
             fill(dynamic_fill.fill.get((self.context.bits, self.context.platform), 0))
         )
-
-    # Maybe we could implement This (or this) type,
-    # which is going to be used for recursive definitions.
 
     def visit_struct(self, marker_struct: Type[Struct]) -> Type[MemoryStruct]:
         # get all bases via resolving the MRO
@@ -290,6 +297,11 @@ class Visitor:
             index = 0
 
             for main_name, main_field in original_fields.items():
+                # if the field has null alignment, move onto the next one
+
+                if not main_field.alignment:
+                    continue
+
                 temp_size = 0
 
                 # calculate size of all fields preceding current field
@@ -412,7 +424,46 @@ class Visitor:
 
             setattr(struct, name, field)
 
+        self.resolve_recursion(fields, struct)
+
         return struct
+
+    def resolve_recursion(self, fields: Dict[str, Field], this: Type[MemoryBase]) -> None:
+        for field in fields.values():
+            self.resolve_recursion_type(field.type, this)
+
+    def resolve_recursion_type(
+        self, type: Type[Layout], this: Type[MemoryBase], in_pointer: bool = False
+    ) -> None:
+        if issubclass(type, MemoryThis):
+            # reaching here implies we are directly having this -> infinite size
+
+            raise TypeError("Infinite size detected while recursively resolving this.")
+
+        if issubclass(type, MemoryBaseArray):
+            self.resolve_recursion_array(type, this, in_pointer=in_pointer)
+
+        if issubclass(type, MemoryBasePointer):
+            self.resolve_recursion_pointer(type, this)
+
+        # we do not really care about anything else
+
+    def resolve_recursion_array(
+        self, array: Type[MemoryBaseArray], this: Type[MemoryBase], in_pointer: bool
+    ) -> None:
+        if issubclass(array.type, MemoryThis):
+            if in_pointer:
+                array._type = this  # perhaps there might be some better way?
+
+        self.resolve_recursion_type(array.type, this, in_pointer=in_pointer)  # pass in_pointer
+
+    def resolve_recursion_pointer(
+        self, pointer: Type[MemoryBasePointer], this: Type[MemoryBase]
+    ) -> None:
+        if issubclass(pointer.type, MemoryThis):
+            pointer._type = this  # there might be some better way, I suppose
+
+        self.resolve_recursion_type(pointer.type, this, in_pointer=True)  # in_pointer -> true
 
     def visit_union(self, marker_union: Type[Union]) -> Type[MemoryUnion]:
         # initialize variables needed to get fields and size
@@ -477,6 +528,8 @@ class Visitor:
                 raise ValueError(f"Field attempts to overwrite name: {name!r}.")
 
             setattr(union, name, field)
+
+        self.resolve_recursion(fields, union)
 
         return union
 
@@ -672,11 +725,33 @@ class Visitor:
 
         return void
 
+    def visit_this(self, marker_this: Type[Void]) -> Type[MemoryThis]:
+        @no_type_check
+        class this(  # type: ignore
+            # merge marker this with memory this
+            MemoryThis,
+            marker_this,  # type: ignore
+            metaclass=merge_metaclass(  # type: ignore
+                MemoryThis, marker_this, name=THIS_TYPE
+            ),
+            # set derive to false, and special to true
+            derive=False,
+            special=True,
+            # other arguments
+            bits=self.context.bits,
+            platform=self.context.platform,
+        ):
+            pass
+
+        this.__qualname__ = this.__name__ = marker_this.__name__
+
+        return this
+
     def visit_read_sized(self, type: Type[ReadLayout[T]]) -> Type[ReadLayout[T]]:
         return type
 
     def visit_read_write_sized(self, type: Type[ReadWriteLayout[T]]) -> Type[ReadWriteLayout[T]]:
         return type
 
-    def visit_marker(self, marker: Type[Marker]) -> Type[Layout]:
+    def visit_simple_marker(self, marker: Type[SimpleMarker]) -> Type[Layout]:
         return self.visit_any(self.context.get_type(marker.name))
