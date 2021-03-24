@@ -1,4 +1,4 @@
-# DOCUMENT (+ OPTIMIZE BETTER?)
+# DOCUMENT; TODO: IMPROVE OPTIMIZATION
 
 # type: ignore
 
@@ -15,7 +15,7 @@ from gd.typing import TYPE_CHECKING, Type
 if TYPE_CHECKING:
     from gd.memory.state import BaseState  # noqa
 
-__all__ = ()
+__all__ = ("old_std_string", "std_string")
 
 CONTENT_SIZE = 0x10
 EMPTY_STRING = ""

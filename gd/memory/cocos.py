@@ -1,7 +1,7 @@
 # type: ignore
 
 from gd.memory.marker import (
-    Struct, mut_array, mut_pointer, bool_t, float_t, int_t, uint_t, this, void
+    Struct, mut_array, mut_pointer, bool_t, ubyte_t, float_t, int_t, uint_t, this, void
 )
 
 
@@ -31,6 +31,12 @@ class CCAffineTransform(Struct):
     d: float_t
     translate_x: float_t
     translate_y: float_t
+
+
+class ColorRGB(Struct):
+    r: ubyte_t
+    g: ubyte_t
+    b: ubyte_t
 
 
 class CCCopying(Struct, vtable=True):
@@ -124,6 +130,17 @@ class CCNode(CCObject, vtable=True):
     script_type: int_t  # enum
 
     component_container: mut_pointer(void)  # CCComponentContainer
+
+
+class CCNodeRGBA(CCNode, vtable=True):
+    displayed_opacity: ubyte_t
+    real_opacity: ubyte_t
+
+    displayed_color: ColorRGB
+    real_color: ColorRGB
+
+    cascade_color_enabled: bool_t
+    cascade_opacity_enabled: bool_t
 
 
 class CCTouchDelegate(Struct, vtable=True):

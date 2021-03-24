@@ -9,6 +9,8 @@ from gd.memory.cocos import CCLayer, CCNode, CCPoint
 from gd.memory.marker import Struct, mut_pointer, bool_t, float_t, int_t, string_t, void
 from gd.text_utils import is_level_probably_decoded
 
+EMPTY = ""
+
 
 class GameLevel(CCNode):
     last_save: mut_pointer(void)  # CCDictionary
@@ -211,7 +213,7 @@ class GameLevel(CCNode):
         unprocessed_data = self.unprocessed_data
 
         if unprocessed_data is None:
-            return ""
+            return EMPTY
 
         if is_level_probably_decoded(unprocessed_data):
             return unprocessed_data
@@ -249,5 +251,33 @@ class GameManager(BaseGameManager, vtable=True):
     ...
 
 
+class AccountManager(CCNode, vtable=True):
+    data: mut_pointer(void)  # CCDictionary
+
+    password: string_t
+    user_name: string_t
+
+    account_id: int_t
+
+    # check types of these fields
+    _unknown_0: int_t
+    _unknown_1: int_t
+
+    register_delegate: mut_pointer(void)
+    login_delegate: mut_pointer(void)
+    account_delegate: mut_pointer(void)
+    backup_delegate: mut_pointer(void)
+    sync_delegate: mut_pointer(void)
+    update_account_delegate: mut_pointer(void)
+
+
 class BaseGameLayer(TriggerEffectDelegate, CCLayer, vtable=True):
+    ...
+
+
+class PlayLayer(BaseGameLayer, vtable=True):
+    ...
+
+
+class EditorLayer(BaseGameLayer, vtable=True):
     ...
