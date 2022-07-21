@@ -59,7 +59,7 @@ for extras in extras_require.values():
     all_extras.extend(extras)  # type: ignore
 
 prelude_extras = extras_require["prelude"]
-prelude = ["crypto", "console", "image", "server", "speedups"]
+prelude = ["crypto", "image", "server", "speedups"]
 
 for extra in prelude:
     extras = extras_require[extra]
