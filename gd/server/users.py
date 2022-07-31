@@ -97,7 +97,7 @@ async def get_self_error(request: web.Request, error: Exception) -> Error:
             name="simple",
             schema=dict(type=bool_type, example="false"),
             required=False,
-        )
+        ),
     ],
     responses={
         200: dict(description="User fetched from the server."),
@@ -147,7 +147,7 @@ async def get_user_error(request: web.Request, error: Exception) -> Error:
             name="simple",
             schema=dict(type=bool_type, example="false"),
             required=False,
-        )
+        ),
     ],
     responses={
         200: dict(description="User fetched from the server."),

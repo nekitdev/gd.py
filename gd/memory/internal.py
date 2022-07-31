@@ -64,9 +64,9 @@ Functions
         ...
 
 
-:func:`inject_dll` is used to inject DLL into process::
+:func:`inject_library` is used to inject DLL into process::
 
-    def inject_dll(process_id: int, path: Union[Path, str]) -> bool:
+    def inject_library(process_id: int, path: Union[Path, str]) -> bool:
         ...
 
 
@@ -109,28 +109,28 @@ Functions
         ...  # return how many bytes were written
 """
 
-from gd.code_utils import unimplemented
 from gd.platform import ANDROID, IOS, LINUX, MACOS, WINDOWS
+from gd.utils import unimplemented
 
 try:
-    from gd.memory.linux import (  # type: ignore
-        allocate_memory as linux_allocate_memory,
-        free_memory as linux_free_memory,
-        get_base_address as linux_get_base_address,
-        get_base_address_from_handle as linux_get_base_address_from_handle,
-        get_process_bits as linux_get_process_bits,
-        get_process_bits_from_handle as linux_get_process_bits_from_handle,
-        open_process as linux_open_process,
-        close_process as linux_close_process,
-        get_process_id_from_name as linux_get_process_id_from_name,
+    from gd.memory.linux import allocate_memory as linux_allocate_memory  # type: ignore
+    from gd.memory.linux import close_process as linux_close_process
+    from gd.memory.linux import free_memory as linux_free_memory
+    from gd.memory.linux import get_base_address as linux_get_base_address
+    from gd.memory.linux import get_base_address_from_handle as linux_get_base_address_from_handle
+    from gd.memory.linux import get_process_bits as linux_get_process_bits
+    from gd.memory.linux import get_process_bits_from_handle as linux_get_process_bits_from_handle
+    from gd.memory.linux import get_process_id_from_name as linux_get_process_id_from_name
+    from gd.memory.linux import (
         get_process_id_from_window_title as linux_get_process_id_from_window_title,
-        get_process_name_from_id as linux_get_process_name_from_id,
-        inject_dll as linux_inject_dll,
-        terminate_process as linux_terminate_process,
-        protect_process_memory as linux_protect_process_memory,
-        read_process_memory as linux_read_process_memory,
-        write_process_memory as linux_write_process_memory,
     )
+    from gd.memory.linux import get_process_name_from_id as linux_get_process_name_from_id
+    from gd.memory.linux import inject_library as linux_inject_library
+    from gd.memory.linux import open_process as linux_open_process
+    from gd.memory.linux import protect_process_memory as linux_protect_process_memory
+    from gd.memory.linux import read_process_memory as linux_read_process_memory
+    from gd.memory.linux import terminate_process as linux_terminate_process
+    from gd.memory.linux import write_process_memory as linux_write_process_memory
 
 except ImportError:
     linux_allocate_memory = unimplemented
@@ -144,31 +144,31 @@ except ImportError:
     linux_get_process_id_from_name = unimplemented
     linux_get_process_id_from_window_title = unimplemented
     linux_get_process_name_from_id = unimplemented
-    linux_inject_dll = unimplemented
+    linux_inject_library = unimplemented
     linux_terminate_process = unimplemented
     linux_protect_process_memory = unimplemented
     linux_read_process_memory = unimplemented
     linux_write_process_memory = unimplemented
 
 try:
-    from gd.memory.macos import (  # type: ignore
-        allocate_memory as macos_allocate_memory,
-        free_memory as macos_free_memory,
-        get_base_address as macos_get_base_address,
-        get_base_address_from_handle as macos_get_base_address_from_handle,
-        get_process_bits as macos_get_process_bits,
-        get_process_bits_from_handle as macos_get_process_bits_from_handle,
-        open_process as macos_open_process,
-        close_process as macos_close_process,
-        get_process_id_from_name as macos_get_process_id_from_name,
+    from gd.memory.macos import allocate_memory as macos_allocate_memory  # type: ignore
+    from gd.memory.macos import close_process as macos_close_process
+    from gd.memory.macos import free_memory as macos_free_memory
+    from gd.memory.macos import get_base_address as macos_get_base_address
+    from gd.memory.macos import get_base_address_from_handle as macos_get_base_address_from_handle
+    from gd.memory.macos import get_process_bits as macos_get_process_bits
+    from gd.memory.macos import get_process_bits_from_handle as macos_get_process_bits_from_handle
+    from gd.memory.macos import get_process_id_from_name as macos_get_process_id_from_name
+    from gd.memory.macos import (
         get_process_id_from_window_title as macos_get_process_id_from_window_title,
-        get_process_name_from_id as macos_get_process_name_from_id,
-        inject_dll as macos_inject_dll,
-        terminate_process as macos_terminate_process,
-        protect_process_memory as macos_protect_process_memory,
-        read_process_memory as macos_read_process_memory,
-        write_process_memory as macos_write_process_memory,
     )
+    from gd.memory.macos import get_process_name_from_id as macos_get_process_name_from_id
+    from gd.memory.macos import inject_library as macos_inject_library
+    from gd.memory.macos import open_process as macos_open_process
+    from gd.memory.macos import protect_process_memory as macos_protect_process_memory
+    from gd.memory.macos import read_process_memory as macos_read_process_memory
+    from gd.memory.macos import terminate_process as macos_terminate_process
+    from gd.memory.macos import write_process_memory as macos_write_process_memory
 
 except ImportError:
     macos_allocate_memory = unimplemented
@@ -182,31 +182,35 @@ except ImportError:
     macos_get_process_id_from_name = unimplemented
     macos_get_process_id_from_window_title = unimplemented
     macos_get_process_name_from_id = unimplemented
-    macos_inject_dll = unimplemented
+    macos_inject_library = unimplemented
     macos_terminate_process = unimplemented
     macos_protect_process_memory = unimplemented
     macos_read_process_memory = unimplemented
     macos_write_process_memory = unimplemented
 
 try:
-    from gd.memory.windows import (  # type: ignore
-        allocate_memory as windows_allocate_memory,
-        free_memory as windows_free_memory,
-        get_base_address as windows_get_base_address,
+    from gd.memory.windows import allocate_memory as windows_allocate_memory  # type: ignore
+    from gd.memory.windows import close_process as windows_close_process
+    from gd.memory.windows import free_memory as windows_free_memory
+    from gd.memory.windows import get_base_address as windows_get_base_address
+    from gd.memory.windows import (
         get_base_address_from_handle as windows_get_base_address_from_handle,
-        get_process_bits as windows_get_process_bits,
-        get_process_bits_from_handle as windows_get_process_bits_from_handle,
-        open_process as windows_open_process,
-        close_process as windows_close_process,
-        get_process_id_from_name as windows_get_process_id_from_name,
-        get_process_id_from_window_title as windows_get_process_id_from_window_title,
-        get_process_name_from_id as windows_get_process_name_from_id,
-        inject_dll as windows_inject_dll,
-        terminate_process as windows_terminate_process,
-        protect_process_memory as windows_protect_process_memory,
-        read_process_memory as windows_read_process_memory,
-        write_process_memory as windows_write_process_memory,
     )
+    from gd.memory.windows import get_process_bits as windows_get_process_bits
+    from gd.memory.windows import (
+        get_process_bits_from_handle as windows_get_process_bits_from_handle,
+    )
+    from gd.memory.windows import get_process_id_from_name as windows_get_process_id_from_name
+    from gd.memory.windows import (
+        get_process_id_from_window_title as windows_get_process_id_from_window_title,
+    )
+    from gd.memory.windows import get_process_name_from_id as windows_get_process_name_from_id
+    from gd.memory.windows import inject_library as windows_inject_library
+    from gd.memory.windows import open_process as windows_open_process
+    from gd.memory.windows import protect_process_memory as windows_protect_process_memory
+    from gd.memory.windows import read_process_memory as windows_read_process_memory
+    from gd.memory.windows import terminate_process as windows_terminate_process
+    from gd.memory.windows import write_process_memory as windows_write_process_memory
 
 except ImportError:
     windows_allocate_memory = unimplemented
@@ -220,7 +224,7 @@ except ImportError:
     windows_get_process_id_from_name = unimplemented
     windows_get_process_id_from_window_title = unimplemented
     windows_get_process_name_from_id = unimplemented
-    windows_inject_dll = unimplemented
+    windows_inject_library = unimplemented
     windows_terminate_process = unimplemented
     windows_protect_process_memory = unimplemented
     windows_read_process_memory = unimplemented
@@ -239,7 +243,7 @@ if ANDROID or LINUX:
     get_process_id_from_name = linux_get_process_id_from_name
     get_process_id_from_window_title = linux_get_process_id_from_window_title
     get_process_name_from_id = linux_get_process_name_from_id
-    inject_dll = linux_inject_dll
+    inject_library = linux_inject_library
     terminate_process = linux_terminate_process
     protect_process_memory = linux_protect_process_memory
     read_process_memory = linux_read_process_memory
@@ -258,7 +262,7 @@ elif IOS or MACOS:
     get_process_id_from_name = macos_get_process_id_from_name
     get_process_id_from_window_title = macos_get_process_id_from_window_title
     get_process_name_from_id = macos_get_process_name_from_id
-    inject_dll = macos_inject_dll
+    inject_library = macos_inject_library
     terminate_process = macos_terminate_process
     protect_process_memory = macos_protect_process_memory
     read_process_memory = macos_read_process_memory
@@ -276,17 +280,13 @@ elif WINDOWS:
     get_process_id_from_name = windows_get_process_id_from_name
     get_process_id_from_window_title = windows_get_process_id_from_window_title
     get_process_name_from_id = windows_get_process_name_from_id
-    inject_dll = windows_inject_dll
+    inject_library = windows_inject_library
     terminate_process = windows_terminate_process
     protect_process_memory = windows_protect_process_memory
     read_process_memory = windows_read_process_memory
     write_process_memory = windows_write_process_memory
 
 else:
-    import warnings
-
-    warnings.warn("Memory API is not supported on this system.", Warning)
-
     allocate_memory = unimplemented
     free_memory = unimplemented
     get_base_address = unimplemented
@@ -298,7 +298,7 @@ else:
     get_process_id_from_name = unimplemented
     get_process_id_from_window_title = unimplemented
     get_process_name_from_id = unimplemented
-    inject_dll = unimplemented
+    inject_library = unimplemented
     terminate_process = unimplemented
     protect_process_memory = unimplemented
     read_process_memory = unimplemented
@@ -317,7 +317,7 @@ __all__ = (  # noqa
     "get_process_id_from_name",
     "get_process_id_from_window_title",
     "get_process_name_from_id",
-    "inject_dll",
+    "inject_library",
     "terminate_process",
     "protect_process_memory",
     "read_process_memory",
@@ -333,7 +333,7 @@ __all__ = (  # noqa
     "linux_get_process_id_from_name",
     "linux_get_process_id_from_window_title",
     "linux_get_process_name_from_id",
-    "linux_inject_dll",
+    "linux_inject_library",
     "linux_terminate_process",
     "linux_protect_process_memory",
     "linux_read_process_memory",
@@ -349,7 +349,7 @@ __all__ = (  # noqa
     "macos_get_process_id_from_name",
     "macos_get_process_id_from_window_title",
     "macos_get_process_name_from_id",
-    "macos_inject_dll",
+    "macos_inject_library",
     "macos_terminate_process",
     "macos_protect_process_memory",
     "macos_read_process_memory",
@@ -365,7 +365,7 @@ __all__ = (  # noqa
     "windows_get_process_id_from_name",
     "windows_get_process_id_from_window_title",
     "windows_get_process_name_from_id",
-    "windows_inject_dll",
+    "windows_inject_library",
     "windows_terminate_process",
     "windows_protect_process_memory",
     "windows_read_process_memory",

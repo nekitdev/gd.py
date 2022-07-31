@@ -73,8 +73,8 @@ class Union(ctypes.Union, metaclass=UnionMeta):
     pass
 
 
-def extern_fn(function_pointer: Any) -> Callable[[Callable[..., T]], Callable[..., T]]:
-    def wrap(function: Callable[..., T]) -> Callable[..., T]:
+def extern_fn(function_pointer: Any) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    def wrap(function: Callable[..., Any]) -> Callable[..., Any]:
         annotations = get_type_hints(function)
 
         return_type = annotations.pop("return", None)
@@ -88,7 +88,7 @@ def extern_fn(function_pointer: Any) -> Callable[[Callable[..., T]], Callable[..
             function_pointer.argtypes = argument_types
 
         @functools.wraps(function)
-        def handle_call(*args) -> T:
+        def handle_call(*args: Any) -> Any:
             return function_pointer(*args)
 
         return handle_call

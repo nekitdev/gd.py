@@ -1,205 +1,332 @@
-from typing import Any, Tuple, TypeVar
+from __future__ import annotations
 
-from attr import attrib, dataclass
+from math import atan2, cos, sin, sqrt
+from typing import Tuple, Type, TypeVar
+
+from attrs import Attribute, define, field
 
 __all__ = ("Point", "Size", "Rectangle")
 
 P = TypeVar("P", bound="Point")
+Q = TypeVar("Q", bound="Point")
+
 S = TypeVar("S", bound="Size")
+T = TypeVar("T", bound="Size")
+
 R = TypeVar("R", bound="Rectangle")
 
 
-@dataclass
+@define()
 class Point:
-    x: float = attrib(default=0.0, converter=float)
-    y: float = attrib(default=0.0, converter=float)
+    x: float = 0.0
+    y: float = 0.0
 
-    def __add__(self: P, other: Any) -> P:
-        if isinstance(other, self.__class__):
-            return self.__class__(self.x + other.x, self.y + other.y)
+    @classmethod
+    def from_scalar(cls: Type[P], scalar: float) -> P:
+        return cls(scalar, scalar)
 
-        return self.__class__(self.x + other, self.y + other)
+    @classmethod
+    def from_length_and_angle(cls: Type[P], length: float, angle: float) -> P:
+        return cls(length * cos(angle), length * sin(angle))
 
-    def __sub__(self: P, other: Any) -> P:
-        if isinstance(other, self.__class__):
-            return self.__class__(self.x - other.x, self.y - other.y)
+    @classmethod
+    def create(cls: Type[P], x: float = 0.0, y: float = 0.0) -> P:
+        return cls(x, y)
 
-        return self.__class__(self.x - other, self.y - other)
+    @property
+    def length_squared(self) -> float:
+        x = self.x
+        y = self.y
 
-    def __mul__(self: P, other: Any) -> P:
-        return self.__class__(self.x * other, self.y * other)
+        return x * x + y * y
 
-    def __truediv__(self: P, other: Any) -> P:
-        return self.__class__(self.x / other, self.y / other)
+    @property
+    def length(self) -> float:
+        return sqrt(self.length_squared)
 
-    def __floordiv__(self: P, other: Any) -> P:
-        return self.__class__(self.x // other, self.y // other)
+    @property
+    def angle(self) -> float:
+        return atan2(self.y, self.x)
 
-    __radd__ = __add__
-    __rsub__ = __sub__
-    __rmul__ = __mul__
-    __rtruediv__ = __truediv__
-    __rfloordiv__ = __floordiv__
+    def normalize(self: P) -> P:
+        length = self.length
 
-    def __iadd__(self: P, other: Any) -> P:
-        if isinstance(other, self.__class__):
-            self.x += other.x
-            self.y += other.y
-
-            return self
-
-        self.x += other
-        self.y += other
+        if length:
+            return self.create(self.x / length, self.y / length)
 
         return self
 
-    def __isub__(self: P, other: Any) -> P:
-        if isinstance(other, self.__class__):
-            self.x -= other.x
-            self.y -= other.y
+    def add(self: P, point: Q) -> P:
+        return self.create(self.x + point.x, self.y + point.y)
 
-            return self
-
-        self.x -= other
-        self.y -= other
+    def add_in_place(self: P, point: Q) -> P:
+        self.x += point.x
+        self.y += point.y
 
         return self
 
-    def __imul__(self: P, other: Any) -> P:
-        self.x *= other
-        self.y *= other
+    def sub(self: P, point: Q) -> P:
+        return self.create(self.x - point.x, self.y - point.y)
+
+    def sub_in_place(self: P, point: Q) -> P:
+        self.x -= point.x
+        self.y -= point.y
 
         return self
 
-    def __itruediv__(self: P, other: Any) -> P:
-        self.x /= other
-        self.y /= other
+    def mul(self: P, scalar: float) -> P:
+        return self.create(self.x * scalar, self.y * scalar)
+
+    def mul_in_place(self: P, scalar: float) -> P:
+        self.x *= scalar
+        self.y *= scalar
 
         return self
 
-    def __ifloordiv__(self: P, other: Any) -> P:
-        self.x //= other
-        self.y //= other
+    def div(self: P, scalar: float) -> P:
+        return self.create(self.x / scalar, self.y / scalar)
+
+    def div_in_place(self: P, scalar: float) -> P:
+        self.x /= scalar
+        self.y /= scalar
 
         return self
+
+    def flipped(self: P) -> P:
+        return self.create(-self.x, -self.y)
+
+    def flip(self: P) -> P:
+        self.x = -self.x
+        self.y = -self.y
+
+        return self
+
+    def x_flipped(self: P) -> P:
+        return self.create(-self.x, self.y)
 
     def x_flip(self: P) -> P:
         self.x = -self.x
 
         return self
 
+    def y_flipped(self: P) -> P:
+        return self.create(self.x, -self.y)
+
     def y_flip(self: P) -> P:
         self.y = -self.y
 
         return self
 
-    def as_tuple(self) -> Tuple[float, float]:
+    def swapped(self: P) -> P:
+        return self.create(self.y, self.x)
+
+    def swap(self: P) -> P:
+        self.x, self.y = self.y, self.x
+
+        return self
+
+    def clone(self: P) -> P:
+        return self.create(self.x, self.y)
+
+    def into_tuple(self) -> Tuple[float, float]:
         return (self.x, self.y)
 
+    def round_tuple(self) -> Tuple[int, int]:
+        return (round(self.x), round(self.y))
 
-@dataclass
+    __neg__ = flipped
+
+    __add__ = __radd__ = add
+    __sub__ = __rsub__ = sub
+    __mul__ = __rmul__ = mul
+
+    __iadd__ = add_in_place
+    __isub__ = sub_in_place
+    __imul__ = mul_in_place
+
+    __truediv__ = div
+    __itruediv__ = div_in_place
+
+
+@define()
 class Size:
-    width: float = attrib(default=0.0, converter=float)
-    height: float = attrib(default=0.0, converter=float)
+    width: float = field(default=0.0)
+    height: float = field(default=0.0)
 
-    def __mul__(self: S, other: Any) -> S:
-        return self.__class__(self.width * other, self.height * other)
+    @width.validator
+    def check_width(self, attribute: Attribute[float], width: float) -> None:
+        if width < 0.0:
+            raise ValueError  # TODO: message?
 
-    def __truediv__(self: S, other: Any) -> S:
-        return self.__class__(self.width / other, self.height / other)
+    @height.validator
+    def check_height(self, attribute: Attribute[float], height: float) -> None:
+        if height < 0.0:
+            raise ValueError  # TODO: message?
 
-    def __floordiv__(self: S, other: Any) -> S:
-        return self.__class__(self.width // other, self.height // other)
+    @classmethod
+    def from_scalar(cls: Type[S], scalar: float) -> S:
+        return cls(scalar, scalar)
 
-    def __imul__(self: S, other: Any) -> S:
-        self.width *= other
-        self.height *= other
+    @classmethod
+    def create(cls: Type[S], width: float = 0.0, height: float = 0.0) -> S:
+        return cls(width, height)
+
+    def mul(self: S, scalar: float) -> S:
+        return self.create(self.width * scalar, self.height * scalar)
+
+    def mul_in_place(self: S, scalar: float) -> S:
+        self.width *= scalar
+        self.height *= scalar
 
         return self
 
-    def __itruediv__(self: S, other: Any) -> S:
-        self.width /= other
-        self.height /= other
+    def mul_components(self: S, size: T) -> S:
+        return self.create(self.width * size.width, self.height * size.height)
+
+    def mul_components_in_place(self: S, size: T) -> S:
+        self.width *= size.width
+        self.height *= size.height
 
         return self
 
-    def __ifloordiv__(self: S, other: Any) -> S:
-        self.width //= other
-        self.height //= other
+    def div(self: S, scalar: float) -> S:
+        return self.create(self.width / scalar, self.height / scalar)
+
+    def div_in_place(self: S, scalar: float) -> S:
+        self.width /= scalar
+        self.height /= scalar
 
         return self
 
-    def as_tuple(self) -> Tuple[float, float]:
+    def div_components(self: S, size: T) -> S:
+        return self.create(self.width / size.width, self.height / size.height)
+
+    def div_components_in_place(self: S, size: T) -> S:
+        self.width /= size.width
+        self.height /= size.height
+
+        return self
+
+    def swapped(self: S) -> S:
+        return self.create(self.height, self.width)
+
+    def swap(self: S) -> S:
+        self.width, self.height = self.height, self.width
+
+        return self
+
+    def clone(self: S) -> S:
+        return self.create(self.width, self.height)
+
+    __mul__ = __rmul__ = mul
+    __imul__ = mul_in_place
+
+    __truediv__ = div
+    __itruediv__ = div_in_place
+
+    def into_tuple(self) -> Tuple[float, float]:
         return (self.width, self.height)
 
+    def round_tuple(self) -> Tuple[int, int]:
+        return (round(self.width), round(self.height))
 
-@dataclass
+
+@define()
 class Rectangle:
-    origin: Point = attrib(factory=Point)
-    size: Size = attrib(factory=Size)
+    origin: Point = field(factory=Point)
+    size: Size = field(factory=Size)
 
-    @property
-    def x(self) -> float:
+    @classmethod
+    def create(cls: Type[R], origin: Point, size: Size) -> R:
+        return cls(origin, size)
+
+    def clone(self: R) -> R:
+        return self.create(self.origin.clone(), self.size.clone())
+
+    def get_x(self) -> float:
         return self.origin.x
 
-    @property
-    def y(self) -> float:
+    def set_x(self, x: float) -> None:
+        self.origin.x = x
+
+    x = property(get_x, set_x)
+
+    def get_y(self) -> float:
         return self.origin.y
 
-    @property
-    def width(self) -> float:
+    def set_y(self, y: float) -> None:
+        self.origin.y = y
+
+    y = property(get_y, set_y)
+
+    def get_width(self) -> float:
         return self.size.width
 
-    @property
-    def height(self) -> float:
+    def set_width(self, width: float) -> None:
+        self.size.width = width
+
+    width = property(get_width, set_width)
+
+    def get_height(self) -> float:
         return self.size.height
+
+    def set_height(self, height: float) -> None:
+        self.size.height = height
+
+    height = property(get_height, set_height)
 
     @property
     def min_x(self) -> float:
-        return self.origin.x
+        return self.x
 
     @property
     def mid_x(self) -> float:
-        return self.origin.x + self.size.width / 2
+        return self.x + self.width / 2
 
     @property
     def max_x(self) -> float:
-        return self.origin.x + self.size.width
+        return self.x + self.width
 
     @property
     def min_y(self) -> float:
-        return self.origin.y
+        return self.y
 
     @property
     def mid_y(self) -> float:
-        return self.origin.y + self.size.height / 2
+        return self.y + self.height / 2
 
     @property
     def max_y(self) -> float:
-        return self.origin.y + self.size.height
+        return self.y + self.height
 
     @property
     def upper_left(self) -> Point:
-        return self.origin.__class__(self.min_x, self.min_y)
+        return self.origin.create(self.min_x, self.min_y)
 
     @property
     def upper_right(self) -> Point:
-        return self.origin.__class__(self.max_x, self.min_y)
+        return self.origin.create(self.max_x, self.min_y)
 
     @property
     def center(self) -> Point:
-        return self.origin.__class__(self.mid_x, self.mid_y)
+        return self.origin.create(self.mid_x, self.mid_y)
 
     @property
     def lower_left(self) -> Point:
-        return self.origin.__class__(self.min_x, self.max_y)
+        return self.origin.create(self.min_x, self.max_y)
 
     @property
     def lower_right(self) -> Point:
-        return self.origin.__class__(self.max_x, self.max_y)
+        return self.origin.create(self.max_x, self.max_y)
 
-    def as_tuple(self) -> Tuple[Tuple[float, float], Tuple[float, float]]:
-        return ((self.x, self.y), (self.width, self.height))
+    def into_tuple(self) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+        return (self.origin.into_tuple(), self.size.into_tuple())
 
-    def as_box(self) -> Tuple[float, float, float, float]:
-        return (self.x, self.y, self.width, self.height)
+    def round_tuple(self) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+        return (self.origin.round_tuple(), self.size.round_tuple())
+
+    def into_box(self) -> Tuple[float, float, float, float]:
+        return (self.min_x, self.min_y, self.max_x, self.max_y)
+
+    def round_box(self) -> Tuple[int, int, int, int]:
+        return (round(self.min_x), round(self.min_y), round(self.max_x), round(self.max_y))

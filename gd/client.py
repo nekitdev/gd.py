@@ -1,15 +1,25 @@
-# DOCUMENT
+from __future__ import annotations
 
-import traceback
-import types
+from builtins import setattr as set_attribute
+from datetime import timedelta
+from types import TracebackType as Traceback
+from typing import (
+    Any, AsyncIterator, Generator, Generic, Iterable, Optional, Type, TypeVar, Union, overload
+)
+
+from attrs import define, field, frozen
+from typing_extensions import ParamSpec
+from yarl import URL
 
 from gd.api.database import Database
-from gd.api.recording import RecordingEntry
-from gd.async_iters import async_iter, awaitable_iterator
-from gd.async_utils import get_not_running_loop, maybe_await, maybe_coroutine
-from gd.comment import Comment
-from gd.crypto import Key, encode_robtop_str
-from gd.decorators import cache_by, synchronize, login_check, login_check_object
+# from gd.api.recording import Recording
+from gd.async_utils import maybe_await, run, run_iterables
+from gd.await_iters import wrap_await_iter
+from gd.comments import Comment
+from gd.constants import DEFAULT_COUNT, DEFAULT_PAGE, DEFAULT_PAGES, DEFAULT_SPECIAL, DEFAULT_USE_CLIENT
+from gd.credentials import Credentials
+from gd.encoding import Key, encode_robtop_string
+from gd.decorators import check_client_login, check_login
 from gd.enums import (
     AccountURLType,
     CommentState,
@@ -27,395 +37,165 @@ from gd.enums import (
     MessageType,
     RewardType,
     SimpleRelationshipType,
+    TimelyType,
 )
-from gd.errors import ClientException, MissingAccess, NothingFound
-from gd.events.listener import (
-    AbstractListener,
-    LevelCommentListener,
-    MessageOrRequestListener,
-    RateLevelListener,
-    TimelyLevelListener,
-    UserCommentListener,
-)
+from gd.errors import ClientError, MissingAccess, NothingFound
+from gd.events.controller import Controller
+from gd.events.listeners import Listener
 from gd.filters import Filters
 from gd.friend_request import FriendRequest
-from gd.http import URL, HTTPClient
+from gd.http import HTTPClient
 from gd.level import Level
 from gd.level_packs import Gauntlet, MapPack
-from gd.logging import get_logger
 from gd.message import Message
-from gd.model import LevelSearchResponseModel  # type: ignore
+# from gd.models import LevelSearchResponseModel
 from gd.rewards import Chest, Quest
 from gd.session import Session
-from gd.song import ArtistInfo, Author, Song
-from gd.text_utils import make_repr
-from gd.typing import (
-    Any,
-    AsyncIterable,
-    AsyncIterator,
-    Awaitable,
-    Callable,
-    Dict,
-    Generator,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-    overload,
-)
+from gd.song import Song
+from gd.typing import AnyCallable, AnyException, DynamicTuple, MaybeAwaitable, URLString
 from gd.user import User
 
-__all__ = ("DAILY", "WEEKLY", "Client")
+__all__ = ("Client",)
 
+P = ParamSpec("P")
 T = TypeVar("T")
-AnyIterable = Union[AsyncIterable[T], Iterable[T]]
 
-log = get_logger(__name__)
-
-MaybeAsyncFunction = Callable[..., Union[T, Awaitable[T]]]
-MaybeAwaitable = Union[Awaitable[T], T]
-
-DAILY = -1
-WEEKLY = -2
-
-COMMENT_PAGE_SIZE = 20
-
-CONCURRENT = True
-PAGES = range(10)
+F = TypeVar("F", bound=AnyCallable)
 
 
-def value_or(value: Optional[T], default: T) -> T:
+def switch_none(value: Optional[T], default: T) -> T:
     return default if value is None else value
 
 
-def pages_for_amount(amount: int, page_size: int) -> Iterable[int]:
-    if amount < 0:
-        raise ValueError("Expected non-negative integer.")
+CONTROLLER_ALREADY_CREATED = "controller was already created"
+NO_DATABASE = "no database to save"
 
-    page = amount / page_size
+DEFAULT_LOAD_AFTER_POST = True
 
-    if not page.is_integer():
-        page += 1
-
-    return range(int(page))
+C = TypeVar("C", bound="Client")
 
 
-def run_async_iterators(
-    iterators: AnyIterable[AnyIterable[T]],
-    *ignore_exceptions: Type[BaseException],
-    concurrent: bool = CONCURRENT,
-) -> AsyncIterator[T]:
-    return async_iter(iterators).run_iterators(*ignore_exceptions, concurrent=concurrent).unwrap()
-
-
-@synchronize
+@define()
 class Client:
-    r"""Main class in gd.py, used for interacting with the servers of Geometry Dash.
+    session: Session = field()
 
-    Parameters
-    ----------
-    load_after_post: :class:`bool`
-        Whether to load comments/messages/requests after sending them.
+    credentials: Credentials = field(factory=Credentials)
 
-        .. note::
+    database: Optional[Database] = field(default=None, repr=False)
 
-            Defaults to ``True``, in which case
-            the following method calls will return entities:
+    load_after_post: bool = field(default=DEFAULT_LOAD_AFTER_POST)
 
-            - :meth:`~gd.Client.send_message`;
-            - :meth:`~gd.Client.send_friend_request`;
-            - :meth:`~gd.Client.comment_level`;
-            - :meth:`~gd.Client.post_comment`.
+    _listeners: DynamicTuple[Listener] = field(default=(), repr=False, init=False)
+    _controller: Optional[Controller] = field(default=None, repr=False, init=False)
 
-            Otherwise, if ``False`` or not found, these methods will return ``None``.
+    def __init__(
+        self,
+        credentials: Optional[Credentials] = None,
+        database: Optional[Database] = None,
+        *,
+        credentials_type: Type[Credentials] = Credentials,
+        session_type: Type[Session] = Session,
+        load_after_post: bool = DEFAULT_LOAD_AFTER_POST,
+        **http_keywords: Any,
+    ) -> None:
+        if credentials is None:
+            credentials = credentials_type()
 
-    \*\*http_args
-        Arguments to pass to :class:`~gd.HTTPClient` constructor.
+        self.__attrs_init__(
+            session=session_type(**http_keywords),
+            credentials=credentials,
+            database=database,
+            load_after_post=load_after_post,
+        )
 
-    Attributes
-    ----------
-    session: :class:`~gd.Session`
-        Session used processing requests and responses.
+    def apply_items(
+        self: C,
+        credentials: Optional[Credentials] = None,
+        database: Optional[Database] = None,
+        credentials_type: Type[Credentials] = Credentials,
+    ) -> C:
+        if credentials is None:
+            self.credentials = credentials_type()
 
-    database: :class:`~gd.api.Database`
-        Client's database, used for working with saves.
-        There is an alias for it called ``db``.
+        else:
+            self.credentials = credentials
 
-    account_id: :class:`int`
-        Account ID of the client. ``0`` if not logged in.
-
-    id: :class:`int`
-        ID of the client. ``0`` if not logged in.
-
-    name: :class:`str`
-        Name of the client. Empty string if not logged in.
-
-    password: :class:`str`
-        Password of the client. Empty string if not logged in.
-    """
-
-    def __init__(self, *, load_after_post: bool = True, **http_args) -> None:
-        self.session = Session(**http_args)
-
-        self.load_after_post = load_after_post
-        self.listeners: List[AbstractListener] = []
-        self.handlers: Dict[str, List[MaybeAsyncFunction]] = {}
-
-        self.database: Database = Database()
-
-        self.account_id = 0
-        self.id = 0
-
-        self.name: str = ""
-        self.password: str = ""
-
-    def __repr__(self) -> str:
-        info = {
-            "account_id": self.account_id,
-            "name": self.name,
-            "id": self.id,
-            "session": self.session,
-        }
-
-        return make_repr(self, info)
-
-    def edit(self, **attrs) -> "Client":
-        r"""Edit attributes of the client.
-
-        Parameters
-        ----------
-        \*\*attrs
-            Attributes to add.
-
-        Returns
-        -------
-        :class:`~gd.Client`
-            Current client.
-        """
-        for name, value in attrs.items():
-            setattr(self, name, value)
+        self.database = database
 
         return self
 
-    def is_logged(self) -> bool:
-        """Check wether the client is logged in.
+    def reset_items(self: C) -> C:
+        return self.apply_items()
 
-        Returns
-        -------
-        :class:`bool`
-            ``True`` if client is logged in, ``False`` otherwise.
+    def is_logged_in(self) -> bool:
+        """Checks if the client is logged in.
+
+        Returns:
+            Whether the client is logged in.
         """
-        return bool(self.account_id and self.id and self.name and self.password)
+        return self.credentials.is_loaded()
 
-    @overload  # noqa
-    def run(self, maybe_awaitable: Awaitable[T]) -> T:  # noqa
-        ...
-
-    @overload  # noqa
-    def run(self, maybe_awaitable: T) -> T:  # noqa
-        ...
-
-    def run(self, maybe_awaitable: MaybeAwaitable[T]) -> T:  # noqa
-        """Run given maybe awaitable object and return the result.
-
-        Parameters
-        ----------
-        maybe_awaitable: Union[Awaitable[``T``], ``T``]
-            Maybe awaitable object to execute.
-
-        Returns
-        -------
-        ``T``
-            Result of the execution.
-        """
-        return get_not_running_loop().run_until_complete(maybe_await(maybe_awaitable))
+    def run(self, maybe_awaitable: MaybeAwaitable[T]) -> T:
+        return run(maybe_await(maybe_awaitable))
 
     @property
-    def db(self) -> Database:
-        """:class:`~gd.api.Database`: Same as :attr:`~gd.Client.database`."""
-        return self.database
+    def account_id(self) -> int:
+        return self.credentials.account_id
 
-    @db.setter
-    def db(self, database: Database) -> None:
-        self.database = database
+    @property
+    def id(self) -> int:
+        return self.credentials.id
+
+    @property
+    def name(self) -> str:
+        return self.credentials.name
+
+    @property
+    def password(self) -> str:
+        return self.credentials.password
 
     @property
     def http(self) -> HTTPClient:
-        """:class:`~gd.HTTPClient`: Same as :attr:`gd.Session.http`."""
         return self.session.http
 
-    @property  # type: ignore
-    @cache_by("password")
+    @property
     def encoded_password(self) -> str:
-        """:class:`str`: Encoded password for the client."""
-        return encode_robtop_str(self.password, Key.ACCOUNT_PASSWORD)  # type: ignore
+        """The encoded password of the client."""
+        return encode_robtop_string(self.password, Key.ACCOUNT_PASSWORD)
 
     @property  # type: ignore
-    @login_check
+    @check_login
     def user(self) -> User:
-        """:class:`~gd.User`: User representing current client."""
-        return User(account_id=self.account_id, id=self.id, name=self.name, client=self)
+        """The user representing the client."""
+        return User(account_id=self.account_id, id=self.id, name=self.name).attach_client(self)
 
-    async def ping_server(self) -> float:
-        return await self.ping(self.http.url)
+    async def ping(self) -> timedelta:
+        return await self.ping_url(self.http.url)
 
-    async def ping(self, url: Union[str, URL]) -> float:
+    async def ping_url(self, url: URLString) -> timedelta:
         return await self.session.ping(url)
 
     async def logout(self) -> None:
-        """Logout from account.
+        self.reset_items()
 
-        Example
-        -------
-        >>> await client.login("user", "password")
-        >>> await client.logout()
-        >>> client.id
-        0
-        """
-        self.database = Database()
+    def login(self: C, name: str, password: str) -> LoginContextManager[C]:
+        return LoginContextManager(self, name, password)
 
-        self.account_id = 0
-        self.id = 0
-
-        self.name = ""
-        self.password = ""
-
-    def login(self, name: str, password: str) -> "LoginContextManager":
-        """:async-with:
-
-        Return context manager that can be used to temporarily log in,
-        logging out on exit.
-
-        Awaiting on the context manager will act the same as actually logging in.
-
-        Example
-        -------
-        >>> async with client.login("user", "password"):
-        ...     async for friend in client.get_friends():
-        ...         print(friend)
-
-        Parameters
-        ----------
-        name: :class:`str`
-            Name of an account.
-
-        password: :class:`str`
-            Password of an account.
-        """
-        return LoginContextManager(self, name, password, unsafe=False)
-
-    async def do_login(self, name: str, password: str) -> None:
-        """Login into an account and update client's settings.
-
-        Example
-        -------
-        >>> await client.do_login("user", "password")
-        >>> client.name
-        "user"
-        >>> client.password
-        "password"
-
-        Parameters
-        ----------
-        name: :class:`str`
-            Name of an account.
-
-        password: :class:`str`
-            Password of an account.
-        """
+    async def try_login(self, name: str, password: str) -> None:
         model = await self.session.login(name, password)
 
-        log.info("Logged in as %r.", name)
+        self.apply_items(Credentials(model.account_id, model.id, name, password))
 
-        self.edit(account_id=model.account_id, id=model.id, name=name, password=password)
+    def unsafe_login(self: C, name: str, password: str) -> UnsafeLoginContextManager[C]:
+        return UnsafeLoginContextManager(self, name, password)
 
-    def unsafe_login(self, name: str, password: str) -> "LoginContextManager":
-        """:async-with:
-
-        Return context manager that can be used to temporarily log in *unsafely*,
-        logging out on exit.
-
-        Awaiting on the context manager will act the same as actually logging in.
-
-        Example
-        -------
-        >>> await client.unsafe_login("user", "password")
-        >>> client.name
-        "user"
-        >>> client.password
-        "password"
-
-        Parameters
-        ----------
-        name: :class:`str`
-            Name of an account.
-
-        password: :class:`str`
-            Password of an account.
-        """
-        return LoginContextManager(self, name, password, unsafe=True)
-
-    async def do_unsafe_login(self, name: str, password: str) -> None:
-        """Login into an account and update client's settings.
-
-        This function is not *safe*, because it does not use login endpoint.
-
-        Instead, it assumes that credentials are correct,
-        and only searches for ID and Account ID.
-
-        Example
-        -------
-        >>> await client.do_unsafe_login("user", "password")
-        >>> client.name
-        "user"
-        >>> client.password
-        "password"
-
-        Parameters
-        ----------
-        name: :class:`str`
-            Name of an account.
-
-        password: :class:`str`
-            Password of an account.
-        """
+    async def try_unsafe_login(self, name: str, password: str) -> None:
         user = await self.search_user(name, simple=True)
 
-        log.info("Logged in? as %r.", name)
+        self.apply_items(Credentials(user.account_id, user.id, name, password))
 
-        self.edit(name=name, password=password, account_id=user.account_id, id=user.id)
-
-    @login_check
+    @check_login
     async def load(self) -> Database:
-        """Load cloud save and process it.
-
-        This returns a :class:`~gd.api.Database`, and sets ``client.database`` to it.
-
-        Example
-        -------
-        >>> await client.login("user", "password")
-        >>> database = await client.load()  # load current save
-        >>> print(database.user_name)  # print current user name
-
-        Raises
-        ------
-        :exc:`~gd.MissingAccess`
-            Failed to load the save.
-
-        :exc:`~gd.HTTPStatusError`
-            Server returned error status code.
-
-        :exc:`~gd.HTTPError`
-            Failed to process the request.
-
-        Returns
-        -------
-        :class:`~gd.api.Database`
-            Loaded database.
-        """
         database = await self.session.load(
             account_id=self.account_id, name=self.name, password=self.password
         )
@@ -424,38 +204,13 @@ class Client:
 
         return database
 
-    @login_check
+    @check_login
     async def save(self, database: Optional[Database] = None) -> None:
-        """Send save to the cloud.
-
-        Example
-        -------
-        >>> await client.login("user", "password")
-        >>> await client.load()  # load current save
-        >>> client.database.set_bootups(0)  # set "bootups" value to "0"
-        >>> await client.save()
-
-        Parameters
-        ----------
-        database: Optional[:class:`~gd.api.Database`]
-            Database to save. If not given or ``None``, tries to use :attr:`~gd.Client.database`.
-
-        Raises
-        ------
-        :exc:`~gd.MissingAccess`
-            Failed to save the database, or it is empty (i.e. not changed).
-
-        :exc:`~gd.HTTPStatusError`
-            Server returned error status code.
-
-        :exc:`~gd.HTTPError`
-            Failed to process the request.
-        """
         if database is None:
-            if self.database.is_empty():
-                raise MissingAccess("No database to save.")
-
             database = self.database
+
+            if database is None:
+                raise MissingAccess(NO_DATABASE)
 
         await self.session.save(
             database, account_id=self.account_id, name=self.name, password=self.password
@@ -464,7 +219,7 @@ class Client:
     async def get_account_url(self, account_id: int, type: AccountURLType) -> URL:
         return await self.session.get_account_url(account_id=account_id, type=type)
 
-    @login_check
+    @check_login
     async def update_profile(
         self,
         stars: Optional[int] = None,
@@ -472,96 +227,24 @@ class Client:
         coins: Optional[int] = None,
         user_coins: Optional[int] = None,
         demons: Optional[int] = None,
-        icon_type: Optional[Union[int, str, IconType]] = None,
-        icon: Optional[int] = None,
+        icon_type: Optional[IconType] = None,
+        icon_id: Optional[int] = None,
         color_1_id: Optional[int] = None,
         color_2_id: Optional[int] = None,
-        has_glow: Optional[bool] = None,
-        cube: Optional[int] = None,
-        ship: Optional[int] = None,
-        ball: Optional[int] = None,
-        ufo: Optional[int] = None,
-        wave: Optional[int] = None,
-        robot: Optional[int] = None,
-        spider: Optional[int] = None,
-        death_effect: Optional[int] = None,
-        special: int = 0,
+        glow: Optional[bool] = None,
+        cube_id: Optional[int] = None,
+        ship_id: Optional[int] = None,
+        ball_id: Optional[int] = None,
+        ufo_id: Optional[int] = None,
+        wave_id: Optional[int] = None,
+        robot_id: Optional[int] = None,
+        spider_id: Optional[int] = None,
+        # swing_copter_id: Optional[int] = None,
+        explosion_id: Optional[int] = None,
+        special: int = DEFAULT_SPECIAL,
         *,
         set_as_user: Optional[User] = None,
     ) -> None:
-        """Update profile of the client.
-
-        Example
-        -------
-        >>> await client.update_profile(has_glow=True)  # enable glow outline
-
-        Parameters
-        ----------
-        stars: Optional[:class:`int`]
-            Amount of stars to set.
-
-        diamonds: Optional[:class:`int`]
-            Amount of diamonds to set.
-
-        coins: Optional[:class:`int`]
-            Amount of coins to set.
-
-        user_coins: Optional[:class:`int`]
-            Amount of user coins to set.
-
-        demons: Optional[:class:`int`]
-            Amount of demons to set.
-
-        icon_type: Optional[Union[:class:`int`, :class:`str`, :class:`~gd.IconType`]]
-            Icon type to use. See :class:`~gd.IconType` for more info.
-
-        icon: Optional[:class:`int`]
-            Icon ID to set.
-
-        color_1_id: Optional[:class:`int`]
-            ID of primary color to use.
-
-        color_2_id: Optional[:class:`int`]
-            ID of secondary color to use.
-
-        has_glow: Optional[:class:`bool`]
-            Whether to use glow outline.
-
-        cube: Optional[:class:`int`]
-            ID of cube to use.
-
-        ship: Optional[:class:`int`]
-            ID of ship to use.
-
-        ball: Optional[:class:`int`]
-            ID of ball to use.
-
-        ufo: Optional[:class:`int`]
-            ID of ufo to use.
-
-        wave: Optional[:class:`int`]
-            ID of wave to use.
-
-        robot: Optional[:class:`int`]
-            ID of robot to use.
-
-        spider: Optional[:class:`int`]
-            ID of spider to use.
-
-        death_effect: Optional[:class:`int`]
-            ID of death effect to use.
-
-        special: :class:`int`
-            Special number to use. Default is ``0``.
-
-        set_as_user: Optional[:class:`~gd.User`]
-            User to get all missing parameters from.
-            If not given or ``None``, :attr:`~gd.Client.user` is used, which implies that::
-
-                await client.update_profile()
-
-            Will cause no effect.
-        """
         if set_as_user is None:
             user = await self.get_user(self.account_id)
 
@@ -569,77 +252,44 @@ class Client:
             user = set_as_user
 
         await self.session.update_profile(
-            stars=value_or(stars, user.stars),
-            diamonds=value_or(diamonds, user.diamonds),
-            coins=value_or(coins, user.coins),
-            user_coins=value_or(user_coins, user.user_coins),
-            demons=value_or(demons, user.demons),
-            icon_type=IconType.from_value(value_or(icon_type, user.icon_type)),
-            icon=value_or(icon, user.icon),
-            color_1_id=value_or(color_1_id, user.color_1_id),
-            color_2_id=value_or(color_2_id, user.color_2_id),
-            has_glow=bool(value_or(has_glow, user.has_glow())),
-            cube=value_or(cube, user.cube),
-            ship=value_or(ship, user.ship),
-            ball=value_or(ball, user.ball),
-            ufo=value_or(ufo, user.ufo),
-            wave=value_or(wave, user.wave),
-            robot=value_or(robot, user.robot),
-            spider=value_or(spider, user.spider),
-            death_effect=value_or(death_effect, user.death_effect),
+            stars=switch_none(stars, user.stars),
+            diamonds=switch_none(diamonds, user.diamonds),
+            coins=switch_none(coins, user.coins),
+            user_coins=switch_none(user_coins, user.user_coins),
+            demons=switch_none(demons, user.demons),
+            icon_type=switch_none(icon_type, user.icon_type),
+            icon_id=switch_none(icon_id, user.icon_id),
+            color_1_id=switch_none(color_1_id, user.color_1_id),
+            color_2_id=switch_none(color_2_id, user.color_2_id),
+            glow=switch_none(glow, user.glow),
+            cube_id=switch_none(cube_id, user.cube_id),
+            ship_id=switch_none(ship_id, user.ship_id),
+            ball_id=switch_none(ball_id, user.ball_id),
+            ufo_id=switch_none(ufo_id, user.ufo_id),
+            wave_id=switch_none(wave_id, user.wave_id),
+            robot_id=switch_none(robot_id, user.robot_id),
+            spider_id=switch_none(spider_id, user.spider_id),
+            # swing_copter_id=switch_none(swing_copter_id, user.swing_copter_id),
+            explosion_id=switch_none(explosion_id, user.explosion_id),
             special=special,
             account_id=self.account_id,
             name=self.name,
             encoded_password=self.encoded_password,
         )
 
-    @login_check
+    @check_login
     async def update_settings(
         self,
-        message_state: Optional[Union[int, str, MessageState]] = None,
-        friend_request_state: Optional[Union[int, str, FriendRequestState]] = None,
-        comment_state: Optional[Union[int, str, CommentState]] = None,
+        message_state: Optional[MessageState] = None,
+        friend_request_state: Optional[FriendRequestState] = None,
+        comment_state: Optional[CommentState] = None,
         youtube: Optional[str] = None,
         twitter: Optional[str] = None,
         twitch: Optional[str] = None,
+        # discord: Optional[str] = None,
         *,
         set_as_user: Optional[User] = None,
     ) -> None:
-        """Update profile of the client.
-
-        Example
-        -------
-        >>> await client.update_settings(comment_state="open_to_all")  # open comments to everyone
-
-        Parameters
-        ----------
-        message_state: Optional[Union[:class:`int`, :class:`str`, :class:`~gd.MessageState`]]
-            Message state to set. See :class:`~gd.MessageState`.
-
-        friend_request_state: Optional[Union[\
-            :class:`int`, :class:`str`, :class:`~gd.FriendRequestState`]]
-            Friend request state to set. See :class:`~gd.FriendRequestState`.
-
-        comment_state: Optional[Union[:class:`int`, :class:`str`, :class:`~gd.CommentState`]]
-            Comment state to set. See :class:`~gd.CommentState`.
-
-        youtube: Optional[:class:`str`]
-            YouTube channel ID to set. In link: ``https://youtube.com/channel/{youtube}``.
-
-        twitter: Optional[:class:`str`]
-            Twitter ID to set. In link: ``https://twitter.com/{twitter}``.
-
-        twitch: Optional[:class:`str`]
-            Twitch ID to set. In link ``https://twitch.tv/{twitch}``.
-
-        set_as_user: Optional[:class:`~gd.User`]
-            User to get all missing parameters from.
-            If not given or ``None``, :attr:`~gd.Client.user` is used, which implies that::
-
-                await client.update_settings()
-
-            Will cause no effect.
-        """
         if set_as_user is None:
             user = await self.get_user(self.account_id, simple=True)
 
@@ -647,14 +297,13 @@ class Client:
             user = set_as_user
 
         await self.session.update_settings(
-            message_state=MessageState.from_value(value_or(message_state, user.message_state)),
-            friend_request_state=FriendRequestState.from_value(
-                value_or(friend_request_state, user.friend_request_state)
-            ),
-            comment_state=CommentState.from_value(value_or(comment_state, user.comment_state)),
-            youtube=value_or(youtube, user.youtube),
-            twitter=value_or(twitter, user.twitter),
-            twitch=value_or(twitch, user.twitch),
+            message_state=switch_none(message_state, user.message_state),
+            friend_request_state=switch_none(friend_request_state, user.friend_request_state),
+            comment_state=switch_none(comment_state, user.comment_state),
+            youtube=switch_none(youtube, user.youtube),
+            twitter=switch_none(twitter, user.twitter),
+            twitch=switch_none(twitch, user.twitch),
+            # discord=switch_none(discord, user.discord),
             account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
@@ -663,7 +312,7 @@ class Client:
         self, account_id: int, simple: bool = False, friend_state: bool = False
     ) -> User:
         if friend_state:  # if we need to find friend state
-            login_check_object(self)  # assert client is logged in
+            check_client_login(self)  # assert client is logged in
 
             profile_model = await self.session.get_user_profile(  # request profile
                 account_id,
@@ -690,7 +339,7 @@ class Client:
             return User.from_model(search_model, client=self)
 
         if friend_state:  # if friend state is requested
-            login_check_object(self)  # assert client is logged in
+            check_client_login(self)  # assert client is logged in
 
             profile_model = await self.session.get_user_profile(  # request profile
                 search_model.account_id,
@@ -703,29 +352,30 @@ class Client:
 
         return User.from_models(search_model, profile_model, client=self)
 
-    @awaitable_iterator
+    @wrap_await_iter
     async def search_users_on_page(
-        self, query: Union[int, str], page: int = 0
+        self, query: Union[int, str], page: int = DEFAULT_PAGE
     ) -> AsyncIterator[User]:
         response_model = await self.session.search_users_on_page(query, page=page)
 
         for model in response_model.users:
             yield User.from_model(model, client=self)
 
-    @awaitable_iterator
+    @wrap_await_iter
     def search_users(
-        self, query: Union[int, str], pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT,
+        self,
+        query: Union[int, str],
+        pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[User]:
-        return run_async_iterators(
+        return run_iterables(
             (self.search_users_on_page(query=query, page=page) for page in pages),
-            ClientException,
-            concurrent=concurrent,
+            ClientError,
         )
 
-    @awaitable_iterator
-    @login_check
+    @wrap_await_iter
+    @check_login
     async def get_relationships(
-        self, type: Union[int, str, SimpleRelationshipType]
+        self, type: SimpleRelationshipType
     ) -> AsyncIterator[User]:
         try:
             response_model = await self.session.get_relationships(
@@ -740,21 +390,23 @@ class Client:
         for model in response_model.users:
             yield User.from_model(model, client=self)
 
-    @login_check
+    @check_login
     def get_friends(self) -> AsyncIterator[User]:
-        return self.get_relationships(SimpleRelationshipType.FRIENDS)
+        return self.get_relationships(SimpleRelationshipType.FRIEND)
 
-    @login_check
+    @check_login
     def get_blocked(self) -> AsyncIterator[User]:
         return self.get_relationships(SimpleRelationshipType.BLOCKED)
 
-    @awaitable_iterator
-    async def get_top(
-        self, strategy: Union[int, str, LeaderboardStrategy], amount: int = 100
+    @wrap_await_iter
+    async def get_leaderboard(
+        self,
+        strategy: LeaderboardStrategy = LeaderboardStrategy.DEFAULT,
+        count: int = DEFAULT_COUNT,
     ) -> AsyncIterator[User]:
-        response_model = await self.session.get_top(
-            LeaderboardStrategy.from_value(strategy),
-            amount,
+        response_model = await self.session.get_leaderboard(
+            strategy,
+            count,
             account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
@@ -762,7 +414,7 @@ class Client:
         for model in response_model.users:
             yield User.from_model(model, client=self)
 
-    get_leaderboard = get_top
+    get_top = get_leaderboard
 
     def levels_from_model(self, response_model: LevelSearchResponseModel) -> Iterator[Level]:
         songs = (Song.from_model(model, custom=True, client=self) for model in response_model.songs)
@@ -784,11 +436,17 @@ class Client:
 
             yield Level.from_model(model, creator=creator, song=song, client=self)
 
-    async def get_daily(self, use_client: bool = False) -> Level:
-        return await self.get_level(DAILY, use_client=use_client)
+    async def get_timely(self, type: TimelyType, use_client: bool = DEFAULT_USE_CLIENT) -> Level:
+        return await self.get_level(type.into_timely_id().value, use_client=use_client)
 
-    async def get_weekly(self, use_client: bool = False) -> Level:
-        return await self.get_level(WEEKLY, use_client=use_client)
+    async def get_daily(self, use_client: bool = DEFAULT_USE_CLIENT) -> Level:
+        return await self.get_timely(TimelyType.DAILY, use_client=use_client)
+
+    async def get_weekly(self, use_client: bool = DEFAULT_USE_CLIENT) -> Level:
+        return await self.get_timely(TimelyType.WEEKLY, use_client=use_client)
+
+    # async def get_event(self, use_client: bool = DEFAULT_USE_CLIENT) -> Level:
+    #     return await self.get_timely(TimelyType.EVENT, use_client=use_client)
 
     async def get_level(
         self, level_id: int, get_data: bool = True, use_client: bool = False
@@ -807,7 +465,7 @@ class Client:
 
         if get_data:
             if use_client:
-                login_check_object(self)  # assert client is logged in
+                check_client_login(self)  # assert client is logged in
 
                 download_model = await self.session.download_level(
                     level_id, account_id=self.account_id, encoded_password=self.encoded_password
@@ -844,7 +502,7 @@ class Client:
 
         return level
 
-    @awaitable_iterator
+    @wrap_await_iter
     async def search_levels_on_page(
         self,
         query: Optional[Union[int, str, Iterable[Any]]] = None,
@@ -880,7 +538,7 @@ class Client:
         for level in self.levels_from_model(response_model):
             yield level
 
-    @awaitable_iterator
+    @wrap_await_iter
     def search_levels(
         self,
         query: Optional[Union[int, str]] = None,
@@ -890,18 +548,22 @@ class Client:
         gauntlet: Optional[int] = None,
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[Level]:
-        return run_async_iterators(
+        return run_iterables(
             (
                 self.search_levels_on_page(
-                    query=query, page=page, filters=filters, user=user, gauntlet=gauntlet,
+                    query=query,
+                    page=page,
+                    filters=filters,
+                    user=user,
+                    gauntlet=gauntlet,
                 )
                 for page in pages
             ),
-            ClientException,
+            ClientError,
             concurrent=concurrent,
         )
 
-    @login_check
+    @check_login
     async def update_level_description(self, level: Level, description: Optional[str]) -> None:
         if description is None:
             description = ""
@@ -975,21 +637,27 @@ class Client:
     async def report_level(self, level: Level) -> None:
         return await self.session.report_level(level.id)
 
-    @login_check
+    @check_login
     async def delete_level(self, level: Level) -> None:
         return await self.session.delete_level(
             level.id, account_id=self.account_id, encoded_password=self.encoded_password
         )
 
-    @login_check
+    @check_login
     async def rate_level(self, level: Level, stars: int) -> None:
         return await self.session.rate_level(
-            level.id, stars, account_id=self.account_id, encoded_password=self.encoded_password,
+            level.id,
+            stars,
+            account_id=self.account_id,
+            encoded_password=self.encoded_password,
         )
 
-    @login_check
+    @check_login
     async def rate_demon(
-        self, level: Level, rating: Union[int, str, DemonDifficulty], as_mod: bool = False,
+        self,
+        level: Level,
+        rating: Union[int, str, DemonDifficulty],
+        as_mod: bool = False,
     ) -> None:
         return await self.session.rate_demon(
             level.id,
@@ -999,7 +667,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @login_check
+    @check_login
     async def send_level(self, level: Level, stars: int, feature: bool) -> None:
         return await self.session.rate_level(  # type: ignore
             level.id,
@@ -1009,8 +677,8 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @awaitable_iterator
-    @login_check
+    @wrap_await_iter
+    @check_login
     async def get_level_top(
         self,
         level: Level,
@@ -1028,7 +696,7 @@ class Client:
 
     get_level_leaderboard = get_level_top
 
-    @login_check
+    @check_login
     async def block(self, user: User) -> None:
         return await self.session.block_or_unblock(
             user.account_id,
@@ -1037,7 +705,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @login_check
+    @check_login
     async def unblock(self, user: User) -> None:
         return await self.session.block_or_unblock(
             user.account_id,
@@ -1046,7 +714,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @login_check
+    @check_login
     async def unfriend(self, user: User) -> None:
         return await self.session.unfriend_user(
             user.account_id,
@@ -1054,7 +722,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @login_check
+    @check_login
     async def send_message(
         self, user: User, subject: Optional[str] = None, content: Optional[str] = None
     ) -> Optional[Message]:
@@ -1085,7 +753,7 @@ class Client:
 
         return None
 
-    @login_check
+    @check_login
     async def get_message(self, message_id: int, type: MessageType) -> Message:
         model = await self.session.download_message(
             message_id,
@@ -1095,12 +763,12 @@ class Client:
         )
         return Message.from_model(model, other_user=self.user, type=type, client=self)
 
-    @login_check
+    @check_login
     async def read_message(self, message: Message) -> str:
         read = await self.get_message(message.id, message.type)
         return read.content
 
-    @login_check
+    @check_login
     async def delete_message(self, message: Message) -> None:
         return await self.session.delete_message(
             message.id,
@@ -1109,8 +777,8 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @awaitable_iterator
-    @login_check
+    @wrap_await_iter
+    @check_login
     async def get_messages_on_page(
         self, type: Union[int, str, MessageType] = MessageType.INCOMING, page: int = 0
     ) -> AsyncIterator[Message]:
@@ -1130,21 +798,21 @@ class Client:
         for model in response_model.messages:
             yield Message.from_model(model, client=self, other_user=self.user, type=message_type)
 
-    @awaitable_iterator
-    @login_check
+    @wrap_await_iter
+    @check_login
     def get_messages(
         self,
         type: Union[int, str, MessageType] = MessageType.INCOMING,
         pages: Iterable[int] = PAGES,
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[Message]:
-        return run_async_iterators(
+        return run_iterables(
             (self.get_messages_on_page(type=type, page=page) for page in pages),
-            ClientException,
+            ClientError,
             concurrent=concurrent,
         )
 
-    @login_check
+    @check_login
     async def send_friend_request(
         self, user: User, message: Optional[str] = None
     ) -> Optional[FriendRequest]:
@@ -1169,7 +837,7 @@ class Client:
 
         return None
 
-    @login_check
+    @check_login
     async def delete_friend_request(self, friend_request: FriendRequest) -> None:
         return await self.session.delete_friend_request(
             account_id=friend_request.author.account_id,
@@ -1178,7 +846,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @login_check
+    @check_login
     async def accept_friend_request(self, friend_request: FriendRequest) -> None:
         return await self.session.accept_friend_request(
             account_id=friend_request.author.account_id,
@@ -1188,7 +856,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @login_check
+    @check_login
     async def read_friend_request(self, friend_request: FriendRequest) -> None:
         return await self.session.read_friend_request(
             request_id=friend_request.id,
@@ -1196,10 +864,12 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @awaitable_iterator
-    @login_check
+    @wrap_await_iter
+    @check_login
     async def get_friend_requests_on_page(
-        self, type: Union[int, str, FriendRequestType] = FriendRequestType.INCOMING, page: int = 0,
+        self,
+        type: Union[int, str, FriendRequestType] = FriendRequestType.INCOMING,
+        page: int = 0,
     ) -> AsyncIterator[FriendRequest]:
         friend_request_type = FriendRequestType.from_value(type)
 
@@ -1219,29 +889,29 @@ class Client:
                 model, client=self, other_user=self.user, type=friend_request_type
             )
 
-    @awaitable_iterator
-    @login_check
+    @wrap_await_iter
+    @check_login
     def get_friend_requests(
         self,
         type: Union[int, str, FriendRequestType] = FriendRequestType.INCOMING,
         pages: Iterable[int] = PAGES,
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[FriendRequest]:
-        return run_async_iterators(
+        return run_iterables(
             (self.get_friend_requests_on_page(type=type, page=page) for page in pages),
-            ClientException,
+            ClientError,
             concurrent=concurrent,
         )
 
-    @login_check
+    @check_login
     async def like(self, entity: Union[Comment, Level]) -> None:
         return await self.like_or_dislike(entity, dislike=False)
 
-    @login_check
+    @check_login
     async def dislike(self, entity: Union[Comment, Level]) -> None:
         return await self.like_or_dislike(entity, dislike=True)
 
-    @login_check
+    @check_login
     async def like_or_dislike(self, entity: Union[Comment, Level], dislike: bool) -> None:
         if isinstance(entity, Comment):
             if entity.type is CommentType.LEVEL:
@@ -1264,7 +934,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @login_check
+    @check_login
     async def comment_level(
         self, level: Level, content: Optional[str] = None, percent: int = 0
     ) -> Optional[Comment]:
@@ -1292,7 +962,7 @@ class Client:
 
         return None
 
-    @login_check
+    @check_login
     async def post_comment(self, content: Optional[str] = None) -> Optional[Comment]:
         await self.session.post_comment(
             type=CommentType.PROFILE,  # type: ignore
@@ -1318,7 +988,7 @@ class Client:
 
         return None
 
-    @login_check
+    @check_login
     async def delete_comment(self, comment: Comment) -> None:
         return await self.session.delete_comment(
             comment_id=comment.id,
@@ -1328,7 +998,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @awaitable_iterator
+    @wrap_await_iter
     async def get_user_comments_on_page(
         self,
         user: User,
@@ -1348,7 +1018,7 @@ class Client:
         for model in response_model.comments:
             yield Comment.from_model(model, client=self, user=user)
 
-    @awaitable_iterator
+    @wrap_await_iter
     def get_user_comments(
         self,
         user: User,
@@ -1358,16 +1028,16 @@ class Client:
         strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[Comment]:
-        return run_async_iterators(
+        return run_iterables(
             (
                 self.get_user_comments_on_page(user=user, type=type, page=page, strategy=strategy)
                 for page in pages
             ),
-            ClientException,
+            ClientError,
             concurrent=concurrent,
         )
 
-    @awaitable_iterator
+    @wrap_await_iter
     async def get_level_comments_on_page(
         self,
         level: Level,
@@ -1390,7 +1060,7 @@ class Client:
         for model in response_model.comments:
             yield Comment.from_model(model, client=self)
 
-    @awaitable_iterator
+    @wrap_await_iter
     def get_level_comments(
         self,
         level: Level,
@@ -1400,43 +1070,43 @@ class Client:
         strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
         concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[Comment]:
-        return run_async_iterators(
+        return run_iterables(
             (
                 self.get_level_comments_on_page(
                     level=level, amount=amount, page=page, strategy=strategy
                 )
                 for page in pages
             ),
-            ClientException,
+            ClientError,
             concurrent=concurrent,
         )
 
-    @awaitable_iterator
+    @wrap_await_iter
     async def get_gauntlets(self) -> AsyncIterator[Gauntlet]:
         response_model = await self.session.get_gauntlets()
 
         for model in response_model.gauntlets:
             yield Gauntlet.from_model(model, client=self)
 
-    @awaitable_iterator
+    @wrap_await_iter
     async def get_map_packs_on_page(self, page: int = 0) -> AsyncIterator[MapPack]:
         response_model = await self.session.get_map_packs_on_page(page=page)
 
         for model in response_model.map_packs:
             yield MapPack.from_model(model, client=self)
 
-    @awaitable_iterator
+    @wrap_await_iter
     def get_map_packs(
         self, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator[MapPack]:
-        return run_async_iterators(
+        return run_iterables(
             (self.get_map_packs_on_page(page=page) for page in pages),
-            ClientException,
+            ClientError,
             concurrent=concurrent,
         )
 
-    @awaitable_iterator
-    @login_check
+    @wrap_await_iter
+    @check_login
     async def get_quests(self) -> AsyncIterator[Quest]:
         response_model = await self.session.get_quests(
             account_id=self.account_id, encoded_password=self.encoded_password
@@ -1447,8 +1117,8 @@ class Client:
 
             yield Quest.from_model(quest_model, seconds=model.time_left, client=self)
 
-    @awaitable_iterator
-    @login_check
+    @wrap_await_iter
+    @check_login
     async def get_chests(
         self,
         reward_type: RewardType = RewardType.GET_INFO,  # type: ignore
@@ -1470,20 +1140,20 @@ class Client:
         ):
             yield Chest.from_model(chest_model, seconds=time_left, count=count, client=self)
 
-    @awaitable_iterator
+    @wrap_await_iter
     async def get_featured_artists_on_page(self, page: int = 0) -> AsyncIterator[Song]:
         response_model = await self.session.get_featured_artists_on_page(page=page)
 
         for model in response_model.featured_artists:
             yield Song.from_model(model, custom=True, client=self)
 
-    @awaitable_iterator
+    @wrap_await_iter
     def get_featured_artists(
         self, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator[MapPack]:
-        return run_async_iterators(
+        return run_iterables(
             (self.get_featured_artists_on_page(page=page) for page in pages),  # type: ignore
-            ClientException,
+            ClientError,
             concurrent=concurrent,
         )
 
@@ -1491,237 +1161,196 @@ class Client:
         model = await self.session.get_song(song_id)
         return Song.from_model(model, custom=True, client=self)
 
-    async def get_ng_song(self, song_id: int) -> Song:
-        model = await self.session.get_ng_song(song_id)
+    async def get_newgrounds_song(self, song_id: int) -> Song:
+        model = await self.session.get_newgrounds_song(song_id)
         return Song.from_model(model, custom=True, client=self)
 
     async def get_artist_info(self, song_id: int) -> ArtistInfo:
         artist_info = await self.session.get_artist_info(song_id)
         return ArtistInfo.from_dict(artist_info, client=self)  # type: ignore
 
-    @awaitable_iterator
-    async def search_ng_songs_on_page(self, query: str, page: int = 0) -> AsyncIterator[Song]:
-        models = await self.session.search_ng_songs_on_page(query=query, page=page)
+    @wrap_await_iter
+    async def search_newgrounds_songs_on_page(
+        self, query: str, page: int = 0
+    ) -> AsyncIterator[Song]:
+        models = await self.session.search_newgrounds_songs_on_page(query=query, page=page)
 
         for model in models:
             yield Song.from_model(model, custom=True, client=self)
 
-    @awaitable_iterator
-    def search_ng_songs(
+    @wrap_await_iter
+    def search_newgrounds_songs(
         self, query: str, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator[Song]:
-        return run_async_iterators(
-            (self.search_ng_songs_on_page(query=query, page=page) for page in pages),
-            ClientException,
+        return run_iterables(
+            (self.search_newgrounds_songs_on_page(query=query, page=page) for page in pages),
+            ClientError,
             concurrent=concurrent,
         )
 
-    @awaitable_iterator
-    async def search_ng_users_on_page(self, query: str, page: int = 0) -> AsyncIterator[Author]:
-        data = await self.session.search_ng_users_on_page(query=query, page=page)
+    @wrap_await_iter
+    async def search_newgrounds_users_on_page(
+        self, query: str, page: int = 0
+    ) -> AsyncIterator[Author]:
+        data = await self.session.search_newgrounds_users_on_page(query=query, page=page)
 
         for part in data:
             yield Author.from_dict(part, client=self)  # type: ignore
 
-    @awaitable_iterator
-    def search_ng_users(
+    @wrap_await_iter
+    def search_newgrounds_users(
         self, query: str, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
     ) -> AsyncIterator[Author]:
-        return run_async_iterators(
-            (self.search_ng_users_on_page(query=query, page=page) for page in pages),
-            ClientException,
+        return run_iterables(
+            (self.search_newgrounds_users_on_page(query=query, page=page) for page in pages),
+            ClientError,
             concurrent=concurrent,
         )
 
-    @awaitable_iterator
-    async def get_ng_user_songs_on_page(self, name: str, page: int = 0) -> AsyncIterator[Song]:
-        models = await self.session.get_ng_user_songs_on_page(name=name, page=page)
+    @wrap_await_iter
+    async def get_newgrounds_artist_songs_on_page(
+        self, name: str, page: int = 0
+    ) -> AsyncIterator[Song]:
+        models = await self.session.get_newgrounds_artist_songs_on_page(name=name, page=page)
 
         for model in models:
-            yield Song.from_model(model, custom=True, client=self)
+            yield Song.from_model(model).attach_client(self)
 
-    @awaitable_iterator
-    def get_ng_user_songs(
-        self, name: str, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
+    @wrap_await_iter
+    def get_newgrounds_artist_songs(
+        self, name: str, pages: Iterable[int] = DEFAULT_PAGES
     ) -> AsyncIterator[Song]:
-        return run_async_iterators(
-            (self.get_ng_user_songs_on_page(name=name, page=page) for page in pages),
-            ClientException,
-            concurrent=concurrent,
+        return run_iterables(
+            (self.get_newgrounds_artist_songs_on_page(name=name, page=page) for page in pages),
+            ClientError,
         )
 
-    async def on_daily(self, level: Level) -> T:
-        """This is the event that is fired when a new daily level is set.
-        See :ref:`events` for more info.
-        """
+    async def on_daily(self, level: Level) -> None:
         pass
 
-    async def on_weekly(self, level: Level) -> T:
-        """This is the event that is fired when a new weekly demon is assigned.
-        See :ref:`events` for more info.
-        """
+    async def on_weekly(self, level: Level) -> None:
         pass
 
-    async def on_rate(self, level: Level) -> T:
-        """This is the event that is fired when a new level is rated.
-        See :ref:`events` for more info.
-        """
+    async def on_rate(self, level: Level) -> None:
         pass
 
-    async def on_unrate(self, level: Level) -> T:
-        """This is the event that is fired when a level is unrated.
-        See :ref:`events` for more info.
-        """
+    async def on_level(self, level: Level) -> None:
         pass
 
-    async def on_message(self, message: Message) -> T:
-        """This is the event that is fired when a logged in client gets a message.
-        See :ref:`events` for more info.
-        """
+    async def on_user_level(self, user: User, level: Level) -> None:
         pass
 
-    async def on_friend_request(self, friend_request: FriendRequest) -> T:
-        """This is the event that is fired when a logged in client gets a friend request.
-        See :ref:`events` for more info.
-        """
+    async def on_message(self, message: Message) -> None:
         pass
 
-    async def on_level_comment(self, level: Level, comment: Comment) -> T:
-        """This is the event that is fired when a comment is posted on some level.
-        See :ref:`events` for more info.
-        """
+    async def on_friend_request(self, friend_request: FriendRequest) -> None:
         pass
 
-    async def dispatch(self, event_name: str, *args, **kwargs) -> None:
-        r"""Dispatch an event given by ``event_name`` with ``*args`` and ``**kwargs``.
+    async def on_level_comment(self, level: Level, comment: Comment) -> None:
+        pass
 
-        Parameters
-        ----------
-        event_name: :class:`str`
-            Name of event to dispatch without ``on_`` prefix, e.g. ``"new_daily"``.
+    async def on_user_comment(self, user: User, comment: Comment) -> None:
+        pass
 
-        \*args
-            Args to call handler with.
+    async def dispatch_daily(self, level: Level) -> None:
+        await self.on_daily(level)
 
-        \*\*kwargs
-            Keyword args to call handler with.
-        """
-        name = "on_" + event_name
+    async def dispatch_weekly(self, level: Level) -> None:
+        await self.on_weekly(level)
 
-        log.info(f"Dispatching event {event_name!r}, client: {self!r}")
+    async def dispatch_rate(self, level: Level) -> None:
+        await self.on_rate(level)
 
-        try:
-            method = getattr(self, name)
+    async def dispatch_level(self, level: Level) -> None:
+        await self.on_level(level)
 
-        except AttributeError:
-            pass
+    async def dispatch_user_level(self, user: User, level: Level) -> None:
+        await self.on_user_level(user, level)
 
-        else:
-            try:
-                await maybe_coroutine(method, *args, **kwargs)
+    async def dispatch_message(self, message: Message) -> None:
+        await self.on_message(message)
 
-            except Exception:
-                traceback.print_exc()
+    async def dispatch_friend_request(self, friend_request: FriendRequest) -> None:
+        await self.on_friend_request(friend_request)
 
-        handlers = self.handlers.get(event_name)
+    async def dispatch_level_comment(self, level: Level, comment: Comment) -> None:
+        await self.on_level_comment(level, comment)
 
-        if handlers is None:
-            return
+    async def dispatch_user_comment(self, user: User, comment: Comment) -> None:
+        await self.on_user_comment(user, comment)
 
-        for handler in handlers:
-            try:
-                await maybe_coroutine(handler, *args, **kwargs)
+    def event(self, function: F) -> F:
+        """Registers an event handler.
 
-            except Exception:
-                traceback.print_exc()
+        Example:
+            ```python
+            client = Client()
 
-    def event(self, function: MaybeAsyncFunction) -> MaybeAsyncFunction:
-        """
-        A decorator that registers an event to listen to::
+            DAILY = "new daily! {daily.name} by {daily.creator.name} (ID: {daily.id})
 
             @client.event
-            async def on_level_rated(level: gd.Level) -> None:
-                print(level.name)
+            async def on_daily(daily: Level) -> None:
+                print(DAILY.format(daily=daily))
+            ```
+
+        Arguments:
+            function: The function to register as an event handler.
+
+        Returns:
+            The function passed.
         """
-        setattr(self, function.__name__, function)
-        log.debug("%s has been successfully registered as an event.", function.__name__)
+        set_attribute(self, function.__name__, function)
 
         return function
 
-    def listen(self, event_name: str) -> Callable[[MaybeAsyncFunction], MaybeAsyncFunction]:
-        def inner(function: MaybeAsyncFunction) -> MaybeAsyncFunction:
-            self.handlers.setdefault(event_name, []).append(function)
-            return function
+    def add_listener(self, listener: Listener) -> None:
+        self.check_controller()
 
-        return inner
+        self._listeners = (*self._listeners, listener)
 
-    def create_listener(self, event_name: str, *args, **kwargs) -> AbstractListener:
-        listener: AbstractListener
+    def clear_listeners(self) -> None:
+        self.check_controller()
 
-        kwargs.update(client=self)
+        self._listeners = ()
 
-        if event_name in {"daily", "weekly"}:
-            kwargs.update(daily=(event_name == "daily"))
-            listener = TimelyLevelListener(*args, **kwargs)
+    def remove_listener(self, listener: Listener) -> bool:
+        self.check_controller()
 
-        elif event_name in {"rate", "unrate"}:
-            kwargs.update(rate=(event_name == "rate"))
-            listener = RateLevelListener(*args, **kwargs)
+        listeners = self._listeners
 
-        elif event_name in {"friend_request", "message"}:
-            kwargs.update(message=(event_name == "message"))
-            listener = MessageOrRequestListener(*args, **kwargs)
+        length = len(listeners)
 
-        elif event_name in {"level_comment"}:
-            listener = LevelCommentListener(*args, **kwargs)
+        self._listeners = listeners = tuple(
+            present_listener
+            for present_listener in listeners
+            if present_listener is not listener
+        )
 
-        elif event_name in {"user_comment"}:
-            listener = UserCommentListener(*args, **kwargs)
+        return len(listeners) < length
 
-        else:
-            raise TypeError(f"Invalid listener type: {type!r}.")
+    def check_controller(self) -> None:
+        if self._controller is not None:
+            raise RuntimeError(CONTROLLER_ALREADY_CREATED)
 
-        return listener
+    def create_controller(self) -> Controller:
+        self.check_controller()
 
-    def apply_listener(self, event_name: str, *args, **kwargs) -> None:
-        self.listeners.append(self.create_listener(event_name, *args, **kwargs))
+        self._controller = controller = Controller(self._listeners)
 
-    def listen_for(
-        self, event_name: str, *args, **kwargs
-    ) -> Callable[[MaybeAsyncFunction], MaybeAsyncFunction]:
-        self.apply_listener(event_name, *args, **kwargs)
-        return self.listen(event_name)
+        return controller
 
 
-class LoginContextManager:
-    def __init__(self, client: Client, user: str, password: str, unsafe: bool = False) -> None:
-        self._client = client
-        self._user = user
-        self._password = password
-        self._unsafe = unsafe
+E = TypeVar("E", bound=AnyException)
 
-    @property
-    def client(self) -> Client:
-        return self._client
 
-    @property
-    def user(self) -> str:
-        return self._user
-
-    @property
-    def password(self) -> str:
-        return self._password
-
-    @property
-    def unsafe(self) -> bool:
-        return self._unsafe
+@frozen()
+class LoginContextManager(Generic[C]):
+    client: C
+    name: str
+    password: str
 
     async def login(self) -> None:
-        if self.unsafe:
-            await self.client.do_unsafe_login(self.user, self.password)
-
-        else:
-            await self.client.do_login(self.user, self.password)
+        await self.client.try_login(self.name, self.password)
 
     async def logout(self) -> None:
         await self.client.logout()
@@ -1729,12 +1358,26 @@ class LoginContextManager:
     def __await__(self) -> Generator[Any, None, None]:
         return self.login().__await__()
 
-    async def __aenter__(self) -> Client:
+    async def __aenter__(self) -> C:
         await self.login()
 
         return self.client
 
+    @overload
+    async def __aexit__(self, error_type: None, error: None, traceback: None) -> None:
+        ...
+
+    @overload
+    async def __aexit__(self, error_type: Type[E], error: E, traceback: Traceback) -> None:
+        ...
+
     async def __aexit__(
-        self, error_type: Type[BaseException], error: BaseException, traceback: types.TracebackType
+        self, error_type: Optional[Type[E]], error: Optional[E], traceback: Optional[Traceback]
     ) -> None:
         await self.logout()
+
+
+@frozen()
+class UnsafeLoginContextManager(LoginContextManager[C]):
+    async def login(self) -> None:
+        await self.client.try_unsafe_login(self.name, self.password)

@@ -2,23 +2,12 @@
 name = "_gd"
 authors = ["nekitdev"]
 version = "0.1.0"
-edition = "2018"
-include = ["src/*"]
+edition = "2021"
 
 [lib]
 name = "_gd"
-path = "src/lib.rs"
 crate-type = ["cdylib"]
 
-[dependencies]
-base64 = ">=0.13.0"
-dtoa = ">=0.4.5"
-itoa = ">=0.4.5"
-
-[dependencies.serde]
-version = ">=1.0.115"
-features = ["derive"]
-
 [dependencies.pyo3]
-version = ">=0.8.5,<0.13.0"
-features = ["extension-module"]
+version = "^0.16.5"
+features = ["extension-module", "macros"]

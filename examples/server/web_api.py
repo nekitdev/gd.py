@@ -12,7 +12,7 @@ import gd
 # create our client instance
 client = gd.Client()
 
-# create a sequence of route table definitions
+# create a table of route definitions
 routes = web.RouteTableDef()
 
 json_response = partial(web.json_response, dumps=partial(gd.utils.dumps, indent=4))
@@ -20,15 +20,15 @@ json_response = partial(web.json_response, dumps=partial(gd.utils.dumps, indent=
 
 # let our app listen to GET requests
 @routes.get("/api/users/{query}")
-async def get_user(request):
+async def get_user(request: web.Request) -> web.Response:
     try:
         query = request.match_info.get("query")
 
-        if query.isdigit():  # if we have an integer query, consider AccountID search
+        if query.isdigit():  # if we have an integer query, consider account ID search
             try:
                 user = await client.get_user(int(query))
 
-            except gd.MissingAccess:  # not found, attempt UserID search
+            except gd.MissingAccess:  # not found, attempt user ID search
                 user = await client.search_user(int(query))
 
         # if we have a string, do regular search
@@ -39,8 +39,8 @@ async def get_user(request):
 
     # return 404 if we have not found any users
     except Exception:
-        raise json_response(
-            {"error": f"Failed to find a user by the query: {query!r}"}, status=404
+        return json_response(
+            {"error": f"Failed to find a user by the query: {query!r}."}, status=404
         )
 
 
@@ -49,8 +49,6 @@ app = web.Application()
 
 # add routes
 app.add_routes(routes)
-
-print("Go to http://localhost:8080/api/users/RobTop to see info about RobTop.")
 
 # run the app
 web.run_app(app)

@@ -4,12 +4,12 @@ import ctypes
 import types
 from pathlib import Path
 
-import pefile  # to parse some headers uwu ~ nekit
+import pefile  # type: ignore  # to parse some headers uwu ~ nekit
 
 from gd.enums import Protection
 from gd.memory.utils import Structure, extern_fn
 from gd.platform import system_bits
-from gd.typing import Dict, Iterator, Optional, Type, Union
+from gd.typing import Dict, Generator, Iterator, Optional, Type, Union
 
 __all__ = (
     "allocate_memory",
@@ -23,7 +23,7 @@ __all__ = (
     "get_process_id_from_name",
     "get_process_id_from_window_title",
     "get_process_name_from_id",
-    "inject_dll",
+    "inject_library",
     "terminate_process",
     "protect_process_memory",
     "read_process_memory",
@@ -344,7 +344,7 @@ def _close_handle_manager(handle: wintypes.HANDLE) -> _CloseHandleManager:
     return _CloseHandleManager(handle)
 
 
-def _iter_processes() -> Iterator[ProcessEntry32]:
+def _iter_processes() -> Generator[ProcessEntry32, None, None]:
     process_snapshot = _create_snapshot(SNAPPROCESS, 0)
 
     process_entry = ProcessEntry32()
@@ -357,7 +357,7 @@ def _iter_processes() -> Iterator[ProcessEntry32]:
             process = _process_next(process_snapshot, ctypes.byref(process_entry))
 
 
-def _iter_modules(process_id: int) -> Iterator[ModuleEntry32]:
+def _iter_modules(process_id: int) -> Generator[ModuleEntry32, None, None]:
     module_snapshot = _create_snapshot(SNAPMODULE | SNAPMODULE32, process_id)
 
     module_entry = ModuleEntry32()
@@ -425,7 +425,7 @@ else:
     _kernel32_symbols = {}
 
 
-def _inject_dll(process_id: int, path: Union[str, Path]) -> int:
+def _inject_library(process_id: int, path: Union[str, Path]) -> int:
     path = Path(path).resolve()
 
     if not path.exists():
@@ -559,7 +559,10 @@ def close_process(process_handle: int) -> None:
 
 
 def allocate_memory(
-    process_handle: int, address: int, size: int, flags: Protection = READ | WRITE | EXECUTE,
+    process_handle: int,
+    address: int,
+    size: int,
+    flags: Protection = READ | WRITE | EXECUTE,  # type: ignore
 ) -> int:
     return _virtual_alloc(
         process_handle, address, size, MEM_RESERVE | MEM_COMMIT, PROTECTION_FLAGS[flags]
@@ -575,7 +578,10 @@ def terminate_process(process_handle: int) -> bool:
 
 
 def protect_process_memory(
-    process_handle: int, address: int, size: int, flags: Protection = READ | WRITE | EXECUTE,
+    process_handle: int,
+    address: int,
+    size: int,
+    flags: Protection = READ | WRITE | EXECUTE,  # type: ignore
 ) -> int:
     old_protect = wintypes.DWORD(0)
 
@@ -608,5 +614,5 @@ def write_process_memory(process_handle: int, address: int, data: bytes) -> int:
     return bytes_written.value
 
 
-def inject_dll(process_id: int, path: Union[str, Path]) -> bool:
-    return bool(_inject_dll(process_id, path))
+def inject_library(process_id: int, path: Union[str, Path]) -> bool:
+    return bool(_inject_library(process_id, path))

@@ -3,7 +3,7 @@
 from gd.memory.data import Data
 from gd.memory.traits import Layout
 from gd.platform import Platform, system_bits, system_platform
-from gd.text_utils import make_repr
+from gd.text_utils import nice_repr
 from gd.typing import Callable, Dict, Type, TypeVar
 
 __all__ = (
@@ -119,6 +119,7 @@ def get_c_uint_type(bits: int) -> Type[Data[int]]:
 
 
 try:
+
     class int8(Data[int], name="int8", format=get_c_int_type(8).format):
         def __init__(self, value: int = 0) -> None:
             self._value = value
@@ -150,7 +151,6 @@ try:
     class uint64(Data[int], name="uint64", format=get_c_uint_type(64).format):
         def __init__(self, value: int = 0) -> None:
             self._value = value
-
 
 except KeyError as error:
     raise LookupError("Can not find all integer types.") from error
@@ -251,7 +251,7 @@ class Types:
     def __repr__(self) -> str:
         info = {"bits": self.bits, "platform": self.platform.name.casefold()}
 
-        return make_repr(self, info)
+        return nice_repr(self, info)
 
     def get(self, name: str) -> Type[L]:
         return self.fetch(name)(self.bits, self.platform)

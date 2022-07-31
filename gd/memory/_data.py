@@ -4,7 +4,7 @@ import struct
 from enums import Enum  # type: ignore
 from iters import iter
 
-from gd.text_utils import make_repr
+from gd.text_utils import nice_repr
 from gd.typing import Any, Generic, Sequence, TypeVar, Union, cast
 
 __all__ = (
@@ -61,7 +61,7 @@ class Data(Generic[T]):
 
     def __repr__(self) -> str:
         info = {"name": repr(self.name), "size": self.size}
-        return make_repr(self, info)
+        return nice_repr(self, info)
 
     def __str__(self) -> str:
         return self.name
@@ -239,7 +239,7 @@ class Buffer(metaclass=BufferMeta):
 
     def __repr__(self) -> str:
         info = {"data": repr(self.to_hex().upper())}
-        return make_repr(self, info)
+        return nice_repr(self, info)
 
     @classmethod
     def from_value(

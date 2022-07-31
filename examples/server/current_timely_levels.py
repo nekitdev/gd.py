@@ -10,15 +10,16 @@ client = gd.Client()  # an entry point to gd API
 # run() only once.
 
 
-async def main():
+async def main() -> None:
     # getting daily...
     daily = await client.get_daily()
 
     # getting weekly...
     weekly = await client.get_weekly()
 
-    # now let's print...
-    print(f"Current daily: {daily}, weekly: {weekly}.")
+    # now let us print...
+    print(f"Current daily: {daily.name} (ID: {daily.id})")
+    print(f"Current weekly: {weekly.name} (ID: {weekly.id})")
 
 
 # run a coroutine

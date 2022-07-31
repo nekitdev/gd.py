@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from inspect import isclass as is_class
 
 from gd.memory.utils import class_property
@@ -21,77 +22,57 @@ __all__ = (
 )
 
 T = TypeVar("T")
-T_co = TypeVar("T_co", covariant=True)
-T_contra = TypeVar("T_contra", contravariant=True)
+
+R = TypeVar("R", covariant=True)
 
 
 @runtime_checkable
-class Read(Protocol[T_co]):
+class Read(Protocol[R]):
     @classmethod
+    @abstractmethod
     def read_from(cls: Type[T], state: "BaseState", address: int) -> T:
-        raise NotImplementedError(
-            "Classes derived from Read must implement read_from(state, address) class method."
-        )
+        ...
 
     @classmethod
-    def read_value_from(cls, state: "BaseState", address: int) -> T_co:
-        raise NotImplementedError(
-            "Classes derived from Read must implement "
-            "read_value_from(state, address) class method."
-        )
+    @abstractmethod
+    def read_value_from(cls, state: "BaseState", address: int) -> R:
+        ...
 
+
+W = TypeVar("W", contravariant=True)
 
 @runtime_checkable
-class Write(Protocol[T_contra]):
-    def write_to(self: T, state: "BaseState", address: int) -> None:
-        raise NotImplementedError(
-            "Classes derived from Write must implement write_to(state, address) method."
-        )
+class Write(Protocol[W]):
+    def write_to(self, state: "BaseState", address: int) -> None:
+        ...
 
     @classmethod
-    def write_value_to(cls, value: T_contra, state: "BaseState", address: int) -> None:
-        raise NotImplementedError(
-            "Classes derived from Write must implement "
-            "write_value_to(value, state, address) class method."
-        )
+    def write_value_to(cls, value: W, state: "BaseState", address: int) -> None:
+        ...
 
 
 class LayoutType(type(Protocol)):  # type: ignore
     @property
+    @abstractmethod
     def size(cls) -> int:
-        raise NotImplementedError(
-            "Classes derived from Layout must implement size property in class."
-        )
+        ...
 
     @property
+    @abstractmethod
     def alignment(cls) -> int:
-        raise NotImplementedError(
-            "Classes derived from Layout must implement alignment property in class."
-        )
+        ...
 
 
-class Layout(Protocol[T_co], metaclass=LayoutType):
+class Layout(metaclass=LayoutType):
     @class_property
-    def size(self: T_co) -> int:
-        raise NotImplementedError("Classes derived from Layout must implement size property.")
+    @abstractmethod
+    def size(self) -> int:
+        ...
 
     @class_property
-    def alignment(self: T_co) -> int:
-        raise NotImplementedError(
-            "Classes derived from Layout must implement alignment property."
-        )
-
-
-class ReadLayout(Read[T], Layout[T]):
-    pass
-
-
-class ReadWriteLayout(Read[T], Write[T], Layout[T]):
-    pass
-
-
-class WriteLayout(Write[T], Layout[T]):
-    pass
+    @abstractmethod
+    def alignment(self) -> int:
+        ...
 
 
 def is_sized(some: Any) -> bool:

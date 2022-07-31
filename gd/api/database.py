@@ -2,23 +2,18 @@
 
 from collections import UserList as ListDerive
 from pathlib import Path
+from typing import Dict, List, Set, Tuple, TypeVar
 
-from attr import attrib, dataclass
+from attrs import define, field
 from iters import iter
 
-from gd.api.struct import LevelAPI  # type: ignore
-from gd.iter_utils import extract_iterable_from_tuple
+from gd.api.struct import LevelAPI
+from gd.enums import DeleteFilter, IconType, LevelLeaderboardStrategy  # type: ignore
 from gd.json import dumps
-from gd.text_utils import make_repr, snake_to_camel
-from gd.typing import Any, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
-from gd.xml_parser import XMLParser
+from gd.text_utils import snake_to_camel
+from gd.typing import is_instance
 
 __all__ = ("Part", "Database", "LevelStore", "LevelValues", "LevelCollection")
-
-AnyString = Union[bytes, str]
-PathLike = Union[str, Path]
-
-IS_ARRAY = snake_to_camel("_is_arr")
 
 MAIN = "CCGameManager.dat"
 LEVELS = "CCLocalLevels.dat"
@@ -27,7 +22,7 @@ T = TypeVar("T")
 
 
 def is_dict(some: Any) -> bool:
-    return isinstance(some, dict)
+    return is_instance(some, dict)
 
 
 @dataclass
@@ -91,7 +86,7 @@ def remove_prefix(string: str, prefix: str) -> str:
     return string
 
 
-class Part(dict):
+class Part(Dict[str, T]):
     @classmethod
     def load(cls, stream: AnyString, default: Optional[Dict[str, T]] = None) -> "Part":
         self = cls()
@@ -118,7 +113,7 @@ class Part(dict):
     def __repr__(self) -> str:
         info = {"length": len(self)}
 
-        return make_repr(self, info)
+        return nice_repr(self, info)
 
     def copy(self) -> "Part":
         return self.__class__(super().copy())
@@ -136,6 +131,270 @@ class Part(dict):
         return self.parser.dump(self)
 
 
+DEFAULT_DISLIKE = False
+
+
+@define()
+class LevelRating:
+    level_id: int
+    dislike: bool = DEFAULT_DISLIKE
+
+
+@define()
+class Folder:
+    id: int
+    name: str
+
+
+DEFAULT_DELETE_FILTER_OBJECT_ID = 0
+DEFAULT_SELECT_FILTER_OBJECT_ID = 0
+
+DEFAULT_BUTTONS_PER_ROW = 6
+DEFAULT_BUTTON_ROWS = 2
+
+DEFAULT_CREATED_LEVELS_FOLDER_ID = 0
+DEFAULT_SAVED_LEVELS_FOLDER_ID = 0
+
+
+@define()
+class Variables:
+    follow_player: bool = True
+    play_music: bool = True
+    swipe: bool = False
+    free_move: bool = False
+    delete_filter: DeleteFilter = DeleteFilter.DEFAULT
+    delete_filter_object_id: int = DEFAULT_DELETE_FILTER_OBJECT_ID
+    rotate_toggled: bool = False
+    snap_toggled: bool = False
+    ignore_damage: bool = True
+    flip_two_player_controls: bool = False
+    always_limit_controls: bool = False
+    showed_comment_rules: bool = True
+    increase_max_history: bool = True
+    disable_explosion_shake: bool = False
+    flip_pause_button: bool = False
+    showed_song_terms: bool = False
+    no_song_limit: bool = True
+    in_memory_songs: bool = True
+    higher_audio_quality: bool = True
+    smooth_fix: bool = False
+    show_cursor_in_game: bool = False
+    windowed: bool = False
+    auto_retry: bool = True
+    auto_checkpoints: bool = True
+    disable_analog_stick: bool = False
+    showed_options: bool = True
+    vsync: bool = True
+    call_gl_finish: bool = False
+    force_timer_enabled: bool = False
+    change_song_path: bool = False
+    game_center_enabled: bool = False
+    preview_mode: bool = True
+    show_ground: bool = False
+    show_grid: bool = True
+    grid_on_top: bool = False
+    show_percentage: bool = True
+    show_object_info: bool = True
+    increase_max_levels: bool = True
+    show_effect_lines: bool = True
+    show_trigger_boxes: bool = True
+    debug_draw: bool = False
+    hide_ui_on_test: bool = False
+    showed_profile_info: bool = True
+    viewed_self_profile: bool = True
+    buttons_per_row: int = DEFAULT_BUTTONS_PER_ROW
+    button_rows: int = DEFAULT_BUTTON_ROWS
+    showed_newgrounds_message: bool = True
+    fast_practice_reset: bool = False
+    free_games: bool = False
+    check_server_online: bool = True
+    hold_to_swipe: bool = False
+    show_duration_lines: bool = False
+    swipe_cycle: bool = False
+    default_mini_icon: bool = False
+    switch_spider_teleport_color: bool = False
+    switch_dash_fire_color: bool = False
+    showed_unverified_coins_message: bool = True
+    select_filter_object_id: int = DEFAULT_SELECT_FILTER_OBJECT_ID
+    enable_move_optimization: bool = False
+    high_capacity: bool = True
+    quick_checkpoints: bool = False
+    show_level_description: bool = True
+    showed_unlisted_level_message: bool = True
+    disable_gravity_effect: bool = False
+    new_completed_filter: bool = False
+    show_restart_button: bool = True
+    disable_level_comments: bool = False
+    disable_user_comments: bool = False
+    featured_levels_only: bool = False
+    hide_background: bool = False
+    hide_grid_on_play: bool = True
+    disable_shake: bool = False
+    disable_high_detail_alert: bool = True
+    disable_song_alert: bool = True
+    manual_order: bool = False
+    small_comments: bool = False
+    extended_info: bool = True
+    auto_load_comments: bool = True
+    created_levels_folder_id: int = DEFAULT_CREATED_LEVELS_FOLDER_ID
+    saved_levels_folder_id: int = DEFAULT_SAVED_LEVELS_FOLDER_ID
+    increase_local_levels_per_page: bool = True
+    more_comments: bool = False
+    just_do_not: bool = False
+    switch_wave_trail_color: bool = False
+    enable_link_controls: bool = False
+    level_leaderboard_strategy: LevelLeaderboardStrategy = LevelLeaderboardStrategy.DEFAULT
+    show_record: bool = True
+    practice_death_effect: bool = False
+    force_smooth_fix: bool = False
+    smooth_fix_in_editor: bool = False
+
+
+@define()
+class Values:
+    variables: Variables = field(factory=Variables)
+
+    cubes: Set[int] = field(factory=set)
+    ships: Set[int] = field(factory=set)
+    balls: Set[int] = field(factory=set)
+    ufos: Set[int] = field(factory=set)
+    waves: Set[int] = field(factory=set)
+    robots: Set[int] = field(factory=set)
+    spiders: Set[int] = field(factory=set)
+    explosions: Set[int] = field(factory=set)
+    colors_1: Set[int] = field(factory=set)
+    colors_2: Set[int] = field(factory=set)
+
+
+@define()
+class UnlockValues:
+    the_challenge_unlocked: bool = False
+    gubflub_hint_1: bool = False
+    gubflub_hint_2: bool = False
+    the_challenge_completed: bool = False
+    treasure_room_unlocked: bool = False
+    chamber_of_time_unlocked: bool = False
+    chamber_of_time_discovered: bool = False
+    master_emblem_shown: bool = False
+    gate_keeper_dialog: bool = False
+    scratch_dialog: bool = False
+    secret_shop_unlocked: bool = False
+    demon_guardian_dialog: bool = False
+    demon_freed: bool = False
+    demon_key_1: bool = False
+    demon_key_2: bool = False
+    demon_key_3: bool = False
+    shop_keeper_dialog: bool = False
+    world_online_levels: bool = False
+    demon_discovered: bool = False
+    community_shop_unlocked: bool = False
+    potbor_dialog: bool = False
+    youtube_chest_unlocked: bool = False
+    facebook_chest_unlocked: bool = False
+    twitter_chest_unlocked: bool = False
+    # firebird_gate_keeper: bool = False
+    # twitch_chest_unlocked: bool = False
+    # discord_chest_unlocked: bool = False
+
+
+@define()
+class Statistics:
+    jumps: int
+    attempts: int
+    official_levels: int
+    online_levels: int
+    demons: int
+    stars: int
+    map_packs: int
+    secret_coins: int
+    destroyed: int
+    voted: int
+    rated: int
+    user_coins: int
+    diamonds: int
+    orbs: int
+    daily_levels: int
+    fire_shards: int
+    ice_shards: int
+    poison_shards: int
+    shadow_shards: int
+    lava_shards: int
+    bonus_shards: int
+    total_orbs: int
+
+    official_coins: Dict[int, int]
+
+
+@define()
+class Database:
+    volume: float
+    sfx_volume: float
+
+    udid: str
+    name: str
+    id: int
+    account_id: int
+    password: str
+    session_id: int
+
+    cube_id: int
+    ship_id: int
+    ball_id: int
+    ufo_id: int
+    wave_id: int
+    spider_id: int
+    color_1_id: int
+    color_2_id: int
+    trail_id: int
+    explosion_id: int
+    icon_type: IconType
+
+    secret_value: int
+
+    moderator: bool
+
+    values: Values
+    unlock_values: UnlockValues
+    custom_objects: CustomObjects
+
+    statistics: Statistics
+
+    show_song_markers: bool
+    show_progress_bar: bool
+
+    clicked_icons: bool
+    clicked_editor: bool
+    clicked_practice: bool
+
+    showed_editor_guide: bool
+    showed_low_detail: bool
+
+    bootups: int
+
+    rated_game: bool
+
+    official_levels: AnyLevelCollection
+    saved_levels: AnyLevelCollection
+    followed: Set[int]
+    last_played: Set[int]
+    filters: Filters
+    daily_levels: AnyLevelCollection
+    daily_id: int
+    level_rated: Set[LevelRating]
+    reported: Set[int]
+    demon_rated: Set[int]
+    gauntlet_levels: AnyLevelCollection
+    weekly_id: int
+    saved_folders: List[Folder]
+    created_folders: List[Folder]
+
+    created_levels: AnyLevelCollection
+
+    songs: Songs
+
+    keybindings: Keybindings
+
+
 class Database:
     def __init__(
         self, main: Optional[AnyString] = None, levels: Optional[AnyString] = None
@@ -146,7 +405,7 @@ class Database:
     def __repr__(self) -> str:
         info = {"main": repr(self.main), "levels": repr(self.levels)}
 
-        return make_repr(self, info)
+        return nice_repr(self, info)
 
     def __json__(self) -> Dict[str, Part]:
         return {"main": self.main, "levels": self.levels}
@@ -307,7 +566,7 @@ class Database:
         levels_file: PathLike = LEVELS,
     ) -> "Database":
         """Load the database. See :meth:`~gd.api.SaveUtils.load` for more."""
-        from gd.api.loader import save  # ...
+        from gd.api.save_manager import save  # ...
 
         return save.load(main=main, levels=levels, main_file=main_file, levels_file=levels_file)
 
@@ -319,20 +578,21 @@ class Database:
         levels_file: PathLike = LEVELS,
     ) -> None:
         """Dump the database back. See :meth:`~gd.api.SaveUtils.dump` for more."""
-        from gd.api.loader import save  # I hate circular imports.
+        from gd.api.save_manager import save  # I hate circular imports.
 
-        save.dump(
-            self, main=main, levels=levels, main_file=main_file, levels_file=levels_file
-        )
+        save.dump(self, main=main, levels=levels, main_file=main_file, levels_file=levels_file)
 
     def as_tuple(self) -> Tuple[Part, Part]:
         return (self.main, self.levels)
 
 
-class LevelCollection(ListDerive):
+A = TypeVar("A", bound=LevelAPI)
+
+
+class LevelCollection(BaseList[A]):
     """Collection of :class:`~gd.api.LevelAPI` objects."""
 
-    def __init__(self, *args) -> None:
+    def __init__(self, levels: Iterable[A]) -> None:
         super().__init__(extract_iterable_from_tuple(args))  # type: ignore
 
         self._callback: Optional[Database] = None
@@ -340,10 +600,12 @@ class LevelCollection(ListDerive):
 
     def get_by_name(self, name: str) -> Optional[LevelAPI]:
         """Fetch a level by ``name``. Returns ``None`` if not found."""
-        return iter(self).get(name=name)
+        return iter(self).get_or_none(name=name)
 
     @classmethod
-    def launch(cls, callback: Database, function: str, iterable: Iterable[T]) -> "LevelCollection":
+    def launch(
+        cls, callback: Database, function: str, iterable: Iterable[A]
+    ) -> "LevelCollection":
         self = cls(iterable)
 
         self._callback = callback

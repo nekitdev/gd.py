@@ -33,7 +33,7 @@ __all__ = ("login", "logout")
         200: dict(description="Token to use for authorized requests."),
         400: dict(description="Required parameters are missing."),
         401: dict(description="Failed to login and check credentials."),
-    }
+    },
 )
 @get("/login", version=1)
 @post("/login", version=1)
@@ -77,7 +77,7 @@ async def login_error(request: web.Request, error: Exception) -> Error:
     summary="Logout and remove token.",
     description="Perform logout and remove token from the database.",
     parameters=[],
-    responses={200: dict(description="Successfully logged out.")}
+    responses={200: dict(description="Successfully logged out.")},
 )
 @get("/logout", version=1)
 @post("/logout", version=1)

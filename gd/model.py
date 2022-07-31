@@ -1,8 +1,8 @@
 # type: ignore  # static type checkers do not understand this
 
-from gd.color import Color
+from gd.colors import Color
 from gd.converters import GameVersion, Password, get_actual_difficulty, value_to_level_difficulty
-from gd.crypto import (
+from gd.encoding import (
     Key,
     decode_robtop_str,
     encode_robtop_str,
@@ -11,7 +11,7 @@ from gd.crypto import (
     unzip_level_str,
     zip_level_str,
 )
-from gd.datetime import datetime
+from gd.date_time import datetime
 from gd.decorators import cache_by
 from gd.enums import (
     CommentState,
@@ -619,7 +619,12 @@ class SearchUserResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     users: List[SearchUserModel] = ModelIterField(
-        index=0, model=SearchUserModel, delim="|", use_default=True, transform=list, factory=list,
+        index=0,
+        model=SearchUserModel,
+        delim="|",
+        use_default=True,
+        transform=list,
+        factory=list,
     )
     page: PageModel = ModelField(index=1, model=PageModel, factory=PageModel)
 
@@ -635,13 +640,28 @@ class LevelSearchResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     levels: List[LevelModel] = ModelIterField(
-        index=0, model=LevelModel, delim="|", use_default=True, transform=list, factory=list,
+        index=0,
+        model=LevelModel,
+        delim="|",
+        use_default=True,
+        transform=list,
+        factory=list,
     )
     creators: List[CreatorModel] = ModelIterField(
-        index=1, model=CreatorModel, delim="|", use_default=True, transform=list, factory=list,
+        index=1,
+        model=CreatorModel,
+        delim="|",
+        use_default=True,
+        transform=list,
+        factory=list,
     )
     songs: List[SongModel] = ModelIterField(
-        index=2, model=SongModel, delim="~:~", use_default=True, transform=list, factory=list,
+        index=2,
+        model=SongModel,
+        delim="~:~",
+        use_default=True,
+        transform=list,
+        factory=list,
     )
     page: PageModel = ModelField(index=3, use_default=True, model=PageModel, factory=PageModel)
     hash: str = StrField(index=4, default="")
@@ -651,7 +671,12 @@ class FeaturedArtistsResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     featured_artists: List[SongModel] = ModelIterField(
-        index=0, model=SongModel, delim="|", use_default=True, transform=list, factory=list,
+        index=0,
+        model=SongModel,
+        delim="|",
+        use_default=True,
+        transform=list,
+        factory=list,
     )
     page: PageModel = ModelField(index=1, use_default=True, model=PageModel, factory=PageModel)
 
@@ -660,7 +685,12 @@ class UserListResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     users: List[ListUserModel] = ModelIterField(
-        index=0, model=ListUserModel, delim="|", use_default=True, transform=list, factory=list,
+        index=0,
+        model=ListUserModel,
+        delim="|",
+        use_default=True,
+        transform=list,
+        factory=list,
     )
 
 
@@ -668,7 +698,12 @@ class CommentsResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     comments: List[CommentModel] = ModelIterField(
-        index=0, model=CommentModel, delim="|", use_default=True, transform=list, factory=list,
+        index=0,
+        model=CommentModel,
+        delim="|",
+        use_default=True,
+        transform=list,
+        factory=list,
     )
     page: PageModel = ModelField(index=1, use_default=True, model=PageModel, factory=PageModel)
 
@@ -727,7 +762,12 @@ class MessagesResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     messages: List[MessageModel] = ModelIterField(
-        index=0, model=MessageModel, delim="|", use_default=True, transform=list, factory=list,
+        index=0,
+        model=MessageModel,
+        delim="|",
+        use_default=True,
+        transform=list,
+        factory=list,
     )
     page: PageModel = ModelField(index=1, use_default=True, model=PageModel, factory=PageModel)
 
@@ -736,7 +776,12 @@ class MapPacksResponseModel(Model):
     PARSER = IndexParser("#", map_like=False)
 
     map_packs: List[MapPackModel] = ModelIterField(
-        index=0, model=MapPackModel, delim="|", use_default=True, transform=list, factory=list,
+        index=0,
+        model=MapPackModel,
+        delim="|",
+        use_default=True,
+        transform=list,
+        factory=list,
     )
     page: PageModel = ModelField(index=1, use_default=True, model=PageModel, factory=PageModel)
     hash: str = StrField(index=2, default="")

@@ -1,7 +1,7 @@
 # DOCUMENT
 
 from gd.memory.field import Field
-from gd.memory.memory import MemoryType, Memory
+from gd.memory.memory import Memory, MemoryType
 from gd.memory.utils import class_property
 from gd.platform import Platform, system_bits, system_platform
 from gd.typing import Any, Dict, Optional, Tuple, Type, Union

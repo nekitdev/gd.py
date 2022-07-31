@@ -1,139 +1,145 @@
-# DOCUMENT
+from __future__ import annotations
 
-from collections import UserList as ListDerive
+from collections import UserList as ListType
+from typing import Iterable, Iterator, List, Match, Type, TypeVar, overload
 import re
 
-from gd.text_utils import concat, make_repr
-from gd.typing import Iterable, Iterator, Match, Type, TypeVar, Union
+from attrs import define
+from gd.constants import EMPTY
+from gd.errors import InternalError
+from gd.models_constants import ONE, RECORDING_SEPARATOR
+from gd.models_utils import concat_recording, float_str, int_bool
+from gd.robtop import RobTop
+from gd.string_constants import DOT
+from gd.string_utils import concat_empty
 
-__all__ = (
-    "RECORDING_ENTRY_PATTERN",
-    "RecordingEntry",
-    "Recording",
-)
+__all__ = ("RecordingItem", "Recording")
 
-RecordingEntryT = TypeVar("RecordingEntryT", bound="RecordingEntry")
+R = TypeVar("R", bound="RecordingItem", covariant=True)
 
-# [1;]n[.d];[1];[;]
-RECORDING_ENTRY_PATTERN = re.compile(
-    r"(?:(?P<prev>1);)?"  # [1;]
-    r"(?P<time>[0-9]+(?:\.[0-9]*)?);"  # n[.d];
-    r"(?P<next>1)?;"  # [1];
-    r"(?P<dual>;)?"  # [;]
-)
+DEFAULT_TIMESTAMP = 0.0
+DEFAULT_PREVIOUS = False
+DEFAULT_NEXT = False
+DEFAULT_SECONDARY =  False
 
-PATTERN_TYPES = {"time": float, "prev": bool, "next": bool, "dual": bool}
+TIMESTAMP = "timestamp"
+PREVIOUS = "previous"
+NEXT = "next"
+SECONDARY = "secondary"
+
+DIGIT = r"[0-9]"
+
+# [1;]t[.d];[1];[;]
+
+RECORDING_ITEM_PATTERN = rf"""
+    (?:(?P<{PREVIOUS}>{ONE}){RECORDING_SEPARATOR})?
+    (?P<{TIMESTAMP}>{DIGIT}(?:{re.escape(DOT)}{DIGIT}*)?){RECORDING_SEPARATOR}
+    (?P<{NEXT}>{ONE})?{RECORDING_SEPARATOR}
+    (?:(?P<{SECONDARY}>);)?
+"""
+
+RECORDING_ITEM = re.compile(RECORDING_ITEM_PATTERN, re.VERBOSE)
 
 
-def _serialize_float(value: float) -> Union[float, int]:
-    int_value = int(value)
+@define()
+class RecordingItem(RobTop):
+    timestamp: float = DEFAULT_TIMESTAMP
+    previous: bool = DEFAULT_PREVIOUS
+    next: bool = DEFAULT_NEXT
+    secondary: bool = DEFAULT_SECONDARY
 
-    return value if value != int_value else int_value
+    def to_robtop_iterator(self) -> Iterator[str]:
+        one = ONE
+        empty = EMPTY
 
+        if self.previous:
+            yield one
 
-class RecordingEntry:
-    def __init__(
-        self, time: float = 0.0, prev: bool = False, next: bool = False, dual: bool = False,
-    ) -> None:
-        self._time = time
-        self._prev = prev
-        self._next = next
-        self._dual = dual
+        yield float_str(self.timestamp)
 
-    def __repr__(self) -> str:
-        info = {
-            "time": self.time,
-            "prev": self.prev,
-            "next": self.next,
-            "dual": self.dual,
-        }
+        yield one if self.next else empty
 
-        return make_repr(self, info)
+        yield empty
 
-    @property
-    def time(self) -> float:
-        """Time delta from the start of the level until this entry."""
-        return self._time
-
-    @property
-    def prev(self) -> bool:
-        """Whether input was previously activated."""
-        return self._prev
-
-    @property
-    def next(self) -> bool:
-        """Whether input should be activated."""
-        return self._next
-
-    @property
-    def dual(self) -> bool:
-        """Whether input should be applied to the second player, and not first."""
-        return self._dual
-
-    def to_string_iterator(self) -> Iterator[str]:
-        if self.prev:
-            yield "1;"
-
-        yield f"{_serialize_float(self.time)};"
-
-        if self.next:
-            yield "1"
-
-        yield ";"
-
-        if self.dual:
-            yield ";"
+        if self.secondary:
+            yield empty
 
     @classmethod
-    def from_string(cls: Type[RecordingEntryT], string: str) -> RecordingEntryT:
-        """Create record entry from string."""
-        match = RECORDING_ENTRY_PATTERN.match(string)
+    def from_robtop_match(cls: Type[R], match: Match[str]) -> R:
+        previous_group = match.group(PREVIOUS)
+
+        previous = False if previous_group is None else int_bool(previous_group)
+
+        timestamp_group = match.group(TIMESTAMP)
+
+        if timestamp_group is None:
+            raise InternalError  # TODO: message?
+
+        timestamp = float(timestamp_group)
+
+        next_group = match.group(NEXT)
+
+        next = False if next_group is None else int_bool(next_group)
+
+        secondary_group = match.group(SECONDARY)
+
+        secondary = secondary_group is not None
+
+        return cls(timestamp, previous, next, secondary)
+
+    @classmethod
+    def from_robtop(cls: Type[R], string: str) -> R:
+        match = RECORDING_ITEM.fullmatch(string)
 
         if match is None:
-            raise ValueError(
-                f"Pattern {RECORDING_ENTRY_PATTERN.pattern} "
-                f"is not matched by the string: {string!r}."
-            )
+            raise ValueError  # TODO: message?
 
-        return cls.from_match(match)
+        return cls.from_robtop_match(match)
 
-    def to_string(self) -> str:
-        return concat(self.to_string_iterator())
-
-    @classmethod
-    def from_match(cls: Type[RecordingEntryT], match: Match) -> RecordingEntryT:
-        """Create record from a regular expression match. Intended for internal use."""
-        mapping = match.groupdict()
-
-        init_args = {
-            name: function(mapping.get(name, 0)) for name, function in PATTERN_TYPES.items()
-        }
-
-        return cls(**init_args)  # type: ignore
+    def to_robtop(self) -> str:
+        return concat_recording(self.to_robtop_iterator())
 
 
-RecordingT = TypeVar("RecordingT", bound="Recording")
-
-
-class Recording(ListDerive):
+class Recording(RobTop, ListType, List[R]):  # type: ignore
+    @overload
     @staticmethod
-    def iter_string(
-        string: str, cls: Type[RecordingEntryT] = RecordingEntry  # type: ignore
-    ) -> Iterator[RecordingEntryT]:
-        iterator = RECORDING_ENTRY_PATTERN.finditer(string)
+    def iter_robtop(string: str) -> Iterator[RecordingItem]:
+        ...
 
-        yield from map(cls.from_match, iterator)
+    @overload
+    @staticmethod
+    def iter_robtop(string: str, item_type: Type[R]) -> Iterator[R]:
+        ...
 
     @staticmethod
-    def collect_string(
-        recording: Iterable[RecordingEntryT],
-        cls: Type[RecordingEntryT] = RecordingEntry,  # type: ignore
-    ) -> str:
-        return concat(map(cls.to_string, recording))
+    def iter_robtop(
+        string: str, item_type: Type[RecordingItem] = RecordingItem
+    ) -> Iterator[RecordingItem]:
+        matches = RECORDING_ITEM.finditer(string)
+
+        return map(item_type.from_robtop_match, matches)
+
+    @staticmethod
+    def collect_robtop(recording: Iterable[RecordingItem]) -> str:
+        return concat_empty(item.to_robtop() for item in recording)
+
+    @overload
+    @classmethod
+    def from_robtop(cls: Type[Recording[RecordingItem]], string: str) -> Recording[RecordingItem]:
+        ...
+
+    @overload
+    @classmethod
+    def from_robtop(cls: Type[Recording[R]], string: str, item_type: Type[R]) -> Recording[R]:
+        ...
 
     @classmethod
-    def from_string(cls: Type[RecordingT], string: str) -> RecordingT:
-        return cls(cls.iter_string(string))
+    def from_robtop(
+        cls: Type[Recording[RecordingItem]],
+        string: str,
+        item_type: Type[RecordingItem] = RecordingItem,
+    ) -> Recording[RecordingItem]:
+        return cls(cls.iter_robtop(string, item_type))
 
-    def to_string(self, cls: Type[RecordingEntryT] = RecordingEntry) -> str:  # type: ignore
-        return concat(self.collect_string(self, cls))
+    def to_robtop(self) -> str:
+        return self.collect_robtop(self)

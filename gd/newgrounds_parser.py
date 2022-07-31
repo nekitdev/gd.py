@@ -4,23 +4,26 @@
 
 import re
 from itertools import chain
-from xml.etree.ElementTree import Element
+from xml.etree import ElementTree as xml
 
 from yarl import URL
 
 from gd.errors import MissingAccess
 from gd.logging import get_logger
-from gd.typing import Dict, Generator, List, Match, Optional, TypeVar, Union
+from gd.typing import Dict, Iterator, List, Literal, Match, Optional, TypeVar, Union, cast, overload
+
+Element = xml.Element
 
 log = get_logger(__name__)
 
-use_lxml = False
+FAST = False
 
 try:
     from lxml import html  # type: ignore
 
-    use_lxml = True
-    Element = html.HtmlElement  # type: ignore  # noqa
+    FAST = True
+
+    Element = html.HtmlElement  # type: ignore
 
 except ImportError:
     try:
@@ -29,21 +32,26 @@ except ImportError:
     except ImportError:
         log.warning("Failed to import lxml and html5lib. Newgrounds parsing will not be supported.")
 
+
 __all__ = (
-    "find_song_info",
-    "extract_info_from_endpoint",
+    "FAST",
+    "find_song_data",
+    "find_info",
     "search_song_data",
-    "extract_user_songs",
-    "extract_users",
+    "search_user_songs",
+    "search_users",
 )
 
 T = TypeVar("T")
 U = TypeVar("U")
 
 
-def str_bytes_to_megabytes(string: str) -> float:
+def string_to_megabytes(string: str) -> float:
     return round(int(string) / 1024 / 1024, 2)
 
+
+QUITE = r"""["']"""
+NOT_QUOTE = r"""[^"']"""
 
 re_link = re.compile(r"(https://audio\.ngfiles\.com/[^\"']+)")
 re_size = re.compile(r"[\"']filesize[\"'][ ]*:[ ]*(\d+)")
@@ -52,7 +60,7 @@ re_author = re.compile(r"[\"']artist[\"'][ ]*:[ ]*[\"']([^\"']+)[\"']")
 
 re_patterns = {
     "download_link": (re_link, str),
-    "size": (re_size, str_bytes_to_megabytes),
+    "size": (re_size, string_to_megabytes),
     "name": (re_name, str),
     "author": (re_author, str),
 }
@@ -60,18 +68,8 @@ re_patterns = {
 re_attrib = r"{}[ ]*=[ ]*(?P<quote>[\"'])(.*?)(?P=quote)"
 re_class = re.compile(re_attrib.format("class"))
 
-re_info = re.compile(
-    r"""
-Artist: (.*?)
-Artist is ?(NOT)? Whitelisted\.
-Artist is ?(NOT)? Scouted\.
-
-Song: (.*?)
-External API ?(NOT)? allowed\.
-""".strip().replace(
-        "\n", r"<\/?br>"
-    )
-)
+re_newline = "\n"
+re_break = r"</?br>"
 
 
 def negate(something: T) -> bool:
@@ -86,25 +84,34 @@ re_info_functions = {
     "api": (5, negate),
 }
 
+empty = ""
+space = " "
 
-def remove_spaces(match: Match) -> str:
-    return match.group(0).replace(" ", "")
+
+def remove_spaces(match: Match[str]) -> str:
+    return match.group(0).replace(space, empty)
 
 
-def html_parse(text: str) -> Element:
-    text = re_class.sub(remove_spaces, text)
+element_tree = "etree"
 
-    if use_lxml:
-        return html.fromstring(text)
+
+def html_parse(string: str) -> Element:
+    string = re_class.sub(remove_spaces, string)
+
+    if FAST:
+        return cast(Element, html.fromstring(string))
 
     else:
-        return parse(text, "etree", False)
+        return cast(Element, parse(string, element_tree, False))
 
 
-def find_song_info(text: str) -> Dict[str, Union[int, str]]:
+Data = Dict[T, Union[T, U]]
+
+
+def find_song_data(string: str) -> Data[str, int]:
     try:
         return {
-            name: function(pattern.search(text).group(1))  # type: ignore
+            name: function(pattern.search(string).group(1))  # type: ignore
             for name, (pattern, function) in re_patterns.items()
         }
 
@@ -112,8 +119,8 @@ def find_song_info(text: str) -> Dict[str, Union[int, str]]:
         raise MissingAccess("Song info was not found.") from None
 
 
-def extract_info_from_endpoint(text: str) -> Dict[str, Union[bool, str]]:
-    match = re_info.match(text)
+def find_info(string: str) -> Data[str, bool]:
+    match = re_info.match(string)
 
     if match is None:
         raise MissingAccess("Artist info was not found.")
@@ -124,59 +131,98 @@ def extract_info_from_endpoint(text: str) -> Dict[str, Union[bool, str]]:
     }
 
 
-def search_song_data(text: str) -> Generator[Dict[str, Union[int, str]], None, None]:
+item_submission = r'.//a[@class="item-audiosubmission"]'
+item_title = r'.//div[@class="detail-title"]'
+
+https = "https"
+href = "href"
+
+
+def search_song_data(text: str) -> Iterator[Dict[str, Union[int, str]]]:
     tree = html_parse(text)
 
-    for a_element, div_element in zip(
-        tree.findall(r'.//a[@class="item-audiosubmission"]'),
-        tree.findall(r'.//div[@class="detail-title"]'),
-    ):
-        url = URL(a_element.attrib["href"]).with_scheme("https")
+    for a_element, div_element in zip(tree.findall(item_submission), tree.findall(item_title)):
+        url = URL(a_element.attrib[href]).with_scheme(https)
 
-        song_id = int(url.parts[-1])
+        id = int(url.name)
 
-        h4_element, span_element, *_ = div_element
+        element_iterator = iter(div_element)
 
-        name = switch_if_none(h4_element.text, "") + "".join(
-            switch_if_none(mark_element.text, "") + switch_if_none(mark_element.tail, "")
+        h4_element = next(element_iterator)
+        span_element = next(element_iterator)
+
+        name = (h4_element.text or empty) + empty.join(
+            (mark_element.text or empty) + (mark_element.tail or empty)
             for mark_element in h4_element
         )
-        author = str(span_element[0].text)
 
-        yield {"id": song_id, "name": name, "author": author, "link": str(url)}
+        element_iterator = iter(span_element)
+
+        element = next(element_iterator)
+
+        author = str(element.text)
+
+        yield dict(id=id, name=name, author=author, link=str(url))
 
 
-def extract_user_songs(
-    json: Dict[str, Dict[str, Dict[str, Union[Dict[str, str], List[str]]]]]
-) -> Generator[Dict[str, Union[int, str]], None, None]:
-    try:
-        years = json["years"].values()
+item_link = r'.//a[@class="item-link"]'
 
-    except (AttributeError, KeyError):
-        return
+years = "years"
+items = "items"
+title = "title"
 
-    for entry in chain.from_iterable(year["items"] for year in years):
+
+def search_user_songs(
+    json: Dict[str, Dict[str, Dict[str, List[str]]]]
+    # {
+    #     years: {
+    #         year: {
+    #             items: [entry, ...]
+    #         },
+    #         ...
+    #     },
+    #     showcase: {...}  // do not care about this
+    # }
+) -> Iterator[Data[str, int]]:
+    for entry in chain.from_iterable(year[items] for year in json[years].values()):
         tree = html_parse(entry)
 
-        a_element = tree.findall(r'.//a[@class="item-link"]')[0]
+        element_iterator = iter(tree.findall(item_link))
 
-        url = URL(a_element.attrib["href"]).with_scheme("https")
+        a_element = next(element_iterator)
 
-        song_id = int(url.parts[-1])
-        name = str(a_element.attrib["title"])
+        url = URL(a_element.attrib[href]).with_scheme(https)
 
-        yield {"id": song_id, "name": name, "link": str(url)}
+        id = int(url.name)
+
+        name = str(a_element.attrib[title])
+
+        yield dict(id=id, name=name, link=str(url))
 
 
-def extract_users(text: str) -> Generator[Dict[str, str], None, None]:
+item_details = r'.//div[@class="item-details-main"]/h4/a'
+
+
+def search_users(text: str) -> Iterator[Data[str, str]]:
     tree = html_parse(text)
 
-    for a_element in tree.findall(r'.//div[@class="item-details-main"]/h4/a'):
-        url = URL(a_element.attrib["href"]).with_scheme("https")
+    for a_element in tree.findall(item_details):
+        url = URL(a_element.attrib[href]).with_scheme(https)
+
         name = str(a_element.text)
 
-        yield {"name": name, "link": str(url)}
+        yield dict(name=name, link=str(url))
 
 
-def switch_if_none(some: Optional[T], other: U) -> Union[T, U]:
+@overload
+def check_none(some: Literal[None], other: U) -> U:
+    ...
+
+
+@overload
+def check_none(some: T, other: U) -> T:
+    ...
+
+
+def check_none(some: Optional[T], other: U) -> Union[T, U]:
     return other if some is None else some

@@ -4,7 +4,8 @@
 
 # from itertools import islice as iter_slice
 
-from gd.memory.marker import Struct, Union, mut_array, mut_pointer, char_t, intsize_t, uintsize_t
+from gd.memory.marker import Struct, Union, char_t, intsize_t, mut_array, mut_pointer, uintsize_t
+
 # from gd.memory.memory_array import MemoryArray
 from gd.memory.memory_base import MemoryStruct
 from gd.memory.types import types

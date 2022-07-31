@@ -1,25 +1,24 @@
 # type: ignore  # static type checker will not understand this either
 
 import re
-
 from copy import deepcopy as recurse_copy
 from functools import partial, wraps
 from urllib.parse import quote, unquote
 
-from gd.color import Color
-from gd.crypto import (
+from gd.colors import Color
+from gd.encoding import (
     Key,
     decode_base64_str,
     decode_robtop_str,
     encode_base64_str,
     encode_robtop_str,
 )
-from gd.datetime import de_human_delta, ser_human_delta, datetime
+from gd.date_time import datetime, de_human_delta, ser_human_delta
 from gd.enums import Enum
 from gd.errors import DeError, SerError
 from gd.index_parser import IndexParser, chain_from_iterable, group
 from gd.map_property import map_property
-from gd.text_utils import make_repr
+from gd.text_utils import nice_repr
 from gd.typing import (
     Callable,
     Dict,
@@ -99,7 +98,7 @@ class Singleton:
     instance = None
 
     def __repr__(self) -> str:  # pragma: no cover
-        return make_repr(self)
+        return nice_repr(self)
 
     @classmethod
     def __new__(cls, *args, **kwargs) -> T:
@@ -290,8 +289,7 @@ ser_url = partial(quote, safe=EMPTY)
 
 
 common_pattern = re.compile(
-    r"(?P<day>[0-9]+).(?P<month>[0-9]+).(?P<year>[0-9]+) "
-    r"(?P<hour>[0-9]+).(?P<minute>[0-9]+)"
+    r"(?P<day>[0-9]+).(?P<month>[0-9]+).(?P<year>[0-9]+) " r"(?P<hour>[0-9]+).(?P<minute>[0-9]+)"
 )
 
 
@@ -373,7 +371,7 @@ class BaseField:
             "aliases": self.aliases,
         }
 
-        return make_repr(self, info)
+        return nice_repr(self, info)
 
     @property
     def index(self) -> str:
@@ -581,7 +579,11 @@ class IterableField(Field):
         super().__init__(
             index=index,
             de=partial(
-                de_iterable, delim=delim, de=de, transform=transform, skip_empty=skip_empty,
+                de_iterable,
+                delim=delim,
+                de=de,
+                transform=transform,
+                skip_empty=skip_empty,
             ),
             ser=partial(ser_iterable, delim=delim, ser=ser),
             name=name,
@@ -866,7 +868,7 @@ def deserialize_parts(
             field = field_map.get(key)
 
             if field:
-                yield key, field.de(part)
+                yield key, field._de(part)
 
             else:
                 yield key, part
@@ -887,7 +889,7 @@ def serialize_parts(
             field = field_map.get(key)
 
             if field:
-                yield key, field.ser(part)
+                yield key, field._ser(part)
 
             elif enforce_str:
                 yield key, f"{part}"
@@ -1059,7 +1061,7 @@ class Model(metaclass=ModelMeta):
             if name not in self.REPR_IGNORE
         }
 
-        return make_repr(self, info)
+        return nice_repr(self, info)
 
     def __eq__(self, other: "Model") -> bool:
         if not isinstance(other, self.__class__):

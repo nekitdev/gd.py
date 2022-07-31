@@ -1,0 +1,176 @@
+[tool.poetry]
+name = "gd.py"
+version = "1.0.0-alpha.1"
+description = "An API wrapper for Geometry Dash written in Python."
+authors = ["nekitdev"]
+license = "MIT"
+
+readme = "README.md"
+
+homepage = "https://github.com/nekitdev/gd.py"
+repository = "https://github.com/nekitdev/gd.py"
+documentation = "https://nekitdev.github.io/gd.py"
+
+keywords = ["python", "gd"]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+]
+
+[[tool.poetry.include]]
+path = "_gd"
+
+[[tool.poetry.include]]
+path = "_gd/*.pyd"
+format = "wheel"
+
+[[tool.poetry.include]]
+path = "_gd/*.so"
+format = "wheel"
+
+[[tool.poetry.include]]
+path = "_gd"
+format = "wheel"
+
+[tool.poetry.urls]
+Discord = "https://nekit.dev/discord"
+Funding = "https://patreon.com/nekitdev"
+Issues = "https://github.com/nekitdev/gd.py/issues"
+
+[[tool.poetry.packages]]
+include = "gd"
+
+[tool.poetry.scripts]
+gd = "gd.main:gd"
+
+[tool.poetry.build]
+generate-setup-file = false
+script = "build.py"
+
+[tool.poetry.dependencies]
+python = ">= 3.7"
+
+aiohttp = ">= 3.8.1"
+click = ">= 8.1.3"
+tqdm = ">= 4.64.0"
+
+enum-extensions = ">= 0.1.0"
+entrypoint = ">= 1.3.0"
+
+[tool.poetry.dependencies.iters]
+version = ">= 0.1.0"
+extras = ["concurrent"]
+
+[tool.poetry.group.format]
+optional = true
+
+[tool.poetry.group.format.dependencies]
+black = "22.6.0"
+
+[tool.poetry.group.format.dependencies.isort]
+version = "5.10.1"
+python = "^3.7"
+
+[tool.poetry.group.check]
+optional = true
+
+[tool.poetry.group.check.dependencies]
+mypy = "0.971"
+
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+pytest = "7.1.2"
+pytest-cov = "3.0.0"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = "1.3.0"
+mkdocs-material = "8.3.9"
+
+[tool.poetry.group.docs.dependencies.mkdocstrings]
+version = "0.19.0"
+extras = ["python"]
+
+[tool.black]
+line_length = 100
+
+[tool.isort]
+line_length = 100
+profile = "black"
+
+[tool.pytest.ini_options]
+addopts = "--cov gd"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["gd"]
+
+[tool.coverage.report]
+ignore_errors = true
+exclude_lines = [
+    "pragma: never",
+    "pragma: no cover",
+    "if TYPE_CHECKING",
+    "@overload",
+    "@abstractmethod",
+    "raise NotImplementedError",
+    "raise AssertionError",
+    "def __repr__",
+]
+
+[tool.coverage.html]
+directory = "coverage"
+
+[tool.mypy]
+show_column_numbers = true
+
+disallow_any_decorated = true
+disallow_any_generics = true
+warn_return_any = true
+
+no_implicit_optional = true
+strict_optional = true
+
+strict_equality = true
+
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_untyped_decorators = true
+disallow_untyped_globals = true
+
+disallow_incomplete_defs = true
+
+warn_no_return = true
+warn_unreachable = true
+
+warn_redundant_casts = true
+warn_unused_ignores = false  # compatibility
+
+[tool.changelogging]
+name = "gd.py"
+version = "1.0.0-alpha.1"
+url = "https://github.com/nekitdev/gd.py"
+directory = "changes"
+output = "CHANGELOG.md"
+
+start_string = "<!-- changelogging: start -->"
+
+title_format = "{version} ({date})"
+issue_format = "[#{issue}]({url}/pull/{issue})"
+
+bullet = "-"
+wrap = true
+wrap_size = 100
+
+display = ["feature", "change", "fix", "security", "deprecation", "removal", "internal"]
+
+[build-system]
+requires = ["poetry-core >= 1.1.0b3", "entrypoint >= 1.3.0"]
+build-backend = "poetry.core.masonry.api"

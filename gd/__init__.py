@@ -1,45 +1,199 @@
-"""Library that provides its users ability to interact
-with the servers and the game of Geometry Dash.
-"""
+"""An API wrapper for Geometry Dash written in Python."""
+
+__description__ = "An API wrapper for Geometry Dash written in Python."
+__url__ = "https://github.com/nekitdev/gd.py"
 
 __title__ = "gd"
 __author__ = "nekitdev"
-__copyright__ = "Copyright 2019-2021 nekitdev"
 __license__ = "MIT"
-__version__ = "1.0.0rc1"
+__version__ = "1.0.0-alpha.1"
 
-from gd.abstract_entity import *
-from gd.client import *
-from gd.color import *
-from gd.comment import *
-from gd.converters import *
-from gd.datetime import *
-from gd.decorators import *
-from gd.enums import *
-from gd.errors import *
-from gd.filters import *
-from gd.friend_request import *
-from gd.http import *
-from gd.level import *
-from gd.level_packs import *
-from gd.logging import *
-from gd.message import *
-from gd.model import *
-from gd.rewards import *
-from gd.session import *
-from gd.song import *
-from gd.user import *
-from gd.version import *
-from gd.xml_parser import *
+from gd.artist import Artist
+# from gd.client import Client
+from gd.colors import Color
+# from gd.comments import Comment, LevelComment, UserComment
+from gd.credentials import Credentials
+from gd.entity import Entity
+from gd.enums import (
+    AccountURLType,
+    ByteOrder,
+    CommentState,
+    CommentStrategy,
+    CommentType,
+    CustomParticleGrouping,
+    CustomParticleProperty,
+    DemonDifficulty,
+    Difficulty,
+    Easing,
+    EasingMethod,
+    FriendRequestState,
+    FriendRequestType,
+    FriendState,
+    GameMode,
+    GauntletID,
+    GuidelineColor,
+    IconType,
+    InstantCountComparison,
+    InternalType,
+    Key,
+    LeaderboardStrategy,
+    LevelDifficulty,
+    LevelLeaderboardStrategy,
+    LevelLength,
+    LevelType,
+    LikeType,
+    MessageState,
+    MessageType,
+    MiscType,
+    OrbType,
+    Orientation,
+    PadType,
+    PickupItemMode,
+    Platform,
+    PlayerColor,
+    PortalType,
+    Protection,
+    PulseMode,
+    PulseTargetType,
+    PulseType,
+    QuestType,
+    RelationshipType,
+    ResponseType,
+    RewardType,
+    Role,
+    Salt,
+    Scene,
+    SearchStrategy,
+    Secret,
+    ShardType,
+    SimpleKey,
+    SimpleRelationshipType,
+    SpecialBlockType,
+    SpecialColorID,
+    Speed,
+    SpeedChange,
+    SpeedConstant,
+    SpeedMagic,
+    TargetType,
+    TimelyID,
+    TimelyType,
+    TouchToggleMode,
+    TriggerType,
+    ZLayer,
+)
+from gd.errors import (
+    InternalError,
+    GDError,
+    HTTPError,
+    HTTPErrorWithOrigin,
+    HTTPStatusError,
+    ClientError,
+    MissingAccess,
+    SongRestricted,
+    CommentBanned,
+    LoginFailed,
+    LoginRequired,
+    NothingFound,
+    DataError,
+    EditorError,
+)
+from gd.filters import Filters
+# from gd.friend_request import FriendRequest
+# from gd.http import HTTPClient
+# from gd.level import Level
+# from gd.level_packs import Gauntlet, MapPack
+# from gd.message import Message
+from gd.password import Password
+# from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM, SYSTEM_PLATFORM_CONFIG, PlatformConfig
+# from gd.relationship import Relationship
+# from gd.rewards import Chest, Quest
+# from gd.song import Song
+# from gd.user import User
+from gd.version import python_version_info, version_info
+from gd.versions import GameVersion, Version
 
-from gd import api  # non-server GD API.
-from gd import crypto  # cryptography and encoding utilites.
-from gd import events  # event-related functions and classes.
-from gd import http  # HTTP requests module.
-from gd import image  # sprites handling and icon factory.
-from gd import json  # JSON utilities.
-from gd import memory  # functions for interacting with memory.
-from gd import model_backend  # backend for gd.py models.
-from gd import server  # REST API wrapper around gd.py.
-from gd import tasks  # background tasks implementation
-from gd import utils  # different useful utilities.
+# from gd import api, encoding, events, image, json, memory, tasks
+
+__all__ = (
+    # errors
+    "InternalError",
+    "GDError",
+    "HTTPError",
+    "HTTPErrorWithOrigin",
+    "HTTPStatusError",
+    "ClientError",
+    "MissingAccess",
+    "SongRestricted",
+    "CommentBanned",
+    "LoginFailed",
+    "LoginRequired",
+    "NothingFound",
+    "DataError",
+    "EditorError",
+    # enums
+    "SimpleKey",
+    "Key",
+    "Salt",
+    "Secret",
+    "AccountURLType",
+    "IconType",
+    "MessageState",
+    "CommentState",
+    "FriendState",
+    "FriendRequestState",
+    "Role",
+    "LevelLength",
+    "LevelDifficulty",
+    "Difficulty",
+    "DemonDifficulty",
+    "TimelyType",
+    "TimelyID",
+    "CommentType",
+    "RelationshipType",
+    "SimpleRelationshipType",
+    "FriendRequestType",
+    "MessageType",
+    "CommentStrategy",
+    "LeaderboardStrategy",
+    "LevelLeaderboardStrategy",
+    "LikeType",
+    "GauntletID",
+    "SearchStrategy",
+    "RewardType",
+    "ShardType",
+    "QuestType",
+    "Scene",
+    "PlayerColor",
+    "CustomParticleGrouping",
+    "CustomParticleProperty",
+    "Easing",
+    "EasingMethod",
+    "PulseMode",
+    "InstantCountComparison",
+    "OrbType",
+    "PadType",
+    "PickupItemMode",
+    "GameMode",
+    "LevelType",
+    "PortalType",
+    "SpeedChange",
+    "PulseTargetType",
+    "PulseType",
+    "SpecialBlockType",
+    "SpecialColorID",
+    "TargetType",
+    "TouchToggleMode",
+    "MiscType",
+    "TriggerType",
+    "ZLayer",
+    "Speed",
+    "SpeedConstant",
+    "SpeedMagic",
+    "GuidelineColor",
+    "InternalType",
+    "Protection",
+    "ByteOrder",
+    "Platform",
+    "Orientation",
+    "ResponseType",
+)

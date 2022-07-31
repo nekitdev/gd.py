@@ -1,0 +1,55 @@
+name: release
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  release:
+    name: Release
+
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        os: [ubuntu, macos, windows]
+
+    runs-on: ${{ matrix.os }}-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Update PATH
+        if: ${{ matrix.os != "windows" }}
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Update PATH for Windows
+        if: ${{ matrix.os == "windows" }}
+        run: echo "$APPDATA/Python/Scripts" >> $GITHUB_PATH
+
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org/ | python -
+
+      - name: Update Poetry
+        run: poetry self update --preview
+
+      - name: Configure Poetry
+        run: poetry config virtualenvs.in-project true
+
+      - name: Build
+        run: poetry build
+
+      - name: Publish to PyPI
+        run: poetry publish
+        env:
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}

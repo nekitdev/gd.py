@@ -1,0 +1,50 @@
+name: test
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - "**"
+
+jobs:
+  test:
+    name: Test
+
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Update PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org/ | python -
+
+      - name: Update Poetry
+        run: poetry self update --preview
+
+      - name: Configure Poetry
+        run: poetry config virtualenvs.in-project true
+
+      - name: Install dependencies
+        run: poetry install --with test
+
+      - name: Run tests
+        run: poetry run pytest --cov-report xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3

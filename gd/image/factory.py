@@ -1,0 +1,289 @@
+from __future__ import annotations
+
+from typing import Iterable, Optional, Tuple, Type, TypeVar
+
+from attrs import define
+from gd.constants import DEFAULT_HEIGHT, DEFAULT_WIDTH
+
+from gd.image.geometry import Point, Rectangle, Size
+from gd.image.sprite import Sprite
+
+try:
+    from PIL.Image import BICUBIC, LANCZOS, Image
+    from PIL.Image import new as new_image
+    from PIL.ImageOps import colorize, flip, grayscale, mirror
+
+except ImportError:
+    pass
+
+from gd.assets import (
+    GLOW_DATA_PATH,
+    GLOW_IMAGE_PATH,
+    ICON_DATA_PATH,
+    ICON_IMAGE_PATH,
+    ROBOT_ANIMATION_PATH,
+    SPIDER_ANIMATION_PATH,
+)
+from gd.colors import Color
+from gd.enums import IconType
+from gd.image.animation import Animation, AnimationSheet, Animations
+from gd.image.icon import Icon
+from gd.image.sheet import Sheet, Sprites
+from gd.typing import IntoPath, Unary
+
+__all__ = ("FACTORY", "Factory")
+
+F = TypeVar("F", bound="Factory")
+
+IDLE = "idle"
+
+RGBA = "RGBA"
+
+DEFAULT_ERROR_ON_NOT_FOUND = False
+
+ZERO = 0
+
+BLACK = Color.black()
+EMPTY = BLACK.to_rgba(ZERO)
+
+DEFAULT_LOW_VALUE = 0xF
+
+
+def zero_low_values(low_value: int = DEFAULT_LOW_VALUE) -> Unary[int, int]:
+    def function(value: int) -> int:
+        return ZERO if value <= low_value else value
+
+    return function
+
+
+def connect_h_images(images: Iterable[Image]) -> Image:
+    array = list(images)
+
+    width = sum(image.width for image in array)
+    height = max(image.height for image in array)
+
+    result = new_image(RGBA, (width, height), EMPTY)
+
+    offset = 0
+
+    for image in array:
+        result.paste(image, (offset, 0))
+        offset += image.width
+
+    return result
+
+
+def connect_v_images(images: Iterable[Image]) -> Image:
+    array = list(images)
+
+    width = max(image.width for image in array)
+    height = sum(image.height for image in array)
+
+    result = new_image(RGBA, (width, height), EMPTY)
+
+    offset = 0
+
+    for image in array:
+        result.paste(image, (0, offset))
+        offset += image.height
+
+    return result
+
+
+QUARTER = 90
+HALF = 180
+FULL = 360
+
+
+@define()
+class Factory:
+    icon_sheet: Sheet
+    glow_sheet: Sheet
+    robot_animation_sheet: AnimationSheet
+    spider_animation_sheet: AnimationSheet
+    error_on_not_found: bool = DEFAULT_ERROR_ON_NOT_FOUND
+
+    @classmethod
+    def default(cls: Type[F], error_on_not_found: bool = DEFAULT_ERROR_ON_NOT_FOUND) -> F:
+        return cls.from_paths(error_on_not_found=error_on_not_found)
+
+    @classmethod
+    def from_paths(
+        cls: Type[F],
+        icon_image_path: IntoPath = ICON_IMAGE_PATH,
+        icon_data_path: IntoPath = ICON_DATA_PATH,
+        glow_image_path: IntoPath = GLOW_IMAGE_PATH,
+        glow_data_path: IntoPath = GLOW_DATA_PATH,
+        robot_animation_path: IntoPath = ROBOT_ANIMATION_PATH,
+        spider_animation_path: IntoPath = SPIDER_ANIMATION_PATH,
+        error_on_not_found: bool = DEFAULT_ERROR_ON_NOT_FOUND,
+    ) -> F:
+        return cls(
+            Sheet.from_paths(icon_image_path, icon_data_path),
+            Sheet.from_paths(glow_image_path, glow_data_path),
+            AnimationSheet.from_path(robot_animation_path),
+            AnimationSheet.from_path(spider_animation_path),
+            error_on_not_found=error_on_not_found,
+        )
+
+    @staticmethod
+    def image_rectangle(image: Image) -> Rectangle:
+        width, height = image.size
+
+        return Rectangle(Point(), Size(width, height))
+
+    @staticmethod
+    def paint(image: Image, color: Color, black: Color = BLACK) -> Image:
+        _red, _green, _blue, alpha = image.split()
+
+        colored = colorize(grayscale(image), black=black.to_rgb(), white=color.to_rgb())
+
+        colored.putalpha(alpha)
+
+        return colored
+
+    @property
+    def icon_sprites(self) -> Sprites:
+        return self.icon_sheet.sprites
+
+    @property
+    def glow_sprites(self) -> Sprites:
+        return self.glow_sheet.sprites
+
+    @property
+    def icon_image(self) -> Image:
+        return self.icon_sheet.image
+
+    @property
+    def glow_image(self) -> Image:
+        return self.glow_sheet.image
+
+    @property
+    def robot_animations(self) -> Animations:
+        return self.robot_animation_sheet.animations
+
+    @property
+    def spider_animations(self) -> Animations:
+        return self.spider_animation_sheet.animations
+
+    @property
+    def robot_idle(self) -> Animation:
+        return self.robot_animations[IDLE]
+
+    @property
+    def spider_idle(self) -> Animation:
+        return self.spider_animations[IDLE]
+
+    def ensure_loaded(self) -> None:
+        self.icon_sheet.ensure_loaded()
+        self.glow_sheet.ensure_loaded()
+        self.robot_animation_sheet.ensure_loaded()
+        self.spider_animation_sheet.ensure_loaded()
+
+    def load(self) -> None:
+        self.icon_sheet.load()
+        self.glow_sheet.load()
+        self.robot_animation_sheet.load()
+        self.spider_animation_sheet.load()
+
+    reload = load
+
+    def unload(self) -> None:
+        self.icon_sheet.unload()
+        self.glow_sheet.unload()
+        self.robot_animation_sheet.unload()
+        self.spider_animation_sheet.unload()
+
+    def find_sprite_and_image(self, name: str) -> Optional[Tuple[Sprite, Image]]:
+        self.ensure_loaded()
+
+        sprite = self.icon_sprites.get(name)
+
+        if sprite is None:
+            sprite = self.glow_sprites.get(name)
+
+            if sprite is None:
+                return None
+
+            return (sprite, self.glow_image)
+
+        return (sprite, self.icon_image)
+
+    def generate(
+        self, icon: Icon, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
+    ) -> Image:
+        self.ensure_loaded()
+
+        # ensure `idle` is configured
+
+        if icon.type is IconType.ROBOT:
+            icon.idle = self.robot_idle
+
+        if icon.type is IconType.SPIDER:
+            icon.idle = self.spider_idle
+
+        result = new_image(RGBA, (width, height), EMPTY)
+
+        center = self.image_rectangle(result).center
+
+        if icon.is_complex():
+            for index, icon_layer in enumerate(icon.iter_complex_layers()):
+                search = self.find_sprite_and_image(icon_layer.name)
+
+                layer = icon_layer.layer
+
+                if search:
+                    sprite, image = search
+
+                    part = self.paint(
+                        self.paint(image.crop(sprite.box), icon_layer.white), icon_layer.color
+                    )
+
+                    if sprite.is_rotated():
+                        part = part.rotate(QUARTER, resample=BICUBIC, expand=True)
+
+                    size = sprite.size.mul_components(layer.scale)
+
+                    part = part.resize(size.round_tuple(), resample=LANCZOS)
+
+                    if layer.is_h_flipped():
+                        part = mirror(part)
+
+                    if layer.is_v_flipped():
+                        part = flip(part)
+
+                    rotation = -layer.rotation  # NOTE: different rotation directions!
+
+                    part = part.rotate(rotation, resample=BICUBIC, expand=True)
+
+                    position = (
+                        center
+                        - self.image_rectangle(part).center
+                        + sprite.offset.y_flipped()
+                        + layer.position.y_flipped()
+                    )
+
+                    result.alpha_composite(part, position.round_tuple())
+
+        else:
+            for icon_layer in icon.iter_simple_layers():
+                search = self.find_sprite_and_image(icon_layer.name)
+
+                if search:
+                    sprite, image = search
+
+                    part = self.paint(image.crop(sprite.box), icon_layer.color)
+
+                    if sprite.is_rotated():
+                        part = part.rotate(QUARTER, resample=BICUBIC, expand=True)
+
+                    position = (
+                        center - self.image_rectangle(part).center + sprite.offset.y_flipped()
+                    )
+
+                    result.alpha_composite(part, position.round_tuple())
+
+        return result
+
+
+FACTORY = Factory.default()

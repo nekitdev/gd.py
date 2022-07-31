@@ -14,4 +14,5 @@ try:
     from gd.server.utils import *
 
 except ImportError:
+    raise
     pass

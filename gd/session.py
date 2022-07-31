@@ -1,7 +1,11 @@
-from gd.api.database import Database
-from gd.api.loader import SAVE_DELIM, save
-from gd.api.recording import RecordingEntry
-from gd.decorators import synchronize
+from datetime import timedelta
+from typing import Any
+
+from attrs import frozen
+from yarl import URL
+
+# from gd.api.database import Database
+# from gd.api.save_manager import save_manager
 from gd.enums import (
     AccountURLType,
     CommentState,
@@ -21,77 +25,49 @@ from gd.enums import (
     SimpleRelationshipType,
 )
 from gd.filters import Filters
-from gd.http import URL, HTTPClient
-from gd.model import (  # type: ignore
-    ChestsResponseModel,
-    CommentsResponseModel,
-    FeaturedArtistsResponseModel,
-    FriendRequestsResponseModel,
-    GauntletsResponseModel,
-    LeaderboardResponseModel,
-    LevelDownloadResponseModel,
-    LevelLeaderboardResponseModel,
-    LevelSearchResponseModel,
-    LoginIDModel,
-    MapPacksResponseModel,
-    MessageModel,
-    MessagesResponseModel,
-    ProfileUserModel,
-    QuestsResponseModel,
-    SearchUserModel,
-    SearchUserResponseModel,
-    SongModel,
-    TimelyInfoModel,
-    UserListResponseModel,
-)
-from gd.newgrounds_parser import (
-    extract_info_from_endpoint,
-    extract_user_songs,
-    extract_users,
-    find_song_info,
-    search_song_data,
-)
-from gd.text_utils import make_repr
-from gd.typing import Any, Dict, Iterable, List, Optional, Union
+from gd.http import HTTPClient
+from gd.models import LoginModel
+from gd.typing import URLString
 
 __all__ = ("Session",)
 
 
-@synchronize
+@frozen()
 class Session:
-    def __init__(self, **http_args) -> None:
-        self.http = HTTPClient(**http_args)
+    http: HTTPClient
 
-    def __repr__(self) -> str:
-        info = {"http": self.http}
-        return make_repr(self, info)
+    def __init__(self, **http_keywords: Any) -> None:
+        self.__attrs_init__(HTTPClient(**http_keywords))
 
-    async def ping(self, url: Union[str, URL]) -> float:
+    async def ping(self, url: URLString) -> timedelta:
         return await self.http.ping(url)
 
-    async def login(self, name: str, password: str) -> LoginIDModel:
+    async def login(self, name: str, password: str) -> LoginModel:
         response = await self.http.login(name, password)
-        return LoginIDModel.from_string(response, use_default=True)
+        return LoginModel.from_robtop(response)
 
     async def load(self, *, account_id: int, name: str, password: str) -> Database:
         response = await self.http.load(account_id=account_id, name=name, password=password)
 
-        main_part, levels_part, *_ = response.split(SAVE_DELIM)
+        main_string, levels_string, *rest = split_save(response)
 
-        return await save.from_string_async(
-            main_part, levels_part, apply_xor=False, follow_os=False
+        return await save_manager.from_strings_async(
+            main_string, levels_string, apply_xor=False, follow_os=False
         )
 
     async def save(self, database: Database, *, account_id: int, name: str, password: str) -> None:
-        parts = await save.to_string_async(database, apply_xor=False, follow_os=False, decode=True)
+        parts = await save_manager.to_strings_async(
+            database, apply_xor=False, follow_os=False
+        )
 
-        data = SAVE_DELIM.join(parts)  # type: ignore  # they are already strings
+        data = concat_save(parts)
 
         await self.http.save(data=data, account_id=account_id, name=name, password=password)
 
     async def get_account_url(self, account_id: int, type: AccountURLType) -> URL:
-        url = await self.http.get_account_url(account_id=account_id, type=type)
-        return URL(url)
+        return await self.http.get_account_url(account_id=account_id, type=type)
+
+    """
 
     async def get_role_id(self, account_id: int, encoded_password: str) -> int:
         return await self.http.get_role_id(account_id=account_id, encoded_password=encoded_password)
@@ -188,7 +164,9 @@ class Session:
         encoded_password: Optional[str] = None,
     ) -> ProfileUserModel:
         response = await self.http.get_user_profile(
-            account_id, client_account_id=client_account_id, encoded_password=encoded_password,
+            account_id,
+            client_account_id=client_account_id,
+            encoded_password=encoded_password,
         )
         return ProfileUserModel.from_string(response, use_default=True)
 
@@ -265,7 +243,10 @@ class Session:
         self, level_id: int, description: str, *, account_id: int, encoded_password: str
     ) -> None:
         await self.http.update_level_description(
-            level_id, description, account_id=account_id, encoded_password=encoded_password,
+            level_id,
+            description,
+            account_id=account_id,
+            encoded_password=encoded_password,
         )
 
     async def upload_level(
@@ -372,12 +353,20 @@ class Session:
         encoded_password: str,
     ) -> LevelLeaderboardResponseModel:
         response = await self.http.get_level_top(
-            level_id, strategy=strategy, account_id=account_id, encoded_password=encoded_password,
+            level_id,
+            strategy=strategy,
+            account_id=account_id,
+            encoded_password=encoded_password,
         )
         return LevelLeaderboardResponseModel.from_string(response, use_default=True)
 
     async def block_or_unblock(
-        self, account_id: int, unblock: bool, *, client_account_id: int, encoded_password: str,
+        self,
+        account_id: int,
+        unblock: bool,
+        *,
+        client_account_id: int,
+        encoded_password: str,
     ) -> None:
         await self.http.block_or_unblock(
             account_id=account_id,
@@ -413,18 +402,34 @@ class Session:
         )
 
     async def download_message(
-        self, message_id: int, type: MessageType, *, account_id: int, encoded_password: str,
+        self,
+        message_id: int,
+        type: MessageType,
+        *,
+        account_id: int,
+        encoded_password: str,
     ) -> MessageModel:
         response = await self.http.download_message(
-            message_id, type=type, account_id=account_id, encoded_password=encoded_password,
+            message_id,
+            type=type,
+            account_id=account_id,
+            encoded_password=encoded_password,
         )
         return MessageModel.from_string(response, use_default=True)
 
     async def delete_message(
-        self, message_id: int, type: MessageType, *, account_id: int, encoded_password: str,
+        self,
+        message_id: int,
+        type: MessageType,
+        *,
+        account_id: int,
+        encoded_password: str,
     ) -> None:
         await self.http.delete_message(
-            message_id, type=type, account_id=account_id, encoded_password=encoded_password,
+            message_id,
+            type=type,
+            account_id=account_id,
+            encoded_password=encoded_password,
         )
 
     async def get_messages_on_page(
@@ -486,11 +491,18 @@ class Session:
         self, request_id: int, *, account_id: int, encoded_password: str
     ) -> None:
         await self.http.read_friend_request(
-            request_id=request_id, account_id=account_id, encoded_password=encoded_password,
+            request_id=request_id,
+            account_id=account_id,
+            encoded_password=encoded_password,
         )
 
     async def get_friend_requests_on_page(
-        self, type: FriendRequestType, page: int, *, account_id: int, encoded_password: str,
+        self,
+        type: FriendRequestType,
+        page: int,
+        *,
+        account_id: int,
+        encoded_password: str,
     ) -> FriendRequestsResponseModel:
         response = await self.http.get_friend_requests_on_page(
             type, page, account_id=account_id, encoded_password=encoded_password
@@ -564,12 +576,21 @@ class Session:
         strategy: CommentStrategy,
     ) -> CommentsResponseModel:
         response = await self.http.get_user_comments_on_page(
-            account_id=account_id, user_id=user_id, type=type, page=page, strategy=strategy,
+            account_id=account_id,
+            user_id=user_id,
+            type=type,
+            page=page,
+            strategy=strategy,
         )
         return CommentsResponseModel.from_string(response, use_default=True)
 
     async def get_level_comments_on_page(
-        self, level_id: int, amount: int, page: int = 0, *, strategy: CommentStrategy,
+        self,
+        level_id: int,
+        amount: int,
+        page: int = 0,
+        *,
+        strategy: CommentStrategy,
     ) -> CommentsResponseModel:
         response = await self.http.get_level_comments_on_page(
             level_id=level_id, amount=amount, page=page, strategy=strategy
@@ -616,29 +637,32 @@ class Session:
         response = await self.http.get_song(song_id)
         return SongModel.from_string(response, use_default=True)
 
-    async def get_ng_song(self, song_id: int) -> SongModel:
-        response = await self.http.get_ng_song(song_id)
-        return SongModel.from_dict(find_song_info(response), id=song_id)
+    async def get_newgrounds_song(self, song_id: int) -> SongModel:
+        response = await self.http.get_newgrounds_song(song_id)
+        return SongModel.from_dict(find_song_data(response), id=song_id)
 
     async def get_artist_info(self, song_id: int) -> Dict[str, Any]:
         response = await self.http.get_artist_info(song_id)
 
-        artist_info = extract_info_from_endpoint(response)
+        artist_info = find_info(response)
         artist_info.update(id=song_id, custom=True)  # type: ignore
 
         return artist_info
 
-    async def search_ng_songs_on_page(self, query: str, page: int = 0) -> List[SongModel]:
-        response = await self.http.search_ng_songs_on_page(query=query, page=page)
+    async def search_newgrounds_songs_on_page(self, query: str, page: int = 0) -> List[SongModel]:
+        response = await self.http.search_newgrounds_songs_on_page(query=query, page=page)
         return list(map(SongModel.from_dict, search_song_data(response)))
 
-    async def search_ng_users_on_page(self, query: str, page: int = 0) -> List[Dict[str, Any]]:
-        response = await self.http.search_ng_users_on_page(query=query, page=page)
-        return list(extract_users(response))
+    async def search_newgrounds_users_on_page(
+        self, query: str, page: int = 0
+    ) -> List[Dict[str, Any]]:
+        response = await self.http.search_newgrounds_users_on_page(query=query, page=page)
+        return list(search_users(response))
 
-    async def get_ng_user_songs_on_page(self, name: str, page: int = 0) -> List[SongModel]:
-        response = await self.http.get_ng_user_songs_on_page(name=name, page=page)
+    async def get_newgrounds_user_songs_on_page(self, name: str, page: int = 0) -> List[SongModel]:
+        response = await self.http.get_newgrounds_user_songs_on_page(name=name, page=page)
         return [
             SongModel.from_dict(data, author=name)
-            for data in extract_user_songs(response)  # type: ignore
+            for data in search_user_songs(response)  # type: ignore
         ]
+    """

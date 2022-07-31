@@ -16,7 +16,7 @@ __all__ = (
 OffsetT = TypeVar("OffsetT", int, "Offsets")
 
 
-class Offsets(NamedDict[str, OffsetT]):
+class Offsets(NamedDict[OffsetT]):
     def __getattr__(self, attr: str) -> OffsetT:
         try:
             return cast(OffsetT, super().__getattr__(attr))
@@ -55,7 +55,7 @@ windows_offsets_x32: Offsets = Offsets(
         auto=0x2B0,
         level_type=0x364,
     ),
-    player=Offsets(gamemodes=0x638, flipped_gravity=0x63E, size=0x644, speed=0x648),
+    player=Offsets(game_modes=0x638, flipped_gravity=0x63E, size=0x644, speed=0x648),
     node=Offsets(x=0x34, y=0x38),
 )
 

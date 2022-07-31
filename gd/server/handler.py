@@ -1,10 +1,13 @@
-from gd.enums import Enum
-from gd.server.common import web
-from gd.server.typing import Handler, Headers, ToString
-from gd.server.utils import json_response
-from gd.typing import (
-    Any, Awaitable, Callable, Mapping, NoReturn, Optional, Tuple, Type, Union, cast
-)
+from typing import Any, Optional
+
+from aiohttp.web import Response, json_response
+from attrs import field, frozen
+from typing_extensions import TypedDict
+
+from gd.enum_extensions import Enum
+from gd.server.constants import APPLICATION_JSON
+from gd.server.typing import Handler, Headers
+from gd.typing import JSONType, StringDict, StringMapping
 
 __all__ = (
     "HTTP_STATUS_TO_ERROR_TYPE",
@@ -25,6 +28,7 @@ __all__ = (
 
 class ErrorType(Enum):
     DEFAULT = 13000
+
     INVALID_ENTITY = 13001
     MISSING_PARAMETER = 13002
     FORBIDDEN = 13003
@@ -50,36 +54,31 @@ HTTP_STATUS_TO_ERROR_TYPE = {
 }
 
 
+class ErrorData(TypedDict):
+    code: str
+    message: Optional[str]
+
+
+DEFAULT_STATUS_CODE = 500
+DEFAULT_ERROR_TYPE = ErrorType.DEFAULT
+
+
+@frozen()
 class Error:
-    def __init__(
-        self,
-        status_code: int = 500,
-        error_type: Union[int, str, ErrorType] = ErrorType.DEFAULT,
-        message: Optional[ToString] = None,
-        headers: Optional[Headers] = None,
-        **additional,
-    ) -> None:
-        self.status_code = status_code
-        self.error_type = ErrorType.from_value(error_type)
-        self.message = message
-        self.headers = headers
-        self.additional = additional
+    status: int = DEFAULT_STATUS_CODE
+    type: ErrorType = DEFAULT_ERROR_TYPE
+    message: Optional[str] = None
+    headers: Optional[Headers] = None
 
-    def into_data(self) -> Mapping[str, Any]:
-        data = {
-            "code": self.error_type.value, "name": self.error_type.title, "message": self.message
-        }
+    def into_data(self) -> ErrorData:
+        return ErrorData(code=self.type.name, message=self.message)
 
-        if self.additional:
-            data.update(self.additional)
+    def into_response(self, **keywords: Any) -> Response:
+        actual = dict(status=self.status, headers=self.headers)
 
-        return data
+        actual.update(keywords)
 
-    def into_response(self, **kwargs) -> web.Response:
-        kwargs.setdefault("status", self.status_code)
-        kwargs.setdefault("headers", self.headers)
-
-        return json_response(self.into_data(), **kwargs)
+        return json_response(self.into_data(), **actual)
 
 
 ErrorExcept = Union[Type[BaseException], Tuple[Type[BaseException], ...]]

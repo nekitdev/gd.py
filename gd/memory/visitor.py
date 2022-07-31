@@ -1,48 +1,42 @@
 # DOCUMENT + FINISH
 
+from abc import abstractmethod
 from functools import wraps
+from typing_extensions import Protocol, runtime_checkable
 
 from gd.memory.context import Context
 from gd.memory.field import Field, MutField
 from gd.memory.marker import (
-    SimpleMarker,
     Array,
-    MutArray,
-    Pointer,
-    MutPointer,
-    Ref,
-    MutRef,
     DynamicFill,
-    This,
+    MutArray,
+    MutPointer,
+    MutRef,
+    Pointer,
+    Ref,
+    SimpleMarker,
     Struct,
+    This,
     Union,
     Void,
     fill,
     uintptr_t,
 )
-from gd.memory.memory_array import MemoryBaseArray, MemoryArray, MemoryMutArray
+from gd.memory.memory_array import MemoryArray, MemoryBaseArray, MemoryMutArray
 from gd.memory.memory_base import MemoryBase, MemoryStruct, MemoryUnion
 from gd.memory.memory_pointer_ref import (
-    MemoryBasePointer, MemoryPointer, MemoryMutPointer, MemoryRef, MemoryMutRef
+    MemoryBasePointer,
+    MemoryMutPointer,
+    MemoryMutRef,
+    MemoryPointer,
+    MemoryRef,
 )
 from gd.memory.memory_special import MemoryThis, MemoryVoid
-from gd.memory.traits import Read, Write, Layout, ReadLayout, ReadWriteLayout, is_class, is_layout
+from gd.memory.traits import Layout, Read, ReadLayout, ReadWriteLayout, Write, is_class, is_layout
 from gd.platform import Platform, platform_to_string, system_bits, system_platform
-from gd.typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    List,
-    Tuple,
-    Type,
-    TypeVar,
-    Union as TypeUnion,
-    cast,
-    get_type_hints,
-    no_type_check,
-    overload,
-)
+from gd.typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Type, TypeVar
+from gd.typing import Union as TypeUnion
+from gd.typing import cast, get_type_hints, no_type_check, overload
 
 if TYPE_CHECKING:
     from gd.memory.state import BaseState  # noqa
@@ -323,7 +317,7 @@ class Visitor:
 
                     field_array.insert(
                         index,
-                        (name, self.create_field(self.visit_array(fill(pad_size))))  # type: ignore
+                        (name, self.create_field(self.visit_array(fill(pad_size)))),  # type: ignore
                     )
 
                     index += 1
@@ -507,9 +501,7 @@ class Visitor:
             # merge marker union with memory union
             marker_union,  # type: ignore
             MemoryUnion,
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryUnion, marker_union, name=UNION_TYPE
-            ),
+            metaclass=merge_metaclass(MemoryUnion, marker_union, name=UNION_TYPE),  # type: ignore
             # set derive to false
             derive=False,
             # other arguments
@@ -605,9 +597,7 @@ class Visitor:
             # merge marker reference with memory reference
             MemoryRef,
             marker_ref,  # type: ignore
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryRef, marker_ref, name=REF_TYPE
-            ),
+            metaclass=merge_metaclass(MemoryRef, marker_ref, name=REF_TYPE),  # type: ignore
             # set derive to false
             derive=False,
             # other arguments
@@ -627,9 +617,7 @@ class Visitor:
 
         types = self.context.types
 
-        pointer_type = (
-            types.intptr_t if marker_mut_ref.signed else types.uintptr_t  # type: ignore
-        )
+        pointer_type = types.intptr_t if marker_mut_ref.signed else types.uintptr_t  # type: ignore
 
         @no_type_check
         class mut_ref(  # type: ignore
@@ -661,9 +649,7 @@ class Visitor:
             # merge marker array with memory array
             MemoryArray,
             marker_array,  # type: ignore
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryArray, marker_array, name=ARRAY_TYPE
-            ),
+            metaclass=merge_metaclass(MemoryArray, marker_array, name=ARRAY_TYPE),  # type: ignore
             # set derive to false
             derive=False,
             # other arguments
@@ -709,9 +695,7 @@ class Visitor:
             # merge marker void with memory void
             MemoryVoid,
             marker_void,  # type: ignore
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryVoid, marker_void, name=VOID_TYPE
-            ),
+            metaclass=merge_metaclass(MemoryVoid, marker_void, name=VOID_TYPE),  # type: ignore
             # set derive to false, and special to true
             derive=False,
             special=True,
@@ -731,9 +715,7 @@ class Visitor:
             # merge marker this with memory this
             MemoryThis,
             marker_this,  # type: ignore
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryThis, marker_this, name=THIS_TYPE
-            ),
+            metaclass=merge_metaclass(MemoryThis, marker_this, name=THIS_TYPE),  # type: ignore
             # set derive to false, and special to true
             derive=False,
             special=True,
@@ -755,3 +737,17 @@ class Visitor:
 
     def visit_simple_marker(self, marker: Type[SimpleMarker]) -> Type[Layout]:
         return self.visit_any(self.context.get_type(marker.name))
+
+
+S = TypeVar("S", bound="AnyVisitable")
+V = TypeVar("V", contravariant=True)
+
+
+@runtime_checkable
+class Visitable(Protocol[V]):
+    @abstractmethod
+    def accept(self: S, visitor: V) -> S:
+        ...
+
+
+AnyVisitable = Visitable[Visitor]

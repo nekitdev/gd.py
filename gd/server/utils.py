@@ -1,143 +1,112 @@
 import re
 from functools import partial
-
-from aiohttp import web
+from typing import AbstractSet, Any, Iterable, Optional, Type, TypeVar
 
 from gd.enums import Enum
-from gd.json import dumps
+from gd.errors import InternalError
 from gd.server.typing import Handler
-from gd.typing import Any, Callable, Iterable, Mapping, Optional, Type, TypeVar, cast
+from gd.string_constants import COMMA
+from gd.string_utils import tick
+from gd.typing import Parse, StringDict, is_instance
 
 __all__ = (
-    "parameter",
     "get_original_handler",
+    "parameter",
     "parse_bool",
     "parse_enum",
     "parse_pages",
-    "html_response",
-    "json_response",
-    "text_response",
 )
 
-T = TypeVar("T")
+HANDLER = "handler"
 
-DELIM = ","
-RANGE = re.compile(
-    r"(?P<start>-*[0-9]+)\.\.(?P<inclusive>=)?(?P<stop>-*[0-9]+)(?:\.\.(?P<step>-*[0-9]+))?"
-)
-
-json_prefix = "json_"
-json_prefix_length = len(json_prefix)
+CAN_NOT_RETRIEVE_HANDLER = "can not retrieve original handler"
 
 
-def get_original_handler(handler: Handler, strict: bool = True) -> Handler:
-    if strict:
-        while isinstance(handler, partial):
-            handler = handler.keywords.get("handler")  # type: ignore
+def get_original_handler(handler: Handler) -> Handler:
+    while is_instance(handler, partial):
+        handler = handler.keywords.get(HANDLER)  # type: ignore
 
-            if handler is None:
-                raise TypeError("Can not retrieve original handler.")
+        if handler is None:
+            raise ValueError(CAN_NOT_RETRIEVE_HANDLER)
 
-        return handler
-
-    else:
-        while True:
-            try:
-                handler = handler.keywords.get("handler")  # type: ignore
-
-                if handler is None:
-                    raise TypeError("Can not retrieve original handler.")
-
-            except AttributeError:
-                return handler
+    return handler
 
 
-def parameter(where: str, **kwargs) -> Mapping[str, Any]:
-    kwargs.setdefault("in", where)
-
-    return kwargs
+IN = "in"
 
 
-def html_response(*args, **kwargs) -> web.Response:
-    kwargs.setdefault("content_type", "text/html")
+def parameter(source: str, **keywords: Any) -> StringDict[Any]:
+    keywords.setdefault(IN, source)
 
-    return web.Response(*args, **kwargs)
-
-
-def json_response(*args, **kwargs) -> web.Response:
-    actual_kwargs = {}
-    json_kwargs = {}
-
-    if kwargs:
-        _json_prefix = json_prefix
-        _json_prefix_length = json_prefix_length
-
-        for key, value in kwargs.items():
-            if key.startswith(_json_prefix):
-                json_kwargs[key[_json_prefix_length:]] = value
-
-            else:
-                actual_kwargs[key] = value
-
-    actual_kwargs.setdefault("dumps", partial(dumps, **json_kwargs))
-
-    return web.json_response(*args, **actual_kwargs)
+    return keywords
 
 
-def text_response(*args, **kwargs) -> web.Response:
-    kwargs.setdefault("content_type", "text/plain")
+TRUE = frozenset(("yes", "y", "true", "t", "1"))
+FALSE = frozenset(("no", "n", "false", "f", "0"))
 
-    return web.Response(*args, **kwargs)
-
-
-def int_or(string: Optional[str], default: int) -> int:
-    return default if string is None else int(string)
+CAN_NOT_CONVERT = "can not convert {} to bool"
 
 
-def parse_bool(
-    string: str,
-    true: Iterable[str] = {"yes", "y", "true", "t", "1"},
-    false: Iterable[str] = {"no", "n", "false", "f", "0"},
-) -> bool:
+def parse_bool(string: str, true: AbstractSet[str] = TRUE, false: AbstractSet[str] = FALSE) -> bool:
     string = string.casefold()
 
     if string in true:
         return True
 
-    elif string in false:
+    if string in false:
         return False
 
-    else:
-        raise ValueError(f"Invalid string given: {string!r}.")
+    raise ValueError(CAN_NOT_CONVERT.format(tick(string)))
 
 
-def parse_enum(
-    string: str, enum: Type[Enum], convert: Optional[Callable[[str], T]] = None
-) -> Enum:
-    if convert is None:
-        return enum.from_value(string)
+E = TypeVar("E", bound=Enum)
+
+
+def parse_enum(string: str, enum: Type[E], parse: Optional[Parse[Any]] = None) -> E:
+    if parse is None:
+        return enum.from_data(string)
 
     try:
-        value = convert(string)
+        return enum.from_data(parse(string))
 
-    except Exception:  # noqa
-        value = cast(T, string)
+    except Exception:
+        return enum.from_data(string)
 
-    return enum.from_value(value)
+
+START = "start"
+STOP = "stop"
+INCLUSIVE = "inclusive"
+
+DIGIT = r"[0-9]"
+EQUAL = r"="
+DOTS = re.escape("..")
+
+RANGE_PATTERN = fr"(?P<{START}>{DIGIT}+){DOTS}(?P<{INCLUSIVE}>{EQUAL})?(?P<{STOP}>{DIGIT}+)"
+
+RANGE = re.compile(RANGE_PATTERN)
 
 
 def parse_pages(string: str) -> Iterable[int]:
     match = RANGE.fullmatch(string)
 
     if match is None:
-        return map(int, filter(bool, string.split(DELIM)))
+        return map(int, string.split(COMMA))
 
-    start = int_or(match.group("start"), 0)
-    stop = int_or(match.group("stop"), 0)
+    start_string = match.group(START)
 
-    if match.group("inclusive"):
+    if start_string is None:
+        raise InternalError  # TODO: message?
+
+    start = int(start_string)
+
+    stop_string = match.group(STOP)
+
+    if stop_string is None:
+        raise InternalError  # TODO: message?
+
+    stop = int(stop_string)
+
+    if match.group(INCLUSIVE) is not None:
         stop += 1
 
-    step = int_or(match.group("step"), 1)
-
-    return range(start, stop, step)
+    return range(start, stop)

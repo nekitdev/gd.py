@@ -1,95 +1,120 @@
-import platform  # machine
-import struct  # bitness
-import sys  # platform
-import sysconfig  # config vars
+from platform import machine as get_machine
+from struct import calcsize as size
+from sys import platform as SYSTEM_PLATFORM_STRING
+from sysconfig import get_config_var as get_config_variable
+from typing import Type, TypeVar
+
+from attrs import frozen
 
 from gd.enums import Platform
-from gd.typing import Tuple, cast
+from gd.string import String
+from gd.string_utils import case_fold
 
 __all__ = (
     "ANDROID",
     "DARWIN",
     "IOS",
+    "IPAD_OS",
     "LINUX",
-    "MACOS",
+    "MAC_OS",
     "WINDOWS",
+    "SYSTEM_BITS",
+    "SYSTEM_PLATFORM",
+    "SYSTEM_PLATFORM_CONFIG",
     "Platform",
-    "platform_from_string",
-    "platform_to_string",
-    "system_bits",
-    "system_platform",
-    "system_platform_raw",
+    "PlatformConfig",
 )
 
-_DELIM = "_x"
+USIZE = "N"
+
+SYSTEM_BITS = size(USIZE)
+
+SEPARATOR = "_x"
+
+partition_separator = SEPARATOR.partition
+concat_separator = SEPARATOR.join
+
+C = TypeVar("C", bound="PlatformConfig")
 
 
-def platform_from_string(string: str) -> Tuple[int, Platform]:
-    platform_string, delim, bits_string = string.partition(_DELIM)
+@frozen()
+class PlatformConfig(String):
+    platform: Platform
+    bits: int
 
-    if not delim:
-        raise ValueError(f"Can not parse {string!r} to platform.")
+    @classmethod
+    def from_string(cls: Type[C], string: str) -> C:
+        platform, _, bits = partition_separator(string)
 
-    return int(bits_string), Platform.from_name(platform_string)
+        return cls(Platform.from_name(platform), int(bits))
+
+    def to_string(self) -> str:
+        parts = (case_fold(self.platform.name), str(self.bits))
+
+        return concat_separator(parts)
+
+    def __str__(self) -> str:
+        return self.to_string()
 
 
-def platform_to_string(bits: int, platform: Platform) -> str:
-    return f"{platform.name.casefold()}{_DELIM}{bits}"
+WINDOWS_LITERAL = "win"
+CYGWIN_LITERAL = "cygwin"
+IPHONE_LITERAL = "iPhone"
+IPAD_LITERAL = "iPad"
+DARWIN_LITERAL = "darwin"
+FREE_BSD_LITERAL = "freebsd"
+LINUX_LITERAL = "linux"
+ANDROID_LITERAL = "android"
 
 
-_ANDROID_API_LEVEL = sysconfig.get_config_vars().get("ANDROID_API_LEVEL")
+ANDROID_API_LEVEL_NAME = "ANDROID_API_LEVEL"
+ANDROID_API_LEVEL = get_config_variable(ANDROID_API_LEVEL_NAME)
 
-if _ANDROID_API_LEVEL is None:
-    _ANDROID_API_LEVEL = 0
-
-if _ANDROID_API_LEVEL > 0:
-    sys.platform = "android"
-
-_IOS_PREFIXES = ("iPad", "iPhone", "iPod")
-
-_MACHINE = platform.machine()
+if ANDROID_API_LEVEL:
+    SYSTEM_PLATFORM_STRING = ANDROID_LITERAL
 
 
 ANDROID = False
 DARWIN = False
 IOS = False
+IPAD_OS = False
+MAC_OS = False
 LINUX = False
-MACOS = False
 WINDOWS = False
 
 
-system_platform_raw = sys.platform
-
-
-if system_platform_raw.startswith(("win", "cygwin")):
+if SYSTEM_PLATFORM_STRING.startswith((WINDOWS_LITERAL, CYGWIN_LITERAL)):
     WINDOWS = True
 
-elif system_platform_raw.startswith("darwin"):
+elif SYSTEM_PLATFORM_STRING.startswith(DARWIN_LITERAL):
     DARWIN = True
 
-    if _MACHINE.startswith(_IOS_PREFIXES):
+    MACHINE = get_machine()
+
+    if MACHINE.startswith(IPHONE_LITERAL):
         IOS = True
 
-    else:
-        MACOS = True
+    elif MACHINE.startswith(IPAD_LITERAL):
+        IPAD_OS = True
 
-elif system_platform_raw.startswith(("freebsd", "linux")):
+    else:
+        MAC_OS = True
+
+elif SYSTEM_PLATFORM_STRING.startswith((LINUX_LITERAL, FREE_BSD_LITERAL)):
     LINUX = True
 
-elif system_platform_raw.startswith("android"):
+elif SYSTEM_PLATFORM_STRING.startswith(ANDROID_LITERAL):
     ANDROID = True
 
 
-system_platform = cast(
-    Platform, {
-        ANDROID: Platform.ANDROID,
-        IOS: Platform.IOS,
-        LINUX: Platform.LINUX,
-        MACOS: Platform.MACOS,
-        WINDOWS: Platform.WINDOWS,
-    }.get(True, Platform.UNKNOWN),
-)
+SYSTEM_PLATFORM = {
+    ANDROID: Platform.ANDROID,
+    IOS: Platform.IOS,
+    IPAD_OS: Platform.IPAD_OS,
+    LINUX: Platform.LINUX,
+    MAC_OS: Platform.MAC_OS,
+    WINDOWS: Platform.WINDOWS,
+}.get(True, Platform.UNKNOWN)
 
 
-byte_bits = 8
-system_bits = struct.calcsize("P") * byte_bits
+SYSTEM_PLATFORM_CONFIG = PlatformConfig(SYSTEM_PLATFORM, SYSTEM_BITS)

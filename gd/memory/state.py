@@ -6,74 +6,69 @@ from gd.decorators import cache_by
 from gd.enums import Protection
 from gd.memory.buffer import Buffer, MutBuffer, buffer, mut_buffer
 from gd.memory.internal import (
-    allocate_memory as system_allocate_memory,
-    free_memory as system_free_memory,
-    get_base_address as system_get_base_address,
-    get_base_address_from_handle as system_get_base_address_from_handle,
-    get_process_bits as system_get_process_bits,
-    # get_process_bits_from_handle as system_get_process_bits_from_handle,
-    open_process as system_open_process,
-    close_process as system_close_process,
-    get_process_id_from_name as system_get_process_id_from_name,
+    allocate_memory as system_allocate_memory,  # get_process_bits_from_handle as system_get_process_bits_from_handle,; linux_get_base_address,; linux_get_process_bits_from_handle,; linux_get_process_id_from_window_title,; linux_get_process_name_from_id,; macos_get_base_address,; macos_get_process_bits_from_handle,; macos_get_process_id_from_window_title,; macos_get_process_name_from_id,; windows_get_base_address_from_handle,; window_get_process_bits,
+)
+from gd.memory.internal import close_process as system_close_process
+from gd.memory.internal import free_memory as system_free_memory
+from gd.memory.internal import get_base_address as system_get_base_address
+from gd.memory.internal import get_base_address_from_handle as system_get_base_address_from_handle
+from gd.memory.internal import get_process_bits as system_get_process_bits
+from gd.memory.internal import get_process_id_from_name as system_get_process_id_from_name
+from gd.memory.internal import (
     get_process_id_from_window_title as system_get_process_id_from_window_title,
-    inject_dll as system_inject_dll,
-    terminate_process as system_terminate_process,
-    protect_process_memory as system_protect_process_memory,
-    read_process_memory as system_read_process_memory,
-    write_process_memory as system_write_process_memory,
+)
+from gd.memory.internal import inject_library as system_inject_library
+from gd.memory.internal import (
     linux_allocate_memory,
+    linux_close_process,
     linux_free_memory,
-    # linux_get_base_address,
     linux_get_base_address_from_handle,
     linux_get_process_bits,
-    # linux_get_process_bits_from_handle,
-    linux_open_process,
-    linux_close_process,
     linux_get_process_id_from_name,
-    # linux_get_process_id_from_window_title,
-    # linux_get_process_name_from_id,
-    linux_inject_dll,
-    linux_terminate_process,
+    linux_inject_library,
+    linux_open_process,
     linux_protect_process_memory,
     linux_read_process_memory,
+    linux_terminate_process,
     linux_write_process_memory,
     macos_allocate_memory,
+    macos_close_process,
     macos_free_memory,
-    # macos_get_base_address,
     macos_get_base_address_from_handle,
     macos_get_process_bits,
-    # macos_get_process_bits_from_handle,
-    macos_open_process,
-    macos_close_process,
     macos_get_process_id_from_name,
-    # macos_get_process_id_from_window_title,
-    # macos_get_process_name_from_id,
-    macos_inject_dll,
-    macos_terminate_process,
+    macos_inject_library,
+    macos_open_process,
     macos_protect_process_memory,
     macos_read_process_memory,
+    macos_terminate_process,
     macos_write_process_memory,
+)
+from gd.memory.internal import open_process as system_open_process
+from gd.memory.internal import protect_process_memory as system_protect_process_memory
+from gd.memory.internal import read_process_memory as system_read_process_memory
+from gd.memory.internal import terminate_process as system_terminate_process
+from gd.memory.internal import (
     windows_allocate_memory,
+    windows_close_process,
     windows_free_memory,
     windows_get_base_address,
-    # windows_get_base_address_from_handle,
-    # window_get_process_bits,
     windows_get_process_bits_from_handle,
-    windows_open_process,
-    windows_close_process,
     windows_get_process_id_from_name,
     windows_get_process_id_from_window_title,
     windows_get_process_name_from_id,
-    windows_inject_dll,
-    windows_terminate_process,
+    windows_inject_library,
+    windows_open_process,
     windows_protect_process_memory,
     windows_read_process_memory,
+    windows_terminate_process,
     windows_write_process_memory,
 )
+from gd.memory.internal import write_process_memory as system_write_process_memory
 from gd.memory.traits import Layout, Read, Write
 from gd.memory.types import Types
 from gd.platform import ANDROID, IOS, LINUX, MACOS, WINDOWS, Platform, system_platform
-from gd.text_utils import make_repr
+from gd.text_utils import nice_repr
 from gd.typing import Callable, Type, TypeVar, Union, cast
 
 __all__ = (
@@ -146,7 +141,7 @@ class BaseState:
             "base_address": hex(self.base_address),
         }
 
-        return make_repr(self, info)
+        return nice_repr(self, info)
 
     def unload(self) -> None:
         self.process_id = 0
@@ -165,9 +160,7 @@ class BaseState:
 
     # REGION: TO BE IMPLEMENTED IN SUBCLASSES
 
-    def allocate_at(
-        self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION
-    ) -> int:
+    def allocate_at(self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION) -> int:
         raise NotImplementedError(
             "Derived classes should implement allocate_at(address, size, flags) method."
         )
@@ -190,8 +183,8 @@ class BaseState:
             "Derived classes should implement write_at(address, size) method."
         )
 
-    def inject_dll(self, path: Union[str, Path]) -> bool:
-        raise NotImplementedError("Derived classes should implement inject_dll(path) method.")
+    def inject_library(self, path: Union[str, Path]) -> bool:
+        raise NotImplementedError("Derived classes should implement inject_library(path) method.")
 
     def close(self) -> None:
         raise NotImplementedError("Derived classes should implement close() method.")
@@ -262,9 +255,7 @@ class SystemState(BaseState):
 
     reload = load
 
-    def allocate_at(
-        self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION
-    ) -> int:
+    def allocate_at(self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION) -> int:
         return system_allocate_memory(self.process_handle, address, size, flags)
 
     def free_at(self, address: int, size: int) -> None:
@@ -279,8 +270,8 @@ class SystemState(BaseState):
     def write_at(self, address: int, data: bytes) -> int:
         return system_write_process_memory(self.process_handle, address, data)
 
-    def inject_dll(self, path: Union[str, Path]) -> bool:
-        return system_inject_dll(self.process_id, path)
+    def inject_library(self, path: Union[str, Path]) -> bool:
+        return system_inject_library(self.process_id, path)
 
     def close(self) -> None:
         return system_close_process(self.process_handle)
@@ -306,9 +297,7 @@ class LinuxState(BaseState):
 
     reload = load
 
-    def allocate_at(
-        self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION
-    ) -> int:
+    def allocate_at(self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION) -> int:
         return linux_allocate_memory(self.process_handle, address, size, flags)
 
     def free_at(self, address: int, size: int) -> None:
@@ -323,8 +312,8 @@ class LinuxState(BaseState):
     def write_at(self, address: int, data: bytes) -> int:
         return linux_write_process_memory(self.process_handle, address, data)
 
-    def inject_dll(self, path: Union[str, Path]) -> bool:
-        return linux_inject_dll(self.process_id, path)
+    def inject_library(self, path: Union[str, Path]) -> bool:
+        return linux_inject_library(self.process_id, path)
 
     def close(self) -> None:
         return linux_close_process(self.process_handle)
@@ -350,9 +339,7 @@ class MacOSState(BaseState):
 
     reload = load
 
-    def allocate_at(
-        self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION
-    ) -> int:
+    def allocate_at(self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION) -> int:
         return macos_allocate_memory(self.process_handle, address, size, flags)
 
     def free_at(self, address: int, size: int) -> None:
@@ -367,8 +354,8 @@ class MacOSState(BaseState):
     def write_at(self, address: int, data: bytes) -> int:
         return macos_write_process_memory(self.process_handle, address, data)
 
-    def inject_dll(self, path: Union[str, Path]) -> bool:
-        return macos_inject_dll(self.process_id, path)
+    def inject_library(self, path: Union[str, Path]) -> bool:
+        return macos_inject_library(self.process_id, path)
 
     def close(self) -> None:
         return macos_close_process(self.process_handle)
@@ -403,9 +390,7 @@ class WindowsState(BaseState):
 
     reload = load
 
-    def allocate_at(
-        self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION
-    ) -> int:
+    def allocate_at(self, address: int, size: int, flags: Protection = DEFAULT_PROTECTION) -> int:
         return windows_allocate_memory(self.process_handle, address, size, flags)
 
     def free_at(self, address: int, size: int) -> None:
@@ -420,8 +405,8 @@ class WindowsState(BaseState):
     def write_at(self, address: int, data: bytes) -> int:
         return windows_write_process_memory(self.process_handle, address, data)
 
-    def inject_dll(self, path: Union[str, Path]) -> bool:
-        return windows_inject_dll(self.process_id, path)
+    def inject_library(self, path: Union[str, Path]) -> bool:
+        return windows_inject_library(self.process_id, path)
 
     def close(self) -> None:
         return windows_close_process(self.process_handle)

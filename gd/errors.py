@@ -1,290 +1,178 @@
-from gd.typing import TYPE_CHECKING, Any, Optional, TypeVar
+from typing import Any, Generic, Optional, TypeVar
+
+from gd.string_utils import password_str, tick
+from gd.typing import AnyException, get_name
 
 __all__ = (
-    "GDException",
-    "HTTPException",
+    "InternalError",
+    "GDError",
     "HTTPError",
+    "HTTPErrorWithOrigin",
     "HTTPStatusError",
-    "ClientException",
+    "ClientError",
     "MissingAccess",
     "SongRestricted",
     "CommentBanned",
-    "LoginFailure",
+    "LoginFailed",
     "LoginRequired",
     "NothingFound",
-    "DataException",
-    "DeError",
-    "SerError",
-    "XMLError",
+    "DataError",
     "EditorError",
 )
 
 T = TypeVar("T")
 U = TypeVar("U")
 
-if TYPE_CHECKING:
-    from gd.model_backend import Field  # type: ignore  # noqa
 
-
-class GDException(Exception):
-    """Base exception class for gd.py.
-    This could be caught to handle any exceptions thrown from this library.
-    """
-
+class InternalError(RuntimeError):
     pass
 
 
-class HTTPException(GDException):
-    """Base exception class for errors that are thrown
-    when operation in :class:`~gd.HTTPClient` fails.
-    """
-
+class GDError(Exception):
     pass
 
 
-class HTTPError(HTTPException):
-    """Exception that is raised when exception
-    in :class:`~gd.HTTPClient` occurs.
-    """
+class HTTPError(GDError):
+    pass
 
-    def __init__(self, origin: BaseException) -> None:
+
+E = TypeVar("E", bound=AnyException, covariant=True)
+
+
+FAILED_TO_PROCESS = "failed to process HTTP request. {}: {}"
+
+
+class HTTPErrorWithOrigin(Generic[E], HTTPError):
+    def __init__(self, origin: E) -> None:
         self._origin = origin
 
-        super().__init__(f"Failed to process HTTP request. {type(origin).__name__}: {origin}")
+        super().__init__(FAILED_TO_PROCESS.format(get_name(type(origin)), origin))
 
     @property
-    def origin(self) -> BaseException:
-        """:class:`BaseException`: The original exception that was raised."""
+    def origin(self) -> E:
         return self._origin
 
 
-class HTTPStatusError(HTTPException):
-    """Exception that is raised when error status code is returned.
-    Error codes are considered to be ``4XX`` (client errors) and ``5XX`` (server errors).
-    """
+STATUS_REASON = "{} {}"
 
+
+class HTTPStatusError(HTTPError):
     def __init__(self, status: int, reason: Optional[Any]) -> None:
         self._status = status
         self._reason = reason
 
-        super().__init__(f"{status} {reason}")
+        super().__init__(STATUS_REASON.format(status, reason))
 
     @property
-    def status(self):
+    def status(self) -> int:
         return self._status
 
     @property
-    def reason(self):
+    def reason(self) -> Optional[Any]:
         return self._reason
 
 
-class ClientException(GDException):
-    """Base exception class for errors that are thrown
-    when operation in :class:`~gd.Client` fails.
-    """
-
+class ClientError(GDError):
     pass
 
 
-class MissingAccess(ClientException):
-    """Exception that is raised when server responses with an error."""
-
+class MissingAccess(ClientError):
     pass
 
 
-class SongRestricted(ClientException):
-    """Exception that is raised when server returns an error when looking for a song."""
+SONG_RESTRICTED = "song with id {} is not allowed for use"
 
+
+class SongRestricted(ClientError):
     def __init__(self, id: int) -> None:
         self._id = id
 
-        super().__init__(f"Song with id {id!r} is not allowed for use.")
+        super().__init__(SONG_RESTRICTED.format(tick(id)))
 
     @property
     def id(self) -> int:
-        """ID of the song that is restricted."""
         return self._id
 
 
-class LoginFailure(ClientException):
-    """Exception that is raised when server returns an error
-    when trying to log in.
-    """
+LOGIN_FAILED = "login failed with name {} and password {}"
 
+
+class LoginFailed(ClientError):
     def __init__(self, name: str, password: str) -> None:
+        password = password_str(password)
+
         self._name = name
         self._password = password
 
-        super().__init__(f"Failed to login with credentials: {name!r} -> {password!r}.")
+        super().__init__(LOGIN_FAILED.format(tick(name), tick(password)))
 
     @property
     def name(self) -> str:
-        """Username that was wrong or password did not match."""
         return self._name
 
     @property
     def password(self) -> str:
-        """Password that login was failed with."""
         return self._password
 
 
-class CommentBanned(ClientException):
-    """Exception that is raised when the client is temporarily or permanently
-    banned from commenting.
-    """
+class CommentBanned(ClientError):
+    PERMANENT = "permanently banned from posting comments; reason: {}"
+    TEMPORARY = "banned for {} seconds from posting comments; reason: {}"
+    DEFAULT_REASON = "not provided"
 
-    PERMANENT = "Permanently banned from posting comments. Reason: {reason}"
-    TEMPORARY = "Banned for {timeout}s from posting comments. Reason: {reason}"
-    DEFAULT_REASON = "Not provided."
-
-    def __init__(self, timeout: Optional[int] = None, reason: Optional[str] = None) -> None:
-        self._timeout = timeout
+    def __init__(self, seconds: Optional[int] = None, reason: Optional[str] = None) -> None:
+        self._seconds = seconds
         self._reason = reason
 
         super().__init__(self.message)
 
     @property
-    def message(self) -> str:
-        timeout = self.timeout
-        reason = self.reason
-
-        if reason is None:
-            reason = self.DEFAULT_REASON
-
-        if timeout is None:
-            return self.PERMANENT.format(reason=reason)
-
-        return self.TEMPORARY.format(timeout=timeout, reason=reason)
-
-    @property
-    def timeout(self) -> Optional[int]:
-        return self._timeout
+    def seconds(self) -> Optional[int]:
+        return self._seconds
 
     @property
     def reason(self) -> Optional[str]:
         return self._reason
 
+    @property
+    def message(self) -> str:
+        seconds = self.seconds
+        reason = self.reason
 
-class LoginRequired(ClientException):
-    """Exception that is raised when the client is not logged in when required."""
+        if reason is None:
+            reason = self.DEFAULT_REASON
 
+        if seconds is None:
+            return self.PERMANENT.format(reason)
+
+        return self.TEMPORARY.format(seconds, reason)
+
+
+class LoginRequired(ClientError):
     pass
 
 
-class NothingFound(ClientException):
-    """Exception that is raised when server returns nothing.
-    It is raised by :class:`~gd.HTTPClient`,
-    and automatically handled by :class:`~gd.Client`.
+NOTHING_FOUND = "{} not found"
 
-    So, if one is working on lower level, i.e.
-    :class:`~gd.HTTPClient` or :class:`~gd.Session`,
-    they should handle it as well.
-    """
 
-    def __init__(self, instance_name: str) -> None:
-        self._instance_name = instance_name
+class NothingFound(ClientError):
+    def __init__(self, name: str) -> None:
+        self._name = name
 
-        super().__init__(f"No {instance_name!r} instances were found.")
+        super().__init__(NOTHING_FOUND.format(tick(name)))
 
     @property
-    def instance_name(self) -> str:
-        """Name of the class instances of which were not found."""
-        return self._instance_name
+    def name(self) -> str:
+        return self._name
 
 
-class DataException(GDException):
-    """Base exception class for errors that are raised
-    when parsing RobTop's data fails.
-    """
-
+class DataError(GDError):
     pass
 
 
-class SerError(DataException):
-    """Exception that is raised when serializing data fails."""
-
-    def __init__(
-        self, data: T, index: U, field: Optional["Field"], origin: Optional[BaseException],
-    ) -> None:
-        self._data = data
-        self._index = index
-        self._field = field
-        self._origin = origin
-
-        lines = [f"Failed to serialize {data!r} at index {index!r}."]
-
-        if field:
-            lines.append(f"[Type] {type(data)!r} -> {field.type!r}")
-            lines.append(f"[Function] {field.ser!r}")
-
-        if origin:
-            lines.append(f"[Origin] {type(origin).__name__}: {origin}")
-
-        super().__init__("\n".join(lines))
-
-    @property
-    def data(self) -> T:
-        return self._data
-
-    @property
-    def index(self) -> U:
-        return self._index  # type: ignore
-
-    @property
-    def field(self) -> Optional["Field"]:
-        return self._field
-
-    @property
-    def origin(self) -> Optional[BaseException]:
-        return self._origin
-
-
-class DeError(DataException):
-    """Exception that is raised if deserializing data fails."""
-
-    def __init__(
-        self, data: str, index: U, field: Optional["Field"], origin: Optional[BaseException],
-    ) -> None:
-        self._data = data
-        self._index = index
-        self._field = field
-        self._origin = origin
-
-        lines = [f"Failed to deserialize {data!r} at index {index!r}."]
-
-        if field:
-            lines.append(f"[Type] {type(data)!r} -> {field.type!r}")
-            lines.append(f"[Function] {field.de!r}")
-
-        if origin:
-            lines.append(f"[Origin] {type(origin).__name__}: {origin}")
-
-        super().__init__("\n".join(lines))
-
-    @property
-    def data(self) -> str:
-        return self._data
-
-    @property
-    def index(self) -> U:
-        return self._index  # type: ignore
-
-    @property
-    def field(self) -> Optional["Field"]:
-        return self._field
-
-    @property
-    def origin(self) -> Optional[BaseException]:
-        return self._origin
-
-
-class XMLError(DataException):
-    """Exception that is raised if conversion in :class:`~gd.XMLParser` fails."""
-
+class EditorError(DataError):
     pass
 
 
-class EditorError(DataException):
-    """Exception that is raised when converting string in :class:`~gd.api.Editor` failed."""
-
+class InternalError(GDError):
     pass

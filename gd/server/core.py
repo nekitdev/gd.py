@@ -1,12 +1,11 @@
 from aiohttp_apispec import setup_aiohttp_apispec  # type: ignore
 from aiohttp_remotes import setup as setup_aiohttp_remotes
 
-import gd
-
+from gd import version_info
 from gd.server.common import ForwardedRelaxed, XForwardedRelaxed, web
 from gd.server.middlewares import status_error_middleware
 from gd.server.routes import routes
-from gd.server.token import Token, TokenDatabase, ServerToken, ServerTokenDatabase
+from gd.server.token import ServerToken, ServerTokenDatabase, Token, TokenDatabase
 from gd.server.typing import Middleware
 from gd.typing import Iterable, Optional, Protocol, Type
 
@@ -32,6 +31,8 @@ class Tool(Protocol):
         ...
 
 
+VERSION = str(gd.version_info)
+
 DEFAULT_MIDDLEWARES: Iterable[Middleware] = (
     status_error_middleware(),
     web.normalize_path_middleware(append_slash=False, remove_slash=True),
@@ -51,7 +52,7 @@ async def setup_app(
     app: web.Application,
     *,
     docs_title: str = "API Documentation",
-    docs_version: str = str(gd.version_info),
+    docs_version: str = VERSION,
     docs_info_url: str = "/api/docs/info.json",
     docs_url: str = "/api/docs",
     middlewares: Iterable[Middleware] = DEFAULT_MIDDLEWARES,
@@ -76,7 +77,7 @@ def setup_app_sync(
     app: web.Application,
     *,
     docs_title: str = "API Documentation",
-    docs_version: str = str(gd.version_info),
+    docs_version: str = VERSION,
     docs_info_url: str = "/api/docs/info.json",
     docs_url: str = "/api/docs",
     middlewares: Iterable[Middleware] = DEFAULT_MIDDLEWARES,
@@ -103,7 +104,7 @@ async def setup_gd_app(
     *,
     client: Optional[gd.Client] = None,
     docs_title: str = "GD API Documentation",
-    docs_version: str = str(gd.version_info),
+    docs_version: str = VERSION,
     docs_info_url: str = "/api/docs/info.json",
     docs_url: str = "/api/docs",
     middlewares: Iterable[Middleware] = DEFAULT_MIDDLEWARES,
@@ -138,7 +139,7 @@ def setup_gd_app_sync(
     *,
     client: Optional[gd.Client] = None,
     docs_title: str = "GD API Documentation",
-    docs_version: str = str(gd.version_info),
+    docs_version: str = VERSION,
     docs_info_url: str = "/api/docs/info.json",
     docs_url: str = "/api/docs",
     middlewares: Iterable[Middleware] = DEFAULT_MIDDLEWARES,

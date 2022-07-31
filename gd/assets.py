@@ -1,0 +1,41 @@
+from pathlib import Path
+
+__all__ = (
+    "ROOT",
+    "ASSETS",
+    "ICON_PATH",
+    "ICON_IMAGE_PATH",
+    "ICON_DATA_PATH",
+    "GLOW_PATH",
+    "GLOW_IMAGE_PATH",
+    "GLOW_DATA_PATH",
+    "ROBOT_ANIMATION_PATH",
+    "SPIDER_ANIMATION_PATH",
+)
+
+ROOT = Path(__file__).parent
+
+ASSETS_NAME = "assets"
+
+ASSETS = ROOT / ASSETS_NAME
+
+ICON_SHEET = "icon_sheet"
+GLOW_SHEET = "glow_sheet"
+ROBOT_ANIMATION_SHEET = "robot_animation_sheet"
+SPIDER_ANIMATION_SHEET = "spider_animation_sheet"
+
+IMAGE_SUFFIX = ".png"
+DATA_SUFFIX = ".json"
+
+ICON_PATH = ASSETS / ICON_SHEET
+
+ICON_IMAGE_PATH = ICON_PATH.with_suffix(IMAGE_SUFFIX)
+ICON_DATA_PATH = ICON_PATH.with_suffix(DATA_SUFFIX)
+
+GLOW_PATH = ASSETS / GLOW_SHEET
+
+GLOW_IMAGE_PATH = GLOW_PATH.with_suffix(IMAGE_SUFFIX)
+GLOW_DATA_PATH = GLOW_PATH.with_suffix(DATA_SUFFIX)
+
+ROBOT_ANIMATION_PATH = (ASSETS / ROBOT_ANIMATION_SHEET).with_suffix(DATA_SUFFIX)
+SPIDER_ANIMATION_PATH = (ASSETS / SPIDER_ANIMATION_SHEET).with_suffix(DATA_SUFFIX)

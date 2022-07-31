@@ -32,7 +32,6 @@ messages = [  # some messages to pick from randomly
     "Insert coin",
     "Wrong button",
     "Time's Up!",
-    "VAMOS",
     "Nice try",
     "Take a break",
     "Explosion!",

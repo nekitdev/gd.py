@@ -1,62 +1,129 @@
-import json
-from collections.abc import Mapping, Sequence, Set
+from abc import abstractmethod
+from builtins import isinstance as is_instance
+from datetime import datetime, timedelta
 from functools import partial
+from json import dump as standard_dump
+from json import dumps as standard_dumps
+from json import load as standard_load
+from json import loads as standard_loads
+from typing import Any, Type, TypeVar
 
-from yarl import URL
+from typing_extensions import Protocol, TypeGuard, runtime_checkable
 
-from gd.datetime import std_date, std_time, std_timedelta
-from gd.typing import Any, Dict, TypeVar, cast
+from gd.text_utils import snake_to_camel
+from gd.typing import JSONType, StringDict, is_instance, is_iterable, is_mapping
 
-__all__ = ("NamedDict", "default", "dump", "dumps", "load", "loads")
+__all__ = (
+    "FromJSON",
+    "ToJSON",
+    "JSON",
+    "is_from_json",
+    "is_to_json",
+    "NamedDict",
+    "CamelDict",
+    "default",
+    "dump",
+    "dumps",
+    "load",
+    "loads",
+)
 
-T = TypeVar("T")
-K = TypeVar("K")
-V = TypeVar("V")
+A = TypeVar("A")
+
+J = TypeVar("J", bound=JSONType)
+
+JP = TypeVar("JP", bound=JSONType, covariant=True)
+JM = TypeVar("JM", bound=JSONType, contravariant=True)
+
+F = TypeVar("F", bound="FromJSONType")
 
 
-class NamedDict(Dict[K, V]):
-    """Improved version of stdlib dictionary, which implements attribute key access."""
+@runtime_checkable
+class FromJSON(Protocol[JM]):
+    @classmethod
+    @abstractmethod
+    def from_json(cls: Type[F], data: JM) -> F:
+        ...
 
-    def copy(self) -> Dict[K, V]:
-        return self.__class__(self)
 
-    def __setattr__(self, name: str, value: V) -> None:
-        self[cast(K, name)] = value
+FromJSONType = FromJSON[JSONType]
 
-    def __getattr__(self, name: str) -> V:
+
+def is_from_json(some: Any) -> TypeGuard[FromJSONType]:
+    return is_instance(some, FromJSONType)
+
+
+T = TypeVar("T", bound="ToJSONType")
+
+
+@runtime_checkable
+class ToJSON(Protocol[JP]):
+    @abstractmethod
+    def to_json(self) -> JP:
+        ...
+
+
+ToJSONType = ToJSON[JSONType]
+
+
+def is_to_json(some: Any) -> TypeGuard[ToJSONType]:
+    return is_instance(some, ToJSONType)
+
+
+@runtime_checkable
+class JSON(FromJSON[J], ToJSON[J], Protocol[J]):
+    pass
+
+
+D = TypeVar("D", bound="AnyNamedDict")
+
+
+class NamedDict(StringDict[A]):
+    def copy(self: D) -> D:
+        return type(self)(self)
+
+    def __getattr__(self, name: str) -> A:
         try:
-            return self[cast(K, name)]
+            return self[name]
 
-        except KeyError:
-            raise AttributeError(name)
-
-
-def default(some_object: T) -> Any:
-    if hasattr(some_object, "__json__"):
-        return some_object.__json__()  # type: ignore
-
-    elif isinstance(some_object, (Sequence, Set)):
-        return list(some_object)
-
-    elif isinstance(some_object, Mapping):
-        return dict(some_object)
-
-    elif isinstance(some_object, URL):
-        return str(some_object)
-
-    elif isinstance(some_object, (std_date, std_time)):
-        return some_object.isoformat()
-
-    elif isinstance(some_object, std_timedelta):
-        return str(some_object)
-
-    else:
-        raise TypeError(
-            f"Object of type {type(some_object).__name__!r} is not JSON-serializable."
-        ) from None
+        except KeyError as error:
+            raise AttributeError(name) from error
 
 
-dump = partial(json.dump, default=default)
-dumps = partial(json.dumps, default=default)
-load = partial(json.load, object_hook=NamedDict)
-loads = partial(json.loads, object_hook=NamedDict)
+AnyNamedDict = NamedDict[Any]
+
+
+class CamelDict(NamedDict[A]):
+    def __getattr__(self, name: str) -> A:
+        return super().__getattr__(snake_to_camel(name))
+
+
+AnyCamelDict = CamelDict[Any]
+
+
+NOT_JSON_SERIALIZABLE = "{} instance is not JSON-serializable"
+
+
+def default(some: Any) -> JSONType:
+    if is_to_json(some):
+        return some.to_json()
+
+    if is_mapping(some):
+        return dict(some)
+
+    if is_iterable(some):
+        return list(some)
+
+    if is_instance(some, datetime):
+        return some.isoformat()
+
+    if is_instance(some, timedelta):
+        return str(some)
+
+    raise TypeError(NOT_JSON_SERIALIZABLE)
+
+
+dump = partial(standard_dump, default=default)
+dumps = partial(standard_dumps, default=default)
+load = partial(standard_load, object_hook=NamedDict)
+loads = partial(standard_loads, object_hook=NamedDict)

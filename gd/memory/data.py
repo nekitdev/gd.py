@@ -1,4 +1,5 @@
-from struct import calcsize as get_size, pack, unpack
+from struct import calcsize as get_size
+from struct import pack, unpack
 
 from gd.enums import ByteOrder
 from gd.memory.utils import bits, class_property

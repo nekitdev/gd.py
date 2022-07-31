@@ -1,16 +1,28 @@
-from aiohttp import web
-from multidict import istr
+from typing import Any, Awaitable, TypeVar
 
-from gd.typing import Awaitable, Callable, Mapping, Protocol, Union
+from aiohttp.web import Request, Response, StreamResponse
 
-__all__ = ("Handler", "Headers", "Middleware", "ToString")
+from gd.typing import Binary, StringMapping, Unary
 
+__all__ = (
+    "GenericHandler",
+    "GenericMiddleware",
+    "StreamHandler",
+    "StreamMiddleware",
+    "Handler",
+    "Middleware",
+)
 
-class ToString(Protocol):
-    def __str__(self) -> str:
-        ...
+In = TypeVar("In", bound=Request)
+Out = TypeVar("Out", bound=StreamResponse)
 
+GenericHandler = Unary[In, Awaitable[Out]]
+GenericMiddleware = Binary[In, GenericHandler[In, Out], Awaitable[Out]]
 
-Handler = Callable[[web.Request], Awaitable[web.StreamResponse]]
-Headers = Mapping[Union[istr, str], ToString]
-Middleware = Callable[[web.Request, Handler], Awaitable[web.StreamResponse]]
+StreamHandler = GenericHandler[Request, StreamResponse]
+StreamMiddleware = GenericMiddleware[Request, StreamResponse]
+
+Handler = GenericHandler[Request, Response]
+Middleware = GenericMiddleware[Request, Response]
+
+Headers = StringMapping[Any]

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from gd.enums import Protection
 from gd.memory.utils import Structure, extern_fn
-from gd.typing import Iterator, Union
+from gd.typing import Iterator, Union, cast
 
 __all__ = (
     "allocate_memory",
@@ -20,7 +20,7 @@ __all__ = (
     "get_process_id_from_name",
     "get_process_id_from_window_title",
     "get_process_name_from_id",
-    "inject_dll",
+    "inject_library",
     "terminate_process",
     "protect_process_memory",
     "read_process_memory",
@@ -28,7 +28,7 @@ __all__ = (
 )
 
 try:
-    libc = ctypes.CDLL("libc.dylib")  # type: ignore
+    libc = ctypes.CDLL("libc.dylib")
 
 except OSError:
     raise ImportError("Can not define memory functions for MacOS.") from None
@@ -229,7 +229,9 @@ def _mach_vm_allocate(
 
 @extern_fn(libc.mach_vm_deallocate)
 def _mach_vm_deallocate(
-    task: vm_map_t, address: mach_vm_address_t, size: mach_vm_size_t,
+    task: vm_map_t,
+    address: mach_vm_address_t,
+    size: mach_vm_size_t,
 ) -> kern_return_t:
     pass
 
@@ -252,7 +254,7 @@ def allocate_memory(
     process_handle: int,
     address: int,  # ignored, as such functionality is not provided
     size: int,
-    flags: Protection = READ | WRITE | EXECUTE,
+    flags: Protection = READ | WRITE | EXECUTE,  # type: ignore
 ) -> int:
     actual_address = mach_vm_address_t(0)
 
@@ -350,7 +352,7 @@ def get_process_bits(process_id: int) -> int:
         ctypes.sizeof(process_info),
     )
 
-    if process_info.flags & PROC_FLAG_LP64:
+    if cast(int, process_info.flags) & PROC_FLAG_LP64:
         return 64
 
     return 32
@@ -368,8 +370,8 @@ def get_process_id_from_window_title(window_title: str) -> int:
     )
 
 
-def inject_dll(process_id: int, path: Union[str, Path]) -> bool:
-    raise NotImplementedError("inject_dll(process_id, path) is not yet implemented for MacOS.")
+def inject_library(process_id: int, path: Union[str, Path]) -> bool:
+    raise NotImplementedError("inject_library(process_id, path) is not yet implemented for MacOS.")
 
 
 def terminate_process(process_handle: int) -> bool:
@@ -377,7 +379,10 @@ def terminate_process(process_handle: int) -> bool:
 
 
 def protect_process_memory(
-    process_handle: int, address: int, size: int, flags: Protection = READ | WRITE | EXECUTE
+    process_handle: int,
+    address: int,
+    size: int,
+    flags: Protection = READ | WRITE | EXECUTE,  # type: ignore
 ) -> int:
     _mach_vm_protect(process_handle, address, size, 0, PROTECTION_FLAGS[flags])
 

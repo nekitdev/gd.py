@@ -7,7 +7,7 @@ import gd
 client = gd.Client()
 
 
-async def main():
+async def main() -> None:
     # get some input from user
     name = input("Enter your GD nickname: ")
 
@@ -20,8 +20,8 @@ async def main():
 
         else:
             print(
-                f"Hello, {user.name}! Your AccountID is {user.account_id} "
-                f"and PlayerID is {user.id}."
+                f"Hello, {user.name}! Your account ID is {user.account_id} "
+                f"and ID is {user.id}."
             )
 
     # could not find

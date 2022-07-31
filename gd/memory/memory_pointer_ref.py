@@ -1,10 +1,10 @@
 # DOCUMENT
 
-from gd.memory.memory import MemoryType, Memory
+from gd.memory.memory import Memory, MemoryType
 from gd.memory.traits import Layout, ReadLayout, ReadWriteLayout
 from gd.memory.utils import class_property
 from gd.platform import Platform, system_bits, system_platform
-from gd.text_utils import make_repr
+from gd.text_utils import nice_repr
 from gd.typing import TYPE_CHECKING, Any, Dict, Generic, Optional, Tuple, Type, TypeVar, Union
 
 if TYPE_CHECKING:
@@ -102,7 +102,7 @@ class MemoryPointer(MemoryBasePointer[ReadLayout[T]]):
     def __repr__(self) -> str:
         info = {"type": self.type, "pointer_type": self.pointer_type}
 
-        return make_repr(self, info)
+        return nice_repr(self, info)
 
     def __int__(self) -> int:
         return self.address

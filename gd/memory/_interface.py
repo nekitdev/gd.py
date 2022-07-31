@@ -2,11 +2,11 @@ from pathlib import Path
 
 from gd.api.editor import Editor
 from gd.converters import get_actual_difficulty
-from gd.crypto import unzip_level_str, zip_level_str
+from gd.encoding import unzip_level_str, zip_level_str
 from gd.decorators import cache_by
 from gd.enums import (
     DemonDifficulty,
-    Gamemode,
+    GameMode,
     LevelDifficulty,
     LevelType,
     Protection,
@@ -31,71 +31,6 @@ from gd.memory._data import (
     uint32,
     uint64,
 )
-from gd.memory.internal import (
-    allocate_memory as system_allocate_memory,
-    free_memory as system_free_memory,
-    get_base_address as system_get_base_address,
-    get_base_address_from_handle as system_get_base_address_from_handle,
-    get_process_bits as system_get_process_bits,
-    # get_process_bits_from_handle as system_get_process_bits_from_handle,
-    open_process as system_open_process,
-    close_process as system_close_process,
-    get_process_id_from_name as system_get_process_id_from_name,
-    get_process_id_from_window_title as system_get_process_id_from_window_title,
-    inject_dll as system_inject_dll,
-    terminate_process as system_terminate_process,
-    protect_process_memory as system_protect_process_memory,
-    read_process_memory as system_read_process_memory,
-    write_process_memory as system_write_process_memory,
-    linux_allocate_memory,
-    linux_free_memory,
-    # linux_get_base_address,
-    linux_get_base_address_from_handle,
-    linux_get_process_bits,
-    # linux_get_process_bits_from_handle,
-    linux_open_process,
-    linux_close_process,
-    linux_get_process_id_from_name,
-    # linux_get_process_id_from_window_title,
-    # linux_get_process_name_from_id,
-    linux_inject_dll,
-    linux_terminate_process,
-    linux_protect_process_memory,
-    linux_read_process_memory,
-    linux_write_process_memory,
-    macos_allocate_memory,
-    macos_free_memory,
-    # macos_get_base_address,
-    macos_get_base_address_from_handle,
-    macos_get_process_bits,
-    # macos_get_process_bits_from_handle,
-    macos_open_process,
-    macos_close_process,
-    macos_get_process_id_from_name,
-    # macos_get_process_id_from_window_title,
-    # macos_get_process_name_from_id,
-    macos_inject_dll,
-    macos_terminate_process,
-    macos_protect_process_memory,
-    macos_read_process_memory,
-    macos_write_process_memory,
-    windows_allocate_memory,
-    windows_free_memory,
-    windows_get_base_address,
-    # windows_get_base_address_from_handle,
-    # window_get_process_bits,
-    windows_get_process_bits_from_handle,
-    windows_open_process,
-    windows_close_process,
-    windows_get_process_id_from_name,
-    windows_get_process_id_from_window_title,
-    windows_get_process_name_from_id,
-    windows_inject_dll,
-    windows_terminate_process,
-    windows_protect_process_memory,
-    windows_read_process_memory,
-    windows_write_process_memory,
-)
 from gd.memory._offsets import (
     Offsets,
     linux_offsets_x32,
@@ -107,8 +42,68 @@ from gd.memory._offsets import (
     windows_offsets_x32,
     windows_offsets_x64,
 )
+from gd.memory.internal import (
+    allocate_memory as system_allocate_memory,  # get_process_bits_from_handle as system_get_process_bits_from_handle,; linux_get_base_address,; linux_get_process_bits_from_handle,; linux_get_process_id_from_window_title,; linux_get_process_name_from_id,; macos_get_base_address,; macos_get_process_bits_from_handle,; macos_get_process_id_from_window_title,; macos_get_process_name_from_id,; windows_get_base_address_from_handle,; window_get_process_bits,
+)
+from gd.memory.internal import close_process as system_close_process
+from gd.memory.internal import free_memory as system_free_memory
+from gd.memory.internal import get_base_address as system_get_base_address
+from gd.memory.internal import get_base_address_from_handle as system_get_base_address_from_handle
+from gd.memory.internal import get_process_bits as system_get_process_bits
+from gd.memory.internal import get_process_id_from_name as system_get_process_id_from_name
+from gd.memory.internal import (
+    get_process_id_from_window_title as system_get_process_id_from_window_title,
+)
+from gd.memory.internal import inject_library as system_inject_library
+from gd.memory.internal import (
+    linux_allocate_memory,
+    linux_close_process,
+    linux_free_memory,
+    linux_get_base_address_from_handle,
+    linux_get_process_bits,
+    linux_get_process_id_from_name,
+    linux_inject_library,
+    linux_open_process,
+    linux_protect_process_memory,
+    linux_read_process_memory,
+    linux_terminate_process,
+    linux_write_process_memory,
+    macos_allocate_memory,
+    macos_close_process,
+    macos_free_memory,
+    macos_get_base_address_from_handle,
+    macos_get_process_bits,
+    macos_get_process_id_from_name,
+    macos_inject_library,
+    macos_open_process,
+    macos_protect_process_memory,
+    macos_read_process_memory,
+    macos_terminate_process,
+    macos_write_process_memory,
+)
+from gd.memory.internal import open_process as system_open_process
+from gd.memory.internal import protect_process_memory as system_protect_process_memory
+from gd.memory.internal import read_process_memory as system_read_process_memory
+from gd.memory.internal import terminate_process as system_terminate_process
+from gd.memory.internal import (
+    windows_allocate_memory,
+    windows_close_process,
+    windows_free_memory,
+    windows_get_base_address,
+    windows_get_process_bits_from_handle,
+    windows_get_process_id_from_name,
+    windows_get_process_id_from_window_title,
+    windows_get_process_name_from_id,
+    windows_inject_library,
+    windows_open_process,
+    windows_protect_process_memory,
+    windows_read_process_memory,
+    windows_terminate_process,
+    windows_write_process_memory,
+)
+from gd.memory.internal import write_process_memory as system_write_process_memory
 from gd.platform import LINUX, MACOS, WINDOWS
-from gd.text_utils import is_level_probably_decoded, make_repr
+from gd.text_utils import is_level_probably_decoded, nice_repr
 from gd.typing import Callable, Dict, List, Type, TypeVar, Union, cast
 
 __all__ = (
@@ -237,7 +232,7 @@ class SystemState:
             "pointer_type": self.pointer_type,
         }
 
-        return make_repr(self, info)
+        return nice_repr(self, info)
 
     def unload(self) -> None:
         self.process_id = 0
@@ -298,8 +293,8 @@ class SystemState:
     def write_at(self, address: int, data: bytes) -> int:
         return system_write_process_memory(self.process_handle, address, data)
 
-    def inject_dll(self, path: Union[str, Path]) -> bool:
-        return system_inject_dll(self.process_id, path)
+    def inject_library(self, path: Union[str, Path]) -> bool:
+        return system_inject_library(self.process_id, path)
 
     def close(self) -> None:
         return system_close_process(self.process_handle)
@@ -524,8 +519,8 @@ class LinuxState(SystemState):
     def raw_write_at(self, address: int, data: bytes) -> int:
         return linux_write_process_memory(self.process_handle, address, data)
 
-    def inject_dll(self, path: Union[str, Path]) -> bool:
-        return linux_inject_dll(self.process_id, path)
+    def inject_library(self, path: Union[str, Path]) -> bool:
+        return linux_inject_library(self.process_id, path)
 
     def close(self) -> None:
         return linux_close_process(self.process_handle)
@@ -567,8 +562,8 @@ class MacOSState(SystemState):
     def raw_write_at(self, address: int, data: bytes) -> int:
         return macos_write_process_memory(self.process_handle, address, data)
 
-    def inject_dll(self, path: Union[str, Path]) -> bool:
-        return macos_inject_dll(self.process_id, path)
+    def inject_library(self, path: Union[str, Path]) -> bool:
+        return macos_inject_library(self.process_id, path)
 
     def close(self) -> None:
         return macos_close_process(self.process_handle)
@@ -654,8 +649,8 @@ class WindowsState(SystemState):
     def raw_write_at(self, address: int, data: bytes) -> int:
         return windows_write_process_memory(self.process_handle, address, data)
 
-    def inject_dll(self, path: Union[str, Path]) -> bool:
-        return windows_inject_dll(self.process_id, path)
+    def inject_library(self, path: Union[str, Path]) -> bool:
+        return windows_inject_library(self.process_id, path)
 
     def close(self) -> None:
         return windows_close_process(self.process_handle)
@@ -774,7 +769,7 @@ class Address:
     def __repr__(self) -> str:
         info = {"address": hex(self.address), "state": self.state}
 
-        return make_repr(self, info)
+        return nice_repr(self, info)
 
     def __bool__(self) -> bool:
         return bool(self.address)
@@ -1117,38 +1112,38 @@ class LevelSettingsLayer(Address):
 
 
 class Player(Address):
-    def get_gamemodes(self) -> List[bool]:
-        return list(map(bool, self.add(self.offsets.player.gamemodes).read_at(6)))
+    def get_game_modes(self) -> List[bool]:
+        return list(map(bool, self.add(self.offsets.player.game_modes).read_at(6)))
 
-    def set_gamemodes(self, gamemodes: List[bool]) -> None:
-        self.add(self.offsets.player.gamemodes).write_buffer(Buffer.from_byte_array(gamemodes))
+    def set_game_modes(self, game_modes: List[bool]) -> None:
+        self.add(self.offsets.player.game_modes).write_buffer(Buffer.from_byte_array(game_modes))
 
-    gamemodes = property(get_gamemodes, set_gamemodes)
+    game_modes = property(get_game_modes, set_game_modes)
 
-    def get_gamemode(self) -> Gamemode:
+    def get_game_mode(self) -> GameMode:
         try:
-            index = self.gamemodes.index(True) + 1
+            index = self.game_modes.index(True) + 1
 
         except ValueError:
             index = 0
 
-        return Gamemode.from_name(GAMEMODE_STATE[index])
+        return GameMode.from_name(GAMEMODE_STATE[index])
 
-    def set_gamemode(self, gamemode: Union[int, str, Gamemode]) -> None:
-        gamemodes = [False, False, False, False, False, False]
+    def set_game_mode(self, game_mode: Union[int, str, GameMode]) -> None:
+        game_modes = [False, False, False, False, False, False]
 
         try:
-            index = GAMEMODE_STATE.index(Gamemode.from_value(gamemode).title)
+            index = GAMEMODE_STATE.index(GameMode.from_value(game_mode).title)
 
         except ValueError:
             pass
 
         else:
-            gamemodes[index] = True
+            game_modes[index] = True
 
-        self.gamemodes = gamemodes
+        self.game_modes = game_modes
 
-    gamemode = property(get_gamemode, set_gamemode)
+    game_mode = property(get_game_mode, set_game_mode)
 
     def get_flipped_gravity(self) -> bool:
         return self.add(self.offsets.player.flipped_gravity).read_bool()

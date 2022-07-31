@@ -3,7 +3,7 @@
 import sys
 
 from gd.iter_utils import is_iterable
-from gd.memory.memory import MemoryType, Memory
+from gd.memory.memory import Memory, MemoryType
 from gd.memory.traits import Layout, ReadLayout, ReadWriteLayout
 from gd.memory.utils import class_property
 from gd.platform import Platform, system_bits, system_platform
@@ -181,9 +181,7 @@ class MemoryMutArray(MemoryArray[T], MemoryBaseArray[ReadWriteLayout[T]]):
     def __setitem__(self, item: slice, value: Iterable[T]) -> None:  # noqa
         ...
 
-    def __setitem__(  # noqa
-        self, item: Union[int, slice], value: Union[T, Iterable[T]]
-    ) -> None:
+    def __setitem__(self, item: Union[int, slice], value: Union[T, Iterable[T]]) -> None:  # noqa
         if isinstance(item, int):
             return self.write_at(item, cast(T, value))
 
@@ -191,9 +189,7 @@ class MemoryMutArray(MemoryArray[T], MemoryBaseArray[ReadWriteLayout[T]]):
             if is_iterable(value):
                 start, stop, step = item.indices(self.length or sys.maxsize)
 
-                return self.write_iter(
-                    range(start, stop, step), cast(Iterable[T], value)
-                )
+                return self.write_iter(range(start, stop, step), cast(Iterable[T], value))
 
             raise ValueError("Expected iterable value with slices.")
 

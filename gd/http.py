@@ -1,31 +1,32 @@
-import asyncio
-import atexit
-import random
-import time
-import types
-import uuid
+from __future__ import annotations
 
+from asyncio import Lock, get_running_loop, new_event_loop, set_event_loop, sleep
+from atexit import register as register_at_exit
+from builtins import getattr as get_attribute
+from builtins import setattr as set_attribute
+from datetime import timedelta
+from io import BytesIO
+from itertools import repeat
 from pathlib import Path
+from random import randrange as get_random_range
+from types import TracebackType as Traceback
+from typing import (
+    Any, AnyStr, BinaryIO, ClassVar, Generic, Mapping, Optional, Set, Type, TypeVar, Union, overload
+)
+from uuid import uuid4 as generate_uuid
 
-import aiohttp
-import tqdm  # type: ignore
+from aiohttp import BasicAuth, ClientError, ClientSession, ClientTimeout
+from attrs import define, field, frozen
+from tqdm import tqdm as progess  # type: ignore
+from typing_extensions import Literal
 from yarl import URL
 
-from gd.api.recording import Recording, RecordingEntry
-from gd.async_utils import get_running_loop, maybe_coroutine, shutdown_loop
-from gd.converters import GameVersion, Password, Version
-from gd.crypto import (  # generate_leaderboard_seed,
-    Key,
-    Salt,
-    encode_base64_str,
-    encode_robtop_str,
-    generate_chk,
-    generate_level_seed,
-    generate_rs,
-    generate_rs_and_encode_number,
-    zip_level_str,
-)
-from gd.decorators import synchronize
+from gd.api.recording import Recording
+from gd.async_utils import maybe_await_call, shutdown_loop
+from gd.constants import DEFAULT_SPECIAL, EMPTY
+from gd.encoding import encode_base64_string_url_safe, generate_check, generate_random_string
+from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, Version
+from gd.typing import AnyException, DynamicTuple, Headers, IntString, IntoPath, JSONType, MaybeAsyncUnary, MaybeIterable, Namespace, Parameters, URLString, is_bytes, is_iterable, is_string
 from gd.enums import (
     AccountURLType,
     CommentState,
@@ -35,52 +36,40 @@ from gd.enums import (
     FriendRequestState,
     FriendRequestType,
     IconType,
+    Key,
     LeaderboardStrategy,
     LevelLeaderboardStrategy,
     LevelLength,
     LikeType,
     MessageState,
     MessageType,
+    ResponseType,
     RewardType,
+    Salt,
     SearchStrategy,
     Secret,
     SimpleRelationshipType,
+    TimelyType,
 )
 from gd.errors import (
     CommentBanned,
     HTTPError,
     HTTPStatusError,
-    LoginFailure,
+    LoginFailed,
     LoginRequired,
     MissingAccess,
     NothingFound,
     SongRestricted,
 )
 from gd.filters import Filters
-from gd.logging import get_logger
-from gd.model import CommentBannedModel  # type: ignore
-from gd.text_utils import is_level_probably_decoded, make_repr, object_count, snake_to_camel
-from gd.typing import (
-    JSON,
-    Any,
-    Awaitable,
-    Callable,
-    Dict,
-    IO,
-    Iterable,
-    Mapping,
-    Optional,
-    Set,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from gd.models import CommentBannedModel
+from gd.models_utils import concat_extra_string
+from gd.string_utils import concat_comma, password_str, tick
+from gd.text_utils import snake_to_camel
+from gd.timer import create_timer
 from gd.version import python_version_info, version_info
 
 __all__ = ("Route", "HTTPClient")
-
-log = get_logger(__name__)
 
 DATABASE = "database"
 ROOT = "/"
@@ -88,16 +77,69 @@ ROOT = "/"
 BASE = "http://www.boomlings.com/database"
 GD_BASE = "http://geometrydash.com/database"
 
-NEWGROUNDS_SONG_LISTEN = "https://www.newgrounds.com/audio/listen/{song_id}"
-NEWGROUNDS_SONG_PAGE = "https://{name}.newgrounds.com/audio/page/{page}"
-NEWGROUNDS_SEARCH = "https://www.newgrounds.com/search/conduct/{type}"
+NEWGROUNDS_SONG_LISTEN = "https://newgrounds.com/audio/listen/{}"
+NEWGROUNDS_SONG_PAGE = "https://{}.newgrounds.com/audio/page/{}"
+NEWGROUNDS_SEARCH = "https://newgrounds.com/search/conduct/{}"
 
-# I might sound stupid but I really like "XMLHTTPRequest", and so I wrote this ~ nekit
+ACCEPT_ENCODING = "Accept-Encoding"
+USER_AGENT = "User-Agent"
+
+FORWARDED_FOR = "X-Forwarded-For"
+REQUESTED_WITH = "X-Requested-With"
+
+# I might sound stupid but I really like `XMLHTTPRequest` more, and so I wrote this ~ nekit
 XML_HTTP_REQUEST = "XML" + "HTTP".title() + "Request"
 
-CLIENTS: Set["HTTPClient"] = set()
+LOGIN = "accounts/loginGJAccount.php"
+LOAD = "accounts/syncGJAccountNew.php"
+SAVE = "accounts/backupGJAccountNew.php"
+GET_ACCOUNT_URL = "getAccountURL.php"
+GET_ROLE_ID = "requestUserAccess.php"
+UPDATE_SETTINGS = "updateGJAccSettings20.php"
+UPDATE_PROFILE = "updateGJUserScore22.php"
+GET_USERS = "getGJUsers20.php"
+GET_USER = "getGJUserInfo20.php"
+GET_RELATIONSHIPS = "getGJUserList20.php"
+GET_LEADERBOARD = "getGJScores20.php"
+GET_LEVELS = "getGJLevels21.php"
+GET_TIMELY = "getGJDailyLevel.php"
+DOWNLOAD_LEVEL = "downloadGJLevel22.php"
+REPORT_LEVEL = "reportGJLevel.php"
+DELETE_LEVEL = "deleteGJLevelUser20.php"
+UPDATE_LEVEL_DESCRIPTION = "updateGJDesc20.php"
+UPLOAD_LEVEL = "uploadGJLevel21.php"
+RATE_LEVEL = "rateGJStars211.php"
+RATE_DEMON = "rateGJDemon21.php"
+SUGGEST_LEVEL = "suggestGJStars20.php"
+GET_LEVEL_LEADERBOARD = "getGJLevelScores211.php"
+UNBLOCK_USER = "unblockGJUser20.php"
+BLOCK_USER = "blockGJUser20.php"
+REMOVE_FRIEND = "removeGJFriend20.php"
+SEND_MESSAGE = "uploadGJMessage20.php"
+GET_MESSAGE = "downloadGJMessage20.php"
+DELETE_MESSAGE = "deleteGJMessages20.php"
+GET_MESSAGES = "getGJMessages20.php"
+SEND_FRIEND_REQUEST = "uploadFriendRequest20.php"
+DELETE_FRIEND_REQUEST = "deleteGJFriendRequests20.php"
+ACCEPT_FRIEND_REQUEST = "acceptGJFriendRequest20.php"
+GET_FRIEND_REQUEST = "readGJFriendRequest20.php"
+GET_FRIEND_REQUESTS = "getGJFriendRequests20.php"
+LIKE_COMMENT = LIKE_LEVEL = "likeGJItem211.php"
+COMMENT_LEVEL = "uploadGJComment21.php"
+POST_COMMENT = "uploadGJAccComment20.php"
+DELETE_LEVEL_COMMENT = "deleteGJComment20.php"
+DELETE_COMMENT = "deleteGJAccComment20.php"
+GET_USER_LEVEL_COMMENTS = "getGJCommentHistory.php"
+GET_USER_COMMENTS = "getGJAccountComments20.php"
+GET_LEVEL_COMMENTS = "getGJComments21.php"
+GET_GAUNTLETS = "getGJGauntlets21.php"
+GET_MAP_PACKS = "getGJMapPacks21.php"
+GET_QUESTS = "getGJChallenges.php"
+GET_CHESTS = "getGJRewards.php"
+GET_TOP_AUTHORS = "getGJTopArtists.php"
+GET_SONG = "getGJSongInfo.php"
 
-VALID_ERRORS = (OSError, aiohttp.ClientError)
+VALID_ERRORS = (OSError, ClientError)
 
 HEAD = "HEAD"
 GET = "GET"
@@ -112,76 +154,65 @@ CONNECT = "CONNECT"
 OPTIONS = "OPTIONS"
 TRACE = "TRACE"
 
+HTTP_SUCCESS = 200
+HTTP_REDIRECT = 300
+HTTP_ERROR = 400
+
 CHUNK_SIZE = 64 * 1024
 
-T = TypeVar("T")
+ResponseData = Union[bytes, str, JSONType]
 
-RequestHook = Callable[["HTTPClient"], Union[T, Awaitable[T]]]
-ResponseData = Union[bytes, str, JSON]
-
-COMMENT_TO_ADD = 1 << 31
+COMMENT_ADD = 1 << 31
 
 
-async def read_data(
-    response: aiohttp.ClientResponse,
-    raw: bool = False,
-    json: bool = False,
-    encoding: str = "utf-8",
-) -> ResponseData:
-    if raw:
-        return await response.read()
-
-    elif json:
-        return await response.json(encoding=encoding, content_type=None)
-
-    else:
-        return await response.text(encoding=encoding)
-
-
-def is_error_code(data: Union[bytes, str]) -> bool:
-    if isinstance(data, bytes):
-        return bool(data) and data[0] == b"-" and data[1:].isdigit()
-
-    else:
-        return bool(data) and data[0] == "-" and data[1:].isdigit()
-
-
-def int_or(data: Union[bytes, str], default: int = 0) -> int:
-    try:
-        return int(data)
-
-    except ValueError:
-        return default
+UNEXPECTED_ERROR_CODE = "got an unexpected error code: {}"
 
 
 def unexpected_error_code(error_code: int) -> MissingAccess:
-    return MissingAccess(f"Got unexpected error code: {error_code}.")
+    return MissingAccess(UNEXPECTED_ERROR_CODE.format(tick(error_code)))
+
+
+ID = "ID"
+ID_TITLE = ID.title()
 
 
 def snake_to_camel_with_id(string: str) -> str:
-    return snake_to_camel(string).replace("Id", "ID")
+    return snake_to_camel(string).replace(ID_TITLE, ID)
 
 
+DEFAULT_HAS_DATA = True
+DEFAULT_TO_CAMEL = True
+
+ROUTE = "{} {}"
+
+
+@frozen()
 class Route:
+    method: str = field()
+    route: str = field()
+    has_data: bool = field(default=DEFAULT_HAS_DATA, kw_only=True)
+    to_camel: bool = field(default=DEFAULT_TO_CAMEL, kw_only=True)
+    parameters: Namespace = field(factory=dict, kw_only=True)
+
     def __init__(
         self,
         method: str,
-        path: str,
+        route: str,
         *,
-        to_camel: bool = False,
-        are_params: bool = False,
-        **parameters,
+        has_data: bool = DEFAULT_HAS_DATA,
+        to_camel: bool = DEFAULT_TO_CAMEL,
+        **parameters: Any,
     ) -> None:
-        self.method = method
-        self.path = path.strip("/")
-        self.are_params = are_params
-
-        self.parameters: Dict[str, Any] = {}
+        self.__attrs_init__(method, route, to_camel=to_camel, has_data=has_data)
 
         self.update(parameters, to_camel=to_camel)
 
     def update(
-        self, mapping: Mapping[str, Any] = None, *, to_camel: bool = False, **parameters,
+        self,
+        mapping: Optional[Namespace] = None,
+        *,
+        to_camel: bool = DEFAULT_TO_CAMEL,
+        **parameters: Any,
     ) -> None:
         if mapping is not None:
             parameters.update(mapping)
@@ -195,12 +226,18 @@ class Route:
             self.parameters.update(parameters)
 
     def __str__(self) -> str:
-        return f"{self.method} {self.path}"
+        return ROUTE.format(self.method, tick(self.route))
 
-    def __repr__(self) -> str:
-        info = {"method": self.method, "path": self.path, "parameters": self.parameters}
 
-        return make_repr(self, info)
+CLIENTS: Set[HTTPClient] = set()
+
+
+def add_client(client: HTTPClient) -> None:
+    CLIENTS.add(client)
+
+
+def remove_client(client: HTTPClient) -> None:
+    CLIENTS.remove(client)
 
 
 async def close_all_clients() -> None:
@@ -211,183 +248,220 @@ async def close_all_clients() -> None:
 
 
 def close_all_clients_sync() -> None:
-    loop = asyncio.new_event_loop()
+    loop = new_event_loop()
 
-    asyncio.set_event_loop(loop)
+    set_event_loop(loop)
 
     loop.run_until_complete(close_all_clients())
 
     shutdown_loop(loop)
 
 
-atexit.register(close_all_clients_sync)
+register_at_exit(close_all_clients_sync)
 
 
-@synchronize
+def try_parse_error_code(string: AnyStr) -> Optional[int]:
+    try:
+        error_code = int(string)
+
+    except ValueError:
+        return None
+
+    else:
+        if error_code < 0:
+            return error_code
+
+        return None
+
+
+def int_or(string: str, default: int) -> int:
+    try:
+        return int(string)
+
+    except ValueError:
+        return default
+
+
+DEFAULT_USER_AGENT = "python/{} gd.py/{}"
+
+DEFAULT_TIMEOUT = 150.0
+
+DEFAULT_GD_WORLD = False
+
+DEFAULT_SEND_USER_AGENT = False
+
+DEFAULT_WITH_BAR = False
+
+DEFAULT_CLOSE = True
+
+DEFUALT_RETRIES = 2
+
+DEFAULT_READ = True
+
+UDID_PREFIX = "S"
+UDID_START = 100_000
+UDID_STOP = 100_000_000
+
+EXTRA_STRING_COUNT = 55
+
+LOOP = "_loop"  # NOTE: keep in sync with the upstream library
+
+UNIT = "b"
+UNIT_SCALE = True
+
+WRITE_BINARY = "wb"
+
+ErrorCodes = Mapping[int, AnyException]
+
+H = TypeVar("H", bound="RequestHook")
+
+C = TypeVar("C", bound="HTTPClient")
+
+
+NAME_TOO_SHORT = "`name` is too short"
+PASSWORD_TOO_SHORT = "`password` is too short"
+LINKED_TO_DIFFERENT = "already linked to a different account"
+INCORRECT_CREDENTIALS = "incorrect credentials: {}, password {}"
+ACCOUNT_DISABLED = "account {} is disabled"
+LINKED_TO_DIFFERENT_STEAM = "already linked to a different steam account"
+
+DATA_TOO_LARGE = "data is too large"
+SOMETHING_WENT_WRONG = "something went wrong on the servers' side"
+
+FAILED_TO_FIND_URL = "failed to find {} URL for user with ID {}"
+
+NO_ROLE_FOUND = "no role found"
+
+FAILED_TO_UPDATE_SETTINGS = "failed to update settings"
+FAILED_TO_UPDATE_PROFILE = "failed to update profile (ID: {})"
+
+CAN_NOT_FIND_USERS = "can not find users by query {}"
+
+CAN_NOT_FIND_USER = "can not find user with ID: {}"
+CAN_NOT_FIND_TYPE_USERS = "can not find {} users"
+
+FAILED_TO_FIND_LEADERBOARD = "failed to find {} leaderboard"
+
+STRATEGY_LEADERBOARD_REQUIRES_LOGIN = "{} strategy requires logged in client"
+
+BY_USER_STRATEGY_REQUIRES_LOGIN = "`by_user` strategy requires logged in client"
+FRIENDS_STRATEGY_REQUIRES_LOGIN = "`friends` strategy requires logged in client"
+
+CAN_NOT_DOWNLOAD_LEVEL = "can not download level with ID: {}"
+
+FAILED_TO_REPORT_LEVEL = "failed to report level with ID: {}"
+FAILED_TO_DELETE_LEVEL = "failed to delete level with ID: {}"
+
+CAN_NOT_UPDATE_LEVEL_DESCRIPTION = "can not update level description (ID: {})"
+
+EXPECTED_TIMELY = "expected timely type"
+CAN_NOT_FIND_TIMELY = "can not find {} level"
+
+AUDIO = "audio"
+USERS = "users"
+LEVELS = "levels"
+
+
+@define()
 class HTTPClient:
-    USER_AGENT = f"python/{python_version_info} gd.py/{version_info}"
-    REQUEST_LOG = "{method} {url} has returned {status}"
-    SUCCESS_LOG = "{method} {url} has received {data}"
+    SKIP_HEADERS: ClassVar[DynamicTuple[str]] = (ACCEPT_ENCODING, USER_AGENT)
 
-    DEFAULT_SKIP_HEADERS = ["Accept-Encoding", "User-Agent"]
+    USER_AGENT: ClassVar[str] = DEFAULT_USER_AGENT.format(python_version_info, version_info)
 
-    def __init__(
-        self,
-        *,
-        url: Union[str, URL] = BASE,
-        proxy: Optional[str] = None,
-        proxy_auth: Optional[aiohttp.BasicAuth] = None,
-        timeout: Union[float, int] = 150,
-        game_version: GameVersion = GameVersion(2, 1),
-        binary_version: Version = Version(3, 5),
-        gd_world: bool = False,
-        forwarded_for: Optional[str] = None,
-        use_user_agent: bool = False,
-    ) -> None:
-        self.session: Optional[aiohttp.ClientSession] = None
+    url: URLString = field(default=BASE)
+    proxy: Optional[str] = field(default=None, repr=False)
+    proxy_auth: Optional[BasicAuth] = field(default=None, repr=False)
+    timeout: float = field(default=DEFAULT_TIMEOUT)
+    game_version: GameVersion = field(default=CURRENT_GAME_VERSION)
+    binary_version: Version = field(default=CURRENT_BINARY_VERSION)
+    gd_world: bool = field(default=DEFAULT_GD_WORLD)
+    forwarded_for: Optional[str] = field(default=None, repr=False)
+    send_user_agent: bool = field(default=DEFAULT_SEND_USER_AGENT, repr=False)
 
-        self.set_url(url)
+    _session: Optional[ClientSession] = field(default=None, repr=False, init=False)
 
-        self.proxy = proxy
-        self.proxy_auth = proxy_auth
+    _before_request: Optional[RequestHook] = field(default=None, repr=False, init=False)
+    _after_request: Optional[RequestHook] = field(default=None, repr=False, init=False)
 
-        self.timeout = timeout
+    def __attrs_post_init__(self) -> None:
+        add_client(self)
 
-        self.game_version = game_version
-        self.binary_version = binary_version
-        self.gd_world = gd_world
+    def __hash__(self) -> int:
+        return id(self)
 
-        self.forwarded_for = forwarded_for
-        self.use_user_agent = use_user_agent
+    def change(self: C, **attributes: Any) -> HTTPClientContextManager[C]:
+        return HTTPClientContextManager(self, **attributes)
 
-        self._before_request: Optional[RequestHook] = None
-        self._after_request: Optional[RequestHook] = None
+    def create_timeout(self) -> ClientTimeout:
+        return ClientTimeout(total=self.timeout)
 
-        CLIENTS.add(self)
-
-    def __repr__(self) -> str:
-        info = {
-            "url": self.str_url,
-            "timeout": self.timeout,
-            "game_version": self.game_version,
-            "binary_version": self.binary_version,
-            "gd_world": self.gd_world,
-        }
-        return make_repr(self, info)
-
-    def change(self, **attrs) -> "HTTPClientContextManager":
-        return HTTPClientContextManager(self, **attrs)
-
-    def get_url(self) -> URL:
-        return URL(self.str_url)
-
-    def set_url(self, url: Union[str, URL]) -> None:
-        self.str_url = str(url)
-
-    url = property(get_url, set_url)
-
-    def create_timeout(self) -> aiohttp.ClientTimeout:
-        return aiohttp.ClientTimeout(total=self.timeout)
-
-    def before_request(self, request_hook: RequestHook) -> RequestHook:
+    def before_request(self, request_hook: H) -> H:
         self._before_request = request_hook
 
         return request_hook
 
-    def after_request(self, request_hook: RequestHook) -> RequestHook:
+    def after_request(self, request_hook: H) -> H:
         self._after_request = request_hook
 
         return request_hook
 
-    async def call_before_request_hook(self) -> Optional[T]:
-        if self._before_request:
-            return await maybe_coroutine(self._before_request, self)
+    async def call_before_request_hook(self) -> None:
+        before_request = self._before_request
 
-        return None
+        if before_request:
+            await maybe_await_call(before_request, self)
 
-    async def call_after_request_hook(self) -> Optional[T]:
-        if self._after_request:
-            return await maybe_coroutine(self._after_request, self)
+    async def call_after_request_hook(self) -> None:
+        after_request = self._after_request
 
-        return None
+        if after_request:
+            await maybe_await_call(after_request, self)
 
     async def close(self) -> None:
-        if self.session is not None:
-            await self.session.close()
+        session = self._session
 
-            self.session = None
+        if session:
+            await session.close()
 
-    async def create_session(self) -> aiohttp.ClientSession:
-        return aiohttp.ClientSession(skip_auto_headers=self.DEFAULT_SKIP_HEADERS)
+            self._session = None
+
+    async def create_session(self) -> ClientSession:
+        return ClientSession(skip_auto_headers=self.SKIP_HEADERS)
 
     async def ensure_session(self) -> None:
-        if self.session is None:
-            self.session = await self.create_session()
+        session = self._session
+
+        if self._session is None:
+            self._session = session = await self.create_session()
 
         loop = get_running_loop()
 
-        maybe_loop = getattr(self.session, "_loop", None)  # XXX: keep up with aiohttp's internals
+        optional_loop = get_attribute(session, LOOP, None)
 
-        if maybe_loop is not None and maybe_loop is not loop:
+        if optional_loop is not loop:
             await self.close()
 
-            self.session = await self.create_session()
+            self._session = await self.create_session()
 
     async def download(
         self,
-        url: Union[URL, str],
+        file: BinaryIO,
+        url: URLString,
         method: str = GET,
         chunk_size: int = CHUNK_SIZE,
-        with_bar: bool = False,
-        close: bool = False,
-        file: Optional[Union[str, Path, IO]] = None,
-        **kwargs,
-    ) -> Optional[bytes]:
-        r"""Download the file at ``url`` with ``method``.
-
-        Parameters
-        ----------
-        method: :class:`str`
-            HTTP method to send request with. Default is ``GET``.
-
-        url: Union[:class:`~yarl.URL`, :class:`str`]
-            URL to request file from.
-
-        chunk_size: :class:`int`
-            Amount of data to read for one chunk. ``-1`` to read until EOF.
-
-        with_bar: :class:`bool`
-            Whether to show progress bar when downloading. ``False`` by default.
-
-        close: :class:`bool`
-            Whether to close the underlying ``file`` after finishing.
-
-        file: Optional[Union[:class:`str`, :class:`~pathlib.Path`, IO]]
-            File to write downloaded data to. If not given,
-            this function returns all the data as the result.
-
-        \*\*kwargs
-            Keywoard arguments to pass to :meth:`aiohttp.ClientSession.request`.
-
-        Returns
-        -------
-        Optional[:class:`bytes`]
-            Data downloaded, if ``file`` is not given or ``None``. Otherwise, returns ``None``.
-        """
-        if isinstance(file, (str, Path)):
-            file = open(file, "wb")
-            close = True
-
+        with_bar: bool = DEFAULT_WITH_BAR,
+        close: bool = DEFAULT_CLOSE,
+        **request_keywords: Any,
+    ) -> None:
         await self.ensure_session()
 
-        async with self.session.request(  # type: ignore
-            url=url, method=method, **kwargs
-        ) as response:
-            if file is None:
-                result = bytes()
+        session = self._session
 
+        async with session.request(  # type: ignore
+            url=url, method=method, **request_keywords
+        ) as response:
             if with_bar:
-                bar = tqdm.tqdm(total=response.content_length, unit="b", unit_scale=True)
+                bar = progess(total=response.content_length, unit=UNIT, unit_scale=UNIT_SCALE)
 
             while True:
                 chunk = await response.content.read(chunk_size)
@@ -395,11 +469,7 @@ class HTTPClient:
                 if not chunk:
                     break
 
-                if file is None:
-                    result += chunk
-
-                else:
-                    file.write(chunk)
+                file.write(chunk)
 
                 if with_bar:
                     bar.update(len(chunk))
@@ -407,75 +477,222 @@ class HTTPClient:
             if with_bar:
                 bar.close()
 
-        if close and file:
+        if close:
             file.close()
 
-        if file is None:
-            return result
+    async def download_to(
+        self,
+        path: IntoPath,
+        url: URLString,
+        method: str = GET,
+        chunk_size: int = CHUNK_SIZE,
+        with_bar: bool = DEFAULT_WITH_BAR,
+        **request_keywords: Any,
+    ) -> None:
+        with Path(path).open(WRITE_BINARY) as file:
+            await self.download(
+                file,
+                url=url,
+                method=method,
+                chunk_size=chunk_size,
+                with_bar=with_bar,
+                **request_keywords,
+            )
 
-        return None
+    async def download_bytes(
+        self,
+        url: URLString,
+        method: str = GET,
+        chunk_size: int = CHUNK_SIZE,
+        with_bar: bool = DEFAULT_WITH_BAR,
+        **request_keywords: Any,
+    ) -> bytes:
+        file = BytesIO()
+
+        await self.download(
+            file,
+            url=url,
+            method=method,
+            chunk_size=chunk_size,
+            with_bar=with_bar,
+            close=False,
+            **request_keywords,
+        )
+
+        file.seek(0)
+
+        data = file.read()
+
+        file.close()
+
+        return data
+
+    @overload
+    async def request_route(
+        self,
+        route: Route,
+        type: Literal[ResponseType.TEXT] = ...,
+        error_codes: Optional[ErrorCodes] = ...,
+        headers: Optional[Headers] = ...,
+        base: Optional[URLString] = ...,
+        retries: int = ...,
+    ) -> str:
+        ...
+
+    @overload
+    async def request_route(
+        self,
+        route: Route,
+        type: Literal[ResponseType.BYTES],
+        error_codes: Optional[ErrorCodes] = ...,
+        headers: Optional[Headers] = ...,
+        base: Optional[URLString] = ...,
+        retries: int = ...,
+    ) -> bytes:
+        ...
+
+    @overload
+    async def request_route(
+        self,
+        route: Route,
+        type: Literal[ResponseType.JSON],
+        error_codes: Optional[ErrorCodes] = ...,
+        headers: Optional[Headers] = ...,
+        base: Optional[URLString] = ...,
+        retries: int = ...,
+    ) -> JSONType:
+        ...
 
     async def request_route(
         self,
         route: Route,
-        raw: bool = False,
-        json: bool = False,
-        error_codes: Optional[Mapping[int, BaseException]] = None,
-        headers: Optional[Dict[str, Any]] = None,
-        base_url: Optional[Union[str, URL]] = None,
-        retries: int = 2,
-    ) -> Optional[ResponseData]:
-        url = URL(self.url if base_url is None else base_url)
+        type: ResponseType = ResponseType.DEFAULT,
+        error_codes: Optional[ErrorCodes] = None,
+        headers: Optional[Headers] = None,
+        base: Optional[URLString] = None,
+        retries: int = DEFUALT_RETRIES,
+    ) -> ResponseData:
+        url = URL(self.url if base is None else base)
 
-        args = dict(
-            method=route.method, url=url / route.path, raw=raw, json=json, error_codes=error_codes,
+        keywords = dict(
+            method=route.method,
+            url=url / route.route,
+            type=type,
+            error_codes=error_codes,
+            headers=headers,
+            retries=retries,
         )
 
-        args["params" if route.are_params else "data"] = route.parameters
+        if route.has_data:
+            keywords.update(data=route.parameters)
 
-        return await self.request(**args)  # type: ignore
+        else:
+            keywords.update(params=route.parameters)
+
+        return await self.request(**keywords)  # type: ignore
+
+    @overload
+    async def request(
+        self,
+        method: str,
+        url: URLString,
+        type: Literal[ResponseType.TEXT] = ...,
+        read: Literal[True] = ...,
+        data: Optional[Parameters] = ...,
+        params: Optional[Parameters] = ...,
+        error_codes: Optional[ErrorCodes] = ...,
+        headers: Optional[Headers] = ...,
+        retries: int = ...,
+    ) -> str:
+        ...
+
+    @overload
+    async def request(
+        self,
+        method: str,
+        url: URLString,
+        type: Literal[ResponseType.BYTES],
+        read: Literal[True] = ...,
+        data: Optional[Parameters] = ...,
+        params: Optional[Parameters] = ...,
+        error_codes: Optional[ErrorCodes] = ...,
+        headers: Optional[Headers] = ...,
+        retries: int = ...,
+    ) -> bytes:
+        ...
+
+    @overload
+    async def request(
+        self,
+        method: str,
+        url: URLString,
+        type: Literal[ResponseType.JSON],
+        read: Literal[True] = ...,
+        data: Optional[Parameters] = ...,
+        params: Optional[Parameters] = ...,
+        error_codes: Optional[ErrorCodes] = ...,
+        headers: Optional[Headers] = ...,
+        retries: int = ...,
+    ) -> JSONType:
+        ...
+
+    @overload
+    async def request(
+        self,
+        method: str,
+        url: URLString,
+        type: ResponseType = ...,
+        read: Literal[False] = ...,
+        data: Optional[Parameters] = ...,
+        params: Optional[Parameters] = ...,
+        error_codes: Optional[ErrorCodes] = ...,
+        headers: Optional[Headers] = ...,
+        retries: int = ...,
+    ) -> None:
+        ...
 
     async def request(
         self,
         method: str,
-        url: Union[str, URL],
-        data: Optional[Mapping[str, Any]] = None,
-        params: Optional[Mapping[str, Any]] = None,
-        raw: bool = False,
-        json: bool = False,
-        read: bool = True,
-        error_codes: Optional[Mapping[int, BaseException]] = None,
-        headers: Optional[Dict[str, Any]] = None,
-        retries: int = 2,
+        url: URLString,
+        type: ResponseType = ResponseType.DEFAULT,
+        read: bool = DEFAULT_READ,
+        data: Optional[Parameters] = None,
+        params: Optional[Parameters] = None,
+        error_codes: Optional[ErrorCodes] = None,
+        headers: Optional[Headers] = None,
+        retries: int = DEFUALT_RETRIES,
     ) -> Optional[ResponseData]:
         await self.ensure_session()
 
         await self.call_before_request_hook()
 
         if retries < 0:
-            attempt_left = -1
-
-        elif retries == 0:
-            attempt_left = 1
+            attempts = -1
 
         else:
-            attempt_left = retries + 1
+            attempts = retries + 1
 
         if headers is None:
             headers = {}
 
-        if self.use_user_agent:
-            headers.setdefault("User-Agent", self.USER_AGENT)
+        else:
+            headers = dict(headers)
 
-        if self.forwarded_for:
-            headers.setdefault("X-Forwarded-For", self.forwarded_for)
+        if self.send_user_agent:
+            headers.setdefault(USER_AGENT, self.USER_AGENT)
 
-        lock = asyncio.Lock()
+        forwarded_for = self.forwarded_for
+
+        if forwarded_for:
+            headers.setdefault(FORWARDED_FOR, forwarded_for)
+
+        lock = Lock()
         error: Optional[BaseException] = None
 
-        while attempt_left:
+        while attempts:
             try:
-                async with lock, self.session.request(  # type: ignore
+                async with lock, self._session.request(  # type: ignore
                     url=url,
                     method=method,
                     data=data,
@@ -485,37 +702,47 @@ class HTTPClient:
                     headers=headers,
                     timeout=self.create_timeout(),
                 ) as response:
-
-                    log.debug("%s %s has returned %d", method, url, response.status)
-
                     if not read:
                         return None
 
-                    response_data = await read_data(response, raw=raw, json=json)
+                    if type is ResponseType.BYTES:
+                        response_data = await response.read()
 
-                    if 200 <= response.status < 300:  # successful
+                    elif type is ResponseType.TEXT:
+                        response_data = await response.text()
 
-                        log.debug("%s %s has received %s", method, url, response_data)
+                    elif type is ResponseType.JSON:
+                        response_data = await response.json(content_type=None)
 
-                        if isinstance(response_data, (bytes, str)):
+                    else:
+                        raise ValueError  # TODO: message?
 
-                            if error_codes and is_error_code(response_data):
-                                error_code = int(response_data)
+                    status = response.status
 
-                                raise error_codes.get(error_code, unexpected_error_code(error_code))
+                    if HTTP_SUCCESS <= status < HTTP_REDIRECT:
+                        if error_codes:
+                            if is_bytes(response_data) or is_string(response_data):
+                                error_code = try_parse_error_code(response_data)
+
+                                if error_code:
+                                    raise error_codes.get(
+                                        error_code, unexpected_error_code(error_code)
+                                    )
 
                         return response_data
 
-                    if response.status >= 400:
-                        error = HTTPStatusError(response.status, response.reason)
+                    if status >= HTTP_ERROR:
+                        reason = response.reason
+
+                        error = HTTPStatusError(status, reason)
 
             except VALID_ERRORS as valid_error:
                 error = HTTPError(valid_error)
 
             finally:
-                await asyncio.sleep(0)  # let underlying connections close
+                await sleep(0)  # let underlying connections close
 
-            attempt_left -= 1
+            attempts -= 1
 
         await self.call_after_request_hook()
 
@@ -525,33 +752,30 @@ class HTTPClient:
         return None
 
     @staticmethod
-    def generate_udid(id: Optional[int] = None, low: int = 1, high: int = 1_000_000_000) -> str:
-        if id is None:
-            id = random.randint(low, high)
-        return f"S{id}"
+    def generate_udid(
+        prefix: str = UDID_PREFIX, start: int = UDID_START, stop: int = UDID_STOP
+    ) -> str:
+        return prefix + str(get_random_range(start, stop))
 
     @staticmethod
     def generate_uuid() -> str:
-        return f"{uuid.uuid4()}"
+        return str(generate_uuid())
 
     @staticmethod
-    def generate_extra_string(amount: int = 55) -> str:
-        return "_".join(map(str, (0 for _ in range(amount))))
+    def generate_extra_string(count: int = EXTRA_STRING_COUNT) -> str:
+        return concat_extra_string(map(str, repeat(0, count)))
 
     def get_game_version(self) -> int:
-        return self.game_version.to_robtop_number()
+        return self.game_version.to_robtop_value()
 
     def get_binary_version(self) -> int:
-        return self.binary_version.to_number()
+        return self.binary_version.to_value()
 
     def get_gd_world(self) -> int:
         return int(self.gd_world)
 
-    def get_secret(self, name: str) -> str:
-        return Secret.from_name(name).value
-
-    async def ping(self, url: Union[str, URL]) -> float:
-        start = time.perf_counter()
+    async def ping(self, url: Union[str, URL]) -> timedelta:
+        timer = create_timer()
 
         try:
             await self.request(GET, url, read=False)
@@ -559,100 +783,111 @@ class HTTPClient:
         except Exception:  # noqa
             pass
 
-        end = time.perf_counter()
-
-        return (end - start) * 1000
+        return timer.elapsed()
 
     async def login(self, name: str, password: str) -> str:
         error_codes = {
-            -1: LoginFailure(name=name, password=password),
-            -12: MissingAccess(f"Account {name!r} (password {password!r}) is disabled."),
+            -1: LoginFailed(name=name, password=password),
+            -8: MissingAccess(NAME_TOO_SHORT),
+            -9: MissingAccess(PASSWORD_TOO_SHORT),
+            -10: MissingAccess(LINKED_TO_DIFFERENT),
+            -11: MissingAccess(
+                INCORRECT_CREDENTIALS.format(tick(name), tick(password_str(password)))
+            ),
+            -12: MissingAccess(ACCOUNT_DISABLED.format(tick(name))),
+            -13: MissingAccess(LINKED_TO_DIFFERENT_STEAM),
         }
 
         route = Route(
             POST,
-            "/accounts/loginGJAccount.php",
+            LOGIN,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             user_name=name,
             password=password,
             udid=self.generate_udid(),
-            secret=self.get_secret("login"),
+            secret=Secret.USER.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
     async def load(self, *, account_id: int, name: str, password: str) -> str:
-        error_codes = {-11: MissingAccess("Failed to load save.")}
+        error_codes = {
+            -11: MissingAccess(
+                INCORRECT_CREDENTIALS.format(tick(name), tick(password_str(password)))
+            )
+        }
 
         route = Route(
             POST,
-            "/accounts/syncGJAccountNew.php",
+            LOAD,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             user_name=name,
             password=password,
-            secret=self.get_secret("login"),
+            secret=Secret.USER.value,
             to_camel=True,
         )
 
-        base_url = await self.get_account_url(account_id, type=AccountURLType.LOAD)  # type: ignore
+        base = await self.get_account_url(account_id, type=AccountURLType.LOAD)
 
-        response = await self.request_route(route, error_codes=error_codes, base_url=base_url)
+        response = await self.request_route(route, error_codes=error_codes, base=base)
 
-        return cast(str, response)
+        return response
 
     async def save(self, data: str, *, account_id: int, name: str, password: str) -> int:
+        incorrect_credentials = MissingAccess(
+            INCORRECT_CREDENTIALS.format(tick(name), tick(password_str(password)))
+        )
+
         error_codes = {
-            -1: MissingAccess("Failed to save."),
-            -4: MissingAccess("Data is too large."),
-            -5: MissingAccess("Invalid login credentials."),
-            -6: MissingAccess("Something went wrong."),
+            -2: incorrect_credentials,
+            -4: MissingAccess(DATA_TOO_LARGE),
+            -5: incorrect_credentials,
+            -6: MissingAccess(SOMETHING_WENT_WRONG),
         }
 
         route = Route(
             POST,
-            "/accounts/backupGJAccountNew.php",
+            SAVE,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             save_data=data,
             user_name=name,
             password=password,
-            secret=self.get_secret("login"),
+            secret=Secret.USER.value,
             to_camel=True,
         )
 
-        base_url = await self.get_account_url(account_id, type=AccountURLType.SAVE)  # type: ignore
+        base = await self.get_account_url(account_id, type=AccountURLType.SAVE)
 
-        response = await self.request_route(route, error_codes=error_codes, base_url=base_url)
+        response = await self.request_route(route, error_codes=error_codes, base=base)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
     async def get_account_url(self, account_id: int, type: AccountURLType) -> URL:
         error_codes = {
-            -1: MissingAccess(
-                f"Failed to find {type.name.lower()} URL for Account ID: {account_id}."
-            )
+            -1: MissingAccess(FAILED_TO_FIND_URL.format(tick(type.name), tick(account_id)))
         }
 
         route = Route(
             POST,
-            "/getAccountURL.php",
+            GET_ACCOUNT_URL,
             account_id=account_id,
             type=type.value,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        url = URL(cast(str, response))
+        url = URL(response)
 
         if url.path == ROOT:
             return url / DATABASE
@@ -660,23 +895,23 @@ class HTTPClient:
         return url
 
     async def get_role_id(self, account_id: int, encoded_password: str) -> int:
-        error_codes = {-1: MissingAccess("No role found.")}
+        error_codes = {-1: MissingAccess(NO_ROLE_FOUND)}
 
         route = Route(
             POST,
-            "/requestUserAccess.php",
+            GET_ROLE_ID,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             account_id=account_id,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
     async def update_settings(
         self,
@@ -686,30 +921,32 @@ class HTTPClient:
         youtube: str,
         twitter: str,
         twitch: str,
+        # discord: str,
         *,
         account_id: int,
         encoded_password: str,
     ) -> int:
-        error_codes = {-1: MissingAccess("Failed to update settings.")}
+        error_codes = {-1: MissingAccess(FAILED_TO_UPDATE_SETTINGS)}
 
         route = Route(
             POST,
-            "/updateGJAccSettings20.php",
+            UPDATE_SETTINGS,
             account_id=account_id,
             gjp=encoded_password,
-            secret=self.get_secret("login"),
+            secret=Secret.USER.value,
             m_s=message_state.value,
             fr_s=friend_request_state.value,
             c_s=comment_state.value,
             yt=youtube,
             twitter=twitter,
             twitch=twitch,
+            # discord=discord,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
     async def update_profile(
         self,
@@ -719,56 +956,54 @@ class HTTPClient:
         user_coins: int,
         demons: int,
         icon_type: IconType,
-        icon: int,
+        icon_id: int,
         color_1_id: int,
         color_2_id: int,
-        has_glow: bool,
-        cube: int,
-        ship: int,
-        ball: int,
-        ufo: int,
-        wave: int,
-        robot: int,
-        spider: int,
-        death_effect: int,
-        special: int = 0,
+        glow: bool,
+        cube_id: int,
+        ship_id: int,
+        ball_id: int,
+        ufo_id: int,
+        wave_id: int,
+        robot_id: int,
+        spider_id: int,
+        explosion_id: int,
+        special: int = DEFAULT_SPECIAL,
         *,
         account_id: int,
         name: str,
         encoded_password: str,
     ) -> int:
         error_codes = {
-            -1: MissingAccess(f"Failed to update profile of a user by Account ID: {account_id}.")
+            -1: MissingAccess(FAILED_TO_UPDATE_PROFILE.format(account_id)),
         }
-        rs = generate_rs()
+        random_string = generate_random_string()
 
-        chk = generate_chk(
-            values=[
-                account_id,
-                user_coins,
-                demons,
-                stars,
-                coins,
-                icon_type.value,
-                icon,
-                diamonds,
-                cube,
-                ship,
-                ball,
-                ufo,
-                wave,
-                robot,
-                int(has_glow),
-                spider,
-                death_effect,
-            ],
-            key=Key.USER_LEADERBOARD,  # type: ignore
-            salt=Salt.USER_LEADERBOARD,  # type: ignore
+        values = (
+            account_id,
+            user_coins,
+            demons,
+            stars,
+            coins,
+            icon_type.value,
+            icon_id,
+            diamonds,
+            cube_id,
+            ship_id,
+            ball_id,
+            ufo_id,
+            wave_id,
+            robot_id,
+            int(glow),
+            spider_id,
+            explosion_id,
         )
+
+        check = generate_check(map(str, values), Key.USER_LEADERBOARD, Salt.USER_LEADERBOARD)
 
         route = Route(
             POST,
-            "/updateGJUserScore22.php",
+            UPDATE_PROFILE,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -778,51 +1013,51 @@ class HTTPClient:
             user_coins=user_coins,
             demons=demons,
             special=special,
-            icon=icon,
+            icon=icon_id,
             icon_type=icon_type.value,
-            acc_icon=cube,
-            acc_ship=ship,
-            acc_ball=ball,
-            acc_bird=ufo,
-            acc_dart=wave,
-            acc_robot=robot,
-            acc_spider=spider,
-            acc_explosion=death_effect,
-            acc_glow=int(has_glow),
+            acc_icon=cube_id,
+            acc_ship=ship_id,
+            acc_ball=ball_id,
+            acc_bird=ufo_id,
+            acc_dart=wave_id,
+            acc_robot=robot_id,
+            acc_spider=spider_id,
+            acc_explosion=explosion_id,
+            acc_glow=int(glow),
             color1=color_1_id,
             color2=color_2_id,
             user_name=name,
             account_id=account_id,
             gjp=encoded_password,
-            seed=rs,
-            seed2=chk,
-            secret=self.get_secret("main"),
+            seed=random_string,
+            seed2=check,
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
     async def search_users_on_page(self, query: Union[int, str], page: int = 0) -> str:
-        error_codes = {-1: MissingAccess(f"Can not find results for query: {query!r}.")}
+        error_codes = {-1: MissingAccess(CAN_NOT_FIND_USERS.format(tick(query)))}
 
         route = Route(
             POST,
-            "/getGJUsers20.php",
+            GET_USERS,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             str=query,
             total=0,
             page=page,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
     async def get_user_profile(
         self,
@@ -831,18 +1066,16 @@ class HTTPClient:
         client_account_id: Optional[int] = None,
         encoded_password: Optional[str] = None,
     ) -> str:
-        error_codes = {
-            -1: MissingAccess(f"Can not find user with ID: {account_id}."),
-        }
+        error_codes = {-1: MissingAccess(CAN_NOT_FIND_USER.format(account_id))}
 
         route = Route(
             POST,
-            "/getGJUserInfo20.php",
+            GET_USER,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             target_account_id=account_id,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
@@ -851,34 +1084,34 @@ class HTTPClient:
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
     async def get_relationships(
         self, type: SimpleRelationshipType, *, account_id: int, encoded_password: str
     ) -> str:
         error_codes = {
-            -1: MissingAccess(f"Failed to fetch {type.name.lower()} users."),
-            -2: NothingFound("AbstractUser"),
+            -1: MissingAccess(CAN_NOT_FIND_USERS),
+            -2: NothingFound(USERS),
         }
 
         route = Route(
             POST,
-            "/getGJUserList20.php",
+            GET_RELATIONSHIPS,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             type=type.value,
             account_id=account_id,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
-    async def get_top(
+    async def get_leaderboard(
         self,
         strategy: LeaderboardStrategy,
         amount: int = 100,
@@ -887,34 +1120,36 @@ class HTTPClient:
         encoded_password: Optional[str] = None,
     ) -> str:
         error_codes = {
-            -1: MissingAccess(f"Failed to fetch leaderboard for strategy: {strategy!r}.")
+            -1: MissingAccess(FAILED_TO_FIND_LEADERBOARD.format(tick(strategy.name.casefold())))
         }
 
         route = Route(
             POST,
-            "/getGJScores20.php",
+            GET_LEADERBOARD,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
-            type=strategy.name.lower(),
+            type=strategy.name.casefold(),
             count=amount,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         if strategy.requires_login():
-            if not account_id or not encoded_password:
-                raise LoginRequired(f"{strategy!r} strategy requires logged in Client.")
+            if account_id is None or encoded_password is None:
+                raise LoginRequired(
+                    STRATEGY_LEADERBOARD_REQUIRES_LOGIN.format(tick(strategy.name.casefold()))
+                )
 
             route.update(account_id=account_id, gjp=encoded_password, to_camel=True)
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
     async def search_levels_on_page(
         self,
-        query: Optional[Union[int, str, Iterable[Any]]] = None,
+        query: Optional[MaybeIterable[IntString]] = None,
         page: int = 0,
         filters: Optional[Filters] = None,
         user_id: Optional[int] = None,
@@ -924,24 +1159,24 @@ class HTTPClient:
         client_user_id: Optional[int] = None,
         encoded_password: Optional[str] = None,
     ) -> str:
-        error_codes = {-1: NothingFound("Level")}
+        error_codes = {-1: NothingFound(LEVELS)}
 
         if filters is None:
             filters = Filters()
 
         if query is None:
-            query = ""
+            query = EMPTY
 
-        if not isinstance(query, str) and isinstance(query, Iterable):
-            query = ",".join(query)
+        if not is_string(query) and is_iterable(query):
+            query = concat_comma(query)
 
         route = Route(
             POST,
-            "/getGJLevels21.php",
+            GET_LEVELS,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
@@ -949,7 +1184,11 @@ class HTTPClient:
             route.update(gauntlet=gauntlet)
 
         else:
-            route.update(filters.to_parameters(), str=query, page=page, total=0, to_camel=True)
+            total = 0
+
+            route.update(
+                filters.to_robtop_filters(), str=query, page=page, total=total, to_camel=True
+            )
 
             if filters.strategy is SearchStrategy.BY_USER:
                 if user_id is None:
@@ -958,9 +1197,7 @@ class HTTPClient:
                         or client_user_id is None
                         or encoded_password is None
                     ):
-                        raise MissingAccess(
-                            "Can not use by-user strategy with no User ID or Client."
-                        )
+                        raise LoginRequired(BY_USER_STRATEGY_REQUIRES_LOGIN)
 
                     route.update(
                         account_id=client_account_id,
@@ -974,31 +1211,34 @@ class HTTPClient:
 
             elif filters.strategy is SearchStrategy.FRIENDS:
                 if client_account_id is None or encoded_password is None:
-                    raise MissingAccess("Friends strategy requires logged in Client.")
+                    raise MissingAccess(FRIENDS_STRATEGY_REQUIRES_LOGIN)
 
                 route.update(account_id=client_account_id, gjp=encoded_password)
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
-    async def get_timely_info(self, weekly: bool) -> str:
-        error_codes = {-1: MissingAccess(f"Can not find {'weekly' if weekly else 'daily'} info.")}
+    async def get_timely_info(self, type: TimelyType) -> str:
+        error_codes = {-1: MissingAccess(CAN_NOT_FIND_TIMELY.format(tick(type.name.casefold())))}
+
+        if type.is_not_timely():
+            raise MissingAccess(EXPECTED_TIMELY)
 
         route = Route(
             POST,
-            "/getGJDailyLevel.php",
+            GET_TIMELY,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
-            weekly=int(weekly),
-            secret=self.get_secret("main"),
+            weekly=int(type.is_weekly()),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
     async def download_level(
         self,
@@ -1007,95 +1247,98 @@ class HTTPClient:
         account_id: Optional[int] = None,
         encoded_password: Optional[str] = None,
     ) -> str:
-        error_codes = {-1: MissingAccess(f"Can not download level with ID: {level_id}.")}
+        error_codes = {-1: MissingAccess(CAN_NOT_DOWNLOAD_LEVEL.format(level_id))}
 
         route = Route(
             POST,
-            "/downloadGJLevel22.php",
+            DOWNLOAD_LEVEL,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             level_id=level_id,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         if account_id is not None and encoded_password is not None:
-            inc = 1
-            rs = generate_rs()
+            increment = 1
+
+            random_string = generate_random_string()
+
             udid = self.generate_udid()
             uuid = self.generate_uuid()
 
-            chk = generate_chk(
-                values=[level_id, inc, rs, account_id, udid, uuid],
-                key=Key.LEVEL,  # type: ignore
-                salt=Salt.LEVEL,  # type: ignore
-            )
+            values = (level_id, increment, random_string, account_id, udid, uuid)
+
+            check = generate_check(map(str, values), Key.LEVEL, Salt.LEVEL)
 
             route.update(
                 account_id=account_id,
                 gjp=encoded_password,
                 udid=udid,
                 uuid=uuid,
-                rs=rs,
-                chk=chk,
+                rs=random_string,
+                chk=check,
                 to_camel=True,
             )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
     async def report_level(self, level_id: int) -> int:
-        error_codes = {-1: MissingAccess(f"Failed to report level with ID: {level_id}.")}
+        error_codes = {-1: MissingAccess(FAILED_TO_REPORT_LEVEL.format(level_id))}
 
-        route = Route(POST, "/reportGJLevel.php", level_id=level_id, to_camel=True)
+        route = Route(POST, REPORT_LEVEL, level_id=level_id, to_camel=True)
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
     async def delete_level(self, level_id: int, *, account_id: int, encoded_password: str) -> int:
-        error_codes = {-1: MissingAccess(f"Failed to delete level with ID: {level_id}.")}
+        error_codes = {-1: MissingAccess(FAILED_TO_DELETE_LEVEL.format(level_id))}
 
         route = Route(
             POST,
-            "/deleteGJLevelUser20.php",
+            DELETE_LEVEL,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             level_id=level_id,
             account_id=account_id,
             gjp=encoded_password,
-            secret=self.get_secret("level"),
+            secret=Secret.LEVEL.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
     async def update_level_description(
         self, level_id: int, description: str, *, account_id: int, encoded_password: str
     ) -> int:
-        error_codes = {-1: MissingAccess(f"Can not update description of the level: {level_id}.")}
+        error_codes = {-1: MissingAccess(CAN_NOT_UPDATE_LEVEL_DESCRIPTION.format(level_id))}
 
         route = Route(
             POST,
-            "/updateGJDesc20.php",
+            UPDATE_LEVEL_DESCRIPTION,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             level_id=level_id,
             account_id=account_id,
             gjp=encoded_password,
-            level_desc=encode_base64_str(description),
+            level_desc=encode_base64_string_url_safe(description),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
+
+    # HERE
 
     async def upload_level(
         self,
@@ -1272,7 +1515,13 @@ class HTTPClient:
         return int_or(cast(str, response), 0)
 
     async def send_level(
-        self, level_id: int, stars: int, feature: bool, *, account_id: int, encoded_password: str,
+        self,
+        level_id: int,
+        stars: int,
+        feature: bool,
+        *,
+        account_id: int,
+        encoded_password: str,
     ) -> int:
         error_codes = {
             -1: MissingAccess(f"Failed to send a level by ID: {level_id}."),
@@ -1377,7 +1626,12 @@ class HTTPClient:
         return cast(str, response)
 
     async def block_or_unblock(
-        self, account_id: int, unblock: bool, *, client_account_id: int, encoded_password: str,
+        self,
+        account_id: int,
+        unblock: bool,
+        *,
+        client_account_id: int,
+        encoded_password: str,
     ) -> int:
         if unblock:
             endpoint = "/unblockGJUser20.php"
@@ -1471,7 +1725,12 @@ class HTTPClient:
         return int_or(cast(str, response), 0)
 
     async def download_message(
-        self, message_id: int, type: MessageType, *, account_id: int, encoded_password: str,
+        self,
+        message_id: int,
+        type: MessageType,
+        *,
+        account_id: int,
+        encoded_password: str,
     ) -> str:
         error_codes = {-1: MissingAccess(f"Failed to read a message by ID: {message_id}.")}
 
@@ -1496,7 +1755,12 @@ class HTTPClient:
         return cast(str, response)
 
     async def delete_message(
-        self, message_id: int, type: MessageType, *, account_id: int, encoded_password: str,
+        self,
+        message_id: int,
+        type: MessageType,
+        *,
+        account_id: int,
+        encoded_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(f"Failed to delete a message by ID: {message_id}.")}
 
@@ -1678,7 +1942,12 @@ class HTTPClient:
         return int_or(cast(str, response), 0)
 
     async def get_friend_requests_on_page(
-        self, type: FriendRequestType, page: int, *, account_id: int, encoded_password: str,
+        self,
+        type: FriendRequestType,
+        page: int,
+        *,
+        account_id: int,
+        encoded_password: str,
     ) -> str:
         error_codes = {
             -1: MissingAccess(f"Failed to get friend requests on page {page}."),
@@ -1901,7 +2170,12 @@ class HTTPClient:
         return cast(str, response)
 
     async def get_level_comments_on_page(
-        self, level_id: int, amount: int, page: int = 0, *, strategy: CommentStrategy,
+        self,
+        level_id: int,
+        amount: int,
+        page: int = 0,
+        *,
+        strategy: CommentStrategy,
     ) -> str:
         error_codes = {
             -1: MissingAccess(f"Failed to get comments of a level by ID: {level_id}."),
@@ -2070,79 +2344,100 @@ class HTTPClient:
 
         return cast(str, response)
 
-    async def get_ng_song(self, song_id: int) -> str:
-        response = await self.request(GET, NEWGROUNDS_SONG_LISTEN.format(song_id=song_id))
+    async def get_newgrounds_song(self, song_id: int) -> str:
+        response = await self.request(GET, NEWGROUNDS_SONG_LISTEN.format(id=song_id))
         return cast(str, response).replace("\\", "")
 
     async def get_artist_info(self, song_id: int) -> str:
         error_codes = {-1: MissingAccess(f"Failed to fetch artist info for ID: {song_id}")}
 
         route = Route(
-            GET, "/testSong.php", song_id=song_id, are_params=True, to_camel=True,
+            GET,
+            "/testSong.php",
+            song_id=song_id,
+            are_params=True,
+            to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
         return cast(str, response)
 
-    async def search_ng_songs_on_page(self, query: str, page: int = 0) -> str:
+    async def search_newgrounds_songs_on_page(self, query: str, page: int = 0) -> str:
         response = await self.request(
-            GET, NEWGROUNDS_SEARCH.format(type="audio"), params=dict(terms=query, page=page + 1),
+            GET,
+            NEWGROUNDS_SEARCH.format(type="audio"),
+            params=dict(terms=query, page=page + 1),
         )
 
         return cast(str, response)
 
-    async def search_ng_users_on_page(self, query: str, page: int = 0) -> str:
+    async def search_newgrounds_users_on_page(self, query: str, page: int = 0) -> str:
         response = await self.request(
-            GET, NEWGROUNDS_SEARCH.format(type="users"), params=dict(terms=query, page=page + 1),
+            GET,
+            NEWGROUNDS_SEARCH.format(type="users"),
+            params=dict(terms=query, page=page + 1),
         )
 
         return cast(str, response)
 
-    async def get_ng_user_songs_on_page(self, name: str, page: int = 0) -> Mapping[str, Any]:
+    async def get_newgrounds_user_songs_on_page(
+        self, name: str, page: int = 0
+    ) -> Mapping[str, Any]:
         response = await self.request(
             GET,
             NEWGROUNDS_SONG_PAGE.format(name=name, page=page + 1),
-            json=True,
-            headers={"X-Requested-With": XML_HTTP_REQUEST},
+            type=ResponseType.JSON,
+            headers={REQUESTED_WITH: XML_HTTP_REQUEST},
         )
 
-        return cast(Mapping[str, Any], response)
+        return response
 
 
-class HTTPClientContextManager:
-    def __init__(self, http_client: HTTPClient, **attrs) -> None:
-        self.attrs = attrs
-        self.saved_attrs: Dict[str, Any] = {}
-        self.http_client = http_client
+RequestHook = MaybeAsyncUnary[HTTPClient, None]
 
-    def __repr__(self) -> str:
-        info = {"http_client": self.http_client}
-        info.update(self.attrs)
-        return make_repr(self, info)
+E = TypeVar("E", bound=AnyException)
+
+
+@frozen()
+class HTTPClientContextManager(Generic[C]):
+    client: C = field()
+    attributes: Namespace = field(repr=False)
+    saved_attributes: Namespace = field(factory=dict, repr=False, init=False)
+
+    def __init__(self, client: C, **attributes: Any) -> None:
+        self.__attrs_init__(client, attributes)
 
     def apply(self) -> None:
-        http_client = self.http_client
-        attrs = self.attrs
-        saved_attrs = self.saved_attrs
+        client = self.client
+        attributes = self.attributes
+        saved_attributes = self.saved_attributes
 
-        for attr, value in attrs.items():
-            saved_attrs[attr] = getattr(http_client, attr, None)  # save attribute value
-            setattr(http_client, attr, value)  # update attribute value
+        for attribute, value in attributes.items():
+            saved_attributes[attribute] = get_attribute(client, attribute, None)
+            set_attribute(client, attribute, value)
 
     def discard(self) -> None:
-        http_client = self.http_client
-        saved_attrs = self.saved_attrs
+        client = self.client
+        saved_attributes = self.saved_attributes
 
-        for saved_attr, saved_value in saved_attrs.items():
-            setattr(http_client, saved_attr, saved_value)  # restore old attribute values
+        for saved_attribute, saved_value in saved_attributes.items():
+            set_attribute(client, saved_attribute, saved_value)  # restore old attribute values
 
-    def __enter__(self) -> HTTPClient:
+    def __enter__(self) -> C:
         self.apply()
 
-        return self.http_client
+        return self.client
+
+    @overload
+    def __exit__(self, error_type: None, error: None, traceback: None) -> None:
+        ...
+
+    @overload
+    def __exit__(self, error_type: Type[E], error: E, traceback: Traceback) -> None:
+        ...
 
     def __exit__(
-        self, error_type: Type[BaseException], error: BaseException, traceback: types.TracebackType
+        self, error_type: Optional[Type[E]], error: Optional[E], traceback: Optional[Traceback]
     ) -> None:
         self.discard()

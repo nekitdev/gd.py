@@ -2,7 +2,7 @@
 
 from gd.memory.utils import class_property
 from gd.platform import Platform, system_bits, system_platform
-from gd.text_utils import make_repr
+from gd.text_utils import nice_repr
 from gd.typing import TYPE_CHECKING, Any, Dict, Generic, Tuple, Type, TypeVar, Union
 
 if TYPE_CHECKING:
@@ -70,7 +70,7 @@ class Memory(metaclass=MemoryType):
     def __repr__(self) -> str:
         info = {"address": hex(self.address), "state": self.state}
 
-        return make_repr(self, info)
+        return nice_repr(self, info)
 
     @class_property
     def size(self) -> int:

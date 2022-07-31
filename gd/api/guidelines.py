@@ -1,78 +1,28 @@
-# DOCUMENT
+from __future__ import annotations
 
-from bisect import bisect_left, bisect_right, insort_left
+from bisect import insort_left
+from typing import BinaryIO, Dict, Iterator, List, Optional, Tuple, Type, TypeVar
 
-from gd.decorators import cache_by
-from gd.enums import GuidelineColor
-from gd.text_utils import make_repr
-from gd.typing import (
-    Dict, Iterable, Iterator, Mapping, Optional, Sequence, Tuple, Type, TypeVar, Union
-)
+from attrs import define, field, frozen
 
-__all__ = ("Guideline", "Guidelines")
+from gd.binary_utils import Reader, Writer
+from gd.colors import Color
+from gd.enums import ByteOrder
+from gd.string_utils import maps
+from gd.typing import IntoMapping, Pairs, is_mapping
 
-K = TypeVar("K")
-V = TypeVar("V")
+__all__ = ("Guidelines", "Guideline")
 
-Pairs = Iterable[Tuple[K, V]]
-IntoColor = Union[float, int, str, GuidelineColor]
-IntoMapping = Union[Mapping[K, V], Pairs[K, V]]
-
-GuidelineT = TypeVar("GuidelineT", bound="Guideline")
-
-T = TypeVar("T")
+G = TypeVar("G", bound="Guideline")
 
 
-def find_before(array: Sequence[T], element: T, strict: bool = True) -> T:
-    bisect = bisect_left if strict else bisect_right
-
-    index = bisect(array, element)
-
-    if index:
-        return array[index - 1]
-
-    raise ValueError(f"Can not find value before {element!r}.")
-
-
-def find_after(array: Sequence[T], element: T, strict: bool = True) -> T:
-    bisect = bisect_right if strict else bisect_left
-
-    index = bisect(array, element)
-
-    if index != len(array):
-        return array[index]
-
-    raise ValueError(f"Can not find value after {element!r}.")
-
-
+@define()
 class Guideline:
-    def __init__(self, timestamp: float, value: float, guidelines: "Guidelines") -> None:
-        self._timestamp = timestamp
-        self._value = value
-        self._guidelines = guidelines
+    _timestamp: float = field()
+    _color: Color = field()
+    _alpha: int = field()
 
-    def __repr__(self) -> str:
-        info = {"timestamp": self.timestamp, "value": self.value, "color": self.color}
-
-        return make_repr(self, info)
-
-    @cache_by("_value")
-    def _get_color(self) -> GuidelineColor:
-        return GuidelineColor.from_value(self._value)
-
-    def _set_color(self, color: IntoColor) -> None:
-        self._value = GuidelineColor.from_value(color).value
-
-    _color = property(_get_color, _set_color)
-
-    def unsync(self) -> None:
-        self._guidelines.remove(self._timestamp)
-
-    def sync(self) -> None:
-        self._guidelines.set(self._timestamp, self._value)
-
-    def resync(self) -> None:
-        self._value = self._guidelines.get(self._timestamp, self._value)
+    _guidelines: Guidelines = field(repr=False)
 
     def get_timestamp(self) -> float:
         return self._timestamp
@@ -80,56 +30,60 @@ class Guideline:
     def set_timestamp(self, timestamp: float) -> None:
         self._timestamp = timestamp
 
+        self.unsync()
         self.sync()
 
     timestamp = property(get_timestamp, set_timestamp)
 
-    def get_value(self) -> float:
-        return self._value
-
-    def set_value(self, value: float) -> None:
-        self._value = value
-
-        self.sync()
-
-    value = property(get_value, set_value)
-
-    def get_color(self) -> GuidelineColor:
+    def get_color(self) -> Color:
         return self._color
 
-    def set_color(self, color: IntoColor) -> None:
+    def set_color(self, color: Color) -> None:
         self._color = color
 
         self.sync()
 
     color = property(get_color, set_color)
 
+    def unsync(self) -> None:
+        self._guidelines.remove(self._timestamp)
 
-_default_sentinel = object()
+    def sync(self) -> None:
+        self._guidelines.set(self._timestamp, self._color)
+
+    def resync(self) -> None:
+        self._color = self._guidelines.get(self._timestamp, self._color)
+
+    @classmethod
+    def from_binary(
+        cls: Type[G], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT
+    ) -> G:
+        reader = Reader()
+
+        timestamp = reader.read_f32(order)
+
+        value = reader.read_u32(order)
+
+IntoGuidelines = IntoMapping[float, Tuple[Color, int]]
+GuidelinePairs = Pairs[float, Tuple[Color, int]]
 
 
-class Guidelines(Dict[float, float]):
-    def __init__(self, guidelines: IntoMapping[float, float] = (), **ignore_kwargs) -> None:
+@frozen()
+class Guidelines(Dict[float, Tuple[Color, int]]):
+    guideline_type: Type[Guideline] = field(default=Guideline)
+
+    _timestamps: List[float] = field(repr=False, init=False)
+
+    @_timestamps.default
+    def default_timestamps(self) -> List[float]:
+        return sorted(self)
+
+    def __init__(
+        self, guidelines: IntoGuidelines, guideline_type: Type[Guideline] = Guideline
+    ) -> None:
         super().__init__(guidelines)
 
-        self._init_timestamps()
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._timestamp_string})"
-
-    @property
-    def _timestamp_string(self) -> str:
-        _casefold = str.casefold
-
-        _color = GuidelineColor
-
-        return ", ".join(
-            f"{_timestamp} -> {_casefold(_color(_value).name)}"
-            for _timestamp, _value in self.items()
-        )
-
-    def _init_timestamps(self) -> None:
-        self._timestamps = sorted(self.keys())
+        self.__attrs_init__(guideline_type)
 
     def _insert_timestamp(self, timestamp: float) -> float:
         if timestamp not in self:
@@ -146,136 +100,54 @@ class Guidelines(Dict[float, float]):
 
         return timestamp
 
-    def __setitem__(self, timestamp: float, value: float) -> None:
-        self._insert_timestamp(timestamp)
+    def _clear_timestamps(self) -> None:
+        self._timestamps.clear()
 
-        super().__setitem__(timestamp, value)
+    def __setitem__(self, timestamp: float, color: Tuple[Color, int]) -> None:
+        super().__setitem__(self._insert_timestamp(timestamp), color)
 
     def __delitem__(self, timestamp: float) -> None:
+        super().__delitem__(self._remove_timestamp(timestamp))
+
+    def pop(self, timestamp: float, default: Optional[Color] = None) -> Color:
         self._remove_timestamp(timestamp)
 
-        super().__delitem__(timestamp)
+        if default is None:
+            return super().pop(timestamp)
 
-    def create_ref(
-        self,
-        timestamp: float,
-        value: float = 0.0,
-        cls: Type[GuidelineT] = Guideline,  # type: ignore
-    ) -> GuidelineT:
-        return cls(timestamp, value, self)
+        return super().pop(timestamp, default)
 
-    def get_ref(
-        self, timestamp: float, cls: Type[GuidelineT] = Guideline  # type: ignore
-    ) -> GuidelineT:
-        return cls(timestamp, self[timestamp], self)
+    def popitem(self) -> Tuple[float, Color]:
+        timestamp, color = super().popitem()
+
+        self._remove_timestamp(timestamp)
+
+        return (timestamp, color)
+
+    def clear(self) -> None:
+        self._clear_timestamps()
+
+        super().clear()
+
+    def setdefault(self, timestamp: float, color: Color) -> float:
+        return super().setdefault(self._insert_timestamp(timestamp), color)
+
+    def update(self, guidelines: IntoGuidelines = ()) -> None:
+        guideline_pairs: GuidelinePairs
+
+        if is_mapping(guidelines):
+            guideline_pairs = guidelines.items()
+
+        else:
+            guideline_pairs = guidelines  # type: ignore
+
+        super().update(
+            (self._insert_timestamp(timestamp), color) for timestamp, color in guideline_pairs
+        )
 
     def remove(self, timestamp: float) -> None:
         if timestamp in self:
             del self[timestamp]
 
-    def set(self, timestamp: float, value: float) -> None:
-        self[timestamp] = value
-
-    def pop(self, timestamp: float, default: float = _default_sentinel) -> None:  # type: ignore
-        self._remove_timestamp(timestamp)
-
-        if default is _default_sentinel:
-            super().pop(timestamp)
-
-        super().pop(timestamp, default)
-
-    def popitem(self) -> Tuple[float, float]:
-        timestamp, value = super().popitem()
-
-        self._remove_timestamp(timestamp)
-
-        return (timestamp, value)
-
-    def clear(self) -> None:
-        self._timestamps.clear()
-
-        super().clear()
-
-    def setdefault(self, timestamp: float, value: float) -> float:  # type: ignore
-        self._insert_timestamp(timestamp)
-
-        return super().setdefault(timestamp, value)
-
-    def update(  # type: ignore
-        self, guidelines: IntoMapping[float, float] = (), **ignore_kwargs
-    ) -> None:
-        guideline_pairs: Pairs[float, float]
-
-        if isinstance(guidelines, Mapping):
-            guideline_pairs = guidelines.items()
-
-        else:
-            guideline_pairs = guidelines
-
-        super().update(
-            (self._insert_timestamp(timestamp), value) for timestamp, value in guideline_pairs
-        )
-
-    @property
-    def timestamps(self) -> Iterator[float]:
-        yield from self._timestamps
-
-    @property
-    def raw_guidelines_ordered(self) -> Iterator[float]:
-        for timestamp in self.timestamps:
-            yield self[timestamp]
-
-    @property
-    def guidelines_ordered(self) -> Iterator[GuidelineT]:
-        for timestamp in self.timestamps:
-            yield self.get_ref(timestamp)
-
-    @property
-    def raw_guidelines(self) -> Iterator[float]:
-        yield from self.values()
-
-    @property
-    def guidelines(self) -> Iterator[GuidelineT]:
-        for timestamp, value in self.items():
-            yield self.create_ref(timestamp, value)
-
-    def at(self, timestamp: float) -> float:
-        return self[timestamp]
-
-    def at_or(
-        self, timestamp: float, default: Optional[float] = None
-    ) -> Optional[float]:
-        if timestamp in self:
-            return self[timestamp]
-
-        return default
-
-    def timestamp_before(self, timestamp: float, strict: bool = True) -> float:
-        return find_before(self._timestamps, timestamp, strict=strict)
-
-    def timestamp_after(self, timestamp: float, strict: bool = True) -> float:
-        return find_after(self._timestamps, timestamp, strict=strict)
-
-    def before(self, timestamp: float, strict: bool = True) -> float:
-        return self[self.timestamp_before(timestamp, strict=strict)]
-
-    def after(self, timestamp: float, strict: bool = True) -> float:
-        return self[self.timestamp_after(timestamp, strict=strict)]
-
-    def before_or(
-        self, timestamp: float, default: Optional[float], strict: bool = True
-    ) -> Optional[float]:
-        try:
-            return self.before(timestamp)
-
-        except (LookupError, ValueError):
-            return default
-
-    def after_or(
-        self, timestamp: float, default: Optional[float], strict: bool = True
-    ) -> Optional[float]:
-        try:
-            return self.after(timestamp)
-
-        except (LookupError, ValueError):
-            return default
+    def set(self, timestamp: float, color: Color) -> None:
+        self[timestamp] = color

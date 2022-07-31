@@ -1,184 +1,190 @@
-"""discord.py task implementation, adjusted for gd.py.
+"""..., adapted from `discord.py` library."""
 
-The MIT License (MIT)
+from __future__ import annotations
 
-Copyright (c) 2015-2020 Rapptz
+from asyncio import CancelledError, Task, TimeoutError, create_task, sleep
+from builtins import issubclass as is_subclass
+from functools import partial
+from random import Random
+from time import monotonic
+from typing import Any, Awaitable, Callable, Generic, Optional, Type, TypeVar, Union
 
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the "Software"),
-to deal in the Software without restriction, including without limitation
-the rights to use, copy, modify, merge, publish, distribute, sublicense,
-and/or sell copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following conditions:
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+from aiohttp import ClientError
+from attrs import define, field
+from typing_extensions import ParamSpec
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-"""
-
-import asyncio
-import inspect
-import random
-import time
-
-import aiohttp
-
-from gd.async_utils import get_maybe_running_loop
-from gd.errors import GDException
-from gd.logging import get_logger
-from gd.typing import Awaitable, Callable, Optional, Tuple, Type, TypeVar, Union
+from gd.errors import GDError
+from gd.typing import AnyException, DynamicTuple, Nullary, StringDict, Unary
 
 __all__ = ("ExponentialBackoff", "Loop", "loop")
 
-S = TypeVar("S")
-T = TypeVar("T")
-U = TypeVar("U")
+Clock = Nullary[float]
 
-MAX_ASYNCIO_SECONDS = 3456000
+DAYS_TO_HOURS = 24.0
+HOURS_TO_MINUTES = 60.0
+MINUTES_TO_SECONDS = 60.0
+HOURS_TO_SECONDS = HOURS_TO_MINUTES * MINUTES_TO_SECONDS
+DAYS_TO_MINUTES = DAYS_TO_HOURS * HOURS_TO_MINUTES
+DAYS_TO_SECONDS = DAYS_TO_MINUTES * MINUTES_TO_SECONDS
 
-log = get_logger(__name__)
+RANDOM = Random()
+RANDOM.seed()
+
+uniform_to = partial(RANDOM.uniform, 0.0)
+
+DEFAULT_MULTIPLY = 1.0
+DEFAULT_BASE = 2.0
+DEFAULT_LIMIT = 10
 
 
+@define()
 class ExponentialBackoff:
-    """An implementation of the exponential backoff algorithm.
+    """An implementation of the *exponential backoff* algorithm.
 
     Provides a convenient interface to implement an exponential backoff
     for reconnecting or retrying transmissions in a distributed network.
 
     Once instantiated, the delay method will return the next interval to
-    wait for when retrying a connection or transmission.  The maximum
+    wait for when retrying a connection or transmission. The maximum
     delay increases exponentially with each retry up to a maximum of
-    2^10 * base, and is reset if no more attempts are needed in a period
-    of 2^11 * base seconds.
-
-    Parameters
-    ----------
-    base: :class:`int`
-        The base delay in seconds. The first retry-delay will be up to
-        this many seconds.
-
-    integral: :class:`bool`
-        Set to ``True`` if whole periods of base is desirable, otherwise any
-        number in between may be returned.
+    `multiply * base ^ limit`, and is reset if no more attempts are needed in a period
+    of `multiply * base ^ (limit + 1)` seconds.
     """
 
-    def __init__(self, base: int = 1, *, integral: bool = False) -> None:
-        self._base = base
+    multiply: float = field(default=DEFAULT_MULTIPLY)
+    base: float = field(default=DEFAULT_BASE)
+    limit: int = field(default=DEFAULT_LIMIT)
 
-        self._exp = 0
-        self._max = 10
-        self._reset_time = base * 2 ** 11
-        self._last_invocation = time.monotonic()
+    _clock: Clock = field(default=monotonic)
 
-        # Use our own random instance to avoid messing with global one
-        random_object = random.Random()
-        random_object.seed()
+    _exponent: int = field(default=0, init=False)
+    _last_called: float = field(init=False)
+    _reset_delta: float = field(init=False)
 
-        self._randfunc: Union[Callable[[int, int], int], Callable[[float, float], float]] = (
-            random_object.randrange if integral else random_object.uniform
-        )
+    @_last_called.default
+    def default_last_called(self) -> float:
+        return self._clock()
 
-    def delay(self) -> Union[float, int]:
-        """Compute the next delay.
+    @_reset_delta.default
+    def default_reset_delta(self) -> float:
+        return self.multiply * pow(self.base, self.limit + 1)
+
+    def delay(self) -> float:
+        """Computes the next delay.
 
         Returns the next delay to wait according to the exponential
-        backoff algorithm.  This is a value between 0 and base * 2^exp
-        where exponent starts off at 1 and is incremented at every
-        invocation of this method up to a maximum of 10.
+        backoff algorithm. This is a value between `0` and `multiply * base ^ exponent`
+        where `exponent` starts off at `0` and is incremented at every
+        invocation of this method up to a maximum of `limit`.
 
-        If a period of more than base * 2^11 has passed since the last
-        retry, the exponent is reset to 1.
+        If a period of more than `multiply * base ^ (limit + 1)` has passed since the last
+        retry, the `exponent` is reset to `0`.
         """
-        invocation = time.monotonic()
-        interval = invocation - self._last_invocation
-        self._last_invocation = invocation
+        called = self._clock()
 
-        if interval > self._reset_time:
-            self._exp = 0
+        interval = called - self._last_called
+        self._last_called = called
 
-        self._exp = min(self._exp + 1, self._max)
-        return self._randfunc(0, self._base * 2 ** self._exp)
+        if interval > self._reset_delta:
+            self._exponent = 0
+
+        if self._exponent < self.limit:
+            self._exponent += 1
+
+        return uniform_to(self.multiply * pow(self.base, self._exponent))
 
 
-class Loop:
-    """A background task helper that abstracts the loop and reconnection logic for you.
+P = ParamSpec("P")
+S = TypeVar("S")
 
-    The main interface to create this is through :func:`~gd.tasks.loop`.
+LoopFunction = Union[Nullary[Awaitable[None]], Unary[S, Awaitable[None]]]
+
+TASK_ALREADY_LAUNCHED = "task is already launched and has not completed yet"
+
+DEFAULT_DELAY = 0.0
+DEFAULT_RECONNECT = True
+
+F = TypeVar("F", bound=LoopFunction[Any])
+L = TypeVar("L", bound="Loop[Any]")
+
+
+@define()
+class Loop(Generic[P]):
+    """A background task helper that abstracts the loop and reconnection logic.
+
+    The main interface to create this is through [`loop`][gd.tasks.loop].
     """
 
-    def __init__(
-        self,
-        seconds: Union[float, int],
-        hours: Union[float, int],
-        minutes: Union[float, int],
-        coroutine: Callable[..., Awaitable[T]],
-        count: Optional[int],
-        reconnect: bool,
-        loop: Optional[asyncio.AbstractEventLoop],
-    ) -> None:
-        self.coroutine = coroutine
-        self.reconnect = reconnect
-        self.loop = loop or get_maybe_running_loop()
-        self.count = count
+    function: Callable[P, Awaitable[None]] = field()
 
-        self._current_loop = 0
-        self._injected: Optional[S] = None  # type: ignore
-        self._task: Optional[asyncio.Task] = None
-        self._valid_exception: Tuple[Type[BaseException], ...] = (
-            OSError,
-            GDException,
-            aiohttp.ClientError,
-            asyncio.TimeoutError,
-        )
+    delay: float = field(default=DEFAULT_DELAY)
 
-        self._before_loop: Optional[Callable[..., Awaitable[T]]] = None
-        self._after_loop: Optional[Callable[..., Awaitable[T]]] = None
-        self._is_being_cancelled = False
-        self._has_failed = False
-        self._stop_next_iteration = False
+    count: Optional[int] = field(default=None)
 
-        if self.count is not None and self.count <= 0:
-            raise ValueError("Count must be greater than 0 or None.")
+    reconnect: bool = field(default=DEFAULT_RECONNECT)
 
-        self.change_interval(seconds=seconds, minutes=minutes, hours=hours)
+    _task: Optional[Task[None]] = field(default=None, init=False)
 
-        if not inspect.iscoroutinefunction(self.coroutine):
-            raise TypeError(f"Expected coroutine function, not {type(self.coroutine).__name__!r}.")
+    _current_count: int = field(default=0, init=False)
 
-    async def _call_loop_function(self, name: str) -> None:
-        coroutine = getattr(self, "_" + name)
+    _error_types: DynamicTuple[Type[AnyException]] = field(
+        default=(OSError, GDError, ClientError, TimeoutError),
+        init=False,
+    )
 
-        if coroutine is None:
+    _is_being_cancelled: bool = field(default=False, init=False)
+    _has_failed: bool = field(default=False, init=False)
+    _stop_next_iteration: bool = field(default=False, init=False)
+
+    _injected: Optional[Any] = field(default=None, init=False)
+
+    _before_loop: Optional[LoopFunction[Any]] = field(default=None, init=False)
+    _after_loop: Optional[LoopFunction[Any]] = field(default=None, init=False)
+
+    async def _call_before_loop(self) -> None:
+        before_loop = self._before_loop
+
+        if before_loop is None:
             return
 
-        if self._injected is not None:
-            await coroutine(self._injected)
+        injected = self._injected
+
+        if injected is None:
+            await before_loop()  # type: ignore
 
         else:
-            await coroutine()
+            await before_loop(injected)  # type: ignore
 
-    async def _loop(self, *args, **kwargs) -> None:
+    async def _call_after_loop(self) -> None:
+        after_loop = self._after_loop
+
+        if after_loop is None:
+            return
+
+        injected = self._injected
+
+        if injected is None:
+            await after_loop()  # type: ignore
+
+        else:
+            await after_loop(injected)  # type: ignore
+
+    async def _loop(self, *args: P.args, **kwargs: P.kwargs) -> None:
         backoff = ExponentialBackoff()
 
-        await self._call_loop_function("before_loop")
+        await self._call_before_loop()
 
         try:
             while True:
                 try:
-                    await self.coroutine(*args, **kwargs)
+                    await self.function(*args, **kwargs)
 
-                except self._valid_exception:
+                except self._error_types:
 
                     if not self.reconnect:
                         raise
 
-                    await asyncio.sleep(backoff.delay())
+                    await sleep(backoff.delay())
 
                 else:
                     if self._stop_next_iteration:
@@ -189,349 +195,142 @@ class Loop:
                     if self._current_loop == self.count:
                         break
 
-                    await asyncio.sleep(self._sleep)
+                    await sleep(self.delay)
 
-        except asyncio.CancelledError:
+        except CancelledError:
             self._is_being_cancelled = True
+
             raise
 
         except Exception:
             self._has_failed = True
-            log.exception("Internal background task failed.")
+
             raise
 
         finally:
-            await self._call_loop_function("after_loop")
+            await self._call_after_loop()
+
+            self._current_loop = 0
 
             self._is_being_cancelled = False
-            self._current_loop = 0
-            self._stop_next_iteration = False
             self._has_failed = False
+            self._stop_next_iteration = False
 
-    def __get__(self, self_object: Optional[S], object_type: Type[S]) -> "Loop":
-        if self_object is None:
+    def __get__(self: L, instance: Optional[S], type: Optional[Type[S]] = None) -> L:
+        if instance is None:
             return self
 
-        self._injected = self_object
+        self._injected = instance
 
         return self
 
     @property
     def current_loop(self) -> int:
-        """:class:`int`: The current iteration of the loop."""
         return self._current_loop
 
-    def start(self, *args, **kwargs) -> asyncio.Task:
-        r"""Starts the internal task in the event loop.
+    def start(self, *args: Any, **kwargs: Any) -> Task[None]:
+        task = self._task
 
-        Parameters
-        ----------
-        \*args
-            The arguments to to use.
-        \*\*kwargs
-            The keyword arguments to use.
+        if task is not None and not task.done():
+            raise RuntimeError(TASK_ALREADY_LAUNCHED)
 
-        Raises
-        ------
-        :exc:`RuntimeError`
-            A task has already been launched and is running.
+        injected = self._injected
 
-        Returns
-        -------
-        :class:`asyncio.Task`
-            The task that has been created.
-        """
+        if injected is not None:
+            args = (injected, *args)
 
-        if self._task is not None and not self._task.done():
-            raise RuntimeError("Task is already launched and is not completed.")
+        self._task = task = create_task(self._loop(*args, **kwargs))
 
-        if self._injected is not None:
-            args = (self._injected, *args)
-
-        self._task = self.loop.create_task(self._loop(*args, **kwargs))
-
-        return self._task
+        return task
 
     def stop(self) -> None:
-        r"""Gracefully stops the task from running.
+        task = self._task
 
-        Unlike :meth:`~gd.tasks.Loop.cancel`, this allows the task to finish its
-        current iteration before gracefully exiting.
-
-        .. note::
-
-            If the internal function raises an error that can be
-            handled before finishing then it will retry until
-            it succeeds.
-
-            If this is undesirable, either remove the error handling
-            before stopping via :meth:`~gd.tasks.Loop.clear_exception_types` or
-            use :meth:`~gd.tasks.Loop.cancel` instead.
-        """
-        if self._task is not None and not self._task.done():
+        if task is not None and not task.done():
             self._stop_next_iteration = True
 
+    @property
     def _can_be_cancelled(self) -> bool:
-        return not self._is_being_cancelled and self._task is not None and not self._task.done()
+        task = self._task
+
+        return not self._is_being_cancelled and task is not None and not task.done()
 
     def cancel(self) -> None:
-        """Cancels the internal task, if it is running."""
-        if self._can_be_cancelled():
+        if self._can_be_cancelled:
             self._task.cancel()  # type: ignore
 
-    def restart(self, *args, **kwargs) -> None:
-        r"""A convenient method to restart the internal task.
-
-        .. note::
-
-            Due to the way this function works, the task is not
-            returned like :meth:`~gd.tasks.Loop.start`.
-
-        Parameters
-        ------------
-        \*args
-            The arguments to to use.
-        \*\*kwargs
-            The keyword arguments to use.
-        """
-
+    def restart(self, *args: Any, **kwargs: Any) -> None:
         def restart_when_over(
-            future: Union[asyncio.Future, asyncio.Task], *, args=args, kwargs=kwargs
+            task: Task[None],
+            *,
+            args: DynamicTuple[Any] = args,
+            kwargs: StringDict[Any] = kwargs,
         ) -> None:
             self._task.remove_done_callback(restart_when_over)  # type: ignore
             self.start(*args, **kwargs)
 
-        if self._can_be_cancelled():
+        if self._can_be_cancelled:
             self._task.add_done_callback(restart_when_over)  # type: ignore
             self._task.cancel()  # type: ignore
 
-    def add_exception_type(self, exception: Type[BaseException]) -> None:
-        r"""Adds an exception type to be handled during the reconnect logic.
+    def add_error_type(self, error_type: Type[AnyException]) -> None:
+        if not is_subclass(error_type, AnyException):
+            raise TypeError  # TODO: message?
 
-        This function is useful if you're interacting with a 3rd party library that
-        raises its own set of exceptions.
+        self._error_types = (*self._error_types, error_type)
 
-        Parameters
-        ------------
-        exc: Type[:class:`BaseException`]
-            The exception class to handle.
+    def clear_error_types(self) -> None:
+        self._error_types = ()
 
-        Raises
-        --------
-        :exc:`TypeError`
-            The exception passed is either not a class or not inherited from :class:`BaseException`.
-        """
-        if not inspect.isclass(exception):
-            raise TypeError(f"{exception!r} must be a class.")
+    def remove_error_type(self, error_type: Type[AnyException]) -> bool:
+        error_types = self._error_types
 
-        if not issubclass(exception, BaseException):
-            raise TypeError(f"{exception!r} must inherit from BaseException.")
+        length = len(error_types)
 
-        self._valid_exception = (*self._valid_exception, exception)
-
-    def clear_exception_types(self) -> None:
-        """Removes all exception types that are handled.
-
-        .. note::
-
-            This operation obviously cannot be undone!
-        """
-        self._valid_exception = tuple()
-
-    def remove_exception_type(self, exception: Type[BaseException]) -> bool:
-        """Removes an exception type from being handled during the reconnect logic.
-
-        Parameters
-        ------------
-        exc: Type[:class:`BaseException`]
-            The exception class to handle.
-
-        Returns
-        ---------
-        :class:`bool`
-            Whether it was successfully removed.
-        """
-        old_length = len(self._valid_exception)
-
-        self._valid_exception = tuple(
-            valid_exception
-            for valid_exception in self._valid_exception
-            if valid_exception is not exception
+        self._error_types = error_types = tuple(
+            present_error_type
+            for present_error_type in error_types
+            if present_error_type is not error_type
         )
 
-        return len(self._valid_exception) != old_length
-
-    def get_task(self) -> Optional[asyncio.Task]:
-        """Optional[:class:`asyncio.Task`]: Fetches the internal task or
-        ``None`` if there isn't one running.
-        """
-        return self._task
+        return len(error_types) < length
 
     def is_being_cancelled(self) -> bool:
-        """Whether the task is being cancelled."""
         return self._is_being_cancelled
 
-    def failed(self) -> bool:
-        """:class:`bool`: Whether the internal task has failed."""
+    def has_failed(self) -> bool:
         return self._has_failed
 
-    def before_loop(self, coroutine: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
-        """A decorator that registers a coroutine to be called before the loop starts running.
+    def before_loop(self, loop_function: F) -> F:
+        self._before_loop = loop_function
 
-        The coroutine must take no arguments (except ``self`` in a class context).
+        return loop_function
 
-        Parameters
-        ------------
-        coroutine: :ref:`coroutine <coroutine>`
-            The coroutine to register before the loop runs.
+    def after_loop(self, loop_function: F) -> F:
+        self._after_loop = loop_function
 
-        Raises
-        -------
-        :exc:`TypeError`
-            The function was not a coroutine.
-        """
-
-        if not inspect.iscoroutinefunction(coroutine):
-            raise TypeError(f"Expected coroutine function, received {type(coroutine).__name__!r}.")
-
-        self._before_loop = coroutine
-        return coroutine
-
-    def after_loop(self, coroutine: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
-        """A decorator that register a coroutine to be called after the loop finished running.
-
-        The coroutine must take no arguments (except ``self`` in a class context).
-
-        .. note::
-
-            This coroutine is called even during cancellation. If it is desirable
-            to tell apart whether something was cancelled or not, check to see
-            whether :meth:`~gd.tasks.Loop.is_being_cancelled` is ``True`` or not.
-
-        Parameters
-        ------------
-        coroutine: :ref:`coroutine <coroutine>`
-            The coroutine to register after the loop finishes.
-
-        Raises
-        -------
-        :exc:`TypeError`
-            The function was not a coroutine.
-        """
-
-        if not inspect.iscoroutinefunction(coroutine):
-            raise TypeError(f"Expected coroutine function, received {type(coroutine).__name__!r}.")
-
-        self._after_loop = coroutine
-        return coroutine
-
-    def change_interval(
-        self,
-        *,
-        seconds: Union[float, int] = 0,
-        minutes: Union[float, int] = 0,
-        hours: Union[float, int] = 0,
-    ) -> None:
-        """Changes the interval for the sleep time.
-
-        .. note::
-
-            This only applies on the next loop iteration.
-            If it is desirable for the change of interval
-            to be applied right away, cancel the task with :meth:`~gd.tasks.Loop.cancel`.
-
-        Parameters
-        ------------
-        seconds: :class:`float`
-            The number of seconds between every iteration.
-
-        minutes: :class:`float`
-            The number of minutes between every iteration.
-
-        hours: :class:`float`
-            The number of hours between every iteration.
-
-        Raises
-        -------
-        :exc:`ValueError`
-            An invalid value was given.
-        """
-
-        sleep = seconds + (minutes * 60.0) + (hours * 3600.0)
-
-        if sleep >= MAX_ASYNCIO_SECONDS:
-            raise ValueError(
-                f"Total number of seconds exceeds asyncio limit of {MAX_ASYNCIO_SECONDS} seconds."
-            )
-
-        if sleep < 0:
-            raise ValueError("Total number of seconds cannot be less than zero.")
-
-        self._sleep = sleep
-
-        self.seconds = seconds
-        self.hours = hours
-        self.minutes = minutes
+        return loop_function
 
 
 def loop(
     *,
-    seconds: Union[float, int] = 0,
-    minutes: Union[float, int] = 0,
-    hours: Union[float, int] = 0,
+    seconds: float = 0.0,
+    minutes: float = 0.0,
+    hours: float = 0.0,
+    days: float = 0.0,
     count: Optional[int] = None,
-    reconnect: bool = True,
-    loop: Optional[asyncio.AbstractEventLoop] = None,
-) -> Callable[[Callable[..., Awaitable[T]]], Loop]:
-    """A decorator that schedules a task in the background for you with
-    optional reconnect logic.
+    reconnect: bool = DEFAULT_RECONNECT,
+) -> Unary[Callable[P, Awaitable[None]], Loop[P]]:
+    delay = (
+        seconds + minutes * MINUTES_TO_SECONDS + hours * HOURS_TO_SECONDS + days * DAYS_TO_SECONDS
+    )
 
-    Parameters
-    ------------
-    seconds: :class:`float`
-        The number of seconds between every iteration.
-
-    minutes: :class:`float`
-        The number of minutes between every iteration.
-
-    hours: :class:`float`
-        The number of hours between every iteration.
-
-    count: Optional[:class:`int`]
-        The number of loops to do, ``None`` if it should be an
-        infinite loop.
-
-    reconnect: :class:`bool`
-        Whether to handle errors and restart the task
-        using an exponential back-off algorithm.
-
-    loop: :class:`asyncio.AbstractEventLoop`
-        The loop to use to register the task, if not given
-        defaults to :func:`asyncio.get_event_loop`.
-
-    Raises
-    --------
-    :exc:`ValueError`
-        An invalid value was given.
-
-    :exc:`TypeError`
-        The function was not a coroutine.
-
-    Returns
-    -------
-    :class:`~gd.tasks.Loop`
-        The loop helper that handles the background task.
-    """
-
-    def decorator(function: Callable[..., Awaitable[T]]) -> Loop:
+    def wrap(function: Callable[P, Awaitable[None]]) -> Loop[P]:
         return Loop(
-            coroutine=function,
-            seconds=seconds,
-            minutes=minutes,
-            hours=hours,
+            function=function,
+            delay=delay,
             count=count,
             reconnect=reconnect,
-            loop=loop,
         )
 
-    return decorator
+    return wrap

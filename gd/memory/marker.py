@@ -4,19 +4,9 @@ from gd.iter_utils import item_to_tuple
 from gd.memory.memory import Memory
 from gd.memory.utils import class_property
 from gd.platform import Platform, platform_from_string, system_bits, system_platform
-from gd.typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Generic,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union as TypeUnion,
-    cast,
-    no_type_check,
-)
+from gd.typing import TYPE_CHECKING, Any, Dict, Generic, Optional, Tuple, Type, TypeVar
+from gd.typing import Union as TypeUnion
+from gd.typing import cast, no_type_check
 
 if TYPE_CHECKING:
     from gd.memory.state import BaseState  # noqa
@@ -94,6 +84,7 @@ class SimpleMarker(metaclass=SimpleMarkerType):
 
 # C INT TYPES
 
+
 class byte_t(SimpleMarker):
     pass
 
@@ -136,6 +127,7 @@ class ulonglong_t(SimpleMarker):
 
 # INT TYPES
 
+
 class int8_t(SimpleMarker):
     pass
 
@@ -170,6 +162,7 @@ class uint64_t(SimpleMarker):
 
 # POINTER / SIZE TYPES
 
+
 class intptr_t(SimpleMarker):
     pass
 
@@ -188,6 +181,7 @@ class uintsize_t(SimpleMarker):
 
 # C FLOAT TYPES
 
+
 class float_t(SimpleMarker):
     pass
 
@@ -197,6 +191,7 @@ class double_t(SimpleMarker):
 
 
 # FLOAT TYPES
+
 
 class float32_t(SimpleMarker):
     pass
@@ -208,17 +203,20 @@ class float64_t(SimpleMarker):
 
 # BOOL TYPE
 
+
 class bool_t(SimpleMarker):
     pass
 
 
 # CHAR TYPE
 
+
 class char_t(SimpleMarker):
     pass
 
 
 # STRING TYPE
+
 
 class string_t(SimpleMarker):
     pass
@@ -267,9 +265,6 @@ class MarkerType(type(Generic)):  # type: ignore
         visitor = Visitor.bound(state)
 
         return cls.visit(visitor)
-
-    def __getitem__(cls, item: Any) -> Type[Memory]:
-        return cls.create(*item_to_tuple(item))
 
     @property
     def derive(cls) -> bool:

@@ -1,12 +1,15 @@
-import time
 from functools import wraps
-from threading import Lock
+from time import monotonic
+from threading import RLock
+from typing import Optional, Type, TypeVar
 
-from gd.server.common import web
+from aiohttp.web import Request, Response
+from attrs import define, field
+from gd.server.constants import TOKEN
+
 from gd.server.handler import Error, ErrorType
 from gd.server.typing import Handler
-from gd.text_utils import make_repr
-from gd.typing import Callable, Dict, Optional, Type, TypeVar
+from gd.typing import DecoratorIdentity, Nullary, StringDict, Unary
 
 __all__ = (
     "CooldownWith",
@@ -21,37 +24,28 @@ __all__ = (
 
 RETRY_AFTER = "Retry-After"
 
-Clock = Callable[[], float]
+Clock = Nullary[float]
 
-CooldownWith = Callable[[web.Request], str]
+CooldownWith = Unary[Request, str]
 
-CooldownT = TypeVar("CooldownT", bound="Cooldown")
-CooldownMappingT = TypeVar("CooldownMappingT", bound="CooldownMapping")
+C = TypeVar("C", bound="Cooldown")
 
 
+@define()
 class Cooldown:
-    def __init__(self, rate: int, per: float, clock: Clock = time.monotonic) -> None:
-        self.rate = int(rate)
-        self.per = float(per)
+    rate: int = field()
+    per: float = field()
 
-        self._clock = clock
+    _clock: Clock = field(default=monotonic)
 
-        self._tokens = self.rate
+    _tokens: int = field()
 
-        self._last = 0.0
+    _last: float = field(default=0.0)
+    _window: float = field(default=0.0)
 
-        self._window = 0.0
-
-    def __repr__(self) -> str:
-        info = {
-            "rate": self.rate,
-            "per": self.per,
-            "tokens": self.tokens,
-            "window": self.window,
-            "last": self.last,
-        }
-
-        return make_repr(self, info)
+    @_tokens.default
+    def default_tokens(self) -> int:
+        return self.rate
 
     @property
     def clock(self) -> Clock:
@@ -69,8 +63,8 @@ class Cooldown:
     def window(self) -> float:
         return self._window
 
-    def copy(self: CooldownT) -> CooldownT:
-        return self.__class__(self.rate, self.per, self.clock)
+    def copy(self: C) -> C:
+        return type(self)(self.rate, self.per, self.clock)
 
     def update_rate_limit(self, current: Optional[float] = None) -> Optional[float]:
         if not current:
@@ -97,41 +91,43 @@ class Cooldown:
         return None  # not rate limited
 
 
+@define()
 class CooldownThreadsafe(Cooldown):
-    def __init__(self, rate: int, per: float, clock: Clock = time.monotonic) -> None:
-        super().__init__(rate, per, clock)
-
-        self._lock = Lock()
+    _lock: RLock = field(factory=RLock)
 
     def update_rate_limit(self, current: Optional[float] = None) -> Optional[float]:
         with self._lock:
             return super().update_rate_limit(current)
 
 
+CM = TypeVar("CM", bound="CooldownMapping")
+
+
+@define()
 class CooldownMapping:
-    def __init__(self, cooldown: Cooldown, cooldown_with: CooldownWith) -> None:
-        self.cache: Dict[str, Cooldown] = {}
+    cooldown: Cooldown = field()
+    cooldown_with: CooldownWith = field()
 
-        self.cooldown = cooldown
-        self.cooldown_with = cooldown_with
+    cache: StringDict[Cooldown] = field(factory=dict, init=False)
 
-    def copy(self: CooldownMappingT) -> CooldownMappingT:
-        self_copy = self.__class__(self.cooldown, self.cooldown_with)
-        self_copy.cache = self.cache.copy()
+    def copy(self: CM) -> CM:
+        copy = type(self)(self.cooldown, self.cooldown_with)
+        copy.cache.update(self.cache)
 
-        return self_copy
+        return copy
+
+    def clear_cache(self) -> None:
+        self.cache.clear()
 
     def clear_unused_cache(self, current: Optional[float] = None) -> None:
         if not current:
-            current = time.monotonic()
+            current = self.cooldown.clock()
 
         self.cache = {
             key: value for key, value in self.cache.items() if current < value.last + value.per
         }
 
-    def get_bucket(self, request: web.Request, current: Optional[float] = None) -> Cooldown:
-        self.clear_unused_cache()
-
+    def get_bucket(self, request: Request) -> Cooldown:
         cooldown_with = self.cooldown_with(request)
 
         if cooldown_with in self.cache:
@@ -144,68 +140,74 @@ class CooldownMapping:
         return bucket
 
     def update_rate_limit(
-        self, request: web.Request, current: Optional[float] = None
+        self, request: Request, current: Optional[float] = None
     ) -> Optional[float]:
-        bucket = self.get_bucket(request, current)
+        self.clear_unused_cache(current)
+
+        bucket = self.get_bucket(request)
 
         return bucket.update_rate_limit(current)
 
     @classmethod
     def from_cooldown(
-        mapping_cls: Type[CooldownMappingT],
+        cls: Type[CM],
         rate: int,
         per: float,
         by: CooldownWith,
-        cls: Type[Cooldown] = Cooldown,
-    ) -> CooldownMappingT:
-        return mapping_cls(cls(rate, per), by)
+        cooldown_type: Type[Cooldown] = Cooldown,
+    ) -> CM:
+        return cls(cooldown_type(rate, per), by)
+
+
+TOO_MANY_REQUESTS = 429
+
+RATE_LIMITED = "rate limited; retry after {} seconds"
 
 
 def create_cooldown_error(retry_after: float) -> Error:
     return Error(
-        429,
-        ErrorType.RATE_LIMITED,
-        message=f"Rate limited. Retry after {retry_after} seconds.",
-        retry_after=retry_after,
-        headers={RETRY_AFTER: f"{retry_after}"},
+        status=TOO_MANY_REQUESTS,
+        type=ErrorType.RATE_LIMITED,
+        message=RATE_LIMITED.format(retry_after),
+        headers={RETRY_AFTER: str(retry_after)},
     )
 
 
-def cooldown_remote(request: web.Request) -> str:
-    return f"{request.remote}"
+def cooldown_remote(request: Request) -> str:
+    return request.remote  # type: ignore
 
 
-def cooldown_token(request: web.Request) -> str:
-    return f"{request.token}"  # type: ignore
+def cooldown_token(request: Request) -> str:
+    return request[TOKEN]
 
 
-def cooldown_remote_and_token(request: web.Request) -> str:
-    return f"{request.remote}_{request.token}"  # type: ignore
+AT = "{}@{}"
+
+
+def cooldown_remote_and_token(request: Request) -> str:
+    return AT.format(cooldown_token(request), cooldown_remote(request))
 
 
 def cooldown(
     rate: int,
     per: float,
     by: CooldownWith,
-    cls: Type[Cooldown] = Cooldown,
-    mapping_cls: Type[CooldownMapping] = CooldownMapping,
+    cooldown_type: Type[Cooldown] = Cooldown,
+    cooldown_mapping_type: Type[CooldownMapping] = CooldownMapping,
     retry_after_precision: int = 2,
-) -> Callable[[Handler], Handler]:
-    def wrapper(handler: Handler) -> Handler:
-        mapping = mapping_cls.from_cooldown(rate, per, by, cls=cls)
+) -> DecoratorIdentity[Handler]:
+    def wrap(handler: Handler) -> Handler:
+        mapping = cooldown_mapping_type.from_cooldown(rate, per, by, cooldown_type=cooldown_type)
 
         @wraps(handler)
-        async def actual_handler(request: web.Request) -> web.StreamResponse:
+        async def retry_after_handler(request: Request) -> Response:
             retry_after = mapping.update_rate_limit(request)
 
             if retry_after is None:
                 return await handler(request)
 
-            else:
-                return create_cooldown_error(
-                    round(retry_after, retry_after_precision)
-                ).into_response()
+            return create_cooldown_error(round(retry_after, retry_after_precision)).into_response()
 
-        return actual_handler
+        return retry_after_handler
 
-    return wrapper
+    return wrap

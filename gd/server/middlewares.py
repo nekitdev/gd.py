@@ -1,6 +1,10 @@
 from gd.server.common import web
 from gd.server.handler import (
-    HTTP_STATUS_TO_ERROR_TYPE, Error, ErrorHandler, ErrorType, error_result_into_response
+    HTTP_STATUS_TO_ERROR_TYPE,
+    Error,
+    ErrorHandler,
+    ErrorType,
+    error_result_into_response,
 )
 from gd.server.typing import Handler, Middleware
 from gd.typing import Mapping, Optional, cast

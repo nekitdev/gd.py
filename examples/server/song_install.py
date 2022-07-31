@@ -13,12 +13,12 @@ async def main() -> None:
 
         try:
             # fetch a song
-            song = await client.get_ng_song(int(query))
+            song = await client.get_newgrounds_song(int(query))
 
         except ValueError:
             print("Invalid type. Expected an integer.")
 
-        except gd.MissingAccess:
+        except Exception:
             print("Song was not found.")
 
         else:
@@ -33,5 +33,6 @@ async def main() -> None:
 # gracefully run
 try:
     client.run(main())
+
 except KeyboardInterrupt:
     pass

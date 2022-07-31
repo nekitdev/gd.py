@@ -1,5 +1,5 @@
 from gd.memory.traits import Layout, ReadLayout, ReadWriteLayout
-from gd.text_utils import make_repr
+from gd.text_utils import nice_repr
 from gd.typing import Any, Generic, Literal, Optional, Type, TypeVar, Union, overload
 
 __all__ = ("Field", "MutField")
@@ -24,7 +24,7 @@ class BaseField(Generic[L]):
 
         info = {"offset": self.offset, "size": size, "type": self.type.__name__}
 
-        return make_repr(self, info)
+        return nice_repr(self, info)
 
     def get_offset(self) -> int:
         return self._offset
