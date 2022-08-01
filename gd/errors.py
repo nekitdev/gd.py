@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Any, Generic, Optional, TypeVar
 
 from gd.string_utils import password_str, tick
@@ -117,18 +118,18 @@ class LoginFailed(ClientError):
 
 class CommentBanned(ClientError):
     PERMANENT = "permanently banned from posting comments; reason: {}"
-    TEMPORARY = "banned for {} seconds from posting comments; reason: {}"
+    TEMPORARY = "banned for {} from posting comments; reason: {}"
     DEFAULT_REASON = "not provided"
 
-    def __init__(self, seconds: Optional[int] = None, reason: Optional[str] = None) -> None:
-        self._seconds = seconds
+    def __init__(self, timeout: Optional[timedelta] = None, reason: Optional[str] = None) -> None:
+        self._timeout = timeout
         self._reason = reason
 
         super().__init__(self.message)
 
     @property
-    def seconds(self) -> Optional[int]:
-        return self._seconds
+    def timeout(self) -> Optional[timedelta]:
+        return self._timeout
 
     @property
     def reason(self) -> Optional[str]:
@@ -136,16 +137,16 @@ class CommentBanned(ClientError):
 
     @property
     def message(self) -> str:
-        seconds = self.seconds
+        timeout = self.timeout
         reason = self.reason
 
         if reason is None:
             reason = self.DEFAULT_REASON
 
-        if seconds is None:
+        if timeout is None:
             return self.PERMANENT.format(reason)
 
-        return self.TEMPORARY.format(seconds, reason)
+        return self.TEMPORARY.format(timeout, reason)
 
 
 class LoginRequired(ClientError):

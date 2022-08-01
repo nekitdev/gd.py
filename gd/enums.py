@@ -479,7 +479,7 @@ class LikeType(Enum):
 
     LEVEL = 1
     LEVEL_COMMENT = 2
-    COMMENT = 3
+    USER_COMMENT = 3
 
 
 class GauntletID(Enum):

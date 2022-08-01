@@ -3,6 +3,8 @@ from datetime import timedelta
 EMPTY = str()
 SPACE = " "
 
+BACKSLASH = "\\"
+
 UNKNOWN = "unknown"
 UNNAMED = "unnamed"
 
@@ -53,6 +55,8 @@ DEFAULT_PAGE = 0
 
 DEFAULT_PAGES_COUNT = 10
 DEFAULT_PAGES = range(DEFAULT_PAGES_COUNT)
+
+DEFAULT_CHEST_COUNT = 0
 
 DEFAULT_WIDTH = 250
 DEFAULT_HEIGHT = 250

@@ -36,10 +36,13 @@ from yarl import URL
 from gd.api.recording import Recording
 from gd.async_utils import maybe_await_call, shutdown_loop
 from gd.constants import (
+    BACKSLASH,
+    DEFAULT_CHEST_COUNT,
     DEFAULT_COINS,
     DEFAULT_ID,
     DEFAULT_LOW_DETAIL,
     DEFAULT_OBJECTS,
+    DEFAULT_PAGE,
     DEFAULT_SPECIAL,
     DEFAULT_STARS,
     DEFAULT_TIME,
@@ -58,6 +61,7 @@ from gd.encoding import (
     generate_leaderboard_seed,
     generate_level_seed,
     generate_random_string,
+    generate_random_string_and_encode_value,
     zip_level_string,
 )
 from gd.enums import (
@@ -142,7 +146,10 @@ FORWARDED_FOR = "X-Forwarded-For"
 REQUESTED_WITH = "X-Requested-With"
 
 # I might sound stupid but I really like `XMLHTTPRequest` more, and so I wrote this ~ nekit
-XML_HTTP_REQUEST = "XML" + "HTTP".title() + "Request"
+XML = "XML"
+HTTP = "HTTP"
+REQUEST = "Request"
+XML_HTTP_REQUEST = XML + HTTP.title() + REQUEST
 
 LOGIN = "accounts/loginGJAccount.php"
 LOAD = "accounts/syncGJAccountNew.php"
@@ -178,11 +185,11 @@ DELETE_FRIEND_REQUEST = "deleteGJFriendRequests20.php"
 ACCEPT_FRIEND_REQUEST = "acceptGJFriendRequest20.php"
 GET_FRIEND_REQUEST = "readGJFriendRequest20.php"
 GET_FRIEND_REQUESTS = "getGJFriendRequests20.php"
-LIKE_COMMENT = LIKE_LEVEL = "likeGJItem211.php"
-COMMENT_LEVEL = "uploadGJComment21.php"
-POST_COMMENT = "uploadGJAccComment20.php"
+LIKE_ITEM = "likeGJItem211.php"
+POST_LEVEL_COMMENT = "uploadGJComment21.php"
+POST_USER_COMMENT = "uploadGJAccComment20.php"
 DELETE_LEVEL_COMMENT = "deleteGJComment20.php"
-DELETE_COMMENT = "deleteGJAccComment20.php"
+DELETE_USER_COMMENT = "deleteGJAccComment20.php"
 GET_USER_LEVEL_COMMENTS = "getGJCommentHistory.php"
 GET_USER_COMMENTS = "getGJAccountComments20.php"
 GET_LEVEL_COMMENTS = "getGJComments21.php"
@@ -190,7 +197,7 @@ GET_GAUNTLETS = "getGJGauntlets21.php"
 GET_MAP_PACKS = "getGJMapPacks21.php"
 GET_QUESTS = "getGJChallenges.php"
 GET_CHESTS = "getGJRewards.php"
-GET_TOP_AUTHORS = "getGJTopArtists.php"
+GET_FEATURED_ARTISTS = "getGJTopArtists.php"
 GET_SONG = "getGJSongInfo.php"
 
 VALID_ERRORS = (OSError, ClientError)
@@ -413,10 +420,71 @@ CAN_NOT_FIND_TIMELY = "can not find {} level"
 
 FAILED_TO_UPLOAD_LEVEL = "failed to upload a level"
 
+FAILED_TO_RATE_LEVEL = "failed to rate the level (ID: {})"
+
+FAILED_TO_RATE_DEMON = "failed to demon-rate the level (ID: {})"
+RATE_DEMON_MISSING_PERMISSIONS = "missing permissions to demon-rate the level (ID: {})"
+
+FAILED_TO_SUGGEST_LEVEL = "failed to suggest the level (ID: {})"
+SUGGEST_LEVEL_MISSING_PERMISSIONS = "missing permissions to suggest the level (ID: {})"
+
+FAILED_TO_GET_LEADERBOARD = "failed to get the level leaderboard (ID: {})"
+
+FAILED_TO_BLOCK_USER = "failed to block the user (ID: {})"
+FAILED_TO_UNBLOCK_USER = "failed to unblock the user (ID: {})"
+
+FAILED_TO_UNFRIEND_USER = "failed to unfriend the user (ID: {})"
+
+FAILED_TO_SEND_MESSAGE = "failed to send a message to the user (ID: {})"
+
+FAILED_TO_GET_MESSAGE = "failed to get the message (ID: {})"
+
+FAILED_TO_DELETE_MESSAGE = "failed to delete the message (ID: {})"
+
+FAILED_TO_GET_MESSAGES = "failed to get messages on page {}"
+
+FAILED_TO_SEND_FRIEND_REQUEST = "failed to send the friend request (ID: {})"
+
+FAILED_TO_DELETE_FRIEND_REQUEST = "failed to delete the friend request (ID: {})"
+
+FAILED_TO_ACCEPT_FRIEND_REQUEST = "failed to accept the friend request (ID: {})"
+
+FAILED_TO_GET_FRIEND_REQUEST = "failed to get the friend request (ID: {})"
+
+FAILED_TO_GET_FRIEND_REQUESTS = "failed to get friend requests on page {}"
+
+FAILED_TO_LIKE_ITEM = "failed to like the item (ID: {})"
+
+FAILED_TO_POST_USER_COMMENT = "failed to post the user comment"
+
+FAILED_TO_POST_LEVEL_COMMENT = "failed to post the level comment"
+
+FAILED_TO_DELETE_USER_COMMENT = "failed to delete the user comment (ID: {})"
+
+FAILED_TO_DELETE_LEVEL_COMMENT = "failed to delete the level comment (ID: {})"
+
+FAILED_TO_GET_USER_LEVEL_COMMENTS = "failed to get user level comments (ID: {})"
+
+FAILED_TO_GET_LEVEL_COMMENTS = "failed to get level comments (ID: {})"
+
+FAILED_TO_GET_GAUNTLETS = "failed to get gauntlets"
+
+FAILED_TO_GET_MAP_PACKS = "failed to get map packs on page {}"
+
+FAILED_TO_GET_QUESTS = "failed to get quests"
+
+FAILED_TO_GET_CHESTS = "failed to get chests"
+
+FAILED_TO_GET_FEATURED_ARTISTS = "failed to get featured artists"
+
+FAILED_TO_GET_SONG = "failed to get the song (ID: {})"
+
 AUDIO = "audio"
 USERS = "users"
 LEVELS = "levels"
-
+MESSAGES = "messages"
+FRIEND_REQUESTS = "friend_requests"
+LEVEL_COMMENTS = "level_comments"
 
 @define()
 class HTTPClient:
@@ -1095,7 +1163,7 @@ class HTTPClient:
 
         return int_or(response, 0)
 
-    async def search_users_on_page(self, query: Union[int, str], page: int = 0) -> str:
+    async def search_users_on_page(self, query: Union[int, str], page: int = DEFAULT_PAGE) -> str:
         error_codes = {-1: MissingAccess(CAN_NOT_FIND_USERS.format(tick(query)))}
 
         route = Route(
@@ -1170,7 +1238,7 @@ class HTTPClient:
     async def get_leaderboard(
         self,
         strategy: LeaderboardStrategy,
-        amount: int = 100,
+        count: int = 100,
         *,
         account_id: Optional[int] = None,
         encoded_password: Optional[str] = None,
@@ -1186,7 +1254,7 @@ class HTTPClient:
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             type=strategy.name.casefold(),
-            count=amount,
+            count=count,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -1206,7 +1274,7 @@ class HTTPClient:
     async def search_levels_on_page(
         self,
         query: Optional[MaybeIterable[IntString]] = None,
-        page: int = 0,
+        page: int = DEFAULT_PAGE,
         filters: Optional[Filters] = None,
         user_id: Optional[int] = None,
         gauntlet: Optional[int] = None,
@@ -1787,7 +1855,7 @@ class HTTPClient:
 
         return int_or(response, 0)
 
-    async def download_message(
+    async def get_message(
         self,
         message_id: int,
         type: MessageType,
@@ -1795,18 +1863,18 @@ class HTTPClient:
         account_id: int,
         encoded_password: str,
     ) -> str:
-        error_codes = {-1: MissingAccess(f"Failed to read a message by ID: {message_id}.")}
+        error_codes = {-1: MissingAccess(FAILED_TO_GET_MESSAGE.format(message_id))}
 
         route = Route(
             POST,
-            "/downloadGJMessage20.php",
+            GET_MESSAGE,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             account_id=account_id,
             message_id=message_id,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
@@ -1815,7 +1883,7 @@ class HTTPClient:
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
     async def delete_message(
         self,
@@ -1825,18 +1893,18 @@ class HTTPClient:
         account_id: int,
         encoded_password: str,
     ) -> int:
-        error_codes = {-1: MissingAccess(f"Failed to delete a message by ID: {message_id}.")}
+        error_codes = {-1: MissingAccess(FAILED_TO_DELETE_MESSAGE.format(message_id))}
 
         route = Route(
             POST,
-            "/deleteGJMessages20.php",
+            DELETE_MESSAGE,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             account_id=account_id,
             message_id=message_id,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
@@ -1845,19 +1913,19 @@ class HTTPClient:
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
     async def get_messages_on_page(
         self, type: MessageType, page: int, *, account_id: int, encoded_password: str
     ) -> str:
         error_codes = {
-            -1: MissingAccess(f"Failed to get messages on page {page}."),
-            -2: NothingFound("Message"),
+            -1: MissingAccess(FAILED_TO_GET_MESSAGES.format(page)),
+            -2: NothingFound(MESSAGES),
         }
 
         route = Route(
             POST,
-            "/getGJMessages20.php",
+            GET_MESSAGES,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1865,7 +1933,7 @@ class HTTPClient:
             total=0,
             account_id=account_id,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
@@ -1874,7 +1942,7 @@ class HTTPClient:
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
     async def send_friend_request(
         self,
@@ -1885,23 +1953,23 @@ class HTTPClient:
         encoded_password: str,
     ) -> int:
         error_codes = {
-            -1: MissingAccess(f"Failed to send a friend request to the user by ID: {account_id}.")
+            -1: MissingAccess(FAILED_TO_SEND_FRIEND_REQUEST.format(account_id))
         }
 
         if message is None:
-            message = ""
+            message = EMPTY
 
         route = Route(
             POST,
-            "/uploadFriendRequest20.php",
+            SEND_FRIEND_REQUEST,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
-            comment=encode_base64_str(message),
+            comment=encode_base64_string_url_safe(message),
             to_account_id=account_id,
             account_id=client_account_id,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
@@ -1910,7 +1978,7 @@ class HTTPClient:
         if not response:
             return 1
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
     async def delete_friend_request(
         self,
@@ -1921,21 +1989,19 @@ class HTTPClient:
         encoded_password: str,
     ) -> int:
         error_codes = {
-            -1: MissingAccess(
-                f"Failed to delete a friend request of the user with ID: {account_id}."
-            )
+            -1: MissingAccess(FAILED_TO_DELETE_FRIEND_REQUEST.format(account_id))
         }
 
         route = Route(
             POST,
-            "/deleteGJFriendRequests20.php",
+            DELETE_FRIEND_REQUEST,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             target_account_id=account_id,
             account_id=client_account_id,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
@@ -1944,7 +2010,7 @@ class HTTPClient:
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
     async def accept_friend_request(
         self,
@@ -1956,14 +2022,12 @@ class HTTPClient:
         encoded_password: str,
     ) -> int:
         error_codes = {
-            -1: MissingAccess(
-                f"Failed to accept a friend request of the user with ID: {account_id}."
-            )
+            -1: MissingAccess(FAILED_TO_ACCEPT_FRIEND_REQUEST.format(account_id))
         }
 
         route = Route(
             POST,
-            "/acceptGJFriendRequest20.php",
+            ACCEPT_FRIEND_REQUEST,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1971,7 +2035,7 @@ class HTTPClient:
             request_id=request_id,
             account_id=client_account_id,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
@@ -1980,29 +2044,29 @@ class HTTPClient:
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
-    async def read_friend_request(
+    async def get_friend_request(
         self, request_id: int, *, account_id: int, encoded_password: str
     ) -> int:
-        error_codes = {-1: MissingAccess(f"Failed to read a friend request with ID: {request_id}.")}
+        error_codes = {-1: MissingAccess(FAILED_TO_GET_FRIEND_REQUEST.format(request_id))}
 
         route = Route(
             POST,
-            "/readGJFriendRequest20.php",
+            GET_FRIEND_REQUEST,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             request_id=request_id,
             account_id=account_id,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
     async def get_friend_requests_on_page(
         self,
@@ -2013,21 +2077,23 @@ class HTTPClient:
         encoded_password: str,
     ) -> str:
         error_codes = {
-            -1: MissingAccess(f"Failed to get friend requests on page {page}."),
-            -2: NothingFound("FriendRequest"),
+            -1: MissingAccess(FAILED_TO_GET_FRIEND_REQUESTS.format(page)),
+            -2: NothingFound(FRIEND_REQUESTS),
         }
+
+        total = 0
 
         route = Route(
             POST,
-            "/getGJFriendRequests20.php",
+            GET_FRIEND_REQUESTS,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             page=page,
-            total=0,
+            total=total,
             account_id=account_id,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
@@ -2036,9 +2102,9 @@ class HTTPClient:
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
-    async def like_or_dislike(
+    async def like_item(
         self,
         type: LikeType,
         item_id: int,
@@ -2048,132 +2114,218 @@ class HTTPClient:
         account_id: int,
         encoded_password: str,
     ) -> int:
-        error_codes = {
-            -1: MissingAccess(f"Failed to like an item by ID: {item_id} (special {special_id}).")
-        }
-
-        type_id = type.value
+        error_codes = {-1: MissingAccess(FAILED_TO_LIKE_ITEM.format(item_id))}
 
         like = not dislike
 
         udid = self.generate_udid()
         uuid = self.generate_uuid()
-        rs = generate_rs()
 
-        int_like = int(like)
+        random_string = generate_random_string()
 
-        chk = generate_chk(
-            values=[special_id, item_id, int_like, type_id, rs, account_id, udid, uuid],
-            key=Key.LIKE_RATE,  # type: ignore
-            salt=Salt.LIKE_RATE,  # type: ignore
-        )
+        values = (special_id, item_id, int(like), type.value, random_string, account_id, udid, uuid)
+
+        check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
 
         route = Route(
             POST,
-            "/likeGJItem211.php",
+            LIKE_ITEM,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             item_id=item_id,
-            type=type_id,
+            type=type.value,
             special=special_id,
-            like=int_like,
+            like=int(like),
             account_id=account_id,
             gjp=encoded_password,
             udid=udid,
             uuid=uuid,
-            rs=rs,
-            chk=chk,
-            secret=self.get_secret("main"),
+            rs=random_string,
+            chk=check,
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
-    async def post_comment(
+    async def like_user_comment(
         self,
-        type: CommentType,
+        comment_id: int,
+        dislike: bool = False,
+        *,
+        account_id: int,
+        encoded_password: str,
+    ) -> int:
+        return await self.like_item(
+            LikeType.USER_COMMENT,
+            comment_id,
+            comment_id,
+            dislike=dislike,
+            account_id=account_id,
+            encoded_password=encoded_password,
+        )
+
+    async def like_level_comment(
+        self,
+        comment_id: int,
+        level_id: int,
+        dislike: bool = False,
+        *,
+        account_id: int,
+        encoded_password: str,
+    ) -> int:
+        return await self.like_item(
+            LikeType.LEVEL_COMMENT,
+            comment_id,
+            level_id,
+            dislike=dislike,
+            account_id=account_id,
+            encoded_password=encoded_password,
+        )
+
+    async def like_level(
+        self,
+        level_id: int,
+        dislike: bool = False,
+        *,
+        account_id: int,
+        encoded_password: str,
+    ) -> int:
+        return await self.like_item(
+            LikeType.LEVEL,
+            level_id,
+            0,
+            dislike=dislike,
+            account_id=account_id,
+            encoded_password=encoded_password,
+        )
+
+    async def post_user_comment(
+        self,
         content: Optional[str] = None,
-        level_id: int = 0,
-        percent: int = 0,
         *,
         account_id: int,
         account_name: str,
         encoded_password: str,
-    ) -> int:  # XXX: We might want to use two separate functions in case of API update.
-        type_name = type.name.casefold()
-
+    ) -> int:
         error_codes = {
-            -1: MissingAccess(f"Failed to post a {type_name} comment."),
-            -10: CommentBanned(timeout=None),
+            -1: MissingAccess(FAILED_TO_POST_USER_COMMENT),
+            -10: CommentBanned(),
         }
 
         if content is None:
-            content = ""
+            content = EMPTY
 
-        content = encode_base64_str(content)
+        content = encode_base64_string_url_safe(content)
 
-        chk = generate_chk(
-            values=[account_name, content, level_id, percent, type.value],
-            key=Key.COMMENT,  # type: ignore
-            salt=Salt.COMMENT,  # type: ignore
-        )
+        level_id = 0
+        percentage = 0
 
-        if type is CommentType.LEVEL:
-            endpoint = "/uploadGJComment21.php"
+        type = CommentType.USER
 
-        else:
-            endpoint = "/uploadGJAccComment20.php"
+        values = (account_name, content, level_id, percentage, type.value)
+
+        check = generate_check(map(str, values), Key.COMMENT, Salt.COMMENT)
 
         route = Route(
             POST,
-            endpoint,
+            POST_USER_COMMENT,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             comment=content,
             level_id=level_id,
             c_type=type.value,
-            percent=percent,
+            percent=percentage,
             account_id=account_id,
             user_name=account_name,
             gjp=encoded_password,
-            chk=chk,
-            secret=self.get_secret("main"),
+            chk=check,
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
-        response = cast(str, await self.request_route(route, error_codes=error_codes))
+        response = await self.request_route(route, error_codes=error_codes)
 
-        if CommentBannedModel.maybe_in(response):
-            ban = CommentBannedModel.from_string(response)
+        if CommentBannedModel.can_be_in(response):
+            ban = CommentBannedModel.from_robtop(response)
 
             raise CommentBanned(timeout=ban.timeout, reason=ban.reason)
 
         return int_or(response, 0)
 
-    async def delete_comment(
+    async def post_level_comment(
+        self,
+        level_id: int,
+        percentage: int,
+        content: Optional[str] = None,
+        *,
+        account_id: int,
+        account_name: str,
+        encoded_password: str,
+    ) -> int:
+        error_codes = {
+            -1: MissingAccess(FAILED_TO_POST_LEVEL_COMMENT.format(level_id)),
+            -10: CommentBanned(),
+        }
+
+        if content is None:
+            content = EMPTY
+
+        content = encode_base64_string_url_safe(content)
+
+        type = CommentType.LEVEL
+
+        values = (account_name, content, level_id, percentage, type.value)
+
+        check = generate_check(map(str, values), Key.COMMENT, Salt.COMMENT)
+
+        route = Route(
+            POST,
+            POST_USER_COMMENT,
+            game_version=self.get_game_version(),
+            binary_version=self.get_binary_version(),
+            gdw=self.get_gd_world(),
+            comment=content,
+            level_id=level_id,
+            c_type=type.value,
+            percent=percentage,
+            account_id=account_id,
+            user_name=account_name,
+            gjp=encoded_password,
+            chk=check,
+            secret=Secret.MAIN.value,
+            to_camel=True,
+        )
+
+        response = await self.request_route(route, error_codes=error_codes)
+
+        if CommentBannedModel.can_be_in(response):
+            ban = CommentBannedModel.from_robtop(response)
+
+            raise CommentBanned(timeout=ban.timeout, reason=ban.reason)
+
+        return int_or(response, 0)
+
+    async def delete_user_comment(
         self,
         comment_id: int,
-        type: CommentType,
-        level_id: int = 0,
         *,
         account_id: int,
         encoded_password: str,
     ) -> int:
-        error_codes = {-1: MissingAccess(f"Failed to delete a comment by ID: {comment_id}.")}
+        error_codes = {-1: MissingAccess(FAILED_TO_DELETE_USER_COMMENT.format(comment_id))}
 
-        if type is CommentType.LEVEL:
-            endpoint = "/deleteGJComment20.php"
+        type = CommentType.USER
 
-        else:
-            endpoint = "/deleteGJAccComment20.php"
+        level_id = 0
 
         route = Route(
             POST,
-            endpoint,
+            DELETE_USER_COMMENT,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2182,137 +2334,155 @@ class HTTPClient:
             level_id=level_id,
             account_id=account_id,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
+
+    async def delete_level_comment(
+        self,
+        comment_id: int,
+        level_id: int,
+        *,
+        account_id: int,
+        encoded_password: str,
+    ) -> int:
+        error_codes = {-1: MissingAccess(FAILED_TO_DELETE_LEVEL_COMMENT.format(comment_id))}
+
+        type = CommentType.LEVEL
+
+        route = Route(
+            POST,
+            DELETE_LEVEL_COMMENT,
+            game_version=self.get_game_version(),
+            binary_version=self.get_binary_version(),
+            gdw=self.get_gd_world(),
+            comment_id=comment_id,
+            c_type=type.value,
+            level_id=level_id,
+            account_id=account_id,
+            gjp=encoded_password,
+            secret=Secret.MAIN.value,
+            to_camel=True,
+        )
+
+        response = await self.request_route(route, error_codes=error_codes)
+
+        return int_or(response, 0)
 
     async def get_user_comments_on_page(
         self,
-        account_id: int,
         user_id: int,
-        type: CommentType,
-        page: int = 0,
+        page: int = DEFAULT_PAGE,
         *,
         strategy: CommentStrategy,
     ) -> str:
         error_codes = {
-            -1: MissingAccess(f"Failed to get comment for user by Account ID: {account_id}.")
+            -1: MissingAccess(FAILED_TO_GET_USER_LEVEL_COMMENTS.format(user_id))
         }
-
-        if type is CommentType.LEVEL:
-            endpoint = "/getGJCommentHistory.php"
-
-        else:
-            endpoint = "/getGJAccountComments20.php"
 
         route = Route(
             POST,
-            endpoint,
+            GET_USER_COMMENTS,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             page=page,
             total=0,
             mode=strategy.value,
-            secret=self.get_secret("main"),
+            user_id=user_id,
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
-        if type is CommentType.LEVEL:
-            route.update(user_id=user_id, to_camel=True)
-
-        else:
-            route.update(account_id=account_id, to_camel=True)
-
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
     async def get_level_comments_on_page(
         self,
         level_id: int,
-        amount: int,
-        page: int = 0,
+        count: int,
+        page: int = DEFAULT_PAGE,
         *,
         strategy: CommentStrategy,
     ) -> str:
         error_codes = {
-            -1: MissingAccess(f"Failed to get comments of a level by ID: {level_id}."),
-            -2: NothingFound("Comment"),
+            -1: MissingAccess(FAILED_TO_GET_LEVEL_COMMENTS.format(level_id)),
+            -2: NothingFound(LEVEL_COMMENTS),
         }
 
-        if amount < 0:
-            amount += COMMENT_TO_ADD
+        if count < 0:
+            count += COMMENT_ADD
 
         route = Route(
             POST,
-            "/getGJComments21.php",
+            GET_LEVEL_COMMENTS,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             level_id=level_id,
             page=page,
             total=0,
-            count=amount,
+            count=count,
             mode=strategy.value,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
     async def get_gauntlets(self) -> str:
-        error_codes = {-1: MissingAccess("Failed to get gauntlets.")}
+        error_codes = {-1: MissingAccess(FAILED_TO_GET_GAUNTLETS)}
 
         route = Route(
             POST,
-            "/getGJGauntlets21.php",
+            GET_GAUNTLETS,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
-    async def get_map_packs_on_page(self, page: int = 0) -> str:
-        error_codes = {-1: MissingAccess("Failed to get map packs.")}
+    async def get_map_packs_on_page(self, page: int = DEFAULT_PAGE) -> str:
+        error_codes = {-1: MissingAccess(FAILED_TO_GET_MAP_PACKS)}
 
         route = Route(
             POST,
-            "/getGJMapPacks21.php",
+            GET_MAP_PACKS,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             page=page,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
     async def get_quests(self, account_id: int, encoded_password: str) -> str:
-        error_codes = {-1: MissingAccess("Failed to get quests.")}
+        error_codes = {-1: MissingAccess(FAILED_TO_GET_QUESTS)}
 
         udid = self.generate_udid()
         uuid = self.generate_uuid()
 
-        chk = generate_rs_and_encode_number(length=5, key=Key.QUESTS)  # type: ignore
+        check = generate_random_string_and_encode_value(key=Key.QUESTS)
 
         route = Route(
             POST,
-            "/getGJChallenges.php",
+            GET_QUESTS,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2320,34 +2490,34 @@ class HTTPClient:
             gjp=encoded_password,
             udid=udid,
             uuid=uuid,
-            chk=chk,
-            secret=self.get_secret("main"),
+            chk=check,
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
     async def get_chests(
         self,
         reward_type: RewardType,
-        chest_1_count: int = 0,
-        chest_2_count: int = 0,
+        chest_1_count: int = DEFAULT_CHEST_COUNT,
+        chest_2_count: int = DEFAULT_CHEST_COUNT,
         *,
         account_id: int,
         encoded_password: str,
     ) -> str:
-        error_codes = {-1: MissingAccess("Failed to get chests.")}
+        error_codes = {-1: MissingAccess(FAILED_TO_GET_CHESTS)}
 
         udid = self.generate_udid()
         uuid = self.generate_uuid()
 
-        chk = generate_rs_and_encode_number(length=5, key=Key.CHESTS)  # type: ignore
+        chk = generate_random_string_and_encode_value(key=Key.CHESTS)
 
         route = Route(
             POST,
-            "/getGJRewards.php",
+            GET_CHESTS,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2359,97 +2529,91 @@ class HTTPClient:
             chk=chk,
             r1=chest_1_count,
             r2=chest_2_count,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
-    async def get_featured_artists_on_page(self, page: int = 0) -> str:
-        error_codes = {-1: MissingAccess("Failed to get featured artists.")}
+    async def get_featured_artists_on_page(self, page: int = DEFAULT_PAGE) -> str:
+        error_codes = {-1: MissingAccess(FAILED_TO_GET_FEATURED_ARTISTS)}
+
+        total = 0
 
         route = Route(
             POST,
-            "/getGJTopArtists.php",
+            GET_FEATURED_ARTISTS,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             page=page,
-            total=0,
-            secret=self.get_secret("main"),
+            total=total,
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
     async def get_song(self, song_id: int) -> str:
         error_codes = {
-            -1: MissingAccess(f"Can not get song by ID: {song_id}."),
+            -1: MissingAccess(FAILED_TO_GET_SONG.format(song_id)),
             -2: SongRestricted(song_id),
         }
 
         route = Route(
             POST,
-            "/getGJSongInfo.php",
+            GET_SONG,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             song_id=song_id,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
     async def get_newgrounds_song(self, song_id: int) -> str:
-        response = await self.request(GET, NEWGROUNDS_SONG_LISTEN.format(id=song_id))
-        return cast(str, response).replace("\\", "")
+        response = await self.request(GET, NEWGROUNDS_SONG_LISTEN.format(song_id))
 
-    async def get_artist_info(self, song_id: int) -> str:
-        error_codes = {-1: MissingAccess(f"Failed to fetch artist info for ID: {song_id}")}
+        return response.replace(BACKSLASH, EMPTY)
 
-        route = Route(
-            GET,
-            "/testSong.php",
-            song_id=song_id,
-            are_params=True,
-            to_camel=True,
-        )
+    async def search_newgrounds_songs_on_page(self, query: str, page: int = DEFAULT_PAGE) -> str:
+        page += 1  # 1-based indexing
 
-        response = await self.request_route(route, error_codes=error_codes)
-
-        return cast(str, response)
-
-    async def search_newgrounds_songs_on_page(self, query: str, page: int = 0) -> str:
         response = await self.request(
             GET,
-            NEWGROUNDS_SEARCH.format(type="audio"),
+            NEWGROUNDS_SEARCH.format(AUDIO),
             params=dict(terms=query, page=page + 1),
         )
 
-        return cast(str, response)
+        return response
 
-    async def search_newgrounds_users_on_page(self, query: str, page: int = 0) -> str:
+    async def search_newgrounds_users_on_page(self, query: str, page: int = DEFAULT_PAGE) -> str:
+        page += 1  # 1-based indexing
+
         response = await self.request(
             GET,
-            NEWGROUNDS_SEARCH.format(type="users"),
-            params=dict(terms=query, page=page + 1),
+            NEWGROUNDS_SEARCH.format(USERS),
+            params=dict(terms=query, page=page),
         )
 
-        return cast(str, response)
+        return response
 
     async def get_newgrounds_user_songs_on_page(
-        self, name: str, page: int = 0
+        self, name: str, page: int = DEFAULT_PAGE
     ) -> Mapping[str, Any]:
+        page += 1  # 1-based indexing
+
         response = await self.request(
             GET,
-            NEWGROUNDS_SONG_PAGE.format(name=name, page=page + 1),
+            NEWGROUNDS_SONG_PAGE.format(name, page),
             type=ResponseType.JSON,
             headers={REQUESTED_WITH: XML_HTTP_REQUEST},
         )
