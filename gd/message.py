@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 from typing import ClassVar, Optional, TypeVar
 
 from gd.constants import EMPTY
 from gd.entity import Entity
 from gd.enums import MessageType
+
 # from gd.models import MessageModel
 from gd.user import User
 

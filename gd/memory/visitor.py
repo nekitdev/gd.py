@@ -2,6 +2,7 @@
 
 from abc import abstractmethod
 from functools import wraps
+
 from typing_extensions import Protocol, runtime_checkable
 
 from gd.memory.context import Context

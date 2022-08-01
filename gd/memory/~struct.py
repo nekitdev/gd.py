@@ -3,8 +3,8 @@
 # type: ignore
 
 from gd.api.editor import Editor
-from gd.encoding import unzip_level_str, zip_level_str
 from gd.decorators import cache_by
+from gd.encoding import unzip_level_str, zip_level_str
 from gd.memory.cocos import CCLayer, CCNode, CCPoint
 from gd.memory.marker import Struct, bool_t, float_t, int_t, mut_pointer, string_t, void
 from gd.text_utils import is_level_probably_decoded

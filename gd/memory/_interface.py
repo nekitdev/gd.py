@@ -2,8 +2,8 @@ from pathlib import Path
 
 from gd.api.editor import Editor
 from gd.converters import get_actual_difficulty
-from gd.encoding import unzip_level_str, zip_level_str
 from gd.decorators import cache_by
+from gd.encoding import unzip_level_str, zip_level_str
 from gd.enums import (
     DemonDifficulty,
     GameMode,

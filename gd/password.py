@@ -77,3 +77,7 @@ class Password(RobTop):
 
     def to_robtop(self) -> str:
         return str(self.to_robtop_value())
+
+    @classmethod
+    def can_be_in(self, string: str) -> bool:
+        return string.isdigit()

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from typing import BinaryIO, Type, TypeVar
-from typing_extensions import Final, Literal
 
 from attrs import Attribute, field, frozen
+from typing_extensions import Final, Literal
 
 from gd.binary import Binary
 from gd.binary_utils import U8_SIZE, Reader, Writer, from_u8, to_u8

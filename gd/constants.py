@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 EMPTY = str()
 SPACE = " "
 
@@ -18,6 +20,18 @@ DEFAULT_RECORD = 0
 DEFAULT_SPECIAL = 0
 
 DEFAULT_COUNT = 100
+
+DEFAULT_VERSION = 1
+DEFAULT_OBJECTS = 0
+DEFAULT_COINS = 0
+DEFAULT_STARS = 0
+
+DEFAULT_TWO_PLAYER = False
+# DEFAULT_PLATFORMER = False
+
+DEFAULT_LOW_DETAIL = False
+
+DEFAULT_TIME = timedelta()
 
 ZERO_PAGE = range(1)
 

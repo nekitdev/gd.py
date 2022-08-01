@@ -1,7 +1,7 @@
 from typing import ClassVar, Set
+
 from enum_extensions import Enum as ExtendedEnum
 from enum_extensions import Flag as ExtendedFlag
-
 from enum_extensions import FormatTrait, OrderTrait
 from enum_extensions import TitleTrait as ExtendedTitleTrait
 

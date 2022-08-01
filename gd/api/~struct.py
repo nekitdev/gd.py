@@ -6,14 +6,14 @@ from builtins import iter as std_iter
 
 from iters import iter
 
+from gd.api.directives import get_dir, get_id
 from gd.api.guidelines import Guidelines
 from gd.api.hsv import HSV
 from gd.api.recording import Recording, RecordingEntry
-from gd.api.directives import get_dir, get_id
 from gd.colors import Color
 from gd.converters import Password, Version
-from gd.encoding import decode_base64_str, encode_base64_str, unzip_level_str, zip_level_str
 from gd.decorators import cache_by
+from gd.encoding import decode_base64_str, encode_base64_str, unzip_level_str, zip_level_str
 from gd.enums import (
     Easing,
     Enum,

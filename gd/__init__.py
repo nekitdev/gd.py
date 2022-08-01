@@ -9,8 +9,10 @@ __license__ = "MIT"
 __version__ = "1.0.0-alpha.1"
 
 from gd.artist import Artist
+
 # from gd.client import Client
 from gd.colors import Color
+
 # from gd.comments import Comment, LevelComment, UserComment
 from gd.credentials import Credentials
 from gd.entity import Entity
@@ -79,31 +81,34 @@ from gd.enums import (
     TimelyType,
     TouchToggleMode,
     TriggerType,
+    UnlistedType,
     ZLayer,
 )
 from gd.errors import (
-    InternalError,
+    ClientError,
+    CommentBanned,
+    DataError,
+    EditorError,
     GDError,
     HTTPError,
     HTTPErrorWithOrigin,
     HTTPStatusError,
-    ClientError,
-    MissingAccess,
-    SongRestricted,
-    CommentBanned,
+    InternalError,
     LoginFailed,
     LoginRequired,
+    MissingAccess,
     NothingFound,
-    DataError,
-    EditorError,
+    SongRestricted,
 )
 from gd.filters import Filters
+
 # from gd.friend_request import FriendRequest
 # from gd.http import HTTPClient
 # from gd.level import Level
 # from gd.level_packs import Gauntlet, MapPack
 # from gd.message import Message
 from gd.password import Password
+
 # from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM, SYSTEM_PLATFORM_CONFIG, PlatformConfig
 # from gd.relationship import Relationship
 # from gd.rewards import Chest, Quest
@@ -143,6 +148,7 @@ __all__ = (
     "FriendRequestState",
     "Role",
     "LevelLength",
+    "UnlistedType",
     "LevelDifficulty",
     "Difficulty",
     "DemonDifficulty",

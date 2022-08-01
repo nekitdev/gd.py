@@ -1,6 +1,6 @@
+import re
 from datetime import datetime, timedelta
 from typing import Iterator
-import re
 
 from gd.constants import EMPTY
 from gd.models_utils import TIME_SEPARATOR, concat_time

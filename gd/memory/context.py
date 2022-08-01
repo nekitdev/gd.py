@@ -2,7 +2,13 @@ from attrs import frozen
 
 from gd.memory.traits import Layout
 from gd.memory.types import Types
-from gd.platform import SYSTEM_PLATFORM_CONFIG, Platform, PlatformConfig, system_bits, system_platform
+from gd.platform import (
+    SYSTEM_PLATFORM_CONFIG,
+    Platform,
+    PlatformConfig,
+    system_bits,
+    system_platform,
+)
 from gd.text_utils import nice_repr
 from gd.typing import TYPE_CHECKING, Type, TypeVar, Union
 

@@ -41,6 +41,7 @@ class Read(Protocol[R]):
 
 W = TypeVar("W", contravariant=True)
 
+
 @runtime_checkable
 class Write(Protocol[W]):
     def write_to(self, state: "BaseState", address: int) -> None:

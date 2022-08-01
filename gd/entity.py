@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterable, Optional, Type, TypeVar
-from typing_extensions import TypedDict
 
 from attrs import Attribute, define, evolve, field
+from typing_extensions import TypedDict
 
 from gd.errors import ClientError
 from gd.json import JSON

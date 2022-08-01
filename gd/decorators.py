@@ -82,9 +82,7 @@ def sync(function: Union[Callable[P, Awaitable[T]], Callable[P, T]]) -> Callable
 C = TypeVar("C", bound="Client")
 
 
-def check_login(
-    function: Callable[Concatenate[C, P], T]
-) -> Callable[Concatenate[C, P], T]:
+def check_login(function: Callable[Concatenate[C, P], T]) -> Callable[Concatenate[C, P], T]:
     """Checks whether the `client` passed as an argument is logged in."""
 
     @wraps(function)

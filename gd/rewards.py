@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-# from typing import TYPE_CHECKING
 
 from attrs import define, field
 
 from gd.constants import UNKNOWN
-from gd.enums import QuestType, ShardType
 from gd.entity import Entity
+from gd.enums import QuestType, ShardType
+
 # from gd.models import ChestModel, QuestModel
 from gd.string_utils import case_fold, tick
+
+# from typing import TYPE_CHECKING
+
 
 # if TYPE_CHECKING:
 #     from gd.client import Client

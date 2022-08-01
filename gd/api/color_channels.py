@@ -1,4 +1,5 @@
 from typing import BinaryIO, Dict, Iterable, Type, TypeVar
+
 from attrs import define, field
 
 from gd.api.api import API

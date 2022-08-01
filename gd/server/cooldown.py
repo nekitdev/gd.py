@@ -1,12 +1,12 @@
 from functools import wraps
-from time import monotonic
 from threading import RLock
+from time import monotonic
 from typing import Optional, Type, TypeVar
 
 from aiohttp.web import Request, Response
 from attrs import define, field
-from gd.server.constants import TOKEN
 
+from gd.server.constants import TOKEN
 from gd.server.handler import Error, ErrorType
 from gd.server.typing import Handler
 from gd.typing import DecoratorIdentity, Nullary, StringDict, Unary

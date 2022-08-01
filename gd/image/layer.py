@@ -1,7 +1,7 @@
 from typing import Sequence, Tuple, Type, TypeVar
-from typing_extensions import TypedDict
 
 from attrs import define
+from typing_extensions import TypedDict
 
 from gd.image.geometry import Point, Size
 

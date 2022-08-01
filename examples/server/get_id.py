@@ -20,8 +20,7 @@ async def main() -> None:
 
         else:
             print(
-                f"Hello, {user.name}! Your account ID is {user.account_id} "
-                f"and ID is {user.id}."
+                f"Hello, {user.name}! Your account ID is {user.account_id} " f"and ID is {user.id}."
             )
 
     # could not find

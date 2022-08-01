@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+
 # from pathlib import Path
 from typing import TYPE_CHECKING, Any, AsyncIterator, Iterable, Optional, Type, TypeVar
 
@@ -10,6 +11,7 @@ from iters import iter
 # from gd.api.editor import Editor
 from gd.await_iters import wrap_await_iter
 from gd.constants import COMMENT_PAGE_SIZE, DEFAULT_PAGE, DEFAULT_RECORD, EMPTY
+
 # from gd.decorators import cache_by
 from gd.entity import Entity
 from gd.enums import (
@@ -24,6 +26,7 @@ from gd.enums import (
     TimelyType,
 )
 from gd.errors import MissingAccess
+
 # from gd.models import LevelModel
 from gd.password import Password
 from gd.song import Song
@@ -90,7 +93,6 @@ class Level(Entity):
 
         else:
             official_level = iter(official_levels).find_or_none(by_id(id))
-
 
         if official_level is None:
             raise LookupError("Could not find official level by given query.")

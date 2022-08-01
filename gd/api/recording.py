@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import re
 from collections import UserList as ListType
 from typing import Iterable, Iterator, List, Match, Type, TypeVar, overload
-import re
 
 from attrs import define
+
 from gd.constants import EMPTY
 from gd.errors import InternalError
 from gd.models_constants import ONE, RECORDING_SEPARATOR
@@ -15,12 +16,10 @@ from gd.string_utils import concat_empty
 
 __all__ = ("RecordingItem", "Recording")
 
-R = TypeVar("R", bound="RecordingItem", covariant=True)
-
 DEFAULT_TIMESTAMP = 0.0
 DEFAULT_PREVIOUS = False
 DEFAULT_NEXT = False
-DEFAULT_SECONDARY =  False
+DEFAULT_SECONDARY = False
 
 TIMESTAMP = "timestamp"
 PREVIOUS = "previous"
@@ -39,6 +38,8 @@ RECORDING_ITEM_PATTERN = rf"""
 """
 
 RECORDING_ITEM = re.compile(RECORDING_ITEM_PATTERN, re.VERBOSE)
+
+RI = TypeVar("RI", bound="RecordingItem")
 
 
 @define()
@@ -65,7 +66,7 @@ class RecordingItem(RobTop):
             yield empty
 
     @classmethod
-    def from_robtop_match(cls: Type[R], match: Match[str]) -> R:
+    def from_robtop_match(cls: Type[RI], match: Match[str]) -> RI:
         previous_group = match.group(PREVIOUS)
 
         previous = False if previous_group is None else int_bool(previous_group)
@@ -88,7 +89,7 @@ class RecordingItem(RobTop):
         return cls(timestamp, previous, next, secondary)
 
     @classmethod
-    def from_robtop(cls: Type[R], string: str) -> R:
+    def from_robtop(cls: Type[RI], string: str) -> RI:
         match = RECORDING_ITEM.fullmatch(string)
 
         if match is None:
@@ -99,8 +100,15 @@ class RecordingItem(RobTop):
     def to_robtop(self) -> str:
         return concat_recording(self.to_robtop_iterator())
 
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return RECORDING_SEPARATOR in string
 
-class Recording(RobTop, ListType, List[R]):  # type: ignore
+
+R = TypeVar("R", bound="Recording")
+
+
+class Recording(RobTop, ListType, List[RecordingItem]):  # type: ignore
     @overload
     @staticmethod
     def iter_robtop(string: str) -> Iterator[RecordingItem]:
@@ -108,7 +116,7 @@ class Recording(RobTop, ListType, List[R]):  # type: ignore
 
     @overload
     @staticmethod
-    def iter_robtop(string: str, item_type: Type[R]) -> Iterator[R]:
+    def iter_robtop(string: str, item_type: Type[RI]) -> Iterator[RI]:
         ...
 
     @staticmethod
@@ -123,23 +131,17 @@ class Recording(RobTop, ListType, List[R]):  # type: ignore
     def collect_robtop(recording: Iterable[RecordingItem]) -> str:
         return concat_empty(item.to_robtop() for item in recording)
 
-    @overload
-    @classmethod
-    def from_robtop(cls: Type[Recording[RecordingItem]], string: str) -> Recording[RecordingItem]:
-        ...
-
-    @overload
-    @classmethod
-    def from_robtop(cls: Type[Recording[R]], string: str, item_type: Type[R]) -> Recording[R]:
-        ...
-
     @classmethod
     def from_robtop(
-        cls: Type[Recording[RecordingItem]],
+        cls: Type[R],
         string: str,
         item_type: Type[RecordingItem] = RecordingItem,
-    ) -> Recording[RecordingItem]:
+    ) -> R:
         return cls(cls.iter_robtop(string, item_type))
 
     def to_robtop(self) -> str:
         return self.collect_robtop(self)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return RECORDING_SEPARATOR in string

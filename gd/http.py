@@ -11,7 +11,19 @@ from pathlib import Path
 from random import randrange as get_random_range
 from types import TracebackType as Traceback
 from typing import (
-    Any, AnyStr, BinaryIO, ClassVar, Generic, Mapping, Optional, Set, Type, TypeVar, Union, overload
+    Any,
+    AnyStr,
+    BinaryIO,
+    ClassVar,
+    Generic,
+    Iterable,
+    Mapping,
+    Optional,
+    Set,
+    Type,
+    TypeVar,
+    Union,
+    overload,
 )
 from uuid import uuid4 as generate_uuid
 
@@ -23,10 +35,31 @@ from yarl import URL
 
 from gd.api.recording import Recording
 from gd.async_utils import maybe_await_call, shutdown_loop
-from gd.constants import DEFAULT_SPECIAL, EMPTY
-from gd.encoding import encode_base64_string_url_safe, generate_check, generate_random_string
-from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, Version
-from gd.typing import AnyException, DynamicTuple, Headers, IntString, IntoPath, JSONType, MaybeAsyncUnary, MaybeIterable, Namespace, Parameters, URLString, is_bytes, is_iterable, is_string
+from gd.constants import (
+    DEFAULT_COINS,
+    DEFAULT_ID,
+    DEFAULT_LOW_DETAIL,
+    DEFAULT_OBJECTS,
+    DEFAULT_SPECIAL,
+    DEFAULT_STARS,
+    DEFAULT_TIME,
+    DEFAULT_VERSION,
+    EMPTY,
+    UNKNOWN,
+)
+from gd.encoding import (
+    ATTEMPTS_ADD,
+    COINS_ADD,
+    JUMPS_ADD,
+    SECONDS_ADD,
+    encode_base64_string_url_safe,
+    encode_robtop_string,
+    generate_check,
+    generate_leaderboard_seed,
+    generate_level_seed,
+    generate_random_string,
+    zip_level_string,
+)
 from gd.enums import (
     AccountURLType,
     CommentState,
@@ -50,6 +83,7 @@ from gd.enums import (
     Secret,
     SimpleRelationshipType,
     TimelyType,
+    UnlistedType,
 )
 from gd.errors import (
     CommentBanned,
@@ -62,12 +96,32 @@ from gd.errors import (
     SongRestricted,
 )
 from gd.filters import Filters
+from gd.iter_utils import tuple_args
 from gd.models import CommentBannedModel
+from gd.models_constants import OBJECTS_SEPARATOR
 from gd.models_utils import concat_extra_string
+from gd.password import Password
 from gd.string_utils import concat_comma, password_str, tick
 from gd.text_utils import snake_to_camel
 from gd.timer import create_timer
+from gd.typing import (
+    AnyException,
+    DynamicTuple,
+    Headers,
+    IntoPath,
+    IntString,
+    JSONType,
+    MaybeAsyncUnary,
+    MaybeIterable,
+    Namespace,
+    Parameters,
+    URLString,
+    is_bytes,
+    is_iterable,
+    is_string,
+)
 from gd.version import python_version_info, version_info
+from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, Version
 
 __all__ = ("Route", "HTTPClient")
 
@@ -114,7 +168,7 @@ SUGGEST_LEVEL = "suggestGJStars20.php"
 GET_LEVEL_LEADERBOARD = "getGJLevelScores211.php"
 UNBLOCK_USER = "unblockGJUser20.php"
 BLOCK_USER = "blockGJUser20.php"
-REMOVE_FRIEND = "removeGJFriend20.php"
+UNFRIEND_USER = "removeGJFriend20.php"
 SEND_MESSAGE = "uploadGJMessage20.php"
 GET_MESSAGE = "downloadGJMessage20.php"
 DELETE_MESSAGE = "deleteGJMessages20.php"
@@ -356,6 +410,8 @@ CAN_NOT_UPDATE_LEVEL_DESCRIPTION = "can not update level description (ID: {})"
 
 EXPECTED_TIMELY = "expected timely type"
 CAN_NOT_FIND_TIMELY = "can not find {} level"
+
+FAILED_TO_UPLOAD_LEVEL = "failed to upload a level"
 
 AUDIO = "audio"
 USERS = "users"
@@ -1168,7 +1224,7 @@ class HTTPClient:
             query = EMPTY
 
         if not is_string(query) and is_iterable(query):
-            query = concat_comma(query)
+            query = concat_comma(map(str, query))
 
         route = Route(
             POST,
@@ -1342,69 +1398,61 @@ class HTTPClient:
 
     async def upload_level(
         self,
-        name: str = "Unnamed",
-        id: int = 0,
-        version: int = 1,
-        length: LevelLength = LevelLength.TINY,  # type: ignore
-        track_id: int = 0,
-        description: str = "",
-        song_id: int = 0,
-        is_auto: bool = False,
-        original: int = 0,
+        name: str = UNKNOWN,
+        id: int = DEFAULT_ID,
+        version: int = DEFAULT_VERSION,
+        length: LevelLength = LevelLength.TINY,
+        track_id: int = DEFAULT_ID,
+        description: str = EMPTY,
+        song_id: int = DEFAULT_ID,
+        original: int = DEFAULT_ID,
         two_player: bool = False,
-        objects: int = 0,
-        coins: int = 0,
-        stars: int = 0,
-        unlisted: bool = False,
-        friends_only: bool = False,
-        low_detail_mode: bool = False,
-        password: Optional[Union[int, str]] = None,
-        copyable: bool = False,
-        recording: Iterable[RecordingEntry] = (),
-        editor_seconds: int = 0,
-        copies_seconds: int = 0,
-        data: str = "",
+        type: UnlistedType = UnlistedType.DEFAULT,
+        objects: int = DEFAULT_OBJECTS,
+        coins: int = DEFAULT_COINS,
+        stars: int = DEFAULT_STARS,
+        low_detail: bool = DEFAULT_LOW_DETAIL,
+        password: Optional[Password] = None,
+        recording: Optional[Recording] = None,
+        editor_time: timedelta = DEFAULT_TIME,
+        copies_time: timedelta = DEFAULT_TIME,
+        data: str = EMPTY,
         *,
         account_id: int,
         account_name: str,
         encoded_password: str,
     ) -> int:
-        error_codes = {-1: MissingAccess("Failed to upload level.")}
+        error_codes = {-1: MissingAccess(FAILED_TO_UPLOAD_LEVEL)}
 
-        if is_level_probably_decoded(data):
+        objects_separator = OBJECTS_SEPARATOR
+
+        if objects_separator in data:
             if not objects:
-                objects = object_count(data)
+                objects = data.count(objects_separator)
 
-            data = zip_level_str(data)
+            data = zip_level_string(data)
 
         extra_string = self.generate_extra_string()
 
-        description = encode_base64_str(description)
+        description = encode_base64_string_url_safe(description)
 
         level_seed = generate_level_seed(data)
 
-        seed = generate_rs()
-        other_seed = generate_chk(
-            values=[level_seed], key=Key.LEVEL, salt=Salt.LEVEL  # type: ignore
-        )
+        random_string = generate_random_string()
 
-        level_password = Password(password, copyable)
+        seed = generate_check(tuple_args(str(level_seed)), Key.LEVEL, Salt.LEVEL)
 
-        just_unlisted = 0
-        listed_for_friends = 0
+        if recording is None:
+            recording = Recording()
 
-        if friends_only:
-            just_unlisted = 1
-            listed_for_friends = 1
+        recording_string = zip_level_string(recording.to_robtop())
 
-        elif unlisted:
-            just_unlisted = 1
-
-        recording_str = zip_level_str(Recording.collect_string(recording))
+        if password is None:
+            password = Password()
 
         route = Route(
             POST,
-            "/uploadGJLevel21.php",
+            UPLOAD_LEVEL,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1415,51 +1463,51 @@ class HTTPClient:
             level_length=length.value,
             audio_track=track_id,
             song_id=song_id,
-            auto=int(is_auto),
+            auto=max(0, min(1, stars)),
             original=original,
             two_player=int(two_player),
             objects=objects,
             coins=coins,
             requested_stars=stars,
-            unlisted=just_unlisted,
-            unlisted2=listed_for_friends,
-            ldm=int(low_detail_mode),
-            password=level_password.to_robtop_number(),
+            unlisted=type.is_unlisted(),
+            unlisted2=type.is_listed_to_friends(),
+            ldm=int(low_detail),
+            password=password.to_robtop_value(),
             level_string=data,
             extra_string=extra_string,
-            level_info=recording_str,
-            seed=seed,
-            seed2=other_seed,
-            wt=editor_seconds,
-            wt2=copies_seconds,
+            level_info=recording_string,
+            seed=random_string,
+            seed2=seed,
+            wt=int(editor_time.total_seconds()),
+            wt2=int(copies_time.total_seconds()),
             account_id=account_id,
             user_name=account_name,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
     async def rate_level(
         self, level_id: int, stars: int, *, account_id: int, encoded_password: str
     ) -> int:
-        error_codes = {-1: MissingAccess(f"Failed to rate level by ID: {level_id}.")}
+        error_codes = {-1: MissingAccess(FAILED_TO_RATE_LEVEL.format(level_id))}
+
         udid = self.generate_udid()
         uuid = self.generate_uuid()
-        rs = generate_rs()
 
-        chk = generate_chk(
-            values=[level_id, stars, rs, account_id, udid, uuid],
-            key=Key.LIKE_RATE,  # type: ignore
-            salt=Salt.LIKE_RATE,  # type: ignore
-        )
+        random_string = generate_random_string()
+
+        values = (level_id, stars, random_string, account_id, udid, uuid)
+
+        check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
 
         route = Route(
             POST,
-            "/rateGJStars211.php",
+            RATE_LEVEL,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1467,17 +1515,17 @@ class HTTPClient:
             stars=stars,
             udid=udid,
             uuid=uuid,
-            rs=rs,
-            chk=chk,
+            rs=random_string,
+            chk=check,
             account_id=account_id,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
     async def rate_demon(
         self,
@@ -1489,15 +1537,13 @@ class HTTPClient:
         encoded_password: str,
     ) -> int:
         error_codes = {
-            -1: MissingAccess(f"Failed to demon-rate level by ID: {level_id}."),
-            -2: MissingAccess(
-                f"Missing moderator permissions to demon-rate level by ID: {level_id}."
-            ),
+            -1: MissingAccess(FAILED_TO_RATE_DEMON.format(level_id)),
+            -2: MissingAccess(RATE_DEMON_MISSING_PERMISSIONS.format(level_id)),
         }
 
         route = Route(
             POST,
-            "/rateGJDemon21.php",
+            RATE_DEMON,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1506,15 +1552,15 @@ class HTTPClient:
             mode=int(as_mod),
             account_id=account_id,
             gjp=encoded_password,
-            secret=self.get_secret("mod"),
+            secret=Secret.MOD.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
-    async def send_level(
+    async def suggest_level(
         self,
         level_id: int,
         stars: int,
@@ -1524,13 +1570,13 @@ class HTTPClient:
         encoded_password: str,
     ) -> int:
         error_codes = {
-            -1: MissingAccess(f"Failed to send a level by ID: {level_id}."),
-            -2: MissingAccess(f"Missing moderator permissions to send level by ID: {level_id}."),
+            -1: MissingAccess(FAILED_TO_SUGGEST_LEVEL.format(level_id)),
+            -2: MissingAccess(SUGGEST_LEVEL_MISSING_PERMISSIONS.format(level_id)),
         }
 
         route = Route(
             POST,
-            "/suggestGJStars20.php",
+            SUGGEST_LEVEL,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1539,62 +1585,64 @@ class HTTPClient:
             feature=int(feature),
             account_id=account_id,
             gjp=encoded_password,
-            secret=self.get_secret("mod"),
+            secret=Secret.MOD.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
-    async def get_level_top(
+    async def get_level_leaderboard(
         self,
         level_id: int,
         strategy: LevelLeaderboardStrategy,
+        timely_type: TimelyType = TimelyType.DEFAULT,
+        timely_id: int = DEFAULT_ID,
+        played: bool = False,
+        percentage: int = 0,
+        jumps: int = 0,
+        attempts: int = 0,
+        seconds: int = 0,
+        coins: int = 0,
+        progress: Iterable[int] = (),
+        send: bool = False,
         *,
         account_id: int,
         encoded_password: str,
     ) -> str:
-        # timely_type: TimelyType = TimelyType.NOT_TIMELY,
-        # timely_id: int = 0,
-        # played: bool = False,
-        # percent: int = 0,
-        # jumps: int = 0,
-        # attempts: int = 0,
-        # seconds: int = 0,
-        # coins: int = 0,
 
-        error_codes = {
-            -1: MissingAccess(f"Failed to get leaderboard of the level by ID: {level_id}.")
-        }
+        error_codes = {-1: MissingAccess(FAILED_TO_GET_LEADERBOARD.format(level_id))}
 
-        # seed = generate_leaderboard_seed(jumps, percentage, seconds, played)
+        seed = generate_leaderboard_seed(jumps, percentage, seconds, played)
 
-        # if timely_type is TimelyType.WEEKLY:
-        #     timely_id += 100_000
+        if timely_type is TimelyType.WEEKLY:
+            timely_id += 100_000
 
-        # chk = generate_chk(
-        #     values=[
-        #         account_id,
-        #         level_id,
-        #         percentage,
-        #         seconds,
-        #         jumps,
-        #         attempts,
-        #         percent,
-        #         100 - percent,
-        #         1,
-        #         coins,
-        #         timely_id,
-        #         rs,
-        #     ],
-        #     key=Key.LEVEL_LEADERBOARD,  # type: ignore
-        #     salt=Salt.LEVEL_LEADERBOARD,  # type: ignore
-        # )
+        random_string = generate_random_string()
+
+        unknown = 1
+
+        values = (
+            account_id,
+            level_id,
+            percentage,
+            seconds,
+            jumps,
+            attempts,
+            percentage,
+            100 - percentage,
+            unknown,
+            coins,
+            timely_id,
+            random_string,
+        )
+
+        check = generate_check(map(str, values), Key.LEVEL_LEADERBOARD, Salt.LEVEL_LEADERBOARD)
 
         route = Route(
             POST,
-            "/getGJLevelScores211.php",
+            GET_LEVEL_LEADERBOARD,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1602,89 +1650,106 @@ class HTTPClient:
             account_id=account_id,
             gjp=encoded_password,
             type=strategy.value,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
-        # route.update(
-        #     percent=percent,
-        #     s1=attempts + 8354,
-        #     s2=jumps + 3991,
-        #     s3=seconds + 4085,
-        #     s4=seed,
-        #     s5=random.randint(100, 10_000),  # not sure about this one
-        #     s6="",  # this is progress string, we will add that later
-        #     s7=rs,
-        #     s8=attempts,
-        #     s9=coins + 5819,
-        #     s10=timely_id,
-        #     chk=chk,
-        # )
+        progress_string = concat_comma(map(str, progress))
+
+        if send:
+            route.update(
+                percent=percentage,
+                s1=attempts + ATTEMPTS_ADD,
+                s2=jumps + JUMPS_ADD,
+                s3=seconds + SECONDS_ADD,
+                s4=seed,
+                s5=get_random_range(100, 100000),
+                s6=progress_string,
+                s7=random_string,
+                s8=attempts,
+                s9=coins + COINS_ADD,
+                s10=timely_id,
+                chk=check,
+                to_camel=True,
+            )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return cast(str, response)
+        return response
 
-    async def block_or_unblock(
+    async def block_user(
         self,
         account_id: int,
-        unblock: bool,
         *,
         client_account_id: int,
         encoded_password: str,
     ) -> int:
-        if unblock:
-            endpoint = "/unblockGJUser20.php"
-            string = "unblock"
-
-        else:
-            endpoint = "/blockGJUser20.php"
-            string = "block"
-
-        error_codes = {
-            -1: MissingAccess(f"Failed to {string} the user by Account ID: {account_id}.")
-        }
+        error_codes = {-1: MissingAccess(FAILED_TO_BLOCK_USER.format(account_id))}
 
         route = Route(
             POST,
-            endpoint,
+            BLOCK_USER,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             target_account_id=account_id,
             account_id=client_account_id,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
+
+    async def unblock_user(
+        self,
+        account_id: int,
+        *,
+        client_account_id: int,
+        encoded_password: str,
+    ) -> int:
+        error_codes = {-1: MissingAccess(FAILED_TO_UNBLOCK_USER.format(account_id))}
+
+        route = Route(
+            POST,
+            BLOCK_USER,
+            game_version=self.get_game_version(),
+            binary_version=self.get_binary_version(),
+            gdw=self.get_gd_world(),
+            target_account_id=account_id,
+            account_id=client_account_id,
+            gjp=encoded_password,
+            secret=Secret.MAIN.value,
+            to_camel=True,
+        )
+
+        response = await self.request_route(route, error_codes=error_codes)
+
+        return int_or(response, 0)
 
     async def unfriend_user(
         self, account_id: int, *, client_account_id: int, encoded_password: str
     ) -> int:
-        error_codes = {
-            -1: MissingAccess(f"Failed to unfriend the user by account ID: {account_id}.")
-        }
+        error_codes = {-1: MissingAccess(FAILED_TO_UNFRIEND_USER.format(account_id))}
 
         route = Route(
             POST,
-            "/removeGJFriend20.php",
+            UNFRIEND_USER,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             target_account_id=account_id,
             account_id=client_account_id,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
     async def send_message(
         self,
@@ -1695,34 +1760,32 @@ class HTTPClient:
         client_account_id: int,
         encoded_password: str,
     ) -> int:
-        error_codes = {
-            -1: MissingAccess(f"Failed to send a message to the user by account ID: {account_id}.")
-        }
+        error_codes = {-1: MissingAccess(FAILED_TO_SEND_MESSAGE.format(account_id))}
 
         if subject is None:
-            subject = ""
+            subject = EMPTY
 
         if content is None:
-            content = ""
+            content = EMPTY
 
         route = Route(
             POST,
-            "/uploadGJMessage20.php",
+            SEND_MESSAGE,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
-            subject=encode_base64_str(subject),
-            body=encode_robtop_str(content, Key.MESSAGE),  # type: ignore
+            subject=encode_base64_string_url_safe(subject),
+            body=encode_robtop_string(content, Key.MESSAGE),
             to_account_id=account_id,
             account_id=client_account_id,
             gjp=encoded_password,
-            secret=self.get_secret("main"),
+            secret=Secret.MAIN.value,
             to_camel=True,
         )
 
         response = await self.request_route(route, error_codes=error_codes)
 
-        return int_or(cast(str, response), 0)
+        return int_or(response, 0)
 
     async def download_message(
         self,

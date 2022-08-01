@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import re
 from secrets import token_hex
 from types import TracebackType as Traceback
 from typing import TYPE_CHECKING, Generic, Optional, Type, TypeVar, overload
-import re
 
 from attrs import field, frozen
 from iters import iter

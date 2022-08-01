@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Iterable, Optional, Tuple, Type, TypeVar
 
 from attrs import define
-from gd.constants import DEFAULT_HEIGHT, DEFAULT_WIDTH
 
+from gd.constants import DEFAULT_HEIGHT, DEFAULT_WIDTH
 from gd.image.geometry import Point, Rectangle, Size
 from gd.image.sprite import Sprite
 
@@ -26,7 +26,7 @@ from gd.assets import (
 )
 from gd.colors import Color
 from gd.enums import IconType
-from gd.image.animation import Animation, AnimationSheet, Animations
+from gd.image.animation import Animation, Animations, AnimationSheet
 from gd.image.icon import Icon
 from gd.image.sheet import Sheet, Sprites
 from gd.typing import IntoPath, Unary

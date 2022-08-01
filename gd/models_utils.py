@@ -3,7 +3,22 @@ from typing import Iterable, Mapping
 
 from iters.iters import iter
 
-from gd.models_constants import COLOR_SEPARATOR, COMMENT_BANNED_SEPARATOR, CREATOR_SEPARATOR, DATABASE_SEPARATOR, EXTRA_STRING_SEPARATOR, HEADER_SEPARATOR, HSV_SEPARATOR, LOGIN_SEPARATOR, OBJECTS_SEPARATOR, PAGE_SEPARATOR, RECORDING_SEPARATOR, SONG_SEPARATOR, TIME_SEPARATOR, TIME_SEPARATOR_SPACE
+from gd.models_constants import (
+    COLOR_SEPARATOR,
+    COMMENT_BANNED_SEPARATOR,
+    CREATOR_SEPARATOR,
+    DATABASE_SEPARATOR,
+    EXTRA_STRING_SEPARATOR,
+    HEADER_SEPARATOR,
+    HSV_SEPARATOR,
+    LOGIN_SEPARATOR,
+    OBJECTS_SEPARATOR,
+    PAGE_SEPARATOR,
+    RECORDING_SEPARATOR,
+    SONG_SEPARATOR,
+    TIME_SEPARATOR,
+    TIME_SEPARATOR_SPACE,
+)
 
 FALSE = str(0)
 TRUE = str(1)
@@ -32,15 +47,11 @@ def split_iterable(separator: str, string: str) -> Iterable[str]:
 
 
 def split_string_mapping(separator: str, string: str) -> Mapping[str, str]:
-    return {
-        index: value for index, value in iter(string.split(separator)).pairs().unwrap()
-    }
+    return {index: value for index, value in iter(string.split(separator)).pairs().unwrap()}
 
 
 def split_mapping(separator: str, string: str) -> Mapping[int, str]:
-    return {
-        int(index): value for index, value in iter(string.split(separator)).pairs().unwrap()
-    }
+    return {int(index): value for index, value in iter(string.split(separator)).pairs().unwrap()}
 
 
 def string_mapping_to_iterable(mapping: Mapping[str, str]) -> Iterable[str]:

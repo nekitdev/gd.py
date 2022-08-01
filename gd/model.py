@@ -2,6 +2,8 @@
 
 from gd.colors import Color
 from gd.converters import GameVersion, Password, get_actual_difficulty, value_to_level_difficulty
+from gd.date_time import datetime
+from gd.decorators import cache_by
 from gd.encoding import (
     Key,
     decode_robtop_str,
@@ -11,8 +13,6 @@ from gd.encoding import (
     unzip_level_str,
     zip_level_str,
 )
-from gd.date_time import datetime
-from gd.decorators import cache_by
 from gd.enums import (
     CommentState,
     DemonDifficulty,

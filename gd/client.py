@@ -4,7 +4,16 @@ from builtins import setattr as set_attribute
 from datetime import timedelta
 from types import TracebackType as Traceback
 from typing import (
-    Any, AsyncIterator, Generator, Generic, Iterable, Optional, Type, TypeVar, Union, overload
+    Any,
+    AsyncIterator,
+    Generator,
+    Generic,
+    Iterable,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    overload,
 )
 
 from attrs import define, field, frozen
@@ -12,14 +21,21 @@ from typing_extensions import ParamSpec
 from yarl import URL
 
 from gd.api.database import Database
+
 # from gd.api.recording import Recording
 from gd.async_utils import maybe_await, run, run_iterables
 from gd.await_iters import wrap_await_iter
 from gd.comments import Comment
-from gd.constants import DEFAULT_COUNT, DEFAULT_PAGE, DEFAULT_PAGES, DEFAULT_SPECIAL, DEFAULT_USE_CLIENT
+from gd.constants import (
+    DEFAULT_COUNT,
+    DEFAULT_PAGE,
+    DEFAULT_PAGES,
+    DEFAULT_SPECIAL,
+    DEFAULT_USE_CLIENT,
+)
 from gd.credentials import Credentials
-from gd.encoding import Key, encode_robtop_string
 from gd.decorators import check_client_login, check_login
+from gd.encoding import Key, encode_robtop_string
 from gd.enums import (
     AccountURLType,
     CommentState,
@@ -48,6 +64,7 @@ from gd.http import HTTPClient
 from gd.level import Level
 from gd.level_packs import Gauntlet, MapPack
 from gd.message import Message
+
 # from gd.models import LevelSearchResponseModel
 from gd.rewards import Chest, Quest
 from gd.session import Session
@@ -374,9 +391,7 @@ class Client:
 
     @wrap_await_iter
     @check_login
-    async def get_relationships(
-        self, type: SimpleRelationshipType
-    ) -> AsyncIterator[User]:
+    async def get_relationships(self, type: SimpleRelationshipType) -> AsyncIterator[User]:
         try:
             response_model = await self.session.get_relationships(
                 SimpleRelationshipType.from_value(type),
@@ -1321,9 +1336,7 @@ class Client:
         length = len(listeners)
 
         self._listeners = listeners = tuple(
-            present_listener
-            for present_listener in listeners
-            if present_listener is not listener
+            present_listener for present_listener in listeners if present_listener is not listener
         )
 
         return len(listeners) < length

@@ -5,7 +5,7 @@ from typing import Optional, Sequence, Type, TypeVar
 from attrs import define, field
 
 from gd.decorators import cache_by
-from gd.image.layer import Layer, Layers, LayerData
+from gd.image.layer import Layer, LayerData, Layers
 from gd.typing import IntoPath, StringMapping
 
 __all__ = ("Animation", "Animations", "AnimationSheet", "AnimationSheetData", "Frame", "Frames")
@@ -63,11 +63,12 @@ class AnimationSheet:
         self.ensure_loaded()
 
         return {
-            name: Animation([
-                Frame([
-                    Layer.from_dict(layer_dict) for layer_dict in layer_dicts
-                ]) for layer_dicts in frames
-            ])
+            name: Animation(
+                [
+                    Frame([Layer.from_dict(layer_dict) for layer_dict in layer_dicts])
+                    for layer_dicts in frames
+                ]
+            )
             for name, frames in self.data.items()
         }
 

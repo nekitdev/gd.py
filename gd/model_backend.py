@@ -6,6 +6,7 @@ from functools import partial, wraps
 from urllib.parse import quote, unquote
 
 from gd.colors import Color
+from gd.date_time import datetime, de_human_delta, ser_human_delta
 from gd.encoding import (
     Key,
     decode_base64_str,
@@ -13,7 +14,6 @@ from gd.encoding import (
     encode_base64_str,
     encode_robtop_str,
 )
-from gd.date_time import datetime, de_human_delta, ser_human_delta
 from gd.enums import Enum
 from gd.errors import DeError, SerError
 from gd.index_parser import IndexParser, chain_from_iterable, group

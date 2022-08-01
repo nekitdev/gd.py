@@ -55,14 +55,13 @@ class Guideline:
         self._color = self._guidelines.get(self._timestamp, self._color)
 
     @classmethod
-    def from_binary(
-        cls: Type[G], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT
-    ) -> G:
+    def from_binary(cls: Type[G], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> G:
         reader = Reader()
 
         timestamp = reader.read_f32(order)
 
         value = reader.read_u32(order)
+
 
 IntoGuidelines = IntoMapping[float, Tuple[Color, int]]
 GuidelinePairs = Pairs[float, Tuple[Color, int]]

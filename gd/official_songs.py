@@ -4,7 +4,10 @@ from gd.artist import Artist
 from gd.constants import UNKNOWN
 
 __all__ = (
-    "OFFICIAL_CLIENT_SONGS", "OFFICIAL_SERVER_SONGS", "OfficialSong", "create_default_offical_song"
+    "OFFICIAL_CLIENT_SONGS",
+    "OFFICIAL_SERVER_SONGS",
+    "OfficialSong",
+    "create_default_offical_song",
 )
 
 

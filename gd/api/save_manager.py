@@ -12,7 +12,13 @@ from gd.platform import SYSTEM_PLATFORM, Platform
 from gd.typing import IntoPath, Optional, Tuple
 
 __all__ = (
-    "MAIN_NAME", "LEVELS_NAME", "PATH", "SaveManager", "create_database", "save_manager", "save"
+    "MAIN_NAME",
+    "LEVELS_NAME",
+    "PATH",
+    "SaveManager",
+    "create_database",
+    "save_manager",
+    "save",
 )
 
 MAIN_NAME = "CCGameManager.dat"
@@ -57,8 +63,19 @@ APPLICATION_DATA = "Application Data"
 WINDOWS_PATH = LOCAL_APP_DATA / GEOMETRY_DASH
 MAC_OS_PATH = HOME / LIBRARY / APPLICATION_SUPPORT / GEOMETRY_DASH
 LINUX_PATH = (
-    HOME / DOT_STEAM / STEAM / STEAM_APPS / COMPATIBILITY_DATA / str(GEOMETRY_DASH_ID) / PFX
-    / DRIVE_C / USERS / STEAM_USER / LOCAL_SETTINGS / APPLICATION_DATA / GEOMETRY_DASH
+    HOME
+    / DOT_STEAM
+    / STEAM
+    / STEAM_APPS
+    / COMPATIBILITY_DATA
+    / str(GEOMETRY_DASH_ID)
+    / PFX
+    / DRIVE_C
+    / USERS
+    / STEAM_USER
+    / LOCAL_SETTINGS
+    / APPLICATION_DATA
+    / GEOMETRY_DASH
 )
 
 
@@ -109,9 +126,7 @@ class SaveManager(Generic[D]):
     def create_database(self) -> D:
         return self.database_type()
 
-    def load_local(
-        self, main: Optional[IntoPath] = None, levels: Optional[IntoPath] = None
-    ) -> D:
+    def load_local(self, main: Optional[IntoPath] = None, levels: Optional[IntoPath] = None) -> D:
         main_path = self.compute_path(main, self.main_name)
         levels_path = self.compute_path(levels, self.levels_name)
 
@@ -140,9 +155,7 @@ class SaveManager(Generic[D]):
         apply_xor: bool = False,
         follow_os: bool = False,
     ) -> Tuple[bytes, bytes]:
-        main_data, levels_data = self.dump_parts(
-            database, apply_xor=apply_xor, follow_os=follow_os
-        )
+        main_data, levels_data = self.dump_parts(database, apply_xor=apply_xor, follow_os=follow_os)
 
         return (main_data, levels_data)
 
@@ -273,9 +286,7 @@ class SaveManager(Generic[D]):
     def dump_parts(
         self, database: Database, apply_xor: bool = False, follow_os: bool = False
     ) -> Tuple[bytes, bytes]:
-        main_data = self.encode_data(
-            database.main.dump(), apply_xor=apply_xor, follow_os=follow_os
-        )
+        main_data = self.encode_data(database.main.dump(), apply_xor=apply_xor, follow_os=follow_os)
         levels_data = self.encode_data(
             database.levels.dump(), apply_xor=apply_xor, follow_os=follow_os
         )
@@ -290,9 +301,7 @@ class SaveManager(Generic[D]):
         apply_xor: bool = False,
         follow_os: bool = False,
     ) -> Tuple[str, str]:
-        main_data, levels_data = self.dump_parts(
-            database, apply_xor=apply_xor, follow_os=follow_os
-        )
+        main_data, levels_data = self.dump_parts(database, apply_xor=apply_xor, follow_os=follow_os)
 
         return (main_data.decode(encoding, errors), levels_data.decode(encoding, errors))
 

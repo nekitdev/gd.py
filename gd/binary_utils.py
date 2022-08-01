@@ -51,7 +51,7 @@ F64_BITS: Final[int] = F64_SIZE * BITS
 
 def create_from_int(format: str) -> Binary[bytes, ByteOrder, int]:
     def from_int(data: bytes, order: ByteOrder = ByteOrder.DEFAULT) -> int:
-        result, = unpack(order.value + format, data)
+        (result,) = unpack(order.value + format, data)
 
         return result
 
@@ -67,7 +67,7 @@ def create_to_int(format: str) -> Binary[int, ByteOrder, bytes]:
 
 def create_from_float(format: str) -> Binary[bytes, ByteOrder, float]:
     def from_float(data: bytes, order: ByteOrder = ByteOrder.DEFAULT) -> float:
-        result, = unpack(order.value + format, data)
+        (result,) = unpack(order.value + format, data)
 
         return result
 

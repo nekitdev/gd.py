@@ -1,4 +1,5 @@
 from typing import BinaryIO, Type, TypeVar
+
 from attrs import define, field
 
 from gd.api.api import API
@@ -38,6 +39,15 @@ class HSV(Binary, Model, API):
     v: float = field(default=V_INITIAL)
     s_checked: bool = field(default=S_CHECKED)
     v_checked: bool = field(default=V_CHECKED)
+
+    def is_default(self) -> bool:
+        return (
+            self.h == H_INITIAL
+            and self.s == S_INITIAL
+            and self.v == V_INITIAL
+            and self.s_checked == S_CHECKED
+            and self.v_checked == V_CHECKED
+        )
 
     @classmethod
     def from_robtop(cls: Type[T], string: str) -> T:

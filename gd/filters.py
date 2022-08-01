@@ -120,12 +120,9 @@ class Filters:
     def to_robtop_filters(self) -> RobTopFilters:
         filters = RobTopFilters(
             type=self.strategy.value,
-            diff=concat_comma(
-                map(str, (difficulty.value for difficulty in self.difficulties))
-            ) or DASH,
-            len=concat_comma(
-                map(str, (length.value for length in self.lengths))
-            ) or DASH,
+            diff=concat_comma(map(str, (difficulty.value for difficulty in self.difficulties)))
+            or DASH,
+            len=concat_comma(map(str, (length.value for length in self.lengths))) or DASH,
             featured=int(self.featured),
             original=int(self.require_original),
             two_player=int(self.require_two_player),
@@ -150,7 +147,9 @@ class Filters:
         completed_levels = self.completed_levels
 
         if completed_levels:
-            filters.update(RobTopFilters(completed_levels=wrap(concat_comma(map(str, completed_levels)))))
+            filters.update(
+                RobTopFilters(completed_levels=wrap(concat_comma(map(str, completed_levels))))
+            )
 
         rated = self.rated
 

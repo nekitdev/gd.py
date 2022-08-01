@@ -8,13 +8,25 @@ from iters import iter
 from yarl import URL
 
 from gd.artist import Artist
-from gd.constants import DEFAULT_FROM_NEWGROUNDS, DEFAULT_ID, DEFAULT_RETURN_DEFAULT, DEFAULT_SERVER_STYLE, DEFAULT_SIZE, DEFAULT_WITH_BAR, UNKNOWN
+from gd.constants import (
+    DEFAULT_FROM_NEWGROUNDS,
+    DEFAULT_ID,
+    DEFAULT_RETURN_DEFAULT,
+    DEFAULT_SERVER_STYLE,
+    DEFAULT_SIZE,
+    DEFAULT_WITH_BAR,
+    UNKNOWN,
+)
 from gd.entity import Entity
 from gd.errors import MissingAccess
+
 # from gd.http import NEWGROUNDS_SONG_LISTEN
 from gd.models import SongModel
 from gd.official_songs import (
-    OFFICIAL_CLIENT_SONGS, OFFICIAL_SERVER_SONGS, OfficialSong, create_default_offical_song
+    OFFICIAL_CLIENT_SONGS,
+    OFFICIAL_SERVER_SONGS,
+    OfficialSong,
+    create_default_offical_song,
 )
 from gd.typing import IntoPath, Predicate
 

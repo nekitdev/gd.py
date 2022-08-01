@@ -1,3 +1,4 @@
+from io import BytesIO
 from typing import BinaryIO, Iterable, Set, Type, TypeVar
 
 from attrs import define, field
@@ -8,6 +9,7 @@ from gd.binary import Binary
 from gd.binary_utils import Reader, Writer
 from gd.colors import Color
 from gd.constants import EMPTY
+from gd.enum_extensions import Enum, Flag
 from gd.enums import (
     ByteOrder,
     Easing,
@@ -24,7 +26,6 @@ from gd.enums import (
 from gd.typing import is_instance
 
 O = TypeVar("O", bound="Object")
-
 
 __all__ = (
     "Object",
@@ -66,6 +67,27 @@ SPECIAL_CHECKED_BIT = 0b10000000
 Z_ORDER_MASK = 0b00011111_11111111
 
 Z_ORDER_BITS = Z_ORDER_MASK.bit_length()
+
+
+class ObjectFlag(Flag):
+    SIMPLE = 0
+
+    HAS_EDITOR_LAYER = 1
+    HAS_COLORS = 2
+    HAS_LINK = 4
+    HAS_Z = 8
+
+    def has_editor_layer(self) -> bool:
+        return type(self).HAS_EDITOR_LAYER in self
+
+    def has_colors(self) -> bool:
+        return type(self).HAS_COLORS in self
+
+    def has_link(self) -> bool:
+        return type(self).HAS_LINK in self
+
+    def has_z(self) -> bool:
+        return type(self).HAS_Z in self
 
 
 @define()
@@ -121,6 +143,10 @@ class Object(Binary):
 
         reader = Reader(binary)
 
+        flag_value = reader.read_u8(order)
+
+        flag = ObjectFlag(flag_value)
+
         id = reader.read_u16(order)
 
         x = reader.read_f32(order)
@@ -140,27 +166,49 @@ class Object(Binary):
         glow = value & glow_bit == glow_bit
         special_checked = value & special_checked_bit == special_checked_bit
 
-        z_layer_order = reader.read_u16(order)
+        if flag.has_z():
+            z_layer_order = reader.read_u16(order)
 
-        z_layer_value = z_layer_order >> Z_ORDER_BITS
-        z_order = z_layer_order & Z_ORDER_MASK
+            z_layer_value = z_layer_order >> Z_ORDER_BITS
+            z_order = z_layer_order & Z_ORDER_MASK
 
-        z_layer = ZLayer(z_layer_value)
+            z_layer = ZLayer(z_layer_value)
 
-        base_editor_layer = reader.read_u16(order)
-        additional_editor_layer = reader.read_u16(order)
+        else:
+            z_layer = ZLayer.DEFAULT
+            z_order = 0
 
-        base_color_id = reader.read_u16(order)
-        detail_color_id = reader.read_u16(order)
+        if flag.has_editor_layer():
+            base_editor_layer = reader.read_u16(order)
+            additional_editor_layer = reader.read_u16(order)
 
-        base_color_hsv = HSV.from_binary(binary, order)
-        detail_color_hsv = HSV.from_binary(binary, order)
+        else:
+            base_editor_layer = 0
+            additional_editor_layer = 0
+
+        if flag.has_colors():
+            base_color_id = reader.read_u16(order)
+            detail_color_id = reader.read_u16(order)
+
+            base_color_hsv = HSV.from_binary(binary, order)
+            detail_color_hsv = HSV.from_binary(binary, order)
+
+        else:
+            base_color_id = 0
+            detail_color_id = 0
+
+            base_color_hsv = HSV()
+            detail_color_hsv = HSV()
 
         length = reader.read_u16(order)
 
         groups = {reader.read_u16(order) for _ in range(length)}
 
-        link_id = reader.read_u16(order)
+        if flag.has_link():
+            link_id = reader.read_u16(order)
+
+        else:
+            link_id = 0
 
         return cls(
             id=id,
@@ -190,6 +238,41 @@ class Object(Binary):
 
     def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
         writer = Writer(binary)
+
+        flag = ObjectFlag.SIMPLE
+
+        z_layer = self.z_layer
+        z_order = self.z_order
+
+        if not z_layer.is_default() or z_order:
+            flag |= ObjectFlag.HAS_Z
+
+        base_editor_layer = self.base_editor_layer
+        additional_editor_layer = self.additional_editor_layer
+
+        if base_editor_layer or additional_editor_layer:
+            flag |= ObjectFlag.HAS_EDITOR_LAYER
+
+        base_color_id = self.base_color_id
+        detail_color_id = self.detail_color_id
+
+        base_color_hsv = self.base_color_hsv
+        detail_color_hsv = self.detail_color_hsv
+
+        if (
+            base_color_id
+            or detail_color_id
+            or not base_color_hsv.is_default()
+            or not detail_color_hsv.is_default()
+        ):
+            flag |= ObjectFlag.HAS_COLORS
+
+        link_id = self.link_id
+
+        if link_id:
+            flag |= ObjectFlag.HAS_LINK
+
+        writer.write_u8(flag.value, order)
 
         writer.write_u16(self.id, order)
 
@@ -227,27 +310,30 @@ class Object(Binary):
 
         writer.write_u8(value, order)
 
-        z_layer_order = self.z_order & Z_ORDER_MASK
+        if flag.has_z():
+            z_layer_order = z_order & Z_ORDER_MASK
+            z_layer_order |= z_layer.value << Z_ORDER_BITS
 
-        z_layer_order |= self.z_layer.value << Z_ORDER_BITS
+            writer.write_u16(z_layer_order, order)
 
-        writer.write_u16(z_layer_order, order)
+        if flag.has_editor_layer():
+            writer.write_u16(base_editor_layer, order)
+            writer.write_u16(additional_editor_layer, order)
 
-        writer.write_u16(self.base_editor_layer, order)
-        writer.write_u16(self.additional_editor_layer, order)
+        if flag.has_colors():
+            writer.write_u16(base_color_id, order)
+            writer.write_u16(detail_color_id, order)
 
-        writer.write_u16(self.base_color_id, order)
-        writer.write_u16(self.detail_color_id, order)
-
-        self.base_color_hsv.to_binary(binary, order)
-        self.detail_color_hsv.to_binary(binary, order)
+            base_color_hsv.to_binary(binary, order)
+            detail_color_hsv.to_binary(binary, order)
 
         writer.write_u16(len(self.groups), order)
 
         for group in sorted(self.groups):
             writer.write_u16(group, order)
 
-        writer.write_u16(self.link_id, order)
+        if flag.has_link():
+            writer.write_u16(link_id, order)
 
     def is_h_flipped(self) -> bool:
         return self.h_flipped
@@ -848,3 +934,95 @@ def is_trigger(object: Object) -> TypeGuard[Trigger]:
 
 def has_target_group(object: Object) -> TypeGuard[HasTargetGroup]:
     return is_instance(object, HasTargetGroup)
+
+
+class ObjectType(Enum):
+    OBJECT = 1
+    ANIMATED_OBJECT = 2
+    ORB = 3
+    COIN = 4
+    TEXT = 5
+    TELEPORT = 6
+    PICKUP_ITEM = 7
+    COLLISION_BLOCK = 8
+    COLOR_TRIGGER = 9
+    PULSE_TRIGGER = 10
+    MOVE_TRIGGER = 11
+    SPAWN_TRIGGER = 12
+    STOP_TRIGGER = 13
+    ROTATE_TRIGGER = 14
+    FOLLOW_TRIGGER = 15
+    SHAKE_TRIGGER = 16
+    ANIMATION_TRIGGER = 17
+    TOUCH_TRIGGER = 18
+    COUNT_TRIGGER = 19
+    INSTANT_COUNT_TRIGGER = 20
+    PICKUP_TRIGGER = 21
+    FOLLOW_PLAYER_Y_TRIGGER = 22
+    ON_DEATH_TRIGGER = 23
+    COLLISION_TRIGGER = 24
+
+
+OBJECT_TYPE_TO_TYPE = {
+    ObjectType.OBJECT: Object,
+    ObjectType.ANIMATED_OBJECT: AnimatedObject,
+    ObjectType.ORB: Orb,
+    ObjectType.COIN: Coin,
+    ObjectType.TEXT: Text,
+    ObjectType.TELEPORT: Teleport,
+    ObjectType.PICKUP_ITEM: PickupItem,
+    ObjectType.COLLISION_BLOCK: CollisionBlock,
+    ObjectType.COLOR_TRIGGER: ColorTrigger,
+    ObjectType.PULSE_TRIGGER: PulseTrigger,
+    ObjectType.MOVE_TRIGGER: MoveTrigger,
+    ObjectType.SPAWN_TRIGGER: SpawnTrigger,
+    ObjectType.STOP_TRIGGER: StopTrigger,
+    ObjectType.ROTATE_TRIGGER: RotateTrigger,
+    ObjectType.FOLLOW_TRIGGER: FollowTrigger,
+    ObjectType.SHAKE_TRIGGER: ShakeTrigger,
+    ObjectType.ANIMATION_TRIGGER: AnimationTrigger,
+    ObjectType.TOUCH_TRIGGER: TouchTrigger,
+    ObjectType.COUNT_TRIGGER: CountTrigger,
+    ObjectType.INSTANT_COUNT_TRIGGER: InstantCountTrigger,
+    ObjectType.PICKUP_TRIGGER: PickupTrigger,
+    ObjectType.FOLLOW_PLAYER_Y_TRIGGER: FollowPlayerYTrigger,
+    ObjectType.ON_DEATH_TRIGGER: OnDeathTrigger,
+    ObjectType.COLLISION_TRIGGER: CollisionTrigger,
+}
+
+TYPE_TO_OBJECT_TYPE = {type: object_type for object_type, type in OBJECT_TYPE_TO_TYPE.items()}
+
+
+def object_from_binary(binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> Object:
+    reader = Reader(binary)
+
+    object_type_value = reader.read_u8(order)
+    object_type = ObjectType(object_type_value)
+
+    return OBJECT_TYPE_TO_TYPE[object_type].from_binary(binary, order)
+
+
+def object_from_bytes(data: bytes, order: ByteOrder = ByteOrder.DEFAULT) -> Object:
+    return object_from_binary(BytesIO(data), order)
+
+
+def object_to_binary(
+    object: Object, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT
+) -> None:
+    object_type = TYPE_TO_OBJECT_TYPE[type(object)]
+
+    writer = Writer(binary)
+
+    writer.write_u8(object_type.value, order)
+
+    object.to_binary(binary, order)
+
+
+def object_to_bytes(object: Object, order: ByteOrder = ByteOrder.DEFAULT) -> bytes:
+    binary = BytesIO()
+
+    object_to_binary(object, binary, order)
+
+    binary.seek(0)
+
+    return binary.read()

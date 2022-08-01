@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from attrs import field, frozen
 from typing import TYPE_CHECKING, AsyncIterator, Iterable, Type, TypeVar
+
+from attrs import field, frozen
 from yarl import URL
 
 from gd.await_iters import wrap_await_iter

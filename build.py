@@ -35,7 +35,12 @@ FAILED_TO_FIND_EXTENSIONS = "failed to find extensions"
 
 def build_command(output_path: Path) -> Sequence[str]:
     return (
-        MATURIN, BUILD, INTERPRETER, INTERPRETER_PATH.as_posix(), OUTPUT, output_path.as_posix()
+        MATURIN,
+        BUILD,
+        INTERPRETER,
+        INTERPRETER_PATH.as_posix(),
+        OUTPUT,
+        output_path.as_posix(),
     )
 
 

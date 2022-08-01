@@ -1,11 +1,13 @@
 from typing import BinaryIO, Type, TypeVar
+
 from attrs import define, field
+
 from gd.api.color_channels import ColorChannels
 
 # from gd.api.guidelines import Guidelines
 from gd.binary import Binary
 from gd.binary_utils import Reader, Writer
-from gd.constants import BITS, DEFAULT_ID
+from gd.constants import DEFAULT_ID
 from gd.enums import ByteOrder, GameMode, Speed
 
 DEFAULT_MINI_MODE = False

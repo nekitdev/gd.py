@@ -1,14 +1,23 @@
 from __future__ import annotations
-from datetime import datetime
 
+from datetime import datetime
 from typing import TYPE_CHECKING, AsyncIterator, Dict, Iterable, Optional, Type, TypeVar
+
 from attrs import define
 
 from gd.await_iters import wrap_await_iter
 from gd.colors import Color
-from gd.constants import DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID, DEFAULT_GLOW, DEFAULT_ID, DEFAULT_PAGE, DEFAULT_PAGES, UNKNOWN
+from gd.constants import (
+    DEFAULT_COLOR_1_ID,
+    DEFAULT_COLOR_2_ID,
+    DEFAULT_GLOW,
+    DEFAULT_ID,
+    DEFAULT_PAGE,
+    DEFAULT_PAGES,
+    UNKNOWN,
+)
 from gd.entity import Entity
-from gd.enums import (
+from gd.enums import (  # Orientation,
     CommentState,
     CommentStrategy,
     CommentType,
@@ -16,10 +25,10 @@ from gd.enums import (
     FriendState,
     IconType,
     MessageState,
-    # Orientation,
     Role,
 )
 from gd.filters import Filters
+
 # from gd.image.factory import FACTORY
 from gd.image.icon import Icon
 from gd.models import CreatorModel
@@ -134,9 +143,7 @@ class User(Entity):
 
     @wrap_await_iter
     def get_levels(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Level]:
-        return self.client.search_levels(
-            pages=pages, filters=Filters.by_user(), user=self
-        )
+        return self.client.search_levels(pages=pages, filters=Filters.by_user(), user=self)
 
     @wrap_await_iter
     def get_comments_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Comment]:
@@ -152,9 +159,7 @@ class User(Entity):
 
     @wrap_await_iter
     def get_comments(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Comment]:
-        return self.client.get_user_comments(
-            user=self, type=CommentType.USER, pages=pages
-        )
+        return self.client.get_user_comments(user=self, type=CommentType.USER, pages=pages)
 
     @wrap_await_iter
     def get_level_comments(
@@ -162,9 +167,7 @@ class User(Entity):
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
         pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[Comment]:
-        return self.client.get_user_comments(
-            user=self, type=CommentType.LEVEL, pages=pages
-        )
+        return self.client.get_user_comments(user=self, type=CommentType.LEVEL, pages=pages)
 
     @property
     def icon_id_by_type(self) -> Dict[IconType, int]:

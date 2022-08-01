@@ -56,9 +56,7 @@ class Session:
         )
 
     async def save(self, database: Database, *, account_id: int, name: str, password: str) -> None:
-        parts = await save_manager.to_strings_async(
-            database, apply_xor=False, follow_os=False
-        )
+        parts = await save_manager.to_strings_async(database, apply_xor=False, follow_os=False)
 
         data = concat_save(parts)
 

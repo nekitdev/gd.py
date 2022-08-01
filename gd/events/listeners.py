@@ -3,7 +3,15 @@ from __future__ import annotations
 from abc import abstractmethod
 from traceback import print_exc as print_current_exception
 from typing import (
-    TYPE_CHECKING, Any, Coroutine, Hashable, Iterable, Iterator, List, Optional, TypeVar
+    TYPE_CHECKING,
+    Any,
+    Coroutine,
+    Hashable,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    TypeVar,
 )
 
 from attrs import define, field

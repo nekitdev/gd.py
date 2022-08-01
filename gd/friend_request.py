@@ -4,6 +4,7 @@ from gd.constants import EMPTY
 from gd.entity import Entity
 from gd.enums import FriendRequestType
 from gd.relationship import Relationship
+
 # from gd.models import FriendRequestModel
 from gd.user import User
 

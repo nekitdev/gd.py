@@ -7,8 +7,10 @@ from attrs import define, field
 from gd.await_iters import wrap_await_iter
 from gd.colors import Color
 from gd.entity import Entity
+
 # from gd.enums import Difficulty, GauntletID
 from gd.filters import Filters
+
 # from gd.model import GauntletModel, MapPackModel
 from gd.typing import DynamicTuple
 

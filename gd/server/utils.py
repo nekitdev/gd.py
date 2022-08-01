@@ -81,7 +81,7 @@ DIGIT = r"[0-9]"
 EQUAL = r"="
 DOTS = re.escape("..")
 
-RANGE_PATTERN = fr"(?P<{START}>{DIGIT}+){DOTS}(?P<{INCLUSIVE}>{EQUAL})?(?P<{STOP}>{DIGIT}+)"
+RANGE_PATTERN = rf"(?P<{START}>{DIGIT}+){DOTS}(?P<{INCLUSIVE}>{EQUAL})?(?P<{STOP}>{DIGIT}+)"
 
 RANGE = re.compile(RANGE_PATTERN)
 

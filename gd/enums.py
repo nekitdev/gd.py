@@ -20,6 +20,7 @@ __all__ = (
     "FriendRequestState",
     "Role",
     "LevelLength",
+    "UnlistedType",
     "LevelDifficulty",
     "Difficulty",
     "DemonDifficulty",
@@ -220,6 +221,22 @@ class LevelLength(Enum):
     DEFAULT = UNKNOWN
 
 
+class UnlistedType(Flag):
+    LISTED = 0
+    UNLISTED = 1
+    LISTED_TO_FRIENDS = 2
+
+    FRIENDS_ONLY = UNLISTED | LISTED_TO_FRIENDS
+
+    DEFAULT = LISTED
+
+    def is_unlisted(self) -> bool:
+        return type(self).UNLISTED in self
+
+    def is_listed_to_friends(self) -> bool:
+        return type(self).LISTED_TO_FRIENDS in self
+
+
 class LevelDifficulty(Enum):
     """An enumeration for level difficulties."""
 
@@ -401,7 +418,8 @@ class FriendRequestType(Enum):
 
     def into_relationship_type(self) -> RelationshipType:
         return (
-            RelationshipType.INCOMING_REQUEST if self.is_incoming()
+            RelationshipType.INCOMING_REQUEST
+            if self.is_incoming()
             else RelationshipType.OUTGOING_REQUEST
         )
 
@@ -913,6 +931,9 @@ class ZLayer(Flag):
     TOP_1 = T1 = 1
     TOP_2 = T2 = 2
     TOP_3 = T3 = 3
+
+    def is_default(self) -> bool:
+        return self is type(self).DEFAULT
 
 
 class SimpleZLayer(Enum):

@@ -603,9 +603,7 @@ class LevelCollection(BaseList[A]):
         return iter(self).get_or_none(name=name)
 
     @classmethod
-    def launch(
-        cls, callback: Database, function: str, iterable: Iterable[A]
-    ) -> "LevelCollection":
+    def launch(cls, callback: Database, function: str, iterable: Iterable[A]) -> "LevelCollection":
         self = cls(iterable)
 
         self._callback = callback

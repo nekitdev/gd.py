@@ -3,7 +3,6 @@ from builtins import hasattr as has_attribute
 from builtins import isinstance as is_instance
 from inspect import isawaitable as standard_is_awaitable
 from os import PathLike
-
 from typing import (
     Any,
     AsyncIterable,
