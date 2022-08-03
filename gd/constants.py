@@ -4,6 +4,7 @@ EMPTY = str()
 SPACE = " "
 
 BACKSLASH = "\\"
+SLASH = "/"
 
 UNKNOWN = "unknown"
 UNNAMED = "unnamed"

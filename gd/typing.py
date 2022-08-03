@@ -70,6 +70,7 @@ DynamicCallable = Callable[..., R]
 AnyCallable = DynamicCallable[Any]
 
 AnyException: TypeAlias = BaseException
+AnyExceptionType: TypeAlias = Type[AnyException]
 
 AnyIterable = Union[AsyncIterable[T], Iterable[T]]
 

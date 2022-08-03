@@ -1,12 +1,12 @@
 from functools import wraps
 from threading import RLock
-from time import monotonic
+from time import monotonic as clock
 from typing import Optional, Type, TypeVar
 
 from aiohttp.web import Request, Response
 from attrs import define, field
 
-from gd.server.constants import TOKEN
+from gd.server.constants import HTTP_TOO_MANY_REQUESTS, TOKEN
 from gd.server.handler import Error, ErrorType
 from gd.server.typing import Handler
 from gd.typing import DecoratorIdentity, Nullary, StringDict, Unary
@@ -36,7 +36,7 @@ class Cooldown:
     rate: int = field()
     per: float = field()
 
-    _clock: Clock = field(default=monotonic)
+    _clock: Clock = field(default=clock)
 
     _tokens: int = field()
 
@@ -159,14 +159,12 @@ class CooldownMapping:
         return cls(cooldown_type(rate, per), by)
 
 
-TOO_MANY_REQUESTS = 429
-
 RATE_LIMITED = "rate limited; retry after {} seconds"
 
 
 def create_cooldown_error(retry_after: float) -> Error:
     return Error(
-        status=TOO_MANY_REQUESTS,
+        status=HTTP_TOO_MANY_REQUESTS,
         type=ErrorType.RATE_LIMITED,
         message=RATE_LIMITED.format(retry_after),
         headers={RETRY_AFTER: str(retry_after)},
@@ -191,7 +189,7 @@ def cooldown_remote_and_token(request: Request) -> str:
 def cooldown(
     rate: int,
     per: float,
-    by: CooldownWith,
+    by: CooldownWith = cooldown_token,
     cooldown_type: Type[Cooldown] = Cooldown,
     cooldown_mapping_type: Type[CooldownMapping] = CooldownMapping,
     retry_after_precision: int = 2,

@@ -48,6 +48,7 @@ from gd.constants import (
     DEFAULT_TIME,
     DEFAULT_VERSION,
     EMPTY,
+    SLASH,
     UNKNOWN,
 )
 from gd.encoding import (
@@ -700,7 +701,7 @@ class HTTPClient:
 
         keywords = dict(
             method=route.method,
-            url=url / route.route,
+            url=url / route.route.strip(SLASH),
             type=type,
             error_codes=error_codes,
             headers=headers,

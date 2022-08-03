@@ -1,13 +1,20 @@
-from typing import Any, Optional
+from typing import Any, Awaitable, Optional, TypeVar, Union
 
-from aiohttp.web import Response, json_response
-from attrs import field, frozen
-from typing_extensions import TypedDict
+from aiohttp.web import Request, Response, StreamResponse, json_response
+from attrs import define, field, frozen
+from typing_extensions import Never, TypedDict
 
 from gd.enum_extensions import Enum
-from gd.server.constants import APPLICATION_JSON
-from gd.server.typing import Handler, Headers
-from gd.typing import JSONType, StringDict, StringMapping
+from gd.server.constants import (
+    HTTP_FORBIDDEN,
+    HTTP_INTERNAL_SERVER_ERROR,
+    HTTP_NOT_FOUND,
+    HTTP_TOO_MANY_REQUESTS,
+    HTTP_UNAUTHORIZED,
+    HTTP_UNPROCESSABLE_ENTITY,
+)
+from gd.server.typing import Headers, StreamHandler
+from gd.typing import AnyException, AnyExceptionType, Binary, Decorator, DynamicTuple, Namespace, is_instance
 
 __all__ = (
     "HTTP_STATUS_TO_ERROR_TYPE",
@@ -16,13 +23,11 @@ __all__ = (
     "ErrorHandler",
     "ErrorResult",
     "default_error_handler",
-    "fail_error_handler",
     # request handling
     "RequestHandler",
     "request_handler",
     # utils for handling dynamic typing
     "error_result_into_response",
-    "handler_into_request_handler",
 )
 
 
@@ -46,20 +51,21 @@ class ErrorType(Enum):
 
 
 HTTP_STATUS_TO_ERROR_TYPE = {
-    401: ErrorType.UNAUTHORIZED,
-    403: ErrorType.FORBIDDEN,
-    404: ErrorType.NOT_FOUND,
-    422: ErrorType.INVALID_ENTITY,
-    429: ErrorType.RATE_LIMITED,
+    HTTP_UNAUTHORIZED: ErrorType.UNAUTHORIZED,
+    HTTP_FORBIDDEN: ErrorType.FORBIDDEN,
+    HTTP_NOT_FOUND: ErrorType.NOT_FOUND,
+    HTTP_UNPROCESSABLE_ENTITY: ErrorType.INVALID_ENTITY,
+    HTTP_TOO_MANY_REQUESTS: ErrorType.RATE_LIMITED,
 }
 
 
 class ErrorData(TypedDict):
-    code: str
+    code: int
+    type: str
     message: Optional[str]
 
 
-DEFAULT_STATUS_CODE = 500
+DEFAULT_STATUS_CODE = HTTP_INTERNAL_SERVER_ERROR
 DEFAULT_ERROR_TYPE = ErrorType.DEFAULT
 
 
@@ -71,70 +77,57 @@ class Error:
     headers: Optional[Headers] = None
 
     def into_data(self) -> ErrorData:
-        return ErrorData(code=self.type.name, message=self.message)
+        return ErrorData(code=self.type.value, type=self.type.name, message=self.message)
 
     def into_response(self, **keywords: Any) -> Response:
-        actual = dict(status=self.status, headers=self.headers)
+        keywords.update(status=self.status, headers=self.headers)
 
-        actual.update(keywords)
-
-        return json_response(self.into_data(), **actual)
+        return json_response(self.into_data(), **keywords)
 
 
-ErrorExcept = Union[Type[BaseException], Tuple[Type[BaseException], ...]]
-ErrorResult = Union[Error, web.StreamResponse]
-ErrorReturn = Union[NoReturn, ErrorResult]
+ErrorExcept = Union[AnyExceptionType, DynamicTuple[AnyExceptionType]]
+ErrorResult = Union[Error, StreamResponse]
+ErrorReturn = Union[Never, ErrorResult]
 
-ErrorHandler = Callable[[web.Request, Exception], Awaitable[ErrorReturn]]
+ErrorHandler = Binary[Request, AnyException, Awaitable[ErrorReturn]]
 
 
-def error_result_into_response(error_result: ErrorResult) -> web.StreamResponse:
-    if isinstance(error_result, Error):
+def error_result_into_response(error_result: ErrorResult) -> StreamResponse:
+    if is_instance(error_result, Error):
         return error_result.into_response()
 
-    elif isinstance(error_result, web.StreamResponse):
+    if is_instance(error_result, StreamResponse):
         return error_result
 
-    else:
-        raise ValueError(
-            f"Expected error result of types {ErrorResult}, got {type(error_result).__name__!r}."
-        )
+    raise ValueError  # TODO: message?
 
 
-async def default_error_handler(request: web.Request, error: BaseException) -> Error:
-    # default error handler is simply going to return not really useful generic error message
-    return Error(message="Some unexpected error has occurred.")
+UNEXPECTED_ERROR = "Some unexpected error has occured."
 
 
-async def fail_error_handler(request: web.Request, error: BaseException) -> NoReturn:
-    # fail error handler is going to raise the exception it is given
-    raise error
+async def default_error_handler(request: Request, error: AnyException) -> Error:
+    return Error(message=UNEXPECTED_ERROR)
 
 
+EH = TypeVar("EH", bound="ErrorHandler")
+
+
+@define(slots=False)
 class RequestHandler:
-    def __init__(
-        self,
-        handler: Handler,
-        error_except: ErrorExcept = Exception,
-        fail_on_error: bool = False,
-    ) -> None:
-        self.handler: Handler = handler
-        self.error_handler: ErrorHandler = (
-            fail_error_handler if fail_on_error else default_error_handler
-        )
+    handler: StreamHandler
+    error_except: ErrorExcept = Exception
+    error_handler: ErrorHandler = default_error_handler
 
-        self.error_except = error_except
-
-    async def __call__(self, request: web.Request) -> web.StreamResponse:
+    async def __call__(self, request: Request) -> StreamResponse:
         try:
             return await self.handler(request)
 
         except self.error_except as error:
-            error_result = await self.error_handler(request, cast(Exception, error))
+            error_result = await self.error_handler(request, error)
 
             return error_result_into_response(error_result)
 
-    def error(self, error_handler: ErrorHandler) -> ErrorHandler:
+    def error(self, error_handler: EH) -> EH:
         self.error_handler = error_handler
 
         return error_handler
@@ -142,16 +135,8 @@ class RequestHandler:
 
 def request_handler(
     error_except: ErrorExcept = Exception,
-    fail_on_error: bool = False,
-) -> Callable[[Handler], RequestHandler]:
-    def wrapper(handler: Handler) -> RequestHandler:
-        return RequestHandler(handler, error_except=error_except, fail_on_error=fail_on_error)
+) -> Decorator[StreamHandler, RequestHandler]:
+    def wrapper(handler: StreamHandler) -> RequestHandler:
+        return RequestHandler(handler, error_except=error_except)
 
     return wrapper
-
-
-def handler_into_request_handler(handler: Handler) -> RequestHandler:
-    if isinstance(handler, RequestHandler):
-        return handler
-
-    return RequestHandler(handler)

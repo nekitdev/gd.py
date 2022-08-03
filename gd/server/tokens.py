@@ -5,15 +5,15 @@ from secrets import token_hex
 from types import TracebackType as Traceback
 from typing import TYPE_CHECKING, Generic, Optional, Type, TypeVar, overload
 
+from aiohttp.web import Request, StreamResponse
 from attrs import field, frozen
-from iters import iter
 from typing_extensions import Literal
 
 from gd.credentials import Credentials
-from gd.server.common import web
+from gd.server.constants import AUTHORIZATION, HTTP_UNAUTHORIZED, TOKEN, TOKENS
 from gd.server.handler import Error, ErrorType
-from gd.server.typing import Handler
-from gd.typing import AnyException, StringDict
+from gd.server.typing import StreamHandler
+from gd.typing import AnyException, DecoratorIdentity, Predicate, StringDict
 
 if TYPE_CHECKING:
     from gd.client import Client
@@ -21,18 +21,16 @@ if TYPE_CHECKING:
 __all__ = (
     "ServerToken",
     "ServerTokenContextManager",
-    "ServerTokenDatabase",
+    "ServerTokens",
     "Token",
-    "TokenDatabase",
+    "Tokens",
     "get_token_from_request",
     "token",
 )
 
-AUTHORIZATION = "Authorization"
-
 TOKEN_PATTERN = r"[0-9a-zA-Z_]+"
 
-TOKEN_HEADER = re.compile(rf"(?:Bearer )?(?P<token>{TOKEN_FORMAT})")
+TOKEN_HEADER = re.compile(rf"(?:Bearer )?(?P<token>{TOKEN_PATTERN})")
 
 TOKEN_LENGTH = 32
 TOKEN_SHORT_LENGTH = 8
@@ -66,6 +64,7 @@ C = TypeVar("C", bound="Client")
 ST = TypeVar("ST", bound="ServerToken")
 
 
+@frozen()
 class ServerToken(Token):
     credentials: Credentials = field(factory=Credentials)
 
@@ -88,7 +87,7 @@ class ServerToken(Token):
     def password(self) -> str:
         return self.credentials.password
 
-    def into(self: ST, client: C) -> ServerTokenContextManager[ST, C]:
+    def apply(self: ST, client: C) -> ServerTokenContextManager[ST, C]:
         return ServerTokenContextManager(self, client)
 
     async def login(self, client: Client) -> None:
@@ -98,6 +97,8 @@ class ServerToken(Token):
 
     async def logout(self, client: Client) -> None:
         await client.logout()
+
+        self.credentials = client.credentials
 
 
 E = TypeVar("E", bound=AnyException)
@@ -135,11 +136,18 @@ class ServerTokenContextManager(Generic[ST, C]):
 
 T = TypeVar("T", bound="Token")
 
-TD = TypeVar("TD", bound="TokenDatabase[Token]")
+Ts = TypeVar("Ts", bound="AnyTokens")
 
 
-class TokenDatabase(StringDict[T]):
-    def copy(self: TD) -> TD:
+class Tokens(StringDict[T]):
+    def __init__(self, token_type: Type[T]) -> None:
+        self._token_type = token_type
+
+    @property
+    def token_type(self) -> Type[T]:
+        return self._token_type
+
+    def copy(self: Ts) -> Ts:
         copy = type(self)(self.token_type)
 
         copy.update(self)
@@ -159,42 +167,73 @@ class TokenDatabase(StringDict[T]):
             del self[token]
 
 
-class ServerTokenDatabase(TokenDatabase[ServerToken]):
-    def get_user(self, name: str, password: str) -> Optional[ServerToken]:
-        return iter(self.tokens).get_or_none(name=name, password=password)
-
-    def register(self, name: str, password: str, account_id: int = 0, id: int = 0) -> ServerToken:
-        return super().insert(self.cls(name=name, password=password, account_id=account_id, id=id))
+AnyTokens = Tokens[Token]
 
 
-@overload  # noqa
-def get_token_from_request(request: web.Request, required: Literal[True]) -> Token:  # noqa
+def by_name_and_password(name: str, password: str) -> Predicate[ServerToken]:
+    def predicate(token: ServerToken) -> bool:
+        return token.name == name and token.password == password
+
+    return predicate
+
+
+ST = TypeVar("ST", bound=ServerToken)
+
+
+class ServerTokens(Tokens[ST]):
+    def get_user(self, name: str, password: str) -> Optional[ST]:
+        return next(filter(by_name_and_password(name, password), self.values()), None)
+
+    def register(
+        self,
+        name: str,
+        password: str,
+        account_id: int = 0,
+        id: int = 0,
+        credentials_type: Type[Credentials] = Credentials,
+    ) -> ServerToken:
+        return self.insert(
+            self.token_type(
+                credentials=credentials_type(
+                    name=name, password=password, account_id=account_id, id=id
+                )
+            )
+        )
+
+
+CAN_NOT_FIND_TOKEN = "can not find the token in the request"
+INVALID_TOKEN = "provided token is invalid"
+TOKEN_NOT_FOUND = "the token was not found in the database"
+
+
+@overload
+def get_token_from_request(request: Request, required: Literal[True]) -> Token:
     ...
 
 
-@overload  # noqa
-def get_token_from_request(  # noqa
-    request: web.Request, required: Literal[False]
+@overload
+def get_token_from_request(
+    request: Request, required: Literal[False]
 ) -> Optional[Token]:
     ...
 
 
-@overload  # noqa
-def get_token_from_request(request: web.Request, required: bool) -> Optional[Token]:  # noqa
+@overload
+def get_token_from_request(request: Request, required: bool) -> Optional[Token]:
     ...
 
 
-def get_token_from_request(request: web.Request, required: bool = False) -> Optional[Token]:  # noqa
-    token_database = request.app.token_database  # type: ignore
+def get_token_from_request(request: Request, required: bool = False) -> Optional[Token]:
+    tokens = request.app[TOKENS]
 
     header = request.headers.get(AUTHORIZATION)
 
     if header is None:
-        string = request.query.get("token")
+        string = request.query.get(TOKEN)
 
         if string is None:
             if required:
-                raise TypeError("Can not find token in the request.")
+                raise TypeError(CAN_NOT_FIND_TOKEN)
 
             return None
 
@@ -203,18 +242,18 @@ def get_token_from_request(request: web.Request, required: bool = False) -> Opti
 
         if match is None:
             if required:
-                raise ValueError("Provided token is invalid.")
+                raise ValueError(INVALID_TOKEN)
 
             return None
 
         else:
-            string = match.group("token")
+            string = match.group(TOKEN)
 
-    token = token_database.get(string)
+    token = tokens.get(string)
 
     if token is None:
         if required:
-            raise LookupError("Token was not found in the database.")
+            raise LookupError(TOKEN_NOT_FOUND)
 
         return None
 
@@ -222,27 +261,34 @@ def get_token_from_request(request: web.Request, required: bool = False) -> Opti
         return token
 
 
-def token(required: bool = False) -> Callable[[Handler], Handler]:
-    def wrapper(handler: Handler) -> Handler:
-        async def handler_with_token(request: web.Request) -> web.StreamResponse:
+INVALID_TOKEN_MESSAGE = "the token is invalid"
+TOKEN_NOT_FOUND_MESSAGE = "the token is not present in the database"
+CAN_NOT_FIND_TOKEN_MESSAGE = "can not find the token in the request"
+
+
+def token(required: bool = False) -> DecoratorIdentity[StreamHandler]:
+    def wrapper(handler: StreamHandler) -> StreamHandler:
+        async def handler_with_token(request: Request) -> StreamResponse:
             try:
                 token = get_token_from_request(request, required=required)
 
             except ValueError:
-                return Error(401, ErrorType.AUTH_INVALID, "Token is invalid.").into_response()
+                return Error(
+                    HTTP_UNAUTHORIZED, ErrorType.AUTH_INVALID, INVALID_TOKEN_MESSAGE
+                ).into_response()
 
             except LookupError:
                 return Error(
-                    401, ErrorType.AUTH_MISSING, "Token is not present in the database."
+                    HTTP_UNAUTHORIZED, ErrorType.AUTH_MISSING, TOKEN_NOT_FOUND_MESSAGE
                 ).into_response()
 
             except TypeError:
                 return Error(
-                    401, ErrorType.AUTH_NOT_SET, "Token is not set in the request."
+                    HTTP_UNAUTHORIZED, ErrorType.AUTH_NOT_SET, CAN_NOT_FIND_TOKEN_MESSAGE
                 ).into_response()
 
             else:
-                request.token = token
+                request[TOKEN] = token
 
                 return await handler(request)
 

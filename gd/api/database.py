@@ -1,12 +1,15 @@
-from typing import Dict, Iterable, List, Optional, Tuple, Type, TypeVar
+from typing import BinaryIO, Dict, Iterable, List, Optional, Type, TypeVar
 
 from attrs import define, field
+from gd.api.api import API
 
 from gd.api.level_api import LevelAPI
 from gd.api.objects import Object
 from gd.api.ordered_set import OrderedSet, ordered_set
+from gd.binary import Binary
+from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ID, EMPTY
-from gd.enums import DeleteFilter, IconType, LevelLeaderboardStrategy
+from gd.enums import ByteOrder, DeleteFilter, IconType, LevelLeaderboardStrategy
 from gd.filters import Filters
 from gd.song import Song
 from gd.typing import Unary
@@ -219,8 +222,11 @@ class Variables:
     smooth_fix_in_editor: bool = False
 
 
+VS = TypeVar("VS", bound="Values")
+
+
 @define()
-class Values:
+class Values(Binary, API):
     variables: Variables = field(factory=Variables)
 
     cubes: OrderedSet[int] = field(factory=ordered_set)
@@ -230,9 +236,98 @@ class Values:
     waves: OrderedSet[int] = field(factory=ordered_set)
     robots: OrderedSet[int] = field(factory=ordered_set)
     spiders: OrderedSet[int] = field(factory=ordered_set)
+    swing_copters: OrderedSet[int] = field(factory=ordered_set)
     explosions: OrderedSet[int] = field(factory=ordered_set)
     colors_1: OrderedSet[int] = field(factory=ordered_set)
     colors_2: OrderedSet[int] = field(factory=ordered_set)
+
+    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+        writer = Writer(binary)
+
+        self.variables.to_binary(binary, order)
+
+        for items in (
+            self.cubes,
+            self.ships,
+            self.balls,
+            self.ufos,
+            self.waves,
+            self.robots,
+            self.spiders,
+            self.swing_copters,
+            self.explosions,
+            self.colors_1,
+            self.colors_2,
+        ):
+            writer.write_u16(len(items), order)
+
+            for item in items:
+                writer.write_u16(item, order)
+
+    @classmethod
+    def from_binary(cls: Type[VS], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> VS:
+        reader = Reader(binary)
+
+        variables = Variables.from_binary(binary, order)
+
+        cubes_length = reader.read_u16(order)
+
+        cubes = ordered_set(reader.read_u16(order) for _ in range(cubes_length))
+
+        ships_length = reader.read_u16(order)
+
+        ships = ordered_set(reader.read_u16(order) for _ in range(ships_length))
+
+        balls_length = reader.read_u16(order)
+
+        balls = ordered_set(reader.read_u16(order) for _ in range(balls_length))
+
+        ufos_length = reader.read_u16(order)
+
+        ufos = ordered_set(reader.read_u16(order) for _ in range(ufos_length))
+
+        waves_length = reader.read_u16(order)
+
+        waves = ordered_set(reader.read_u16(order) for _ in range(waves_length))
+
+        robots_length = reader.read_u16(order)
+
+        robots = ordered_set(reader.read_u16(order) for _ in range(robots_length))
+
+        spiders_length = reader.read_u16(order)
+
+        spiders = ordered_set(reader.read_u16(order) for _ in range(spiders_length))
+
+        swing_copters_length = reader.read_u16(order)
+
+        swing_copters = ordered_set(reader.read_u16(order) for _ in range(swing_copters_length))
+
+        explosions_length = reader.read_u16(order)
+
+        explosions = ordered_set(reader.read_u16(order) for _ in range(explosions_length))
+
+        colors_1_length = reader.read_u16(order)
+
+        colors_1 = ordered_set(reader.read_u16(order) for _ in range(colors_1_length))
+
+        colors_2_length = reader.read_u16(order)
+
+        colors_2 = ordered_set(reader.read_u16(order) for _ in range(colors_2_length))
+
+        return cls(
+            variables=variables,
+            cubes=cubes,
+            ships=ships,
+            balls=balls,
+            ufos=ufos,
+            waves=waves,
+            robots=robots,
+            spiders=spiders,
+            swing_copters=swing_copters,
+            explosions=explosions,
+            colors_1=colors_1,
+            colors_2=colors_2,
+        )
 
 
 @define()
@@ -266,8 +361,11 @@ class UnlockValues:
     # discord_chest_unlocked: bool = False
 
 
+S = TypeVar("S", bound="Statistics")
+
+
 @define()
-class Statistics:
+class Statistics(Binary, API):
     jumps: int = field(default=0)
     attempts: int = field(default=0)
     official_levels: int = field(default=0)
@@ -277,7 +375,7 @@ class Statistics:
     map_packs: int = field(default=0)
     secret_coins: int = field(default=0)
     destroyed: int = field(default=0)
-    voted: int = field(default=0)
+    liked: int = field(default=0)
     rated: int = field(default=0)
     user_coins: int = field(default=0)
     diamonds: int = field(default=0)
@@ -292,6 +390,99 @@ class Statistics:
     total_orbs: int = field(default=0)
 
     official_coins: Dict[int, int] = field(factory=dict)
+
+    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+        writer = Writer(binary)
+
+        writer.write_u32(self.jumps, order)
+        writer.write_u32(self.attempts, order)
+        writer.write_u8(self.official_levels, order)
+        writer.write_u32(self.online_levels, order)
+        writer.write_u16(self.demons, order)
+        writer.write_u32(self.stars, order)
+        writer.write_u8(self.map_packs, order)
+        writer.write_u8(self.secret_coins, order)
+        writer.write_u32(self.destroyed, order)
+        writer.write_u32(self.liked, order)
+        writer.write_u32(self.rated, order)
+        writer.write_u32(self.user_coins, order)
+        writer.write_u32(self.diamonds, order)
+        writer.write_u32(self.orbs, order)
+        writer.write_u32(self.daily_levels, order)
+        writer.write_u16(self.fire_shards, order)
+        writer.write_u16(self.ice_shards, order)
+        writer.write_u16(self.poison_shards, order)
+        writer.write_u16(self.shadow_shards, order)
+        writer.write_u16(self.lava_shards, order)
+        writer.write_u16(self.bonus_shards, order)
+        writer.write_u32(self.total_orbs, order)
+
+        official_coins = self.official_coins
+
+        writer.write_u16(len(official_coins))
+
+        for level_id, count in official_coins.items():
+            writer.write_u16(level_id, order)
+            writer.write_u8(count, order)
+
+    @classmethod
+    def from_binary(cls: Type[S], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> S:
+        reader = Reader(binary)
+
+        jumps = reader.read_u32(order)
+        attempts = reader.read_u32(order)
+        official_levels = reader.read_u8(order)
+        online_levels = reader.read_u32(order)
+        demons = reader.read_u16(order)
+        stars = reader.read_u32(order)
+        map_packs = reader.read_u8(order)
+        secret_coins = reader.read_u8(order)
+        destroyed = reader.read_u32(order)
+        liked = reader.read_u32(order)
+        rated = reader.read_u32(order)
+        user_coins = reader.read_u32(order)
+        diamonds = reader.read_u32(order)
+        orbs = reader.read_u32(order)
+        daily_levels = reader.read_u32(order)
+        fire_shards = reader.read_u16(order)
+        ice_shards = reader.read_u16(order)
+        poison_shards = reader.read_u16(order)
+        shadow_shards = reader.read_u16(order)
+        lava_shards = reader.read_u16(order)
+        bonus_shards = reader.read_u16(order)
+        total_orbs = reader.read_u32(order)
+
+        official_coins_length = reader.read_u16(order)
+
+        official_coins = {
+            reader.read_u16(order): reader.read_u8(order) for _ in range(official_coins_length)
+        }
+
+        return cls(
+            jumps=jumps,
+            attempts=attempts,
+            official_levels=official_levels,
+            online_levels=online_levels,
+            demons=demons,
+            stars=stars,
+            map_packs=map_packs,
+            secret_coins=secret_coins,
+            destroyed=destroyed,
+            liked=liked,
+            rated=rated,
+            user_coins=user_coins,
+            diamonds=diamonds,
+            orbs=orbs,
+            daily_levels=daily_levels,
+            fire_shards=fire_shards,
+            ice_shards=ice_shards,
+            poison_shards=poison_shards,
+            shadow_shards=shadow_shards,
+            lava_shards=lava_shards,
+            bonus_shards=bonus_shards,
+            total_orbs=total_orbs,
+            official_coins=official_coins,
+        )
 
 
 @define()
@@ -329,15 +520,15 @@ class Database:
 
     statistics: Statistics = field(default=Statistics)
 
-    show_song_markers: bool = field(default=False)
-    show_progress_bar: bool = field(default=False)
+    show_song_markers: bool = field(default=True)
+    show_progress_bar: bool = field(default=True)
 
-    clicked_icons: bool = field(default=False)
-    clicked_editor: bool = field(default=False)
-    clicked_practice: bool = field(default=False)
+    clicked_icons: bool = field(default=True)
+    clicked_editor: bool = field(default=True)
+    clicked_practice: bool = field(default=True)
 
-    showed_editor_guide: bool = field(default=False)
-    showed_low_detail: bool = field(default=False)
+    showed_editor_guide: bool = field(default=True)
+    showed_low_detail: bool = field(default=True)
 
     bootups: int = field(default=0)
 

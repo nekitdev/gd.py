@@ -1,93 +1,137 @@
-from gd.errors import LoginFailure
-from gd.server.common import docs, web
+from aiohttp.web import Request, Response, json_response
+
+from gd.errors import LoginFailed
+from gd.server.constants import (
+    CLIENT,
+    HTTP_BAD_REQUEST,
+    HTTP_CREATED,
+    HTTP_FORBIDDEN,
+    HTTP_OK,
+    HTTP_UNAUTHORIZED,
+    QUERY,
+    TOKEN,
+    TOKENS,
+)
+from gd.server.core import docs
 from gd.server.handler import Error, ErrorType, request_handler
 from gd.server.routes import get, post
-from gd.server.token import token
-from gd.server.types import str_type
-from gd.server.utils import json_response, parameter
+from gd.server.tokens import token
+from gd.server.types import STRING
+from gd.server.utils import parameter
+from gd.typing import is_instance
 
 __all__ = ("login", "logout")
 
+LOGIN = "/login"
+
+LOGIN_TAG = "login"
+LOGIN_SUMMARY = "Login and fetch the token."
+LOGIN_DESCRIPTION = "Perform login and acquire the token for further interactions."
+LOGIN_NAME = "name"
+LOGIN_NAME_EXAMPLE = "name"
+LOGIN_NAME_DESCRIPTION = "The name of the user to login with."
+LOGIN_PASSWORD = "password"
+LOGIN_PASSWORD_EXAMPLE = "password"
+LOGIN_PASSWORD_DESCRIPTION = "The password of the user to login with."
+
+LOGIN_OK_DESCRIPTION = "The token to use for authorized requests."
+LOGIN_CREATED_DESCRIPTION = "The token created to use for authorized requests."
+LOGIN_BAD_REQUEST_DESCRIPTION = "Required parameters are missing."
+LOGIN_UNAUTHORIZED = "Failed to login."
+
+NAME = "name"
+PASSWORD = "password"
+
 
 @docs(
-    tags=["login"],
-    summary="Login and get token.",
-    description="Perform login and acquire token for further interactions.",
+    tags=[LOGIN_TAG],
+    summary=LOGIN_SUMMARY,
+    description=LOGIN_DESCRIPTION,
     parameters=[
         parameter(
-            "query",
-            description="Name of the account to log into.",
-            name="name",
-            schema=dict(type=str_type, example="User"),
+            QUERY,
+            description=LOGIN_NAME_DESCRIPTION,
+            name=LOGIN_NAME,
+            schema=dict(type=STRING, example=LOGIN_NAME_EXAMPLE),
             required=True,
         ),
         parameter(
-            "query",
-            description="Password of the account to log into.",
-            name="password",
-            schema=dict(type=str_type, example="Password"),
+            QUERY,
+            description=LOGIN_PASSWORD_DESCRIPTION,
+            name=LOGIN_PASSWORD,
+            schema=dict(type=STRING, example=LOGIN_PASSWORD_EXAMPLE),
             required=True,
         ),
     ],
     responses={
-        200: dict(description="Token to use for authorized requests."),
-        400: dict(description="Required parameters are missing."),
-        401: dict(description="Failed to login and check credentials."),
+        HTTP_OK: dict(description=LOGIN_OK_DESCRIPTION),
+        HTTP_BAD_REQUEST: dict(description=LOGIN_BAD_REQUEST_DESCRIPTION),
+        HTTP_UNAUTHORIZED: dict(description=LOGIN_UNAUTHORIZED),
     },
 )
-@get("/login", version=1)
-@post("/login", version=1)
+@get(LOGIN, version=1)
+@post(LOGIN, version=1)
 @request_handler()
-async def login(request: web.Request) -> web.Response:
-    client = request.app.client  # type: ignore
-    token_database = request.app.token_database  # type: ignore
+async def login(request: Request) -> Response:
+    client = request.app[CLIENT]
+    tokens = request.app[TOKENS]
 
-    name = request.query["name"]
-    password = request.query["password"]
+    query = request.query
 
-    token = token_database.get_user(name, password)
+    name = query[NAME]
+    password = query[PASSWORD]
+
+    token = tokens.get_user(name, password)
 
     if token is None:
-        token = token_database.register(name, password)
-        status = 201  # new token was inserted, so we return "created" status
+        token = tokens.register(name, password)
+        status = HTTP_CREATED
 
     else:
-        status = 200  # old token is used, so we return simple "ok" status
+        status = HTTP_OK
 
     await client.session.login(name, password)  # attempt login to check credentials
-
-    await token.load(client, force=True)
 
     return json_response(dict(token=token.string), status=status)
 
 
-@login.error
-async def login_error(request: web.Request, error: Exception) -> Error:
-    if isinstance(error, LookupError):
-        return Error(400, ErrorType.MISSING_PARAMETER, f"Missing {error!s} parameter.")
+MISSING_PARAMETER = "missing {} parameter"
 
-    if isinstance(error, LoginFailure):
-        return Error(401, ErrorType.LOGIN_FAILED, f"{error}")
+
+@login.error
+async def login_error(request: Request, error: Exception) -> Error:
+    if is_instance(error, LookupError):
+        return Error(HTTP_BAD_REQUEST, ErrorType.MISSING_PARAMETER, MISSING_PARAMETER.format(tick(error)))
+
+    if is_instance(error, LoginFailed):
+        return Error(HTTP_UNAUTHORIZED, ErrorType.LOGIN_FAILED, str(error))
 
     return Error(message="Some unexpected error has occured.")
 
 
+LOGOUT = "/logout"
+LOGOUT_TAG = "logout"
+LOGOUT_SUMMARY = "Log out and remove the token."
+LOGOUT_DESCRIPTION = "Perform logout and remove the token from the database."
+LOGOUT_OK_DESCRIPTION = "Succeffully logged out."
+
+
 @docs(
-    tags=["logout"],
-    summary="Logout and remove token.",
-    description="Perform logout and remove token from the database.",
+    tags=[LOGOUT],
+    summary=LOGOUT_SUMMARY,
+    description=LOGOUT_DESCRIPTION,
     parameters=[],
-    responses={200: dict(description="Successfully logged out.")},
+    responses={HTTP_OK: dict(description=LOGOUT_OK_DESCRIPTION)},
 )
-@get("/logout", version=1)
-@post("/logout", version=1)
+@get(LOGOUT, version=1)
+@post(LOGOUT, version=1)
 @request_handler()
 @token(required=True)
-async def logout(request: web.Request) -> web.Response:
-    token_database = request.app.token_database  # type: ignore
+async def logout(request: Request) -> Response:
+    tokens = request.app[TOKENS]
 
-    token = request.token  # type: ignore
+    token = request[TOKEN]
 
-    token_database.remove(token)
+    tokens.remove(token)
 
-    return json_response({})
+    return json_response(dict())

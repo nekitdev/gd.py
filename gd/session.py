@@ -4,8 +4,8 @@ from typing import Any
 from attrs import frozen
 from yarl import URL
 
-# from gd.api.database import Database
-# from gd.api.save_manager import save_manager
+from gd.api.database import Database
+from gd.api.save_manager import save_manager
 from gd.enums import (
     AccountURLType,
     CommentState,

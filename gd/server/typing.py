@@ -1,6 +1,8 @@
+from abc import abstractmethod
 from typing import Any, Awaitable, TypeVar
+from typing_extensions import Protocol
 
-from aiohttp.web import Request, Response, StreamResponse
+from aiohttp.web import Application, Request, Response, StreamResponse
 
 from gd.typing import Binary, StringMapping, Unary
 
@@ -11,6 +13,8 @@ __all__ = (
     "StreamMiddleware",
     "Handler",
     "Middleware",
+    "Headers",
+    "Tool",
 )
 
 In = TypeVar("In", bound=Request)
@@ -26,3 +30,9 @@ Handler = GenericHandler[Request, Response]
 Middleware = GenericMiddleware[Request, Response]
 
 Headers = StringMapping[Any]
+
+
+class Tool(Protocol):
+    @abstractmethod
+    async def setup(self, app: Application) -> None:
+        ...

@@ -27,6 +27,7 @@ from gd.async_utils import maybe_await, run, run_iterables
 from gd.await_iters import wrap_await_iter
 from gd.comments import Comment
 from gd.constants import (
+    COMMENT_PAGE_SIZE,
     DEFAULT_COUNT,
     DEFAULT_PAGE,
     DEFAULT_PAGES,
@@ -557,11 +558,10 @@ class Client:
     def search_levels(
         self,
         query: Optional[Union[int, str]] = None,
-        pages: Iterable[int] = PAGES,
+        pages: Iterable[int] = DEFAULT_PAGES,
         filters: Optional[Filters] = None,
         user: Optional[Union[int, User]] = None,
         gauntlet: Optional[int] = None,
-        concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[Level]:
         return run_iterables(
             (
@@ -818,8 +818,7 @@ class Client:
     def get_messages(
         self,
         type: Union[int, str, MessageType] = MessageType.INCOMING,
-        pages: Iterable[int] = PAGES,
-        concurrent: bool = CONCURRENT,
+        pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[Message]:
         return run_iterables(
             (self.get_messages_on_page(type=type, page=page) for page in pages),
@@ -909,8 +908,7 @@ class Client:
     def get_friend_requests(
         self,
         type: Union[int, str, FriendRequestType] = FriendRequestType.INCOMING,
-        pages: Iterable[int] = PAGES,
-        concurrent: bool = CONCURRENT,
+        pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[FriendRequest]:
         return run_iterables(
             (self.get_friend_requests_on_page(type=type, page=page) for page in pages),
@@ -980,7 +978,7 @@ class Client:
     @check_login
     async def post_comment(self, content: Optional[str] = None) -> Optional[Comment]:
         await self.session.post_comment(
-            type=CommentType.PROFILE,  # type: ignore
+            type=CommentType.USER,  # type: ignore
             content=content,
             level_id=0,
             percent=0,
@@ -993,7 +991,7 @@ class Client:
             if content is None:
                 content = ""
 
-            comments = self.get_user_comments_on_page(type=CommentType.PROFILE)
+            comments = self.get_user_comments_on_page(type=CommentType.USER)
             comment = await comments.get(author=self.user, content=content)
 
             if comment is None:
@@ -1017,7 +1015,7 @@ class Client:
     async def get_user_comments_on_page(
         self,
         user: User,
-        type: Union[int, str, CommentType] = CommentType.PROFILE,
+        type: Union[int, str, CommentType] = CommentType.USER,
         page: int = 0,
         *,
         strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
@@ -1037,11 +1035,10 @@ class Client:
     def get_user_comments(
         self,
         user: User,
-        type: Union[int, str, CommentType] = CommentType.PROFILE,
-        pages: Iterable[int] = PAGES,
+        type: Union[int, str, CommentType] = CommentType.USER,
+        pages: Iterable[int] = DEFAULT_PAGES,
         *,
         strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
-        concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[Comment]:
         return run_iterables(
             (
@@ -1080,10 +1077,9 @@ class Client:
         self,
         level: Level,
         amount: int = COMMENT_PAGE_SIZE,
-        pages: Iterable[int] = PAGES,
+        pages: Iterable[int] = DEFAULT_PAGES,
         *,
         strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
-        concurrent: bool = CONCURRENT,
     ) -> AsyncIterator[Comment]:
         return run_iterables(
             (
@@ -1112,7 +1108,7 @@ class Client:
 
     @wrap_await_iter
     def get_map_packs(
-        self, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
+        self, pages: Iterable[int] = DEFAULT_PAGES
     ) -> AsyncIterator[MapPack]:
         return run_iterables(
             (self.get_map_packs_on_page(page=page) for page in pages),
@@ -1164,7 +1160,7 @@ class Client:
 
     @wrap_await_iter
     def get_featured_artists(
-        self, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
+        self, pages: Iterable[int] = DEFAULT_PAGES
     ) -> AsyncIterator[MapPack]:
         return run_iterables(
             (self.get_featured_artists_on_page(page=page) for page in pages),  # type: ignore
@@ -1195,7 +1191,7 @@ class Client:
 
     @wrap_await_iter
     def search_newgrounds_songs(
-        self, query: str, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
+        self, query: str, pages: Iterable[int] = DEFAULT_PAGES
     ) -> AsyncIterator[Song]:
         return run_iterables(
             (self.search_newgrounds_songs_on_page(query=query, page=page) for page in pages),
@@ -1214,7 +1210,7 @@ class Client:
 
     @wrap_await_iter
     def search_newgrounds_users(
-        self, query: str, pages: Iterable[int] = PAGES, concurrent: bool = CONCURRENT
+        self, query: str, pages: Iterable[int] = DEFAULT_PAGES
     ) -> AsyncIterator[Author]:
         return run_iterables(
             (self.search_newgrounds_users_on_page(query=query, page=page) for page in pages),

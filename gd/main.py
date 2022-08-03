@@ -3,7 +3,10 @@ from sys import exit
 from typing import Iterator
 
 import click
+from aiohttp.web import Application
 
+from gd.server.constants import DEFAULT_HOST, DEFAULT_PORT
+from gd.server.core import run_app, setup_gd_app
 from gd.string_utils import concat_new_line
 from gd.version import python_version_info, version_info
 
@@ -38,3 +41,15 @@ def gd(version: bool) -> None:
 def iter_versions() -> Iterator[str]:
     for name, version in VERSION_MAPPING.items():
         yield version_format(name, version)
+
+
+SERVER = "server"
+
+
+@click.option("--host", "-h", type=str, default=DEFAULT_HOST)
+@click.option("--port", "-p", type=int, default=DEFAULT_PORT)
+@gd.command(name=SERVER)
+def server(host: str, port: int) -> None:
+    app = Application()
+
+    run_app(setup_gd_app(app), host=host, port=port)
