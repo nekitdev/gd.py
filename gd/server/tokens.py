@@ -212,9 +212,7 @@ def get_token_from_request(request: Request, required: Literal[True]) -> Token:
 
 
 @overload
-def get_token_from_request(
-    request: Request, required: Literal[False]
-) -> Optional[Token]:
+def get_token_from_request(request: Request, required: Literal[False]) -> Optional[Token]:
     ...
 
 

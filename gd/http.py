@@ -487,6 +487,7 @@ MESSAGES = "messages"
 FRIEND_REQUESTS = "friend_requests"
 LEVEL_COMMENTS = "level_comments"
 
+
 @define()
 class HTTPClient:
     SKIP_HEADERS: ClassVar[DynamicTuple[str]] = (ACCEPT_ENCODING, USER_AGENT)
@@ -1953,9 +1954,7 @@ class HTTPClient:
         client_account_id: int,
         encoded_password: str,
     ) -> int:
-        error_codes = {
-            -1: MissingAccess(FAILED_TO_SEND_FRIEND_REQUEST.format(account_id))
-        }
+        error_codes = {-1: MissingAccess(FAILED_TO_SEND_FRIEND_REQUEST.format(account_id))}
 
         if message is None:
             message = EMPTY
@@ -1989,9 +1988,7 @@ class HTTPClient:
         client_account_id: int,
         encoded_password: str,
     ) -> int:
-        error_codes = {
-            -1: MissingAccess(FAILED_TO_DELETE_FRIEND_REQUEST.format(account_id))
-        }
+        error_codes = {-1: MissingAccess(FAILED_TO_DELETE_FRIEND_REQUEST.format(account_id))}
 
         route = Route(
             POST,
@@ -2022,9 +2019,7 @@ class HTTPClient:
         client_account_id: int,
         encoded_password: str,
     ) -> int:
-        error_codes = {
-            -1: MissingAccess(FAILED_TO_ACCEPT_FRIEND_REQUEST.format(account_id))
-        }
+        error_codes = {-1: MissingAccess(FAILED_TO_ACCEPT_FRIEND_REQUEST.format(account_id))}
 
         route = Route(
             POST,
@@ -2381,9 +2376,7 @@ class HTTPClient:
         *,
         strategy: CommentStrategy,
     ) -> str:
-        error_codes = {
-            -1: MissingAccess(FAILED_TO_GET_USER_LEVEL_COMMENTS.format(user_id))
-        }
+        error_codes = {-1: MissingAccess(FAILED_TO_GET_USER_LEVEL_COMMENTS.format(user_id))}
 
         route = Route(
             POST,

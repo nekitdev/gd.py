@@ -101,7 +101,9 @@ MISSING_PARAMETER = "missing {} parameter"
 @login.error
 async def login_error(request: Request, error: Exception) -> Error:
     if is_instance(error, LookupError):
-        return Error(HTTP_BAD_REQUEST, ErrorType.MISSING_PARAMETER, MISSING_PARAMETER.format(tick(error)))
+        return Error(
+            HTTP_BAD_REQUEST, ErrorType.MISSING_PARAMETER, MISSING_PARAMETER.format(tick(error))
+        )
 
     if is_instance(error, LoginFailed):
         return Error(HTTP_UNAUTHORIZED, ErrorType.LOGIN_FAILED, str(error))

@@ -1,24 +1,23 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 # from pathlib import Path
-from typing import TYPE_CHECKING, Any, AsyncIterator, Iterable, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, AsyncIterator, BinaryIO, Iterable, Optional, Type, TypeVar
 
 from attrs import define, field
 from iters import iter
 
 # from gd.api.editor import Editor
 from gd.await_iters import wrap_await_iter
-from gd.constants import COMMENT_PAGE_SIZE, DEFAULT_PAGE, DEFAULT_RECORD, EMPTY
-
-# from gd.decorators import cache_by
+from gd.binary_utils import UTF_8, Reader, Writer
+from gd.constants import COMMENT_PAGE_SIZE, DEFAULT_PAGE, DEFAULT_RECORD, EMPTY, EMPTY_BYTES
 from gd.entity import Entity
 from gd.enums import (
+    ByteOrder,
     CommentStrategy,
     DemonDifficulty,
     Difficulty,
-    LevelDifficulty,
     LevelLeaderboardStrategy,
     LevelLength,
     Score,
@@ -41,14 +40,27 @@ __all__ = ("Level",)
 
 L = TypeVar("L", bound="Level")
 
+REQUESTED_STARS_MASK = 0b11110000
+STARS_MASK = 0b00001111
+
+REQUESTED_STARS_SHIFT = STARS_MASK.bit_length()
+
+DIFFICULTY_MASK = 0b00001111
+TWO_PLAYER_BIT = 0b00010000
+VERIFIED_COINS_BIT = 0b00100000
+EPIC_BIT = 0b01000000
+LOW_DETAIL_BIT = 0b10000000
+
 
 @define()
 class Level(Entity):
     name: str = field()
     creator: User = field()
     song: Song = field()
+    uploaded_at: datetime = field()
+    updated_at: datetime = field()
     description: str = field(default=EMPTY)
-    # data
+    data: bytes = field(default=EMPTY_BYTES)
     version: int = field(default=0)
     downloads: int = field(default=0)
     game_version: GameVersion = field(default=CURRENT_GAME_VERSION)
@@ -59,20 +71,205 @@ class Level(Entity):
     requested_stars: int = field(default=0)
     score: int = field(default=0)
     password_data: Password = field(factory=Password)
-    # uploaded_at: datetime
-    # updated_at: datetime
     original_id: int = field(default=0)
     two_player: bool = field(default=False)
-    # extra_data
     coins: int = field(default=0)
     verified_coins: bool = field(default=False)
-    low_detail_mode: bool = field(default=False)
+    low_detail: bool = field(default=False)
     epic: bool = field(default=False)
     object_count: int = field(default=0)
     editor_time: timedelta = field(factory=timedelta)
     copies_time: timedelta = field(factory=timedelta)
     timely_type: TimelyType = field(default=TimelyType.DEFAULT)
-    timely_id: TimelyID = field(default=TimelyID.DEFAULT)
+
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+    ) -> None:
+        writer = Writer(binary)
+
+        super().to_binary(binary, order)
+
+        data = self.name.encode(encoding)
+
+        writer.write_u8(len(data), order)
+
+        writer.write(data)
+
+        self.creator.to_binary(binary, order)
+        self.song.to_binary(binary, order)
+
+        writer.write_f32(self.uploaded_at.timestamp(), order)
+        writer.write_f32(self.updated_at.timestamp(), order)
+
+        data = self.description.encode(encoding)
+
+        writer.write_u16(len(data), order)
+
+        writer.write(data)
+
+        data = self.data
+
+        writer.write_u32(len(data), order)
+
+        writer.write(data)
+
+        writer.write_u8(self.version, order)
+
+        writer.write_u32(self.downloads, order)
+
+        self.game_version.to_binary(binary, order)
+
+        writer.write_i32(self.rating, order)
+
+        writer.write_u8(self.length.value, order)
+
+        value = self.difficulty.value
+
+        if self.is_two_player():
+            value |= TWO_PLAYER_BIT
+
+        if self.has_verified_coins():
+            value |= VERIFIED_COINS_BIT
+
+        if self.is_epic():
+            value |= EPIC_BIT
+
+        if self.has_low_detail():
+            value |= LOW_DETAIL_BIT
+
+        writer.write_u8(value, order)
+
+        value = (self.requested_stars << REQUESTED_STARS_SHIFT) | self.stars
+
+        writer.write_u8(value, order)
+
+        writer.write_i32(self.score, order)
+
+        self.password_data.to_binary(binary, order)
+
+        writer.write_u32(self.original_id, order)
+
+        writer.write_u8(self.coins, order)
+
+        writer.write_u32(self.object_count, order)
+
+        writer.write_f32(self.editor_time.total_seconds(), order)
+        writer.write_f32(self.copies_time.total_seconds(), order)
+
+        writer.write_u8(self.timely_type.value, order)
+
+    @classmethod
+    def from_binary(
+        cls: Type[L], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+    ) -> L:
+        two_player_bit = TWO_PLAYER_BIT
+        verified_coins_bit = VERIFIED_COINS_BIT
+        epic_bit = EPIC_BIT
+        low_detail_bit = LOW_DETAIL_BIT
+
+        reader = Reader(binary)
+
+        id = reader.read_u32(order)
+
+        name_length = reader.read_u8(order)
+
+        name = reader.read(name_length).decode(encoding)
+
+        creator = User.from_binary(binary, order, encoding)
+        song = Song.from_binary(binary, order, encoding)
+
+        uploaded_timestamp = reader.read_f32(order)
+        updated_timestamp = reader.read_f32(order)
+
+        uploaded_at = datetime.fromtimestamp(uploaded_timestamp)
+        updated_at = datetime.fromtimestamp(updated_timestamp)
+
+        description_length = reader.read_u16(order)
+
+        description = reader.read(description_length).decode(encoding)
+
+        data_length = reader.read_u32(order)
+
+        data = reader.read(data_length)
+
+        version = reader.read_u8(order)
+
+        downloads = reader.read_u32(order)
+
+        game_version = GameVersion.from_binary(binary, order)
+
+        rating = reader.read_i32(order)
+
+        length_value = reader.read_u8(order)
+
+        length = LevelLength(length_value)
+
+        value = reader.read_u8(order)
+
+        difficulty_value = value & DIFFICULTY_MASK
+
+        difficulty = Difficulty(difficulty_value)
+
+        two_player = value & two_player_bit == two_player_bit
+        verified_coins = value & verified_coins_bit == verified_coins_bit
+        epic = value & epic_bit == epic_bit
+        low_detail = value & low_detail_bit == low_detail_bit
+
+        value = reader.read_u8(order)
+
+        requested_stars = (value & REQUESTED_STARS_MASK) >> REQUESTED_STARS_SHIFT
+        stars = value & STARS_MASK
+
+        score = reader.read_i32(order)
+
+        password_data = Password.from_binary(binary, order)
+
+        original_id = reader.read_u32(order)
+
+        coins = reader.read_u8(order)
+
+        object_count = reader.read_u32(order)
+
+        editor_seconds = reader.read_f32(order)
+        copies_seconds = reader.read_f32(order)
+
+        editor_time = timedelta(seconds=editor_seconds)
+        copies_time = timedelta(seconds=copies_seconds)
+
+        timely_type_value = reader.read_u8(order)
+
+        timely_type = TimelyType(timely_type_value)
+
+        return cls(
+            id=id,
+            name=name,
+            creator=creator,
+            song=song,
+            uploaded_at=uploaded_at,
+            updated_at=updated_at,
+            description=description,
+            data=data,
+            version=version,
+            downloads=downloads,
+            game_version=game_version,
+            rating=rating,
+            length=length,
+            difficulty=difficulty,
+            stars=stars,
+            requested_stars=requested_stars,
+            score=score,
+            password_data=password_data,
+            original_id=original_id,
+            two_player=two_player,
+            coins=coins,
+            verified_coins=verified_coins,
+            low_detail=low_detail,
+            epic=epic,
+            object_count=object_count,
+            editor_time=editor_time,
+            copies_time=copies_time,
+            timely_type=timely_type,
+        )
 
     @classmethod
     def official(
@@ -109,12 +306,16 @@ class Level(Entity):
     def password(self) -> Optional[int]:
         return self.password_data.password
 
+    @property
+    def timely_id(self) -> TimelyID:
+        return self.timely_type.into_timely_id()
+
     def is_copyable(self) -> bool:
         return self.password_data.copyable
 
     def is_timely(self, timely_type: Optional[TimelyType] = None) -> bool:
         if timely_type is None:
-            return self.timely_type is not TimelyType.NOT_TIMELY
+            return not self.timely_type.is_not_timely()
 
         return self.timely_type is timely_type
 
@@ -136,6 +337,15 @@ class Level(Entity):
     def is_original(self) -> bool:
         return not self.original_id
 
+    def is_two_player(self) -> bool:
+        return self.two_player
+
+    def has_low_detail(self) -> bool:
+        return self.low_detail
+
+    def has_verified_coins(self) -> bool:
+        return self.verified_coins
+
     def open_editor(self) -> Editor:
         ...
 
@@ -155,15 +365,14 @@ class Level(Entity):
             length=abs(self.length.value),
             track_id=track_id,
             song_id=song_id,
-            two_player=self.has_two_player(),
-            is_auto=self.is_auto(),
+            two_player=self.is_two_player(),
             original=self.original_id,
             objects=self.objects,
             coins=self.coins,
             stars=self.stars,
             unlisted=False,
             friends_only=False,
-            low_detail_mode=self.has_low_detail_mode(),
+            low_detail=self.has_low_detail(),
             password=self.password,
             copyable=self.is_copyable(),
             description=self.description,
@@ -192,8 +401,8 @@ class Level(Entity):
     ) -> None:
         await self.client.rate_demon(self, demon_difficulty=demon_difficulty, as_mod=as_mod)
 
-    async def send(self, stars: int, featured: bool) -> None:
-        await self.client.send_level(self, stars=stars, featured=featured)
+    async def suggest(self, stars: int, featured: bool) -> None:
+        await self.client.suggest_level(self, stars=stars, featured=featured)
 
     async def is_alive(self) -> bool:
         ...

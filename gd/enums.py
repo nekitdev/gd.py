@@ -69,6 +69,7 @@ __all__ = (
     "SpeedMagic",
     "GuidelineColor",
     "InternalType",
+    "Filter",
     "Protection",
     "ByteOrder",
     "Platform",
@@ -148,7 +149,7 @@ class IconType(Enum):
     WAVE = 4
     ROBOT = 5
     SPIDER = 6
-    SWING_COPTER = 7
+    # SWING_COPTER = 7
 
     DEFAULT = CUBE
 
@@ -207,8 +208,6 @@ class Role(Enum):
 class LevelLength(Enum):
     """An enumeration for level lengths."""
 
-    UNKNOWN = -1
-
     TINY = 0
     SHORT = 1
     MEDIUM = 2
@@ -216,9 +215,7 @@ class LevelLength(Enum):
     XL = 4
     # PLATFORMER = 5
 
-    NA = UNKNOWN
-
-    DEFAULT = UNKNOWN
+    DEFAULT = TINY
 
 
 class UnlistedType(Flag):
@@ -776,6 +773,8 @@ class LevelType(Enum):
     SAVED = 3
     ONLINE = 4
 
+    DEFAULT = NULL
+
 
 class PortalType(Enum):
     """An enumeration representing IDs of portal or speed change objects."""
@@ -1022,7 +1021,7 @@ class InternalType(Enum):
     REWARD_OBJECT = 9
 
 
-class DeleteFilter(Enum):
+class Filter(Enum):
     NONE = 0
     DETAIL = 1
     STATIC = 2

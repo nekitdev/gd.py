@@ -4,7 +4,9 @@ from typing import Iterable, Optional, Tuple, Type, TypeVar
 
 from attrs import define
 
+from gd.async_utils import run_blocking
 from gd.constants import DEFAULT_HEIGHT, DEFAULT_WIDTH
+from gd.errors import InternalError
 from gd.image.geometry import Point, Rectangle, Size
 from gd.image.sprite import Sprite
 
@@ -25,11 +27,11 @@ from gd.assets import (
     SPIDER_ANIMATION_PATH,
 )
 from gd.colors import Color
-from gd.enums import IconType
+from gd.enums import IconType, Orientation
 from gd.image.animation import Animation, Animations, AnimationSheet
 from gd.image.icon import Icon
 from gd.image.sheet import Sheet, Sprites
-from gd.typing import IntoPath, Unary
+from gd.typing import IntoPath
 
 __all__ = ("FACTORY", "Factory")
 
@@ -46,17 +48,8 @@ ZERO = 0
 BLACK = Color.black()
 EMPTY = BLACK.to_rgba(ZERO)
 
-DEFAULT_LOW_VALUE = 0xF
 
-
-def zero_low_values(low_value: int = DEFAULT_LOW_VALUE) -> Unary[int, int]:
-    def function(value: int) -> int:
-        return ZERO if value <= low_value else value
-
-    return function
-
-
-def connect_h_images(images: Iterable[Image]) -> Image:
+def connect_horizontal_images(images: Iterable[Image]) -> Image:
     array = list(images)
 
     width = sum(image.width for image in array)
@@ -73,7 +66,7 @@ def connect_h_images(images: Iterable[Image]) -> Image:
     return result
 
 
-def connect_v_images(images: Iterable[Image]) -> Image:
+def connect_vertical_images(images: Iterable[Image]) -> Image:
     array = list(images)
 
     width = max(image.width for image in array)
@@ -88,6 +81,18 @@ def connect_v_images(images: Iterable[Image]) -> Image:
         offset += image.height
 
     return result
+
+
+def connect_images(
+    images: Iterable[Image], orientation: Orientation = Orientation.DEFAULT
+) -> Image:
+    if orientation.is_horizontal():
+        return connect_horizontal_images(images)
+
+    if orientation.is_vertical():
+        return connect_vertical_images(images)
+
+    raise InternalError  # TODO: message?
 
 
 QUARTER = 90
@@ -209,6 +214,9 @@ class Factory:
 
         return (sprite, self.icon_image)
 
+    async def generate_async(self, icon: Icon, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT) -> Image:
+        return await run_blocking(self.generate, icon, width=width, height=height)
+
     def generate(
         self, icon: Icon, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
     ) -> Image:
@@ -281,9 +289,15 @@ class Factory:
                         center - self.image_rectangle(part).center + sprite.offset.y_flipped()
                     )
 
+                    if icon.type is IconType.UFO:
+                        position.y += UFO_OFFSET
+
                     result.alpha_composite(part, position.round_tuple())
 
         return result
+
+
+UFO_OFFSET = 30.0
 
 
 FACTORY = Factory.default()

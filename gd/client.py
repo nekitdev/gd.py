@@ -1107,9 +1107,7 @@ class Client:
             yield MapPack.from_model(model, client=self)
 
     @wrap_await_iter
-    def get_map_packs(
-        self, pages: Iterable[int] = DEFAULT_PAGES
-    ) -> AsyncIterator[MapPack]:
+    def get_map_packs(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[MapPack]:
         return run_iterables(
             (self.get_map_packs_on_page(page=page) for page in pages),
             ClientError,
@@ -1159,9 +1157,7 @@ class Client:
             yield Song.from_model(model, custom=True, client=self)
 
     @wrap_await_iter
-    def get_featured_artists(
-        self, pages: Iterable[int] = DEFAULT_PAGES
-    ) -> AsyncIterator[MapPack]:
+    def get_featured_artists(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[MapPack]:
         return run_iterables(
             (self.get_featured_artists_on_page(page=page) for page in pages),  # type: ignore
             ClientError,

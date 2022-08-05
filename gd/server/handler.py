@@ -14,7 +14,15 @@ from gd.server.constants import (
     HTTP_UNPROCESSABLE_ENTITY,
 )
 from gd.server.typing import Headers, StreamHandler
-from gd.typing import AnyException, AnyExceptionType, Binary, Decorator, DynamicTuple, Namespace, is_instance
+from gd.typing import (
+    AnyException,
+    AnyExceptionType,
+    Binary,
+    Decorator,
+    DynamicTuple,
+    Namespace,
+    is_instance,
+)
 
 __all__ = (
     "HTTP_STATUS_TO_ERROR_TYPE",

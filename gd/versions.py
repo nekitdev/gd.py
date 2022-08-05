@@ -20,7 +20,7 @@ V = TypeVar("V", bound="Version")
 
 
 @frozen(eq=True, order=True)
-class Version(Binary, String):
+class Version(Binary, RobTop, String):
     major: int = field(default=0)
     minor: int = field(default=0)
 
@@ -55,6 +55,17 @@ class Version(Binary, String):
     def to_string(self) -> str:
         return str(self.to_value())
 
+    @classmethod
+    def from_robtop(cls: Type[V], string: str, base: int = BASE) -> V:
+        return cls.from_string(string, base)
+
+    def to_robtop(self) -> str:
+        return self.to_string()
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return string.isdigit()
+
     # assume `u8` is enough
 
     @classmethod
@@ -77,7 +88,7 @@ INVALID_GAME_VERSION = "invalid game version: {}"
 
 
 @frozen()
-class GameVersion(RobTop, Version):
+class GameVersion(Version):
     @classmethod
     def from_robtop_value(cls: Type[G], value: int) -> G:
         if not value:
@@ -119,7 +130,7 @@ class GameVersion(RobTop, Version):
 
     @classmethod
     def can_be_in(cls, string: str) -> Literal[True]:
-        return True
+        return string.isdigit()
 
 
 CURRENT_GAME_VERSION = GameVersion(2, 1)

@@ -6,7 +6,7 @@ from typing_extensions import TypeGuard
 
 from gd.api.hsv import HSV
 from gd.binary import Binary
-from gd.binary_utils import Reader, Writer
+from gd.binary_utils import UTF_8, Reader, Writer
 from gd.colors import Color
 from gd.constants import EMPTY
 from gd.enum_extensions import Enum, Flag
@@ -441,9 +441,6 @@ class Coin(Object):
         writer.write_u8(self.coin_id, order)
 
 
-UTF_8 = "utf-8"
-
-
 S = TypeVar("S", bound="Text")
 
 
@@ -529,11 +526,51 @@ class Teleport(Object):
         return self.smooth
 
 
+RANDOMIZE_START_BIT = 0b00000001
+
+AO = TypeVar("AO", bound="AnimatedObject")
+
+
 @define()
 class AnimatedObject(Object):
     randomize_start: bool = False
     animation_speed: float = 0.0
 
+    @classmethod
+    def from_binary(cls: Type[AO], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> AO:
+        randomize_start_bit = RANDOMIZE_START_BIT
+
+        animated_object = super().from_binary(binary, order)
+
+        reader = Reader(binary)
+
+        animation_speed = reader.read_f32(order)
+
+        value = reader.read_u8(order)
+
+        randomize_start = value & randomize_start_bit == randomize_start_bit
+
+        animated_object.randomize_start = randomize_start
+        animated_object.animation_speed = animation_speed
+
+        return animated_object
+
+    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+        super().to_binary(binary, order)
+
+        writer = Writer(binary)
+
+        writer.write_f32(self.animation_speed, order)
+
+        value = 0
+
+        if self.is_randomize_start():
+            value |= RANDOMIZE_START_BIT
+
+        writer.write_u8(value, order)
+
+    def is_randomize_start(self) -> bool:
+        return self.randomize_start
 
 DYNAMIC_BIT = 0b10000000_00000000
 BLOCK_ID_MASK = 0b01111111_11111111
@@ -637,9 +674,42 @@ class Orb(HasMultiActivate, Object):
     pass
 
 
+PI = TypeVar("PI", bound="PickupItem")
+
+
 @define()
 class PickupItem(HasTargetGroup, HasItem, Object):
     mode: PickupItemMode = PickupItemMode.DEFAULT
+
+    @classmethod
+    def from_binary(cls: Type[PI], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> PI:
+        pickup_item = super().from_binary(binary, order)
+
+        reader = Reader(binary)
+
+        target_group_id = reader.read_u16(order)
+        item_id = reader.read_u16(order)
+
+        mode_value = reader.read_u8(order)
+
+        mode = PickupItemMode(mode_value)
+
+        pickup_item.target_group_id = target_group_id
+        pickup_item.item_id = item_id
+
+        pickup_item.mode = mode
+
+        return pickup_item
+
+    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+        super().to_binary(binary, order)
+
+        writer = Writer(binary)
+
+        writer.write_u16(self.target_group_id, order)
+        writer.write_u16(self.item_id, order)
+
+        writer.write_u8(self.mode.value, order)
 
 
 TOUCH_TRIGGERED_BIT = 0b00000001

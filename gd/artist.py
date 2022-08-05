@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, AsyncIterator, Iterable, Type, TypeVar
+from typing import TYPE_CHECKING, AsyncIterator, BinaryIO, Iterable, Type, TypeVar
 
 from attrs import field, frozen
 from yarl import URL
 
 from gd.await_iters import wrap_await_iter
+from gd.binary_utils import UTF_8, Reader, Writer
 from gd.constants import DEFAULT_PAGE, DEFAULT_PAGES, UNKNOWN
 from gd.entity import Entity
+from gd.enums import ByteOrder
 from gd.string_utils import case_fold, clear_whitespace
 
 if TYPE_CHECKING:
@@ -48,6 +50,31 @@ class Artist(Entity):
 
     def __str__(self) -> str:
         return self.name
+
+    @classmethod
+    def from_binary(
+        cls: Type[A], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+    ) -> A:
+        reader = Reader(binary)
+
+        length = reader.read_u8(order)
+
+        data = reader.read(length)
+
+        name = data.decode(encoding)
+
+        return cls(name)
+
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+    ) -> None:
+        writer = Writer(binary)
+
+        data = self.name.encode(encoding)
+
+        writer.write_u8(len(data))
+
+        writer.write(data)
 
     @wrap_await_iter
     def get_songs_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Song]:

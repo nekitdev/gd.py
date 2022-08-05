@@ -105,6 +105,7 @@ to_u64 = create_to_int(U64)
 to_f32 = create_to_float(F32)
 to_f64 = create_to_float(F64)
 
+UTF_8 = "utf-8"
 
 B = TypeVar("B", bound=BinaryIO)
 

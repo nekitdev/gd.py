@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+EMPTY_BYTES = bytes()
+
 EMPTY = str()
 SPACE = " "
 

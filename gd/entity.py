@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, BinaryIO, Optional, Type, TypeVar
 
-from attrs import Attribute, define, evolve, field
+from attrs import Attribute, define, field
 from typing_extensions import TypedDict
 
+from gd.binary import Binary
+from gd.binary_utils import Reader, Writer
+from gd.enums import ByteOrder
 from gd.errors import ClientError
 from gd.json import JSON
-from gd.typing import Namespace
 
 if TYPE_CHECKING:
     from gd.client import Client
@@ -27,7 +29,7 @@ ID = "id"
 
 
 @define(eq=True, order=True)
-class Entity(JSON[EntityData]):
+class Entity(Binary, JSON[EntityData]):
     id: int = field(eq=True, order=True)
 
     maybe_client: Optional[Client] = field(
@@ -79,3 +81,16 @@ class Entity(JSON[EntityData]):
 
     def to_json(self) -> EntityData:
         return EntityData(id=self.id)
+
+    @classmethod
+    def from_binary(cls: Type[E], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> E:
+        reader = Reader(binary)
+
+        id = reader.read_u32(order)
+
+        return cls(id)
+
+    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+        writer = Writer(binary)
+
+        writer.write_u32(self.id, order)

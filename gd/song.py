@@ -8,6 +8,7 @@ from iters import iter
 from yarl import URL
 
 from gd.artist import Artist
+from gd.binary_utils import UTF_8, Reader, Writer
 from gd.constants import (
     DEFAULT_FROM_NEWGROUNDS,
     DEFAULT_ID,
@@ -15,9 +16,11 @@ from gd.constants import (
     DEFAULT_SERVER_STYLE,
     DEFAULT_SIZE,
     DEFAULT_WITH_BAR,
+    EMPTY,
     UNKNOWN,
 )
 from gd.entity import Entity
+from gd.enums import ByteOrder
 from gd.errors import MissingAccess
 
 # from gd.http import NEWGROUNDS_SONG_LISTEN
@@ -70,6 +73,71 @@ class Song(Entity):
     custom: bool = DEFAULT_CUSTOM
 
     download_url: Optional[URL] = None
+
+    @classmethod
+    def from_binary(
+        cls: Type[S], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+    ) -> S:
+        reader = Reader(binary)
+
+        id = reader.read_u32(order)
+
+        name_length = reader.read_u8(order)
+
+        name = reader.read(name_length).decode(encoding)
+
+        artist = Artist.from_binary(binary, order, encoding)
+
+        size = reader.read_f32(order)
+
+        custom = bool(reader.read_u8(order))
+
+        download_url_length = reader.read_u16(order)
+
+        string = reader.read(download_url_length).decode(encoding)
+
+        if not string:
+            download_url = None
+
+        else:
+            download_url = URL(string)
+
+        return cls(
+            id=id, name=name, artist=artist, size=size, custom=custom, download_url=download_url
+        )
+
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+    ) -> None:
+        writer = Writer(binary)
+
+        writer.write_u32(self.id, order)
+
+        data = self.name.encode(encoding)
+
+        writer.write_u8(len(data), order)
+
+        writer.write(data)
+
+        self.artist.to_binary(binary, order, encoding)
+
+        writer.write_f32(self.size, order)
+
+        writer.write_u8(int(self.custom), order)
+
+        download_url = self.download_url
+
+        if download_url is None:
+            string = EMPTY
+
+        else:
+            string = str(download_url)
+
+        data = string.encode(encoding)
+
+        writer.write_u16(len(data), order)
+
+        writer.write(data)
 
     @classmethod
     def default(cls: Type[S]) -> S:
