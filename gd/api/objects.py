@@ -16,9 +16,11 @@ from gd.enums import (
     InstantCountComparison,
     PickupItemMode,
     PlayerColor,
+    PortalType,
     PulseMode,
     PulseTargetType,
     PulseType,
+    SpeedChange,
     TargetType,
     ToggleType,
     ZLayer,
@@ -413,6 +415,16 @@ class Object(Binary):
     def is_trigger(self) -> bool:
         return False
 
+    def is_portal(self) -> bool:
+        return self.id in PORTAL_IDS
+
+    def is_speed_change(self) -> bool:
+        return self.id in SPEED_CHANGE_IDS
+
+
+PORTAL_IDS = {portal.value for portal in PortalType}
+SPEED_CHANGE_IDS = {speed_change.value for speed_change in SpeedChange}
+
 
 C = TypeVar("C", bound="Coin")
 
@@ -571,6 +583,7 @@ class AnimatedObject(Object):
 
     def is_randomize_start(self) -> bool:
         return self.randomize_start
+
 
 DYNAMIC_BIT = 0b10000000_00000000
 BLOCK_ID_MASK = 0b01111111_11111111
