@@ -295,11 +295,7 @@ class LevelCommentListener(Listener):
 
 @define()
 class DailyCommentListener(Listener):
-    level: Level = field(init=False)
-
-    @level.default
-    def default_level(self) -> Level:
-        return Level(id=TimelyID.DAILY.value, type=TimelyType.DAILY).attach_client(self.client)
+    level_id: int = TimelyID.DAILY.value
 
     async def dispatch_level_comment(self, level: Level, comment: LevelComment) -> None:
         await self.client.dispatch_daily_comment(level, comment)
@@ -307,11 +303,7 @@ class DailyCommentListener(Listener):
 
 @define()
 class WeeklyCommentListener(Listener):
-    level: Level = field(init=False)
-
-    @level.default
-    def default_level(self) -> Level:
-        return Level(id=TimelyID.WEEKLY.value, type=TimelyType.WEEKLY).attach_client(self.client)
+    level_id: int = TimelyID.WEEKLY.value
 
     async def dispatch_level_comment(self, level: Level, comment: LevelComment) -> None:
         await self.client.dispatch_weekly_comment(level, comment)

@@ -1,7 +1,7 @@
 from itertools import count
 from operator import attrgetter as get_attribute_factory
 from typing import (
-    AbstractSet, Iterable, Iterator, List, Optional, Sequence, Set, Type, TypeVar, Union, overload
+    AbstractSet, BinaryIO, Iterable, Iterator, List, Optional, Sequence, Set, Type, TypeVar, Union, overload
 )
 
 from attrs import define, field
@@ -9,7 +9,9 @@ from attrs import define, field
 from gd.api.color_channels import ColorChannels
 from gd.api.header import Header
 from gd.api.objects import Object, has_target_group, object_from_binary, object_to_binary
-from gd.enums import Speed, SpeedChange, SpeedMagic
+from gd.binary import Binary
+from gd.binary_utils import Reader, Writer
+from gd.enums import ByteOrder, Speed, SpeedChange, SpeedMagic
 from gd.errors import EditorError
 from gd.typing import is_instance
 
@@ -98,7 +100,7 @@ E = TypeVar("E", bound="Editor")
 
 
 @define()
-class Editor(Sequence[Object]):
+class Editor(Binary, Sequence[Object]):
     header: Header = field(factory=Header)
     objects: List[Object] = field(factory=list)
 
@@ -214,3 +216,29 @@ class Editor(Sequence[Object]):
             distance = self.x_length
 
         return get_time_length(distance, self.start_speed, self.speed_changes)
+
+    @classmethod
+    def from_binary(cls: Type[E], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> E:
+        header = Header.from_binary(binary, order)
+
+        reader = Reader(binary)
+
+        iterable_length = reader.read_u32(order)
+
+        iterable = (
+            object_from_binary(binary, order) for _ in range(iterable_length)
+        )
+
+        return cls.from_object_iterable(iterable, header)
+
+    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+        self.header.to_binary(binary, order)
+
+        writer = Writer(binary)
+
+        objects = self.objects
+
+        writer.write_u32(len(objects), order)
+
+        for object in objects:
+            object_to_binary(object, binary, order)

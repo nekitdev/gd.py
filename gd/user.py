@@ -337,8 +337,6 @@ class User(Entity):
         if not record_present:
             record = None
 
-        print(vars())
-
         timestamp = reader.read_f32(order)
 
         if timestamp:
