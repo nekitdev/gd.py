@@ -1,4 +1,3 @@
-from faulthandler import is_enabled
 from io import BytesIO
 from typing import BinaryIO, Iterable, Set, Type, TypeVar
 
