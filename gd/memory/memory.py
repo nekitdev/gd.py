@@ -1,7 +1,7 @@
 # DOCUMENT
 
 from gd.memory.utils import class_property
-from gd.platform import Platform, system_bits, system_platform
+from gd.platform import SYSTEM_PLATFORM_CONFIG, Platform, PlatformConfig, system_bits, system_platform
 from gd.text_utils import nice_repr
 from gd.typing import TYPE_CHECKING, Any, Dict, Generic, Tuple, Type, TypeVar, Union
 
@@ -14,8 +14,7 @@ M = TypeVar("M", bound="Memory")
 
 
 class MemoryType(type(Generic)):  # type: ignore
-    _bits: int
-    _platform: Platform
+    _config: PlatformConfig
     _size: int
     _alignment: int
 
@@ -26,9 +25,8 @@ class MemoryType(type(Generic)):  # type: ignore
         cls_dict: Dict[str, Any],
         size: int = 0,
         alignment: int = 0,
-        bits: int = system_bits,
-        platform: Union[int, str, Platform] = system_platform,
-        **kwargs,
+        config: PlatformConfig = SYSTEM_PLATFORM_CONFIG,
+        **keywords: Any,
     ) -> "MemoryType":
         cls = super().__new__(meta_cls, cls_name, bases, cls_dict, **kwargs)
 

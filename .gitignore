@@ -94,3 +94,6 @@ target/
 # leave it in here for libraries
 
 Cargo.lock
+
+# assets
+.gd/

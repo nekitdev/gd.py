@@ -1,10 +1,11 @@
 # DOCUMENT
 
+from typing_extensions import Never
 from gd.iter_utils import item_to_tuple
 from gd.memory.memory import Memory
 from gd.memory.utils import class_property
 from gd.platform import Platform, platform_from_string, system_bits, system_platform
-from gd.typing import TYPE_CHECKING, Any, Dict, Generic, Optional, Tuple, Type, TypeVar
+from gd.typing import TYPE_CHECKING, Any, AnyType, Dict, DynamicTuple, Generic, Namespace, Optional, Tuple, Type, TypeVar, get_name
 from gd.typing import Union as TypeUnion
 from gd.typing import cast, no_type_check
 
@@ -70,15 +71,15 @@ __all__ = (
 
 class SimpleMarkerType(type):
     def __repr__(cls) -> str:
-        return cls.__name__
+        return get_name(cls)
 
     @property
     def name(cls) -> str:
-        return cls.__name__
+        return get_name(cls)
 
 
 class SimpleMarker(metaclass=SimpleMarkerType):
-    def __init__(self) -> None:
+    def __init__(self) -> Never:
         raise TypeError("Markers can not be initialized.")
 
 
@@ -222,31 +223,32 @@ class string_t(SimpleMarker):
     pass
 
 
+MT = TypeVar("MT", bound="MarkerType")
+
+
 class MarkerType(type(Generic)):  # type: ignore
     _derive: bool
 
     def __new__(
-        meta_cls,
-        cls_name: str,
-        bases: Tuple[Type[Any], ...],
-        cls_dict: Dict[str, Any],
+        cls: Type[MT],
+        name: str,
+        bases: DynamicTuple[AnyType],
+        namespace: Namespace,
         derive: bool = True,
-        **kwargs,
-    ) -> "MarkerType":
-        cls = super().__new__(meta_cls, cls_name, bases, cls_dict, **kwargs)
+        **keywords: Any,
+    ) -> MT:
+        self = super().__new__(cls, name, bases, namespace, **keywords)
 
-        cls._derive = derive  # type: ignore
+        self._derive = derive
 
-        return cls
+        return self
 
-        # return no_type_check(cls)  # type: ignore
-
-    def assert_can_derive(cls) -> None:
+    def check_derive(self) -> None:
         if not cls.derive:
             raise TypeError(f"Can not derive memory from {cls.__name__}.")
 
-    def visit(cls, visitor: "Visitor") -> Type[Memory]:
-        cls.assert_can_derive()
+    def accept(cls, visitor: "Visitor") -> Type[Layout]:
+        cls.check_derive()
 
         return cast(Type[Memory], visitor.visit_any(cls))
 
@@ -272,11 +274,7 @@ class MarkerType(type(Generic)):  # type: ignore
 
 
 class Marker(metaclass=MarkerType):
-    _derive: bool
-
-    @class_property
-    def derive(self) -> bool:
-        return self._derive
+    pass
 
 
 class PointerType(MarkerType):

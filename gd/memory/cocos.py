@@ -1,4 +1,4 @@
-# type: ignore
+from typing_extensions import TypeAlias
 
 from gd.memory.marker import (
     Struct,
@@ -24,13 +24,16 @@ class CCSize(Struct):
     height: float_t
 
 
-class CCRect(Struct):
+class CCRectangle(Struct):
     origin: CCPoint
     size: CCSize
 
 
+array_16: TypeAlias = mut_array(float_t, 4 * 4)
+
+
 class Matrix4(Struct):  # 4 x 4 matrix
-    matrix: mut_array(float_t, 4 * 4)
+    matrix: array_16
 
 
 class CCAffineTransform(Struct):
@@ -65,17 +68,23 @@ class CCObject(CCCopying):
     padding: uint_t  # modified
 
 
+array_pointer: TypeAlias = mut_pointer(mut_array(mut_pointer(CCObject)))
+
+
 class CCArrayStruct(Struct):
     length: uint_t
     capacity: uint_t
     # this is actually CCObject double pointer,
     # but since we do not have indexing or iterating pointers implemented,
     # we instead make it point to an array of pointers
-    array: mut_pointer(mut_array(mut_pointer(CCObject)))
+    array: array_pointer
+
+
+array_struct_pointer: TypeAlias = mut_pointer(CCArrayStruct)
 
 
 class CCArray(CCObject):
-    data: mut_pointer(CCArrayStruct)
+    data: array_struct_pointer
 
 
 class CCNode(CCObject, vtable=True):

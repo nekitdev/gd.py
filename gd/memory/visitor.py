@@ -3,6 +3,7 @@
 from abc import abstractmethod
 from functools import wraps
 
+from attrs import define
 from typing_extensions import Protocol, runtime_checkable
 
 from gd.memory.context import Context
@@ -33,9 +34,10 @@ from gd.memory.memory_pointer_ref import (
     MemoryRef,
 )
 from gd.memory.memory_special import MemoryThis, MemoryVoid
+from gd.memory.state import AbstractState
 from gd.memory.traits import Layout, Read, ReadLayout, ReadWriteLayout, Write, is_class, is_layout
 from gd.platform import Platform, platform_to_string, system_bits, system_platform
-from gd.typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Type, TypeVar
+from gd.typing import TYPE_CHECKING, Any, Binary, Callable, Dict, List, Named, Tuple, Type, TypeVar, get_name
 from gd.typing import Union as TypeUnion
 from gd.typing import cast, get_type_hints, no_type_check, overload
 
@@ -43,6 +45,17 @@ if TYPE_CHECKING:
     from gd.memory.state import BaseState  # noqa
 
 __all__ = ("Visitor",)
+
+
+VS = TypeVar("VS", bound="Visitor", contravariant=True)
+
+
+@runtime_checkable
+class Visitable(Protocol[VS]):
+    @abstractmethod
+    def accept(self, visitor: VS) -> Type[Layout]:
+        ...
+
 
 ANNOTATIONS = "__annotations__"
 BASES = "__bases__"
@@ -65,24 +78,16 @@ THIS_TYPE = "this_type"
 VOID_TYPE = "void_type"
 
 T = TypeVar("T")
-V = TypeVar("V", bound="Visitor")
+
+PAD_NAME = "__{}_{}__"
 
 
 def pad_name(name: str) -> str:
-    return f"__{PAD}_{name}__"
+    return PAD_NAME.format(PAD, name)
 
 
 def vtable_name(name: str) -> str:
-    return f"__{VTABLE}_{name}__"
-
-
-def merge_metaclass(*types: Type[Any], name: str = MERGED_METACLASS) -> Type[Type[Any]]:
-    class merged_metaclass(*map(type, types)):  # type: ignore
-        pass
-
-    merged_metaclass.__qualname__ = merged_metaclass.__name__ = name
-
-    return merged_metaclass
+    return PAD_NAME.format(VTABLE, name)
 
 
 class InvalidMemoryType(TypeError):
@@ -90,19 +95,19 @@ class InvalidMemoryType(TypeError):
 
 
 VISITOR_CACHE: Dict[str, Any] = {}
-VISITOR_CACHE_KEY = "{name}@{id}[{platform}]"
-
-NAME = "__name__"
-UNNAMED = "unnamed"
+VISITOR_CACHE_KEY = "{}@{:x}[{}]"
 
 
-def visitor_cache(visit: Callable[[V, Any], T]) -> Callable[[V, Any], T]:
+V = TypeVar("V", bound="Visitor")
+
+
+def visitor_cache(visit: Binary[V, Visitable[V], T]) -> Binary[V, Visitable[V], T]:
     @wraps(visit)
-    def visit_function(visitor: V, some: Any) -> T:
+    def visit_function(visitor: V, some: Visitable[V]) -> T:
         visitor_cache_key = VISITOR_CACHE_KEY.format(
-            name=getattr(some, NAME, UNNAMED),
-            platform=platform_to_string(visitor.context.bits, visitor.context.platform),
-            id=hex(id(some)),
+            get_name(some),
+            id(some),
+            visitor.context.config,
         )
 
         if visitor_cache_key not in VISITOR_CACHE:
@@ -113,110 +118,26 @@ def visitor_cache(visit: Callable[[V, Any], T]) -> Callable[[V, Any], T]:
     return visit_function
 
 
+@define()
 class Visitor:
-    def __init__(self, context: Context) -> None:
-        self._context = context
+    context: Context
 
     @classmethod
-    def with_context(
-        cls: Type[V],
-        bits: int = system_bits,
-        platform: TypeUnion[int, str, Platform] = system_platform,
-    ) -> V:
-        return cls(Context(bits, platform))  # type: ignore
+    def bound(cls: Type[V], state: AbstractState) -> V:
+        return cls(Context.bound(state))
 
-    @classmethod
-    def bound(cls: Type[V], state: "BaseState") -> V:
-        return cls(Context.bound(state))  # type: ignore
-
-    @property
-    def context(self) -> Context:
-        return self._context
-
-    @overload  # noqa
-    def create_field(self, some: Type[ReadWriteLayout[T]], offset: int) -> MutField[T]:  # noqa
+    def create_field(self, some: Type[Read[T]]) -> Field[T]:
         ...
 
-    @overload  # noqa
-    def create_field(self, some: Type[ReadLayout[T]], offset: int) -> Field[T]:  # noqa
+    def create_mut_field(self, some: Type[ReadWrite[T]]) -> MutField[T]:
         ...
-
-    def create_field(self, some: Type[Any], offset: int = 0) -> Field[T]:  # noqa
-        if is_class(some):
-            if is_layout(some):
-                if issubclass(some, Read):
-                    if issubclass(some, Write):
-                        mut_type = cast(Type[ReadWriteLayout[T]], some)
-
-                        return MutField(mut_type, offset)
-
-                    type = cast(Type[ReadLayout[T]], some)
-
-                    return Field(type, offset)
-
-        raise InvalidMemoryType(f"Can not create field from {some!r}.")
 
     @visitor_cache
-    def visit_any(self, some: Any) -> Type[Layout]:
-        if is_class(some):
-            if is_layout(some):
-                if issubclass(some, Read):
-                    if issubclass(some, Write):
-                        return self.visit_read_write_sized(some)
-
-                    return self.visit_read_sized(some)
-
-            if issubclass(some, Struct):
-                struct = cast(Type[Struct], some)
-
-                return self.visit_struct(struct)
-
-            if issubclass(some, Union):
-                union = cast(Type[Union], some)
-
-                return self.visit_union(union)
-
-            if issubclass(some, This):
-                return self.visit_this(some)
-
-            if issubclass(some, Void):
-                return self.visit_void(some)
-
-            if issubclass(some, DynamicFill):
-                dynamic_fill = cast(Type[DynamicFill], some)
-
-                return self.visit_dynamic_fill(dynamic_fill)
-
-            if issubclass(some, Ref):
-                if issubclass(some, MutRef):
-                    return self.visit_mut_ref(some)
-
-                return self.visit_ref(some)
-
-            if issubclass(some, Pointer):
-                if issubclass(some, MutPointer):
-                    return self.visit_mut_pointer(some)
-
-                return self.visit_pointer(some)
-
-            if issubclass(some, Array):
-                if issubclass(some, MutArray):
-                    return self.visit_mut_array(some)
-
-                return self.visit_array(some)
-
-            if issubclass(some, SimpleMarker):
-                return self.visit_simple_marker(some)
-
-        raise InvalidMemoryType(f"{some!r} is not valid as memory type.")
-
-    def visit(self, some: Any) -> Type[Layout]:
-        return self.visit_any(some)
+    def visit(self: V, visitable: Visitable[V]) -> Type[Layout]:
+        return visitable.accept(self)
 
     def visit_dynamic_fill(self, dynamic_fill: Type[DynamicFill]) -> Type[Layout]:
-        return self.visit_array(
-            fill(dynamic_fill.fill.get((self.context.bits, self.context.platform), 0))
-        )
+        return self.visit_array(fill(dynamic_fill.fill.get(self.context.config, 0)))
 
     def visit_struct(self, marker_struct: Type[Struct]) -> Type[MemoryStruct]:
         # get all bases via resolving the MRO
@@ -737,18 +658,7 @@ class Visitor:
         return type
 
     def visit_simple_marker(self, marker: Type[SimpleMarker]) -> Type[Layout]:
-        return self.visit_any(self.context.get_type(marker.name))
-
-
-S = TypeVar("S", bound="AnyVisitable")
-V = TypeVar("V", contravariant=True)
-
-
-@runtime_checkable
-class Visitable(Protocol[V]):
-    @abstractmethod
-    def accept(self: S, visitor: V) -> S:
-        ...
+        return self.visit(self.context.get(marker.name))
 
 
 AnyVisitable = Visitable[Visitor]

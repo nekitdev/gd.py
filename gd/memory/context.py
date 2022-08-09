@@ -1,19 +1,19 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Type, TypeVar
+
 from attrs import frozen
 
 from gd.memory.traits import Layout
-from gd.memory.types import Types
+# from gd.memory.types import Types
 from gd.platform import (
     SYSTEM_PLATFORM_CONFIG,
     Platform,
     PlatformConfig,
-    system_bits,
-    system_platform,
 )
-from gd.text_utils import nice_repr
-from gd.typing import TYPE_CHECKING, Type, TypeVar, Union
 
 if TYPE_CHECKING:
-    from gd.memory.state import BaseState  # noqa
+    from gd.memory.state import AbstractState
 
 __all__ = ("Context",)
 
@@ -24,13 +24,21 @@ C = TypeVar("C", bound="Context")
 class Context:
     config: PlatformConfig = SYSTEM_PLATFORM_CONFIG
 
-    @classmethod
-    def bound(cls: Type[C], state: "BaseState") -> C:
-        return cls(state.config)
+    @property
+    def platform(self) -> Platform:
+        return self.config.platform
 
     @property
-    def types(self) -> Types:
-        return Types(self.config)
+    def bits(self) -> int:
+        return self.config.bits
 
-    def get_type(self, name: str) -> Type[Layout]:
-        return self.types.get(name)
+    @classmethod
+    def bound(cls: Type[C], state: AbstractState) -> C:
+        return cls(state.config)
+
+    # @property
+    # def types(self) -> Types:
+    #     return Types(self.config)
+
+    # def get(self, name: str) -> Type[Layout]:
+    #     return self.types.get(name)

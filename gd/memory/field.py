@@ -1,62 +1,47 @@
-from gd.memory.traits import Layout, ReadLayout, ReadWriteLayout
-from gd.text_utils import nice_repr
-from gd.typing import Any, Generic, Literal, Optional, Type, TypeVar, Union, overload
+from typing import Any, Generic, Optional, Type, TypeVar, Union, overload
+
+from attrs import define, field
+
+from gd.memory.memory import Memory
+from gd.memory.traits import Layout, Read, ReadWrite
 
 __all__ = ("Field", "MutField")
 
-UNSIZED = "unsized"
 L = TypeVar("L", bound=Layout)
 T = TypeVar("T")
 
+FROZEN_FIELD = "this field is frozen"
 
-class BaseField(Generic[L]):
-    def __init__(self, type: Type[L], offset: int, frozen: bool = False) -> None:
-        self._type = type
-        self._offset = offset
-        self._frozen = frozen
 
-    def __repr__(self) -> str:
-        try:
-            size = self.size
-
-        except TypeError:
-            size = UNSIZED
-
-        info = {"offset": self.offset, "size": size, "type": self.type.__name__}
-
-        return nice_repr(self, info)
-
-    def get_offset(self) -> int:
-        return self._offset
-
-    def set_offset(self, offset: int) -> None:
-        if self._frozen:
-            raise TypeError("Can not update this field.")
-
-        self._offset = offset
-
-    offset = property(get_offset, set_offset)
+@define()
+class AbstractField(Generic[L]):
+    _type: Type[L] = field()
+    _offset: int = field()
+    _frozen: bool = field(default=False, init=False)
 
     def get_type(self) -> Type[L]:
         return self._type
 
     def set_type(self, type: Type[L]) -> None:
-        if self._frozen:
-            raise TypeError("Can not update this field.")
+        self.check_frozen()
 
         self._type = type
 
     type = property(get_type, set_type)
 
-    def get_size(self) -> int:
-        return self.type.size
+    def get_offset(self) -> int:
+        return self._offset
 
-    size = property(get_size)
+    def set_offset(self, offset: int) -> None:
+        self.check_frozen()
 
-    def get_alignment(self) -> int:
-        return self.type.alignment
+        self._offset = offset
 
-    alignment = property(get_alignment)
+    offset = property(get_offset, set_offset)
+
+    def check_frozen(self) -> None:
+        if self._frozen:
+            raise TypeError(FROZEN_FIELD)
 
     def freeze(self) -> None:
         self._frozen = True
@@ -65,41 +50,41 @@ class BaseField(Generic[L]):
         self._frozen = False
 
 
-class Field(BaseField[ReadLayout[T]]):
-    def __init__(self, type: Type[ReadLayout[T]], offset: int) -> None:
-        super().__init__(type, offset)
+M = TypeVar("M", bound="Memory")
 
-    @overload  # noqa
-    def __get__(  # noqa
-        self, instance: Literal[None], owner: Optional[Type[Any]] = None
-    ) -> "Field[T]":
+F = TypeVar("F", bound="AnyField")
+
+CAN_NOT_SET_IMMUTABLE = "can not set an immutable field"
+CAN_NOT_DELETE_FIELDS = "can not delete fields"
+
+
+class Field(AbstractField[Read[T]]):
+    @overload
+    def __get__(self: F, instance: None, type: Optional[Type[M]] = ...) -> F:
         ...
 
-    @overload  # noqa
-    def __get__(self, instance: Any, owner: Optional[Type[Any]] = None) -> T:  # noqa
+    @overload
+    def __get__(self, instance: M, type: Optional[Type[M]] = ...) -> T:
         ...
 
     def __get__(  # noqa
-        self, instance: Optional[Any], owner: Optional[Type[Any]] = None
-    ) -> Union[T, "Field[T]"]:
+        self: F, instance: Optional[M], type: Optional[Type[M]] = None
+    ) -> Union[T, F]:
         if instance is None:
             return self
 
         return self.type.read_value_from(instance.state, instance.address + self.offset)
 
-    def __set__(self, instance: Any, value: T) -> None:
-        raise AttributeError("Can not set field, as it is immutable.")
+    def __set__(self, instance: M, value: T) -> None:
+        raise AttributeError(CAN_NOT_SET_IMMUTABLE)
 
-    def __delete__(self, instance: Any) -> None:
-        raise AttributeError("Can not delete field.")
+    def __delete__(self, instance: M) -> None:
+        raise AttributeError(CAN_NOT_DELETE_FIELDS)
 
 
-class MutField(Field[T], BaseField[ReadWriteLayout[T]]):
-    def __init__(self, type: Type[ReadWriteLayout[T]], offset: int) -> None:
-        super().__init__(type, offset)  # type: ignore
+AnyField = Field[Any]
 
-    def __set__(self, instance: Any, value: T) -> None:
+
+class MutField(Field[T], AbstractField[ReadWrite[T]]):
+    def __set__(self, instance: M, value: T) -> None:
         self.type.write_value_to(value, instance.state, instance.address + self.offset)
-
-    def __delete__(self, instance: Any) -> None:
-        raise AttributeError("Can not delete field.")

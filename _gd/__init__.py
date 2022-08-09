@@ -1,5 +1,5 @@
 try:
-    from _gd._gd import cyclic_xor, xor
+    from _gd._gd import cyclic_xor, xor  # type: ignore
 
 except ImportError:
     pass

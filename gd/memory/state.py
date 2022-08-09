@@ -72,7 +72,7 @@ from gd.text_utils import nice_repr
 from gd.typing import Callable, Type, TypeVar, Union, cast
 
 __all__ = (
-    "BaseState",
+    "AbstractState",
     "LinuxState",
     "MacOSState",
     "SystemState",
@@ -97,7 +97,7 @@ DEFAULT_MACOS_NAME = "Geometry Dash"
 DEFAULT_WINDOWS_NAME = "GeometryDash.exe"
 
 
-class BaseState:
+class AbstractState:
     process_name: str
     window_title: str
     bits: int
@@ -225,7 +225,7 @@ class BaseState:
         type.write_value_to(value, self, address)
 
 
-class SystemState(BaseState):
+class SystemState(AbstractState):
     platform = cast(Platform, system_platform)
 
     def load(self) -> None:
@@ -280,7 +280,7 @@ class SystemState(BaseState):
         return system_terminate_process(self.process_handle)
 
 
-class LinuxState(BaseState):
+class LinuxState(AbstractState):
     platform = cast(Platform, Platform.LINUX)
 
     def load(self) -> None:
@@ -322,7 +322,7 @@ class LinuxState(BaseState):
         return linux_terminate_process(self.process_handle)
 
 
-class MacOSState(BaseState):
+class MacOSState(AbstractState):
     platform = cast(Platform, Platform.MACOS)
 
     def load(self) -> None:
@@ -364,7 +364,7 @@ class MacOSState(BaseState):
         return macos_terminate_process(self.process_handle)
 
 
-class WindowsState(BaseState):
+class WindowsState(AbstractState):
     platform = cast(Platform, Platform.WINDOWS)
 
     def load(self) -> None:
@@ -455,9 +455,9 @@ def get_system_state(
     return SystemState(process_name=process_name, bits=bits, window_title=window_title, load=load)
 
 
-State: Type[BaseState]
+State: Type[AbstractState]
 
-get_state: Callable[..., BaseState]
+get_state: Callable[..., AbstractState]
 
 if ANDROID or LINUX:
     State = LinuxState

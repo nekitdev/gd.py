@@ -1,93 +1,110 @@
-import ctypes
-import functools
+from __future__ import annotations
 
-from gd.typing import Any, Callable, Dict, Optional, Tuple, Type, TypeVar, cast, get_type_hints
+from builtins import setattr as set_attribute
+from ctypes import Structure as CStructure
+from ctypes import Union as CUnion
+from functools import wraps
+from math import ceil, log2
+from typing import Any, Callable, Optional, Type, TypeVar, get_type_hints
 
+from gd.binary_utils import BITS
+from gd.typing import AnyType, Binary, DecoratorIdentity, DynamicTuple, Namespace, Unary
+
+__all__ = (
+    "Structure", "Union", "bits", "closest_power_of_two", "closest_power_of_two_bits", "external"
+)
+
+
+S = TypeVar("S")
 T = TypeVar("T")
-
-__all__ = ("Structure", "Union", "bits", "closest_power_of_two", "extern_fn")
 
 
 def class_property(
-    get_function: Optional[Callable[..., T]] = None,
-    set_function: Optional[Callable[..., None]] = None,
-    del_function: Optional[Callable[..., None]] = None,
+    get_function: Optional[Unary[S, T]] = None,
+    set_function: Optional[Binary[S, T, None]] = None,
+    delete_function: Optional[Unary[S, None]] = None,
 ) -> T:
-    return cast(T, property(get_function, set_function, del_function))
+    return property(get_function, set_function, delete_function)  # type: ignore
 
 
-def bits(size: int, *, byte_bits: int = 8) -> int:
-    return size * byte_bits
+def bits(size: int) -> int:
+    return size * BITS
+
+
+def closest_power_of_two_bits(value: int) -> int:
+    return ceil(log2(value))
 
 
 def closest_power_of_two(value: int) -> int:
-    result = 1
-
-    while result < value:
-        result *= 2
-
-    return result
+    return 1 << closest_power_of_two_bits(value)
 
 
-class StructureMeta(type(ctypes.Structure)):  # type: ignore
-    def __new__(  # type: ignore
-        meta_cls, name: str, bases: Tuple[Type[Any], ...], namespace: Dict[str, Any]
-    ) -> Type[ctypes.Structure]:
-        cls = super().__new__(meta_cls, name, bases, namespace)
+FIELDS = "_fields_"
+
+
+class StructureType(type(CStructure)):  # type: ignore
+    def __new__(cls: Type[CS], name: str, bases: DynamicTuple[AnyType], namespace: Namespace) -> CS:
+        self = super().__new__(cls, name, bases, namespace)
 
         fields = {}
 
-        for base in reversed(cls.mro()):
+        for base in reversed(self.mro()):
             fields.update(get_type_hints(base))
 
-        cls._fields_ = list(fields.items())
+        set_attribute(self, FIELDS, list(fields.items()))
 
-        return cls  # type: ignore
+        return self
 
 
-class UnionMeta(type(ctypes.Union)):  # type: ignore
-    def __new__(  # type: ignore
-        meta_cls, name: str, bases: Tuple[Type[Any], ...], namespace: Dict[str, Any]
-    ) -> Type[ctypes.Union]:
-        cls = super().__new__(meta_cls, name, bases, namespace)
+CS = TypeVar("CS", bound=StructureType)
+
+
+class UnionType(type(CUnion)):  # type: ignore
+    def __new__(cls: Type[CU], name: str, bases: DynamicTuple[AnyType], namespace: Namespace) -> CU:
+        self = super().__new__(cls, name, bases, namespace)
 
         fields = {}
 
-        for base in reversed(cls.mro()):
+        for base in reversed(self.mro()):
             fields.update(get_type_hints(base))
 
-        cls._fields_ = list(fields.items())
+        set_attribute(self, FIELDS, list(fields.items()))
 
-        return cls  # type: ignore
-
-
-class Structure(ctypes.Structure, metaclass=StructureMeta):
-    """Structure that has ability to populate its fields with annotations."""
-
-    pass
+        return self
 
 
-class Union(ctypes.Union, metaclass=UnionMeta):
-    """Union that has ability to populate its fields with annotations."""
-
-    pass
+CU = TypeVar("CU", bound=UnionType)
 
 
-def extern_fn(function_pointer: Any) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+class Structure(CStructure, metaclass=StructureType):
+    """Represents structures that have ability to populate their fields with annotations."""
+
+
+class Union(CUnion, metaclass=UnionType):
+    """Represents unions that have ability to populate their fields with annotations."""
+
+
+RETURN = "return"
+
+ARGUMENT_TYPES = "argtypes"
+RETURN_TYPE = "restype"
+
+
+def external(function_pointer: Any) -> DecoratorIdentity[Callable[..., Any]]:
     def wrap(function: Callable[..., Any]) -> Callable[..., Any]:
         annotations = get_type_hints(function)
 
-        return_type = annotations.pop("return", None)
+        return_type = annotations.pop(RETURN, None)
 
         if return_type:
-            function_pointer.restype = return_type
+            set_attribute(function_pointer, RETURN_TYPE, return_type)
 
         argument_types = list(annotations.values())
 
         if argument_types:
-            function_pointer.argtypes = argument_types
+            set_attribute(function_pointer, ARGUMENT_TYPES, return_type)
 
-        @functools.wraps(function)
+        @wraps(function)
         def handle_call(*args: Any) -> Any:
             return function_pointer(*args)
 
