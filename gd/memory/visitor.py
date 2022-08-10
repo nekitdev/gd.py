@@ -1,12 +1,16 @@
 from abc import abstractmethod
+from builtins import getattr as get_attribute
+from builtins import hasattr as has_attribute
+from builtins import issubclass as is_subclass
+from builtins import setattr as set_attribute
 from functools import wraps
-from typing import Type, TypeVar
+from typing import Any, Type, TypeVar, get_type_hints
 
 from attrs import define
 from typing_extensions import Protocol, runtime_checkable
 
 from gd.memory.context import Context
-from gd.memory.field import Field, MutField
+from gd.memory.field import AnyField, Field, MutField
 from gd.memory.markers import (
     Array,
     DynamicFill,
@@ -24,9 +28,10 @@ from gd.memory.markers import (
     uintptr_t,
 )
 from gd.memory.memory import Memory
-from gd.memory.memory_arrays import MemoryArray, MemoryMutArray
-from gd.memory.memory_base import MemoryStruct, MemoryUnion
+from gd.memory.memory_arrays import MemoryAbstractArray, MemoryArray, MemoryMutArray
+from gd.memory.memory_base import MemoryAbstract, MemoryStruct, MemoryUnion
 from gd.memory.memory_pointers_refs import (
+    MemoryAbstractPointer,
     MemoryMutPointer,
     MemoryMutRef,
     MemoryPointer,
@@ -37,7 +42,7 @@ from gd.memory.state import AbstractState
 from gd.memory.traits import Layout, Read, ReadWrite, Write, is_layout
 from gd.memory.utils import set_name
 from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
-from gd.typing import Binary, Namespace, get_name
+from gd.typing import Binary, Namespace, StringDict, get_name
 
 __all__ = ("Visitable", "AnyVisitable", "Visitor")
 
@@ -112,6 +117,9 @@ def visitor_cache(visit: Binary[V, Visitable[V], T]) -> Binary[V, Visitable[V], 
         return VISITOR_CACHE[visitor_cache_key]
 
     return visit_function
+
+
+INFINITE_SIZE = "infinite size detected while resolving recursive `this`"
 
 
 @define()
@@ -342,39 +350,37 @@ class Visitor:
 
         return struct
 
-    def resolve_recursion(self, fields: Dict[str, Field], this: Type[MemoryBase]) -> None:
+    def resolve_recursion(self, fields: StringDict[AnyField], this: Type[MemoryAbstract]) -> None:
         for field in fields.values():
             self.resolve_recursion_type(field.type, this)
 
     def resolve_recursion_type(
-        self, type: Type[Layout], this: Type[MemoryBase], in_pointer: bool = False
+        self, type: Type[Memory], this: Type[MemoryAbstract], in_pointer: bool = False
     ) -> None:
-        if issubclass(type, MemoryThis):
-            # reaching here implies we are directly having this -> infinite size
+        if is_subclass(type, MemoryThis):
+            # reaching here implies we are directly having this => infinite size
 
-            raise TypeError("Infinite size detected while recursively resolving this.")
+            raise TypeError(INFINITE_SIZE)
 
-        if issubclass(type, MemoryBaseArray):
+        if is_subclass(type, MemoryAbstractArray):
             self.resolve_recursion_array(type, this, in_pointer=in_pointer)
 
-        if issubclass(type, MemoryBasePointer):
+        if is_subclass(type, MemoryAbstractPointer):
             self.resolve_recursion_pointer(type, this)
 
-        # we do not really care about anything else
-
     def resolve_recursion_array(
-        self, array: Type[MemoryBaseArray], this: Type[MemoryBase], in_pointer: bool
+        self, array: Type[MemoryAbstractArray[Any]], this: Type[MemoryAbstract], in_pointer: bool
     ) -> None:
-        if issubclass(array.type, MemoryThis):
+        if is_subclass(array.type, MemoryThis):
             if in_pointer:
                 array._type = this  # perhaps there might be some better way?
 
         self.resolve_recursion_type(array.type, this, in_pointer=in_pointer)  # pass in_pointer
 
     def resolve_recursion_pointer(
-        self, pointer: Type[MemoryBasePointer], this: Type[MemoryBase]
+        self, pointer: Type[MemoryAbstractPointer[Any]], this: Type[MemoryAbstract]
     ) -> None:
-        if issubclass(pointer.type, MemoryThis):
+        if is_subclass(pointer.type, MemoryThis):
             pointer._type = this  # there might be some better way, I suppose
 
         self.resolve_recursion_type(pointer.type, this, in_pointer=True)  # in_pointer -> true
@@ -382,7 +388,7 @@ class Visitor:
     def visit_union(self, marker_union: Type[Union]) -> Type[MemoryUnion]:
         # initialize variables needed to get fields and size
 
-        fields: Dict[str, Field] = {}
+        fields: StringDict[AnyField] = {}
 
         alignment = 0
         size = 0
@@ -392,20 +398,20 @@ class Visitor:
         annotations = {}
 
         for base in marker_union.mro():
-            annotations.update(getattr(base, ANNOTATIONS, {}))
+            annotations.update(get_attribute(base, ANNOTATIONS, {}))
 
         class annotation_holder:
             pass
 
-        setattr(annotation_holder, ANNOTATIONS, annotations)
+        set_attribute(annotation_holder, ANNOTATIONS, annotations)
 
         # iterate through annotations
 
-        for name, annotation in get_type_hints(annotation_holder).items():
+        for name, type_hint in get_type_hints(annotation_holder).items():
             try:
-                field: Field[Any] = self.create_field(self.visit_any(annotation))  # type: ignore
+                field = self.create_mut_field(self.visit(type_hint))
 
-            except InvalidMemoryType:
+            except AttributeError:
                 continue
 
             fields[name] = field
@@ -446,62 +452,26 @@ class Visitor:
         return union
 
     def visit_pointer(self, marker_pointer: Type[Pointer]) -> Type[MemoryPointer[T]]:
-        type = self.visit_any(marker_pointer.type)
-
-        types = self.context.types
-
-        pointer_type = types.intptr_t if marker_pointer.signed else types.uintptr_t  # type: ignore
-
-        @no_type_check
-        class pointer(  # type: ignore
-            # merge marker pointer with memory pointer
+        class pointer(
             MemoryPointer,
-            marker_pointer,  # type: ignore
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryPointer, marker_pointer, name=POINTER_TYPE
-            ),
-            # set derive to false
-            derive=False,
-            # other arguments
-            type=type,
-            pointer_type=pointer_type,
-            bits=self.context.bits,
-            platform=self.context.platform,
-        ):
-            pass
+            type=self.visit(marker_pointer.type),
+            pointer_type=self.visit_simple(uintptr_t),
+            config=self.config,
+        )
 
-        pointer.__qualname__ = pointer.__name__ = marker_pointer.__name__
+        set_name(pointer, get_name(marker_pointer))
 
         return pointer
 
     def visit_mut_pointer(self, marker_mut_pointer: Type[MutPointer]) -> Type[MemoryMutPointer[T]]:
-        type = self.visit_any(marker_mut_pointer.type)
-
-        types = self.context.types
-
-        pointer_type = (
-            types.intptr_t if marker_mut_pointer.signed else types.uintptr_t  # type: ignore
+        class mut_pointer(
+            MemoryMutPointer,
+            type=self.visit(marker_mut_pointer.type),
+            pointer_type=self.visit_simple(uintptr_t),
+            config=self.config,
         )
 
-        @no_type_check
-        class mut_pointer(  # type: ignore
-            # merge marker mutable pointer with memory mutable pointer
-            MemoryMutPointer,
-            marker_mut_pointer,  # type: ignore
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryMutPointer, marker_mut_pointer, name=MUT_POINTER_TYPE
-            ),
-            # set derive to false
-            derive=False,
-            # other arguments
-            type=type,
-            pointer_type=pointer_type,
-            bits=self.context.bits,
-            platform=self.context.platform,
-        ):
-            pass
-
-        mut_pointer.__qualname__ = mut_pointer.__name__ = marker_mut_pointer.__name__
+        set_name(mut_pointer, get_name(marker_mut_pointer))
 
         return mut_pointer
 

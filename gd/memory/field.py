@@ -1,11 +1,11 @@
 from typing import Any, Generic, Optional, Type, TypeVar, Union, overload
 
-from attrs import define, field
+from attrs import define, field, frozen
 
 from gd.memory.memory import Memory
 from gd.memory.traits import Layout, Read, ReadWrite
 
-__all__ = ("Field", "MutField")
+__all__ = ("Field", "MutField", "FieldMarker", "MutFieldMarker", "field", "mut_field")
 
 L = TypeVar("L", bound=Layout)
 T = TypeVar("T")
@@ -88,3 +88,21 @@ AnyField = Field[Any]
 class MutField(Field[T], AbstractField[ReadWrite[T]]):
     def __set__(self, instance: M, value: T) -> None:
         self.type.write_value_to(value, instance.state, instance.address + self.offset)
+
+
+@frozen()
+class FieldMarker:
+    pass
+
+
+def field() -> FieldMarker:
+    return FieldMarker()
+
+
+@frozen()
+class MutFieldMarker(FieldMarker):
+    pass
+
+
+def mut_field() -> MutFieldMarker:
+    return MutFieldMarker()
