@@ -6,6 +6,7 @@ from typing import Type, TypeVar
 
 from attrs import frozen
 
+from gd.binary_utils import BITS
 from gd.enums import Platform
 from gd.string import String
 from gd.string_utils import case_fold
@@ -27,7 +28,7 @@ __all__ = (
 
 USIZE = "N"
 
-SYSTEM_BITS = size(USIZE)
+SYSTEM_BITS = size(USIZE) * BITS
 
 SEPARATOR = "_x"
 

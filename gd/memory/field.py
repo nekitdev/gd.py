@@ -16,7 +16,7 @@ FROZEN_FIELD = "this field is frozen"
 @define()
 class AbstractField(Generic[L]):
     _type: Type[L] = field()
-    _offset: int = field()
+    _offset: int = field(default=0)
     _frozen: bool = field(default=False, init=False)
 
     def get_type(self) -> Type[L]:
@@ -58,7 +58,7 @@ CAN_NOT_SET_IMMUTABLE = "can not set an immutable field"
 CAN_NOT_DELETE_FIELDS = "can not delete fields"
 
 
-class Field(AbstractField[Read[T]]):
+class Field(Generic[T], AbstractField[Read[T]]):
     @overload
     def __get__(self: F, instance: None, type: Optional[Type[M]] = ...) -> F:
         ...

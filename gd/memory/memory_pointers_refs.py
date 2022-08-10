@@ -1,109 +1,82 @@
-# DOCUMENT
+from typing import TYPE_CHECKING, Any, Generic, Type, TypeVar
 
 from gd.memory.memory import Memory, MemoryType
-from gd.memory.traits import Layout, ReadLayout, ReadWriteLayout
-from gd.memory.utils import class_property
-from gd.platform import Platform, system_bits, system_platform
-from gd.text_utils import nice_repr
-from gd.typing import TYPE_CHECKING, Any, Dict, Generic, Optional, Tuple, Type, TypeVar, Union
+from gd.memory.memory_special import MemoryVoid
+from gd.memory.traits import Layout, Read, ReadWrite
+from gd.memory.types import uintptr
+from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
+from gd.typing import AnyType, DynamicTuple, Namespace
 
 if TYPE_CHECKING:
-    from gd.memory.state import BaseState  # noqa
+    from gd.memory.state import AbstractState
 
-__all__ = ("MemoryPointer", "MemoryMutPointer", "MemoryRef", "MemoryMutRef")
+__all__ = ("MemoryAbstractPointerType", "MemoryAbstractPointer", "MemoryPointer", "MemoryMutPointer", "MemoryRef", "MemoryMutRef")
 
-L = TypeVar("L", bound=Layout)
-T = TypeVar("T")
-
-
-class NullPointerError(RuntimeError):
-    pass
+MAPT = TypeVar("MAPT", bound="MemoryAbstractPointerType")
 
 
-class MemoryPointerType(MemoryType):
+class MemoryAbstractPointerType(MemoryType):
     _type: Type[Layout]
-    _pointer_type: Type[ReadWriteLayout[int]]
+    _pointer_type: Type[ReadWrite[int]]
 
     def __new__(
-        meta_cls,
-        cls_name: str,
-        bases: Tuple[Type[Any], ...],
-        cls_dict: Dict[str, Any],
-        type: Optional[Type[Layout]] = None,
-        pointer_type: Optional[Type[ReadWriteLayout[int]]] = None,
-        bits: int = system_bits,
-        platform: Union[int, str, Platform] = system_platform,
-        **kwargs,
-    ) -> "MemoryPointerType":
-        cls = super().__new__(
-            meta_cls, cls_name, bases, cls_dict, bits=bits, platform=platform, **kwargs
-        )
+        cls: Type[MAPT],
+        name: str,
+        bases: DynamicTuple[AnyType],
+        namespace: Namespace,
+        type: Type[Layout] = MemoryVoid,
+        pointer_type: Type[ReadWrite[int]] = uintptr,
+        config: PlatformConfig = SYSTEM_PLATFORM_CONFIG,
+        **keywords: Any,
+    ) -> MAPT:
+        self = super().__new__(cls, name, bases, namespace, config=config)
 
-        if type is not None:
-            cls._type = type  # type: ignore
+        self._type = type
 
-        if pointer_type is not None:
-            cls._pointer_type = pointer_type  # type: ignore
+        self._pointer_type = pointer_type
 
-        return cls  # type: ignore
+        return self
 
     @property
-    def pointer_type(cls) -> Type[ReadWriteLayout[int]]:
-        return cls._pointer_type
-
-    @property
-    def type(cls) -> Type[Layout]:
-        return cls._type
-
-    @property
-    def size(cls) -> int:
-        return cls.pointer_type.size
-
-    @property
-    def alignment(cls) -> int:
-        return cls.pointer_type.alignment
-
-
-PointerT = TypeVar("PointerT", bound="MemoryPointer")
-PointerU = TypeVar("PointerU", bound="MemoryPointer")
-
-
-class MemoryBasePointer(Generic[L], Memory, metaclass=MemoryPointerType):
-    _type: Type[L]
-    _pointer_type: Type[ReadWriteLayout[int]]
-
-    @class_property
-    def pointer_type(self) -> Type[ReadWriteLayout[int]]:
+    def pointer_type(self) -> Type[ReadWrite[int]]:
         return self._pointer_type
 
-    @class_property
-    def type(self) -> Type[L]:
+    @property
+    def type(self) -> Type[Layout]:
         return self._type
 
-    @class_property
+    @property
     def size(self) -> int:
         return self.pointer_type.size
 
-    @class_property
+    @property
     def alignment(self) -> int:
         return self.pointer_type.alignment
 
-    def write_to(self, state: "BaseState", address: int) -> None:
-        ...
+
+PT = TypeVar("PT", bound="MemoryAbstractPointer")
+PU = TypeVar("PU", bound="MemoryAbstractPointer")
+
+L = TypeVar("L", bound=Layout)
 
 
-class MemoryPointer(MemoryBasePointer[ReadLayout[T]]):
-    _type: Type[ReadLayout[T]]
+class MemoryAbstractPointer(Generic[L], Memory, metaclass=MemoryAbstractPointerType):
+    _type: Type[L]
+    _pointer_type: Type[ReadWrite[int]]
 
-    @class_property
-    def type(self) -> Type[ReadLayout[T]]:  # type: ignore
+    @property
+    def pointer_type(self) -> Type[ReadWrite[int]]:
+        return self._pointer_type
+
+    @property
+    def type(self) -> Type[L]:
         return self._type
 
-    def __repr__(self) -> str:
-        info = {"type": self.type, "pointer_type": self.pointer_type}
 
-        return nice_repr(self, info)
+T = TypeVar("T")
 
+
+class MemoryPointer(MemoryAbstractPointer[Read[T]]):
     def __int__(self) -> int:
         return self.address
 

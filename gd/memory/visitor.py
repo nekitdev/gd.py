@@ -1,14 +1,13 @@
-# DOCUMENT + FINISH
-
 from abc import abstractmethod
 from functools import wraps
+from typing import Type, TypeVar
 
 from attrs import define
 from typing_extensions import Protocol, runtime_checkable
 
 from gd.memory.context import Context
 from gd.memory.field import Field, MutField
-from gd.memory.marker import (
+from gd.memory.markers import (
     Array,
     DynamicFill,
     MutArray,
@@ -24,10 +23,10 @@ from gd.memory.marker import (
     fill,
     uintptr_t,
 )
-from gd.memory.memory_array import MemoryArray, MemoryBaseArray, MemoryMutArray
-from gd.memory.memory_base import MemoryBase, MemoryStruct, MemoryUnion
-from gd.memory.memory_pointer_ref import (
-    MemoryBasePointer,
+from gd.memory.memory import Memory
+from gd.memory.memory_arrays import MemoryArray, MemoryMutArray
+from gd.memory.memory_base import MemoryStruct, MemoryUnion
+from gd.memory.memory_pointers_refs import (
     MemoryMutPointer,
     MemoryMutRef,
     MemoryPointer,
@@ -35,16 +34,12 @@ from gd.memory.memory_pointer_ref import (
 )
 from gd.memory.memory_special import MemoryThis, MemoryVoid
 from gd.memory.state import AbstractState
-from gd.memory.traits import Layout, Read, ReadLayout, ReadWriteLayout, Write, is_class, is_layout
-from gd.platform import Platform, platform_to_string, system_bits, system_platform
-from gd.typing import TYPE_CHECKING, Any, Binary, Callable, Dict, List, Named, Tuple, Type, TypeVar, get_name
-from gd.typing import Union as TypeUnion
-from gd.typing import cast, get_type_hints, no_type_check, overload
+from gd.memory.traits import Layout, Read, ReadWrite, Write, is_layout
+from gd.memory.utils import set_name
+from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
+from gd.typing import Binary, Namespace, get_name
 
-if TYPE_CHECKING:
-    from gd.memory.state import BaseState  # noqa
-
-__all__ = ("Visitor",)
+__all__ = ("Visitable", "AnyVisitable", "Visitor")
 
 
 VS = TypeVar("VS", bound="Visitor", contravariant=True)
@@ -52,8 +47,9 @@ VS = TypeVar("VS", bound="Visitor", contravariant=True)
 
 @runtime_checkable
 class Visitable(Protocol[VS]):
+    @classmethod
     @abstractmethod
-    def accept(self, visitor: VS) -> Type[Layout]:
+    def accept(cls, visitor: VS) -> Type[Layout]:
         ...
 
 
@@ -94,7 +90,7 @@ class InvalidMemoryType(TypeError):
     pass
 
 
-VISITOR_CACHE: Dict[str, Any] = {}
+VISITOR_CACHE: Namespace = {}
 VISITOR_CACHE_KEY = "{}@{:x}[{}]"
 
 
@@ -105,9 +101,9 @@ def visitor_cache(visit: Binary[V, Visitable[V], T]) -> Binary[V, Visitable[V], 
     @wraps(visit)
     def visit_function(visitor: V, some: Visitable[V]) -> T:
         visitor_cache_key = VISITOR_CACHE_KEY.format(
-            get_name(some),
+            get_name(type(some)),
             id(some),
-            visitor.context.config,
+            visitor.config,
         )
 
         if visitor_cache_key not in VISITOR_CACHE:
@@ -122,33 +118,35 @@ def visitor_cache(visit: Binary[V, Visitable[V], T]) -> Binary[V, Visitable[V], 
 class Visitor:
     context: Context
 
+    @property
+    def config(self) -> PlatformConfig:
+        return self.context.config
+
     @classmethod
     def bound(cls: Type[V], state: AbstractState) -> V:
         return cls(Context.bound(state))
 
     def create_field(self, some: Type[Read[T]]) -> Field[T]:
-        ...
+        return Field(some)
 
     def create_mut_field(self, some: Type[ReadWrite[T]]) -> MutField[T]:
-        ...
+        return MutField(some)
 
     @visitor_cache
     def visit(self: V, visitable: Visitable[V]) -> Type[Layout]:
         return visitable.accept(self)
 
-    def visit_dynamic_fill(self, dynamic_fill: Type[DynamicFill]) -> Type[Layout]:
-        return self.visit_array(fill(dynamic_fill.fill.get(self.context.config, 0)))
+    def visit_dynamic_fill(self, dynamic_fill: Type[DynamicFill]) -> Type[MemoryArray]:
+        return self.visit_array(fill(dynamic_fill.fills.get(self.config, 0)))
 
     def visit_struct(self, marker_struct: Type[Struct]) -> Type[MemoryStruct]:
         # get all bases via resolving the MRO
 
-        bases = getattr(marker_struct, MRO)
+        bases = marker_struct.mro()
 
         # get direct (main) base
 
-        direct_bases = getattr(marker_struct, BASES)
-
-        direct_base, *_ = direct_bases
+        direct_base, *_ = bases
 
         # if struct has inherited annotations, and does not define any on its own, reset
 
@@ -393,7 +391,7 @@ class Visitor:
 
         annotations = {}
 
-        for base in getattr(marker_union, MRO):
+        for base in marker_union.mro():
             annotations.update(getattr(base, ANNOTATIONS, {}))
 
         class annotation_holder:
@@ -508,156 +506,74 @@ class Visitor:
         return mut_pointer
 
     def visit_ref(self, marker_ref: Type[Ref]) -> Type[MemoryRef[T]]:
-        type = self.visit_any(marker_ref.type)
-
-        types = self.context.types
-
-        pointer_type = types.intptr_t if marker_ref.signed else types.uintptr_t  # type: ignore
-
-        @no_type_check
-        class ref(  # type: ignore
-            # merge marker reference with memory reference
+        class ref(
             MemoryRef,
-            marker_ref,  # type: ignore
-            metaclass=merge_metaclass(MemoryRef, marker_ref, name=REF_TYPE),  # type: ignore
-            # set derive to false
-            derive=False,
-            # other arguments
-            type=type,
-            pointer_type=pointer_type,
-            bits=self.context.bits,
-            platform=self.context.platform,
+            type=self.visit(marker_ref.type),
+            pointer_type=self.visit_simple(uintptr_t),
+            config=self.config,
         ):
             pass
 
-        ref.__qualname__ = ref.__name__ = marker_ref.__name__
+        set_name(ref, get_name(marker_ref))
 
         return ref
 
     def visit_mut_ref(self, marker_mut_ref: Type[MutRef]) -> Type[MemoryMutRef[T]]:
-        type = self.visit_any(marker_mut_ref.type)
-
-        types = self.context.types
-
-        pointer_type = types.intptr_t if marker_mut_ref.signed else types.uintptr_t  # type: ignore
-
-        @no_type_check
-        class mut_ref(  # type: ignore
-            # merge marker mutable reference with memory mutable reference
+        class mut_ref(
             MemoryMutRef,
-            marker_mut_ref,  # type: ignore
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryMutRef, marker_mut_ref, name=MUT_REF_TYPE
-            ),
-            # set derive to false
-            derive=False,
-            # other arguments
-            type=type,
-            pointer_type=pointer_type,
-            bits=self.context.bits,
-            platform=self.context.platform,
+            type=self.visit(marker_mut_ref.type),
+            pointer_type=self.visit_simple(uintptr_t),
+            config=self.config,
         ):
             pass
 
-        mut_ref.__qualname__ = mut_ref.__name__ = marker_mut_ref.__name__
+        set_name(mut_ref, get_name(marker_mut_ref))
 
         return mut_ref
 
     def visit_array(self, marker_array: Type[Array]) -> Type[MemoryArray[T]]:
-        type = self.visit_any(marker_array.type)
-
-        @no_type_check
-        class array(  # type: ignore
-            # merge marker array with memory array
+        class array(
             MemoryArray,
-            marker_array,  # type: ignore
-            metaclass=merge_metaclass(MemoryArray, marker_array, name=ARRAY_TYPE),  # type: ignore
-            # set derive to false
-            derive=False,
-            # other arguments
-            type=type,
+            type=self.visit(marker_array.type),
             length=marker_array.length,
-            bits=self.context.bits,
-            platform=self.context.platform,
+            config=self.config,
         ):
             pass
 
-        array.__qualname__ = array.__name__ = marker_array.__name__
+        set_name(array, get_name(marker_array))
 
         return array
 
     def visit_mut_array(self, marker_mut_array: Type[MutArray]) -> Type[MemoryMutArray[T]]:
-        type = self.visit_any(marker_mut_array.type)
-
-        @no_type_check
-        class mut_array(  # type: ignore
-            # merge marker mutable array with memory mutable array
+        class mut_array(
             MemoryMutArray,
-            marker_mut_array,  # type: ignore
-            metaclass=merge_metaclass(  # type: ignore
-                MemoryMutArray, marker_mut_array, name=MUT_ARRAY_TYPE
-            ),
-            # set derive to false
-            derive=False,
-            # other arguments
-            type=type,
+            type=self.visit(marker_mut_array.type),
             length=marker_mut_array.length,
-            bits=self.context.bits,
-            platform=self.context.platform,
+            config=self.config,
         ):
             pass
 
-        mut_array.__qualname__ = mut_array.__name__ = marker_mut_array.__name__
+        set_name(mut_array, get_name(marker_mut_array))
 
         return mut_array
 
     def visit_void(self, marker_void: Type[Void]) -> Type[MemoryVoid]:
-        @no_type_check
-        class void(  # type: ignore
-            # merge marker void with memory void
-            MemoryVoid,
-            marker_void,  # type: ignore
-            metaclass=merge_metaclass(MemoryVoid, marker_void, name=VOID_TYPE),  # type: ignore
-            # set derive to false, and special to true
-            derive=False,
-            special=True,
-            # other arguments
-            bits=self.context.bits,
-            platform=self.context.platform,
-        ):
+        class void(MemoryVoid, config=self.config):
             pass
 
-        void.__qualname__ = void.__name__ = marker_void.__name__
+        set_name(void, get_name(marker_void))
 
         return void
 
-    def visit_this(self, marker_this: Type[Void]) -> Type[MemoryThis]:
-        @no_type_check
-        class this(  # type: ignore
-            # merge marker this with memory this
-            MemoryThis,
-            marker_this,  # type: ignore
-            metaclass=merge_metaclass(MemoryThis, marker_this, name=THIS_TYPE),  # type: ignore
-            # set derive to false, and special to true
-            derive=False,
-            special=True,
-            # other arguments
-            bits=self.context.bits,
-            platform=self.context.platform,
-        ):
+    def visit_this(self, marker_this: Type[This]) -> Type[MemoryThis]:
+        class this(MemoryThis, config=self.config):
             pass
 
-        this.__qualname__ = this.__name__ = marker_this.__name__
+        set_name(this, get_name(marker_this))
 
         return this
 
-    def visit_read_sized(self, type: Type[ReadLayout[T]]) -> Type[ReadLayout[T]]:
-        return type
-
-    def visit_read_write_sized(self, type: Type[ReadWriteLayout[T]]) -> Type[ReadWriteLayout[T]]:
-        return type
-
-    def visit_simple_marker(self, marker: Type[SimpleMarker]) -> Type[Layout]:
+    def visit_simple(self, marker: Type[SimpleMarker]) -> Type[Memory]:
         return self.visit(self.context.get(marker.name))
 
 

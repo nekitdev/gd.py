@@ -1,6 +1,6 @@
 from typing_extensions import TypeAlias
 
-from gd.memory.marker import (
+from gd.memory.markers import (
     Struct,
     bool_t,
     float_t,

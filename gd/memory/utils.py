@@ -5,26 +5,18 @@ from ctypes import Structure as CStructure
 from ctypes import Union as CUnion
 from functools import wraps
 from math import ceil, log2
-from typing import Any, Callable, Optional, Type, TypeVar, get_type_hints
+from typing import Any, Callable, Type, TypeVar, get_type_hints
 
 from gd.binary_utils import BITS
-from gd.typing import AnyType, Binary, DecoratorIdentity, DynamicTuple, Namespace, Unary
+from gd.typing import AnyType, DecoratorIdentity, DynamicTuple, Namespace
 
 __all__ = (
-    "Structure", "Union", "bits", "closest_power_of_two", "closest_power_of_two_bits", "external"
+    "Structure", "Union", "bits", "closest_power_of_two", "closest_power_of_two_bits", "external", "set_name"
 )
 
 
-S = TypeVar("S")
-T = TypeVar("T")
-
-
-def class_property(
-    get_function: Optional[Unary[S, T]] = None,
-    set_function: Optional[Binary[S, T, None]] = None,
-    delete_function: Optional[Unary[S, None]] = None,
-) -> T:
-    return property(get_function, set_function, delete_function)  # type: ignore
+def set_name(item: Any, name: str) -> None:
+    item.__qualname__ = item.__name__ = name
 
 
 def bits(size: int) -> int:

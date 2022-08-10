@@ -19,6 +19,7 @@ __all__ = (
     "NothingFound",
     "DataError",
     "EditorError",
+    "NullPointerError",
 )
 
 T = TypeVar("T")
@@ -176,4 +177,8 @@ class EditorError(DataError):
 
 
 class InternalError(GDError):
+    pass
+
+
+class NullPointerError(GDError):
     pass

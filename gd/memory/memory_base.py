@@ -1,64 +1,59 @@
-# DOCUMENT
+from typing import Any, Optional, Type, TypeVar
 
-from gd.memory.field import Field
+from gd.memory.field import AnyField
 from gd.memory.memory import Memory, MemoryType
-from gd.memory.utils import class_property
-from gd.platform import Platform, system_bits, system_platform
-from gd.typing import Any, Dict, Optional, Tuple, Type, Union
+from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
+from gd.typing import AnyType, DynamicTuple, Namespace, StringDict
 
-__all__ = ("MemoryBaseType", "MemoryBase", "MemoryStruct", "MemoryUnion")
+__all__ = ("MemoryAbstractType", "MemoryAbstract", "MemoryStruct", "MemoryUnion")
+
+MAT = TypeVar("MAT", bound="MemoryAbstractType")
 
 
-class MemoryBaseType(MemoryType):
-    _fields: Dict[str, Field]
+class MemoryAbstractType(MemoryType):
+    _fields: StringDict[AnyField]
 
     def __new__(
-        meta_cls,
-        cls_name: str,
-        bases: Tuple[Type[Any], ...],
-        cls_dict: Dict[str, Any],
+        cls: Type[MAT],
+        name: str,
+        bases: DynamicTuple[AnyType],
+        namespace: Namespace,
         size: int = 0,
         alignment: int = 0,
-        fields: Optional[Dict[str, Field]] = None,
-        bits: int = system_bits,
-        platform: Union[int, str, Platform] = system_platform,
-        **kwargs,
-    ) -> "MemoryBaseType":
-        cls = super().__new__(
-            meta_cls,
-            cls_name,
+        fields: Optional[StringDict[AnyField]] = None,
+        config: PlatformConfig = SYSTEM_PLATFORM_CONFIG,
+        **keywords: Any,
+    ) -> MAT:
+        self = super().__new__(
+            cls,
+            name,
             bases,
-            cls_dict,
+            namespace,
             size=size,
             alignment=alignment,
-            bits=bits,
-            platform=platform,
-            **kwargs,
+            config=config,
+            **keywords,
         )
 
         if fields is None:
             fields = {}
 
-        cls._fields = fields  # type: ignore
+        self._fields = fields
 
-        return cls  # type: ignore
+        return self
 
     @property
-    def fields(cls) -> Dict[str, Field]:
+    def fields(cls) -> StringDict[AnyField]:
         return cls._fields
 
 
-class MemoryBase(Memory, metaclass=MemoryBaseType):
-    _fields: Dict[str, Field]
-
-    @class_property
-    def fields(self) -> Dict[str, Field]:
-        return self._fields
-
-
-class MemoryStruct(MemoryBase):
+class MemoryAbstract(Memory, metaclass=MemoryAbstractType):
     pass
 
 
-class MemoryUnion(MemoryBase):
+class MemoryStruct(MemoryAbstract):
+    pass
+
+
+class MemoryUnion(MemoryAbstract):
     pass

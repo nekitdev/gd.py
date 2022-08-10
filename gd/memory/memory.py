@@ -1,16 +1,18 @@
-# DOCUMENT
+from __future__ import annotations
 
-from gd.memory.utils import class_property
-from gd.platform import SYSTEM_PLATFORM_CONFIG, Platform, PlatformConfig, system_bits, system_platform
-from gd.text_utils import nice_repr
-from gd.typing import TYPE_CHECKING, Any, Dict, Generic, Tuple, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Generic, Type, TypeVar
+
+from attrs import define, field
+
+from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
+from gd.typing import AnyType, DynamicTuple, Namespace
 
 if TYPE_CHECKING:
-    from gd.memory.state import BaseState  # noqa
+    from gd.memory.state import AbstractState
 
 __all__ = ("MemoryType", "Memory")
 
-M = TypeVar("M", bound="Memory")
+MT = TypeVar("MT", bound="MemoryType")
 
 
 class MemoryType(type(Generic)):  # type: ignore
@@ -19,85 +21,49 @@ class MemoryType(type(Generic)):  # type: ignore
     _alignment: int
 
     def __new__(
-        meta_cls,
-        cls_name: str,
-        bases: Tuple[Type[Any], ...],
-        cls_dict: Dict[str, Any],
+        cls: Type[MT],
+        name: str,
+        bases: DynamicTuple[AnyType],
+        namespace: Namespace,
         size: int = 0,
         alignment: int = 0,
         config: PlatformConfig = SYSTEM_PLATFORM_CONFIG,
         **keywords: Any,
-    ) -> "MemoryType":
-        cls = super().__new__(meta_cls, cls_name, bases, cls_dict, **kwargs)
+    ) -> MT:
+        self = super().__new__(cls, name, bases, namespace, **keywords)
 
-        cls._size = size  # type: ignore
-        cls._alignment = alignment  # type: ignore
+        self._size = size
+        self._alignment = alignment or size
 
-        cls._bits = bits  # type: ignore
-        cls._platform = Platform.from_value(platform)  # type: ignore
+        self._config = config
 
-        return cls  # type: ignore
-
-    @property
-    def size(cls) -> int:
-        return cls._size
+        return self
 
     @property
-    def alignment(cls) -> int:
-        return cls._alignment
-
-    @property
-    def bits(cls) -> int:
-        return cls._bits
-
-    @property
-    def platform(cls) -> Platform:
-        return cls._platform
-
-
-class Memory(metaclass=MemoryType):
-    _bits: int
-    _platform: Platform
-    _size: int
-    _alignment: int
-
-    def __init__(self, state: "BaseState", address: int) -> None:
-        self._state = state
-        self._address = address
-
-    def __repr__(self) -> str:
-        info = {"address": hex(self.address), "state": self.state}
-
-        return nice_repr(self, info)
-
-    @class_property
     def size(self) -> int:
         return self._size
 
-    @class_property
+    @property
     def alignment(self) -> int:
         return self._alignment
 
-    @class_property
-    def bits(self) -> int:
-        return self._bits
-
-    @class_property
-    def platform(self) -> Platform:
-        return self._platform
-
     @property
-    def state(self) -> "BaseState":
-        return self._state
+    def config(self) -> PlatformConfig:
+        return self._config
 
-    @property
-    def address(self) -> int:
-        return self._address
+
+M = TypeVar("M", bound="Memory")
+
+
+@define()
+class Memory(metaclass=MemoryType):
+    state: AbstractState = field()
+    address: int = field(repr=hex)
 
     @classmethod
-    def read_from(cls: Type[M], state: "BaseState", address: int) -> M:
+    def read_from(cls: Type[M], state: AbstractState, address: int) -> M:
         return cls(state, address)
 
     @classmethod
-    def read_value_from(cls: Type[M], state: "BaseState", address: int) -> M:
+    def read_value_from(cls: Type[M], state: AbstractState, address: int) -> M:
         return cls(state, address)

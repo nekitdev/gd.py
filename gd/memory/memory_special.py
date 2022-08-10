@@ -1,35 +1,35 @@
-# DOCUMENT
+from typing import Any, Type, TypeVar
 
 from gd.memory.memory import Memory, MemoryType
-from gd.platform import Platform, system_bits, system_platform
-from gd.typing import Any, Dict, Tuple, Type, Union
+from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
+from gd.typing import AnyType, DynamicTuple, Namespace
 
 __all__ = ("SPECIAL_SIZE", "MemorySpecialType", "MemorySpecial", "MemoryThis", "MemoryVoid")
 
 SPECIAL_SIZE = 0
 SPECIAL_ALIGNMENT = 0
 
+MST = TypeVar("MST", bound="MemorySpecialType")
+
 
 class MemorySpecialType(MemoryType):
     def __new__(
-        meta_cls,
-        cls_name: str,
-        bases: Tuple[Type[Any], ...],
-        cls_dict: Dict[str, Any],
-        bits: int = system_bits,
-        platform: Union[int, str, Platform] = system_platform,
-        **kwargs,
-    ) -> "MemorySpecialType":
+        cls: Type[MST],
+        name: str,
+        bases: DynamicTuple[AnyType],
+        namespace: Namespace,
+        config: PlatformConfig = SYSTEM_PLATFORM_CONFIG,
+        **keywords: Any,
+    ) -> MST:
         return super().__new__(
-            meta_cls,
-            cls_name,
+            cls,
+            name,
             bases,
-            cls_dict,
+            namespace,
             size=SPECIAL_SIZE,
             alignment=SPECIAL_ALIGNMENT,
-            bits=bits,
-            platform=platform,
-            **kwargs,
+            config=config,
+            **keywords,
         )
 
 

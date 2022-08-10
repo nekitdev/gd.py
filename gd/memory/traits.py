@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from builtins import hasattr as has_attribute
-from typing import TYPE_CHECKING, Any, ClassVar, Protocol, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Protocol, Type, TypeVar
 
 from typing_extensions import TypeGuard, runtime_checkable
 
@@ -17,10 +17,20 @@ __all__ = (
     "is_layout",
 )
 
+class LayoutType(type(Protocol)):
+    @property
+    @abstractmethod
+    def size(self) -> int:
+        ...
 
-class Layout(Protocol):
-    size: ClassVar[int]
-    alignment: ClassVar[int]
+    @property
+    @abstractmethod
+    def alignment(self) -> int:
+        ...
+
+
+class Layout(Protocol, metaclass=LayoutType):
+    pass
 
 
 SIZE = "size"
