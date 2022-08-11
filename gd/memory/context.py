@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Type, TypeVar
 
 from attrs import frozen
 
-from gd.memory.traits import Layout
-# from gd.memory.types import Types
+from gd.memory.data import AnyData
+from gd.memory.types import Types
 from gd.platform import (
     SYSTEM_PLATFORM_CONFIG,
     Platform,
@@ -36,9 +36,9 @@ class Context:
     def bound(cls: Type[C], state: AbstractState) -> C:
         return cls(state.config)
 
-    # @property
-    # def types(self) -> Types:
-    #     return Types(self.config)
+    @property
+    def types(self) -> Types:
+        return Types(self.config)
 
-    # def get(self, name: str) -> Type[Layout]:
-    #     return self.types.get(name)
+    def get(self, name: str) -> Type[AnyData]:
+        return self.types.get(name)

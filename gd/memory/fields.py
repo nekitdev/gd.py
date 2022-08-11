@@ -1,9 +1,11 @@
-from typing import Any, Generic, Optional, Type, TypeVar, Union, overload
+from typing import Any, Generic, Iterator, Optional, Tuple, Type, TypeVar, Union, get_type_hints, overload
 
 from attrs import define, field, frozen
 
+from gd.memory.markers import AnyMarker
 from gd.memory.memory import Memory
 from gd.memory.traits import Layout, Read, ReadWrite
+from gd.typing import AnyType, StringDict, is_instance
 
 __all__ = ("Field", "MutField", "FieldMarker", "MutFieldMarker", "field", "mut_field")
 
@@ -106,3 +108,24 @@ class MutFieldMarker(FieldMarker):
 
 def mut_field() -> MutFieldMarker:
     return MutFieldMarker()
+
+
+Fields = StringDict[Tuple[Type[AnyMarker], FieldMarker]]
+FieldsIterator = Iterator[Tuple[str, Tuple[Type[AnyMarker], FieldMarker]]]
+
+
+def fetch_fields_from(base: AnyType) -> FieldsIterator:
+    type_hints = get_type_hints(base)
+
+    for name, maybe in vars(base).items():
+        if is_instance(maybe, FieldMarker):
+            yield (name, (type_hints[name], maybe))
+
+
+def fetch_fields_iter(type: AnyType) -> FieldsIterator:
+    for base in reversed(type.mro()):
+        yield from fetch_fields_from(base)
+
+
+def fetch_fields(type: AnyType) -> Fields:
+    return dict(fetch_fields_iter(type))

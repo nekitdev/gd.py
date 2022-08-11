@@ -192,13 +192,3 @@ class old_std_string(Struct):
         string = cls(state, address)
 
         string.value = value
-
-
-@types.register_function
-def string_t(bits: int, platform: Platform) -> Type[MemoryStruct]:
-    # XXX: on later versions of std libraries the struct used is std_string
-
-    if platform is Platform.WINDOWS:
-        return std_string.create(bits, platform)
-
-    return old_std_string.create(bits, platform)

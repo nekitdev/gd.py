@@ -41,7 +41,7 @@ class DataType(type(Generic)):  # type: ignore
 
         size = compute_size(format)
 
-        self._name = name
+        self._name = name or type_name
         self._format = format
         self._size = size
         self._alignment = alignment or size

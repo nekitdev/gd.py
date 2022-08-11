@@ -1,10 +1,13 @@
-# DOCUMENT
+from typing import ClassVar, Type, TypeVar
 
-from gd.memory.data import Data
+from attrs import define
+from ..enums import Platform
+
+from gd.memory.data import AnyData, Data
 from gd.memory.traits import Layout
-from gd.platform import Platform, system_bits, system_platform
-from gd.text_utils import nice_repr
-from gd.typing import Callable, Dict, Type, TypeVar
+from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM_CONFIG, PlatformConfig
+from gd.string_utils import tick
+from gd.typing import DecoratorIdentity, StringDict, Unary, get_name
 
 __all__ = (
     "Types",
@@ -37,404 +40,359 @@ __all__ = (
     "uintptr",
     "intsize",
     "uintsize",
-    "get_c_int_type",
-    "get_c_uint_type",
-    "get_intptr",
-    "get_uintptr",
-    "get_intsize",
-    "get_uintsize",
 )
 
 T = TypeVar("T")
 
-
-class c_byte(Data[int], name="c_byte", format="b"):
-    def __init__(self, value: int = 0) -> None:
-        self._value = value
-
-
-class c_ubyte(Data[int], name="c_ubyte", format="B"):
-    def __init__(self, value: int = 0) -> None:
-        self._value = value
-
-
-class c_short(Data[int], name="c_short", format="h"):
-    def __init__(self, value: int = 0) -> None:
-        self._value = value
+BYTE = "b"
+UBYTE = "B"
+SHORT = "h"
+USHORT = "H"
+INT = "i"
+UINT = "I"
+LONG = "l"
+ULONG = "L"
+LONGLONG = "q"
+ULONGLONG = "Q"
 
 
-class c_ushort(Data[int], name="c_ushort", format="H"):
-    def __init__(self, value: int = 0) -> None:
-        self._value = value
+class c_byte(Data[int], format=BYTE):
+    pass
 
 
-class c_int(Data[int], name="c_int", format="i"):
-    def __init__(self, value: int = 0) -> None:
-        self._value = value
+class c_ubyte(Data[int], format=UBYTE):
+    pass
 
 
-class c_uint(Data[int], name="c_uint", format="I"):
-    def __init__(self, value: int = 0) -> None:
-        self._value = value
+class c_short(Data[int], format=SHORT):
+    pass
 
 
-class c_long(Data[int], name="c_long", format="l"):
-    def __init__(self, value: int = 0) -> None:
-        self._value = value
+class c_ushort(Data[int], format=USHORT):
+    pass
 
 
-class c_ulong(Data[int], name="c_ulong", format="L"):
-    def __init__(self, value: int = 0) -> None:
-        self._value = value
+class c_int(Data[int], format=INT):
+    pass
 
 
-class c_longlong(Data[int], name="c_longlong", format="q"):
-    def __init__(self, value: int = 0) -> None:
-        self._value = value
+class c_uint(Data[int], format=UINT):
+    pass
 
 
-class c_ulonglong(Data[int], name="c_ulonglong", format="Q"):
-    def __init__(self, value: int = 0) -> None:
-        self._value = value
+class c_long(Data[int], format=LONG):
+    pass
 
 
-c_int_types = (c_byte, c_short, c_int, c_long, c_longlong)
-c_uint_types = (c_ubyte, c_ushort, c_uint, c_ulong, c_ulonglong)
+class c_ulong(Data[int], format=ULONG):
+    pass
 
 
-def get_c_int_type(bits: int) -> Type[Data[int]]:
-    for c_int_type in c_int_types:
-        if c_int_type.bits == bits:
-            return c_int_type
-
-    raise LookupError(f"Can not find C signed integer type with {bits} bits.")
+class c_longlong(Data[int], format=LONGLONG):
+    pass
 
 
-def get_c_uint_type(bits: int) -> Type[Data[int]]:
-    for c_uint_type in c_uint_types:
-        if c_uint_type.bits == bits:
-            return c_uint_type
+class c_ulonglong(Data[int], format=ULONGLONG):
+    pass
 
-    raise LookupError(f"Can not find C unsigned integer type with {bits} bits.")
+
+c_int_types = {
+    c_byte.bits: c_byte,
+    c_short.bits: c_short,
+    c_int.bits: c_int,
+    c_long.bits: c_long,
+    c_longlong.bits: c_longlong,
+}
+
+c_uint_types = {
+    c_ubyte.bits: c_ubyte,
+    c_ushort.bits: c_ushort,
+    c_uint.bits: c_uint,
+    c_ulong.bits: c_ulong,
+    c_ulonglong.bits: c_ulonglong,
+}
+
+CAN_NOT_FIND_ALL_INTEGER_TYPES = "can not find all integer types"
 
 
 try:
+    class int8(Data[int], format=c_int_types[8].format):
+        pass
 
-    class int8(Data[int], name="int8", format=get_c_int_type(8).format):
-        def __init__(self, value: int = 0) -> None:
-            self._value = value
+    class uint8(Data[int], format=c_uint_types[8].format):
+        pass
 
-    class uint8(Data[int], name="uint8", format=get_c_uint_type(8).format):
-        def __init__(self, value: int = 0) -> None:
-            self._value = value
+    class int16(Data[int], format=c_int_types[16].format):
+        pass
 
-    class int16(Data[int], name="int16", format=get_c_int_type(16).format):
-        def __init__(self, value: int = 0) -> None:
-            self._value = value
+    class uint16(Data[int], format=c_uint_types[16].format):
+        pass
 
-    class uint16(Data[int], name="uint16", format=get_c_uint_type(16).format):
-        def __init__(self, value: int = 0) -> None:
-            self._value = value
+    class int32(Data[int], format=c_int_types[32].format):
+        pass
 
-    class int32(Data[int], name="int32", format=get_c_int_type(32).format):
-        def __init__(self, value: int = 0) -> None:
-            self._value = value
+    class uint32(Data[int], format=c_uint_types[32].format):
+        pass
 
-    class uint32(Data[int], name="uint32", format=get_c_uint_type(32).format):
-        def __init__(self, value: int = 0) -> None:
-            self._value = value
+    class int64(Data[int], format=c_int_types[64].format):
+        pass
 
-    class int64(Data[int], name="int64", format=get_c_int_type(64).format):
-        def __init__(self, value: int = 0) -> None:
-            self._value = value
-
-    class uint64(Data[int], name="uint64", format=get_c_uint_type(64).format):
-        def __init__(self, value: int = 0) -> None:
-            self._value = value
+    class uint64(Data[int], format=c_uint_types[64].format):
+        pass
 
 except KeyError as error:
-    raise LookupError("Can not find all integer types.") from error
+    raise LookupError(CAN_NOT_FIND_ALL_INTEGER_TYPES) from error
 
 
-int_types = (int8, int16, int32, int64)
-uint_types = (uint8, uint16, uint32, uint64)
+int_types = {int8.bits: int8, int16.bits: int16, int32.bits: int32, int64.bits: int64}
+uint_types = {uint8.bits: uint8, uint16.bits: uint16, uint32.bits: uint32, uint64.bits: uint64}
 
 
-def get_int_type(bits: int) -> Type[Data[int]]:
-    for int_type in int_types:
-        if int_type.bits == bits:
-            return int_type
+intptr = int_types[SYSTEM_BITS]
+uintptr = uint_types[SYSTEM_BITS]
 
-    raise LookupError(f"Can not find signed integer type with {bits} bits.")
-
-
-def get_uint_type(bits: int) -> Type[Data[int]]:
-    for uint_type in uint_types:
-        if uint_type.bits == bits:
-            return uint_type
-
-    raise LookupError(f"Can not find unsigned integer type with {bits} bits.")
+intsize = int_types[SYSTEM_BITS]
+uintsize = uint_types[SYSTEM_BITS]
 
 
-def get_intptr(bits: int) -> Type[Data[int]]:
-    return get_int_type(bits)
+FLOAT = "f"
+DOUBLE = "d"
 
 
-def get_uintptr(bits: int) -> Type[Data[int]]:
-    return get_uint_type(bits)
+class c_float(Data[float], format=FLOAT):
+    pass
 
 
-def get_intsize(bits: int) -> Type[Data[int]]:
-    return get_int_type(bits)
+class c_double(Data[float], name=DOUBLE):
+    pass
 
 
-def get_uintsize(bits: int) -> Type[Data[int]]:
-    return get_uint_type(bits)
+class float32(Data[float], format=c_float.format):
+    pass
 
 
-intptr = get_intptr(system_bits)
-uintptr = get_uintptr(system_bits)
-
-intsize = get_intsize(system_bits)
-uintsize = get_uintsize(system_bits)
+class float64(Data[float], format=c_double.format):
+    pass
 
 
-class c_float(Data[float], name="c_float", format="f"):
-    def __init__(self, value: float = 0.0) -> None:
-        self._value = value
+BOOL = "?"
 
 
-class c_double(Data[float], name="c_double", format="d"):
-    def __init__(self, value: float = 0.0) -> None:
-        self._value = value
+class c_bool(Data[bool], format=BOOL):
+    pass
 
 
-class float32(Data[float], name="float32", format=c_float.format):
-    def __init__(self, value: float = 0.0) -> None:
-        self._value = value
-
-
-class float64(Data[float], name="float64", format=c_double.format):
-    def __init__(self, value: float = 0.0) -> None:
-        self._value = value
-
-
-class c_bool(Data[bool], name="c_bool", format="?"):
-    def __init__(self, value: bool = False) -> None:
-        self._value = value
-
-
-class boolean(Data[bool], name="boolean", format=c_bool.format):
-    def __init__(self, value: bool = False) -> None:
-        self._value = value
+class boolean(Data[bool], format=c_bool.format):
+    pass
 
 
 L = TypeVar("L", bound=Layout)
 
-GetType = Callable[[int, Platform], Type[L]]
+GetType = Unary[PlatformConfig, Type[AnyData]]
 
 
-def get_type_wrap(type: Type[L]) -> GetType[L]:
-    def get_type(bits: int, platform: Platform) -> Type[L]:
+def get_type_wrap(type: Type[AnyData]) -> GetType:
+    def get_type(config: PlatformConfig) -> Type[AnyData]:
         return type
 
     return get_type
 
 
+GT = TypeVar("GT", bound=GetType)
+
+CAN_NOT_FIND_ANY_TYPES = "can not find any types for name {}"
+
+
+@define()
 class Types:
-    TYPES: Dict[str, GetType] = {}
+    TYPES: ClassVar[StringDict[GetType]] = {}
 
-    def __init__(self, bits: int = system_bits, platform: Platform = system_platform) -> None:
-        self.bits = bits
-        self.platform = platform
+    config: PlatformConfig = SYSTEM_PLATFORM_CONFIG
 
-    def __repr__(self) -> str:
-        info = {"bits": self.bits, "platform": self.platform.name.casefold()}
-
-        return nice_repr(self, info)
-
-    def get(self, name: str) -> Type[L]:
-        return self.fetch(name)(self.bits, self.platform)
+    def get(self, name: str) -> Type[AnyData]:
+        return self.fetch(name)(self.config)
 
     __getattr__ = get
 
     @classmethod
-    def _register(cls, name: str, get_type: GetType[L]) -> GetType[L]:
+    def register_get_type(cls, name: str, get_type: GT) -> GT:
         return cls.TYPES.setdefault(name, get_type)
 
     @classmethod
-    def register(cls, name: str) -> Callable[[GetType[L]], GetType[L]]:
-        def decorator(get_type: GetType[L]) -> GetType[L]:
-            return cls._register(name, get_type)
+    def register(cls, name: str) -> DecoratorIdentity[GT]:
+        def decorator(get_type: GT) -> GT:
+            return cls.register_get_type(name, get_type)
 
         return decorator
 
     @classmethod
-    def register_function(cls, get_type: GetType[L]) -> GetType[L]:
-        return cls._register(get_type.__name__, get_type)
+    def register_function(cls, get_type: GT) -> GT:
+        return cls.register_get_type(get_name(get_type), get_type)  # type: ignore
 
     @classmethod
-    def register_type(cls, name: str, type: Type[L]) -> GetType[L]:
-        return cls._register(name, get_type_wrap(type))
+    def register_type(cls, name: str, type: Type[AnyData]) -> GetType:
+        return cls.register_get_type(name, get_type_wrap(type))
 
     @classmethod
-    def fetch(cls, name: str) -> GetType[L]:
-        if name in cls.TYPES:
-            return cls.TYPES[name]
+    def fetch(cls, name: str) -> GetType:
+        types = cls.TYPES
 
-        raise LookupError(f"Can not find any types for {name!r}.")
+        if name in types:
+            return types[name]
+
+        raise LookupError(CAN_NOT_FIND_ANY_TYPES.format(tick(name)))
 
 
 types = Types
 
 
 @types.register_function
-def byte_t(bits: int, platform: Platform) -> Type[Data[int]]:
+def byte_t(config: PlatformConfig) -> Type[Data[int]]:
     return int8
 
 
 @types.register_function
-def ubyte_t(bits: int, platform: Platform) -> Type[Data[int]]:
+def ubyte_t(config: PlatformConfig) -> Type[Data[int]]:
     return uint8
 
 
 @types.register_function
-def short_t(bits: int, platform: Platform) -> Type[Data[int]]:
+def short_t(config: PlatformConfig) -> Type[Data[int]]:
     return int16
 
 
 @types.register_function
-def ushort_t(bits: int, platform: Platform) -> Type[Data[int]]:
+def ushort_t(config: PlatformConfig) -> Type[Data[int]]:
     return uint16
 
 
 @types.register_function
-def int_t(bits: int, platform: Platform) -> Type[Data[int]]:
-    if bits < 32:
+def int_t(config: PlatformConfig) -> Type[Data[int]]:
+    if config.bits < 32:
         return int16
 
     return int32
 
 
 @types.register_function
-def uint_t(bits: int, platform: Platform) -> Type[Data[int]]:
-    if bits < 32:
+def uint_t(config: PlatformConfig) -> Type[Data[int]]:
+    if config.bits < 32:
         return uint16
 
     return uint32
 
 
 @types.register_function
-def long_t(bits: int, platform: Platform) -> Type[Data[int]]:
-    if bits > 32:
+def long_t(config: PlatformConfig) -> Type[Data[int]]:
+    if config.bits > 32 and config.platform is not Platform.WINDOWS:
         return int64
 
     return int32
 
 
 @types.register_function
-def ulong_t(bits: int, platform: Platform) -> Type[Data[int]]:
-    if bits > 32:
+def ulong_t(config: PlatformConfig) -> Type[Data[int]]:
+    if config.bits > 32 and config.platform is not Platform.WINDOWS:
         return uint64
 
     return uint32
 
 
 @types.register_function
-def longlong_t(bits: int, platform: Platform) -> Type[Data[int]]:
+def longlong_t(config: PlatformConfig) -> Type[Data[int]]:
     return int64
 
 
 @types.register_function
-def ulonglong_t(bits: int, platform: Platform) -> Type[Data[int]]:
+def ulonglong_t(config: PlatformConfig) -> Type[Data[int]]:
     return uint64
 
 
 @types.register_function
-def int8_t(bits: int, platform: Platform) -> Type[Data[int]]:
+def int8_t(config: PlatformConfig) -> Type[Data[int]]:
     return int8
 
 
 @types.register_function
-def uint8_t(bits: int, platform: Platform) -> Type[Data[int]]:
+def uint8_t(config: PlatformConfig) -> Type[Data[int]]:
     return uint8
 
 
 @types.register_function
-def int16_t(bits: int, platform: Platform) -> Type[Data[int]]:
+def int16_t(config: PlatformConfig) -> Type[Data[int]]:
     return int16
 
 
 @types.register_function
-def uint16_t(bits: int, platform: Platform) -> Type[Data[int]]:
+def uint16_t(config: PlatformConfig) -> Type[Data[int]]:
     return uint16
 
 
 @types.register_function
-def int32_t(bits: int, platform: Platform) -> Type[Data[int]]:
+def int32_t(config: PlatformConfig) -> Type[Data[int]]:
     return int32
 
 
 @types.register_function
-def uint32_t(bits: int, platform: Platform) -> Type[Data[int]]:
+def uint32_t(config: PlatformConfig) -> Type[Data[int]]:
     return uint32
 
 
 @types.register_function
-def int64_t(bits: int, platform: Platform) -> Type[Data[int]]:
+def int64_t(config: PlatformConfig) -> Type[Data[int]]:
     return int64
 
 
 @types.register_function
-def uint64_t(bits: int, platform: Platform) -> Type[Data[int]]:
+def uint64_t(config: PlatformConfig) -> Type[Data[int]]:
     return uint64
 
 
 @types.register_function
-def intptr_t(bits: int, platform: Platform) -> Type[Data[int]]:
-    return get_intptr(bits)
+def intptr_t(config: PlatformConfig) -> Type[Data[int]]:
+    return int_types[config.bits]
 
 
 @types.register_function
-def uintptr_t(bits: int, platform: Platform) -> Type[Data[int]]:
-    return get_uintptr(bits)
+def uintptr_t(config: PlatformConfig) -> Type[Data[int]]:
+    return uint_types[config.bits]
 
 
 @types.register_function
-def intsize_t(bits: int, platform: Platform) -> Type[Data[int]]:
-    return get_intsize(bits)
+def intsize_t(config: PlatformConfig) -> Type[Data[int]]:
+    return int_types[config.bits]
 
 
 @types.register_function
-def uintsize_t(bits: int, platform: Platform) -> Type[Data[int]]:
-    return get_uintsize(bits)
+def uintsize_t(config: PlatformConfig) -> Type[Data[int]]:
+    return uint_types[config.bits]
 
 
 @types.register_function
-def float_t(bits: int, platform: Platform) -> Type[Data[float]]:
-    return c_float
-
-
-@types.register_function
-def double_t(bits: int, platform: Platform) -> Type[Data[float]]:
-    return c_double
-
-
-@types.register_function
-def char_t(bits: int, platform: Platform) -> Type[Data[int]]:
-    return uint8
-
-
-@types.register_function
-def float32_t(bits: int, platform: Platform) -> Type[Data[float]]:
+def float_t(config: PlatformConfig) -> Type[Data[float]]:
     return float32
 
 
 @types.register_function
-def float64_t(bits: int, platform: Platform) -> Type[Data[float]]:
+def double_t(config: PlatformConfig) -> Type[Data[float]]:
     return float64
 
 
 @types.register_function
-def bool_t(bits: int, platform: Platform) -> Type[Data[bool]]:
-    return c_bool
+def char_t(config: PlatformConfig) -> Type[Data[int]]:
+    return uint8
+
+
+@types.register_function
+def float32_t(config: PlatformConfig) -> Type[Data[float]]:
+    return float32
+
+
+@types.register_function
+def float64_t(config: PlatformConfig) -> Type[Data[float]]:
+    return float64
+
+
+@types.register_function
+def bool_t(config: PlatformConfig) -> Type[Data[bool]]:
+    return boolean

@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, Generic, Type, TypeVar
 
+from gd.errors import NullPointerError
 from gd.memory.memory import Memory, MemoryType
 from gd.memory.memory_special import MemoryVoid
 from gd.memory.traits import Layout, Read, ReadWrite
 from gd.memory.types import uintptr
 from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
-from gd.typing import AnyType, DynamicTuple, Namespace
+from gd.typing import AnyType, DynamicTuple, Namespace, is_same_type
 
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
@@ -54,9 +57,6 @@ class MemoryAbstractPointerType(MemoryType):
         return self.pointer_type.alignment
 
 
-PT = TypeVar("PT", bound="MemoryAbstractPointer")
-PU = TypeVar("PU", bound="MemoryAbstractPointer")
-
 L = TypeVar("L", bound=Layout)
 
 
@@ -73,6 +73,9 @@ class MemoryAbstractPointer(Generic[L], Memory, metaclass=MemoryAbstractPointerT
         return self._type
 
 
+PT = TypeVar("PT", bound="AnyMemoryPointer")
+PU = TypeVar("PU", bound="AnyMemoryPointer")
+
 T = TypeVar("T")
 
 
@@ -87,48 +90,40 @@ class MemoryPointer(MemoryAbstractPointer[Read[T]]):
         return self.address
 
     def __eq__(self, other: Any) -> bool:
-        if isinstance(other, self.__class__):
+        if is_same_type(other, self):
             return self.state is other.state and self.address == other.address
 
         return NotImplemented
 
     def __ne__(self, other: Any) -> bool:
-        if isinstance(other, self.__class__):
+        if is_same_type(other, self):
             return self.state is other.state and self.address != other.address
 
         return NotImplemented
 
     def __gt__(self, other: Any) -> bool:
-        if isinstance(other, self.__class__):
+        if is_same_type(other, self):
             return self.state is other.state and self.address > other.address
 
         return NotImplemented
 
     def __lt__(self, other: Any) -> bool:
-        if isinstance(other, self.__class__):
+        if is_same_type(other, self):
             return self.state is other.state and self.address < other.address
 
         return NotImplemented
 
     def __ge__(self, other: Any) -> bool:
-        if isinstance(other, self.__class__):
+        if is_same_type(other, self):
             return self.state is other.state and self.address >= other.address
 
         return NotImplemented
 
     def __le__(self, other: Any) -> bool:
-        if isinstance(other, self.__class__):
+        if is_same_type(other, self):
             return self.state is other.state and self.address <= other.address
 
         return NotImplemented
-
-    def get_address(self) -> int:
-        return self._address
-
-    def set_address(self, address: int) -> None:
-        self._address = address
-
-    address = class_property(get_address, set_address)
 
     def is_null(self) -> bool:
         return not self.value_address
@@ -139,7 +134,7 @@ class MemoryPointer(MemoryAbstractPointer[Read[T]]):
         if address:
             return self.type.read_value_from(self.state, address)
 
-        raise NullPointerError("Can not dereference null pointer.")
+        raise NullPointerError()
 
     value = property(read)
 
@@ -147,90 +142,87 @@ class MemoryPointer(MemoryAbstractPointer[Read[T]]):
         return self.pointer_type.read_value_from(self.state, self.address)
 
     def write_address(self, address: int) -> None:
-        return self.pointer_type.write_value_to(address, self.state, self.address)
+        return self.pointer_type.write_value_to(self.state, address, self.address)
 
     value_address = property(read_address, write_address)
 
     @classmethod
-    def create_from(cls: Type[PointerT], other: PointerU) -> PointerT:
+    def create_from(cls: Type[PT], other: PU) -> PT:
         return cls(address=other.address, state=other.state)
 
-    def copy(self: PointerT) -> PointerT:
+    def copy(self: PT) -> PT:
         return self.create_from(self)
 
-    def add_inplace(self: PointerT, value: int) -> PointerT:
+    def add_in_place(self: PT, value: int) -> PT:
         self.address += value
 
         return self
 
-    __iadd__ = add_inplace
+    __iadd__ = add_in_place
 
-    def sub_inplace(self: PointerT, value: int) -> PointerT:
+    def sub_in_place(self: PT, value: int) -> PT:
         self.address -= value
 
         return self
 
-    __isub__ = sub_inplace
+    __isub__ = sub_in_place
 
-    def follow_inplace(self: PointerT) -> PointerT:
+    def follow_in_place(self: PT) -> PT:
         self.address = self.value_address
 
         return self
 
-    def offset_inplace(self: PointerT, *offsets: int) -> PointerT:
+    def offset_in_place(self: PT, *offsets: int) -> PT:
         if offsets:
-            offset_iter = iter(offsets)
+            iterator = iter(offsets)
 
-            self.add_inplace(next(offset_iter))
+            self.add_in_place(next(iterator))
 
-            for offset in offset_iter:
-                self.follow_inplace().add_inplace(offset)
+            for offset in iterator:
+                self.follow_in_place().add_in_place(offset)
 
         return self
 
-    def add(self: PointerT, value: int) -> PointerT:
-        other = self.copy()
+    def add(self: PT, value: int) -> PT:
+        copy = self.copy()
 
-        other.add_inplace(value)
+        copy.add_in_place(value)
 
-        return other
+        return copy
 
     __add__ = add
 
-    def sub(self: PointerT, value: int) -> PointerT:
-        other = self.copy()
+    def sub(self: PT, value: int) -> PT:
+        copy = self.copy()
 
-        other.sub_inplace(value)
+        copy.sub_in_place(value)
 
-        return other
+        return copy
 
     __sub__ = sub
 
-    def follow(self: PointerT) -> PointerT:
-        other = self.copy()
+    def follow(self: PT) -> PT:
+        copy = self.copy()
 
-        other.follow_inplace()
+        copy.follow_in_place()
 
-        return other
+        return copy
 
-    def offset(self: PointerT, *offsets: int) -> PointerT:
-        other = self.copy()
+    def offset(self: PT, *offsets: int) -> PT:
+        copy = self.copy()
 
-        other.offset_inplace(*offsets)
+        copy.offset_in_place(*offsets)
 
-        return other
+        return copy
 
-    def cast(self: PointerT, cls: Type[PointerU]) -> PointerU:
-        return cls.create_from(self)
+    def cast(self: PT, type: Type[PU]) -> PU:
+        return type.create_from(self)
 
 
-class MemoryMutPointer(MemoryPointer[T], MemoryBasePointer[ReadWriteLayout[T]]):
-    _type: Type[ReadWriteLayout[T]]  # type: ignore
+AnyMemoryPointer = MemoryPointer[Any]
 
-    @class_property
-    def type(self) -> Type[ReadWriteLayout[T]]:  # type: ignore
-        return self._type
 
+class MemoryMutPointer(MemoryPointer[T], MemoryAbstractPointer[ReadWrite[T]]):
     def read(self) -> T:
         return super().read()
 
@@ -238,16 +230,16 @@ class MemoryMutPointer(MemoryPointer[T], MemoryBasePointer[ReadWriteLayout[T]]):
         address = self.value_address
 
         if address:
-            return self.type.write_value_to(value, self.state, address)
+            return self.type.write_value_to(self.state, value, address)
 
-        raise NullPointerError("Can not dereference null pointer.")
+        raise NullPointerError()
 
     value = property(read, write)
 
 
 class MemoryRef(MemoryPointer[T]):
     @classmethod
-    def read_value_from(cls, state: "BaseState", address: int) -> T:  # type: ignore
+    def read_value_from(cls, state: AbstractState, address: int) -> T:  # type: ignore
         self = cls(state, address)
 
         return self.value
@@ -255,7 +247,7 @@ class MemoryRef(MemoryPointer[T]):
 
 class MemoryMutRef(MemoryRef[T], MemoryMutPointer[T]):
     @classmethod
-    def write_value_to(cls, value: T, state: "BaseState", address: int) -> None:  # type: ignore
+    def write_value_to(cls, state: AbstractState, value: T, address: int) -> None:  # type: ignore
         self = cls(state, address)
 
         self.value = value

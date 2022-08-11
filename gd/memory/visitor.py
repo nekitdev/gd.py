@@ -1,16 +1,19 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 from builtins import getattr as get_attribute
 from builtins import hasattr as has_attribute
 from builtins import issubclass as is_subclass
 from builtins import setattr as set_attribute
 from functools import wraps
-from typing import Any, Type, TypeVar, get_type_hints
+from typing import TYPE_CHECKING, Any, Type, TypeVar, get_type_hints
 
 from attrs import define
 from typing_extensions import Protocol, runtime_checkable
 
 from gd.memory.context import Context
-from gd.memory.field import AnyField, Field, MutField
+from .data import AnyData
+from gd.memory.fields import AnyField, Field, MutField, MutFieldMarker, fetch_fields
 from gd.memory.markers import (
     Array,
     DynamicFill,
@@ -38,11 +41,14 @@ from gd.memory.memory_pointers_refs import (
     MemoryRef,
 )
 from gd.memory.memory_special import MemoryThis, MemoryVoid
-from gd.memory.state import AbstractState
-from gd.memory.traits import Layout, Read, ReadWrite, Write, is_layout
+from gd.memory.traits import Layout, Read, ReadWrite
 from gd.memory.utils import set_name
-from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
-from gd.typing import Binary, Namespace, StringDict, get_name
+from gd.platform import PlatformConfig
+from gd.typing import Binary, Namespace, StringDict, get_name, is_instance
+
+if TYPE_CHECKING:
+    from gd.memory.state import AbstractState
+
 
 __all__ = ("Visitable", "AnyVisitable", "Visitor")
 
@@ -371,19 +377,23 @@ class Visitor:
     def resolve_recursion_array(
         self, array: Type[MemoryAbstractArray[Any]], this: Type[MemoryAbstract], in_pointer: bool
     ) -> None:
-        if is_subclass(array.type, MemoryThis):
-            if in_pointer:
-                array._type = this  # perhaps there might be some better way?
+        array_type = array.type
 
-        self.resolve_recursion_type(array.type, this, in_pointer=in_pointer)  # pass in_pointer
+        if is_subclass(array_type, MemoryThis):
+            if in_pointer:
+                array._type = array_type = this  # perhaps there might be some better way?
+
+        self.resolve_recursion_type(array_type, this, in_pointer=in_pointer)  # pass in_pointer
 
     def resolve_recursion_pointer(
         self, pointer: Type[MemoryAbstractPointer[Any]], this: Type[MemoryAbstract]
     ) -> None:
-        if is_subclass(pointer.type, MemoryThis):
-            pointer._type = this  # there might be some better way, I suppose
+        pointer_type = pointer.type
 
-        self.resolve_recursion_type(pointer.type, this, in_pointer=True)  # in_pointer -> true
+        if is_subclass(pointer_type, MemoryThis):
+            pointer._type = pointer_type = this  # there might be some better way, I suppose
+
+        self.resolve_recursion_type(pointer_type, this, in_pointer=True)  # in_pointer -> true
 
     def visit_union(self, marker_union: Type[Union]) -> Type[MemoryUnion]:
         # initialize variables needed to get fields and size
@@ -395,57 +405,38 @@ class Visitor:
 
         # acquire all annotations
 
-        annotations = {}
-
-        for base in marker_union.mro():
-            annotations.update(get_attribute(base, ANNOTATIONS, {}))
-
-        class annotation_holder:
-            pass
-
-        set_attribute(annotation_holder, ANNOTATIONS, annotations)
+        field_markers = fetch_fields(marker_union)
 
         # iterate through annotations
 
-        for name, type_hint in get_type_hints(annotation_holder).items():
-            try:
+        for name, (type_hint, field_marker) in field_markers.items():
+            if is_instance(field_marker, MutFieldMarker):
                 field = self.create_mut_field(self.visit(type_hint))
 
-            except AttributeError:
-                continue
+            else:
+                field = self.create_field(self.visit(type_hint))
 
             fields[name] = field
 
-            if field.size > size:
-                size = field.size
+            field_size = field.size
+            field_alignment = field.alignment
 
-            if field.alignment > alignment:
-                alignment = field.alignment
+            if field_size > size:
+                size = field_size
 
-        @no_type_check
-        class union(  # type: ignore
-            # merge marker union with memory union
-            marker_union,  # type: ignore
+            if field_alignment > alignment:
+                alignment = field_alignment
+
+        class union(
             MemoryUnion,
-            metaclass=merge_metaclass(MemoryUnion, marker_union, name=UNION_TYPE),  # type: ignore
-            # set derive to false
-            derive=False,
-            # other arguments
             size=size,
             alignment=alignment,
             fields=fields,
-            bits=self.context.bits,
-            platform=self.context.platform,
+            config=self.config,
         ):
-            pass
+            vars().update(fields)
 
-        union.__qualname__ = union.__name__ = marker_union.__name__
-
-        for name, field in fields.items():
-            if hasattr(union, name):
-                raise ValueError(f"Field attempts to overwrite name: {name!r}.")
-
-            setattr(union, name, field)
+        set_name(union, get_name(marker_union))
 
         self.resolve_recursion(fields, union)
 
@@ -457,7 +448,8 @@ class Visitor:
             type=self.visit(marker_pointer.type),
             pointer_type=self.visit_simple(uintptr_t),
             config=self.config,
-        )
+        ):
+            pass
 
         set_name(pointer, get_name(marker_pointer))
 
@@ -469,7 +461,8 @@ class Visitor:
             type=self.visit(marker_mut_pointer.type),
             pointer_type=self.visit_simple(uintptr_t),
             config=self.config,
-        )
+        ):
+            pass
 
         set_name(mut_pointer, get_name(marker_mut_pointer))
 
@@ -543,8 +536,8 @@ class Visitor:
 
         return this
 
-    def visit_simple(self, marker: Type[SimpleMarker]) -> Type[Memory]:
-        return self.visit(self.context.get(marker.name))
+    def visit_simple(self, marker: Type[SimpleMarker]) -> Type[AnyData]:
+        return self.context.get(marker.name)
 
 
 AnyVisitable = Visitable[Visitor]

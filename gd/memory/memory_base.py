@@ -1,6 +1,6 @@
 from typing import Any, Optional, Type, TypeVar
 
-from gd.memory.field import AnyField
+from gd.memory.fields import AnyField
 from gd.memory.memory import Memory, MemoryType
 from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
 from gd.typing import AnyType, DynamicTuple, Namespace, StringDict

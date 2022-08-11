@@ -17,7 +17,7 @@ __all__ = (
     "is_layout",
 )
 
-class LayoutType(type(Protocol)):
+class LayoutType(type(Protocol)):  # type: ignore
     @property
     @abstractmethod
     def size(self) -> int:

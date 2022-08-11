@@ -95,7 +95,7 @@ class SimpleMarker(metaclass=SimpleMarkerType):
     def accept(cls, visitor: Visitor) -> Type[Memory]:
         return visitor.visit_simple(cls)
 
-    def __init__(self) -> Never:
+    def __init__(self) -> None:
         raise TypeError(CAN_NOT_INITIALIZE_SIMPLE_MARKERS)
 
 
@@ -352,7 +352,7 @@ CAN_NOT_INSTANTIATE = "can not instantiate {}"
 
 
 class Special(Marker, metaclass=SpecialType, special=True):
-    def __init__(self) -> Never:
+    def __init__(self) -> None:
         raise TypeError(CAN_NOT_INSTANTIATE.format(get_name(type(self))))
 
 

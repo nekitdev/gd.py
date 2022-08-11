@@ -141,9 +141,10 @@ class MemoryMutArray(MemoryArray[T], MemoryAbstractArray[ReadWrite[T]]):
 
     def write_at(self, index: int, value: T) -> None:
         if self.length is None or index < self.length:
-            return self.type.write_value_to(value, self.state, self.calculate_address(index))
+            self.type.write_value_to(value, self.state, self.calculate_address(index))
 
-        raise IndexError(INDEX_OUT_OF_BOUNDS)
+        else:
+            raise IndexError(INDEX_OUT_OF_BOUNDS)
 
     def iter_write(self, indexes: Iterable[int], values: Iterable[T]) -> None:
         for index, value in zip(indexes, values):
