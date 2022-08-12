@@ -418,8 +418,8 @@ class Visitor:
 
             fields[name] = field
 
-            field_size = field.size
-            field_alignment = field.alignment
+            field_size = field.type.size
+            field_alignment = field.type.alignment
 
             if field_size > size:
                 size = field_size
