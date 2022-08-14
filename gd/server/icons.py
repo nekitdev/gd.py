@@ -1,5 +1,7 @@
+from typing import List
 from aiohttp.web import FileResponse, Request
 
+from gd.async_utils import gather_iterable
 from gd.colors import Color
 from gd.enums import IconType
 from gd.image.factory import FACTORY, connect_images
@@ -30,11 +32,16 @@ DEFAULT_GLOW = "false"
 @get(ICONS, version=1)
 @request_handler()
 async def get_icons(request: Request) -> FileResponse:
+    path = (ASSETS / ICONS_NAME / request.query_string).with_suffix(IMAGE_SUFFIX)
+
+    if path.exists():
+        return FileResponse(path)
+
     factory = FACTORY
 
     query = request.query
 
-    icons = []
+    icons: List[Icon] = []
 
     color_1_hex = query.get(COLOR_1, DEFAULT_COLOR_1)
 
@@ -59,11 +66,9 @@ async def get_icons(request: Request) -> FileResponse:
         else:
             icons.append(Icon(type, id, color_1, color_2, glow))
 
-    images = [await factory.generate_async(icon) for icon in icons]
+    images = await gather_iterable(factory.generate_async(icon) for icon in icons)
 
     image = connect_images(images)
-
-    path = (ASSETS / ICONS_NAME / request.query_string).with_suffix(IMAGE_SUFFIX)
 
     image.save(path)
 
