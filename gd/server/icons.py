@@ -10,6 +10,11 @@ from gd.server.routes import get
 from gd.server.utils import parse_bool
 
 ICONS = "/icons"
+ICONS_NAME = "icons"
+
+ICONS_PATH = ASSETS / ICONS_NAME
+
+ICONS_PATH.mkdir(parents=True, exist_ok=True)
 
 COLOR_1 = "color_1"
 COLOR_2 = "color_2"
@@ -58,7 +63,7 @@ async def get_icons(request: Request) -> FileResponse:
 
     image = connect_images(images)
 
-    path = (ASSETS / request.query_string).with_suffix(IMAGE_SUFFIX)
+    path = (ASSETS / ICONS_NAME / request.query_string).with_suffix(IMAGE_SUFFIX)
 
     image.save(path)
 

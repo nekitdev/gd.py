@@ -1,5 +1,7 @@
 from pathlib import Path
 
-ASSETS = Path(".gd")
+ASSETS_NAME = ".gd"
+
+ASSETS = Path(ASSETS_NAME)
 
 IMAGE_SUFFIX = ".png"

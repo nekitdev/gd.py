@@ -20,12 +20,19 @@ B = TypeVar("B", bound="FromBinary")
 class FromBinary(Protocol):
     @classmethod
     @abstractmethod
-    def from_binary(cls: Type[B], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> B:
+    def from_binary(
+        cls: Type[B],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> B:
         ...
 
     @classmethod
-    def from_bytes(cls: Type[B], data: bytes, order: ByteOrder = ByteOrder.DEFAULT) -> B:
-        return cls.from_binary(BytesIO(data), order)
+    def from_bytes(
+        cls: Type[B], data: bytes, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> B:
+        return cls.from_binary(BytesIO(data), order, version)
 
 
 def is_from_binary(item: Any) -> TypeGuard[FromBinary]:
@@ -35,13 +42,15 @@ def is_from_binary(item: Any) -> TypeGuard[FromBinary]:
 @runtime_checkable
 class ToBinary(Protocol):
     @abstractmethod
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         ...
 
-    def to_bytes(self, order: ByteOrder = ByteOrder.DEFAULT) -> bytes:
+    def to_bytes(self, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION) -> bytes:
         buffer = BytesIO()
 
-        self.to_binary(buffer, order)
+        self.to_binary(buffer, order, version)
 
         buffer.seek(0)
 

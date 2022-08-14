@@ -21,6 +21,8 @@ DEFAULT_MIDDLEWARES: Iterable[StreamMiddleware] = (
 
 DEFAULT_TOOLS: Iterable[Tool] = ()
 
+STATIC_PATH = "/swagger"
+
 A = TypeVar("A", bound=Application)
 
 
@@ -31,6 +33,7 @@ async def setup_app(
     version: str = VERSION,
     info: str = INFO,
     docs: str = DOCS,
+    static_path: str = STATIC_PATH,
     middlewares: Iterable[StreamMiddleware] = DEFAULT_MIDDLEWARES,
     tools: Iterable[Tool] = DEFAULT_TOOLS,
     tokens_type: Type[AnyTokens] = Tokens,
@@ -38,7 +41,9 @@ async def setup_app(
 ) -> A:
     app.middlewares.extend(middlewares)
 
-    setup_aiohttp_apispec(app=app, title=title, version=version, url=info, swagger_path=docs)
+    setup_aiohttp_apispec(
+        app=app, title=title, version=version, url=info, swagger_path=docs, static_path=static_path
+    )
 
     await setup_aiohttp_remotes(app, *tools)
 
@@ -55,6 +60,7 @@ async def setup_gd_app(
     version: str = VERSION,
     info: str = INFO,
     docs: str = DOCS,
+    static_path: str = STATIC_PATH,
     middlewares: Iterable[StreamMiddleware] = DEFAULT_MIDDLEWARES,
     tools: Iterable[Tool] = DEFAULT_TOOLS,
     tokens_type: Type[ServerTokens] = ServerTokens,
@@ -66,6 +72,7 @@ async def setup_gd_app(
         version=version,
         info=info,
         docs=docs,
+        static_path=static_path,
         middlewares=middlewares,
         tools=tools,
         tokens_type=tokens_type,
