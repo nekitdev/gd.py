@@ -1,6 +1,6 @@
 from typing import Any, Awaitable, Optional, TypeVar, Union
 
-from aiohttp.web import Request, Response, StreamResponse, json_response
+from aiohttp.web import HTTPError, Request, Response, StreamResponse, json_response
 from attrs import define, field, frozen
 from typing_extensions import Never, TypedDict
 
@@ -20,7 +20,6 @@ from gd.typing import (
     Binary,
     Decorator,
     DynamicTuple,
-    Namespace,
     is_instance,
 )
 
@@ -114,6 +113,14 @@ UNEXPECTED_ERROR = "Some unexpected error has occured."
 
 
 async def default_error_handler(request: Request, error: AnyException) -> Error:
+    if is_instance(error, HTTPError):
+        status = error.status
+
+        type = HTTP_STATUS_TO_ERROR_TYPE.get(status)
+
+        if type:
+            return Error(status, type)
+
     return Error(message=UNEXPECTED_ERROR)
 
 

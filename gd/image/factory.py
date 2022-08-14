@@ -53,7 +53,7 @@ def connect_horizontal_images(images: Iterable[Image]) -> Image:
     array = list(images)
 
     width = sum(image.width for image in array)
-    height = max(image.height for image in array)
+    height = max((image.height for image in array), default=0)
 
     result = new_image(RGBA, (width, height), EMPTY)
 
@@ -69,7 +69,7 @@ def connect_horizontal_images(images: Iterable[Image]) -> Image:
 def connect_vertical_images(images: Iterable[Image]) -> Image:
     array = list(images)
 
-    width = max(image.width for image in array)
+    width = max((image.width for image in array), default=0)
     height = sum(image.height for image in array)
 
     result = new_image(RGBA, (width, height), EMPTY)

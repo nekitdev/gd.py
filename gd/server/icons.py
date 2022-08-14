@@ -1,6 +1,6 @@
 from typing import List
 
-from aiohttp.web import FileResponse, Request
+from aiohttp.web import FileResponse, HTTPNotFound, Request
 
 from gd.async_utils import gather_iterable
 from gd.colors import Color
@@ -29,11 +29,15 @@ DEFAULT_COLOR_2 = Color.default_color_2().to_hex()
 
 DEFAULT_GLOW = "false"
 
+EMPTY = "empty"
+
 
 @get(ICONS, version=1)
 @request_handler()
 async def get_icons(request: Request) -> FileResponse:
-    path = (ASSETS / ICONS_NAME / request.query_string).with_suffix(IMAGE_SUFFIX)
+    query_string = request.query_string or EMPTY
+
+    path = (ASSETS / ICONS_NAME / query_string).with_suffix(IMAGE_SUFFIX)
 
     if path.exists():
         return FileResponse(path)
@@ -66,6 +70,9 @@ async def get_icons(request: Request) -> FileResponse:
 
         else:
             icons.append(Icon(type, id, color_1, color_2, glow))
+
+    if not icons:
+        raise HTTPNotFound()
 
     images = await gather_iterable(factory.generate_async(icon) for icon in icons)
 
