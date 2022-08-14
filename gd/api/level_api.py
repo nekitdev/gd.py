@@ -2,7 +2,6 @@ from datetime import timedelta
 from typing import BinaryIO
 from attrs import define, field
 
-from gd.api.api import API
 from gd.api.recording import Recording
 from gd.binary import Binary
 from gd.binary_utils import UTF_8, Writer
@@ -32,7 +31,7 @@ UNLISTED_BIT = 0b01000000_00000000
 
 
 @define()
-class LevelAPI(API):
+class LevelAPI:
     id: int = field()
     name: str = field()
     creator: User = field()
@@ -80,6 +79,9 @@ class LevelAPI(API):
     best_time: timedelta = field(factory=timedelta)
     progress: Progress = field(factory=Progress)
     leaderboard_record: int = field(default=0)
+
+    def __hash__(self) -> int:
+        return self.id
 
     def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8) -> None:
         writer = Writer(binary)

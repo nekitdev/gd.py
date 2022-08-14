@@ -1,13 +1,13 @@
 from typing import BinaryIO, Dict, Iterable, List, Optional, Type, TypeVar
 
 from attrs import define, field
-from gd.api.api import API
 
+from gd.api.folder import Folder
 from gd.api.level_api import LevelAPI
-from gd.api.objects import Object
+from gd.api.objects import Object, object_from_binary, object_to_binary
 from gd.api.ordered_set import OrderedSet, ordered_set
 from gd.binary import Binary
-from gd.binary_utils import Reader, Writer
+from gd.binary_utils import UTF_8, Reader, Writer
 from gd.constants import DEFAULT_ID, EMPTY
 from gd.enums import ByteOrder, Filter, IconType, LevelLeaderboardStrategy
 from gd.filters import Filters
@@ -106,14 +106,6 @@ class Completed:
 
     def get_prefix_to_set(self) -> Dict[str, OrderedSet[int]]:
         return {prefix(type): set for type, set in self.get_type_to_set().items()}
-
-
-@define()
-class Folder:
-    """Represents level folders."""
-
-    id: int
-    name: str
 
 
 DEFAULT_BUTTONS_PER_ROW = 6
@@ -216,7 +208,7 @@ V = TypeVar("V", bound="Variables")
 
 
 @define()
-class Variables(Binary, API):
+class Variables(Binary):
     """Represents game variables."""
 
     follow_player: bool = True  # editor
@@ -1129,7 +1121,7 @@ VS = TypeVar("VS", bound="Values")
 
 
 @define()
-class Values(Binary, API):
+class Values(Binary):
     variables: Variables = field(factory=Variables)
 
     cubes: OrderedSet[int] = field(factory=ordered_set)
@@ -1265,7 +1257,7 @@ UV = TypeVar("UV", bound="UnlockValues")
 
 
 @define()
-class UnlockValues(Binary, API):
+class UnlockValues(Binary):
     the_challenge_unlocked: bool = False
     gubflub_hint_1: bool = False
     gubflub_hint_2: bool = False
@@ -1564,7 +1556,7 @@ S = TypeVar("S", bound="Statistics")
 
 
 @define()
-class Statistics(Binary, API):
+class Statistics(Binary):
     jumps: int = field(default=0)
     attempts: int = field(default=0)
     official_levels: int = field(default=0)
@@ -1684,8 +1676,24 @@ class Statistics(Binary, API):
         )
 
 
+SHOW_SONG_MARKERS_BIT = 0b00000001
+SHOW_PROGRESS_BAR_BIT = 0b00000010
+CLICKED_ICONS_BIT = 0b00000100
+CLICKED_EDITOR_BIT = 0b00001000
+CLICKED_PRACTICE_BIT = 0b00010000
+SHOWN_EDITOR_GUIDE_BIT = 0b00100000
+SHOWN_LOW_DETAIL_BIT = 0b01000000
+RATED_GAME_BIT = 0b10000000
+MODERATOR_BIT = 0b00000001_00000000
+
+LIKED_BIT = 0b10000000_00000000_00000000_00000000
+LIKED_MASK = 0b01111111_11111111_11111111_11111111
+
+D = TypeVar("D", bound="Database")
+
+
 @define()
-class Database:
+class Database(Binary):
     volume: float = field(default=1.0)
     sfx_volume: float = field(default=1.0)
 
@@ -1701,6 +1709,7 @@ class Database:
     ball_id: int = field(default=DEFAULT_ID)
     ufo_id: int = field(default=DEFAULT_ID)
     wave_id: int = field(default=DEFAULT_ID)
+    robot_id: int = field(default=DEFAULT_ID)
     spider_id: int = field(default=DEFAULT_ID)
     color_1_id: int = field(default=DEFAULT_ID)
     color_2_id: int = field(default=DEFAULT_ID)
@@ -1717,7 +1726,7 @@ class Database:
     unlock_values: UnlockValues = field(factory=UnlockValues)
     custom_objects: List[List[Object]] = field(factory=list)
 
-    statistics: Statistics = field(default=Statistics)
+    statistics: Statistics = field(factory=Statistics)
 
     show_song_markers: bool = field(default=True)
     show_progress_bar: bool = field(default=True)
@@ -1740,17 +1749,470 @@ class Database:
     filters: Filters = field(factory=Filters)
     daily_levels: AnyLevelCollection = field(factory=level_collection)
     daily_id: int = field(default=0)
-    liked: Dict[int, int] = field(factory=dict)
+    weekly_id: int = field(default=0)
+    liked: Dict[int, bool] = field(factory=dict)
     rated: Dict[int, int] = field(factory=dict)
     reported: OrderedSet[int] = field(factory=ordered_set)
     demon_rated: OrderedSet[int] = field(factory=ordered_set)
     gauntlet_levels: AnyLevelCollection = field(factory=level_collection)
-    weekly_id: int = field(default=0)
-    saved_folders: List[Folder] = field(factory=list)
-    created_folders: List[Folder] = field(factory=list)
+    saved_folders: OrderedSet[Folder] = field(factory=ordered_set)
+    created_folders: OrderedSet[Folder] = field(factory=ordered_set)
 
     created_levels: AnyLevelCollection = field(factory=level_collection)
 
     songs: OrderedSet[Song] = field(factory=ordered_set)
 
     # keybindings: Keybindings
+
+    @classmethod
+    def from_binary(
+        cls: Type[D], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+    ) -> D:
+        show_song_markers_bit = SHOW_SONG_MARKERS_BIT
+        show_progress_bar_bit = SHOW_PROGRESS_BAR_BIT
+        clicked_icons_bit = CLICKED_ICONS_BIT
+        clicked_editor_bit = CLICKED_EDITOR_BIT
+        clicked_practice_bit = CLICKED_PRACTICE_BIT
+        shown_editor_guide_bit = SHOWN_EDITOR_GUIDE_BIT
+        shown_low_detail_bit = SHOWN_LOW_DETAIL_BIT
+        rated_game_bit = RATED_GAME_BIT
+        moderator_bit = MODERATOR_BIT
+
+        liked_bit = LIKED_BIT
+        liked_mask = LIKED_MASK
+
+        reader = Reader(binary)
+
+        volume = reader.read_f32(order)
+        sfx_volume = reader.read_f32(order)
+
+        udid_length = reader.read_u8(order)
+
+        udid = reader.read(udid_length).decode(encoding)
+
+        name_length = reader.read_u8(order)
+
+        name = reader.read(name_length).decode(encoding)
+
+        id = reader.read_u32(order)
+        account_id = reader.read_u32(order)
+
+        password_length = reader.read_u8(order)
+
+        password = reader.read(password_length).decode(encoding)
+
+        session_id = reader.read_u32(order)
+
+        cube_id = reader.read_u16(order)
+        ship_id = reader.read_u16(order)
+        ball_id = reader.read_u16(order)
+        ufo_id = reader.read_u16(order)
+        wave_id = reader.read_u16(order)
+        robot_id = reader.read_u16(order)
+        spider_id = reader.read_u16(order)
+        color_1_id = reader.read_u16(order)
+        color_2_id = reader.read_u16(order)
+        trail_id = reader.read_u16(order)
+        explosion_id = reader.read_u16(order)
+
+        icon_type_value = reader.read_u8(order)
+        icon_type = IconType(icon_type_value)
+
+        secret_value = reader.read_u32(order)
+
+        value = reader.read_u16(order)
+
+        show_song_markers = value & show_song_markers_bit == show_song_markers_bit
+        show_progress_bar = value & show_progress_bar_bit == show_progress_bar_bit
+        clicked_icons = value & clicked_icons_bit == clicked_icons_bit
+        clicked_editor = value & clicked_editor_bit == clicked_editor_bit
+        clicked_practice = value & clicked_practice_bit == clicked_practice_bit
+        shown_editor_guide = value & shown_editor_guide_bit == shown_editor_guide_bit
+        shown_low_detail = value & shown_low_detail_bit == shown_low_detail_bit
+        rated_game = value & rated_game_bit == rated_game_bit
+        moderator = value & moderator_bit == moderator_bit
+
+        bootups = reader.read_u32(order)
+
+        values = Values.from_binary(binary, order)
+        unlock_values = UnlockValues.from_binary(binary, order)
+
+        custom_objects_length = reader.read_u16(order)
+
+        custom_objects: List[List[Object]] = []
+
+        for _ in range(custom_objects_length):
+            objects_length = reader.read_u32(order)
+
+            objects = [object_from_binary(binary, order) for _ in range(objects_length)]
+
+            custom_objects.append(objects)
+
+        statistics = Statistics.from_binary(binary, order)
+
+        official_levels_length = reader.read_u8(order)
+
+        official_levels = ordered_set(
+            LevelAPI.from_binary(binary, order) for _ in range(official_levels_length)
+        )
+
+        saved_levels_length = reader.read_u8(order)
+
+        saved_levels = ordered_set(
+            LevelAPI.from_binary(binary, order) for _ in range(saved_levels_length)
+        )
+
+        followed_length = reader.read_u32(order)
+
+        followed = ordered_set(reader.read_u32(order) for _ in range(followed_length))
+
+        last_played_length = reader.read_u16(order)
+
+        last_played = ordered_set(reader.read_u32(order) for _ in range(last_played_length))
+
+        filters = Filters.from_binary(binary, order)
+
+        daily_levels_length = reader.read_u32(order)
+
+        daily_levels = ordered_set(
+            LevelAPI.from_binary(binary, order) for _ in range(daily_levels_length)
+        )
+
+        daily_id = reader.read_u32(order)
+        weekly_id = reader.read_u32(order)
+
+        liked_length = reader.read_u32(order)
+
+        liked = {}
+
+        for _ in range(liked_length):
+            liked_id = reader.read_u32(order)
+
+            liked[liked_id & liked_mask] = liked_id & liked_bit == liked_bit
+
+        rated_length = reader.read_u32(order)
+
+        rated = {
+            reader.read_u32(order): reader.read_u8(order) for _ in range(rated_length)
+        }
+
+        reported_length = reader.read_u32(order)
+
+        reported = ordered_set(reader.read_u32(order) for _ in range(reported_length))
+
+        demon_rated_length = reader.read_u32(order)
+
+        demon_rated = ordered_set(reader.read_u32(order) for _ in range(demon_rated_length))
+
+        gauntlet_levels_length = reader.read_u16(order)
+
+        gauntlet_levels = ordered_set(
+            LevelAPI.from_binary(binary, order) for _ in range(gauntlet_levels_length)
+        )
+
+        saved_folders_length = reader.read_u8(order)
+
+        saved_folders = ordered_set(
+            Folder.from_binary(binary, order, encoding) for _ in range(saved_folders_length)
+        )
+
+        created_folders_length = reader.read_u8(order)
+
+        created_folders = ordered_set(
+            Folder.from_binary(binary, order, encoding) for _ in range(created_folders_length)
+        )
+
+        created_levels_length = reader.read_u32(order)
+
+        created_levels = ordered_set(
+            LevelAPI.from_binary(binary, order) for _ in range(created_levels_length)
+        )
+
+        songs_length = reader.read_u32(order)
+
+        songs = ordered_set(
+            Song.from_binary(binary, order, encoding) for _ in range(songs_length)
+        )
+
+        return cls(
+            volume=volume,
+            sfx_volume=sfx_volume,
+            udid=udid,
+            name=name,
+            id=id,
+            account_id=account_id,
+            password=password,
+            session_id=session_id,
+            cube_id=cube_id,
+            ship_id=ship_id,
+            ball_id=ball_id,
+            ufo_id=ufo_id,
+            wave_id=wave_id,
+            robot_id=robot_id,
+            spider_id=spider_id,
+            color_1_id=color_1_id,
+            color_2_id=color_2_id,
+            trail_id=trail_id,
+            explosion_id=explosion_id,
+            icon_type=icon_type,
+            secret_value=secret_value,
+            moderator=moderator,
+            show_song_markers=show_song_markers,
+            show_progress_bar=show_progress_bar,
+            clicked_icons=clicked_icons,
+            clicked_editor=clicked_editor,
+            clicked_practice=clicked_practice,
+            shown_editor_guide=shown_editor_guide,
+            shown_low_detail=shown_low_detail,
+            rated_game=rated_game,
+            bootups=bootups,
+            values=values,
+            unlock_values=unlock_values,
+            custom_objects=custom_objects,
+            statistics=statistics,
+            official_levels=official_levels,
+            saved_levels=saved_levels,
+            followed=followed,
+            last_played=last_played,
+            filters=filters,
+            daily_levels=daily_levels,
+            daily_id=daily_id,
+            weekly_id=weekly_id,
+            liked=liked,
+            rated=rated,
+            reported=reported,
+            demon_rated=demon_rated,
+            gauntlet_levels=gauntlet_levels,
+            saved_folders=saved_folders,
+            created_folders=created_folders,
+            created_levels=created_levels,
+            songs=songs,
+        )
+
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+    ) -> None:
+        liked_bit = LIKED_BIT
+
+        writer = Writer(binary)
+
+        writer.write_f32(self.volume, order)
+        writer.write_f32(self.sfx_volume, order)
+
+        data = self.udid.encode(encoding)
+
+        writer.write_u8(len(data), order)
+
+        writer.write(data)
+
+        data = self.name.encode(encoding)
+
+        writer.write_u8(len(data), order)
+
+        writer.write(data)
+
+        writer.write_u32(self.id, order)
+        writer.write_u32(self.account_id, order)
+
+        data = self.password.encode(encoding)
+
+        writer.write_u8(len(data), order)
+
+        writer.write(data)
+
+        writer.write_u32(self.session_id, order)
+
+        writer.write_u16(self.cube_id, order)
+        writer.write_u16(self.ship_id, order)
+        writer.write_u16(self.ball_id, order)
+        writer.write_u16(self.ufo_id, order)
+        writer.write_u16(self.wave_id, order)
+        writer.write_u16(self.robot_id, order)
+        writer.write_u16(self.spider_id, order)
+        writer.write_u16(self.color_1_id, order)
+        writer.write_u16(self.color_2_id, order)
+        writer.write_u16(self.trail_id, order)
+        writer.write_u16(self.explosion_id, order)
+
+        writer.write_u8(self.icon_type.value, order)
+
+        writer.write_u32(self.secret_value, order)
+
+        value = 0
+
+        if self.is_show_song_markers():
+            value |= SHOW_SONG_MARKERS_BIT
+
+        if self.is_show_progress_bar():
+            value |= SHOW_PROGRESS_BAR_BIT
+
+        if self.has_clicked_icons():
+            value |= CLICKED_ICONS_BIT
+
+        if self.has_clicked_editor():
+            value |= CLICKED_EDITOR_BIT
+
+        if self.has_clicked_practice():
+            value |= CLICKED_PRACTICE_BIT
+
+        if self.has_shown_editor_guide():
+            value |= SHOWN_EDITOR_GUIDE_BIT
+
+        if self.has_shown_low_detail():
+            value |= SHOWN_LOW_DETAIL_BIT
+
+        if self.has_rated_game():
+            value |= RATED_GAME_BIT
+
+        if self.is_moderator():
+            value |= MODERATOR_BIT
+
+        writer.write_u16(value, order)
+
+        writer.write_u32(self.bootups, order)
+
+        self.values.to_binary(binary, order)
+        self.unlock_values.to_binary(binary, order)
+
+        custom_objects = self.custom_objects
+
+        writer.write_u16(len(custom_objects), order)
+
+        for objects in custom_objects:
+            writer.write_u32(len(objects), order)
+
+            for object in objects:
+                object_to_binary(object, binary, order)
+
+        self.statistics.to_binary(binary, order)
+
+        official_levels = self.official_levels
+
+        writer.write_u8(len(official_levels), order)
+
+        for official_level in official_levels:
+            official_level.to_binary(binary, order, encoding)
+
+        saved_levels = self.saved_levels
+
+        writer.write_u32(len(saved_levels), order)
+
+        for saved_level in saved_levels:
+            saved_level.to_binary(binary, order, encoding)
+
+        followed = self.followed
+
+        writer.write_u32(len(followed), order)
+
+        for followed_id in followed:
+            writer.write_u32(followed_id, order)
+
+        last_played = self.last_played
+
+        writer.write_u16(len(last_played), order)
+
+        for last_played_id in last_played:
+            writer.write_u32(last_played_id, order)
+
+        # TODO: filters
+
+        daily_levels = self.daily_levels
+
+        writer.write_u32(len(daily_levels), order)
+
+        for daily_level in daily_levels:
+            daily_level.to_binary(binary, order, encoding)
+
+        writer.write_u32(self.daily_id, order)
+        writer.write_u32(self.weekly_id, order)
+
+        liked = self.liked
+
+        writer.write_u32(len(liked), order)
+
+        for level_id, is_liked in liked.items():
+            if is_liked:
+                level_id |= liked_bit
+
+            writer.write_u32(level_id, order)
+
+        rated = self.rated
+
+        writer.write_u32(len(rated), order)
+
+        for level_id, stars in rated.items():
+            writer.write_u32(level_id, order)
+            writer.write_u8(stars, order)
+
+        reported = self.reported
+
+        writer.write_u32(len(reported), order)
+
+        for level_id in reported:
+            writer.write_u32(level_id, order)
+
+        demon_rated = self.demon_rated
+
+        writer.write_u32(len(demon_rated), order)
+
+        for level_id in demon_rated:
+            writer.write_u32(level_id, order)
+
+        gauntlet_levels = self.gauntlet_levels
+
+        writer.write_u16(len(gauntlet_levels), order)
+
+        for gauntlet_level in gauntlet_levels:
+            gauntlet_level.to_binary(binary, order, encoding)
+
+        saved_folders = self.saved_folders
+
+        writer.write_u8(len(saved_folders), order)
+
+        for saved_folder in saved_folders:
+            saved_folder.to_binary(binary, order, encoding)
+
+        created_folders = self.created_folders
+
+        writer.write_u8(len(created_folders), order)
+
+        created_levels = self.created_levels
+
+        writer.write_u32(len(created_levels), order)
+
+        for created_level in created_levels:
+            created_level.to_binary(binary, order, encoding)
+
+        songs = self.songs
+
+        writer.write_u32(len(songs), order)
+
+        for song in songs:
+            song.to_binary(binary, order, encoding)
+
+    def is_moderator(self) -> bool:
+        return self.moderator
+
+    def is_show_song_markers(self) -> bool:
+        return self.show_song_markers
+
+    def is_show_progress_bar(self) -> bool:
+        return self.show_progress_bar
+
+    def has_clicked_icons(self) -> bool:
+        return self.clicked_icons
+
+    def has_clicked_editor(self) -> bool:
+        return self.clicked_editor
+
+    def has_clicked_practice(self) -> bool:
+        return self.clicked_practice
+
+    def has_shown_editor_guide(self) -> bool:
+        return self.shown_editor_guide
+
+    def has_shown_low_detail(self) -> bool:
+        return self.shown_low_detail
+
+    def has_rated_game(self) -> bool:
+        return self.rated_game

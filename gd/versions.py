@@ -6,7 +6,7 @@ from attrs import Attribute, field, frozen
 from typing_extensions import Final, Literal
 
 from gd.binary import Binary
-from gd.binary_utils import U8_SIZE, Reader, Writer, from_u8, to_u8
+from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder
 from gd.robtop import RobTop
 from gd.string import String
@@ -24,8 +24,6 @@ class Version(Binary, RobTop, String):
     major: int = field(default=0)
     minor: int = field(default=0)
 
-    base: int = field(default=BASE, repr=False)
-
     @major.validator
     def check_major(self, attribute: Attribute[int], major: int) -> None:
         if major < 0:
@@ -36,28 +34,28 @@ class Version(Binary, RobTop, String):
         if minor < 0:
             raise ValueError  # TODO: message?
 
-        if minor >= self.base:
+        if minor >= BASE:
             raise ValueError  # TODO: message?
 
     @classmethod
-    def from_value(cls: Type[V], value: int, base: int = BASE) -> V:
-        major, minor = divmod(value, base)
+    def from_value(cls: Type[V], value: int) -> V:
+        major, minor = divmod(value, BASE)
 
-        return cls(major, minor, base)
+        return cls(major, minor)
 
     def to_value(self) -> int:
-        return self.major * self.base + self.minor
+        return self.major * BASE + self.minor
 
     @classmethod
-    def from_string(cls: Type[V], string: str, base: int = BASE) -> V:
-        return cls.from_value(int(string), base)
+    def from_string(cls: Type[V], string: str) -> V:
+        return cls.from_value(int(string))
 
     def to_string(self) -> str:
         return str(self.to_value())
 
     @classmethod
-    def from_robtop(cls: Type[V], string: str, base: int = BASE) -> V:
-        return cls.from_string(string, base)
+    def from_robtop(cls: Type[V], string: str) -> V:
+        return cls.from_string(string)
 
     def to_robtop(self) -> str:
         return self.to_string()
@@ -70,11 +68,11 @@ class Version(Binary, RobTop, String):
 
     @classmethod
     def from_binary(
-        cls: Type[V], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, base: int = BASE
+        cls: Type[V], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT
     ) -> V:
         reader = Reader(binary)
 
-        return cls.from_value(reader.read_u8(order), base)
+        return cls.from_value(reader.read_u8(order))
 
     def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
         writer = Writer(binary)
@@ -129,7 +127,7 @@ class GameVersion(Version):
         return str(self.to_robtop_value())
 
     @classmethod
-    def can_be_in(cls, string: str) -> Literal[True]:
+    def can_be_in(cls, string: str) -> bool:
         return string.isdigit()
 
 

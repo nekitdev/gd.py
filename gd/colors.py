@@ -303,3 +303,20 @@ class ColorAlpha(Color):
         The alpha component is ignored.
         """
         return cls.from_rgb(r, g, b).with_a(a)
+
+    def to_value(self) -> int:
+        value = self.value
+
+        value <<= BITS
+
+        value |= self.alpha
+
+        return value
+
+    @classmethod
+    def from_value(cls: Type[A], value: int) -> A:
+        alpha = value & BYTE
+
+        value >>= BITS
+
+        return cls(value, alpha)

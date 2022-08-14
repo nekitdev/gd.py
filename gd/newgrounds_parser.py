@@ -4,13 +4,14 @@
 
 import re
 from itertools import chain
+from typing_extensions import Final
 from xml.etree import ElementTree as xml
 
 from yarl import URL
 
 from gd.errors import MissingAccess
 from gd.logging import get_logger
-from gd.typing import Dict, Iterator, List, Literal, Match, Optional, TypeVar, Union, cast, overload
+from gd.typing import Dict, Iterator, List, Literal, Match, Namespace, Optional, TypeVar, Union, cast, overload
 
 Element = xml.Element
 
@@ -45,13 +46,22 @@ __all__ = (
 T = TypeVar("T")
 U = TypeVar("U")
 
+FACTOR = 1024
+ROUNDING = 2
+
 
 def string_to_megabytes(string: str) -> float:
-    return round(int(string) / 1024 / 1024, 2)
+    return round(int(string) / FACTOR / FACTOR, ROUNDING)
 
 
-QUITE = r"""["']"""
-NOT_QUOTE = r"""[^"']"""
+QUOTE: Final = "\""
+
+
+def quote(string: str) -> str:
+    quote = QUOTE
+
+    return quote + string + quote
+
 
 re_link = re.compile(r"(https://audio\.ngfiles\.com/[^\"']+)")
 re_size = re.compile(r"[\"']filesize[\"'][ ]*:[ ]*(\d+)")
@@ -134,8 +144,8 @@ def find_info(string: str) -> Data[str, bool]:
 item_submission = r'.//a[@class="item-audiosubmission"]'
 item_title = r'.//div[@class="detail-title"]'
 
-https = "https"
-href = "href"
+HTTPS = "https"
+HREF = "href"
 
 
 def search_song_data(text: str) -> Iterator[Dict[str, Union[int, str]]]:
@@ -173,7 +183,7 @@ title = "title"
 
 
 def search_user_songs(
-    json: Dict[str, Dict[str, Dict[str, List[str]]]]
+    json: Namespace,
     # {
     #     years: {
     #         year: {

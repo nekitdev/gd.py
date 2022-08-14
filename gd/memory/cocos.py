@@ -25,15 +25,8 @@ class CCSize(Struct):
 
 
 class CCRectangle(Struct):
-    origin: CCPoint
+    point: CCPoint
     size: CCSize
-
-
-array_16: TypeAlias = mut_array(float_t, 4 * 4)
-
-
-class Matrix4(Struct):  # 4 x 4 matrix
-    matrix: array_16
 
 
 class CCAffineTransform(Struct):
@@ -68,7 +61,7 @@ class CCObject(CCCopying):
     padding: uint_t  # modified
 
 
-array_pointer: TypeAlias = mut_pointer(mut_array(mut_pointer(CCObject)))
+array_mut_pointer: TypeAlias = mut_pointer(mut_array(mut_pointer(CCObject)))
 
 
 class CCArrayStruct(Struct):
@@ -77,7 +70,7 @@ class CCArrayStruct(Struct):
     # this is actually CCObject double pointer,
     # but since we do not have indexing or iterating pointers implemented,
     # we instead make it point to an array of pointers
-    array: array_pointer
+    array: array_mut_pointer
 
 
 array_struct_pointer: TypeAlias = mut_pointer(CCArrayStruct)
@@ -85,6 +78,12 @@ array_struct_pointer: TypeAlias = mut_pointer(CCArrayStruct)
 
 class CCArray(CCObject):
     data: array_struct_pointer
+
+
+void_mut_pointer: TypeAlias = mut_pointer(void)
+this_mut_pointer: TypeAlias = mut_pointer(this)
+cc_array_mut_pointer: TypeAlias = mut_pointer(CCArray)
+cc_object_mut_pointer: TypeAlias = mut_pointer(CCObject)
 
 
 class CCNode(CCObject, vtable=True):
@@ -109,28 +108,28 @@ class CCNode(CCObject, vtable=True):
     transform: CCAffineTransform
     inverse: CCAffineTransform
 
-    camera: mut_pointer(void)  # CCCamera
+    camera: void_mut_pointer  # CCCamera
 
-    grid: mut_pointer(void)  # CCGridBase
+    grid: void_mut_pointer  # CCGridBase
 
     z_order: int_t
 
-    children: mut_pointer(CCArray)
+    children: cc_array_mut_pointer
 
-    parent: mut_pointer(this)
+    parent: this_mut_pointer
 
-    user_data: mut_pointer(void)  # void
-    user_object: mut_pointer(CCObject)
+    user_data: void_mut_pointer  # void
+    user_object: cc_object_mut_pointer
 
-    shader_program: mut_pointer(void)  # CCGLProgram
+    shader_program: void_mut_pointer  # CCGLProgram
 
     server_state: int_t  # enum
 
     order_of_arrival: uint_t
 
-    scheduler: mut_pointer(void)  # CCScheduler
+    scheduler: void_mut_pointer  # CCScheduler
 
-    action_manager: mut_pointer(void)  # CCActionManager
+    action_manager: void_mut_pointer  # CCActionManager
 
     running: bool_t
 
@@ -147,7 +146,7 @@ class CCNode(CCObject, vtable=True):
     update_script_handler: int_t
     script_type: int_t  # enum
 
-    component_container: mut_pointer(void)  # CCComponentContainer
+    component_container: void_mut_pointer  # CCComponentContainer
 
 
 class CCNodeRGBA(CCNode, vtable=True):
@@ -196,9 +195,9 @@ class CCLayer(
     keyboard_enabled: bool_t
     mouse_enabled: bool_t
 
-    script_touch_handler_entry: mut_pointer(void)  # CCTouchScriptHandlerEntry
-    script_keypad_handler_entry: mut_pointer(void)  # CCScriptHandlerEntry
-    script_accelerometer_handler_entry: mut_pointer(void)  # CCScriptHandlerEntry
+    script_touch_handler_entry: void_mut_pointer  # CCTouchScriptHandlerEntry
+    script_keypad_handler_entry: void_mut_pointer  # CCScriptHandlerEntry
+    script_accelerometer_handler_entry: void_mut_pointer  # CCScriptHandlerEntry
 
     touch_priority: int_t
     touch_mode: int_t  # enum

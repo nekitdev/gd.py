@@ -6,7 +6,7 @@ from typing import BinaryIO, Dict, Iterator, List, Optional, Tuple, Type, TypeVa
 from attrs import define, field, frozen
 
 from gd.binary_utils import Reader, Writer
-from gd.colors import Color
+from gd.colors import ColorAlpha
 from gd.enums import ByteOrder
 from gd.string_utils import maps
 from gd.typing import IntoMapping, Pairs, is_mapping
@@ -19,8 +19,7 @@ G = TypeVar("G", bound="Guideline")
 @define()
 class Guideline:
     _timestamp: float = field()
-    _color: Color = field()
-    _alpha: int = field()
+    _color: ColorAlpha = field()
 
     _guidelines: Guidelines = field(repr=False)
 

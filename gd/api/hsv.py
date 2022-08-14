@@ -2,7 +2,6 @@ from typing import BinaryIO, Type, TypeVar
 
 from attrs import define, field
 
-from gd.api.api import API
 from gd.binary import Binary
 from gd.binary_utils import Reader, Writer
 from gd.constants import BITS, BYTE
@@ -33,7 +32,7 @@ T = TypeVar("T", bound="HSV")
 
 
 @define()
-class HSV(Binary, Model, API):
+class HSV(Binary, Model):
     h: int = field(default=H_INITIAL)
     s: float = field(default=S_INITIAL)
     v: float = field(default=V_INITIAL)

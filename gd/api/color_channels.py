@@ -2,7 +2,6 @@ from typing import BinaryIO, Dict, Iterable, Type, TypeVar
 
 from attrs import define, field
 
-from gd.api.api import API
 from gd.api.hsv import HSV
 from gd.binary import Binary
 from gd.binary_utils import Reader, Writer
@@ -41,7 +40,7 @@ CC = TypeVar("CC", bound="ColorChannel")
 
 
 @define()
-class ColorChannel(Binary, API):
+class ColorChannel(Binary):
     id: int = field()
     color: Color = field(factory=Color.default)
     player_color: PlayerColor = field(default=PlayerColor.DEFAULT)

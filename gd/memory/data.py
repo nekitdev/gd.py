@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from struct import calcsize as compute_size
 from struct import pack, unpack
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Type, TypeVar
 
 from attrs import define
 
@@ -84,12 +84,6 @@ D = TypeVar("D", bound="AnyData")
 
 @define()
 class Data(Generic[T], metaclass=DataType):
-    _name: ClassVar[str] = EMPTY
-    _format: ClassVar[str] = EMPTY
-    _size: ClassVar[int] = 0
-    _alignment: ClassVar[int] = 0
-    _order: ClassVar[ByteOrder] = ByteOrder.NATIVE
-
     value: T
 
     @classmethod

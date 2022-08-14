@@ -1,35 +1,23 @@
-# DOCUMENT; TODO: IMPROVE OPTIMIZATION
-
-# type: ignore
-
-# from itertools import islice as iter_slice
-
+from typing import TYPE_CHECKING, Type, TypeAlias
 from gd.memory.markers import Struct, Union, char_t, intsize_t, mut_array, mut_pointer, uintsize_t
-
-# from gd.memory.memory_array import MemoryArray
-from gd.memory.memory_base import MemoryStruct
-from gd.memory.types import types
 from gd.memory.utils import closest_power_of_two
-from gd.platform import Platform
-from gd.typing import TYPE_CHECKING, Type
 
 if TYPE_CHECKING:
-    from gd.memory.state import BaseState  # noqa
+    from gd.memory.state import AbstractState  # noqa
 
 __all__ = ("old_std_string", "std_string")
 
 CONTENT_SIZE = 0x10
-EMPTY_STRING = ""
 NULL_BYTE = bytes(1)
 
 
-# def to_bytes(array: MemoryArray[int], length: int) -> bytes:
-#     return bytes(iter_slice(array, length))
+inline_content: TypeAlias = mut_array(char_t, CONTENT_SIZE)
+content_pointer: TypeAlias = mut_pointer(mut_array(char_t))
 
 
 class std_string_content(Union):
-    inline: mut_array(char_t, CONTENT_SIZE)
-    pointer: mut_pointer(mut_array(char_t))
+    inline: inline_content
+    pointer: content_pointer
 
 
 class std_string(Struct):

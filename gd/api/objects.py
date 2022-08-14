@@ -47,7 +47,7 @@ __all__ = (
     "RotateTrigger",
     "FollowTrigger",
     "ShakeTrigger",
-    "AnimationTrigger",
+    "AnimateTrigger",
     "TouchTrigger",
     "CountTrigger",
     "InstantCountTrigger",

@@ -62,7 +62,7 @@ WRITE_BINARY = "wb"
 DEFAULT_CUSTOM = True
 
 
-@define()
+@define(hash=True)
 class Song(Entity):
     """Represents Geometry Dash and Newgrounds songs."""
 
