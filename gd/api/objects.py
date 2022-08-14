@@ -940,6 +940,7 @@ class ColorTrigger(HasColor, HasDuration, Trigger):
 
 ALT = TypeVar("ALT", bound="AlphaTrigger")
 
+
 @define()
 class AlphaTrigger(HasDuration, Trigger):
     opacity: float = 1.0
@@ -1184,7 +1185,7 @@ class MoveTrigger(HasTargetGroup, HasEasing, HasDuration, Trigger):
 
         return self
 
-    def move_offset(self: MT, x_offset: float = 0.0, y_offset: float = 0.0) ->MT:
+    def move_offset(self: MT, x_offset: float = 0.0, y_offset: float = 0.0) -> MT:
         self.x_offset += x_offset
         self.y_offset += y_offset
 

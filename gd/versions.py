@@ -67,9 +67,7 @@ class Version(Binary, RobTop, String):
     # assume `u8` is enough
 
     @classmethod
-    def from_binary(
-        cls: Type[V], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT
-    ) -> V:
+    def from_binary(cls: Type[V], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> V:
         reader = Reader(binary)
 
         return cls.from_value(reader.read_u8(order))

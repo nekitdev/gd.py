@@ -1,7 +1,18 @@
 from itertools import count
 from operator import attrgetter as get_attribute_factory
 from typing import (
-    AbstractSet, BinaryIO, Iterable, Iterator, List, Optional, Sequence, Set, Type, TypeVar, Union, overload
+    AbstractSet,
+    BinaryIO,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Type,
+    TypeVar,
+    Union,
+    overload,
 )
 
 from attrs import define, field
@@ -225,9 +236,7 @@ class Editor(Binary, Sequence[Object]):
 
         iterable_length = reader.read_u32(order)
 
-        iterable = (
-            object_from_binary(binary, order) for _ in range(iterable_length)
-        )
+        iterable = (object_from_binary(binary, order) for _ in range(iterable_length))
 
         return cls.from_object_iterable(iterable, header)
 

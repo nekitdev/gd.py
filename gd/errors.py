@@ -180,7 +180,6 @@ class InternalError(GDError):
     pass
 
 
-
 CAN_NOT_DEREFERENCE_NULL_POINTER = "can not dereference null pointer"
 
 

@@ -6,11 +6,7 @@ from attrs import frozen
 
 from gd.memory.data import AnyData
 from gd.memory.types import Types
-from gd.platform import (
-    SYSTEM_PLATFORM_CONFIG,
-    Platform,
-    PlatformConfig,
-)
+from gd.platform import SYSTEM_PLATFORM_CONFIG, Platform, PlatformConfig
 
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState

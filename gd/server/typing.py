@@ -1,8 +1,8 @@
 from abc import abstractmethod
 from typing import Any, Awaitable, TypeVar
-from typing_extensions import Protocol
 
 from aiohttp.web import Application, Request, Response, StreamResponse
+from typing_extensions import Protocol
 
 from gd.typing import Binary, StringMapping, Unary
 

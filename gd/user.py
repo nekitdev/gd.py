@@ -4,10 +4,10 @@ from datetime import datetime
 from typing import TYPE_CHECKING, AsyncIterator, BinaryIO, Dict, Iterable, Optional, Type, TypeVar
 
 from attrs import define
-from gd.async_utils import gather_iterable
 
+from gd.async_utils import gather_iterable
 from gd.await_iters import wrap_await_iter
-from gd.binary_utils import Reader, Writer, UTF_8
+from gd.binary_utils import UTF_8, Reader, Writer
 from gd.colors import Color
 from gd.constants import (
     DEFAULT_COLOR_1_ID,
@@ -33,7 +33,6 @@ from gd.enums import (  # Orientation,
     Role,
 )
 from gd.filters import Filters
-
 from gd.image.factory import FACTORY, connect_images
 from gd.image.icon import Icon
 from gd.models import CreatorModel
@@ -288,8 +287,8 @@ class User(Entity):
 
         message_state_value = (value & MESSAGE_STATE_MASK) >> MESSAGE_STATE_SHIFT
         friend_request_state_value = (
-            (value & FRIEND_REQUEST_STATE_MASK) >> FRIEND_REQUEST_STATE_SHIFT
-        )
+            value & FRIEND_REQUEST_STATE_MASK
+        ) >> FRIEND_REQUEST_STATE_SHIFT
         comment_state_value = (value & COMMENT_STATE_MASK) >> COMMENT_STATE_SHIFT
 
         message_state = MessageState(message_state_value)

@@ -214,7 +214,9 @@ class Factory:
 
         return (sprite, self.icon_image)
 
-    async def generate_async(self, icon: Icon, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT) -> Image:
+    async def generate_async(
+        self, icon: Icon, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
+    ) -> Image:
         return await run_blocking(self.generate, icon, width=width, height=height)
 
     def generate(

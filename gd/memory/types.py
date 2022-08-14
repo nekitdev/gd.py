@@ -1,13 +1,14 @@
 from typing import ClassVar, Type, TypeVar
 
 from attrs import define
-from ..enums import Platform
 
 from gd.memory.data import AnyData, Data
 from gd.memory.traits import Layout
 from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM_CONFIG, PlatformConfig
 from gd.string_utils import tick
 from gd.typing import DecoratorIdentity, StringDict, Unary, get_name
+
+from ..enums import Platform
 
 __all__ = (
     "Types",
@@ -116,6 +117,7 @@ CAN_NOT_FIND_ALL_INTEGER_TYPES = "can not find all integer types"
 
 
 try:
+
     class int8(Data[int], format=c_int_types[8].format):
         pass
 

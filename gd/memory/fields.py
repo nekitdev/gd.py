@@ -1,4 +1,15 @@
-from typing import Any, Generic, Iterator, Optional, Tuple, Type, TypeVar, Union, get_type_hints, overload
+from typing import (
+    Any,
+    Generic,
+    Iterator,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    get_type_hints,
+    overload,
+)
 
 from attrs import define, field, frozen
 

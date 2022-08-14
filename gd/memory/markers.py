@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar
 from typing import Union as TypeUnion
 
 from typing_extensions import Never
-from gd.memory.context import Context
 
+from gd.memory.context import Context
 from gd.memory.traits import Layout
 from gd.memory.utils import set_name
 from gd.platform import PlatformConfig
@@ -16,7 +16,10 @@ if TYPE_CHECKING:
     from gd.memory.memory_arrays import MemoryArray, MemoryMutArray
     from gd.memory.memory_base import MemoryStruct, MemoryUnion
     from gd.memory.memory_pointers_refs import (
-        MemoryMutPointer, MemoryMutRef, MemoryPointer, MemoryRef
+        MemoryMutPointer,
+        MemoryMutRef,
+        MemoryPointer,
+        MemoryRef,
     )
     from gd.memory.memory_special import MemoryThis, MemoryVoid
     from gd.memory.state import AbstractState

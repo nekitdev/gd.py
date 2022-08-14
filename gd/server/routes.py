@@ -1,6 +1,6 @@
 from typing import Any
-from aiohttp.web import RouteTableDef
 
+from aiohttp.web import RouteTableDef
 from yarl import URL
 
 from gd.constants import SLASH

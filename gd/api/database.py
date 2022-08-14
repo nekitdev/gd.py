@@ -1892,9 +1892,7 @@ class Database(Binary):
 
         rated_length = reader.read_u32(order)
 
-        rated = {
-            reader.read_u32(order): reader.read_u8(order) for _ in range(rated_length)
-        }
+        rated = {reader.read_u32(order): reader.read_u8(order) for _ in range(rated_length)}
 
         reported_length = reader.read_u32(order)
 
@@ -1930,9 +1928,7 @@ class Database(Binary):
 
         songs_length = reader.read_u32(order)
 
-        songs = ordered_set(
-            Song.from_binary(binary, order, encoding) for _ in range(songs_length)
-        )
+        songs = ordered_set(Song.from_binary(binary, order, encoding) for _ in range(songs_length))
 
         return cls(
             volume=volume,

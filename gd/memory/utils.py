@@ -11,7 +11,13 @@ from gd.binary_utils import BITS
 from gd.typing import AnyType, DecoratorIdentity, DynamicTuple, Namespace
 
 __all__ = (
-    "Structure", "Union", "bits", "closest_power_of_two", "closest_power_of_two_bits", "external", "set_name"
+    "Structure",
+    "Union",
+    "bits",
+    "closest_power_of_two",
+    "closest_power_of_two_bits",
+    "external",
+    "set_name",
 )
 
 

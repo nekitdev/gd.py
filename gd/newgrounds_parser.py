@@ -4,14 +4,26 @@
 
 import re
 from itertools import chain
-from typing_extensions import Final
 from xml.etree import ElementTree as xml
 
+from typing_extensions import Final
 from yarl import URL
 
 from gd.errors import MissingAccess
 from gd.logging import get_logger
-from gd.typing import Dict, Iterator, List, Literal, Match, Namespace, Optional, TypeVar, Union, cast, overload
+from gd.typing import (
+    Dict,
+    Iterator,
+    List,
+    Literal,
+    Match,
+    Namespace,
+    Optional,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
 
 Element = xml.Element
 
@@ -54,7 +66,7 @@ def string_to_megabytes(string: str) -> float:
     return round(int(string) / FACTOR / FACTOR, ROUNDING)
 
 
-QUOTE: Final = "\""
+QUOTE: Final = '"'
 
 
 def quote(string: str) -> str:

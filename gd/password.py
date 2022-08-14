@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import BinaryIO, ClassVar, Optional, Type, TypeVar
 
 from attrs import Attribute, define, field
+
 from gd.binary import Binary
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder
-
 from gd.robtop import RobTop
 
 __all__ = ("Password",)

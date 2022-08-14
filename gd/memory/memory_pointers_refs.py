@@ -13,7 +13,14 @@ from gd.typing import AnyType, DynamicTuple, Namespace, is_same_type
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
 
-__all__ = ("MemoryAbstractPointerType", "MemoryAbstractPointer", "MemoryPointer", "MemoryMutPointer", "MemoryRef", "MemoryMutRef")
+__all__ = (
+    "MemoryAbstractPointerType",
+    "MemoryAbstractPointer",
+    "MemoryPointer",
+    "MemoryMutPointer",
+    "MemoryRef",
+    "MemoryMutRef",
+)
 
 MAPT = TypeVar("MAPT", bound="MemoryAbstractPointerType")
 

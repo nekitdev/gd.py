@@ -1,5 +1,6 @@
 from datetime import timedelta
 from typing import BinaryIO
+
 from attrs import define, field
 
 from gd.api.recording import Recording
@@ -83,7 +84,9 @@ class LevelAPI:
     def __hash__(self) -> int:
         return self.id
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+    ) -> None:
         writer = Writer(binary)
 
         writer.write_u64(self.id, order)

@@ -67,7 +67,16 @@ from gd.memory.internal import (
 from gd.memory.internal import write_process_memory as system_write_process_memory
 from gd.memory.traits import Layout, Read, Write
 from gd.memory.types import Types
-from gd.platform import ANDROID, IOS, LINUX, MACOS, WINDOWS, Platform, PlatformConfig, system_platform
+from gd.platform import (
+    ANDROID,
+    IOS,
+    LINUX,
+    MACOS,
+    WINDOWS,
+    Platform,
+    PlatformConfig,
+    system_platform,
+)
 from gd.text_utils import nice_repr
 from gd.typing import Callable, Type, TypeVar, Union, cast
 

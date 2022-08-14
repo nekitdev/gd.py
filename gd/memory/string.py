@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Type, TypeAlias
+
 from gd.memory.markers import Struct, Union, char_t, intsize_t, mut_array, mut_pointer, uintsize_t
 from gd.memory.utils import closest_power_of_two
 
