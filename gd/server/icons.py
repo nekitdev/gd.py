@@ -43,6 +43,7 @@ async def get_icons(request: Request) -> FileResponse:
         return FileResponse(path)
 
     factory = FACTORY
+    factory.load()
 
     query = request.query
 
