@@ -32,6 +32,8 @@ from gd.song import Song
 from gd.user import User
 from gd.versions import CURRENT_GAME_VERSION, GameVersion
 
+from .binary import VERSION
+
 if TYPE_CHECKING:
     from gd.client import Client  # noqa
     from gd.comments import Comment  # noqa
@@ -83,7 +85,11 @@ class Level(Entity):
     timely_type: TimelyType = field(default=TimelyType.DEFAULT)
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        self,
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> None:
         writer = Writer(binary)
 
@@ -160,7 +166,11 @@ class Level(Entity):
 
     @classmethod
     def from_binary(
-        cls: Type[L], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        cls: Type[L],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> L:
         two_player_bit = TWO_PLAYER_BIT
         verified_coins_bit = VERIFIED_COINS_BIT

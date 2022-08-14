@@ -5,7 +5,7 @@ from attrs import define, field
 from gd.api.color_channels import ColorChannels
 
 # from gd.api.guidelines import Guidelines
-from gd.binary import Binary
+from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ID
 from gd.enums import ByteOrder, GameMode, Speed
@@ -63,7 +63,9 @@ class Header(Binary):
     color_channels: ColorChannels = field(factory=ColorChannels)
 
     @classmethod
-    def from_binary(cls: Type[H], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> H:
+    def from_binary(
+        cls: Type[H], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> H:
         mini_mode_bit = MINI_MODE_BIT
         dual_mode_bit = DUAL_MODE_BIT
         start_pos_bit = START_POS_BIT
@@ -125,7 +127,9 @@ class Header(Binary):
             color_channels=color_channels,
         )
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         writer = Writer(binary)
 
         writer.write_u8(self.background_id, order)

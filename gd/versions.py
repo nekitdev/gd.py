@@ -5,7 +5,7 @@ from typing import BinaryIO, Type, TypeVar
 from attrs import Attribute, field, frozen
 from typing_extensions import Final, Literal
 
-from gd.binary import Binary
+from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder
 from gd.robtop import RobTop
@@ -67,12 +67,16 @@ class Version(Binary, RobTop, String):
     # assume `u8` is enough
 
     @classmethod
-    def from_binary(cls: Type[V], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> V:
+    def from_binary(
+        cls: Type[V], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> V:
         reader = Reader(binary)
 
         return cls.from_value(reader.read_u8(order))
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         writer = Writer(binary)
 
         writer.write_u8(self.to_value(), order)

@@ -8,6 +8,7 @@ __author__ = "nekitdev"
 __license__ = "MIT"
 __version__ = "1.0.0-alpha.1"
 
+from gd import api, encoding, events, image, json, memory, tasks
 from gd.artist import Artist
 
 # from gd.client import Client
@@ -117,8 +118,6 @@ from gd.password import Password
 # from gd.user import User
 from gd.version import python_version_info, version_info
 from gd.versions import GameVersion, Version
-
-# from gd import api, encoding, events, image, json, memory, tasks
 
 __all__ = (
     # errors

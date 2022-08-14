@@ -33,6 +33,8 @@ from gd.official_songs import (
 )
 from gd.typing import IntoPath, Predicate
 
+from .binary import VERSION
+
 __all__ = ("Song",)
 
 
@@ -76,7 +78,11 @@ class Song(Entity):
 
     @classmethod
     def from_binary(
-        cls: Type[S], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        cls: Type[S],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> S:
         reader = Reader(binary)
 
@@ -107,7 +113,11 @@ class Song(Entity):
         )
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        self,
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> None:
         writer = Writer(binary)
 

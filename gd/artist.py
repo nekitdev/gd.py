@@ -12,6 +12,8 @@ from gd.entity import Entity
 from gd.enums import ByteOrder
 from gd.string_utils import case_fold, clear_whitespace
 
+from .binary import VERSION
+
 if TYPE_CHECKING:
     from gd.song import Song
 
@@ -53,7 +55,11 @@ class Artist(Entity):
 
     @classmethod
     def from_binary(
-        cls: Type[A], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        cls: Type[A],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> A:
         reader = Reader(binary)
 
@@ -66,7 +72,11 @@ class Artist(Entity):
         return cls(name)
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        self,
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> None:
         writer = Writer(binary)
 

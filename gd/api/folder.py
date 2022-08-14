@@ -2,7 +2,7 @@ from typing import BinaryIO, Type, TypeVar
 
 from attrs import define
 
-from gd.binary import Binary
+from gd.binary import VERSION, Binary
 from gd.binary_utils import UTF_8, Reader, Writer
 from gd.enums import ByteOrder
 
@@ -23,7 +23,11 @@ class Folder(Binary):
 
     @classmethod
     def from_binary(
-        cls: Type[F], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        cls: Type[F],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> F:
         reader = Reader(binary)
 
@@ -36,7 +40,11 @@ class Folder(Binary):
         return cls(id, name)
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        self,
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> None:
         writer = Writer(binary)
 

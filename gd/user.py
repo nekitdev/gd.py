@@ -37,6 +37,8 @@ from gd.image.factory import FACTORY, connect_images
 from gd.image.icon import Icon
 from gd.models import CreatorModel
 
+from .binary import VERSION
+
 if TYPE_CHECKING:
     from PIL.Image import Image
 
@@ -231,7 +233,11 @@ class User(Entity):
 
     @classmethod
     def from_binary(
-        cls: Type[U], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        cls: Type[U],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> U:
         glow_bit = GLOW_BIT
         banned_bit = BANNED_BIT
@@ -385,7 +391,11 @@ class User(Entity):
         )
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        self,
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> None:
         super().to_binary(binary, order)
 

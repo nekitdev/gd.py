@@ -4,7 +4,7 @@ from typing import BinaryIO
 from attrs import define, field
 
 from gd.api.recording import Recording
-from gd.binary import Binary
+from gd.binary import VERSION, Binary
 from gd.binary_utils import UTF_8, Writer
 from gd.constants import DEFAULT_ID, DEFAULT_VERSION, EMPTY, EMPTY_BYTES
 from gd.enums import ByteOrder, Difficulty, LevelLength, LevelType
@@ -85,7 +85,11 @@ class LevelAPI:
         return self.id
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        self,
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> None:
         writer = Writer(binary)
 

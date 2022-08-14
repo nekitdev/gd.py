@@ -4,7 +4,7 @@ from typing import BinaryIO, ClassVar, Optional, Type, TypeVar
 
 from attrs import Attribute, define, field
 
-from gd.binary import Binary
+from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder
 from gd.robtop import RobTop
@@ -47,7 +47,9 @@ class Password(Binary, RobTop):
         return self.copyable
 
     @classmethod
-    def from_binary(cls: Type[P], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> P:
+    def from_binary(
+        cls: Type[P], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> P:
         copyable_bit = COPYABLE_BIT
         password_bit = PASSWORD_BIT
 
@@ -66,7 +68,9 @@ class Password(Binary, RobTop):
 
         return cls(password=password, copyable=copyable)
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         writer = Writer(binary)
 
         value = self.password

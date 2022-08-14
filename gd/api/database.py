@@ -3,10 +3,10 @@ from typing import BinaryIO, Dict, Iterable, List, Optional, Type, TypeVar
 from attrs import define, field
 
 from gd.api.folder import Folder
-from gd.api.level_api import LevelAPI
+from gd.api.level import LevelAPI
 from gd.api.objects import Object, object_from_binary, object_to_binary
 from gd.api.ordered_set import OrderedSet, ordered_set
-from gd.binary import Binary
+from gd.binary import VERSION, Binary
 from gd.binary_utils import UTF_8, Reader, Writer
 from gd.constants import DEFAULT_ID, EMPTY
 from gd.enums import ByteOrder, Filter, IconType, LevelLeaderboardStrategy
@@ -548,7 +548,9 @@ class Variables(Binary):
         return self.smooth_fix_in_editor
 
     @classmethod
-    def from_binary(cls: Type[V], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> V:
+    def from_binary(
+        cls: Type[V], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> V:
         reader = Reader(binary)
 
         follow_player_bit = FOLLOW_PLAYER_BIT
@@ -847,7 +849,9 @@ class Variables(Binary):
             smooth_fix_in_editor=smooth_fix_in_editor,
         )
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         writer = Writer(binary)
 
         value = 0
@@ -1136,7 +1140,9 @@ class Values(Binary):
     colors_1: OrderedSet[int] = field(factory=ordered_set)
     colors_2: OrderedSet[int] = field(factory=ordered_set)
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         writer = Writer(binary)
 
         self.variables.to_binary(binary, order)
@@ -1160,7 +1166,12 @@ class Values(Binary):
                 writer.write_u16(item, order)
 
     @classmethod
-    def from_binary(cls: Type[VS], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> VS:
+    def from_binary(
+        cls: Type[VS],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> VS:
         reader = Reader(binary)
 
         variables = Variables.from_binary(binary, order)
@@ -1287,7 +1298,12 @@ class UnlockValues(Binary):
     # discord_chest_unlocked: bool = False
 
     @classmethod
-    def from_binary(cls: Type[UV], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> UV:
+    def from_binary(
+        cls: Type[UV],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> UV:
         reader = Reader(binary)
 
         the_challenge_unlocked_bit = THE_CHALLENGE_UNLOCKED_BIT
@@ -1382,7 +1398,9 @@ class UnlockValues(Binary):
             # discord_chest_unlocked=discord_chest_unlocked,
         )
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         writer = Writer(binary)
 
         value = 0
@@ -1582,7 +1600,9 @@ class Statistics(Binary):
 
     official_coins: Dict[int, int] = field(factory=dict)
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         writer = Writer(binary)
 
         writer.write_u32(self.jumps, order)
@@ -1617,7 +1637,9 @@ class Statistics(Binary):
             writer.write_u8(count, order)
 
     @classmethod
-    def from_binary(cls: Type[S], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> S:
+    def from_binary(
+        cls: Type[S], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> S:
         reader = Reader(binary)
 
         jumps = reader.read_u32(order)
@@ -1766,7 +1788,11 @@ class Database(Binary):
 
     @classmethod
     def from_binary(
-        cls: Type[D], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        cls: Type[D],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> D:
         show_song_markers_bit = SHOW_SONG_MARKERS_BIT
         show_progress_bar_bit = SHOW_PROGRESS_BAR_BIT
@@ -1986,7 +2012,11 @@ class Database(Binary):
         )
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        self,
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> None:
         liked_bit = LIKED_BIT
 

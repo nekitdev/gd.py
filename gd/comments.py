@@ -11,6 +11,8 @@ from gd.constants import BYTE, DEFAULT_GET_DATA, DEFAULT_USE_CLIENT
 from gd.entity import Entity
 from gd.enums import ByteOrder
 
+from .binary import VERSION
+
 # from gd.models import LevelCommentModel, UserCommentModel
 
 __all__ = ("Comment", "LevelComment", "UserComment")
@@ -36,7 +38,11 @@ class Comment(Entity):
 
     @classmethod
     def from_binary(
-        cls: Type[C], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        cls: Type[C],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> C:
         reader = Reader(binary)
 
@@ -63,7 +69,11 @@ class Comment(Entity):
         )
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        self,
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> None:
         super().to_binary(binary, order)
 
@@ -108,7 +118,11 @@ class LevelComment(Comment):
 
     @classmethod
     def from_binary(
-        cls: Type[LC], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        cls: Type[LC],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> LC:
         reader = Reader(binary)
 
@@ -148,7 +162,11 @@ class LevelComment(Comment):
         )
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        self,
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> None:
         super().to_binary(binary, order, encoding)
 

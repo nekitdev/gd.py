@@ -5,7 +5,7 @@ from attrs import define, field
 from typing_extensions import TypeGuard
 
 from gd.api.hsv import HSV
-from gd.binary import Binary
+from gd.binary import VERSION, Binary
 from gd.binary_utils import BITS, UTF_8, Reader, Writer
 from gd.colors import Color
 from gd.constants import EMPTY
@@ -27,8 +27,6 @@ from gd.enums import (
 )
 from gd.typing import is_instance
 
-O = TypeVar("O", bound="Object")
-
 __all__ = (
     "Object",
     "AnimatedObject",
@@ -38,12 +36,13 @@ __all__ = (
     "Teleport",
     "PickupItem",
     "CollisionBlock",
-    "Trigger",
     "ColorTrigger",
     "PulseTrigger",
+    "AlphaTrigger",
     "MoveTrigger",
     "SpawnTrigger",
     "StopTrigger",
+    "ToggleTrigger",
     "RotateTrigger",
     "FollowTrigger",
     "ShakeTrigger",
@@ -55,7 +54,13 @@ __all__ = (
     "FollowPlayerYTrigger",
     "OnDeathTrigger",
     "CollisionTrigger",
+    "object_from_binary",
+    "object_to_binary",
+    "object_from_bytes",
+    "object_to_bytes",
 )
+
+O = TypeVar("O", bound="Object")
 
 H_FLIPPED_BIT = 0b00000001
 V_FLIPPED_BIT = 0b00000010
@@ -133,7 +138,9 @@ class Object(Binary):
     link_id: int = 0
 
     @classmethod
-    def from_binary(cls: Type[O], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> O:
+    def from_binary(
+        cls: Type[O], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> O:
         h_flipped_bit = H_FLIPPED_BIT
         v_flipped_bit = V_FLIPPED_BIT
         do_not_fade_bit = DO_NOT_FADE_BIT
@@ -238,7 +245,9 @@ class Object(Binary):
             link_id=link_id,
         )
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         writer = Writer(binary)
 
         flag = ObjectFlag.SIMPLE
@@ -434,7 +443,9 @@ class Coin(Object):
     coin_id: int = 0
 
     @classmethod
-    def from_binary(cls: Type[C], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> C:
+    def from_binary(
+        cls: Type[C], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> C:
         coin = super().from_binary(binary, order)
 
         reader = Reader(binary)
@@ -445,7 +456,9 @@ class Coin(Object):
 
         return coin
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -462,7 +475,11 @@ class Text(Object):
 
     @classmethod
     def from_binary(
-        cls: Type[S], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        cls: Type[S],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> S:
         text = super().from_binary(binary, order)
 
@@ -477,7 +494,11 @@ class Text(Object):
         return text
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, encoding: str = UTF_8
+        self,
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = UTF_8,
     ) -> None:
         super().to_binary(binary, order)
 
@@ -502,7 +523,9 @@ class Teleport(Object):
     smooth: bool = False
 
     @classmethod
-    def from_binary(cls: Type[P], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> P:
+    def from_binary(
+        cls: Type[P], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> P:
         smooth_bit = SMOOTH_BIT
 
         teleport = super().from_binary(binary, order)
@@ -520,7 +543,9 @@ class Teleport(Object):
 
         return teleport
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -549,7 +574,12 @@ class AnimatedObject(Object):
     animation_speed: float = 0.0
 
     @classmethod
-    def from_binary(cls: Type[AO], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> AO:
+    def from_binary(
+        cls: Type[AO],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> AO:
         randomize_start_bit = RANDOMIZE_START_BIT
 
         animated_object = super().from_binary(binary, order)
@@ -568,7 +598,9 @@ class AnimatedObject(Object):
 
         return animated_object
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -599,7 +631,12 @@ class CollisionBlock(Object):
     dynamic: bool = False
 
     @classmethod
-    def from_binary(cls: Type[CB], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> CB:
+    def from_binary(
+        cls: Type[CB],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> CB:
         dynamic_bit = DYNAMIC_BIT
 
         collision_block = super().from_binary(binary, order)
@@ -616,7 +653,9 @@ class CollisionBlock(Object):
 
         return collision_block
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -698,7 +737,12 @@ OP = TypeVar("OP", bound="Orb")
 @define()
 class Orb(HasMultiActivate, Object):
     @classmethod
-    def from_binary(cls: Type[OP], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> OP:
+    def from_binary(
+        cls: Type[OP],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> OP:
         orb = super().from_binary(binary, order)
 
         multi_activate_bit = MULTI_ACTIVATE_BIT
@@ -713,7 +757,9 @@ class Orb(HasMultiActivate, Object):
 
         return orb
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -734,7 +780,12 @@ class PickupItem(HasTargetGroup, HasItem, Object):
     mode: PickupItemMode = PickupItemMode.DEFAULT
 
     @classmethod
-    def from_binary(cls: Type[PI], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> PI:
+    def from_binary(
+        cls: Type[PI],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> PI:
         pickup_item = super().from_binary(binary, order)
 
         reader = Reader(binary)
@@ -754,7 +805,9 @@ class PickupItem(HasTargetGroup, HasItem, Object):
 
         return pickup_item
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -779,7 +832,9 @@ class Trigger(Object):
     multi_trigger: bool = False
 
     @classmethod
-    def from_binary(cls: Type[T], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> T:
+    def from_binary(
+        cls: Type[T], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> T:
         touch_triggered_bit = TOUCH_TRIGGERED_BIT
         spawn_triggered_bit = SPAWN_TRIGGERED_BIT
         multi_trigger_bit = MULTI_TRIGGER_BIT
@@ -800,7 +855,9 @@ class Trigger(Object):
 
         return trigger
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -858,7 +915,12 @@ class ColorTrigger(HasColor, HasDuration, Trigger):
         return self.copy_opacity
 
     @classmethod
-    def from_binary(cls: Type[CLT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> CLT:
+    def from_binary(
+        cls: Type[CLT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> CLT:
         color_trigger = super().from_binary(binary, order)
 
         blending_bit = BLENDING_BIT
@@ -907,7 +969,9 @@ class ColorTrigger(HasColor, HasDuration, Trigger):
 
         return color_trigger
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -946,7 +1010,12 @@ class AlphaTrigger(HasDuration, Trigger):
     opacity: float = 1.0
 
     @classmethod
-    def from_binary(cls: Type[ALT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> ALT:
+    def from_binary(
+        cls: Type[ALT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> ALT:
         alpha_trigger = super().from_binary(binary, order)
 
         reader = Reader(binary)
@@ -960,7 +1029,9 @@ class AlphaTrigger(HasDuration, Trigger):
 
         return alpha_trigger
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -1000,7 +1071,12 @@ class PulseTrigger(Trigger):
         return self.exclusive
 
     @classmethod
-    def from_binary(cls: Type[PLT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> PLT:
+    def from_binary(
+        cls: Type[PLT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> PLT:
         exclusive_bit = EXCLUSIVE_BIT
 
         pulse_trigger = super().from_binary(binary, order)
@@ -1046,7 +1122,9 @@ class PulseTrigger(Trigger):
 
         return pulse_trigger
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         writer = Writer(binary)
 
         writer.write_f32(self.fade_in, order)
@@ -1087,7 +1165,12 @@ class MoveTrigger(HasTargetGroup, HasEasing, HasDuration, Trigger):
     target_type: TargetType = TargetType.DEFAULT
 
     @classmethod
-    def from_binary(cls: Type[MT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> MT:
+    def from_binary(
+        cls: Type[MT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> MT:
         locked_to_player_x_bit = LOCKED_TO_PLAYER_X_BIT
         locked_to_player_y_bit = LOCKED_TO_PLAYER_Y_BIT
 
@@ -1133,7 +1216,9 @@ class MoveTrigger(HasTargetGroup, HasEasing, HasDuration, Trigger):
 
         return move_trigger
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -1203,7 +1288,12 @@ class SpawnTrigger(HasDelay, HasTargetGroup, Trigger):
     editor_disable: bool = False
 
     @classmethod
-    def from_binary(cls: Type[SPT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> SPT:
+    def from_binary(
+        cls: Type[SPT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> SPT:
         editor_disable_bit = EDITOR_DISABLE_BIT
 
         spawn_trigger = super().from_binary(binary, order)
@@ -1224,7 +1314,9 @@ class SpawnTrigger(HasDelay, HasTargetGroup, Trigger):
 
         spawn_trigger.editor_disable = editor_disable
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -1250,7 +1342,12 @@ ST = TypeVar("ST", bound="StopTrigger")
 @define()
 class StopTrigger(HasTargetGroup, Trigger):
     @classmethod
-    def from_binary(cls: Type[ST], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> ST:
+    def from_binary(
+        cls: Type[ST],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> ST:
         stop_trigger = super().from_binary(binary, order)
 
         reader = Reader(binary)
@@ -1261,7 +1358,9 @@ class StopTrigger(HasTargetGroup, Trigger):
 
         return stop_trigger
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -1280,7 +1379,12 @@ class ToggleTrigger(HasActivateGroup, HasTargetGroup, Trigger):
     toggled: bool = False
 
     @classmethod
-    def from_binary(cls: Type[TT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> TT:
+    def from_binary(
+        cls: Type[TT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> TT:
         toggled_bit = TOGGLED_BIT
         activate_group_bit = ACTIVATE_GROUP_BIT
 
@@ -1304,7 +1408,9 @@ class ToggleTrigger(HasActivateGroup, HasTargetGroup, Trigger):
 
         return toggle_trigger
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -1342,7 +1448,12 @@ class RotateTrigger(HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, 
     rotation_locked: bool = False
 
     @classmethod
-    def from_binary(cls: Type[RT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> RT:
+    def from_binary(
+        cls: Type[RT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> RT:
         rotation_locked_bit = ROTATION_LOCKED_BIT
 
         rotate_trigger = super().from_binary(binary, order)
@@ -1378,7 +1489,9 @@ class RotateTrigger(HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, 
 
         rotate_trigger.rotation_locked = rotation_locked
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -1428,7 +1541,12 @@ class FollowTrigger(HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, 
     y_modifier: float = 1.0
 
     @classmethod
-    def from_binary(cls: Type[FT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> FT:
+    def from_binary(
+        cls: Type[FT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> FT:
         follow_trigger = super().from_binary(binary, order)
 
         reader = Reader(binary)
@@ -1460,7 +1578,9 @@ class FollowTrigger(HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, 
 
         return follow_trigger
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -1486,7 +1606,12 @@ class ShakeTrigger(HasDuration, Trigger):
     interval: float = 0.0
 
     @classmethod
-    def from_binary(cls: Type[SHT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> SHT:
+    def from_binary(
+        cls: Type[SHT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> SHT:
         shake_trigger = super().from_binary(binary, order)
 
         reader = Reader(binary)
@@ -1499,7 +1624,9 @@ class ShakeTrigger(HasDuration, Trigger):
         shake_trigger.strength = strength
         shake_trigger.interval = interval
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -1517,7 +1644,12 @@ class AnimateTrigger(HasTargetGroup, Trigger):
     animation_id: int = 0
 
     @classmethod
-    def from_binary(cls: Type[AT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> AT:
+    def from_binary(
+        cls: Type[AT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> AT:
         animate_trigger = super().from_binary(binary, order)
 
         reader = Reader(binary)
@@ -1532,7 +1664,9 @@ class AnimateTrigger(HasTargetGroup, Trigger):
 
         return animate_trigger
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -1557,7 +1691,12 @@ class TouchTrigger(HasTargetGroup, Trigger):
     toggle_type: ToggleType = ToggleType.DEFAULT
 
     @classmethod
-    def from_binary(cls: Type[THT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> THT:
+    def from_binary(
+        cls: Type[THT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> THT:
         hold_mode_bit = HOLD_MODE_BIT
         dual_mode_bit = DUAL_MODE_BIT
 
@@ -1585,7 +1724,9 @@ class TouchTrigger(HasTargetGroup, Trigger):
 
         return touch_trigger
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -1615,7 +1756,12 @@ CT = TypeVar("CT", bound="CountTrigger")
 @define()
 class CountTrigger(HasMultiActivate, HasActivateGroup, HasCount, HasItem, Trigger):
     @classmethod
-    def from_binary(cls: Type[CT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> CT:
+    def from_binary(
+        cls: Type[CT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> CT:
         activate_group_bit = ACTIVATE_GROUP_BIT
         multi_activate_bit = MULTI_ACTIVATE_BIT
 
@@ -1639,7 +1785,9 @@ class CountTrigger(HasMultiActivate, HasActivateGroup, HasCount, HasItem, Trigge
         count_trigger.activate_group = activate_group
         count_trigger.multi_activate = multi_activate
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -1670,7 +1818,12 @@ class InstantCountTrigger(HasActivateGroup, HasCount, HasItem, Trigger):
     comparison: InstantCountComparison = InstantCountComparison.DEFAULT
 
     @classmethod
-    def from_binary(cls: Type[ICT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> ICT:
+    def from_binary(
+        cls: Type[ICT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> ICT:
         activate_group_bit = ACTIVATE_GROUP_BIT
 
         instant_count_trigger = super().from_binary(binary, order)
@@ -1699,7 +1852,9 @@ class InstantCountTrigger(HasActivateGroup, HasCount, HasItem, Trigger):
 
         return instant_count_trigger
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -1724,7 +1879,12 @@ PT = TypeVar("PT", bound="PickupTrigger")
 @define()
 class PickupTrigger(HasCount, HasItem, Trigger):
     @classmethod
-    def from_binary(cls: Type[PT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> PT:
+    def from_binary(
+        cls: Type[PT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> PT:
         pickup_trigger = super().from_binary(binary, order)
 
         reader = Reader(binary)
@@ -1739,7 +1899,9 @@ class PickupTrigger(HasCount, HasItem, Trigger):
 
         return pickup_trigger
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -1760,7 +1922,10 @@ class FollowPlayerYTrigger(HasDelay, HasTargetGroup, Trigger):
 
     @classmethod
     def from_binary(
-        cls: Type[FPYT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT
+        cls: Type[FPYT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
     ) -> FPYT:
         follow_player_y_trigger = super().from_binary(binary, order)
 
@@ -1784,7 +1949,9 @@ class FollowPlayerYTrigger(HasDelay, HasTargetGroup, Trigger):
 
         return follow_player_y_trigger
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -1804,7 +1971,12 @@ ODT = TypeVar("ODT", bound="OnDeathTrigger")
 @define()
 class OnDeathTrigger(HasActivateGroup, HasTargetGroup, Trigger):
     @classmethod
-    def from_binary(cls: Type[ODT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> ODT:
+    def from_binary(
+        cls: Type[ODT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> ODT:
         activate_group_bit = ACTIVATE_GROUP_BIT
 
         on_death_trigger = super().from_binary(binary, order)
@@ -1823,7 +1995,9 @@ class OnDeathTrigger(HasActivateGroup, HasTargetGroup, Trigger):
 
         return on_death_trigger
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         super().to_binary(binary, order)
 
         writer = Writer(binary)
@@ -1852,7 +2026,12 @@ class CollisionTrigger(HasActivateGroup, HasTargetGroup, Trigger):
     trigger_on_exit: bool = False
 
     @classmethod
-    def from_binary(cls: Type[CBT], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> CBT:
+    def from_binary(
+        cls: Type[CBT],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> CBT:
         block_id_mask = BLOCK_ID_MASK
         trigger_on_exit_bit = TRIGGER_ON_EXIT_BIT
 
@@ -1876,7 +2055,9 @@ class CollisionTrigger(HasActivateGroup, HasTargetGroup, Trigger):
 
         return collision_trigger
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         block_id_mask = BLOCK_ID_MASK
 
         super().to_binary(binary, order)
@@ -1965,7 +2146,9 @@ OBJECT_TYPE_TO_TYPE = {
 TYPE_TO_OBJECT_TYPE = {type: object_type for object_type, type in OBJECT_TYPE_TO_TYPE.items()}
 
 
-def object_from_binary(binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> Object:
+def object_from_binary(
+    binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+) -> Object:
     reader = Reader(binary)
 
     object_type_value = reader.read_u8(order)
@@ -1974,12 +2157,14 @@ def object_from_binary(binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -
     return OBJECT_TYPE_TO_TYPE[object_type].from_binary(binary, order)
 
 
-def object_from_bytes(data: bytes, order: ByteOrder = ByteOrder.DEFAULT) -> Object:
+def object_from_bytes(
+    data: bytes, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+) -> Object:
     return object_from_binary(BytesIO(data), order)
 
 
 def object_to_binary(
-    object: Object, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT
+    object: Object, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
 ) -> None:
     object_type = TYPE_TO_OBJECT_TYPE[type(object)]
 
@@ -1990,7 +2175,9 @@ def object_to_binary(
     object.to_binary(binary, order)
 
 
-def object_to_bytes(object: Object, order: ByteOrder = ByteOrder.DEFAULT) -> bytes:
+def object_to_bytes(
+    object: Object, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+) -> bytes:
     binary = BytesIO()
 
     object_to_binary(object, binary, order)

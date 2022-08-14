@@ -3,7 +3,7 @@ from typing import BinaryIO, Dict, Iterable, Type, TypeVar
 from attrs import define, field
 
 from gd.api.hsv import HSV
-from gd.binary import Binary
+from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
 from gd.colors import Color
 from gd.constants import BITS, BYTE, DEFAULT_ID
@@ -56,7 +56,12 @@ class ColorChannel(Binary):
     unknown_another: bool = field(default=DEFAULT_UNKNOWN_ANOTHER)
 
     @classmethod
-    def from_binary(cls: Type[CC], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> CC:
+    def from_binary(
+        cls: Type[CC],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> CC:
         bits = BITS
         byte = BYTE
 
@@ -133,7 +138,9 @@ class ColorChannel(Binary):
             unknown_another=unknown_another,
         )
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         bits = BITS
 
         player_color_mask = PLAYER_COLOR_MASK

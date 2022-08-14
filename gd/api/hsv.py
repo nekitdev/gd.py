@@ -2,7 +2,7 @@ from typing import BinaryIO, Type, TypeVar
 
 from attrs import define, field
 
-from gd.binary import Binary
+from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
 from gd.constants import BITS, BYTE
 from gd.enums import ByteOrder
@@ -128,12 +128,16 @@ class HSV(Binary, Model):
         return value
 
     @classmethod
-    def from_binary(cls: Type[T], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> T:
+    def from_binary(
+        cls: Type[T], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> T:
         reader = Reader(binary)
 
         return cls.from_value(reader.read_u32(order))
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         writer = Writer(binary)
 
         writer.write_u32(self.to_value(), order)

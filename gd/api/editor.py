@@ -20,7 +20,7 @@ from attrs import define, field
 from gd.api.color_channels import ColorChannels
 from gd.api.header import Header
 from gd.api.objects import Object, has_target_group, object_from_binary, object_to_binary
-from gd.binary import Binary
+from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder, Speed, SpeedChange, SpeedMagic
 from gd.errors import EditorError
@@ -229,7 +229,9 @@ class Editor(Binary, Sequence[Object]):
         return get_time_length(distance, self.start_speed, self.speed_changes)
 
     @classmethod
-    def from_binary(cls: Type[E], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> E:
+    def from_binary(
+        cls: Type[E], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> E:
         header = Header.from_binary(binary, order)
 
         reader = Reader(binary)
@@ -240,7 +242,9 @@ class Editor(Binary, Sequence[Object]):
 
         return cls.from_object_iterable(iterable, header)
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         self.header.to_binary(binary, order)
 
         writer = Writer(binary)
