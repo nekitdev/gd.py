@@ -11,12 +11,6 @@ from gd.enums import QuestType, ShardType
 # from gd.models import ChestModel, QuestModel
 from gd.string_utils import case_fold, tick
 
-# from typing import TYPE_CHECKING
-
-
-# if TYPE_CHECKING:
-#     from gd.client import Client
-
 __all__ = ("Chest", "Quest")
 
 

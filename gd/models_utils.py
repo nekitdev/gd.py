@@ -1,7 +1,8 @@
 from functools import partial
-from typing import Iterable, Mapping
+from typing import Iterable, Mapping, Optional, Type, TypeVar
 
 from iters.iters import iter
+from .enum_extensions import Enum
 
 from gd.models_constants import (
     COLOR_SEPARATOR,
@@ -15,10 +16,14 @@ from gd.models_constants import (
     OBJECTS_SEPARATOR,
     PAGE_SEPARATOR,
     RECORDING_SEPARATOR,
+    SEARCH_USER_SEPARATOR,
+    SEARCH_USERS_RESPONSE_SEPARATOR,
+    SEARCH_USERS_RESPONSE_USERS_SEPARATOR,
     SONG_SEPARATOR,
     TIME_SEPARATOR,
     TIME_SEPARATOR_SPACE,
 )
+from .typing import Parse
 
 FALSE = str(0)
 TRUE = str(1)
@@ -40,6 +45,28 @@ def int_bool(string: str) -> bool:
         return False
 
     return bool(int(string))
+
+
+E = TypeVar("E", bound=Enum)
+T = TypeVar("T")
+
+
+def parse_enum(parse: Parse[T], enum_type: Type[E], string: str) -> E:
+    return enum_type.from_value(parse(string))
+
+
+def partial_parse_enum(parse: Parse[T], enum_type: Type[E]) -> Parse[E]:
+    def actual_parse(string: str) -> E:
+        return parse_enum(parse, enum_type, string)
+
+    return actual_parse
+
+
+def parse_get_or(parse: Parse[T], default: T, option: Optional[str]) -> T:
+    if option is None:
+        return default
+
+    return parse(option)
 
 
 def split_iterable(separator: str, string: str) -> Iterable[str]:
@@ -83,6 +110,9 @@ concat_login = partial(concat_iterable, LOGIN_SEPARATOR)
 split_creator = partial(split_iterable, CREATOR_SEPARATOR)
 concat_creator = partial(concat_iterable, CREATOR_SEPARATOR)
 
+split_search_user = partial(split_mapping, SEARCH_USER_SEPARATOR)
+concat_search_user = partial(concat_mapping, SEARCH_USER_SEPARATOR)
+
 split_page = partial(split_iterable, PAGE_SEPARATOR)
 concat_page = partial(concat_iterable, PAGE_SEPARATOR)
 
@@ -111,3 +141,9 @@ concat_objects = partial(concat_iterable, OBJECTS_SEPARATOR)
 
 split_time = partial(split_iterable, TIME_SEPARATOR)
 concat_time = partial(concat_iterable, TIME_SEPARATOR_SPACE)
+
+split_search_users_response = partial(split_iterable, SEARCH_USERS_RESPONSE_SEPARATOR)
+concat_search_users_response = partial(concat_iterable, SEARCH_USERS_RESPONSE_SEPARATOR)
+
+split_search_users_response_users = partial(split_iterable, SEARCH_USERS_RESPONSE_USERS_SEPARATOR)
+concat_search_users_response_users = partial(concat_iterable, SEARCH_USERS_RESPONSE_USERS_SEPARATOR)

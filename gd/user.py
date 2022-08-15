@@ -4,18 +4,27 @@ from datetime import datetime
 from typing import TYPE_CHECKING, AsyncIterator, BinaryIO, Dict, Iterable, Optional, Type, TypeVar
 
 from attrs import define
+from iters.async_iters import wrap_async_iter
 
 from gd.async_utils import gather_iterable
-from gd.await_iters import wrap_await_iter
 from gd.binary_utils import UTF_8, Reader, Writer
 from gd.colors import Color
 from gd.constants import (
     DEFAULT_COLOR_1_ID,
     DEFAULT_COLOR_2_ID,
+    DEFAULT_CREATOR_POINTS,
+    DEFAULT_DEMONS,
+    DEFAULT_DIAMONDS,
     DEFAULT_GLOW,
+    DEFAULT_ICON_ID,
     DEFAULT_ID,
+    DEFAULT_ORBS,
     DEFAULT_PAGE,
     DEFAULT_PAGES,
+    DEFAULT_RANK,
+    DEFAULT_SECRET_COINS,
+    DEFAULT_STARS,
+    DEFAULT_USER_COINS,
     EMPTY,
     UNKNOWN,
 )
@@ -35,7 +44,7 @@ from gd.enums import (  # Orientation,
 from gd.filters import Filters
 from gd.image.factory import FACTORY, connect_images
 from gd.image.icon import Icon
-from gd.models import CreatorModel
+from gd.models import CreatorModel, SearchUserModel
 
 from .binary import VERSION
 
@@ -71,27 +80,27 @@ RECORD_MASK = 0b01111111
 class User(Entity):
     name: str
     account_id: int
-    stars: int = 0
-    demons: int = 0
-    diamonds: int = 0
-    orbs: int = 0
-    user_coins: int = 0
-    secret_coins: int = 0
-    creator_points: int = 0
-    rank: int = 0
+    stars: int = DEFAULT_STARS
+    demons: int = DEFAULT_DEMONS
+    diamonds: int = DEFAULT_DIAMONDS
+    orbs: int = DEFAULT_ORBS
+    user_coins: int = DEFAULT_USER_COINS
+    secret_coins: int = DEFAULT_SECRET_COINS
+    creator_points: int = DEFAULT_CREATOR_POINTS
+    rank: int = DEFAULT_RANK
     color_1_id: int = DEFAULT_COLOR_1_ID
     color_2_id: int = DEFAULT_COLOR_2_ID
     icon_type: IconType = IconType.DEFAULT
-    icon_id: int = 1
-    cube_id: int = 1
-    ship_id: int = 1
-    ball_id: int = 1
-    ufo_id: int = 1
-    wave_id: int = 1
-    robot_id: int = 1
-    spider_id: int = 1
-    # swing_copter_id: int = 1
-    explosion_id: int = 1
+    icon_id: int = DEFAULT_ICON_ID
+    cube_id: int = DEFAULT_ICON_ID
+    ship_id: int = DEFAULT_ICON_ID
+    ball_id: int = DEFAULT_ICON_ID
+    ufo_id: int = DEFAULT_ICON_ID
+    wave_id: int = DEFAULT_ICON_ID
+    robot_id: int = DEFAULT_ICON_ID
+    spider_id: int = DEFAULT_ICON_ID
+    # swing_copter_id: int = DEFAULT_ICON_ID
+    explosion_id: int = DEFAULT_ICON_ID
     glow: bool = DEFAULT_GLOW
     role: Role = Role.DEFAULT
     message_state: MessageState = MessageState.DEFAULT
@@ -114,6 +123,25 @@ class User(Entity):
     @classmethod
     def from_creator_model(cls: Type[U], model: CreatorModel) -> U:
         return cls(id=model.id, name=model.name, account_id=model.account_id)
+
+    @classmethod
+    def from_search_user_model(cls: Type[U], model: SearchUserModel) -> U:
+        return cls(
+            name=model.name,
+            id=model.id,
+            stars=model.stars,
+            demons=model.demons,
+            rank=model.rank,
+            creator_points=model.creator_points,
+            icon_id=model.icon_id,
+            color_1_id=model.color_1_id,
+            color_2_id=model.color_2_id,
+            secret_coins=model.secret_coins,
+            icon_type=model.icon_type,
+            glow=model.glow,
+            account_id=model.account_id,
+            user_coins=model.user_coins,
+        )
 
     def __str__(self) -> str:
         return self.name
@@ -156,19 +184,19 @@ class User(Entity):
     async def send_friend_request(self, message: Optional[str] = None) -> Optional[FriendRequest]:
         return await self.client.send_friend_request(self, message)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_levels_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Level]:
         return self.client.search_levels_on_page(page=page, filters=Filters.by_user(), user=self)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_levels(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Level]:
         return self.client.search_levels(pages=pages, filters=Filters.by_user(), user=self)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_comments_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Comment]:
         return self.client.get_user_comments_on_page(user=self, type=CommentType.USER, page=page)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_level_comments_on_page(
         self,
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
@@ -176,11 +204,11 @@ class User(Entity):
     ) -> AsyncIterator[Comment]:
         return self.client.get_user_comments_on_page(user=self, type=CommentType.LEVEL, page=page)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_comments(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Comment]:
         return self.client.get_user_comments(user=self, type=CommentType.USER, pages=pages)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_level_comments(
         self,
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
@@ -342,7 +370,7 @@ class User(Entity):
         if not record_present:
             record = None
 
-        timestamp = reader.read_f32(order)
+        timestamp = reader.read_f64(order)
 
         if timestamp:
             recorded_at = datetime.fromtimestamp(timestamp)
@@ -516,4 +544,4 @@ class User(Entity):
         else:
             timestamp = recorded_at.timestamp()
 
-        writer.write_f32(timestamp, order)
+        writer.write_f64(timestamp, order)

@@ -254,4 +254,4 @@ class Editor(Binary, Sequence[Object]):
         writer.write_u32(len(objects), order)
 
         for object in objects:
-            object_to_binary(object, binary, order)
+            object_to_binary(object, binary, order, version)

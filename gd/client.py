@@ -17,14 +17,15 @@ from typing import (
 )
 
 from attrs import define, field, frozen
+from iters.async_iters import wrap_async_iter
 from typing_extensions import ParamSpec
 from yarl import URL
 
 from gd.api.database import Database
+from .artist import Artist
 
 # from gd.api.recording import Recording
 from gd.async_utils import maybe_await, run, run_iterables
-from gd.await_iters import wrap_await_iter
 from gd.comments import Comment
 from gd.constants import (
     COMMENT_PAGE_SIZE,
@@ -70,7 +71,7 @@ from gd.message import Message
 from gd.rewards import Chest, Quest
 from gd.session import Session
 from gd.song import Song
-from gd.typing import AnyCallable, AnyException, DynamicTuple, MaybeAwaitable, URLString
+from gd.typing import AnyCallable, AnyException, DynamicTuple, IntString, MaybeAwaitable, MaybeIterable, URLString
 from gd.user import User
 
 __all__ = ("Client",)
@@ -179,7 +180,7 @@ class Client:
     @property
     def encoded_password(self) -> str:
         """The encoded password of the client."""
-        return encode_robtop_string(self.password, Key.ACCOUNT_PASSWORD)
+        return encode_robtop_string(self.password, Key.USER_PASSWORD)
 
     @property  # type: ignore
     @check_login
@@ -242,7 +243,7 @@ class Client:
         self,
         stars: Optional[int] = None,
         diamonds: Optional[int] = None,
-        coins: Optional[int] = None,
+        secret_coins: Optional[int] = None,
         user_coins: Optional[int] = None,
         demons: Optional[int] = None,
         icon_type: Optional[IconType] = None,
@@ -272,7 +273,7 @@ class Client:
         await self.session.update_profile(
             stars=switch_none(stars, user.stars),
             diamonds=switch_none(diamonds, user.diamonds),
-            coins=switch_none(coins, user.coins),
+            secret_coins=switch_none(secret_coins, user.secret_coins),
             user_coins=switch_none(user_coins, user.user_coins),
             demons=switch_none(demons, user.demons),
             icon_type=switch_none(icon_type, user.icon_type),
@@ -330,7 +331,7 @@ class Client:
         self, account_id: int, simple: bool = False, friend_state: bool = False
     ) -> User:
         if friend_state:  # if we need to find friend state
-            check_client_login(self)  # assert client is logged in
+            check_client_login(self)
 
             profile_model = await self.session.get_user_profile(  # request profile
                 account_id,
@@ -341,48 +342,50 @@ class Client:
         else:  # otherwise, just request normally
             profile_model = await self.session.get_user_profile(account_id)
 
-        if simple:  # if only profile is needed, return right away
-            return User.from_model(profile_model, client=self)
+        if simple:  # if only the profile is needed, return right away
+            return User.from_profile_model(profile_model).attach_client(client)
 
         search_model = await self.session.search_user(profile_model.id)  # search by ID
 
-        return User.from_models(search_model, profile_model, client=self)
+        return User.from_search_user_and_profile_models(search_model, profile_model).attach_client(self)
 
     async def search_user(
-        self, query: Union[int, str], simple: bool = False, friend_state: bool = False
+        self, query: IntString, simple: bool = False, friend_state: bool = False
     ) -> User:
-        search_model = await self.session.search_user(query)  # search using query
+        search_user_model = await self.session.search_user(query)  # search using query
 
         if simple:  # if only simple is required, return right away
-            return User.from_model(search_model, client=self)
+            return User.from_search_user_model(search_user_model)
 
         if friend_state:  # if friend state is requested
             check_client_login(self)  # assert client is logged in
 
             profile_model = await self.session.get_user_profile(  # request profile
-                search_model.account_id,
+                search_user_model.account_id,
                 client_account_id=self.account_id,
                 encoded_password=self.encoded_password,
             )
 
         else:  # otherwise, request normally
-            profile_model = await self.session.get_user_profile(search_model.account_id)
+            profile_model = await self.session.get_user_profile(search_user_model.account_id)
 
-        return User.from_models(search_model, profile_model, client=self)
+        return User.from_search_user_and_profile_models(
+            search_user_model, profile_model
+        ).attach_client(self)
 
-    @wrap_await_iter
+    @wrap_async_iter
     async def search_users_on_page(
-        self, query: Union[int, str], page: int = DEFAULT_PAGE
+        self, query: IntString, page: int = DEFAULT_PAGE
     ) -> AsyncIterator[User]:
-        response_model = await self.session.search_users_on_page(query, page=page)
+        search_users_response_model = await self.session.search_users_on_page(query, page=page)
 
-        for model in response_model.users:
-            yield User.from_model(model, client=self)
+        for search_user_model in search_users_response_model.users:
+            yield User.from_search_user_model(search_user_model).attach_client(self)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def search_users(
         self,
-        query: Union[int, str],
+        query: IntString,
         pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[User]:
         return run_iterables(
@@ -390,7 +393,7 @@ class Client:
             ClientError,
         )
 
-    @wrap_await_iter
+    @wrap_async_iter
     @check_login
     async def get_relationships(self, type: SimpleRelationshipType) -> AsyncIterator[User]:
         try:
@@ -414,7 +417,7 @@ class Client:
     def get_blocked(self) -> AsyncIterator[User]:
         return self.get_relationships(SimpleRelationshipType.BLOCKED)
 
-    @wrap_await_iter
+    @wrap_async_iter
     async def get_leaderboard(
         self,
         strategy: LeaderboardStrategy = LeaderboardStrategy.DEFAULT,
@@ -518,13 +521,13 @@ class Client:
 
         return level
 
-    @wrap_await_iter
+    @wrap_async_iter
     async def search_levels_on_page(
         self,
-        query: Optional[Union[int, str, Iterable[Any]]] = None,
+        query: Optional[MaybeIterable[IntString]] = None,
         page: int = 0,
         filters: Optional[Filters] = None,
-        user: Optional[Union[int, User]] = None,
+        user: Optional[User] = None,
         gauntlet: Optional[int] = None,
     ) -> AsyncIterator[Level]:
         if user is None:
@@ -554,7 +557,7 @@ class Client:
         for level in self.levels_from_model(response_model):
             yield level
 
-    @wrap_await_iter
+    @wrap_async_iter
     def search_levels(
         self,
         query: Optional[Union[int, str]] = None,
@@ -692,7 +695,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @wrap_await_iter
+    @wrap_async_iter
     @check_login
     async def get_level_top(
         self,
@@ -792,7 +795,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @wrap_await_iter
+    @wrap_async_iter
     @check_login
     async def get_messages_on_page(
         self, type: Union[int, str, MessageType] = MessageType.INCOMING, page: int = 0
@@ -813,7 +816,7 @@ class Client:
         for model in response_model.messages:
             yield Message.from_model(model, client=self, other_user=self.user, type=message_type)
 
-    @wrap_await_iter
+    @wrap_async_iter
     @check_login
     def get_messages(
         self,
@@ -878,7 +881,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @wrap_await_iter
+    @wrap_async_iter
     @check_login
     async def get_friend_requests_on_page(
         self,
@@ -903,7 +906,7 @@ class Client:
                 model, client=self, other_user=self.user, type=friend_request_type
             )
 
-    @wrap_await_iter
+    @wrap_async_iter
     @check_login
     def get_friend_requests(
         self,
@@ -1011,7 +1014,7 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    @wrap_await_iter
+    @wrap_async_iter
     async def get_user_comments_on_page(
         self,
         user: User,
@@ -1031,7 +1034,7 @@ class Client:
         for model in response_model.comments:
             yield Comment.from_model(model, client=self, user=user)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_user_comments(
         self,
         user: User,
@@ -1049,7 +1052,7 @@ class Client:
             concurrent=concurrent,
         )
 
-    @wrap_await_iter
+    @wrap_async_iter
     async def get_level_comments_on_page(
         self,
         level: Level,
@@ -1072,7 +1075,7 @@ class Client:
         for model in response_model.comments:
             yield Comment.from_model(model, client=self)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_level_comments(
         self,
         level: Level,
@@ -1092,21 +1095,21 @@ class Client:
             concurrent=concurrent,
         )
 
-    @wrap_await_iter
+    @wrap_async_iter
     async def get_gauntlets(self) -> AsyncIterator[Gauntlet]:
         response_model = await self.session.get_gauntlets()
 
         for model in response_model.gauntlets:
             yield Gauntlet.from_model(model, client=self)
 
-    @wrap_await_iter
+    @wrap_async_iter
     async def get_map_packs_on_page(self, page: int = 0) -> AsyncIterator[MapPack]:
         response_model = await self.session.get_map_packs_on_page(page=page)
 
         for model in response_model.map_packs:
             yield MapPack.from_model(model, client=self)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_map_packs(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[MapPack]:
         return run_iterables(
             (self.get_map_packs_on_page(page=page) for page in pages),
@@ -1114,7 +1117,7 @@ class Client:
             concurrent=concurrent,
         )
 
-    @wrap_await_iter
+    @wrap_async_iter
     @check_login
     async def get_quests(self) -> AsyncIterator[Quest]:
         response_model = await self.session.get_quests(
@@ -1126,7 +1129,7 @@ class Client:
 
             yield Quest.from_model(quest_model, seconds=model.time_left, client=self)
 
-    @wrap_await_iter
+    @wrap_async_iter
     @check_login
     async def get_chests(
         self,
@@ -1149,14 +1152,14 @@ class Client:
         ):
             yield Chest.from_model(chest_model, seconds=time_left, count=count, client=self)
 
-    @wrap_await_iter
+    @wrap_async_iter
     async def get_featured_artists_on_page(self, page: int = 0) -> AsyncIterator[Song]:
         response_model = await self.session.get_featured_artists_on_page(page=page)
 
         for model in response_model.featured_artists:
             yield Song.from_model(model, custom=True, client=self)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_featured_artists(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[MapPack]:
         return run_iterables(
             (self.get_featured_artists_on_page(page=page) for page in pages),  # type: ignore
@@ -1166,7 +1169,8 @@ class Client:
 
     async def get_song(self, song_id: int) -> Song:
         model = await self.session.get_song(song_id)
-        return Song.from_model(model, custom=True, client=self)
+
+        return Song.from_model(model).attach_client(self)
 
     async def get_newgrounds_song(self, song_id: int) -> Song:
         model = await self.session.get_newgrounds_song(song_id)
@@ -1176,7 +1180,7 @@ class Client:
         artist_info = await self.session.get_artist_info(song_id)
         return ArtistInfo.from_dict(artist_info, client=self)  # type: ignore
 
-    @wrap_await_iter
+    @wrap_async_iter
     async def search_newgrounds_songs_on_page(
         self, query: str, page: int = 0
     ) -> AsyncIterator[Song]:
@@ -1185,7 +1189,7 @@ class Client:
         for model in models:
             yield Song.from_model(model, custom=True, client=self)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def search_newgrounds_songs(
         self, query: str, pages: Iterable[int] = DEFAULT_PAGES
     ) -> AsyncIterator[Song]:
@@ -1195,7 +1199,7 @@ class Client:
             concurrent=concurrent,
         )
 
-    @wrap_await_iter
+    @wrap_async_iter
     async def search_newgrounds_users_on_page(
         self, query: str, page: int = 0
     ) -> AsyncIterator[Author]:
@@ -1204,17 +1208,16 @@ class Client:
         for part in data:
             yield Author.from_dict(part, client=self)  # type: ignore
 
-    @wrap_await_iter
+    @wrap_async_iter
     def search_newgrounds_users(
         self, query: str, pages: Iterable[int] = DEFAULT_PAGES
-    ) -> AsyncIterator[Author]:
+    ) -> AsyncIterator[Artist]:
         return run_iterables(
             (self.search_newgrounds_users_on_page(query=query, page=page) for page in pages),
             ClientError,
-            concurrent=concurrent,
         )
 
-    @wrap_await_iter
+    @wrap_async_iter
     async def get_newgrounds_artist_songs_on_page(
         self, name: str, page: int = 0
     ) -> AsyncIterator[Song]:
@@ -1223,7 +1226,7 @@ class Client:
         for model in models:
             yield Song.from_model(model).attach_client(self)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_newgrounds_artist_songs(
         self, name: str, pages: Iterable[int] = DEFAULT_PAGES
     ) -> AsyncIterator[Song]:

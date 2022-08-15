@@ -6,7 +6,7 @@ from asyncio import CancelledError, Task, TimeoutError, create_task, sleep
 from builtins import issubclass as is_subclass
 from functools import partial
 from random import Random
-from time import monotonic
+from time import monotonic as clock
 from typing import Any, Awaitable, Callable, Generic, Optional, Type, TypeVar, Union
 
 from aiohttp import ClientError
@@ -55,7 +55,7 @@ class ExponentialBackoff:
     base: float = field(default=DEFAULT_BASE)
     limit: int = field(default=DEFAULT_LIMIT)
 
-    _clock: Clock = field(default=monotonic)
+    _clock: Clock = field(default=clock)
 
     _exponent: int = field(default=0, init=False)
     _last_called: float = field(init=False)

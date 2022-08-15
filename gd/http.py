@@ -136,7 +136,7 @@ ROOT = "/"
 BASE = "http://www.boomlings.com/database"
 GD_BASE = "http://geometrydash.com/database"
 
-NEWGROUNDS_SONG_LISTEN = "https://newgrounds.com/audio/listen/{}"
+NEWGROUNDS_SONG = "https://newgrounds.com/audio/listen/{}"
 NEWGROUNDS_SONG_PAGE = "https://{}.newgrounds.com/audio/page/{}"
 NEWGROUNDS_SEARCH = "https://newgrounds.com/search/conduct/{}"
 
@@ -1044,15 +1044,27 @@ class HTTPClient:
         message_state: MessageState,
         friend_request_state: FriendRequestState,
         comment_state: CommentState,
-        youtube: str,
-        twitter: str,
-        twitch: str,
-        # discord: str,
+        youtube: Optional[str],
+        twitter: Optional[str],
+        twitch: Optional[str],
+        # discord: Optional[str],
         *,
         account_id: int,
         encoded_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_UPDATE_SETTINGS)}
+
+        if youtube is None:
+            youtube = EMPTY
+
+        if twitter is None:
+            twitter = EMPTY
+
+        if twitch is None:
+            twitch = EMPTY
+
+        # if discord is None:
+        #     discord = EMPTY
 
         route = Route(
             POST,
@@ -1078,7 +1090,7 @@ class HTTPClient:
         self,
         stars: int,
         diamonds: int,
-        coins: int,
+        secret_coins: int,
         user_coins: int,
         demons: int,
         icon_type: IconType,
@@ -1093,6 +1105,7 @@ class HTTPClient:
         wave_id: int,
         robot_id: int,
         spider_id: int,
+        # swing_copter_id: int,
         explosion_id: int,
         special: int = DEFAULT_SPECIAL,
         *,
@@ -1110,7 +1123,7 @@ class HTTPClient:
             user_coins,
             demons,
             stars,
-            coins,
+            secret_coins,
             icon_type.value,
             icon_id,
             diamonds,
@@ -1135,7 +1148,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             stars=stars,
             diamonds=diamonds,
-            coins=coins,
+            coins=secret_coins,
             user_coins=user_coins,
             demons=demons,
             special=special,

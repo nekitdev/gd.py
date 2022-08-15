@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, AsyncIterator
 
 from attrs import define, field
+from iters.async_iters import wrap_async_iter
 
-from gd.await_iters import wrap_await_iter
 from gd.colors import Color
 from gd.entity import Entity
 
@@ -34,7 +34,7 @@ class Gauntlet(Entity):
     def levels(self) -> DynamicTuple[Level]:
         return self._levels
 
-    @wrap_await_iter
+    @wrap_async_iter
     async def get_levels(self) -> AsyncIterator[Level]:
         levels = await self.client.search_levels_on_page(
             query=self.level_ids, filters=Filters.search_many()

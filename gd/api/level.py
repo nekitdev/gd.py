@@ -101,5 +101,7 @@ class LevelAPI:
 
         writer.write(data)
 
-        self.creator.to_binary(binary, order)
-        self.song.to_binary(binary, order)
+        self.creator.to_binary(binary, order, version)
+        self.song.to_binary(binary, order, version)
+
+        data = self.description.encode(encoding)

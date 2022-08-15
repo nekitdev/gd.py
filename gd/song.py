@@ -22,8 +22,7 @@ from gd.constants import (
 from gd.entity import Entity
 from gd.enums import ByteOrder
 from gd.errors import MissingAccess
-
-# from gd.http import NEWGROUNDS_SONG_LISTEN
+from gd.http import NEWGROUNDS_SONG
 from gd.models import SongModel
 from gd.official_songs import (
     OFFICIAL_CLIENT_SONGS,
@@ -63,6 +62,8 @@ WRITE_BINARY = "wb"
 
 DEFAULT_CUSTOM = True
 
+CUSTOM_BIT = 0b00000001
+
 
 @define(hash=True)
 class Song(Entity):
@@ -84,6 +85,8 @@ class Song(Entity):
         version: int = VERSION,
         encoding: str = UTF_8,
     ) -> S:
+        custom_bit = CUSTOM_BIT
+
         reader = Reader(binary)
 
         id = reader.read_u32(order)
@@ -92,11 +95,13 @@ class Song(Entity):
 
         name = reader.read(name_length).decode(encoding)
 
-        artist = Artist.from_binary(binary, order, encoding)
+        artist = Artist.from_binary(binary, order, version, encoding)
 
         size = reader.read_f32(order)
 
-        custom = bool(reader.read_u8(order))
+        value = reader.read_u8(order)
+
+        custom = value & custom_bit == custom_bit
 
         download_url_length = reader.read_u16(order)
 
@@ -129,11 +134,16 @@ class Song(Entity):
 
         writer.write(data)
 
-        self.artist.to_binary(binary, order, encoding)
+        self.artist.to_binary(binary, order, version, encoding)
 
         writer.write_f32(self.size, order)
 
-        writer.write_u8(int(self.custom), order)
+        value = 0
+
+        if self.is_custom():
+            value |= CUSTOM_BIT
+
+        writer.write_u8(value, order)
 
         download_url = self.download_url
 
@@ -165,13 +175,6 @@ class Song(Entity):
 
     def __str__(self) -> str:
         return self.name
-
-    @property
-    def link(self) -> str:
-        if self.is_custom():
-            return NEWGROUNDS_SONG_LISTEN.format(self.id)
-
-        raise
 
     def is_custom(self) -> bool:
         return self.custom
@@ -212,41 +215,64 @@ class Song(Entity):
             custom=False,
         )
 
-    async def update(self, from_newgrounds: bool = DEFAULT_FROM_NEWGROUNDS) -> None:
+    async def update(self: S, from_newgrounds: bool = DEFAULT_FROM_NEWGROUNDS) -> S:
         if from_newgrounds:
             new = await self.client.get_newgrounds_song(self.id)
 
         else:
             new = await self.client.get_song(self.id)
 
-        self.update_from(new)
+        return self.update_from(new)
+
+    def update_from(self: S, song: Song) -> S:
+        self.id = song.id
+        self.name = song.name
+        self.artist = song.artist
+        self.size = song.size
+        self.custom = song.custom
+        self.download_url = song.download_url
+
+        return self
+
+    async def ensure_download_url(self) -> None:
+        download_url = self.download_url
+
+        if download_url is None:
+            await self.update(from_newgrounds=True)
+
+        download_url = self.download_url
+
+        if download_url is None:
+            raise MissingAccess(CAN_NOT_FIND_URL)
 
     async def download(self, file: BinaryIO, with_bar: bool = DEFAULT_WITH_BAR) -> None:
         if self.is_custom():
-            download_url = self.download_url
+            await self.ensure_download_url()
 
-            if download_url is None:
-                await self.update(from_newgrounds=True)
-
-            download_url = self.download_url
-
-            if download_url is None:
-                raise MissingAccess(CAN_NOT_FIND_URL)
-
-            return await self.client.http.download(download_url, file=file, with_bar=with_bar)
+            await self.client.http.download(
+                file, self.download_url, with_bar=with_bar  # type: ignore
+            )
 
         else:
             raise MissingAccess(CAN_NOT_DOWNLOAD)
 
     async def download_bytes(self, with_bar: bool = DEFAULT_WITH_BAR) -> bytes:
-        file = BytesIO()
+        if self.is_custom():
+            await self.ensure_download_url()
 
-        await self.download(file, with_bar=with_bar)
+            return await self.client.http.download_bytes(
+                self.download_url, with_bar=with_bar  # type: ignore
+            )
 
-        file.seek(0)
-
-        return file.read()
+        raise MissingAccess(CAN_NOT_DOWNLOAD)
 
     async def download_to(self, path: IntoPath, with_bar: bool = DEFAULT_WITH_BAR) -> None:
-        with open(path, WRITE_BINARY) as file:
-            await self.download(file, with_bar=with_bar)
+        if self.is_custom():
+            await self.ensure_download_url()
+
+            await self.client.http.download_to(
+                path, self.download_url, with_bar=with_bar  # type: ignore
+            )
+
+        else:
+            raise MissingAccess(CAN_NOT_DOWNLOAD)

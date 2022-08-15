@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from datetime import timedelta
-from typing import Any
+from typing import Any, Optional
 
 from attrs import frozen
 from yarl import URL
@@ -26,10 +28,12 @@ from gd.enums import (
 )
 from gd.filters import Filters
 from gd.http import HTTPClient
-from gd.models import LoginModel
-from gd.typing import URLString
+from gd.models import LoginModel, SearchUserModel, SearchUsersResponseModel, SongModel
+from gd.typing import IntString, MaybeIterable, URLString
 
 __all__ = ("Session",)
+
+FIRST = 0
 
 
 @frozen()
@@ -44,7 +48,10 @@ class Session:
 
     async def login(self, name: str, password: str) -> LoginModel:
         response = await self.http.login(name, password)
+
         return LoginModel.from_robtop(response)
+
+    # HERE
 
     async def load(self, *, account_id: int, name: str, password: str) -> Database:
         response = await self.http.load(account_id=account_id, name=name, password=password)
@@ -65,8 +72,6 @@ class Session:
     async def get_account_url(self, account_id: int, type: AccountURLType) -> URL:
         return await self.http.get_account_url(account_id=account_id, type=type)
 
-    """
-
     async def get_role_id(self, account_id: int, encoded_password: str) -> int:
         return await self.http.get_role_id(account_id=account_id, encoded_password=encoded_password)
 
@@ -75,9 +80,9 @@ class Session:
         message_state: MessageState,
         friend_request_state: FriendRequestState,
         comment_state: CommentState,
-        youtube: str,
-        twitter: str,
-        twitch: str,
+        youtube: Optional[str],
+        twitter: Optional[str],
+        twitch: Optional[str],
         *,
         account_id: int,
         encoded_password: str,
@@ -97,22 +102,23 @@ class Session:
         self,
         stars: int,
         diamonds: int,
-        coins: int,
+        secret_coins: int,
         user_coins: int,
         demons: int,
         icon_type: IconType,
-        icon: int,
+        icon_id: int,
         color_1_id: int,
         color_2_id: int,
-        has_glow: bool,
-        cube: int,
-        ship: int,
-        ball: int,
-        ufo: int,
-        wave: int,
-        robot: int,
-        spider: int,
-        death_effect: int,
+        glow: bool,
+        cube_id: int,
+        ship_id: int,
+        ball_id: int,
+        ufo_id: int,
+        wave_id: int,
+        robot_id: int,
+        spider_id: int,
+        # swing_copter_id: int,
+        explosion_id: int,
         special: int = 0,
         *,
         account_id: int,
@@ -122,37 +128,39 @@ class Session:
         await self.http.update_profile(
             stars=stars,
             diamonds=diamonds,
-            coins=coins,
+            secret_coins=secret_coins,
             user_coins=user_coins,
             demons=demons,
             icon_type=icon_type,
-            icon=icon,
+            icon_id=icon_id,
             color_1_id=color_1_id,
             color_2_id=color_2_id,
-            has_glow=has_glow,
-            cube=cube,
-            ship=ship,
-            ball=ball,
-            ufo=ufo,
-            wave=wave,
-            robot=robot,
-            spider=spider,
-            death_effect=death_effect,
+            glow=glow,
+            cube_id=cube_id,
+            ship_id=ship_id,
+            ball_id=ball_id,
+            ufo_id=ufo_id,
+            wave_id=wave_id,
+            robot_id=robot_id,
+            spider_id=spider_id,
+            explosion_id=explosion_id,
             special=special,
             account_id=account_id,
             name=name,
             encoded_password=encoded_password,
         )
 
-    async def search_user(self, query: Union[int, str]) -> SearchUserModel:
-        response_model = await self.search_users_on_page(query, page=0)
-        return response_model.users[0]
+    async def search_user(self, query: IntString) -> SearchUserModel:
+        response_model = await self.search_users_on_page(query)
+
+        return response_model.users[FIRST]
 
     async def search_users_on_page(
-        self, query: Union[int, str], page: int = 0
-    ) -> SearchUserResponseModel:
+        self, query: IntString, page: int = 0
+    ) -> SearchUsersResponseModel:
         response = await self.http.search_users_on_page(query, page=page)
-        return SearchUserResponseModel.from_string(response, use_default=True)
+
+        return SearchUsersResponseModel.from_robtop(response)
 
     async def get_user_profile(
         self,
@@ -191,7 +199,7 @@ class Session:
 
     async def search_levels_on_page(
         self,
-        query: Optional[Union[int, str, Iterable[Any]]] = None,
+        query: Optional[MaybeIterable[IntString]] = None,
         page: int = 0,
         filters: Optional[Filters] = None,
         user_id: Optional[int] = None,
@@ -265,7 +273,7 @@ class Session:
         unlisted: bool = False,
         friends_only: bool = False,
         low_detail_mode: bool = False,
-        password: Optional[Union[int, str]] = None,
+        password: Optional[IntString] = None,
         copyable: bool = False,
         recording: Iterable[RecordingEntry] = (),
         editor_seconds: int = 0,
@@ -633,10 +641,12 @@ class Session:
 
     async def get_song(self, song_id: int) -> SongModel:
         response = await self.http.get_song(song_id)
-        return SongModel.from_string(response, use_default=True)
+
+        return SongModel.from_robtop(response)
 
     async def get_newgrounds_song(self, song_id: int) -> SongModel:
         response = await self.http.get_newgrounds_song(song_id)
+
         return SongModel.from_dict(find_song_data(response), id=song_id)
 
     async def get_artist_info(self, song_id: int) -> Dict[str, Any]:
@@ -663,4 +673,3 @@ class Session:
             SongModel.from_dict(data, author=name)
             for data in search_user_songs(response)  # type: ignore
         ]
-    """

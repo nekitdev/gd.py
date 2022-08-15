@@ -74,6 +74,13 @@ async def gather_iterable(
     ...
 
 
+@overload
+async def gather_iterable(
+    awaitables: Iterable[Awaitable[T]], return_exceptions: bool
+) -> List[AnyResult[T]]:
+    ...
+
+
 async def gather_iterable(
     awaitables: Iterable[Awaitable[T]],
     return_exceptions: bool = False,

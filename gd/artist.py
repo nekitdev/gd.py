@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, AsyncIterator, BinaryIO, Iterable, Type, TypeVar
 
 from attrs import field, frozen
+from iters.async_iters import wrap_async_iter
 from yarl import URL
 
-from gd.await_iters import wrap_await_iter
 from gd.binary_utils import UTF_8, Reader, Writer
 from gd.constants import DEFAULT_PAGE, DEFAULT_PAGES, UNKNOWN
 from gd.entity import Entity
@@ -24,7 +24,7 @@ A = TypeVar("A", bound="Artist")
 ARTIST = "https://{}.newgrounds.com/"
 
 
-@frozen()
+@frozen(hash=True)
 class Artist(Entity):
     """Represents artists on *Newgrounds*."""
 
@@ -32,7 +32,7 @@ class Artist(Entity):
 
     url: URL = field(converter=URL)
 
-    id: int = field()
+    id: int = field(repr=False)
 
     @id.default
     def default_id(self) -> int:
@@ -48,7 +48,7 @@ class Artist(Entity):
 
     @classmethod
     def default(cls: Type[A]) -> A:
-        return cls(UNKNOWN)
+        return cls(name=UNKNOWN)
 
     def __str__(self) -> str:
         return self.name
@@ -69,7 +69,7 @@ class Artist(Entity):
 
         name = data.decode(encoding)
 
-        return cls(name)
+        return cls(name=name)
 
     def to_binary(
         self,
@@ -86,10 +86,10 @@ class Artist(Entity):
 
         writer.write(data)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_songs_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Song]:
         return self.client.get_newgrounds_artist_songs_on_page(self, page=page)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_songs(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Song]:
         return self.client.get_newgrounds_artist_songs(self, pages=pages)

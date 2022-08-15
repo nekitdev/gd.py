@@ -104,7 +104,7 @@ class ColorChannel(Binary):
         else:
             player_color = PlayerColor(player_color_value)
 
-        hsv = HSV.from_binary(binary, order)
+        hsv = HSV.from_binary(binary, order, version)
 
         to_value = reader.read_u32(order)
 
@@ -183,7 +183,7 @@ class ColorChannel(Binary):
 
         writer.write_u8(unknowns_and_player_color, order)
 
-        self.hsv.to_binary(binary, order)
+        self.hsv.to_binary(binary, order, version)
 
         to_value = self.to_color.value
 
@@ -244,23 +244,28 @@ class ColorChannels(Binary, Dict[int, ColorChannel]):
         cls: Type[CCS],
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
         color_channel_type: Type[ColorChannel] = ColorChannel,
     ) -> CCS:
         reader = Reader(binary)
 
         length = reader.read_u16(order)
 
-        color_channels = (color_channel_type.from_binary(binary, order) for _ in range(length))
+        color_channels = (
+            color_channel_type.from_binary(binary, order, version) for _ in range(length)
+        )
 
         return cls.from_color_channel_iterable(color_channels)
 
-    def to_binary(self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
         writer = Writer(binary)
 
         writer.write_u16(self.length, order)
 
         for color_channel in self.values():
-            color_channel.to_binary(binary, order)
+            color_channel.to_binary(binary, order, version)
 
 
 Channels = ColorChannels

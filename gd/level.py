@@ -6,10 +6,10 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, AsyncIterator, BinaryIO, Iterable, Optional, Type, TypeVar
 
 from attrs import define, field
-from iters import iter
+from iters.async_iters import wrap_async_iter
+from iters.iters import iter
 
 # from gd.api.editor import Editor
-from gd.await_iters import wrap_await_iter
 from gd.binary_utils import UTF_8, Reader, Writer
 from gd.constants import COMMENT_PAGE_SIZE, DEFAULT_PAGE, DEFAULT_RECORD, EMPTY, EMPTY_BYTES
 from gd.entity import Entity
@@ -429,14 +429,14 @@ class Level(Entity):
     async def dislike(self) -> None:
         await self.client.dislike(self)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_leaderboard(
         self,
         strategy: LevelLeaderboardStrategy = LevelLeaderboardStrategy.DEFAULT,
     ) -> AsyncIterator[User]:
         return self.client.get_level_leaderboard(self, strategy=strategy)
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_comments(
         self,
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
@@ -451,7 +451,7 @@ class Level(Entity):
             concurrent=concurrent,
         )
 
-    @wrap_await_iter
+    @wrap_async_iter
     def get_comments_on_page(
         self,
         strategy: CommentStrategy = CommentStrategy.DEFAULT,

@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import re
 from collections import UserList as ListType
-from typing import Iterable, Iterator, List, Match, Type, TypeVar, overload
+from typing import BinaryIO, Iterable, Iterator, List, Match, Type, TypeVar, overload
 
 from attrs import define
 
+from gd.binary import VERSION, Binary
+from gd.binary_utils import Reader, Writer
 from gd.constants import EMPTY
+from gd.enums import ByteOrder
 from gd.errors import InternalError
 from gd.models_constants import ONE, RECORDING_SEPARATOR
 from gd.models_utils import concat_recording, float_str, int_bool
@@ -41,9 +44,13 @@ RECORDING_ITEM = re.compile(RECORDING_ITEM_PATTERN, re.VERBOSE)
 
 RI = TypeVar("RI", bound="RecordingItem")
 
+PREVIOUS_BIT = 0b00000001
+NEXT_BIT = 0b00000010
+SECONDARY_BIT = 0b00000100
+
 
 @define()
-class RecordingItem(RobTop):
+class RecordingItem(Binary, RobTop):
     timestamp: float = DEFAULT_TIMESTAMP
     previous: bool = DEFAULT_PREVIOUS
     next: bool = DEFAULT_NEXT
@@ -104,11 +111,63 @@ class RecordingItem(RobTop):
     def can_be_in(cls, string: str) -> bool:
         return RECORDING_SEPARATOR in string
 
+    @classmethod
+    def from_binary(
+        cls: Type[RI],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> RI:
+        previous_bit = PREVIOUS_BIT
+        next_bit = NEXT_BIT
+        secondary_bit = SECONDARY_BIT
+
+        reader = Reader(binary)
+
+        timestamp = reader.read_f32(order)
+
+        value = reader.read_u8(order)
+
+        previous = value & previous_bit == previous_bit
+        next = value & next_bit == next_bit
+        secondary = value & secondary_bit == secondary_bit
+
+        return cls(timestamp=timestamp, previous=previous, next=next, secondary=secondary)
+
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
+        writer = Writer(binary)
+
+        writer.write_f32(self.timestamp, order)
+
+        value = 0
+
+        if self.is_previous():
+            value |= PREVIOUS_BIT
+
+        if self.is_next():
+            value |= NEXT_BIT
+
+        if self.is_secondary():
+            value |= SECONDARY_BIT
+
+        writer.write_u8(value, order)
+
+    def is_previous(self) -> bool:
+        return self.previous
+
+    def is_next(self) -> bool:
+        return self.next
+
+    def is_secondary(self) -> bool:
+        return self.secondary
+
 
 R = TypeVar("R", bound="Recording")
 
 
-class Recording(RobTop, ListType, List[RecordingItem]):  # type: ignore
+class Recording(Binary, RobTop, ListType, List[RecordingItem]):  # type: ignore
     @overload
     @staticmethod
     def iter_robtop(string: str) -> Iterator[RecordingItem]:
@@ -145,3 +204,29 @@ class Recording(RobTop, ListType, List[RecordingItem]):  # type: ignore
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return RECORDING_SEPARATOR in string
+
+    @classmethod
+    def from_binary(
+        cls: Type[R],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        item_type: Type[RecordingItem] = RecordingItem
+    ) -> R:
+        reader = Reader(binary)
+
+        length = reader.read_u32(order)
+
+        return cls(
+            item_type.from_binary(binary, order, version) for _ in range(length)
+        )
+
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
+        writer = Writer(binary)
+
+        writer.write_u32(len(self), order)
+
+        for item in self:
+            item.to_binary(binary, order, version)
