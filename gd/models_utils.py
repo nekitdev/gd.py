@@ -69,6 +69,13 @@ def parse_get_or(parse: Parse[T], default: T, option: Optional[str]) -> T:
     return parse(option)
 
 
+def int_invert(string: str) -> bool:
+    if not string:
+        return True
+
+    return not int(string)
+
+
 def split_iterable(separator: str, string: str) -> Iterable[str]:
     return string.split(separator)
 

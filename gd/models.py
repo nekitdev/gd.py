@@ -7,8 +7,8 @@ from attrs import define, field
 from typing_extensions import Protocol
 from yarl import URL
 
-from gd.constants import DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID, DEFAULT_CREATOR_POINTS, DEFAULT_DEMONS, DEFAULT_GLOW, DEFAULT_ID, DEFAULT_RANK, DEFAULT_SECRET_COINS, DEFAULT_SIZE, DEFAULT_STARS, DEFAULT_USER_COINS, EMPTY, UNKNOWN
-from gd.enums import IconType
+from gd.constants import DEFAULT_ACTIVE, DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID, DEFAULT_CREATOR_POINTS, DEFAULT_DEMONS, DEFAULT_DIAMONDS, DEFAULT_GLOW, DEFAULT_ICON_ID, DEFAULT_ID, DEFAULT_NEW, DEFAULT_RANK, DEFAULT_SECRET_COINS, DEFAULT_SIZE, DEFAULT_STARS, DEFAULT_USER_COINS, EMPTY, UNKNOWN
+from gd.enums import CommentState, FriendRequestState, FriendState, IconType, MessageState, Role
 from gd.models_constants import (
     COMMENT_BANNED_SEPARATOR,
     CREATOR_SEPARATOR,
@@ -239,31 +239,31 @@ class DatabaseModel(Model):
 
 
 DEFAULT_TOTAL = 0
-DEFAULT_PAGE_START = 0
-DEFAULT_PAGE_STOP = 0
+DEFAULT_START = 0
+DEFAULT_STOP = 0
 
 
-P = TypeVar("P", bound="PageModel")
+A = TypeVar("A", bound="PageModel")
 
 
 @define()
 class PageModel(Model):
     total: int = DEFAULT_TOTAL
-    page_start: int = DEFAULT_PAGE_START
-    page_stop: int = DEFAULT_PAGE_STOP
+    start: int = DEFAULT_START
+    stop: int = DEFAULT_STOP
 
     @classmethod
-    def from_robtop(cls: Type[P], string: str) -> P:
-        total, page_start, page_stop = map(int, split_page(string))
+    def from_robtop(cls: Type[A], string: str) -> A:
+        total, start, stop = map(int, split_page(string))
 
-        return cls(total, page_start, page_stop)
+        return cls(total, start, stop)
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return PAGE_SEPARATOR in string
 
     def to_robtop(self) -> str:
-        return concat_page(map(str, (self.total, self.page_start, self.page_stop)))
+        return concat_page(map(str, (self.total, self.start, self.stop)))
 
 
 SEARCH_USER_NAME = 1
@@ -432,6 +432,164 @@ class SearchUserModel(Model):
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return SEARCH_USER_SEPARATOR in string
+
+
+PROFILE_NAME = 1
+PROFILE_ID = 2
+PROFILE_STARS = 3
+PROFILE_DEMONS = 4
+PROFILE_CREATOR_POINTS = 8
+PROFILE_COLOR_1_ID = 10
+PROFILE_COLOR_2_ID = 11
+PROFILE_SECRET_COINS = 13
+PROFILE_ACCOUNT_ID = 16
+PROFILE_USER_COINS = 17
+PROFILE_MESSAGE_STATE = 18
+PROFILE_FRIEND_REQUEST_STATE = 19
+PROFILE_YOUTUBE = 20
+PROFILE_CUBE_ID = 21
+PROFILE_SHIP_ID = 22
+PROFILE_BALL_ID = 23
+PROFILE_UFO_ID = 24
+PROFILE_WAVE_ID = 25
+PROFILE_ROBOT_ID = 26
+PROFILE_GLOW = 28
+PROFILE_ACTIVE = 29
+PROFILE_RANK = 30
+PROFILE_FRIEND_STATE = 31
+PROFILE_NEW_MESSAGES = 38
+PROFILE_NEW_FRIEND_REQUESTS = 39
+PROFILE_NEW_FRIENDS = 40
+PROFILE_SPIDER_ID = 43
+PROFILE_TWITTER = 44
+PROFILE_TWITCH = 45
+PROFILE_DIAMONDS = 46
+PROFILE_EXPLOSION_ID = 48
+PROFILE_ROLE = 49
+PROFILE_COMMENT_STATE = 50
+
+
+P = TypeVar("P", bound="ProfileModel")
+
+
+@define()
+class ProfileModel(Model):
+    @classmethod
+    def from_robtop(
+        cls: Type[P],
+        string: str,
+        # indexes
+        profile_name_index: int = PROFILE_NAME,
+        profile_id_index: int = PROFILE_ID,
+        profile_stars_index: int = PROFILE_STARS,
+        profile_demons_index: int = PROFILE_DEMONS,
+        profile_creator_points_index: int = PROFILE_CREATOR_POINTS,
+        profile_color_1_id_index: int = PROFILE_COLOR_1_ID,
+        profile_color_2_id_index: int = PROFILE_COLOR_2_ID,
+        profile_secret_coins_index: int = PROFILE_SECRET_COINS,
+        profile_account_id_index: int = PROFILE_ACCOUNT_ID,
+        profile_user_coins_index: int = PROFILE_USER_COINS,
+        profile_message_state_index: int = PROFILE_MESSAGE_STATE,
+        profile_friend_request_state_index: int = PROFILE_FRIEND_REQUEST_STATE,
+        profile_youtube_index: int = PROFILE_YOUTUBE,
+        profile_cube_id_index: int = PROFILE_CUBE_ID,
+        profile_ship_id_index: int = PROFILE_SHIP_ID,
+        profile_ball_id_index: int = PROFILE_BALL_ID,
+        profile_ufo_id_index: int = PROFILE_UFO_ID,
+        profile_wave_id_index: int = PROFILE_WAVE_ID,
+        profile_robot_id_index: int = PROFILE_ROBOT_ID,
+        profile_glow_index: int = PROFILE_GLOW,
+        profile_active_index: int = PROFILE_ACTIVE,
+        profile_rank_index: int = PROFILE_RANK,
+        profile_friend_state_index: int = PROFILE_FRIEND_STATE,
+        profile_new_messages_index: int = PROFILE_NEW_MESSAGES,
+        profile_new_friend_requests_index: int = PROFILE_NEW_FRIEND_REQUESTS,
+        profile_new_friends_index: int = PROFILE_NEW_FRIENDS,
+        profile_spider_id_index: int = PROFILE_SPIDER_ID,
+        profile_twitter_index: int = PROFILE_TWITTER,
+        profile_twitch_index: int = PROFILE_TWITCH,
+        profile_diamonds_index: int = PROFILE_DIAMONDS,
+        profile_explosion_id_index: int = PROFILE_EXPLOSION_ID,
+        profile_role_index: int = PROFILE_ROLE,
+        profile_comment_state_index: int = PROFILE_COMMENT_STATE,
+        # defaults
+        profile_name_default: str = UNKNOWN,
+        profile_id_default: int = DEFAULT_ID,
+        profile_stars_default: int = DEFAULT_STARS,
+        profile_demons_default: int = DEFAULT_DEMONS,
+        profile_creator_points_default: int = DEFAULT_CREATOR_POINTS,
+        profile_color_1_id_default: int = DEFAULT_COLOR_1_ID,
+        profile_color_2_id_default: int = DEFAULT_COLOR_2_ID,
+        profile_secret_coins_default: int = DEFAULT_SECRET_COINS,
+        profile_account_id_default: int = DEFAULT_ID,
+        profile_user_coins_default: int = DEFAULT_USER_COINS,
+        profile_message_state_default: MessageState = MessageState.DEFAULT,
+        profile_friend_request_state_default: FriendRequestState = FriendRequestState.DEFAULT,
+        profile_youtube_default: Optional[str] = None,
+        profile_cube_id_default: int = DEFAULT_ICON_ID,
+        profile_ship_id_default: int = DEFAULT_ICON_ID,
+        profile_ball_id_default: int = DEFAULT_ICON_ID,
+        profile_ufo_id_default: int = DEFAULT_ICON_ID,
+        profile_wave_id_default: int = DEFAULT_ICON_ID,
+        profile_robot_id_default: int = DEFAULT_ICON_ID,
+        profile_glow_default: bool = DEFAULT_GLOW,
+        profile_active_default: bool = DEFAULT_ACTIVE,
+        profile_rank_default: int = DEFAULT_RANK,
+        profile_friend_state_default: FriendState = FriendState.DEFAULT,
+        profile_new_messages_default: int = DEFAULT_NEW,
+        profile_new_friend_requests_default: int = DEFAULT_NEW,
+        profile_new_friends_default: int = DEFAULT_NEW,
+        profile_spider_id_default: int = DEFAULT_ICON_ID,
+        profile_twitter_default: Optional[str] = None,
+        profile_twitch_default: Optional[str] = None,
+        profile_diamonds_default: int = DEFAULT_DIAMONDS,
+        profile_explosion_id_default: int = DEFAULT_ICON_ID,
+        profile_role_default: Role = Role.DEFAULT,
+        profile_comment_state_default: CommentState = CommentState.DEFAULT,
+    ) -> P:
+        ...
+
+    def to_robtop(
+        self,
+        profile_name_index: int = PROFILE_NAME,
+        profile_id_index: int = PROFILE_ID,
+        profile_stars_index: int = PROFILE_STARS,
+        profile_demons_index: int = PROFILE_DEMONS,
+        profile_creator_points_index: int = PROFILE_CREATOR_POINTS,
+        profile_color_1_id_index: int = PROFILE_COLOR_1_ID,
+        profile_color_2_id_index: int = PROFILE_COLOR_2_ID,
+        profile_secret_coins_index: int = PROFILE_SECRET_COINS,
+        profile_account_id_index: int = PROFILE_ACCOUNT_ID,
+        profile_user_coins_index: int = PROFILE_USER_COINS,
+        profile_message_state_index: int = PROFILE_MESSAGE_STATE,
+        profile_friend_request_state_index: int = PROFILE_FRIEND_REQUEST_STATE,
+        profile_youtube_index: int = PROFILE_YOUTUBE,
+        profile_cube_id_index: int = PROFILE_CUBE_ID,
+        profile_ship_id_index: int = PROFILE_SHIP_ID,
+        profile_ball_id_index: int = PROFILE_BALL_ID,
+        profile_ufo_id_index: int = PROFILE_UFO_ID,
+        profile_wave_id_index: int = PROFILE_WAVE_ID,
+        profile_robot_id_index: int = PROFILE_ROBOT_ID,
+        profile_glow_index: int = PROFILE_GLOW,
+        profile_active_index: int = PROFILE_ACTIVE,
+        profile_rank_index: int = PROFILE_RANK,
+        profile_friend_state_index: int = PROFILE_FRIEND_STATE,
+        profile_new_messages_index: int = PROFILE_NEW_MESSAGES,
+        profile_new_friend_requests_index: int = PROFILE_NEW_FRIEND_REQUESTS,
+        profile_new_friends_index: int = PROFILE_NEW_FRIENDS,
+        profile_spider_id_index: int = PROFILE_SPIDER_ID,
+        profile_twitter_index: int = PROFILE_TWITTER,
+        profile_twitch_index: int = PROFILE_TWITCH,
+        profile_diamonds_index: int = PROFILE_DIAMONDS,
+        profile_explosion_id_index: int = PROFILE_EXPLOSION_ID,
+        profile_role_index: int = PROFILE_ROLE,
+        profile_comment_state_index: int = PROFILE_COMMENT_STATE,
+    ) -> str:
+        ...
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        ...
 
 
 SUR = TypeVar("SUR", bound="SearchUsersResponseModel")

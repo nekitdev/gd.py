@@ -10,6 +10,7 @@ from gd.async_utils import gather_iterable
 from gd.binary_utils import UTF_8, Reader, Writer
 from gd.colors import Color
 from gd.constants import (
+    DEFAULT_BANNED,
     DEFAULT_COLOR_1_ID,
     DEFAULT_COLOR_2_ID,
     DEFAULT_CREATOR_POINTS,
@@ -29,7 +30,7 @@ from gd.constants import (
     UNKNOWN,
 )
 from gd.entity import Entity
-from gd.enums import (  # Orientation,
+from gd.enums import (
     ByteOrder,
     CommentState,
     CommentStrategy,
@@ -59,8 +60,6 @@ if TYPE_CHECKING:
 __all__ = ("User",)
 
 U = TypeVar("U", bound="User")
-
-DEFAULT_BANNED = False
 
 BANNED_BIT = 0b10000000
 MESSAGE_STATE_MASK = 0b01100000
