@@ -2,13 +2,13 @@ from typing import ClassVar, Type, TypeVar
 
 from attrs import define
 
+from gd.enums import Platform
 from gd.memory.data import AnyData, Data
 from gd.memory.traits import Layout
 from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM_CONFIG, PlatformConfig
 from gd.string_utils import tick
 from gd.typing import DecoratorIdentity, StringDict, Unary, get_name
 
-from ..enums import Platform
 
 __all__ = (
     "Types",

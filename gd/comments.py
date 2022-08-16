@@ -5,13 +5,13 @@ from typing import TYPE_CHECKING, BinaryIO, Type, TypeVar
 
 from attrs import define
 
+from gd.binary import VERSION
 from gd.binary_utils import BITS, UTF_8, Reader, Writer
 from gd.colors import Color
 from gd.constants import BYTE, DEFAULT_GET_DATA, DEFAULT_USE_CLIENT
 from gd.entity import Entity
 from gd.enums import ByteOrder
 
-from .binary import VERSION
 
 # from gd.models import LevelCommentModel, UserCommentModel
 

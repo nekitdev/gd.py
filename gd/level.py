@@ -10,6 +10,7 @@ from iters.async_iters import wrap_async_iter
 from iters.iters import iter
 
 # from gd.api.editor import Editor
+from gd.binary import VERSION
 from gd.binary_utils import UTF_8, Reader, Writer
 from gd.constants import COMMENT_PAGE_SIZE, DEFAULT_PAGE, DEFAULT_RECORD, EMPTY, EMPTY_BYTES
 from gd.entity import Entity
@@ -32,7 +33,6 @@ from gd.song import Song
 from gd.user import User
 from gd.versions import CURRENT_GAME_VERSION, GameVersion
 
-from .binary import VERSION
 
 if TYPE_CHECKING:
     from gd.client import Client  # noqa

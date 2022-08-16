@@ -8,6 +8,7 @@ from iters import iter
 from yarl import URL
 
 from gd.artist import Artist
+from gd.binary import VERSION
 from gd.binary_utils import UTF_8, Reader, Writer
 from gd.constants import (
     DEFAULT_FROM_NEWGROUNDS,
@@ -32,7 +33,6 @@ from gd.official_songs import (
 )
 from gd.typing import IntoPath, Predicate
 
-from .binary import VERSION
 
 __all__ = ("Song",)
 

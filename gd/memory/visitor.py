@@ -12,6 +12,7 @@ from attrs import define
 from typing_extensions import Protocol, runtime_checkable
 
 from gd.memory.context import Context
+from gd.memory.data import AnyData
 from gd.memory.fields import AnyField, Field, MutField, MutFieldMarker, fetch_fields
 from gd.memory.markers import (
     Array,
@@ -45,7 +46,6 @@ from gd.memory.utils import set_name
 from gd.platform import PlatformConfig
 from gd.typing import Binary, Namespace, StringDict, get_name, is_instance
 
-from .data import AnyData
 
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState

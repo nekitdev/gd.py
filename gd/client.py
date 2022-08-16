@@ -22,9 +22,9 @@ from typing_extensions import ParamSpec
 from yarl import URL
 
 from gd.api.database import Database
-from .artist import Artist
 
 # from gd.api.recording import Recording
+from gd.artist import Artist
 from gd.async_utils import maybe_await, run, run_iterables
 from gd.comments import Comment
 from gd.constants import (

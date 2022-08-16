@@ -2,8 +2,8 @@ from functools import partial
 from typing import Iterable, Mapping, Optional, Type, TypeVar
 
 from iters.iters import iter
-from .enum_extensions import Enum
 
+from gd.enum_extensions import Enum
 from gd.models_constants import (
     COLOR_SEPARATOR,
     COMMENT_BANNED_SEPARATOR,
@@ -24,7 +24,7 @@ from gd.models_constants import (
     TIME_SEPARATOR,
     TIME_SEPARATOR_SPACE,
 )
-from .typing import Parse
+from gd.typing import Parse
 
 FALSE = str(0)
 TRUE = str(1)

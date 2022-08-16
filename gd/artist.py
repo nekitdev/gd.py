@@ -6,13 +6,13 @@ from attrs import field, frozen
 from iters.async_iters import wrap_async_iter
 from yarl import URL
 
+from gd.binary import VERSION
 from gd.binary_utils import UTF_8, Reader, Writer
 from gd.constants import DEFAULT_PAGE, DEFAULT_PAGES, UNKNOWN
 from gd.entity import Entity
 from gd.enums import ByteOrder
 from gd.string_utils import case_fold, clear_whitespace
 
-from .binary import VERSION
 
 if TYPE_CHECKING:
     from gd.song import Song
