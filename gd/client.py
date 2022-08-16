@@ -389,7 +389,7 @@ class Client:
         pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[User]:
         return run_iterables(
-            (self.search_users_on_page(query=query, page=page) for page in pages),
+            (self.search_users_on_page(query=query, page=page).unwrap() for page in pages),
             ClientError,
         )
 
@@ -398,7 +398,7 @@ class Client:
     async def get_relationships(self, type: SimpleRelationshipType) -> AsyncIterator[User]:
         try:
             response_model = await self.session.get_relationships(
-                SimpleRelationshipType.from_value(type),
+                type,
                 account_id=self.account_id,
                 encoded_password=self.encoded_password,
             )
@@ -407,15 +407,17 @@ class Client:
             return
 
         for model in response_model.users:
-            yield User.from_model(model, client=self)
+            yield User.from_relationship_user_model(model).attach_client(self)
 
+    @wrap_async_iter
     @check_login
     def get_friends(self) -> AsyncIterator[User]:
-        return self.get_relationships(SimpleRelationshipType.FRIEND)
+        return self.get_relationships(SimpleRelationshipType.FRIEND).unwrap()
 
+    @wrap_async_iter
     @check_login
     def get_blocked(self) -> AsyncIterator[User]:
-        return self.get_relationships(SimpleRelationshipType.BLOCKED)
+        return self.get_relationships(SimpleRelationshipType.BLOCKED).unwrap()
 
     @wrap_async_iter
     async def get_leaderboard(

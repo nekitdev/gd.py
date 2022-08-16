@@ -16,6 +16,8 @@ from gd.models_constants import (
     LOGIN_SEPARATOR,
     PAGE_SEPARATOR,
     PROFILE_SEPARATOR,
+    RELATIONSHIP_USER_SEPARATOR,
+    RELATIONSHIPS_USERS_SEPARATOR,
     SEARCH_USER_SEPARATOR,
     SEARCH_USERS_RESPONSE_SEPARATOR,
     SONG_SEPARATOR,
@@ -26,6 +28,8 @@ from gd.models_utils import (
     concat_login,
     concat_page,
     concat_profile,
+    concat_relationship_user,
+    concat_relationships_users,
     concat_search_user,
     concat_search_users_response,
     concat_search_users_response_users,
@@ -39,6 +43,8 @@ from gd.models_utils import (
     split_login,
     split_page,
     split_profile,
+    split_relationship_user,
+    split_relationships_users,
     split_search_user,
     split_search_users_response,
     split_search_users_response_users,
@@ -60,13 +66,13 @@ __all__ = (
     "LevelLeaderboardUserModel",
     "LeaderboardUserModel",
     "LevelModel",
-    "ListUserModel",
     "LoginModel",
     "MapPackModel",
     "MessageModel",
     "PageModel",
     "ProfileModel",
     "QuestModel",
+    "RelationshipUserModel",
     "SearchUserModel",
     "SongModel",
     "TimelyInfoModel",
@@ -709,6 +715,100 @@ class ProfileModel(Model):
         self.active = not self.banned
 
 
+RELATIONSHIP_USER_NAME = 1
+RELATIONSHIP_USER_ID = 2
+RELATIONSHIP_USER_ICON_ID = 9
+RELATIONSHIP_USER_COLOR_1_ID = 10
+RELATIONSHIP_USER_COLOR_2_ID = 11
+RELATIONSHIP_USER_ICON_TYPE = 14
+RELATIONSHIP_USER_GLOW = 15
+RELATIONSHIP_USER_ACCOUNT_ID = 16
+RELATIONSHIP_USER_MESSAGE_STATE = 18
+
+
+RU = TypeVar("RU", bound="RelationshipUserModel")
+
+
+@define()
+class RelationshipUserModel(Model):
+    name: str = UNKNOWN
+    id: int = DEFAULT_ID
+    icon_id: int = DEFAULT_ICON_ID
+    color_1_id: int = DEFAULT_COLOR_1_ID
+    color_2_id: int = DEFAULT_COLOR_2_ID
+    icon_type: IconType = IconType.DEFAULT
+    glow: bool = DEFAULT_GLOW
+    account_id: int = DEFAULT_ID
+    message_state: MessageState = MessageState.DEFAULT
+
+    @classmethod
+    def from_robtop(
+        cls: Type[RU],
+        string: str,
+        relationship_user_name_index: int = RELATIONSHIP_USER_NAME,
+        relationship_user_id_index: int = RELATIONSHIP_USER_ID,
+        relationship_user_icon_id_index: int = RELATIONSHIP_USER_ICON_ID,
+        relationship_user_color_1_id_index: int = RELATIONSHIP_USER_COLOR_1_ID,
+        relationship_user_color_2_id_index: int = RELATIONSHIP_USER_COLOR_2_ID,
+        relationship_user_icon_type_index: int = RELATIONSHIP_USER_ICON_TYPE,
+        relationship_user_glow_index: int = RELATIONSHIP_USER_GLOW,
+        relationship_user_account_id_index: int = RELATIONSHIP_USER_ACCOUNT_ID,
+        relationship_user_message_state_index: int = RELATIONSHIP_USER_MESSAGE_STATE,
+        relationship_user_name_default: str = UNKNOWN,
+        relationship_user_id_default: int = DEFAULT_ID,
+        relationship_user_icon_id_default: int = DEFAULT_ICON_ID,
+        relationship_user_color_1_id_default: int = DEFAULT_COLOR_1_ID,
+        relationship_user_color_2_id_default: int = DEFAULT_COLOR_2_ID,
+        relationship_user_icon_type_default: IconType = IconType.DEFAULT,
+        relationship_user_glow_default: bool = DEFAULT_GLOW,
+        relationship_user_account_id_default: int = DEFAULT_ID,
+        relationship_user_message_state_default: MessageState = MessageState.DEFAULT,
+    ) -> RU:
+        mapping = split_relationship_user(string)
+
+        return cls(
+            name=mapping.get(relationship_user_name_index, relationship_user_name_default),
+            id=parse_get_or(int, relationship_user_id_default, mapping.get(relationship_user_id_index)),
+            icon_id=parse_get_or(int, relationship_user_icon_id_default, mapping.get(relationship_user_icon_id_index)),
+            color_1_id=parse_get_or(int, relationship_user_color_1_id_default, mapping.get(relationship_user_color_1_id_index)),
+            color_2_id=parse_get_or(int, relationship_user_color_2_id_default, mapping.get(relationship_user_color_2_id_index)),
+            icon_type=parse_get_or(partial_parse_enum(int, IconType), relationship_user_icon_type_default, mapping.get(relationship_user_icon_type_index)),
+            glow=parse_get_or(int_bool, relationship_user_glow_default, mapping.get(relationship_user_glow_index)),
+            account_id=parse_get_or(int, relationship_user_account_id_default, mapping.get(relationship_user_account_id_index)),
+            message_state=parse_get_or(partial_parse_enum(int, MessageState), relationship_user_message_state_default, mapping.get(relationship_user_message_state_index)),
+        )
+
+    def to_robtop(
+        self,
+        relationship_user_name_index: int = RELATIONSHIP_USER_NAME,
+        relationship_user_id_index: int = RELATIONSHIP_USER_ID,
+        relationship_user_icon_id_index: int = RELATIONSHIP_USER_ICON_ID,
+        relationship_user_color_1_id_index: int = RELATIONSHIP_USER_COLOR_1_ID,
+        relationship_user_color_2_id_index: int = RELATIONSHIP_USER_COLOR_2_ID,
+        relationship_user_icon_type_index: int = RELATIONSHIP_USER_ICON_TYPE,
+        relationship_user_glow_index: int = RELATIONSHIP_USER_GLOW,
+        relationship_user_account_id_index: int = RELATIONSHIP_USER_ACCOUNT_ID,
+        relationship_user_message_state_index: int = RELATIONSHIP_USER_MESSAGE_STATE,
+    ) -> str:
+        mapping = {
+            relationship_user_name_index: str(self.name),
+            relationship_user_id_index: str(self.id),
+            relationship_user_icon_id_index: str(self.icon_id),
+            relationship_user_color_1_id_index: str(self.color_1_id),
+            relationship_user_color_2_id_index: str(self.color_2_id),
+            relationship_user_icon_type_index: str(self.icon_type.value),
+            relationship_user_glow_index: str(int(self.glow)),
+            relationship_user_account_id_index: str(self.account_id),
+            relationship_user_message_state_index: str(self.message_state.value),
+        }
+
+        return concat_relationship_user(mapping)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return RELATIONSHIP_USER_SEPARATOR in string
+
+
 SUR = TypeVar("SUR", bound="SearchUsersResponseModel")
 
 
@@ -741,6 +841,30 @@ class SearchUsersResponseModel(Model):
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return SEARCH_USERS_RESPONSE_SEPARATOR in string
+
+
+R = TypeVar("R", bound="RelationshipsResponseModel")
+
+
+@define()
+class RelationshipsResponseModel(Model):
+    users: List[RelationshipUserModel] = field(factory=list)
+
+    @classmethod
+    def from_robtop(cls: Type[R], string: str) -> R:
+        users = [
+            RelationshipUserModel.from_robtop(string)
+            for string in split_relationships_users(string)
+        ]
+
+        return cls(users=users)
+
+    def to_robtop(self) -> str:
+        return concat_search_users_response_users(user.to_robtop() for user in self.users)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return RELATIONSHIPS_USERS_SEPARATOR in string
 
 
 TEMPORARY = "temp"

@@ -17,6 +17,8 @@ from gd.models_constants import (
     PAGE_SEPARATOR,
     PROFILE_SEPARATOR,
     RECORDING_SEPARATOR,
+    RELATIONSHIP_USER_SEPARATOR,
+    RELATIONSHIPS_USERS_SEPARATOR,
     SEARCH_USER_SEPARATOR,
     SEARCH_USERS_RESPONSE_SEPARATOR,
     SEARCH_USERS_RESPONSE_USERS_SEPARATOR,
@@ -124,6 +126,9 @@ concat_search_user = partial(concat_mapping, SEARCH_USER_SEPARATOR)
 split_profile = partial(split_mapping, PROFILE_SEPARATOR)
 concat_profile = partial(concat_mapping, PROFILE_SEPARATOR)
 
+split_relationship_user = partial(split_mapping, RELATIONSHIP_USER_SEPARATOR)
+concat_relationship_user = partial(concat_mapping, RELATIONSHIP_USER_SEPARATOR)
+
 split_page = partial(split_iterable, PAGE_SEPARATOR)
 concat_page = partial(concat_iterable, PAGE_SEPARATOR)
 
@@ -158,3 +163,6 @@ concat_search_users_response = partial(concat_iterable, SEARCH_USERS_RESPONSE_SE
 
 split_search_users_response_users = partial(split_iterable, SEARCH_USERS_RESPONSE_USERS_SEPARATOR)
 concat_search_users_response_users = partial(concat_iterable, SEARCH_USERS_RESPONSE_USERS_SEPARATOR)
+
+split_relationships_users = partial(split_iterable, RELATIONSHIPS_USERS_SEPARATOR)
+concat_relationships_users = partial(concat_iterable, RELATIONSHIPS_USERS_SEPARATOR)

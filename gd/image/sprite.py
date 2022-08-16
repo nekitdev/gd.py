@@ -25,9 +25,6 @@ class SpriteData(TypedDict):
     rotated: NotRequired[bool]
 
 
-SpriteData = StringMapping[SpriteData]
-
-
 @frozen()
 class Sprite:
     size: Size = field(factory=Size)

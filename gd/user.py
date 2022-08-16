@@ -46,7 +46,7 @@ from gd.enums import (
 from gd.filters import Filters
 from gd.image.factory import FACTORY, connect_images
 from gd.image.icon import Icon
-from gd.models import CreatorModel, ProfileModel, SearchUserModel
+from gd.models import CreatorModel, ProfileModel, RelationshipUserModel, SearchUserModel
 
 if TYPE_CHECKING:
     from PIL.Image import Image
@@ -211,6 +211,20 @@ class User(Entity):
             explosion_id=profile_model.explosion_id,
             role=profile_model.role,
             comment_state=profile_model.comment_state,
+        )
+
+    @classmethod
+    def from_relationship_user_model(cls: Type[U], model: RelationshipUserModel) -> U:
+        return cls(
+            name=model.name,
+            id=model.id,
+            icon_id=model.icon_id,
+            color_1_id=model.color_1_id,
+            color_2_id=model.color_2_id,
+            icon_type=model.icon_type,
+            glow=model.glow,
+            account_id=model.account_id,
+            message_state=model.message_state,
         )
 
     def __str__(self) -> str:

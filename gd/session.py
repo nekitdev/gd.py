@@ -28,7 +28,7 @@ from gd.enums import (
 )
 from gd.filters import Filters
 from gd.http import HTTPClient
-from gd.models import LoginModel, ProfileModel, SearchUserModel, SearchUsersResponseModel, SongModel
+from gd.models import LoginModel, ProfileModel, RelationshipsResponseModel, SearchUserModel, SearchUsersResponseModel, SongModel
 from gd.typing import IntString, MaybeIterable, URLString
 
 __all__ = ("Session",)
@@ -179,11 +179,12 @@ class Session:
 
     async def get_relationships(
         self, type: SimpleRelationshipType, *, account_id: int, encoded_password: str
-    ) -> UserListResponseModel:
+    ) -> RelationshipsResponseModel:
         response = await self.http.get_relationships(
             type, account_id=account_id, encoded_password=encoded_password
         )
-        return UserListResponseModel.from_string(response, use_default=True)
+
+        return RelationshipsResponseModel.from_robtop(response)
 
     async def get_top(
         self,

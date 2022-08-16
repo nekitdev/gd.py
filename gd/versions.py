@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import BinaryIO, Type, TypeVar
 
 from attrs import Attribute, field, frozen
-from typing_extensions import Final, Literal
+from typing_extensions import Final
 
 from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
@@ -14,7 +14,7 @@ from gd.string_utils import tick
 
 __all__ = ("CURRENT_GAME_VERSION", "CURRENT_BINARY_VERSION", "Version", "GameVersion")
 
-BASE: Final = 10
+BASE: Final[int] = 10
 
 V = TypeVar("V", bound="Version")
 
