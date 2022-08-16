@@ -1,4 +1,4 @@
-from aiohttp.web import Request, FileResponse
+from aiohttp.web import FileResponse, Request
 
 from gd.client import Client
 from gd.server.constants import CLIENT

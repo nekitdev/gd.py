@@ -13,7 +13,6 @@ from gd.entity import Entity
 from gd.enums import ByteOrder
 from gd.string_utils import case_fold, clear_whitespace
 
-
 if TYPE_CHECKING:
     from gd.song import Song
 

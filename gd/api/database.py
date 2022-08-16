@@ -1876,13 +1876,15 @@ class Database(Binary):
         official_levels_length = reader.read_u8(order)
 
         official_levels = ordered_set(
-            LevelAPI.from_binary(binary, order, version, encoding) for _ in range(official_levels_length)
+            LevelAPI.from_binary(binary, order, version, encoding)
+            for _ in range(official_levels_length)
         )
 
         saved_levels_length = reader.read_u8(order)
 
         saved_levels = ordered_set(
-            LevelAPI.from_binary(binary, order, version, encoding) for _ in range(saved_levels_length)
+            LevelAPI.from_binary(binary, order, version, encoding)
+            for _ in range(saved_levels_length)
         )
 
         followed_length = reader.read_u32(order)
@@ -1898,7 +1900,8 @@ class Database(Binary):
         daily_levels_length = reader.read_u32(order)
 
         daily_levels = ordered_set(
-            LevelAPI.from_binary(binary, order, version, encoding) for _ in range(daily_levels_length)
+            LevelAPI.from_binary(binary, order, version, encoding)
+            for _ in range(daily_levels_length)
         )
 
         daily_id = reader.read_u32(order)
@@ -1928,30 +1931,36 @@ class Database(Binary):
         gauntlet_levels_length = reader.read_u16(order)
 
         gauntlet_levels = ordered_set(
-            LevelAPI.from_binary(binary, order, version, encoding) for _ in range(gauntlet_levels_length)
+            LevelAPI.from_binary(binary, order, version, encoding)
+            for _ in range(gauntlet_levels_length)
         )
 
         saved_folders_length = reader.read_u8(order)
 
         saved_folders = ordered_set(
-            Folder.from_binary(binary, order, version, encoding) for _ in range(saved_folders_length)
+            Folder.from_binary(binary, order, version, encoding)
+            for _ in range(saved_folders_length)
         )
 
         created_folders_length = reader.read_u8(order)
 
         created_folders = ordered_set(
-            Folder.from_binary(binary, order, version, encoding) for _ in range(created_folders_length)
+            Folder.from_binary(binary, order, version, encoding)
+            for _ in range(created_folders_length)
         )
 
         created_levels_length = reader.read_u32(order)
 
         created_levels = ordered_set(
-            LevelAPI.from_binary(binary, order, version, encoding) for _ in range(created_levels_length)
+            LevelAPI.from_binary(binary, order, version, encoding)
+            for _ in range(created_levels_length)
         )
 
         songs_length = reader.read_u32(order)
 
-        songs = ordered_set(Song.from_binary(binary, order, version, encoding) for _ in range(songs_length))
+        songs = ordered_set(
+            Song.from_binary(binary, order, version, encoding) for _ in range(songs_length)
+        )
 
         return cls(
             volume=volume,

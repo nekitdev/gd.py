@@ -28,7 +28,14 @@ from gd.enums import (
 )
 from gd.filters import Filters
 from gd.http import HTTPClient
-from gd.models import LoginModel, ProfileModel, RelationshipsResponseModel, SearchUserModel, SearchUsersResponseModel, SongModel
+from gd.models import (
+    LoginModel,
+    ProfileModel,
+    RelationshipsResponseModel,
+    SearchUserModel,
+    SearchUsersResponseModel,
+    SongModel,
+)
 from gd.typing import IntString, MaybeIterable, URLString
 
 __all__ = ("Session",)

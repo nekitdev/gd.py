@@ -33,7 +33,6 @@ from gd.song import Song
 from gd.user import User
 from gd.versions import CURRENT_GAME_VERSION, GameVersion
 
-
 if TYPE_CHECKING:
     from gd.client import Client  # noqa
     from gd.comments import Comment  # noqa

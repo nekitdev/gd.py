@@ -71,7 +71,15 @@ from gd.message import Message
 from gd.rewards import Chest, Quest
 from gd.session import Session
 from gd.song import Song
-from gd.typing import AnyCallable, AnyException, DynamicTuple, IntString, MaybeAwaitable, MaybeIterable, URLString
+from gd.typing import (
+    AnyCallable,
+    AnyException,
+    DynamicTuple,
+    IntString,
+    MaybeAwaitable,
+    MaybeIterable,
+    URLString,
+)
 from gd.user import User
 
 __all__ = ("Client",)
@@ -347,7 +355,9 @@ class Client:
 
         search_model = await self.session.search_user(profile_model.id)  # search by ID
 
-        return User.from_search_user_and_profile_models(search_model, profile_model).attach_client(self)
+        return User.from_search_user_and_profile_models(search_model, profile_model).attach_client(
+            self
+        )
 
     async def search_user(
         self, query: IntString, simple: bool = False, friend_state: bool = False

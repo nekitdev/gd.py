@@ -177,7 +177,9 @@ class User(Entity):
         )
 
     @classmethod
-    def from_search_user_and_profile_models(cls: Type[U], search_user_model: SearchUserModel, profile_model: ProfileModel) -> U:
+    def from_search_user_and_profile_models(
+        cls: Type[U], search_user_model: SearchUserModel, profile_model: ProfileModel
+    ) -> U:
         return cls(
             name=profile_model.name,
             id=profile_model.id,

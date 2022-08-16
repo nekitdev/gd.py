@@ -12,7 +12,6 @@ from gd.constants import BYTE, DEFAULT_GET_DATA, DEFAULT_USE_CLIENT
 from gd.entity import Entity
 from gd.enums import ByteOrder
 
-
 # from gd.models import LevelCommentModel, UserCommentModel
 
 __all__ = ("Comment", "LevelComment", "UserComment")

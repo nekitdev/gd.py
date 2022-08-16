@@ -211,15 +211,13 @@ class Recording(Binary, RobTop, ListType, List[RecordingItem]):  # type: ignore
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        item_type: Type[RecordingItem] = RecordingItem
+        item_type: Type[RecordingItem] = RecordingItem,
     ) -> R:
         reader = Reader(binary)
 
         length = reader.read_u32(order)
 
-        return cls(
-            item_type.from_binary(binary, order, version) for _ in range(length)
-        )
+        return cls(item_type.from_binary(binary, order, version) for _ in range(length))
 
     def to_binary(
         self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION

@@ -9,7 +9,6 @@ from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM_CONFIG, PlatformConfig
 from gd.string_utils import tick
 from gd.typing import DecoratorIdentity, StringDict, Unary, get_name
 
-
 __all__ = (
     "Types",
     "types",

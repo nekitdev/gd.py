@@ -33,7 +33,6 @@ from gd.official_songs import (
 )
 from gd.typing import IntoPath, Predicate
 
-
 __all__ = ("Song",)
 
 

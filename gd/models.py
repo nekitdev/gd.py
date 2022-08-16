@@ -7,7 +7,25 @@ from attrs import define, field
 from typing_extensions import Protocol
 from yarl import URL
 
-from gd.constants import DEFAULT_ACTIVE, DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID, DEFAULT_CREATOR_POINTS, DEFAULT_DEMONS, DEFAULT_DIAMONDS, DEFAULT_GLOW, DEFAULT_ICON_ID, DEFAULT_ID, DEFAULT_NEW, DEFAULT_RANK, DEFAULT_SECRET_COINS, DEFAULT_SIZE, DEFAULT_STARS, DEFAULT_USER_COINS, EMPTY, UNKNOWN
+from gd.constants import (
+    DEFAULT_ACTIVE,
+    DEFAULT_COLOR_1_ID,
+    DEFAULT_COLOR_2_ID,
+    DEFAULT_CREATOR_POINTS,
+    DEFAULT_DEMONS,
+    DEFAULT_DIAMONDS,
+    DEFAULT_GLOW,
+    DEFAULT_ICON_ID,
+    DEFAULT_ID,
+    DEFAULT_NEW,
+    DEFAULT_RANK,
+    DEFAULT_SECRET_COINS,
+    DEFAULT_SIZE,
+    DEFAULT_STARS,
+    DEFAULT_USER_COINS,
+    EMPTY,
+    UNKNOWN,
+)
 from gd.enums import CommentState, FriendRequestState, FriendState, IconType, MessageState, Role
 from gd.models_constants import (
     COMMENT_BANNED_SEPARATOR,
@@ -367,7 +385,9 @@ class SearchUserModel(Model):
             ),
             rank=rank,
             creator_points=parse_get_or(
-                int, search_user_creator_points_default, mapping.get(search_user_creator_points_index)
+                int,
+                search_user_creator_points_default,
+                mapping.get(search_user_creator_points_index),
             ),
             icon_id=parse_get_or(
                 int, search_user_icon_id_default, mapping.get(search_user_icon_id_index)
@@ -597,35 +617,83 @@ class ProfileModel(Model):
             id=parse_get_or(int, profile_id_default, mapping.get(profile_id_index)),
             stars=parse_get_or(int, profile_stars_default, mapping.get(profile_stars_index)),
             demons=parse_get_or(int, profile_demons_default, mapping.get(profile_demons_index)),
-            creator_points=parse_get_or(int, profile_creator_points_default, mapping.get(profile_creator_points_index)),
-            color_1_id=parse_get_or(int, profile_color_1_id_default, mapping.get(profile_color_1_id_index)),
-            color_2_id=parse_get_or(int, profile_color_2_id_default, mapping.get(profile_color_2_id_index)),
-            secret_coins=parse_get_or(int, profile_secret_coins_default, mapping.get(profile_secret_coins_index)),
-            account_id=parse_get_or(int, profile_account_id_default, mapping.get(profile_account_id_index)),
-            user_coins=parse_get_or(int, profile_user_coins_default, mapping.get(profile_user_coins_index)),
-            message_state=parse_get_or(partial_parse_enum(int, MessageState), profile_message_state_default, mapping.get(profile_message_state_index)),
-            friend_request_state=parse_get_or(partial_parse_enum(int, FriendRequestState), profile_friend_request_state_default, mapping.get(profile_friend_request_state_index)),
+            creator_points=parse_get_or(
+                int, profile_creator_points_default, mapping.get(profile_creator_points_index)
+            ),
+            color_1_id=parse_get_or(
+                int, profile_color_1_id_default, mapping.get(profile_color_1_id_index)
+            ),
+            color_2_id=parse_get_or(
+                int, profile_color_2_id_default, mapping.get(profile_color_2_id_index)
+            ),
+            secret_coins=parse_get_or(
+                int, profile_secret_coins_default, mapping.get(profile_secret_coins_index)
+            ),
+            account_id=parse_get_or(
+                int, profile_account_id_default, mapping.get(profile_account_id_index)
+            ),
+            user_coins=parse_get_or(
+                int, profile_user_coins_default, mapping.get(profile_user_coins_index)
+            ),
+            message_state=parse_get_or(
+                partial_parse_enum(int, MessageState),
+                profile_message_state_default,
+                mapping.get(profile_message_state_index),
+            ),
+            friend_request_state=parse_get_or(
+                partial_parse_enum(int, FriendRequestState),
+                profile_friend_request_state_default,
+                mapping.get(profile_friend_request_state_index),
+            ),
             youtube=mapping.get(profile_youtube_index) or profile_youtube_default,
             cube_id=parse_get_or(int, profile_cube_id_default, mapping.get(profile_cube_id_index)),
             ship_id=parse_get_or(int, profile_ship_id_default, mapping.get(profile_ship_id_index)),
             ball_id=parse_get_or(int, profile_ball_id_default, mapping.get(profile_ball_id_index)),
             ufo_id=parse_get_or(int, profile_ufo_id_default, mapping.get(profile_ufo_id_index)),
             wave_id=parse_get_or(int, profile_wave_id_default, mapping.get(profile_wave_id_index)),
-            robot_id=parse_get_or(int, profile_robot_id_default, mapping.get(profile_robot_id_index)),
+            robot_id=parse_get_or(
+                int, profile_robot_id_default, mapping.get(profile_robot_id_index)
+            ),
             glow=parse_get_or(int_bool, profile_glow_default, mapping.get(profile_glow_index)),
-            active=parse_get_or(int_bool, profile_active_default, mapping.get(profile_active_index)),
+            active=parse_get_or(
+                int_bool, profile_active_default, mapping.get(profile_active_index)
+            ),
             rank=parse_get_or(int, profile_rank_default, mapping.get(profile_rank_index)),
-            friend_state=parse_get_or(partial_parse_enum(int, FriendState), profile_friend_state_default, mapping.get(profile_friend_state_index)),
-            new_messages=parse_get_or(int, profile_new_messages_default, mapping.get(profile_new_messages_index)),
-            new_friend_requests=parse_get_or(int, profile_new_friend_requests_default, mapping.get(profile_new_friend_requests_index)),
-            new_friends=parse_get_or(int, profile_new_friends_default, mapping.get(profile_new_friends_index)),
-            spider_id=parse_get_or(int, profile_spider_id_default, mapping.get(profile_spider_id_index)),
+            friend_state=parse_get_or(
+                partial_parse_enum(int, FriendState),
+                profile_friend_state_default,
+                mapping.get(profile_friend_state_index),
+            ),
+            new_messages=parse_get_or(
+                int, profile_new_messages_default, mapping.get(profile_new_messages_index)
+            ),
+            new_friend_requests=parse_get_or(
+                int,
+                profile_new_friend_requests_default,
+                mapping.get(profile_new_friend_requests_index),
+            ),
+            new_friends=parse_get_or(
+                int, profile_new_friends_default, mapping.get(profile_new_friends_index)
+            ),
+            spider_id=parse_get_or(
+                int, profile_spider_id_default, mapping.get(profile_spider_id_index)
+            ),
             twitter=mapping.get(profile_twitter_index) or profile_twitter_default,
             twitch=mapping.get(profile_twitch_index) or profile_twitch_default,
-            diamonds=parse_get_or(int, profile_diamonds_default, mapping.get(profile_diamonds_index)),
-            explosion_id=parse_get_or(int, profile_explosion_id_default, mapping.get(profile_explosion_id_index)),
-            role=parse_get_or(partial_parse_enum(int, Role), profile_role_default, mapping.get(profile_role_index)),
-            comment_state=parse_get_or(partial_parse_enum(int, CommentState), profile_comment_state_default, mapping.get(profile_comment_state_index)),
+            diamonds=parse_get_or(
+                int, profile_diamonds_default, mapping.get(profile_diamonds_index)
+            ),
+            explosion_id=parse_get_or(
+                int, profile_explosion_id_default, mapping.get(profile_explosion_id_index)
+            ),
+            role=parse_get_or(
+                partial_parse_enum(int, Role), profile_role_default, mapping.get(profile_role_index)
+            ),
+            comment_state=parse_get_or(
+                partial_parse_enum(int, CommentState),
+                profile_comment_state_default,
+                mapping.get(profile_comment_state_index),
+            ),
         )
 
     def to_robtop(
@@ -768,14 +836,40 @@ class RelationshipUserModel(Model):
 
         return cls(
             name=mapping.get(relationship_user_name_index, relationship_user_name_default),
-            id=parse_get_or(int, relationship_user_id_default, mapping.get(relationship_user_id_index)),
-            icon_id=parse_get_or(int, relationship_user_icon_id_default, mapping.get(relationship_user_icon_id_index)),
-            color_1_id=parse_get_or(int, relationship_user_color_1_id_default, mapping.get(relationship_user_color_1_id_index)),
-            color_2_id=parse_get_or(int, relationship_user_color_2_id_default, mapping.get(relationship_user_color_2_id_index)),
-            icon_type=parse_get_or(partial_parse_enum(int, IconType), relationship_user_icon_type_default, mapping.get(relationship_user_icon_type_index)),
-            glow=parse_get_or(int_bool, relationship_user_glow_default, mapping.get(relationship_user_glow_index)),
-            account_id=parse_get_or(int, relationship_user_account_id_default, mapping.get(relationship_user_account_id_index)),
-            message_state=parse_get_or(partial_parse_enum(int, MessageState), relationship_user_message_state_default, mapping.get(relationship_user_message_state_index)),
+            id=parse_get_or(
+                int, relationship_user_id_default, mapping.get(relationship_user_id_index)
+            ),
+            icon_id=parse_get_or(
+                int, relationship_user_icon_id_default, mapping.get(relationship_user_icon_id_index)
+            ),
+            color_1_id=parse_get_or(
+                int,
+                relationship_user_color_1_id_default,
+                mapping.get(relationship_user_color_1_id_index),
+            ),
+            color_2_id=parse_get_or(
+                int,
+                relationship_user_color_2_id_default,
+                mapping.get(relationship_user_color_2_id_index),
+            ),
+            icon_type=parse_get_or(
+                partial_parse_enum(int, IconType),
+                relationship_user_icon_type_default,
+                mapping.get(relationship_user_icon_type_index),
+            ),
+            glow=parse_get_or(
+                int_bool, relationship_user_glow_default, mapping.get(relationship_user_glow_index)
+            ),
+            account_id=parse_get_or(
+                int,
+                relationship_user_account_id_default,
+                mapping.get(relationship_user_account_id_index),
+            ),
+            message_state=parse_get_or(
+                partial_parse_enum(int, MessageState),
+                relationship_user_message_state_default,
+                mapping.get(relationship_user_message_state_index),
+            ),
         )
 
     def to_robtop(

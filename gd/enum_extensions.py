@@ -5,7 +5,7 @@ from enum_extensions import Flag as ExtendedFlag
 from enum_extensions import Format, Order
 from enum_extensions import Title as ExtendedTitle
 
-__all__ = ("Enum", "Flag", "TitleTrait")
+__all__ = ("Enum", "Flag", "Title")
 
 ABBREVIATIONS = {"NA", "UFO", "XL"}
 
@@ -14,9 +14,9 @@ class Title(ExtendedTitle):
     ABBREVIATIONS: ClassVar[Set[str]] = ABBREVIATIONS
 
 
-class Enum(Format, Order, ExtendedEnum):
+class Enum(Title, Format, Order, ExtendedEnum):
     pass
 
 
-class Flag(Format, Order, ExtendedFlag):
+class Flag(Title, Format, Order, ExtendedFlag):
     pass

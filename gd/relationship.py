@@ -1,4 +1,4 @@
-from attrs import define
+from attrs import define, field
 
 from gd.entity import Entity
 from gd.enums import RelationshipType
@@ -9,5 +9,11 @@ __all__ = ("Relationship",)
 
 @define()
 class Relationship(Entity):
-    user: User
-    type: RelationshipType
+    user: User = field()
+    type: RelationshipType = field()
+
+    id: int = field()
+
+    @id.default
+    def default_id(self) -> int:
+        return self.user.id

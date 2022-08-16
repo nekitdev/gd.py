@@ -46,7 +46,6 @@ from gd.memory.utils import set_name
 from gd.platform import PlatformConfig
 from gd.typing import Binary, Namespace, StringDict, get_name, is_instance
 
-
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
 
