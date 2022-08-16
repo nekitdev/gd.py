@@ -14,4 +14,5 @@ from gd.server.icons import get_icons
 from gd.server.routes import ROUTES, delete, get, get_route, head, patch, post, put, static
 from gd.server.tokens import ServerToken, ServerTokens, Token, Tokens, token
 from gd.server.types import BOOL, FILE, FLOAT, INT, OBJECT, STRING
+from gd.server.users import get_user_icons, search_user_icons
 from gd.server.utils import get_original_handler, parameter, parse_bool, parse_enum, parse_pages

@@ -15,6 +15,7 @@ from gd.models_constants import (
     DATABASE_SEPARATOR,
     LOGIN_SEPARATOR,
     PAGE_SEPARATOR,
+    PROFILE_SEPARATOR,
     SEARCH_USER_SEPARATOR,
     SEARCH_USERS_RESPONSE_SEPARATOR,
     SONG_SEPARATOR,
@@ -24,6 +25,7 @@ from gd.models_utils import (
     concat_creator,
     concat_login,
     concat_page,
+    concat_profile,
     concat_search_user,
     concat_search_users_response,
     concat_search_users_response_users,
@@ -36,6 +38,7 @@ from gd.models_utils import (
     split_creator,
     split_login,
     split_page,
+    split_profile,
     split_search_user,
     split_search_users_response,
     split_search_users_response_users,
@@ -62,7 +65,7 @@ __all__ = (
     "MapPackModel",
     "MessageModel",
     "PageModel",
-    "ProfileUserModel",
+    "ProfileModel",
     "QuestModel",
     "SearchUserModel",
     "SongModel",
@@ -474,6 +477,40 @@ P = TypeVar("P", bound="ProfileModel")
 
 @define()
 class ProfileModel(Model):
+    name: str = UNKNOWN
+    id: int = DEFAULT_ID
+    stars: int = DEFAULT_STARS
+    demons: int = DEFAULT_DEMONS
+    creator_points: int = DEFAULT_CREATOR_POINTS
+    color_1_id: int = DEFAULT_COLOR_1_ID
+    color_2_id: int = DEFAULT_COLOR_2_ID
+    secret_coins: int = DEFAULT_SECRET_COINS
+    account_id: int = DEFAULT_ID
+    user_coins: int = DEFAULT_USER_COINS
+    message_state: MessageState = MessageState.DEFAULT
+    friend_request_state: FriendRequestState = FriendRequestState.DEFAULT
+    youtube: Optional[str] = None
+    cube_id: int = DEFAULT_ICON_ID
+    ship_id: int = DEFAULT_ICON_ID
+    ball_id: int = DEFAULT_ICON_ID
+    ufo_id: int = DEFAULT_ICON_ID
+    wave_id: int = DEFAULT_ICON_ID
+    robot_id: int = DEFAULT_ICON_ID
+    glow: bool = DEFAULT_GLOW
+    active: bool = DEFAULT_ACTIVE
+    rank: int = DEFAULT_RANK
+    friend_state: FriendState = FriendState.DEFAULT
+    new_messages: int = DEFAULT_NEW
+    new_friend_requests: int = DEFAULT_NEW
+    new_friends: int = DEFAULT_NEW
+    spider_id: int = DEFAULT_ICON_ID
+    twitter: Optional[str] = None
+    twitch: Optional[str] = None
+    diamonds: int = DEFAULT_DIAMONDS
+    explosion_id: int = DEFAULT_ICON_ID
+    role: Role = Role.DEFAULT
+    comment_state: CommentState = CommentState.DEFAULT
+
     @classmethod
     def from_robtop(
         cls: Type[P],
@@ -547,7 +584,43 @@ class ProfileModel(Model):
         profile_role_default: Role = Role.DEFAULT,
         profile_comment_state_default: CommentState = CommentState.DEFAULT,
     ) -> P:
-        ...
+        mapping = split_profile(string)
+
+        return cls(
+            name=mapping.get(profile_name_index, profile_name_default),
+            id=parse_get_or(int, profile_id_default, mapping.get(profile_id_index)),
+            stars=parse_get_or(int, profile_stars_default, mapping.get(profile_stars_index)),
+            demons=parse_get_or(int, profile_demons_default, mapping.get(profile_demons_index)),
+            creator_points=parse_get_or(int, profile_creator_points_default, mapping.get(profile_creator_points_index)),
+            color_1_id=parse_get_or(int, profile_color_1_id_default, mapping.get(profile_color_1_id_index)),
+            color_2_id=parse_get_or(int, profile_color_2_id_default, mapping.get(profile_color_2_id_index)),
+            secret_coins=parse_get_or(int, profile_secret_coins_default, mapping.get(profile_secret_coins_index)),
+            account_id=parse_get_or(int, profile_account_id_default, mapping.get(profile_account_id_index)),
+            user_coins=parse_get_or(int, profile_user_coins_default, mapping.get(profile_user_coins_index)),
+            message_state=parse_get_or(partial_parse_enum(int, MessageState), profile_message_state_default, mapping.get(profile_message_state_index)),
+            friend_request_state=parse_get_or(partial_parse_enum(int, FriendRequestState), profile_friend_request_state_default, mapping.get(profile_friend_request_state_index)),
+            youtube=mapping.get(profile_youtube_index) or profile_youtube_default,
+            cube_id=parse_get_or(int, profile_cube_id_default, mapping.get(profile_cube_id_index)),
+            ship_id=parse_get_or(int, profile_ship_id_default, mapping.get(profile_ship_id_index)),
+            ball_id=parse_get_or(int, profile_ball_id_default, mapping.get(profile_ball_id_index)),
+            ufo_id=parse_get_or(int, profile_ufo_id_default, mapping.get(profile_ufo_id_index)),
+            wave_id=parse_get_or(int, profile_wave_id_default, mapping.get(profile_wave_id_index)),
+            robot_id=parse_get_or(int, profile_robot_id_default, mapping.get(profile_robot_id_index)),
+            glow=parse_get_or(int_bool, profile_glow_default, mapping.get(profile_glow_index)),
+            active=parse_get_or(int_bool, profile_active_default, mapping.get(profile_active_index)),
+            rank=parse_get_or(int, profile_rank_default, mapping.get(profile_rank_index)),
+            friend_state=parse_get_or(partial_parse_enum(int, FriendState), profile_friend_state_default, mapping.get(profile_friend_state_index)),
+            new_messages=parse_get_or(int, profile_new_messages_default, mapping.get(profile_new_messages_index)),
+            new_friend_requests=parse_get_or(int, profile_new_friend_requests_default, mapping.get(profile_new_friend_requests_index)),
+            new_friends=parse_get_or(int, profile_new_friends_default, mapping.get(profile_new_friends_index)),
+            spider_id=parse_get_or(int, profile_spider_id_default, mapping.get(profile_spider_id_index)),
+            twitter=mapping.get(profile_twitter_index) or profile_twitter_default,
+            twitch=mapping.get(profile_twitch_index) or profile_twitch_default,
+            diamonds=parse_get_or(int, profile_diamonds_default, mapping.get(profile_diamonds_index)),
+            explosion_id=parse_get_or(int, profile_explosion_id_default, mapping.get(profile_explosion_id_index)),
+            role=parse_get_or(partial_parse_enum(int, Role), profile_role_default, mapping.get(profile_role_index)),
+            comment_state=parse_get_or(partial_parse_enum(int, CommentState), profile_comment_state_default, mapping.get(profile_comment_state_index)),
+        )
 
     def to_robtop(
         self,
@@ -585,11 +658,55 @@ class ProfileModel(Model):
         profile_role_index: int = PROFILE_ROLE,
         profile_comment_state_index: int = PROFILE_COMMENT_STATE,
     ) -> str:
-        ...
+        mapping = {
+            profile_name_index: self.name,
+            profile_id_index: str(self.id),
+            profile_stars_index: str(self.stars),
+            profile_demons_index: str(self.demons),
+            profile_creator_points_index: str(self.creator_points),
+            profile_color_1_id_index: str(self.color_1_id),
+            profile_color_2_id_index: str(self.color_2_id),
+            profile_secret_coins_index: str(self.secret_coins),
+            profile_account_id_index: str(self.account_id),
+            profile_user_coins_index: str(self.user_coins),
+            profile_message_state_index: str(self.message_state.value),
+            profile_friend_request_state_index: str(self.friend_request_state.value),
+            profile_youtube_index: self.youtube or EMPTY,
+            profile_cube_id_index: str(self.cube_id),
+            profile_ship_id_index: str(self.ship_id),
+            profile_ball_id_index: str(self.ball_id),
+            profile_ufo_id_index: str(self.ufo_id),
+            profile_wave_id_index: str(self.wave_id),
+            profile_robot_id_index: str(self.robot_id),
+            profile_glow_index: str(int(self.glow)),
+            profile_active_index: str(int(self.active)),
+            profile_rank_index: str(int(self.rank)),
+            profile_friend_state_index: str(self.friend_state.value),
+            profile_new_messages_index: str(self.new_messages),
+            profile_new_friend_requests_index: str(self.new_friend_requests),
+            profile_new_friends_index: str(self.new_friends),
+            profile_spider_id_index: str(self.spider_id),
+            profile_twitter_index: self.twitter or EMPTY,
+            profile_twitch_index: self.twitch or EMPTY,
+            profile_diamonds_index: str(self.diamonds),
+            profile_explosion_id_index: str(self.explosion_id),
+            profile_role_index: str(self.role.value),
+            profile_comment_state_index: str(self.comment_state.value),
+        }
+
+        return concat_profile(mapping)
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
-        ...
+        return PROFILE_SEPARATOR in string
+
+    @property
+    def banned(self) -> bool:
+        return not self.active
+
+    @banned.setter
+    def banned(self, banned: bool) -> None:
+        self.active = not self.banned
 
 
 SUR = TypeVar("SUR", bound="SearchUsersResponseModel")

@@ -28,7 +28,7 @@ from gd.enums import (
 )
 from gd.filters import Filters
 from gd.http import HTTPClient
-from gd.models import LoginModel, SearchUserModel, SearchUsersResponseModel, SongModel
+from gd.models import LoginModel, ProfileModel, SearchUserModel, SearchUsersResponseModel, SongModel
 from gd.typing import IntString, MaybeIterable, URLString
 
 __all__ = ("Session",)
@@ -168,13 +168,14 @@ class Session:
         *,
         client_account_id: Optional[int] = None,
         encoded_password: Optional[str] = None,
-    ) -> ProfileUserModel:
+    ) -> ProfileModel:
         response = await self.http.get_user_profile(
             account_id,
             client_account_id=client_account_id,
             encoded_password=encoded_password,
         )
-        return ProfileUserModel.from_string(response, use_default=True)
+
+        return ProfileModel.from_robtop(response)
 
     async def get_relationships(
         self, type: SimpleRelationshipType, *, account_id: int, encoded_password: str

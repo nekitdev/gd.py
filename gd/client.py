@@ -343,7 +343,7 @@ class Client:
             profile_model = await self.session.get_user_profile(account_id)
 
         if simple:  # if only the profile is needed, return right away
-            return User.from_profile_model(profile_model).attach_client(client)
+            return User.from_profile_model(profile_model).attach_client(self)
 
         search_model = await self.session.search_user(profile_model.id)  # search by ID
 

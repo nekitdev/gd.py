@@ -7,6 +7,7 @@ from attrs import define
 from iters.async_iters import wrap_async_iter
 
 from gd.async_utils import gather_iterable
+from gd.binary import VERSION
 from gd.binary_utils import UTF_8, Reader, Writer
 from gd.colors import Color
 from gd.constants import (
@@ -45,9 +46,7 @@ from gd.enums import (
 from gd.filters import Filters
 from gd.image.factory import FACTORY, connect_images
 from gd.image.icon import Icon
-from gd.models import CreatorModel, SearchUserModel
-
-from .binary import VERSION
+from gd.models import CreatorModel, ProfileModel, SearchUserModel
 
 if TYPE_CHECKING:
     from PIL.Image import Image
@@ -140,6 +139,78 @@ class User(Entity):
             glow=model.glow,
             account_id=model.account_id,
             user_coins=model.user_coins,
+        )
+
+    @classmethod
+    def from_profile_model(cls: Type[U], model: ProfileModel) -> U:
+        return cls(
+            name=model.name,
+            id=model.id,
+            stars=model.stars,
+            demons=model.demons,
+            creator_points=model.creator_points,
+            color_1_id=model.color_1_id,
+            color_2_id=model.color_2_id,
+            secret_coins=model.secret_coins,
+            account_id=model.account_id,
+            user_coins=model.user_coins,
+            message_state=model.message_state,
+            friend_request_state=model.friend_request_state,
+            youtube=model.youtube,
+            cube_id=model.cube_id,
+            ship_id=model.ship_id,
+            ball_id=model.ball_id,
+            ufo_id=model.ufo_id,
+            wave_id=model.wave_id,
+            robot_id=model.robot_id,
+            glow=model.glow,
+            banned=model.banned,
+            rank=model.rank,
+            friend_state=model.friend_state,
+            spider_id=model.spider_id,
+            twitter=model.twitter,
+            twitch=model.twitch,
+            diamonds=model.diamonds,
+            explosion_id=model.explosion_id,
+            role=model.role,
+            comment_state=model.comment_state,
+        )
+
+    @classmethod
+    def from_search_user_and_profile_models(cls: Type[U], search_user_model: SearchUserModel, profile_model: ProfileModel) -> U:
+        return cls(
+            name=profile_model.name,
+            id=profile_model.id,
+            stars=profile_model.stars,
+            demons=profile_model.demons,
+            creator_points=profile_model.creator_points,
+            color_1_id=profile_model.color_1_id,
+            color_2_id=profile_model.color_2_id,
+            secret_coins=profile_model.secret_coins,
+            account_id=profile_model.account_id,
+            user_coins=profile_model.user_coins,
+            message_state=profile_model.message_state,
+            friend_request_state=profile_model.friend_request_state,
+            youtube=profile_model.youtube,
+            icon_id=search_user_model.icon_id,
+            icon_type=search_user_model.icon_type,
+            cube_id=profile_model.cube_id,
+            ship_id=profile_model.ship_id,
+            ball_id=profile_model.ball_id,
+            ufo_id=profile_model.ufo_id,
+            wave_id=profile_model.wave_id,
+            robot_id=profile_model.robot_id,
+            glow=profile_model.glow,
+            banned=profile_model.banned,
+            rank=profile_model.rank,
+            friend_state=profile_model.friend_state,
+            spider_id=profile_model.spider_id,
+            twitter=profile_model.twitter,
+            twitch=profile_model.twitch,
+            diamonds=profile_model.diamonds,
+            explosion_id=profile_model.explosion_id,
+            role=profile_model.role,
+            comment_state=profile_model.comment_state,
         )
 
     def __str__(self) -> str:

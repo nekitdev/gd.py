@@ -5,7 +5,7 @@ from yarl import URL
 
 from gd.constants import SLASH
 from gd.server.constants import PREFIX, VERSION, VERSION_FORMAT
-from gd.server.typing import Handler
+from gd.server.typing import StreamHandler
 from gd.typing import DecoratorIdentity
 
 __all__ = ("ROUTES", "get_route", "delete", "get", "head", "patch", "post", "put", "static")
@@ -26,7 +26,7 @@ def get(
     version_format: str = VERSION_FORMAT,
     routes: RouteTableDef = ROUTES,
     **kwargs: Any,
-) -> DecoratorIdentity[Handler]:
+) -> DecoratorIdentity[StreamHandler]:
     return routes.get(get_route(route, version, prefix, version_format), **kwargs)
 
 
@@ -37,7 +37,7 @@ def post(
     version_format: str = VERSION_FORMAT,
     routes: RouteTableDef = ROUTES,
     **kwargs: Any,
-) -> DecoratorIdentity[Handler]:
+) -> DecoratorIdentity[StreamHandler]:
     return routes.post(get_route(route, version, prefix, version_format), **kwargs)
 
 
@@ -48,7 +48,7 @@ def head(
     version_format: str = VERSION_FORMAT,
     routes: RouteTableDef = ROUTES,
     **kwargs: Any,
-) -> DecoratorIdentity[Handler]:
+) -> DecoratorIdentity[StreamHandler]:
     return routes.head(get_route(route, version, prefix, version_format), **kwargs)
 
 
@@ -59,7 +59,7 @@ def put(
     version_format: str = VERSION_FORMAT,
     routes: RouteTableDef = ROUTES,
     **kwargs: Any,
-) -> DecoratorIdentity[Handler]:
+) -> DecoratorIdentity[StreamHandler]:
     return routes.put(get_route(route, version, prefix, version_format), **kwargs)
 
 
@@ -70,7 +70,7 @@ def patch(
     version_format: str = VERSION_FORMAT,
     routes: RouteTableDef = ROUTES,
     **kwargs: Any,
-) -> DecoratorIdentity[Handler]:
+) -> DecoratorIdentity[StreamHandler]:
     return routes.patch(get_route(route, version, prefix, version_format), **kwargs)
 
 
@@ -81,7 +81,7 @@ def delete(
     version_format: str = VERSION_FORMAT,
     routes: RouteTableDef = ROUTES,
     **kwargs: Any,
-) -> DecoratorIdentity[Handler]:
+) -> DecoratorIdentity[StreamHandler]:
     return routes.delete(get_route(route, version, prefix, version_format), **kwargs)
 
 
