@@ -43,7 +43,7 @@ GET_USER_NAME = "get.{}.png"
 async def get_user_icons(request: Request) -> FileResponse:
     account_id = int(request.match_info[ACCOUNT_ID])
 
-    path = ICONS_PATH / SEARCH_USER_NAME.format(account_id)
+    path = ICONS_PATH / GET_USER_NAME.format(account_id)
 
     client: Client = request.app[CLIENT]
 

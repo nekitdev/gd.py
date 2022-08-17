@@ -23,6 +23,7 @@ from gd.constants import (
     DEFAULT_ORBS,
     DEFAULT_PAGE,
     DEFAULT_PAGES,
+    DEFAULT_PLACE,
     DEFAULT_RANK,
     DEFAULT_SECRET_COINS,
     DEFAULT_STARS,
@@ -46,7 +47,7 @@ from gd.enums import (
 from gd.filters import Filters
 from gd.image.factory import FACTORY, connect_images
 from gd.image.icon import Icon
-from gd.models import CreatorModel, ProfileModel, RelationshipUserModel, SearchUserModel
+from gd.models import CreatorModel, LeaderboardUserModel, ProfileModel, RelationshipUserModel, SearchUserModel
 
 if TYPE_CHECKING:
     from PIL.Image import Image
@@ -109,6 +110,7 @@ class User(Entity):
     twitter: Optional[str] = None
     twitch: Optional[str] = None
     # discord: Optional[str] = None
+    place: int = DEFAULT_PLACE
     record: Optional[int] = None
     banned: bool = DEFAULT_BANNED
 
@@ -227,6 +229,26 @@ class User(Entity):
             glow=model.glow,
             account_id=model.account_id,
             message_state=model.message_state,
+        )
+
+    @classmethod
+    def from_leaderboard_user_model(cls: Type[U], model: LeaderboardUserModel) -> U:
+        return cls(
+            name=model.name,
+            id=model.id,
+            stars=model.stars,
+            demons=model.demons,
+            place=model.place,
+            creator_points=model.creator_points,
+            icon_id=model.icon_id,
+            color_1_id=model.color_1_id,
+            color_2_id=model.color_2_id,
+            secret_coins=model.secret_coins,
+            icon_type=model.icon_type,
+            glow=model.glow,
+            account_id=model.account_id,
+            user_coins=model.user_coins,
+            diamonds=model.diamonds,
         )
 
     def __str__(self) -> str:

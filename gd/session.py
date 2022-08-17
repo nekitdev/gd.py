@@ -29,6 +29,7 @@ from gd.enums import (
 from gd.filters import Filters
 from gd.http import HTTPClient
 from gd.models import (
+    LeaderboardResponseModel,
     LoginModel,
     ProfileModel,
     RelationshipsResponseModel,
@@ -193,18 +194,18 @@ class Session:
 
         return RelationshipsResponseModel.from_robtop(response)
 
-    async def get_top(
+    async def get_leaderboard(
         self,
         strategy: LeaderboardStrategy,
-        amount: int,
+        count: int,
         *,
         account_id: Optional[int] = None,
         encoded_password: Optional[str] = None,
     ) -> LeaderboardResponseModel:
-        response = await self.http.get_top(
-            strategy, amount, account_id=account_id, encoded_password=encoded_password
+        response = await self.http.get_leaderboard(
+            strategy, count, account_id=account_id, encoded_password=encoded_password
         )
-        return LeaderboardResponseModel.from_string(response, use_default=True)
+        return LeaderboardResponseModel.from_robtop(response)
 
     async def search_levels_on_page(
         self,

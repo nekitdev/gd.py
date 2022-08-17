@@ -8,7 +8,7 @@ from gd.constants import BITS, BYTE
 from gd.enums import ByteOrder
 from gd.models import Model
 from gd.models_constants import HSV_SEPARATOR
-from gd.models_utils import bool_str, concat_hsv, float_str, int_bool, split_hsv
+from gd.models_utils import concat_hsv, float_str, int_bool, split_hsv
 
 __all__ = ("HSV",)
 
@@ -69,8 +69,8 @@ class HSV(Binary, Model):
             str(self.h),
             float_str(self.s),
             float_str(self.v),
-            bool_str(self.s_checked),
-            bool_str(self.v_checked),
+            str(int(self.s_checked)),
+            str(int(self.v_checked)),
         ]
 
         return concat_hsv(values)

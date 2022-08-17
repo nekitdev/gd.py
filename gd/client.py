@@ -443,9 +443,7 @@ class Client:
         )
 
         for model in response_model.users:
-            yield User.from_model(model, client=self)
-
-    get_top = get_leaderboard
+            yield User.from_leaderboard_user_model(model).attach_client(self)
 
     def levels_from_model(self, response_model: LevelSearchResponseModel) -> Iterator[Level]:
         songs = (Song.from_model(model, custom=True, client=self) for model in response_model.songs)

@@ -18,6 +18,7 @@ from gd.constants import (
     DEFAULT_ICON_ID,
     DEFAULT_ID,
     DEFAULT_NEW,
+    DEFAULT_PLACE,
     DEFAULT_RANK,
     DEFAULT_SECRET_COINS,
     DEFAULT_SIZE,
@@ -31,11 +32,13 @@ from gd.models_constants import (
     COMMENT_BANNED_SEPARATOR,
     CREATOR_SEPARATOR,
     DATABASE_SEPARATOR,
+    LEADERBOARD_RESPONSE_USERS_SEPARATOR,
+    LEADERBOARD_USER_SEPARATOR,
     LOGIN_SEPARATOR,
     PAGE_SEPARATOR,
     PROFILE_SEPARATOR,
     RELATIONSHIP_USER_SEPARATOR,
-    RELATIONSHIPS_USERS_SEPARATOR,
+    RELATIONSHIPS_RESPONSE_USERS_SEPARATOR,
     SEARCH_USER_SEPARATOR,
     SEARCH_USERS_RESPONSE_SEPARATOR,
     SONG_SEPARATOR,
@@ -43,11 +46,13 @@ from gd.models_constants import (
 from gd.models_utils import (
     concat_comment_banned,
     concat_creator,
+    concat_leaderboard_user,
     concat_login,
     concat_page,
     concat_profile,
     concat_relationship_user,
-    concat_relationships_users,
+    concat_leaderboard_response_users,
+    concat_relationships_response_users,
     concat_search_user,
     concat_search_users_response,
     concat_search_users_response_users,
@@ -58,11 +63,13 @@ from gd.models_utils import (
     partial_parse_enum,
     split_comment_banned,
     split_creator,
+    split_leaderboard_user,
+    split_leaderboard_response_users,
     split_login,
     split_page,
     split_profile,
     split_relationship_user,
-    split_relationships_users,
+    split_relationships_response_users,
     split_search_user,
     split_search_users_response,
     split_search_users_response_users,
@@ -434,10 +441,8 @@ class SearchUserModel(Model):
         search_user_account_id_index: int = SEARCH_USER_ACCOUNT_ID,
         search_user_user_coins_index: int = SEARCH_USER_USER_COINS,
     ) -> str:
-        glow = int(self.glow)
-
-        if glow:
-            glow += 1
+        glow = self.glow
+        glow += glow
 
         mapping = {
             search_user_name_index: self.name,
@@ -903,6 +908,176 @@ class RelationshipUserModel(Model):
         return RELATIONSHIP_USER_SEPARATOR in string
 
 
+LEADERBOARD_USER_NAME = 1
+LEADERBOARD_USER_ID = 2
+LEADERBOARD_USER_STARS = 3
+LEADERBOARD_USER_DEMONS = 4
+LEADERBOARD_USER_PLACE = 6
+LEADERBOARD_USER_CREATOR_POINTS = 8
+LEADERBOARD_USER_ICON_ID = 9
+LEADERBOARD_USER_COLOR_1_ID = 10
+LEADERBOARD_USER_COLOR_2_ID = 11
+LEADERBOARD_USER_SECRET_COINS = 13
+LEADERBOARD_USER_ICON_TYPE = 14
+LEADERBOARD_USER_GLOW = 15
+LEADERBOARD_USER_ACCOUNT_ID = 16
+LEADERBOARD_USER_USER_COINS = 17
+LEADERBOARD_USER_DIAMONDS = 46
+
+LU = TypeVar("LU", bound="LeaderboardUserModel")
+
+
+@define()
+class LeaderboardUserModel(Model):
+    name: str = UNKNOWN
+    id: int = DEFAULT_ID
+    stars: int = DEFAULT_STARS
+    demons: int = DEFAULT_DEMONS
+    place: int = DEFAULT_PLACE
+    creator_points: int = DEFAULT_CREATOR_POINTS
+    icon_id: int = DEFAULT_ICON_ID
+    color_1_id: int = DEFAULT_COLOR_1_ID
+    color_2_id: int = DEFAULT_COLOR_2_ID
+    secret_coins: int = DEFAULT_SECRET_COINS
+    icon_type: IconType = IconType.DEFAULT
+    glow: bool = DEFAULT_GLOW
+    account_id: int = DEFAULT_ID
+    user_coins: int = DEFAULT_USER_COINS
+    diamonds: int = DEFAULT_DIAMONDS
+
+    @classmethod
+    def from_robtop(
+        cls: Type[LU],
+        string: str,
+        # indexes
+        leaderboard_user_name_index: int = LEADERBOARD_USER_NAME,
+        leaderboard_user_id_index: int = LEADERBOARD_USER_ID,
+        leaderboard_user_stars_index: int = LEADERBOARD_USER_STARS,
+        leaderboard_user_demons_index: int = LEADERBOARD_USER_DEMONS,
+        leaderboard_user_place_index: int = LEADERBOARD_USER_PLACE,
+        leaderboard_user_creator_points_index: int = LEADERBOARD_USER_CREATOR_POINTS,
+        leaderboard_user_icon_id_index: int = LEADERBOARD_USER_ICON_ID,
+        leaderboard_user_color_1_id_index: int = LEADERBOARD_USER_COLOR_1_ID,
+        leaderboard_user_color_2_id_index: int = LEADERBOARD_USER_COLOR_2_ID,
+        leaderboard_user_secret_coins_index: int = LEADERBOARD_USER_SECRET_COINS,
+        leaderboard_user_icon_type_index: int = LEADERBOARD_USER_ICON_TYPE,
+        leaderboard_user_glow_index: int = LEADERBOARD_USER_GLOW,
+        leaderboard_user_account_id_index: int = LEADERBOARD_USER_ACCOUNT_ID,
+        leaderboard_user_user_coins_index: int = LEADERBOARD_USER_USER_COINS,
+        leaderboard_user_diamonds_index: int = LEADERBOARD_USER_DIAMONDS,
+        # defaults
+        leaderboard_user_name_default: str = UNKNOWN,
+        leaderboard_user_id_default: int = DEFAULT_ID,
+        leaderboard_user_stars_default: int = DEFAULT_STARS,
+        leaderboard_user_demons_default: int = DEFAULT_DEMONS,
+        leaderboard_user_place_default: int = DEFAULT_PLACE,
+        leaderboard_user_creator_points_default: int = DEFAULT_CREATOR_POINTS,
+        leaderboard_user_icon_id_default: int = DEFAULT_ICON_ID,
+        leaderboard_user_color_1_id_default: int = DEFAULT_COLOR_1_ID,
+        leaderboard_user_color_2_id_default: int = DEFAULT_COLOR_2_ID,
+        leaderboard_user_secret_coins_default: int = DEFAULT_SECRET_COINS,
+        leaderboard_user_icon_type_default: IconType = IconType.DEFAULT,
+        leaderboard_user_glow_default: bool = DEFAULT_GLOW,
+        leaderboard_user_account_id_default: int = DEFAULT_ID,
+        leaderboard_user_user_coins_default: int = DEFAULT_USER_COINS,
+        leaderboard_user_diamonds_default: int = DEFAULT_DIAMONDS,
+    ) -> LU:
+        mapping = split_leaderboard_user(string)
+
+        return cls(
+            name=mapping.get(leaderboard_user_name_index, leaderboard_user_name_default),
+            id=parse_get_or(
+                int, leaderboard_user_id_default, mapping.get(leaderboard_user_id_index)
+            ),
+            stars=parse_get_or(
+                int, leaderboard_user_stars_default, mapping.get(leaderboard_user_stars_index)
+            ),
+            demons=parse_get_or(
+                int, leaderboard_user_demons_default, mapping.get(leaderboard_user_demons_index)
+            ),
+            place=parse_get_or(
+                int, leaderboard_user_place_default, mapping.get(leaderboard_user_place_index)
+            ),
+            creator_points=parse_get_or(
+                int, leaderboard_user_creator_points_default, mapping.get(leaderboard_user_creator_points_index)
+            ),
+            icon_id=parse_get_or(
+                int, leaderboard_user_icon_id_default, mapping.get(leaderboard_user_icon_id_index)
+            ),
+            color_1_id=parse_get_or(
+                int,
+                leaderboard_user_color_1_id_default,
+                mapping.get(leaderboard_user_color_1_id_index),
+            ),
+            color_2_id=parse_get_or(
+                int, leaderboard_user_color_2_id_default, mapping.get(leaderboard_user_color_2_id_index)
+            ),
+            secret_coins=parse_get_or(
+                int, leaderboard_user_secret_coins_default, mapping.get(leaderboard_user_secret_coins_index)
+            ),
+            icon_type=parse_get_or(
+                partial_parse_enum(int, IconType), leaderboard_user_icon_type_default, mapping.get(leaderboard_user_icon_type_index)
+            ),
+            glow=parse_get_or(
+                int_bool, leaderboard_user_glow_default, mapping.get(leaderboard_user_glow_index)
+            ),
+            account_id=parse_get_or(
+                int, leaderboard_user_account_id_default, mapping.get(leaderboard_user_account_id_index)
+            ),
+            user_coins=parse_get_or(
+                int, leaderboard_user_user_coins_default, mapping.get(leaderboard_user_user_coins_index)
+            ),
+            diamonds=parse_get_or(
+                int, leaderboard_user_diamonds_default, mapping.get(leaderboard_user_diamonds_index)
+            ),
+        )
+
+    def to_robtop(
+        self,
+        leaderboard_user_name_index: int = LEADERBOARD_USER_NAME,
+        leaderboard_user_id_index: int = LEADERBOARD_USER_ID,
+        leaderboard_user_stars_index: int = LEADERBOARD_USER_STARS,
+        leaderboard_user_demons_index: int = LEADERBOARD_USER_DEMONS,
+        leaderboard_user_place_index: int = LEADERBOARD_USER_PLACE,
+        leaderboard_user_creator_points_index: int = LEADERBOARD_USER_CREATOR_POINTS,
+        leaderboard_user_icon_id_index: int = LEADERBOARD_USER_ICON_ID,
+        leaderboard_user_color_1_id_index: int = LEADERBOARD_USER_COLOR_1_ID,
+        leaderboard_user_color_2_id_index: int = LEADERBOARD_USER_COLOR_2_ID,
+        leaderboard_user_secret_coins_index: int = LEADERBOARD_USER_SECRET_COINS,
+        leaderboard_user_icon_type_index: int = LEADERBOARD_USER_ICON_TYPE,
+        leaderboard_user_glow_index: int = LEADERBOARD_USER_GLOW,
+        leaderboard_user_account_id_index: int = LEADERBOARD_USER_ACCOUNT_ID,
+        leaderboard_user_user_coins_index: int = LEADERBOARD_USER_USER_COINS,
+        leaderboard_user_diamonds_index: int = LEADERBOARD_USER_DIAMONDS,
+    ) -> str:
+        glow = self.glow
+        glow += glow
+
+        mapping = {
+            leaderboard_user_name_index: self.name,
+            leaderboard_user_id_index: str(self.id),
+            leaderboard_user_stars_index: str(self.stars),
+            leaderboard_user_place_index: str(self.place),
+            leaderboard_user_demons_index: str(self.demons),
+            leaderboard_user_creator_points_index: str(self.creator_points),
+            leaderboard_user_icon_id_index: str(self.icon_id),
+            leaderboard_user_color_1_id_index: str(self.color_1_id),
+            leaderboard_user_color_2_id_index: str(self.color_2_id),
+            leaderboard_user_secret_coins_index: str(self.secret_coins),
+            leaderboard_user_icon_type_index: str(self.icon_type.value),
+            leaderboard_user_glow_index: str(glow),
+            leaderboard_user_account_id_index: str(self.account_id),
+            leaderboard_user_user_coins_index: str(self.user_coins),
+            leaderboard_user_diamonds_index: str(self.diamonds),
+        }
+
+        return concat_leaderboard_user(mapping)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return LEADERBOARD_USER_SEPARATOR in string
+
+
 SUR = TypeVar("SUR", bound="SearchUsersResponseModel")
 
 
@@ -937,7 +1112,7 @@ class SearchUsersResponseModel(Model):
         return SEARCH_USERS_RESPONSE_SEPARATOR in string
 
 
-R = TypeVar("R", bound="RelationshipsResponseModel")
+RR = TypeVar("RR", bound="RelationshipsResponseModel")
 
 
 @define()
@@ -945,20 +1120,44 @@ class RelationshipsResponseModel(Model):
     users: List[RelationshipUserModel] = field(factory=list)
 
     @classmethod
-    def from_robtop(cls: Type[R], string: str) -> R:
+    def from_robtop(cls: Type[RR], string: str) -> RR:
         users = [
             RelationshipUserModel.from_robtop(string)
-            for string in split_relationships_users(string)
+            for string in split_relationships_response_users(string)
         ]
 
         return cls(users=users)
 
     def to_robtop(self) -> str:
-        return concat_search_users_response_users(user.to_robtop() for user in self.users)
+        return concat_relationships_response_users(user.to_robtop() for user in self.users)
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
-        return RELATIONSHIPS_USERS_SEPARATOR in string
+        return RELATIONSHIPS_RESPONSE_USERS_SEPARATOR in string
+
+
+LR = TypeVar("LR", bound="LeaderboardResponseModel")
+
+
+@define()
+class LeaderboardResponseModel(Model):
+    users: List[LeaderboardUserModel] = field(factory=list)
+
+    @classmethod
+    def from_robtop(cls: Type[LR], string: str) -> LR:
+        users = [
+            LeaderboardUserModel.from_robtop(string)
+            for string in split_leaderboard_response_users(string)
+        ]
+
+        return cls(users=users)
+
+    def to_robtop(self) -> str:
+        return concat_leaderboard_response_users(user.to_robtop() for user in self.users)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return LEADERBOARD_RESPONSE_USERS_SEPARATOR in string
 
 
 TEMPORARY = "temp"
