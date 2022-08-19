@@ -67,8 +67,7 @@ from gd.http import HTTPClient
 from gd.level import Level
 from gd.level_packs import Gauntlet, MapPack
 from gd.message import Message
-
-# from gd.models import LevelSearchResponseModel
+from gd.relationship import Relationship
 from gd.rewards import Chest, Quest
 from gd.session import Session
 from gd.song import Song
@@ -406,7 +405,7 @@ class Client:
 
     @wrap_async_iter
     @check_login
-    async def get_relationships(self, type: SimpleRelationshipType) -> AsyncIterator[User]:
+    async def get_simple_relationships(self, type: SimpleRelationshipType) -> AsyncIterator[User]:
         try:
             response_model = await self.session.get_relationships(
                 type,
@@ -423,12 +422,12 @@ class Client:
     @wrap_async_iter
     @check_login
     def get_friends(self) -> AsyncIterator[User]:
-        return self.get_relationships(SimpleRelationshipType.FRIEND).unwrap()
+        return self.get_simple_relationships(SimpleRelationshipType.FRIEND).unwrap()
 
     @wrap_async_iter
     @check_login
     def get_blocked(self) -> AsyncIterator[User]:
-        return self.get_relationships(SimpleRelationshipType.BLOCKED).unwrap()
+        return self.get_simple_relationships(SimpleRelationshipType.BLOCKED).unwrap()
 
     @wrap_async_iter
     async def get_leaderboard(
@@ -877,14 +876,12 @@ class Client:
     @check_login
     async def get_friend_requests_on_page(
         self,
-        type: Union[int, str, FriendRequestType] = FriendRequestType.INCOMING,
+        type: FriendRequestType = FriendRequestType.INCOMING,
         page: int = 0,
     ) -> AsyncIterator[FriendRequest]:
-        friend_request_type = FriendRequestType.from_value(type)
-
         try:
             response_model = await self.session.get_friend_requests_on_page(
-                friend_request_type,
+                type,
                 page,
                 account_id=self.account_id,
                 encoded_password=self.encoded_password,
@@ -894,21 +891,18 @@ class Client:
             return
 
         for model in response_model.friend_requests:
-            yield FriendRequest.from_model(
-                model, client=self, other_user=self.user, type=friend_request_type
-            )
+            yield FriendRequest.from_model(model, type).attach_client(self)
 
     @wrap_async_iter
     @check_login
     def get_friend_requests(
         self,
-        type: Union[int, str, FriendRequestType] = FriendRequestType.INCOMING,
+        type: FriendRequestType = FriendRequestType.INCOMING,
         pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[FriendRequest]:
         return run_iterables(
-            (self.get_friend_requests_on_page(type=type, page=page) for page in pages),
+            (self.get_friend_requests_on_page(type=type, page=page).unwrap() for page in pages),
             ClientError,
-            concurrent=concurrent,
         )
 
     @check_login

@@ -51,6 +51,7 @@ from gd.models_constants import (
     COMMENT_BANNED_SEPARATOR,
     CREATOR_SEPARATOR,
     DATABASE_SEPARATOR,
+    FRIEND_REQUEST_SEPARATOR,
     LEADERBOARD_RESPONSE_USERS_SEPARATOR,
     LEADERBOARD_USER_SEPARATOR,
     LOGIN_SEPARATOR,
@@ -68,6 +69,9 @@ from gd.models_constants import (
 from gd.models_utils import (
     concat_comment_banned,
     concat_creator,
+    concat_friend_request,
+    concat_friend_requests_response,
+    concat_friend_requests_response_friend_requests,
     concat_leaderboard_response_users,
     concat_leaderboard_user,
     concat_login,
@@ -89,6 +93,9 @@ from gd.models_utils import (
     partial_parse_enum,
     split_comment_banned,
     split_creator,
+    split_friend_request,
+    split_friend_requests_response,
+    split_friend_requests_response_friend_requests,
     split_leaderboard_response_users,
     split_leaderboard_user,
     split_login,
@@ -317,13 +324,16 @@ class PageModel(Model):
 
     @classmethod
     def from_robtop(cls: Type[A], string: str) -> A:
-        try:
-            total, start, stop = map(int, split_page(string))
+        total_string, start_string, stop_string = split_page(string)
 
-        except ValueError:
-            start, stop = map(int, split_page(string))
-
+        if not total_string:
             total = None
+
+        else:
+            total = int(total_string)
+
+        start = int(start_string)
+        stop = int(stop_string)
 
         return cls(total, start, stop)
 
@@ -337,12 +347,12 @@ class PageModel(Model):
         stop = self.stop
 
         if total is None:
-            values = (start, stop)
+            values = (EMPTY, str(start), str(stop))
 
         else:
-            values = (total, start, stop)
+            values = (str(total), str(start), str(stop))
 
-        return concat_page(map(str, values))
+        return concat_page(values)
 
 
 SEARCH_USER_NAME = 1
@@ -1313,7 +1323,10 @@ FRIEND_REQUEST_CONTENT = 35
 FRIEND_REQUEST_CREATED_AT = 37
 FRIEND_REQUEST_UNREAD = 41
 
+FR = TypeVar("FR", bound="FriendRequestModel")
 
+
+@define()
 class FriendRequestModel(Model):
     name: str = field(default=UNKNOWN)
     user_id: int = field(default=DEFAULT_ID)
@@ -1325,8 +1338,149 @@ class FriendRequestModel(Model):
     account_id: int = field(default=DEFAULT_ID)
     id: int = field(default=DEFAULT_ID)
     content: str = field(default=EMPTY)
-    created_at: datetime = field(default=datetime.utcnow)
+    created_at: datetime = field(factory=datetime.utcnow)
     unread: bool = field(default=DEFAULT_UNREAD)
+
+    @classmethod
+    def from_robtop(
+        cls: Type[FR],
+        string: str,
+        # indexes
+        friend_request_name_index: int = FRIEND_REQUEST_NAME,
+        friend_request_user_id_index: int = FRIEND_REQUEST_USER_ID,
+        friend_request_icon_id_index: int = FRIEND_REQUEST_ICON_ID,
+        friend_request_color_1_id_index: int = FRIEND_REQUEST_COLOR_1_ID,
+        friend_request_color_2_id_index: int = FRIEND_REQUEST_COLOR_2_ID,
+        friend_request_icon_type_index: int = FRIEND_REQUEST_ICON_TYPE,
+        friend_request_glow_index: int = FRIEND_REQUEST_GLOW,
+        friend_request_account_id_index: int = FRIEND_REQUEST_ACCOUNT_ID,
+        friend_request_id_index: int = FRIEND_REQUEST_ID,
+        friend_request_content_index: int = FRIEND_REQUEST_CONTENT,
+        friend_request_created_at_index: int = FRIEND_REQUEST_CREATED_AT,
+        friend_request_unread_index: int = FRIEND_REQUEST_UNREAD,
+        # defaults
+        friend_request_name_default: str = UNKNOWN,
+        friend_request_user_id_default: int = DEFAULT_ID,
+        friend_request_icon_id_default: int = DEFAULT_ICON_ID,
+        friend_request_color_1_id_default: int = DEFAULT_COLOR_1_ID,
+        friend_request_color_2_id_default: int = DEFAULT_COLOR_2_ID,
+        friend_request_icon_type_default: IconType = IconType.DEFAULT,
+        friend_request_glow_default: bool = DEFAULT_GLOW,
+        friend_request_account_id_default: int = DEFAULT_ID,
+        friend_request_id_default: int = DEFAULT_ID,
+        friend_request_content_default: str = EMPTY,
+        friend_request_created_at_default: Optional[datetime] = None,
+        friend_request_unread_default: bool = DEFAULT_UNREAD,
+    ) -> FR:
+        if friend_request_created_at_default is None:
+            friend_request_created_at_default = datetime.utcnow()
+
+        mapping = split_friend_request(string)
+
+        friend_request_created_at = mapping.get(friend_request_created_at_index)
+
+        if friend_request_created_at is None:
+            created_at = friend_request_created_at_default
+
+        else:
+            created_at = datetime_from_human(friend_request_created_at)
+
+        return cls(
+            name=mapping.get(friend_request_name_index, friend_request_name_default),
+            user_id=parse_get_or(
+                int, friend_request_user_id_default, mapping.get(friend_request_user_id_index)
+            ),
+            icon_id=parse_get_or(
+                int, friend_request_icon_id_default, mapping.get(friend_request_icon_id_index)
+            ),
+            color_1_id=parse_get_or(
+                int,
+                friend_request_color_1_id_default,
+                mapping.get(friend_request_color_1_id_index),
+            ),
+            color_2_id=parse_get_or(
+                int,
+                friend_request_color_2_id_default,
+                mapping.get(friend_request_color_2_id_index),
+            ),
+            icon_type=parse_get_or(
+                partial_parse_enum(int, IconType),
+                friend_request_icon_type_default,
+                mapping.get(friend_request_icon_type_index),
+            ),
+            glow=parse_get_or(
+                int_bool, friend_request_glow_default, mapping.get(friend_request_glow_index)
+            ),
+            account_id=parse_get_or(
+                int, friend_request_account_id_default, mapping.get(friend_request_account_id_index)
+            ),
+            id=parse_get_or(
+                int, friend_request_id_default, mapping.get(friend_request_id_index)
+            ),
+            content=decode_base64_string_url_safe(
+                mapping.get(friend_request_content_index, friend_request_content_default)
+            ),
+            created_at=created_at,
+            unread=parse_get_or(
+                int_bool, friend_request_unread_default, mapping.get(friend_request_unread_index)
+            ),
+        )
+
+    def to_robtop(
+        self,
+        friend_request_name_index: int = FRIEND_REQUEST_NAME,
+        friend_request_user_id_index: int = FRIEND_REQUEST_USER_ID,
+        friend_request_icon_id_index: int = FRIEND_REQUEST_ICON_ID,
+        friend_request_color_1_id_index: int = FRIEND_REQUEST_COLOR_1_ID,
+        friend_request_color_2_id_index: int = FRIEND_REQUEST_COLOR_2_ID,
+        friend_request_icon_type_index: int = FRIEND_REQUEST_ICON_TYPE,
+        friend_request_glow_index: int = FRIEND_REQUEST_GLOW,
+        friend_request_account_id_index: int = FRIEND_REQUEST_ACCOUNT_ID,
+        friend_request_id_index: int = FRIEND_REQUEST_ID,
+        friend_request_content_index: int = FRIEND_REQUEST_CONTENT,
+        friend_request_created_at_index: int = FRIEND_REQUEST_CREATED_AT,
+        friend_request_unread_index: int = FRIEND_REQUEST_UNREAD,
+    ) -> str:
+        glow = self.glow
+
+        glow += glow
+
+        unread = EMPTY if self.is_read() else str(int(self.unread))
+
+        mapping = {
+            friend_request_name_index: self.name,
+            friend_request_user_id_index: str(self.user_id),
+            friend_request_icon_id_index: str(self.icon_id),
+            friend_request_color_1_id_index: str(self.color_1_id),
+            friend_request_color_2_id_index: str(self.color_2_id),
+            friend_request_icon_type_index: str(self.icon_type.value),
+            friend_request_glow_index: str(glow),
+            friend_request_account_id_index: str(self.account_id),
+            friend_request_id_index: str(self.id),
+            friend_request_content_index: encode_base64_string_url_safe(self.content),
+            friend_request_created_at_index: datetime_to_human(self.created_at),
+            friend_request_unread_index: unread,
+        }
+
+        return concat_friend_request(mapping)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return FRIEND_REQUEST_SEPARATOR in string
+
+    def is_unread(self) -> bool:
+        return self.unread
+
+    def is_read(self) -> bool:
+        return self.read
+
+    @property
+    def read(self) -> bool:
+        return not self.unread
+
+    @read.setter
+    def read(self, read: bool) -> None:
+        self.unread = not read
 
 
 SUR = TypeVar("SUR", bound="SearchUsersResponseModel")
@@ -1335,25 +1489,25 @@ SUR = TypeVar("SUR", bound="SearchUsersResponseModel")
 @define()
 class SearchUsersResponseModel(Model):
     users: List[SearchUserModel] = field(factory=list)
-    pages: PageModel = field(factory=PageModel)
+    page: PageModel = field(factory=PageModel)
 
     @classmethod
     def from_robtop(cls: Type[SUR], string: str) -> SUR:
-        users_string, pages_string = split_search_users_response(string)
+        users_string, page_string = split_search_users_response(string)
 
         users = [
             SearchUserModel.from_robtop(string)
             for string in split_search_users_response_users(users_string)
         ]
 
-        pages = PageModel.from_robtop(pages_string)
+        page = PageModel.from_robtop(page_string)
 
-        return cls(users=users, pages=pages)
+        return cls(users=users, page=page)
 
     def to_robtop(self) -> str:
         values = (
             concat_search_users_response_users(user.to_robtop() for user in self.users),
-            self.pages.to_robtop(),
+            self.page.to_robtop(),
         )
 
         return concat_search_users_response(values)
@@ -1417,28 +1571,64 @@ MR = TypeVar("MR", bound="MessagesResponseModel")
 @define()
 class MessagesResponseModel(Model):
     messages: List[MessageModel] = field(factory=list)
-    pages: PageModel = field(factory=PageModel)
+    page: PageModel = field(factory=PageModel)
 
     @classmethod
     def from_robtop(cls: Type[MR], string: str) -> MR:
-        messages_string, pages_string = split_messages_response(string)
+        messages_string, page_string = split_messages_response(string)
 
         messages = [
             MessageModel.from_robtop(string, content_present=False)
             for string in split_messages_response_messages(messages_string)
         ]
 
-        pages = PageModel.from_robtop(pages_string)
+        page = PageModel.from_robtop(page_string)
 
-        return cls(messages=messages, pages=pages)
+        return cls(messages=messages, page=page)
 
     def to_robtop(self) -> str:
         values = (
             concat_messages_response_messages(message.to_robtop() for message in self.messages),
-            self.pages.to_robtop(),
+            self.page.to_robtop(),
         )
 
         return concat_messages_response(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return MESSAGES_RESPONSE_SEPARATOR in string
+
+
+FRR = TypeVar("FRR", bound="FriendRequestsResponseModel")
+
+
+@define()
+class FriendRequestsResponseModel(Model):
+    friend_requests: List[FriendRequestModel] = field(factory=list)
+    page: PageModel = field(factory=PageModel)
+
+    @classmethod
+    def from_robtop(cls: Type[FRR], string: str) -> FRR:
+        friend_requests_string, page_string = split_friend_requests_response(string)
+
+        friend_requests = [
+            FriendRequestModel.from_robtop(string)
+            for string in split_friend_requests_response_friend_requests(friend_requests_string)
+        ]
+
+        page = PageModel.from_robtop(page_string)
+
+        return cls(friend_requests=friend_requests, page=page)
+
+    def to_robtop(self) -> str:
+        values = (
+            concat_friend_requests_response_friend_requests(
+                friend_request.to_robtop() for friend_request in self.friend_requests
+            ),
+            self.page.to_robtop(),
+        )
+
+        return concat_friend_requests_response(values)
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:

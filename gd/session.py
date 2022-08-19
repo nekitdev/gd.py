@@ -43,6 +43,7 @@ from gd.enums import (
 from gd.filters import Filters
 from gd.http import HTTPClient
 from gd.models import (
+    FriendRequestsResponseModel,
     LeaderboardResponseModel,
     LoginModel,
     MessageModel,
@@ -549,7 +550,8 @@ class Session:
         response = await self.http.get_friend_requests_on_page(
             type, page, account_id=account_id, encoded_password=encoded_password
         )
-        return FriendRequestsResponseModel.from_string(response, use_default=True)
+
+        return FriendRequestsResponseModel.from_robtop(response)
 
     async def like_or_dislike(
         self,

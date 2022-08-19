@@ -10,6 +10,9 @@ from gd.models_constants import (
     CREATOR_SEPARATOR,
     DATABASE_SEPARATOR,
     EXTRA_STRING_SEPARATOR,
+    FRIEND_REQUEST_SEPARATOR,
+    FRIEND_REQUESTS_RESPONSE_FRIEND_REQUESTS_SEPARATOR,
+    FRIEND_REQUESTS_RESPONSE_SEPARATOR,
     HEADER_SEPARATOR,
     HSV_SEPARATOR,
     LEADERBOARD_RESPONSE_USERS_SEPARATOR,
@@ -77,8 +80,18 @@ def int_invert(string: str) -> bool:
     return not int(string)
 
 
-def split_iterable(separator: str, string: str) -> Iterable[str]:
-    return filter(None, string.split(separator))
+DEFAULT_IGNORE_EMPTY = False
+
+
+def split_iterable(
+    separator: str, string: str, ignore_empty: bool = DEFAULT_IGNORE_EMPTY
+) -> Iterable[str]:
+    iterable = string.split(separator)
+
+    if ignore_empty:
+        return filter(None, iterable)
+
+    return iterable
 
 
 def split_string_mapping(separator: str, string: str) -> Mapping[str, str]:
@@ -136,6 +149,9 @@ concat_timely_info = partial(concat_iterable, TIMELY_INFO_SEPARATOR)
 split_message = partial(split_mapping, MESSAGE_SEPARATOR)
 concat_message = partial(concat_mapping, MESSAGE_SEPARATOR)
 
+split_friend_request = partial(split_mapping, FRIEND_REQUEST_SEPARATOR)
+concat_friend_request = partial(concat_mapping, FRIEND_REQUEST_SEPARATOR)
+
 split_page = partial(split_iterable, PAGE_SEPARATOR)
 concat_page = partial(concat_iterable, PAGE_SEPARATOR)
 
@@ -168,19 +184,37 @@ concat_time = partial(concat_iterable, TIME_SEPARATOR_SPACE)
 split_search_users_response = partial(split_iterable, SEARCH_USERS_RESPONSE_SEPARATOR)
 concat_search_users_response = partial(concat_iterable, SEARCH_USERS_RESPONSE_SEPARATOR)
 
-split_search_users_response_users = partial(split_iterable, SEARCH_USERS_RESPONSE_USERS_SEPARATOR)
+split_search_users_response_users = partial(
+    split_iterable, SEARCH_USERS_RESPONSE_USERS_SEPARATOR, ignore_empty=True
+)
 concat_search_users_response_users = partial(concat_iterable, SEARCH_USERS_RESPONSE_USERS_SEPARATOR)
 
-split_relationships_response_users = partial(split_iterable, RELATIONSHIPS_RESPONSE_USERS_SEPARATOR)
+split_relationships_response_users = partial(
+    split_iterable, RELATIONSHIPS_RESPONSE_USERS_SEPARATOR, ignore_empty=True
+)
 concat_relationships_response_users = partial(
     concat_iterable, RELATIONSHIPS_RESPONSE_USERS_SEPARATOR
 )
 
-split_leaderboard_response_users = partial(split_iterable, LEADERBOARD_RESPONSE_USERS_SEPARATOR)
+split_leaderboard_response_users = partial(
+    split_iterable, LEADERBOARD_RESPONSE_USERS_SEPARATOR, ignore_empty=True
+)
 concat_leaderboard_response_users = partial(concat_iterable, LEADERBOARD_RESPONSE_USERS_SEPARATOR)
 
 split_messages_response = partial(split_iterable, MESSAGES_RESPONSE_SEPARATOR)
 concat_messages_response = partial(concat_iterable, MESSAGES_RESPONSE_SEPARATOR)
 
-split_messages_response_messages = partial(split_iterable, MESSAGES_RESPONSE_MESSAGES_SEPARATOR)
+split_messages_response_messages = partial(
+    split_iterable, MESSAGES_RESPONSE_MESSAGES_SEPARATOR, ignore_empty=True
+)
 concat_messages_response_messages = partial(concat_iterable, MESSAGES_RESPONSE_MESSAGES_SEPARATOR)
+
+split_friend_requests_response = partial(split_iterable, FRIEND_REQUESTS_RESPONSE_SEPARATOR)
+concat_friend_requests_response = partial(concat_iterable, FRIEND_REQUESTS_RESPONSE_SEPARATOR)
+
+split_friend_requests_response_friend_requests = partial(
+    split_iterable, FRIEND_REQUESTS_RESPONSE_FRIEND_REQUESTS_SEPARATOR, ignore_empty=True
+)
+concat_friend_requests_response_friend_requests = partial(
+    concat_iterable, FRIEND_REQUESTS_RESPONSE_FRIEND_REQUESTS_SEPARATOR
+)
