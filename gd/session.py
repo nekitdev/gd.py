@@ -7,7 +7,19 @@ from attrs import frozen
 from yarl import URL
 
 from gd.api.database import Database
+from gd.api.recording import Recording
 from gd.api.save_manager import save_manager
+from gd.constants import (
+    DEFAULT_COINS,
+    DEFAULT_ID,
+    DEFAULT_LOW_DETAIL,
+    DEFAULT_OBJECTS,
+    DEFAULT_STARS,
+    DEFAULT_TIME,
+    DEFAULT_VERSION,
+    EMPTY,
+    UNKNOWN,
+)
 from gd.enums import (
     AccountURLType,
     CommentState,
@@ -25,18 +37,24 @@ from gd.enums import (
     MessageType,
     RewardType,
     SimpleRelationshipType,
+    TimelyType,
+    UnlistedType,
 )
 from gd.filters import Filters
 from gd.http import HTTPClient
 from gd.models import (
     LeaderboardResponseModel,
     LoginModel,
+    MessageModel,
+    MessagesResponseModel,
     ProfileModel,
     RelationshipsResponseModel,
     SearchUserModel,
     SearchUsersResponseModel,
     SongModel,
+    TimelyInfoModel,
 )
+from gd.password import Password
 from gd.typing import IntString, MaybeIterable, URLString
 
 __all__ = ("Session",)
@@ -231,9 +249,10 @@ class Session:
         )
         return LevelSearchResponseModel.from_string(response, use_default=True)
 
-    async def get_timely_info(self, weekly: bool) -> TimelyInfoModel:
-        response = await self.http.get_timely_info(weekly)
-        return TimelyInfoModel.from_string(response, use_default=True)
+    async def get_timely_info(self, type: TimelyType) -> TimelyInfoModel:
+        response = await self.http.get_timely_info(type)
+
+        return TimelyInfoModel.from_robtop(response, type=type)
 
     async def download_level(
         self,
@@ -267,28 +286,25 @@ class Session:
 
     async def upload_level(
         self,
-        name: str = "Unnamed",
-        id: int = 0,
-        version: int = 1,
-        length: LevelLength = LevelLength.TINY,  # type: ignore
-        track_id: int = 0,
-        description: str = "",
-        song_id: int = 0,
-        is_auto: bool = False,
-        original: int = 0,
+        name: str = UNKNOWN,
+        id: int = DEFAULT_ID,
+        version: int = DEFAULT_VERSION,
+        length: LevelLength = LevelLength.TINY,
+        track_id: int = DEFAULT_ID,
+        description: str = EMPTY,
+        song_id: int = DEFAULT_ID,
+        original: int = DEFAULT_ID,
         two_player: bool = False,
-        objects: int = 0,
-        coins: int = 0,
-        stars: int = 0,
-        unlisted: bool = False,
-        friends_only: bool = False,
-        low_detail_mode: bool = False,
-        password: Optional[IntString] = None,
-        copyable: bool = False,
-        recording: Iterable[RecordingEntry] = (),
-        editor_seconds: int = 0,
-        copies_seconds: int = 0,
-        data: str = "",
+        type: UnlistedType = UnlistedType.DEFAULT,
+        objects: int = DEFAULT_OBJECTS,
+        coins: int = DEFAULT_COINS,
+        stars: int = DEFAULT_STARS,
+        low_detail: bool = DEFAULT_LOW_DETAIL,
+        password: Optional[Password] = None,
+        recording: Optional[Recording] = None,
+        editor_time: timedelta = DEFAULT_TIME,
+        copies_time: timedelta = DEFAULT_TIME,
+        data: str = EMPTY,
         *,
         account_id: int,
         account_name: str,
@@ -302,20 +318,17 @@ class Session:
             track_id=track_id,
             description=description,
             song_id=song_id,
-            is_auto=is_auto,
             original=original,
             two_player=two_player,
             objects=objects,
             coins=coins,
             stars=stars,
-            unlisted=unlisted,
-            friends_only=friends_only,
-            low_detail_mode=low_detail_mode,
+            type=type,
+            low_detail=low_detail,
             password=password,
-            copyable=copyable,
             recording=recording,
-            editor_seconds=editor_seconds,
-            copies_seconds=copies_seconds,
+            editor_time=editor_time,
+            copies_time=copies_time,
             data=data,
             account_id=account_id,
             account_name=account_name,
@@ -349,10 +362,10 @@ class Session:
             encoded_password=encoded_password,
         )
 
-    async def send_level(
+    async def suggest_level(
         self, level_id: int, stars: int, feature: bool, *, account_id: int, encoded_password: str
     ) -> None:
-        await self.http.send_level(
+        await self.http.suggest_level(
             level_id=level_id,
             stars=stars,
             feature=feature,
@@ -376,17 +389,28 @@ class Session:
         )
         return LevelLeaderboardResponseModel.from_string(response, use_default=True)
 
-    async def block_or_unblock(
+    async def block_user(
         self,
         account_id: int,
-        unblock: bool,
         *,
         client_account_id: int,
         encoded_password: str,
     ) -> None:
-        await self.http.block_or_unblock(
+        await self.http.block_user(
             account_id=account_id,
-            unblock=unblock,
+            client_account_id=client_account_id,
+            encoded_password=encoded_password,
+        )
+
+    async def unblock_user(
+        self,
+        account_id: int,
+        *,
+        client_account_id: int,
+        encoded_password: str,
+    ) -> None:
+        await self.http.unblock_user(
+            account_id=account_id,
             client_account_id=client_account_id,
             encoded_password=encoded_password,
         )
@@ -417,7 +441,7 @@ class Session:
             encoded_password=encoded_password,
         )
 
-    async def download_message(
+    async def get_message(
         self,
         message_id: int,
         type: MessageType,
@@ -425,13 +449,14 @@ class Session:
         account_id: int,
         encoded_password: str,
     ) -> MessageModel:
-        response = await self.http.download_message(
+        response = await self.http.get_message(
             message_id,
             type=type,
             account_id=account_id,
             encoded_password=encoded_password,
         )
-        return MessageModel.from_string(response, use_default=True)
+
+        return MessageModel.from_robtop(response, content_present=True)
 
     async def delete_message(
         self,
@@ -454,7 +479,8 @@ class Session:
         response = await self.http.get_messages_on_page(
             type, page, account_id=account_id, encoded_password=encoded_password
         )
-        return MessagesResponseModel.from_string(response, use_default=True)
+
+        return MessagesResponseModel.from_robtop(response)
 
     async def send_friend_request(
         self,

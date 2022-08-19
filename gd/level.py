@@ -12,7 +12,14 @@ from iters.iters import iter
 # from gd.api.editor import Editor
 from gd.binary import VERSION
 from gd.binary_utils import UTF_8, Reader, Writer
-from gd.constants import COMMENT_PAGE_SIZE, DEFAULT_PAGE, DEFAULT_RECORD, EMPTY, EMPTY_BYTES
+from gd.constants import (
+    COMMENT_PAGE_SIZE,
+    DEFAULT_ID,
+    DEFAULT_PAGE,
+    DEFAULT_RECORD,
+    EMPTY,
+    EMPTY_BYTES,
+)
 from gd.entity import Entity
 from gd.enums import (
     ByteOrder,
@@ -82,6 +89,7 @@ class Level(Entity):
     editor_time: timedelta = field(factory=timedelta)
     copies_time: timedelta = field(factory=timedelta)
     timely_type: TimelyType = field(default=TimelyType.DEFAULT)
+    timely_id: int = field(default=DEFAULT_ID)
 
     def to_binary(
         self,
@@ -162,6 +170,7 @@ class Level(Entity):
         writer.write_f32(self.copies_time.total_seconds(), order)
 
         writer.write_u8(self.timely_type.value, order)
+        writer.write_u32(self.timely_id, order)
 
     @classmethod
     def from_binary(
@@ -249,6 +258,8 @@ class Level(Entity):
 
         timely_type = TimelyType(timely_type_value)
 
+        timely_id = reader.read_u32(order)
+
         return cls(
             id=id,
             name=name,
@@ -278,6 +289,7 @@ class Level(Entity):
             editor_time=editor_time,
             copies_time=copies_time,
             timely_type=timely_type,
+            timely_id=timely_id,
         )
 
     @classmethod
@@ -314,10 +326,6 @@ class Level(Entity):
     @property
     def password(self) -> Optional[int]:
         return self.password_data.password
-
-    @property
-    def timely_id(self) -> TimelyID:
-        return self.timely_type.into_timely_id()
 
     def is_copyable(self) -> bool:
         return self.password_data.copyable

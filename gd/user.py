@@ -47,7 +47,13 @@ from gd.enums import (
 from gd.filters import Filters
 from gd.image.factory import FACTORY, connect_images
 from gd.image.icon import Icon
-from gd.models import CreatorModel, LeaderboardUserModel, ProfileModel, RelationshipUserModel, SearchUserModel
+from gd.models import (
+    CreatorModel,
+    LeaderboardUserModel,
+    ProfileModel,
+    RelationshipUserModel,
+    SearchUserModel,
+)
 
 if TYPE_CHECKING:
     from PIL.Image import Image

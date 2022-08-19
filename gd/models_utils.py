@@ -15,6 +15,9 @@ from gd.models_constants import (
     LEADERBOARD_RESPONSE_USERS_SEPARATOR,
     LEADERBOARD_USER_SEPARATOR,
     LOGIN_SEPARATOR,
+    MESSAGE_SEPARATOR,
+    MESSAGES_RESPONSE_MESSAGES_SEPARATOR,
+    MESSAGES_RESPONSE_SEPARATOR,
     OBJECTS_SEPARATOR,
     PAGE_SEPARATOR,
     PROFILE_SEPARATOR,
@@ -27,6 +30,7 @@ from gd.models_constants import (
     SONG_SEPARATOR,
     TIME_SEPARATOR,
     TIME_SEPARATOR_SPACE,
+    TIMELY_INFO_SEPARATOR,
 )
 from gd.typing import Parse
 
@@ -126,6 +130,12 @@ concat_relationship_user = partial(concat_mapping, RELATIONSHIP_USER_SEPARATOR)
 split_leaderboard_user = partial(split_mapping, LEADERBOARD_USER_SEPARATOR)
 concat_leaderboard_user = partial(concat_mapping, LEADERBOARD_USER_SEPARATOR)
 
+split_timely_info = partial(split_iterable, TIMELY_INFO_SEPARATOR)
+concat_timely_info = partial(concat_iterable, TIMELY_INFO_SEPARATOR)
+
+split_message = partial(split_mapping, MESSAGE_SEPARATOR)
+concat_message = partial(concat_mapping, MESSAGE_SEPARATOR)
+
 split_page = partial(split_iterable, PAGE_SEPARATOR)
 concat_page = partial(concat_iterable, PAGE_SEPARATOR)
 
@@ -162,7 +172,15 @@ split_search_users_response_users = partial(split_iterable, SEARCH_USERS_RESPONS
 concat_search_users_response_users = partial(concat_iterable, SEARCH_USERS_RESPONSE_USERS_SEPARATOR)
 
 split_relationships_response_users = partial(split_iterable, RELATIONSHIPS_RESPONSE_USERS_SEPARATOR)
-concat_relationships_response_users = partial(concat_iterable, RELATIONSHIPS_RESPONSE_USERS_SEPARATOR)
+concat_relationships_response_users = partial(
+    concat_iterable, RELATIONSHIPS_RESPONSE_USERS_SEPARATOR
+)
 
 split_leaderboard_response_users = partial(split_iterable, LEADERBOARD_RESPONSE_USERS_SEPARATOR)
 concat_leaderboard_response_users = partial(concat_iterable, LEADERBOARD_RESPONSE_USERS_SEPARATOR)
+
+split_messages_response = partial(split_iterable, MESSAGES_RESPONSE_SEPARATOR)
+concat_messages_response = partial(concat_iterable, MESSAGES_RESPONSE_SEPARATOR)
+
+split_messages_response_messages = partial(split_iterable, MESSAGES_RESPONSE_MESSAGES_SEPARATOR)
+concat_messages_response_messages = partial(concat_iterable, MESSAGES_RESPONSE_MESSAGES_SEPARATOR)

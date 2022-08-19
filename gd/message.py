@@ -1,19 +1,26 @@
 from __future__ import annotations
 
-from typing import ClassVar, Optional, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Optional, Type, TypeVar
+
+from attrs import define
 
 from gd.constants import EMPTY
 from gd.entity import Entity
 from gd.enums import MessageType
+from gd.models import MessageModel
 
 # from gd.models import MessageModel
 from gd.user import User
+
+if TYPE_CHECKING:
+    from gd.client import Client
 
 __all__ = ("Message",)
 
 M = TypeVar("M", bound="Message")
 
 
+@define()
 class Message(Entity):
     SCHEMA: ClassVar[str] = "Re: {message.subject}"
 
@@ -36,15 +43,25 @@ class Message(Entity):
     def is_outgoing(self) -> bool:
         return self.type.is_outgoing()
 
+    @classmethod
+    def from_model(cls: Type[M], model: MessageModel) -> M:
+        type = MessageType.OUTGOING if model.is_sent() else MessageType.INCOMING
+
+        return cls(
+            id=model.id,
+            user=User(id=model.user_id, name=model.name, account_id=model.account_id),
+            type=type,
+            subject=model.subject,
+            content=model.content if model.is_content_present() else None,
+            was_read=model.read,
+        )
+
     @property
     def body(self) -> Optional[str]:
         return self.content
 
     def is_read(self) -> bool:
         return self.was_read
-
-    def is_unread(self) -> bool:
-        return not self.was_read
 
     async def read(self) -> str:
         content = self.content
@@ -54,7 +71,7 @@ class Message(Entity):
 
             self.content = content = message.content
 
-        return content
+        return content  # type: ignore
 
     async def reply(self, content: str, schema: Optional[str] = None) -> Optional[Message]:
         if schema is None:
@@ -67,3 +84,8 @@ class Message(Entity):
 
     async def delete(self) -> None:
         await self.client.delete_message(self)
+
+    def attach_client(self: M, client: Client) -> M:
+        self.user.attach_client(client)
+
+        return super().attach_client(client)

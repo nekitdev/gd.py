@@ -106,8 +106,11 @@ DOES_NOT_MATCH_HUMAN_TIME_COMPLEX = "{} does not match human time complex patter
 
 ATTEMPT_TO_CONVERT_BOTH_PAST_AND_FUTURE = "attempt to convert time that is both past and future"
 
+DEFAULT_SIMPLE = True
+DEFAULT_DISTANCE_ONLY = False
 
-def timedelta_from_human(string: str, simple: bool = True) -> timedelta:
+
+def timedelta_from_human(string: str, simple: bool = DEFAULT_SIMPLE) -> timedelta:
     cleared = clear_whitespace(string)
 
     if simple:
@@ -162,7 +165,7 @@ def timedelta_from_human(string: str, simple: bool = True) -> timedelta:
 
 
 def timedelta_to_human(
-    timedelta: timedelta, distance_only: bool = False, simple: bool = True
+    timedelta: timedelta, distance_only: bool = DEFAULT_DISTANCE_ONLY, simple: bool = DEFAULT_SIMPLE
 ) -> str:
     seconds = round(timedelta.total_seconds())
 
@@ -172,7 +175,9 @@ def timedelta_to_human(
 HUMAN_TIME_FORMAT = "{} {}"
 
 
-def string_delta(seconds: int, distance_only: bool = False, simple: bool = True) -> str:
+def string_delta(
+    seconds: int, distance_only: bool = DEFAULT_DISTANCE_ONLY, simple: bool = DEFAULT_SIMPLE
+) -> str:
     iterator = iter_delta(seconds)
 
     if simple:
@@ -217,11 +222,13 @@ def iter_delta(seconds: int) -> Iterator[str]:
             break
 
 
-def datetime_from_human(string: str, simple: bool = True) -> datetime:
+def datetime_from_human(string: str, simple: bool = DEFAULT_SIMPLE) -> datetime:
     return datetime.utcnow() + timedelta_from_human(string, simple=simple)
 
 
-def datetime_to_human(datetime: datetime, distance_only: bool = False, simple: bool = True) -> str:
+def datetime_to_human(
+    datetime: datetime, distance_only: bool = DEFAULT_DISTANCE_ONLY, simple: bool = DEFAULT_SIMPLE
+) -> str:
     now = datetime.utcnow()
 
     offset = datetime.utcoffset()

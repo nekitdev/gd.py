@@ -1,5 +1,4 @@
-from datetime import timedelta
-from functools import partial
+from datetime import datetime, timedelta
 from typing import List, Optional, Type, TypeVar
 from urllib.parse import quote, unquote
 
@@ -11,6 +10,7 @@ from gd.constants import (
     DEFAULT_ACTIVE,
     DEFAULT_COLOR_1_ID,
     DEFAULT_COLOR_2_ID,
+    DEFAULT_CONTENT_PRESENT,
     DEFAULT_CREATOR_POINTS,
     DEFAULT_DEMONS,
     DEFAULT_DIAMONDS,
@@ -20,14 +20,33 @@ from gd.constants import (
     DEFAULT_NEW,
     DEFAULT_PLACE,
     DEFAULT_RANK,
+    DEFAULT_READ,
     DEFAULT_SECRET_COINS,
+    DEFAULT_SENT,
     DEFAULT_SIZE,
     DEFAULT_STARS,
+    DEFAULT_UNREAD,
     DEFAULT_USER_COINS,
     EMPTY,
     UNKNOWN,
 )
-from gd.enums import CommentState, FriendRequestState, FriendState, IconType, MessageState, Role
+from gd.datetime import datetime_from_human, datetime_to_human
+from gd.encoding import (
+    decode_base64_string_url_safe,
+    decode_robtop_string,
+    encode_base64_string_url_safe,
+    encode_robtop_string,
+)
+from gd.enums import (
+    CommentState,
+    FriendRequestState,
+    FriendState,
+    IconType,
+    Key,
+    MessageState,
+    Role,
+    TimelyType,
+)
 from gd.models_constants import (
     COMMENT_BANNED_SEPARATOR,
     CREATOR_SEPARATOR,
@@ -35,6 +54,8 @@ from gd.models_constants import (
     LEADERBOARD_RESPONSE_USERS_SEPARATOR,
     LEADERBOARD_USER_SEPARATOR,
     LOGIN_SEPARATOR,
+    MESSAGE_SEPARATOR,
+    MESSAGES_RESPONSE_SEPARATOR,
     PAGE_SEPARATOR,
     PROFILE_SEPARATOR,
     RELATIONSHIP_USER_SEPARATOR,
@@ -42,30 +63,38 @@ from gd.models_constants import (
     SEARCH_USER_SEPARATOR,
     SEARCH_USERS_RESPONSE_SEPARATOR,
     SONG_SEPARATOR,
+    TIMELY_INFO_SEPARATOR,
 )
 from gd.models_utils import (
     concat_comment_banned,
     concat_creator,
+    concat_leaderboard_response_users,
     concat_leaderboard_user,
     concat_login,
+    concat_message,
+    concat_messages_response,
+    concat_messages_response_messages,
     concat_page,
     concat_profile,
     concat_relationship_user,
-    concat_leaderboard_response_users,
     concat_relationships_response_users,
     concat_search_user,
     concat_search_users_response,
     concat_search_users_response_users,
     concat_song,
+    concat_timely_info,
     float_str,
     int_bool,
     parse_get_or,
     partial_parse_enum,
     split_comment_banned,
     split_creator,
-    split_leaderboard_user,
     split_leaderboard_response_users,
+    split_leaderboard_user,
     split_login,
+    split_message,
+    split_messages_response,
+    split_messages_response_messages,
     split_page,
     split_profile,
     split_relationship_user,
@@ -74,6 +103,7 @@ from gd.models_utils import (
     split_search_users_response,
     split_search_users_response_users,
     split_song,
+    split_timely_info,
 )
 from gd.robtop import RobTop
 
@@ -163,7 +193,7 @@ class SongModel(Model):
 
         download_url_string = mapping.get(song_download_url_index)
 
-        download_url = URL(download_url_string) if download_url_string else None
+        download_url = URL(unquote(download_url_string)) if download_url_string else None
 
         return cls(
             id=parse_get_or(int, song_id_default, mapping.get(song_id_index)),
@@ -272,7 +302,6 @@ class DatabaseModel(Model):
         return DATABASE_SEPARATOR in string
 
 
-DEFAULT_TOTAL = 0
 DEFAULT_START = 0
 DEFAULT_STOP = 0
 
@@ -282,13 +311,19 @@ A = TypeVar("A", bound="PageModel")
 
 @define()
 class PageModel(Model):
-    total: int = DEFAULT_TOTAL
+    total: Optional[int] = None
     start: int = DEFAULT_START
     stop: int = DEFAULT_STOP
 
     @classmethod
     def from_robtop(cls: Type[A], string: str) -> A:
-        total, start, stop = map(int, split_page(string))
+        try:
+            total, start, stop = map(int, split_page(string))
+
+        except ValueError:
+            start, stop = map(int, split_page(string))
+
+            total = None
 
         return cls(total, start, stop)
 
@@ -297,7 +332,17 @@ class PageModel(Model):
         return PAGE_SEPARATOR in string
 
     def to_robtop(self) -> str:
-        return concat_page(map(str, (self.total, self.start, self.stop)))
+        total = self.total
+        start = self.start
+        stop = self.stop
+
+        if total is None:
+            values = (start, stop)
+
+        else:
+            values = (total, start, stop)
+
+        return concat_page(map(str, values))
 
 
 SEARCH_USER_NAME = 1
@@ -999,7 +1044,9 @@ class LeaderboardUserModel(Model):
                 int, leaderboard_user_place_default, mapping.get(leaderboard_user_place_index)
             ),
             creator_points=parse_get_or(
-                int, leaderboard_user_creator_points_default, mapping.get(leaderboard_user_creator_points_index)
+                int,
+                leaderboard_user_creator_points_default,
+                mapping.get(leaderboard_user_creator_points_index),
             ),
             icon_id=parse_get_or(
                 int, leaderboard_user_icon_id_default, mapping.get(leaderboard_user_icon_id_index)
@@ -1010,22 +1057,32 @@ class LeaderboardUserModel(Model):
                 mapping.get(leaderboard_user_color_1_id_index),
             ),
             color_2_id=parse_get_or(
-                int, leaderboard_user_color_2_id_default, mapping.get(leaderboard_user_color_2_id_index)
+                int,
+                leaderboard_user_color_2_id_default,
+                mapping.get(leaderboard_user_color_2_id_index),
             ),
             secret_coins=parse_get_or(
-                int, leaderboard_user_secret_coins_default, mapping.get(leaderboard_user_secret_coins_index)
+                int,
+                leaderboard_user_secret_coins_default,
+                mapping.get(leaderboard_user_secret_coins_index),
             ),
             icon_type=parse_get_or(
-                partial_parse_enum(int, IconType), leaderboard_user_icon_type_default, mapping.get(leaderboard_user_icon_type_index)
+                partial_parse_enum(int, IconType),
+                leaderboard_user_icon_type_default,
+                mapping.get(leaderboard_user_icon_type_index),
             ),
             glow=parse_get_or(
                 int_bool, leaderboard_user_glow_default, mapping.get(leaderboard_user_glow_index)
             ),
             account_id=parse_get_or(
-                int, leaderboard_user_account_id_default, mapping.get(leaderboard_user_account_id_index)
+                int,
+                leaderboard_user_account_id_default,
+                mapping.get(leaderboard_user_account_id_index),
             ),
             user_coins=parse_get_or(
-                int, leaderboard_user_user_coins_default, mapping.get(leaderboard_user_user_coins_index)
+                int,
+                leaderboard_user_user_coins_default,
+                mapping.get(leaderboard_user_user_coins_index),
             ),
             diamonds=parse_get_or(
                 int, leaderboard_user_diamonds_default, mapping.get(leaderboard_user_diamonds_index)
@@ -1076,6 +1133,200 @@ class LeaderboardUserModel(Model):
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return LEADERBOARD_USER_SEPARATOR in string
+
+
+TI = TypeVar("TI", bound="TimelyInfoModel")
+
+TIMELY_ID_ADD = 100_000
+
+
+@define()
+class TimelyInfoModel(Model):
+    id: int = field(default=DEFAULT_ID)
+    type: TimelyType = field(default=TimelyType.DEFAULT)
+    cooldown: timedelta = field(factory=timedelta)
+
+    @classmethod
+    def from_robtop(cls: Type[TI], string: str, type: TimelyType = TimelyType.DEFAULT) -> TI:
+        timely_id, cooldown_seconds = map(int, split_timely_info(string))
+
+        return cls(
+            id=timely_id % TIMELY_ID_ADD, type=type, cooldown=timedelta(seconds=cooldown_seconds)
+        )
+
+    def to_robtop(self) -> str:
+        timely_id = self.id
+
+        if self.type.is_weekly():
+            timely_id += TIMELY_ID_ADD
+
+        cooldown = int(self.cooldown.total_seconds())
+
+        values = (str(timely_id), str(cooldown))
+
+        return concat_timely_info(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return TIMELY_INFO_SEPARATOR in string
+
+
+MESSAGE_ID = 1
+MESSAGE_ACCOUNT_ID = 2
+MESSAGE_USER_ID = 3
+MESSAGE_SUBJECT = 4
+MESSAGE_CONTENT = 5
+MESSAGE_NAME = 6
+MESSAGE_CREATED_AT = 7
+MESSAGE_READ = 8
+MESSAGE_SENT = 9
+
+M = TypeVar("M", bound="MessageModel")
+
+
+@define()
+class MessageModel(Model):
+    id: int = field(default=DEFAULT_ID)
+    account_id: int = field(default=DEFAULT_ID)
+    user_id: int = field(default=DEFAULT_ID)
+    subject: str = field(default=EMPTY)
+    content: str = field(default=EMPTY)
+    name: str = field(default=UNKNOWN)
+    created_at: datetime = field(factory=datetime.utcnow)
+    read: bool = field(default=DEFAULT_READ)
+    sent: bool = field(default=DEFAULT_SENT)
+
+    content_present: bool = field(default=DEFAULT_CONTENT_PRESENT)
+
+    @classmethod
+    def from_robtop(
+        cls: Type[M],
+        string: str,
+        content_present: bool = DEFAULT_CONTENT_PRESENT,
+        # indexes
+        message_id_index: int = MESSAGE_ID,
+        message_account_id_index: int = MESSAGE_ACCOUNT_ID,
+        message_user_id_index: int = MESSAGE_USER_ID,
+        message_subject_index: int = MESSAGE_SUBJECT,
+        message_content_index: int = MESSAGE_CONTENT,
+        message_name_index: int = MESSAGE_NAME,
+        message_created_at_index: int = MESSAGE_CREATED_AT,
+        message_read_index: int = MESSAGE_READ,
+        message_sent_index: int = MESSAGE_SENT,
+        # defaults
+        message_id_default: int = DEFAULT_ID,
+        message_account_id_default: int = DEFAULT_ID,
+        message_user_id_default: int = DEFAULT_ID,
+        message_subject_default: str = EMPTY,
+        message_content_default: str = EMPTY,
+        message_name_default: str = UNKNOWN,
+        message_created_at_default: Optional[datetime] = None,
+        message_read_default: bool = DEFAULT_READ,
+        message_sent_default: bool = DEFAULT_SENT,
+    ) -> M:
+        if message_created_at_default is None:
+            message_created_at_default = datetime.utcnow()
+
+        mapping = split_message(string)
+
+        message_created_at = mapping.get(message_created_at_index)
+
+        if message_created_at is None:
+            created_at = message_created_at_default
+
+        else:
+            created_at = datetime_from_human(message_created_at)
+
+        return cls(
+            id=parse_get_or(int, message_id_default, mapping.get(message_id_index)),
+            account_id=parse_get_or(
+                int, message_account_id_default, mapping.get(message_account_id_index)
+            ),
+            user_id=parse_get_or(
+                int,
+                message_user_id_default,
+                mapping.get(message_user_id_index),
+            ),
+            subject=decode_base64_string_url_safe(
+                mapping.get(message_subject_index, message_subject_default)
+            ),
+            content=decode_robtop_string(
+                mapping.get(message_content_index, message_content_default), Key.MESSAGE
+            ),
+            name=mapping.get(message_name_index, message_name_default),
+            created_at=created_at,
+            read=parse_get_or(int_bool, message_read_default, mapping.get(message_read_index)),
+            sent=parse_get_or(int_bool, message_sent_default, mapping.get(message_sent_index)),
+            content_present=content_present,
+        )
+
+    def to_robtop(
+        self,
+        message_id_index: int = MESSAGE_ID,
+        message_account_id_index: int = MESSAGE_ACCOUNT_ID,
+        message_user_id_index: int = MESSAGE_USER_ID,
+        message_subject_index: int = MESSAGE_SUBJECT,
+        message_content_index: int = MESSAGE_CONTENT,
+        message_name_index: int = MESSAGE_NAME,
+        message_created_at_index: int = MESSAGE_CREATED_AT,
+        message_read_index: int = MESSAGE_READ,
+        message_sent_index: int = MESSAGE_SENT,
+    ) -> str:
+        mapping = {
+            message_id_index: str(self.id),
+            message_account_id_index: str(self.account_id),
+            message_user_id_index: str(self.user_id),
+            message_subject_index: encode_base64_string_url_safe(self.subject),
+            message_content_index: encode_robtop_string(self.content, Key.MESSAGE),
+            message_name_index: self.name,
+            message_created_at_index: datetime_to_human(self.created_at),
+            message_read_index: str(int(self.read)),
+            message_sent_index: str(int(self.sent)),
+        }
+
+        return concat_message(mapping)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return MESSAGE_SEPARATOR in string
+
+    def is_read(self) -> bool:
+        return self.read
+
+    def is_sent(self) -> bool:
+        return self.sent
+
+    def is_content_present(self) -> bool:
+        return self.content_present
+
+
+FRIEND_REQUEST_NAME = 1
+FRIEND_REQUEST_USER_ID = 2
+FRIEND_REQUEST_ICON_ID = 9
+FRIEND_REQUEST_COLOR_1_ID = 10
+FRIEND_REQUEST_COLOR_2_ID = 11
+FRIEND_REQUEST_ICON_TYPE = 14
+FRIEND_REQUEST_GLOW = 15
+FRIEND_REQUEST_ACCOUNT_ID = 16
+FRIEND_REQUEST_ID = 32
+FRIEND_REQUEST_CONTENT = 35
+FRIEND_REQUEST_CREATED_AT = 37
+FRIEND_REQUEST_UNREAD = 41
+
+
+class FriendRequestModel(Model):
+    name: str = field(default=UNKNOWN)
+    user_id: int = field(default=DEFAULT_ID)
+    icon_id: int = field(default=DEFAULT_ICON_ID)
+    color_1_id: int = field(default=DEFAULT_COLOR_1_ID)
+    color_2_id: int = field(default=DEFAULT_COLOR_2_ID)
+    icon_type: IconType = field(default=IconType.DEFAULT)
+    glow: bool = field(default=DEFAULT_GLOW)
+    account_id: int = field(default=DEFAULT_ID)
+    id: int = field(default=DEFAULT_ID)
+    content: str = field(default=EMPTY)
+    created_at: datetime = field(default=datetime.utcnow)
+    unread: bool = field(default=DEFAULT_UNREAD)
 
 
 SUR = TypeVar("SUR", bound="SearchUsersResponseModel")
@@ -1158,6 +1409,40 @@ class LeaderboardResponseModel(Model):
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return LEADERBOARD_RESPONSE_USERS_SEPARATOR in string
+
+
+MR = TypeVar("MR", bound="MessagesResponseModel")
+
+
+@define()
+class MessagesResponseModel(Model):
+    messages: List[MessageModel] = field(factory=list)
+    pages: PageModel = field(factory=PageModel)
+
+    @classmethod
+    def from_robtop(cls: Type[MR], string: str) -> MR:
+        messages_string, pages_string = split_messages_response(string)
+
+        messages = [
+            MessageModel.from_robtop(string, content_present=False)
+            for string in split_messages_response_messages(messages_string)
+        ]
+
+        pages = PageModel.from_robtop(pages_string)
+
+        return cls(messages=messages, pages=pages)
+
+    def to_robtop(self) -> str:
+        values = (
+            concat_messages_response_messages(message.to_robtop() for message in self.messages),
+            self.pages.to_robtop(),
+        )
+
+        return concat_messages_response(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return MESSAGES_RESPONSE_SEPARATOR in string
 
 
 TEMPORARY = "temp"

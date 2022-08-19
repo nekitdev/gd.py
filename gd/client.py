@@ -34,6 +34,7 @@ from gd.constants import (
     DEFAULT_PAGES,
     DEFAULT_SPECIAL,
     DEFAULT_USE_CLIENT,
+    EMPTY,
 )
 from gd.credentials import Credentials
 from gd.decorators import check_client_login, check_login
@@ -477,19 +478,14 @@ class Client:
     # async def get_event(self, use_client: bool = DEFAULT_USE_CLIENT) -> Level:
     #     return await self.get_timely(TimelyType.EVENT, use_client=use_client)
 
+    async def get_timely(self, type: TimelyType, use_client: bool = DEFAULT_USE_CLIENT) -> Level:
+        model = await self.session.get_timely_info(type)
+
     async def get_level(
         self, level_id: int, get_data: bool = True, use_client: bool = False
     ) -> Level:
         if level_id < 0:
-            get_data = True
-
-            timely_model = await self.session.get_timely_info(
-                bool(~level_id)  # -1 -> 0; -2 -> 1; then call bool
-            )
-
-        else:
-            timely_model = None
-
+            timely_model = await self.get_timely_info
         level_model = None
 
         if get_data:
@@ -543,11 +539,8 @@ class Client:
         if user is None:
             user_id = None
 
-        elif isinstance(user, User):
-            user_id = user.id
-
         else:
-            user_id = user
+            user_id = user.id
 
         try:
             response_model = await self.session.search_levels_on_page(
@@ -573,7 +566,7 @@ class Client:
         query: Optional[Union[int, str]] = None,
         pages: Iterable[int] = DEFAULT_PAGES,
         filters: Optional[Filters] = None,
-        user: Optional[Union[int, User]] = None,
+        user: Optional[User] = None,
         gauntlet: Optional[int] = None,
     ) -> AsyncIterator[Level]:
         return run_iterables(
@@ -584,17 +577,16 @@ class Client:
                     filters=filters,
                     user=user,
                     gauntlet=gauntlet,
-                )
+                ).unwrap()
                 for page in pages
             ),
             ClientError,
-            concurrent=concurrent,
         )
 
     @check_login
     async def update_level_description(self, level: Level, description: Optional[str]) -> None:
         if description is None:
-            description = ""
+            description = EMPTY
 
         return await self.session.update_level_description(
             level.id,
@@ -684,20 +676,20 @@ class Client:
     async def rate_demon(
         self,
         level: Level,
-        rating: Union[int, str, DemonDifficulty],
+        rating: DemonDifficulty,
         as_mod: bool = False,
     ) -> None:
         return await self.session.rate_demon(
             level.id,
-            DemonDifficulty.from_value(rating),
+            rating,
             as_mod=as_mod,
             account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
 
     @check_login
-    async def send_level(self, level: Level, stars: int, feature: bool) -> None:
-        return await self.session.rate_level(  # type: ignore
+    async def suggest_level(self, level: Level, stars: int, feature: bool) -> None:
+        return await self.session.suggest_level(
             level.id,
             stars,
             feature,
@@ -707,12 +699,12 @@ class Client:
 
     @wrap_async_iter
     @check_login
-    async def get_level_top(
+    async def get_level_leaderboard(
         self,
         level: Level,
         strategy: Union[int, str, LevelLeaderboardStrategy] = LevelLeaderboardStrategy.ALL,
     ) -> AsyncIterator[User]:
-        response_model = await self.session.get_level_top(
+        response_model = await self.session.get_level_leaderboard(
             level.id,
             LevelLeaderboardStrategy.from_value(strategy),
             account_id=self.account_id,
@@ -722,28 +714,24 @@ class Client:
         for model in response_model.users:
             yield User.from_model(model, client=self)
 
-    get_level_leaderboard = get_level_top
-
     @check_login
-    async def block(self, user: User) -> None:
-        return await self.session.block_or_unblock(
+    async def block_user(self, user: User) -> None:
+        return await self.session.block_user(
             user.account_id,
-            unblock=False,
             client_account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
 
     @check_login
-    async def unblock(self, user: User) -> None:
-        return await self.session.block_or_unblock(
+    async def unblock_user(self, user: User) -> None:
+        return await self.session.unblock_user(
             user.account_id,
-            unblock=True,
             client_account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
 
     @check_login
-    async def unfriend(self, user: User) -> None:
+    async def unfriend_user(self, user: User) -> None:
         return await self.session.unfriend_user(
             user.account_id,
             client_account_id=self.account_id,
@@ -764,10 +752,10 @@ class Client:
 
         if self.load_after_post:
             if subject is None:
-                subject = ""
+                subject = EMPTY
 
             if content is None:
-                content = ""
+                content = EMPTY
 
             messages = self.get_messages_on_page(type=MessageType.OUTGOING)
             message = await messages.get(subject=subject, recipient=user)
@@ -783,18 +771,13 @@ class Client:
 
     @check_login
     async def get_message(self, message_id: int, type: MessageType) -> Message:
-        model = await self.session.download_message(
+        model = await self.session.get_message(
             message_id,
             type=type,
             account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
-        return Message.from_model(model, other_user=self.user, type=type, client=self)
-
-    @check_login
-    async def read_message(self, message: Message) -> str:
-        read = await self.get_message(message.id, message.type)
-        return read.content
+        return Message.from_model(model).attach_client(self)
 
     @check_login
     async def delete_message(self, message: Message) -> None:
@@ -824,7 +807,7 @@ class Client:
             return
 
         for model in response_model.messages:
-            yield Message.from_model(model, client=self, other_user=self.user, type=message_type)
+            yield Message.from_model(model).attach_client(self)
 
     @wrap_async_iter
     @check_login
@@ -834,9 +817,8 @@ class Client:
         pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[Message]:
         return run_iterables(
-            (self.get_messages_on_page(type=type, page=page) for page in pages),
+            (self.get_messages_on_page(type=type, page=page).unwrap() for page in pages),
             ClientError,
-            concurrent=concurrent,
         )
 
     @check_login
@@ -867,7 +849,7 @@ class Client:
     @check_login
     async def delete_friend_request(self, friend_request: FriendRequest) -> None:
         return await self.session.delete_friend_request(
-            account_id=friend_request.author.account_id,
+            account_id=friend_request.user.account_id,
             type=friend_request.type,
             client_account_id=self.account_id,
             encoded_password=self.encoded_password,
@@ -876,7 +858,7 @@ class Client:
     @check_login
     async def accept_friend_request(self, friend_request: FriendRequest) -> None:
         return await self.session.accept_friend_request(
-            account_id=friend_request.author.account_id,
+            account_id=friend_request.user.account_id,
             request_id=friend_request.id,
             type=friend_request.type,
             client_account_id=self.account_id,

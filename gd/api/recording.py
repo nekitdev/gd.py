@@ -11,7 +11,7 @@ from gd.binary_utils import Reader, Writer
 from gd.constants import EMPTY
 from gd.enums import ByteOrder
 from gd.errors import InternalError
-from gd.models_constants import ONE, RECORDING_SEPARATOR
+from gd.models_constants import RECORDING_SEPARATOR
 from gd.models_utils import concat_recording, float_str, int_bool
 from gd.robtop import RobTop
 from gd.string_constants import DOT
@@ -30,6 +30,8 @@ NEXT = "next"
 SECONDARY = "secondary"
 
 DIGIT = r"[0-9]"
+
+ONE = str(1)
 
 # [1;]t[.d];[1];[;]
 

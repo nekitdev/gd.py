@@ -184,7 +184,7 @@ GET_MESSAGES = "getGJMessages20.php"
 SEND_FRIEND_REQUEST = "uploadFriendRequest20.php"
 DELETE_FRIEND_REQUEST = "deleteGJFriendRequests20.php"
 ACCEPT_FRIEND_REQUEST = "acceptGJFriendRequest20.php"
-GET_FRIEND_REQUEST = "readGJFriendRequest20.php"
+READ_FRIEND_REQUEST = "readGJFriendRequest20.php"
 GET_FRIEND_REQUESTS = "getGJFriendRequests20.php"
 LIKE_ITEM = "likeGJItem211.php"
 POST_LEVEL_COMMENT = "uploadGJComment21.php"
@@ -450,7 +450,7 @@ FAILED_TO_DELETE_FRIEND_REQUEST = "failed to delete the friend request (ID: {})"
 
 FAILED_TO_ACCEPT_FRIEND_REQUEST = "failed to accept the friend request (ID: {})"
 
-FAILED_TO_GET_FRIEND_REQUEST = "failed to get the friend request (ID: {})"
+FAILED_TO_READ_FRIEND_REQUEST = "failed to read the friend request (ID: {})"
 
 FAILED_TO_GET_FRIEND_REQUESTS = "failed to get friend requests on page {}"
 
@@ -2055,14 +2055,14 @@ class HTTPClient:
 
         return int_or(response, 0)
 
-    async def get_friend_request(
+    async def read_friend_request(
         self, request_id: int, *, account_id: int, encoded_password: str
     ) -> int:
-        error_codes = {-1: MissingAccess(FAILED_TO_GET_FRIEND_REQUEST.format(request_id))}
+        error_codes = {-1: MissingAccess(FAILED_TO_READ_FRIEND_REQUEST.format(request_id))}
 
         route = Route(
             POST,
-            GET_FRIEND_REQUEST,
+            READ_FRIEND_REQUEST,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
