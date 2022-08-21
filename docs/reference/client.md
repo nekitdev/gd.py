@@ -1,1 +1,1 @@
-::: gd.client.Client
+::: gd.client

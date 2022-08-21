@@ -19,7 +19,7 @@ from attrs import define, field
 
 from gd.api.color_channels import ColorChannels
 from gd.api.header import Header
-from gd.api.objects import Object, has_target_group, object_from_binary, object_to_binary
+from gd.api.objects import Object, Trigger, has_target_group, is_trigger, object_from_binary, object_to_binary
 from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder, Speed, SpeedChange, SpeedMagic
@@ -204,13 +204,13 @@ class Editor(Binary, Sequence[Object]):
     def speed_changes(self) -> List[Object]:
         return sorted(self.iter_speed_changes(), key=get_x)
 
-    def iter_triggers(self) -> Iterator[Object]:
+    def iter_triggers(self) -> Iterator[Trigger]:
         for object in self.objects:
-            if object.is_trigger():
+            if is_trigger(object):
                 yield object
 
     @property
-    def triggers(self) -> List[Object]:
+    def triggers(self) -> List[Trigger]:
         return sorted(self.iter_triggers(), key=get_x)
 
     @property

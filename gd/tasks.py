@@ -39,7 +39,7 @@ DEFAULT_LIMIT = 10
 
 @define()
 class ExponentialBackoff:
-    """An implementation of the *exponential backoff* algorithm.
+    r"""An implementation of the *exponential backoff* algorithm.
 
     Provides a convenient interface to implement an exponential backoff
     for reconnecting or retrying transmissions in a distributed network.
@@ -47,8 +47,8 @@ class ExponentialBackoff:
     Once instantiated, the delay method will return the next interval to
     wait for when retrying a connection or transmission. The maximum
     delay increases exponentially with each retry up to a maximum of
-    `multiply * base ^ limit`, and is reset if no more attempts are needed in a period
-    of `multiply * base ^ (limit + 1)` seconds.
+    $m \cdot b^l$ (where $m$ is `multiply`, $b$ is `base` and $l$ is `limit`),
+    and is reset if no more attempts are needed in a period of $m \cdot b^{l + 1}$ seconds.
     """
 
     multiply: float = field(default=DEFAULT_MULTIPLY)
@@ -70,15 +70,15 @@ class ExponentialBackoff:
         return self.multiply * pow(self.base, self.limit + 1)
 
     def delay(self) -> float:
-        """Computes the next delay.
+        r"""Computes the next delay.
 
         Returns the next delay to wait according to the exponential
-        backoff algorithm. This is a value between `0` and `multiply * base ^ exponent`
-        where `exponent` starts off at `0` and is incremented at every
-        invocation of this method up to a maximum of `limit`.
+        backoff algorithm. This is a value between $0$ and $m \cdot b ^ e$
+        where $e$ (`exponent`) starts off at $0$ and is incremented at every
+        invocation of this method up to a maximum of $l$ (`limit`).
 
-        If a period of more than `multiply * base ^ (limit + 1)` has passed since the last
-        retry, the `exponent` is reset to `0`.
+        If a period of more than $m \cdot b^{l + 1}$ has passed since the last
+        retry, the `exponent` ($e$) is reset to $0$.
         """
         called = self._clock()
 
@@ -312,15 +312,23 @@ class Loop(Generic[P]):
         return loop_function
 
 
+DEFAULT_SECONDS = 0.0
+DEFAULT_MINUTES = 0.0
+DEFAULT_HOURS = 0.0
+DEFAULT_DAYS = 0.0
+
+
 def loop(
     *,
-    seconds: float = 0.0,
-    minutes: float = 0.0,
-    hours: float = 0.0,
-    days: float = 0.0,
+    seconds: float = DEFAULT_SECONDS,
+    minutes: float = DEFAULT_MINUTES,
+    hours: float = DEFAULT_HOURS,
+    days: float = DEFAULT_DAYS,
     count: Optional[int] = None,
     reconnect: bool = DEFAULT_RECONNECT,
 ) -> Unary[Callable[P, Awaitable[None]], Loop[P]]:
+    """..."""
+
     delay = (
         seconds + minutes * MINUTES_TO_SECONDS + hours * HOURS_TO_SECONDS + days * DAYS_TO_SECONDS
     )

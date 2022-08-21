@@ -1,7 +1,7 @@
 from re import compile
 from typing import Match
 
-__all__ = ("camel_to_snake", "snake_to_camel", "to_ordinal")
+__all__ = ("camel_to_snake", "snake_to_camel")
 
 UPPER = r"[A-Z]"
 LOWER = r"[a-z]"
@@ -46,32 +46,3 @@ def snake_to_camel(string: str) -> str:
         The resulting `camelCase` string.
     """
     return SNAKE_TO_CAMEL.sub(upper_case_first_group, string)
-
-
-ORDINAL_SUFFIXES = ("th", "st", "nd", "rd", "th")  # 0th, 1st, 2nd, 3rd, 4th, ...
-ORDINAL_LAST_INDEX = len(ORDINAL_SUFFIXES) - 1
-ORDINAL_LAST = ORDINAL_SUFFIXES[ORDINAL_LAST_INDEX]
-
-
-def to_ordinal(value: int) -> str:
-    """Converts the `value` to an ordinal, for example:
-
-    | `number` | `ordinal` |
-    |----------|-----------|
-    | ``0``    | ``0th``   |
-    | ``1``    | ``1st``   |
-    | ``13``   | ``13th``  |
-    | ``42``   | ``42nd``  |
-
-    Arguments:
-        value: The value to convert to an ordinal.
-
-    Returns:
-        An ordinal string representing the value.
-    """
-    suffix = ORDINAL_SUFFIXES[value % 10 % ORDINAL_LAST_INDEX]
-
-    if 10 < value % 100 < 14:
-        suffix = ORDINAL_LAST
-
-    return str(value) + suffix
