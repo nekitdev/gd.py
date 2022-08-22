@@ -413,7 +413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="reference/tasks.md" class="md-nav__link">
+      <a href="reference/tasks/" class="md-nav__link">
         Tasks
       </a>
     </li>
@@ -657,7 +657,9 @@
 </code></pre></div>
 <h2 id="examples">Examples</h2>
 <h3 id="songs">Songs</h3>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">asyncio</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># file.py</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
 
 <span class="kn">import</span> <span class="nn">gd</span>
 
@@ -670,10 +672,13 @@
 
     <span class="n">song</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get_song</span><span class="p">(</span><span class="n">SONG_ID</span><span class="p">)</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="n">SONG</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">song</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">song</span><span class="o">.</span><span class="n">artist</span><span class="p">,</span> <span class="n">song</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">song</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">SONG</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">song</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">song</span><span class="o">.</span><span class="n">artist</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">song</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">song</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
 
 
 <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>python file.py
+<span class="go">PANDA EYES - BROKEN by PandaEyesOfficial (ID: 1081309, size: 9.71 MB)</span>
 </code></pre></div>
 <h2 id="documentation">Documentation</h2>
 <p>You can find the documentation <a href="https://nekitdev.github.io/gd.py">here</a>.</p>
