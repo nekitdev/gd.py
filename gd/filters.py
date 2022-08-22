@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Optional, Type, TypeVar
 from attrs import define
 from typing_extensions import TypedDict
 
-from gd.enums import DemonDifficulty, LevelDifficulty, LevelLength, SearchStrategy
+from gd.enums import DemonDifficulty, Difficulty, LevelDifficulty, LevelLength, SearchStrategy
 from gd.string_constants import DASH
 from gd.string_utils import concat_comma, wrap
 from gd.typing import DynamicTuple
@@ -22,8 +22,7 @@ F = TypeVar("F", bound="Filters")
 @define()
 class Filters:
     strategy: SearchStrategy = SearchStrategy.DEFAULT
-    difficulties: DynamicTuple[LevelDifficulty] = ()
-    demon_difficulty: Optional[DemonDifficulty] = None
+    difficulties: DynamicTuple[Difficulty] = ()
     lengths: DynamicTuple[LevelLength] = ()
     completed_levels: DynamicTuple[int] = ()
     completed: Optional[bool] = None
@@ -40,8 +39,7 @@ class Filters:
     def __init__(
         self,
         strategy: SearchStrategy = SearchStrategy.DEFAULT,
-        difficulties: Iterable[LevelDifficulty] = (),
-        demon_difficulty: Optional[DemonDifficulty] = None,
+        difficulties: Iterable[Difficulty] = (),
         lengths: Iterable[LevelLength] = (),
         completed_levels: Iterable[int] = (),
         completed: Optional[bool] = None,
@@ -58,7 +56,6 @@ class Filters:
         self.__attrs_init__(
             strategy,
             tuple(difficulties),
-            demon_difficulty,
             tuple(lengths),
             tuple(completed_levels),
             completed,
@@ -120,8 +117,13 @@ class Filters:
     def to_robtop_filters(self) -> RobTopFilters:
         filters = RobTopFilters(
             type=self.strategy.value,
-            diff=concat_comma(map(str, (difficulty.value for difficulty in self.difficulties)))
-            or DASH,
+            diff=concat_comma(
+                map(
+                    str, (
+                        difficulty.into_level_difficulty().value for difficulty in self.difficulties
+                    )
+                )
+            ) or DASH,
             len=concat_comma(map(str, (length.value for length in self.lengths))) or DASH,
             featured=int(self.featured),
             original=int(self.require_original),
@@ -129,11 +131,6 @@ class Filters:
             coins=int(self.require_coins),
             epic=int(self.epic),
         )
-
-        demon_difficulty = self.demon_difficulty
-
-        if demon_difficulty is not None:
-            filters.update(RobTopFilters(demon_filter=demon_difficulty.value))
 
         completed = self.completed
 
@@ -184,7 +181,6 @@ class RobTopFilters(TypedDict, total=False):
     two_player: int
     coins: int
     epic: int
-    demon_filter: int
     completed_levels: str
     star: int
     no_star: int

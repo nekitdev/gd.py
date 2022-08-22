@@ -13,9 +13,8 @@ from gd.constants import (
     DEFAULT_COINS,
     DEFAULT_ID,
     DEFAULT_LOW_DETAIL,
-    DEFAULT_OBJECTS,
+    DEFAULT_OBJECT_COUNT,
     DEFAULT_STARS,
-    DEFAULT_TIME,
     DEFAULT_VERSION,
     EMPTY,
     UNKNOWN,
@@ -45,11 +44,13 @@ from gd.http import HTTPClient
 from gd.models import (
     FriendRequestsResponseModel,
     LeaderboardResponseModel,
+    LevelResponseModel,
     LoginModel,
     MessageModel,
     MessagesResponseModel,
     ProfileModel,
     RelationshipsResponseModel,
+    SearchLevelsResponseModel,
     SearchUserModel,
     SearchUsersResponseModel,
     SongModel,
@@ -237,7 +238,7 @@ class Session:
         client_account_id: Optional[int] = None,
         client_user_id: Optional[int] = None,
         encoded_password: Optional[str] = None,
-    ) -> LevelSearchResponseModel:
+    ) -> SearchLevelsResponseModel:
         response = await self.http.search_levels_on_page(
             query,
             page=page,
@@ -248,24 +249,26 @@ class Session:
             client_user_id=client_user_id,
             encoded_password=encoded_password,
         )
-        return LevelSearchResponseModel.from_string(response, use_default=True)
+
+        return SearchLevelsResponseModel.from_robtop(response)
 
     async def get_timely_info(self, type: TimelyType) -> TimelyInfoModel:
         response = await self.http.get_timely_info(type)
 
         return TimelyInfoModel.from_robtop(response, type=type)
 
-    async def download_level(
+    async def get_level(
         self,
         level_id: int,
         *,
         account_id: Optional[int] = None,
         encoded_password: Optional[str] = None,
-    ) -> LevelDownloadResponseModel:
-        response = await self.http.download_level(
+    ) -> LevelResponseModel:
+        response = await self.http.get_level(
             level_id, account_id=account_id, encoded_password=encoded_password
         )
-        return LevelDownloadResponseModel.from_string(response, use_default=True)
+
+        return LevelResponseModel.from_robtop(response)
 
     async def report_level(self, level_id: int) -> None:
         await self.http.report_level(level_id)
@@ -297,14 +300,14 @@ class Session:
         original: int = DEFAULT_ID,
         two_player: bool = False,
         type: UnlistedType = UnlistedType.DEFAULT,
-        objects: int = DEFAULT_OBJECTS,
+        object_count: int = DEFAULT_OBJECT_COUNT,
         coins: int = DEFAULT_COINS,
         stars: int = DEFAULT_STARS,
         low_detail: bool = DEFAULT_LOW_DETAIL,
         password: Optional[Password] = None,
         recording: Optional[Recording] = None,
-        editor_time: timedelta = DEFAULT_TIME,
-        copies_time: timedelta = DEFAULT_TIME,
+        editor_time: Optional[timedelta] = None,
+        copies_time: Optional[timedelta] = None,
         data: str = EMPTY,
         *,
         account_id: int,
@@ -321,7 +324,7 @@ class Session:
             song_id=song_id,
             original=original,
             two_player=two_player,
-            objects=objects,
+            object_count=object_count,
             coins=coins,
             stars=stars,
             type=type,

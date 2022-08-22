@@ -17,6 +17,8 @@ from gd.models_constants import (
     HSV_SEPARATOR,
     LEADERBOARD_RESPONSE_USERS_SEPARATOR,
     LEADERBOARD_USER_SEPARATOR,
+    LEVEL_RESPONSE_SEPARATOR,
+    LEVEL_SEPARATOR,
     LOGIN_SEPARATOR,
     MESSAGE_SEPARATOR,
     MESSAGES_RESPONSE_MESSAGES_SEPARATOR,
@@ -27,6 +29,10 @@ from gd.models_constants import (
     RECORDING_SEPARATOR,
     RELATIONSHIP_USER_SEPARATOR,
     RELATIONSHIPS_RESPONSE_USERS_SEPARATOR,
+    SEARCH_LEVELS_RESPONSE_CREATORS_SEPARATOR,
+    SEARCH_LEVELS_RESPONSE_LEVELS_SEPARATOR,
+    SEARCH_LEVELS_RESPONSE_SEPARATOR,
+    SEARCH_LEVELS_RESPONSE_SONGS_SEPARATOR,
     SEARCH_USER_SEPARATOR,
     SEARCH_USERS_RESPONSE_SEPARATOR,
     SEARCH_USERS_RESPONSE_USERS_SEPARATOR,
@@ -66,11 +72,23 @@ def partial_parse_enum(parse: Parse[T], enum_type: Type[E]) -> Parse[E]:
     return actual_parse
 
 
-def parse_get_or(parse: Parse[T], default: T, option: Optional[str]) -> T:
+DEFAULT_IGNORE_ERRORS = False
+
+
+def parse_get_or(
+    parse: Parse[T], default: T, option: Optional[str], ignore_errors: bool = DEFAULT_IGNORE_ERRORS
+) -> T:
     if option is None:
         return default
 
-    return parse(option)
+    try:
+        return parse(option)
+
+    except Exception:
+        if ignore_errors:
+            return default
+
+        raise
 
 
 def int_invert(string: str) -> bool:
@@ -152,6 +170,9 @@ concat_message = partial(concat_mapping, MESSAGE_SEPARATOR)
 split_friend_request = partial(split_mapping, FRIEND_REQUEST_SEPARATOR)
 concat_friend_request = partial(concat_mapping, FRIEND_REQUEST_SEPARATOR)
 
+split_level = partial(split_mapping, LEVEL_SEPARATOR)
+concat_level = partial(concat_mapping, LEVEL_SEPARATOR)
+
 split_page = partial(split_iterable, PAGE_SEPARATOR)
 concat_page = partial(concat_iterable, PAGE_SEPARATOR)
 
@@ -217,4 +238,31 @@ split_friend_requests_response_friend_requests = partial(
 )
 concat_friend_requests_response_friend_requests = partial(
     concat_iterable, FRIEND_REQUESTS_RESPONSE_FRIEND_REQUESTS_SEPARATOR
+)
+
+split_level_response = partial(split_iterable, LEVEL_RESPONSE_SEPARATOR)
+concat_level_response = partial(concat_iterable, LEVEL_RESPONSE_SEPARATOR)
+
+split_search_levels_response = partial(split_iterable, SEARCH_LEVELS_RESPONSE_SEPARATOR)
+concat_search_levels_response = partial(concat_iterable, SEARCH_LEVELS_RESPONSE_SEPARATOR)
+
+split_search_levels_response_levels = partial(
+    split_iterable, SEARCH_LEVELS_RESPONSE_LEVELS_SEPARATOR, ignore_empty=True
+)
+concat_search_levels_response_levels = partial(
+    concat_iterable, SEARCH_LEVELS_RESPONSE_LEVELS_SEPARATOR
+)
+
+split_search_levels_response_creators = partial(
+    split_iterable, SEARCH_LEVELS_RESPONSE_CREATORS_SEPARATOR, ignore_empty=True
+)
+concat_search_levels_response_creators = partial(
+    concat_iterable, SEARCH_LEVELS_RESPONSE_CREATORS_SEPARATOR
+)
+
+split_search_levels_response_songs = partial(
+    split_iterable, SEARCH_LEVELS_RESPONSE_SONGS_SEPARATOR, ignore_empty=True
+)
+concat_search_levels_response_songs = partial(
+    concat_iterable, SEARCH_LEVELS_RESPONSE_SONGS_SEPARATOR
 )

@@ -14,9 +14,20 @@ from gd.binary import VERSION
 from gd.binary_utils import UTF_8, Reader, Writer
 from gd.constants import (
     COMMENT_PAGE_SIZE,
+    DEFAULT_COINS,
+    DEFAULT_DOWNLOADS,
+    DEFAULT_EPIC,
     DEFAULT_ID,
+    DEFAULT_LOW_DETAIL,
+    DEFAULT_OBJECT_COUNT,
     DEFAULT_PAGE,
+    DEFAULT_RATING,
     DEFAULT_RECORD,
+    DEFAULT_SCORE,
+    DEFAULT_STARS,
+    DEFAULT_TWO_PLAYER,
+    DEFAULT_VERIFIED_COINS,
+    DEFAULT_VERSION,
     EMPTY,
     EMPTY_BYTES,
 )
@@ -33,6 +44,7 @@ from gd.enums import (
     TimelyType,
 )
 from gd.errors import MissingAccess
+from gd.models import LevelModel, TimelyInfoModel
 
 # from gd.models import LevelModel
 from gd.password import Password
@@ -65,27 +77,27 @@ class Level(Entity):
     name: str = field()
     creator: User = field()
     song: Song = field()
-    uploaded_at: datetime = field()
-    updated_at: datetime = field()
+    uploaded_at: datetime = field(factory=datetime.utcnow)
+    updated_at: datetime = field(factory=datetime.utcnow)
     description: str = field(default=EMPTY)
     data: bytes = field(default=EMPTY_BYTES)
-    version: int = field(default=0)
-    downloads: int = field(default=0)
+    version: int = field(default=DEFAULT_VERSION)
+    downloads: int = field(default=DEFAULT_DOWNLOADS)
     game_version: GameVersion = field(default=CURRENT_GAME_VERSION)
-    rating: int = field(default=0)
+    rating: int = field(default=DEFAULT_RATING)
     length: LevelLength = field(default=LevelLength.DEFAULT)
     difficulty: Difficulty = field(default=Difficulty.DEFAULT)
-    stars: int = field(default=0)
-    requested_stars: int = field(default=0)
-    score: int = field(default=0)
+    stars: int = field(default=DEFAULT_STARS)
+    requested_stars: int = field(default=DEFAULT_STARS)
+    score: int = field(default=DEFAULT_SCORE)
     password_data: Password = field(factory=Password)
-    original_id: int = field(default=0)
-    two_player: bool = field(default=False)
-    coins: int = field(default=0)
-    verified_coins: bool = field(default=False)
-    low_detail: bool = field(default=False)
-    epic: bool = field(default=False)
-    object_count: int = field(default=0)
+    original_id: int = field(default=DEFAULT_ID)
+    two_player: bool = field(default=DEFAULT_TWO_PLAYER)
+    coins: int = field(default=DEFAULT_COINS)
+    verified_coins: bool = field(default=DEFAULT_VERIFIED_COINS)
+    low_detail: bool = field(default=DEFAULT_LOW_DETAIL)
+    epic: bool = field(default=DEFAULT_EPIC)
+    object_count: int = field(default=DEFAULT_OBJECT_COUNT)
     editor_time: timedelta = field(factory=timedelta)
     copies_time: timedelta = field(factory=timedelta)
     timely_type: TimelyType = field(default=TimelyType.DEFAULT)
@@ -111,8 +123,8 @@ class Level(Entity):
         self.creator.to_binary(binary, order)
         self.song.to_binary(binary, order)
 
-        writer.write_f32(self.uploaded_at.timestamp(), order)
-        writer.write_f32(self.updated_at.timestamp(), order)
+        writer.write_f64(self.uploaded_at.timestamp(), order)
+        writer.write_f64(self.updated_at.timestamp(), order)
 
         data = self.description.encode(encoding)
 
@@ -196,8 +208,8 @@ class Level(Entity):
         creator = User.from_binary(binary, order, encoding)
         song = Song.from_binary(binary, order, encoding)
 
-        uploaded_timestamp = reader.read_f32(order)
-        updated_timestamp = reader.read_f32(order)
+        uploaded_timestamp = reader.read_f64(order)
+        updated_timestamp = reader.read_f64(order)
 
         uploaded_at = datetime.fromtimestamp(uploaded_timestamp)
         updated_at = datetime.fromtimestamp(updated_timestamp)
@@ -293,6 +305,46 @@ class Level(Entity):
         )
 
     @classmethod
+    def from_model(cls: Type[L], model: LevelModel, creator: User, song: Song) -> L:
+        return cls(
+            id=model.id,
+            name=model.name,
+            creator=creator,
+            song=song,
+            description=model.description,
+            # data?
+            version=model.version,
+            difficulty=model.difficulty,
+            downloads=model.downloads,
+            game_version=model.game_version,
+            rating=model.rating,
+            length=model.length,
+            stars=model.stars,
+            score=model.score,
+            password_data=model.password_data,
+            uploaded_at=model.uploaded_at,
+            updated_at=model.updated_at,
+            original_id=model.original_id,
+            two_player=model.two_player,
+            coins=model.coins,
+            verified_coins=model.verified_coins,
+            requested_stars=model.requested_stars,
+            low_detail=model.low_detail,
+            timely_id=model.timely_id,
+            timely_type=model.timely_type,
+            epic=model.epic,
+            object_count=model.object_count,
+            editor_time=model.editor_time,
+            copies_time=model.copies_time,
+        )
+
+    def update_with_timely_model(self: L, model: TimelyInfoModel) -> L:
+        self.timely_id = model.id
+        self.timely_type = model.type
+
+        return self
+
+    @classmethod
     def official(
         cls: Type[L],
         id: Optional[int] = None,
@@ -328,7 +380,7 @@ class Level(Entity):
         return self.password_data.password
 
     def is_copyable(self) -> bool:
-        return self.password_data.copyable
+        return self.password_data.is_copyable()
 
     def is_timely(self, timely_type: Optional[TimelyType] = None) -> bool:
         if timely_type is None:

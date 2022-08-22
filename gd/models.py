@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import List, Optional, Type, TypeVar
+from typing import Iterator, List, Optional, Type, TypeVar
 from urllib.parse import quote, unquote
 
 from attrs import define, field
@@ -8,27 +8,42 @@ from yarl import URL
 
 from gd.constants import (
     DEFAULT_ACTIVE,
+    DEFAULT_AUTO,
+    DEFAULT_COINS,
     DEFAULT_COLOR_1_ID,
     DEFAULT_COLOR_2_ID,
     DEFAULT_CONTENT_PRESENT,
     DEFAULT_CREATOR_POINTS,
+    DEFAULT_DEMON,
     DEFAULT_DEMONS,
+    DEFAULT_DENOMINATOR,
     DEFAULT_DIAMONDS,
+    DEFAULT_DOWNLOADS,
+    DEFAULT_EPIC,
     DEFAULT_GLOW,
     DEFAULT_ICON_ID,
     DEFAULT_ID,
+    DEFAULT_LOW_DETAIL,
     DEFAULT_NEW,
+    DEFAULT_NUMERATOR,
+    DEFAULT_OBJECT_COUNT,
     DEFAULT_PLACE,
     DEFAULT_RANK,
+    DEFAULT_RATING,
     DEFAULT_READ,
+    DEFAULT_SCORE,
     DEFAULT_SECRET_COINS,
     DEFAULT_SENT,
     DEFAULT_SIZE,
     DEFAULT_STARS,
+    DEFAULT_TWO_PLAYER,
     DEFAULT_UNREAD,
     DEFAULT_USER_COINS,
+    DEFAULT_VERIFIED_COINS,
+    DEFAULT_VERSION,
     EMPTY,
     UNKNOWN,
+    UNNAMED,
 )
 from gd.datetime import datetime_from_human, datetime_to_human
 from gd.encoding import (
@@ -36,15 +51,22 @@ from gd.encoding import (
     decode_robtop_string,
     encode_base64_string_url_safe,
     encode_robtop_string,
+    generate_level_seed,
+    sha1_string_with_salt,
 )
 from gd.enums import (
     CommentState,
+    DemonDifficulty,
+    Difficulty,
     FriendRequestState,
     FriendState,
     IconType,
     Key,
+    LevelDifficulty,
+    LevelLength,
     MessageState,
     Role,
+    Salt,
     TimelyType,
 )
 from gd.models_constants import (
@@ -54,6 +76,8 @@ from gd.models_constants import (
     FRIEND_REQUEST_SEPARATOR,
     LEADERBOARD_RESPONSE_USERS_SEPARATOR,
     LEADERBOARD_USER_SEPARATOR,
+    LEVEL_RESPONSE_SEPARATOR,
+    LEVEL_SEPARATOR,
     LOGIN_SEPARATOR,
     MESSAGE_SEPARATOR,
     MESSAGES_RESPONSE_SEPARATOR,
@@ -61,6 +85,7 @@ from gd.models_constants import (
     PROFILE_SEPARATOR,
     RELATIONSHIP_USER_SEPARATOR,
     RELATIONSHIPS_RESPONSE_USERS_SEPARATOR,
+    SEARCH_LEVELS_RESPONSE_SEPARATOR,
     SEARCH_USER_SEPARATOR,
     SEARCH_USERS_RESPONSE_SEPARATOR,
     SONG_SEPARATOR,
@@ -74,6 +99,8 @@ from gd.models_utils import (
     concat_friend_requests_response_friend_requests,
     concat_leaderboard_response_users,
     concat_leaderboard_user,
+    concat_level,
+    concat_level_response,
     concat_login,
     concat_message,
     concat_messages_response,
@@ -82,6 +109,10 @@ from gd.models_utils import (
     concat_profile,
     concat_relationship_user,
     concat_relationships_response_users,
+    concat_search_levels_response,
+    concat_search_levels_response_creators,
+    concat_search_levels_response_levels,
+    concat_search_levels_response_songs,
     concat_search_user,
     concat_search_users_response,
     concat_search_users_response_users,
@@ -98,6 +129,8 @@ from gd.models_utils import (
     split_friend_requests_response_friend_requests,
     split_leaderboard_response_users,
     split_leaderboard_user,
+    split_level,
+    split_level_response,
     split_login,
     split_message,
     split_messages_response,
@@ -106,13 +139,20 @@ from gd.models_utils import (
     split_profile,
     split_relationship_user,
     split_relationships_response_users,
+    split_search_levels_response,
+    split_search_levels_response_creators,
+    split_search_levels_response_levels,
+    split_search_levels_response_songs,
     split_search_user,
     split_search_users_response,
     split_search_users_response_users,
     split_song,
     split_timely_info,
 )
+from gd.password import Password
 from gd.robtop import RobTop
+from gd.string_utils import concat_empty
+from gd.versions import GameVersion, CURRENT_GAME_VERSION
 
 __all__ = (
     "Model",
@@ -250,7 +290,7 @@ class SongModel(Model):
         return concat_song(mapping)
 
 
-L = TypeVar("L", bound="LoginModel")
+LG = TypeVar("LG", bound="LoginModel")
 
 
 @define()
@@ -259,7 +299,7 @@ class LoginModel(Model):
     id: int = 0
 
     @classmethod
-    def from_robtop(cls: Type[L], string: str) -> L:
+    def from_robtop(cls: Type[LG], string: str) -> LG:
         account_id, id = split_login(string)
 
         return cls(int(account_id), int(id))
@@ -279,24 +319,24 @@ C = TypeVar("C", bound="CreatorModel")
 
 @define()
 class CreatorModel(Model):
-    account_id: int = DEFAULT_ID
-    name: str = UNKNOWN
     id: int = DEFAULT_ID
+    name: str = UNKNOWN
+    account_id: int = DEFAULT_ID
 
     @classmethod
     def from_robtop(cls: Type[C], string: str) -> C:
-        account_id, name, id = split_creator(string)
+        id_string, name, account_id_string = split_creator(string)
 
-        return cls(int(account_id), name, int(id))
+        return cls(int(id_string), name, int(account_id_string))
+
+    def to_robtop(self) -> str:
+        values = (str(self.id), self.name, str(self.account_id))
+
+        return concat_creator(values)
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return CREATOR_SEPARATOR in string
-
-    def to_robtop(self) -> str:
-        values = (self.account_id, self.name, self.id)
-
-        return concat_creator(map(str, values))
 
 
 @define()
@@ -1239,14 +1279,6 @@ class MessageModel(Model):
 
         mapping = split_message(string)
 
-        message_created_at = mapping.get(message_created_at_index)
-
-        if message_created_at is None:
-            created_at = message_created_at_default
-
-        else:
-            created_at = datetime_from_human(message_created_at)
-
         return cls(
             id=parse_get_or(int, message_id_default, mapping.get(message_id_index)),
             account_id=parse_get_or(
@@ -1264,7 +1296,12 @@ class MessageModel(Model):
                 mapping.get(message_content_index, message_content_default), Key.MESSAGE
             ),
             name=mapping.get(message_name_index, message_name_default),
-            created_at=created_at,
+            created_at=parse_get_or(
+                datetime_from_human,
+                message_created_at_default,
+                mapping.get(message_created_at_index),
+                ignore_errors=True,
+            ),
             read=parse_get_or(int_bool, message_read_default, mapping.get(message_read_index)),
             sent=parse_get_or(int_bool, message_sent_default, mapping.get(message_sent_index)),
             content_present=content_present,
@@ -1377,14 +1414,6 @@ class FriendRequestModel(Model):
 
         mapping = split_friend_request(string)
 
-        friend_request_created_at = mapping.get(friend_request_created_at_index)
-
-        if friend_request_created_at is None:
-            created_at = friend_request_created_at_default
-
-        else:
-            created_at = datetime_from_human(friend_request_created_at)
-
         return cls(
             name=mapping.get(friend_request_name_index, friend_request_name_default),
             user_id=parse_get_or(
@@ -1420,7 +1449,12 @@ class FriendRequestModel(Model):
             content=decode_base64_string_url_safe(
                 mapping.get(friend_request_content_index, friend_request_content_default)
             ),
-            created_at=created_at,
+            created_at=parse_get_or(
+                datetime_from_human,
+                friend_request_created_at_default,
+                mapping.get(friend_request_created_at_index),
+                ignore_errors=True,
+            ),
             unread=parse_get_or(
                 int_bool, friend_request_unread_default, mapping.get(friend_request_unread_index)
             ),
@@ -1481,6 +1515,563 @@ class FriendRequestModel(Model):
     @read.setter
     def read(self, read: bool) -> None:
         self.unread = not read
+
+
+LEVEL_ID = 1
+LEVEL_NAME = 2
+LEVEL_DESCRIPTION = 3
+LEVEL_UNPROCESSED_DATA = 4
+LEVEL_VERSION = 5
+LEVEL_CREATOR_ID = 6
+LEVEL_DIFFICULTY_NUMERATOR = 8
+LEVEL_DIFFICULTY_DENOMINATOR = 9
+LEVEL_DOWNLOADS = 10
+LEVEL_OFFICIAL_SONG_ID = 12
+LEVEL_GAME_VERSION = 13
+LEVEL_RATING = 14
+LEVEL_LENGTH = 15
+LEVEL_DEMON = 17
+LEVEL_STARS = 18
+LEVEL_SCORE = 19
+LEVEL_AUTO = 25
+LEVEL_PASSWORD_DATA = 27
+LEVEL_UPLOADED_AT = 28
+LEVEL_UPDATED_AT = 29
+LEVEL_ORIGINAL_ID = 30
+LEVEL_TWO_PLAYER = 31
+LEVEL_CUSTOM_SONG_ID = 35
+LEVEL_EXTRA_STRING = 36
+LEVEL_COINS = 37
+LEVEL_VERIFIED_COINS = 38
+LEVEL_REQUESTED_STARS = 39
+LEVEL_LOW_DETAIL = 40
+LEVEL_TIMELY_ID = 41
+LEVEL_EPIC = 42
+LEVEL_DEMON_DIFFICULTY = 43
+LEVEL_OBJECT_COUNT = 45
+LEVEL_EDITOR_TIME = 46
+LEVEL_COPIES_TIME = 47
+
+
+L = TypeVar("L", bound="LevelModel")
+
+
+VALUE_TO_DEMON_DIFFICULTY = {
+    3: DemonDifficulty.EASY_DEMON,
+    4: DemonDifficulty.MEDIUM_DEMON,
+    5: DemonDifficulty.INSANE_DEMON,
+    6: DemonDifficulty.EXTREME_DEMON,
+}
+
+DEMON_DIFFICULTY_TO_VALUE = {
+    demon_difficulty: value for value, demon_difficulty in VALUE_TO_DEMON_DIFFICULTY.items()
+}
+
+
+@define()
+class LevelModel(Model):
+    id: int = DEFAULT_ID
+    name: str = UNNAMED
+    description: str = EMPTY
+    unprocessed_data: str = EMPTY
+    version: int = DEFAULT_VERSION
+    creator_id: int = DEFAULT_ID
+    difficulty_denominator: int = DEFAULT_DENOMINATOR
+    difficulty_numerator: int = DEFAULT_NUMERATOR
+    downloads: int = DEFAULT_DOWNLOADS
+    official_song_id: int = DEFAULT_ID
+    game_version: GameVersion = CURRENT_GAME_VERSION
+    rating: int = DEFAULT_RATING
+    length: LevelLength = LevelLength.DEFAULT
+    demon: bool = DEFAULT_DEMON
+    stars: int = DEFAULT_STARS
+    score: int = DEFAULT_SCORE
+    auto: bool = DEFAULT_AUTO
+    password_data: Password = field(factory=Password)
+    uploaded_at: datetime = field(factory=datetime.utcnow)
+    updated_at: datetime = field(factory=datetime.utcnow)
+    original_id: int = DEFAULT_ID
+    two_player: bool = DEFAULT_TWO_PLAYER
+    custom_song_id: int = DEFAULT_ID
+    extra_string: str = EMPTY
+    coins: int = DEFAULT_COINS
+    verified_coins: bool = DEFAULT_VERIFIED_COINS
+    requested_stars: int = DEFAULT_STARS
+    low_detail: bool = DEFAULT_LOW_DETAIL
+    timely_id: int = DEFAULT_ID
+    timely_type: TimelyType = TimelyType.DEFAULT
+    epic: bool = DEFAULT_EPIC
+    demon_difficulty: DemonDifficulty = DemonDifficulty.DEFAULT
+    object_count: int = DEFAULT_OBJECT_COUNT
+    editor_time: timedelta = field(factory=timedelta)
+    copies_time: timedelta = field(factory=timedelta)
+
+    @classmethod
+    def from_robtop(
+        cls: Type[L],
+        string: str,
+        # indexes
+        level_id_index: int = LEVEL_ID,
+        level_name_index: int = LEVEL_NAME,
+        level_description_index: int = LEVEL_DESCRIPTION,
+        level_unprocessed_data_index: int = LEVEL_UNPROCESSED_DATA,
+        level_version_index: int = LEVEL_VERSION,
+        level_creator_id_index: int = LEVEL_CREATOR_ID,
+        level_difficulty_numerator_index: int = LEVEL_DIFFICULTY_NUMERATOR,
+        level_difficulty_denominator_index: int = LEVEL_DIFFICULTY_DENOMINATOR,
+        level_downloads_index: int = LEVEL_DOWNLOADS,
+        level_official_song_id_index: int = LEVEL_OFFICIAL_SONG_ID,
+        level_game_version_index: int = LEVEL_GAME_VERSION,
+        level_rating_index: int = LEVEL_RATING,
+        level_length_index: int = LEVEL_LENGTH,
+        level_demon_index: int = LEVEL_DEMON,
+        level_stars_index: int = LEVEL_STARS,
+        level_score_index: int = LEVEL_SCORE,
+        level_auto_index: int = LEVEL_AUTO,
+        level_password_data_index: int = LEVEL_PASSWORD_DATA,
+        level_uploaded_at_index: int = LEVEL_UPLOADED_AT,
+        level_updated_at_index: int = LEVEL_UPDATED_AT,
+        level_original_id_index: int = LEVEL_ORIGINAL_ID,
+        level_two_player_index: int = LEVEL_TWO_PLAYER,
+        level_custom_song_id_index: int = LEVEL_CUSTOM_SONG_ID,
+        level_extra_string_index: int = LEVEL_EXTRA_STRING,
+        level_coins_index: int = LEVEL_COINS,
+        level_verified_coins_index: int = LEVEL_VERIFIED_COINS,
+        level_requested_stars_index: int = LEVEL_REQUESTED_STARS,
+        level_low_detail_index: int = LEVEL_LOW_DETAIL,
+        level_timely_id_index: int = LEVEL_TIMELY_ID,
+        level_epic_index: int = LEVEL_EPIC,
+        level_demon_difficulty_index: int = LEVEL_DEMON_DIFFICULTY,
+        level_object_count_index: int = LEVEL_OBJECT_COUNT,
+        level_editor_time_index: int = LEVEL_EDITOR_TIME,
+        level_copies_time_index: int = LEVEL_COPIES_TIME,
+        # defaults
+        level_id_default: int = DEFAULT_ID,
+        level_name_default: str = UNNAMED,
+        level_description_default: str = EMPTY,
+        level_unprocessed_data_default: str = EMPTY,
+        level_version_default: int = DEFAULT_VERSION,
+        level_creator_id_default: int = DEFAULT_ID,
+        level_difficulty_denominator_default: int = DEFAULT_DENOMINATOR,
+        level_difficulty_numerator_default: int = DEFAULT_NUMERATOR,
+        level_downloads_default: int = DEFAULT_DOWNLOADS,
+        level_official_song_id_default: int = DEFAULT_ID,
+        level_game_version_default: GameVersion = CURRENT_GAME_VERSION,
+        level_rating_default: int = DEFAULT_RATING,
+        level_length_default: LevelLength = LevelLength.DEFAULT,
+        level_demon_default: bool = DEFAULT_DEMON,
+        level_stars_default: int = DEFAULT_STARS,
+        level_score_default: int = DEFAULT_SCORE,
+        level_auto_default: bool = DEFAULT_AUTO,
+        level_password_data_default: Optional[Password] = None,
+        level_uploaded_at_default: Optional[datetime] = None,
+        level_updated_at_default: Optional[datetime] = None,
+        level_original_id_default: int = DEFAULT_ID,
+        level_two_player_default: bool = DEFAULT_TWO_PLAYER,
+        level_custom_song_id_default: int = DEFAULT_ID,
+        level_extra_string_default: str = EMPTY,
+        level_coins_default: int = DEFAULT_COINS,
+        level_verified_coins_default: bool = DEFAULT_VERIFIED_COINS,
+        level_requested_stars_default: int = DEFAULT_STARS,
+        level_low_detail_default: bool = DEFAULT_LOW_DETAIL,
+        level_timely_id_default: int = DEFAULT_ID,
+        level_epic_default: bool = DEFAULT_EPIC,
+        level_demon_difficulty_default: DemonDifficulty = DemonDifficulty.DEFAULT,
+        level_object_count_default: int = DEFAULT_OBJECT_COUNT,
+        level_editor_time_default: Optional[timedelta] = None,
+        level_copies_time_default: Optional[timedelta] = None,
+    ) -> L:
+        if level_password_data_default is None:
+            level_password_data_default = Password()
+
+        if level_uploaded_at_default is None:
+            level_uploaded_at_default = datetime.utcnow()
+
+        if level_updated_at_default is None:
+            level_updated_at_default = datetime.utcnow()
+
+        if level_editor_time_default is None:
+            level_editor_time_default = timedelta()
+
+        if level_copies_time_default is None:
+            level_copies_time_default = timedelta()
+
+        mapping = split_level(string)
+
+        level_demon_difficulty = mapping.get(level_demon_difficulty_index)
+
+        if level_demon_difficulty is None:
+            demon_difficulty = level_demon_difficulty_default
+
+        else:
+            demon_difficulty_value = int(level_demon_difficulty)
+
+            demon_difficulty = VALUE_TO_DEMON_DIFFICULTY.get(demon_difficulty_value, DemonDifficulty.HARD_DEMON)
+
+        level_editor_time = mapping.get(level_editor_time_index)
+
+        if level_editor_time:
+            editor_time = timedelta(seconds=int(level_editor_time))
+
+        else:
+            editor_time = level_editor_time_default
+
+        level_copies_time = mapping.get(level_copies_time_index)
+
+        if level_copies_time:
+            copies_time = timedelta(seconds=int(level_copies_time))
+
+        else:
+            copies_time = level_copies_time_default
+
+        timely_id = parse_get_or(
+            int, level_timely_id_default, mapping.get(level_timely_id_index)
+        )
+
+        if timely_id:
+            if timely_id // TIMELY_ID_ADD:
+                timely_type = TimelyType.WEEKLY
+
+            else:
+                timely_type = TimelyType.DAILY
+
+        else:
+            timely_type = TimelyType.NOT_TIMELY
+
+        timely_id %= TIMELY_ID_ADD
+
+        return cls(
+            id=parse_get_or(int, level_id_default, mapping.get(level_id_index)),
+            name=mapping.get(level_name_index, level_name_default),
+            description=decode_base64_string_url_safe(
+                mapping.get(level_description_index, level_description_default)
+            ),
+            unprocessed_data=mapping.get(
+                level_unprocessed_data_index, level_unprocessed_data_default
+            ),
+            version=parse_get_or(int, level_version_default, mapping.get(level_version_index)),
+            creator_id=parse_get_or(
+                int, level_creator_id_default, mapping.get(level_creator_id_index)
+            ),
+            difficulty_denominator=parse_get_or(
+                int,
+                level_difficulty_denominator_default,
+                mapping.get(level_difficulty_denominator_index),
+            ),
+            difficulty_numerator=parse_get_or(
+                int,
+                level_difficulty_numerator_default,
+                mapping.get(level_difficulty_numerator_index),
+            ),
+            downloads=parse_get_or(
+                int, level_downloads_default, mapping.get(level_downloads_index)
+            ),
+            official_song_id=parse_get_or(
+                int,
+                level_official_song_id_default,
+                mapping.get(level_official_song_id_index),
+            ),
+            game_version=parse_get_or(
+                GameVersion.from_robtop,
+                level_game_version_default,
+                mapping.get(level_game_version_index),
+            ),
+            rating=parse_get_or(int, level_rating_default, mapping.get(level_rating_index)),
+            length=parse_get_or(
+                partial_parse_enum(int, LevelLength),
+                level_length_default,
+                mapping.get(level_length_index),
+            ),
+            demon=parse_get_or(int_bool, level_demon_default, mapping.get(level_demon_index)),
+            stars=parse_get_or(int, level_stars_default, mapping.get(level_stars_index)),
+            score=parse_get_or(int, level_score_default, mapping.get(level_score_index)),
+            auto=parse_get_or(int_bool, level_auto_default, mapping.get(level_auto_index)),
+            password_data=parse_get_or(
+                Password.from_robtop,
+                level_password_data_default,
+                mapping.get(level_password_data_index),
+            ),
+            uploaded_at=parse_get_or(
+                datetime_from_human,
+                level_uploaded_at_default,
+                mapping.get(level_uploaded_at_index),
+                ignore_errors=True,
+            ),
+            updated_at=parse_get_or(
+                datetime_from_human,
+                level_updated_at_default,
+                mapping.get(level_updated_at_index),
+                ignore_errors=True,
+            ),
+            original_id=parse_get_or(
+                int, level_original_id_default, mapping.get(level_original_id_index)
+            ),
+            two_player=parse_get_or(
+                int_bool, level_two_player_default, mapping.get(level_two_player_index)
+            ),
+            custom_song_id=parse_get_or(
+                int, level_custom_song_id_default, mapping.get(level_custom_song_id_index)
+            ),
+            extra_string=mapping.get(level_extra_string_index, level_extra_string_default),
+            coins=parse_get_or(int, level_coins_default, mapping.get(level_coins_index)),
+            verified_coins=parse_get_or(
+                int_bool, level_verified_coins_default, mapping.get(level_verified_coins_index)
+            ),
+            requested_stars=parse_get_or(
+                int, level_requested_stars_default, mapping.get(level_requested_stars_index)
+            ),
+            low_detail=parse_get_or(
+                int_bool, level_low_detail_default, mapping.get(level_low_detail_index)
+            ),
+            timely_id=timely_id,
+            timely_type=timely_type,
+            epic=parse_get_or(int_bool, level_epic_default, mapping.get(level_epic_index)),
+            demon_difficulty=demon_difficulty,
+            object_count=parse_get_or(
+                int, level_object_count_default, mapping.get(level_object_count_index)
+            ),
+            editor_time=editor_time,
+            copies_time=copies_time,
+        )
+
+    def to_robtop(
+        self,
+        level_id_index: int = LEVEL_ID,
+        level_name_index: int = LEVEL_NAME,
+        level_description_index: int = LEVEL_DESCRIPTION,
+        level_unprocessed_data_index: int = LEVEL_UNPROCESSED_DATA,
+        level_version_index: int = LEVEL_VERSION,
+        level_creator_id_index: int = LEVEL_CREATOR_ID,
+        level_difficulty_numerator_index: int = LEVEL_DIFFICULTY_NUMERATOR,
+        level_difficulty_denominator_index: int = LEVEL_DIFFICULTY_DENOMINATOR,
+        level_downloads_index: int = LEVEL_DOWNLOADS,
+        level_official_song_id_index: int = LEVEL_OFFICIAL_SONG_ID,
+        level_game_version_index: int = LEVEL_GAME_VERSION,
+        level_rating_index: int = LEVEL_RATING,
+        level_length_index: int = LEVEL_LENGTH,
+        level_demon_index: int = LEVEL_DEMON,
+        level_stars_index: int = LEVEL_STARS,
+        level_score_index: int = LEVEL_SCORE,
+        level_auto_index: int = LEVEL_AUTO,
+        level_password_data_index: int = LEVEL_PASSWORD_DATA,
+        level_uploaded_at_index: int = LEVEL_UPLOADED_AT,
+        level_updated_at_index: int = LEVEL_UPDATED_AT,
+        level_original_id_index: int = LEVEL_ORIGINAL_ID,
+        level_two_player_index: int = LEVEL_TWO_PLAYER,
+        level_custom_song_id_index: int = LEVEL_CUSTOM_SONG_ID,
+        level_extra_string_index: int = LEVEL_EXTRA_STRING,
+        level_coins_index: int = LEVEL_COINS,
+        level_verified_coins_index: int = LEVEL_VERIFIED_COINS,
+        level_requested_stars_index: int = LEVEL_REQUESTED_STARS,
+        level_low_detail_index: int = LEVEL_LOW_DETAIL,
+        level_timely_id_index: int = LEVEL_TIMELY_ID,
+        level_epic_index: int = LEVEL_EPIC,
+        level_demon_difficulty_index: int = LEVEL_DEMON_DIFFICULTY,
+        level_object_count_index: int = LEVEL_OBJECT_COUNT,
+        level_editor_time_index: int = LEVEL_EDITOR_TIME,
+        level_copies_time_index: int = LEVEL_COPIES_TIME,
+    ) -> str:
+        timely_id = self.timely_id
+
+        if self.timely_type.is_weekly():
+            timely_id += TIMELY_ID_ADD
+
+        demon_difficulty_value = DEMON_DIFFICULTY_TO_VALUE.get(self.demon_difficulty, DemonDifficulty.DEMON.value)
+
+        mapping = {
+            level_id_index: str(self.id),
+            level_name_index: self.name,
+            level_description_index: encode_base64_string_url_safe(self.description),
+            level_unprocessed_data_index: self.unprocessed_data,
+            level_version_index: str(self.version),
+            level_creator_id_index: str(self.creator_id),
+            level_difficulty_denominator_index: str(self.difficulty_denominator),
+            level_difficulty_numerator_index: str(self.difficulty_numerator),
+            level_downloads_index: str(self.downloads),
+            level_official_song_id_index: str(self.official_song_id),
+            level_game_version_index: self.game_version.to_robtop(),
+            level_rating_index: str(self.rating),
+            level_length_index: str(self.length.value),
+            level_demon_index: str(int(self.demon)) if self.is_demon() else EMPTY,
+            level_stars_index: str(self.stars),
+            level_score_index: str(self.score),
+            level_auto_index: str(int(self.auto)) if self.is_auto() else EMPTY,
+            level_password_data_index: self.password_data.to_robtop(),
+            level_uploaded_at_index: datetime_to_human(self.uploaded_at),
+            level_updated_at_index: datetime_to_human(self.updated_at),
+            level_original_id_index: str(self.original_id),
+            level_two_player_index: str(int(self.two_player)) if self.is_two_player() else EMPTY,
+            level_custom_song_id_index: str(self.custom_song_id),
+            level_extra_string_index: self.extra_string,
+            level_coins_index: str(self.coins),
+            level_verified_coins_index: str(int(self.verified_coins)),
+            level_requested_stars_index: str(self.requested_stars),
+            level_low_detail_index: str(int(self.low_detail)),
+            level_timely_id_index: str(timely_id),
+            level_epic_index: str(int(self.epic)),
+            level_demon_difficulty_index: str(demon_difficulty_value),
+            level_object_count_index: str(self.object_count),
+            level_editor_time_index: str(int(self.editor_time.total_seconds())),
+            level_copies_time_index: str(int(self.copies_time.total_seconds())),
+        }
+
+        return concat_level(mapping)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return LEVEL_SEPARATOR in string
+
+    def is_demon(self) -> bool:
+        return self.demon
+
+    def is_auto(self) -> bool:
+        return self.auto
+
+    def is_two_player(self) -> bool:
+        return self.two_player
+
+    def has_low_detail(self) -> bool:
+        return self.low_detail
+
+    def is_epic(self) -> bool:
+        return self.epic
+
+    @property
+    def difficulty(self) -> Difficulty:
+        if self.is_auto():
+            return Difficulty.AUTO
+
+        if self.is_demon():
+            return self.demon_difficulty.into_difficulty()
+
+        return self.level_difficulty.into_difficulty()
+
+    @property
+    def level_difficulty(self) -> LevelDifficulty:
+        difficulty_numerator = self.difficulty_numerator
+        difficulty_denominator = self.difficulty_denominator
+
+        if difficulty_denominator:
+            difficulty_value = difficulty_numerator // difficulty_denominator
+
+            if difficulty_value:
+                return LevelDifficulty(difficulty_value)
+
+        return LevelDifficulty.DEFAULT
+
+
+LR = TypeVar("LR", bound="LevelResponseModel")
+
+SMART_HASH_COUNT = 40
+
+
+@define()
+class LevelResponseModel:
+    level: LevelModel = field(factory=LevelModel)
+    smart_hash: str = field()  # *smart* hash
+    hash: str = field()
+    creator: Optional[CreatorModel] = field(default=None)
+
+    @smart_hash.default
+    def default_smart_hash(self) -> str:
+        return sha1_string_with_salt(generate_level_seed(self.level.to_robtop(), SMART_HASH_COUNT), Salt.LEVEL)
+
+    @hash.default
+    def default_hash(self) -> str:
+        return sha1_string_with_salt(self.level.to_robtop(), Salt.LEVEL)
+
+    @classmethod
+    def from_robtop(cls: Type[LR], string: str) -> LR:
+        try:
+            level_string, smart_hash, hash = split_level_response(string)
+
+            creator = None
+
+        except ValueError:
+            level_string, smart_hash, hash, creator_string = split_level_response(string)
+
+            creator = CreatorModel.from_robtop(creator_string)
+
+        level = LevelModel.from_robtop(level_string)
+
+        return cls(level=level, smart_hash=smart_hash, hash=hash, creator=creator)
+
+    def to_robtop(self) -> str:
+        values = (self.level.to_robtop(), self.hash)
+
+        return concat_level_response(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return LEVEL_RESPONSE_SEPARATOR in string
+
+
+SLR = TypeVar("SLR", bound="SearchLevelsResponseModel")
+
+FIRST = 0
+LAST = ~0
+
+
+@define()
+class SearchLevelsResponseModel(Model):
+    levels: List[LevelModel] = field(factory=list)
+    creators: List[CreatorModel] = field(factory=list)
+    songs: List[SongModel] = field(factory=list)
+    page: PageModel = field(factory=PageModel)
+    hash: str = field()
+
+    def default_hash_iterator(self) -> Iterator[str]:
+        first = FIRST
+        last = LAST
+
+        for level in self.levels:
+            string = str(level.id)
+
+            values = (string[first], string[last], str(level.stars), str(level.coins))
+
+            yield concat_empty(values)
+
+    @hash.default
+    def default_hash(self) -> str:
+        return sha1_string_with_salt(concat_empty(self.default_hash_iterator()), Salt.LEVEL)
+
+    @classmethod
+    def from_robtop(cls: Type[SLR], string: str) -> SLR:
+        levels_string, creators_string, songs_string, page_string, hash = split_search_levels_response(string)
+
+        levels = [
+            LevelModel.from_robtop(string) for string
+            in split_search_levels_response_levels(levels_string)
+        ]
+
+        creators = [
+            CreatorModel.from_robtop(string) for string
+            in split_search_levels_response_creators(creators_string)
+        ]
+
+        songs = [
+            SongModel.from_robtop(string) for string
+            in split_search_levels_response_songs(songs_string)
+        ]
+
+        page = PageModel.from_robtop(page_string)
+
+        return cls(levels=levels, creators=creators, songs=songs, page=page, hash=hash)
+
+    def to_robtop(self) -> str:
+        values = (
+            concat_search_levels_response_levels(level.to_robtop() for level in self.levels),
+            concat_search_levels_response_creators(creator.to_robtop() for creator in self.creators),
+            concat_search_levels_response_songs(song.to_robtop() for song in self.songs),
+            self.page.to_robtop(),
+            self.hash,
+        )
+
+        return concat_search_levels_response(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return SEARCH_LEVELS_RESPONSE_SEPARATOR in string
 
 
 SUR = TypeVar("SUR", bound="SearchUsersResponseModel")

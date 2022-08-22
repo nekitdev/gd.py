@@ -6,7 +6,8 @@ from attrs import Attribute, define, field
 
 from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
-from gd.enums import ByteOrder
+from gd.encoding import decode_robtop_string, encode_robtop_string
+from gd.enums import ByteOrder, Key
 from gd.robtop import RobTop
 
 __all__ = ("Password",)
@@ -120,10 +121,10 @@ class Password(Binary, RobTop):
 
     @classmethod
     def from_robtop(cls: Type[P], string: str) -> P:
-        return cls.from_robtop_value(int(string))
+        return cls.from_robtop_value(int(decode_robtop_string(string, Key.LEVEL_PASSWORD)))
 
     def to_robtop(self) -> str:
-        return str(self.to_robtop_value())
+        return encode_robtop_string(str(self.to_robtop_value()), Key.LEVEL_LEADERBOARD)
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:

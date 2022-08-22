@@ -59,6 +59,8 @@ git = "https://github.com/nekitdev/gd.py.git"
 ### Songs
 
 ```python
+# file.py
+
 import asyncio
 
 import gd
@@ -72,10 +74,15 @@ async def main() -> None:
 
     song = await client.get_song(SONG_ID)
 
-    print(SONG.format(song.name, song.artist, song.id, song.size))
+    print(SONG.format(song.name, song.artist.name, song.id, song.size))
 
 
 asyncio.run(main())
+```
+
+```console
+$ python file.py
+PANDA EYES - BROKEN by PandaEyesOfficial (ID: 1081309, size: 9.71 MB)
 ```
 
 ## Documentation

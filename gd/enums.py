@@ -234,6 +234,30 @@ class UnlistedType(Flag):
         return type(self).LISTED_TO_FRIENDS in self
 
 
+class Difficulty(Enum):
+    UNKNOWN = 0
+
+    AUTO = 1
+    EASY = 2
+    NORMAL = 3
+    HARD = 4
+    HARDER = 5
+    INSANE = 6
+    DEMON = 7
+    EASY_DEMON = 8
+    MEDIUM_DEMON = 9
+    HARD_DEMON = 10
+    INSANE_DEMON = 11
+    EXTREME_DEMON = 12
+
+    NA = UNKNOWN
+
+    DEFAULT = UNKNOWN
+
+    def into_level_difficulty(self) -> LevelDifficulty:
+        return DIFFICULTY_TO_LEVEL_DIFFICULTY[self]
+
+
 class LevelDifficulty(Enum):
     """An enumeration for level difficulties."""
 
@@ -255,26 +279,31 @@ class LevelDifficulty(Enum):
 
     DEFAULT = UNKNOWN
 
+    def into_difficulty(self) -> Difficulty:
+        return LEVEL_DIFFICULTY_TO_DIFFICULTY[self]
 
-class Difficulty(Enum):
-    UNKNOWN = 0
 
-    AUTO = 1
-    EASY = 2
-    NORMAL = 3
-    HARD = 4
-    HARDER = 5
-    INSANE = 6
-    DEMON = 7
-    EASY_DEMON = 8
-    MEDIUM_DEMON = 9
-    HARD_DEMON = 10
-    INSANE_DEMON = 11
-    EXTREME_DEMON = 12
+LEVEL_DIFFICULTY_TO_DIFFICULTY = {
+    LevelDifficulty.UNKNOWN: Difficulty.UNKNOWN,
+    LevelDifficulty.AUTO: Difficulty.AUTO,
+    LevelDifficulty.EASY: Difficulty.EASY,
+    LevelDifficulty.NORMAL: Difficulty.NORMAL,
+    LevelDifficulty.HARD: Difficulty.HARD,
+    LevelDifficulty.HARDER: Difficulty.HARDER,
+    LevelDifficulty.INSANE: Difficulty.INSANE,
+    LevelDifficulty.DEMON: Difficulty.DEMON,
+    LevelDifficulty.EASY_DEMON: Difficulty.EASY_DEMON,
+    LevelDifficulty.MEDIUM_DEMON: Difficulty.MEDIUM_DEMON,
+    LevelDifficulty.HARD_DEMON: Difficulty.HARD_DEMON,
+    LevelDifficulty.INSANE_DEMON: Difficulty.INSANE_DEMON,
+    LevelDifficulty.EXTREME_DEMON: Difficulty.EXTREME_DEMON,
+}
 
-    NA = UNKNOWN
 
-    DEFAULT = UNKNOWN
+DIFFICULTY_TO_LEVEL_DIFFICULTY = {
+    difficulty: level_difficulty for level_difficulty, difficulty
+    in LEVEL_DIFFICULTY_TO_DIFFICULTY.items()
+}
 
 
 class DemonDifficulty(Enum):
@@ -292,6 +321,20 @@ class DemonDifficulty(Enum):
     NA = UNKNOWN
 
     DEFAULT = UNKNOWN
+
+    def into_difficulty(self) -> Difficulty:
+        return DEMON_DIFFICULTY_TO_DIFFICULTY[self]
+
+
+DEMON_DIFFICULTY_TO_DIFFICULTY = {
+    DemonDifficulty.UNKNOWN: Difficulty.UNKNOWN,
+    DemonDifficulty.DEMON: Difficulty.DEMON,
+    DemonDifficulty.EASY_DEMON: Difficulty.EASY_DEMON,
+    DemonDifficulty.MEDIUM_DEMON: Difficulty.MEDIUM_DEMON,
+    DemonDifficulty.HARD_DEMON: Difficulty.HARD_DEMON,
+    DemonDifficulty.INSANE_DEMON: Difficulty.INSANE_DEMON,
+    DemonDifficulty.EXTREME_DEMON: Difficulty.EXTREME_DEMON,
+}
 
 
 class TimelyType(Enum):

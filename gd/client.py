@@ -9,7 +9,9 @@ from typing import (
     Generator,
     Generic,
     Iterable,
+    Iterator,
     Optional,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -67,6 +69,7 @@ from gd.http import HTTPClient
 from gd.level import Level
 from gd.level_packs import Gauntlet, MapPack
 from gd.message import Message
+from gd.models import LevelModel, SearchLevelsResponseModel
 from gd.relationship import Relationship
 from gd.rewards import Chest, Quest
 from gd.session import Session
@@ -445,9 +448,9 @@ class Client:
         for model in response_model.users:
             yield User.from_leaderboard_user_model(model).attach_client(self)
 
-    def levels_from_model(self, response_model: LevelSearchResponseModel) -> Iterator[Level]:
-        songs = (Song.from_model(model, custom=True, client=self) for model in response_model.songs)
-        creators = (User.from_model(model, client=self) for model in response_model.creators)
+    def level_models_from_model(self, response_model: SearchLevelsResponseModel) -> Iterator[Tuple[LevelModel, User, Song]]:
+        songs = (Song.from_model(model).attach_client(self) for model in response_model.songs)
+        creators = (User.from_creator_model(model).attach_client(self) for model in response_model.creators)
 
         id_to_song = {song.id: song for song in songs}
         id_to_creator = {creator.id: creator for creator in creators}
@@ -456,17 +459,14 @@ class Client:
             song = id_to_song.get(model.custom_song_id)
 
             if song is None:
-                song = Song.official(model.official_song_id, server_style=True, client=self)
+                song = Song.official(model.official_song_id, server_style=True).attach_client(self)
 
             creator = id_to_creator.get(model.creator_id)
 
             if creator is None:
-                creator = User(account_id=0, name="unknown", id=model.creator_id, client=self)
+                creator = User.default().attach_client(self)
 
-            yield Level.from_model(model, creator=creator, song=song, client=self)
-
-    async def get_timely(self, type: TimelyType, use_client: bool = DEFAULT_USE_CLIENT) -> Level:
-        return await self.get_level(type.into_timely_id().value, use_client=use_client)
+            yield (model, creator, song)
 
     async def get_daily(self, use_client: bool = DEFAULT_USE_CLIENT) -> Level:
         return await self.get_timely(TimelyType.DAILY, use_client=use_client)
@@ -478,53 +478,30 @@ class Client:
     #     return await self.get_timely(TimelyType.EVENT, use_client=use_client)
 
     async def get_timely(self, type: TimelyType, use_client: bool = DEFAULT_USE_CLIENT) -> Level:
-        model = await self.session.get_timely_info(type)
+        timely_model = await self.session.get_timely_info(type)
 
-    async def get_level(
-        self, level_id: int, get_data: bool = True, use_client: bool = False
-    ) -> Level:
-        if level_id < 0:
-            timely_model = await self.get_timely_info
-        level_model = None
+        level = await self.get_level(type.into_timely_id().value)
 
-        if get_data:
-            if use_client:
-                check_client_login(self)  # assert client is logged in
+        return level.update_with_timely_model(timely_model)
 
-                download_model = await self.session.download_level(
-                    level_id, account_id=self.account_id, encoded_password=self.encoded_password
-                )
+    async def get_level(self, level_id: int, use_client: bool = False) -> Level:
+        if use_client:
+            check_client_login(self)
 
-            else:
-                download_model = await self.session.download_level(level_id)
-
-            level_model = download_model.level
-
-            level_id = level_model.id
-
-        level: Level = await self.search_levels_on_page(query=level_id).next()
-
-        if level_model is not None:
-            level.options.update(
-                Level.from_model(
-                    level_model,
-                    creator=level.creator,
-                    song=level.song,
-                    type=level.type,
-                    timely_id=level.timely_id,
-                    cooldown=level.cooldown,
-                    client=self,
-                ).options
+            response_model = await self.session.get_level(
+                level_id, account_id=self.account_id, encoded_password=self.encoded_password
             )
 
-        if timely_model is not None:
-            level.options.update(
-                timely_id=timely_model.timely_id,
-                type=timely_model.type,
-                cooldown=timely_model.cooldown,
-            )
+        else:
+            response_model = await self.session.get_level(level_id)
 
-        return level
+        model = response_model.level
+
+        level_id = model.id
+
+        level = await self.search_levels_on_page(level_id).next()
+
+        return Level.from_model(model, level.creator, level.song).attach_client(self)
 
     @wrap_async_iter
     async def search_levels_on_page(
@@ -556,8 +533,8 @@ class Client:
         except NothingFound:
             return
 
-        for level in self.levels_from_model(response_model):
-            yield level
+        for model, creator, song in self.level_models_from_model(response_model):
+            yield Level.from_model(model, creator, song).attach_client(self)
 
     @wrap_async_iter
     def search_levels(

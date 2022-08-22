@@ -41,11 +41,10 @@ from gd.constants import (
     DEFAULT_COINS,
     DEFAULT_ID,
     DEFAULT_LOW_DETAIL,
-    DEFAULT_OBJECTS,
+    DEFAULT_OBJECT_COUNT,
     DEFAULT_PAGE,
     DEFAULT_SPECIAL,
     DEFAULT_STARS,
-    DEFAULT_TIME,
     DEFAULT_VERSION,
     EMPTY,
     SLASH,
@@ -166,7 +165,7 @@ GET_RELATIONSHIPS = "getGJUserList20.php"
 GET_LEADERBOARD = "getGJScores20.php"
 GET_LEVELS = "getGJLevels21.php"
 GET_TIMELY = "getGJDailyLevel.php"
-DOWNLOAD_LEVEL = "downloadGJLevel22.php"
+GET_LEVEL = "downloadGJLevel22.php"
 REPORT_LEVEL = "reportGJLevel.php"
 DELETE_LEVEL = "deleteGJLevelUser20.php"
 UPDATE_LEVEL_DESCRIPTION = "updateGJDesc20.php"
@@ -410,7 +409,7 @@ STRATEGY_LEADERBOARD_REQUIRES_LOGIN = "{} strategy requires logged in client"
 BY_USER_STRATEGY_REQUIRES_LOGIN = "`by_user` strategy requires logged in client"
 FRIENDS_STRATEGY_REQUIRES_LOGIN = "`friends` strategy requires logged in client"
 
-CAN_NOT_DOWNLOAD_LEVEL = "can not download level with ID: {}"
+CAN_NOT_GET_LEVEL = "can not get level with ID: {}"
 
 FAILED_TO_REPORT_LEVEL = "failed to report level with ID: {}"
 FAILED_TO_DELETE_LEVEL = "failed to delete level with ID: {}"
@@ -1382,18 +1381,18 @@ class HTTPClient:
 
         return response
 
-    async def download_level(
+    async def get_level(
         self,
         level_id: int,
         *,
         account_id: Optional[int] = None,
         encoded_password: Optional[str] = None,
     ) -> str:
-        error_codes = {-1: MissingAccess(CAN_NOT_DOWNLOAD_LEVEL.format(level_id))}
+        error_codes = {-1: MissingAccess(CAN_NOT_GET_LEVEL.format(level_id))}
 
         route = Route(
             POST,
-            DOWNLOAD_LEVEL,
+            GET_LEVEL,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1494,27 +1493,33 @@ class HTTPClient:
         original: int = DEFAULT_ID,
         two_player: bool = False,
         type: UnlistedType = UnlistedType.DEFAULT,
-        objects: int = DEFAULT_OBJECTS,
+        object_count: int = DEFAULT_OBJECT_COUNT,
         coins: int = DEFAULT_COINS,
         stars: int = DEFAULT_STARS,
         low_detail: bool = DEFAULT_LOW_DETAIL,
         password: Optional[Password] = None,
         recording: Optional[Recording] = None,
-        editor_time: timedelta = DEFAULT_TIME,
-        copies_time: timedelta = DEFAULT_TIME,
+        editor_time: Optional[timedelta] = None,
+        copies_time: Optional[timedelta] = None,
         data: str = EMPTY,
         *,
         account_id: int,
         account_name: str,
         encoded_password: str,
     ) -> int:
+        if editor_time is None:
+            editor_time = timedelta()
+
+        if copies_time is None:
+            copies_time = timedelta()
+
         error_codes = {-1: MissingAccess(FAILED_TO_UPLOAD_LEVEL)}
 
         objects_separator = OBJECTS_SEPARATOR
 
         if objects_separator in data:
-            if not objects:
-                objects = data.count(objects_separator)
+            if not object_count:
+                object_count = data.count(objects_separator)
 
             data = zip_level_string(data)
 
@@ -1552,7 +1557,7 @@ class HTTPClient:
             auto=max(0, min(1, stars)),
             original=original,
             two_player=int(two_player),
-            objects=objects,
+            objects=object_count,
             coins=coins,
             requested_stars=stars,
             unlisted=type.is_unlisted(),
