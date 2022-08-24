@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from builtins import hasattr as has_attribute
-from typing import TYPE_CHECKING, Any, Protocol, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Type, TypeVar
 
-from typing_extensions import TypeGuard, runtime_checkable
+from typing_extensions import Protocol, TypeGuard, runtime_checkable
 
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
