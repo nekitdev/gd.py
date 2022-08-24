@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from asyncio import CancelledError, Task, TimeoutError, create_task, sleep
+from asyncio import CancelledError, Task, TimeoutError, get_event_loop, sleep
 from builtins import issubclass as is_subclass
 from functools import partial
 from random import Random
@@ -12,6 +12,7 @@ from typing import Any, Awaitable, Callable, Generic, Optional, Type, TypeVar, U
 from aiohttp import ClientError
 from attrs import define, field
 from typing_extensions import ParamSpec
+from gd.constants import DEFAULT_RECONNECT
 
 from gd.errors import GDError
 from gd.typing import AnyException, DynamicTuple, Nullary, StringDict, Unary
@@ -102,7 +103,6 @@ LoopFunction = Union[Nullary[Awaitable[None]], Unary[S, Awaitable[None]]]
 TASK_ALREADY_LAUNCHED = "task is already launched and has not completed yet"
 
 DEFAULT_DELAY = 0.0
-DEFAULT_RECONNECT = True
 
 F = TypeVar("F", bound=LoopFunction[Any])
 L = TypeVar("L", bound="Loop[Any]")
@@ -190,9 +190,9 @@ class Loop(Generic[P]):
                     if self._stop_next_iteration:
                         return
 
-                    self._current_loop += 1
+                    self._current_count += 1
 
-                    if self._current_loop == self.count:
+                    if self._current_count == self.count:
                         break
 
                     await sleep(self.delay)
@@ -210,7 +210,7 @@ class Loop(Generic[P]):
         finally:
             await self._call_after_loop()
 
-            self._current_loop = 0
+            self._current_count = 0
 
             self._is_being_cancelled = False
             self._has_failed = False
@@ -225,8 +225,8 @@ class Loop(Generic[P]):
         return self
 
     @property
-    def current_loop(self) -> int:
-        return self._current_loop
+    def current_count(self) -> int:
+        return self._current_count
 
     def start(self, *args: Any, **kwargs: Any) -> Task[None]:
         task = self._task
@@ -239,7 +239,7 @@ class Loop(Generic[P]):
         if injected is not None:
             args = (injected, *args)
 
-        self._task = task = create_task(self._loop(*args, **kwargs))
+        self._task = task = get_event_loop().create_task(self._loop(*args, **kwargs))
 
         return task
 

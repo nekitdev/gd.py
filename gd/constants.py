@@ -11,6 +11,8 @@ SLASH = "/"
 UNKNOWN = "unknown"
 UNNAMED = "unnamed"
 
+DEFAULT_RECONNECT = True
+
 DEFAULT_COLOR_1_ID = 0
 DEFAULT_COLOR_2_ID = 3
 

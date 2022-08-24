@@ -19,7 +19,7 @@ from gd.constants import (
     DEFAULT_STARS,
     DEFAULT_VERSION,
     EMPTY,
-    UNKNOWN,
+    UNNAMED,
 )
 from gd.enums import (
     AccountURLType,
@@ -292,7 +292,7 @@ class Session:
 
     async def upload_level(
         self,
-        name: str = UNKNOWN,
+        name: str = UNNAMED,
         id: int = DEFAULT_ID,
         version: int = DEFAULT_VERSION,
         length: LevelLength = LevelLength.DEFAULT,

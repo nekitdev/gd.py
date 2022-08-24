@@ -49,7 +49,7 @@ from gd.constants import (
     EMPTY,
     SLASH,
     TIMELY_ID_ADD,
-    UNKNOWN,
+    UNNAMED,
 )
 from gd.encoding import (
     ATTEMPTS_ADD,
@@ -1491,7 +1491,7 @@ class HTTPClient:
 
     async def upload_level(
         self,
-        name: str = UNKNOWN,
+        name: str = UNNAMED,
         id: int = DEFAULT_ID,
         version: int = DEFAULT_VERSION,
         length: LevelLength = LevelLength.DEFAULT,

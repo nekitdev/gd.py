@@ -6,6 +6,7 @@ from types import TracebackType as Traceback
 from typing import (
     Any,
     AsyncIterator,
+    Awaitable,
     Generator,
     Generic,
     Iterable,
@@ -28,7 +29,7 @@ from gd.api.recording import Recording
 
 # from gd.api.recording import Recording
 from gd.artist import Artist
-from gd.async_utils import maybe_await, run, run_iterables
+from gd.async_utils import awaiting, run, run_iterables
 from gd.comments import Comment, LevelComment, UserComment
 from gd.constants import (
     COMMENT_PAGE_SIZE,
@@ -41,12 +42,12 @@ from gd.constants import (
     DEFAULT_OBJECT_COUNT,
     DEFAULT_PAGE,
     DEFAULT_PAGES,
+    DEFAULT_RECONNECT,
     DEFAULT_SPECIAL,
     DEFAULT_STARS,
     DEFAULT_USE_CLIENT,
     DEFAULT_VERSION,
     EMPTY,
-    UNKNOWN,
     UNNAMED,
 )
 from gd.credentials import Credentials
@@ -73,7 +74,7 @@ from gd.enums import (
 )
 from gd.errors import ClientError, MissingAccess, NothingFound
 from gd.events.controller import Controller
-from gd.events.listeners import Listener
+from gd.events.listeners import DEFAULT_DELAY, DailyLevelListener, FriendRequestListener, Listener, MessageListener, RateListener, WeeklyLevelListener
 from gd.filters import Filters
 from gd.friend_request import FriendRequest
 from gd.http import HTTPClient
@@ -91,7 +92,6 @@ from gd.typing import (
     AnyException,
     DynamicTuple,
     IntString,
-    MaybeAwaitable,
     MaybeIterable,
     Predicate,
     URLString,
@@ -132,7 +132,7 @@ DEFAULT_LOAD_AFTER_POST = True
 C = TypeVar("C", bound="Client")
 
 
-@define()
+@define(slots=False)
 class Client:
     session: Session = field()
     """The session of the client."""
@@ -196,8 +196,8 @@ class Client:
         """
         return self.credentials.is_loaded()
 
-    def run(self, maybe_awaitable: MaybeAwaitable[T]) -> T:
-        return run(maybe_await(maybe_awaitable))
+    def run(self, awaitable: Awaitable[T]) -> T:
+        return run(awaiting(awaitable))
 
     @property
     def account_id(self) -> int:
@@ -311,7 +311,7 @@ class Client:
             This function requires the client to be logged in.
 
         Returns:
-            The database loaded.
+            The [`Database`][gd.api.database.Database] loaded.
         """
         database = await self.session.load(
             account_id=self.account_id, name=self.name, password=self.password
@@ -440,6 +440,8 @@ class Client:
         ```python
         await client.get_user(client.account_id, simple=simple)
         ```
+
+        See [`get_user`][gd.client.Client.get_user] for more information.
 
         Arguments:
             simple: Whether to fetch simple information.
@@ -609,7 +611,7 @@ class Client:
     #     return await self.get_timely(TimelyType.EVENT, use_client=use_client)
 
     async def get_timely(self, type: TimelyType, use_client: bool = DEFAULT_USE_CLIENT) -> Level:
-        timely_model = await self.session.get_timely_info(type)
+        timely_model = await self.session.get_timely_info(type=type)
 
         level = await self.get_level(type.into_timely_id().value)
 
@@ -623,7 +625,7 @@ class Client:
                 check_client_login(self)
 
                 response_model = await self.session.get_level(
-                    level_id, account_id=self.account_id, encoded_password=self.encoded_password
+                    level_id=level_id, account_id=self.account_id, encoded_password=self.encoded_password
                 )
 
             else:
@@ -657,11 +659,11 @@ class Client:
 
         try:
             response_model = await self.session.search_levels_on_page(
-                query,
-                page,
-                filters,
-                user_id,
-                gauntlet,
+                query=query,
+                page=page,
+                filters=filters,
+                user_id=user_id,
+                gauntlet=gauntlet,
                 client_account_id=self.account_id,
                 client_user_id=self.id,
                 encoded_password=self.encoded_password,
@@ -707,7 +709,7 @@ class Client:
 
     async def upload_level(
         self,
-        name: str = UNKNOWN,
+        name: str = UNNAMED,
         id: int = DEFAULT_ID,
         version: int = DEFAULT_VERSION,
         length: LevelLength = LevelLength.DEFAULT,
@@ -760,14 +762,14 @@ class Client:
     @check_login
     async def delete_level(self, level: Level) -> None:
         await self.session.delete_level(
-            level.id, account_id=self.account_id, encoded_password=self.encoded_password
+            level_id=level.id, account_id=self.account_id, encoded_password=self.encoded_password
         )
 
     @check_login
     async def rate_level(self, level: Level, stars: int) -> None:
         await self.session.rate_level(
-            level.id,
-            stars,
+            level_id=level.id,
+            stars=stars,
             account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
@@ -780,8 +782,8 @@ class Client:
         as_mod: bool = DEFAULT_AS_MOD,
     ) -> None:
         await self.session.rate_demon(
-            level.id,
-            rating,
+            level_id=level.id,
+            rating=rating,
             as_mod=as_mod,
             account_id=self.account_id,
             encoded_password=self.encoded_password,
@@ -790,9 +792,9 @@ class Client:
     @check_login
     async def suggest_level(self, level: Level, stars: int, feature: bool) -> None:
         return await self.session.suggest_level(
-            level.id,
-            stars,
-            feature,
+            level_id=level.id,
+            stars=stars,
+            feature=feature,
             account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
@@ -854,7 +856,7 @@ class Client:
             if subject is None:
                 subject = EMPTY
 
-            messages = self.get_messages_on_page(type=MessageType.OUTGOING)
+            messages = self.get_messages_on_page(MessageType.OUTGOING)
             message = await messages.find(by_subject_and_user(subject, user))
 
             if message is None:
@@ -1232,12 +1234,12 @@ class Client:
         )
 
     async def get_song(self, song_id: int) -> Song:
-        model = await self.session.get_song(song_id)
+        model = await self.session.get_song(song_id=song_id)
 
         return Song.from_model(model).attach_client(self)
 
     async def get_newgrounds_song(self, song_id: int) -> Song:
-        model = await self.session.get_newgrounds_song(song_id)
+        model = await self.session.get_newgrounds_song(song_id=song_id)
         return Song.from_model(model, custom=True, client=self)
 
     @wrap_async_iter
@@ -1376,6 +1378,33 @@ class Client:
 
         return function
 
+    def listen_for_daily(
+        self, delay: float = DEFAULT_DELAY, reconnect: bool = DEFAULT_RECONNECT
+    ) -> None:
+        self.add_listener(DailyLevelListener(self, delay=delay, reconnect=reconnect))
+
+    def listen_for_weekly(
+        self, delay: float = DEFAULT_DELAY, reconnect: bool = DEFAULT_RECONNECT
+    ) -> None:
+        self.add_listener(WeeklyLevelListener(self, delay=delay, reconnect=reconnect))
+
+    def listen_for_rate(
+        self, delay: float = DEFAULT_DELAY, reconnect: bool = DEFAULT_RECONNECT
+    ) -> None:
+        self.add_listener(RateListener(self, delay=delay, reconnect=reconnect))
+
+    def listen_for_message(
+        self, delay: float = DEFAULT_DELAY, reconnect: bool = DEFAULT_RECONNECT
+    ) -> None:
+        self.add_listener(MessageListener(self, delay=delay, reconnect=reconnect))
+
+    def listen_for_friend_request(
+        self, delay: float = DEFAULT_DELAY, reconnect: bool = DEFAULT_RECONNECT
+    ) -> None:
+        self.add_listener(FriendRequestListener(self, delay=delay, reconnect=reconnect))
+
+    # listeners
+
     def add_listener(self, listener: Listener) -> None:
         self.check_controller()
 
@@ -1398,6 +1427,8 @@ class Client:
         )
 
         return len(listeners) < length
+
+    # controllers
 
     def check_controller(self) -> None:
         if self._controller is not None:

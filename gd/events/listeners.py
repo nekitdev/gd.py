@@ -19,15 +19,17 @@ from typing_extensions import Protocol
 
 from gd.async_utils import get_running_loop
 from gd.comments import LevelComment, UserComment
-from gd.enums import SearchStrategy, TimelyID, TimelyType
+from gd.constants import DEFAULT_RECONNECT
+from gd.enums import SearchStrategy, TimelyID
 from gd.filters import Filters
 from gd.friend_request import FriendRequest
 from gd.level import Level
 from gd.message import Message
-from gd.tasks import DEFAULT_RECONNECT, Loop
+from gd.tasks import Loop
 from gd.user import User
 
 __all__ = (
+    "DEFAULT_DELAY",
     "Listener",
     "DailyLevelListener",
     "WeeklyLevelListener",
@@ -45,9 +47,10 @@ __all__ = (
 if TYPE_CHECKING:
     from gd.client import Client  # noqa
 
-DEFAULT_DELAY = 10.0
-
 LISTENER_ALREADY_STARTED = "listener has already started"
+
+
+DEFAULT_DELAY = 10.0
 
 
 class ListenerProtocol(Protocol):
