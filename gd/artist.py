@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, AsyncIterator, BinaryIO, Iterable, Type, TypeV
 
 from attrs import field, frozen
 from iters.async_iters import wrap_async_iter
+from typing_extensions import TypedDict
 from yarl import URL
 
 from gd.binary import VERSION
@@ -16,11 +17,18 @@ from gd.string_utils import case_fold, clear_whitespace
 if TYPE_CHECKING:
     from gd.song import Song
 
-__all__ = ("Artist",)
+__all__ = ("Artist", "ArtistData")
 
 A = TypeVar("A", bound="Artist")
 
 ARTIST = "https://{}.newgrounds.com/"
+
+
+class ArtistData(TypedDict):
+    name: str
+
+
+NAME = "name"
 
 
 @frozen(hash=True)
@@ -29,16 +37,14 @@ class Artist(Entity):
 
     name: str = field()
 
-    url: URL = field(converter=URL)
-
-    id: int = field(repr=False)
+    id: int = field(repr=False, init=False)
 
     @id.default
     def default_id(self) -> int:
         return hash(self.name) ^ hash(self.url)
 
-    @url.default
-    def default_url(self) -> URL:
+    @property
+    def url(self) -> URL:
         return URL(ARTIST.format(self.id_name))
 
     @property
@@ -48,6 +54,13 @@ class Artist(Entity):
     @classmethod
     def default(cls: Type[A]) -> A:
         return cls(name=UNKNOWN)
+
+    @classmethod
+    def from_json(cls: Type[A], data: ArtistData) -> A:
+        return cls(name=data[NAME])
+
+    def to_json(self) -> ArtistData:
+        return ArtistData(name=self.name)
 
     def __str__(self) -> str:
         return self.name

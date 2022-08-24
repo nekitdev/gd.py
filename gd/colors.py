@@ -6,12 +6,13 @@ from typing import ClassVar, Dict, Iterator, List, Optional, Tuple, Type, TypeVa
 from attrs import Attribute, field, frozen
 
 from gd.constants import BITS, BYTE, DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID, DOUBLE_BITS, EMPTY
+from gd.json import JSON
 from gd.models_constants import COLOR_SEPARATOR
 from gd.models_utils import concat_color, split_color
 from gd.robtop import RobTop
 from gd.string_utils import tick
 
-__all__ = ("Color", "ColorAlpha")
+__all__ = ("Color",)
 
 C = TypeVar("C", bound="Color")
 
@@ -49,7 +50,7 @@ VALUE_TOO_SMALL = "color value too small: {}"
 
 
 @frozen()
-class Color(RobTop):
+class Color(JSON[int], RobTop):
     value: int = field(default=BLACK, repr=hex_value)
 
     ID_TO_VALUE: ClassVar[Dict[int, int]] = {
@@ -179,6 +180,13 @@ class Color(RobTop):
     paint = ansi_escape
 
     @classmethod
+    def from_json(cls: Type[C], data: int) -> C:
+        return cls(data)
+
+    def to_json(self) -> int:
+        return self.value
+
+    @classmethod
     def default(cls: Type[C]) -> C:
         return cls.white()
 
@@ -265,58 +273,3 @@ class Color(RobTop):
     def list_colors(cls: Type[C]) -> List[C]:
         """Same as [`Color.iter_colors`][gd.colors.Color.iter_colors], but returns a list."""
         return list(cls.iter_colors())
-
-
-A = TypeVar("A", bound="ColorAlpha")
-
-
-@frozen()
-class ColorAlpha(Color):
-    alpha: int = field(default=BYTE, repr=hex)
-    """The alpha component of the color."""
-
-    @property
-    def a(self) -> int:
-        """The alpha component of the color."""
-        return self.alpha
-
-    def with_alpha(self: A, alpha: int) -> A:
-        return type(self)(self.value, alpha)
-
-    with_a = with_alpha
-
-    def to_rgba(self, alpha: Optional[int] = None) -> Tuple[int, int, int, int]:
-        """Returns the `(r, g, b, a)` tuple representing the color.
-
-        Arguments:
-            alpha: The alpha component of the color to use.
-        """
-        if alpha is None:
-            alpha = self.alpha
-
-        return (self.red, self.green, self.blue, alpha & BYTE)
-
-    @classmethod
-    def from_rgba(cls: Type[A], r: int, g: int, b: int, a: int) -> A:
-        """Converts an `(r, g, b, a)` to [`ColorAlpha`][gd.colors.ColorAlpha].
-
-        The alpha component is ignored.
-        """
-        return cls.from_rgb(r, g, b).with_a(a)
-
-    def to_value(self) -> int:
-        value = self.value
-
-        value <<= BITS
-
-        value |= self.alpha
-
-        return value
-
-    @classmethod
-    def from_value(cls: Type[A], value: int) -> A:
-        alpha = value & BYTE
-
-        value >>= BITS
-
-        return cls(value, alpha)

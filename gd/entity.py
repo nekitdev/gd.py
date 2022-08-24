@@ -14,7 +14,7 @@ from gd.json import JSON
 if TYPE_CHECKING:
     from gd.client import Client
 
-__all__ = ("Entity",)
+__all__ = ("Entity", "EntityData")
 
 E = TypeVar("E", bound="Entity")
 

@@ -24,21 +24,29 @@ from typing_extensions import ParamSpec
 from yarl import URL
 
 from gd.api.database import Database
+from gd.api.recording import Recording
 
 # from gd.api.recording import Recording
 from gd.artist import Artist
 from gd.async_utils import maybe_await, run, run_iterables
-from gd.comments import Comment
+from gd.comments import Comment, LevelComment, UserComment
 from gd.constants import (
     COMMENT_PAGE_SIZE,
+    DEFAULT_AS_MOD,
+    DEFAULT_CHEST_COUNT,
+    DEFAULT_COINS,
     DEFAULT_COUNT,
     DEFAULT_ID,
+    DEFAULT_LOW_DETAIL,
+    DEFAULT_OBJECT_COUNT,
     DEFAULT_PAGE,
     DEFAULT_PAGES,
     DEFAULT_SPECIAL,
+    DEFAULT_STARS,
     DEFAULT_USE_CLIENT,
     DEFAULT_VERSION,
     EMPTY,
+    UNKNOWN,
     UNNAMED,
 )
 from gd.credentials import Credentials
@@ -48,7 +56,6 @@ from gd.enums import (
     AccountURLType,
     CommentState,
     CommentStrategy,
-    CommentType,
     DemonDifficulty,
     FriendRequestState,
     FriendRequestType,
@@ -56,12 +63,13 @@ from gd.enums import (
     LeaderboardStrategy,
     LevelLeaderboardStrategy,
     LevelLength,
-    LikeType,
     MessageState,
     MessageType,
+    RelationshipType,
     RewardType,
     SimpleRelationshipType,
     TimelyType,
+    UnlistedType,
 )
 from gd.errors import ClientError, MissingAccess, NothingFound
 from gd.events.controller import Controller
@@ -73,6 +81,7 @@ from gd.level import Level
 from gd.level_packs import Gauntlet, MapPack
 from gd.message import Message
 from gd.models import LevelModel, SearchLevelsResponseModel
+from gd.password import Password
 from gd.relationship import Relationship
 from gd.rewards import Chest, Quest
 from gd.session import Session
@@ -360,7 +369,7 @@ class Client:
         set_as_user: Optional[User] = None,
     ) -> None:
         if set_as_user is None:
-            user = await self.get_user(self.account_id)
+            user = await self.get_self()
 
         else:
             user = set_as_user
@@ -405,7 +414,7 @@ class Client:
         set_as_user: Optional[User] = None,
     ) -> None:
         if set_as_user is None:
-            user = await self.get_user(self.account_id, simple=True)
+            user = await self.get_self(simple=True)
 
         else:
             user = set_as_user
@@ -422,6 +431,27 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
+    @check_login
+    async def get_self(self, simple: bool = False) -> User:
+        """Gets the user representing this client.
+
+        This is a shorthand for:
+
+        ```python
+        await client.get_user(client.account_id, simple=simple)
+        ```
+
+        Arguments:
+            simple: Whether to fetch simple information.
+
+        Note:
+            This function requires the client to be logged in.
+
+        Returns:
+            The [`User`][gd.user.User] representing the client.
+        """
+        return await self.get_user(self.account_id, simple=simple)
+
     async def get_user(
         self, account_id: int, simple: bool = False, friend_state: bool = False
     ) -> User:
@@ -429,13 +459,13 @@ class Client:
             check_client_login(self)
 
             profile_model = await self.session.get_user_profile(  # request profile
-                account_id,
+                account_id=account_id,
                 client_account_id=self.account_id,
                 encoded_password=self.encoded_password,
             )
 
         else:  # otherwise, just request normally
-            profile_model = await self.session.get_user_profile(account_id)
+            profile_model = await self.session.get_user_profile(account_id=account_id)
 
         if simple:  # if only the profile is needed, return right away
             return User.from_profile_model(profile_model).attach_client(self)
@@ -449,7 +479,7 @@ class Client:
     async def search_user(
         self, query: IntString, simple: bool = False, friend_state: bool = False
     ) -> User:
-        search_user_model = await self.session.search_user(query)  # search using query
+        search_user_model = await self.session.search_user(query=query)  # search using query
 
         if simple:  # if only simple is required, return right away
             return User.from_search_user_model(search_user_model)
@@ -464,7 +494,7 @@ class Client:
             )
 
         else:  # otherwise, request normally
-            profile_model = await self.session.get_user_profile(search_user_model.account_id)
+            profile_model = await self.session.get_user_profile(account_id=search_user_model.account_id)
 
         return User.from_search_user_and_profile_models(
             search_user_model, profile_model
@@ -474,7 +504,7 @@ class Client:
     async def search_users_on_page(
         self, query: IntString, page: int = DEFAULT_PAGE
     ) -> AsyncIterator[User]:
-        search_users_response_model = await self.session.search_users_on_page(query, page=page)
+        search_users_response_model = await self.session.search_users_on_page(query=query, page=page)
 
         for search_user_model in search_users_response_model.users:
             yield User.from_search_user_model(search_user_model).attach_client(self)
@@ -495,7 +525,7 @@ class Client:
     async def get_simple_relationships(self, type: SimpleRelationshipType) -> AsyncIterator[User]:
         try:
             response_model = await self.session.get_simple_relationships(
-                type,
+                type=type,
                 account_id=self.account_id,
                 encoded_password=self.encoded_password,
             )
@@ -517,14 +547,29 @@ class Client:
         return self.get_simple_relationships(SimpleRelationshipType.BLOCKED).unwrap()
 
     @wrap_async_iter
+    @check_login
+    async def get_relationships(self) -> AsyncIterator[Relationship]:
+        async for friend in self.get_friends():
+            yield friend.into_relationship(RelationshipType.FRIEND)
+
+        async for blocked in self.get_blocked():
+            yield blocked.into_relationship(RelationshipType.BLOCKED)
+
+        async for friend_request in self.get_friend_requests(type=FriendRequestType.INCOMING):
+            yield friend_request.into_relationship()
+
+        async for friend_request in self.get_friend_requests(type=FriendRequestType.OUTGOING):
+            yield friend_request.into_relationship()
+
+    @wrap_async_iter
     async def get_leaderboard(
         self,
         strategy: LeaderboardStrategy = LeaderboardStrategy.DEFAULT,
         count: int = DEFAULT_COUNT,
     ) -> AsyncIterator[User]:
         response_model = await self.session.get_leaderboard(
-            strategy,
-            count,
+            strategy=strategy,
+            count=count,
             account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
@@ -599,7 +644,7 @@ class Client:
     async def search_levels_on_page(
         self,
         query: Optional[MaybeIterable[IntString]] = None,
-        page: int = 0,
+        page: int = DEFAULT_PAGE,
         filters: Optional[Filters] = None,
         user: Optional[User] = None,
         gauntlet: Optional[int] = None,
@@ -654,70 +699,60 @@ class Client:
     @check_login
     async def update_level_description(self, level: Level, description: Optional[str]) -> None:
         await self.session.update_level_description(
-            level.id,
-            description,
+            level_id=level.id,
+            description=description,
             account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
 
     async def upload_level(
         self,
-        name: str = UNNAMED,
+        name: str = UNKNOWN,
         id: int = DEFAULT_ID,
         version: int = DEFAULT_VERSION,
-        length: LevelLength = LevelLength.TINY,
+        length: LevelLength = LevelLength.DEFAULT,
         official_song_id: int = DEFAULT_ID,
         description: str = EMPTY,
-        song_id: int = 0,
-        is_auto: bool = False,
-        original: int = 0,
+        song_id: int = DEFAULT_ID,
+        original: int = DEFAULT_ID,
         two_player: bool = False,
-        objects: int = 0,
-        coins: int = 0,
-        stars: int = 0,
-        unlisted: bool = False,
-        friends_only: bool = False,
-        low_detail_mode: bool = False,
-        password: Optional[Union[int, str]] = None,
-        copyable: bool = False,
-        recording: Iterable[RecordingEntry] = (),
-        editor_seconds: int = 0,
-        copies_seconds: int = 0,
-        data: str = "",
-        load: bool = True,
+        type: UnlistedType = UnlistedType.DEFAULT,
+        object_count: int = DEFAULT_OBJECT_COUNT,
+        coins: int = DEFAULT_COINS,
+        stars: int = DEFAULT_STARS,
+        low_detail: bool = DEFAULT_LOW_DETAIL,
+        password: Optional[Password] = None,
+        recording: Optional[Recording] = None,
+        editor_time: Optional[timedelta] = None,
+        copies_time: Optional[timedelta] = None,
+        data: str = EMPTY,
     ) -> Level:
         level_id = await self.session.upload_level(
             name=name,
             id=id,
             version=version,
-            length=LevelLength.from_value(length),
-            track_id=track_id,
+            length=length,
+            official_song_id=official_song_id,
             description=description,
             song_id=song_id,
-            is_auto=is_auto,
             original=original,
             two_player=two_player,
-            objects=objects,
+            object_count=object_count,
             coins=coins,
             stars=stars,
-            unlisted=unlisted,
-            friends_only=friends_only,
-            low_detail_mode=low_detail_mode,
+            type=type,
+            low_detail=low_detail,
             password=password,
-            copyable=copyable,
             recording=recording,
-            editor_seconds=editor_seconds,
-            copies_seconds=copies_seconds,
+            editor_time=editor_time,
+            copies_time=copies_time,
             data=data,
             account_id=self.account_id,
             account_name=self.name,
             encoded_password=self.encoded_password,
         )
 
-        if load:
-            return await self.get_level(level_id)
-
-        return Level(id=level_id, client=self)
+        return await self.get_level(level_id)
 
     async def report_level(self, level: Level) -> None:
         await self.session.report_level(level.id)
@@ -742,7 +777,7 @@ class Client:
         self,
         level: Level,
         rating: DemonDifficulty,
-        as_mod: bool = False,
+        as_mod: bool = DEFAULT_AS_MOD,
     ) -> None:
         await self.session.rate_demon(
             level.id,
@@ -770,8 +805,8 @@ class Client:
         strategy: LevelLeaderboardStrategy = LevelLeaderboardStrategy.ALL,
     ) -> AsyncIterator[User]:
         response_model = await self.session.get_level_leaderboard(
-            level.id,
-            LevelLeaderboardStrategy.from_value(strategy),
+            level_id=level.id,
+            strategy=strategy,
             account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
@@ -782,7 +817,7 @@ class Client:
     @check_login
     async def block_user(self, user: User) -> None:
         await self.session.block_user(
-            user.account_id,
+            account_id=user.account_id,
             client_account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
@@ -790,7 +825,7 @@ class Client:
     @check_login
     async def unblock_user(self, user: User) -> None:
         await self.session.unblock_user(
-            user.account_id,
+            account_id=user.account_id,
             client_account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
@@ -798,7 +833,7 @@ class Client:
     @check_login
     async def unfriend_user(self, user: User) -> None:
         await self.session.unfriend_user(
-            user.account_id,
+            account_id=user.account_id,
             client_account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
@@ -834,7 +869,7 @@ class Client:
     @check_login
     async def get_message(self, message_id: int, type: MessageType) -> Message:
         model = await self.session.get_message(
-            message_id,
+            message_id=message_id,
             type=type,
             account_id=self.account_id,
             encoded_password=self.encoded_password,
@@ -845,7 +880,7 @@ class Client:
     @check_login
     async def delete_message(self, message: Message) -> None:
         await self.session.delete_message(
-            message.id,
+            message_id=message.id,
             type=message.type,
             account_id=self.account_id,
             encoded_password=self.encoded_password,
@@ -854,14 +889,13 @@ class Client:
     @wrap_async_iter
     @check_login
     async def get_messages_on_page(
-        self, type: Union[int, str, MessageType] = MessageType.INCOMING, page: int = 0
+        self, type: MessageType = MessageType.DEFAULT, page: int = DEFAULT_PAGE
     ) -> AsyncIterator[Message]:
-        message_type = MessageType.from_value(type)
 
         try:
             response_model = await self.session.get_messages_on_page(
-                message_type,
-                page,
+                type=type,
+                page=page,
                 account_id=self.account_id,
                 encoded_password=self.encoded_password,
             )
@@ -876,7 +910,7 @@ class Client:
     @check_login
     def get_messages(
         self,
-        type: Union[int, str, MessageType] = MessageType.INCOMING,
+        type: MessageType = MessageType.DEFAULT,
         pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[Message]:
         return run_iterables(
@@ -933,13 +967,13 @@ class Client:
     @check_login
     async def get_friend_requests_on_page(
         self,
-        type: FriendRequestType = FriendRequestType.INCOMING,
-        page: int = 0,
+        type: FriendRequestType = FriendRequestType.DEFAULT,
+        page: int = DEFAULT_PAGE,
     ) -> AsyncIterator[FriendRequest]:
         try:
             response_model = await self.session.get_friend_requests_on_page(
-                type,
-                page,
+                type=type,
+                page=page,
                 account_id=self.account_id,
                 encoded_password=self.encoded_password,
             )
@@ -954,7 +988,7 @@ class Client:
     @check_login
     def get_friend_requests(
         self,
-        type: FriendRequestType = FriendRequestType.INCOMING,
+        type: FriendRequestType = FriendRequestType.DEFAULT,
         pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[FriendRequest]:
         return run_iterables(
@@ -962,69 +996,78 @@ class Client:
             ClientError,
         )
 
-    # like
-    # dislike
-
     @check_login
-    async def comment_level(
-        self, level: Level, content: Optional[str] = None, percent: int = 0
-    ) -> Optional[Comment]:
-        await self.session.post_comment(
-            type=CommentType.LEVEL,  # type: ignore
-            content=content,
-            level_id=level.id,
-            percent=percent,
+    async def like_level(self, level: Level) -> None:
+        await self.session.like_level(
+            level.id,
+            dislike=False,
             account_id=self.account_id,
-            account_name=self.name,
             encoded_password=self.encoded_password,
         )
 
-        if self.load_after_post:
-            if content is None:
-                content = ""
-
-            comments = self.get_level_comments_on_page(level)
-            comment = await comments.get(author=self.user, content=content)
-
-            if comment is None:
-                return None
-
-            return comment
-
-        return None
-
     @check_login
-    async def post_comment(self, content: Optional[str] = None) -> Optional[Comment]:
-        await self.session.post_comment(
-            type=CommentType.USER,  # type: ignore
-            content=content,
-            level_id=0,
-            percent=0,
+    async def dislike_level(self, level: Level) -> None:
+        await self.session.like_level(
+            level.id,
+            dislike=True,
             account_id=self.account_id,
-            account_name=self.name,
             encoded_password=self.encoded_password,
         )
 
-        if self.load_after_post:
-            if content is None:
-                content = ""
-
-            comments = self.get_user_comments_on_page(type=CommentType.USER)
-            comment = await comments.get(author=self.user, content=content)
-
-            if comment is None:
-                return None
-
-            return comment
-
-        return None
+    @check_login
+    async def like_user_comment(self, comment: UserComment) -> None:
+        await self.session.like_user_comment(
+            comment.id,
+            dislike=False,
+            account_id=self.account_id,
+            encoded_password=self.encoded_password,
+        )
 
     @check_login
-    async def delete_comment(self, comment: Comment) -> None:
-        await self.session.delete_comment(
+    async def dislike_user_comment(self, comment: UserComment) -> None:
+        await self.session.like_user_comment(
+            comment.id,
+            dislike=True,
+            account_id=self.account_id,
+            encoded_password=self.encoded_password,
+        )
+
+    @check_login
+    async def like_level_comment(self, comment: LevelComment) -> None:
+        await self.session.like_level_comment(
+            comment.id,
+            comment.level.id,
+            dislike=False,
+            account_id=self.account_id,
+            encoded_password=self.encoded_password,
+        )
+
+    @check_login
+    async def dislike_level_comment(self, comment: LevelComment) -> None:
+        await self.session.like_level_comment(
+            comment.id,
+            comment.level.id,
+            dislike=True,
+            account_id=self.account_id,
+            encoded_password=self.encoded_password,
+        )
+
+    # post_comment
+    # post_level_comment
+
+    @check_login
+    async def delete_comment(self, comment: UserComment) -> None:
+        await self.session.delete_user_comment(
             comment_id=comment.id,
-            type=comment.type,
-            level_id=comment.level_id,
+            account_id=self.account_id,
+            encoded_password=self.encoded_password,
+        )
+
+    @check_login
+    async def delete_level_comment(self, comment: LevelComment) -> None:
+        await self.session.delete_level_comment(
+            comment_id=comment.id,
+            level_id=comment.level.id,
             account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
@@ -1033,17 +1076,11 @@ class Client:
     async def get_user_comments_on_page(
         self,
         user: User,
-        type: Union[int, str, CommentType] = CommentType.USER,
-        page: int = 0,
-        *,
-        strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
-    ) -> AsyncIterator[Comment]:
+        page: int = DEFAULT_PAGE,
+    ) -> AsyncIterator[UserComment]:
         response_model = await self.session.get_user_comments_on_page(
-            account_id=user.account_id,
             user_id=user.id,
-            type=CommentType.from_value(type),
             page=page,
-            strategy=CommentStrategy.from_value(strategy),
         )
 
         for model in response_model.comments:
@@ -1053,35 +1090,50 @@ class Client:
     def get_user_comments(
         self,
         user: User,
-        type: Union[int, str, CommentType] = CommentType.USER,
         pages: Iterable[int] = DEFAULT_PAGES,
-        *,
-        strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
-    ) -> AsyncIterator[Comment]:
+    ) -> AsyncIterator[UserComment]:
         return run_iterables(
             (
-                self.get_user_comments_on_page(user=user, type=type, page=page, strategy=strategy)
+                self.get_user_comments_on_page(user=user, page=page).unwrap()
                 for page in pages
             ),
             ClientError,
-            concurrent=concurrent,
         )
+
+    @wrap_async_iter
+    async def get_user_level_comments_on_page(
+        self,
+        user: User,
+        page: int = DEFAULT_PAGE,
+        strategy: CommentStrategy = CommentStrategy.DEFAULT,
+    ) -> AsyncIterator[LevelComment]:
+        try:
+            response_model = await self.session.get_user_level_comments_on_page(
+                user_id=user.id,
+                page=page,
+                strategy=strategy,
+            )
+
+        except NothingFound:
+            return
+
+        for model in response_model.comments:
+            yield Comment.from_model(model, client=self)
 
     @wrap_async_iter
     async def get_level_comments_on_page(
         self,
         level: Level,
-        amount: int = COMMENT_PAGE_SIZE,
-        page: int = 0,
-        *,
-        strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
-    ) -> AsyncIterator[Comment]:
+        count: int = COMMENT_PAGE_SIZE,
+        page: int = DEFAULT_PAGE,
+        strategy: CommentStrategy = CommentStrategy.DEFAULT,
+    ) -> AsyncIterator[LevelComment]:
         try:
             response_model = await self.session.get_level_comments_on_page(
                 level_id=level.id,
-                amount=amount,
+                count=count,
                 page=page,
-                strategy=CommentStrategy.from_value(strategy),
+                strategy=strategy,
             )
 
         except NothingFound:
@@ -1094,20 +1146,18 @@ class Client:
     def get_level_comments(
         self,
         level: Level,
-        amount: int = COMMENT_PAGE_SIZE,
+        count: int = COMMENT_PAGE_SIZE,
         pages: Iterable[int] = DEFAULT_PAGES,
-        *,
-        strategy: Union[int, str, CommentStrategy] = CommentStrategy.RECENT,
-    ) -> AsyncIterator[Comment]:
+        strategy: CommentStrategy = CommentStrategy.DEFAULT,
+    ) -> AsyncIterator[LevelComment]:
         return run_iterables(
             (
                 self.get_level_comments_on_page(
-                    level=level, amount=amount, page=page, strategy=strategy
-                )
+                    level=level, count=count, page=page, strategy=strategy
+                ).unwrap()
                 for page in pages
             ),
             ClientError,
-            concurrent=concurrent,
         )
 
     @wrap_async_iter
@@ -1118,7 +1168,7 @@ class Client:
             yield Gauntlet.from_model(model, client=self)
 
     @wrap_async_iter
-    async def get_map_packs_on_page(self, page: int = 0) -> AsyncIterator[MapPack]:
+    async def get_map_packs_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[MapPack]:
         response_model = await self.session.get_map_packs_on_page(page=page)
 
         for model in response_model.map_packs:
@@ -1127,9 +1177,8 @@ class Client:
     @wrap_async_iter
     def get_map_packs(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[MapPack]:
         return run_iterables(
-            (self.get_map_packs_on_page(page=page) for page in pages),
+            (self.get_map_packs_on_page(page=page).unwrap() for page in pages),
             ClientError,
-            concurrent=concurrent,
         )
 
     @wrap_async_iter
@@ -1138,6 +1187,7 @@ class Client:
         response_model = await self.session.get_quests(
             account_id=self.account_id, encoded_password=self.encoded_password
         )
+
         model = response_model.inner
 
         for quest_model in (model.quest_1, model.quest_2, model.quest_3):
@@ -1148,9 +1198,9 @@ class Client:
     @check_login
     async def get_chests(
         self,
-        reward_type: RewardType = RewardType.GET_INFO,  # type: ignore
-        chest_1_count: int = 0,
-        chest_2_count: int = 0,
+        reward_type: RewardType = RewardType.DEFAULT,
+        chest_1_count: int = DEFAULT_CHEST_COUNT,
+        chest_2_count: int = DEFAULT_CHEST_COUNT,
     ) -> AsyncIterator[Chest]:
         response_model = await self.session.get_chests(
             reward_type=reward_type,
@@ -1168,18 +1218,17 @@ class Client:
             yield Chest.from_model(chest_model, seconds=time_left, count=count, client=self)
 
     @wrap_async_iter
-    async def get_featured_artists_on_page(self, page: int = 0) -> AsyncIterator[Song]:
+    async def get_featured_artists_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Artist]:
         response_model = await self.session.get_featured_artists_on_page(page=page)
 
         for model in response_model.featured_artists:
             yield Song.from_model(model, custom=True, client=self)
 
     @wrap_async_iter
-    def get_featured_artists(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[MapPack]:
+    def get_featured_artists(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Artist]:
         return run_iterables(
-            (self.get_featured_artists_on_page(page=page) for page in pages),  # type: ignore
+            (self.get_featured_artists_on_page(page=page).unwrap() for page in pages),
             ClientError,
-            concurrent=concurrent,
         )
 
     async def get_song(self, song_id: int) -> Song:
@@ -1191,13 +1240,9 @@ class Client:
         model = await self.session.get_newgrounds_song(song_id)
         return Song.from_model(model, custom=True, client=self)
 
-    async def get_artist_info(self, song_id: int) -> ArtistInfo:
-        artist_info = await self.session.get_artist_info(song_id)
-        return ArtistInfo.from_dict(artist_info, client=self)  # type: ignore
-
     @wrap_async_iter
     async def search_newgrounds_songs_on_page(
-        self, query: str, page: int = 0
+        self, query: str, page: int = DEFAULT_PAGE
     ) -> AsyncIterator[Song]:
         models = await self.session.search_newgrounds_songs_on_page(query=query, page=page)
 
@@ -1211,12 +1256,11 @@ class Client:
         return run_iterables(
             (self.search_newgrounds_songs_on_page(query=query, page=page) for page in pages),
             ClientError,
-            concurrent=concurrent,
         )
 
     @wrap_async_iter
     async def search_newgrounds_users_on_page(
-        self, query: str, page: int = 0
+        self, query: str, page: int = DEFAULT_PAGE
     ) -> AsyncIterator[Author]:
         data = await self.session.search_newgrounds_users_on_page(query=query, page=page)
 
@@ -1234,7 +1278,7 @@ class Client:
 
     @wrap_async_iter
     async def get_newgrounds_artist_songs_on_page(
-        self, name: str, page: int = 0
+        self, name: str, page: int = DEFAULT_PAGE
     ) -> AsyncIterator[Song]:
         models = await self.session.get_newgrounds_artist_songs_on_page(name=name, page=page)
 
@@ -1246,9 +1290,11 @@ class Client:
         self, name: str, pages: Iterable[int] = DEFAULT_PAGES
     ) -> AsyncIterator[Song]:
         return run_iterables(
-            (self.get_newgrounds_artist_songs_on_page(name=name, page=page) for page in pages),
+            (self.get_newgrounds_artist_songs_on_page(name=name, page=page).unwrap() for page in pages),
             ClientError,
         )
+
+    # events
 
     async def on_daily(self, level: Level) -> None:
         pass
@@ -1271,11 +1317,13 @@ class Client:
     async def on_friend_request(self, friend_request: FriendRequest) -> None:
         pass
 
-    async def on_level_comment(self, level: Level, comment: Comment) -> None:
+    async def on_level_comment(self, level: Level, comment: LevelComment) -> None:
         pass
 
-    async def on_user_comment(self, user: User, comment: Comment) -> None:
+    async def on_user_comment(self, user: User, comment: UserComment) -> None:
         pass
+
+    # dispatchers
 
     async def dispatch_daily(self, level: Level) -> None:
         await self.on_daily(level)
@@ -1298,10 +1346,10 @@ class Client:
     async def dispatch_friend_request(self, friend_request: FriendRequest) -> None:
         await self.on_friend_request(friend_request)
 
-    async def dispatch_level_comment(self, level: Level, comment: Comment) -> None:
+    async def dispatch_level_comment(self, level: Level, comment: LevelComment) -> None:
         await self.on_level_comment(level, comment)
 
-    async def dispatch_user_comment(self, user: User, comment: Comment) -> None:
+    async def dispatch_user_comment(self, user: User, comment: UserComment) -> None:
         await self.on_user_comment(user, comment)
 
     def event(self, function: F) -> F:

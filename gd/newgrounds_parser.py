@@ -10,20 +10,6 @@ from typing_extensions import Final
 from yarl import URL
 
 from gd.errors import MissingAccess
-from gd.logging import get_logger
-from gd.typing import (
-    Dict,
-    Iterator,
-    List,
-    Literal,
-    Match,
-    Namespace,
-    Optional,
-    TypeVar,
-    Union,
-    cast,
-    overload,
-)
 
 Element = xml.Element
 
@@ -187,11 +173,15 @@ def search_song_data(text: str) -> Iterator[Dict[str, Union[int, str]]]:
         yield dict(id=id, name=name, author=author, link=str(url))
 
 
-item_link = r'.//a[@class="item-link"]'
+ITEM_LINK = "item-link"
 
-years = "years"
-items = "items"
-title = "title"
+ITEM_LINK_PATH = rf"""
+.//a[@class="{ITEM_LINK}"]
+""".strip()
+
+YEARS = "years"
+ITEMS = "items"
+TITLE = "title"
 
 
 def search_user_songs(

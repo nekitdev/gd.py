@@ -10,10 +10,12 @@ from gd.api.database import Database
 from gd.api.recording import Recording
 from gd.api.save_manager import save_manager
 from gd.constants import (
+    DEFAULT_CHEST_COUNT,
     DEFAULT_COINS,
     DEFAULT_ID,
     DEFAULT_LOW_DETAIL,
     DEFAULT_OBJECT_COUNT,
+    DEFAULT_PAGE,
     DEFAULT_STARS,
     DEFAULT_VERSION,
     EMPTY,
@@ -23,7 +25,6 @@ from gd.enums import (
     AccountURLType,
     CommentState,
     CommentStrategy,
-    CommentType,
     DemonDifficulty,
     FriendRequestState,
     FriendRequestType,
@@ -31,7 +32,6 @@ from gd.enums import (
     LeaderboardStrategy,
     LevelLeaderboardStrategy,
     LevelLength,
-    LikeType,
     MessageState,
     MessageType,
     RewardType,
@@ -171,6 +171,7 @@ class Session:
             wave_id=wave_id,
             robot_id=robot_id,
             spider_id=spider_id,
+            # swing_copter_id=swing_copter_id,
             explosion_id=explosion_id,
             special=special,
             account_id=account_id,
@@ -184,9 +185,9 @@ class Session:
         return response_model.users[FIRST]
 
     async def search_users_on_page(
-        self, query: IntString, page: int = 0
+        self, query: IntString, page: int = DEFAULT_PAGE
     ) -> SearchUsersResponseModel:
-        response = await self.http.search_users_on_page(query, page=page)
+        response = await self.http.search_users_on_page(query=query, page=page)
 
         return SearchUsersResponseModel.from_robtop(response)
 
@@ -198,7 +199,7 @@ class Session:
         encoded_password: Optional[str] = None,
     ) -> ProfileModel:
         response = await self.http.get_user_profile(
-            account_id,
+            account_id=account_id,
             client_account_id=client_account_id,
             encoded_password=encoded_password,
         )
@@ -209,7 +210,7 @@ class Session:
         self, type: SimpleRelationshipType, *, account_id: int, encoded_password: str
     ) -> RelationshipsResponseModel:
         response = await self.http.get_simple_relationships(
-            type, account_id=account_id, encoded_password=encoded_password
+            type=type, account_id=account_id, encoded_password=encoded_password
         )
 
         return RelationshipsResponseModel.from_robtop(response)
@@ -223,14 +224,15 @@ class Session:
         encoded_password: Optional[str] = None,
     ) -> LeaderboardResponseModel:
         response = await self.http.get_leaderboard(
-            strategy, count, account_id=account_id, encoded_password=encoded_password
+            strategy=strategy, count=count, account_id=account_id, encoded_password=encoded_password
         )
+
         return LeaderboardResponseModel.from_robtop(response)
 
     async def search_levels_on_page(
         self,
         query: Optional[MaybeIterable[IntString]] = None,
-        page: int = 0,
+        page: int = DEFAULT_PAGE,
         filters: Optional[Filters] = None,
         user_id: Optional[int] = None,
         gauntlet: Optional[int] = None,
@@ -240,7 +242,7 @@ class Session:
         encoded_password: Optional[str] = None,
     ) -> SearchLevelsResponseModel:
         response = await self.http.search_levels_on_page(
-            query,
+            query=query,
             page=page,
             filters=filters,
             user_id=user_id,
@@ -253,7 +255,7 @@ class Session:
         return SearchLevelsResponseModel.from_robtop(response)
 
     async def get_timely_info(self, type: TimelyType) -> TimelyInfoModel:
-        response = await self.http.get_timely_info(type)
+        response = await self.http.get_timely_info(type=type)
 
         return TimelyInfoModel.from_robtop(response, type=type)
 
@@ -265,25 +267,25 @@ class Session:
         encoded_password: Optional[str] = None,
     ) -> LevelResponseModel:
         response = await self.http.get_level(
-            level_id, account_id=account_id, encoded_password=encoded_password
+            level_id=level_id, account_id=account_id, encoded_password=encoded_password
         )
 
         return LevelResponseModel.from_robtop(response)
 
     async def report_level(self, level_id: int) -> None:
-        await self.http.report_level(level_id)
+        await self.http.report_level(level_id=level_id)
 
     async def delete_level(self, level_id: int, *, account_id: int, encoded_password: str) -> None:
         await self.http.delete_level(
-            level_id, account_id=account_id, encoded_password=encoded_password
+            level_id=level_id, account_id=account_id, encoded_password=encoded_password
         )
 
     async def update_level_description(
         self, level_id: int, description: Optional[str], *, account_id: int, encoded_password: str
     ) -> None:
         await self.http.update_level_description(
-            level_id,
-            description,
+            level_id=level_id,
+            description=description,
             account_id=account_id,
             encoded_password=encoded_password,
         )
@@ -293,8 +295,8 @@ class Session:
         name: str = UNKNOWN,
         id: int = DEFAULT_ID,
         version: int = DEFAULT_VERSION,
-        length: LevelLength = LevelLength.TINY,
-        track_id: int = DEFAULT_ID,
+        length: LevelLength = LevelLength.DEFAULT,
+        official_song_id: int = DEFAULT_ID,
         description: str = EMPTY,
         song_id: int = DEFAULT_ID,
         original: int = DEFAULT_ID,
@@ -319,7 +321,7 @@ class Session:
             id=id,
             version=version,
             length=length,
-            track_id=track_id,
+            official_song_id=official_song_id,
             description=description,
             song_id=song_id,
             original=original,
@@ -386,7 +388,7 @@ class Session:
         encoded_password: str,
     ) -> LevelLeaderboardResponseModel:
         response = await self.http.get_level_leaderboard(
-            level_id,
+            level_id=level_id,
             strategy=strategy,
             account_id=account_id,
             encoded_password=encoded_password,
@@ -455,7 +457,7 @@ class Session:
         encoded_password: str,
     ) -> MessageModel:
         response = await self.http.get_message(
-            message_id,
+            message_id=message_id,
             type=type,
             account_id=account_id,
             encoded_password=encoded_password,
@@ -472,7 +474,7 @@ class Session:
         encoded_password: str,
     ) -> None:
         await self.http.delete_message(
-            message_id,
+            message_id=message_id,
             type=type,
             account_id=account_id,
             encoded_password=encoded_password,
@@ -482,7 +484,7 @@ class Session:
         self, type: MessageType, page: int, *, account_id: int, encoded_password: str
     ) -> MessagesResponseModel:
         response = await self.http.get_messages_on_page(
-            type, page, account_id=account_id, encoded_password=encoded_password
+            type=type, page=page, account_id=account_id, encoded_password=encoded_password
         )
 
         return MessagesResponseModel.from_robtop(response)
@@ -552,7 +554,7 @@ class Session:
         encoded_password: str,
     ) -> FriendRequestsResponseModel:
         response = await self.http.get_friend_requests_on_page(
-            type, page, account_id=account_id, encoded_password=encoded_password
+            type=type, page=page, account_id=account_id, encoded_password=encoded_password
         )
 
         return FriendRequestsResponseModel.from_robtop(response)
@@ -566,7 +568,7 @@ class Session:
         encoded_password: str,
     ) -> None:
         await self.http.like_level(
-            level_id,
+            level_id=level_id,
             dislike=dislike,
             account_id=account_id,
             encoded_password=encoded_password,
@@ -581,7 +583,7 @@ class Session:
         encoded_password: str,
     ) -> None:
         await self.http.like_user_comment(
-            comment_id,
+            comment_id=comment_id,
             dislike=dislike,
             account_id=account_id,
             encoded_password=encoded_password,
@@ -597,8 +599,8 @@ class Session:
         encoded_password: str,
     ) -> None:
         await self.http.like_level_comment(
-            comment_id,
-            level_id,
+            comment_id=comment_id,
+            level_id=level_id,
             dislike=dislike,
             account_id=account_id,
             encoded_password=encoded_password,
@@ -615,7 +617,7 @@ class Session:
         encoded_password: str,
     ) -> None:
         await self.http.post_level_comment(
-            content,
+            content=content,
             level_id=level_id,
             record=record,
             account_id=account_id,
@@ -632,7 +634,7 @@ class Session:
         encoded_password: str,
     ) -> None:
         await self.http.post_user_comment(
-            content,
+            content=content,
             account_id=account_id,
             account_name=account_name,
             encoded_password=encoded_password,
@@ -668,17 +670,24 @@ class Session:
 
     async def get_user_comments_on_page(
         self,
-        account_id: int,
         user_id: int,
-        type: CommentType,
-        page: int = 0,
-        *,
-        strategy: CommentStrategy,
+        page: int = DEFAULT_PAGE,
     ) -> CommentsResponseModel:
         response = await self.http.get_user_comments_on_page(
-            account_id=account_id,
             user_id=user_id,
-            type=type,
+            page=page,
+        )
+
+        return CommentsResponseModel.from_string(response, use_default=True)
+
+    async def get_user_level_comments_on_page(
+        self,
+        user_id: int,
+        page: int = DEFAULT_PAGE,
+        strategy: CommentStrategy = CommentStrategy.DEFAULT,
+    ) -> CommentsResponseModel:
+        response = await self.http.get_user_level_comments_on_page(
+            user_id=user_id,
             page=page,
             strategy=strategy,
         )
@@ -688,25 +697,25 @@ class Session:
     async def get_level_comments_on_page(
         self,
         level_id: int,
-        amount: int,
-        page: int = 0,
-        *,
-        strategy: CommentStrategy,
+        count: int,
+        page: int = DEFAULT_PAGE,
+        strategy: CommentStrategy = CommentStrategy.DEFAULT,
     ) -> CommentsResponseModel:
         response = await self.http.get_level_comments_on_page(
-            level_id=level_id, amount=amount, page=page, strategy=strategy
+            level_id=level_id, count=count, page=page, strategy=strategy
         )
+
         return CommentsResponseModel.from_string(response, use_default=True)
 
     async def get_gauntlets(self) -> GauntletsResponseModel:
         response = await self.http.get_gauntlets()
         return GauntletsResponseModel.from_string(response, use_default=True)
 
-    async def get_map_packs_on_page(self, page: int = 0) -> MapPacksResponseModel:
+    async def get_map_packs_on_page(self, page: int = DEFAULT_PAGE) -> MapPacksResponseModel:
         response = await self.http.get_map_packs_on_page(page=page)
         return MapPacksResponseModel.from_string(response, use_default=True)
 
-    async def get_quests(self, account_id: int, encoded_password: str) -> QuestsResponseModel:
+    async def get_quests(self, *, account_id: int, encoded_password: str) -> QuestsResponseModel:
         response = await self.http.get_quests(
             account_id=account_id, encoded_password=encoded_password
         )
@@ -715,8 +724,8 @@ class Session:
     async def get_chests(
         self,
         reward_type: RewardType,
-        chest_1_count: int = 0,
-        chest_2_count: int = 0,
+        chest_1_count: int = DEFAULT_CHEST_COUNT,
+        chest_2_count: int = DEFAULT_CHEST_COUNT,
         *,
         account_id: int,
         encoded_password: str,
@@ -730,7 +739,7 @@ class Session:
         )
         return ChestsResponseModel.from_string(response, use_default=True)
 
-    async def get_featured_artists_on_page(self, page: int = 0) -> FeaturedArtistsResponseModel:
+    async def get_featured_artists_on_page(self, page: int = DEFAULT_PAGE) -> FeaturedArtistsResponseModel:
         response = await self.http.get_featured_artists_on_page(page=page)
         return FeaturedArtistsResponseModel.from_string(response, use_default=True)
 
@@ -752,17 +761,17 @@ class Session:
 
         return artist_info
 
-    async def search_newgrounds_songs_on_page(self, query: str, page: int = 0) -> List[SongModel]:
+    async def search_newgrounds_songs_on_page(self, query: str, page: int = DEFAULT_PAGE) -> List[SongModel]:
         response = await self.http.search_newgrounds_songs_on_page(query=query, page=page)
         return list(map(SongModel.from_dict, search_song_data(response)))
 
     async def search_newgrounds_users_on_page(
-        self, query: str, page: int = 0
+        self, query: str, page: int = DEFAULT_PAGE
     ) -> List[Dict[str, Any]]:
         response = await self.http.search_newgrounds_users_on_page(query=query, page=page)
         return list(search_users(response))
 
-    async def get_newgrounds_user_songs_on_page(self, name: str, page: int = 0) -> List[SongModel]:
+    async def get_newgrounds_user_songs_on_page(self, name: str, page: int = DEFAULT_PAGE) -> List[SongModel]:
         response = await self.http.get_newgrounds_user_songs_on_page(name=name, page=page)
         return [
             SongModel.from_dict(data, author=name)

@@ -231,6 +231,9 @@ class UnlistedType(Flag):
     def is_listed_to_friends(self) -> bool:
         return type(self).LISTED_TO_FRIENDS in self
 
+    def is_friends_only(self) -> bool:
+        return self.is_unlisted() and self.is_listed_to_friends()
+
 
 class Difficulty(Enum):
     UNKNOWN = 0
@@ -448,6 +451,8 @@ class FriendRequestType(Enum):
     INCOMING = 0
     OUTGOING = 1
 
+    DEFAULT = INCOMING
+
     def is_incoming(self) -> bool:
         return self is self.INCOMING
 
@@ -467,6 +472,8 @@ class MessageType(Enum):
 
     INCOMING = 0
     OUTGOING = 1
+
+    DEFAULT = INCOMING
 
     def is_incoming(self) -> bool:
         return self is self.INCOMING
@@ -571,6 +578,8 @@ class RewardType(Enum):
     GET_INFO = 0
     CLAIM_SMALL = 1
     CLAIM_LARGE = 2
+
+    DEFAULT = GET_INFO
 
 
 class ShardType(Enum):

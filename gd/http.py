@@ -469,6 +469,8 @@ FAILED_TO_DELETE_USER_COMMENT = "failed to delete the user comment (ID: {})"
 
 FAILED_TO_DELETE_LEVEL_COMMENT = "failed to delete the level comment (ID: {})"
 
+FAILED_TO_GET_USER_COMMENTS = "failed to get user comments (ID: {})"
+
 FAILED_TO_GET_USER_LEVEL_COMMENTS = "failed to get user level comments (ID: {})"
 
 FAILED_TO_GET_LEVEL_COMMENTS = "failed to get level comments (ID: {})"
@@ -1492,8 +1494,8 @@ class HTTPClient:
         name: str = UNKNOWN,
         id: int = DEFAULT_ID,
         version: int = DEFAULT_VERSION,
-        length: LevelLength = LevelLength.TINY,
-        track_id: int = DEFAULT_ID,
+        length: LevelLength = LevelLength.DEFAULT,
+        official_song_id: int = DEFAULT_ID,
         description: str = EMPTY,
         song_id: int = DEFAULT_ID,
         original: int = DEFAULT_ID,
@@ -1558,7 +1560,7 @@ class HTTPClient:
             level_desc=description,
             level_version=version,
             level_length=length.value,
-            audio_track=track_id,
+            audio_track=official_song_id,
             song_id=song_id,
             auto=max(0, min(1, stars)),
             original=original,
@@ -2444,8 +2446,31 @@ class HTTPClient:
         self,
         user_id: int,
         page: int = DEFAULT_PAGE,
-        *,
-        strategy: CommentStrategy,
+    ) -> str:
+        error_codes = {-1: MissingAccess(FAILED_TO_GET_USER_COMMENTS.format(user_id))}
+
+        route = Route(
+            POST,
+            GET_USER_COMMENTS,
+            game_version=self.get_game_version(),
+            binary_version=self.get_binary_version(),
+            gdw=self.get_gd_world(),
+            page=page,
+            total=0,
+            user_id=user_id,
+            secret=Secret.MAIN.value,
+            to_camel=True,
+        )
+
+        response = await self.request_route(route, error_codes=error_codes)
+
+        return response
+
+    async def get_user_level_comments_on_page(
+        self,
+        user_id: int,
+        page: int = DEFAULT_PAGE,
+        strategy: CommentStrategy = CommentStrategy.DEFAULT,
     ) -> str:
         error_codes = {-1: MissingAccess(FAILED_TO_GET_USER_LEVEL_COMMENTS.format(user_id))}
 
@@ -2706,7 +2731,7 @@ class HTTPClientContextManager(Generic[C]):
         saved_attributes = self.saved_attributes
 
         for attribute, value in attributes.items():
-            saved_attributes[attribute] = get_attribute(client, attribute, None)
+            saved_attributes[attribute] = get_attribute(client, attribute)  # store attribute values
             set_attribute(client, attribute, value)
 
     def discard(self) -> None:

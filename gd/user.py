@@ -42,6 +42,7 @@ from gd.enums import (
     IconType,
     MessageState,
     Orientation,
+    RelationshipType,
     Role,
 )
 from gd.filters import Filters
@@ -54,6 +55,7 @@ from gd.models import (
     RelationshipUserModel,
     SearchUserModel,
 )
+from gd.relationship import Relationship
 
 if TYPE_CHECKING:
     from PIL.Image import Image
@@ -260,6 +262,9 @@ class User(Entity):
     def __str__(self) -> str:
         return self.name
 
+    def into_relationship(self, type: RelationshipType) -> Relationship:
+        return Relationship(self, type)
+
     def is_glow(self) -> bool:
         return self.glow
 
@@ -282,18 +287,18 @@ class User(Entity):
         return self.update_from(await self.get_user())
 
     async def send(
-        self, subject: Optional[str] = None, body: Optional[str] = None
+        self, subject: Optional[str] = None, content: Optional[str] = None
     ) -> Optional[Message]:
-        return await self.client.send_message(self, subject, body)
+        return await self.client.send_message(self, subject, content)
 
     async def block(self) -> None:
-        await self.client.block(self)
+        await self.client.block_user(self)
 
     async def unblock(self) -> None:
-        await self.client.unblock(self)
+        await self.client.unblock_user(self)
 
     async def unfriend(self) -> None:
-        await self.client.unfriend(self)
+        await self.client.unfriend_user(self)
 
     async def send_friend_request(self, message: Optional[str] = None) -> Optional[FriendRequest]:
         return await self.client.send_friend_request(self, message)
@@ -308,7 +313,7 @@ class User(Entity):
 
     @wrap_async_iter
     def get_comments_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Comment]:
-        return self.client.get_user_comments_on_page(user=self, type=CommentType.USER, page=page)
+        return self.client.get_user_comments_on_page(user=self, page=page).unwrap()
 
     @wrap_async_iter
     def get_level_comments_on_page(
@@ -316,11 +321,11 @@ class User(Entity):
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
         page: int = DEFAULT_PAGE,
     ) -> AsyncIterator[Comment]:
-        return self.client.get_user_comments_on_page(user=self, type=CommentType.LEVEL, page=page)
+        return self.client.get_user_level_comments_on_page(user=self, page=page, strategy=strategy).unwrap()
 
     @wrap_async_iter
     def get_comments(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Comment]:
-        return self.client.get_user_comments(user=self, type=CommentType.USER, pages=pages)
+        return self.client.get_user_comments(user=self, pages=pages).unwrap()
 
     @wrap_async_iter
     def get_level_comments(
@@ -328,7 +333,7 @@ class User(Entity):
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
         pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[Comment]:
-        return self.client.get_user_comments(user=self, type=CommentType.LEVEL, pages=pages)
+        return self.client.get_user_comments(user=self, pages=pages, strategy=strategy).unwrap()
 
     @property
     def icon_id_by_type(self) -> Dict[IconType, int]:
