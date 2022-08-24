@@ -128,4 +128,4 @@ class Password(Binary, RobTop):
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
-        return string.isdigit()
+        return True

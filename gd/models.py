@@ -42,6 +42,7 @@ from gd.constants import (
     DEFAULT_VERIFIED_COINS,
     DEFAULT_VERSION,
     EMPTY,
+    TIMELY_ID_ADD,
     UNKNOWN,
     UNNAMED,
 )
@@ -1186,8 +1187,6 @@ class LeaderboardUserModel(Model):
 
 
 TI = TypeVar("TI", bound="TimelyInfoModel")
-
-TIMELY_ID_ADD = 100_000
 
 
 @define()

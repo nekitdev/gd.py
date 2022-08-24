@@ -34,7 +34,7 @@ from typing_extensions import Literal
 from yarl import URL
 
 from gd.api.recording import Recording
-from gd.async_utils import maybe_await_call, shutdown_loop
+from gd.async_utils import maybe_await_call, run_blocking, shutdown_loop
 from gd.constants import (
     BACKSLASH,
     DEFAULT_CHEST_COUNT,
@@ -48,6 +48,7 @@ from gd.constants import (
     DEFAULT_VERSION,
     EMPTY,
     SLASH,
+    TIMELY_ID_ADD,
     UNKNOWN,
 )
 from gd.encoding import (
@@ -186,7 +187,9 @@ DELETE_FRIEND_REQUEST = "deleteGJFriendRequests20.php"
 ACCEPT_FRIEND_REQUEST = "acceptGJFriendRequest20.php"
 READ_FRIEND_REQUEST = "readGJFriendRequest20.php"
 GET_FRIEND_REQUESTS = "getGJFriendRequests20.php"
-LIKE_ITEM = "likeGJItem211.php"
+LIKE_LEVEL = "likeGJItem211.php"
+LIKE_USER_COMMENT = "likeGJItem211.php"
+LIKE_LEVEL_COMMENT = "likeGJItem211.php"
 POST_LEVEL_COMMENT = "uploadGJComment21.php"
 POST_USER_COMMENT = "uploadGJAccComment20.php"
 DELETE_LEVEL_COMMENT = "deleteGJComment20.php"
@@ -454,7 +457,9 @@ FAILED_TO_READ_FRIEND_REQUEST = "failed to read the friend request (ID: {})"
 
 FAILED_TO_GET_FRIEND_REQUESTS = "failed to get friend requests on page {}"
 
-FAILED_TO_LIKE_ITEM = "failed to like the item (ID: {})"
+FAILED_TO_LIKE_LEVEL = "failed to like the level (ID: {})"
+FAILED_TO_LIKE_USER_COMMENT = "failed to like the user comment (ID: {})"
+FAILED_TO_LIKE_LEVEL_COMMENT = "failed to like the level comment (ID: {})"
 
 FAILED_TO_POST_USER_COMMENT = "failed to post the user comment"
 
@@ -595,7 +600,7 @@ class HTTPClient:
                 if not chunk:
                     break
 
-                file.write(chunk)
+                await run_blocking(file.write, chunk)
 
                 if with_bar:
                     bar.update(len(chunk))
@@ -1227,7 +1232,7 @@ class HTTPClient:
 
         return response
 
-    async def get_relationships(
+    async def get_simple_relationships(
         self, type: SimpleRelationshipType, *, account_id: int, encoded_password: str
     ) -> str:
         error_codes = {
@@ -1457,9 +1462,12 @@ class HTTPClient:
         return int_or(response, 0)
 
     async def update_level_description(
-        self, level_id: int, description: str, *, account_id: int, encoded_password: str
+        self, level_id: int, description: Optional[str], *, account_id: int, encoded_password: str
     ) -> int:
         error_codes = {-1: MissingAccess(CAN_NOT_UPDATE_LEVEL_DESCRIPTION.format(level_id))}
+
+        if description is None:
+            description = EMPTY
 
         route = Route(
             POST,
@@ -1478,8 +1486,6 @@ class HTTPClient:
         response = await self.request_route(route, error_codes=error_codes)
 
         return int_or(response, 0)
-
-    # HERE
 
     async def upload_level(
         self,
@@ -1691,7 +1697,7 @@ class HTTPClient:
         timely_type: TimelyType = TimelyType.DEFAULT,
         timely_id: int = DEFAULT_ID,
         played: bool = False,
-        percentage: int = 0,
+        record: int = 0,
         jumps: int = 0,
         attempts: int = 0,
         seconds: int = 0,
@@ -1705,10 +1711,10 @@ class HTTPClient:
 
         error_codes = {-1: MissingAccess(FAILED_TO_GET_LEADERBOARD.format(level_id))}
 
-        seed = generate_leaderboard_seed(jumps, percentage, seconds, played)
+        seed = generate_leaderboard_seed(jumps, record, seconds, played)
 
         if timely_type is TimelyType.WEEKLY:
-            timely_id += 100_000
+            timely_id += TIMELY_ID_ADD
 
         random_string = generate_random_string()
 
@@ -1717,12 +1723,12 @@ class HTTPClient:
         values = (
             account_id,
             level_id,
-            percentage,
+            record,
             seconds,
             jumps,
             attempts,
-            percentage,
-            100 - percentage,
+            record,
+            100 - record,
             unknown,
             coins,
             timely_id,
@@ -1749,7 +1755,7 @@ class HTTPClient:
 
         if send:
             route.update(
-                percent=percentage,
+                percent=record,
                 s1=attempts + ATTEMPTS_ADD,
                 s2=jumps + JUMPS_ADD,
                 s3=seconds + SECONDS_ADD,
@@ -2121,36 +2127,37 @@ class HTTPClient:
 
         return response
 
-    async def like_item(
+    async def like_level(
         self,
-        type: LikeType,
-        item_id: int,
-        special_id: int,
+        level_id: int,
         dislike: bool = False,
         *,
         account_id: int,
         encoded_password: str,
     ) -> int:
-        error_codes = {-1: MissingAccess(FAILED_TO_LIKE_ITEM.format(item_id))}
+        error_codes = {-1: MissingAccess(FAILED_TO_LIKE_LEVEL.format(level_id))}
 
         like = not dislike
+        special_id = 0
+
+        type = LikeType.LEVEL
 
         udid = self.generate_udid()
         uuid = self.generate_uuid()
 
         random_string = generate_random_string()
 
-        values = (special_id, item_id, int(like), type.value, random_string, account_id, udid, uuid)
+        values = (special_id, level_id, int(like), type.value, random_string, account_id, udid, uuid)
 
         check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
 
         route = Route(
             POST,
-            LIKE_ITEM,
+            LIKE_LEVEL,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
-            item_id=item_id,
+            item_id=level_id,
             type=type.value,
             special=special_id,
             like=int(like),
@@ -2176,14 +2183,45 @@ class HTTPClient:
         account_id: int,
         encoded_password: str,
     ) -> int:
-        return await self.like_item(
-            LikeType.USER_COMMENT,
-            comment_id,
-            comment_id,
-            dislike=dislike,
+        error_codes = {-1: MissingAccess(FAILED_TO_LIKE_USER_COMMENT.format(comment_id))}
+
+        like = not dislike
+        special_id = comment_id
+
+        type = LikeType.USER_COMMENT
+
+        udid = self.generate_udid()
+        uuid = self.generate_uuid()
+
+        random_string = generate_random_string()
+
+        values = (special_id, comment_id, int(like), type.value, random_string, account_id, udid, uuid)
+
+        check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
+
+        route = Route(
+            POST,
+            LIKE_USER_COMMENT,
+            game_version=self.get_game_version(),
+            binary_version=self.get_binary_version(),
+            gdw=self.get_gd_world(),
+            item_id=comment_id,
+            type=type.value,
+            special=special_id,
+            like=int(like),
             account_id=account_id,
-            encoded_password=encoded_password,
+            gjp=encoded_password,
+            udid=udid,
+            uuid=uuid,
+            rs=random_string,
+            chk=check,
+            secret=Secret.MAIN.value,
+            to_camel=True,
         )
+
+        response = await self.request_route(route, error_codes=error_codes)
+
+        return int_or(response, 0)
 
     async def like_level_comment(
         self,
@@ -2194,31 +2232,45 @@ class HTTPClient:
         account_id: int,
         encoded_password: str,
     ) -> int:
-        return await self.like_item(
-            LikeType.LEVEL_COMMENT,
-            comment_id,
-            level_id,
-            dislike=dislike,
+        error_codes = {-1: MissingAccess(FAILED_TO_LIKE_LEVEL_COMMENT.format(comment_id))}
+
+        like = not dislike
+        special_id = level_id
+
+        type = LikeType.LEVEL_COMMENT
+
+        udid = self.generate_udid()
+        uuid = self.generate_uuid()
+
+        random_string = generate_random_string()
+
+        values = (special_id, comment_id, int(like), type.value, random_string, account_id, udid, uuid)
+
+        check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
+
+        route = Route(
+            POST,
+            LIKE_LEVEL_COMMENT,
+            game_version=self.get_game_version(),
+            binary_version=self.get_binary_version(),
+            gdw=self.get_gd_world(),
+            item_id=comment_id,
+            type=type.value,
+            special=special_id,
+            like=int(like),
             account_id=account_id,
-            encoded_password=encoded_password,
+            gjp=encoded_password,
+            udid=udid,
+            uuid=uuid,
+            rs=random_string,
+            chk=check,
+            secret=Secret.MAIN.value,
+            to_camel=True,
         )
 
-    async def like_level(
-        self,
-        level_id: int,
-        dislike: bool = False,
-        *,
-        account_id: int,
-        encoded_password: str,
-    ) -> int:
-        return await self.like_item(
-            LikeType.LEVEL,
-            level_id,
-            0,
-            dislike=dislike,
-            account_id=account_id,
-            encoded_password=encoded_password,
-        )
+        response = await self.request_route(route, error_codes=error_codes)
+
+        return int_or(response, 0)
 
     async def post_user_comment(
         self,
@@ -2239,11 +2291,11 @@ class HTTPClient:
         content = encode_base64_string_url_safe(content)
 
         level_id = 0
-        percentage = 0
+        record = 0
 
         type = CommentType.USER
 
-        values = (account_name, content, level_id, percentage, type.value)
+        values = (account_name, content, level_id, record, type.value)
 
         check = generate_check(map(str, values), Key.COMMENT, Salt.COMMENT)
 
@@ -2254,9 +2306,7 @@ class HTTPClient:
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             comment=content,
-            level_id=level_id,
             c_type=type.value,
-            percent=percentage,
             account_id=account_id,
             user_name=account_name,
             gjp=encoded_password,
@@ -2276,9 +2326,9 @@ class HTTPClient:
 
     async def post_level_comment(
         self,
+        content: Optional[str],
         level_id: int,
-        percentage: int,
-        content: Optional[str] = None,
+        record: int,
         *,
         account_id: int,
         account_name: str,
@@ -2296,7 +2346,7 @@ class HTTPClient:
 
         type = CommentType.LEVEL
 
-        values = (account_name, content, level_id, percentage, type.value)
+        values = (account_name, content, level_id, record, type.value)
 
         check = generate_check(map(str, values), Key.COMMENT, Salt.COMMENT)
 
@@ -2309,7 +2359,7 @@ class HTTPClient:
             comment=content,
             level_id=level_id,
             c_type=type.value,
-            percent=percentage,
+            percent=record,
             account_id=account_id,
             user_name=account_name,
             gjp=encoded_password,

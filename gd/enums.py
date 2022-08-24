@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import Optional, Type, TypeVar
 
-from enum_extensions import non_member
-
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, EMPTY
 from gd.enum_extensions import Enum, Flag
 
@@ -924,22 +922,7 @@ class MiscType(Enum):
 class TriggerType(Enum):
     """An enumeration representing IDs of most triggers."""
 
-    BACKGROUND = BG = 29
-    GROUND = G = 30
-    START_POS = 31
-    ENABLE_TRAIL = 32
-    DISABLE_TRAIL = 33
-    LINE = L = 104
-    OBJECT = OBJ = 105
-    COLOR1 = 221
-    COLOR2 = 717
-    COLOR3 = 718
-    COLOR4 = 743
-    LINE3D = L3D = 744
-    COLOR = 899
-    SECONDARY_GROUND = GROUND_2 = G2 = 900
     MOVE = 901
-    LINE_2 = L2 = 915
     PULSE = 1006
     ALPHA = 1007
     TOGGLE = 1049
@@ -950,16 +933,12 @@ class TriggerType(Enum):
     ANIMATE = 1585
     TOUCH = 1595
     COUNT = 1611
-    HIDE_PLAYER = 1612
-    SHOW_PLAYER = 1613
     STOP = 1616
     INSTANT_COUNT = 1811
     ON_DEATH = 1812
     FOLLOW_PLAYER_Y = 1814
     COLLISION = 1815
     PICKUP = 1817
-    BACKGROUND_EFFECT_ON = BG_EFFECT_ON = 1818
-    BACKGROUND_EFFECT_OFF = BG_EFFECT_OFF = 1819
 
 
 class ZLayer(Flag):

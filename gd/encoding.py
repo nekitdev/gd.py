@@ -376,19 +376,19 @@ def generate_level_seed(data: AnyStr, count: int = DEFAULT_COUNT) -> AnyStr:
 HAS_PLAYED_MULTIPLY = 1482
 ATTEMPTS_ADD = 8354
 JUMPS_ADD = 3991
-PERCENTAGE_ADD = 8354
+RECORD_ADD = 8354
 SECONDS_ADD = 4085
 COINS_ADD = 5819
 
-TOTAL_SUBTRACT = JUMPS_ADD * PERCENTAGE_ADD + SECONDS_ADD * SECONDS_ADD
+TOTAL_SUBTRACT = JUMPS_ADD * RECORD_ADD + SECONDS_ADD * SECONDS_ADD
 
 
 def generate_leaderboard_seed(
-    jumps: int = 0, percentage: int = 0, seconds: int = 0, has_played: bool = True
+    jumps: int = 0, record: int = 0, seconds: int = 0, has_played: bool = True
 ) -> int:
     return (
         HAS_PLAYED_MULTIPLY * (has_played + 1)
-        + (jumps + JUMPS_ADD) * (percentage + SECONDS_ADD)
+        + (jumps + JUMPS_ADD) * (record + RECORD_ADD)
         + pow(seconds + SECONDS_ADD, 2)
         - TOTAL_SUBTRACT
     )

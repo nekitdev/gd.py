@@ -32,11 +32,14 @@ from gd.comments import Comment
 from gd.constants import (
     COMMENT_PAGE_SIZE,
     DEFAULT_COUNT,
+    DEFAULT_ID,
     DEFAULT_PAGE,
     DEFAULT_PAGES,
     DEFAULT_SPECIAL,
     DEFAULT_USE_CLIENT,
+    DEFAULT_VERSION,
     EMPTY,
+    UNNAMED,
 )
 from gd.credentials import Credentials
 from gd.decorators import check_client_login, check_login
@@ -81,6 +84,7 @@ from gd.typing import (
     IntString,
     MaybeAwaitable,
     MaybeIterable,
+    Predicate,
     URLString,
 )
 from gd.user import User
@@ -97,6 +101,20 @@ def switch_none(value: Optional[T], default: T) -> T:
     return default if value is None else value
 
 
+def by_subject_and_user(subject: str, user: User) -> Predicate[Message]:
+    def predicate(message: Message) -> bool:
+        return message.subject == subject and message.user.id == user.id
+
+    return predicate
+
+
+def by_user(user: User) -> Predicate[FriendRequest]:
+    def predicate(friend_request: FriendRequest) -> bool:
+        return friend_request.user.id == user.id
+
+    return predicate
+
+
 CONTROLLER_ALREADY_CREATED = "controller was already created"
 NO_DATABASE = "no database to save"
 
@@ -108,12 +126,16 @@ C = TypeVar("C", bound="Client")
 @define()
 class Client:
     session: Session = field()
+    """The session of the client."""
 
     credentials: Credentials = field(factory=Credentials)
+    """The credentials of the client."""
 
     database: Optional[Database] = field(default=None, repr=False)
+    """The database of the client."""
 
     load_after_post: bool = field(default=DEFAULT_LOAD_AFTER_POST)
+    """Whether to load items after posting them."""
 
     _listeners: DynamicTuple[Listener] = field(default=(), repr=False, init=False)
     _controller: Optional[Controller] = field(default=None, repr=False, init=False)
@@ -170,22 +192,27 @@ class Client:
 
     @property
     def account_id(self) -> int:
+        """The account ID of the client."""
         return self.credentials.account_id
 
     @property
     def id(self) -> int:
+        """The user ID of the client."""
         return self.credentials.id
 
     @property
     def name(self) -> str:
+        """The name of the client."""
         return self.credentials.name
 
     @property
     def password(self) -> str:
+        """The password of the client."""
         return self.credentials.password
 
     @property
     def http(self) -> HTTPClient:
+        """The [`HTTPClient`][gd.http.HTTPClient] used by the client."""
         return self.session.http
 
     @property
@@ -197,18 +224,43 @@ class Client:
     @check_login
     def user(self) -> User:
         """The user representing the client."""
-        return User(account_id=self.account_id, id=self.id, name=self.name).attach_client(self)
+        return User(id=self.id, name=self.name, account_id=self.account_id).attach_client(self)
 
     async def ping(self) -> timedelta:
+        """Pings the Geometry Dash server.
+
+        Returns:
+            The [`timedelta`][datetime.timedelta] representing the latency.
+        """
         return await self.ping_url(self.http.url)
 
     async def ping_url(self, url: URLString) -> timedelta:
+        """Pings the given `url`.
+
+        Returns:
+            The [`timedelta`][datetime.timedelta] representing the latency.
+        """
         return await self.session.ping(url)
 
     async def logout(self) -> None:
+        """Performs the logout."""
         self.reset_items()
 
     def login(self: C, name: str, password: str) -> LoginContextManager[C]:
+        """Performs the login.
+
+        This function returns a context manager that can be used for temporarily logging in:
+
+        ```python
+        async with client.login(name, password):
+            assert client.is_logged_in()
+
+        assert not client.is_logged_in()
+        ```
+
+        Returns:
+            The [`LoginContextManager`][gd.client.LoginContextManager] for handling login process.
+        """
         return LoginContextManager(self, name, password)
 
     async def try_login(self, name: str, password: str) -> None:
@@ -217,6 +269,23 @@ class Client:
         self.apply_items(Credentials(model.account_id, model.id, name, password))
 
     def unsafe_login(self: C, name: str, password: str) -> UnsafeLoginContextManager[C]:
+        """Performs the *unsafe* login.
+
+        *Unsafe* means that the credentials are not confirmed.
+
+        This function returns a context manager that can be used for temporarily logging in:
+
+        ```python
+        async with client.unsafe_login(name, password):
+            assert client.is_logged_in()
+
+        assert not client.is_logged_in()
+        ```
+
+        Returns:
+            The [`UnsafeLoginContextManager`][gd.client.UnsafeLoginContextManager]
+                for handling login process.
+        """
         return UnsafeLoginContextManager(self, name, password)
 
     async def try_unsafe_login(self, name: str, password: str) -> None:
@@ -226,6 +295,15 @@ class Client:
 
     @check_login
     async def load(self) -> Database:
+        """Loads the save from the cloud, saving it in the
+        [`database`][gd.client.Client.database] attribute.
+
+        Note:
+            This function requires the client to be logged in.
+
+        Returns:
+            The database loaded.
+        """
         database = await self.session.load(
             account_id=self.account_id, name=self.name, password=self.password
         )
@@ -236,6 +314,12 @@ class Client:
 
     @check_login
     async def save(self, database: Optional[Database] = None) -> None:
+        """Saves the the `database` to the cloud, optionally fetching it from the
+        [`database`][gd.client.Client.database] attribute.
+
+        Note:
+            This function requires the client to be logged in.
+        """
         if database is None:
             database = self.database
 
@@ -410,7 +494,7 @@ class Client:
     @check_login
     async def get_simple_relationships(self, type: SimpleRelationshipType) -> AsyncIterator[User]:
         try:
-            response_model = await self.session.get_relationships(
+            response_model = await self.session.get_simple_relationships(
                 type,
                 account_id=self.account_id,
                 encoded_password=self.encoded_password,
@@ -448,7 +532,9 @@ class Client:
         for model in response_model.users:
             yield User.from_leaderboard_user_model(model).attach_client(self)
 
-    def level_models_from_model(self, response_model: SearchLevelsResponseModel) -> Iterator[Tuple[LevelModel, User, Song]]:
+    def level_models_from_model(
+        self, response_model: SearchLevelsResponseModel
+    ) -> Iterator[Tuple[LevelModel, User, Song]]:
         songs = (Song.from_model(model).attach_client(self) for model in response_model.songs)
         creators = (User.from_creator_model(model).attach_client(self) for model in response_model.creators)
 
@@ -484,24 +570,30 @@ class Client:
 
         return level.update_with_timely_model(timely_model)
 
-    async def get_level(self, level_id: int, use_client: bool = False) -> Level:
-        if use_client:
-            check_client_login(self)
+    async def get_level(self, level_id: int, get_data: bool = True, use_client: bool = False) -> Level:
+        get_data = get_data or level_id < 0
 
-            response_model = await self.session.get_level(
-                level_id, account_id=self.account_id, encoded_password=self.encoded_password
-            )
+        if get_data:
+            if use_client:
+                check_client_login(self)
 
-        else:
-            response_model = await self.session.get_level(level_id)
+                response_model = await self.session.get_level(
+                    level_id, account_id=self.account_id, encoded_password=self.encoded_password
+                )
 
-        model = response_model.level
+            else:
+                response_model = await self.session.get_level(level_id)
 
-        level_id = model.id
+            model = response_model.level
+
+            level_id = model.id
 
         level = await self.search_levels_on_page(level_id).next()
 
-        return Level.from_model(model, level.creator, level.song).attach_client(self)
+        if get_data:
+            return Level.from_model(model, level.creator, level.song).attach_client(self)
+
+        return level
 
     @wrap_async_iter
     async def search_levels_on_page(
@@ -561,10 +653,7 @@ class Client:
 
     @check_login
     async def update_level_description(self, level: Level, description: Optional[str]) -> None:
-        if description is None:
-            description = EMPTY
-
-        return await self.session.update_level_description(
+        await self.session.update_level_description(
             level.id,
             description,
             account_id=self.account_id,
@@ -573,12 +662,12 @@ class Client:
 
     async def upload_level(
         self,
-        name: str = "Unnamed",
-        id: int = 0,
-        version: int = 1,
-        length: Union[int, str, LevelLength] = LevelLength.TINY,
-        track_id: int = 0,
-        description: str = "",
+        name: str = UNNAMED,
+        id: int = DEFAULT_ID,
+        version: int = DEFAULT_VERSION,
+        length: LevelLength = LevelLength.TINY,
+        official_song_id: int = DEFAULT_ID,
+        description: str = EMPTY,
         song_id: int = 0,
         is_auto: bool = False,
         original: int = 0,
@@ -631,17 +720,17 @@ class Client:
         return Level(id=level_id, client=self)
 
     async def report_level(self, level: Level) -> None:
-        return await self.session.report_level(level.id)
+        await self.session.report_level(level.id)
 
     @check_login
     async def delete_level(self, level: Level) -> None:
-        return await self.session.delete_level(
+        await self.session.delete_level(
             level.id, account_id=self.account_id, encoded_password=self.encoded_password
         )
 
     @check_login
     async def rate_level(self, level: Level, stars: int) -> None:
-        return await self.session.rate_level(
+        await self.session.rate_level(
             level.id,
             stars,
             account_id=self.account_id,
@@ -655,7 +744,7 @@ class Client:
         rating: DemonDifficulty,
         as_mod: bool = False,
     ) -> None:
-        return await self.session.rate_demon(
+        await self.session.rate_demon(
             level.id,
             rating,
             as_mod=as_mod,
@@ -678,7 +767,7 @@ class Client:
     async def get_level_leaderboard(
         self,
         level: Level,
-        strategy: Union[int, str, LevelLeaderboardStrategy] = LevelLeaderboardStrategy.ALL,
+        strategy: LevelLeaderboardStrategy = LevelLeaderboardStrategy.ALL,
     ) -> AsyncIterator[User]:
         response_model = await self.session.get_level_leaderboard(
             level.id,
@@ -688,11 +777,11 @@ class Client:
         )
 
         for model in response_model.users:
-            yield User.from_model(model, client=self)
+            yield User.from_level_leaderboard_user_model(model).attach_client(self)
 
     @check_login
     async def block_user(self, user: User) -> None:
-        return await self.session.block_user(
+        await self.session.block_user(
             user.account_id,
             client_account_id=self.account_id,
             encoded_password=self.encoded_password,
@@ -700,7 +789,7 @@ class Client:
 
     @check_login
     async def unblock_user(self, user: User) -> None:
-        return await self.session.unblock_user(
+        await self.session.unblock_user(
             user.account_id,
             client_account_id=self.account_id,
             encoded_password=self.encoded_password,
@@ -708,7 +797,7 @@ class Client:
 
     @check_login
     async def unfriend_user(self, user: User) -> None:
-        return await self.session.unfriend_user(
+        await self.session.unfriend_user(
             user.account_id,
             client_account_id=self.account_id,
             encoded_password=self.encoded_password,
@@ -730,11 +819,8 @@ class Client:
             if subject is None:
                 subject = EMPTY
 
-            if content is None:
-                content = EMPTY
-
             messages = self.get_messages_on_page(type=MessageType.OUTGOING)
-            message = await messages.get(subject=subject, recipient=user)
+            message = await messages.find(by_subject_and_user(subject, user))
 
             if message is None:
                 return None
@@ -753,11 +839,12 @@ class Client:
             account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
+
         return Message.from_model(model).attach_client(self)
 
     @check_login
     async def delete_message(self, message: Message) -> None:
-        return await self.session.delete_message(
+        await self.session.delete_message(
             message.id,
             type=message.type,
             account_id=self.account_id,
@@ -809,22 +896,15 @@ class Client:
         )
 
         if self.load_after_post:
-            if message is None:
-                message = ""
-
             friend_requests = self.get_friend_requests_on_page(type=FriendRequestType.OUTGOING)
-            friend_request = await friend_requests.get(recipient=user)
 
-            if friend_request is None:
-                return None
-
-            return friend_request
+            return await friend_requests.find(by_user(user))
 
         return None
 
     @check_login
     async def delete_friend_request(self, friend_request: FriendRequest) -> None:
-        return await self.session.delete_friend_request(
+        await self.session.delete_friend_request(
             account_id=friend_request.user.account_id,
             type=friend_request.type,
             client_account_id=self.account_id,
@@ -833,7 +913,7 @@ class Client:
 
     @check_login
     async def accept_friend_request(self, friend_request: FriendRequest) -> None:
-        return await self.session.accept_friend_request(
+        await self.session.accept_friend_request(
             account_id=friend_request.user.account_id,
             request_id=friend_request.id,
             type=friend_request.type,
@@ -843,7 +923,7 @@ class Client:
 
     @check_login
     async def read_friend_request(self, friend_request: FriendRequest) -> None:
-        return await self.session.read_friend_request(
+        await self.session.read_friend_request(
             request_id=friend_request.id,
             account_id=self.account_id,
             encoded_password=self.encoded_password,
@@ -882,36 +962,8 @@ class Client:
             ClientError,
         )
 
-    @check_login
-    async def like(self, entity: Union[Comment, Level]) -> None:
-        return await self.like_or_dislike(entity, dislike=False)
-
-    @check_login
-    async def dislike(self, entity: Union[Comment, Level]) -> None:
-        return await self.like_or_dislike(entity, dislike=True)
-
-    @check_login
-    async def like_or_dislike(self, entity: Union[Comment, Level], dislike: bool) -> None:
-        if isinstance(entity, Comment):
-            if entity.type is CommentType.LEVEL:
-                like_type, special_id = LikeType.LEVEL_COMMENT, entity.level_id
-            else:
-                like_type, special_id = LikeType.COMMENT, entity.id
-
-        elif isinstance(entity, Level):
-            like_type, special_id = LikeType.LEVEL, 0
-
-        else:
-            raise TypeError(f"Expected Comment or User, got {type(entity).__name__!r}.")
-
-        return await self.session.like_or_dislike(
-            type=like_type,  # type: ignore
-            item_id=entity.id,
-            special_id=special_id,
-            dislike=dislike,
-            account_id=self.account_id,
-            encoded_password=self.encoded_password,
-        )
+    # like
+    # dislike
 
     @check_login
     async def comment_level(
@@ -969,7 +1021,7 @@ class Client:
 
     @check_login
     async def delete_comment(self, comment: Comment) -> None:
-        return await self.session.delete_comment(
+        await self.session.delete_comment(
             comment_id=comment.id,
             type=comment.type,
             level_id=comment.level_id,

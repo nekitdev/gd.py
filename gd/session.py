@@ -205,10 +205,10 @@ class Session:
 
         return ProfileModel.from_robtop(response)
 
-    async def get_relationships(
+    async def get_simple_relationships(
         self, type: SimpleRelationshipType, *, account_id: int, encoded_password: str
     ) -> RelationshipsResponseModel:
-        response = await self.http.get_relationships(
+        response = await self.http.get_simple_relationships(
             type, account_id=account_id, encoded_password=encoded_password
         )
 
@@ -279,7 +279,7 @@ class Session:
         )
 
     async def update_level_description(
-        self, level_id: int, description: str, *, account_id: int, encoded_password: str
+        self, level_id: int, description: Optional[str], *, account_id: int, encoded_password: str
     ) -> None:
         await self.http.update_level_description(
             level_id,
@@ -377,7 +377,7 @@ class Session:
             encoded_password=encoded_password,
         )
 
-    async def get_level_top(
+    async def get_level_leaderboard(
         self,
         level_id: int,
         strategy: LevelLeaderboardStrategy,
@@ -385,12 +385,13 @@ class Session:
         account_id: int,
         encoded_password: str,
     ) -> LevelLeaderboardResponseModel:
-        response = await self.http.get_level_top(
+        response = await self.http.get_level_leaderboard(
             level_id,
             strategy=strategy,
             account_id=account_id,
             encoded_password=encoded_password,
         )
+
         return LevelLeaderboardResponseModel.from_string(response, use_default=True)
 
     async def block_user(
@@ -556,58 +557,110 @@ class Session:
 
         return FriendRequestsResponseModel.from_robtop(response)
 
-    async def like_or_dislike(
+    async def like_level(
         self,
-        type: LikeType,
-        item_id: int,
-        special_id: int,
-        dislike: bool = False,
+        level_id: int,
+        dislike: bool,
         *,
         account_id: int,
         encoded_password: str,
     ) -> None:
-        await self.http.like_or_dislike(
-            type=type,
-            item_id=item_id,
-            special_id=special_id,
+        await self.http.like_level(
+            level_id,
             dislike=dislike,
             account_id=account_id,
             encoded_password=encoded_password,
         )
 
-    async def post_comment(
+    async def like_user_comment(
         self,
-        type: CommentType,
-        content: Optional[str] = None,
-        level_id: int = 0,
-        percent: int = 0,
+        comment_id: int,
+        dislike: bool,
+        *,
+        account_id: int,
+        encoded_password: str,
+    ) -> None:
+        await self.http.like_user_comment(
+            comment_id,
+            dislike=dislike,
+            account_id=account_id,
+            encoded_password=encoded_password,
+        )
+
+    async def like_level_comment(
+        self,
+        comment_id: int,
+        level_id: int,
+        dislike: bool,
+        *,
+        account_id: int,
+        encoded_password: str,
+    ) -> None:
+        await self.http.like_level_comment(
+            comment_id,
+            level_id,
+            dislike=dislike,
+            account_id=account_id,
+            encoded_password=encoded_password,
+        )
+
+    async def post_level_comment(
+        self,
+        content: Optional[str],
+        level_id: int,
+        record: int,
         *,
         account_id: int,
         account_name: str,
         encoded_password: str,
     ) -> None:
-        await self.http.post_comment(
-            content=content,
-            type=type,
+        await self.http.post_level_comment(
+            content,
             level_id=level_id,
-            percent=percent,
+            record=record,
             account_id=account_id,
             account_name=account_name,
             encoded_password=encoded_password,
         )
 
-    async def delete_comment(
+    async def post_user_comment(
+        self,
+        content: Optional[str],
+        *,
+        account_id: int,
+        account_name: str,
+        encoded_password: str,
+    ) -> None:
+        await self.http.post_user_comment(
+            content,
+            account_id=account_id,
+            account_name=account_name,
+            encoded_password=encoded_password,
+        )
+
+    async def delete_user_comment(
         self,
         comment_id: int,
-        type: CommentType,
-        level_id: int = 0,
         *,
         account_id: int,
         encoded_password: str,
     ) -> None:
-        await self.http.delete_comment(
+        await self.http.delete_user_comment(
             comment_id=comment_id,
-            type=type,
+            account_id=account_id,
+            encoded_password=encoded_password,
+        )
+
+    async def delete_level_comment(
+        self,
+        comment_id: int,
+        level_id: int,
+        *,
+        account_id: int,
+        encoded_password: str,
+    ) -> None:
+        await self.http.delete_level_comment(
+            comment_id=comment_id,
             level_id=level_id,
             account_id=account_id,
             encoded_password=encoded_password,
@@ -629,6 +682,7 @@ class Session:
             page=page,
             strategy=strategy,
         )
+
         return CommentsResponseModel.from_string(response, use_default=True)
 
     async def get_level_comments_on_page(
