@@ -78,6 +78,8 @@ DEFAULT_VERIFIED_COINS = False
 
 DEFAULT_EPIC = False
 
+DEFAULT_SPAM = False
+
 DEFAULT_AS_MOD = False
 
 ZERO_PAGE = range(1)

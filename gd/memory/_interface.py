@@ -42,20 +42,20 @@ from gd.memory._offsets import (
     windows_offsets_x32,
     windows_offsets_x64,
 )
-from gd.memory.internal import (
+from gd.memory.internal.internal import (
     allocate_memory as system_allocate_memory,  # get_process_bits_from_handle as system_get_process_bits_from_handle,; linux_get_base_address,; linux_get_process_bits_from_handle,; linux_get_process_id_from_window_title,; linux_get_process_name_from_id,; macos_get_base_address,; macos_get_process_bits_from_handle,; macos_get_process_id_from_window_title,; macos_get_process_name_from_id,; windows_get_base_address_from_handle,; window_get_process_bits,
 )
-from gd.memory.internal import close_process as system_close_process
-from gd.memory.internal import free_memory as system_free_memory
-from gd.memory.internal import get_base_address as system_get_base_address
-from gd.memory.internal import get_base_address_from_handle as system_get_base_address_from_handle
-from gd.memory.internal import get_process_bits as system_get_process_bits
-from gd.memory.internal import get_process_id_from_name as system_get_process_id_from_name
-from gd.memory.internal import (
+from gd.memory.internal.internal import close_process as system_close_process
+from gd.memory.internal.internal import free_memory as system_free_memory
+from gd.memory.internal.internal import get_base_address as system_get_base_address
+from gd.memory.internal.internal import get_base_address_from_handle as system_get_base_address_from_handle
+from gd.memory.internal.internal import get_process_bits as system_get_process_bits
+from gd.memory.internal.internal import get_process_id_from_name as system_get_process_id_from_name
+from gd.memory.internal.internal import (
     get_process_id_from_window_title as system_get_process_id_from_window_title,
 )
-from gd.memory.internal import inject_library as system_inject_library
-from gd.memory.internal import (
+from gd.memory.internal.internal import inject_library as system_inject_library
+from gd.memory.internal.internal import (
     linux_allocate_memory,
     linux_close_process,
     linux_free_memory,
@@ -81,11 +81,11 @@ from gd.memory.internal import (
     macos_terminate_process,
     macos_write_process_memory,
 )
-from gd.memory.internal import open_process as system_open_process
-from gd.memory.internal import protect_process_memory as system_protect_process_memory
-from gd.memory.internal import read_process_memory as system_read_process_memory
-from gd.memory.internal import terminate_process as system_terminate_process
-from gd.memory.internal import (
+from gd.memory.internal.internal import open_process as system_open_process
+from gd.memory.internal.internal import protect_process_memory as system_protect_process_memory
+from gd.memory.internal.internal import read_process_memory as system_read_process_memory
+from gd.memory.internal.internal import terminate_process as system_terminate_process
+from gd.memory.internal.internal import (
     windows_allocate_memory,
     windows_close_process,
     windows_free_memory,
@@ -101,7 +101,7 @@ from gd.memory.internal import (
     windows_terminate_process,
     windows_write_process_memory,
 )
-from gd.memory.internal import write_process_memory as system_write_process_memory
+from gd.memory.internal.internal import write_process_memory as system_write_process_memory
 from gd.platform import LINUX, MACOS, WINDOWS
 from gd.text_utils import is_level_probably_decoded, nice_repr
 from gd.typing import Callable, Dict, List, Type, TypeVar, Union, cast

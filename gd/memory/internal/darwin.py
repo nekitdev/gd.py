@@ -27,8 +27,10 @@ __all__ = (
     "write_process_memory",
 )
 
+LIBC_DYLIB = "libc.dylib"
+
 try:
-    libc = ctypes.CDLL("libc.dylib")
+    LIBC = ctypes.CDLL(LIBC_DYLIB)
 
 except OSError:
     raise ImportError("Can not define memory functions for MacOS.") from None

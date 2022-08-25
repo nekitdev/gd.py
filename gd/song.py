@@ -160,7 +160,7 @@ class Song(Entity):
 
     @classmethod
     def default(cls: Type[S]) -> S:
-        return cls(DEFAULT_ID, UNKNOWN, Artist.default())
+        return cls(id=DEFAULT_ID, name=UNKNOWN, artist=Artist.default())
 
     @classmethod
     def from_model(cls: Type[S], model: SongModel) -> S:

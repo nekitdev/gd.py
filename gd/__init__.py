@@ -11,7 +11,7 @@ __version__ = "1.0.0-alpha.1"
 from gd import api, encoding, events, image, json, memory, tasks
 from gd.artist import Artist
 from gd.client import Client
-from gd.colors import Color
+from gd.color import Color
 from gd.comments import Comment, LevelComment, UserComment
 from gd.credentials import Credentials
 from gd.entity import Entity
@@ -50,11 +50,11 @@ from gd.enums import (
     OrbType,
     Orientation,
     PadType,
+    Permissions,
     PickupItemMode,
     Platform,
     PlayerColor,
     PortalType,
-    Protection,
     PulseMode,
     PulseTargetType,
     PulseType,
@@ -194,7 +194,7 @@ __all__ = (
     "GuidelineColor",
     "InternalType",
     "Filter",
-    "Protection",
+    "Permissions",
     "ByteOrder",
     "Platform",
     "Orientation",

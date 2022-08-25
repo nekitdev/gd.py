@@ -30,7 +30,7 @@ from gd.api.recording import Recording
 # from gd.api.recording import Recording
 from gd.artist import Artist
 from gd.async_utils import awaiting, run, run_iterables
-from gd.comments import Comment, LevelComment, UserComment
+from gd.comments import LevelComment, UserComment
 from gd.constants import (
     COMMENT_PAGE_SIZE,
     DEFAULT_AS_MOD,
@@ -932,7 +932,7 @@ class Client:
         )
 
         if self.load_after_post:
-            friend_requests = self.get_friend_requests_on_page(type=FriendRequestType.OUTGOING)
+            friend_requests = self.get_friend_requests_on_page(FriendRequestType.OUTGOING)
 
             return await friend_requests.find(by_user(user))
 
@@ -1058,7 +1058,7 @@ class Client:
     # post_level_comment
 
     @check_login
-    async def delete_comment(self, comment: UserComment) -> None:
+    async def delete_user_comment(self, comment: UserComment) -> None:
         await self.session.delete_user_comment(
             comment_id=comment.id,
             account_id=self.account_id,
@@ -1081,12 +1081,12 @@ class Client:
         page: int = DEFAULT_PAGE,
     ) -> AsyncIterator[UserComment]:
         response_model = await self.session.get_user_comments_on_page(
-            user_id=user.id,
+            account_id=user.account_id,
             page=page,
         )
 
         for model in response_model.comments:
-            yield Comment.from_model(model, client=self, user=user)
+            yield UserComment.from_model(model, user).attach_client(self)
 
     @wrap_async_iter
     def get_user_comments(
@@ -1106,12 +1106,14 @@ class Client:
     async def get_user_level_comments_on_page(
         self,
         user: User,
+        count: int = COMMENT_PAGE_SIZE,
         page: int = DEFAULT_PAGE,
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
     ) -> AsyncIterator[LevelComment]:
         try:
             response_model = await self.session.get_user_level_comments_on_page(
                 user_id=user.id,
+                count=count,
                 page=page,
                 strategy=strategy,
             )
@@ -1120,7 +1122,7 @@ class Client:
             return
 
         for model in response_model.comments:
-            yield Comment.from_model(model, client=self)
+            yield LevelComment.from_model(model).attach_client(self)
 
     @wrap_async_iter
     async def get_level_comments_on_page(
@@ -1142,7 +1144,11 @@ class Client:
             return
 
         for model in response_model.comments:
-            yield Comment.from_model(model, client=self)
+            comment = LevelComment.from_model(model).attach_client(self)
+
+            comment.level = level
+
+            yield comment
 
     @wrap_async_iter
     def get_level_comments(

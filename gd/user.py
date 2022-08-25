@@ -9,7 +9,7 @@ from iters.async_iters import wrap_async_iter
 from gd.async_utils import gather_iterable
 from gd.binary import VERSION
 from gd.binary_utils import UTF_8, Reader, Writer
-from gd.colors import Color
+from gd.color import Color
 from gd.constants import (
     DEFAULT_BANNED,
     DEFAULT_COLOR_1_ID,
@@ -51,6 +51,7 @@ from gd.image.icon import Icon
 from gd.models import (
     CreatorModel,
     LeaderboardUserModel,
+    LevelCommentUserModel,
     ProfileModel,
     RelationshipUserModel,
     SearchUserModel,
@@ -60,7 +61,7 @@ from gd.relationship import Relationship
 if TYPE_CHECKING:
     from PIL.Image import Image
 
-    from gd.comments import Comment
+    from gd.comments import LevelComment, UserComment
     from gd.friend_request import FriendRequest
     from gd.level import Level
     from gd.message import Message
@@ -259,6 +260,19 @@ class User(Entity):
             diamonds=model.diamonds,
         )
 
+    @classmethod
+    def from_level_comment_user_model(cls: Type[U], model: LevelCommentUserModel, id: int) -> U:
+        return cls(
+            id=id,
+            name=model.name,
+            icon_id=model.icon_id,
+            color_1_id=model.color_1_id,
+            color_2_id=model.color_2_id,
+            icon_type=model.icon_type,
+            glow=model.glow,
+            account_id=model.account_id,
+        )
+
     def __str__(self) -> str:
         return self.name
 
@@ -280,11 +294,11 @@ class User(Entity):
     def color_2(self) -> Color:
         return Color.with_id(self.color_2_id, Color.default_color_2())
 
-    async def get_user(self) -> User:
+    async def get(self) -> User:
         return await self.client.get_user(self.account_id)
 
     async def update(self: U) -> U:
-        return self.update_from(await self.get_user())
+        ...
 
     async def send(
         self, subject: Optional[str] = None, content: Optional[str] = None
@@ -312,7 +326,7 @@ class User(Entity):
         return self.client.search_levels(pages=pages, filters=Filters.by_user(), user=self)
 
     @wrap_async_iter
-    def get_comments_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Comment]:
+    def get_comments_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[UserComment]:
         return self.client.get_user_comments_on_page(user=self, page=page).unwrap()
 
     @wrap_async_iter
@@ -320,11 +334,11 @@ class User(Entity):
         self,
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
         page: int = DEFAULT_PAGE,
-    ) -> AsyncIterator[Comment]:
+    ) -> AsyncIterator[LevelComment]:
         return self.client.get_user_level_comments_on_page(user=self, page=page, strategy=strategy).unwrap()
 
     @wrap_async_iter
-    def get_comments(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Comment]:
+    def get_comments(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[UserComment]:
         return self.client.get_user_comments(user=self, pages=pages).unwrap()
 
     @wrap_async_iter
@@ -332,7 +346,7 @@ class User(Entity):
         self,
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
         pages: Iterable[int] = DEFAULT_PAGES,
-    ) -> AsyncIterator[Comment]:
+    ) -> AsyncIterator[LevelComment]:
         return self.client.get_user_comments(user=self, pages=pages, strategy=strategy).unwrap()
 
     @property
@@ -544,7 +558,7 @@ class User(Entity):
         version: int = VERSION,
         encoding: str = UTF_8,
     ) -> None:
-        super().to_binary(binary, order)
+        super().to_binary(binary, order, version)
 
         writer = Writer(binary)
 

@@ -94,7 +94,7 @@ class Artist(Entity):
 
         data = self.name.encode(encoding)
 
-        writer.write_u8(len(data))
+        writer.write_u8(len(data), order)
 
         writer.write(data)
 

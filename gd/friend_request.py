@@ -1,10 +1,11 @@
 from __future__ import annotations
+from datetime import datetime
 
 from typing import TYPE_CHECKING, Type, TypeVar
 
-from attrs import define
+from attrs import define, field
 
-from gd.constants import EMPTY
+from gd.constants import DEFAULT_READ, EMPTY
 from gd.entity import Entity
 from gd.enums import FriendRequestType
 from gd.models import FriendRequestModel
@@ -21,12 +22,14 @@ FR = TypeVar("FR", bound="FriendRequest")
 
 @define()
 class FriendRequest(Entity):
-    user: User
-    type: FriendRequestType
+    user: User = field()
+    type: FriendRequestType = field()
 
-    content: str = EMPTY
+    created_at: datetime = field(factory=datetime.utcnow)
 
-    was_read: bool = False
+    content: str = field(default=EMPTY)
+
+    was_read: bool = field(default=DEFAULT_READ)
 
     def __str__(self) -> str:
         return self.content
@@ -46,6 +49,7 @@ class FriendRequest(Entity):
                 account_id=model.account_id,
             ),
             type=type,
+            created_at=model.created_at,
             content=model.content,
             was_read=model.read,
         )

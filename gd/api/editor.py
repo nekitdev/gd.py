@@ -232,20 +232,20 @@ class Editor(Binary, Sequence[Object]):
     def from_binary(
         cls: Type[E], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> E:
-        header = Header.from_binary(binary, order)
+        header = Header.from_binary(binary, order, version)
 
         reader = Reader(binary)
 
         iterable_length = reader.read_u32(order)
 
-        iterable = (object_from_binary(binary, order) for _ in range(iterable_length))
+        iterable = (object_from_binary(binary, order, version) for _ in range(iterable_length))
 
         return cls.from_object_iterable(iterable, header)
 
     def to_binary(
         self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        self.header.to_binary(binary, order)
+        self.header.to_binary(binary, order, version)
 
         writer = Writer(binary)
 

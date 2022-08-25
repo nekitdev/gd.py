@@ -17,6 +17,11 @@ from gd.models_constants import (
     HSV_SEPARATOR,
     LEADERBOARD_RESPONSE_USERS_SEPARATOR,
     LEADERBOARD_USER_SEPARATOR,
+    LEVEL_COMMENT_INNER_SEPARATOR,
+    LEVEL_COMMENT_SEPARATOR,
+    LEVEL_COMMENT_USER_SEPARATOR,
+    LEVEL_COMMENTS_RESPONSE_COMMENTS_SEPARATOR,
+    LEVEL_COMMENTS_RESPONSE_SEPARATOR,
     LEVEL_RESPONSE_SEPARATOR,
     LEVEL_SEPARATOR,
     LOGIN_SEPARATOR,
@@ -40,6 +45,9 @@ from gd.models_constants import (
     TIME_SEPARATOR,
     TIME_SEPARATOR_SPACE,
     TIMELY_INFO_SEPARATOR,
+    USER_COMMENT_SEPARATOR,
+    USER_COMMENTS_RESPONSE_COMMENTS_SEPARATOR,
+    USER_COMMENTS_RESPONSE_SEPARATOR,
 )
 from gd.typing import Parse
 
@@ -173,6 +181,18 @@ concat_friend_request = partial(concat_mapping, FRIEND_REQUEST_SEPARATOR)
 split_level = partial(split_mapping, LEVEL_SEPARATOR)
 concat_level = partial(concat_mapping, LEVEL_SEPARATOR)
 
+split_level_comment_inner = partial(split_mapping, LEVEL_COMMENT_INNER_SEPARATOR)
+concat_level_comment_inner = partial(concat_mapping, LEVEL_COMMENT_INNER_SEPARATOR)
+
+split_level_comment_user = partial(split_mapping, LEVEL_COMMENT_USER_SEPARATOR)
+concat_level_comment_user = partial(concat_mapping, LEVEL_COMMENT_USER_SEPARATOR)
+
+split_level_comment = partial(split_iterable, LEVEL_COMMENT_SEPARATOR)
+concat_level_comment = partial(concat_iterable, LEVEL_COMMENT_SEPARATOR)
+
+split_user_comment = partial(split_mapping, USER_COMMENT_SEPARATOR)
+concat_user_comment = partial(concat_mapping, USER_COMMENT_SEPARATOR)
+
 split_page = partial(split_iterable, PAGE_SEPARATOR)
 concat_page = partial(concat_iterable, PAGE_SEPARATOR)
 
@@ -265,4 +285,24 @@ split_search_levels_response_songs = partial(
 )
 concat_search_levels_response_songs = partial(
     concat_iterable, SEARCH_LEVELS_RESPONSE_SONGS_SEPARATOR
+)
+
+split_user_comments_response = partial(split_iterable, USER_COMMENTS_RESPONSE_SEPARATOR)
+concat_user_comments_response = partial(concat_iterable, USER_COMMENTS_RESPONSE_SEPARATOR)
+
+split_user_comments_response_comments = partial(
+    split_iterable, USER_COMMENTS_RESPONSE_COMMENTS_SEPARATOR, ignore_empty=True
+)
+concat_user_comments_response_comments = partial(
+    concat_iterable, USER_COMMENTS_RESPONSE_COMMENTS_SEPARATOR
+)
+
+split_level_comments_response = partial(split_iterable, LEVEL_COMMENTS_RESPONSE_SEPARATOR)
+concat_level_comments_response = partial(concat_iterable, LEVEL_COMMENTS_RESPONSE_SEPARATOR)
+
+split_level_comments_response_comments = partial(
+    split_iterable, LEVEL_COMMENTS_RESPONSE_COMMENTS_SEPARATOR, ignore_empty=True
+)
+concat_level_comments_response_comments = partial(
+    concat_iterable, LEVEL_COMMENTS_RESPONSE_COMMENTS_SEPARATOR
 )

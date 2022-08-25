@@ -44,6 +44,7 @@ from gd.http import HTTPClient
 from gd.models import (
     FriendRequestsResponseModel,
     LeaderboardResponseModel,
+    LevelCommentsResponseModel,
     LevelResponseModel,
     LoginModel,
     MessageModel,
@@ -55,6 +56,7 @@ from gd.models import (
     SearchUsersResponseModel,
     SongModel,
     TimelyInfoModel,
+    UserCommentsResponseModel,
 )
 from gd.password import Password
 from gd.typing import IntString, MaybeIterable, URLString
@@ -670,29 +672,31 @@ class Session:
 
     async def get_user_comments_on_page(
         self,
-        user_id: int,
+        account_id: int,
         page: int = DEFAULT_PAGE,
-    ) -> CommentsResponseModel:
+    ) -> UserCommentsResponseModel:
         response = await self.http.get_user_comments_on_page(
-            user_id=user_id,
+            account_id=account_id,
             page=page,
         )
 
-        return CommentsResponseModel.from_string(response, use_default=True)
+        return UserCommentsResponseModel.from_robtop(response)
 
     async def get_user_level_comments_on_page(
         self,
         user_id: int,
+        count: int,
         page: int = DEFAULT_PAGE,
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
-    ) -> CommentsResponseModel:
+    ) -> LevelCommentsResponseModel:
         response = await self.http.get_user_level_comments_on_page(
             user_id=user_id,
+            count=count,
             page=page,
             strategy=strategy,
         )
 
-        return CommentsResponseModel.from_string(response, use_default=True)
+        return LevelCommentsResponseModel.from_robtop(response)
 
     async def get_level_comments_on_page(
         self,
@@ -700,12 +704,12 @@ class Session:
         count: int,
         page: int = DEFAULT_PAGE,
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
-    ) -> CommentsResponseModel:
+    ) -> LevelCommentsResponseModel:
         response = await self.http.get_level_comments_on_page(
             level_id=level_id, count=count, page=page, strategy=strategy
         )
 
-        return CommentsResponseModel.from_string(response, use_default=True)
+        return LevelCommentsResponseModel.from_robtop(response)
 
     async def get_gauntlets(self) -> GauntletsResponseModel:
         response = await self.http.get_gauntlets()

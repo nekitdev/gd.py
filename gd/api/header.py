@@ -103,9 +103,9 @@ class Header(Binary):
 
         song_offset = reader.read_f32(order)
 
-        # guidelines = Guidelines.from_binary(binary, order)
+        # guidelines = Guidelines.from_binary(binary, order, version)
 
-        color_channels = ColorChannels.from_binary(binary, order)
+        color_channels = ColorChannels.from_binary(binary, order, version)
 
         return cls(
             game_mode=game_mode,
@@ -173,9 +173,9 @@ class Header(Binary):
 
         writer.write_f32(self.song_offset, order)
 
-        # self.guidelines.to_binary(binary, order)
+        # self.guidelines.to_binary(binary, order, version)
 
-        self.color_channels.to_binary(binary, order)
+        self.color_channels.to_binary(binary, order, version)
 
     def is_mini_mode(self) -> bool:
         return self.mini_mode

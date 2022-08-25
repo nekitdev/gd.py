@@ -6,6 +6,7 @@ from attrs import define, field
 from typing_extensions import Protocol
 from yarl import URL
 
+from gd.color import ID_NOT_PRESENT, Color
 from gd.constants import (
     DEFAULT_ACTIVE,
     DEFAULT_AUTO,
@@ -31,10 +32,12 @@ from gd.constants import (
     DEFAULT_RANK,
     DEFAULT_RATING,
     DEFAULT_READ,
+    DEFAULT_RECORD,
     DEFAULT_SCORE,
     DEFAULT_SECRET_COINS,
     DEFAULT_SENT,
     DEFAULT_SIZE,
+    DEFAULT_SPAM,
     DEFAULT_STARS,
     DEFAULT_TWO_PLAYER,
     DEFAULT_UNREAD,
@@ -73,10 +76,12 @@ from gd.enums import (
 from gd.models_constants import (
     COMMENT_BANNED_SEPARATOR,
     CREATOR_SEPARATOR,
-    DATABASE_SEPARATOR,
     FRIEND_REQUEST_SEPARATOR,
     LEADERBOARD_RESPONSE_USERS_SEPARATOR,
     LEADERBOARD_USER_SEPARATOR,
+    LEVEL_COMMENT_SEPARATOR,
+    LEVEL_COMMENT_USER_SEPARATOR,
+    LEVEL_COMMENTS_RESPONSE_SEPARATOR,
     LEVEL_RESPONSE_SEPARATOR,
     LEVEL_SEPARATOR,
     LOGIN_SEPARATOR,
@@ -91,6 +96,8 @@ from gd.models_constants import (
     SEARCH_USERS_RESPONSE_SEPARATOR,
     SONG_SEPARATOR,
     TIMELY_INFO_SEPARATOR,
+    USER_COMMENT_SEPARATOR,
+    USER_COMMENTS_RESPONSE_SEPARATOR,
 )
 from gd.models_utils import (
     concat_comment_banned,
@@ -101,6 +108,11 @@ from gd.models_utils import (
     concat_leaderboard_response_users,
     concat_leaderboard_user,
     concat_level,
+    concat_level_comment,
+    concat_level_comment_inner,
+    concat_level_comment_user,
+    concat_level_comments_response,
+    concat_level_comments_response_comments,
     concat_level_response,
     concat_login,
     concat_message,
@@ -119,6 +131,9 @@ from gd.models_utils import (
     concat_search_users_response_users,
     concat_song,
     concat_timely_info,
+    concat_user_comment,
+    concat_user_comments_response,
+    concat_user_comments_response_comments,
     float_str,
     int_bool,
     parse_get_or,
@@ -131,6 +146,11 @@ from gd.models_utils import (
     split_leaderboard_response_users,
     split_leaderboard_user,
     split_level,
+    split_level_comment,
+    split_level_comment_inner,
+    split_level_comment_user,
+    split_level_comments_response,
+    split_level_comments_response_comments,
     split_level_response,
     split_login,
     split_message,
@@ -149,6 +169,9 @@ from gd.models_utils import (
     split_search_users_response_users,
     split_song,
     split_timely_info,
+    split_user_comment,
+    split_user_comments_response,
+    split_user_comments_response_comments,
 )
 from gd.password import Password
 from gd.robtop import RobTop
@@ -159,13 +182,11 @@ __all__ = (
     "Model",
     "ChestModel",
     "CommentBannedModel",
-    "CommentInnerModel",
-    "CommentModel",
     "CommentUserModel",
     "CreatorModel",
-    "DatabaseModel",
     "FriendRequestModel",
     "GauntletModel",
+    "LevelCommentModel",
     "LevelLeaderboardUserModel",
     "LeaderboardUserModel",
     "LevelModel",
@@ -179,6 +200,7 @@ __all__ = (
     "SearchUserModel",
     "SongModel",
     "TimelyInfoModel",
+    "UserCommentModel",
 )
 
 
@@ -315,7 +337,7 @@ class LoginModel(Model):
         return concat_login(map(str, values))
 
 
-C = TypeVar("C", bound="CreatorModel")
+CRT = TypeVar("CRT", bound="CreatorModel")
 
 
 @define()
@@ -325,7 +347,7 @@ class CreatorModel(Model):
     account_id: int = DEFAULT_ID
 
     @classmethod
-    def from_robtop(cls: Type[C], string: str) -> C:
+    def from_robtop(cls: Type[CRT], string: str) -> CRT:
         id_string, name, account_id_string = split_creator(string)
 
         return cls(int(id_string), name, int(account_id_string))
@@ -338,16 +360,6 @@ class CreatorModel(Model):
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return CREATOR_SEPARATOR in string
-
-
-@define()
-class DatabaseModel(Model):
-    main: bytes
-    levels: bytes
-
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
-        return DATABASE_SEPARATOR in string
 
 
 DEFAULT_START = 0
@@ -1959,6 +1971,419 @@ class LevelModel(Model):
         return LevelDifficulty.DEFAULT
 
 
+LCI = TypeVar("LCI", bound="LevelCommentInnerModel")
+
+
+LEVEL_COMMENT_INNER_LEVEL_ID = 1
+LEVEL_COMMENT_INNER_CONTENT = 2
+LEVEL_COMMENT_INNER_USER_ID = 3
+LEVEL_COMMENT_INNER_RATING = 4
+LEVEL_COMMENT_INNER_ID = 6
+LEVEL_COMMENT_INNER_SPAM = 7
+LEVEL_COMMENT_INNER_CREATED_AT = 9
+LEVEL_COMMENT_INNER_RECORD = 10
+LEVEL_COMMENT_INNER_ROLE_ID = 11
+LEVEL_COMMENT_INNER_COLOR = 12
+
+
+@define()
+class LevelCommentInnerModel(Model):
+    level_id: int = field(default=DEFAULT_ID)
+    content: str = field(default=EMPTY)
+    user_id: int = field(default=DEFAULT_ID)
+    rating: int = field(default=DEFAULT_RATING)
+    id: int = field(default=DEFAULT_ID)
+    spam: bool = field(default=DEFAULT_SPAM)
+    created_at: datetime = field(factory=datetime.utcnow)
+    record: int = field(default=DEFAULT_RECORD)
+    role_id: int = field(default=DEFAULT_ID)
+    color: Color = field(factory=Color.default)
+
+    @classmethod
+    def from_robtop(
+        cls: Type[LCI],
+        string: str,
+        # indexes
+        level_comment_inner_level_id_index: int = LEVEL_COMMENT_INNER_LEVEL_ID,
+        level_comment_inner_content_index: int = LEVEL_COMMENT_INNER_CONTENT,
+        level_comment_inner_user_id_index: int = LEVEL_COMMENT_INNER_USER_ID,
+        level_comment_inner_rating_index: int = LEVEL_COMMENT_INNER_RATING,
+        level_comment_inner_id_index: int = LEVEL_COMMENT_INNER_ID,
+        level_comment_inner_spam_index: int = LEVEL_COMMENT_INNER_SPAM,
+        level_comment_inner_created_at_index: int = LEVEL_COMMENT_INNER_CREATED_AT,
+        level_comment_inner_record_index: int = LEVEL_COMMENT_INNER_RECORD,
+        level_comment_inner_role_id_index: int = LEVEL_COMMENT_INNER_ROLE_ID,
+        level_comment_inner_color_index: int = LEVEL_COMMENT_INNER_COLOR,
+        # defaults
+        level_comment_inner_level_id_default: int = DEFAULT_ID,
+        level_comment_inner_content_default: str = EMPTY,
+        level_comment_inner_user_id_default: int = DEFAULT_ID,
+        level_comment_inner_rating_default: int = DEFAULT_RATING,
+        level_comment_inner_id_default: int = DEFAULT_ID,
+        level_comment_inner_spam_default: bool = DEFAULT_SPAM,
+        level_comment_inner_created_at_default: Optional[datetime] = None,
+        level_comment_inner_record_default: int = DEFAULT_RECORD,
+        level_comment_inner_role_id_default: int = DEFAULT_ID,
+        level_comment_inner_color_default: Optional[Color] = None,
+    ) -> LCI:
+        if level_comment_inner_created_at_default is None:
+            level_comment_inner_created_at_default = datetime.utcnow()
+
+        if level_comment_inner_color_default is None:
+            level_comment_inner_color_default = Color.default()
+
+        mapping = split_level_comment_inner(string)
+
+        level_comment_inner_created_at = mapping.get(level_comment_inner_created_at_index)
+
+        if level_comment_inner_created_at is None:
+            created_at = level_comment_inner_created_at_default
+
+        else:
+            created_at = datetime_from_human(level_comment_inner_created_at)
+
+        return cls(
+            level_id=parse_get_or(
+                int, level_comment_inner_level_id_default, mapping.get(level_comment_inner_level_id_index)
+            ),
+            content=decode_base64_string_url_safe(
+                mapping.get(level_comment_inner_content_index, level_comment_inner_content_default)
+            ),
+            user_id=parse_get_or(
+                int, level_comment_inner_user_id_default, mapping.get(level_comment_inner_user_id_index)
+            ),
+            rating=parse_get_or(
+                int, level_comment_inner_rating_default, mapping.get(level_comment_inner_rating_index)
+            ),
+            id=parse_get_or(int, level_comment_inner_id_default, mapping.get(level_comment_inner_id_index)),
+            spam=parse_get_or(
+                int_bool, level_comment_inner_spam_default, mapping.get(level_comment_inner_spam_index)
+            ),
+            created_at=created_at,
+            record=parse_get_or(
+                int, level_comment_inner_record_default, mapping.get(level_comment_inner_record_index)
+            ),
+            role_id=parse_get_or(
+                int, level_comment_inner_role_id_default, mapping.get(level_comment_inner_role_id_index)
+            ),
+            color=parse_get_or(
+                Color.from_robtop,
+                level_comment_inner_color_default,
+                mapping.get(level_comment_inner_color_index),
+            ),
+        )
+
+    def to_robtop(
+        self,
+        level_comment_inner_level_id_index: int = LEVEL_COMMENT_INNER_LEVEL_ID,
+        level_comment_inner_content_index: int = LEVEL_COMMENT_INNER_CONTENT,
+        level_comment_inner_user_id_index: int = LEVEL_COMMENT_INNER_USER_ID,
+        level_comment_inner_rating_index: int = LEVEL_COMMENT_INNER_RATING,
+        level_comment_inner_id_index: int = LEVEL_COMMENT_INNER_ID,
+        level_comment_inner_spam_index: int = LEVEL_COMMENT_INNER_SPAM,
+        level_comment_inner_created_at_index: int = LEVEL_COMMENT_INNER_CREATED_AT,
+        level_comment_inner_record_index: int = LEVEL_COMMENT_INNER_RECORD,
+        level_comment_inner_role_id_index: int = LEVEL_COMMENT_INNER_ROLE_ID,
+        level_comment_inner_color_index: int = LEVEL_COMMENT_INNER_COLOR,
+    ) -> str:
+        mapping = {
+            level_comment_inner_level_id_index: str(self.level_id),
+            level_comment_inner_content_index: encode_base64_string_url_safe(self.content),
+            level_comment_inner_user_id_index: str(self.user_id),
+            level_comment_inner_rating_index: str(self.rating),
+            level_comment_inner_id_index: str(self.id),
+            level_comment_inner_spam_index: str(int(self.spam)),
+            level_comment_inner_created_at_index: datetime_to_human(self.created_at),
+            level_comment_inner_record_index: str(self.record),
+            level_comment_inner_role_id_index: str(self.role_id),
+            level_comment_inner_color_index: self.color.to_robtop(),
+        }
+
+        return concat_level_comment_inner(mapping)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return COMMENT_INNER_SEPARATOR in string
+
+    def is_spam(self) -> bool:
+        return self.spam
+
+
+LEVEL_COMMENT_USER_NAME = 1
+LEVEL_COMMENT_USER_ICON_ID = 9
+LEVEL_COMMENT_USER_COLOR_1_ID = 10
+LEVEL_COMMENT_USER_COLOR_2_ID = 11
+LEVEL_COMMENT_USER_ICON_TYPE = 14
+LEVEL_COMMENT_USER_GLOW = 15
+LEVEL_COMMENT_USER_ACCOUNT_ID = 16
+
+
+LCU = TypeVar("LCU", bound="LevelCommentUserModel")
+
+
+@define()
+class LevelCommentUserModel(Model):
+    name: str = UNKNOWN
+    icon_id: int = DEFAULT_ICON_ID
+    color_1_id: int = DEFAULT_COLOR_1_ID
+    color_2_id: int = DEFAULT_COLOR_2_ID
+    icon_type: IconType = IconType.DEFAULT
+    glow: bool = DEFAULT_GLOW
+    account_id: int = DEFAULT_ID
+
+    @classmethod
+    def from_robtop(
+        cls: Type[LCU],
+        string: str,
+        # indexes
+        level_comment_user_name_index: int = LEVEL_COMMENT_USER_NAME,
+        level_comment_user_icon_id_index: int = LEVEL_COMMENT_USER_ICON_ID,
+        level_comment_user_color_1_id_index: int = LEVEL_COMMENT_USER_COLOR_1_ID,
+        level_comment_user_color_2_id_index: int = LEVEL_COMMENT_USER_COLOR_2_ID,
+        level_comment_user_icon_type_index: int = LEVEL_COMMENT_USER_ICON_TYPE,
+        level_comment_user_glow_index: int = LEVEL_COMMENT_USER_GLOW,
+        level_comment_user_account_id_index: int = LEVEL_COMMENT_USER_ACCOUNT_ID,
+        # defaults
+        level_comment_user_name_default: str = UNKNOWN,
+        level_comment_user_icon_id_default: int = DEFAULT_ICON_ID,
+        level_comment_user_color_1_id_default: int = DEFAULT_COLOR_1_ID,
+        level_comment_user_color_2_id_default: int = DEFAULT_COLOR_2_ID,
+        level_comment_user_icon_type_default: IconType = IconType.DEFAULT,
+        level_comment_user_glow_default: bool = DEFAULT_GLOW,
+        level_comment_user_account_id_default: int = DEFAULT_ID,
+    ) -> LCU:
+        mapping = split_level_comment_user(string)
+
+        return cls(
+            name=mapping.get(level_comment_user_name_index, level_comment_user_name_default),
+            icon_id=parse_get_or(
+                int, level_comment_user_icon_id_default, mapping.get(level_comment_user_icon_id_index),
+            ),
+            color_1_id=parse_get_or(
+                int, level_comment_user_color_1_id_default, mapping.get(level_comment_user_color_1_id_index),
+            ),
+            color_2_id=parse_get_or(
+                int, level_comment_user_color_2_id_default, mapping.get(level_comment_user_color_2_id_index),
+            ),
+            icon_type=parse_get_or(
+                partial_parse_enum(int, IconType),
+                level_comment_user_icon_type_default,
+                mapping.get(level_comment_user_icon_type_index),
+            ),
+            glow=parse_get_or(
+                int_bool, level_comment_user_glow_default, mapping.get(level_comment_user_glow_index)
+            ),
+            account_id=parse_get_or(
+                int, level_comment_user_account_id_default, mapping.get(level_comment_user_account_id_index),
+            ),
+        )
+
+    def to_robtop(
+        self,
+        level_comment_user_name_index: int = LEVEL_COMMENT_USER_NAME,
+        level_comment_user_icon_id_index: int = LEVEL_COMMENT_USER_ICON_ID,
+        level_comment_user_color_1_id_index: int = LEVEL_COMMENT_USER_COLOR_1_ID,
+        level_comment_user_color_2_id_index: int = LEVEL_COMMENT_USER_COLOR_2_ID,
+        level_comment_user_icon_type_index: int = LEVEL_COMMENT_USER_ICON_TYPE,
+        level_comment_user_glow_index: int = LEVEL_COMMENT_USER_GLOW,
+        level_comment_user_account_id_index: int = LEVEL_COMMENT_USER_ACCOUNT_ID,
+    ) -> str:
+        glow = self.glow
+
+        glow += glow
+
+        mapping = {
+            level_comment_user_name_index: self.name,
+            level_comment_user_icon_id_index: str(self.icon_id),
+            level_comment_user_color_1_id_index: str(self.color_1_id),
+            level_comment_user_color_2_id_index: str(self.color_2_id),
+            level_comment_user_icon_type_index: str(self.icon_type.value),
+            level_comment_user_glow_index: str(glow),
+            level_comment_user_account_id_index: str(self.account_id),
+        }
+
+        return concat_level_comment_user(mapping)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return LEVEL_COMMENT_USER_SEPARATOR in string
+
+
+LC = TypeVar("LC", bound="LevelCommentModel")
+
+
+@define()
+class LevelCommentModel(Model):
+    inner: LevelCommentInnerModel = field(factory=LevelCommentInnerModel)
+    user: LevelCommentUserModel = field(factory=LevelCommentUserModel)
+
+    @classmethod
+    def from_robtop(cls: Type[LC], string: str) -> LC:
+        inner_string, user_string = split_level_comment(string)
+
+        inner = LevelCommentInnerModel.from_robtop(inner_string)
+        user = LevelCommentUserModel.from_robtop(user_string)
+
+        return cls(inner=inner, user=user)
+
+    def to_robtop(self) -> str:
+        values = (self.inner.to_robtop(), self.user.to_robtop())
+
+        return concat_level_comment(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return LEVEL_COMMENT_SEPARATOR in string
+
+
+UC = TypeVar("UC", bound="UserCommentModel")
+
+
+USER_COMMENT_CONTENT = 2
+USER_COMMENT_RATING = 4
+USER_COMMENT_ID = 6
+USER_COMMENT_CREATED_AT = 9
+
+
+@define()
+class UserCommentModel(Model):
+    content: str = field(default=EMPTY)
+    rating: int = field(default=DEFAULT_RATING)
+    id: int = field(default=DEFAULT_ID)
+    created_at: datetime = field(factory=datetime.utcnow)
+
+    @classmethod
+    def from_robtop(
+        cls: Type[UC],
+        string: str,
+        # indexes
+        user_comment_content_index: int = USER_COMMENT_CONTENT,
+        user_comment_rating_index: int = USER_COMMENT_RATING,
+        user_comment_id_index: int = USER_COMMENT_ID,
+        user_comment_created_at_index: int = USER_COMMENT_CREATED_AT,
+        # defaults
+        user_comment_content_default: str = EMPTY,
+        user_comment_rating_default: int = DEFAULT_RATING,
+        user_comment_id_default: int = DEFAULT_ID,
+        user_comment_created_at_default: Optional[datetime] = None,
+    ) -> UC:
+        if user_comment_created_at_default is None:
+            user_comment_created_at_default = datetime.utcnow()
+
+        mapping = split_user_comment(string)
+
+        user_comment_created_at = mapping.get(user_comment_created_at_index)
+
+        if user_comment_created_at is None:
+            created_at = user_comment_created_at_default
+
+        else:
+            created_at = datetime_from_human(user_comment_created_at)
+
+        return cls(
+            content=decode_base64_string_url_safe(
+                mapping.get(user_comment_content_index, user_comment_content_default)
+            ),
+            rating=parse_get_or(
+                int, user_comment_rating_default, mapping.get(user_comment_rating_index)
+            ),
+            id=parse_get_or(int, user_comment_id_default, mapping.get(user_comment_id_index)),
+            created_at=created_at,
+        )
+
+    def to_robtop(
+        self,
+        user_comment_content_index: int = USER_COMMENT_CONTENT,
+        user_comment_rating_index: int = USER_COMMENT_RATING,
+        user_comment_id_index: int = USER_COMMENT_ID,
+        user_comment_created_at_index: int = USER_COMMENT_CREATED_AT,
+    ) -> str:
+        mapping = {
+            user_comment_content_index: decode_base64_string_url_safe(self.content),
+            user_comment_rating_index: str(self.rating),
+            user_comment_id_index: str(self.id),
+            user_comment_created_at_index: datetime_to_human(self.created_at),
+        }
+
+        return concat_user_comment(mapping)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return USER_COMMENT_SEPARATOR in string
+
+
+LCR = TypeVar("LCR", bound="LevelCommentsResponseModel")
+
+
+@define()
+class LevelCommentsResponseModel(Model):
+    comments: List[LevelCommentModel] = field(factory=list)
+    page: PageModel = field(factory=PageModel)
+
+    @classmethod
+    def from_robtop(cls: Type[LCR], string: str) -> LCR:
+        comments_string, page_string = split_level_comments_response(string)
+
+        comments = [
+            LevelCommentModel.from_robtop(string) for string
+            in split_level_comments_response_comments(comments_string)
+        ]
+
+        page = PageModel.from_robtop(page_string)
+
+        return cls(comments=comments, page=page)
+
+    def to_robtop(self) -> str:
+        values = (
+            concat_level_comments_response_comments(
+                comment.to_robtop() for comment in self.comments
+            ),
+            self.page.to_robtop(),
+        )
+
+        return concat_level_comments_response(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return LEVEL_COMMENTS_RESPONSE_SEPARATOR in string
+
+
+UCR = TypeVar("UCR", bound="UserCommentsResponseModel")
+
+
+@define()
+class UserCommentsResponseModel(Model):
+    comments: List[UserCommentModel] = field(factory=list)
+    page: PageModel = field(factory=PageModel)
+
+    @classmethod
+    def from_robtop(cls: Type[UCR], string: str) -> UCR:
+        comments_string, page_string = split_user_comments_response(string)
+
+        comments = [
+            UserCommentModel.from_robtop(string) for string
+            in split_user_comments_response_comments(comments_string)
+        ]
+
+        page = PageModel.from_robtop(page_string)
+
+        return cls(comments=comments, page=page)
+
+    def to_robtop(self) -> str:
+        values = (
+            concat_user_comments_response_comments(
+                comment.to_robtop() for comment in self.comments
+            ),
+            self.page.to_robtop(),
+        )
+
+        return concat_user_comments_response(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return USER_COMMENTS_RESPONSE_SEPARATOR in string
+
+
 LR = TypeVar("LR", bound="LevelResponseModel")
 
 SMART_HASH_COUNT = 40
@@ -1996,7 +2421,13 @@ class LevelResponseModel:
         return cls(level=level, smart_hash=smart_hash, hash=hash, creator=creator)
 
     def to_robtop(self) -> str:
-        values = (self.level.to_robtop(), self.hash)
+        creator = self.creator
+
+        if creator is None:
+            values = (self.level.to_robtop(), self.smart_hash, self.hash)
+
+        else:
+            values = (self.level.to_robtop(), self.smart_hash, self.hash, creator.to_robtop())
 
         return concat_level_response(values)
 

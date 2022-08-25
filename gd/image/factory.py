@@ -26,7 +26,7 @@ from gd.assets import (
     ROBOT_ANIMATION_PATH,
     SPIDER_ANIMATION_PATH,
 )
-from gd.colors import Color
+from gd.color import Color
 from gd.enums import IconType, Orientation
 from gd.image.animation import Animation, Animations, AnimationSheet
 from gd.image.icon import Icon

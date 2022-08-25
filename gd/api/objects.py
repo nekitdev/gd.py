@@ -7,7 +7,7 @@ from typing_extensions import TypeGuard
 from gd.api.hsv import HSV
 from gd.binary import VERSION, Binary
 from gd.binary_utils import BITS, UTF_8, Reader, Writer
-from gd.colors import Color
+from gd.color import Color
 from gd.constants import EMPTY
 from gd.enum_extensions import Enum, Flag
 from gd.enums import (

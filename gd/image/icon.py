@@ -3,7 +3,7 @@ from typing import Iterator, Optional
 from attrs import define, field
 
 from gd.assets import IMAGE_SUFFIX
-from gd.colors import Color
+from gd.color import Color
 from gd.constants import DEFAULT_GLOW
 from gd.enums import IconType
 from gd.image.animation import Animation

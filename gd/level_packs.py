@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, AsyncIterator
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
 
-from gd.colors import Color
+from gd.color import Color
 from gd.entity import Entity
 
 # from gd.enums import Difficulty, GauntletID

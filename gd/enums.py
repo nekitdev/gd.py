@@ -68,7 +68,7 @@ __all__ = (
     "GuidelineColor",
     "InternalType",
     "Filter",
-    "Protection",
+    "Permissions",
     "ByteOrder",
     "Platform",
     "Orientation",
@@ -1061,16 +1061,13 @@ class Filter(Enum):
     DEFAULT = NONE
 
 
-class Protection(Flag):
+class Permissions(Flag):
     NONE = 0
     EXECUTE = 1
     WRITE = 2
     READ = 4
 
-    N = NONE
-    X = EXECUTE
-    W = WRITE
-    R = READ
+    DEFAULT = READ | WRITE | EXECUTE
 
 
 class ByteOrder(Enum):

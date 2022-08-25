@@ -37,6 +37,7 @@ from gd.api.recording import Recording
 from gd.async_utils import maybe_await_call, run_blocking, shutdown_loop
 from gd.constants import (
     BACKSLASH,
+    COMMENT_PAGE_SIZE,
     DEFAULT_CHEST_COUNT,
     DEFAULT_COINS,
     DEFAULT_ID,
@@ -226,8 +227,6 @@ HTTP_ERROR = 400
 CHUNK_SIZE = 64 * 1024
 
 ResponseData = Union[bytes, str, JSONType]
-
-COMMENT_ADD = 1 << 31
 
 
 UNEXPECTED_ERROR_CODE = "got an unexpected error code: {}"
@@ -2444,10 +2443,10 @@ class HTTPClient:
 
     async def get_user_comments_on_page(
         self,
-        user_id: int,
+        account_id: int,
         page: int = DEFAULT_PAGE,
     ) -> str:
-        error_codes = {-1: MissingAccess(FAILED_TO_GET_USER_COMMENTS.format(user_id))}
+        error_codes = {-1: MissingAccess(FAILED_TO_GET_USER_COMMENTS.format(account_id))}
 
         route = Route(
             POST,
@@ -2457,7 +2456,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             page=page,
             total=0,
-            user_id=user_id,
+            account_id=account_id,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -2469,6 +2468,7 @@ class HTTPClient:
     async def get_user_level_comments_on_page(
         self,
         user_id: int,
+        count: int,
         page: int = DEFAULT_PAGE,
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
     ) -> str:
@@ -2476,11 +2476,12 @@ class HTTPClient:
 
         route = Route(
             POST,
-            GET_USER_COMMENTS,
+            GET_USER_LEVEL_COMMENTS,
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             page=page,
+            count=count,
             total=0,
             mode=strategy.value,
             user_id=user_id,
@@ -2504,9 +2505,6 @@ class HTTPClient:
             -1: MissingAccess(FAILED_TO_GET_LEVEL_COMMENTS.format(level_id)),
             -2: NothingFound(LEVEL_COMMENTS),
         }
-
-        if count < 0:
-            count += COMMENT_ADD
 
         route = Route(
             POST,

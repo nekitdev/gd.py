@@ -1,6 +1,6 @@
 # type: ignore  # static type checkers do not understand this
 
-from gd.colors import Color
+from gd.color import Color
 from gd.converters import GameVersion, Password, get_actual_difficulty, value_to_level_difficulty
 from gd.date_time import datetime
 from gd.decorators import cache_by

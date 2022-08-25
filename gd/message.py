@@ -1,10 +1,11 @@
 from __future__ import annotations
+from datetime import datetime
 
 from typing import TYPE_CHECKING, ClassVar, Optional, Type, TypeVar
 
-from attrs import define
+from attrs import define, field
 
-from gd.constants import EMPTY
+from gd.constants import DEFAULT_READ, EMPTY
 from gd.entity import Entity
 from gd.enums import MessageType
 from gd.models import MessageModel
@@ -24,13 +25,15 @@ M = TypeVar("M", bound="Message")
 class Message(Entity):
     SCHEMA: ClassVar[str] = "Re: {message.subject}"
 
-    user: User
-    type: MessageType
+    user: User = field()
+    type: MessageType = field()
 
-    subject: str = EMPTY
-    content: Optional[str] = None
+    created_at: datetime = field(factory=datetime.utcnow)
 
-    was_read: bool = False
+    subject: str = field(default=EMPTY)
+    content: Optional[str] = field(default=None)
+
+    was_read: bool = field(default=DEFAULT_READ)
 
     def __str__(self) -> str:
         content = self.content
@@ -51,6 +54,7 @@ class Message(Entity):
             id=model.id,
             user=User(id=model.user_id, name=model.name, account_id=model.account_id),
             type=type,
+            created_at=model.created_at,
             subject=model.subject,
             content=model.content if model.is_content_present() else None,
             was_read=model.read,

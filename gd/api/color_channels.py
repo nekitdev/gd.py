@@ -5,7 +5,7 @@ from attrs import define, field
 from gd.api.hsv import HSV
 from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
-from gd.colors import Color
+from gd.color import Color
 from gd.constants import BITS, BYTE, DEFAULT_ID
 from gd.enums import ByteOrder, PlayerColor
 

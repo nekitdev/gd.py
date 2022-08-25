@@ -3,7 +3,7 @@ from typing import List
 from aiohttp.web import FileResponse, HTTPNotFound, Request
 
 from gd.async_utils import gather_iterable
-from gd.colors import Color
+from gd.color import Color
 from gd.enums import IconType
 from gd.image.factory import FACTORY, connect_images
 from gd.image.icon import Icon

@@ -30,6 +30,7 @@ from gd.constants import (
     DEFAULT_VERSION,
     EMPTY,
     EMPTY_BYTES,
+    UNKNOWN,
 )
 from gd.entity import Entity
 from gd.enums import (
@@ -40,7 +41,6 @@ from gd.enums import (
     LevelLeaderboardStrategy,
     LevelLength,
     Score,
-    TimelyID,
     TimelyType,
 )
 from gd.errors import MissingAccess
@@ -54,7 +54,7 @@ from gd.versions import CURRENT_GAME_VERSION, GameVersion
 
 if TYPE_CHECKING:
     from gd.client import Client  # noqa
-    from gd.comments import Comment  # noqa
+    from gd.comments import LevelComment  # noqa
 
 __all__ = ("Level",)
 
@@ -112,7 +112,7 @@ class Level(Entity):
     ) -> None:
         writer = Writer(binary)
 
-        super().to_binary(binary, order)
+        super().to_binary(binary, order, version)
 
         data = self.name.encode(encoding)
 
@@ -120,8 +120,11 @@ class Level(Entity):
 
         writer.write(data)
 
-        self.creator.to_binary(binary, order)
-        self.song.to_binary(binary, order)
+        self.creator.to_binary(binary, order, version)
+        self.song.to_binary(binary, order, version)
+
+        self.creator.to_binary(binary, order, version)
+        self.song.to_binary(binary, order, version)
 
         writer.write_f64(self.uploaded_at.timestamp(), order)
         writer.write_f64(self.updated_at.timestamp(), order)
@@ -142,7 +145,7 @@ class Level(Entity):
 
         writer.write_u32(self.downloads, order)
 
-        self.game_version.to_binary(binary, order)
+        self.game_version.to_binary(binary, order, version)
 
         writer.write_i32(self.rating, order)
 
@@ -170,7 +173,7 @@ class Level(Entity):
 
         writer.write_i32(self.score, order)
 
-        self.password_data.to_binary(binary, order)
+        self.password_data.to_binary(binary, order, version)
 
         writer.write_u32(self.original_id, order)
 
@@ -205,8 +208,8 @@ class Level(Entity):
 
         name = reader.read(name_length).decode(encoding)
 
-        creator = User.from_binary(binary, order, encoding)
-        song = Song.from_binary(binary, order, encoding)
+        creator = User.from_binary(binary, order, version, encoding)
+        song = Song.from_binary(binary, order, version, encoding)
 
         uploaded_timestamp = reader.read_f64(order)
         updated_timestamp = reader.read_f64(order)
@@ -226,7 +229,7 @@ class Level(Entity):
 
         downloads = reader.read_u32(order)
 
-        game_version = GameVersion.from_binary(binary, order)
+        game_version = GameVersion.from_binary(binary, order, version)
 
         rating = reader.read_i32(order)
 
@@ -252,7 +255,7 @@ class Level(Entity):
 
         score = reader.read_i32(order)
 
-        password_data = Password.from_binary(binary, order)
+        password_data = Password.from_binary(binary, order, version)
 
         original_id = reader.read_u32(order)
 
@@ -343,6 +346,10 @@ class Level(Entity):
         self.timely_type = model.type
 
         return self
+
+    @classmethod
+    def default(cls: Type[L]) -> L:
+        return cls(id=DEFAULT_ID, name=UNKNOWN, creator=User.default(), song=Song.default())
 
     @classmethod
     def official(
@@ -501,7 +508,7 @@ class Level(Entity):
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
         pages: Iterable[int] = DEFAULT_PAGE,
         amount: int = COMMENT_PAGE_SIZE,
-    ) -> AsyncIterator["Comment"]:
+    ) -> AsyncIterator[LevelComment]:
         return self.client.get_level_comments(
             level=self,
             strategy=strategy,
@@ -516,7 +523,7 @@ class Level(Entity):
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
         page: int = DEFAULT_PAGE,
         count: int = COMMENT_PAGE_SIZE,
-    ) -> AsyncIterator[Comment]:
+    ) -> AsyncIterator[LevelComment]:
         return self.client.get_level_comments_on_page(
             self, page=page, count=count, strategy=strategy
         )
