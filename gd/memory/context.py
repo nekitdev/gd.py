@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Type, TypeVar
 
-from attrs import frozen
+from attrs import field, frozen
 
 from gd.memory.data import AnyData
 from gd.memory.types import Types
-from gd.platform import SYSTEM_PLATFORM_CONFIG, Platform, PlatformConfig
+from gd.platform import Platform, PlatformConfig
 
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
@@ -18,7 +18,7 @@ C = TypeVar("C", bound="Context")
 
 @frozen()
 class Context:
-    config: PlatformConfig = SYSTEM_PLATFORM_CONFIG
+    config: PlatformConfig = field(factory=PlatformConfig.system)
 
     @property
     def platform(self) -> Platform:

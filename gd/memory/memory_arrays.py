@@ -4,7 +4,7 @@ from typing import Any, Generic, Iterable, Iterator, Optional, Type, TypeVar, Un
 from gd.memory.memory import Memory, MemoryType
 from gd.memory.memory_special import MemoryVoid
 from gd.memory.traits import Layout, Read, ReadWrite
-from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
+from gd.platform import PlatformConfig
 from gd.typing import AnyType, DynamicTuple, Namespace, is_instance
 
 __all__ = ("MemoryAbstractArrayType", "MemoryArray", "MemoryMutArray")
@@ -25,7 +25,7 @@ class MemoryAbstractArrayType(MemoryType):
         namespace: Namespace,
         type: Type[Layout] = MemoryVoid,
         length: Optional[int] = None,
-        config: PlatformConfig = SYSTEM_PLATFORM_CONFIG,
+        config: Optional[PlatformConfig] = None,
         **keywords: Any,
     ) -> MAAT:
         self = super().__new__(cls, name, bases, namespace, config=config, **keywords)

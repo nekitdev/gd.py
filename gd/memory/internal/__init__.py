@@ -24,7 +24,6 @@ from typing_extensions import Never
 
 from gd.platform import DARWIN, WINDOWS
 
-
 UNIMPLEMENTED = "this function is not implemented"
 
 

@@ -2,7 +2,7 @@ from typing import Any, Optional, Type, TypeVar
 
 from gd.memory.fields import AnyField
 from gd.memory.memory import Memory, MemoryType
-from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
+from gd.platform import PlatformConfig
 from gd.typing import AnyType, DynamicTuple, Namespace, StringDict
 
 __all__ = ("MemoryAbstractType", "MemoryAbstract", "MemoryStruct", "MemoryUnion")
@@ -21,7 +21,7 @@ class MemoryAbstractType(MemoryType):
         size: int = 0,
         alignment: int = 0,
         fields: Optional[StringDict[AnyField]] = None,
-        config: PlatformConfig = SYSTEM_PLATFORM_CONFIG,
+        config: Optional[PlatformConfig] = None,
         **keywords: Any,
     ) -> MAT:
         self = super().__new__(

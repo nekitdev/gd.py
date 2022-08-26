@@ -107,7 +107,7 @@ from gd.level import Level
 from gd.level_packs import Gauntlet, MapPack
 from gd.message import Message
 from gd.password import Password
-from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM, SYSTEM_PLATFORM_CONFIG, PlatformConfig
+from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM, PlatformConfig
 from gd.relationship import Relationship
 from gd.rewards import Chest, Quest
 from gd.song import Song

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Optional, Type, TypeVar
 
 from gd.errors import NullPointerError
 from gd.memory.memory import Memory, MemoryType
 from gd.memory.memory_special import MemoryVoid
 from gd.memory.traits import Layout, Read, ReadWrite
 from gd.memory.types import uintptr
-from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
+from gd.platform import PlatformConfig
 from gd.typing import AnyType, DynamicTuple, Namespace, is_same_type
 
 if TYPE_CHECKING:
@@ -36,7 +36,7 @@ class MemoryAbstractPointerType(MemoryType):
         namespace: Namespace,
         type: Type[Layout] = MemoryVoid,
         pointer_type: Type[ReadWrite[int]] = uintptr,
-        config: PlatformConfig = SYSTEM_PLATFORM_CONFIG,
+        config: Optional[PlatformConfig] = None,
         **keywords: Any,
     ) -> MAPT:
         self = super().__new__(cls, name, bases, namespace, config=config)

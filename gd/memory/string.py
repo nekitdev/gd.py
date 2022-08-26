@@ -1,12 +1,14 @@
-from typing import TYPE_CHECKING, Type, TypeAlias
+from typing import Type
+from typing_extensions import TypeAlias
+from gd.constants import DEFAULT_ENCODING
 
+from gd.memory.fields import mut_field
 from gd.memory.markers import Struct, Union, char_t, intsize_t, mut_array, mut_pointer, uintsize_t
+from gd.memory.types import types
 from gd.memory.utils import closest_power_of_two
+from gd.platform import PlatformConfig
 
-if TYPE_CHECKING:
-    from gd.memory.state import AbstractState  # noqa
-
-__all__ = ("old_std_string", "std_string")
+__all__ = ("old_string", "string")
 
 CONTENT_SIZE = 0x10
 NULL_BYTE = bytes(1)
@@ -16,15 +18,15 @@ inline_content: TypeAlias = mut_array(char_t, CONTENT_SIZE)
 content_pointer: TypeAlias = mut_pointer(mut_array(char_t))
 
 
-class std_string_content(Union):
-    inline: inline_content
-    pointer: content_pointer
+class string_content(Union):
+    inline: inline_content = mut_field()
+    pointer: content_pointer = mut_field()
 
 
-class std_string(Struct):
-    content: std_string_content
-    length: uintsize_t
-    capacity: uintsize_t
+class string(Struct):
+    content: string_content = mut_field()
+    length: uintsize_t = mut_field()
+    capacity: uintsize_t = mut_field()
 
     def get_value(self) -> str:
         content = self.content
@@ -33,26 +35,20 @@ class std_string(Struct):
 
         if capacity < content.size:
             try:
-                # return to_bytes(content.inline, length).decode()  # <- optimization required
-
-                return self.state.read_at(content.inline.address, length).decode()  # optimized
+                return self.state.read_at(content.inline.address, length).decode(DEFAULT_ENCODING)
 
             except UnicodeDecodeError:
                 pass
 
-        try:
-            # return to_bytes(content.pointer.value, length).decode()  # <- optimization required
-
-            return self.state.read_at(content.pointer.value_address, length).decode()  # optimized
-
-        except UnicodeDecodeError:
-            return EMPTY_STRING
+        return self.state.read_at(content.pointer.value_address, length).decode(
+            DEFAULT_ENCODING
+        )
 
     def set_value(self, value: str) -> None:
         content = self.content
         capacity = self.capacity
 
-        data = value.encode()
+        data = value.encode(DEFAULT_ENCODING)
         length = len(data)
 
         data += NULL_BYTE
@@ -64,9 +60,7 @@ class std_string(Struct):
             if length < content.size:
                 self.capacity = content.size - 1
 
-                # return content.inline.write(data)  # <- optimization required
-
-                self.state.write_at(content.inline.address, data)  # optimized
+                self.state.write_at(content.inline.address, data)
 
             else:
                 size = closest_power_of_two(size)
@@ -77,9 +71,7 @@ class std_string(Struct):
 
                 self.capacity = size - 1
 
-                # return content.pointer.value.write(data)  # <- optimization required
-
-                self.state.write_at(content.pointer.value_address, data)  # optimized
+                self.state.write_at(content.pointer.value_address, data)
 
         else:
             if capacity < content.size:
@@ -89,16 +81,11 @@ class std_string(Struct):
 
     value = property(get_value, set_value)
 
-    # XXX: should this be here?
-
     @classmethod
     def read_value_from(cls, state: "BaseState", address: int) -> str:
         string = cls(state, address)
 
         return string.value
-
-    def write_to(self, state: "BaseState", address: int) -> None:
-        ...
 
     @classmethod
     def write_value_to(cls, value: str, state: "BaseState", address: int) -> None:
@@ -107,29 +94,29 @@ class std_string(Struct):
         string.value = value
 
 
-class old_std_long_string(Struct, origin=3):
+content: TypeAlias = mut_array(char_t)
+
+
+class old_long_string(Struct, origin=3):
     capacity: uintsize_t
     length: uintsize_t
     ref_count: intsize_t
 
-    content: mut_array(char_t)  # <- origin
+    content: content  # <- origin
 
 
-class old_std_string(Struct):
-    pointer: mut_pointer(old_std_long_string)
+old_long_string_pointer: TypeAlias = mut_pointer(old_long_string)
+
+
+class old_string(Struct):
+    pointer: old_long_string_pointer
 
     def get_value(self) -> str:
         long_string = self.pointer.value
 
-        try:
-            # return to_bytes(  # <- optimization required
-            #     long_string.content, long_string.length
-            # ).decode()
-
-            return self.state.read_at(long_string.content.address, long_string.length)  # optimized
-
-        except UnicodeDecodeError:
-            return EMPTY_STRING
+        return self.state.read_at(long_string.content.address, long_string.length).decode(
+            DEFAULT_ENCODING
+        )
 
     def set_value(self, value: str) -> None:
         long_string = self.pointer.value
@@ -159,13 +146,9 @@ class old_std_string(Struct):
 
         long_string.length = length
 
-        # return long_string.content.write(data)  # <- optimization required
-
-        self.state.write_at(long_string.content.address, data)  # optimized
+        self.state.write_at(long_string.content.address, data)
 
     value = property(get_value, set_value)
-
-    # XXX: should this be here?
 
     @classmethod
     def read_value_from(cls, state: "BaseState", address: int) -> str:
@@ -173,11 +156,16 @@ class old_std_string(Struct):
 
         return string.value
 
-    def write_to(self, state: "BaseState", address: int) -> None:
-        ...
-
     @classmethod
     def write_value_to(cls, value: str, state: "BaseState", address: int) -> None:
         string = cls(state, address)
 
         string.value = value
+
+
+@types.register_function
+def string_t(config: PlatformConfig) -> Type[Struct]:
+    if config.platform.is_windows():
+        return string
+
+    return old_string

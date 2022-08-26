@@ -1,11 +1,11 @@
 from typing import ClassVar, Type, TypeVar
 
-from attrs import define
+from attrs import define, field
 
 from gd.enums import Platform
 from gd.memory.data import AnyData, Data
 from gd.memory.traits import Layout
-from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM_CONFIG, PlatformConfig
+from gd.platform import SYSTEM_BITS, PlatformConfig
 from gd.string_utils import tick
 from gd.typing import DecoratorIdentity, StringDict, Unary, get_name
 
@@ -208,7 +208,7 @@ CAN_NOT_FIND_ANY_TYPES = "can not find any types for name {}"
 class Types:
     TYPES: ClassVar[StringDict[GetType]] = {}
 
-    config: PlatformConfig = SYSTEM_PLATFORM_CONFIG
+    config: PlatformConfig = field(factory=PlatformConfig.system)
 
     def get(self, name: str) -> Type[AnyData]:
         return self.fetch(name)(self.config)

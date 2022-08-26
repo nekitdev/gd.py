@@ -1085,11 +1085,21 @@ class Platform(Enum):
 
     UNKNOWN = 0
     ANDROID = 1
-    IOS = 2
-    IPAD_OS = 3
-    LINUX = 4
-    MAC_OS = 5
-    WINDOWS = 6
+    DARWIN = 2
+    LINUX = 3
+    WINDOWS = 4
+
+    def is_android(self) -> bool:
+        return self is type(self).ANDROID
+
+    def is_darwin(self) -> bool:
+        return self is type(self).DARWIN
+
+    def is_linux(self) -> bool:
+        return self is type(self).LINUX
+
+    def is_windows(self) -> bool:
+        return self is type(self).WINDOWS
 
 
 class Orientation(Enum):

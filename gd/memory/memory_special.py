@@ -1,7 +1,7 @@
-from typing import Any, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 from gd.memory.memory import Memory, MemoryType
-from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
+from gd.platform import PlatformConfig
 from gd.typing import AnyType, DynamicTuple, Namespace
 
 __all__ = ("SPECIAL_SIZE", "MemorySpecialType", "MemorySpecial", "MemoryThis", "MemoryVoid")
@@ -18,7 +18,7 @@ class MemorySpecialType(MemoryType):
         name: str,
         bases: DynamicTuple[AnyType],
         namespace: Namespace,
-        config: PlatformConfig = SYSTEM_PLATFORM_CONFIG,
+        config: Optional[PlatformConfig] = None,
         **keywords: Any,
     ) -> MST:
         return super().__new__(

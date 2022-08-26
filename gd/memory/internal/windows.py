@@ -12,6 +12,7 @@ from gd.enums import Permissions
 from gd.memory.internal import unimplemented
 from gd.memory.utils import Structure, external
 from gd.platform import SYSTEM_BITS
+from gd.string_utils import tick
 from gd.typing import AnyException
 
 __all__ = (

@@ -10,6 +10,7 @@ from gd.constants import DEFAULT_ENCODING
 from gd.enums import Permissions
 from gd.memory.internal import unimplemented
 from gd.memory.utils import Structure, external
+from gd.string_utils import tick
 
 __all__ = (
     "open",

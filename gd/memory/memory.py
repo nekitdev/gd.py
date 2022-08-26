@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Optional, Type, TypeVar
 
 from attrs import define, field
 
-from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
+from gd.platform import PlatformConfig
 from gd.typing import AnyType, DynamicTuple, Namespace
 
 if TYPE_CHECKING:
@@ -27,13 +27,16 @@ class MemoryType(type(Generic)):  # type: ignore
         namespace: Namespace,
         size: int = 0,
         alignment: int = 0,
-        config: PlatformConfig = SYSTEM_PLATFORM_CONFIG,
+        config: Optional[PlatformConfig] = None,
         **keywords: Any,
     ) -> MT:
         self = super().__new__(cls, name, bases, namespace, **keywords)
 
         self._size = size
         self._alignment = alignment or size
+
+        if config is None:
+            config = PlatformConfig.system()
 
         self._config = config
 
