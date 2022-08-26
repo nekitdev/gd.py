@@ -8,7 +8,15 @@ from attrs import define, field
 from gd.binary import VERSION
 from gd.binary_utils import BITS, UTF_8, Reader, Writer
 from gd.color import Color
-from gd.constants import BYTE, DEFAULT_GET_DATA, DEFAULT_ID, DEFAULT_RATING, DEFAULT_RECORD, DEFAULT_USE_CLIENT, EMPTY
+from gd.constants import (
+    BYTE,
+    DEFAULT_GET_DATA,
+    DEFAULT_ID,
+    DEFAULT_RATING,
+    DEFAULT_RECORD,
+    DEFAULT_USE_CLIENT,
+    EMPTY,
+)
 from gd.entity import Entity
 from gd.enums import ByteOrder
 from gd.level import Level

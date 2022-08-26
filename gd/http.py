@@ -2148,7 +2148,16 @@ class HTTPClient:
 
         random_string = generate_random_string()
 
-        values = (special_id, level_id, int(like), type.value, random_string, account_id, udid, uuid)
+        values = (
+            special_id,
+            level_id,
+            int(like),
+            type.value,
+            random_string,
+            account_id,
+            udid,
+            uuid,
+        )
 
         check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
 
@@ -2196,7 +2205,16 @@ class HTTPClient:
 
         random_string = generate_random_string()
 
-        values = (special_id, comment_id, int(like), type.value, random_string, account_id, udid, uuid)
+        values = (
+            special_id,
+            comment_id,
+            int(like),
+            type.value,
+            random_string,
+            account_id,
+            udid,
+            uuid,
+        )
 
         check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
 
@@ -2245,7 +2263,16 @@ class HTTPClient:
 
         random_string = generate_random_string()
 
-        values = (special_id, comment_id, int(like), type.value, random_string, account_id, udid, uuid)
+        values = (
+            special_id,
+            comment_id,
+            int(like),
+            type.value,
+            random_string,
+            account_id,
+            udid,
+            uuid,
+        )
 
         check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
 

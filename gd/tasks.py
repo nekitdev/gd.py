@@ -34,8 +34,8 @@ from typing import Any, Awaitable, Callable, Generic, Optional, Type, TypeVar, U
 from aiohttp import ClientError
 from attrs import define, field
 from typing_extensions import ParamSpec
-from gd.constants import DEFAULT_RECONNECT
 
+from gd.constants import DEFAULT_RECONNECT
 from gd.errors import GDError
 from gd.typing import AnyException, DynamicTuple, Nullary, StringDict, Unary
 

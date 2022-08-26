@@ -48,7 +48,9 @@ from gd.memory.internal.internal import (
 from gd.memory.internal.internal import close_process as system_close_process
 from gd.memory.internal.internal import free_memory as system_free_memory
 from gd.memory.internal.internal import get_base_address as system_get_base_address
-from gd.memory.internal.internal import get_base_address_from_handle as system_get_base_address_from_handle
+from gd.memory.internal.internal import (
+    get_base_address_from_handle as system_get_base_address_from_handle,
+)
 from gd.memory.internal.internal import get_process_bits as system_get_process_bits
 from gd.memory.internal.internal import get_process_id_from_name as system_get_process_id_from_name
 from gd.memory.internal.internal import (

@@ -176,7 +176,7 @@ from gd.models_utils import (
 from gd.password import Password
 from gd.robtop import RobTop
 from gd.string_utils import concat_empty
-from gd.versions import GameVersion, CURRENT_GAME_VERSION
+from gd.versions import CURRENT_GAME_VERSION, GameVersion
 
 __all__ = (
     "Model",
@@ -1454,9 +1454,7 @@ class FriendRequestModel(Model):
             account_id=parse_get_or(
                 int, friend_request_account_id_default, mapping.get(friend_request_account_id_index)
             ),
-            id=parse_get_or(
-                int, friend_request_id_default, mapping.get(friend_request_id_index)
-            ),
+            id=parse_get_or(int, friend_request_id_default, mapping.get(friend_request_id_index)),
             content=decode_base64_string_url_safe(
                 mapping.get(friend_request_content_index, friend_request_content_default)
             ),
@@ -1717,7 +1715,9 @@ class LevelModel(Model):
         else:
             demon_difficulty_value = int(level_demon_difficulty)
 
-            demon_difficulty = VALUE_TO_DEMON_DIFFICULTY.get(demon_difficulty_value, DemonDifficulty.HARD_DEMON)
+            demon_difficulty = VALUE_TO_DEMON_DIFFICULTY.get(
+                demon_difficulty_value, DemonDifficulty.HARD_DEMON
+            )
 
         level_editor_time = mapping.get(level_editor_time_index)
 
@@ -1735,9 +1735,7 @@ class LevelModel(Model):
         else:
             copies_time = level_copies_time_default
 
-        timely_id = parse_get_or(
-            int, level_timely_id_default, mapping.get(level_timely_id_index)
-        )
+        timely_id = parse_get_or(int, level_timely_id_default, mapping.get(level_timely_id_index))
 
         if timely_id:
             if timely_id // TIMELY_ID_ADD:
@@ -1887,7 +1885,9 @@ class LevelModel(Model):
         if self.timely_type.is_weekly():
             timely_id += TIMELY_ID_ADD
 
-        demon_difficulty_value = DEMON_DIFFICULTY_TO_VALUE.get(self.demon_difficulty, DemonDifficulty.DEMON.value)
+        demon_difficulty_value = DEMON_DIFFICULTY_TO_VALUE.get(
+            self.demon_difficulty, DemonDifficulty.DEMON.value
+        )
 
         mapping = {
             level_id_index: str(self.id),
@@ -2044,27 +2044,41 @@ class LevelCommentInnerModel(Model):
 
         return cls(
             level_id=parse_get_or(
-                int, level_comment_inner_level_id_default, mapping.get(level_comment_inner_level_id_index)
+                int,
+                level_comment_inner_level_id_default,
+                mapping.get(level_comment_inner_level_id_index),
             ),
             content=decode_base64_string_url_safe(
                 mapping.get(level_comment_inner_content_index, level_comment_inner_content_default)
             ),
             user_id=parse_get_or(
-                int, level_comment_inner_user_id_default, mapping.get(level_comment_inner_user_id_index)
+                int,
+                level_comment_inner_user_id_default,
+                mapping.get(level_comment_inner_user_id_index),
             ),
             rating=parse_get_or(
-                int, level_comment_inner_rating_default, mapping.get(level_comment_inner_rating_index)
+                int,
+                level_comment_inner_rating_default,
+                mapping.get(level_comment_inner_rating_index),
             ),
-            id=parse_get_or(int, level_comment_inner_id_default, mapping.get(level_comment_inner_id_index)),
+            id=parse_get_or(
+                int, level_comment_inner_id_default, mapping.get(level_comment_inner_id_index)
+            ),
             spam=parse_get_or(
-                int_bool, level_comment_inner_spam_default, mapping.get(level_comment_inner_spam_index)
+                int_bool,
+                level_comment_inner_spam_default,
+                mapping.get(level_comment_inner_spam_index),
             ),
             created_at=created_at,
             record=parse_get_or(
-                int, level_comment_inner_record_default, mapping.get(level_comment_inner_record_index)
+                int,
+                level_comment_inner_record_default,
+                mapping.get(level_comment_inner_record_index),
             ),
             role_id=parse_get_or(
-                int, level_comment_inner_role_id_default, mapping.get(level_comment_inner_role_id_index)
+                int,
+                level_comment_inner_role_id_default,
+                mapping.get(level_comment_inner_role_id_index),
             ),
             color=parse_get_or(
                 Color.from_robtop,
@@ -2157,13 +2171,19 @@ class LevelCommentUserModel(Model):
         return cls(
             name=mapping.get(level_comment_user_name_index, level_comment_user_name_default),
             icon_id=parse_get_or(
-                int, level_comment_user_icon_id_default, mapping.get(level_comment_user_icon_id_index),
+                int,
+                level_comment_user_icon_id_default,
+                mapping.get(level_comment_user_icon_id_index),
             ),
             color_1_id=parse_get_or(
-                int, level_comment_user_color_1_id_default, mapping.get(level_comment_user_color_1_id_index),
+                int,
+                level_comment_user_color_1_id_default,
+                mapping.get(level_comment_user_color_1_id_index),
             ),
             color_2_id=parse_get_or(
-                int, level_comment_user_color_2_id_default, mapping.get(level_comment_user_color_2_id_index),
+                int,
+                level_comment_user_color_2_id_default,
+                mapping.get(level_comment_user_color_2_id_index),
             ),
             icon_type=parse_get_or(
                 partial_parse_enum(int, IconType),
@@ -2171,10 +2191,14 @@ class LevelCommentUserModel(Model):
                 mapping.get(level_comment_user_icon_type_index),
             ),
             glow=parse_get_or(
-                int_bool, level_comment_user_glow_default, mapping.get(level_comment_user_glow_index)
+                int_bool,
+                level_comment_user_glow_default,
+                mapping.get(level_comment_user_glow_index),
             ),
             account_id=parse_get_or(
-                int, level_comment_user_account_id_default, mapping.get(level_comment_user_account_id_index),
+                int,
+                level_comment_user_account_id_default,
+                mapping.get(level_comment_user_account_id_index),
             ),
         )
 
@@ -2325,8 +2349,8 @@ class LevelCommentsResponseModel(Model):
         comments_string, page_string = split_level_comments_response(string)
 
         comments = [
-            LevelCommentModel.from_robtop(string) for string
-            in split_level_comments_response_comments(comments_string)
+            LevelCommentModel.from_robtop(string)
+            for string in split_level_comments_response_comments(comments_string)
         ]
 
         page = PageModel.from_robtop(page_string)
@@ -2361,8 +2385,8 @@ class UserCommentsResponseModel(Model):
         comments_string, page_string = split_user_comments_response(string)
 
         comments = [
-            UserCommentModel.from_robtop(string) for string
-            in split_user_comments_response_comments(comments_string)
+            UserCommentModel.from_robtop(string)
+            for string in split_user_comments_response_comments(comments_string)
         ]
 
         page = PageModel.from_robtop(page_string)
@@ -2398,7 +2422,9 @@ class LevelResponseModel:
 
     @smart_hash.default
     def default_smart_hash(self) -> str:
-        return sha1_string_with_salt(generate_level_seed(self.level.to_robtop(), SMART_HASH_COUNT), Salt.LEVEL)
+        return sha1_string_with_salt(
+            generate_level_seed(self.level.to_robtop(), SMART_HASH_COUNT), Salt.LEVEL
+        )
 
     @hash.default
     def default_hash(self) -> str:
@@ -2467,21 +2493,27 @@ class SearchLevelsResponseModel(Model):
 
     @classmethod
     def from_robtop(cls: Type[SLR], string: str) -> SLR:
-        levels_string, creators_string, songs_string, page_string, hash = split_search_levels_response(string)
+        (
+            levels_string,
+            creators_string,
+            songs_string,
+            page_string,
+            hash,
+        ) = split_search_levels_response(string)
 
         levels = [
-            LevelModel.from_robtop(string) for string
-            in split_search_levels_response_levels(levels_string)
+            LevelModel.from_robtop(string)
+            for string in split_search_levels_response_levels(levels_string)
         ]
 
         creators = [
-            CreatorModel.from_robtop(string) for string
-            in split_search_levels_response_creators(creators_string)
+            CreatorModel.from_robtop(string)
+            for string in split_search_levels_response_creators(creators_string)
         ]
 
         songs = [
-            SongModel.from_robtop(string) for string
-            in split_search_levels_response_songs(songs_string)
+            SongModel.from_robtop(string)
+            for string in split_search_levels_response_songs(songs_string)
         ]
 
         page = PageModel.from_robtop(page_string)
@@ -2491,7 +2523,9 @@ class SearchLevelsResponseModel(Model):
     def to_robtop(self) -> str:
         values = (
             concat_search_levels_response_levels(level.to_robtop() for level in self.levels),
-            concat_search_levels_response_creators(creator.to_robtop() for creator in self.creators),
+            concat_search_levels_response_creators(
+                creator.to_robtop() for creator in self.creators
+            ),
             concat_search_levels_response_songs(song.to_robtop() for song in self.songs),
             self.page.to_robtop(),
             self.hash,

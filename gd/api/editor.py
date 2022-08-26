@@ -19,7 +19,14 @@ from attrs import define, field
 
 from gd.api.color_channels import ColorChannels
 from gd.api.header import Header
-from gd.api.objects import Object, Trigger, has_target_group, is_trigger, object_from_binary, object_to_binary
+from gd.api.objects import (
+    Object,
+    Trigger,
+    has_target_group,
+    is_trigger,
+    object_from_binary,
+    object_to_binary,
+)
 from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder, Speed, SpeedChange, SpeedMagic

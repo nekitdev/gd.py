@@ -302,8 +302,8 @@ LEVEL_DIFFICULTY_TO_DIFFICULTY = {
 
 
 DIFFICULTY_TO_LEVEL_DIFFICULTY = {
-    difficulty: level_difficulty for level_difficulty, difficulty
-    in LEVEL_DIFFICULTY_TO_DIFFICULTY.items()
+    difficulty: level_difficulty
+    for level_difficulty, difficulty in LEVEL_DIFFICULTY_TO_DIFFICULTY.items()
 }
 
 

@@ -119,11 +119,11 @@ class Filters:
             type=self.strategy.value,
             diff=concat_comma(
                 map(
-                    str, (
-                        difficulty.into_level_difficulty().value for difficulty in self.difficulties
-                    )
+                    str,
+                    (difficulty.into_level_difficulty().value for difficulty in self.difficulties),
                 )
-            ) or DASH,
+            )
+            or DASH,
             len=concat_comma(map(str, (length.value for length in self.lengths))) or DASH,
             featured=int(self.featured),
             original=int(self.require_original),

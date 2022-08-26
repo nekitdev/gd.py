@@ -6,8 +6,8 @@ from types import TracebackType as Traceback
 from typing import Generator, Optional, Type, TypeVar, overload
 
 from typing_extensions import TypeAlias
-from gd.constants import DEFAULT_ENCODING
 
+from gd.constants import DEFAULT_ENCODING
 from gd.enums import Permissions
 from gd.memory.internal import unimplemented
 from gd.memory.utils import Structure, external
@@ -298,7 +298,9 @@ def _virtual_protect(
 
 
 @extern_fn(KERNEL.IsWow64Process)
-def _is_wow_64_process_via_pointer(handle: wintypes.HANDLE, bool_ptr: wintypes.PBOOL) -> wintypes.BOOL:
+def _is_wow_64_process_via_pointer(
+    handle: wintypes.HANDLE, bool_ptr: wintypes.PBOOL
+) -> wintypes.BOOL:
     pass
 
 
@@ -463,9 +465,7 @@ def protect(
 ) -> int:
     old_protect = wintypes.DWORD(0)
 
-    _virtual_protect(
-        handle, address, size, PERMISSIONS[permissions], ctypes.byref(old_protect)
-    )
+    _virtual_protect(handle, address, size, PERMISSIONS[permissions], ctypes.byref(old_protect))
 
     return old_protect.value
 

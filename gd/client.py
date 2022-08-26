@@ -74,7 +74,15 @@ from gd.enums import (
 )
 from gd.errors import ClientError, MissingAccess, NothingFound
 from gd.events.controller import Controller
-from gd.events.listeners import DEFAULT_DELAY, DailyLevelListener, FriendRequestListener, Listener, MessageListener, RateListener, WeeklyLevelListener
+from gd.events.listeners import (
+    DEFAULT_DELAY,
+    DailyLevelListener,
+    FriendRequestListener,
+    Listener,
+    MessageListener,
+    RateListener,
+    WeeklyLevelListener,
+)
 from gd.filters import Filters
 from gd.friend_request import FriendRequest
 from gd.http import HTTPClient
@@ -496,7 +504,9 @@ class Client:
             )
 
         else:  # otherwise, request normally
-            profile_model = await self.session.get_user_profile(account_id=search_user_model.account_id)
+            profile_model = await self.session.get_user_profile(
+                account_id=search_user_model.account_id
+            )
 
         return User.from_search_user_and_profile_models(
             search_user_model, profile_model
@@ -506,7 +516,9 @@ class Client:
     async def search_users_on_page(
         self, query: IntString, page: int = DEFAULT_PAGE
     ) -> AsyncIterator[User]:
-        search_users_response_model = await self.session.search_users_on_page(query=query, page=page)
+        search_users_response_model = await self.session.search_users_on_page(
+            query=query, page=page
+        )
 
         for search_user_model in search_users_response_model.users:
             yield User.from_search_user_model(search_user_model).attach_client(self)
@@ -583,7 +595,9 @@ class Client:
         self, response_model: SearchLevelsResponseModel
     ) -> Iterator[Tuple[LevelModel, User, Song]]:
         songs = (Song.from_model(model).attach_client(self) for model in response_model.songs)
-        creators = (User.from_creator_model(model).attach_client(self) for model in response_model.creators)
+        creators = (
+            User.from_creator_model(model).attach_client(self) for model in response_model.creators
+        )
 
         id_to_song = {song.id: song for song in songs}
         id_to_creator = {creator.id: creator for creator in creators}
@@ -617,7 +631,9 @@ class Client:
 
         return level.update_with_timely_model(timely_model)
 
-    async def get_level(self, level_id: int, get_data: bool = True, use_client: bool = False) -> Level:
+    async def get_level(
+        self, level_id: int, get_data: bool = True, use_client: bool = False
+    ) -> Level:
         get_data = get_data or level_id < 0
 
         if get_data:
@@ -625,7 +641,9 @@ class Client:
                 check_client_login(self)
 
                 response_model = await self.session.get_level(
-                    level_id=level_id, account_id=self.account_id, encoded_password=self.encoded_password
+                    level_id=level_id,
+                    account_id=self.account_id,
+                    encoded_password=self.encoded_password,
                 )
 
             else:
@@ -1095,10 +1113,7 @@ class Client:
         pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[UserComment]:
         return run_iterables(
-            (
-                self.get_user_comments_on_page(user=user, page=page).unwrap()
-                for page in pages
-            ),
+            (self.get_user_comments_on_page(user=user, page=page).unwrap() for page in pages),
             ClientError,
         )
 
@@ -1314,7 +1329,10 @@ class Client:
         self, name: str, pages: Iterable[int] = DEFAULT_PAGES
     ) -> AsyncIterator[Song]:
         return run_iterables(
-            (self.get_newgrounds_artist_songs_on_page(name=name, page=page).unwrap() for page in pages),
+            (
+                self.get_newgrounds_artist_songs_on_page(name=name, page=page).unwrap()
+                for page in pages
+            ),
             ClientError,
         )
 

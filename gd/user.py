@@ -325,9 +325,7 @@ class User(Entity):
 
     @wrap_async_iter
     def get_levels(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Level]:
-        return self.client.search_levels(
-            pages=pages, filters=Filters.by_user(), user=self
-        ).unwrap()
+        return self.client.search_levels(pages=pages, filters=Filters.by_user(), user=self).unwrap()
 
     @wrap_async_iter
     def get_comments_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[UserComment]:

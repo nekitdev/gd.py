@@ -1,6 +1,6 @@
 from __future__ import annotations
-from datetime import datetime
 
+from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar, Optional, Type, TypeVar
 
 from attrs import define, field

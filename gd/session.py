@@ -743,7 +743,9 @@ class Session:
         )
         return ChestsResponseModel.from_string(response, use_default=True)
 
-    async def get_featured_artists_on_page(self, page: int = DEFAULT_PAGE) -> FeaturedArtistsResponseModel:
+    async def get_featured_artists_on_page(
+        self, page: int = DEFAULT_PAGE
+    ) -> FeaturedArtistsResponseModel:
         response = await self.http.get_featured_artists_on_page(page=page)
         return FeaturedArtistsResponseModel.from_string(response, use_default=True)
 
@@ -765,7 +767,9 @@ class Session:
 
         return artist_info
 
-    async def search_newgrounds_songs_on_page(self, query: str, page: int = DEFAULT_PAGE) -> List[SongModel]:
+    async def search_newgrounds_songs_on_page(
+        self, query: str, page: int = DEFAULT_PAGE
+    ) -> List[SongModel]:
         response = await self.http.search_newgrounds_songs_on_page(query=query, page=page)
         return list(map(SongModel.from_dict, search_song_data(response)))
 
@@ -775,7 +779,9 @@ class Session:
         response = await self.http.search_newgrounds_users_on_page(query=query, page=page)
         return list(search_users(response))
 
-    async def get_newgrounds_user_songs_on_page(self, name: str, page: int = DEFAULT_PAGE) -> List[SongModel]:
+    async def get_newgrounds_user_songs_on_page(
+        self, name: str, page: int = DEFAULT_PAGE
+    ) -> List[SongModel]:
         response = await self.http.get_newgrounds_user_songs_on_page(name=name, page=page)
         return [
             SongModel.from_dict(data, author=name)
