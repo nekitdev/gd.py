@@ -319,11 +319,15 @@ class User(Entity):
 
     @wrap_async_iter
     def get_levels_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Level]:
-        return self.client.search_levels_on_page(page=page, filters=Filters.by_user(), user=self)
+        return self.client.search_levels_on_page(
+            page=page, filters=Filters.by_user(), user=self
+        ).unwrap()
 
     @wrap_async_iter
     def get_levels(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Level]:
-        return self.client.search_levels(pages=pages, filters=Filters.by_user(), user=self)
+        return self.client.search_levels(
+            pages=pages, filters=Filters.by_user(), user=self
+        ).unwrap()
 
     @wrap_async_iter
     def get_comments_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[UserComment]:
@@ -335,7 +339,9 @@ class User(Entity):
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
         page: int = DEFAULT_PAGE,
     ) -> AsyncIterator[LevelComment]:
-        return self.client.get_user_level_comments_on_page(user=self, page=page, strategy=strategy).unwrap()
+        return self.client.get_user_level_comments_on_page(
+            user=self, page=page, strategy=strategy
+        ).unwrap()
 
     @wrap_async_iter
     def get_comments(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[UserComment]:
@@ -347,7 +353,9 @@ class User(Entity):
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
         pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[LevelComment]:
-        return self.client.get_user_comments(user=self, pages=pages, strategy=strategy).unwrap()
+        return self.client.get_user_level_comments(
+            user=self, pages=pages, strategy=strategy
+        ).unwrap()
 
     @property
     def icon_id_by_type(self) -> Dict[IconType, int]:

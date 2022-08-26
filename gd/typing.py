@@ -72,8 +72,6 @@ AnyCallable = DynamicCallable[Any]
 AnyException: TypeAlias = BaseException
 AnyExceptionType: TypeAlias = Type[AnyException]
 
-AnyIterable = Union[AsyncIterable[T], Iterable[T]]
-
 Nullary = Callable[[], R]
 Unary = Callable[[T], R]
 Binary = Callable[[T, U], R]

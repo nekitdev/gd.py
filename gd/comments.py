@@ -8,7 +8,7 @@ from attrs import define, field
 from gd.binary import VERSION
 from gd.binary_utils import BITS, UTF_8, Reader, Writer
 from gd.color import Color
-from gd.constants import BYTE, DEFAULT_GET_DATA, DEFAULT_RATING, DEFAULT_RECORD, DEFAULT_USE_CLIENT, EMPTY
+from gd.constants import BYTE, DEFAULT_GET_DATA, DEFAULT_ID, DEFAULT_RATING, DEFAULT_RECORD, DEFAULT_USE_CLIENT, EMPTY
 from gd.entity import Entity
 from gd.enums import ByteOrder
 from gd.level import Level
@@ -25,6 +25,9 @@ class Comment(Entity):
     content: str
 
     created_at: datetime
+
+    def __str__(self) -> str:
+        return self.content
 
     def is_disliked(self) -> bool:
         return self.rating < 0
@@ -48,6 +51,10 @@ class UserComment(Comment):
 
     async def delete(self) -> None:
         await self.client.delete_user_comment(self)
+
+    @classmethod
+    def default(cls: Type[UC]) -> UC:
+        return cls(id=DEFAULT_ID, author=User.default())
 
     @classmethod
     def from_model(cls: Type[UC], model: UserCommentModel, author: User) -> UC:
@@ -130,6 +137,10 @@ class LevelComment(Comment):
     content: str = field(default=EMPTY)
 
     created_at: datetime = field(factory=datetime.utcnow)
+
+    @classmethod
+    def default(cls: Type[LC]) -> LC:
+        return cls(id=DEFAULT_ID, author=User.default(), level=Level.default())
 
     @classmethod
     def from_model(cls: Type[LC], model: LevelCommentModel) -> LC:

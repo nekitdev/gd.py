@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from attrs import define, field
 
-from gd.constants import UNKNOWN
+from gd.constants import DEFAULT_CHEST_COUNT, DEFAULT_DIAMONDS, DEFAULT_KEYS, DEFAULT_ORBS, UNKNOWN
 from gd.entity import Entity
 from gd.enums import QuestType, ShardType
 
@@ -19,24 +19,20 @@ CHEST = "Chest; orbs: {}, diamonds: {}, keys: {}, shard: {}, new in {}"
 
 @define()
 class Chest(Entity):
-    orbs: int = field(default=0)
-    diamonds: int = field(default=0)
+    orbs: int = field(default=DEFAULT_ORBS)
+    diamonds: int = field(default=DEFAULT_DIAMONDS)
     shard_type: ShardType = field(default=ShardType.UNKNOWN)
-    keys: int = field(default=0)
-    count: int = field(default=0)
+    keys: int = field(default=DEFAULT_KEYS)
+    count: int = field(default=DEFAULT_CHEST_COUNT)
 
     delta: timedelta = field(factory=timedelta)
 
-    _created_at: datetime = field(factory=datetime.utcnow, init=False, repr=False)
+    created_at: datetime = field(factory=datetime.utcnow, init=False)
 
     def __str__(self) -> str:
         return CHEST.format(
             self.orbs, self.diamonds, self.keys, case_fold(self.shard_type.name), self.delta
         )
-
-    @property
-    def created_at(self) -> datetime:
-        return self._created_at
 
     @property
     def ready_at(self) -> datetime:
@@ -56,7 +52,7 @@ class Quest(Entity):
 
     delta: timedelta = field(factory=timedelta)
 
-    _created_at: datetime = field(factory=datetime.utcnow, init=False, repr=False)
+    created_at: datetime = field(factory=datetime.utcnow)
 
     def __str__(self) -> str:
         if self.type is QuestType.UNKNOWN:
@@ -65,10 +61,6 @@ class Quest(Entity):
         return QUEST.format(
             tick(self.name), self.amount, case_fold(self.type.name), self.reward, self.delta
         )
-
-    @property
-    def created_at(self) -> datetime:
-        return self._created_at
 
     @property
     def new_at(self) -> datetime:

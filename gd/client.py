@@ -1125,6 +1125,22 @@ class Client:
             yield LevelComment.from_model(model).attach_client(self)
 
     @wrap_async_iter
+    def get_user_level_comments(
+        self,
+        user: User,
+        count: int = COMMENT_PAGE_SIZE,
+        pages: Iterable[int] = DEFAULT_PAGES,
+        strategy: CommentStrategy = CommentStrategy.DEFAULT,
+    ) -> AsyncIterator[LevelComment]:
+        return run_iterables(
+            (
+                self.get_user_level_comments_on_page(user=user, count=count, page=page).unwrap()
+                for page in pages
+            ),
+            ClientError,
+        )
+
+    @wrap_async_iter
     async def get_level_comments_on_page(
         self,
         level: Level,

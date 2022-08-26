@@ -103,6 +103,9 @@ class Level(Entity):
     timely_type: TimelyType = field(default=TimelyType.DEFAULT)
     timely_id: int = field(default=DEFAULT_ID)
 
+    def __str__(self) -> str:
+        return self.name
+
     def to_binary(
         self,
         binary: BinaryIO,
@@ -500,22 +503,7 @@ class Level(Entity):
         self,
         strategy: LevelLeaderboardStrategy = LevelLeaderboardStrategy.DEFAULT,
     ) -> AsyncIterator[User]:
-        return self.client.get_level_leaderboard(self, strategy=strategy)
-
-    @wrap_async_iter
-    def get_comments(
-        self,
-        strategy: CommentStrategy = CommentStrategy.DEFAULT,
-        pages: Iterable[int] = DEFAULT_PAGE,
-        amount: int = COMMENT_PAGE_SIZE,
-    ) -> AsyncIterator[LevelComment]:
-        return self.client.get_level_comments(
-            level=self,
-            strategy=strategy,
-            pages=pages,
-            amount=amount,
-            concurrent=concurrent,
-        )
+        return self.client.get_level_leaderboard(self, strategy=strategy).unwrap()
 
     @wrap_async_iter
     def get_comments_on_page(
@@ -526,4 +514,18 @@ class Level(Entity):
     ) -> AsyncIterator[LevelComment]:
         return self.client.get_level_comments_on_page(
             self, page=page, count=count, strategy=strategy
-        )
+        ).unwrap()
+
+    @wrap_async_iter
+    def get_comments(
+        self,
+        strategy: CommentStrategy = CommentStrategy.DEFAULT,
+        count: int = COMMENT_PAGE_SIZE,
+        pages: Iterable[int] = DEFAULT_PAGE,
+    ) -> AsyncIterator[LevelComment]:
+        return self.client.get_level_comments(
+            level=self,
+            strategy=strategy,
+            count=count,
+            pages=pages,
+        ).unwrap()

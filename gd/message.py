@@ -36,9 +36,7 @@ class Message(Entity):
     was_read: bool = field(default=DEFAULT_READ)
 
     def __str__(self) -> str:
-        content = self.content
-
-        return EMPTY if content is None else content
+        return self.subject
 
     def is_incoming(self) -> bool:
         return self.type.is_incoming()

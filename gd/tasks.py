@@ -96,7 +96,7 @@ class ExponentialBackoff:
         r"""Computes the next delay.
 
         Returns the next delay to wait according to the exponential
-        backoff algorithm. This is a value between $0$ and $m \cdot b ^ e$
+        backoff algorithm. This is a value between $0$ and $m \cdot b^e$
         where $e$ (`exponent`) starts off at $0$ and is incremented at every
         invocation of this method up to a maximum of $l$ (`limit`).
 

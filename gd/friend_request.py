@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Type, TypeVar
 
 from attrs import define, field
 
-from gd.constants import DEFAULT_READ, EMPTY
+from gd.constants import DEFAULT_ID, DEFAULT_READ, EMPTY
 from gd.entity import Entity
 from gd.enums import FriendRequestType
 from gd.models import FriendRequestModel
@@ -33,6 +33,10 @@ class FriendRequest(Entity):
 
     def __str__(self) -> str:
         return self.content
+
+    @classmethod
+    def default(cls: Type[FR]) -> FR:
+        return cls(id=DEFAULT_ID, user=User.default(), type=FriendRequestType.DEFAULT)
 
     @classmethod
     def from_model(cls: Type[FR], model: FriendRequestModel, type: FriendRequestType) -> FR:

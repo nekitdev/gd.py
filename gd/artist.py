@@ -100,8 +100,8 @@ class Artist(Entity):
 
     @wrap_async_iter
     def get_songs_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Song]:
-        return self.client.get_newgrounds_artist_songs_on_page(self, page=page)
+        return self.client.get_newgrounds_artist_songs_on_page(self, page=page).unwrap()
 
     @wrap_async_iter
     def get_songs(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Song]:
-        return self.client.get_newgrounds_artist_songs(self, pages=pages)
+        return self.client.get_newgrounds_artist_songs(self, pages=pages).unwrap()
