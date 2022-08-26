@@ -480,7 +480,7 @@ def read(handle: int, address: int, size: int) -> bytes:
     return buffer.raw
 
 
-def write(handle: int, address: int, data: bytes) -> int:
+def write(handle: int, address: int, data: bytes) -> None:
     size = len(data)
 
     buffer = ctypes.create_string_buffer(data, size)
@@ -488,5 +488,3 @@ def write(handle: int, address: int, data: bytes) -> int:
     bytes_written = ctypes.c_size_t(0)
 
     _write_process_memory(handle, address, buffer, size, ctypes.byref(bytes_written))
-
-    return bytes_written.value
