@@ -100,7 +100,7 @@ def external(function_pointer: Any) -> DecoratorIdentity[Callable[..., Any]]:
         argument_types = list(annotations.values())
 
         if argument_types:
-            set_attribute(function_pointer, ARGUMENT_TYPES, return_type)
+            set_attribute(function_pointer, ARGUMENT_TYPES, argument_types)
 
         @wraps(function)
         def handle_call(*args: Any) -> Any:

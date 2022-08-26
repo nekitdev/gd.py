@@ -297,7 +297,7 @@ def _virtual_protect(
     ...
 
 
-@extern_fn(KERNEL.IsWow64Process)
+@external(KERNEL.IsWow64Process)
 def _is_wow_64_process_via_pointer(
     handle: wintypes.HANDLE, bool_ptr: wintypes.PBOOL
 ) -> wintypes.BOOL:
@@ -361,19 +361,19 @@ def _iter_modules(process_id: int) -> Generator[ModuleEntry, None, None]:
 def _is_wow_64_process(handle: int) -> bool:
     result = wintypes.BOOL(0)
 
-    _is_wow_64_process_via_pointer(process_handle, ctypes.byref(result))
+    _is_wow_64_process_via_pointer(handle, ctypes.byref(result))
 
     return bool(result.value)
 
 
 def get_process_bits(process_id: int) -> int:
-    with _close_handle_manager(open_process(process_id)) as handle:
+    with _close_handle_manager(open(process_id)) as handle:
         return get_process_bits_from_handle(handle)
 
 
 def get_process_bits_from_handle(handle: int) -> int:
     if SYSTEM_BITS == 64:
-        if _is_wow_64_process(process_handle):
+        if _is_wow_64_process(handle):
             return 32
 
         return 64
