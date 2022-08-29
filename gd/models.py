@@ -115,8 +115,8 @@ from gd.models_utils import (
     concat_level_comment_user,
     concat_level_comments_response,
     concat_level_comments_response_comments,
-    concat_level_leaderboard_user,
     concat_level_leaderboard_response_users,
+    concat_level_leaderboard_user,
     concat_level_response,
     concat_login,
     concat_message,
@@ -155,8 +155,8 @@ from gd.models_utils import (
     split_level_comment_user,
     split_level_comments_response,
     split_level_comments_response_comments,
-    split_level_leaderboard_user,
     split_level_leaderboard_response_users,
+    split_level_leaderboard_user,
     split_level_response,
     split_login,
     split_message,
@@ -277,12 +277,8 @@ class SongModel(Model):
             artist_name=mapping.get(artist_name_index, artist_name_default),
             artist_id=parse_get_or(int, artist_id_default, mapping.get(artist_id_index)),
             size=parse_get_or(float, size_default, mapping.get(size_index)),
-            youtube_video_id=mapping.get(
-                youtube_video_id_index, youtube_video_id_default
-            ),
-            youtube_channel_id=mapping.get(
-                youtube_channel_id_index, youtube_channel_id_default
-            ),
+            youtube_video_id=mapping.get(youtube_video_id_index, youtube_video_id_default),
+            youtube_channel_id=mapping.get(youtube_channel_id_index, youtube_channel_id_default),
             unknown=mapping.get(unknown_index, unknown_default),
             download_url=download_url,
         )
@@ -498,44 +494,26 @@ class SearchUserModel(Model):
         return cls(
             name=mapping.get(name_index, name_default),
             id=parse_get_or(int, id_default, mapping.get(id_index)),
-            stars=parse_get_or(
-                int, stars_default, mapping.get(stars_index)
-            ),
-            demons=parse_get_or(
-                int, demons_default, mapping.get(demons_index)
-            ),
+            stars=parse_get_or(int, stars_default, mapping.get(stars_index)),
+            demons=parse_get_or(int, demons_default, mapping.get(demons_index)),
             rank=rank,
             creator_points=parse_get_or(
                 int,
                 creator_points_default,
                 mapping.get(creator_points_index),
             ),
-            icon_id=parse_get_or(
-                int, icon_id_default, mapping.get(icon_id_index)
-            ),
-            color_1_id=parse_get_or(
-                int, color_1_id_default, mapping.get(color_1_id_index)
-            ),
-            color_2_id=parse_get_or(
-                int, color_2_id_default, mapping.get(color_2_id_index)
-            ),
-            secret_coins=parse_get_or(
-                int, secret_coins_default, mapping.get(secret_coins_index)
-            ),
+            icon_id=parse_get_or(int, icon_id_default, mapping.get(icon_id_index)),
+            color_1_id=parse_get_or(int, color_1_id_default, mapping.get(color_1_id_index)),
+            color_2_id=parse_get_or(int, color_2_id_default, mapping.get(color_2_id_index)),
+            secret_coins=parse_get_or(int, secret_coins_default, mapping.get(secret_coins_index)),
             icon_type=parse_get_or(
                 partial_parse_enum(int, IconType),
                 icon_type_default,
                 mapping.get(icon_type_index),
             ),
-            glow=parse_get_or(
-                int_bool, glow_default, mapping.get(glow_index)
-            ),
-            account_id=parse_get_or(
-                int, account_id_default, mapping.get(account_id_index)
-            ),
-            user_coins=parse_get_or(
-                int, user_coins_default, mapping.get(user_coins_index)
-            ),
+            glow=parse_get_or(int_bool, glow_default, mapping.get(glow_index)),
+            account_id=parse_get_or(int, account_id_default, mapping.get(account_id_index)),
+            user_coins=parse_get_or(int, user_coins_default, mapping.get(user_coins_index)),
         )
 
     def to_robtop(
@@ -739,21 +717,11 @@ class ProfileModel(Model):
             creator_points=parse_get_or(
                 int, creator_points_default, mapping.get(creator_points_index)
             ),
-            color_1_id=parse_get_or(
-                int, color_1_id_default, mapping.get(color_1_id_index)
-            ),
-            color_2_id=parse_get_or(
-                int, color_2_id_default, mapping.get(color_2_id_index)
-            ),
-            secret_coins=parse_get_or(
-                int, secret_coins_default, mapping.get(secret_coins_index)
-            ),
-            account_id=parse_get_or(
-                int, account_id_default, mapping.get(account_id_index)
-            ),
-            user_coins=parse_get_or(
-                int, user_coins_default, mapping.get(user_coins_index)
-            ),
+            color_1_id=parse_get_or(int, color_1_id_default, mapping.get(color_1_id_index)),
+            color_2_id=parse_get_or(int, color_2_id_default, mapping.get(color_2_id_index)),
+            secret_coins=parse_get_or(int, secret_coins_default, mapping.get(secret_coins_index)),
+            account_id=parse_get_or(int, account_id_default, mapping.get(account_id_index)),
+            user_coins=parse_get_or(int, user_coins_default, mapping.get(user_coins_index)),
             message_state=parse_get_or(
                 partial_parse_enum(int, MessageState),
                 message_state_default,
@@ -770,44 +738,28 @@ class ProfileModel(Model):
             ball_id=parse_get_or(int, ball_id_default, mapping.get(ball_id_index)),
             ufo_id=parse_get_or(int, ufo_id_default, mapping.get(ufo_id_index)),
             wave_id=parse_get_or(int, wave_id_default, mapping.get(wave_id_index)),
-            robot_id=parse_get_or(
-                int, robot_id_default, mapping.get(robot_id_index)
-            ),
+            robot_id=parse_get_or(int, robot_id_default, mapping.get(robot_id_index)),
             glow=parse_get_or(int_bool, glow_default, mapping.get(glow_index)),
-            active=parse_get_or(
-                int_bool, active_default, mapping.get(active_index)
-            ),
+            active=parse_get_or(int_bool, active_default, mapping.get(active_index)),
             rank=parse_get_or(int, rank_default, mapping.get(rank_index)),
             friend_state=parse_get_or(
                 partial_parse_enum(int, FriendState),
                 friend_state_default,
                 mapping.get(friend_state_index),
             ),
-            new_messages=parse_get_or(
-                int, new_messages_default, mapping.get(new_messages_index)
-            ),
+            new_messages=parse_get_or(int, new_messages_default, mapping.get(new_messages_index)),
             new_friend_requests=parse_get_or(
                 int,
                 new_friend_requests_default,
                 mapping.get(new_friend_requests_index),
             ),
-            new_friends=parse_get_or(
-                int, new_friends_default, mapping.get(new_friends_index)
-            ),
-            spider_id=parse_get_or(
-                int, spider_id_default, mapping.get(spider_id_index)
-            ),
+            new_friends=parse_get_or(int, new_friends_default, mapping.get(new_friends_index)),
+            spider_id=parse_get_or(int, spider_id_default, mapping.get(spider_id_index)),
             twitter=mapping.get(twitter_index) or twitter_default,
             twitch=mapping.get(twitch_index) or twitch_default,
-            diamonds=parse_get_or(
-                int, diamonds_default, mapping.get(diamonds_index)
-            ),
-            explosion_id=parse_get_or(
-                int, explosion_id_default, mapping.get(explosion_id_index)
-            ),
-            role=parse_get_or(
-                partial_parse_enum(int, Role), role_default, mapping.get(role_index)
-            ),
+            diamonds=parse_get_or(int, diamonds_default, mapping.get(diamonds_index)),
+            explosion_id=parse_get_or(int, explosion_id_default, mapping.get(explosion_id_index)),
+            role=parse_get_or(partial_parse_enum(int, Role), role_default, mapping.get(role_index)),
             comment_state=parse_get_or(
                 partial_parse_enum(int, CommentState),
                 comment_state_default,
@@ -955,12 +907,8 @@ class RelationshipUserModel(Model):
 
         return cls(
             name=mapping.get(name_index, name_default),
-            id=parse_get_or(
-                int, id_default, mapping.get(id_index)
-            ),
-            icon_id=parse_get_or(
-                int, icon_id_default, mapping.get(icon_id_index)
-            ),
+            id=parse_get_or(int, id_default, mapping.get(id_index)),
+            icon_id=parse_get_or(int, icon_id_default, mapping.get(icon_id_index)),
             color_1_id=parse_get_or(
                 int,
                 color_1_id_default,
@@ -976,9 +924,7 @@ class RelationshipUserModel(Model):
                 icon_type_default,
                 mapping.get(icon_type_index),
             ),
-            glow=parse_get_or(
-                int_bool, glow_default, mapping.get(glow_index)
-            ),
+            glow=parse_get_or(int_bool, glow_default, mapping.get(glow_index)),
             account_id=parse_get_or(
                 int,
                 account_id_default,
@@ -1100,26 +1046,16 @@ class LeaderboardUserModel(Model):
 
         return cls(
             name=mapping.get(name_index, name_default),
-            id=parse_get_or(
-                int, id_default, mapping.get(id_index)
-            ),
-            stars=parse_get_or(
-                int, stars_default, mapping.get(stars_index)
-            ),
-            demons=parse_get_or(
-                int, demons_default, mapping.get(demons_index)
-            ),
-            place=parse_get_or(
-                int, place_default, mapping.get(place_index)
-            ),
+            id=parse_get_or(int, id_default, mapping.get(id_index)),
+            stars=parse_get_or(int, stars_default, mapping.get(stars_index)),
+            demons=parse_get_or(int, demons_default, mapping.get(demons_index)),
+            place=parse_get_or(int, place_default, mapping.get(place_index)),
             creator_points=parse_get_or(
                 int,
                 creator_points_default,
                 mapping.get(creator_points_index),
             ),
-            icon_id=parse_get_or(
-                int, icon_id_default, mapping.get(icon_id_index)
-            ),
+            icon_id=parse_get_or(int, icon_id_default, mapping.get(icon_id_index)),
             color_1_id=parse_get_or(
                 int,
                 color_1_id_default,
@@ -1140,9 +1076,7 @@ class LeaderboardUserModel(Model):
                 icon_type_default,
                 mapping.get(icon_type_index),
             ),
-            glow=parse_get_or(
-                int_bool, glow_default, mapping.get(glow_index)
-            ),
+            glow=parse_get_or(int_bool, glow_default, mapping.get(glow_index)),
             account_id=parse_get_or(
                 int,
                 account_id_default,
@@ -1153,9 +1087,7 @@ class LeaderboardUserModel(Model):
                 user_coins_default,
                 mapping.get(user_coins_index),
             ),
-            diamonds=parse_get_or(
-                int, diamonds_default, mapping.get(diamonds_index)
-            ),
+            diamonds=parse_get_or(int, diamonds_default, mapping.get(diamonds_index)),
         )
 
     def to_robtop(
@@ -1298,20 +1230,14 @@ class MessageModel(Model):
 
         return cls(
             id=parse_get_or(int, id_default, mapping.get(id_index)),
-            account_id=parse_get_or(
-                int, account_id_default, mapping.get(account_id_index)
-            ),
+            account_id=parse_get_or(int, account_id_default, mapping.get(account_id_index)),
             user_id=parse_get_or(
                 int,
                 user_id_default,
                 mapping.get(user_id_index),
             ),
-            subject=decode_base64_string_url_safe(
-                mapping.get(subject_index, subject_default)
-            ),
-            content=decode_robtop_string(
-                mapping.get(content_index, content_default), Key.MESSAGE
-            ),
+            subject=decode_base64_string_url_safe(mapping.get(subject_index, subject_default)),
+            content=decode_robtop_string(mapping.get(content_index, content_default), Key.MESSAGE),
             name=mapping.get(name_index, name_default),
             created_at=parse_get_or(
                 datetime_from_human,
@@ -1433,12 +1359,8 @@ class FriendRequestModel(Model):
 
         return cls(
             name=mapping.get(name_index, name_default),
-            user_id=parse_get_or(
-                int, user_id_default, mapping.get(user_id_index)
-            ),
-            icon_id=parse_get_or(
-                int, icon_id_default, mapping.get(icon_id_index)
-            ),
+            user_id=parse_get_or(int, user_id_default, mapping.get(user_id_index)),
+            icon_id=parse_get_or(int, icon_id_default, mapping.get(icon_id_index)),
             color_1_id=parse_get_or(
                 int,
                 color_1_id_default,
@@ -1454,25 +1376,17 @@ class FriendRequestModel(Model):
                 icon_type_default,
                 mapping.get(icon_type_index),
             ),
-            glow=parse_get_or(
-                int_bool, glow_default, mapping.get(glow_index)
-            ),
-            account_id=parse_get_or(
-                int, account_id_default, mapping.get(account_id_index)
-            ),
+            glow=parse_get_or(int_bool, glow_default, mapping.get(glow_index)),
+            account_id=parse_get_or(int, account_id_default, mapping.get(account_id_index)),
             id=parse_get_or(int, id_default, mapping.get(id_index)),
-            content=decode_base64_string_url_safe(
-                mapping.get(content_index, content_default)
-            ),
+            content=decode_base64_string_url_safe(mapping.get(content_index, content_default)),
             created_at=parse_get_or(
                 datetime_from_human,
                 created_at_default,
                 mapping.get(created_at_index),
                 ignore_errors=True,
             ),
-            unread=parse_get_or(
-                int_bool, unread_default, mapping.get(unread_index)
-            ),
+            unread=parse_get_or(int_bool, unread_default, mapping.get(unread_index)),
         )
 
     def to_robtop(
@@ -1761,13 +1675,9 @@ class LevelModel(Model):
             description=decode_base64_string_url_safe(
                 mapping.get(description_index, description_default)
             ),
-            unprocessed_data=mapping.get(
-                unprocessed_data_index, unprocessed_data_default
-            ),
+            unprocessed_data=mapping.get(unprocessed_data_index, unprocessed_data_default),
             version=parse_get_or(int, version_default, mapping.get(version_index)),
-            creator_id=parse_get_or(
-                int, creator_id_default, mapping.get(creator_id_index)
-            ),
+            creator_id=parse_get_or(int, creator_id_default, mapping.get(creator_id_index)),
             difficulty_denominator=parse_get_or(
                 int,
                 difficulty_denominator_default,
@@ -1778,9 +1688,7 @@ class LevelModel(Model):
                 difficulty_numerator_default,
                 mapping.get(difficulty_numerator_index),
             ),
-            downloads=parse_get_or(
-                int, downloads_default, mapping.get(downloads_index)
-            ),
+            downloads=parse_get_or(int, downloads_default, mapping.get(downloads_index)),
             official_song_id=parse_get_or(
                 int,
                 official_song_id_default,
@@ -1818,12 +1726,8 @@ class LevelModel(Model):
                 mapping.get(updated_at_index),
                 ignore_errors=True,
             ),
-            original_id=parse_get_or(
-                int, original_id_default, mapping.get(original_id_index)
-            ),
-            two_player=parse_get_or(
-                int_bool, two_player_default, mapping.get(two_player_index)
-            ),
+            original_id=parse_get_or(int, original_id_default, mapping.get(original_id_index)),
+            two_player=parse_get_or(int_bool, two_player_default, mapping.get(two_player_index)),
             custom_song_id=parse_get_or(
                 int, custom_song_id_default, mapping.get(custom_song_id_index)
             ),
@@ -1835,16 +1739,12 @@ class LevelModel(Model):
             requested_stars=parse_get_or(
                 int, requested_stars_default, mapping.get(requested_stars_index)
             ),
-            low_detail=parse_get_or(
-                int_bool, low_detail_default, mapping.get(low_detail_index)
-            ),
+            low_detail=parse_get_or(int_bool, low_detail_default, mapping.get(low_detail_index)),
             timely_id=timely_id,
             timely_type=timely_type,
             epic=parse_get_or(int_bool, epic_default, mapping.get(epic_index)),
             demon_difficulty=demon_difficulty,
-            object_count=parse_get_or(
-                int, object_count_default, mapping.get(object_count_index)
-            ),
+            object_count=parse_get_or(int, object_count_default, mapping.get(object_count_index)),
             editor_time=editor_time,
             copies_time=copies_time,
         )
@@ -2046,9 +1946,7 @@ class LevelCommentInnerModel(Model):
                 level_id_default,
                 mapping.get(level_id_index),
             ),
-            content=decode_base64_string_url_safe(
-                mapping.get(content_index, content_default)
-            ),
+            content=decode_base64_string_url_safe(mapping.get(content_index, content_default)),
             user_id=parse_get_or(
                 int,
                 user_id_default,
@@ -2059,9 +1957,7 @@ class LevelCommentInnerModel(Model):
                 rating_default,
                 mapping.get(rating_index),
             ),
-            id=parse_get_or(
-                int, id_default, mapping.get(id_index)
-            ),
+            id=parse_get_or(int, id_default, mapping.get(id_index)),
             spam=parse_get_or(
                 int_bool,
                 spam_default,
@@ -2300,12 +2196,8 @@ class UserCommentModel(Model):
         mapping = split_user_comment(string)
 
         return cls(
-            content=decode_base64_string_url_safe(
-                mapping.get(content_index, content_default)
-            ),
-            rating=parse_get_or(
-                int, rating_default, mapping.get(rating_index)
-            ),
+            content=decode_base64_string_url_safe(mapping.get(content_index, content_default)),
+            rating=parse_get_or(int, rating_default, mapping.get(rating_index)),
             id=parse_get_or(int, id_default, mapping.get(id_index)),
             created_at=parse_get_or(
                 datetime_from_human,
@@ -2410,9 +2302,13 @@ class LevelLeaderboardUserModel(Model):
             color_1_id=parse_get_or(int, color_1_id_default, mapping.get(color_1_id_index)),
             color_2_id=parse_get_or(int, color_2_id_default, mapping.get(color_2_id_index)),
             coins=parse_get_or(int, coins_default, mapping.get(coins_index)),
-            icon_type=parse_get_or(partial_parse_enum(int, IconType), icon_type_default, mapping.get(icon_type_index)),
+            icon_type=parse_get_or(
+                partial_parse_enum(int, IconType), icon_type_default, mapping.get(icon_type_index)
+            ),
             glow=parse_get_or(int_bool, glow_default, mapping.get(glow_index)),
-            recorded_at=parse_get_or(datetime_from_human, recorded_at_default, mapping.get(recorded_at_index)),
+            recorded_at=parse_get_or(
+                datetime_from_human, recorded_at_default, mapping.get(recorded_at_index)
+            ),
         )
 
     def to_robtop(

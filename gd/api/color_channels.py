@@ -8,7 +8,14 @@ from gd.binary_utils import Reader, Writer
 from gd.color import Color
 from gd.constants import BITS, BYTE, DEFAULT_ID
 from gd.enums import ByteOrder, PlayerColor
-from gd.models_utils import concat_color_channel, float_str, int_bool, parse_get_or, partial_parse_enum, split_color_channel
+from gd.models_utils import (
+    concat_color_channel,
+    float_str,
+    int_bool,
+    parse_get_or,
+    partial_parse_enum,
+    split_color_channel,
+)
 
 __all__ = ("ColorChannel", "ColorChannels", "Channel", "Channels")
 
@@ -140,45 +147,27 @@ class ColorChannel(Binary):
             mapping.get(player_color_index),
         )
 
-        blending = parse_get_or(
-            int_bool, blending_default, mapping.get(blending_index)
-        )
+        blending = parse_get_or(int_bool, blending_default, mapping.get(blending_index))
 
         id = parse_get_or(int, id_default, mapping.get(id_index))
 
-        opacity = parse_get_or(
-            float, opacity_default, mapping.get(opacity_index)
-        )
+        opacity = parse_get_or(float, opacity_default, mapping.get(opacity_index))
 
-        unknown = parse_get_or(
-            int_bool, unknown_default, mapping.get(unknown_index)
-        )
+        unknown = parse_get_or(int_bool, unknown_default, mapping.get(unknown_index))
 
-        copied_id = parse_get_or(
-            int, copied_id_default, mapping.get(copied_id_index)
-        )
+        copied_id = parse_get_or(int, copied_id_default, mapping.get(copied_id_index))
 
-        hsv = parse_get_or(
-            HSV.from_robtop, hsv_default, mapping.get(hsv_index)
-        )
+        hsv = parse_get_or(HSV.from_robtop, hsv_default, mapping.get(hsv_index))
 
         to_red, to_green, to_blue = (
-            parse_get_or(
-                int, to_red_default, mapping.get(to_red_index)
-            ),
-            parse_get_or(
-                int, to_green_default, mapping.get(to_green_index)
-            ),
-            parse_get_or(
-                int, to_blue_default, mapping.get(to_blue_index)
-            ),
+            parse_get_or(int, to_red_default, mapping.get(to_red_index)),
+            parse_get_or(int, to_green_default, mapping.get(to_green_index)),
+            parse_get_or(int, to_blue_default, mapping.get(to_blue_index)),
         )
 
         to_color = Color.from_rgb(to_red, to_green, to_blue)
 
-        to_opacity = parse_get_or(
-            float, to_opacity_default, mapping.get(to_opacity_index)
-        )
+        to_opacity = parse_get_or(float, to_opacity_default, mapping.get(to_opacity_index))
 
         copy_opacity = parse_get_or(
             int_bool,

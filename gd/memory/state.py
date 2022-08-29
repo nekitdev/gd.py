@@ -7,39 +7,39 @@ from typing_extensions import Protocol
 from gd.enums import Permissions, Platform
 from gd.memory.context import Context
 from gd.memory.internal import (
-    system_get_process_id_from_name,
-    system_get_process_id_from_title,
-    system_get_process_bits,
-    system_open,
-    system_get_base_address_from_handle,
-    system_get_base_address,
-    system_allocate,
-    system_free,
-    system_protect,
-    system_read,
-    system_write,
-    system_terminate,
-    windows_get_process_id_from_name,
-    windows_get_process_id_from_title,
-    windows_get_process_bits_from_handle,
-    windows_open,
-    windows_get_base_address,
-    windows_allocate,
-    windows_free,
-    windows_protect,
-    windows_read,
-    windows_write,
-    windows_terminate,
-    darwin_get_process_id_from_name,
-    darwin_get_process_bits,
-    darwin_open,
-    darwin_get_base_address_from_handle,
     darwin_allocate,
     darwin_free,
+    darwin_get_base_address_from_handle,
+    darwin_get_process_bits,
+    darwin_get_process_id_from_name,
+    darwin_open,
     darwin_protect,
     darwin_read,
-    darwin_write,
     darwin_terminate,
+    darwin_write,
+    system_allocate,
+    system_free,
+    system_get_base_address,
+    system_get_base_address_from_handle,
+    system_get_process_bits,
+    system_get_process_id_from_name,
+    system_get_process_id_from_title,
+    system_open,
+    system_protect,
+    system_read,
+    system_terminate,
+    system_write,
+    windows_allocate,
+    windows_free,
+    windows_get_base_address,
+    windows_get_process_bits_from_handle,
+    windows_get_process_id_from_name,
+    windows_get_process_id_from_title,
+    windows_open,
+    windows_protect,
+    windows_read,
+    windows_terminate,
+    windows_write,
 )
 from gd.memory.traits import Layout, Read, Write
 from gd.memory.types import Types
@@ -234,13 +234,17 @@ class DarwinState(AbstractState):
 
         super().load()
 
-    def allocate_at(self, address: int, size: int, permissions: Permissions = Permissions.DEFAULT) -> int:
+    def allocate_at(
+        self, address: int, size: int, permissions: Permissions = Permissions.DEFAULT
+    ) -> int:
         return darwin_allocate(self.handle, address, size, permissions)
 
     def free_at(self, address: int, size: int) -> None:
         return darwin_free(self.handle, address, size)
 
-    def protect_at(self, address: int, size: int, permissions: Permissions = Permissions.DEFAULT) -> int:
+    def protect_at(
+        self, address: int, size: int, permissions: Permissions = Permissions.DEFAULT
+    ) -> int:
         return darwin_protect(self.handle, address, size, permissions)
 
     def read_at(self, address: int, size: int) -> bytes:
@@ -280,13 +284,17 @@ class WindowsState(AbstractState):
 
         super().load()
 
-    def allocate_at(self, address: int, size: int, permissions: Permissions = Permissions.DEFAULT) -> int:
+    def allocate_at(
+        self, address: int, size: int, permissions: Permissions = Permissions.DEFAULT
+    ) -> int:
         return windows_allocate(self.handle, address, size, permissions)
 
     def free_at(self, address: int, size: int) -> None:
         return windows_free(self.handle, address, size)
 
-    def protect_at(self, address: int, size: int, permissions: Permissions = Permissions.DEFAULT) -> int:
+    def protect_at(
+        self, address: int, size: int, permissions: Permissions = Permissions.DEFAULT
+    ) -> int:
         return windows_protect(self.handle, address, size, permissions)
 
     def read_at(self, address: int, size: int) -> bytes:

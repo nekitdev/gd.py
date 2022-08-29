@@ -1,7 +1,8 @@
 from typing import Type
-from typing_extensions import TypeAlias
-from gd.constants import DEFAULT_ENCODING
 
+from typing_extensions import TypeAlias
+
+from gd.constants import DEFAULT_ENCODING
 from gd.memory.fields import mut_field
 from gd.memory.markers import Struct, Union, char_t, intsize_t, mut_array, mut_pointer, uintsize_t
 from gd.memory.types import types
@@ -40,9 +41,7 @@ class string(Struct):
             except UnicodeDecodeError:
                 pass
 
-        return self.state.read_at(content.pointer.value_address, length).decode(
-            DEFAULT_ENCODING
-        )
+        return self.state.read_at(content.pointer.value_address, length).decode(DEFAULT_ENCODING)
 
     def set_value(self, value: str) -> None:
         content = self.content
