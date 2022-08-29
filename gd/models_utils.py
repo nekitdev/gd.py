@@ -5,6 +5,7 @@ from iters.iters import iter
 
 from gd.enum_extensions import Enum
 from gd.models_constants import (
+    COLOR_CHANNEL_SEPARATOR,
     COLOR_SEPARATOR,
     COMMENT_BANNED_SEPARATOR,
     CREATOR_SEPARATOR,
@@ -22,6 +23,8 @@ from gd.models_constants import (
     LEVEL_COMMENT_USER_SEPARATOR,
     LEVEL_COMMENTS_RESPONSE_COMMENTS_SEPARATOR,
     LEVEL_COMMENTS_RESPONSE_SEPARATOR,
+    LEVEL_LEADERBOARD_RESPONSE_USERS_SEPARATOR,
+    LEVEL_LEADERBOARD_USER_SEPARATOR,
     LEVEL_RESPONSE_SEPARATOR,
     LEVEL_SEPARATOR,
     LOGIN_SEPARATOR,
@@ -31,7 +34,7 @@ from gd.models_constants import (
     OBJECTS_SEPARATOR,
     PAGE_SEPARATOR,
     PROFILE_SEPARATOR,
-    RECORDING_SEPARATOR,
+    RECORDING_ITEM_SEPARATOR,
     RELATIONSHIP_USER_SEPARATOR,
     RELATIONSHIPS_RESPONSE_USERS_SEPARATOR,
     SEARCH_LEVELS_RESPONSE_CREATORS_SEPARATOR,
@@ -97,13 +100,6 @@ def parse_get_or(
             return default
 
         raise
-
-
-def int_invert(string: str) -> bool:
-    if not string:
-        return True
-
-    return not int(string)
 
 
 DEFAULT_IGNORE_EMPTY = False
@@ -187,6 +183,9 @@ concat_level_comment_inner = partial(concat_mapping, LEVEL_COMMENT_INNER_SEPARAT
 split_level_comment_user = partial(split_mapping, LEVEL_COMMENT_USER_SEPARATOR)
 concat_level_comment_user = partial(concat_mapping, LEVEL_COMMENT_USER_SEPARATOR)
 
+split_level_leaderboard_user = partial(split_mapping, LEVEL_LEADERBOARD_USER_SEPARATOR)
+concat_level_leaderboard_user = partial(concat_mapping, LEVEL_LEADERBOARD_USER_SEPARATOR)
+
 split_level_comment = partial(split_iterable, LEVEL_COMMENT_SEPARATOR)
 concat_level_comment = partial(concat_iterable, LEVEL_COMMENT_SEPARATOR)
 
@@ -198,6 +197,8 @@ concat_page = partial(concat_iterable, PAGE_SEPARATOR)
 
 split_comment_banned = partial(split_iterable, COMMENT_BANNED_SEPARATOR)
 concat_comment_banned = partial(concat_iterable, COMMENT_BANNED_SEPARATOR)
+
+concat_recording_item = partial(concat_iterable, RECORDING_ITEM_SEPARATOR)
 
 split_extra_string = partial(split_iterable, EXTRA_STRING_SEPARATOR)
 concat_extra_string = partial(concat_iterable, EXTRA_STRING_SEPARATOR)
@@ -214,7 +215,8 @@ concat_database = partial(concat_iterable, DATABASE_SEPARATOR)
 split_header = partial(split_string_mapping, HEADER_SEPARATOR)
 concat_header = partial(concat_string_mapping, HEADER_SEPARATOR)
 
-concat_recording = partial(concat_iterable, RECORDING_SEPARATOR)
+split_color_channel = partial(split_mapping, COLOR_CHANNEL_SEPARATOR)
+concat_color_channel = partial(concat_mapping, COLOR_CHANNEL_SEPARATOR)
 
 split_objects = partial(split_iterable, OBJECTS_SEPARATOR)
 concat_objects = partial(concat_iterable, OBJECTS_SEPARATOR)
@@ -305,4 +307,11 @@ split_level_comments_response_comments = partial(
 )
 concat_level_comments_response_comments = partial(
     concat_iterable, LEVEL_COMMENTS_RESPONSE_COMMENTS_SEPARATOR
+)
+
+split_level_leaderboard_response_users = partial(
+    split_iterable, LEVEL_LEADERBOARD_RESPONSE_USERS_SEPARATOR, ignore_empty=True
+)
+concat_level_leaderboard_response_users = partial(
+    concat_iterable, LEVEL_LEADERBOARD_RESPONSE_USERS_SEPARATOR
 )

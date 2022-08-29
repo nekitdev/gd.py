@@ -1,4 +1,4 @@
-from gd.api.color_channels import ColorChannel, ColorChannels
+from gd.api.color_channels import Channel, Channels, ColorChannel, ColorChannels
 from gd.api.database import Database
 from gd.api.editor import Editor
 from gd.api.folder import Folder

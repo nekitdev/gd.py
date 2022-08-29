@@ -931,7 +931,20 @@ class MiscType(Enum):
 class TriggerType(Enum):
     """An enumeration representing IDs of most triggers."""
 
+    BACKGROUND = BG = 29
+    GROUND = G = 30
+    START_POS = 31
+    LINE = L = 104
+    OBJECT = OBJ = 105
+    COLOR_1 = C1 = 221
+    COLOR_2 = C2 = 717
+    COLOR_3 = C3 = 718
+    COLOR_4 = C4 = 743
+    LINE_3D = L3D = 744
+    COLOR = 899
+    GROUND_2 = G2 = 900
     MOVE = 901
+    LINE_2 = L2 = 915
     PULSE = 1006
     ALPHA = 1007
     TOGGLE = 1049

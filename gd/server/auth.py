@@ -5,7 +5,6 @@ from gd.server.constants import (
     CLIENT,
     HTTP_BAD_REQUEST,
     HTTP_CREATED,
-    HTTP_FORBIDDEN,
     HTTP_OK,
     HTTP_UNAUTHORIZED,
     QUERY,

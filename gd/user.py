@@ -12,6 +12,7 @@ from gd.binary_utils import UTF_8, Reader, Writer
 from gd.color import Color
 from gd.constants import (
     DEFAULT_BANNED,
+    DEFAULT_COINS,
     DEFAULT_COLOR_1_ID,
     DEFAULT_COLOR_2_ID,
     DEFAULT_CREATOR_POINTS,
@@ -52,6 +53,7 @@ from gd.models import (
     CreatorModel,
     LeaderboardUserModel,
     LevelCommentUserModel,
+    LevelLeaderboardUserModel,
     ProfileModel,
     RelationshipUserModel,
     SearchUserModel,
@@ -119,6 +121,7 @@ class User(Entity):
     twitter: Optional[str] = None
     twitch: Optional[str] = None
     # discord: Optional[str] = None
+    coins: int = DEFAULT_COINS
     place: int = DEFAULT_PLACE
     record: Optional[int] = None
     banned: bool = DEFAULT_BANNED
@@ -271,6 +274,23 @@ class User(Entity):
             icon_type=model.icon_type,
             glow=model.glow,
             account_id=model.account_id,
+        )
+
+    @classmethod
+    def from_level_leaderboard_user_model(cls: Type[U], model: LevelLeaderboardUserModel) -> U:
+        return cls(
+            name=model.name,
+            id=model.id,
+            record=model.record,
+            place=model.place,
+            icon_id=model.icon_id,
+            color_1_id=model.color_1_id,
+            color_2_id=model.color_2_id,
+            coins=model.coins,
+            icon_type=model.icon_type,
+            glow=model.glow,
+            account_id=model.account_id,
+            recorded_at=model.recorded_at,
         )
 
     def __str__(self) -> str:
@@ -500,6 +520,10 @@ class User(Entity):
         # if not discord:
         #     discord = None
 
+        coins = reader.read_u8(order)
+
+        place = reader.read_u32(order)
+
         record_value = reader.read_u8(order)
 
         record = record_value & RECORD_MASK
@@ -552,6 +576,8 @@ class User(Entity):
             twitter=twitter,
             twitch=twitch,
             # discord=discord,
+            coins=coins,
+            place=place,
             record=record,
             banned=banned,
             recorded_at=recorded_at,
@@ -664,6 +690,10 @@ class User(Entity):
         # writer.write_u16(len(data), order)
 
         # writer.write(data)
+
+        writer.write_u8(self.coins, order)
+
+        writer.write_u32(self.place, order)
 
         record = self.record
 

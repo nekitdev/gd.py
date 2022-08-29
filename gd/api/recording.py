@@ -11,8 +11,8 @@ from gd.binary_utils import Reader, Writer
 from gd.constants import EMPTY
 from gd.enums import ByteOrder
 from gd.errors import InternalError
-from gd.models_constants import RECORDING_SEPARATOR
-from gd.models_utils import concat_recording, float_str, int_bool
+from gd.models_constants import RECORDING_ITEM_SEPARATOR
+from gd.models_utils import concat_recording_item, float_str, int_bool
 from gd.robtop import RobTop
 from gd.string_constants import DOT
 from gd.string_utils import concat_empty
@@ -36,9 +36,9 @@ ONE = str(1)
 # [1;]t[.d];[1];[;]
 
 RECORDING_ITEM_PATTERN = rf"""
-    (?:(?P<{PREVIOUS}>{ONE}){RECORDING_SEPARATOR})?
-    (?P<{TIMESTAMP}>{DIGIT}(?:{re.escape(DOT)}{DIGIT}*)?){RECORDING_SEPARATOR}
-    (?P<{NEXT}>{ONE})?{RECORDING_SEPARATOR}
+    (?:(?P<{PREVIOUS}>{ONE}){RECORDING_ITEM_SEPARATOR})?
+    (?P<{TIMESTAMP}>{DIGIT}(?:{re.escape(DOT)}{DIGIT}*)?){RECORDING_ITEM_SEPARATOR}
+    (?P<{NEXT}>{ONE})?{RECORDING_ITEM_SEPARATOR}
     (?:(?P<{SECONDARY}>);)?
 """
 
@@ -107,11 +107,11 @@ class RecordingItem(Binary, RobTop):
         return cls.from_robtop_match(match)
 
     def to_robtop(self) -> str:
-        return concat_recording(self.to_robtop_iterator())
+        return concat_recording_item(self.to_robtop_iterator())
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
-        return RECORDING_SEPARATOR in string
+        return RECORDING_ITEM_SEPARATOR in string
 
     @classmethod
     def from_binary(

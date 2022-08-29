@@ -45,6 +45,7 @@ from gd.models import (
     FriendRequestsResponseModel,
     LeaderboardResponseModel,
     LevelCommentsResponseModel,
+    LevelLeaderboardResponseModel,
     LevelResponseModel,
     LoginModel,
     MessageModel,
@@ -396,7 +397,7 @@ class Session:
             encoded_password=encoded_password,
         )
 
-        return LevelLeaderboardResponseModel.from_string(response, use_default=True)
+        return LevelLeaderboardResponseModel.from_robtop(response)
 
     async def block_user(
         self,

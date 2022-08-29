@@ -42,6 +42,24 @@ PLATFORMER_MODE_BIT = 0b00000001
 H = TypeVar("H", bound="Header")
 
 
+GAME_MODE = "kA2"
+MINI_MODE = "kA3"
+SPEED = "kA4"
+BACKGROUND_ID = "kA6"
+GROUND_ID = "kA7"
+DUAL_MODE = "kA8"
+START_POS = "kA9"
+FLIP_GRAVITY = "kA11"
+SONG_OFFSET = "kA13"
+# GUIDELINES = "kA14"
+SONG_FADE_IN = "kA15"
+SONG_FADE_OUT = "kA16"
+GROUND_LINE_ID = "kA17"
+FONT_ID = "kA18"
+PLATFORMER_MODE = "kA22"
+COLOR_CHANNELS = "kS38"
+
+
 @define()
 class Header(Binary):
     game_mode: GameMode = field(default=GameMode.DEFAULT)
