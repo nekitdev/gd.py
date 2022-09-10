@@ -6,7 +6,7 @@ from builtins import hasattr as has_attribute
 from builtins import issubclass as is_subclass
 from builtins import setattr as set_attribute
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Type, TypeVar, get_type_hints
+from typing import TYPE_CHECKING, Any, List, Tuple, Type, TypeVar, get_type_hints
 
 from attrs import define
 from typing_extensions import Protocol, runtime_checkable
@@ -164,35 +164,29 @@ class Visitor:
 
         # if struct has inherited annotations, and does not define any on its own, reset
 
-        if getattr(marker_struct, ANNOTATIONS, {}) == getattr(direct_base, ANNOTATIONS, {}):
-            setattr(marker_struct, ANNOTATIONS, {})
+        if get_attribute(marker_struct, ANNOTATIONS, {}) == get_attribute(
+            direct_base, ANNOTATIONS, {}
+        ):
+            set_attribute(marker_struct, ANNOTATIONS, {})
 
         # fetch annotations
 
-        annotations = {}
+        annotations: Namespace = {}
 
         for base in reversed(bases):
             # XXX: we need to do something in case of ambiguity
 
             if getattr(base, VTABLE, None):
-                if not any(
-                    issubclass(other_base, Struct)
-                    and other_base is not Struct
-                    and other_base is not base
-                    and issubclass(base, other_base)
-                    for other_base in reversed(bases)
-                ):
-                    # XXX: it is not really base name, though
-                    annotations[vtable_name(base.__name__)] = uintptr_t
+                annotations[vtable_name(get_name(base))] = uintptr_t
 
-            annotations.update(getattr(base, ANNOTATIONS, {}))
+            annotations.update(get_attribute(base, ANNOTATIONS, {}))
 
         # XXX: implement vtable optimization
 
-        class annotation_holder:
+        class annotations_holder:
             pass
 
-        setattr(annotation_holder, ANNOTATIONS, annotations)
+        set_attribute(annotations_holder, ANNOTATIONS, annotations)
 
         # initialize variables used in fetching fields, size and offsets
 
@@ -204,7 +198,7 @@ class Visitor:
 
         for name, annotation in get_type_hints(annotation_holder).items():
             try:
-                field: Field[Any] = self.create_field(self.visit_any(annotation))  # type: ignore
+                field: Field[Any] = self.create_field(self.visit(annotation))
 
             except InvalidMemoryType:
                 continue

@@ -56,7 +56,7 @@ git = "https://github.com/nekitdev/gd.py.git"
 
 ## Examples
 
-### Songs
+### Fetching
 
 ```python
 # file.py
@@ -83,6 +83,26 @@ asyncio.run(main())
 ```console
 $ python file.py
 PANDA EYES - BROKEN by PandaEyesOfficial (ID: 1081309, size: 9.71 MB)
+```
+
+### Listening
+
+```python
+import gd
+
+client = gd.Client()
+
+DAILY = "new daily! {daily.name} by {daily.creator.name} (ID: {daily.id})
+
+
+@client.event
+async def on_daily(daily: gd.Level) -> None:
+    print(DAILY.format(daily=daily))
+
+
+client.listen_for_daily()
+
+client.create_controller().run()
 ```
 
 ## Documentation

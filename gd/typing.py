@@ -130,12 +130,14 @@ IntoMapping = Union[Mapping[T, U], Pairs[T, U]]
 MaybeMapping = Union[Mapping[T, U], V]
 
 try:
-    IntoPath = Union[str, PathLike[str]]
+    IntoPath = Union[str, PathLike[str]]  # type: ignore
 
 except TypeError:
     IntoPath = Union[str, PathLike]  # type: ignore
 
+
 JSONType: TypeAlias = Optional[Union[bool, int, float, str, StringDict[Any], List[Any]]]
+
 
 LT = TypeVar("LT", bound="Less")
 

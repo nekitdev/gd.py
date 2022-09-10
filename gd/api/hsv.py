@@ -12,7 +12,6 @@ from gd.models_utils import concat_hsv, float_str, int_bool, split_hsv
 
 __all__ = ("HSV",)
 
-
 H_INITIAL = 0
 S_INITIAL = 1.0
 V_INITIAL = 1.0
@@ -60,20 +59,20 @@ class HSV(Binary, Model):
             int_bool(v_checked),
         )
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
-        return HSV_SEPARATOR in string
-
     def to_robtop(self) -> str:
-        values = [
+        values = (
             str(self.h),
             float_str(self.s),
             float_str(self.v),
             str(int(self.s_checked)),
             str(int(self.v_checked)),
-        ]
+        )
 
         return concat_hsv(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return HSV_SEPARATOR in string
 
     # 00000VSH HHHHHHHH SSSSSSSS VVVVVVVV
 

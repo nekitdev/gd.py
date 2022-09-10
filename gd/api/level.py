@@ -97,7 +97,7 @@ class LevelAPI:
 
         data = self.name.encode(encoding)
 
-        writer.write_u16(len(data), order)
+        writer.write_u8(len(data), order)
 
         writer.write(data)
 
@@ -105,3 +105,21 @@ class LevelAPI:
         self.song.to_binary(binary, order, version)
 
         data = self.description.encode(encoding)
+
+        writer.write_u16(len(data), order)
+
+        writer.write(data)
+
+        data = self.data
+
+        writer.write_u32(len(data), order)
+
+        writer.write(data)
+
+        writer.write_u8(self.difficulty.value, order)
+
+        value = 0
+
+        ...
+
+        writer.write_u16(value, order)

@@ -24,8 +24,8 @@ fn xor<'p>(python: Python<'p>, mut data: Vec<u8>, key: u8) -> PyResult<&'p PyByt
 
 #[py_module]
 fn _gd(_python: Python, module: &PyModule) -> PyResult<()> {
-    module.add_wrapped(wrap_py_function!(cyclic_xor))?;
-    module.add_wrapped(wrap_py_function!(xor))?;
+    module.add_function(wrap_py_function!(cyclic_xor, module)?)?;
+    module.add_function(wrap_py_function!(xor, module)?)?;
 
     Ok(())
 }

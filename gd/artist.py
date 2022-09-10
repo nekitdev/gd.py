@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, AsyncIterator, BinaryIO, Iterable, Type, TypeVar
 
-from attrs import field, frozen
+from attrs import define, field
 from iters.async_iters import wrap_async_iter
 from typing_extensions import TypedDict
 from yarl import URL
@@ -31,7 +31,7 @@ class ArtistData(TypedDict):
 NAME = "name"
 
 
-@frozen(hash=True)
+@define()
 class Artist(Entity):
     """Represents artists on *Newgrounds*."""
 
@@ -41,7 +41,7 @@ class Artist(Entity):
 
     @id.default
     def default_id(self) -> int:
-        return hash(self.name) ^ hash(self.url)
+        return hash(self.id_name)
 
     @property
     def url(self) -> URL:
@@ -56,11 +56,14 @@ class Artist(Entity):
         return cls(name=UNKNOWN)
 
     @classmethod
-    def from_json(cls: Type[A], data: ArtistData) -> A:
+    def from_json(cls: Type[A], data: ArtistData) -> A:  # type: ignore
         return cls(name=data[NAME])
 
-    def to_json(self) -> ArtistData:
+    def to_json(self) -> ArtistData:  # type: ignore
         return ArtistData(name=self.name)
+
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ self.id
 
     def __str__(self) -> str:
         return self.name

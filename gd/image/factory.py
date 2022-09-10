@@ -11,9 +11,9 @@ from gd.image.geometry import Point, Rectangle, Size
 from gd.image.sprite import Sprite
 
 try:
-    from PIL.Image import BICUBIC, LANCZOS, Image
-    from PIL.Image import new as new_image
-    from PIL.ImageOps import colorize, flip, grayscale, mirror
+    from PIL.Image import BICUBIC, LANCZOS, Image  # type: ignore
+    from PIL.Image import new as new_image  # type: ignore
+    from PIL.ImageOps import colorize, flip, grayscale, mirror  # type: ignore
 
 except ImportError:
     pass

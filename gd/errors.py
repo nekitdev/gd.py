@@ -48,7 +48,7 @@ class HTTPErrorWithOrigin(Generic[E], HTTPError):
     def __init__(self, origin: E) -> None:
         self._origin = origin
 
-        super().__init__(FAILED_TO_PROCESS.format(get_name(type(origin)), origin))
+        super().__init__(FAILED_TO_PROCESS.format(get_name(type(origin)), origin))  # type: ignore
 
     @property
     def origin(self) -> E:
@@ -70,7 +70,7 @@ class HTTPStatusError(HTTPError):
         return self._status
 
     @property
-    def reason(self) -> Optional[Any]:
+    def reason(self) -> Optional[Any]:  # type: ignore
         return self._reason
 
 
@@ -173,10 +173,6 @@ class DataError(GDError):
 
 
 class EditorError(DataError):
-    pass
-
-
-class InternalError(GDError):
     pass
 
 

@@ -29,6 +29,9 @@ class Chest(Entity):
 
     created_at: datetime = field(factory=datetime.utcnow, init=False)
 
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ self.id
+
     def __str__(self) -> str:
         return CHEST.format(
             self.orbs, self.diamonds, self.keys, case_fold(self.shard_type.name), self.delta
@@ -53,6 +56,9 @@ class Quest(Entity):
     delta: timedelta = field(factory=timedelta)
 
     created_at: datetime = field(factory=datetime.utcnow)
+
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ self.id
 
     def __str__(self) -> str:
         if self.type is QuestType.UNKNOWN:

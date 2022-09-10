@@ -37,7 +37,7 @@ class Entity(Binary, JSON[EntityData]):
     )
 
     def __hash__(self) -> int:
-        return self.id
+        return hash(type(self)) ^ self.id
 
     @id.validator
     def check_id(self, attribute: Attribute[int], id: int) -> None:

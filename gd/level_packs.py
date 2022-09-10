@@ -27,6 +27,9 @@ class Gauntlet(Entity):
     level_ids: DynamicTuple[int] = field()
     _levels: DynamicTuple[Level] = field(default=(), repr=False, init=False)
 
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ self.id
+
     def __str__(self) -> str:
         return self.name
 
@@ -53,3 +56,6 @@ class MapPack(Gauntlet):
     # difficulty: Difficulty
     primary_color: Color
     secondary_color: Color
+
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ self.id

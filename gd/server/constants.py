@@ -9,12 +9,12 @@ TOKENS = "tokens"
 
 TITLE = "API Documentation"
 
-DOCS = "/api/docs"
-INFO = "/api/docs/info.json"
+DOCS = "/gd/api/docs"
+INFO = "/gd/api/docs/info.json"
 
 GD = ".gd"
 
-PREFIX = "/api"
+PREFIX = "/gd/api"
 VERSION = 1
 VERSION_FORMAT = "v{}"
 

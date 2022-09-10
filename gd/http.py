@@ -37,9 +37,9 @@ from gd.api.recording import Recording
 from gd.async_utils import maybe_await_call, run_blocking, shutdown_loop
 from gd.constants import (
     BACKSLASH,
-    COMMENT_PAGE_SIZE,
     DEFAULT_CHEST_COUNT,
     DEFAULT_COINS,
+    DEFAULT_COUNT,
     DEFAULT_ID,
     DEFAULT_LOW_DETAIL,
     DEFAULT_OBJECT_COUNT,
@@ -95,6 +95,7 @@ from gd.enums import (
 from gd.errors import (
     CommentBanned,
     HTTPError,
+    HTTPErrorWithOrigin,
     HTTPStatusError,
     LoginFailed,
     LoginRequired,
@@ -224,7 +225,7 @@ HTTP_SUCCESS = 200
 HTTP_REDIRECT = 300
 HTTP_ERROR = 400
 
-CHUNK_SIZE = 64 * 1024
+CHUNK_SIZE = 65536
 
 ResponseData = Union[bytes, str, JSONType]
 
@@ -820,7 +821,7 @@ class HTTPClient:
             headers.setdefault(FORWARDED_FOR, forwarded_for)
 
         lock = Lock()
-        error: Optional[BaseException] = None
+        error: Optional[AnyException] = None
 
         utf_8 = UTF_8
 
@@ -871,7 +872,7 @@ class HTTPClient:
                         error = HTTPStatusError(status, reason)
 
             except VALID_ERRORS as valid_error:
-                error = HTTPError(valid_error)
+                error = HTTPErrorWithOrigin(valid_error)
 
             finally:
                 await sleep(0)  # let underlying connections close
@@ -1261,7 +1262,7 @@ class HTTPClient:
     async def get_leaderboard(
         self,
         strategy: LeaderboardStrategy,
-        count: int = 100,
+        count: int = DEFAULT_COUNT,
         *,
         account_id: Optional[int] = None,
         encoded_password: Optional[str] = None,

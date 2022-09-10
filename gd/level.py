@@ -72,7 +72,7 @@ EPIC_BIT = 0b01000000
 LOW_DETAIL_BIT = 0b10000000
 
 
-@define()
+@define(hash=True)
 class Level(Entity):
     name: str = field()
     creator: User = field()
@@ -102,6 +102,9 @@ class Level(Entity):
     copies_time: timedelta = field(factory=timedelta)
     timely_type: TimelyType = field(default=TimelyType.DEFAULT)
     timely_id: int = field(default=DEFAULT_ID)
+
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ self.id
 
     def __str__(self) -> str:
         return self.name

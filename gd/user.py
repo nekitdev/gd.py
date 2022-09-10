@@ -37,7 +37,6 @@ from gd.enums import (
     ByteOrder,
     CommentState,
     CommentStrategy,
-    CommentType,
     FriendRequestState,
     FriendState,
     IconType,
@@ -61,7 +60,7 @@ from gd.models import (
 from gd.relationship import Relationship
 
 if TYPE_CHECKING:
-    from PIL.Image import Image
+    from PIL.Image import Image  # type: ignore
 
     from gd.comments import LevelComment, UserComment
     from gd.friend_request import FriendRequest
@@ -297,7 +296,7 @@ class User(Entity):
         return self.name
 
     def into_relationship(self, type: RelationshipType) -> Relationship:
-        return Relationship(self, type)
+        return Relationship(user=self, type=type)
 
     def is_glow(self) -> bool:
         return self.glow

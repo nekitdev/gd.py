@@ -205,7 +205,7 @@ class Recording(Binary, RobTop, ListType, List[RecordingItem]):  # type: ignore
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
-        return RECORDING_SEPARATOR in string
+        return RECORDING_ITEM_SEPARATOR in string
 
     @classmethod
     def from_binary(

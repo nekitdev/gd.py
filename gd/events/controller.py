@@ -1,7 +1,7 @@
 from asyncio import AbstractEventLoop, new_event_loop, set_event_loop
 from signal import SIGINT, SIGTERM
 from threading import Thread
-from typing import Optional
+from typing import Iterable, Optional
 
 from attrs import define, field
 
@@ -20,6 +20,14 @@ class Controller:
     loop: AbstractEventLoop = field(factory=new_event_loop)
 
     _thread: Optional[Thread] = field(default=None, init=False)
+
+    def __init__(
+        self, listeners: Iterable[Listener], loop: Optional[AbstractEventLoop] = None
+    ) -> None:
+        if loop is None:
+            loop = new_event_loop()
+
+        self.__attrs_init__(tuple(listeners), loop)
 
     def run(self) -> None:
         loop = self.loop

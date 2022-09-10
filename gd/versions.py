@@ -24,6 +24,9 @@ class Version(Binary, RobTop, String):
     major: int = field(default=0)
     minor: int = field(default=0)
 
+    def __hash__(self) -> int:
+        return self.to_value()
+
     @major.validator
     def check_major(self, attribute: Attribute[int], major: int) -> None:
         if major < 0:

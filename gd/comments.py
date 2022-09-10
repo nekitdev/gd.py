@@ -34,6 +34,9 @@ class Comment(Entity):
 
     created_at: datetime
 
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ self.id
+
     def __str__(self) -> str:
         return self.content
 
@@ -50,6 +53,9 @@ class UserComment(Comment):
     content: str = field(default=EMPTY)
 
     created_at: datetime = field(factory=datetime.utcnow)
+
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ self.id
 
     async def like(self) -> None:
         await self.client.like_user_comment(self)
@@ -145,6 +151,9 @@ class LevelComment(Comment):
     content: str = field(default=EMPTY)
 
     created_at: datetime = field(factory=datetime.utcnow)
+
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ self.id
 
     @classmethod
     def default(cls: Type[LC]) -> LC:

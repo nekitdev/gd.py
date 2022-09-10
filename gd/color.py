@@ -114,6 +114,9 @@ class Color(JSON[int], RobTop):
     def __str__(self) -> str:
         return self.to_hex()
 
+    def __hash__(self) -> int:
+        return self.value
+
     @property
     def id(self) -> Optional[int]:
         """An in-game ID of the color (if present)."""

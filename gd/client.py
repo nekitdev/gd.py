@@ -42,6 +42,7 @@ from gd.constants import (
     DEFAULT_OBJECT_COUNT,
     DEFAULT_PAGE,
     DEFAULT_PAGES,
+    DEFAULT_PAGES_COUNT,
     DEFAULT_RECONNECT,
     DEFAULT_SPECIAL,
     DEFAULT_STARS,
@@ -81,6 +82,8 @@ from gd.events.listeners import (
     Listener,
     MessageListener,
     RateListener,
+    UserCommentListener,
+    UserLevelListener,
     WeeklyLevelListener,
 )
 from gd.filters import Filters
@@ -1429,9 +1432,14 @@ class Client:
         self.add_listener(WeeklyLevelListener(self, delay=delay, reconnect=reconnect))
 
     def listen_for_rate(
-        self, delay: float = DEFAULT_DELAY, reconnect: bool = DEFAULT_RECONNECT
+        self,
+        pages_count: int = DEFAULT_PAGES_COUNT,
+        delay: float = DEFAULT_DELAY,
+        reconnect: bool = DEFAULT_RECONNECT,
     ) -> None:
-        self.add_listener(RateListener(self, delay=delay, reconnect=reconnect))
+        self.add_listener(
+            RateListener(self, delay=delay, reconnect=reconnect, pages_count=pages_count)
+        )
 
     def listen_for_message(
         self, delay: float = DEFAULT_DELAY, reconnect: bool = DEFAULT_RECONNECT
@@ -1442,6 +1450,34 @@ class Client:
         self, delay: float = DEFAULT_DELAY, reconnect: bool = DEFAULT_RECONNECT
     ) -> None:
         self.add_listener(FriendRequestListener(self, delay=delay, reconnect=reconnect))
+
+    def listen_for_user_level(
+        self,
+        account_id: Optional[int] = None,
+        id: Optional[int] = None,
+        name: Optional[str] = None,
+        delay: float = DEFAULT_DELAY,
+        reconnect: bool = DEFAULT_RECONNECT,
+    ) -> None:
+        self.add_listener(
+            UserLevelListener(
+                self, account_id=account_id, id=id, name=name, delay=delay, reconnect=reconnect
+            )
+        )
+
+    def listen_for_user_comment(
+        self,
+        account_id: Optional[int] = None,
+        id: Optional[int] = None,
+        name: Optional[str] = None,
+        delay: float = DEFAULT_DELAY,
+        reconnect: bool = DEFAULT_RECONNECT,
+    ) -> None:
+        self.add_listener(
+            UserCommentListener(
+                self, account_id=account_id, id=id, name=name, delay=delay, reconnect=reconnect
+            )
+        )
 
     # listeners
 

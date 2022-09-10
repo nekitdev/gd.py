@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from functools import lru_cache, wraps
 from operator import attrgetter as get_attribute_factory
-from typing import TYPE_CHECKING, Awaitable, Callable, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Tuple, TypeVar, Union
 
 from typing_extensions import Concatenate, ParamSpec
 
 from gd.async_utils import awaiting, run
 from gd.errors import LoginRequired
-from gd.typing import DecoratorIdentity, is_awaitable
+from gd.typing import DecoratorIdentity, DynamicTuple, is_awaitable
 
 if TYPE_CHECKING:
     from gd.client import Client
@@ -39,7 +39,7 @@ def cache_by(*names: str) -> DecoratorIdentity[Callable[Concatenate[S, P], T]]:
     def decorator(function: Callable[Concatenate[S, P], T]) -> Callable[Concatenate[S, P], T]:
         get_attributes = tuple(map(get_attribute_factory, names))
 
-        cache = {}  # type: ignore
+        cache: Dict[int, Tuple[T, DynamicTuple[Any]]] = {}
 
         @wraps(function)
         def wrap(self: S, *args: P.args, **kwargs: P.kwargs) -> T:

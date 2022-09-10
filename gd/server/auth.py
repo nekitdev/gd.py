@@ -1,6 +1,6 @@
 from aiohttp.web import Request, Response, json_response
 
-from gd.errors import LoginFailed
+from gd.errors import LoginFailed, MissingAccess
 from gd.server.constants import (
     CLIENT,
     HTTP_BAD_REQUEST,

@@ -66,13 +66,12 @@ class ErrorData(TypedDict):
 
 
 DEFAULT_STATUS_CODE = HTTP_INTERNAL_SERVER_ERROR
-DEFAULT_ERROR_TYPE = ErrorType.DEFAULT
 
 
 @frozen()
 class Error:
     status: int = DEFAULT_STATUS_CODE
-    type: ErrorType = DEFAULT_ERROR_TYPE
+    type: ErrorType = ErrorType.DEFAULT
     message: Optional[str] = None
     headers: Optional[Headers] = None
 

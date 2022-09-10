@@ -1,16 +1,16 @@
 from gd.events.controller import Controller
 from gd.events.listeners import (
-    DailyCommentListener,
+    # DailyCommentListener,
     DailyLevelListener,
     FriendRequestListener,
-    LevelCommentListener,
+    # LevelCommentListener,
     LevelListener,
     Listener,
     MessageListener,
     RateListener,
     UserCommentListener,
     UserLevelListener,
-    WeeklyCommentListener,
+    # WeeklyCommentListener,
     WeeklyLevelListener,
 )
 
@@ -23,9 +23,9 @@ __all__ = (
     "RateListener",
     "MessageListener",
     "FriendRequestListener",
-    "LevelCommentListener",
-    "DailyCommentListener",
-    "WeeklyCommentListener",
+    # "LevelCommentListener",
+    # "DailyCommentListener",
+    # "WeeklyCommentListener",
     "UserCommentListener",
     "UserLevelListener",
 )

@@ -16,7 +16,7 @@ __all__ = ("Relationship",)
 R = TypeVar("R", bound="Relationship")
 
 
-@define()
+@define(hash=True)
 class Relationship(Entity):
     user: User = field()
     type: RelationshipType = field()
@@ -26,6 +26,9 @@ class Relationship(Entity):
     @id.default
     def default_id(self) -> int:
         return self.user.id
+
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ self.id
 
     def attach_client(self: R, client: Client) -> R:
         self.user.attach_client(client)

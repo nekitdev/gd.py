@@ -64,7 +64,7 @@ DEFAULT_CUSTOM = True
 CUSTOM_BIT = 0b00000001
 
 
-@define(hash=True)
+@define()
 class Song(Entity):
     """Represents Geometry Dash and Newgrounds songs."""
 
@@ -75,6 +75,9 @@ class Song(Entity):
     custom: bool = DEFAULT_CUSTOM
 
     download_url: Optional[URL] = None
+
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ self.id
 
     @classmethod
     def from_binary(

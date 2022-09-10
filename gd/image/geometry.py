@@ -243,37 +243,37 @@ class Rectangle:
     def clone(self: R) -> R:
         return self.create(self.origin.clone(), self.size.clone())
 
-    def get_x(self) -> float:
+    @property
+    def x(self) -> float:
         return self.origin.x
 
-    def set_x(self, x: float) -> None:
+    @x.setter
+    def x(self, x: float) -> None:
         self.origin.x = x
 
-    x = property(get_x, set_x)
-
-    def get_y(self) -> float:
+    @property
+    def y(self) -> float:
         return self.origin.y
 
-    def set_y(self, y: float) -> None:
+    @y.setter
+    def y(self, y: float) -> None:
         self.origin.y = y
 
-    y = property(get_y, set_y)
-
-    def get_width(self) -> float:
+    @property
+    def width(self) -> float:
         return self.size.width
 
-    def set_width(self, width: float) -> None:
+    @width.setter
+    def width(self, width: float) -> None:
         self.size.width = width
 
-    width = property(get_width, set_width)
-
-    def get_height(self) -> float:
+    @property
+    def height(self) -> float:
         return self.size.height
 
-    def set_height(self, height: float) -> None:
+    @height.setter
+    def height(self, height: float) -> None:
         self.size.height = height
-
-    height = property(get_height, set_height)
 
     @property
     def min_x(self) -> float:

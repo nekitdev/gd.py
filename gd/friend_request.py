@@ -31,6 +31,9 @@ class FriendRequest(Entity):
 
     was_read: bool = field(default=DEFAULT_READ)
 
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ self.id
+
     def __str__(self) -> str:
         return self.content
 
