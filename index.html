@@ -304,8 +304,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#songs" class="md-nav__link">
-    Songs
+  <a href="#fetching" class="md-nav__link">
+    Fetching
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#listening" class="md-nav__link">
+    Listening
   </a>
   
 </li>
@@ -549,8 +556,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#songs" class="md-nav__link">
-    Songs
+  <a href="#fetching" class="md-nav__link">
+    Fetching
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#listening" class="md-nav__link">
+    Listening
   </a>
   
 </li>
@@ -656,7 +670,7 @@
 <span class="n">git</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;https://github.com/nekitdev/gd.py.git&quot;</span><span class="w"></span>
 </code></pre></div>
 <h2 id="examples">Examples</h2>
-<h3 id="songs">Songs</h3>
+<h3 id="fetching">Fetching</h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># file.py</span>
 
 <span class="kn">import</span> <span class="nn">asyncio</span>
@@ -679,6 +693,23 @@
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="gp">$ </span>python file.py
 <span class="go">PANDA EYES - BROKEN by PandaEyesOfficial (ID: 1081309, size: 9.71 MB)</span>
+</code></pre></div>
+<h3 id="listening">Listening</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">gd</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">gd</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+
+<span class="n">DAILY</span> <span class="o">=</span> <span class="s2">&quot;new daily! </span><span class="si">{daily.name}</span><span class="s2"> by </span><span class="si">{daily.creator.name}</span><span class="s2"> (ID: </span><span class="si">{daily.id}</span><span class="s2">)</span>
+
+
+<span class="nd">@client</span><span class="o">.</span><span class="n">event</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">on_daily</span><span class="p">(</span><span class="n">daily</span><span class="p">:</span> <span class="n">gd</span><span class="o">.</span><span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">DAILY</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">daily</span><span class="o">=</span><span class="n">daily</span><span class="p">))</span>
+
+
+<span class="n">client</span><span class="o">.</span><span class="n">listen_for_daily</span><span class="p">()</span>
+
+<span class="n">client</span><span class="o">.</span><span class="n">create_controller</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </code></pre></div>
 <h2 id="documentation">Documentation</h2>
 <p>You can find the documentation <a href="https://nekitdev.github.io/gd.py">here</a>.</p>
