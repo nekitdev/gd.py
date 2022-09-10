@@ -92,7 +92,7 @@ import gd
 
 client = gd.Client()
 
-DAILY = "new daily! {daily.name} by {daily.creator.name} (ID: {daily.id})
+DAILY = "new daily! {daily.name} by {daily.creator.name} (ID: {daily.id})"
 
 
 @client.event

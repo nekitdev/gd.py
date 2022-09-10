@@ -76,4 +76,4 @@ def build(setup_keywords: S, output_path: Path = OUTPUT_PATH) -> S:
 
 @entrypoint(__name__)
 def main() -> None:
-    build(dict())
+    build({})
