@@ -15,7 +15,10 @@ INTERPRETER_PATH = Path(INTERPRETER_STRING)
 
 ROOT = Path(__file__).parent
 
-EXTENSIONS = frozenset((".so", ".pyd"))
+SHARED_OBJECT = ".so"
+PYTHON_DLL = ".pyd"
+
+EXTENSIONS = frozenset((SHARED_OBJECT, PYTHON_DLL))
 
 MATURIN = "maturin"
 BUILD = "build"

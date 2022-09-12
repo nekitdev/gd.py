@@ -146,5 +146,5 @@ async def run_iterables(
             raise result
 
         else:
-            for item in result:
+            for item in result:  # type: ignore
                 yield item

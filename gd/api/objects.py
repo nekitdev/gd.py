@@ -2,7 +2,7 @@ from io import BytesIO
 from typing import BinaryIO, Iterable, Set, Type, TypeVar
 
 from attrs import define, field
-from typing_extensions import TypeGuard
+from typing_extensions import Literal, TypeGuard
 
 from gd.api.hsv import HSV
 from gd.binary import VERSION, Binary
@@ -456,6 +456,12 @@ class Object(Binary):
     def is_trigger(self) -> bool:
         return False
 
+    def has_target_group(self) -> bool:
+        return False
+
+    def has_additional_group(self) -> bool:
+        return False
+
     def is_portal(self) -> bool:
         return self.id in PORTAL_IDS
 
@@ -907,7 +913,7 @@ class Trigger(Object):
 
         writer.write_u8(value, order)
 
-    def is_trigger(self) -> bool:
+    def is_trigger(self) -> Literal[True]:
         return True
 
     def is_touch_triggered(self) -> bool:
@@ -2119,6 +2125,10 @@ def is_trigger(object: Object) -> TypeGuard[Trigger]:
 
 def has_target_group(object: Object) -> TypeGuard[HasTargetGroup]:
     return is_instance(object, HasTargetGroup)
+
+
+def has_additional_group(object: Object) -> TypeGuard[HasAdditionalGroup]:
+    return is_instance(object, HasAdditionalGroup)
 
 
 class ObjectType(Enum):

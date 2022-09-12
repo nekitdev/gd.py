@@ -10,7 +10,6 @@ from gd.typing import is_instance
 __all__ = ("Binary", "FromBinary", "ToBinary", "is_from_binary", "is_to_binary")
 
 HEADER = b"GD"
-
 VERSION = 1
 
 B = TypeVar("B", bound="FromBinary")

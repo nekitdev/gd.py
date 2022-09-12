@@ -16,7 +16,6 @@ from typing import (
     BinaryIO,
     ClassVar,
     Generic,
-    Iterable,
     Mapping,
     Optional,
     Set,
@@ -94,7 +93,6 @@ from gd.enums import (
 )
 from gd.errors import (
     CommentBanned,
-    HTTPError,
     HTTPErrorWithOrigin,
     HTTPStatusError,
     LoginFailed,
@@ -109,6 +107,7 @@ from gd.models import CommentBannedModel
 from gd.models_constants import OBJECTS_SEPARATOR
 from gd.models_utils import concat_extra_string
 from gd.password import Password
+from gd.progress import Progress
 from gd.string_utils import concat_comma, password_str, tick
 from gd.text_utils import snake_to_camel
 from gd.timer import create_timer
@@ -1704,7 +1703,7 @@ class HTTPClient:
         attempts: int = 0,
         seconds: int = 0,
         coins: int = 0,
-        progress: Iterable[int] = (),
+        progress: Optional[Progress] = None,
         send: bool = False,
         *,
         account_id: int,

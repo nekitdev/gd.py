@@ -2,7 +2,7 @@ import json
 import re
 from collections import defaultdict as default_dict
 from pathlib import Path
-from typing import Any, Dict, Iterator, Optional, Tuple, TypeVar
+from typing import Any, Dict, Iterator, List, Optional, Tuple, TypeVar
 
 from gd.constants import EMPTY
 
@@ -19,7 +19,7 @@ from gd.image.sheet import SheetData
 from gd.image.sprite import SpriteData
 from gd.json import AnyCamelDict, CamelDict
 from gd.string_constants import COMMA
-from gd.typing import IntoPath, Parse, Unary
+from gd.typing import IntoPath, Parse, StringDict, Unary
 
 __all__ = (
     "convert_animation_sheet_data",
@@ -146,7 +146,7 @@ def get_z(layer_dict: CamelDict[Any]) -> int:
 
 
 def convert_animation_sheet_data(document: AnyCamelDict) -> AnimationSheetData:
-    data = default_dict(list)
+    data: StringDict[List[List[LayerData]]] = default_dict(list)
 
     for frame_name, frame_dict in document.animation_container.items():
         name, index = get_animation_name_index(frame_name)

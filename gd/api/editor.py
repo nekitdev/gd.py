@@ -22,6 +22,7 @@ from gd.api.header import Header
 from gd.api.objects import (
     Object,
     Trigger,
+    has_additional_group,
     has_target_group,
     is_trigger,
     object_from_binary,
@@ -170,6 +171,9 @@ class Editor(Binary, Sequence[Object]):
             if has_target_group(object):
                 yield object.target_group_id
 
+            if has_additional_group(object):
+                yield object.additional_group_id
+
     @property
     def groups(self) -> Set[int]:
         return set(self.iter_groups())
@@ -229,11 +233,8 @@ class Editor(Binary, Sequence[Object]):
         return self.header.speed
 
     @property
-    def length(self, distance: Optional[float] = None) -> float:
-        if distance is None:
-            distance = self.x_length
-
-        return get_time_length(distance, self.start_speed, self.speed_changes)
+    def length(self) -> float:
+        return get_time_length(self.x_length, self.start_speed, self.speed_changes)
 
     @classmethod
     def from_binary(

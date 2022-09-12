@@ -425,6 +425,13 @@ class ColorChannels(Binary, Dict[int, ColorChannel]):
         self[color_channel.id] = color_channel
 
     @classmethod
+    def from_robtop(cls: Type[CCS], string: str) -> CCS:
+        ...
+
+    def to_robtop(self) -> str:
+        ...
+
+    @classmethod
     def from_binary(
         cls: Type[CCS],
         binary: BinaryIO,
