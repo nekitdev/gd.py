@@ -4,7 +4,7 @@ from attrs import define, field
 
 from gd.api.color_channels import ColorChannels
 
-# from gd.api.guidelines import Guidelines
+from gd.api.guidelines import Guidelines
 from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ID
@@ -14,7 +14,7 @@ DEFAULT_MINI_MODE = False
 
 DEFAULT_DUAL_MODE = False
 
-DEFAULT_START_POS = False
+DEFAULT_START_POSITION = False
 
 DEFAULT_TWO_PLAYER = False
 
@@ -32,7 +32,7 @@ HALF_BITS = HALF_BYTE.bit_length()
 
 MINI_MODE_BIT = 0b10000000
 DUAL_MODE_BIT = 0b01000000
-START_POS_BIT = 0b00100000
+START_POSITION_BIT = 0b00100000
 TWO_PLAYER_BIT = 0b00010000
 FLIP_GRAVITY_BIT = 0b00001000
 SONG_FADE_IN_BIT = 0b00000100
@@ -48,10 +48,11 @@ SPEED = "kA4"
 BACKGROUND_ID = "kA6"
 GROUND_ID = "kA7"
 DUAL_MODE = "kA8"
-START_POS = "kA9"
+START_POSITION = "kA9"
+TWO_PLAYER = "kA10"
 FLIP_GRAVITY = "kA11"
 SONG_OFFSET = "kA13"
-# GUIDELINES = "kA14"
+GUIDELINES = "kA14"
 SONG_FADE_IN = "kA15"
 SONG_FADE_OUT = "kA16"
 GROUND_LINE_ID = "kA17"
@@ -68,11 +69,11 @@ class Header(Binary):
     background_id: int = field(default=DEFAULT_ID)
     ground_id: int = field(default=DEFAULT_ID)
     dual_mode: bool = field(default=DEFAULT_DUAL_MODE)
-    start_pos: bool = field(default=DEFAULT_START_POS)
+    start_position: bool = field(default=DEFAULT_START_POSITION)
     two_player: bool = field(default=DEFAULT_TWO_PLAYER)
     flip_gravity: bool = field(default=DEFAULT_FLIP_GRAVITY)
     song_offset: float = field(default=DEFAULT_SONG_OFFSET)
-    # guidelines: Guidelines = field(factory=Guidelines)
+    guidelines: Guidelines = field(factory=Guidelines)
     song_fade_in: bool = field(default=DEFAULT_SONG_FADE_IN)
     song_fade_out: bool = field(default=DEFAULT_SONG_FADE_OUT)
     ground_line_id: int = field(default=DEFAULT_ID)
@@ -86,7 +87,7 @@ class Header(Binary):
     ) -> H:
         mini_mode_bit = MINI_MODE_BIT
         dual_mode_bit = DUAL_MODE_BIT
-        start_pos_bit = START_POS_BIT
+        start_position_bit = START_POSITION_BIT
         two_player_bit = TWO_PLAYER_BIT
         flip_gravity_bit = FLIP_GRAVITY_BIT
         song_fade_in_bit = SONG_FADE_IN_BIT
@@ -112,7 +113,7 @@ class Header(Binary):
 
         mini_mode = bits & mini_mode_bit == mini_mode_bit
         dual_mode = bits & dual_mode_bit == dual_mode_bit
-        start_pos = bits & start_pos_bit == start_pos_bit
+        start_position = bits & start_position_bit == start_position_bit
         two_player = bits & two_player_bit == two_player_bit
         flip_gravity = bits & flip_gravity_bit == flip_gravity_bit
         song_fade_in = bits & song_fade_in_bit == song_fade_in_bit
@@ -121,7 +122,7 @@ class Header(Binary):
 
         song_offset = reader.read_f32(order)
 
-        # guidelines = Guidelines.from_binary(binary, order, version)
+        guidelines = Guidelines.from_binary(binary, order, version)
 
         color_channels = ColorChannels.from_binary(binary, order, version)
 
@@ -132,11 +133,11 @@ class Header(Binary):
             background_id=background_id,
             ground_id=ground_id,
             dual_mode=dual_mode,
-            start_pos=start_pos,
+            start_position=start_position,
             two_player=two_player,
             flip_gravity=flip_gravity,
             song_offset=song_offset,
-            # guidelines=guidelines,
+            guidelines=guidelines,
             song_fade_in=song_fade_in,
             song_fade_out=song_fade_out,
             ground_line_id=ground_line_id,
@@ -170,7 +171,7 @@ class Header(Binary):
             bits |= DUAL_MODE_BIT
 
         if self.is_start_pos():
-            bits |= START_POS_BIT
+            bits |= START_POSITION_BIT
 
         if self.is_two_player():
             bits |= TWO_PLAYER_BIT
@@ -191,7 +192,7 @@ class Header(Binary):
 
         writer.write_f32(self.song_offset, order)
 
-        # self.guidelines.to_binary(binary, order, version)
+        self.guidelines.to_binary(binary, order, version)
 
         self.color_channels.to_binary(binary, order, version)
 

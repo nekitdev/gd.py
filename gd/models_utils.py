@@ -14,6 +14,7 @@ from gd.models_constants import (
     FRIEND_REQUEST_SEPARATOR,
     FRIEND_REQUESTS_RESPONSE_FRIEND_REQUESTS_SEPARATOR,
     FRIEND_REQUESTS_RESPONSE_SEPARATOR,
+    GUIDELINES_SEPARATOR,
     HEADER_SEPARATOR,
     HSV_SEPARATOR,
     LEADERBOARD_RESPONSE_USERS_SEPARATOR,
@@ -124,6 +125,10 @@ def split_mapping(separator: str, string: str) -> Mapping[int, str]:
     return {int(index): value for index, value in iter(string.split(separator)).pairs().unwrap()}
 
 
+def split_float_mapping(separator: str, string: str) -> Mapping[float, float]:
+    return {float(key): float(value) for key, value in iter(string.split(separator)).pairs().unwrap()}
+
+
 def string_mapping_to_iterable(mapping: Mapping[str, str]) -> Iterable[str]:
     return iter((index, value) for index, value in mapping.items()).flatten().unwrap()
 
@@ -132,12 +137,20 @@ def mapping_to_iterable(mapping: Mapping[int, str]) -> Iterable[str]:
     return iter((str(index), value) for index, value in mapping.items()).flatten().unwrap()
 
 
+def float_mapping_to_iterable(mapping: Mapping[float, float]) -> Iterable[str]:
+    return iter((str(key), str(value)) for key, value in mapping.items()).flatten().unwrap()
+
+
 def concat_string_mapping(separator: str, mapping: Mapping[str, str]) -> str:
     return separator.join(string_mapping_to_iterable(mapping))
 
 
 def concat_mapping(separator: str, mapping: Mapping[int, str]) -> str:
     return separator.join(mapping_to_iterable(mapping))
+
+
+def concat_float_mapping(separator: str, mapping: Mapping[float, float]) -> str:
+    return separator.join(float_mapping_to_iterable(mapping))
 
 
 def concat_iterable(separator: str, iterable: Iterable[str]) -> str:
@@ -220,6 +233,9 @@ concat_color_channel = partial(concat_mapping, COLOR_CHANNEL_SEPARATOR)
 
 split_objects = partial(split_iterable, OBJECTS_SEPARATOR)
 concat_objects = partial(concat_iterable, OBJECTS_SEPARATOR)
+
+split_guidelines = partial(split_float_mapping, GUIDELINES_SEPARATOR)
+concat_guidelines = partial(concat_float_mapping, GUIDELINES_SEPARATOR)
 
 split_time = partial(split_iterable, TIME_SEPARATOR)
 concat_time = partial(concat_iterable, TIME_SEPARATOR_SPACE)
