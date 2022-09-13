@@ -10,7 +10,7 @@ from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ID
 from gd.enums import ByteOrder, GameMode, Speed
 from gd.models_constants import HEADER_SEPARATOR
-from gd.models_utils import concat_header, float_str, split_header
+from gd.models_utils import concat_header, float_str, int_bool, parse_get_or, partial_parse_enum, split_header
 from gd.robtop import RobTop
 
 DEFAULT_MINI_MODE = False
@@ -248,7 +248,44 @@ class Header(RobTop, Binary):
 
         mapping = split_header(string)
 
-        return cls()
+        return cls(
+            game_mode=parse_get_or(
+                partial_parse_enum(int, GameMode), game_mode_default, mapping.get(game_mode_index)
+            ),
+            mini_mode=parse_get_or(int_bool, mini_mode_default, mapping.get(mini_mode_index)),
+            speed=parse_get_or(
+                partial_parse_enum(int, Speed), speed_default, mapping.get(speed_index)
+            ),
+            background_id=parse_get_or(
+                int, background_id_default, mapping.get(background_id_index)
+            ),
+            ground_id=parse_get_or(int, ground_id_default, mapping.get(ground_id_index)),
+            dual_mode=parse_get_or(int_bool, dual_mode_default, mapping.get(dual_mode_index)),
+            start_position=parse_get_or(
+                int_bool, start_position_default, mapping.get(start_position_index)
+            ),
+            two_player=parse_get_or(int_bool, two_player_default, mapping.get(two_player_index)),
+            flip_gravity=parse_get_or(
+                int_bool, flip_gravity_default, mapping.get(flip_gravity_index)
+            ),
+            song_offset=parse_get_or(float, song_offset_default, mapping.get(song_offset_index)),
+            song_fade_in=parse_get_or(
+                int_bool, song_fade_in_default, mapping.get(song_fade_in_index)
+            ),
+            song_fade_out=parse_get_or(
+                int_bool, song_fade_out_default, mapping.get(song_fade_out_index)
+            ),
+            ground_line_id=parse_get_or(
+                int, ground_line_id_default, mapping.get(ground_line_id_index)
+            ),
+            font_id=parse_get_or(int, font_id_default, mapping.get(font_id_index)),
+            platformer_mode=parse_get_or(
+                int_bool, platformer_mode_default, mapping.get(platformer_mode_index)
+            ),
+            color_channels=parse_get_or(
+                ColorChannels.from_robtop, color_channels_default, mapping.get(color_channels_index)
+            ),
+        )
 
     def to_robtop(
         self,

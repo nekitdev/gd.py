@@ -10,11 +10,13 @@ from gd.constants import BITS, BYTE, DEFAULT_ID
 from gd.enums import ByteOrder, PlayerColor
 from gd.models_utils import (
     concat_color_channel,
+    concat_color_channels,
     float_str,
     int_bool,
     parse_get_or,
     partial_parse_enum,
     split_color_channel,
+    split_color_channels,
 )
 
 __all__ = ("ColorChannel", "ColorChannels", "Channel", "Channels")
@@ -425,11 +427,15 @@ class ColorChannels(Binary, Dict[int, ColorChannel]):
         self[color_channel.id] = color_channel
 
     @classmethod
-    def from_robtop(cls: Type[CCS], string: str) -> CCS:
-        ...
+    def from_robtop(
+        cls: Type[CCS], string: str, color_channel_type: Type[ColorChannel] = ColorChannel
+    ) -> CCS:
+        return cls.from_color_channel_iterable(
+            map(color_channel_type.from_robtop, split_color_channels(string))
+        )
 
     def to_robtop(self) -> str:
-        ...
+        return concat_color_channels(color_channel.to_robtop() for color_channel in self.values())
 
     @classmethod
     def from_binary(

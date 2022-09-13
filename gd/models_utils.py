@@ -6,6 +6,7 @@ from iters.iters import iter
 from gd.enum_extensions import Enum
 from gd.models_constants import (
     COLOR_CHANNEL_SEPARATOR,
+    COLOR_CHANNELS_SEPARATOR,
     COLOR_SEPARATOR,
     COMMENT_BANNED_SEPARATOR,
     CREATOR_SEPARATOR,
@@ -230,6 +231,9 @@ concat_header = partial(concat_string_mapping, HEADER_SEPARATOR)
 
 split_color_channel = partial(split_mapping, COLOR_CHANNEL_SEPARATOR)
 concat_color_channel = partial(concat_mapping, COLOR_CHANNEL_SEPARATOR)
+
+split_color_channels = partial(split_iterable, COLOR_CHANNELS_SEPARATOR)
+concat_color_channels = partial(concat_iterable, COLOR_CHANNELS_SEPARATOR)
 
 split_objects = partial(split_iterable, OBJECTS_SEPARATOR)
 concat_objects = partial(concat_iterable, OBJECTS_SEPARATOR)
