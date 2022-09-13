@@ -1,4 +1,4 @@
-from typing import BinaryIO, Type, TypeVar
+from typing import BinaryIO, Optional, Type, TypeVar
 
 from attrs import define, field
 
@@ -9,6 +9,8 @@ from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ID
 from gd.enums import ByteOrder, GameMode, Speed
+from gd.models_constants import HEADER_SEPARATOR
+from gd.models_utils import concat_header, float_str, split_header
 
 DEFAULT_MINI_MODE = False
 
@@ -170,7 +172,7 @@ class Header(Binary):
         if self.is_dual_mode():
             bits |= DUAL_MODE_BIT
 
-        if self.is_start_pos():
+        if self.is_start_position():
             bits |= START_POSITION_BIT
 
         if self.is_two_player():
@@ -196,14 +198,111 @@ class Header(Binary):
 
         self.color_channels.to_binary(binary, order, version)
 
+    @classmethod
+    def from_robtop(
+        cls: Type[H],
+        string: str,
+        # indexes
+        game_mode_index: str = GAME_MODE,
+        mini_mode_index: str = MINI_MODE,
+        speed_index: str = SPEED,
+        background_id_index: str = BACKGROUND_ID,
+        ground_id_index: str = GROUND_ID,
+        dual_mode_index: str = DUAL_MODE,
+        start_position_index: str = START_POSITION,
+        two_player_index: str = TWO_PLAYER,
+        flip_gravity_index: str = FLIP_GRAVITY,
+        song_offset_index: str = SONG_OFFSET,
+        guidelines_index: str = GUIDELINES,
+        song_fade_in_index: str = SONG_FADE_IN,
+        song_fade_out_index: str = SONG_FADE_OUT,
+        ground_line_id_index: str = GROUND_LINE_ID,
+        font_id_index: str = FONT_ID,
+        platformer_mode_index: str = PLATFORMER_MODE,
+        color_channels_index: str = COLOR_CHANNELS,
+        # defaults
+        game_mode_default: GameMode = GameMode.DEFAULT,
+        mini_mode_default: bool = DEFAULT_MINI_MODE,
+        speed_default: Speed = Speed.DEFAULT,
+        background_id_default: int = DEFAULT_ID,
+        ground_id_default: int = DEFAULT_ID,
+        dual_mode_default: bool = DEFAULT_DUAL_MODE,
+        start_position_default: bool = DEFAULT_START_POSITION,
+        two_player_default: bool = DEFAULT_TWO_PLAYER,
+        flip_gravity_default: bool = DEFAULT_FLIP_GRAVITY,
+        song_offset_default: float = DEFAULT_SONG_OFFSET,
+        guidelines_default: Optional[Guidelines] = None,
+        song_fade_in_default: bool = DEFAULT_SONG_FADE_IN,
+        song_fade_out_default: bool = DEFAULT_SONG_FADE_OUT,
+        ground_line_id_default: int = DEFAULT_ID,
+        font_id_default: int = DEFAULT_ID,
+        platformer_mode_default: bool = DEFAULT_PLATFORMER_MODE,
+        color_channels_default: Optional[ColorChannels] = None,
+    ) -> H:
+        if guidelines_default is None:
+            guidelines_default = Guidelines()
+
+        if color_channels_default is None:
+            color_channels_default = ColorChannels()
+
+        mapping = split_header(string)
+
+        return cls()
+
+    def to_robtop(
+        self,
+        game_mode_index: str = GAME_MODE,
+        mini_mode_index: str = MINI_MODE,
+        speed_index: str = SPEED,
+        background_id_index: str = BACKGROUND_ID,
+        ground_id_index: str = GROUND_ID,
+        dual_mode_index: str = DUAL_MODE,
+        start_position_index: str = START_POSITION,
+        two_player_index: str = TWO_PLAYER,
+        flip_gravity_index: str = FLIP_GRAVITY,
+        song_offset_index: str = SONG_OFFSET,
+        guidelines_index: str = GUIDELINES,
+        song_fade_in_index: str = SONG_FADE_IN,
+        song_fade_out_index: str = SONG_FADE_OUT,
+        ground_line_id_index: str = GROUND_LINE_ID,
+        font_id_index: str = FONT_ID,
+        platformer_mode_index: str = PLATFORMER_MODE,
+        color_channels_index: str = COLOR_CHANNELS,
+    ) -> str:
+        mapping = {
+            game_mode_index: str(self.game_mode.value),
+            mini_mode_index: str(int(self.mini_mode)),
+            speed_index: str(self.speed.value),
+            background_id_index: str(self.background_id),
+            ground_id_index: str(self.ground_id),
+            dual_mode_index: str(int(self.dual_mode)),
+            start_position_index: str(int(self.start_position)),
+            two_player_index: str(int(self.two_player)),
+            flip_gravity_index: str(int(self.flip_gravity)),
+            song_offset_index: float_str(self.song_offset),
+            guidelines_index: self.guidelines.to_robtop(),
+            song_fade_in_index: str(int(self.song_fade_in)),
+            song_fade_out_index: str(int(self.song_fade_out)),
+            ground_line_id_index: str(self.ground_line_id),
+            font_id_index: str(self.font_id),
+            platformer_mode_index: str(int(self.platformer_mode)),
+            color_channels_index: self.color_channels.to_robtop(),
+        }
+
+        return concat_header(mapping)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return HEADER_SEPARATOR in string
+
     def is_mini_mode(self) -> bool:
         return self.mini_mode
 
     def is_dual_mode(self) -> bool:
         return self.dual_mode
 
-    def is_start_pos(self) -> bool:
-        return self.start_pos
+    def is_start_position(self) -> bool:
+        return self.start_position
 
     def is_two_player(self) -> bool:
         return self.two_player

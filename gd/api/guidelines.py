@@ -5,14 +5,16 @@ from typing import BinaryIO, Dict, Type, TypeVar
 from gd.binary import VERSION
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder, GuidelineColor
+from gd.models_constants import GUIDELINES_SEPARATOR
 from gd.models_utils import concat_guidelines, split_guidelines
+from gd.robtop import RobTop
 
 __all__ = ("Guidelines",)
 
 G = TypeVar("G", bound="Guidelines")
 
 
-class Guidelines(Dict[float, GuidelineColor]):
+class Guidelines(RobTop, Dict[float, GuidelineColor]):
     def add(self, timestamp: float, color: GuidelineColor = GuidelineColor.DEFAULT) -> None:
         self[timestamp] = color
 
@@ -49,3 +51,7 @@ class Guidelines(Dict[float, GuidelineColor]):
 
     def to_robtop(self) -> str:
         return concat_guidelines({timestamp: color.value for timestamp, color in self.items()})
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return GUIDELINES_SEPARATOR in string

@@ -18,9 +18,8 @@ class FromRobTop(Protocol):
         ...
 
     @classmethod
-    @abstractmethod
     def can_be_in(cls, string: str) -> bool:
-        ...
+        return False
 
 
 def is_from_robtop(item: Any) -> TypeGuard[FromRobTop]:
