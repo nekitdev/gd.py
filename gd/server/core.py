@@ -11,7 +11,7 @@ from gd.server.tokens import AnyTokens, ServerToken, ServerTokens, Token, Tokens
 from gd.server.typing import StreamMiddleware, Tool
 from gd.version import version_info
 
-__all__ = ("setup_app", "setup_gd_app", "run_app")
+__all__ = ("docs", "setup_app", "setup_gd_app", "run_app")
 
 VERSION = str(version_info)
 

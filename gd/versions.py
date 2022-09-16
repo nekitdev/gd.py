@@ -19,7 +19,7 @@ BASE: Final[int] = 10
 V = TypeVar("V", bound="Version")
 
 
-@frozen(eq=True, order=True)
+@frozen(order=True)
 class Version(Binary, RobTop, String):
     major: int = field(default=0)
     minor: int = field(default=0)

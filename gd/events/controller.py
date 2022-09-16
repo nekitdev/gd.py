@@ -13,21 +13,17 @@ CONTROLLER_NOT_RUNNING = "the controller is not running"
 CONTROLLER_ALREADY_STARTED = "the controller has already started"
 
 
+def convert_listeners(iterable: Iterable[Listener]) -> DynamicTuple[Listener]:
+    return tuple(iterable)
+
+
 @define()
 class Controller:
-    listeners: DynamicTuple[Listener] = field(default=())
+    listeners: DynamicTuple[Listener] = field(default=(), converter=convert_listeners)
 
     loop: AbstractEventLoop = field(factory=new_event_loop)
 
     _thread: Optional[Thread] = field(default=None, init=False)
-
-    def __init__(
-        self, listeners: Iterable[Listener], loop: Optional[AbstractEventLoop] = None
-    ) -> None:
-        if loop is None:
-            loop = new_event_loop()
-
-        self.__attrs_init__(tuple(listeners), loop)
 
     def run(self) -> None:
         loop = self.loop
@@ -36,7 +32,7 @@ class Controller:
             loop.add_signal_handler(SIGINT, loop.stop)
             loop.add_signal_handler(SIGTERM, loop.stop)
 
-        except (NotImplementedError, RuntimeError):
+        except RuntimeError:
             pass
 
         set_event_loop(loop)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import BinaryIO, Type, TypeVar
+from typing import TYPE_CHECKING, BinaryIO, Optional, Type, TypeVar
 
 from attrs import define, field
 
@@ -23,16 +23,21 @@ from gd.level import Level
 from gd.models import LevelCommentModel, UserCommentModel
 from gd.user import User
 
+if TYPE_CHECKING:
+    from gd.client import Client
+
 __all__ = ("Comment", "LevelComment", "UserComment")
+
+C = TypeVar("C", bound="Comment")
 
 
 @define()
 class Comment(Entity):
-    author: User
-    rating: int
-    content: str
+    author: User = field(eq=False)
+    rating: int = field(eq=False)
+    content: str = field(eq=False)
 
-    created_at: datetime
+    created_at: datetime = field(eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
@@ -43,16 +48,31 @@ class Comment(Entity):
     def is_disliked(self) -> bool:
         return self.rating < 0
 
+    def maybe_attach_client(self: C, client: Optional[Client]) -> C:
+        self.author.maybe_attach_client(client)
+
+        return super().maybe_attach_client(client)
+
+    def attach_client(self: C, client: Client) -> C:
+        self.author.attach_client(client)
+
+        return super().attach_client(client)
+
+    def detach_client(self: C) -> C:
+        self.author.detach_client()
+
+        return super().detach_client()
+
 
 UC = TypeVar("UC", bound="UserComment")
 
 
 @define()
 class UserComment(Comment):
-    rating: int = field(default=DEFAULT_RATING)
-    content: str = field(default=EMPTY)
+    rating: int = field(default=DEFAULT_RATING, eq=False)
+    content: str = field(default=EMPTY, eq=False)
 
-    created_at: datetime = field(factory=datetime.utcnow)
+    created_at: datetime = field(factory=datetime.utcnow, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
@@ -141,16 +161,16 @@ LC = TypeVar("LC", bound="LevelComment")
 
 @define()
 class LevelComment(Comment):
-    level: Level = field()
+    level: Level = field(eq=False)
 
-    record: int = field(default=DEFAULT_RECORD)
+    record: int = field(default=DEFAULT_RECORD, eq=False)
 
-    color: Color = field(factory=Color.default)
+    color: Color = field(factory=Color.default, eq=False)
 
-    rating: int = field(default=DEFAULT_RATING)
-    content: str = field(default=EMPTY)
+    rating: int = field(default=DEFAULT_RATING, eq=False)
+    content: str = field(default=EMPTY, eq=False)
 
-    created_at: datetime = field(factory=datetime.utcnow)
+    created_at: datetime = field(factory=datetime.utcnow, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
@@ -253,3 +273,18 @@ class LevelComment(Comment):
         value = (self.color.value << BITS) | self.record
 
         writer.write_u32(value, order)
+
+    def maybe_attach_client(self: LC, client: Optional[Client]) -> LC:
+        self.level.maybe_attach_client(client)
+
+        return super().maybe_attach_client(client)
+
+    def attach_client(self: LC, client: Client) -> LC:
+        self.level.attach_client(client)
+
+        return super().attach_client(client)
+
+    def detach_client(self: LC) -> LC:
+        self.level.detach_client()
+
+        return super().detach_client()

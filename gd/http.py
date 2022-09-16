@@ -12,7 +12,6 @@ from random import randrange as get_random_range
 from types import TracebackType as Traceback
 from typing import (
     Any,
-    AnyStr,
     BinaryIO,
     ClassVar,
     Generic,
@@ -27,7 +26,7 @@ from typing import (
 from uuid import uuid4 as generate_uuid
 
 from aiohttp import BasicAuth, ClientError, ClientSession, ClientTimeout
-from attrs import define, field, frozen
+from attrs import define, evolve, field, frozen
 from tqdm import tqdm as progess  # type: ignore
 from typing_extensions import Literal
 from yarl import URL
@@ -115,6 +114,7 @@ from gd.typing import (
     AnyException,
     DynamicTuple,
     Headers,
+    IntoParameters,
     IntoPath,
     IntString,
     JSONType,
@@ -244,53 +244,69 @@ def snake_to_camel_with_id(string: str) -> str:
     return snake_to_camel(string).replace(ID_TITLE, ID)
 
 
-DEFAULT_HAS_DATA = True
-DEFAULT_TO_CAMEL = True
+DEFAULT_TO_CAMEL = False
+
+
+P = TypeVar("P", bound="Payload")
+
+
+class Payload(Namespace):
+    def __init__(
+        self,
+        into_parameters: IntoParameters = (),
+        *,
+        to_camel: bool = DEFAULT_TO_CAMEL,
+        **parameters: Any,
+    ) -> None:
+        payload = dict(into_parameters)
+
+        payload.update(parameters)
+
+        if to_camel:
+            payload = {snake_to_camel_with_id(name): value for name, value in payload.items()}
+
+        super().__init__(payload)
+
+    def update(
+        self,
+        into_parameters: IntoParameters = (),
+        *,
+        to_camel: bool = DEFAULT_TO_CAMEL,
+        **parameters: Any,
+    ) -> None:
+        payload = dict(into_parameters)
+
+        payload.update(parameters)
+
+        if to_camel:
+            payload = {snake_to_camel_with_id(name): value for name, value in payload.items()}
+
+        super().update(payload)
+
+    def copy(self: P) -> P:
+        return type(self)(self)
+
 
 ROUTE = "{} {}"
+
+R = TypeVar("R", bound="Route")
 
 
 @frozen()
 class Route:
     method: str = field()
     route: str = field()
-    has_data: bool = field(default=DEFAULT_HAS_DATA, kw_only=True)
-    to_camel: bool = field(default=DEFAULT_TO_CAMEL, kw_only=True)
-    parameters: Namespace = field(factory=dict, kw_only=True)
+    parameters: Namespace = field(factory=dict)
 
-    def __init__(
-        self,
-        method: str,
-        route: str,
-        *,
-        has_data: bool = DEFAULT_HAS_DATA,
-        to_camel: bool = DEFAULT_TO_CAMEL,
-        **parameters: Any,
-    ) -> None:
-        self.__attrs_init__(method, route, to_camel=to_camel, has_data=has_data)
-
-        self.update(parameters, to_camel=to_camel)
-
-    def update(
-        self,
-        mapping: Optional[Namespace] = None,
-        *,
-        to_camel: bool = DEFAULT_TO_CAMEL,
-        **parameters: Any,
-    ) -> None:
-        if mapping is not None:
-            parameters.update(mapping)
-
-        if to_camel:
-            self.parameters.update(
-                {snake_to_camel_with_id(name): value for name, value in parameters.items()}
-            )
-
-        else:
-            self.parameters.update(parameters)
+    @property
+    def actual_route(self) -> str:
+        return self.route.format_map(self.parameters)
 
     def __str__(self) -> str:
-        return ROUTE.format(self.method, tick(self.route))
+        return ROUTE.format(self.method, tick(self.actual_route))
+
+    def with_parameters(self: R, parameters: Namespace) -> R:
+        return evolve(self, parameters=parameters)
 
 
 CLIENTS: Set[HTTPClient] = set()
@@ -324,7 +340,7 @@ def close_all_clients_sync() -> None:
 register_at_exit(close_all_clients_sync)
 
 
-def try_parse_error_code(string: AnyStr) -> Optional[int]:
+def try_parse_error_code(string: Union[str, bytes]) -> Optional[int]:
     try:
         error_code = int(string)
 
@@ -552,7 +568,7 @@ class HTTPClient:
     async def close(self) -> None:
         session = self._session
 
-        if session:
+        if session is not None:
             await session.close()
 
             self._session = None
@@ -664,6 +680,8 @@ class HTTPClient:
         self,
         route: Route,
         type: Literal[ResponseType.TEXT] = ...,
+        data: Optional[Parameters] = None,
+        parameters: Optional[Parameters] = None,
         error_codes: Optional[ErrorCodes] = ...,
         headers: Optional[Headers] = ...,
         base: Optional[URLString] = ...,
@@ -676,6 +694,8 @@ class HTTPClient:
         self,
         route: Route,
         type: Literal[ResponseType.BYTES],
+        data: Optional[Parameters] = None,
+        parameters: Optional[Parameters] = None,
         error_codes: Optional[ErrorCodes] = ...,
         headers: Optional[Headers] = ...,
         base: Optional[URLString] = ...,
@@ -688,6 +708,8 @@ class HTTPClient:
         self,
         route: Route,
         type: Literal[ResponseType.JSON],
+        data: Optional[Parameters] = ...,
+        parameters: Optional[Parameters] = ...,
         error_codes: Optional[ErrorCodes] = ...,
         headers: Optional[Headers] = ...,
         base: Optional[URLString] = ...,
@@ -699,6 +721,8 @@ class HTTPClient:
         self,
         route: Route,
         type: ResponseType = ResponseType.DEFAULT,
+        data: Optional[Parameters] = None,
+        parameters: Optional[Parameters] = None,
         error_codes: Optional[ErrorCodes] = None,
         headers: Optional[Headers] = None,
         base: Optional[URLString] = None,
@@ -706,22 +730,16 @@ class HTTPClient:
     ) -> ResponseData:
         url = URL(self.url if base is None else base)
 
-        keywords = dict(
+        return await self.request(
             method=route.method,
             url=url / route.route.strip(SLASH),
             type=type,
+            data=data,
+            parameters=parameters,
             error_codes=error_codes,
             headers=headers,
             retries=retries,
         )
-
-        if route.has_data:
-            keywords.update(data=route.parameters)
-
-        else:
-            keywords.update(params=route.parameters)
-
-        return await self.request(**keywords)  # type: ignore
 
     @overload
     async def request(
@@ -731,7 +749,7 @@ class HTTPClient:
         type: Literal[ResponseType.TEXT] = ...,
         read: Literal[True] = ...,
         data: Optional[Parameters] = ...,
-        params: Optional[Parameters] = ...,
+        parameters: Optional[Parameters] = ...,
         error_codes: Optional[ErrorCodes] = ...,
         headers: Optional[Headers] = ...,
         retries: int = ...,
@@ -746,7 +764,7 @@ class HTTPClient:
         type: Literal[ResponseType.BYTES],
         read: Literal[True] = ...,
         data: Optional[Parameters] = ...,
-        params: Optional[Parameters] = ...,
+        parameters: Optional[Parameters] = ...,
         error_codes: Optional[ErrorCodes] = ...,
         headers: Optional[Headers] = ...,
         retries: int = ...,
@@ -761,7 +779,7 @@ class HTTPClient:
         type: Literal[ResponseType.JSON],
         read: Literal[True] = ...,
         data: Optional[Parameters] = ...,
-        params: Optional[Parameters] = ...,
+        parameters: Optional[Parameters] = ...,
         error_codes: Optional[ErrorCodes] = ...,
         headers: Optional[Headers] = ...,
         retries: int = ...,
@@ -776,7 +794,7 @@ class HTTPClient:
         type: ResponseType = ...,
         read: Literal[False] = ...,
         data: Optional[Parameters] = ...,
-        params: Optional[Parameters] = ...,
+        parameters: Optional[Parameters] = ...,
         error_codes: Optional[ErrorCodes] = ...,
         headers: Optional[Headers] = ...,
         retries: int = ...,
@@ -790,7 +808,7 @@ class HTTPClient:
         type: ResponseType = ResponseType.DEFAULT,
         read: bool = DEFAULT_READ,
         data: Optional[Parameters] = None,
-        params: Optional[Parameters] = None,
+        parameters: Optional[Parameters] = None,
         error_codes: Optional[ErrorCodes] = None,
         headers: Optional[Headers] = None,
         retries: int = DEFUALT_RETRIES,
@@ -830,7 +848,7 @@ class HTTPClient:
                     url=url,
                     method=method,
                     data=data,
-                    params=params,
+                    params=parameters,
                     proxy=self.proxy,
                     proxy_auth=self.proxy_auth,
                     headers=headers,
@@ -932,9 +950,9 @@ class HTTPClient:
             -13: MissingAccess(LINKED_TO_DIFFERENT_STEAM),
         }
 
-        route = Route(
-            POST,
-            LOGIN,
+        route = Route(POST, LOGIN)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -945,7 +963,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -956,9 +974,9 @@ class HTTPClient:
             )
         }
 
-        route = Route(
-            POST,
-            LOAD,
+        route = Route(POST, LOAD)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -970,7 +988,7 @@ class HTTPClient:
 
         base = await self.get_account_url(account_id, type=AccountURLType.LOAD)
 
-        response = await self.request_route(route, error_codes=error_codes, base=base)
+        response = await self.request_route(route, data=payload, error_codes=error_codes, base=base)
 
         return response
 
@@ -986,9 +1004,9 @@ class HTTPClient:
             -6: MissingAccess(SOMETHING_WENT_WRONG),
         }
 
-        route = Route(
-            POST,
-            SAVE,
+        route = Route(POST, SAVE)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1001,7 +1019,7 @@ class HTTPClient:
 
         base = await self.get_account_url(account_id, type=AccountURLType.SAVE)
 
-        response = await self.request_route(route, error_codes=error_codes, base=base)
+        response = await self.request_route(route, data=payload, error_codes=error_codes, base=base)
 
         return int_or(response, 0)
 
@@ -1010,16 +1028,16 @@ class HTTPClient:
             -1: MissingAccess(FAILED_TO_FIND_URL.format(tick(type.name), tick(account_id)))
         }
 
-        route = Route(
-            POST,
-            GET_ACCOUNT_URL,
+        route = Route(POST, GET_ACCOUNT_URL)
+
+        payload = Payload(
             account_id=account_id,
             type=type.value,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         url = URL(response)
 
@@ -1031,9 +1049,9 @@ class HTTPClient:
     async def get_role_id(self, account_id: int, encoded_password: str) -> int:
         error_codes = {-1: MissingAccess(NO_ROLE_FOUND)}
 
-        route = Route(
-            POST,
-            GET_ROLE_ID,
+        route = Route(POST, GET_ROLE_ID)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1043,7 +1061,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -1074,9 +1092,9 @@ class HTTPClient:
         # if discord is None:
         #     discord = EMPTY
 
-        route = Route(
-            POST,
-            UPDATE_SETTINGS,
+        route = Route(POST, UPDATE_SETTINGS)
+
+        payload = Payload(
             account_id=account_id,
             gjp=encoded_password,
             secret=Secret.USER.value,
@@ -1090,7 +1108,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -1148,9 +1166,9 @@ class HTTPClient:
 
         check = generate_check(map(str, values), Key.USER_LEADERBOARD, Salt.USER_LEADERBOARD)
 
-        route = Route(
-            POST,
-            UPDATE_PROFILE,
+        route = Route(POST, UPDATE_PROFILE)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1182,16 +1200,16 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
     async def search_users_on_page(self, query: Union[int, str], page: int = DEFAULT_PAGE) -> str:
         error_codes = {-1: MissingAccess(CAN_NOT_FIND_USERS.format(tick(query)))}
 
-        route = Route(
-            POST,
-            GET_USERS,
+        route = Route(POST, GET_USERS)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1202,7 +1220,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -1215,9 +1233,9 @@ class HTTPClient:
     ) -> str:
         error_codes = {-1: MissingAccess(CAN_NOT_FIND_USER.format(account_id))}
 
-        route = Route(
-            POST,
-            GET_USER,
+        route = Route(POST, GET_USER)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1227,9 +1245,9 @@ class HTTPClient:
         )
 
         if client_account_id is not None and encoded_password is not None:
-            route.update(account_id=client_account_id, gjp=encoded_password, to_camel=True)
+            payload.update(account_id=client_account_id, gjp=encoded_password, to_camel=True)
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -1241,9 +1259,9 @@ class HTTPClient:
             -2: NothingFound(USERS),
         }
 
-        route = Route(
-            POST,
-            GET_RELATIONSHIPS,
+        route = Route(POST, GET_RELATIONSHIPS)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1254,7 +1272,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -1270,9 +1288,9 @@ class HTTPClient:
             -1: MissingAccess(FAILED_TO_FIND_LEADERBOARD.format(tick(strategy.name.casefold())))
         }
 
-        route = Route(
-            POST,
-            GET_LEADERBOARD,
+        route = Route(POST, GET_LEADERBOARD)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1288,9 +1306,9 @@ class HTTPClient:
                     STRATEGY_LEADERBOARD_REQUIRES_LOGIN.format(tick(strategy.name.casefold()))
                 )
 
-            route.update(account_id=account_id, gjp=encoded_password, to_camel=True)
+            payload.update(account_id=account_id, gjp=encoded_password, to_camel=True)
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -1317,9 +1335,9 @@ class HTTPClient:
         if not is_string(query) and is_iterable(query):
             query = concat_comma(map(str, query))
 
-        route = Route(
-            POST,
-            GET_LEVELS,
+        route = Route(POST, GET_LEVELS)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1328,12 +1346,12 @@ class HTTPClient:
         )
 
         if gauntlet is not None:
-            route.update(gauntlet=gauntlet)
+            payload.update(gauntlet=gauntlet)
 
         else:
             total = 0
 
-            route.update(
+            payload.update(
                 filters.to_robtop_filters(), str=query, page=page, total=total, to_camel=True
             )
 
@@ -1346,7 +1364,7 @@ class HTTPClient:
                     ):
                         raise LoginRequired(BY_USER_STRATEGY_REQUIRES_LOGIN)
 
-                    route.update(
+                    payload.update(
                         account_id=client_account_id,
                         str=client_user_id,
                         gjp=encoded_password,
@@ -1354,15 +1372,15 @@ class HTTPClient:
                     )
 
                 else:
-                    route.update(str=user_id)
+                    payload.update(str=user_id)
 
             elif filters.strategy is SearchStrategy.FRIENDS:
                 if client_account_id is None or encoded_password is None:
                     raise MissingAccess(FRIENDS_STRATEGY_REQUIRES_LOGIN)
 
-                route.update(account_id=client_account_id, gjp=encoded_password)
+                payload.update(account_id=client_account_id, gjp=encoded_password)
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -1372,9 +1390,9 @@ class HTTPClient:
         if type.is_not_timely():
             raise MissingAccess(EXPECTED_TIMELY)
 
-        route = Route(
-            POST,
-            GET_TIMELY,
+        route = Route(POST, GET_TIMELY)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1383,7 +1401,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -1396,9 +1414,9 @@ class HTTPClient:
     ) -> str:
         error_codes = {-1: MissingAccess(CAN_NOT_GET_LEVEL.format(level_id))}
 
-        route = Route(
-            POST,
-            GET_LEVEL,
+        route = Route(POST, GET_LEVEL)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1419,7 +1437,7 @@ class HTTPClient:
 
             check = generate_check(map(str, values), Key.LEVEL, Salt.LEVEL)
 
-            route.update(
+            payload.update(
                 account_id=account_id,
                 gjp=encoded_password,
                 udid=udid,
@@ -1429,25 +1447,27 @@ class HTTPClient:
                 to_camel=True,
             )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
     async def report_level(self, level_id: int) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_REPORT_LEVEL.format(level_id))}
 
-        route = Route(POST, REPORT_LEVEL, level_id=level_id, to_camel=True)
+        route = Route(POST, REPORT_LEVEL)
 
-        response = await self.request_route(route, error_codes=error_codes)
+        payload = Payload(level_id=level_id, to_camel=True)
+
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
     async def delete_level(self, level_id: int, *, account_id: int, encoded_password: str) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_DELETE_LEVEL.format(level_id))}
 
-        route = Route(
-            POST,
-            DELETE_LEVEL,
+        route = Route(POST, DELETE_LEVEL)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1458,7 +1478,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -1470,9 +1490,9 @@ class HTTPClient:
         if description is None:
             description = EMPTY
 
-        route = Route(
-            POST,
-            UPDATE_LEVEL_DESCRIPTION,
+        route = Route(POST, UPDATE_LEVEL_DESCRIPTION)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1484,7 +1504,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -1548,9 +1568,9 @@ class HTTPClient:
         if password is None:
             password = Password()
 
-        route = Route(
-            POST,
-            UPLOAD_LEVEL,
+        route = Route(POST, UPLOAD_LEVEL)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1585,7 +1605,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -1603,9 +1623,9 @@ class HTTPClient:
 
         check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
 
-        route = Route(
-            POST,
-            RATE_LEVEL,
+        route = Route(POST, RATE_LEVEL)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1621,7 +1641,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -1639,9 +1659,9 @@ class HTTPClient:
             -2: MissingAccess(RATE_DEMON_MISSING_PERMISSIONS.format(level_id)),
         }
 
-        route = Route(
-            POST,
-            RATE_DEMON,
+        route = Route(POST, RATE_DEMON)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1654,7 +1674,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -1672,9 +1692,9 @@ class HTTPClient:
             -2: MissingAccess(SUGGEST_LEVEL_MISSING_PERMISSIONS.format(level_id)),
         }
 
-        route = Route(
-            POST,
-            SUGGEST_LEVEL,
+        route = Route(POST, SUGGEST_LEVEL)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1687,7 +1707,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -1738,9 +1758,9 @@ class HTTPClient:
 
         check = generate_check(map(str, values), Key.LEVEL_LEADERBOARD, Salt.LEVEL_LEADERBOARD)
 
-        route = Route(
-            POST,
-            GET_LEVEL_LEADERBOARD,
+        route = Route(POST, GET_LEVEL_LEADERBOARD)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1752,10 +1772,13 @@ class HTTPClient:
             to_camel=True,
         )
 
+        if progress is None:
+            progress = Progress()
+
         progress_string = concat_comma(map(str, progress))
 
         if send:
-            route.update(
+            payload.update(
                 percent=record,
                 s1=attempts + ATTEMPTS_ADD,
                 s2=jumps + JUMPS_ADD,
@@ -1771,7 +1794,7 @@ class HTTPClient:
                 to_camel=True,
             )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -1784,9 +1807,9 @@ class HTTPClient:
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_BLOCK_USER.format(account_id))}
 
-        route = Route(
-            POST,
-            BLOCK_USER,
+        route = Route(POST, BLOCK_USER)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1797,7 +1820,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -1810,9 +1833,9 @@ class HTTPClient:
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_UNBLOCK_USER.format(account_id))}
 
-        route = Route(
-            POST,
-            BLOCK_USER,
+        route = Route(POST, BLOCK_USER)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1823,7 +1846,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -1832,9 +1855,9 @@ class HTTPClient:
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_UNFRIEND_USER.format(account_id))}
 
-        route = Route(
-            POST,
-            UNFRIEND_USER,
+        route = Route(POST, UNFRIEND_USER)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1845,7 +1868,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -1866,9 +1889,9 @@ class HTTPClient:
         if content is None:
             content = EMPTY
 
-        route = Route(
-            POST,
-            SEND_MESSAGE,
+        route = Route(POST, SEND_MESSAGE)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1881,7 +1904,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -1895,9 +1918,9 @@ class HTTPClient:
     ) -> str:
         error_codes = {-1: MissingAccess(FAILED_TO_GET_MESSAGE.format(message_id))}
 
-        route = Route(
-            POST,
-            GET_MESSAGE,
+        route = Route(POST, GET_MESSAGE)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1909,9 +1932,9 @@ class HTTPClient:
         )
 
         if type is MessageType.OUTGOING:
-            route.update(is_sender=1, to_camel=True)
+            payload.update(is_sender=1, to_camel=True)
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -1925,9 +1948,9 @@ class HTTPClient:
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_DELETE_MESSAGE.format(message_id))}
 
-        route = Route(
-            POST,
-            DELETE_MESSAGE,
+        route = Route(POST, DELETE_MESSAGE)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1939,9 +1962,9 @@ class HTTPClient:
         )
 
         if type is MessageType.OUTGOING:
-            route.update(is_sender=1, to_camel=True)
+            payload.update(is_sender=1, to_camel=True)
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -1953,9 +1976,9 @@ class HTTPClient:
             -2: NothingFound(MESSAGES),
         }
 
-        route = Route(
-            POST,
-            GET_MESSAGES,
+        route = Route(POST, GET_MESSAGES)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -1968,9 +1991,9 @@ class HTTPClient:
         )
 
         if type is MessageType.OUTGOING:
-            route.update(get_sent=1, to_camel=True)
+            payload.update(get_sent=1, to_camel=True)
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -1987,9 +2010,9 @@ class HTTPClient:
         if message is None:
             message = EMPTY
 
-        route = Route(
-            POST,
-            SEND_FRIEND_REQUEST,
+        route = Route(POST, SEND_FRIEND_REQUEST)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2001,7 +2024,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         if not response:
             return 1
@@ -2018,9 +2041,9 @@ class HTTPClient:
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_DELETE_FRIEND_REQUEST.format(account_id))}
 
-        route = Route(
-            POST,
-            DELETE_FRIEND_REQUEST,
+        route = Route(POST, DELETE_FRIEND_REQUEST)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2032,9 +2055,9 @@ class HTTPClient:
         )
 
         if type is FriendRequestType.OUTGOING:
-            route.update(is_sender=1, to_camel=True)
+            payload.update(is_sender=1, to_camel=True)
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -2049,9 +2072,9 @@ class HTTPClient:
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_ACCEPT_FRIEND_REQUEST.format(account_id))}
 
-        route = Route(
-            POST,
-            ACCEPT_FRIEND_REQUEST,
+        route = Route(POST, ACCEPT_FRIEND_REQUEST)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2064,9 +2087,9 @@ class HTTPClient:
         )
 
         if type is FriendRequestType.OUTGOING:
-            route.update(is_sender=1, to_camel=True)
+            payload.update(is_sender=1, to_camel=True)
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -2075,9 +2098,9 @@ class HTTPClient:
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_READ_FRIEND_REQUEST.format(request_id))}
 
-        route = Route(
-            POST,
-            READ_FRIEND_REQUEST,
+        route = Route(POST, READ_FRIEND_REQUEST)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2088,7 +2111,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -2107,9 +2130,9 @@ class HTTPClient:
 
         total = 0
 
-        route = Route(
-            POST,
-            GET_FRIEND_REQUESTS,
+        route = Route(POST, GET_FRIEND_REQUESTS)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2122,9 +2145,9 @@ class HTTPClient:
         )
 
         if type is FriendRequestType.OUTGOING:
-            route.update(get_sent=1, to_camel=True)
+            payload.update(get_sent=1, to_camel=True)
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -2161,9 +2184,9 @@ class HTTPClient:
 
         check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
 
-        route = Route(
-            POST,
-            LIKE_LEVEL,
+        route = Route(POST, LIKE_LEVEL)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2181,7 +2204,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -2218,9 +2241,9 @@ class HTTPClient:
 
         check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
 
-        route = Route(
-            POST,
-            LIKE_USER_COMMENT,
+        route = Route(POST, LIKE_USER_COMMENT)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2238,7 +2261,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -2276,9 +2299,9 @@ class HTTPClient:
 
         check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
 
-        route = Route(
-            POST,
-            LIKE_LEVEL_COMMENT,
+        route = Route(POST, LIKE_LEVEL_COMMENT)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2296,7 +2319,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -2327,9 +2350,9 @@ class HTTPClient:
 
         check = generate_check(map(str, values), Key.COMMENT, Salt.COMMENT)
 
-        route = Route(
-            POST,
-            POST_USER_COMMENT,
+        route = Route(POST, POST_USER_COMMENT)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2343,7 +2366,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         if CommentBannedModel.can_be_in(response):
             ban = CommentBannedModel.from_robtop(response)
@@ -2378,9 +2401,9 @@ class HTTPClient:
 
         check = generate_check(map(str, values), Key.COMMENT, Salt.COMMENT)
 
-        route = Route(
-            POST,
-            POST_USER_COMMENT,
+        route = Route(POST, POST_USER_COMMENT)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2396,7 +2419,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         if CommentBannedModel.can_be_in(response):
             ban = CommentBannedModel.from_robtop(response)
@@ -2418,9 +2441,9 @@ class HTTPClient:
 
         level_id = 0
 
-        route = Route(
-            POST,
-            DELETE_USER_COMMENT,
+        route = Route(POST, DELETE_USER_COMMENT)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2433,7 +2456,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -2449,9 +2472,9 @@ class HTTPClient:
 
         type = CommentType.LEVEL
 
-        route = Route(
-            POST,
-            DELETE_LEVEL_COMMENT,
+        route = Route(POST, DELETE_LEVEL_COMMENT)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2464,7 +2487,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
 
@@ -2475,9 +2498,9 @@ class HTTPClient:
     ) -> str:
         error_codes = {-1: MissingAccess(FAILED_TO_GET_USER_COMMENTS.format(account_id))}
 
-        route = Route(
-            POST,
-            GET_USER_COMMENTS,
+        route = Route(POST, GET_USER_COMMENTS)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2488,7 +2511,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -2501,9 +2524,9 @@ class HTTPClient:
     ) -> str:
         error_codes = {-1: MissingAccess(FAILED_TO_GET_USER_LEVEL_COMMENTS.format(user_id))}
 
-        route = Route(
-            POST,
-            GET_USER_LEVEL_COMMENTS,
+        route = Route(POST, GET_USER_LEVEL_COMMENTS)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2516,7 +2539,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -2533,9 +2556,9 @@ class HTTPClient:
             -2: NothingFound(LEVEL_COMMENTS),
         }
 
-        route = Route(
-            POST,
-            GET_LEVEL_COMMENTS,
+        route = Route(POST, GET_LEVEL_COMMENTS)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2548,16 +2571,16 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
     async def get_gauntlets(self) -> str:
         error_codes = {-1: MissingAccess(FAILED_TO_GET_GAUNTLETS)}
 
-        route = Route(
-            POST,
-            GET_GAUNTLETS,
+        route = Route(POST, GET_GAUNTLETS)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2565,16 +2588,16 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
     async def get_map_packs_on_page(self, page: int = DEFAULT_PAGE) -> str:
         error_codes = {-1: MissingAccess(FAILED_TO_GET_MAP_PACKS)}
 
-        route = Route(
-            POST,
-            GET_MAP_PACKS,
+        route = Route(POST, GET_MAP_PACKS)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2583,7 +2606,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -2595,9 +2618,9 @@ class HTTPClient:
 
         check = generate_random_string_and_encode_value(key=Key.QUESTS)
 
-        route = Route(
-            POST,
-            GET_QUESTS,
+        route = Route(POST, GET_QUESTS)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2610,7 +2633,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -2630,9 +2653,9 @@ class HTTPClient:
 
         chk = generate_random_string_and_encode_value(key=Key.CHESTS)
 
-        route = Route(
-            POST,
-            GET_CHESTS,
+        route = Route(POST, GET_CHESTS)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2648,7 +2671,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -2657,9 +2680,9 @@ class HTTPClient:
 
         total = 0
 
-        route = Route(
-            POST,
-            GET_FEATURED_ARTISTS,
+        route = Route(POST, GET_FEATURED_ARTISTS)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2669,7 +2692,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -2679,9 +2702,9 @@ class HTTPClient:
             -2: SongRestricted(song_id),
         }
 
-        route = Route(
-            POST,
-            GET_SONG,
+        route = Route(POST, GET_SONG)
+
+        payload = Payload(
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
@@ -2690,7 +2713,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        response = await self.request_route(route, error_codes=error_codes)
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
@@ -2705,7 +2728,7 @@ class HTTPClient:
         response = await self.request(
             GET,
             NEWGROUNDS_SEARCH.format(AUDIO),
-            params=dict(terms=query, page=page + 1),
+            parameters=dict(terms=query, page=page + 1),
         )
 
         return response
@@ -2716,7 +2739,7 @@ class HTTPClient:
         response = await self.request(
             GET,
             NEWGROUNDS_SEARCH.format(USERS),
-            params=dict(terms=query, page=page),
+            parameters=dict(terms=query, page=page),
         )
 
         return response

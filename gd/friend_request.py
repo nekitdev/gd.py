@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Type, TypeVar
+from typing import TYPE_CHECKING, Optional, Type, TypeVar
 
 from attrs import define, field
 
@@ -22,14 +22,14 @@ FR = TypeVar("FR", bound="FriendRequest")
 
 @define()
 class FriendRequest(Entity):
-    user: User = field()
-    type: FriendRequestType = field()
+    user: User = field(eq=False)
+    type: FriendRequestType = field(eq=False)
 
-    created_at: datetime = field(factory=datetime.utcnow)
+    created_at: datetime = field(factory=datetime.utcnow, eq=False)
 
-    content: str = field(default=EMPTY)
+    content: str = field(default=EMPTY, eq=False)
 
-    was_read: bool = field(default=DEFAULT_READ)
+    was_read: bool = field(default=DEFAULT_READ, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
@@ -84,7 +84,17 @@ class FriendRequest(Entity):
             id=self.id, user=self.user, type=self.type.into_relationship_type()
         ).maybe_attach_client(self.maybe_client)
 
+    def maybe_attach_client(self: FR, client: Optional[Client]) -> FR:
+        self.user.maybe_attach_client(client)
+
+        return super().maybe_attach_client(client)
+
     def attach_client(self: FR, client: Client) -> FR:
         self.user.attach_client(client)
 
         return super().attach_client(client)
+
+    def detach_client(self: FR) -> FR:
+        self.user.detach_client()
+
+        return super().detach_client()

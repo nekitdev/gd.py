@@ -29,7 +29,7 @@ __all__ = (
     "get_process_id_from_title",
 )
 
-LIBC_DYLIB = "LIBC.dylib"
+LIBC_DYLIB = "libc.dylib"
 
 try:
     LIBC = ctypes.CDLL(LIBC_DYLIB)
@@ -282,7 +282,7 @@ def free(handle: int, address: int, size: int) -> None:
     _mach_vm_deallocate(handle, address, size)
 
 
-def get_base_address(id: int, module_name: str) -> int:
+def get_base_address(process_id: int, module_name: str) -> int:
     return get_base_address_from_handle(open(process_id))
 
 

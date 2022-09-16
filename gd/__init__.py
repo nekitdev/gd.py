@@ -110,6 +110,7 @@ from gd.password import Password
 from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM, PlatformConfig
 from gd.relationship import Relationship
 from gd.rewards import Chest, Quest
+from gd.session import Session
 from gd.song import Song
 from gd.user import User
 from gd.version import python_version_info, version_info

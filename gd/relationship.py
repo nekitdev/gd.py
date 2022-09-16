@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Optional, TypeVar
 
 from attrs import define, field
 
@@ -18,8 +18,8 @@ R = TypeVar("R", bound="Relationship")
 
 @define(hash=True)
 class Relationship(Entity):
-    user: User = field()
-    type: RelationshipType = field()
+    user: User = field(eq=False)
+    type: RelationshipType = field(eq=False)
 
     id: int = field()
 
@@ -30,7 +30,17 @@ class Relationship(Entity):
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
 
+    def maybe_attach_client(self: R, client: Optional[Client]) -> R:
+        self.user.maybe_attach_client(client)
+
+        return super().maybe_attach_client(client)
+
     def attach_client(self: R, client: Client) -> R:
         self.user.attach_client(client)
 
         return super().attach_client(client)
+
+    def detach_client(self: R) -> R:
+        self.user.detach_client()
+
+        return super().detach_client()

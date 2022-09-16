@@ -7,7 +7,7 @@ __all__ = (
     "OFFICIAL_CLIENT_SONGS",
     "OFFICIAL_SERVER_SONGS",
     "OfficialSong",
-    "create_default_offical_song",
+    "default_official_song",
 )
 
 
@@ -22,7 +22,7 @@ class OfficialSong:
     artist: Artist = field(factory=create_artist)
 
 
-def create_default_offical_song(id: int = 0) -> OfficialSong:
+def default_official_song(id: int = 0) -> OfficialSong:
     return OfficialSong(id=id)
 
 

@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 EMPTY_BYTES = bytes()
 
 EMPTY = str()
@@ -11,7 +9,10 @@ SLASH = "/"
 UNKNOWN = "unknown"
 UNNAMED = "unnamed"
 
+DEFAULT_DELAY = 10.0
 DEFAULT_RECONNECT = True
+
+DEFAULT_UPDATE = True
 
 DEFAULT_COLOR_1_ID = 0
 DEFAULT_COLOR_2_ID = 3

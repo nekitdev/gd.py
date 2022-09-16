@@ -49,7 +49,7 @@ VALUE_TOO_LARGE = "color value too large: {}"
 VALUE_TOO_SMALL = "color value too small: {}"
 
 
-@frozen()
+@frozen(order=True)
 class Color(JSON[int], RobTop):
     value: int = field(default=BLACK, repr=hex_value)
 

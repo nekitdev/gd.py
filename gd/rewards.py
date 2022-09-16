@@ -19,15 +19,15 @@ CHEST = "Chest; orbs: {}, diamonds: {}, keys: {}, shard: {}, new in {}"
 
 @define()
 class Chest(Entity):
-    orbs: int = field(default=DEFAULT_ORBS)
-    diamonds: int = field(default=DEFAULT_DIAMONDS)
-    shard_type: ShardType = field(default=ShardType.UNKNOWN)
-    keys: int = field(default=DEFAULT_KEYS)
-    count: int = field(default=DEFAULT_CHEST_COUNT)
+    orbs: int = field(default=DEFAULT_ORBS, eq=False)
+    diamonds: int = field(default=DEFAULT_DIAMONDS, eq=False)
+    shard_type: ShardType = field(default=ShardType.UNKNOWN, eq=False)
+    keys: int = field(default=DEFAULT_KEYS, eq=False)
+    count: int = field(default=DEFAULT_CHEST_COUNT, eq=False)
 
-    delta: timedelta = field(factory=timedelta)
+    delta: timedelta = field(factory=timedelta, eq=False)
 
-    created_at: datetime = field(factory=datetime.utcnow, init=False)
+    created_at: datetime = field(factory=datetime.utcnow, init=False, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
@@ -48,14 +48,14 @@ QUEST = "Quest {}; collect: {} {}, reward: {}, new in {}"
 
 @define()
 class Quest(Entity):
-    name: str = field(default=UNKNOWN)
-    type: QuestType = field(default=QuestType.UNKNOWN)
-    amount: int = field(default=0)
-    reward: int = field(default=0)
+    name: str = field(default=UNKNOWN, eq=False)
+    type: QuestType = field(default=QuestType.UNKNOWN, eq=False)
+    amount: int = field(default=0, eq=False)
+    reward: int = field(default=0, eq=False)
 
-    delta: timedelta = field(factory=timedelta)
+    delta: timedelta = field(factory=timedelta, eq=False)
 
-    created_at: datetime = field(factory=datetime.utcnow)
+    created_at: datetime = field(factory=datetime.utcnow, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id

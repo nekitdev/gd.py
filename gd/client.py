@@ -37,6 +37,7 @@ from gd.constants import (
     DEFAULT_CHEST_COUNT,
     DEFAULT_COINS,
     DEFAULT_COUNT,
+    DEFAULT_DELAY,
     DEFAULT_ID,
     DEFAULT_LOW_DETAIL,
     DEFAULT_OBJECT_COUNT,
@@ -46,6 +47,7 @@ from gd.constants import (
     DEFAULT_RECONNECT,
     DEFAULT_SPECIAL,
     DEFAULT_STARS,
+    DEFAULT_UPDATE,
     DEFAULT_USE_CLIENT,
     DEFAULT_VERSION,
     EMPTY,
@@ -76,14 +78,17 @@ from gd.enums import (
 from gd.errors import ClientError, MissingAccess, NothingFound
 from gd.events.controller import Controller
 from gd.events.listeners import (
-    DEFAULT_DELAY,
+    DailyCommentListener,
     DailyLevelListener,
     FriendRequestListener,
+    LevelCommentListener,
     Listener,
     MessageListener,
     RateListener,
     UserCommentListener,
+    UserLevelCommentListener,
     UserLevelListener,
+    WeeklyCommentListener,
     WeeklyLevelListener,
 )
 from gd.filters import Filters
@@ -145,7 +150,7 @@ C = TypeVar("C", bound="Client")
 
 @define(slots=False)
 class Client:
-    session: Session = field()
+    session: Session = field(factory=Session)
     """The session of the client."""
 
     credentials: Credentials = field(factory=Credentials)
@@ -159,26 +164,6 @@ class Client:
 
     _listeners: DynamicTuple[Listener] = field(default=(), repr=False, init=False)
     _controller: Optional[Controller] = field(default=None, repr=False, init=False)
-
-    def __init__(
-        self,
-        credentials: Optional[Credentials] = None,
-        database: Optional[Database] = None,
-        *,
-        credentials_type: Type[Credentials] = Credentials,
-        session_type: Type[Session] = Session,
-        load_after_post: bool = DEFAULT_LOAD_AFTER_POST,
-        **http_keywords: Any,
-    ) -> None:
-        if credentials is None:
-            credentials = credentials_type()
-
-        self.__attrs_init__(
-            session=session_type(**http_keywords),
-            credentials=credentials,
-            database=database,
-            load_after_post=load_after_post,
-        )
 
     def apply_items(
         self: C,
@@ -1339,63 +1324,208 @@ class Client:
             ClientError,
         )
 
-    # events
+    # handlers
 
-    async def on_daily(self, level: Level) -> None:
-        pass
+    async def on_daily(self, daily: Level) -> None:
+        """Handles `daily` events.
 
-    async def on_weekly(self, level: Level) -> None:
-        pass
+        Arguments:
+            daily: The daily level to handle.
+        """
+
+    async def on_weekly(self, weekly: Level) -> None:
+        """Handles `weekly` events.
+
+        Arguments:
+            weekly: The weekly level to handle.
+        """
 
     async def on_rate(self, level: Level) -> None:
-        pass
+        """Handles `rate` events.
+
+        Arguments:
+            level: The rated level to handle.
+        """
 
     async def on_level(self, level: Level) -> None:
-        pass
+        """Handles `level` events.
+
+        Arguments:
+            level: The level to handle.
+        """
 
     async def on_user_level(self, user: User, level: Level) -> None:
-        pass
+        """Handles `user_level` events.
+
+        Arguments:
+            user: The user to handle.
+            level: The level to handle.
+        """
 
     async def on_message(self, message: Message) -> None:
-        pass
+        """Handles `message` events.
+
+        Arguments:
+            message: The message to handle.
+        """
 
     async def on_friend_request(self, friend_request: FriendRequest) -> None:
-        pass
+        """Handles `friend_request` events.
+
+        Arguments:
+            friend_request: The friend request to handle.
+        """
 
     async def on_level_comment(self, level: Level, comment: LevelComment) -> None:
-        pass
+        """Handles `level_comment` events.
+
+        Arguments:
+            level: The level to handle.
+            comment: The level comment to handle.
+        """
+
+    async def on_daily_comment(self, daily: Level, comment: LevelComment) -> None:
+        """Handles `daily_comment` events.
+
+        Arguments:
+            daily: The daily level to handle.
+            comment: The daily comment to handle.
+        """
+
+    async def on_weekly_comment(self, weekly: Level, comment: LevelComment) -> None:
+        """Handles `weekly_comment` events.
+
+        Arguments:
+            weekly: The weekly level to handle.
+            comment: The weekly comment to handle.
+        """
 
     async def on_user_comment(self, user: User, comment: UserComment) -> None:
-        pass
+        """Handles `user_comment` events.
+
+        Arguments:
+            user: The user to handle.
+            comment: The comment to handle.
+        """
+
+    async def on_user_level_comment(self, user: User, comment: LevelComment) -> None:
+        """Handles `user_level_comment` events.
+
+        Arguments:
+            user: The user to handle.
+            comment: The level comment to handle.
+        """
 
     # dispatchers
 
-    async def dispatch_daily(self, level: Level) -> None:
-        await self.on_daily(level)
+    async def dispatch_daily(self, daily: Level) -> None:
+        """Dispatches `daily` events via calling [`on_daily`][gd.client.Client.on_daily].
 
-    async def dispatch_weekly(self, level: Level) -> None:
-        await self.on_weekly(level)
+        Arguments:
+            daily: The daily level to dispatch.
+        """
+        await self.on_daily(daily)
+
+    async def dispatch_weekly(self, weekly: Level) -> None:
+        """Dispatches `weekly` events via calling [`on_weekly`][gd.client.Client.on_weekly].
+
+        Arguments:
+            weekly: The weekly level to dispatch.
+        """
+        await self.on_weekly(weekly)
 
     async def dispatch_rate(self, level: Level) -> None:
+        """Dispatches `rate` events via calling [`on_rate`][gd.client.Client.on_rate].
+
+        Arguments:
+            level: The rated level to dispatch.
+        """
         await self.on_rate(level)
 
     async def dispatch_level(self, level: Level) -> None:
+        """Dispatches `level` events via calling [`on_level`][gd.client.Client.on_level].
+
+        Arguments:
+            level: The level to dispatch.
+        """
         await self.on_level(level)
 
     async def dispatch_user_level(self, user: User, level: Level) -> None:
+        """Dispatches `user_level` events via calling
+        [`on_user_level`][gd.client.Client.on_user_level].
+
+        Arguments:
+            user: The user to dispatch.
+            level: The level to dispatch.
+        """
         await self.on_user_level(user, level)
 
     async def dispatch_message(self, message: Message) -> None:
+        """Dispatches `message` events via calling [`on_message`][gd.client.Client.on_message].
+
+        Arguments:
+            message: The message to dispatch.
+        """
         await self.on_message(message)
 
     async def dispatch_friend_request(self, friend_request: FriendRequest) -> None:
+        """Dispatches `friend_request` events via calling
+        [`on_friend_request`][gd.client.Client.on_friend_request].
+
+        Arguments:
+            friend_request: The friend request to dispatch.
+        """
         await self.on_friend_request(friend_request)
 
     async def dispatch_level_comment(self, level: Level, comment: LevelComment) -> None:
+        """Dispatches `level_comment` events via calling
+        [`on_level_comment`][gd.client.Client.on_level_comment].
+
+        Arguments:
+            level: The level to dispatch.
+            comment: The level comment to dispatch.
+        """
         await self.on_level_comment(level, comment)
 
+    async def dispatch_daily_comment(self, daily: Level, comment: LevelComment) -> None:
+        """Dispatches `level_comment` events via calling
+        [`on_level_comment`][gd.client.Client.on_level_comment].
+
+        Arguments:
+            level: The daily level to dispatch.
+            comment: The daily comment to dispatch.
+        """
+        await self.on_daily_comment(daily, comment)
+
+    async def dispatch_weekly_comment(self, weekly: Level, comment: LevelComment) -> None:
+        """Dispatches `weekly_comment` events via calling
+        [`on_weekly_comment`][gd.client.Client.on_weekly_comment].
+
+        Arguments:
+            weekly: The weekly level to dispatch.
+            comment: The weekly comment to dispatch.
+        """
+        await self.on_weekly_comment(weekly, comment)
+
     async def dispatch_user_comment(self, user: User, comment: UserComment) -> None:
+        """Dispatches `user_comment` events via calling
+        [`on_user_comment`][gd.client.Client.on_user_comment].
+
+        Arguments:
+            user: The user to dispatch.
+            comment: The comment to dispatch.
+        """
         await self.on_user_comment(user, comment)
+
+    async def dispatch_user_level_comment(self, user: User, comment: LevelComment) -> None:
+        """Dispatches `user_level_comment` events via calling
+        [`on_user_level_comment`][gd.client.Client.on_user_level_comment].
+
+        Arguments:
+            user: The user to dispatch.
+            comment: The level comment to dispatch.
+        """
+        await self.on_user_level_comment(user, comment)
 
     def event(self, function: F) -> F:
         """Registers an event handler.
@@ -1441,27 +1571,105 @@ class Client:
             RateListener(self, delay=delay, reconnect=reconnect, pages_count=pages_count)
         )
 
-    def listen_for_message(
-        self, delay: float = DEFAULT_DELAY, reconnect: bool = DEFAULT_RECONNECT
-    ) -> None:
-        self.add_listener(MessageListener(self, delay=delay, reconnect=reconnect))
-
-    def listen_for_friend_request(
-        self, delay: float = DEFAULT_DELAY, reconnect: bool = DEFAULT_RECONNECT
-    ) -> None:
-        self.add_listener(FriendRequestListener(self, delay=delay, reconnect=reconnect))
-
     def listen_for_user_level(
         self,
         account_id: Optional[int] = None,
         id: Optional[int] = None,
         name: Optional[str] = None,
+        pages_count: int = DEFAULT_PAGES_COUNT,
+        update: bool = DEFAULT_UPDATE,
         delay: float = DEFAULT_DELAY,
         reconnect: bool = DEFAULT_RECONNECT,
     ) -> None:
         self.add_listener(
             UserLevelListener(
-                self, account_id=account_id, id=id, name=name, delay=delay, reconnect=reconnect
+                self,
+                delay=delay,
+                reconnect=reconnect,
+                account_id=account_id,
+                id=id,
+                name=name,
+                pages_count=pages_count,
+                update=update,
+            )
+        )
+
+    def listen_for_message(
+        self,
+        pages_count: int = DEFAULT_PAGES_COUNT,
+        delay: float = DEFAULT_DELAY,
+        reconnect: bool = DEFAULT_RECONNECT,
+    ) -> None:
+        self.add_listener(
+            MessageListener(self, delay=delay, reconnect=reconnect, pages_count=pages_count)
+        )
+
+    def listen_for_friend_request(
+        self,
+        pages_count: int = DEFAULT_PAGES_COUNT,
+        delay: float = DEFAULT_DELAY,
+        reconnect: bool = DEFAULT_RECONNECT,
+    ) -> None:
+        self.add_listener(
+            FriendRequestListener(self, delay=delay, reconnect=reconnect, pages_count=pages_count)
+        )
+
+    def listen_for_level_comment(
+        self,
+        level_id: int,
+        pages_count: int = DEFAULT_PAGES_COUNT,
+        count: int = DEFAULT_COUNT,
+        update: bool = DEFAULT_UPDATE,
+        delay: float = DEFAULT_DELAY,
+        reconnect: bool = DEFAULT_RECONNECT,
+    ) -> None:
+        self.add_listener(
+            LevelCommentListener(
+                self,
+                delay=delay,
+                reconnect=reconnect,
+                level_id=level_id,
+                pages_count=pages_count,
+                count=count,
+                update=update,
+            )
+        )
+
+    def listen_for_daily_comment(
+        self,
+        pages_count: int = DEFAULT_PAGES_COUNT,
+        count: int = DEFAULT_COUNT,
+        update: bool = DEFAULT_UPDATE,
+        delay: float = DEFAULT_DELAY,
+        reconnect: bool = DEFAULT_RECONNECT,
+    ) -> None:
+        self.add_listener(
+            DailyCommentListener(
+                self,
+                delay=delay,
+                reconnect=reconnect,
+                pages_count=pages_count,
+                count=count,
+                update=update,
+            )
+        )
+
+    def listen_for_weekly_comment(
+        self,
+        pages_count: int = DEFAULT_PAGES_COUNT,
+        count: int = DEFAULT_COUNT,
+        update: bool = DEFAULT_UPDATE,
+        delay: float = DEFAULT_DELAY,
+        reconnect: bool = DEFAULT_RECONNECT,
+    ) -> None:
+        self.add_listener(
+            WeeklyCommentListener(
+                self,
+                delay=delay,
+                reconnect=reconnect,
+                pages_count=pages_count,
+                count=count,
+                update=update,
             )
         )
 
@@ -1470,12 +1678,40 @@ class Client:
         account_id: Optional[int] = None,
         id: Optional[int] = None,
         name: Optional[str] = None,
+        update: bool = DEFAULT_UPDATE,
         delay: float = DEFAULT_DELAY,
         reconnect: bool = DEFAULT_RECONNECT,
     ) -> None:
         self.add_listener(
             UserCommentListener(
-                self, account_id=account_id, id=id, name=name, delay=delay, reconnect=reconnect
+                self,
+                delay=delay,
+                reconnect=reconnect,
+                account_id=account_id,
+                id=id,
+                name=name,
+                update=update,
+            )
+        )
+
+    def listen_for_user_level_comment(
+        self,
+        account_id: Optional[int] = None,
+        id: Optional[int] = None,
+        name: Optional[str] = None,
+        update: bool = DEFAULT_UPDATE,
+        delay: float = DEFAULT_DELAY,
+        reconnect: bool = DEFAULT_RECONNECT,
+    ) -> None:
+        self.add_listener(
+            UserLevelCommentListener(
+                self,
+                delay=delay,
+                reconnect=reconnect,
+                account_id=account_id,
+                id=id,
+                name=name,
+                update=update,
             )
         )
 

@@ -239,7 +239,7 @@ class Factory:
         center = self.image_rectangle(result).center
 
         if icon.is_complex():
-            for index, icon_layer in enumerate(icon.iter_complex_layers()):
+            for icon_layer in icon.iter_complex_layers():
                 search = self.find_sprite_and_image(icon_layer.name)
 
                 layer = icon_layer.layer

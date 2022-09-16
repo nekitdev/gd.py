@@ -1,31 +1,33 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, AsyncIterator
+from typing import TYPE_CHECKING, AsyncIterator, Optional, TypeVar
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
 
 from gd.color import Color
 from gd.entity import Entity
-
-# from gd.enums import Difficulty, GauntletID
+from gd.enums import Difficulty
 from gd.filters import Filters
-
-# from gd.model import GauntletModel, MapPackModel
 from gd.typing import DynamicTuple
+
+if TYPE_CHECKING:
+    from gd.client import Client
 
 __all__ = ("Gauntlet", "MapPack")
 
 if TYPE_CHECKING:
-    from gd.client import Client  # noqa
     from gd.level import Level  # noqa
+
+
+G = TypeVar("G", bound="Gauntlet")
 
 
 @define()
 class Gauntlet(Entity):
-    name: str = field()
-    level_ids: DynamicTuple[int] = field()
-    _levels: DynamicTuple[Level] = field(default=(), repr=False, init=False)
+    name: str = field(eq=False)
+    level_ids: DynamicTuple[int] = field(eq=False)
+    _levels: DynamicTuple[Level] = field(default=(), repr=False, init=False, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
@@ -48,14 +50,32 @@ class Gauntlet(Entity):
         for level in levels:
             yield level
 
+    def maybe_attach_client(self: G, client: Optional[Client]) -> G:
+        for level in self.levels:
+            level.maybe_attach_client(client)
+
+        return super().maybe_attach_client(client)
+
+    def attach_client(self: G, client: Client) -> G:
+        for level in self.levels:
+            level.attach_client(client)
+
+        return super().attach_client(client)
+
+    def detach_client(self: G) -> G:
+        for level in self.levels:
+            level.detach_client()
+
+        return super().detach_client()
+
 
 @define()
 class MapPack(Gauntlet):
-    stars: int
-    coins: int
-    # difficulty: Difficulty
-    primary_color: Color
-    secondary_color: Color
+    stars: int = field(eq=False)
+    coins: int = field(eq=False)
+    difficulty: Difficulty = field(eq=False)
+    primary_color: Color = field(eq=False)
+    secondary_color: Color = field(eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Iterable, Optional, Type, TypeVar
 
-from attrs import define
+from attrs import define, field
 from typing_extensions import TypedDict
 
-from gd.enums import DemonDifficulty, Difficulty, LevelDifficulty, LevelLength, SearchStrategy
+from gd.enums import Difficulty, LevelLength, SearchStrategy
 from gd.string_constants import DASH
 from gd.string_utils import concat_comma, wrap
 from gd.typing import DynamicTuple
@@ -21,54 +21,20 @@ F = TypeVar("F", bound="Filters")
 
 @define()
 class Filters:
-    strategy: SearchStrategy = SearchStrategy.DEFAULT
-    difficulties: DynamicTuple[Difficulty] = ()
-    lengths: DynamicTuple[LevelLength] = ()
-    completed_levels: DynamicTuple[int] = ()
-    completed: Optional[bool] = None
-    require_coins: bool = False
-    featured: bool = False
-    epic: bool = False
-    rated: Optional[bool] = None
-    require_two_player: bool = False
-    song_id: Optional[int] = None
-    custom_song: bool = False
-    require_original: bool = False
-    followed: DynamicTuple[int] = ()
-
-    def __init__(
-        self,
-        strategy: SearchStrategy = SearchStrategy.DEFAULT,
-        difficulties: Iterable[Difficulty] = (),
-        lengths: Iterable[LevelLength] = (),
-        completed_levels: Iterable[int] = (),
-        completed: Optional[bool] = None,
-        require_coins: bool = False,
-        featured: bool = False,
-        epic: bool = False,
-        rated: Optional[bool] = None,
-        require_two_player: bool = False,
-        song_id: Optional[int] = None,
-        custom_song: bool = False,
-        require_original: bool = False,
-        followed: Iterable[int] = (),
-    ) -> None:
-        self.__attrs_init__(
-            strategy,
-            tuple(difficulties),
-            tuple(lengths),
-            tuple(completed_levels),
-            completed,
-            require_coins,
-            featured,
-            epic,
-            rated,
-            require_two_player,
-            song_id,
-            custom_song,
-            require_original,
-            tuple(followed),
-        )
+    strategy: SearchStrategy = field(default=SearchStrategy.DEFAULT)
+    difficulties: DynamicTuple[Difficulty] = field(default=(), converter=tuple)
+    lengths: DynamicTuple[LevelLength] = field(default=(), converter=tuple)
+    completed_levels: DynamicTuple[int] = field(default=(), converter=tuple)
+    completed: Optional[bool] = field(default=None)
+    require_coins: bool = field(default=False)
+    featured: bool = field(default=False)
+    epic: bool = field(default=False)
+    rated: Optional[bool] = field(default=None)
+    require_two_player: bool = field(default=False)
+    song_id: Optional[int] = field(default=None)
+    custom_song: bool = field(default=False)
+    require_original: bool = field(default=False)
+    followed: DynamicTuple[int] = field(default=(), converter=tuple)
 
     @classmethod
     def by_user(cls: Type[F], *args: Any, **kwargs: Any) -> F:  # type: ignore
@@ -91,7 +57,7 @@ class Filters:
         return cls(SearchStrategy.FOLLOWED, *args, followed=followed, **kwargs)  # type: ignore
 
     @classmethod
-    def with_completed(  # type: ignore
+    def with_completed_levels(  # type: ignore
         cls: Type[F], *args: Any, completed_levels: Iterable[int], **kwargs: Any
     ) -> F:
         return cls(*args, completed_levels=completed_levels, **kwargs)  # type: ignore
@@ -106,13 +72,13 @@ class Filters:
     ) -> F:
         return cls.with_followed(*args, followed=client.database.followed, **kwargs)  # type: ignore
 
-    @classmethod
-    def client_completed(  # type: ignore
-        cls: Type[F], client: Client, *args: Any, **kwargs: Any
-    ) -> F:
-        return cls.with_completed(  # type: ignore
-            *args, completed_levels=client.database.values.normal.completed, **kwargs
-        )
+    # @classmethod
+    # def client_completed_levels(  # type: ignore
+    #     cls: Type[F], client: Client, *args: Any, **kwargs: Any
+    # ) -> F:
+    #     return cls.with_completed(  # type: ignore
+    #         *args, completed_levels=..., **kwargs
+    #     )
 
     def to_robtop_filters(self) -> RobTopFilters:
         filters = RobTopFilters(

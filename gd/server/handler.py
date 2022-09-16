@@ -1,7 +1,7 @@
 from typing import Any, Awaitable, Optional, TypeVar, Union
 
 from aiohttp.web import HTTPError, Request, Response, StreamResponse, json_response
-from attrs import define, field, frozen
+from attrs import define, frozen
 from typing_extensions import Never, TypedDict
 
 from gd.enum_extensions import Enum

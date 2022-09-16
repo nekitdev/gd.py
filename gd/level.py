@@ -74,34 +74,34 @@ LOW_DETAIL_BIT = 0b10000000
 
 @define(hash=True)
 class Level(Entity):
-    name: str = field()
-    creator: User = field()
-    song: Song = field()
-    description: str = field(default=EMPTY)
-    data: bytes = field(default=EMPTY_BYTES)
-    version: int = field(default=DEFAULT_VERSION)
-    downloads: int = field(default=DEFAULT_DOWNLOADS)
-    game_version: GameVersion = field(default=CURRENT_GAME_VERSION)
-    rating: int = field(default=DEFAULT_RATING)
-    length: LevelLength = field(default=LevelLength.DEFAULT)
-    difficulty: Difficulty = field(default=Difficulty.DEFAULT)
-    stars: int = field(default=DEFAULT_STARS)
-    requested_stars: int = field(default=DEFAULT_STARS)
-    score: int = field(default=DEFAULT_SCORE)
-    password_data: Password = field(factory=Password)
-    original_id: int = field(default=DEFAULT_ID)
-    two_player: bool = field(default=DEFAULT_TWO_PLAYER)
-    coins: int = field(default=DEFAULT_COINS)
-    verified_coins: bool = field(default=DEFAULT_VERIFIED_COINS)
-    low_detail: bool = field(default=DEFAULT_LOW_DETAIL)
-    epic: bool = field(default=DEFAULT_EPIC)
-    object_count: int = field(default=DEFAULT_OBJECT_COUNT)
-    uploaded_at: datetime = field(factory=datetime.utcnow)
-    updated_at: datetime = field(factory=datetime.utcnow)
-    editor_time: timedelta = field(factory=timedelta)
-    copies_time: timedelta = field(factory=timedelta)
-    timely_type: TimelyType = field(default=TimelyType.DEFAULT)
-    timely_id: int = field(default=DEFAULT_ID)
+    name: str = field(eq=False)
+    creator: User = field(eq=False)
+    song: Song = field(eq=False)
+    description: str = field(default=EMPTY, eq=False)
+    data: bytes = field(default=EMPTY_BYTES, eq=False)
+    version: int = field(default=DEFAULT_VERSION, eq=False)
+    downloads: int = field(default=DEFAULT_DOWNLOADS, eq=False)
+    game_version: GameVersion = field(default=CURRENT_GAME_VERSION, eq=False)
+    rating: int = field(default=DEFAULT_RATING, eq=False)
+    length: LevelLength = field(default=LevelLength.DEFAULT, eq=False)
+    difficulty: Difficulty = field(default=Difficulty.DEFAULT, eq=False)
+    stars: int = field(default=DEFAULT_STARS, eq=False)
+    requested_stars: int = field(default=DEFAULT_STARS, eq=False)
+    score: int = field(default=DEFAULT_SCORE, eq=False)
+    password_data: Password = field(factory=Password, eq=False)
+    original_id: int = field(default=DEFAULT_ID, eq=False)
+    two_player: bool = field(default=DEFAULT_TWO_PLAYER, eq=False)
+    coins: int = field(default=DEFAULT_COINS, eq=False)
+    verified_coins: bool = field(default=DEFAULT_VERIFIED_COINS, eq=False)
+    low_detail: bool = field(default=DEFAULT_LOW_DETAIL, eq=False)
+    epic: bool = field(default=DEFAULT_EPIC, eq=False)
+    object_count: int = field(default=DEFAULT_OBJECT_COUNT, eq=False)
+    uploaded_at: datetime = field(factory=datetime.utcnow, eq=False)
+    updated_at: datetime = field(factory=datetime.utcnow, eq=False)
+    editor_time: timedelta = field(factory=timedelta, eq=False)
+    copies_time: timedelta = field(factory=timedelta, eq=False)
+    timely_type: TimelyType = field(default=TimelyType.DEFAULT, eq=False)
+    timely_id: int = field(default=DEFAULT_ID, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
@@ -486,9 +486,6 @@ class Level(Entity):
     async def suggest(self, stars: int, featured: bool) -> None:
         await self.client.suggest_level(self, stars=stars, featured=featured)
 
-    async def is_alive(self) -> bool:
-        ...
-
     async def update(self, *, get_data: bool = True) -> Optional[Level]:
         ...
 
@@ -532,3 +529,21 @@ class Level(Entity):
             count=count,
             pages=pages,
         ).unwrap()
+
+    def maybe_attach_client(self: L, client: Optional[Client]) -> L:
+        self.creator.maybe_attach_client(client)
+        self.song.maybe_attach_client(client)
+
+        return super().maybe_attach_client(client)
+
+    def attach_client(self: L, client: Client) -> L:
+        self.creator.attach_client(client)
+        self.song.attach_client(client)
+
+        return super().attach_client(client)
+
+    def detach_client(self: L) -> L:
+        self.creator.detach_client()
+        self.song.detach_client()
+
+        return super().detach_client()

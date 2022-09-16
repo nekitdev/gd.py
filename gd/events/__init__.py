@@ -1,16 +1,13 @@
 from gd.events.controller import Controller
-from gd.events.listeners import (
-    # DailyCommentListener,
+from gd.events.listeners import (  # DailyCommentListener,; LevelCommentListener,; WeeklyCommentListener,
     DailyLevelListener,
     FriendRequestListener,
-    # LevelCommentListener,
     LevelListener,
     Listener,
     MessageListener,
     RateListener,
     UserCommentListener,
     UserLevelListener,
-    # WeeklyCommentListener,
     WeeklyLevelListener,
 )
 

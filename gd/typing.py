@@ -127,6 +127,12 @@ Pairs = Iterable[Tuple[T, U]]
 
 IntoMapping = Union[Mapping[T, U], Pairs[T, U]]
 
+IntoStringMapping = IntoMapping[str, T]
+
+IntoNamespace = IntoStringMapping[Any]
+
+IntoParameters = IntoStringMapping[Any]
+
 MaybeMapping = Union[Mapping[T, U], V]
 
 try:

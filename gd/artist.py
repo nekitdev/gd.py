@@ -35,7 +35,7 @@ NAME = "name"
 class Artist(Entity):
     """Represents artists on *Newgrounds*."""
 
-    name: str = field()
+    name: str = field(eq=False)
 
     id: int = field(repr=False, init=False)
 

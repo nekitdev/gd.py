@@ -1,6 +1,7 @@
 from aiohttp.web import Request, Response, json_response
 
-from gd.errors import LoginFailed, MissingAccess
+from gd.client import Client
+from gd.errors import LoginFailed
 from gd.server.constants import (
     CLIENT,
     HTTP_BAD_REQUEST,
@@ -17,6 +18,7 @@ from gd.server.routes import get, post
 from gd.server.tokens import token
 from gd.server.types import STRING
 from gd.server.utils import parameter
+from gd.string_utils import tick
 from gd.typing import is_instance
 
 __all__ = ("login", "logout")
@@ -72,7 +74,7 @@ PASSWORD = "password"
 @post(LOGIN, version=1)
 @request_handler()
 async def login(request: Request) -> Response:
-    client = request.app[CLIENT]
+    client: Client = request.app[CLIENT]
     tokens = request.app[TOKENS]
 
     query = request.query

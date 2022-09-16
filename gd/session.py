@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any, Optional
 
-from attrs import frozen
+from attrs import field, frozen
 from yarl import URL
 
 from gd.api.database import Database
@@ -69,10 +69,7 @@ FIRST = 0
 
 @frozen()
 class Session:
-    http: HTTPClient
-
-    def __init__(self, **http_keywords: Any) -> None:
-        self.__attrs_init__(HTTPClient(**http_keywords))
+    http: HTTPClient = field(factory=HTTPClient)
 
     async def ping(self, url: URLString) -> timedelta:
         return await self.http.ping(url)

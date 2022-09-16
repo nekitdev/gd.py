@@ -18,18 +18,25 @@ from attrs import define, field
 from typing_extensions import Protocol
 
 from gd.async_utils import awaiting, get_running_loop
-from gd.comments import Comment
-from gd.constants import DEFAULT_PAGES_COUNT, DEFAULT_RECONNECT
-from gd.enums import SearchStrategy
+from gd.comments import LevelComment, UserComment
+from gd.constants import (
+    DEFAULT_COUNT,
+    DEFAULT_DELAY,
+    DEFAULT_ID,
+    DEFAULT_PAGES_COUNT,
+    DEFAULT_RECONNECT,
+    DEFAULT_UPDATE,
+)
+from gd.enums import SearchStrategy, TimelyID
 from gd.filters import Filters
 from gd.friend_request import FriendRequest
 from gd.level import Level
 from gd.message import Message
 from gd.tasks import Loop
+from gd.typing import Nullary
 from gd.user import User
 
 __all__ = (
-    "DEFAULT_DELAY",
     "Listener",
     "DailyLevelListener",
     "WeeklyLevelListener",
@@ -37,9 +44,9 @@ __all__ = (
     "RateListener",
     "MessageListener",
     "FriendRequestListener",
-    # "LevelCommentListener",
-    # "DailyCommentListener",
-    # "WeeklyCommentListener",
+    "LevelCommentListener",
+    "DailyCommentListener",
+    "WeeklyCommentListener",
     "UserCommentListener",
     "UserLevelListener",
 )
@@ -50,12 +57,8 @@ if TYPE_CHECKING:
 LISTENER_ALREADY_STARTED = "listener has already started"
 
 
-DEFAULT_DELAY = 10.0
-
-
 class ListenerProtocol(Protocol):
     delay: float
-    count: Optional[int]
     reconnect: bool
     _started: bool
 
@@ -80,9 +83,7 @@ class ListenerProtocol(Protocol):
         if self._started:
             raise RuntimeError(LISTENER_ALREADY_STARTED)
 
-        loop = Loop(
-            function=self.main, delay=self.delay, count=self.count, reconnect=self.reconnect
-        )
+        loop = Loop(function=self.main, delay=self.delay, reconnect=self.reconnect)
 
         loop.start()
 
@@ -92,8 +93,8 @@ class ListenerProtocol(Protocol):
 @define()
 class Listener(ListenerProtocol):
     client: Client = field()
+
     delay: float = field(default=DEFAULT_DELAY)
-    count: Optional[int] = field(default=None)
     reconnect: bool = field(default=DEFAULT_RECONNECT)
 
     _started: bool = field(default=False, init=False)
@@ -179,9 +180,16 @@ class LevelListener(Listener):
             await self.schedule(self.dispatch_level(level))
 
 
+def filters_factory(strategy: SearchStrategy) -> Nullary[Filters]:
+    def factory() -> Filters:
+        return Filters(strategy)
+
+    return factory
+
+
 @define()
 class RateListener(LevelListener):
-    filters: Filters = field(default=Filters(SearchStrategy.AWARDED))
+    filters: Filters = field(factory=filters_factory(SearchStrategy.AWARDED))
 
     async def dispatch_level(self, level: Level) -> None:
         await self.client.dispatch_rate(level)
@@ -228,116 +236,103 @@ class FriendRequestListener(Listener):
     async def step(self) -> None:
         client = self.client
 
-        messages = await client.get_messages(pages=range(self.pages_count))
+        friend_requests = await client.get_friend_requests(pages=range(self.pages_count))
 
-        if not messages:
+        if not friend_requests:
             return
 
-        messages_cache = self.messages_cache
+        friend_requests_cache = self.friend_requests_cache
 
-        if not messages_cache:
-            self.messages_cache = messages
+        if not friend_requests_cache:
+            self.friend_requests_cache = friend_requests
 
             return
 
-        difference = differ(messages_cache, messages)
+        difference = differ(friend_requests_cache, friend_requests)
 
-        self.messages_cache = messages
+        self.friend_requests_cache = friend_requests
 
-        for message in difference:
-            await self.schedule(client.dispatch_friend_request(message))
-
-
-DEFAULT_UPDATE = True
-# DEFAULT_COUNT = 100
+        for friend_request in difference:
+            await self.schedule(client.dispatch_friend_request(friend_request))
 
 
-# @define()
-# class LevelCommentListener(Listener):
-#     level_id: int = field(default=0)
+@define()
+class LevelCommentListener(Listener):
+    level_id: int = field(default=DEFAULT_ID)
 
-#     count: int = field(default=DEFAULT_COUNT)
+    pages_count: int = field(default=DEFAULT_PAGES_COUNT)
+    count: int = field(default=DEFAULT_COUNT)
 
-#     update: bool = field(default=DEFAULT_UPDATE)
+    update: bool = field(default=DEFAULT_UPDATE)
 
-#     level: Level = field(init=False)
-#     level_comments_cache: List[LevelComment] = field(factory=list, init=False)
+    level: Optional[Level] = field(default=None, init=False)
+    level_comments_cache: List[LevelComment] = field(factory=list, init=False)
 
-#     async def get_level(self) -> Level:
-#         return await self.client.get_level(self.level_id)
+    async def get_level(self) -> Level:
+        return await self.client.get_level(self.level_id)
 
-#     async def dispatch_level_comment(self, level: Level, comment: LevelComment) -> None:
-#         await self.client.dispatch_level_comment(level, comment)
+    async def dispatch_level_comment(self, level: Level, comment: LevelComment) -> None:
+        await self.client.dispatch_level_comment(level, comment)
 
-#     async def step(self) -> None:
-#         level = self.level
+    async def step(self) -> None:
+        level = self.level
 
-#         if level is None:
-#             self.level = level = await self.client.get_level(self.level_id)
+        if level is None:
+            self.level = level = await self.client.get_level(self.level_id)
 
-#         level_comments = await level.get_comments(count=self.count)
+        level_comments = await level.get_comments(count=self.count, pages=range(self.pages_count))
 
-#         if not level_comments:
-#             return
+        if not level_comments:
+            return
 
-#         level_comments_cache = self.level_comments_cache
+        level_comments_cache = self.level_comments_cache
 
-#         if not level_comments_cache:
-#             self.level_comments_cache = level_comments
+        if not level_comments_cache:
+            self.level_comments_cache = level_comments
 
-#             return
+            return
 
-#         difference = differ(level_comments_cache, level_comments)
+        difference = differ(level_comments_cache, level_comments)
 
-#         self.level_comments_cache = level_comments
+        self.level_comments_cache = level_comments
 
-#         if difference and self.update:
-#             await level.update()
+        if difference and self.update:
+            await level.update()
 
-#         for comment in difference:
-#             await self.schedule(self.dispatch_level_comment(level, comment))
-
-
-# @define()
-# class DailyCommentListener(Listener):
-#     level_id: int = TimelyID.DAILY.value
-
-#     async def get_level(self) -> Level:
-#         return await self.client.get_daily()
-
-#     async def dispatch_level_comment(self, level: Level, comment: LevelComment) -> None:
-#         await self.client.dispatch_daily_comment(level, comment)
+        for comment in difference:
+            await self.schedule(self.dispatch_level_comment(level, comment))
 
 
-# @define()
-# class WeeklyCommentListener(Listener):
-#     level_id: int = TimelyID.WEEKLY.value
+@define()
+class DailyCommentListener(LevelCommentListener):
+    level_id: int = TimelyID.DAILY.value
 
-#     async def get_level(self) -> Level:
-#         return await self.client.get_weekly()
+    async def get_level(self) -> Level:
+        return await self.client.get_daily()
 
-#     async def dispatch_level_comment(self, level: Level, comment: LevelComment) -> None:
-#         await self.client.dispatch_weekly_comment(level, comment)
+    async def dispatch_level_comment(self, level: Level, comment: LevelComment) -> None:
+        await self.client.dispatch_daily_comment(level, comment)
+
+
+@define()
+class WeeklyCommentListener(LevelCommentListener):
+    level_id: int = TimelyID.WEEKLY.value
+
+    async def get_level(self) -> Level:
+        return await self.client.get_weekly()
+
+    async def dispatch_level_comment(self, level: Level, comment: LevelComment) -> None:
+        await self.client.dispatch_weekly_comment(level, comment)
 
 
 QUERY_EXPECTED = "expected either `account_id`, `id` or `name` query"
 
-DEFAULT_LEVEL = False
-
 
 @define()
-class UserCommentListener(Listener):
-    account_id: Optional[int] = field(default=None)
-    id: Optional[int] = field(default=None)
-    name: Optional[str] = field(default=None)
-
-    level: bool = field(default=DEFAULT_LEVEL)
-
-    pages_count: int = field(default=DEFAULT_PAGES_COUNT)
-
-    user: Optional[User] = field(default=None, init=False)
-
-    user_comments_cache: List[Comment] = field(factory=list, init=False)
+class UserBasedListener(Listener):
+    account_id: Optional[int] = None
+    id: Optional[int] = None
+    name: Optional[str] = None
 
     async def find_user(self) -> User:
         client = self.client
@@ -364,17 +359,24 @@ class UserCommentListener(Listener):
 
         return user
 
+
+@define()
+class UserCommentListener(UserBasedListener):
+    pages_count: int = field(default=DEFAULT_PAGES_COUNT)
+
+    update: bool = DEFAULT_UPDATE
+
+    user: Optional[User] = field(default=None, init=False)
+
+    user_comments_cache: List[UserComment] = field(factory=list, init=False)
+
     async def step(self) -> None:
         user = self.user
 
         if user is None:
             self.user = user = await self.find_user()
 
-        if self.level:
-            user_comments = await user.get_level_comments(pages=range(self.pages_count))
-
-        else:
-            user_comments = await user.get_comments(pages=range(self.pages_count))
+        user_comments = await user.get_comments(pages=range(self.pages_count))
 
         if not user_comments:
             return
@@ -388,6 +390,9 @@ class UserCommentListener(Listener):
 
         difference = differ(user_comments_cache, user_comments)
 
+        if difference and self.update:
+            await user.update()
+
         client = self.client
 
         for comment in difference:
@@ -395,43 +400,53 @@ class UserCommentListener(Listener):
 
 
 @define()
-class UserLevelListener(Listener):
-    account_id: Optional[int] = field(default=None)
-    id: Optional[int] = field(default=None)
-    name: Optional[str] = field(default=None)
+class UserLevelCommentListener(UserBasedListener):
+    pages_count: int = field(default=DEFAULT_PAGES_COUNT)
+
+    update: bool = DEFAULT_UPDATE
+
+    user: Optional[User] = field(default=None, init=False)
+
+    user_level_comments_cache: List[LevelComment] = field(factory=list, init=False)
+
+    async def step(self) -> None:
+        user = self.user
+
+        if user is None:
+            self.user = user = await self.find_user()
+
+        user_level_comments = await user.get_level_comments(pages=range(self.pages_count))
+
+        if not user_level_comments:
+            return
+
+        user_level_comments_cache = self.user_level_comments_cache
+
+        if not user_level_comments_cache:
+            self.user_level_comments_cache = user_level_comments
+
+            return
+
+        difference = differ(user_level_comments_cache, user_level_comments)
+
+        if difference and self.update:
+            await user.update()
+
+        client = self.client
+
+        for comment in difference:
+            await self.schedule(client.dispatch_user_level_comment(user, comment))
+
+
+@define()
+class UserLevelListener(UserBasedListener):
+    pages_count: int = field(default=DEFAULT_PAGES_COUNT)
 
     update: bool = field(default=DEFAULT_UPDATE)
-
-    pages_count: int = field(default=DEFAULT_PAGES_COUNT)
 
     user: Optional[User] = field(default=None, init=False)
 
     user_levels_cache: List[Level] = field(factory=list, init=False)
-
-    async def find_user(self) -> User:
-        client = self.client
-
-        account_id = self.account_id
-
-        if account_id is not None:
-            user = await client.get_user(account_id)
-
-        else:
-            id = self.id
-
-            if id is not None:
-                user = await client.search_user(id)
-
-            else:
-                name = self.name
-
-                if name is not None:
-                    user = await client.search_user(name)
-
-                else:
-                    raise ValueError(QUERY_EXPECTED)
-
-        return user
 
     async def step(self) -> None:
         user = self.user
@@ -462,7 +477,7 @@ class UserLevelListener(Listener):
 Q = TypeVar("Q", bound=Hashable)
 
 
-def differ(before: Iterable[Q], after: Iterable[Q]) -> Iterator[Q]:
+def differ_iterator(before: Iterable[Q], after: Iterable[Q]) -> Iterator[Q]:
     before_set = set(before)
 
     for item in after:
@@ -470,3 +485,7 @@ def differ(before: Iterable[Q], after: Iterable[Q]) -> Iterator[Q]:
             break
 
         yield item
+
+
+def differ(before: Iterable[Q], after: Iterable[Q]) -> List[Q]:
+    return list(differ_iterator(before, after))

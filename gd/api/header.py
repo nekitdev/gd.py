@@ -3,14 +3,20 @@ from typing import BinaryIO, Optional, Type, TypeVar
 from attrs import define, field
 
 from gd.api.color_channels import ColorChannels
-
 from gd.api.guidelines import Guidelines
 from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ID
 from gd.enums import ByteOrder, GameMode, Speed
 from gd.models_constants import HEADER_SEPARATOR
-from gd.models_utils import concat_header, float_str, int_bool, parse_get_or, partial_parse_enum, split_header
+from gd.models_utils import (
+    concat_header,
+    float_str,
+    int_bool,
+    parse_get_or,
+    partial_parse_enum,
+    split_header,
+)
 from gd.robtop import RobTop
 
 DEFAULT_MINI_MODE = False

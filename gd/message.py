@@ -9,8 +9,6 @@ from gd.constants import DEFAULT_READ, EMPTY
 from gd.entity import Entity
 from gd.enums import MessageType
 from gd.models import MessageModel
-
-# from gd.models import MessageModel
 from gd.user import User
 
 if TYPE_CHECKING:
@@ -25,15 +23,15 @@ M = TypeVar("M", bound="Message")
 class Message(Entity):
     SCHEMA: ClassVar[str] = "Re: {message.subject}"
 
-    user: User = field()
-    type: MessageType = field()
+    user: User = field(eq=False)
+    type: MessageType = field(eq=False)
 
-    created_at: datetime = field(factory=datetime.utcnow)
+    created_at: datetime = field(factory=datetime.utcnow, eq=False)
 
-    subject: str = field(default=EMPTY)
-    content: Optional[str] = field(default=None)
+    subject: str = field(default=EMPTY, eq=False)
+    content: Optional[str] = field(default=None, eq=False)
 
-    was_read: bool = field(default=DEFAULT_READ)
+    was_read: bool = field(default=DEFAULT_READ, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
@@ -90,7 +88,17 @@ class Message(Entity):
     async def delete(self) -> None:
         await self.client.delete_message(self)
 
+    def maybe_attach_client(self: M, client: Optional[Client]) -> M:
+        self.user.maybe_attach_client(client)
+
+        return super().maybe_attach_client(client)
+
     def attach_client(self: M, client: Client) -> M:
         self.user.attach_client(client)
 
         return super().attach_client(client)
+
+    def detach_client(self: M) -> M:
+        self.user.detach_client()
+
+        return super().detach_client()

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, BinaryIO, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, BinaryIO, Optional, Type, TypeVar
 
 from attrs import Attribute, define, field
 from typing_extensions import TypedDict
@@ -10,6 +10,7 @@ from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder
 from gd.errors import ClientError
 from gd.json import JSON
+from gd.typing import is_same_type
 
 if TYPE_CHECKING:
     from gd.client import Client
@@ -28,13 +29,11 @@ class EntityData(TypedDict):
 ID = "id"
 
 
-@define(eq=True, order=True)
+@define()
 class Entity(Binary, JSON[EntityData]):
-    id: int = field(eq=True, order=True)
+    id: int = field()
 
-    maybe_client: Optional[Client] = field(
-        default=None, init=False, repr=False, eq=False, order=False
-    )
+    maybe_client: Optional[Client] = field(default=None, init=False, repr=False, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
@@ -72,6 +71,11 @@ class Entity(Binary, JSON[EntityData]):
 
     def detach_client(self: E) -> E:
         del self.client
+
+        return self
+
+    def update_from(self: E, entity: Entity) -> E:
+        vars(self).update(vars(entity))
 
         return self
 

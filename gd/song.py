@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from io import BytesIO
 from typing import BinaryIO, Optional, Type, TypeVar
 
 from attrs import define
@@ -29,7 +28,7 @@ from gd.official_songs import (
     OFFICIAL_CLIENT_SONGS,
     OFFICIAL_SERVER_SONGS,
     OfficialSong,
-    create_default_offical_song,
+    default_official_song,
 )
 from gd.typing import IntoPath, Predicate
 
@@ -78,6 +77,10 @@ class Song(Entity):
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
+
+    @property
+    def url(self) -> URL:
+        return URL(NEWGROUNDS_SONG.format(self.id))
 
     @classmethod
     def from_binary(
@@ -195,16 +198,14 @@ class Song(Entity):
             if name is None:
                 raise LookupError(EXPECTED_QUERY)
 
-            official_song = iter(official_songs).find(by_name(name))
+            official_song = iter(official_songs).find_or_none(by_name(name))
 
         else:
-            official_song = iter(official_songs).find(by_id(id))
+            official_song = iter(official_songs).find_or_none(by_id(id))
 
         if official_song is None:
             if return_default:
-                official_song = (
-                    create_default_offical_song() if id is None else create_default_offical_song(id)
-                )
+                official_song = default_official_song() if id is None else default_official_song(id)
 
             else:
                 raise LookupError(CAN_NOT_FIND_SONG)
@@ -225,16 +226,6 @@ class Song(Entity):
             new = await self.client.get_song(self.id)
 
         return self.update_from(new)
-
-    def update_from(self: S, song: Song) -> S:
-        self.id = song.id
-        self.name = song.name
-        self.artist = song.artist
-        self.size = song.size
-        self.custom = song.custom
-        self.download_url = song.download_url
-
-        return self
 
     async def ensure_download_url(self) -> None:
         download_url = self.download_url

@@ -127,7 +127,9 @@ def split_mapping(separator: str, string: str) -> Mapping[int, str]:
 
 
 def split_float_mapping(separator: str, string: str) -> Mapping[float, float]:
-    return {float(key): float(value) for key, value in iter(string.split(separator)).pairs().unwrap()}
+    return {
+        float(key): float(value) for key, value in iter(string.split(separator)).pairs().unwrap()
+    }
 
 
 def string_mapping_to_iterable(mapping: Mapping[str, str]) -> Iterable[str]:

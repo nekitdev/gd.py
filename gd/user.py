@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, AsyncIterator, BinaryIO, Dict, Iterable, Optional, Type, TypeVar
 
-from attrs import define
+from attrs import define, field
 from iters.async_iters import wrap_async_iter
 
 from gd.async_utils import gather_iterable
@@ -87,43 +87,43 @@ RECORD_MASK = 0b01111111
 
 @define()
 class User(Entity):
-    name: str
-    account_id: int
-    stars: int = DEFAULT_STARS
-    demons: int = DEFAULT_DEMONS
-    diamonds: int = DEFAULT_DIAMONDS
-    orbs: int = DEFAULT_ORBS
-    user_coins: int = DEFAULT_USER_COINS
-    secret_coins: int = DEFAULT_SECRET_COINS
-    creator_points: int = DEFAULT_CREATOR_POINTS
-    rank: int = DEFAULT_RANK
-    color_1_id: int = DEFAULT_COLOR_1_ID
-    color_2_id: int = DEFAULT_COLOR_2_ID
-    icon_type: IconType = IconType.DEFAULT
-    icon_id: int = DEFAULT_ICON_ID
-    cube_id: int = DEFAULT_ICON_ID
-    ship_id: int = DEFAULT_ICON_ID
-    ball_id: int = DEFAULT_ICON_ID
-    ufo_id: int = DEFAULT_ICON_ID
-    wave_id: int = DEFAULT_ICON_ID
-    robot_id: int = DEFAULT_ICON_ID
-    spider_id: int = DEFAULT_ICON_ID
-    # swing_copter_id: int = DEFAULT_ICON_ID
-    explosion_id: int = DEFAULT_ICON_ID
-    glow: bool = DEFAULT_GLOW
-    role: Role = Role.DEFAULT
-    message_state: MessageState = MessageState.DEFAULT
-    friend_request_state: FriendRequestState = FriendRequestState.DEFAULT
-    comment_state: CommentState = CommentState.DEFAULT
-    friend_state: FriendState = FriendState.DEFAULT
-    youtube: Optional[str] = None
-    twitter: Optional[str] = None
-    twitch: Optional[str] = None
-    # discord: Optional[str] = None
-    coins: int = DEFAULT_COINS
-    place: int = DEFAULT_PLACE
-    record: Optional[int] = None
-    banned: bool = DEFAULT_BANNED
+    name: str = field(eq=False)
+    account_id: int = field(eq=False)
+    stars: int = field(default=DEFAULT_STARS, eq=False)
+    demons: int = field(default=DEFAULT_DEMONS, eq=False)
+    diamonds: int = field(default=DEFAULT_DIAMONDS, eq=False)
+    orbs: int = field(default=DEFAULT_ORBS, eq=False)
+    user_coins: int = field(default=DEFAULT_USER_COINS, eq=False)
+    secret_coins: int = field(default=DEFAULT_SECRET_COINS, eq=False)
+    creator_points: int = field(default=DEFAULT_CREATOR_POINTS, eq=False)
+    rank: int = field(default=DEFAULT_RANK, eq=False)
+    color_1_id: int = field(default=DEFAULT_COLOR_1_ID, eq=False)
+    color_2_id: int = field(default=DEFAULT_COLOR_2_ID, eq=False)
+    icon_type: IconType = field(default=IconType.DEFAULT, eq=False)
+    icon_id: int = field(default=DEFAULT_ICON_ID, eq=False)
+    cube_id: int = field(default=DEFAULT_ICON_ID, eq=False)
+    ship_id: int = field(default=DEFAULT_ICON_ID, eq=False)
+    ball_id: int = field(default=DEFAULT_ICON_ID, eq=False)
+    ufo_id: int = field(default=DEFAULT_ICON_ID, eq=False)
+    wave_id: int = field(default=DEFAULT_ICON_ID, eq=False)
+    robot_id: int = field(default=DEFAULT_ICON_ID, eq=False)
+    spider_id: int = field(default=DEFAULT_ICON_ID, eq=False)
+    # swing_copter_id: int = field(default=DEFAULT_ICON_ID, eq=False)
+    explosion_id: int = field(default=DEFAULT_ICON_ID, eq=False)
+    glow: bool = field(default=DEFAULT_GLOW, eq=False)
+    role: Role = field(default=Role.DEFAULT, eq=False)
+    message_state: MessageState = field(default=MessageState.DEFAULT, eq=False)
+    friend_request_state: FriendRequestState = field(default=FriendRequestState.DEFAULT, eq=False)
+    comment_state: CommentState = field(default=CommentState.DEFAULT, eq=False)
+    friend_state: FriendState = field(default=FriendState.DEFAULT, eq=False)
+    youtube: Optional[str] = field(default=None, eq=False)
+    twitter: Optional[str] = field(default=None, eq=False)
+    twitch: Optional[str] = field(default=None, eq=False)
+    # discord: Optional[str] = field(default=None, eq=False)
+    coins: int = field(default=DEFAULT_COINS, eq=False)
+    place: int = field(default=DEFAULT_PLACE, eq=False)
+    record: Optional[int] = field(default=None, eq=False)
+    banned: bool = field(default=DEFAULT_BANNED, eq=False)
 
     recorded_at: Optional[datetime] = None
 
@@ -296,7 +296,7 @@ class User(Entity):
         return self.name
 
     def into_relationship(self, type: RelationshipType) -> Relationship:
-        return Relationship(user=self, type=type)
+        return Relationship(user=self, type=type).maybe_attach_client(self.maybe_client)
 
     def is_glow(self) -> bool:
         return self.glow
@@ -317,7 +317,7 @@ class User(Entity):
         return await self.client.get_user(self.account_id)
 
     async def update(self: U) -> U:
-        ...
+        return self.update_from(await self.get())
 
     async def send(
         self, subject: Optional[str] = None, content: Optional[str] = None
