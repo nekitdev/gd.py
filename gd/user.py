@@ -305,6 +305,10 @@ class User(Entity):
         """Indicates whether the user is banned."""
         return self.banned
 
+    def is_registered(self) -> bool:
+        """Indicates whether the user is registered."""
+        return self.account_id > 0 and self.id > 0
+
     @property
     def color_1(self) -> Color:
         return Color.with_id(self.color_1_id, Color.default_color_1())

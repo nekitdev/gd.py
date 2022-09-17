@@ -236,4 +236,4 @@ def datetime_to_human(
     if offset is not None:
         now += offset
 
-    return timedelta_to_human(now - datetime, distance_only=distance_only, simple=simple)
+    return timedelta_to_human(datetime - now, distance_only=distance_only, simple=simple)
