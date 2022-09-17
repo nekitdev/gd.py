@@ -15,6 +15,7 @@ from gd.binary_utils import UTF_8, Reader, Writer
 from gd.constants import (
     COMMENT_PAGE_SIZE,
     DEFAULT_COINS,
+    DEFAULT_DEMON,
     DEFAULT_DOWNLOADS,
     DEFAULT_EPIC,
     DEFAULT_ID,
@@ -43,33 +44,25 @@ from gd.enums import (
     Score,
     TimelyType,
 )
-from gd.errors import MissingAccess
 from gd.models import LevelModel, TimelyInfoModel
-
-# from gd.models import LevelModel
 from gd.password import Password
 from gd.song import Song
 from gd.user import User
 from gd.versions import CURRENT_GAME_VERSION, GameVersion
 
 if TYPE_CHECKING:
-    from gd.client import Client  # noqa
-    from gd.comments import LevelComment  # noqa
+    from gd.client import Client
+    from gd.comments import LevelComment
 
 __all__ = ("Level",)
 
 L = TypeVar("L", bound="Level")
 
-REQUESTED_STARS_MASK = 0b11110000
-STARS_MASK = 0b00001111
-
-REQUESTED_STARS_SHIFT = STARS_MASK.bit_length()
-
-DIFFICULTY_MASK = 0b00001111
-TWO_PLAYER_BIT = 0b00010000
-VERIFIED_COINS_BIT = 0b00100000
-EPIC_BIT = 0b01000000
-LOW_DETAIL_BIT = 0b10000000
+TWO_PLAYER_BIT = 0b00000001
+VERIFIED_COINS_BIT = 0b00000010
+EPIC_BIT = 0b00000100
+LOW_DETAIL_BIT = 0b00001000
+DEMON_BIT = 0b00010000
 
 
 @define(hash=True)
@@ -85,6 +78,7 @@ class Level(Entity):
     rating: int = field(default=DEFAULT_RATING, eq=False)
     length: LevelLength = field(default=LevelLength.DEFAULT, eq=False)
     difficulty: Difficulty = field(default=Difficulty.DEFAULT, eq=False)
+    demon: bool = field(default=DEFAULT_DEMON, eq=False)
     stars: int = field(default=DEFAULT_STARS, eq=False)
     requested_stars: int = field(default=DEFAULT_STARS, eq=False)
     score: int = field(default=DEFAULT_SCORE, eq=False)
@@ -157,7 +151,9 @@ class Level(Entity):
 
         writer.write_u8(self.length.value, order)
 
-        value = self.difficulty.value
+        writer.write_u8(self.difficulty.value, order)
+
+        value = 0
 
         if self.is_two_player():
             value |= TWO_PLAYER_BIT
@@ -171,11 +167,14 @@ class Level(Entity):
         if self.has_low_detail():
             value |= LOW_DETAIL_BIT
 
+        if self.is_demon():
+            value |= DEMON_BIT
+
         writer.write_u8(value, order)
 
-        value = (self.requested_stars << REQUESTED_STARS_SHIFT) | self.stars
+        writer.write_u8(self.stars, order)
 
-        writer.write_u8(value, order)
+        writer.write_u8(self.requested_stars, order)
 
         writer.write_i32(self.score, order)
 
@@ -205,6 +204,7 @@ class Level(Entity):
         verified_coins_bit = VERIFIED_COINS_BIT
         epic_bit = EPIC_BIT
         low_detail_bit = LOW_DETAIL_BIT
+        demon_bit = DEMON_BIT
 
         reader = Reader(binary)
 
@@ -243,21 +243,21 @@ class Level(Entity):
 
         length = LevelLength(length_value)
 
-        value = reader.read_u8(order)
-
-        difficulty_value = value & DIFFICULTY_MASK
+        difficulty_value = reader.read_u8(order)
 
         difficulty = Difficulty(difficulty_value)
+
+        value = reader.read_u8(order)
 
         two_player = value & two_player_bit == two_player_bit
         verified_coins = value & verified_coins_bit == verified_coins_bit
         epic = value & epic_bit == epic_bit
         low_detail = value & low_detail_bit == low_detail_bit
+        demon = value & demon_bit == demon_bit
 
-        value = reader.read_u8(order)
+        stars = reader.read_u8(order)
 
-        requested_stars = (value & REQUESTED_STARS_MASK) >> REQUESTED_STARS_SHIFT
-        stars = value & STARS_MASK
+        requested_stars = reader.read_u8(order)
 
         score = reader.read_i32(order)
 
@@ -296,6 +296,7 @@ class Level(Entity):
             rating=rating,
             length=length,
             difficulty=difficulty,
+            demon=demon,
             stars=stars,
             requested_stars=requested_stars,
             score=score,
@@ -328,6 +329,7 @@ class Level(Entity):
             game_version=model.game_version,
             rating=model.rating,
             length=model.length,
+            demon=model.demon,
             stars=model.stars,
             score=model.score,
             password_data=model.password_data,
@@ -421,6 +423,9 @@ class Level(Entity):
 
     def is_two_player(self) -> bool:
         return self.two_player
+
+    def is_demon(self) -> bool:
+        return self.demon
 
     def has_low_detail(self) -> bool:
         return self.low_detail

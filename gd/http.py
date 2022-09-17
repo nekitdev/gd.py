@@ -932,7 +932,7 @@ class HTTPClient:
         try:
             await self.request(GET, url, read=False)
 
-        except Exception:  # noqa
+        except Exception:
             pass
 
         return timer.elapsed()

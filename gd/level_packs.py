@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 __all__ = ("Gauntlet", "MapPack")
 
 if TYPE_CHECKING:
-    from gd.level import Level  # noqa
+    from gd.level import Level
 
 
 G = TypeVar("G", bound="Gauntlet")

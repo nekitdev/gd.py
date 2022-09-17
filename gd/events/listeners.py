@@ -52,7 +52,7 @@ __all__ = (
 )
 
 if TYPE_CHECKING:
-    from gd.client import Client  # noqa
+    from gd.client import Client
 
 LISTENER_ALREADY_STARTED = "listener has already started"
 

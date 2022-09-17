@@ -90,15 +90,15 @@ INDEX_OUT_OF_BOUNDS = "the index is out of bounds"
 
 
 class MemoryArray(MemoryAbstractArray[Read[T]]):
-    @overload  # noqa
-    def __getitem__(self, item: int) -> T:  # noqa
+    @overload
+    def __getitem__(self, item: int) -> T:
         ...
 
-    @overload  # noqa
-    def __getitem__(self, item: slice) -> Iterator[T]:  # noqa
+    @overload
+    def __getitem__(self, item: slice) -> Iterator[T]:
         ...
 
-    def __getitem__(self, item: Union[int, slice]) -> Union[T, Iterator[T]]:  # noqa
+    def __getitem__(self, item: Union[int, slice]) -> Union[T, Iterator[T]]:
         if is_instance(item, int):
             return self.read_at(item)
 
@@ -123,15 +123,15 @@ class MemoryArray(MemoryAbstractArray[Read[T]]):
 
 
 class MemoryMutArray(MemoryArray[T], MemoryAbstractArray[ReadWrite[T]]):
-    @overload  # noqa
-    def __setitem__(self, item: int, value: T) -> None:  # noqa
+    @overload
+    def __setitem__(self, item: int, value: T) -> None:
         ...
 
-    @overload  # noqa
-    def __setitem__(self, item: slice, value: Iterable[T]) -> None:  # noqa
+    @overload
+    def __setitem__(self, item: slice, value: Iterable[T]) -> None:
         ...
 
-    def __setitem__(self, item: Union[int, slice], value: Union[T, Iterable[T]]) -> None:  # noqa
+    def __setitem__(self, item: Union[int, slice], value: Union[T, Iterable[T]]) -> None:
         if is_instance(item, int):
             return self.write_at(item, value)  # type: ignore
 

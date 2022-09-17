@@ -80,7 +80,7 @@ class Field(Generic[T], AbstractField[Read[T]]):
     def __get__(self, instance: M, type: Optional[Type[M]] = ...) -> T:
         ...
 
-    def __get__(  # noqa
+    def __get__(
         self: F, instance: Optional[M], type: Optional[Type[M]] = None
     ) -> Union[T, F]:
         if instance is None:
