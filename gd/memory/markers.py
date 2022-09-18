@@ -272,7 +272,6 @@ STT = TypeVar("STT", bound="StructType")
 
 
 class StructType(type):
-    _vtable: bool
     _packed: bool
     _origin: int
 
@@ -281,22 +280,16 @@ class StructType(type):
         name: str,
         bases: DynamicTuple[AnyType],
         namespace: Namespace,
-        vtable: bool = False,
         packed: bool = False,
         origin: int = 0,
         **keywords: Any,
     ) -> STT:
         self = super().__new__(cls, name, bases, namespace, **keywords)
 
-        self._vtable = vtable
         self._packed = packed
         self._origin = origin
 
         return self
-
-    @property
-    def vtable(cls) -> bool:
-        return cls._vtable
 
     @property
     def packed(cls) -> bool:
@@ -308,17 +301,12 @@ class StructType(type):
 
 
 class Struct(Marker, metaclass=StructType):
-    _vtable: bool
     _packed: bool
     _origin: int
 
     @classmethod
     def accept(cls, visitor: Visitor) -> Type[MemoryStruct]:
         return visitor.visit_struct(cls)
-
-    @property
-    def vtable(self) -> bool:
-        return self._vtable
 
     @property
     def packed(self) -> bool:

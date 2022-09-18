@@ -1,83 +1,108 @@
-from typing import List
+from typing import Optional, TypeVar, Union
 
-from aiohttp.web import FileResponse, HTTPNotFound, Request
+from fastapi.responses import FileResponse
 
-from gd.async_utils import gather_iterable
+from gd.async_utils import gather_iterable, run_blocking
 from gd.color import Color
 from gd.enums import IconType
 from gd.image.factory import FACTORY, connect_images
 from gd.image.icon import Icon
 from gd.server.assets import ASSETS, IMAGE_SUFFIX
-from gd.server.handler import request_handler
-from gd.server.routes import get
-from gd.server.utils import parse_bool
+from gd.server.core import app
+from gd.server.parse import parse_bool
 
-ICONS = "/icons"
+__all__ = ()
+
+GENERATE_ICONS = "/icons"
 ICONS_NAME = "icons"
 
 ICONS_PATH = ASSETS / ICONS_NAME
 
 ICONS_PATH.mkdir(parents=True, exist_ok=True)
 
-COLOR_1 = "color_1"
-COLOR_2 = "color_2"
-
-GLOW = "glow"
-
 DEFAULT_COLOR_1 = Color.default_color_1().to_hex()
 DEFAULT_COLOR_2 = Color.default_color_2().to_hex()
 
 DEFAULT_GLOW = "false"
 
-EMPTY = "empty"
+NULL = "null"
+
+QUERY = """
+{color_1}_{color_2}_{glow}_{cube_id}_{ship_id}_{ball_id}_{ufo_id}_{wave_id}_{robot_id}_{spider_id}
+""".strip()
 
 
-@get(ICONS, version=1)
-@request_handler()
-async def get_icons(request: Request) -> FileResponse:
-    query_string = request.query_string or EMPTY
+T = TypeVar("T")
+U = TypeVar("U")
 
-    path = (ASSETS / ICONS_NAME / query_string).with_suffix(IMAGE_SUFFIX)
+
+def switch_none(option: Optional[T], default: U) -> Union[T, U]:
+    return default if option is None else option
+
+
+@app.get(GENERATE_ICONS)
+async def generate_icons(
+    color_1: str = DEFAULT_COLOR_1,
+    color_2: str = DEFAULT_COLOR_2,
+    glow: str = DEFAULT_GLOW,
+    cube_id: Optional[int] = None,
+    ship_id: Optional[int] = None,
+    ball_id: Optional[int] = None,
+    ufo_id: Optional[int] = None,
+    wave_id: Optional[int] = None,
+    robot_id: Optional[int] = None,
+    spider_id: Optional[int] = None,
+    # swing_copter_id: Optional[int] = None,
+) -> FileResponse:
+    null = NULL
+
+    query = QUERY.format(
+        color_1=color_1,
+        color_2=color_2,
+        glow=glow,
+        cube_id=switch_none(cube_id, null),
+        ship_id=switch_none(ship_id, null),
+        ball_id=switch_none(ball_id, null),
+        ufo_id=switch_none(ufo_id, null),
+        wave_id=switch_none(wave_id, null),
+        robot_id=switch_none(robot_id, null),
+        spider_id=switch_none(spider_id, null),
+        # swing_copter_id=switch_none(swing_copter_id, null),
+    )
+
+    mapping = {
+        IconType.CUBE: cube_id,
+        IconType.SHIP: ship_id,
+        IconType.BALL: ball_id,
+        IconType.UFO: ufo_id,
+        IconType.WAVE: wave_id,
+        IconType.ROBOT: robot_id,
+        IconType.SPIDER: spider_id,
+        # IconType.SWING_COPTER: swing_copter_id,
+    }
+
+    icon_color_1 = Color.from_hex(color_1)
+    icon_color_2 = Color.from_hex(color_2)
+
+    icon_glow = parse_bool(glow)
+
+    icons = []
+
+    for icon_type, icon_id in mapping.items():
+        if icon_id is not None:
+            icons.append(Icon(icon_type, icon_id, icon_color_1, icon_color_2, icon_glow))
+
+    path = (ASSETS / ICONS_NAME / query).with_suffix(IMAGE_SUFFIX)
 
     if path.exists():
         return FileResponse(path)
 
     factory = FACTORY
 
-    query = request.query
-
-    icons: List[Icon] = []
-
-    color_1_hex = query.get(COLOR_1, DEFAULT_COLOR_1)
-
-    color_1 = Color.from_hex(color_1_hex)
-
-    color_2_hex = query.get(COLOR_2, DEFAULT_COLOR_2)
-
-    color_2 = Color.from_hex(color_2_hex)
-
-    glow_string = query.get(GLOW, DEFAULT_GLOW)
-
-    glow = parse_bool(glow_string)
-
-    for name, value in query.items():
-        try:
-            type = IconType.from_name(name)
-            id = int(value)
-
-        except (KeyError, ValueError):
-            pass
-
-        else:
-            icons.append(Icon(type, id, color_1, color_2, glow))
-
-    if not icons:
-        raise HTTPNotFound()
-
     images = await gather_iterable(factory.generate_async(icon) for icon in icons)
 
-    image = connect_images(images)
+    image = await run_blocking(connect_images, images)
 
-    image.save(path)
+    await run_blocking(image.save, path)
 
     return FileResponse(path)

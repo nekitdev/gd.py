@@ -1,44 +1,13 @@
 import re
-from functools import partial
 from typing import AbstractSet, Any, Iterable, Optional, Type, TypeVar
 
 from gd.enums import Enum
 from gd.errors import InternalError
-from gd.server.typing import Handler
 from gd.string_constants import COMMA
 from gd.string_utils import tick
-from gd.typing import Parse, StringDict, is_instance
+from gd.typing import Parse
 
-__all__ = (
-    "get_original_handler",
-    "parameter",
-    "parse_bool",
-    "parse_enum",
-    "parse_pages",
-)
-
-HANDLER = "handler"
-
-CAN_NOT_RETRIEVE_HANDLER = "can not retrieve original handler"
-
-
-def get_original_handler(handler: Handler) -> Handler:
-    while is_instance(handler, partial):
-        handler = handler.keywords.get(HANDLER)  # type: ignore
-
-        if handler is None:
-            raise ValueError(CAN_NOT_RETRIEVE_HANDLER)
-
-    return handler
-
-
-IN = "in"
-
-
-def parameter(source: str, **keywords: Any) -> StringDict[Any]:
-    keywords.setdefault(IN, source)
-
-    return keywords
+__all__ = ("parse_bool", "parse_enum", "parse_pages")
 
 
 TRUE = frozenset(("yes", "y", "true", "t", "1"))
@@ -78,7 +47,7 @@ STOP = "stop"
 INCLUSIVE = "inclusive"
 
 DIGIT = r"[0-9]"
-EQUAL = r"="
+EQUAL = "="
 DOTS = re.escape("..")
 
 RANGE_PATTERN = rf"(?P<{START}>{DIGIT}+){DOTS}(?P<{INCLUSIVE}>{EQUAL})?(?P<{STOP}>{DIGIT}+)"

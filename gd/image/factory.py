@@ -30,7 +30,8 @@ from gd.color import Color
 from gd.enums import IconType, Orientation
 from gd.image.animation import Animation, Animations, AnimationSheet
 from gd.image.icon import Icon
-from gd.image.sheet import Sheet, Sprites
+from gd.image.sheet import Sheet
+from gd.image.sprite import Sprites
 from gd.typing import IntoPath
 
 __all__ = ("FACTORY", "Factory")
@@ -98,6 +99,8 @@ def connect_images(
 QUARTER = 90
 HALF = 180
 FULL = 360
+
+UFO_OFFSET = 30.0
 
 
 @define()
@@ -239,16 +242,17 @@ class Factory:
         center = self.image_rectangle(result).center
 
         if icon.is_complex():
-            for icon_layer in icon.iter_complex_layers():
-                search = self.find_sprite_and_image(icon_layer.name)
+            for complex_icon_layer in icon.iter_complex_layers():
+                search = self.find_sprite_and_image(complex_icon_layer.name)
 
-                layer = icon_layer.layer
+                layer = complex_icon_layer.layer
 
                 if search:
                     sprite, image = search
 
                     part = self.paint(
-                        self.paint(image.crop(sprite.box), icon_layer.white), icon_layer.color
+                        self.paint(image.crop(sprite.box), complex_icon_layer.white),
+                        complex_icon_layer.color,
                     )
 
                     if sprite.is_rotated():
@@ -299,9 +303,6 @@ class Factory:
                     result.alpha_composite(part, position.round_tuple())
 
         return result
-
-
-UFO_OFFSET = 30.0
 
 
 FACTORY = Factory.default()

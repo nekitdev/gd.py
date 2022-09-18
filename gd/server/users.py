@@ -1,56 +1,44 @@
-from aiohttp.web import FileResponse, Request
+from fastapi.responses import FileResponse
 
-from gd.client import Client
-from gd.server.constants import CLIENT
-from gd.server.handler import request_handler
+from gd.async_utils import run_blocking
+from gd.server.core import app, client
 from gd.server.icons import ICONS_PATH
-from gd.server.routes import get
 
 SEARCH_USER_ICONS = "/search/user/{query}/icons"
 
 QUERY = "query"
 
-SEARCH_USER_NAME = "search.{}.png"
+SEARCH_USER_NAME = "search_{}.png"
 
 
-@get(SEARCH_USER_ICONS, version=1)
-@request_handler()
-async def search_user_icons(request: Request) -> FileResponse:
-    query = request.match_info[QUERY]
-
+@app.get(SEARCH_USER_ICONS)
+async def search_user_icons(query: str) -> FileResponse:
     path = ICONS_PATH / SEARCH_USER_NAME.format(query)
-
-    client: Client = request.app[CLIENT]
 
     user = await client.search_user(query)
 
     image = await user.generate_full_async()
 
-    image.save(path)
+    await run_blocking(image.save, path)
 
     return FileResponse(path)
 
 
-GET_USER_ICONS = "/users/{account_id}/icons"
+GET_USER_ICONS = "/v1/users/{account_id}/icons"
 
 ACCOUNT_ID = "account_id"
 
-GET_USER_NAME = "get.{}.png"
+GET_USER_NAME = "get_{}.png"
 
 
-@get(GET_USER_ICONS, version=1)
-@request_handler()
-async def get_user_icons(request: Request) -> FileResponse:
-    account_id = int(request.match_info[ACCOUNT_ID])
-
+@app.get(GET_USER_ICONS)
+async def get_user_icons(account_id: int) -> FileResponse:
     path = ICONS_PATH / GET_USER_NAME.format(account_id)
-
-    client: Client = request.app[CLIENT]
 
     user = await client.get_user(account_id)
 
     image = await user.generate_full_async()
 
-    image.save(path)
+    await run_blocking(image.save, path)
 
     return FileResponse(path)

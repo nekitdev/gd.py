@@ -57,7 +57,7 @@ class AnimationSheet:
 
     loaded: bool = field(default=False, init=False)
 
-    @property
+    @property  # type: ignore
     @cache_by(PATH)
     def animations(self) -> Animations:
         self.ensure_loaded()
@@ -65,14 +65,15 @@ class AnimationSheet:
         return {
             name: Animation(
                 [
-                    Frame([Layer.from_dict(layer_dict) for layer_dict in layer_dicts])
-                    for layer_dicts in frames
+                    Frame([Layer.from_data(layer_data) for layer_data in frame_data])
+                    for frame_data in animation_data
                 ]
             )
-            for name, frames in self.data.items()
+            for name, animation_data in self.data.items()
         }
 
-    def get_data(self) -> AnimationSheetData:
+    @property
+    def data(self) -> AnimationSheetData:
         result = self.data_unchecked
 
         if result is None:
@@ -80,13 +81,13 @@ class AnimationSheet:
 
         return result
 
-    def set_data(self, data: AnimationSheetData) -> None:
+    @data.setter
+    def data(self, data: AnimationSheetData) -> None:
         self.data_unchecked = data
 
-    def delete_data(self) -> None:
+    @data.deleter
+    def data(self) -> None:
         self.data_unchecked = None
-
-    data = property(get_data, set_data, delete_data)
 
     def load(self) -> None:
         self.loaded = True
@@ -105,13 +106,13 @@ class AnimationSheet:
     def unload(self) -> None:
         self.loaded = False
 
-        self.delete_data()
+        del self.data
 
     def is_loaded(self) -> bool:
         return self.loaded
 
     def ensure_loaded(self) -> None:
-        if not self.loaded:
+        if not self.is_loaded():
             self.load()
 
     @classmethod

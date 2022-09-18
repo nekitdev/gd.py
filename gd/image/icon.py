@@ -4,7 +4,7 @@ from attrs import define, field
 
 from gd.assets import IMAGE_SUFFIX
 from gd.color import Color
-from gd.constants import DEFAULT_GLOW
+from gd.constants import DEFAULT_GLOW, DEFAULT_ICON_ID
 from gd.enums import IconType
 from gd.image.animation import Animation
 from gd.image.layer import Layer
@@ -75,7 +75,7 @@ class ComplexIconLayer(IconLayer):
 @define()
 class Icon:
     type: IconType = field(default=IconType.DEFAULT)
-    id: int = field(default=1)
+    id: int = field(default=DEFAULT_ICON_ID)
     color_1: Color = field(factory=Color.default_color_1)
     color_2: Color = field(factory=Color.default_color_2)
     glow: bool = field(default=DEFAULT_GLOW)
@@ -102,7 +102,8 @@ class Icon:
     def is_simple(self) -> bool:
         return not self.is_complex()
 
-    def get_glow_color(self) -> Color:
+    @property
+    def glow_color(self) -> Color:
         glow_color = self.glow_color_unchecked
 
         if glow_color is None:
@@ -120,26 +121,27 @@ class Icon:
 
         return glow_color
 
-    def set_glow_color(self, color: Color) -> None:
+    @glow_color.setter
+    def glow_color(self, color: Color) -> None:
         self.glow_color_unchecked = color
 
-    def delete_glow_color(self) -> None:
+    @glow_color.deleter
+    def glow_color(self) -> None:
         self.glow_color_unchecked = None
 
-    glow_color = property(get_glow_color, set_glow_color, delete_glow_color)
-
-    def get_extra_color(self) -> Color:
+    @property
+    def extra_color(self) -> Color:
         extra_color = self.extra_color_unchecked
 
         return DEFAULT_EXTRA_COLOR if extra_color is None else extra_color
 
-    def set_extra_color(self, color: Color) -> None:
+    @extra_color.setter
+    def extra_color(self, color: Color) -> None:
         self.extra_color_unchecked = color
 
-    def delete_extra_color(self) -> None:
+    @extra_color.deleter
+    def extra_color(self) -> None:
         self.extra_color_unchecked = None
-
-    extra_color = property(get_extra_color, set_extra_color, delete_extra_color)
 
     def generate_name(
         self,
@@ -242,6 +244,11 @@ def generate_name(
     return string if suffix is None else string + suffix
 
 
+ID_ALIGN = 2
+PART_ALIGN = 2
+FRAME_ALIGN = 3
+
+
 def generate_name_iterator(
     name: str,
     id: Optional[int] = None,
@@ -254,10 +261,10 @@ def generate_name_iterator(
     yield name
 
     if id is not None:
-        yield zero_pad(2, id)
+        yield zero_pad(ID_ALIGN, id)
 
     if part is not None:
-        yield zero_pad(2, part)
+        yield zero_pad(PART_ALIGN, part)
 
     if sub_part is not None:
         yield str(sub_part)
@@ -269,4 +276,4 @@ def generate_name_iterator(
         yield GLOW
 
     if frame is not None:
-        yield zero_pad(3, frame)
+        yield zero_pad(FRAME_ALIGN, frame)

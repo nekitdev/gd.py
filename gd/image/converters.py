@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, TypeVar
 from gd.constants import EMPTY
 
 try:
-    from plistlib import load as load_plist
+    import plistlib as plist
 
 except ImportError:
     pass
@@ -40,8 +40,8 @@ BRACES = "{}"
 remove_braces = str.maketrans(dict.fromkeys(BRACES, EMPTY))
 
 
-def simple_array_parse(string: str, parse: Parse[T], split: str = COMMA) -> Iterator[T]:
-    return map(parse, string.translate(remove_braces).split(split))
+def simple_array_parse(string: str, parse: Parse[T], separator: str = COMMA) -> Iterator[T]:
+    return map(parse, string.translate(remove_braces).split(separator))
 
 
 def convert_sprite_format_0(sprite_dict: AnyCamelDict) -> SpriteData:
@@ -116,7 +116,7 @@ def convert_sheet_path(
     input_path, output_path = input_output_path(input, output, DATA_SUFFIX)
 
     with input_path.open(READ_BINARY) as input_file:
-        document = load_plist(input_file, dict_type=CamelDict)
+        document = plist.load(input_file, dict_type=CamelDict)
 
     result = convert_sheet_data(document)
 
@@ -166,7 +166,7 @@ def convert_animation_sheet_path(
     input_path, output_path = input_output_path(input, output, DATA_SUFFIX)
 
     with input_path.open(READ_BINARY) as input_file:
-        document = load_plist(input_file, dict_type=CamelDict)
+        document = plist.load(input_file, dict_type=CamelDict)
 
     result = convert_animation_sheet_data(document)
 

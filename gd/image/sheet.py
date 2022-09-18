@@ -41,49 +41,46 @@ class Sheet:
 
     loaded: bool = field(default=False, init=False)
 
-    @property
+    @property  # type: ignore
     @cache_by(IMAGE_PATH, DATA_PATH)
     def sprites(self) -> Sprites:
         self.ensure_loaded()
 
         return {name: Sprite.from_data(sprite_data) for name, sprite_data in self.data.items()}
 
-    def get_image(self) -> Image:
-        result = self.image_unchecked
+    @property
+    def image(self) -> Image:
+        image = self.image_unchecked
 
-        if result is None:
+        if image is None:
             raise ValueError(NO_IMAGE)
 
-        return result
+        return image
 
-    def set_image(self, image: Image) -> None:
+    @image.setter
+    def image(self, image: Image) -> None:
         self.image_unchecked = image
 
-    def delete_image(self) -> None:
+    @image.deleter
+    def image(self) -> None:
         self.image_unchecked = None
 
-    def free_image(self) -> None:
-        del self.image
+    @property
+    def data(self) -> SheetData:
+        data = self.data_unchecked
 
-        gc.collect()  # force garbage collection
-
-    image = property(get_image, set_image, delete_image)
-
-    def get_data(self) -> SheetData:
-        result = self.data_unchecked
-
-        if result is None:
+        if data is None:
             raise ValueError(NO_DATA)
 
-        return result
+        return data
 
-    def set_data(self, data: SheetData) -> None:
+    @data.setter
+    def data(self, data: SheetData) -> None:
         self.data_unchecked = data
 
-    def delete_data(self) -> None:
+    @data.deleter
+    def data(self) -> None:
         self.data_unchecked = None
-
-    data = property(get_data, set_data, delete_data)
 
     def load(self) -> None:
         self.loaded = True
@@ -106,14 +103,16 @@ class Sheet:
     def unload(self) -> None:
         self.loaded = False
 
-        self.free_image()
-        self.delete_data()
+        del self.image
+        del self.data
+
+        gc.collect()
 
     def is_loaded(self) -> bool:
         return self.loaded
 
     def ensure_loaded(self) -> None:
-        if not self.loaded:
+        if not self.is_loaded():
             self.load()
 
     @classmethod

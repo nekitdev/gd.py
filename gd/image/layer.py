@@ -41,7 +41,7 @@ class Layer:
     def is_v_flipped(self) -> bool:
         return self.v_flipped
 
-    def into_dict(self) -> LayerData:
+    def into_data(self) -> LayerData:
         return LayerData(
             part=self.part,
             position=self.position.into_tuple(),
@@ -52,13 +52,13 @@ class Layer:
         )
 
     @classmethod
-    def from_dict(cls: Type[L], layer_dict: LayerData) -> L:
-        part = layer_dict[PART]
-        x, y = layer_dict[POSITION]
-        width, height = layer_dict[SCALE]
-        rotation = layer_dict[ROTATION]
-        h_flipped = layer_dict[H_FLIPPED]
-        v_flipped = layer_dict[V_FLIPPED]
+    def from_data(cls: Type[L], layer_data: LayerData) -> L:
+        part = layer_data[PART]
+        x, y = layer_data[POSITION]
+        width, height = layer_data[SCALE]
+        rotation = layer_data[ROTATION]
+        h_flipped = layer_data[H_FLIPPED]
+        v_flipped = layer_data[V_FLIPPED]
 
         return cls(
             part=part,
