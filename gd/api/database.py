@@ -26,10 +26,10 @@ CAN_NOT_DUMP_NOT_LOADED = "can not `dump` level collection that was created with
 
 
 class LevelCollection(OrderedSet[A]):
-    def __init__(self, levels: Iterable[A] = ()) -> None:
+    def __init__(self, levels: Iterable[A] = (), callback: Optional[Callback[A]] = None) -> None:
         super().__init__(levels)
 
-        self.callback: Optional[Callback[A]] = None
+        self.callback = callback
 
     @classmethod
     def load(cls: Type[C], iterable: Iterable[A], callback: Callback[A]) -> C:

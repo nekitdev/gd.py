@@ -116,7 +116,10 @@ class GameVersion(Version):
         minor = self.minor
 
         if major == 1:
-            if minor == 7:
+            if minor == 8:
+                return 11
+
+            elif minor == 7:
                 return 10
 
             elif minor < 7:

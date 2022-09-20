@@ -24,6 +24,7 @@ MATURIN = "maturin"
 BUILD = "build"
 INTERPRETER = "-i"
 OUTPUT = "-o"
+RELEASE = "-r"
 
 WHEELS = "wheels"
 WHEEL = ".whl"
@@ -40,6 +41,7 @@ def build_command(output_path: Path) -> Sequence[str]:
     return (
         MATURIN,
         BUILD,
+        RELEASE,
         INTERPRETER,
         INTERPRETER_PATH.as_posix(),
         OUTPUT,
