@@ -7,7 +7,7 @@ from attrs import define
 from gd.api.database import Database
 from gd.async_utils import run_blocking
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
-from gd.encoding import decode_os_save, decode_save, encode_os_save, encode_save
+from gd.encoding import decode_system_save, decode_save, encode_system_save, encode_save
 from gd.platform import SYSTEM_PLATFORM, Platform
 from gd.typing import IntoPath, Optional, Tuple
 
@@ -133,7 +133,7 @@ class SaveManager(Generic[D]):
         main_data = main_path.read_bytes()
         levels_data = levels_path.read_bytes()
 
-        return self.load_parts(main_data, levels_data, apply_xor=True, follow_os=True)
+        return self.load_parts(main_data, levels_data, apply_xor=True, follow_system=True)
 
     def dump_local(
         self,
@@ -144,7 +144,7 @@ class SaveManager(Generic[D]):
         main_path = self.compute_path(main, self.main_name)
         levels_path = self.compute_path(levels, self.levels_name)
 
-        main_data, levels_data = self.dump_parts(database, apply_xor=True, follow_os=True)
+        main_data, levels_data = self.dump_parts(database, apply_xor=True, follow_system=True)
 
         main_path.write_bytes(main_data)
         levels_path.write_bytes(levels_data)
@@ -153,9 +153,9 @@ class SaveManager(Generic[D]):
         self,
         database: Database,
         apply_xor: bool = False,
-        follow_os: bool = False,
+        follow_system: bool = False,
     ) -> Tuple[bytes, bytes]:
-        main_data, levels_data = self.dump_parts(database, apply_xor=apply_xor, follow_os=follow_os)
+        main_data, levels_data = self.dump_parts(database, apply_xor=apply_xor, follow_system=follow_system)
 
         return (main_data, levels_data)
 
@@ -163,10 +163,10 @@ class SaveManager(Generic[D]):
         self,
         database: Database,
         apply_xor: bool = False,
-        follow_os: bool = False,
+        follow_system: bool = False,
     ) -> Tuple[bytes, bytes]:
         main_data, levels_data = await run_blocking(
-            self.dump_parts, database, apply_xor=apply_xor, follow_os=follow_os
+            self.dump_parts, database, apply_xor=apply_xor, follow_system=follow_system
         )
 
         return (main_data, levels_data)
@@ -177,14 +177,14 @@ class SaveManager(Generic[D]):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
         apply_xor: bool = False,
-        follow_os: bool = False,
+        follow_system: bool = False,
     ) -> Tuple[str, str]:
         main_string, levels_string = self.dump_string_parts(
             database,
             encoding=encoding,
             errors=errors,
             apply_xor=apply_xor,
-            follow_os=follow_os,
+            follow_system=follow_system,
         )
 
         return (main_string, levels_string)
@@ -195,7 +195,7 @@ class SaveManager(Generic[D]):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
         apply_xor: bool = False,
-        follow_os: bool = False,
+        follow_system: bool = False,
     ) -> Tuple[str, str]:
         main_string, levels_string = await run_blocking(
             self.dump_string_parts,
@@ -203,7 +203,7 @@ class SaveManager(Generic[D]):
             encoding=encoding,
             errors=errors,
             apply_xor=apply_xor,
-            follow_os=follow_os,
+            follow_system=follow_system,
         )
 
         return (main_string, levels_string)
@@ -213,19 +213,19 @@ class SaveManager(Generic[D]):
         main_data: bytes,
         levels_data: bytes,
         apply_xor: bool = False,
-        follow_os: bool = False,
+        follow_system: bool = False,
     ) -> D:
-        return self.load_parts(main_data, levels_data, apply_xor=apply_xor, follow_os=follow_os)
+        return self.load_parts(main_data, levels_data, apply_xor=apply_xor, follow_system=follow_system)
 
     async def from_bytes_async(
         self,
         main_data: bytes,
         levels_data: bytes,
         apply_xor: bool = False,
-        follow_os: bool = False,
+        follow_system: bool = False,
     ) -> D:
         return await run_blocking(
-            self.load_parts, main_data, levels_data, apply_xor=apply_xor, follow_os=follow_os
+            self.load_parts, main_data, levels_data, apply_xor=apply_xor, follow_system=follow_system
         )
 
     def from_strings(
@@ -233,10 +233,10 @@ class SaveManager(Generic[D]):
         main_string: str,
         levels_string: str,
         apply_xor: bool = False,
-        follow_os: bool = False,
+        follow_system: bool = False,
     ) -> D:
         return self.load_string_parts(
-            main_string, levels_string, apply_xor=apply_xor, follow_os=follow_os
+            main_string, levels_string, apply_xor=apply_xor, follow_system=follow_system
         )
 
     async def from_strings_async(
@@ -244,14 +244,14 @@ class SaveManager(Generic[D]):
         main_string: str,
         levels_string: str,
         apply_xor: bool = False,
-        follow_os: bool = False,
+        follow_system: bool = False,
     ) -> D:
         return await run_blocking(
             self.load_string_parts,
             main_string,
             levels_string,
             apply_xor=apply_xor,
-            follow_os=follow_os,
+            follow_system=follow_system,
         )
 
     def load_parts(
@@ -259,10 +259,10 @@ class SaveManager(Generic[D]):
         main_data: bytes,
         levels_data: bytes,
         apply_xor: bool = False,
-        follow_os: bool = False,
+        follow_system: bool = False,
     ) -> D:
-        main = self.decode_data(main_data, apply_xor=apply_xor, follow_os=follow_os)
-        levels = self.decode_data(levels_data, apply_xor=apply_xor, follow_os=follow_os)
+        main = self.decode_data(main_data, apply_xor=apply_xor, follow_system=follow_system)
+        levels = self.decode_data(levels_data, apply_xor=apply_xor, follow_system=follow_system)
 
         return self.database_type(main, levels)
 
@@ -273,22 +273,22 @@ class SaveManager(Generic[D]):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
         apply_xor: bool = False,
-        follow_os: bool = False,
+        follow_system: bool = False,
         database_type: Type[Database] = Database,
     ) -> D:
         return self.load_parts(
             main_string.encode(encoding, errors),
             levels_string.encode(encoding, errors),
             apply_xor=apply_xor,
-            follow_os=follow_os,
+            follow_system=follow_system,
         )
 
     def dump_parts(
-        self, database: Database, apply_xor: bool = False, follow_os: bool = False
+        self, database: Database, apply_xor: bool = False, follow_system: bool = False
     ) -> Tuple[bytes, bytes]:
-        main_data = self.encode_data(database.main.dump(), apply_xor=apply_xor, follow_os=follow_os)
+        main_data = self.encode_data(database.main.dump(), apply_xor=apply_xor, follow_system=follow_system)
         levels_data = self.encode_data(
-            database.levels.dump(), apply_xor=apply_xor, follow_os=follow_os
+            database.levels.dump(), apply_xor=apply_xor, follow_system=follow_system
         )
 
         return (main_data, levels_data)
@@ -299,9 +299,9 @@ class SaveManager(Generic[D]):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
         apply_xor: bool = False,
-        follow_os: bool = False,
+        follow_system: bool = False,
     ) -> Tuple[str, str]:
-        main_data, levels_data = self.dump_parts(database, apply_xor=apply_xor, follow_os=follow_os)
+        main_data, levels_data = self.dump_parts(database, apply_xor=apply_xor, follow_system=follow_system)
 
         return (main_data.decode(encoding, errors), levels_data.decode(encoding, errors))
 
@@ -319,13 +319,13 @@ class SaveManager(Generic[D]):
 
         return path
 
-    def decode_data(self, data: bytes, apply_xor: bool = True, follow_os: bool = True) -> bytes:
-        decode = decode_os_save if follow_os else decode_save
+    def decode_data(self, data: bytes, apply_xor: bool = True, follow_system: bool = True) -> bytes:
+        decode = decode_system_save if follow_system else decode_save
 
         return decode(data, apply_xor=apply_xor)
 
-    def encode_data(self, data: bytes, apply_xor: bool = True, follow_os: bool = True) -> bytes:
-        encode = encode_os_save if follow_os else encode_save
+    def encode_data(self, data: bytes, apply_xor: bool = True, follow_system: bool = True) -> bytes:
+        encode = encode_system_save if follow_system else encode_save
 
         return encode(data, apply_xor=apply_xor)
 

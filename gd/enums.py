@@ -24,6 +24,7 @@ __all__ = (
     "DemonDifficulty",
     "TimelyType",
     "TimelyID",
+    "Score",
     "CommentType",
     "RelationshipType",
     "SimpleRelationshipType",
@@ -45,6 +46,7 @@ __all__ = (
     "Easing",
     "EasingMethod",
     "PulseMode",
+    "ToggleType",
     "InstantCountComparison",
     "OrbType",
     "PadType",
@@ -62,6 +64,7 @@ __all__ = (
     "MiscType",
     "TriggerType",
     "ZLayer",
+    "SimpleZLayer",
     "Speed",
     "SpeedConstant",
     "SpeedMagic",
@@ -73,15 +76,17 @@ __all__ = (
     "Platform",
     "Orientation",
     "ResponseType",
+    "CollectedCoins",
 )
 
 
 class SimpleKey(Enum, unknown=True):
+    """An enumertion of keys used in *XOR* ciphering."""
     SAVE = 11
 
 
 class Key(Enum, unknown=True):
-    """An enumeration for keys used in *XOR* ciphering."""
+    """An enumeration of keys used in cyclic *XOR* ciphering."""
 
     MESSAGE = 14251
     QUESTS = 19847
@@ -102,7 +107,7 @@ class Key(Enum, unknown=True):
 
 
 class Salt(Enum, unknown=True):
-    """An enumeration for salts used in hashing."""
+    """An enumeration of salts used in hashing."""
 
     LEVEL = "xI25fpAapCQg"
     COMMENT = "xPT6iUrtws0J"
@@ -122,7 +127,7 @@ class Salt(Enum, unknown=True):
 
 
 class Secret(Enum):
-    """An enumeration for request secrets."""
+    """An enumeration of request secrets."""
 
     MAIN = "Wmfd2893gb7"
     LEVEL = "Wmfv2898gc9"
@@ -131,7 +136,7 @@ class Secret(Enum):
 
 
 class AccountURLType(Enum):
-    """An enumeration for account URL types."""
+    """An enumeration of account URL types."""
 
     SAVE = 1
     LOAD = 2
@@ -153,7 +158,7 @@ class IconType(Enum):
 
 
 class MessageState(Enum):
-    """An enumeration for message states."""
+    """An enumeration of message states."""
 
     OPEN_TO_ALL = 0
     OPEN_TO_FRIENDS = 1
@@ -163,7 +168,7 @@ class MessageState(Enum):
 
 
 class CommentState(Enum):
-    """An enumeration for comment states."""
+    """An enumeration of comment states."""
 
     OPEN_TO_ALL = 0
     OPEN_TO_FRIENDS = 1
@@ -173,7 +178,7 @@ class CommentState(Enum):
 
 
 class FriendState(Enum):
-    """An enumeration for friend states."""
+    """An enumeration of friend states."""
 
     NOT_FRIEND = 0
     FRIEND = 1
@@ -185,7 +190,7 @@ class FriendState(Enum):
 
 
 class FriendRequestState(Enum):
-    """An enumeration for friend request states."""
+    """An enumeration of friend request states."""
 
     OPEN = 0
     CLOSED = 1
@@ -194,7 +199,7 @@ class FriendRequestState(Enum):
 
 
 class Role(Enum):
-    """An enumeration for server roles."""
+    """An enumeration of server roles."""
 
     USER = 0
     MODERATOR = 1
@@ -204,7 +209,7 @@ class Role(Enum):
 
 
 class LevelLength(Enum):
-    """An enumeration for level lengths."""
+    """An enumeration of level lengths."""
 
     TINY = 0
     SHORT = 1
@@ -217,6 +222,8 @@ class LevelLength(Enum):
 
 
 class UnlistedType(Flag):
+    """An enumeration of unlisted flags."""
+
     LISTED = 0
     UNLISTED = 1
     LISTED_TO_FRIENDS = 2
@@ -236,6 +243,8 @@ class UnlistedType(Flag):
 
 
 class Difficulty(Enum):
+    """An enumeration of level difficulties."""
+
     UNKNOWN = 0
 
     AUTO = 1
@@ -260,7 +269,7 @@ class Difficulty(Enum):
 
 
 class LevelDifficulty(Enum):
-    """An enumeration for level difficulties."""
+    """An enumeration of server level difficulties."""
 
     UNKNOWN = -1
     DEMON = -2
@@ -308,7 +317,7 @@ DIFFICULTY_TO_LEVEL_DIFFICULTY = {
 
 
 class DemonDifficulty(Enum):
-    """An enumeration for demon difficulties."""
+    """An enumeration of demon difficulties."""
 
     UNKNOWN = -1
 
@@ -339,7 +348,7 @@ DEMON_DIFFICULTY_TO_DIFFICULTY = {
 
 
 class TimelyType(Enum):
-    """An enumeration for timely types."""
+    """An enumeration of timely types."""
 
     NOT_TIMELY = 0
     DAILY = 1
@@ -362,7 +371,7 @@ class TimelyType(Enum):
 
 
 class TimelyID(Enum):
-    """An enumeration for timely level IDs."""
+    """An enumeration of timely level IDs."""
 
     NOT_TIMELY = 0
     DAILY = -1
@@ -398,6 +407,8 @@ S = TypeVar("S", bound="Score")
 
 
 class Score(Enum):
+    """An enumeration of score types."""
+
     EPIC_ONLY = -2
     UNFEATURED = -1
     NOT_FEATURED = 0
@@ -418,13 +429,15 @@ class Score(Enum):
 
 
 class CommentType(Enum):
-    """An enumeration for comment objects."""
+    """An enumeration of comment types."""
 
     LEVEL = 0
     USER = 1
 
 
 class RelationshipType(Enum):
+    """An enumeration of relationship types."""
+
     FRIEND = 1
     BLOCKED = 2
     INCOMING_REQUEST = 3
@@ -432,6 +445,8 @@ class RelationshipType(Enum):
 
 
 class SimpleRelationshipType(Enum):
+    """An enumeration of simple relationship types."""
+
     FRIEND = 0
     BLOCKED = 1
 
@@ -446,7 +461,7 @@ class SimpleRelationshipType(Enum):
 
 
 class FriendRequestType(Enum):
-    """An enumeration for friend request objects."""
+    """An enumeration of friend request types."""
 
     INCOMING = 0
     OUTGOING = 1
@@ -468,7 +483,7 @@ class FriendRequestType(Enum):
 
 
 class MessageType(Enum):
-    """An enumeration for message objects."""
+    """An enumeration of message types."""
 
     INCOMING = 0
     OUTGOING = 1
@@ -483,7 +498,7 @@ class MessageType(Enum):
 
 
 class CommentStrategy(Enum):
-    """An enumeration for comment searching."""
+    """An enumeration of comment searching strategies."""
 
     RECENT = 0
     MOST_LIKED = 1
@@ -492,7 +507,7 @@ class CommentStrategy(Enum):
 
 
 class LeaderboardStrategy(Enum):
-    """An enumeration for getting leaderboard users."""
+    """An enumeration of leaderboard strategies."""
 
     TOP = 0
     PLAYERS = 0
@@ -510,7 +525,7 @@ REQUIRES_LOGIN = {LeaderboardStrategy.FRIENDS, LeaderboardStrategy.RELATIVE}
 
 
 class LevelLeaderboardStrategy(Enum):
-    """An enumeration for getting level leaderboard."""
+    """An enumeration of level leaderboard strategies."""
 
     FRIENDS = 0
     ALL = 1
@@ -520,7 +535,7 @@ class LevelLeaderboardStrategy(Enum):
 
 
 class LikeType(Enum):
-    """An enumeration for sending ratings for entities."""
+    """An enumeration of like item types."""
 
     LEVEL = 1
     LEVEL_COMMENT = 2
@@ -528,7 +543,7 @@ class LikeType(Enum):
 
 
 class GauntletID(Enum):
-    """An enumeration for gauntlets."""
+    """An enumeration of gauntlet IDs."""
 
     UNKNOWN = 0
     FIRE = 1
@@ -549,7 +564,7 @@ class GauntletID(Enum):
 
 
 class SearchStrategy(Enum):
-    """An enumeration for search strategy."""
+    """An enumeration of search strategies."""
 
     DEFAULT = 0
     MOST_DOWNLOADED = 1
@@ -573,7 +588,7 @@ class SearchStrategy(Enum):
 
 
 class RewardType(Enum):
-    """An enumeration for reward types."""
+    """An enumeration of reward types."""
 
     GET_INFO = 0
     CLAIM_SMALL = 1
@@ -583,7 +598,7 @@ class RewardType(Enum):
 
 
 class ShardType(Enum):
-    """An enumeration represeting shard names."""
+    """An enumeration of shard types."""
 
     UNKNOWN = 0
     FIRE = 1
@@ -595,7 +610,7 @@ class ShardType(Enum):
 
 
 class QuestType(Enum):
-    """An enumeration for quest types."""
+    """An enumeration of quest types."""
 
     UNKNOWN = 0
     ORBS = 1
@@ -604,7 +619,7 @@ class QuestType(Enum):
 
 
 class Scene(Enum):
-    """An enumeration that represents IDs of different scenes in the game."""
+    """An enumeration of different scene IDs."""
 
     UNKNOWN = -1
     MAIN = 0
@@ -621,7 +636,7 @@ class Scene(Enum):
 
 
 class PlayerColor(Enum):
-    """An enumeration for player color setting."""
+    """An enumeration of player color settings."""
 
     NOT_USED = -1
     DEFAULT = 0
@@ -639,7 +654,7 @@ class PlayerColor(Enum):
 
 
 class CustomParticleGrouping(Enum):
-    """An enumeration for particle grouping."""
+    """An enumeration of particle grouping types."""
 
     FREE = 0
     RELATIVE = 1
@@ -647,14 +662,14 @@ class CustomParticleGrouping(Enum):
 
 
 class CustomParticleProperty(Enum):
-    """An enumeration for particle system."""
+    """An enumeration of particle system types."""
 
     GRAVITY = 0
     RADIUS = 1
 
 
 class Easing(Enum):
-    """An enumeration representing easing of a moving object (used in move and rotate triggers)."""
+    """An enumeration of easing types."""
 
     NONE = 0
     EASE_IN_OUT = 1
@@ -679,10 +694,15 @@ class Easing(Enum):
     DEFAULT = NONE
 
 
+IN_OUT_SHIFT = 2
+MULTIPLIER = 3
+
 EM = TypeVar("EM", bound="EasingMethod")
 
 
 class EasingMethod(Flag):
+    """An enumeration of easing method flags."""
+
     NONE = 0
     IN = 1
     OUT = 2
@@ -708,7 +728,7 @@ class EasingMethod(Flag):
         if not has_easing_in and not has_easing_out:
             raise ValueError(f"{self!r} does not have In / Out modifiers.")
 
-        value = (value.bit_length() - 2) * 3
+        value = (value.bit_length() - IN_OUT_SHIFT) * MULTIPLIER
 
         if has_easing_in:
             value -= 1
@@ -723,26 +743,30 @@ class EasingMethod(Flag):
         value = easing.value
 
         if not value:
-            return cls.DEFAULT  # type: ignore
+            return cls.DEFAULT
 
-        shift, remainder = divmod((value - 1), 3)
-        shift += 2  # in, out
-        has_easing_in = remainder != 2
-        has_easing_out = remainder != 1
+        IN = cls.IN
+        OUT = cls.OUT
+
+        shift, remainder = divmod((value - 1), MULTIPLIER)
+        shift += IN_OUT_SHIFT
+
+        has_easing_in = remainder != OUT.value
+        has_easing_out = remainder != IN.value
 
         result = cls(1 << shift)
 
         if has_easing_in:
-            result |= cls.IN  # type: ignore
+            result |= IN
 
         if has_easing_out:
-            result |= cls.OUT  # type: ignore
+            result |= OUT
 
         return result
 
 
 class PulseMode(Enum):
-    """An enumeration representing mode of a pulse trigger."""
+    """An enumeration of pulse modes."""
 
     COLOR = 0
     HSV = 1
@@ -751,6 +775,8 @@ class PulseMode(Enum):
 
 
 class ToggleType(Enum):
+    """An enumeration of toggle types."""
+
     SPAWN = 0
     TOGGLE_ON = 1
     TOGGLE_OFF = 2
@@ -759,7 +785,7 @@ class ToggleType(Enum):
 
 
 class InstantCountComparison(Enum):
-    """An enumeration representing instant count comparison check."""
+    """An enumeration of instant count comparison types."""
 
     EQUALS = 0
     LARGER = 1
@@ -769,7 +795,7 @@ class InstantCountComparison(Enum):
 
 
 class OrbType(Enum):
-    """An enumeration representing IDs of orb objects."""
+    """An enumeration of IDs of orb objects."""
 
     YELLOW = 36
     BLUE = 84
@@ -783,7 +809,7 @@ class OrbType(Enum):
 
 
 class PadType(Enum):
-    """An enumeration representing IDs of pad objects."""
+    """An enumeration of IDs of pad objects."""
 
     YELLOW = 35
     BLUE = 67
@@ -792,7 +818,7 @@ class PadType(Enum):
 
 
 class PickupItemMode(Enum):
-    """An enumeration representing mode of a pickup trigger."""
+    """An enumeration of pickup item modes."""
 
     DEFAULT = 0
     PICKUP = 1
@@ -800,7 +826,7 @@ class PickupItemMode(Enum):
 
 
 class GameMode(Enum):
-    """An enumeration representing different game modes."""
+    """An enumeration of game modes."""
 
     CUBE = 0
     SHIP = 1
@@ -815,7 +841,7 @@ class GameMode(Enum):
 
 
 class LevelType(Enum):
-    """An enumeration that represents type of the level."""
+    """An enumeration of level types."""
 
     NULL = 0
     OFFICIAL = 1
@@ -827,7 +853,7 @@ class LevelType(Enum):
 
 
 class PortalType(Enum):
-    """An enumeration representing IDs of portal or speed change objects."""
+    """An enumeration of IDs of portals."""
 
     CUBE = 12
     SHIP = 13
@@ -850,6 +876,8 @@ class PortalType(Enum):
 
 
 class SpeedChange(Enum):
+    """An enumeration of IDs of speed changes."""
+
     SLOW = 200
     NORMAL = 201
     FAST = 202
@@ -858,7 +886,7 @@ class SpeedChange(Enum):
 
 
 class PulseTargetType(Enum):
-    """An enumeration representing type of pulse trigger target."""
+    """An enumeration of pulse target types."""
 
     COLOR_CHANNEL = 0
     GROUP = 1
@@ -867,6 +895,8 @@ class PulseTargetType(Enum):
 
 
 class PulseType(Flag):
+    """An enumeration of pulse types."""
+
     MAIN = 1
     DETAIL = 2
 
@@ -876,7 +906,7 @@ class PulseType(Flag):
 
 
 class SpecialBlockType(Enum):
-    """An enumeration representing IDs of special objects (e.g. *S*, *H*, etc)."""
+    """An enumeration of IDs of special objects (`D`, `J`, `S`, `H`)."""
 
     D = 1755
     J = 1813
@@ -885,7 +915,7 @@ class SpecialBlockType(Enum):
 
 
 class SpecialColorID(Enum):
-    """An enumeration representing IDs of special colors (e.g. *BG*, *Line*, etc)."""
+    """An enumeration of IDs of special colors."""
 
     BACKGROUND = BG = 1000
     GROUND = G = 1001
@@ -902,7 +932,7 @@ class SpecialColorID(Enum):
 
 
 class TargetType(Flag):
-    """An enumeration representing modes for a targetted move trigger."""
+    """An enumeration of move target types."""
 
     NONE = 0
 
@@ -915,7 +945,7 @@ class TargetType(Flag):
 
 
 class TouchToggleMode(Enum):
-    """An enumeration representing toggle modes of a touch trigger."""
+    """An enumeration of touch toggle modes."""
 
     DEFAULT = 0
     ON = 1
@@ -923,13 +953,13 @@ class TouchToggleMode(Enum):
 
 
 class MiscType(Enum):
-    """An enumeration representing miscellaneous IDs of objects."""
+    """An enumeration of IDs of miscellaneous objects."""
 
     TEXT = 914
 
 
 class TriggerType(Enum):
-    """An enumeration representing IDs of most triggers."""
+    """An enumeration of IDs of triggers."""
 
     BACKGROUND = BG = 29
     GROUND = G = 30
@@ -964,6 +994,8 @@ class TriggerType(Enum):
 
 
 class ZLayer(Flag):
+    """An enumeration of Z layers."""
+
     BOTTOM_4 = B4 = 7
     BOTTOM_3 = B3 = 6
     BOTTOM_2 = B2 = 5
@@ -980,7 +1012,7 @@ class ZLayer(Flag):
 
 
 class SimpleZLayer(Enum):
-    """An enumeration representing Z Layer of objects."""
+    """An enumeration of simple Z layers."""
 
     BOTTOM_4 = B4 = -3
     BOTTOM_3 = B3 = -1
@@ -1004,7 +1036,7 @@ class SimpleZLayer(Enum):
 
 
 class Speed(Enum):
-    """An enumeration representing speed modifier modes."""
+    """An enumeration of speed modifiers."""
 
     NORMAL = 0
     SLOW = 1
@@ -1016,7 +1048,7 @@ class Speed(Enum):
 
 
 class SpeedConstant(float, Enum):
-    """An enumeration representing actual speed modifiers."""
+    """An enumeration of actual speed modifiers."""
 
     NULL = 0.0
     SLOW = 0.7
@@ -1041,7 +1073,7 @@ GC = TypeVar("GC", bound="GuidelineColor")
 
 
 class GuidelineColor(float, Enum):
-    """An enumeration representing guideline colors."""
+    """An enumeration of guideline colors."""
 
     DEFAULT = 0.0
     TRANSPARENT = 0.7
@@ -1058,6 +1090,8 @@ class GuidelineColor(float, Enum):
 
 
 class InternalType(Enum):
+    """An enumeration of internal types."""
+
     LEVEL = 4
     SONG = 6
     CHALLENGE = 7
@@ -1066,6 +1100,8 @@ class InternalType(Enum):
 
 
 class Filter(Enum):
+    """An enumeration of filter types."""
+
     NONE = 0
     DETAIL = 1
     STATIC = 2
@@ -1075,6 +1111,8 @@ class Filter(Enum):
 
 
 class Permissions(Flag):
+    """An enumeration of permissions."""
+
     NONE = 0
     EXECUTE = 1
     WRITE = 2
@@ -1084,7 +1122,7 @@ class Permissions(Flag):
 
 
 class ByteOrder(Enum):
-    """An enumeration representing byte orders."""
+    """An enumeration of byte orders."""
 
     LITTLE = "<"
     NATIVE = "="
@@ -1094,7 +1132,7 @@ class ByteOrder(Enum):
 
 
 class Platform(Enum):
-    """An enumeration representing system platforms."""
+    """An enumeration of system platforms."""
 
     UNKNOWN = 0
     ANDROID = 1
@@ -1116,6 +1154,8 @@ class Platform(Enum):
 
 
 class Orientation(Enum):
+    """An enumeration of orientations."""
+
     HORIZONTAL = 0
     VERTICAL = 1
 
@@ -1129,8 +1169,36 @@ class Orientation(Enum):
 
 
 class ResponseType(Enum):
+    """An enumeration of response types."""
+
     BYTES = 0
     TEXT = 1
     JSON = 2
 
     DEFAULT = TEXT
+
+
+class CollectedCoins(Flag):
+    """An enumeration of collected coins."""
+
+    NONE = 0
+
+    FIRST = 1
+    SECOND = 2
+    THIRD = 4
+
+    ALL = FIRST | SECOND | THIRD
+
+    DEFAULT = NONE
+
+    def first(self) -> bool:
+        return type(self).FIRST in self
+
+    def second(self) -> bool:
+        return type(self).SECOND in self
+
+    def third(self) -> bool:
+        return type(self).THIRD in self
+
+    def all(self) -> bool:
+        return type(self).ALL in self

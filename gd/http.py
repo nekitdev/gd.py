@@ -32,9 +32,8 @@ from typing_extensions import Literal
 from yarl import URL
 
 from gd.api.recording import Recording
-from gd.async_utils import maybe_await_call, run_blocking, shutdown_loop
+from gd.async_utils import run_blocking, shutdown_loop
 from gd.constants import (
-    BACKSLASH,
     DEFAULT_CHEST_COUNT,
     DEFAULT_COINS,
     DEFAULT_COUNT,
@@ -44,6 +43,7 @@ from gd.constants import (
     DEFAULT_PAGE,
     DEFAULT_SPECIAL,
     DEFAULT_STARS,
+    DEFAULT_TWO_PLAYER,
     DEFAULT_VERSION,
     EMPTY,
     SLASH,
@@ -118,7 +118,6 @@ from gd.typing import (
     IntoPath,
     IntString,
     JSONType,
-    MaybeAsyncUnary,
     MaybeIterable,
     Namespace,
     Parameters,
@@ -296,7 +295,7 @@ R = TypeVar("R", bound="Route")
 class Route:
     method: str = field()
     route: str = field()
-    parameters: Namespace = field(factory=dict)
+    parameters: Parameters = field(factory=dict)
 
     @property
     def actual_route(self) -> str:
@@ -305,7 +304,7 @@ class Route:
     def __str__(self) -> str:
         return ROUTE.format(self.method, tick(self.actual_route))
 
-    def with_parameters(self: R, parameters: Namespace) -> R:
+    def with_parameters(self: R, parameters: Parameters) -> R:
         return evolve(self, parameters=parameters)
 
 
@@ -392,8 +391,6 @@ UNIT_SCALE = True
 WRITE_BINARY = "wb"
 
 ErrorCodes = Mapping[int, AnyException]
-
-H = TypeVar("H", bound="RequestHook")
 
 C = TypeVar("C", bound="HTTPClient")
 
@@ -528,9 +525,6 @@ class HTTPClient:
 
     _session: Optional[ClientSession] = field(default=None, repr=False, init=False)
 
-    _before_request: Optional[RequestHook] = field(default=None, repr=False, init=False)
-    _after_request: Optional[RequestHook] = field(default=None, repr=False, init=False)
-
     def __attrs_post_init__(self) -> None:
         add_client(self)
 
@@ -542,28 +536,6 @@ class HTTPClient:
 
     def create_timeout(self) -> ClientTimeout:
         return ClientTimeout(total=self.timeout)
-
-    def before_request(self, request_hook: H) -> H:
-        self._before_request = request_hook
-
-        return request_hook
-
-    def after_request(self, request_hook: H) -> H:
-        self._after_request = request_hook
-
-        return request_hook
-
-    async def call_before_request_hook(self) -> None:
-        before_request = self._before_request
-
-        if before_request:
-            await maybe_await_call(before_request, self)
-
-    async def call_after_request_hook(self) -> None:
-        after_request = self._after_request
-
-        if after_request:
-            await maybe_await_call(after_request, self)
 
     async def close(self) -> None:
         session = self._session
@@ -815,8 +787,6 @@ class HTTPClient:
     ) -> Optional[ResponseData]:
         await self.ensure_session()
 
-        await self.call_before_request_hook()
-
         if retries < 0:
             attempts = -1
 
@@ -895,8 +865,6 @@ class HTTPClient:
                 await sleep(0)  # let underlying connections close
 
             attempts -= 1
-
-        await self.call_after_request_hook()
 
         if error:
             raise error
@@ -1517,8 +1485,8 @@ class HTTPClient:
         official_song_id: int = DEFAULT_ID,
         description: str = EMPTY,
         song_id: int = DEFAULT_ID,
-        original: int = DEFAULT_ID,
-        two_player: bool = False,
+        original_id: int = DEFAULT_ID,
+        two_player: bool = DEFAULT_TWO_PLAYER,
         type: UnlistedType = UnlistedType.DEFAULT,
         object_count: int = DEFAULT_OBJECT_COUNT,
         coins: int = DEFAULT_COINS,
@@ -1582,7 +1550,7 @@ class HTTPClient:
             audio_track=official_song_id,
             song_id=song_id,
             auto=max(0, min(1, stars)),
-            original=original,
+            original=original_id,
             two_player=int(two_player),
             objects=object_count,
             coins=coins,
@@ -2718,9 +2686,9 @@ class HTTPClient:
         return response
 
     async def get_newgrounds_song(self, song_id: int) -> str:
-        response = await self.request(GET, NEWGROUNDS_SONG_LISTEN.format(song_id))
+        response = await self.request(GET, NEWGROUNDS_SONG.format(song_id))
 
-        return response.replace(BACKSLASH, EMPTY)
+        return response
 
     async def search_newgrounds_songs_on_page(self, query: str, page: int = DEFAULT_PAGE) -> str:
         page += 1  # 1-based indexing
@@ -2758,8 +2726,6 @@ class HTTPClient:
 
         return response
 
-
-RequestHook = MaybeAsyncUnary[HTTPClient, None]
 
 E = TypeVar("E", bound=AnyException)
 

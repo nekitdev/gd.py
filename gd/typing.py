@@ -40,7 +40,6 @@ __all__ = (
     "Predicate",
     "Parse",
     "DynamicTuple",
-    "MaybeAwaitable",
     "MaybeIterable",
     "StringDict",
     "StringMapping",
@@ -48,7 +47,6 @@ __all__ = (
     "IntoPath",
     "JSONType",
     "is_same_type",
-    "is_awaitable",
     "is_iterable",
     "is_string",
     "is_error",
@@ -84,12 +82,6 @@ AsyncBinary = Binary[T, U, Awaitable[R]]
 AsyncTernary = Ternary[T, U, V, Awaitable[R]]
 AsyncQuaternary = Quaternary[T, U, V, W, Awaitable[R]]
 
-MaybeAsyncNullary = Union[Nullary[R], AsyncNullary[R]]
-MaybeAsyncUnary = Union[Unary[T, R], AsyncUnary[T, R]]
-MaybeAsyncBinary = Union[Binary[T, U, R], AsyncBinary[T, U, R]]
-MaybeAsyncTernary = Union[Ternary[T, U, V, R], AsyncTernary[T, U, V, R]]
-MaybeAsyncQuaternary = Union[Quaternary[T, U, V, W, R], AsyncQuaternary[T, U, V, W, R]]
-
 C = TypeVar("C", bound=AnyType)
 D = TypeVar("D", bound=AnyType)
 
@@ -107,7 +99,6 @@ Parse = Unary[str, T]
 
 DynamicTuple = Tuple[T, ...]
 
-MaybeAwaitable = Union[Awaitable[T], T]
 MaybeIterable = Union[Iterable[T], T]
 
 AnyIterable = Union[AsyncIterable[T], Iterable[T]]
@@ -170,10 +161,6 @@ StrictOrdered = Union[Less, Greater]
 
 def is_same_type(value: Any, item: T) -> TypeGuard[T]:
     return type(value) is type(item)
-
-
-def is_awaitable(maybe_awaitable: MaybeAwaitable[T]) -> TypeGuard[Awaitable[T]]:
-    return standard_is_awaitable(maybe_awaitable)
 
 
 def is_iterable(maybe_iterable: MaybeIterable[T]) -> TypeGuard[Iterable[T]]:

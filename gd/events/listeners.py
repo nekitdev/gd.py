@@ -390,6 +390,8 @@ class UserCommentListener(UserBasedListener):
 
         difference = differ(user_comments_cache, user_comments)
 
+        self.user_comments_cache = user_comments
+
         if difference and self.update:
             await user.update()
 
@@ -429,6 +431,8 @@ class UserLevelCommentListener(UserBasedListener):
 
         difference = differ(user_level_comments_cache, user_level_comments)
 
+        self.user_level_comments_cache = user_level_comments
+
         if difference and self.update:
             await user.update()
 
@@ -467,6 +471,8 @@ class UserLevelListener(UserBasedListener):
             return
 
         difference = differ(user_levels_cache, user_levels)
+
+        self.user_levels_cache = user_levels
 
         client = self.client
 

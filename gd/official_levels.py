@@ -16,6 +16,7 @@ class OfficialLevel:
     difficulty: Difficulty
     length: LevelLength
     game_version: GameVersion
+    demon: bool
 
 
 OFFICIAL_LEVELS = (
@@ -28,6 +29,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.EASY,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 0),
+        demon=False,
     ),
     OfficialLevel(
         id=2,
@@ -38,6 +40,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.EASY,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 0),
+        demon=False,
     ),
     OfficialLevel(
         id=3,
@@ -48,6 +51,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 0),
+        demon=False,
     ),
     OfficialLevel(
         id=4,
@@ -58,6 +62,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 0),
+        demon=False,
     ),
     OfficialLevel(
         id=5,
@@ -68,6 +73,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARD,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 0),
+        demon=False,
     ),
     OfficialLevel(
         id=6,
@@ -78,6 +84,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARD,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 0),
+        demon=False,
     ),
     OfficialLevel(
         id=7,
@@ -88,6 +95,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARDER,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 0),
+        demon=False,
     ),
     OfficialLevel(
         id=8,
@@ -98,6 +106,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARDER,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 1),
+        demon=False,
     ),
     OfficialLevel(
         id=9,
@@ -108,6 +117,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARDER,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 2),
+        demon=False,
     ),
     OfficialLevel(
         id=10,
@@ -118,6 +128,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.INSANE,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 3),
+        demon=False,
     ),
     OfficialLevel(
         id=11,
@@ -128,6 +139,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.INSANE,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 4),
+        demon=False,
     ),
     OfficialLevel(
         id=12,
@@ -138,6 +150,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.INSANE,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 5),
+        demon=False,
     ),
     OfficialLevel(
         id=13,
@@ -148,6 +161,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.INSANE,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 6),
+        demon=False,
     ),
     OfficialLevel(
         id=14,
@@ -158,6 +172,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.EASY_DEMON,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 6),
+        demon=True,
     ),
     OfficialLevel(
         id=15,
@@ -168,6 +183,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.INSANE,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 7),
+        demon=False,
     ),
     OfficialLevel(
         id=16,
@@ -178,6 +194,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.INSANE,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 8),
+        demon=False,
     ),
     OfficialLevel(
         id=17,
@@ -188,6 +205,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARDER,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 9),
+        demon=False,
     ),
     OfficialLevel(
         id=18,
@@ -198,6 +216,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.EASY_DEMON,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 9),
+        demon=True,
     ),
     OfficialLevel(
         id=19,
@@ -208,6 +227,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARDER,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 0),
+        demon=False,
     ),
     OfficialLevel(
         id=20,
@@ -218,6 +238,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.MEDIUM_DEMON,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 0),
+        demon=True,
     ),
     OfficialLevel(
         id=21,
@@ -228,6 +249,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.INSANE,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 1),
+        demon=False,
     ),
     OfficialLevel(
         id=1001,
@@ -238,6 +260,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.EASY,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 0),
+        demon=False,
     ),
     OfficialLevel(
         id=1002,
@@ -248,6 +271,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 0),
+        demon=False,
     ),
     OfficialLevel(
         id=1003,
@@ -258,6 +282,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARD,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 0),
+        demon=False,
     ),
     OfficialLevel(
         id=2001,
@@ -268,6 +293,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.EASY,
         length=LevelLength.SHORT,
         game_version=GameVersion(2, 1),
+        demon=False,
     ),
     OfficialLevel(
         id=2002,
@@ -278,6 +304,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
+        demon=False,
     ),
     OfficialLevel(
         id=2003,
@@ -288,6 +315,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
+        demon=False,
     ),
     OfficialLevel(
         id=2004,
@@ -298,6 +326,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
+        demon=False,
     ),
     OfficialLevel(
         id=2005,
@@ -308,6 +337,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
+        demon=False,
     ),
     OfficialLevel(
         id=2006,
@@ -318,6 +348,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
+        demon=False,
     ),
     OfficialLevel(
         id=2007,
@@ -328,6 +359,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
+        demon=False,
     ),
     OfficialLevel(
         id=2008,
@@ -338,6 +370,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.SHORT,
         game_version=GameVersion(2, 1),
+        demon=False,
     ),
     OfficialLevel(
         id=2009,
@@ -348,6 +381,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
+        demon=False,
     ),
     OfficialLevel(
         id=2010,
@@ -358,6 +392,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
+        demon=False,
     ),
     OfficialLevel(
         id=3001,
@@ -368,6 +403,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARD,
         length=LevelLength.SHORT,
         game_version=GameVersion(2, 1),
+        demon=False,
     ),
     OfficialLevel(
         id=4001,
@@ -378,6 +414,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 2),
+        demon=False,
     ),
     OfficialLevel(
         id=4002,
@@ -388,6 +425,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARD,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 2),
+        demon=False,
     ),
     OfficialLevel(
         id=4003,
@@ -398,5 +436,6 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARDER,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 2),
+        demon=False,
     ),
 )

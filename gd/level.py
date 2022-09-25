@@ -14,6 +14,7 @@ from gd.binary import VERSION
 from gd.binary_utils import UTF_8, Reader, Writer
 from gd.constants import (
     COMMENT_PAGE_SIZE,
+    DEFAULT_AS_MOD,
     DEFAULT_COINS,
     DEFAULT_DEMON,
     DEFAULT_DOWNLOADS,
@@ -45,8 +46,10 @@ from gd.enums import (
     TimelyType,
 )
 from gd.models import LevelModel, TimelyInfoModel
+from gd.official_levels import OFFICIAL_LEVELS, OfficialLevel
 from gd.password import Password
 from gd.song import Song
+from gd.typing import Predicate
 from gd.user import User
 from gd.versions import CURRENT_GAME_VERSION, GameVersion
 
@@ -63,6 +66,26 @@ VERIFIED_COINS_BIT = 0b00000010
 EPIC_BIT = 0b00000100
 LOW_DETAIL_BIT = 0b00001000
 DEMON_BIT = 0b00010000
+
+EXPECTED_QUERY = "expected either `id` or `name` query"
+CAN_NOT_FIND_LEVEL = "can not find an official level by given query"
+
+
+def by_name(name: str) -> Predicate[OfficialLevel]:
+    def predicate(level: OfficialLevel) -> bool:
+        return level.name == name
+
+    return predicate
+
+
+def by_id(id: int) -> Predicate[OfficialLevel]:
+    def predicate(level: OfficialLevel) -> bool:
+        return level.id == id
+
+    return predicate
+
+
+OFFICIAL_LEVEL_DESCRIPTION = "Official Level: {}"
 
 
 @define(hash=True)
@@ -371,7 +394,7 @@ class Level(Entity):
 
         if id is None:
             if name is None:
-                ...
+                raise ValueError(EXPECTED_QUERY)
 
             else:
                 official_level = iter(official_levels).find_or_none(by_name(name))
@@ -380,10 +403,30 @@ class Level(Entity):
             official_level = iter(official_levels).find_or_none(by_id(id))
 
         if official_level is None:
-            raise LookupError("Could not find official level by given query.")
+            raise LookupError(CAN_NOT_FIND_LEVEL)
 
-        return cast(OfficialLevel, official_level).into_level(
-            client, get_data=get_data, server_style=server_style
+        data = EMPTY_BYTES  # TODO
+
+        name = official_level.name
+
+        song_id = official_level.song_id
+
+        if server_style:
+            song_id -= 1
+
+        return cls(
+            id=official_level.id,
+            name=name,
+            creator=User.robtop(),
+            song=Song.official(id=song_id, server_style=server_style),
+            description=OFFICIAL_LEVEL_DESCRIPTION.format(name),
+            data=data,
+            coins=official_level.coins,
+            stars=official_level.stars,
+            difficulty=official_level.difficulty,
+            demon=official_level.demon,
+            game_version=official_level.game_version,
+            length=official_level.length,
         )
 
     @property
@@ -402,6 +445,12 @@ class Level(Entity):
             return not self.timely_type.is_not_timely()
 
         return self.timely_type is timely_type
+
+    def is_daily(self) -> bool:
+        return self.is_timely(TimelyType.DAILY)
+
+    def is_weekly(self) -> bool:
+        return self.is_timely(TimelyType.WEEKLY)
 
     def is_rated(self) -> bool:
         return self.stars > 0
@@ -443,18 +492,19 @@ class Level(Entity):
         song = self.song
         song_id = song.id
 
-        track_id, song_id = (0, song_id) if song.is_custom() else (song_id, 0)
+        official_song_id, song_id = (0, song_id) if song.is_custom() else (song_id, 0)
 
         args = dict(
             name=self.name,
             id=self.id,
             version=self.version,
             length=abs(self.length.value),
-            track_id=track_id,
+            official_song_id=official_song_id,
+            description=self.description,
             song_id=song_id,
             two_player=self.is_two_player(),
             original=self.original_id,
-            objects=self.objects,
+            object_count=self.object_count,
             coins=self.coins,
             stars=self.stars,
             unlisted=False,
@@ -462,7 +512,6 @@ class Level(Entity):
             low_detail=self.has_low_detail(),
             password=self.password,
             copyable=self.is_copyable(),
-            description=self.description,
             editor_seconds=self.editor_seconds,
             copies_seconds=self.copies_seconds,
             data=self.data,
@@ -470,7 +519,7 @@ class Level(Entity):
 
         args.update(kwargs)
 
-        uploaded = await client.upload_level(**args)
+        uploaded = await self.client.upload_level(**args)
 
         self.options.update(uploaded.options)
 
@@ -484,24 +533,24 @@ class Level(Entity):
         await self.client.rate_level(self, stars)
 
     async def rate_demon(
-        self, demon_difficulty: DemonDifficulty = DemonDifficulty.DEFAULT, as_mod: bool = False
+        self, rating: DemonDifficulty = DemonDifficulty.DEFAULT, as_mod: bool = DEFAULT_AS_MOD
     ) -> None:
-        await self.client.rate_demon(self, demon_difficulty=demon_difficulty, as_mod=as_mod)
+        await self.client.rate_demon(self, rating=rating, as_mod=as_mod)
 
-    async def suggest(self, stars: int, featured: bool) -> None:
-        await self.client.suggest_level(self, stars=stars, featured=featured)
+    async def suggest(self, stars: int, feature: bool) -> None:
+        await self.client.suggest_level(self, stars=stars, feature=feature)
 
     async def update(self, *, get_data: bool = True) -> Optional[Level]:
         ...
 
-    async def comment(self, content: str, record: int = DEFAULT_RECORD) -> Optional[Comment]:
-        return await self.client.comment_level(self, content, record)
+    async def comment(self, content: str, record: int = DEFAULT_RECORD) -> Optional[LevelComment]:
+        return await self.client.post_level_comment(self, content, record)
 
     async def like(self) -> None:
-        await self.client.like(self)
+        await self.client.like_level(self)
 
     async def dislike(self) -> None:
-        await self.client.dislike(self)
+        await self.client.dislike_level(self)
 
     @wrap_async_iter
     def get_leaderboard(

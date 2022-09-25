@@ -19,9 +19,7 @@ from typing_extensions import Literal, ParamSpec
 from gd.typing import (
     AnyException,
     AnyIterable,
-    MaybeAwaitable,
     Nullary,
-    is_awaitable,
     is_error,
     is_instance,
 )
@@ -35,8 +33,6 @@ __all__ = (
     "cancel_all_tasks",
     "shutdown_loop",
     "awaiting",
-    "maybe_await",
-    "maybe_await_call",
     "run_iterables",
 )
 
@@ -116,19 +112,6 @@ def shutdown_loop(loop: AbstractEventLoop) -> None:
 
 async def awaiting(awaitable: Awaitable[T]) -> T:
     return await awaitable
-
-
-async def maybe_await(maybe_awaitable: MaybeAwaitable[T]) -> T:
-    if is_awaitable(maybe_awaitable):
-        return await maybe_awaitable  # type: ignore
-
-    return maybe_awaitable  # type: ignore
-
-
-def maybe_await_call(
-    function: Callable[P, MaybeAwaitable[T]], *args: P.args, **kwargs: P.kwargs
-) -> Awaitable[T]:
-    return maybe_await(function(*args, **kwargs))
 
 
 async def run_iterables(

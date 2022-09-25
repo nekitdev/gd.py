@@ -102,7 +102,7 @@ HUMAN_DELTA_PATTERN = rf"""
 HUMAN_DELTA = re.compile(HUMAN_DELTA_PATTERN, re.VERBOSE)
 
 DOES_NOT_MATCH_HUMAN_TIME = "{} does not match human time pattern"
-DOES_NOT_MATCH_HUMAN_TIME_COMPLEX = "{} does not match human time complex pattern"
+DOES_NOT_MATCH_HUMAN_TIME_COMPLEX = "{} does not match complex human time pattern"
 
 ATTEMPT_TO_CONVERT_BOTH_PAST_AND_FUTURE = "attempt to convert time that is both past and future"
 

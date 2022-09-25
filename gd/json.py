@@ -114,12 +114,6 @@ def default(some: Any) -> JSONType:
     if is_iterable(some):
         return list(some)
 
-    if is_instance(some, datetime):
-        return some.isoformat()
-
-    if is_instance(some, timedelta):
-        return str(some)
-
     raise TypeError(NOT_JSON_SERIALIZABLE)
 
 

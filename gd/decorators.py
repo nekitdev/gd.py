@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from functools import lru_cache, wraps
 from operator import attrgetter as get_attribute_factory
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Tuple, TypeVar
 
 from typing_extensions import Concatenate, ParamSpec
 
 from gd.async_utils import awaiting, run
 from gd.errors import LoginRequired
-from gd.typing import DecoratorIdentity, DynamicTuple, is_awaitable
+from gd.typing import DecoratorIdentity, DynamicTuple
 
 if TYPE_CHECKING:
     from gd.client import Client
@@ -64,17 +64,12 @@ def cache_by(*names: str) -> DecoratorIdentity[Callable[Concatenate[S, P], T]]:
     return decorator
 
 
-def sync(function: Union[Callable[P, Awaitable[T]], Callable[P, T]]) -> Callable[P, T]:
-    """Wraps `function` to be called synchronously."""
+def sync(function: Callable[P, Awaitable[T]]) -> Callable[P, T]:
+    """Wraps the `function` to be called synchronously."""
 
     @wraps(function)
     def wrap(*args: P.args, **kwargs: P.kwargs) -> T:
-        result = function(*args, **kwargs)
-
-        if is_awaitable(result):
-            return run(awaiting(result))
-
-        return result  # type: ignore
+        return run(awaiting(function(*args, **kwargs)))
 
     return wrap
 
@@ -83,7 +78,7 @@ C = TypeVar("C", bound="Client")
 
 
 def check_login(function: Callable[Concatenate[C, P], T]) -> Callable[Concatenate[C, P], T]:
-    """Checks whether the `client` passed as an argument is logged in."""
+    """Checks whether the `client` passed as the first argument is logged in."""
 
     @wraps(function)
     def wrap(client: C, *args: P.args, **kwargs: P.kwargs) -> T:
@@ -94,8 +89,11 @@ def check_login(function: Callable[Concatenate[C, P], T]) -> Callable[Concatenat
     return wrap
 
 
+NOT_LOGGED_IN = "the client is not logged in"
+
+
 def check_client_login(client: C) -> None:
     """Checks whether the `client` is logged in."""
 
     if not client.is_logged_in():
-        raise LoginRequired()  # TODO: message?
+        raise LoginRequired(NOT_LOGGED_IN)

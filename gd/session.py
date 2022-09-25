@@ -17,6 +17,7 @@ from gd.constants import (
     DEFAULT_OBJECT_COUNT,
     DEFAULT_PAGE,
     DEFAULT_STARS,
+    DEFAULT_TWO_PLAYER,
     DEFAULT_VERSION,
     EMPTY,
     UNNAMED,
@@ -59,7 +60,9 @@ from gd.models import (
     TimelyInfoModel,
     UserCommentsResponseModel,
 )
+from gd.newgrounds import find_song_model
 from gd.password import Password
+from gd.string_utils import remove_escapes
 from gd.typing import IntString, MaybeIterable, URLString
 
 __all__ = ("Session",)
@@ -87,11 +90,11 @@ class Session:
         main_string, levels_string, *rest = split_save(response)
 
         return await save_manager.from_strings_async(
-            main_string, levels_string, apply_xor=False, follow_os=False
+            main_string, levels_string, apply_xor=False, follow_system=False
         )
 
     async def save(self, database: Database, *, account_id: int, name: str, password: str) -> None:
-        parts = await save_manager.to_strings_async(database, apply_xor=False, follow_os=False)
+        parts = await save_manager.to_strings_async(database, apply_xor=False, follow_system=False)
 
         data = concat_save(parts)
 
@@ -299,8 +302,8 @@ class Session:
         official_song_id: int = DEFAULT_ID,
         description: str = EMPTY,
         song_id: int = DEFAULT_ID,
-        original: int = DEFAULT_ID,
-        two_player: bool = False,
+        original_id: int = DEFAULT_ID,
+        two_player: bool = DEFAULT_TWO_PLAYER,
         type: UnlistedType = UnlistedType.DEFAULT,
         object_count: int = DEFAULT_OBJECT_COUNT,
         coins: int = DEFAULT_COINS,
@@ -324,7 +327,7 @@ class Session:
             official_song_id=official_song_id,
             description=description,
             song_id=song_id,
-            original=original,
+            original_id=original_id,
             two_player=two_player,
             object_count=object_count,
             coins=coins,
@@ -606,6 +609,21 @@ class Session:
             encoded_password=encoded_password,
         )
 
+    async def post_user_comment(
+        self,
+        content: Optional[str],
+        *,
+        account_id: int,
+        account_name: str,
+        encoded_password: str,
+    ) -> int:
+        return await self.http.post_user_comment(
+            content=content,
+            account_id=account_id,
+            account_name=account_name,
+            encoded_password=encoded_password,
+        )
+
     async def post_level_comment(
         self,
         content: Optional[str],
@@ -615,26 +633,11 @@ class Session:
         account_id: int,
         account_name: str,
         encoded_password: str,
-    ) -> None:
-        await self.http.post_level_comment(
+    ) -> int:
+        return await self.http.post_level_comment(
             content=content,
             level_id=level_id,
             record=record,
-            account_id=account_id,
-            account_name=account_name,
-            encoded_password=encoded_password,
-        )
-
-    async def post_user_comment(
-        self,
-        content: Optional[str],
-        *,
-        account_id: int,
-        account_name: str,
-        encoded_password: str,
-    ) -> None:
-        await self.http.post_user_comment(
-            content=content,
             account_id=account_id,
             account_name=account_name,
             encoded_password=encoded_password,
@@ -755,7 +758,7 @@ class Session:
     async def get_newgrounds_song(self, song_id: int) -> SongModel:
         response = await self.http.get_newgrounds_song(song_id)
 
-        return SongModel.from_dict(find_song_data(response), id=song_id)
+        return find_song_model(remove_escapes(response), song_id)
 
     async def get_artist_info(self, song_id: int) -> Dict[str, Any]:
         response = await self.http.get_artist_info(song_id)

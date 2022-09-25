@@ -18,6 +18,10 @@ BASE: Final[int] = 10
 
 V = TypeVar("V", bound="Version")
 
+EXPECTED_MAJOR = "expected major >= 0"
+EXPECTED_MINOR = "expected minor >= 0"
+EXPECTED_BASE = f"expected minor <= {BASE}"
+
 
 @frozen(order=True)
 class Version(Binary, RobTop, String):
@@ -30,15 +34,15 @@ class Version(Binary, RobTop, String):
     @major.validator
     def check_major(self, attribute: Attribute[int], major: int) -> None:
         if major < 0:
-            raise ValueError  # TODO: message?
+            raise ValueError(EXPECTED_MAJOR)
 
     @minor.validator
     def check_minor(self, attribute: Attribute[int], minor: int) -> None:
         if minor < 0:
-            raise ValueError  # TODO: message?
+            raise ValueError(EXPECTED_MINOR)
 
         if minor >= BASE:
-            raise ValueError  # TODO: message?
+            raise ValueError(EXPECTED_BASE)
 
     @classmethod
     def from_value(cls: Type[V], value: int) -> V:

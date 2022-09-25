@@ -50,8 +50,8 @@ __all__ = (
     "encode_robtop_string",
     "decode_darwin_save",
     "encode_darwin_save",
-    "decode_os_save",
-    "encode_os_save",
+    "decode_system_save",
+    "encode_system_save",
     "sha1",
     "sha1_with_salt",
     "sha1_string",
@@ -292,20 +292,22 @@ def encode_darwin_save(
     if cipher is None:
         raise OSError  # TODO: message?
 
-    required = len(data) % ECB_PAD
+    pad = ECB_PAD
+
+    required = len(data) % pad
 
     if required:
-        byte = ECB_PAD - required
+        byte = pad - required
         data += bytes([byte] * byte)
 
     return cipher.encrypt(data)
 
 
 if DARWIN:
-    decode_os_save, encode_os_save = decode_darwin_save, encode_darwin_save
+    decode_system_save, encode_system_save = decode_darwin_save, encode_darwin_save
 
 else:
-    decode_os_save, encode_os_save = decode_save, encode_save
+    decode_system_save, encode_system_save = decode_save, encode_save
 
 
 def sha1(data: bytes) -> str:

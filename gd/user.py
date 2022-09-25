@@ -18,6 +18,7 @@ from gd.constants import (
     DEFAULT_CREATOR_POINTS,
     DEFAULT_DEMONS,
     DEFAULT_DIAMONDS,
+    DEFAULT_FRIEND_STATE,
     DEFAULT_GLOW,
     DEFAULT_ICON_ID,
     DEFAULT_ID,
@@ -26,10 +27,15 @@ from gd.constants import (
     DEFAULT_PAGES,
     DEFAULT_PLACE,
     DEFAULT_RANK,
+    DEFAULT_RECORD,
     DEFAULT_SECRET_COINS,
+    DEFAULT_SIMPLE,
     DEFAULT_STARS,
     DEFAULT_USER_COINS,
     EMPTY,
+    ROBTOP_ACCOUNT_ID,
+    ROBTOP_ID,
+    ROBTOP_NAME,
     UNKNOWN,
 )
 from gd.entity import Entity
@@ -81,9 +87,6 @@ MESSAGE_STATE_SHIFT = FRIEND_REQUEST_STATE_MASK.bit_length()
 FRIEND_REQUEST_STATE_SHIFT = COMMENT_STATE_MASK.bit_length()
 COMMENT_STATE_SHIFT = GLOW_BIT.bit_length()
 
-RECORD_BIT = 0b10000000
-RECORD_MASK = 0b01111111
-
 
 @define()
 class User(Entity):
@@ -122,7 +125,7 @@ class User(Entity):
     # discord: Optional[str] = field(default=None, eq=False)
     coins: int = field(default=DEFAULT_COINS, eq=False)
     place: int = field(default=DEFAULT_PLACE, eq=False)
-    record: Optional[int] = field(default=None, eq=False)
+    record: int = field(default=DEFAULT_RECORD, eq=False)
     banned: bool = field(default=DEFAULT_BANNED, eq=False)
 
     recorded_at: Optional[datetime] = None
@@ -130,6 +133,10 @@ class User(Entity):
     @classmethod
     def default(cls: Type[U]) -> U:
         return cls(id=DEFAULT_ID, name=UNKNOWN, account_id=DEFAULT_ID)
+
+    @classmethod
+    def robtop(cls: Type[U]) -> U:
+        return cls(id=ROBTOP_ID, name=ROBTOP_NAME, account_id=ROBTOP_ACCOUNT_ID)
 
     @classmethod
     def from_creator_model(cls: Type[U], model: CreatorModel) -> U:
@@ -317,11 +324,15 @@ class User(Entity):
     def color_2(self) -> Color:
         return Color.with_id(self.color_2_id, Color.default_color_2())
 
-    async def get(self) -> User:
-        return await self.client.get_user(self.account_id)
+    async def get(
+        self, simple: bool = DEFAULT_SIMPLE, friend_state: bool = DEFAULT_FRIEND_STATE
+    ) -> User:
+        return await self.client.get_user(self.account_id, simple=simple, friend_state=friend_state)
 
-    async def update(self: U) -> U:
-        return self.update_from(await self.get())
+    async def update(
+        self: U, friend_state: bool = DEFAULT_FRIEND_STATE
+    ) -> U:
+        return self.update_from(await self.get(friend_state=friend_state))
 
     async def send(
         self, subject: Optional[str] = None, content: Optional[str] = None
@@ -431,7 +442,6 @@ class User(Entity):
     ) -> U:
         glow_bit = GLOW_BIT
         banned_bit = BANNED_BIT
-        record_bit = RECORD_BIT
 
         reader = Reader(binary)
 
@@ -527,14 +537,7 @@ class User(Entity):
 
         place = reader.read_u32(order)
 
-        record_value = reader.read_u8(order)
-
-        record = record_value & RECORD_MASK
-
-        record_present = record_value & record_bit == record_bit
-
-        if not record_present:
-            record = None
+        record = reader.read_u8(order)
 
         timestamp = reader.read_f64(order)
 
@@ -698,15 +701,7 @@ class User(Entity):
 
         writer.write_u32(self.place, order)
 
-        record = self.record
-
-        if record is None:
-            record = 0
-
-        else:
-            record |= RECORD_BIT
-
-        writer.write_u8(record, order)
+        writer.write_u8(self.record, order)
 
         recorded_at = self.recorded_at
 

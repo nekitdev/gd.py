@@ -52,7 +52,7 @@ def by_name(name: str) -> Predicate[OfficialSong]:
 S = TypeVar("S", bound="Song")
 
 EXPECTED_QUERY = "expected either `id` or `name` query"
-CAN_NOT_FIND_SONG = "can not find official song by given query"
+CAN_NOT_FIND_SONG = "can not find an official song by given query"
 CAN_NOT_DOWNLOAD = "can not download an official song"
 CAN_NOT_FIND_URL = "can not find download URL"
 
@@ -65,7 +65,7 @@ CUSTOM_BIT = 0b00000001
 
 @define()
 class Song(Entity):
-    """Represents Geometry Dash and Newgrounds songs."""
+    """Represents *Geometry Dash* and *Newgrounds* songs."""
 
     name: str
     artist: Artist
@@ -254,7 +254,7 @@ class Song(Entity):
             await self.ensure_download_url()
 
             return await self.client.http.download_bytes(
-                self.download_url, with_bar=with_bar  # type: ignore
+                self.download_url, with_bar=with_bar
             )
 
         raise MissingAccess(CAN_NOT_DOWNLOAD)

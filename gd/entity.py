@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, BinaryIO, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, BinaryIO, Optional, Type, TypeVar
 
 from attrs import Attribute, define, field
 from typing_extensions import TypedDict
@@ -10,7 +10,6 @@ from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder
 from gd.errors import ClientError
 from gd.json import JSON
-from gd.typing import is_same_type
 
 if TYPE_CHECKING:
     from gd.client import Client
@@ -43,7 +42,8 @@ class Entity(Binary, JSON[EntityData]):
         if id < 0:
             raise ValueError  # TODO: message?
 
-    def get_client(self) -> Client:
+    @property
+    def client(self) -> Client:
         result = self.maybe_client
 
         if result is None:
@@ -51,13 +51,13 @@ class Entity(Binary, JSON[EntityData]):
 
         return result
 
-    def set_client(self, client: Client) -> None:
+    @client.setter
+    def client(self, client: Client) -> None:
         self.maybe_client = client
 
-    def delete_client(self) -> None:
+    @client.deleter
+    def client(self) -> None:
         self.maybe_client = None
-
-    client = property(get_client, set_client, delete_client)
 
     def maybe_attach_client(self: E, client: Optional[Client]) -> E:
         self.maybe_client = client

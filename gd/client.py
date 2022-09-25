@@ -27,10 +27,10 @@ from yarl import URL
 from gd.api.database import Database
 from gd.api.recording import Recording
 
-# from gd.api.recording import Recording
+from gd.api.recording import Recording
 from gd.artist import Artist
 from gd.async_utils import awaiting, run, run_iterables
-from gd.comments import LevelComment, UserComment
+from gd.comments import Comment, LevelComment, UserComment
 from gd.constants import (
     COMMENT_PAGE_SIZE,
     DEFAULT_AS_MOD,
@@ -38,6 +38,8 @@ from gd.constants import (
     DEFAULT_COINS,
     DEFAULT_COUNT,
     DEFAULT_DELAY,
+    DEFAULT_FRIEND_STATE,
+    DEFAULT_GET_DATA,
     DEFAULT_ID,
     DEFAULT_LOW_DETAIL,
     DEFAULT_OBJECT_COUNT,
@@ -45,8 +47,11 @@ from gd.constants import (
     DEFAULT_PAGES,
     DEFAULT_PAGES_COUNT,
     DEFAULT_RECONNECT,
+    DEFAULT_RECORD,
+    DEFAULT_SIMPLE,
     DEFAULT_SPECIAL,
     DEFAULT_STARS,
+    DEFAULT_TWO_PLAYER,
     DEFAULT_UPDATE,
     DEFAULT_USE_CLIENT,
     DEFAULT_VERSION,
@@ -128,14 +133,21 @@ def switch_none(value: Optional[T], default: T) -> T:
 
 def by_subject_and_user(subject: str, user: User) -> Predicate[Message]:
     def predicate(message: Message) -> bool:
-        return message.subject == subject and message.user.id == user.id
+        return message.subject == subject and message.user == user
 
     return predicate
 
 
 def by_user(user: User) -> Predicate[FriendRequest]:
     def predicate(friend_request: FriendRequest) -> bool:
-        return friend_request.user.id == user.id
+        return friend_request.user == user
+
+    return predicate
+
+
+def by_id(id: int) -> Predicate[Comment]:
+    def predicate(comment: Comment) -> bool:
+        return comment.id == id
 
     return predicate
 
@@ -217,7 +229,7 @@ class Client:
 
     @property
     def http(self) -> HTTPClient:
-        """The [`HTTPClient`][gd.http.HTTPClient] used by the client."""
+        """The [`HTTPClient`][gd.http.HTTPClient] used by the client session."""
         return self.session.http
 
     @property
@@ -428,32 +440,48 @@ class Client:
         )
 
     @check_login
-    async def get_self(self, simple: bool = False) -> User:
+    async def get_self(self, simple: bool = DEFAULT_SIMPLE) -> User:
         """Gets the user representing this client.
 
         This is a shorthand for:
 
         ```python
-        await client.get_user(client.account_id, simple=simple)
+        await client.user.get(simple=simple)
         ```
 
-        See [`get_user`][gd.client.Client.get_user] for more information.
-
-        Arguments:
-            simple: Whether to fetch simple information.
+        See [`User.get`][gd.user.User.get] for more information.
 
         Note:
             This function requires the client to be logged in.
 
+        Arguments:
+            simple: Whether to fetch simple information.
+
         Returns:
             The [`User`][gd.user.User] representing the client.
         """
-        return await self.get_user(self.account_id, simple=simple)
+        return await self.user.get(simple=simple)
 
     async def get_user(
-        self, account_id: int, simple: bool = False, friend_state: bool = False
+        self,
+        account_id: int,
+        simple: bool = DEFAULT_SIMPLE,
+        friend_state: bool = DEFAULT_FRIEND_STATE,
     ) -> User:
-        if friend_state:  # if we need to find friend state
+        """Fetches the user by `account_id`.
+
+        Arguments:
+            account_id: The account ID of the user to fetch.
+            simple: Whether to fetch simple information only.
+            friend_state: Whether to fetch friend state.
+
+        Note:
+            `friend_state` requires the client to be logged in.
+
+        Returns:
+            The [`User`][gd.user.User] fetched.
+        """
+        if friend_state:  # if we need to fetch friend state
             check_client_login(self)
 
             profile_model = await self.session.get_user_profile(  # request profile
@@ -462,7 +490,7 @@ class Client:
                 encoded_password=self.encoded_password,
             )
 
-        else:  # otherwise, just request normally
+        else:  # otherwise, simply request normally
             profile_model = await self.session.get_user_profile(account_id=account_id)
 
         if simple:  # if only the profile is needed, return right away
@@ -475,7 +503,10 @@ class Client:
         )
 
     async def search_user(
-        self, query: IntString, simple: bool = False, friend_state: bool = False
+        self,
+        query: IntString,
+        simple: bool = DEFAULT_SIMPLE,
+        friend_state: bool = DEFAULT_FRIEND_STATE,
     ) -> User:
         search_user_model = await self.session.search_user(query=query)  # search using query
 
@@ -620,7 +651,10 @@ class Client:
         return level.update_with_timely_model(timely_model)
 
     async def get_level(
-        self, level_id: int, get_data: bool = True, use_client: bool = False
+        self,
+        level_id: int,
+        get_data: bool = DEFAULT_GET_DATA,
+        use_client: bool = DEFAULT_USE_CLIENT,
     ) -> Level:
         get_data = get_data or level_id < 0
 
@@ -722,8 +756,8 @@ class Client:
         official_song_id: int = DEFAULT_ID,
         description: str = EMPTY,
         song_id: int = DEFAULT_ID,
-        original: int = DEFAULT_ID,
-        two_player: bool = False,
+        original_id: int = DEFAULT_ID,
+        two_player: bool = DEFAULT_TWO_PLAYER,
         type: UnlistedType = UnlistedType.DEFAULT,
         object_count: int = DEFAULT_OBJECT_COUNT,
         coins: int = DEFAULT_COINS,
@@ -743,7 +777,7 @@ class Client:
             official_song_id=official_song_id,
             description=description,
             song_id=song_id,
-            original=original,
+            original_id=original_id,
             two_player=two_player,
             object_count=object_count,
             coins=coins,
@@ -760,7 +794,14 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-        return await self.get_level(level_id)
+        if self.load_after_post:
+            return await self.get_level(level_id)
+
+        level = Level.default()
+
+        level.id = level_id
+
+        return level
 
     async def report_level(self, level: Level) -> None:
         await self.session.report_level(level.id)
@@ -863,10 +904,10 @@ class Client:
                 subject = EMPTY
 
             messages = self.get_messages_on_page(MessageType.OUTGOING)
-            message = await messages.find(by_subject_and_user(subject, user))
+            message = await messages.find_or_none(by_subject_and_user(subject, user))
 
             if message is None:
-                return None
+                return message
 
             message.content = content
 
@@ -899,7 +940,6 @@ class Client:
     async def get_messages_on_page(
         self, type: MessageType = MessageType.DEFAULT, page: int = DEFAULT_PAGE
     ) -> AsyncIterator[Message]:
-
         try:
             response_model = await self.session.get_messages_on_page(
                 type=type,
@@ -940,7 +980,7 @@ class Client:
         if self.load_after_post:
             friend_requests = self.get_friend_requests_on_page(FriendRequestType.OUTGOING)
 
-            return await friend_requests.find(by_user(user))
+            return await friend_requests.find_or_none(by_user(user))
 
         return None
 
@@ -1060,8 +1100,41 @@ class Client:
             encoded_password=self.encoded_password,
         )
 
-    # post_comment
-    # post_level_comment
+    @check_login
+    async def post_comment(self, content: Optional[str] = None) -> Optional[UserComment]:
+        comment_id = await self.session.post_user_comment(
+            content=content,
+            account_id=self.account_id,
+            account_name=self.name,
+            encoded_password=self.encoded_password,
+        )
+
+        if self.load_after_post:
+            comments = self.user.get_comments_on_page()
+
+            return await comments.find_or_none(by_id(comment_id))
+
+        return None
+
+    @check_login
+    async def post_level_comment(
+        self, level: Level, record: int = DEFAULT_RECORD, content: Optional[str] = None
+    ) -> Optional[LevelComment]:
+        comment_id = await self.session.post_level_comment(
+            level_id=level.id,
+            record=record,
+            content=content,
+            account_id=self.account_id,
+            account_name=self.name,
+            encoded_password=self.encoded_password,
+        )
+
+        if self.load_after_post:
+            comments = level.get_comments_on_page(count=DEFAULT_COUNT)
+
+            return await comments.find_or_none(by_id(comment_id))
+
+        return None
 
     @check_login
     async def delete_user_comment(self, comment: UserComment) -> None:
@@ -1265,7 +1338,8 @@ class Client:
 
     async def get_newgrounds_song(self, song_id: int) -> Song:
         model = await self.session.get_newgrounds_song(song_id=song_id)
-        return Song.from_model(model, custom=True, client=self)
+
+        return Song.from_model(model).attach_client(self)
 
     @wrap_async_iter
     async def search_newgrounds_songs_on_page(

@@ -79,6 +79,9 @@ class FriendRequest(Entity):
     def is_incoming(self) -> bool:
         return self.type.is_incoming()
 
+    def is_outgoing(self) -> bool:
+        return self.type.is_outgoing()
+
     def into_relationship(self) -> Relationship:
         return Relationship(
             id=self.id, user=self.user, type=self.type.into_relationship_type()

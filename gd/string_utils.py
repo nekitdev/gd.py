@@ -1,4 +1,4 @@
-from gd.constants import EMPTY
+from gd.constants import BACKSLASH, EMPTY
 from gd.string_constants import COMMA, MAPS, NEW_LINE, PIPE, STAR, TICK, UNDER, WRAP
 
 wrap = WRAP.format
@@ -14,6 +14,10 @@ concat_under = UNDER.join
 
 def clear_whitespace(string: str) -> str:
     return concat_empty(string.split())
+
+
+def remove_escapes(string: str) -> str:
+    return string.replace(BACKSLASH, EMPTY)
 
 
 def password_str(password: str) -> str:

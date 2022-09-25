@@ -6,6 +6,7 @@ from attrs import define, field
 from iters.async_iters import wrap_async_iter
 
 from gd.color import Color
+from gd.constants import DEFAULT_COINS, DEFAULT_STARS
 from gd.entity import Entity
 from gd.enums import Difficulty
 from gd.filters import Filters
@@ -71,11 +72,11 @@ class Gauntlet(Entity):
 
 @define()
 class MapPack(Gauntlet):
-    stars: int = field(eq=False)
-    coins: int = field(eq=False)
-    difficulty: Difficulty = field(eq=False)
-    primary_color: Color = field(eq=False)
-    secondary_color: Color = field(eq=False)
+    stars: int = field(default=DEFAULT_STARS, eq=False)
+    coins: int = field(default=DEFAULT_COINS, eq=False)
+    difficulty: Difficulty = field(default=Difficulty.DEFAULT, eq=False)
+    primary_color: Color = field(factory=Color.default, eq=False)
+    secondary_color: Color = field(factory=Color.default, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id

@@ -16,7 +16,6 @@ from gd.constants import (
     DEFAULT_EDITABLE,
     DEFAULT_EPIC,
     DEFAULT_FAVORITE,
-    DEFAULT_FIRST_COIN_VERIFIED,
     DEFAULT_GAUNTLET,
     DEFAULT_ID,
     DEFAULT_LOW_DETAIL,
@@ -26,10 +25,8 @@ from gd.constants import (
     DEFAULT_PLAYABLE,
     DEFAULT_RATING,
     DEFAULT_RECORD,
-    DEFAULT_SECOND_COIN_VERIFIED,
     DEFAULT_SCORE,
     DEFAULT_STARS,
-    DEFAULT_THIRD_COIN_VERIFIED,
     DEFAULT_TWO_PLAYER,
     DEFAULT_UNLISTED,
     DEFAULT_UNLOCKED,
@@ -40,7 +37,7 @@ from gd.constants import (
     EMPTY,
     EMPTY_BYTES,
 )
-from gd.enums import ByteOrder, Difficulty, LevelLength, LevelType
+from gd.enums import ByteOrder, CollectedCoins, Difficulty, LevelLength, LevelType
 from gd.password import Password
 from gd.progress import Progress
 from gd.song import Song
@@ -56,13 +53,14 @@ LOW_DETAIL_BIT = 0b00000000_00100000
 LOW_DETAIL_TOGGLED_BIT = 0b00000000_01000000
 FAVORITE_BIT = 0b00000000_10000000
 
-FIRST_COIN_ACQUIRED_BIT = 0b00000001_00000000
-SECOND_COIN_ACQUIRED_BIT = 0b00000010_00000000
-THIRD_COIN_ACQUIRED_BIT = 0b00000100_00000000
+COLLECTED_COINS_SHIFT = FAVORITE_BIT.bit_length()
+
+COLLECTED_COINS_MASK = 0b00000111_00000000
 VERIFIED_COINS_BIT = 0b00001000_00000000
 EPIC_BIT = 0b00010000_00000000
 GAUNTLET_BIT = 0b00100000_00000000
 UNLISTED_BIT = 0b01000000_00000000
+DEMON_BIT = 0b10000000_00000000
 
 A = TypeVar("A", bound="LevelAPI")
 
@@ -88,6 +86,7 @@ class LevelAPI(Binary):
     attempts: int = field(default=DEFAULT_ATTEMPTS)
     normal_record: int = field(default=DEFAULT_RECORD)
     practice_record: int = field(default=DEFAULT_RECORD)
+    # HERE
     type: LevelType = field(default=LevelType.DEFAULT)
     rating: int = field(default=DEFAULT_RATING)
     length: LevelLength = field(default=LevelLength.DEFAULT)
@@ -100,9 +99,7 @@ class LevelAPI(Binary):
     original_id: int = field(default=DEFAULT_ID)
     two_player: bool = field(default=DEFAULT_TWO_PLAYER)
     object_count: int = field(default=DEFAULT_OBJECT_COUNT)
-    first_coin_acquired: bool = field(default=DEFAULT_FIRST_COIN_VERIFIED)
-    second_coin_acquired: bool = field(default=DEFAULT_SECOND_COIN_VERIFIED)
-    third_coin_acquired: bool = field(default=DEFAULT_THIRD_COIN_VERIFIED)
+    collected_coins: CollectedCoins = field(default=CollectedCoins.DEFAULT)
     coins: int = field(default=DEFAULT_COINS)
     verified_coins: bool = field(default=DEFAULT_VERIFIED_COINS)
     requested_stars: int = field(default=DEFAULT_STARS)
@@ -171,6 +168,98 @@ class LevelAPI(Binary):
 
         value = 0
 
-        ...
+        if self.is_editable():
+            value |= EDITABLE_BIT
+
+        if self.is_verified():
+            value |= VERIFIED_BIT
+
+        if self.is_uploaded():
+            value |= UPLOADED_BIT
+
+        if self.is_playable():
+            value |= PLAYABLE_BIT
+
+        if self.is_two_player():
+            value |= TWO_PLAYER_BIT
+
+        if self.has_low_detail():
+            value |= LOW_DETAIL_BIT
+
+        if self.is_low_detail_toggled():
+            value |= LOW_DETAIL_TOGGLED_BIT
+
+        if self.is_favorite():
+            value |= FAVORITE_BIT
+
+        value |= self.collected_coins.value << COLLECTED_COINS_SHIFT
+
+        if self.has_verified_coins():
+            value |= VERIFIED_COINS_BIT
+
+        if self.is_epic():
+            value |= EPIC_BIT
+
+        if self.is_gauntlet():
+            value |= GAUNTLET_BIT
+
+        if self.is_unlisted():
+            value |= UNLISTED_BIT
+
+        if self.is_demon():
+            value |= DEMON_BIT
 
         writer.write_u16(value, order)
+
+        writer.write_u32(self.downloads, order)
+
+        writer.write_u16(self.completions, order)
+
+        writer.write_u8(self.version, order)
+
+        self.game_version.to_binary(binary, order, version)
+        self.binary_version.to_binary(binary, order, version)
+
+        writer.write_u32(self.attempts, order)
+
+        writer.write_u8(self.normal_record, order)
+        writer.write_u8(self.practice_record, order)
+
+    def is_editable(self) -> bool:
+        return self.editable
+
+    def is_verified(self) -> bool:
+        return self.verified
+
+    def is_uploaded(self) -> bool:
+        return self.uploaded
+
+    def is_playable(self) -> bool:
+        return self.playable
+
+    def is_two_player(self) -> bool:
+        return self.two_player
+
+    def has_low_detail(self) -> bool:
+        return self.low_detail
+
+    def is_low_detail_toggled(self) -> bool:
+        return self.low_detail_toggled
+
+    def is_favorite(self) -> bool:
+        return self.favorite
+
+    def has_verified_coins(self) -> bool:
+        return self.verified_coins
+
+    def is_epic(self) -> bool:
+        return self.epic
+
+    def is_gauntlet(self) -> bool:
+        return self.gauntlet
+
+    def is_unlisted(self) -> bool:
+        return self.unlisted
+
+    def is_demon(self) -> bool:
+        return self.demon
