@@ -133,7 +133,7 @@ def convert_layer(layer_dict: AnyCamelDict) -> LayerData:
 
     return LayerData(
         part=part,
-        position=(position_x * MAGIC_SCALAR, position_y * MAGIC_SCALAR),
+        position=(position_x * MAGIC_SCALAR, position_y * MAGIC_SCALAR),  # NOTE: magic!
         scale=(scale_width, scale_height),
         rotation=rotation,
         h_flipped=h_flipped,

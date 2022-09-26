@@ -8,8 +8,8 @@ from typing_extensions import TypedDict
 from yarl import URL
 
 from gd.binary import VERSION
-from gd.binary_utils import UTF_8, Reader, Writer
-from gd.constants import DEFAULT_PAGE, DEFAULT_PAGES, UNKNOWN
+from gd.binary_utils import Reader, Writer
+from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_PAGE, DEFAULT_PAGES, UNKNOWN
 from gd.entity import Entity
 from gd.enums import ByteOrder
 from gd.string_utils import case_fold, clear_whitespace
@@ -74,7 +74,8 @@ class Artist(Entity):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> A:
         reader = Reader(binary)
 
@@ -82,7 +83,7 @@ class Artist(Entity):
 
         data = reader.read(length)
 
-        name = data.decode(encoding)
+        name = data.decode(encoding, errors)
 
         return cls(name=name)
 
@@ -91,11 +92,12 @@ class Artist(Entity):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> None:
         writer = Writer(binary)
 
-        data = self.name.encode(encoding)
+        data = self.name.encode(encoding, errors)
 
         writer.write_u8(len(data), order)
 

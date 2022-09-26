@@ -3,8 +3,8 @@ from typing import BinaryIO, Type, TypeVar
 from attrs import define, field
 
 from gd.binary import VERSION, Binary
+from gd.binary_constants import BITS, BYTE
 from gd.binary_utils import Reader, Writer
-from gd.constants import BITS, BYTE
 from gd.enums import ByteOrder
 from gd.models import Model
 from gd.models_constants import HSV_SEPARATOR

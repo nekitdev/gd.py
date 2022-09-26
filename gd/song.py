@@ -8,8 +8,10 @@ from yarl import URL
 
 from gd.artist import Artist
 from gd.binary import VERSION
-from gd.binary_utils import UTF_8, Reader, Writer
+from gd.binary_utils import Reader, Writer
 from gd.constants import (
+    DEFAULT_ENCODING,
+    DEFAULT_ERRORS,
     DEFAULT_FROM_NEWGROUNDS,
     DEFAULT_ID,
     DEFAULT_RETURN_DEFAULT,
@@ -88,7 +90,8 @@ class Song(Entity):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> S:
         custom_bit = CUSTOM_BIT
 
@@ -98,9 +101,9 @@ class Song(Entity):
 
         name_length = reader.read_u8(order)
 
-        name = reader.read(name_length).decode(encoding)
+        name = reader.read(name_length).decode(encoding, errors)
 
-        artist = Artist.from_binary(binary, order, version, encoding)
+        artist = Artist.from_binary(binary, order, version, encoding, errors)
 
         size = reader.read_f32(order)
 
@@ -110,7 +113,7 @@ class Song(Entity):
 
         download_url_length = reader.read_u16(order)
 
-        string = reader.read(download_url_length).decode(encoding)
+        string = reader.read(download_url_length).decode(encoding, errors)
 
         if not string:
             download_url = None
@@ -127,19 +130,20 @@ class Song(Entity):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> None:
         writer = Writer(binary)
 
         writer.write_u32(self.id, order)
 
-        data = self.name.encode(encoding)
+        data = self.name.encode(encoding, errors)
 
         writer.write_u8(len(data), order)
 
         writer.write(data)
 
-        self.artist.to_binary(binary, order, version, encoding)
+        self.artist.to_binary(binary, order, version, encoding, errors)
 
         writer.write_f32(self.size, order)
 
@@ -158,7 +162,7 @@ class Song(Entity):
         else:
             string = str(download_url)
 
-        data = string.encode(encoding)
+        data = string.encode(encoding, errors)
 
         writer.write_u16(len(data), order)
 
@@ -254,7 +258,7 @@ class Song(Entity):
             await self.ensure_download_url()
 
             return await self.client.http.download_bytes(
-                self.download_url, with_bar=with_bar
+                self.download_url, with_bar=with_bar  # type: ignore
             )
 
         raise MissingAccess(CAN_NOT_DOWNLOAD)

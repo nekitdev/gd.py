@@ -6,7 +6,7 @@ from typing import Iterator
 
 from typing_extensions import TypeAlias
 
-from gd.constants import DEFAULT_ENCODING
+from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.enums import Permissions
 from gd.memory.internal import unimplemented
 from gd.memory.utils import Structure, external
@@ -334,7 +334,7 @@ def get_process_id_from_name(name: str) -> int:
         path_value = path_buffer.value
 
         if path_value:
-            path = Path(path_value.decode(DEFAULT_ENCODING))
+            path = Path(path_value.decode(DEFAULT_ENCODING, DEFAULT_ERRORS))
 
             if path.name.casefold() == lookup_name:
                 return process_id

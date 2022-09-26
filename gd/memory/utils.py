@@ -4,18 +4,13 @@ from builtins import setattr as set_attribute
 from ctypes import Structure as CStructure
 from ctypes import Union as CUnion
 from functools import wraps
-from math import ceil, log2
-from typing import Any, Callable, Type, TypeVar, get_type_hints
+from typing import Any, Type, TypeVar, get_type_hints
 
-from gd.binary_utils import BITS
-from gd.typing import AnyType, DecoratorIdentity, DynamicTuple, Namespace
+from gd.typing import AnyCallable, AnyType, DecoratorIdentity, DynamicTuple, Namespace
 
 __all__ = (
     "Structure",
     "Union",
-    "bits",
-    "closest_power_of_two",
-    "closest_power_of_two_bits",
     "external",
     "set_name",
 )
@@ -25,18 +20,6 @@ def set_name(item: Any, name: str) -> None:
     item.__qualname__ = item.__name__ = name
 
 
-def bits(size: int) -> int:
-    return size * BITS
-
-
-def closest_power_of_two_bits(value: int) -> int:
-    return ceil(log2(value))
-
-
-def closest_power_of_two(value: int) -> int:
-    return 1 << closest_power_of_two_bits(value)
-
-
 FIELDS = "_fields_"
 
 
@@ -44,10 +27,7 @@ class StructureType(type(CStructure)):  # type: ignore
     def __new__(cls: Type[CS], name: str, bases: DynamicTuple[AnyType], namespace: Namespace) -> CS:
         self = super().__new__(cls, name, bases, namespace)
 
-        fields = {}
-
-        for base in reversed(self.mro()):
-            fields.update(get_type_hints(base))
+        fields = get_type_hints(self)
 
         set_attribute(self, FIELDS, list(fields.items()))
 
@@ -61,10 +41,7 @@ class UnionType(type(CUnion)):  # type: ignore
     def __new__(cls: Type[CU], name: str, bases: DynamicTuple[AnyType], namespace: Namespace) -> CU:
         self = super().__new__(cls, name, bases, namespace)
 
-        fields = {}
-
-        for base in reversed(self.mro()):
-            fields.update(get_type_hints(base))
+        fields = get_type_hints(self)
 
         set_attribute(self, FIELDS, list(fields.items()))
 
@@ -88,8 +65,8 @@ ARGUMENT_TYPES = "argtypes"
 RETURN_TYPE = "restype"
 
 
-def external(function_pointer: Any) -> DecoratorIdentity[Callable[..., Any]]:
-    def wrap(function: Callable[..., Any]) -> Callable[..., Any]:
+def external(function_pointer: Any) -> DecoratorIdentity[AnyCallable]:
+    def wrap(function: AnyCallable) -> AnyCallable:
         annotations = get_type_hints(function)
 
         return_type = annotations.pop(RETURN, None)

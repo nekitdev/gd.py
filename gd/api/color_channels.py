@@ -4,9 +4,10 @@ from attrs import define, field
 
 from gd.api.hsv import HSV
 from gd.binary import VERSION, Binary
+from gd.binary_constants import BITS, BYTE
 from gd.binary_utils import Reader, Writer
 from gd.color import Color
-from gd.constants import BITS, BYTE, DEFAULT_ID
+from gd.constants import DEFAULT_ID
 from gd.enums import ByteOrder, PlayerColor
 from gd.models_utils import (
     concat_color_channel,

@@ -8,7 +8,7 @@ from iters.async_iters import wrap_async_iter
 
 from gd.async_utils import gather_iterable
 from gd.binary import VERSION
-from gd.binary_utils import UTF_8, Reader, Writer
+from gd.binary_utils import Reader, Writer
 from gd.color import Color
 from gd.constants import (
     DEFAULT_BANNED,
@@ -18,6 +18,8 @@ from gd.constants import (
     DEFAULT_CREATOR_POINTS,
     DEFAULT_DEMONS,
     DEFAULT_DIAMONDS,
+    DEFAULT_ENCODING,
+    DEFAULT_ERRORS,
     DEFAULT_FRIEND_STATE,
     DEFAULT_GLOW,
     DEFAULT_ICON_ID,
@@ -438,7 +440,8 @@ class User(Entity):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> U:
         glow_bit = GLOW_BIT
         banned_bit = BANNED_BIT
@@ -449,7 +452,7 @@ class User(Entity):
 
         name_length = reader.read_u8(order)
 
-        name = reader.read(name_length).decode(encoding)
+        name = reader.read(name_length).decode(encoding, errors)
 
         account_id = reader.read_u32(order)
 
@@ -507,28 +510,28 @@ class User(Entity):
 
         youtube_length = reader.read_u16(order)
 
-        youtube = reader.read(youtube_length).decode(encoding)
+        youtube = reader.read(youtube_length).decode(encoding, errors)
 
         if not youtube:
             youtube = None
 
         twitter_length = reader.read_u16(order)
 
-        twitter = reader.read(twitter_length).decode(encoding)
+        twitter = reader.read(twitter_length).decode(encoding, errors)
 
         if not twitter:
             twitter = None
 
         twitch_length = reader.read_u16(order)
 
-        twitch = reader.read(twitch_length).decode(encoding)
+        twitch = reader.read(twitch_length).decode(encoding, errors)
 
         if not twitch:
             twitch = None
 
         # discord_length = reader.read_u16(order)
 
-        # discord = reader.read(discord_length).decode(encoding)
+        # discord = reader.read(discord_length).decode(encoding, errors)
 
         # if not discord:
         #     discord = None
@@ -594,13 +597,14 @@ class User(Entity):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> None:
         super().to_binary(binary, order, version)
 
         writer = Writer(binary)
 
-        data = self.name.encode(encoding)
+        data = self.name.encode(encoding, errors)
 
         writer.write_u8(len(data), order)
 
@@ -658,7 +662,7 @@ class User(Entity):
         if youtube is None:
             youtube = EMPTY
 
-        data = youtube.encode(encoding)
+        data = youtube.encode(encoding, errors)
 
         writer.write_u16(len(data), order)
 
@@ -669,7 +673,7 @@ class User(Entity):
         if twitter is None:
             twitter = EMPTY
 
-        data = twitter.encode(encoding)
+        data = twitter.encode(encoding, errors)
 
         writer.write_u16(len(data), order)
 
@@ -680,7 +684,7 @@ class User(Entity):
         if twitch is None:
             twitch = EMPTY
 
-        data = twitch.encode(encoding)
+        data = twitch.encode(encoding, errors)
 
         writer.write_u16(len(data), order)
 
@@ -691,7 +695,7 @@ class User(Entity):
         # if discord is None:
         #     discord = EMPTY
 
-        # data = discord.encode(encoding)
+        # data = discord.encode(encoding, errors)
 
         # writer.write_u16(len(data), order)
 

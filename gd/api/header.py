@@ -5,6 +5,7 @@ from attrs import define, field
 from gd.api.color_channels import ColorChannels
 from gd.api.guidelines import Guidelines
 from gd.binary import VERSION, Binary
+from gd.binary_constants import HALF_BITS, HALF_BYTE
 from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ID
 from gd.enums import ByteOrder, GameMode, Speed
@@ -35,9 +36,6 @@ DEFAULT_SONG_FADE_IN = False
 DEFAULT_SONG_FADE_OUT = False
 
 DEFAULT_PLATFORMER_MODE = False
-
-HALF_BYTE = 0xF
-HALF_BITS = HALF_BYTE.bit_length()
 
 MINI_MODE_BIT = 0b10000000
 DUAL_MODE_BIT = 0b01000000

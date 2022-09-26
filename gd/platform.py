@@ -5,7 +5,7 @@ from typing import Type, TypeVar
 
 from attrs import define
 
-from gd.binary_utils import BITS
+from gd.binary_constants import BITS
 from gd.enums import Platform
 from gd.string import String
 from gd.string_utils import case_fold

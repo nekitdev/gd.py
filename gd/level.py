@@ -11,11 +11,13 @@ from iters.iters import iter
 
 # from gd.api.editor import Editor
 from gd.binary import VERSION
-from gd.binary_utils import UTF_8, Reader, Writer
+from gd.binary_utils import Reader, Writer
 from gd.constants import (
     COMMENT_PAGE_SIZE,
     DEFAULT_AS_MOD,
     DEFAULT_COINS,
+    DEFAULT_ENCODING,
+    DEFAULT_ERRORS,
     DEFAULT_DEMON,
     DEFAULT_DOWNLOADS,
     DEFAULT_EPIC,
@@ -131,28 +133,26 @@ class Level(Entity):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> None:
         writer = Writer(binary)
 
         super().to_binary(binary, order, version)
 
-        data = self.name.encode(encoding)
+        data = self.name.encode(encoding, errors)
 
         writer.write_u8(len(data), order)
 
         writer.write(data)
 
-        self.creator.to_binary(binary, order, version)
-        self.song.to_binary(binary, order, version)
-
-        self.creator.to_binary(binary, order, version)
-        self.song.to_binary(binary, order, version)
+        self.creator.to_binary(binary, order, version, encoding, errors)
+        self.song.to_binary(binary, order, version, encoding, errors)
 
         writer.write_f64(self.uploaded_at.timestamp(), order)
         writer.write_f64(self.updated_at.timestamp(), order)
 
-        data = self.description.encode(encoding)
+        data = self.description.encode(encoding, errors)
 
         writer.write_u16(len(data), order)
 
@@ -221,7 +221,8 @@ class Level(Entity):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> L:
         two_player_bit = TWO_PLAYER_BIT
         verified_coins_bit = VERIFIED_COINS_BIT
@@ -235,10 +236,10 @@ class Level(Entity):
 
         name_length = reader.read_u8(order)
 
-        name = reader.read(name_length).decode(encoding)
+        name = reader.read(name_length).decode(encoding, errors)
 
-        creator = User.from_binary(binary, order, version, encoding)
-        song = Song.from_binary(binary, order, version, encoding)
+        creator = User.from_binary(binary, order, version, encoding, errors)
+        song = Song.from_binary(binary, order, version, encoding, errors)
 
         uploaded_timestamp = reader.read_f64(order)
         updated_timestamp = reader.read_f64(order)
@@ -248,7 +249,7 @@ class Level(Entity):
 
         description_length = reader.read_u16(order)
 
-        description = reader.read(description_length).decode(encoding)
+        description = reader.read(description_length).decode(encoding, errors)
 
         data_length = reader.read_u32(order)
 

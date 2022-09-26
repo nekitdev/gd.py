@@ -13,22 +13,30 @@ from gd.image.sheet import Sheet, SheetData
 from gd.image.sprite import Sprite, SpriteData
 
 __all__ = (
+    # factory
     "FACTORY",
     "Factory",
+    # icon
     "Icon",
+    # geometry
     "Point",
     "Rectangle",
     "Size",
+    # sprites
     "Sprite",
     "SpriteData",
+    # sprite sheets
     "Sheet",
     "SheetData",
+    # layers
     "Layer",
     "LayerData",
+    # animations
     "Frame",
     "Animation",
     "AnimationSheet",
     "AnimationSheetData",
+    # converters
     "convert_animation_sheet_data",
     "convert_animation_sheet_path",
     "convert_sheet_data",

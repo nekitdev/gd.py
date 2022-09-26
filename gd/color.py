@@ -5,7 +5,8 @@ from typing import ClassVar, Dict, Iterator, List, Optional, Tuple, Type, TypeVa
 
 from attrs import Attribute, field, frozen
 
-from gd.constants import BITS, BYTE, DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID, DOUBLE_BITS, EMPTY
+from gd.binary_constants import BITS, BYTE, DOUBLE_BITS
+from gd.constants import DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID, EMPTY
 from gd.json import JSON
 from gd.models_constants import COLOR_SEPARATOR
 from gd.models_utils import concat_color, split_color

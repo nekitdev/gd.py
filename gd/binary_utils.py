@@ -1,52 +1,68 @@
-from struct import calcsize as size
 from struct import pack, unpack
 from typing import BinaryIO, Generic, TypeVar
 
 from attrs import frozen
-from typing_extensions import Final
 
+from gd.binary_constants import (
+    I8,
+    U8,
+    I16,
+    U16,
+    I32,
+    U32,
+    I64,
+    U64,
+    F32,
+    F64,
+    BOOL,
+    I8_SIZE,
+    U8_SIZE,
+    I16_SIZE,
+    U16_SIZE,
+    I32_SIZE,
+    U32_SIZE,
+    I64_SIZE,
+    U64_SIZE,
+    F32_SIZE,
+    F64_SIZE,
+    BOOL_SIZE,
+)
 from gd.enums import ByteOrder
 from gd.typing import Binary
 
-__all__ = ("Reader", "Writer")
-
-I8: Final[str] = "b"
-U8: Final[str] = "B"
-I16: Final[str] = "h"
-U16: Final[str] = "H"
-I32: Final[str] = "i"
-U32: Final[str] = "I"
-I64: Final[str] = "q"
-U64: Final[str] = "Q"
-
-F32: Final[str] = "f"
-F64: Final[str] = "d"
-
-I8_SIZE: Final[int] = size(I8)
-U8_SIZE: Final[int] = size(U8)
-I16_SIZE: Final[int] = size(I16)
-U16_SIZE: Final[int] = size(U16)
-I32_SIZE: Final[int] = size(I32)
-U32_SIZE: Final[int] = size(U32)
-I64_SIZE: Final[int] = size(I64)
-U64_SIZE: Final[int] = size(U64)
-
-F32_SIZE: Final[int] = size(F32)
-F64_SIZE: Final[int] = size(F64)
-
-BITS: Final[int] = 8
-
-I8_BITS: Final[int] = I8_SIZE * BITS
-U8_BITS: Final[int] = U8_SIZE * BITS
-I16_BITS: Final[int] = I16_SIZE * BITS
-U16_BITS: Final[int] = U16_SIZE * BITS
-I32_BITS: Final[int] = I32_SIZE * BITS
-U32_BITS: Final[int] = U32_SIZE * BITS
-I64_BITS: Final[int] = I64_SIZE * BITS
-U64_BITS: Final[int] = U64_SIZE * BITS
-
-F32_BITS: Final[int] = F32_SIZE * BITS
-F64_BITS: Final[int] = F64_SIZE * BITS
+__all__ = (
+    # reader, writer
+    "Reader",
+    "Writer",
+    # from ints
+    "from_i8",
+    "from_u8",
+    "from_i16",
+    "from_u16",
+    "from_i32",
+    "from_u32",
+    "from_i64",
+    "from_u64",
+    # from floats
+    "from_f32",
+    "from_f64",
+    # from bool
+    "from_bool",
+    # to ints
+    "to_i8",
+    "to_u8",
+    "to_i16",
+    "to_u16",
+    "to_i32",
+    "to_u32",
+    "to_i64",
+    "to_u64",
+    # to floats
+    "to_f32",
+    "to_f64",
+    # to bool
+    "to_bool",
+)
 
 
 def create_from_int(format: str) -> Binary[bytes, ByteOrder, int]:
@@ -81,6 +97,22 @@ def create_to_float(format: str) -> Binary[float, ByteOrder, bytes]:
     return to_float
 
 
+def create_from_bool(format: str) -> Binary[bytes, ByteOrder, bool]:
+    def from_bool(data: bytes, order: ByteOrder = ByteOrder.DEFAULT) -> bool:
+        (result,) = unpack(order.value + format, data)
+
+        return result
+
+    return from_bool
+
+
+def create_to_bool(format: str) -> Binary[bool, ByteOrder, bytes]:
+    def to_bool(value: bool, order: ByteOrder = ByteOrder.DEFAULT) -> bytes:
+        return pack(order.value + format, value)
+
+    return to_bool
+
+
 from_i8 = create_from_int(I8)
 from_u8 = create_from_int(U8)
 from_i16 = create_from_int(I16)
@@ -92,6 +124,8 @@ from_u64 = create_from_int(U64)
 
 from_f32 = create_from_float(F32)
 from_f64 = create_from_float(F64)
+
+from_bool = create_from_bool(BOOL)
 
 to_i8 = create_to_int(I8)
 to_u8 = create_to_int(U8)
@@ -105,7 +139,7 @@ to_u64 = create_to_int(U64)
 to_f32 = create_to_float(F32)
 to_f64 = create_to_float(F64)
 
-UTF_8 = "utf-8"
+to_bool = create_to_bool(BOOL)
 
 B = TypeVar("B", bound=BinaryIO)
 
@@ -144,6 +178,9 @@ class Reader(Generic[B]):
     def read_f64(self, order: ByteOrder = ByteOrder.DEFAULT) -> float:
         return from_f64(self.read(F64_SIZE), order)
 
+    def read_bool(self, order: ByteOrder = ByteOrder.DEFAULT) -> bool:
+        return from_bool(self.read(BOOL_SIZE), order)
+
     def read(self, size: int) -> bytes:
         return self.reader.read(size)
 
@@ -181,6 +218,9 @@ class Writer(Generic[B]):
 
     def write_f64(self, value: float, order: ByteOrder = ByteOrder.DEFAULT) -> None:
         self.write(to_f64(value, order))
+
+    def write_bool(self, value: bool, order: ByteOrder = ByteOrder.DEFAULT) -> None:
+        self.write(to_bool(value, order))
 
     def write(self, data: bytes) -> None:
         self.writer.write(data)

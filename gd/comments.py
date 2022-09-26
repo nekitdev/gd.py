@@ -6,10 +6,12 @@ from typing import TYPE_CHECKING, BinaryIO, Optional, Type, TypeVar
 from attrs import define, field
 
 from gd.binary import VERSION
-from gd.binary_utils import BITS, UTF_8, Reader, Writer
+from gd.binary_constants import BITS, BYTE
+from gd.binary_utils import Reader, Writer
 from gd.color import Color
 from gd.constants import (
-    BYTE,
+    DEFAULT_ENCODING,
+    DEFAULT_ERRORS,
     DEFAULT_GET_DATA,
     DEFAULT_ID,
     DEFAULT_RATING,
@@ -106,19 +108,20 @@ class UserComment(Comment):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> UC:
         reader = Reader(binary)
 
         id = reader.read_u32(order)
 
-        author = User.from_binary(binary, order, version, encoding)
+        author = User.from_binary(binary, order, version, encoding, errors)
 
         rating = reader.read_i32(order)
 
         content_length = reader.read_u16(order)
 
-        content = reader.read(content_length).decode(encoding)
+        content = reader.read(content_length).decode(encoding, errors)
 
         timestamp = reader.read_f64(order)
 
@@ -137,17 +140,18 @@ class UserComment(Comment):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> None:
         super().to_binary(binary, order, version)
 
-        self.author.to_binary(binary, order, version, encoding)
+        self.author.to_binary(binary, order, version, encoding, errors)
 
         writer = Writer(binary)
 
         writer.write_i32(self.rating, order)
 
-        data = self.content.encode(encoding)
+        data = self.content.encode(encoding, errors)
 
         writer.write_u16(len(data), order)
 
@@ -218,25 +222,26 @@ class LevelComment(Comment):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> LC:
         reader = Reader(binary)
 
         id = reader.read_u32(order)
 
-        author = User.from_binary(binary, order, version, encoding)
+        author = User.from_binary(binary, order, version, encoding, errors)
 
         rating = reader.read_i32(order)
 
         content_length = reader.read_u16(order)
 
-        content = reader.read(content_length).decode(encoding)
+        content = reader.read(content_length).decode(encoding, errors)
 
         timestamp = reader.read_f64(order)
 
         created_at = datetime.fromtimestamp(timestamp)
 
-        level = Level.from_binary(binary, order, version, encoding)
+        level = Level.from_binary(binary, order, version, encoding, errors)
 
         value = reader.read_u32()
 
@@ -262,7 +267,8 @@ class LevelComment(Comment):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> None:
         super().to_binary(binary, order, version, encoding)
 

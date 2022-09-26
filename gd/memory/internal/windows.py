@@ -7,7 +7,7 @@ from typing import Generator, Optional, Type, TypeVar, overload
 
 from typing_extensions import TypeAlias
 
-from gd.constants import DEFAULT_ENCODING
+from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.enums import Permissions
 from gd.memory.internal import unimplemented
 from gd.memory.utils import Structure, external
@@ -119,7 +119,7 @@ class ProcessEntry(Structure):
 
     @property
     def name(self) -> str:
-        return self.exe_file.decode(DEFAULT_ENCODING)
+        return self.exe_file.decode(DEFAULT_ENCODING, DEFAULT_ERRORS)
 
     def __init__(self) -> None:
         self.size = ctypes.sizeof(self)
@@ -156,11 +156,11 @@ class ModuleEntry(Structure):
 
     @property
     def name(self) -> str:
-        return self.module_name.decode(DEFAULT_ENCODING)
+        return self.module_name.decode(DEFAULT_ENCODING, DEFAULT_ERRORS)
 
     @property
     def path(self) -> Path:
-        return Path(self.exe_path.decode(DEFAULT_ENCODING))
+        return Path(self.exe_path.decode(DEFAULT_ENCODING, DEFAULT_ERRORS))
 
 
 LP_MODULE_ENTRY = ctypes.POINTER(ModuleEntry)
@@ -422,7 +422,7 @@ def get_process_id_from_name(name: str) -> int:
 
 
 def get_process_id_from_title(title: str) -> int:
-    window = _find_window(None, ctypes.c_char_p(title.encode(DEFAULT_ENCODING)))
+    window = _find_window(None, ctypes.c_char_p(title.encode(DEFAULT_ENCODING, DEFAULT_ERRORS)))
 
     process_id = wintypes.DWORD(0)
 

@@ -3,7 +3,8 @@ from typing import BinaryIO, Type, TypeVar
 from attrs import define
 
 from gd.binary import VERSION, Binary
-from gd.binary_utils import UTF_8, Reader, Writer
+from gd.binary_utils import Reader, Writer
+from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.enums import ByteOrder
 
 __all__ = ("Folder",)
@@ -27,7 +28,8 @@ class Folder(Binary):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> F:
         reader = Reader(binary)
 
@@ -35,7 +37,7 @@ class Folder(Binary):
 
         name_length = reader.read_u8(order)
 
-        name = reader.read(name_length).decode(encoding)
+        name = reader.read(name_length).decode(encoding, errors)
 
         return cls(id, name)
 
@@ -44,13 +46,14 @@ class Folder(Binary):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> None:
         writer = Writer(binary)
 
         writer.write_u8(self.id, order)
 
-        data = self.name.encode(encoding)
+        data = self.name.encode(encoding, errors)
 
         writer.write_u8(len(data), order)
 

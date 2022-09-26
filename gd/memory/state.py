@@ -4,8 +4,42 @@ from typing import Type, TypeVar
 from attrs import define, field
 from typing_extensions import Protocol
 
-from gd.enums import Permissions, Platform
-from gd.memory.context import Context
+from gd.binary_utils import (
+    I8_SIZE,
+    U8_SIZE,
+    I16_SIZE,
+    U16_SIZE,
+    I32_SIZE,
+    U32_SIZE,
+    I64_SIZE,
+    U64_SIZE,
+    F32_SIZE,
+    F64_SIZE,
+    BOOL_SIZE,
+    from_i8,
+    from_u8,
+    from_i16,
+    from_u16,
+    from_i32,
+    from_u32,
+    from_i64,
+    from_u64,
+    from_f32,
+    from_f64,
+    from_bool,
+    to_i8,
+    to_u8,
+    to_i16,
+    to_u16,
+    to_i32,
+    to_u32,
+    to_i64,
+    to_u64,
+    to_f32,
+    to_f64,
+    to_bool,
+)
+from gd.enums import ByteOrder, Permissions, Platform
 from gd.memory.internal import (
     darwin_allocate,
     darwin_free,
@@ -41,8 +75,6 @@ from gd.memory.internal import (
     windows_terminate,
     windows_write,
 )
-from gd.memory.traits import Layout, Read, Write
-from gd.memory.types import Types
 from gd.platform import DARWIN, WINDOWS, PlatformConfig
 from gd.typing import Binary
 
@@ -72,7 +104,7 @@ DEFAULT_BASE_ADDRESS = 0
 DEFAULT_LOADED = False
 
 
-class AbstractStateProtocol(Protocol):
+class StateProtocol(Protocol):
     @abstractmethod
     def allocate_at(
         self, address: int, size: int, permissions: Permissions = Permissions.DEFAULT
@@ -104,41 +136,90 @@ class AbstractStateProtocol(Protocol):
     def allocate(self, size: int, permissions: Permissions = Permissions.DEFAULT) -> int:
         return self.allocate_at(0, size, permissions)
 
-    def allocate_for(
-        self, type: Type[Layout], permissions: Permissions = Permissions.DEFAULT
-    ) -> int:
-        return self.allocate(type.size, permissions)
+    def read_i8(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return from_i8(self.read_at(address, I8_SIZE), order)
 
-    def read(self, type: Type[Read[T]], address: int) -> Read[T]:
-        return type.read_from(self, address)
+    def read_u8(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return from_u8(self.read_at(address, U8_SIZE), order)
 
-    def read_value(self, type: Type[Read[T]], address: int) -> T:
-        return type.read_value_from(self, address)
+    def read_i16(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return from_i16(self.read_at(address, I16_SIZE), order)
 
-    def write(self, item: Write[T], address: int) -> None:
-        item.write_to(self, address)
+    def read_u16(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return from_u16(self.read_at(address, U16_SIZE), order)
 
-    def write_value(self, type: Type[Write[T]], value: T, address: int) -> None:
-        type.write_value_to(self, value, address)
+    def read_i32(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return from_i32(self.read_at(address, I32_SIZE), order)
+
+    def read_u32(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return from_u32(self.read_at(address, U32_SIZE), order)
+
+    def read_i64(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return from_i64(self.read_at(address, I64_SIZE), order)
+
+    def read_u64(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return from_u64(self.read_at(address, U64_SIZE), order)
+
+    def read_f32(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> float:
+        return from_f32(self.read_at(address, F32_SIZE), order)
+
+    def read_f64(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> float:
+        return from_f64(self.read_at(address, F64_SIZE), order)
+
+    def read_bool(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> bool:
+        return from_bool(self.read_at(address, BOOL_SIZE), order)
+
+    def write_i8(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_at(address, to_i8(value, order))
+
+    def write_u8(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_at(address, to_u8(value, order))
+
+    def write_i16(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_at(address, to_i16(value, order))
+
+    def write_u16(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_at(address, to_u16(value, order))
+
+    def write_i32(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_at(address, to_i32(value, order))
+
+    def write_u32(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_at(address, to_u32(value, order))
+
+    def write_i64(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_at(address, to_i64(value, order))
+
+    def write_u64(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_at(address, to_u64(value, order))
+
+    def write_f32(self, address: int, value: float, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_at(address, to_f32(value, order))
+
+    def write_f64(self, address: int, value: float, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_at(address, to_f64(value, order))
+
+    def write_bool(self, address: int, value: bool, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_at(address, to_bool(value, order))
 
 
 @define()
-class AbstractState(AbstractStateProtocol):
-    config: PlatformConfig
-    process_name: str
-    title: str = DEFAULT_TITLE
-    process_id: int = DEFAULT_PROCESS_ID
-    handle: int = DEFAULT_HANDLE
-    base_address: int = DEFAULT_BASE_ADDRESS
-    loaded: bool = DEFAULT_LOADED
+class AbstractState(StateProtocol):
+    config: PlatformConfig = field()
+    process_name: str = field()
+    title: str = field(default=DEFAULT_TITLE)
+    process_id: int = field(default=DEFAULT_PROCESS_ID)
+    handle: int = field(default=DEFAULT_HANDLE, repr=hex)
+    base_address: int = field(default=DEFAULT_BASE_ADDRESS, repr=hex)
+    loaded: bool = field(default=DEFAULT_LOADED)
 
     @property
-    def context(self) -> Context:
-        return Context(self.config)
+    def bits(self) -> int:
+        return self.config.bits
 
     @property
-    def types(self) -> Types:
-        return Types(self.config)
+    def platform(self) -> Platform:
+        return self.config.platform
 
     def unload(self) -> None:
         self.process_id = 0
@@ -160,6 +241,132 @@ class AbstractState(AbstractStateProtocol):
 
     def is_loaded(self) -> bool:
         return self.loaded
+
+    def read_isize(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        read_isize = {8: self.read_i8, 16: self.read_i16, 32: self.read_i32, 64: self.read_i64}
+
+        return read_isize[self.bits](address, order)
+
+    def read_usize(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        read_usize = {8: self.read_u8, 16: self.read_u16, 32: self.read_u32, 64: self.read_u64}
+
+        return read_usize[self.bits](address, order)
+
+    def read_byte(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return self.read_i8(address, order)
+
+    def read_ubyte(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return self.read_u8(address, order)
+
+    def read_short(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return self.read_i16(address, order)
+
+    def read_ushort(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return self.read_u16(address, order)
+
+    def read_int(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        if self.bits < 32:
+            return self.read_i16(address, order)
+
+        return self.read_i32(address, order)
+
+    def read_uint(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        if self.bits < 32:
+            return self.read_u16(address, order)
+
+        return self.read_u32(address, order)
+
+    def read_long(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        if self.bits > 32 and not self.platform.is_windows():
+            return self.read_i64(address, order)
+
+        return self.read_i32(address, order)
+
+    def read_ulong(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        if self.bits > 32 and not self.platform.is_windows():
+            return self.read_u64(address, order)
+
+        return self.read_u32(address, order)
+
+    def read_longlong(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return self.read_i64(address, order)
+
+    def read_ulonglong(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return self.read_u64(address, order)
+
+    def read_float(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> float:
+        return self.read_f32(address, order)
+
+    def read_double(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> float:
+        return self.read_f64(address, order)
+
+    def read_size(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return self.read_isize(address, order)
+
+    def write_isize(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        write_isize = {8: self.write_i8, 16: self.write_i16, 32: self.write_i32, 64: self.write_i64}
+
+        write_isize[self.bits](address, value, order)
+
+    def write_usize(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        write_usize = {8: self.write_u8, 16: self.write_u16, 32: self.write_u32, 64: self.write_u64}
+
+        write_usize[self.bits](address, value, order)
+
+    def write_byte(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_i8(address, value, order)
+
+    def write_ubyte(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_u8(address, value, order)
+
+    def write_short(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_i16(address, value, order)
+
+    def write_ushort(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_u16(address, value, order)
+
+    def write_int(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        if self.bits < 32:
+            self.write_i16(address, value, order)
+
+        else:
+            self.write_i32(address, value, order)
+
+    def write_uint(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        if self.bits < 32:
+            self.write_u16(address, value, order)
+
+        else:
+            self.write_u32(address, value, order)
+
+    def write_long(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        if self.bits > 32 and not self.platform.is_windows():
+            self.write_i64(address, value, order)
+
+        else:
+            self.write_i32(address, value, order)
+
+    def write_ulong(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        if self.bits > 32 and not self.platform.is_windows():
+            self.write_u64(address, value, order)
+
+        else:
+            self.write_u32(address, value, order)
+
+    def write_longlong(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_i64(address, value, order)
+
+    def write_ulonglong(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_u64(address, value, order)
+
+    def write_float(self, address: int, value: float, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_f32(address, value, order)
+
+    def write_double(self, address: int, value: float, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_f64(address, value, order)
+
+    def write_size(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_isize(address, value, order)
 
 
 @define()

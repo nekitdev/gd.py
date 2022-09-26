@@ -7,8 +7,8 @@ from gd.api.level import LevelAPI
 from gd.api.objects import Object, object_from_binary, object_to_binary
 from gd.api.ordered_set import OrderedSet, ordered_set
 from gd.binary import VERSION, Binary
-from gd.binary_utils import UTF_8, Reader, Writer
-from gd.constants import DEFAULT_ID, EMPTY
+from gd.binary_utils import Reader, Writer
+from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, EMPTY
 from gd.enums import ByteOrder, Filter, IconType, LevelLeaderboardStrategy
 from gd.filters import Filters
 from gd.song import Song
@@ -1789,7 +1789,8 @@ class Database(Binary):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> D:
         show_song_markers_bit = SHOW_SONG_MARKERS_BIT
         show_progress_bar_bit = SHOW_PROGRESS_BAR_BIT
@@ -1811,18 +1812,18 @@ class Database(Binary):
 
         udid_length = reader.read_u8(order)
 
-        udid = reader.read(udid_length).decode(encoding)
+        udid = reader.read(udid_length).decode(encoding, errors)
 
         name_length = reader.read_u8(order)
 
-        name = reader.read(name_length).decode(encoding)
+        name = reader.read(name_length).decode(encoding, errors)
 
         id = reader.read_u32(order)
         account_id = reader.read_u32(order)
 
         password_length = reader.read_u8(order)
 
-        password = reader.read(password_length).decode(encoding)
+        password = reader.read(password_length).decode(encoding, errors)
 
         session_id = reader.read_u32(order)
 
@@ -1876,14 +1877,14 @@ class Database(Binary):
         official_levels_length = reader.read_u8(order)
 
         official_levels = ordered_set(
-            LevelAPI.from_binary(binary, order, version, encoding)
+            LevelAPI.from_binary(binary, order, version, encoding, errors)
             for _ in range(official_levels_length)
         )
 
         saved_levels_length = reader.read_u8(order)
 
         saved_levels = ordered_set(
-            LevelAPI.from_binary(binary, order, version, encoding)
+            LevelAPI.from_binary(binary, order, version, encoding, errors)
             for _ in range(saved_levels_length)
         )
 
@@ -1900,7 +1901,7 @@ class Database(Binary):
         daily_levels_length = reader.read_u32(order)
 
         daily_levels = ordered_set(
-            LevelAPI.from_binary(binary, order, version, encoding)
+            LevelAPI.from_binary(binary, order, version, encoding, errors)
             for _ in range(daily_levels_length)
         )
 
@@ -1931,35 +1932,35 @@ class Database(Binary):
         gauntlet_levels_length = reader.read_u16(order)
 
         gauntlet_levels = ordered_set(
-            LevelAPI.from_binary(binary, order, version, encoding)
+            LevelAPI.from_binary(binary, order, version, encoding, errors)
             for _ in range(gauntlet_levels_length)
         )
 
         saved_folders_length = reader.read_u8(order)
 
         saved_folders = ordered_set(
-            Folder.from_binary(binary, order, version, encoding)
+            Folder.from_binary(binary, order, version, encoding, errors)
             for _ in range(saved_folders_length)
         )
 
         created_folders_length = reader.read_u8(order)
 
         created_folders = ordered_set(
-            Folder.from_binary(binary, order, version, encoding)
+            Folder.from_binary(binary, order, version, encoding, errors)
             for _ in range(created_folders_length)
         )
 
         created_levels_length = reader.read_u32(order)
 
         created_levels = ordered_set(
-            LevelAPI.from_binary(binary, order, version, encoding)
+            LevelAPI.from_binary(binary, order, version, encoding, errors)
             for _ in range(created_levels_length)
         )
 
         songs_length = reader.read_u32(order)
 
         songs = ordered_set(
-            Song.from_binary(binary, order, version, encoding) for _ in range(songs_length)
+            Song.from_binary(binary, order, version, encoding, errors) for _ in range(songs_length)
         )
 
         return cls(
@@ -2022,7 +2023,8 @@ class Database(Binary):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> None:
         liked_bit = LIKED_BIT
 
@@ -2031,13 +2033,13 @@ class Database(Binary):
         writer.write_f32(self.volume, order)
         writer.write_f32(self.sfx_volume, order)
 
-        data = self.udid.encode(encoding)
+        data = self.udid.encode(encoding, errors)
 
         writer.write_u8(len(data), order)
 
         writer.write(data)
 
-        data = self.name.encode(encoding)
+        data = self.name.encode(encoding, errors)
 
         writer.write_u8(len(data), order)
 
@@ -2046,7 +2048,7 @@ class Database(Binary):
         writer.write_u32(self.id, order)
         writer.write_u32(self.account_id, order)
 
-        data = self.password.encode(encoding)
+        data = self.password.encode(encoding, errors)
 
         writer.write_u8(len(data), order)
 
@@ -2123,14 +2125,14 @@ class Database(Binary):
         writer.write_u8(len(official_levels), order)
 
         for official_level in official_levels:
-            official_level.to_binary(binary, order, version, encoding)
+            official_level.to_binary(binary, order, version, encoding, errors)
 
         saved_levels = self.saved_levels
 
         writer.write_u32(len(saved_levels), order)
 
         for saved_level in saved_levels:
-            saved_level.to_binary(binary, order, version, encoding)
+            saved_level.to_binary(binary, order, version, encoding, errors)
 
         followed = self.followed
 
@@ -2153,7 +2155,7 @@ class Database(Binary):
         writer.write_u32(len(daily_levels), order)
 
         for daily_level in daily_levels:
-            daily_level.to_binary(binary, order, version, encoding)
+            daily_level.to_binary(binary, order, version, encoding, errors)
 
         writer.write_u32(self.daily_id, order)
         writer.write_u32(self.weekly_id, order)
@@ -2195,14 +2197,14 @@ class Database(Binary):
         writer.write_u16(len(gauntlet_levels), order)
 
         for gauntlet_level in gauntlet_levels:
-            gauntlet_level.to_binary(binary, order, version, encoding)
+            gauntlet_level.to_binary(binary, order, version, encoding, errors)
 
         saved_folders = self.saved_folders
 
         writer.write_u8(len(saved_folders), order)
 
         for saved_folder in saved_folders:
-            saved_folder.to_binary(binary, order, version, encoding)
+            saved_folder.to_binary(binary, order, version, encoding, errors)
 
         created_folders = self.created_folders
 
@@ -2213,14 +2215,14 @@ class Database(Binary):
         writer.write_u32(len(created_levels), order)
 
         for created_level in created_levels:
-            created_level.to_binary(binary, order, version, encoding)
+            created_level.to_binary(binary, order, version, encoding, errors)
 
         songs = self.songs
 
         writer.write_u32(len(songs), order)
 
         for song in songs:
-            song.to_binary(binary, order, version, encoding)
+            song.to_binary(binary, order, version, encoding, errors)
 
     def is_moderator(self) -> bool:
         return self.moderator

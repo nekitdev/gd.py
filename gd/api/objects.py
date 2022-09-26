@@ -6,9 +6,10 @@ from typing_extensions import Literal, TypeGuard
 
 from gd.api.hsv import HSV
 from gd.binary import VERSION, Binary
-from gd.binary_utils import BITS, UTF_8, Reader, Writer
+from gd.binary_constants import BITS
+from gd.binary_utils import Reader, Writer
 from gd.color import Color
-from gd.constants import EMPTY
+from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, EMPTY
 from gd.enum_extensions import Enum, Flag
 from gd.enums import (
     ByteOrder,
@@ -79,10 +80,14 @@ Z_ORDER_BITS = Z_ORDER_MASK.bit_length()
 class ObjectFlag(Flag):
     SIMPLE = 0
 
-    HAS_EDITOR_LAYER = 1
-    HAS_COLORS = 2
-    HAS_LINK = 4
-    HAS_Z = 8
+    HAS_ROTATION_AND_SCALE = 1
+    HAS_EDITOR_LAYER = 2
+    HAS_COLORS = 4
+    HAS_LINK = 8
+    HAS_Z = 16
+
+    def has_rotation_and_scale(self) -> bool:
+        return type(self).HAS_ROTATION_AND_SCALE in self
 
     def has_editor_layer(self) -> bool:
         return type(self).HAS_EDITOR_LAYER in self
@@ -193,9 +198,6 @@ class Object(Binary):
         x = reader.read_f32(order)
         y = reader.read_f32(order)
 
-        rotation = reader.read_f32(order)
-        scale = reader.read_f32(order)
-
         value = reader.read_u8(order)
 
         h_flipped = value & h_flipped_bit == h_flipped_bit
@@ -206,6 +208,14 @@ class Object(Binary):
         high_detail = value & high_detail_bit == high_detail_bit
         glow = value & glow_bit == glow_bit
         special_checked = value & special_checked_bit == special_checked_bit
+
+        if flag.has_rotation_and_scale():
+            rotation = reader.read_f32(order)
+            scale = reader.read_f32(order)
+
+        else:
+            rotation = DEFAULT_ROTATION
+            scale = DEFAULT_SCALE
 
         if flag.has_z():
             z_layer_order = reader.read_u16(order)
@@ -284,6 +294,12 @@ class Object(Binary):
 
         flag = ObjectFlag.SIMPLE
 
+        rotation = self.rotation
+        scale = self.scale
+
+        if rotation != DEFAULT_ROTATION or scale != DEFAULT_SCALE:
+            flag |= ObjectFlag.HAS_ROTATION_AND_SCALE
+
         z_layer = self.z_layer
         z_order = self.z_order
 
@@ -322,9 +338,6 @@ class Object(Binary):
         writer.write_f32(self.x, order)
         writer.write_f32(self.y, order)
 
-        writer.write_f32(self.rotation, order)
-        writer.write_f32(self.scale, order)
-
         value = 0
 
         if self.is_h_flipped():
@@ -352,6 +365,10 @@ class Object(Binary):
             value |= SPECIAL_CHECKED_BIT
 
         writer.write_u8(value, order)
+
+        if flag.has_rotation_and_scale():
+            writer.write_f32(self.rotation, order)
+            writer.write_f32(self.scale, order)
 
         if flag.has_z():
             z_layer_order = z_order & Z_ORDER_MASK
@@ -517,7 +534,8 @@ class Text(Object):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> S:
         text = super().from_binary(binary, order, version)
 
@@ -525,7 +543,7 @@ class Text(Object):
 
         length = reader.read_u16(order)
 
-        content = reader.read(length).decode(encoding)
+        content = reader.read(length).decode(encoding, errors)
 
         text.content = content
 
@@ -536,13 +554,14 @@ class Text(Object):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> None:
         super().to_binary(binary, order, version)
 
         writer = Writer(binary)
 
-        data = self.content.encode(encoding)
+        data = self.content.encode(encoding, errors)
 
         writer.write_u16(len(data), order)
 

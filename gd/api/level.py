@@ -5,7 +5,7 @@ from attrs import define, field
 
 from gd.api.recording import Recording
 from gd.binary import VERSION, Binary
-from gd.binary_utils import UTF_8, Reader, Writer
+from gd.binary_utils import Reader, Writer
 from gd.constants import (
     DEFAULT_ATTEMPTS,
     DEFAULT_CLICKS,
@@ -14,7 +14,9 @@ from gd.constants import (
     DEFAULT_DEMON,
     DEFAULT_DOWNLOADS,
     DEFAULT_EDITABLE,
+    DEFAULT_ENCODING,
     DEFAULT_EPIC,
+    DEFAULT_ERRORS,
     DEFAULT_FAVORITE,
     DEFAULT_GAUNTLET,
     DEFAULT_ID,
@@ -137,13 +139,14 @@ class LevelAPI(Binary):
         binary: BinaryIO,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        encoding: str = UTF_8,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> None:
         writer = Writer(binary)
 
         writer.write_u64(self.id, order)
 
-        data = self.name.encode(encoding)
+        data = self.name.encode(encoding, errors)
 
         writer.write_u8(len(data), order)
 
@@ -152,7 +155,7 @@ class LevelAPI(Binary):
         self.creator.to_binary(binary, order, version)
         self.song.to_binary(binary, order, version)
 
-        data = self.description.encode(encoding)
+        data = self.description.encode(encoding, errors)
 
         writer.write_u16(len(data), order)
 
