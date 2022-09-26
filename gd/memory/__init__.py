@@ -1,5 +1,5 @@
 from gd.memory.base import Struct, Union
-from gd.memory.fields import Field, I8, U8
+from gd.memory.fields import Field
 from gd.memory.state import (
     AbstractState,
     DarwinState,
