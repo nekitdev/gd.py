@@ -5,8 +5,6 @@ from attrs import define, field
 
 from gd.enums import ByteOrder
 from gd.memory.constants import DEFAULT_ALIGNMENT, DEFAULT_PACKED, DEFAULT_SIZE
-from gd.memory.fields import U8 as Byte
-from gd.memory.fields import ArrayField, fetch_fields
 from gd.memory.state import AbstractState
 from gd.memory.utils import set_module, set_name
 from gd.platform import PlatformConfig
@@ -14,6 +12,8 @@ from gd.string_utils import tick
 from gd.typing import ClassDecoratorIdentity, get_module, get_name
 
 __all__ = ("Base", "Struct", "Union", "struct", "union")
+
+TB = TypeVar("TB", bound="Type[Base]")
 
 
 @define()
@@ -34,16 +34,38 @@ class Base:
         return type(self).ALIGNMENT
 
 
+TS = TypeVar("TS", bound="Type[Struct]")
+
+
 @define()
 class Struct(Base):
     """Represents `struct` types."""
 
     PACKED: ClassVar[bool] = DEFAULT_PACKED
 
+    @classmethod
+    def reconstruct(cls: TS, config: PlatformConfig) -> TS:
+        return struct(config=config)(cls)
+
+    @classmethod
+    def reconstruct_for(cls: TS, state: AbstractState) -> TS:
+        return cls.reconstruct(state.config)
+
+
+TU = TypeVar("TU", bound="Type[Union]")
+
 
 @define()
 class Union(Base):
     """Represents `union` types."""
+
+    @classmethod
+    def reconstruct(cls: TU, config: PlatformConfig) -> TU:
+        return union(config=config)(cls)
+
+    @classmethod
+    def reconstruct_for(cls: TU, state: AbstractState) -> TU:
+        return cls.reconstruct(state.config)
 
 
 PAD_NAME = "__pad_{}__"
@@ -53,9 +75,6 @@ pad_name = PAD_NAME.format
 FINAL = "final"
 
 RESERVED_NAME = f"the field name can not be {tick(FINAL)}"
-
-
-TS = TypeVar("TS", bound=Type[Struct])
 
 
 def struct(
@@ -167,7 +186,7 @@ def struct(
             new_struct_type.SIZE = size
 
         for name, field in fields.items():
-            set_attribute(new_struct_type, name, field)
+            set_attribute(new_struct_type, name, ActualField(field))
 
         set_name(new_struct_type, get_name(struct_type))
         set_module(new_struct_type, get_module(struct_type))
@@ -175,9 +194,6 @@ def struct(
         return new_struct_type
 
     return wrap
-
-
-TU = TypeVar("TU", bound=Type[Union])
 
 
 def union(config: Optional[PlatformConfig] = None) -> ClassDecoratorIdentity[TU]:
@@ -194,7 +210,7 @@ def union(config: Optional[PlatformConfig] = None) -> ClassDecoratorIdentity[TU]
         new_union_type.ALIGNMENT = max(field.compute_alignment(config) for field in fields.values())
 
         for name, field in fields.items():
-            set_attribute(new_union_type, name, field)
+            set_attribute(new_union_type, name, ActualField(field))
 
         set_name(new_union_type, get_name(union_type))
         set_module(new_union_type, get_module(union_type))
@@ -202,3 +218,8 @@ def union(config: Optional[PlatformConfig] = None) -> ClassDecoratorIdentity[TU]
         return new_union_type
 
     return wrap
+
+
+# import cycle solution
+from gd.memory.fields import U8 as Byte
+from gd.memory.fields import ActualField, ArrayField, fetch_fields

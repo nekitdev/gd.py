@@ -539,8 +539,6 @@ def get_system_state(
 
 State: Type[AbstractState]
 
-get_state: Binary[str, str, AbstractState]
-
 if DARWIN:
     State = DarwinState
     get_state = get_darwin_state

@@ -28,7 +28,7 @@ class CCSize(Struct):
 
 
 class CCRectangle(Struct):
-    point: CCPoint = mut_field()
+    origin: CCPoint = mut_field()
     size: CCSize = mut_field()
 
 

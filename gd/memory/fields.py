@@ -1,7 +1,18 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Iterator, Optional, Tuple, Type, TypeVar, Union, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    Iterator,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    overload,
+)
 
 from attrs import define, field
 from typing_extensions import Never, Protocol
@@ -21,10 +32,7 @@ from gd.binary_constants import (
 from gd.enums import ByteOrder
 from gd.memory.state import AbstractState
 from gd.platform import PlatformConfig
-from gd.typing import StringDict, is_instance
-
-if TYPE_CHECKING:
-    from gd.memory.base import Base
+from gd.typing import AnyType, StringDict, is_instance
 
 __all__ = ("Field",)
 
@@ -67,28 +75,29 @@ F = TypeVar("F", bound="AnyField")
 class Field(FieldProtocol[T]):
     offset: int = field(default=DEFAULT_OFFSET, repr=hex)
 
-    @overload
-    def __get__(self: F, instance: None, type: Optional[Type[B]] = ...) -> F:
-        ...
-
-    @overload
-    def __get__(self, instance: B, type: Optional[Type[B]]) -> T:
-        ...
-
-    def __get__(self: F, instance: Optional[B], type: Optional[Type[B]] = None) -> Union[F, T]:
-        if instance is None:
-            return self
-
-        return self.read(instance.state, instance.address + self.offset, instance.order)
-
-    def __set__(self, instance: B, value: T) -> None:
-        self.write(instance.state, instance.address + self.offset, value, instance.order)
-
-    def __delete__(self, instance: B) -> Never:
-        raise AttributeError(CAN_NOT_DELETE_FIELDS)
-
     def copy(self: F) -> F:
         return type(self)(self.offset)
+
+    if TYPE_CHECKING:
+
+        @overload
+        def __get__(self, instance: None, type: Optional[Type[B]] = ...) -> Field[T]:
+            ...
+
+        @overload
+        def __get__(self, instance: B, type: Optional[Type[B]]) -> T:
+            ...
+
+        def __get__(
+            self, instance: Optional[B], type: Optional[Type[B]] = None
+        ) -> Union[Field[T], T]:
+            ...
+
+        def __set__(self, instance: B, value: T) -> None:
+            ...
+
+        def __delete__(self, instance: B) -> Never:
+            ...
 
 
 AnyField = Field[Any]
@@ -103,6 +112,38 @@ def fetch_fields_iterator(base: Type[B]) -> Iterator[Tuple[str, AnyField]]:
 
 def fetch_fields(base: Type[B]) -> StringDict[AnyField]:
     return dict(fetch_fields_iterator(base))
+
+
+@define()
+class ActualField(Generic[T]):
+    field: Field[T]
+
+    @overload
+    def __get__(self, instance: None, type: Optional[Type[B]] = ...) -> Field[T]:
+        ...
+
+    @overload
+    def __get__(self, instance: B, type: Optional[Type[B]]) -> T:
+        ...
+
+    def __get__(self, instance: Optional[B], type: Optional[Type[B]] = None) -> Union[Field[T], T]:
+        if instance is None:
+            return self.field
+
+        if is_instance(instance, Base):
+            return self.field.read(
+                instance.state, instance.address + self.field.offset, instance.order
+            )
+
+        return self.field
+
+    def __set__(self, instance: B, value: T) -> None:
+        self.field.write(
+            instance.state, instance.address + self.field.offset, value, instance.order
+        )
+
+    def __delete__(self, instance: B) -> Never:
+        raise AttributeError(CAN_NOT_DELETE_FIELDS)
 
 
 @define()
@@ -560,6 +601,7 @@ class Double(Field[float]):
         return F64_SIZE
 
 
+# import cycle solution
 from gd.memory.array import Array
 
 UNSIZED_ARRAY = "array is unsized"
@@ -598,3 +640,7 @@ class ArrayField(Field[Array[T]]):
 
     def compute_alignment(self, config: PlatformConfig) -> int:
         return self.type.compute_alignment(config)
+
+
+# import cycle solution
+from gd.memory.base import Base
