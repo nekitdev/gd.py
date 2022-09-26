@@ -78,27 +78,6 @@ class Field(FieldProtocol[T]):
     def copy(self: F) -> F:
         return type(self)(self.offset)
 
-    if TYPE_CHECKING:
-
-        @overload
-        def __get__(self, instance: None, type: Optional[Type[B]] = ...) -> Field[T]:
-            ...
-
-        @overload
-        def __get__(self, instance: B, type: Optional[Type[B]]) -> T:
-            ...
-
-        def __get__(
-            self, instance: Optional[B], type: Optional[Type[B]] = None
-        ) -> Union[Field[T], T]:
-            ...
-
-        def __set__(self, instance: B, value: T) -> None:
-            ...
-
-        def __delete__(self, instance: B) -> Never:
-            ...
-
 
 AnyField = Field[Any]
 
@@ -606,6 +585,8 @@ from gd.memory.array import Array
 
 UNSIZED_ARRAY = "array is unsized"
 
+AF = TypeVar("AF", bound="AnyArrayField")
+
 
 @define()
 class ArrayField(Field[Array[T]]):
@@ -640,6 +621,12 @@ class ArrayField(Field[Array[T]]):
 
     def compute_alignment(self, config: PlatformConfig) -> int:
         return self.type.compute_alignment(config)
+
+    def copy(self: AF) -> AF:
+        return type(self)(self.type, self.length, self.offset, self.array_type)
+
+
+AnyArrayField = ArrayField[Any]
 
 
 # import cycle solution
