@@ -7,7 +7,7 @@ from attrs import define
 from gd.api.database import Database
 from gd.async_utils import run_blocking
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
-from gd.encoding import decode_system_save, decode_save, encode_system_save, encode_save
+from gd.encoding import decode_save, decode_system_save, encode_save, encode_system_save
 from gd.platform import SYSTEM_PLATFORM, Platform
 from gd.typing import IntoPath, Optional, Tuple
 
@@ -155,7 +155,9 @@ class SaveManager(Generic[D]):
         apply_xor: bool = False,
         follow_system: bool = False,
     ) -> Tuple[bytes, bytes]:
-        main_data, levels_data = self.dump_parts(database, apply_xor=apply_xor, follow_system=follow_system)
+        main_data, levels_data = self.dump_parts(
+            database, apply_xor=apply_xor, follow_system=follow_system
+        )
 
         return (main_data, levels_data)
 
@@ -215,7 +217,9 @@ class SaveManager(Generic[D]):
         apply_xor: bool = False,
         follow_system: bool = False,
     ) -> D:
-        return self.load_parts(main_data, levels_data, apply_xor=apply_xor, follow_system=follow_system)
+        return self.load_parts(
+            main_data, levels_data, apply_xor=apply_xor, follow_system=follow_system
+        )
 
     async def from_bytes_async(
         self,
@@ -225,7 +229,11 @@ class SaveManager(Generic[D]):
         follow_system: bool = False,
     ) -> D:
         return await run_blocking(
-            self.load_parts, main_data, levels_data, apply_xor=apply_xor, follow_system=follow_system
+            self.load_parts,
+            main_data,
+            levels_data,
+            apply_xor=apply_xor,
+            follow_system=follow_system,
         )
 
     def from_strings(
@@ -286,7 +294,9 @@ class SaveManager(Generic[D]):
     def dump_parts(
         self, database: Database, apply_xor: bool = False, follow_system: bool = False
     ) -> Tuple[bytes, bytes]:
-        main_data = self.encode_data(database.main.dump(), apply_xor=apply_xor, follow_system=follow_system)
+        main_data = self.encode_data(
+            database.main.dump(), apply_xor=apply_xor, follow_system=follow_system
+        )
         levels_data = self.encode_data(
             database.levels.dump(), apply_xor=apply_xor, follow_system=follow_system
         )
@@ -301,7 +311,9 @@ class SaveManager(Generic[D]):
         apply_xor: bool = False,
         follow_system: bool = False,
     ) -> Tuple[str, str]:
-        main_data, levels_data = self.dump_parts(database, apply_xor=apply_xor, follow_system=follow_system)
+        main_data, levels_data = self.dump_parts(
+            database, apply_xor=apply_xor, follow_system=follow_system
+        )
 
         return (main_data.decode(encoding, errors), levels_data.decode(encoding, errors))
 

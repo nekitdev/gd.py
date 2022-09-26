@@ -53,6 +53,9 @@ __all__ = (
     "Named",
     "is_named",
     "get_name",
+    "HasModule",
+    "has_module",
+    "get_module",
     "is_instance",
 )
 
@@ -197,3 +200,19 @@ def is_named(item: Any) -> TypeGuard[Named]:
 
 def get_name(item: Named) -> str:
     return item.__name__
+
+
+@runtime_checkable
+class HasModule(Protocol):
+    __module__: str
+
+
+MODULE = "__module__"
+
+
+def has_module(item: Any) -> TypeGuard[HasModule]:
+    return has_attribute(item, MODULE)
+
+
+def get_module(item: HasModule) -> str:
+    return item.__module__

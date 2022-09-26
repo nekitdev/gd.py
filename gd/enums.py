@@ -82,6 +82,7 @@ __all__ = (
 
 class SimpleKey(Enum, unknown=True):
     """An enumertion of keys used in *XOR* ciphering."""
+
     SAVE = 11
 
 

@@ -13,11 +13,16 @@ __all__ = (
     "Union",
     "external",
     "set_name",
+    "set_module",
 )
 
 
 def set_name(item: Any, name: str) -> None:
     item.__qualname__ = item.__name__ = name
+
+
+def set_module(item: Any, module: str) -> None:
+    item.__module__ = module
 
 
 FIELDS = "_fields_"

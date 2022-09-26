@@ -5,39 +5,39 @@ from attrs import define, field
 from typing_extensions import Protocol
 
 from gd.binary_utils import (
-    I8_SIZE,
-    U8_SIZE,
-    I16_SIZE,
-    U16_SIZE,
-    I32_SIZE,
-    U32_SIZE,
-    I64_SIZE,
-    U64_SIZE,
+    BOOL_SIZE,
     F32_SIZE,
     F64_SIZE,
-    BOOL_SIZE,
-    from_i8,
-    from_u8,
-    from_i16,
-    from_u16,
-    from_i32,
-    from_u32,
-    from_i64,
-    from_u64,
+    I8_SIZE,
+    I16_SIZE,
+    I32_SIZE,
+    I64_SIZE,
+    U8_SIZE,
+    U16_SIZE,
+    U32_SIZE,
+    U64_SIZE,
+    from_bool,
     from_f32,
     from_f64,
-    from_bool,
-    to_i8,
-    to_u8,
-    to_i16,
-    to_u16,
-    to_i32,
-    to_u32,
-    to_i64,
-    to_u64,
+    from_i8,
+    from_i16,
+    from_i32,
+    from_i64,
+    from_u8,
+    from_u16,
+    from_u32,
+    from_u64,
+    to_bool,
     to_f32,
     to_f64,
-    to_bool,
+    to_i8,
+    to_i16,
+    to_i32,
+    to_i64,
+    to_u8,
+    to_u16,
+    to_u32,
+    to_u64,
 )
 from gd.enums import ByteOrder, Permissions, Platform
 from gd.memory.internal import (
@@ -294,14 +294,14 @@ class AbstractState(StateProtocol):
     def read_ulonglong(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
         return self.read_u64(address, order)
 
+    def read_size(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
+        return self.read_isize(address, order)
+
     def read_float(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> float:
         return self.read_f32(address, order)
 
     def read_double(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> float:
         return self.read_f64(address, order)
-
-    def read_size(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
-        return self.read_isize(address, order)
 
     def write_isize(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
         write_isize = {8: self.write_i8, 16: self.write_i16, 32: self.write_i32, 64: self.write_i64}
@@ -356,17 +356,19 @@ class AbstractState(StateProtocol):
     def write_longlong(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
         self.write_i64(address, value, order)
 
-    def write_ulonglong(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+    def write_ulonglong(
+        self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+    ) -> None:
         self.write_u64(address, value, order)
 
     def write_float(self, address: int, value: float, order: ByteOrder = ByteOrder.NATIVE) -> None:
         self.write_f32(address, value, order)
 
-    def write_double(self, address: int, value: float, order: ByteOrder = ByteOrder.NATIVE) -> None:
-        self.write_f64(address, value, order)
-
     def write_size(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
         self.write_isize(address, value, order)
+
+    def write_double(self, address: int, value: float, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        self.write_f64(address, value, order)
 
 
 @define()

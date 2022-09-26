@@ -331,9 +331,7 @@ class User(Entity):
     ) -> User:
         return await self.client.get_user(self.account_id, simple=simple, friend_state=friend_state)
 
-    async def update(
-        self: U, friend_state: bool = DEFAULT_FRIEND_STATE
-    ) -> U:
+    async def update(self: U, friend_state: bool = DEFAULT_FRIEND_STATE) -> U:
         return self.update_from(await self.get(friend_state=friend_state))
 
     async def send(

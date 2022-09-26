@@ -3,12 +3,15 @@ from typing import ClassVar, Optional, Type, TypeVar
 
 from attrs import define, field
 
+from gd.enums import ByteOrder
 from gd.memory.constants import DEFAULT_ALIGNMENT, DEFAULT_PACKED, DEFAULT_SIZE
-from gd.memory.fields import fetch_fields
+from gd.memory.fields import U8 as Byte
+from gd.memory.fields import ArrayField, fetch_fields
 from gd.memory.state import AbstractState
+from gd.memory.utils import set_module, set_name
 from gd.platform import PlatformConfig
 from gd.string_utils import tick
-from gd.typing import ClassDecoratorIdentity
+from gd.typing import ClassDecoratorIdentity, get_module, get_name
 
 __all__ = ("Base", "Struct", "Union", "struct", "union")
 
@@ -20,6 +23,7 @@ class Base:
 
     state: AbstractState = field()
     address: int = field(repr=hex)
+    order: ByteOrder = field(default=ByteOrder.NATIVE)
 
     @property
     def size(self) -> int:
@@ -99,13 +103,6 @@ def struct(
                 if main_name == FINAL:
                     raise ValueError(RESERVED_NAME)
 
-                main_field.offset = offset
-
-                main_size = main_field.compute_size(config)
-
-                offset += main_size
-                size += main_size
-
                 # if the field has null alignment, move onto the next one
 
                 main_alignment = main_field.compute_alignment(config)
@@ -130,16 +127,23 @@ def struct(
                 if remain_size:
                     pad_size = main_alignment - remain_size
 
-                    offset += pad_size
-                    size += pad_size
-
                     name = pad_name(main_name)
 
-                    field = ...
+                    field = ArrayField(Byte(), pad_size, offset)
 
                     field_array.insert(index, (name, field))
 
+                    offset += pad_size
+                    size += pad_size
+
                     index += 1
+
+                main_field.offset = offset
+
+                main_size = main_field.compute_size(config)
+
+                offset += main_size
+                size += main_size
 
                 index += 1
 
@@ -151,19 +155,22 @@ def struct(
                 if remain_size:
                     pad_size = alignment - remain_size
 
-                    offset += pad_size
-                    size += pad_size
-
                     name = pad_name(FINAL)
 
-                    field = ...
+                    field = ArrayField(Byte(), pad_size, offset)
 
                     fields[name] = field
+
+                    offset += pad_size
+                    size += pad_size
 
             new_struct_type.SIZE = size
 
         for name, field in fields.items():
             set_attribute(new_struct_type, name, field)
+
+        set_name(new_struct_type, get_name(struct_type))
+        set_module(new_struct_type, get_module(struct_type))
 
         return new_struct_type
 
@@ -183,15 +190,14 @@ def union(config: Optional[PlatformConfig] = None) -> ClassDecoratorIdentity[TU]
         class new_union_type(union_type):
             pass
 
-        new_union_type.SIZE = max(
-            field.compute_size(config) for field in fields.values()
-        )
-        new_union_type.ALIGNMENT = max(
-            field.compute_alignment(config) for field in fields.values()
-        )
+        new_union_type.SIZE = max(field.compute_size(config) for field in fields.values())
+        new_union_type.ALIGNMENT = max(field.compute_alignment(config) for field in fields.values())
 
         for name, field in fields.items():
             set_attribute(new_union_type, name, field)
+
+        set_name(new_union_type, get_name(union_type))
+        set_module(new_union_type, get_module(union_type))
 
         return new_union_type
 

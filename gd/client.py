@@ -26,8 +26,6 @@ from yarl import URL
 
 from gd.api.database import Database
 from gd.api.recording import Recording
-
-from gd.api.recording import Recording
 from gd.artist import Artist
 from gd.async_utils import awaiting, run, run_iterables
 from gd.comments import Comment, LevelComment, UserComment

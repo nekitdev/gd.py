@@ -16,13 +16,7 @@ from typing import (
 from iters.async_utils import async_iter, async_list
 from typing_extensions import Literal, ParamSpec
 
-from gd.typing import (
-    AnyException,
-    AnyIterable,
-    Nullary,
-    is_error,
-    is_instance,
-)
+from gd.typing import AnyException, AnyIterable, Nullary, is_error, is_instance
 
 __all__ = (
     "run_blocking",

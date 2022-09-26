@@ -41,7 +41,6 @@ __all__ = (
 
 from typing_extensions import Final
 
-
 I8: Final[str] = "b"
 U8: Final[str] = "B"
 I16: Final[str] = "h"
