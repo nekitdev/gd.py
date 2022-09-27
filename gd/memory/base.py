@@ -186,6 +186,7 @@ def struct(
             new_struct_type.SIZE = size
 
         for name, field in fields.items():
+            print(name, field)
             set_attribute(new_struct_type, name, ActualField(field))
 
         set_name(new_struct_type, get_name(struct_type))

@@ -1,23 +1,13 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Generic,
-    Iterator,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import Any, Generic, Iterator, Optional, Tuple, Type, TypeVar, Union, overload
 
 from attrs import define, field
 from typing_extensions import Never, Protocol
 
 from gd.binary_constants import (
+    BOOL_SIZE,
     F32_SIZE,
     F64_SIZE,
     I8_SIZE,
@@ -30,11 +20,48 @@ from gd.binary_constants import (
     U64_SIZE,
 )
 from gd.enums import ByteOrder
+from gd.memory.constants import VOID_SIZE
 from gd.memory.state import AbstractState
 from gd.platform import PlatformConfig
-from gd.typing import AnyType, StringDict, is_instance
+from gd.typing import StringDict, is_instance
 
-__all__ = ("Field",)
+__all__ = (
+    "Field",
+    "I8",
+    "U8",
+    "I16",
+    "U16",
+    "I32",
+    "U32",
+    "I64",
+    "U64",
+    "ISize",
+    "USize",
+    "F32",
+    "F64",
+    "Bool",
+    "Byte",
+    "UByte",
+    "Short",
+    "UShort",
+    "Int",
+    "UInt",
+    "Long",
+    "ULong",
+    "LongLong",
+    "ULongLong",
+    "Size",
+    "Float",
+    "Double",
+    "Ref",
+    "MutRef",
+    "ArrayField",
+    "MutArrayField",
+    "PointerField",
+    "MutPointerField",
+    "StructField",
+    "UnionField",
+)
 
 T = TypeVar("T")
 
@@ -339,6 +366,22 @@ class F64(Field[float]):
         return F64_SIZE
 
 
+class Bool(Field[bool]):
+    def read(self, state: AbstractState, address: int, order: ByteOrder = ByteOrder.NATIVE) -> bool:
+        return state.read_bool(address, order)
+
+    def write(
+        self, state: AbstractState, address: int, value: bool, order: ByteOrder = ByteOrder.NATIVE
+    ) -> None:
+        state.write_bool(address, value, order)
+
+    def compute_size(self, config: PlatformConfig) -> int:
+        return BOOL_SIZE
+
+    def compute_alignment(self, config: PlatformConfig) -> int:
+        return BOOL_SIZE
+
+
 class Byte(Field[int]):
     def read(self, state: AbstractState, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
         return state.read_byte(address, order)
@@ -580,8 +623,24 @@ class Double(Field[float]):
         return F64_SIZE
 
 
+class Void(Field[None]):
+    def read(self, state: AbstractState, address: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
+        return None
+
+    def write(
+        self, state: AbstractState, address: int, value: None, order: ByteOrder = ByteOrder.NATIVE
+    ) -> None:
+        pass
+
+    def compute_size(self, config: PlatformConfig) -> int:
+        return VOID_SIZE
+
+    def compute_alignment(self, config: PlatformConfig) -> int:
+        return VOID_SIZE
+
+
 # import cycle solution
-from gd.memory.array import Array
+from gd.memory.arrays import Array
 
 UNSIZED_ARRAY = "array is unsized"
 
@@ -627,6 +686,293 @@ class ArrayField(Field[Array[T]]):
 
 
 AnyArrayField = ArrayField[Any]
+
+
+# import cycle solution
+from gd.memory.arrays import MutArray
+
+MAF = TypeVar("MAF", bound="AnyMutArrayField")
+
+
+@define()
+class MutArrayField(Field[MutArray[T]]):
+    type: Field[T] = field()
+    length: Optional[int] = field(default=None)
+
+    offset: int = field(default=DEFAULT_OFFSET, repr=hex)
+
+    array_type: Type[MutArray[T]] = field(default=MutArray[T], repr=False)
+
+    def read(
+        self, state: AbstractState, address: int, order: ByteOrder = ByteOrder.NATIVE
+    ) -> MutArray[T]:
+        return self.array_type(state, address, self.type, self.length, order)
+
+    def write(
+        self,
+        state: AbstractState,
+        address: int,
+        value: MutArray[T],
+        order: ByteOrder = ByteOrder.NATIVE,
+    ) -> None:
+        pass  # do nothing
+
+    def compute_size(self, config: PlatformConfig) -> int:
+        length = self.length
+
+        if length is None:
+            raise TypeError(UNSIZED_ARRAY)
+
+        return self.type.compute_size(config) * length
+
+    def compute_alignment(self, config: PlatformConfig) -> int:
+        return self.type.compute_alignment(config)
+
+    def copy(self: MAF) -> MAF:
+        return type(self)(self.type, self.length, self.offset, self.array_type)
+
+
+AnyMutArrayField = MutArrayField[Any]
+
+
+# import cycle solution
+from gd.memory.base import Struct
+
+S = TypeVar("S", bound="Struct")
+
+SF = TypeVar("SF", bound="AnyStructField")
+
+
+@define()
+class StructField(Field[S]):
+    struct_type: Type[S] = field()
+
+    offset: int = field(default=DEFAULT_OFFSET, repr=hex)
+
+    def read(self, state: AbstractState, address: int, order: ByteOrder = ByteOrder.NATIVE) -> S:
+        return self.struct_type(state, address, order)
+
+    def write(
+        self,
+        state: AbstractState,
+        address: int,
+        value: S,
+        order: ByteOrder = ByteOrder.NATIVE,
+    ) -> None:
+        pass  # do nothing
+
+    def compute_size(self, config: PlatformConfig) -> int:
+        return self.struct_type.reconstruct(config).SIZE
+
+    def compute_alignment(self, config: PlatformConfig) -> int:
+        return self.struct_type.reconstruct(config).ALIGNMENT
+
+    def copy(self: SF) -> SF:
+        return type(self)(self.struct_type, self.offset)
+
+
+AnyStructField = StructField[Struct]
+
+
+# import cycle solution
+from gd.memory.base import Union as UnionType
+
+U = TypeVar("U", bound="UnionType")
+
+UF = TypeVar("UF", bound="AnyUnionField")
+
+
+@define()
+class UnionField(Field[U]):
+    union_type: Type[U] = field()
+
+    offset: int = field(default=DEFAULT_OFFSET, repr=hex)
+
+    def read(self, state: AbstractState, address: int, order: ByteOrder = ByteOrder.NATIVE) -> U:
+        return self.union_type(state, address, order)
+
+    def write(
+        self,
+        state: AbstractState,
+        address: int,
+        value: U,
+        order: ByteOrder = ByteOrder.NATIVE,
+    ) -> None:
+        pass  # do nothing
+
+    def compute_size(self, config: PlatformConfig) -> int:
+        return self.union_type.reconstruct(config).SIZE
+
+    def compute_alignment(self, config: PlatformConfig) -> int:
+        return self.union_type.reconstruct(config).ALIGNMENT
+
+    def copy(self: UF) -> UF:
+        return type(self)(self.union_type, self.offset)
+
+
+AnyUnionField = UnionField[UnionType]
+
+
+# import cycle solution
+from gd.memory.pointers import Pointer
+
+PF = TypeVar("PF", bound="AnyPointerField")
+
+
+@define()
+class PointerField(Field[Pointer[T]]):
+    type: Field[T] = field()
+    pointer_type: Field[int] = field(factory=USize)
+
+    offset: int = field(default=DEFAULT_OFFSET, repr=hex)
+
+    internal_pointer_type: Type[Pointer[T]] = field(default=Pointer[T])
+
+    def read(
+        self, state: AbstractState, address: int, order: ByteOrder = ByteOrder.NATIVE
+    ) -> Pointer[T]:
+        return self.internal_pointer_type(state, address, self.type, self.pointer_type, order)
+
+    def write(
+        self,
+        state: AbstractState,
+        address: int,
+        value: Pointer[T],
+        order: ByteOrder = ByteOrder.NATIVE,
+    ) -> None:
+        pass  # do nothing
+
+    def compute_size(self, config: PlatformConfig) -> int:
+        return self.pointer_type.compute_size(config)
+
+    def compute_alignment(self, config: PlatformConfig) -> int:
+        return self.pointer_type.compute_alignment(config)
+
+    def copy(self: PF) -> PF:
+        return type(self)(self.type, self.pointer_type, self.offset, self.internal_pointer_type)
+
+
+AnyPointerField = PointerField[Any]
+
+
+# import cycle solution
+from gd.memory.pointers import MutPointer
+
+MPF = TypeVar("MPF", bound="AnyMutPointerField")
+
+
+@define()
+class MutPointerField(Field[MutPointer[T]]):
+    type: Field[T] = field()
+    pointer_type: Field[int] = field(factory=USize)
+
+    offset: int = field(default=DEFAULT_OFFSET, repr=hex)
+
+    internal_pointer_type: Type[MutPointer[T]] = field(default=MutPointer[T])
+
+    def read(
+        self, state: AbstractState, address: int, order: ByteOrder = ByteOrder.NATIVE
+    ) -> MutPointer[T]:
+        return self.internal_pointer_type(state, address, self.type, self.pointer_type, order)
+
+    def write(
+        self,
+        state: AbstractState,
+        address: int,
+        value: MutPointer[T],
+        order: ByteOrder = ByteOrder.NATIVE,
+    ) -> None:
+        pass  # do nothing
+
+    def compute_size(self, config: PlatformConfig) -> int:
+        return self.pointer_type.compute_size(config)
+
+    def compute_alignment(self, config: PlatformConfig) -> int:
+        return self.pointer_type.compute_alignment(config)
+
+    def copy(self: MPF) -> MPF:
+        return type(self)(self.type, self.pointer_type, self.offset, self.internal_pointer_type)
+
+
+AnyMutPointerField = MutPointerField[Any]
+
+
+IMMUTABLE_REFERENCE = "the reference is immutable"
+
+R = TypeVar("R", bound="Ref")
+
+
+@define()
+class Ref(Field[T]):
+    type: Field[T] = field()
+    pointer_type: Field[int] = field(factory=USize)
+
+    offset: int = field(default=DEFAULT_OFFSET, repr=hex)
+
+    internal_pointer_type: Type[Pointer[T]] = field(default=Pointer[T])
+
+    def read(self, state: AbstractState, address: int, order: ByteOrder = ByteOrder.NATIVE) -> T:
+        return self.internal_pointer_type(state, address, self.type, self.pointer_type, order).value
+
+    def write(
+        self,
+        state: AbstractState,
+        address: int,
+        value: T,
+        order: ByteOrder = ByteOrder.NATIVE,
+    ) -> Never:
+        raise TypeError(IMMUTABLE_REFERENCE)
+
+    def compute_size(self, config: PlatformConfig) -> int:
+        return self.pointer_type.compute_size(config)
+
+    def compute_alignment(self, config: PlatformConfig) -> int:
+        return self.pointer_type.compute_alignment(config)
+
+    def copy(self: R) -> R:
+        return type(self)(self.type, self.pointer_type, self.offset, self.internal_pointer_type)
+
+
+AnyRef = Ref[Any]
+
+
+MR = TypeVar("MR", bound="AnyMutRef")
+
+
+@define()
+class MutRef(Field[T]):
+    type: Field[T] = field()
+    pointer_type: Field[int] = field(factory=USize)
+
+    offset: int = field(default=DEFAULT_OFFSET, repr=hex)
+
+    internal_pointer_type: Type[MutPointer[T]] = field(default=MutPointer[T])
+
+    def read(self, state: AbstractState, address: int, order: ByteOrder = ByteOrder.NATIVE) -> T:
+        return self.internal_pointer_type(state, address, self.type, self.pointer_type, order).value
+
+    def write(
+        self,
+        state: AbstractState,
+        address: int,
+        value: T,
+        order: ByteOrder = ByteOrder.NATIVE,
+    ) -> None:
+        self.internal_pointer_type(
+            state, address, self.type, self.pointer_type, order
+        ).value = value
+
+    def compute_size(self, config: PlatformConfig) -> int:
+        return self.pointer_type.compute_size(config)
+
+    def compute_alignment(self, config: PlatformConfig) -> int:
+        return self.pointer_type.compute_alignment(config)
+
+    def copy(self: MR) -> MR:
+        return type(self)(self.type, self.pointer_type, self.offset, self.internal_pointer_type)
+
+
+AnyMutRef = MutRef[Any]
 
 
 # import cycle solution
