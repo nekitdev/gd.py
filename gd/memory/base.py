@@ -4,7 +4,7 @@ from typing import ClassVar, Optional, Type, TypeVar
 from attrs import define, field
 
 from gd.enums import ByteOrder
-from gd.memory.constants import DEFAULT_ALIGNMENT, DEFAULT_PACKED, DEFAULT_SIZE
+from gd.memory.constants import DEFAULT_ALIGNMENT, DEFAULT_PACKED, DEFAULT_SIZE, DEFAULT_VIRTUAL
 from gd.memory.state import AbstractState
 from gd.memory.utils import set_module, set_name
 from gd.platform import PlatformConfig
@@ -42,10 +42,11 @@ class Struct(Base):
     """Represents `struct` types."""
 
     PACKED: ClassVar[bool] = DEFAULT_PACKED
+    VIRTUAL: ClassVar[bool] = DEFAULT_VIRTUAL
 
     @classmethod
     def reconstruct(cls: TS, config: PlatformConfig) -> TS:
-        return struct(config=config)(cls)
+        return struct(cls.PACKED, cls.VIRTUAL, config)(cls)
 
     @classmethod
     def reconstruct_for(cls: TS, state: AbstractState) -> TS:
@@ -61,7 +62,7 @@ class Union(Base):
 
     @classmethod
     def reconstruct(cls: TU, config: PlatformConfig) -> TU:
-        return union(config=config)(cls)
+        return union(config)(cls)
 
     @classmethod
     def reconstruct_for(cls: TU, state: AbstractState) -> TU:
@@ -78,18 +79,19 @@ RESERVED_NAME = f"the field name can not be {tick(FINAL)}"
 
 
 def struct(
-    packed: bool = DEFAULT_PACKED, config: Optional[PlatformConfig] = None
+    packed: bool = DEFAULT_PACKED, virtual: bool = DEFAULT_VIRTUAL, config: Optional[PlatformConfig] = None
 ) -> ClassDecoratorIdentity[TS]:
     if config is None:
         config = PlatformConfig.system()
 
     def wrap(struct_type: TS) -> TS:
+        struct_type.PACKED = packed
+        struct_type.VIRTUAL = virtual
+
         fields = fetch_fields(struct_type)
 
         class new_struct_type(struct_type):
             pass
-
-        new_struct_type.PACKED = packed
 
         offset = 0
         size = 0
@@ -111,7 +113,8 @@ def struct(
 
         else:
             new_struct_type.ALIGNMENT = alignment = max(
-                field.compute_alignment(config) for field in fields.values()
+                (field.compute_alignment(config) for field in fields.values()),
+                default=DEFAULT_ALIGNMENT,
             )
 
             field_array = list(fields.items())
@@ -186,7 +189,6 @@ def struct(
             new_struct_type.SIZE = size
 
         for name, field in fields.items():
-            print(name, field)
             set_attribute(new_struct_type, name, ActualField(field))
 
         set_name(new_struct_type, get_name(struct_type))
@@ -207,8 +209,14 @@ def union(config: Optional[PlatformConfig] = None) -> ClassDecoratorIdentity[TU]
         class new_union_type(union_type):
             pass
 
-        new_union_type.SIZE = max(field.compute_size(config) for field in fields.values())
-        new_union_type.ALIGNMENT = max(field.compute_alignment(config) for field in fields.values())
+        new_union_type.SIZE = max(
+            (field.compute_size(config) for field in fields.values()),
+            default=DEFAULT_SIZE,
+        )
+        new_union_type.ALIGNMENT = max(
+            (field.compute_alignment(config) for field in fields.values()),
+            default=DEFAULT_ALIGNMENT,
+        )
 
         for name, field in fields.items():
             set_attribute(new_union_type, name, ActualField(field))

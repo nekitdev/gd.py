@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from builtins import issubclass as is_subclass
 from typing import Any, Generic, Iterator, Optional, Tuple, Type, TypeVar, Union, overload
 
 from attrs import define, field
@@ -23,7 +24,7 @@ from gd.enums import ByteOrder
 from gd.memory.constants import VOID_SIZE
 from gd.memory.state import AbstractState
 from gd.platform import PlatformConfig
-from gd.typing import StringDict, is_instance
+from gd.typing import StringDict, get_name, is_instance
 
 __all__ = (
     "Field",
@@ -108,9 +109,25 @@ class Field(FieldProtocol[T]):
 
 AnyField = Field[Any]
 
+VIRTUAL_NAME = "__virtual_{}__"
+
+virtual_name = VIRTUAL_NAME.format
+
 
 def fetch_fields_iterator(base: Type[B]) -> Iterator[Tuple[str, AnyField]]:
-    for type in reversed(base.mro()):
+    types = base.mro()
+
+    for type in reversed(types):
+        if is_subclass(type, Struct) and type.VIRTUAL:
+            if not any(
+                is_subclass(other, Struct)
+                and other is not Struct
+                and other is not type
+                and is_subclass(type, other)
+                for other in reversed(types)
+            ):
+                yield (virtual_name(get_name(type)), PointerField(Void()))
+
         for name, value in vars(type).items():
             if is_instance(value, Field):
                 yield (name, value)

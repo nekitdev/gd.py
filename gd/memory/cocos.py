@@ -1,5 +1,5 @@
 from gd.memory.base import Struct, struct
-from gd.memory.fields import Bool, Float, Int, MutArrayField, MutPointerField, PointerField, StructField, UByte, UInt, Void
+from gd.memory.fields import Bool, Float, Int, MutArrayField, MutPointerField, StructField, UByte, UInt, Void
 
 
 @struct()
@@ -15,11 +15,6 @@ class CCSize(Struct):
 
 
 @struct()
-class CCRectangle(Struct):
-    origin = StructField(CCPoint)
-    size = StructField(CCSize)
-
-
 class CCAffineTransform(Struct):
     a = Float()
     b = Float()
@@ -29,27 +24,33 @@ class CCAffineTransform(Struct):
     translate_y = Float()
 
 
+@struct()
 class ColorRGB(Struct):
     r = UByte()
     g = UByte()
     b = UByte()
 
 
+@struct(virtual=True)
 class CCCopying(Struct):
-    __copying_virtual__ = PointerField(Void())
+    pass
 
 
+@struct()
 class CCObject(CCCopying):
     id = UInt()
     ref_id = Int()
 
     tag = UInt()  # modified
-    object_type = Int()  # enum  # modified
 
     ref_count = UInt()
     auto_release_count = UInt()
 
+    object_type = Int()  # enum  # modified
+    index_in_array = UInt()
 
+
+@struct()
 class CCArrayStruct(Struct):
     length = UInt()
     capacity = UInt()
@@ -59,13 +60,13 @@ class CCArrayStruct(Struct):
     array = MutPointerField(MutArrayField(MutPointerField(StructField(CCObject))))
 
 
+@struct()
 class CCArray(CCObject):
     data = MutPointerField(StructField(CCArrayStruct))
 
 
+@struct(virtual=True)
 class CCNode(CCObject):
-    __node_virtual__ = MutPointerField(Void())
-
     rotation_x = Float()
     rotation_y = Float()
     scale_x = Float()
@@ -128,9 +129,8 @@ class CCNode(CCObject):
     component_container = MutPointerField(Void())  # CCComponentContainer*
 
 
+@struct(virtual=True)
 class CCNodeRGBA(CCNode):
-    __node_rgba_virtual__ = MutPointerField(Void())
-
     displayed_opacity = UByte()
     real_opacity = UByte()
 
@@ -141,26 +141,32 @@ class CCNodeRGBA(CCNode):
     cascade_opacity_enabled = Bool()
 
 
+@struct(virtual=True)
 class CCTouchDelegate(Struct):
-    __touch_delegate_virtual__ = MutPointerField(Void())
+    pass
 
 
+@struct(virtual=True)
 class CCAccelerometerDelegate(Struct):
-    __accelerometer_delegate_virtual__ = MutPointerField(Void())
+    pass
 
 
+@struct(virtual=True)
 class CCKeypadDelegate(Struct):
-    __keypad_delegate_virtual__ = MutPointerField(Void())
+    pass
 
 
+@struct(virtual=True)
 class CCKeyboardDelegate(Struct):
-    __keyboard_delegate_virtual__ = MutPointerField(Void())
+    pass
 
 
+@struct(virtual=True)
 class CCMouseDelegate(Struct):
-    __mouse_delegate_virtual__ = MutPointerField(Void())
+    pass
 
 
+@struct(virtual=True)
 class CCLayer(
     CCMouseDelegate,
     CCKeyboardDelegate,
@@ -169,8 +175,6 @@ class CCLayer(
     CCTouchDelegate,
     CCNode,
 ):
-    __layer_virtual__ = MutPointerField(Void())
-
     touch_enabled = Bool()
     accelerometer_enabled = Bool()
     keypad_enabled = Bool()
