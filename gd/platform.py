@@ -41,6 +41,9 @@ class PlatformConfig(String):
     platform: Platform
     bits: int = DEFAULT_BITS
 
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ hash(self.platform) ^ self.bits
+
     @classmethod
     def default_system(cls: Type[C]) -> C:
         return cls(SYSTEM_PLATFORM)

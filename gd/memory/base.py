@@ -2,6 +2,7 @@ from builtins import setattr as set_attribute
 from typing import ClassVar, Optional, Type, TypeVar
 
 from attrs import define, field
+from gd.decorators import cache
 
 from gd.enums import ByteOrder
 from gd.memory.constants import DEFAULT_ALIGNMENT, DEFAULT_PACKED, DEFAULT_SIZE, DEFAULT_VIRTUAL
@@ -45,6 +46,7 @@ class Struct(Base):
     VIRTUAL: ClassVar[bool] = DEFAULT_VIRTUAL
 
     @classmethod
+    @cache
     def reconstruct(cls: TS, config: PlatformConfig) -> TS:
         return struct(cls.PACKED, cls.VIRTUAL, config)(cls)
 
@@ -61,6 +63,7 @@ class Union(Base):
     """Represents `union` types."""
 
     @classmethod
+    @cache
     def reconstruct(cls: TU, config: PlatformConfig) -> TU:
         return union(config)(cls)
 
@@ -103,7 +106,7 @@ def struct(
 
                 field.offset = offset
 
-                field_size = field.compute_size(config)
+                field_size = field.data.compute_size(config)
 
                 offset += field_size
                 size += field_size
@@ -113,7 +116,7 @@ def struct(
 
         else:
             new_struct_type.ALIGNMENT = alignment = max(
-                (field.compute_alignment(config) for field in fields.values()),
+                (field.data.compute_alignment(config) for field in fields.values()),
                 default=DEFAULT_ALIGNMENT,
             )
 
@@ -127,7 +130,7 @@ def struct(
 
                 # if the field has null alignment, move onto the next one
 
-                main_alignment = main_field.compute_alignment(config)
+                main_alignment = main_field.data.compute_alignment(config)
 
                 if not main_alignment:
                     continue
@@ -140,7 +143,7 @@ def struct(
                     if field is main_field:
                         break
 
-                    before_size += field.compute_size(config)
+                    before_size += field.data.compute_size(config)
 
                 remain_size = before_size % main_alignment
 
@@ -151,7 +154,7 @@ def struct(
 
                     name = pad_name(main_name)
 
-                    field = ArrayField(Byte(), pad_size, offset)
+                    field = Field(ArrayData(Byte(), pad_size), offset)
 
                     field_array.insert(index, (name, field))
 
@@ -162,7 +165,7 @@ def struct(
 
                 main_field.offset = offset
 
-                main_size = main_field.compute_size(config)
+                main_size = main_field.data.compute_size(config)
 
                 offset += main_size
                 size += main_size
@@ -179,7 +182,7 @@ def struct(
 
                     name = pad_name(FINAL)
 
-                    field = ArrayField(Byte(), pad_size, offset)
+                    field = Field(ArrayData(Byte(), pad_size), offset)
 
                     fields[name] = field
 
@@ -189,7 +192,7 @@ def struct(
             new_struct_type.SIZE = size
 
         for name, field in fields.items():
-            set_attribute(new_struct_type, name, ActualField(field))
+            set_attribute(new_struct_type, name, field)
 
         set_name(new_struct_type, get_name(struct_type))
         set_module(new_struct_type, get_module(struct_type))
@@ -210,16 +213,16 @@ def union(config: Optional[PlatformConfig] = None) -> ClassDecoratorIdentity[TU]
             pass
 
         new_union_type.SIZE = max(
-            (field.compute_size(config) for field in fields.values()),
+            (field.data.compute_size(config) for field in fields.values()),
             default=DEFAULT_SIZE,
         )
         new_union_type.ALIGNMENT = max(
-            (field.compute_alignment(config) for field in fields.values()),
+            (field.data.compute_alignment(config) for field in fields.values()),
             default=DEFAULT_ALIGNMENT,
         )
 
         for name, field in fields.items():
-            set_attribute(new_union_type, name, ActualField(field))
+            set_attribute(new_union_type, name, field)
 
         set_name(new_union_type, get_name(union_type))
         set_module(new_union_type, get_module(union_type))
@@ -230,5 +233,6 @@ def union(config: Optional[PlatformConfig] = None) -> ClassDecoratorIdentity[TU]
 
 
 # import cycle solution
-from gd.memory.fields import U8 as Byte
-from gd.memory.fields import ActualField, ArrayField, fetch_fields
+from gd.memory.data import ArrayData
+from gd.memory.data import U8 as Byte
+from gd.memory.fields import Field, fetch_fields

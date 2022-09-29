@@ -5,23 +5,25 @@ from typing import TYPE_CHECKING, Generic, TypeVar
 from attrs import define, field
 
 from gd.enums import ByteOrder
-from gd.memory.fields import USize
+from gd.memory.data import USize
 from gd.memory.state import AbstractState
 
 if TYPE_CHECKING:
-    from gd.memory.fields import Field
+    from gd.memory.data import Data
 
 T = TypeVar("T")
 
 NULL_POINTER = "the pointer is null"
+
+IMMUTABLE_POINTER = "the pointer is immutable"
 
 
 @define()
 class Pointer(Generic[T]):
     state: AbstractState = field()
     address: int = field(repr=hex)
-    type: Field[T] = field()
-    pointer_type: Field[int] = field(factory=USize)
+    type: Data[T] = field()
+    pointer_type: Data[int] = field(factory=USize)
     order: ByteOrder = field(default=ByteOrder.NATIVE)
 
     @property
@@ -43,6 +45,10 @@ class Pointer(Generic[T]):
             raise ValueError(NULL_POINTER)
 
         return self.type.read(self.state, value_address, self.order)
+
+    @value.setter
+    def value(self, value: T) -> None:
+        raise TypeError(IMMUTABLE_POINTER)
 
 
 @define()

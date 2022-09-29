@@ -8,7 +8,7 @@ from gd.enums import ByteOrder
 from gd.memory.state import AbstractState
 
 if TYPE_CHECKING:
-    from gd.memory.fields import Field
+    from gd.memory.data import Data
 
 __all__ = ("Array",)
 
@@ -25,7 +25,7 @@ class Array(Sequence[T]):
 
     state: AbstractState = field()
     address: int = field(repr=hex)
-    type: Field[T] = field()
+    type: Data[T] = field()
     length: Optional[int] = field(default=None)
     order: ByteOrder = field(default=ByteOrder.NATIVE)
 
