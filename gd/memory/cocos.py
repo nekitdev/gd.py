@@ -1,34 +1,45 @@
 from gd.memory.base import Struct, struct
-from gd.memory.data import Bool, Float, Int, MutArrayData, MutPointerData, StructData, UByte, UInt, Void
+from gd.memory.data import (
+    Bool,
+    Float,
+    Int,
+    MutArrayData,
+    MutPointerData,
+    StructData,
+    UByte,
+    UInt,
+    Void,
+)
+from gd.memory.fields import Field
 
 
 @struct()
 class CCPoint(Struct):
-    x = Float()
-    y = Float()
+    x = Field(Float())
+    y = Field(Float())
 
 
 @struct()
 class CCSize(Struct):
-    width = Float()
-    height = Float()
+    width = Field(Float())
+    height = Field(Float())
 
 
 @struct()
 class CCAffineTransform(Struct):
-    a = Float()
-    b = Float()
-    c = Float()
-    d = Float()
-    translate_x = Float()
-    translate_y = Float()
+    a = Field(Float())
+    b = Field(Float())
+    c = Field(Float())
+    d = Field(Float())
+    translate_x = Field(Float())
+    translate_y = Field(Float())
 
 
 @struct()
 class ColorRGB(Struct):
-    r = UByte()
-    g = UByte()
-    b = UByte()
+    r = Field(UByte())
+    g = Field(UByte())
+    b = Field(UByte())
 
 
 @struct(virtual=True)
@@ -38,107 +49,107 @@ class CCCopying(Struct):
 
 @struct()
 class CCObject(CCCopying):
-    id = UInt()
-    ref_id = Int()
+    id = Field(UInt())
+    ref_id = Field(Int())
 
-    tag = UInt()  # modified
+    tag = Field(UInt())  # modified
 
-    ref_count = UInt()
-    auto_release_count = UInt()
+    ref_count = Field(UInt())
+    auto_release_count = Field(UInt())
 
-    object_type = Int()  # enum  # modified
-    index_in_array = UInt()
+    object_type = Field(Int())  # enum  # modified
+    index_in_array = Field(UInt())
 
 
 @struct()
 class CCArrayStruct(Struct):
-    length = UInt()
-    capacity = UInt()
+    length = Field(UInt())
+    capacity = Field(UInt())
     # this is actually CCObject double pointer,
     # but since we do not have indexing or iterating pointers implemented,
     # we instead make it point to an array of pointers
-    array = MutPointerData(MutArrayData(MutPointerData(StructData(CCObject))))
+    array = Field(MutPointerData(MutArrayData(MutPointerData(StructData(CCObject)))))
 
 
 @struct()
 class CCArray(CCObject):
-    data = MutPointerData(StructData(CCArrayStruct))
+    data = Field(MutPointerData(StructData(CCArrayStruct)))
 
 
 @struct(virtual=True)
 class CCNode(CCObject):
-    rotation_x = Float()
-    rotation_y = Float()
-    scale_x = Float()
-    scale_y = Float()
+    rotation_x = Field(Float())
+    rotation_y = Field(Float())
+    scale_x = Field(Float())
+    scale_y = Field(Float())
 
-    vertex_z = Float()
+    vertex_z = Field(Float())
 
-    position = StructData(CCPoint)
+    position = Field(StructData(CCPoint))
 
-    skew_x = Float()
-    skew_y = Float()
+    skew_x = Field(Float())
+    skew_y = Field(Float())
 
-    anchor_in_points = StructData(CCPoint)
-    anchor = StructData(CCPoint)
+    anchor_in_points = Field(StructData(CCPoint))
+    anchor = Field(StructData(CCPoint))
 
-    content_size = StructData(CCSize)
+    content_size = Field(StructData(CCSize))
 
-    additional_transform = StructData(CCAffineTransform)
-    transform = StructData(CCAffineTransform)
-    inverse = StructData(CCAffineTransform)
+    additional_transform = Field(StructData(CCAffineTransform))
+    transform = Field(StructData(CCAffineTransform))
+    inverse = Field(StructData(CCAffineTransform))
 
-    camera = MutPointerData(Void())  # CCCamera*
+    camera = Field(MutPointerData(Void()))  # CCCamera*
 
-    grid = MutPointerData(Void())  # CCGridBase*
+    grid = Field(MutPointerData(Void()))  # CCGridBase*
 
-    z_order = Int()
+    z_order = Field(Int())
 
-    children = MutPointerData(StructData(CCArray))
+    children = Field(MutPointerData(StructData(CCArray)))
 
-    parent = MutPointerData(Void())  # CCNode*
+    parent = Field(MutPointerData(Void()))  # CCNode*
 
-    user_data = MutPointerData(Void())  # void
-    user_object = MutPointerData(StructData(CCObject))
+    user_data = Field(MutPointerData(Void()))  # void*
+    user_object = Field(MutPointerData(StructData(CCObject)))
 
-    shader_program = MutPointerData(Void())  # CCGLProgram*
+    shader_program = Field(MutPointerData(Void()))  # CCGLProgram*
 
-    server_state = Int()  # enum
+    server_state = Field(Int())  # enum
 
-    order_of_arrival = UInt()
+    order_of_arrival = Field(UInt())
 
-    scheduler = MutPointerData(Void())  # CCScheduler*
+    scheduler = Field(MutPointerData(Void()))  # CCScheduler*
 
-    action_manager = MutPointerData(Void())  # CCActionManager*
+    action_manager = Field(MutPointerData(Void()))  # CCActionManager*
 
-    running = Bool()
+    running = Field(Bool())
 
-    transform_dirty = Bool()
-    inverse_dirty = Bool()
-    additional_transform_dirty = Bool()
-    visible = Bool()
+    transform_dirty = Field(Bool())
+    inverse_dirty = Field(Bool())
+    additional_transform_dirty = Field(Bool())
+    visible = Field(Bool())
 
-    ignore_anchor_point_for_position = Bool()
+    ignore_anchor_point_for_position = Field(Bool())
 
-    reorder_child_dirty = Bool()
+    reorder_child_dirty = Field(Bool())
 
-    script_handler = Int()
-    update_script_handler = Int()
-    script_type = Int()  # enum
+    script_handler = Field(Int())
+    update_script_handler = Field(Int())
+    script_type = Field(Int())  # enum
 
-    component_container = MutPointerData(Void())  # CCComponentContainer*
+    component_container = Field(MutPointerData(Void()))  # CCComponentContainer*
 
 
 @struct(virtual=True)
 class CCNodeRGBA(CCNode):
-    displayed_opacity = UByte()
-    real_opacity = UByte()
+    displayed_opacity = Field(UByte())
+    real_opacity = Field(UByte())
 
-    displayed_color = StructData(ColorRGB)
-    real_color = StructData(ColorRGB)
+    displayed_color = Field(StructData(ColorRGB))
+    real_color = Field(StructData(ColorRGB))
 
-    cascade_color_enabled = Bool()
-    cascade_opacity_enabled = Bool()
+    cascade_color_enabled = Field(Bool())
+    cascade_opacity_enabled = Field(Bool())
 
 
 @struct(virtual=True)
@@ -175,15 +186,15 @@ class CCLayer(
     CCTouchDelegate,
     CCNode,
 ):
-    touch_enabled = Bool()
-    accelerometer_enabled = Bool()
-    keypad_enabled = Bool()
-    keyboard_enabled = Bool()
-    mouse_enabled = Bool()
+    touch_enabled = Field(Bool())
+    accelerometer_enabled = Field(Bool())
+    keypad_enabled = Field(Bool())
+    keyboard_enabled = Field(Bool())
+    mouse_enabled = Field(Bool())
 
-    script_touch_handler_entry = MutPointerData(Void())  # CCTouchScriptHandlerEntry*
-    script_keypad_handler_entry = MutPointerData(Void())  # CCScriptHandlerEntry*
-    script_accelerometer_handler_entry = MutPointerData(Void())  # CCScriptHandlerEntry*
+    script_touch_handler_entry = Field(MutPointerData(Void()))  # CCTouchScriptHandlerEntry*
+    script_keypad_handler_entry = Field(MutPointerData(Void()))  # CCScriptHandlerEntry*
+    script_accelerometer_handler_entry = Field(MutPointerData(Void()))  # CCScriptHandlerEntry*
 
-    touch_priority = Int()
-    touch_mode = Int()  # enum
+    touch_priority = Field(Int())
+    touch_mode = Field(Int())  # enum

@@ -1,7 +1,18 @@
 from __future__ import annotations
 
 from builtins import issubclass as is_subclass
-from typing import TYPE_CHECKING, Any, Generic, Iterator, Optional, Tuple, Type, TypeVar, Union, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    Iterator,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    overload,
+)
 
 from attrs import define, field
 from typing_extensions import Never
@@ -43,14 +54,10 @@ class Field(Generic[T]):
         if instance is None:
             return self
 
-        return self.data.read(
-            instance.state, instance.address + self.offset, instance.order
-        )
+        return self.data.read(instance.state, instance.address + self.offset, instance.order)
 
     def __set__(self, instance: Base, value: T) -> None:
-        self.data.write(
-            instance.state, instance.address + self.offset, value, instance.order
-        )
+        self.data.write(instance.state, instance.address + self.offset, value, instance.order)
 
     def __delete__(self, instance: Base) -> Never:
         raise AttributeError(CAN_NOT_DELETE_FIELDS)
@@ -78,8 +85,8 @@ def fetch_fields_iterator(base: Type[Base]) -> Iterator[Tuple[str, AnyField]]:
                 yield (virtual_name(get_name(type)), Field(PointerData(Void())))
 
         for name, value in vars(type).items():
-            if is_instance(value, Data):
-                yield (name, Field(value))
+            if is_instance(value, Field):
+                yield (name, value)
 
 
 def fetch_fields(base: Type[Base]) -> StringDict[AnyField]:

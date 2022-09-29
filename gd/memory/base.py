@@ -2,8 +2,8 @@ from builtins import setattr as set_attribute
 from typing import ClassVar, Optional, Type, TypeVar
 
 from attrs import define, field
-from gd.decorators import cache
 
+from gd.decorators import cache
 from gd.enums import ByteOrder
 from gd.memory.constants import DEFAULT_ALIGNMENT, DEFAULT_PACKED, DEFAULT_SIZE, DEFAULT_VIRTUAL
 from gd.memory.state import AbstractState
@@ -82,7 +82,9 @@ RESERVED_NAME = f"the field name can not be {tick(FINAL)}"
 
 
 def struct(
-    packed: bool = DEFAULT_PACKED, virtual: bool = DEFAULT_VIRTUAL, config: Optional[PlatformConfig] = None
+    packed: bool = DEFAULT_PACKED,
+    virtual: bool = DEFAULT_VIRTUAL,
+    config: Optional[PlatformConfig] = None,
 ) -> ClassDecoratorIdentity[TS]:
     if config is None:
         config = PlatformConfig.system()
@@ -233,6 +235,6 @@ def union(config: Optional[PlatformConfig] = None) -> ClassDecoratorIdentity[TU]
 
 
 # import cycle solution
-from gd.memory.data import ArrayData
 from gd.memory.data import U8 as Byte
+from gd.memory.data import ArrayData
 from gd.memory.fields import Field, fetch_fields

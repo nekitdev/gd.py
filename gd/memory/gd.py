@@ -1,246 +1,241 @@
-# type: ignore
-
-from typing_extensions import TypeAlias
-
+from gd.memory.base import struct
 from gd.memory.cocos import CCLayer, CCNode, CCPoint
-from gd.memory.fields import mut_field
-from gd.memory.markers import Struct, bool_t, float_t, int_t, mut_pointer, string_t, void
-
-void_mut_pointer = mut_pointer(void)
+from gd.memory.data import Bool, Float, Int, MutPointerData, StructData, Void
 
 
 class GameLevel(CCNode):
-    last_save: void_mut_pointer = mut_field()
+    last_save = MutPointerData(Void())
 
-    level_id_random: int_t = mut_field()
-    level_id_seed: int_t = mut_field()
-    level_id: int_t = mut_field()
+    level_id_random = Int()
+    level_id_seed = Int()
+    level_id = Int()
 
-    name: string_t = mut_field()
-    description: string_t = mut_field()
+    name = StringData()
+    description = StringData()
 
-    unprocessed_data: string_t = mut_field()
+    unprocessed_data = StringData()
 
-    user_name: string_t = mut_field()
+    user_name = StringData()
 
-    record_string: string_t = mut_field()
+    record_string = StringData()
 
-    uploaded_at_string: string_t = mut_field()
-    updated_at_string: string_t = mut_field()
+    uploaded_at_string = StringData()
+    updated_at_string = StringData()
 
-    user_id_random: int_t = mut_field()
-    user_id_seed: int_t = mut_field()
-    user_id: int_t = mut_field()
+    user_id_random = Int()
+    user_id_seed = Int()
+    user_id = Int()
 
-    account_id_random: int_t = mut_field()
-    account_id_seed: int_t = mut_field()
-    account_id: int_t = mut_field()
+    account_id_random = Int()
+    account_id_seed = Int()
+    account_id = Int()
 
-    difficulty: int_t = mut_field()
-    track_id: int_t = mut_field()
-    song_id: int_t = mut_field()
+    difficulty = Int()
+    track_id = Int()
+    song_id = Int()
 
-    revision: int_t = mut_field()
+    revision = Int()
 
-    unlisted: bool_t = mut_field()
+    unlisted = Bool()
 
-    object_count_random: int_t = mut_field()
-    object_count_seed: int_t = mut_field()
-    object_count: int_t = mut_field()
+    object_count_random = Int()
+    object_count_seed = Int()
+    object_count = Int()
 
-    averate_difficulty: int_t = mut_field()
-    difficulty_denominator: int_t = mut_field()
-    difficulty_numerator: int_t = mut_field()
+    average_difficulty = Int()
+    difficulty_denominator = Int()
+    difficulty_numerator = Int()
 
-    downloads: int_t = mut_field()
+    downloads = Int()
 
-    editable: bool_t = mut_field()
+    editable = Bool()
 
-    gauntlet_level: bool_t = mut_field()
-    gauntlet_level_other: bool_t = mut_field()
+    gauntlet_level = Bool()
+    gauntlet_level_other = Bool()
 
-    editor_seconds: int_t = mut_field()
-    copies_seconds: int_t = mut_field()
+    editor_seconds = Int()
+    copies_seconds = Int()
 
-    low_detail_mode: bool_t = mut_field()
-    low_detail_mode_toggled: bool_t = mut_field()
+    low_detail = Bool()
+    low_detail_toggled = Bool()
 
-    verified_random: int_t = mut_field()
-    verified_seed: int_t = mut_field()
-    verified: bool_t = mut_field()
+    verified_random = Int()
+    verified_seed = Int()
+    verified = Bool()
 
-    uploaded: bool_t = mut_field()
+    uploaded = Bool()
 
-    modified: bool_t = mut_field()
+    modified = Bool()
 
-    version: int_t = mut_field()
+    version = Int()
 
-    game_version_value: int_t = mut_field()
+    game_version_value = Int()
 
-    attempts_rand: int_t = mut_field()
-    attempts_seed: int_t = mut_field()
-    attempts: int_t = mut_field()
+    attempts_rand = Int()
+    attempts_seed = Int()
+    attempts = Int()
 
-    jumps_random: int_t = mut_field()
-    jumps_seed: int_t = mut_field()
-    jumps: int_t = mut_field()
+    jumps_random = Int()
+    jumps_seed = Int()
+    jumps = Int()
 
-    clicks_random: int_t = mut_field()
-    clicks_seed: int_t = mut_field()
-    clicks: int_t = mut_field()
+    clicks_random = Int()
+    clicks_seed = Int()
+    clicks = Int()
 
-    attempt_time_random: int_t = mut_field()
-    attempt_time_seed: int_t = mut_field()
-    attempt_time: int_t = mut_field()
+    attempt_time_random = Int()
+    attempt_time_seed = Int()
+    attempt_time = Int()
 
-    chk: int_t = mut_field()
+    chk = Int()
 
-    chk_valid: bool_t = mut_field()
-    legit: bool_t = mut_field()
+    chk_valid = Bool()
+    legit = Bool()
 
-    normal_percent: int_t = mut_field()
-    normal_percent_seed: int_t = mut_field()
-    normal_percent_random: int_t = mut_field()
+    normal_percent = Int()
+    normal_percent_seed = Int()
+    normal_percent_random = Int()
 
-    orbs_random: int_t = mut_field()
-    orbs_seed: int_t = mut_field()
-    orbs: int_t = mut_field()
+    orbs_random = Int()
+    orbs_seed = Int()
+    orbs = Int()
 
-    new_normal_percent_random: int_t = mut_field()
-    new_normal_percent_seed: int_t = mut_field()
-    new_normal_percent: int_t = mut_field()
+    new_normal_percent_random = Int()
+    new_normal_percent_seed = Int()
+    new_normal_percent = Int()
 
-    practice_percent: int_t = mut_field()
+    practice_percent = Int()
 
-    likes: int_t = mut_field()
-    dislikes: int_t = mut_field()
+    likes = Int()
+    dislikes = Int()
 
-    level_length_value: int_t = mut_field()
+    level_length_value = Int()
 
-    score: int_t = mut_field()
+    score = Int()
 
-    epic: bool_t = mut_field()
-    level_favorite: bool_t = mut_field()
+    epic = Bool()
+    level_favorite = Bool()
 
-    level_folder: int_t = mut_field()
+    level_folder = Int()
 
-    timely_id_random: int_t = mut_field()
-    timely_id_seed: int_t = mut_field()
-    timely_id: int_t = mut_field()
+    timely_id_random = Int()
+    timely_id_seed = Int()
+    timely_id = Int()
 
-    demon_random: int_t = mut_field()
-    demon_seed: int_t = mut_field()
-    demon: int_t = mut_field()
+    demon_random = Int()
+    demon_seed = Int()
+    demon = Int()
 
-    demon_difficulty: int_t = mut_field()
+    demon_difficulty = Int()
 
-    stars_random: int_t = mut_field()
-    stars_seed: int_t = mut_field()
-    stars: int_t = mut_field()
+    stars_random = Int()
+    stars_seed = Int()
+    stars = Int()
 
-    auto: bool_t = mut_field()
-    coins: int_t = mut_field()
+    auto = Bool()
+    coins = Int()
 
-    verified_coins_random: int_t = mut_field()
-    verified_coins_seed: int_t = mut_field()
-    verified_coins: int_t = mut_field()
+    verified_coins_random = Int()
+    verified_coins_seed = Int()
+    verified_coins = Int()
 
-    password_random: int_t = mut_field()
-    password_seed: int_t = mut_field()
+    password_random = Int()
+    password_seed = Int()
 
-    original_id_random: int_t = mut_field()
-    original_id_seed: int_t = mut_field()
-    original_id: int_t = mut_field()
+    original_id_random = Int()
+    original_id_seed = Int()
+    original_id = Int()
 
-    two_player: bool_t = mut_field()
+    two_player = Bool()
 
-    failed_password_attempts: int_t = mut_field()
+    failed_password_attempts = Int()
 
-    first_coin_acquired_random: int_t = mut_field()
-    first_coin_acquired_seed: int_t = mut_field()
-    first_coin_acquired: int_t = mut_field()
+    first_coin_acquired_random = Int()
+    first_coin_acquired_seed = Int()
+    first_coin_acquired = Int()
 
-    second_coin_acquired_random: int_t = mut_field()
-    second_coin_acquired_seed: int_t = mut_field()
-    second_coin_acquired: int_t = mut_field()
+    second_coin_acquired_random = Int()
+    second_coin_acquired_seed = Int()
+    second_coin_acquired = Int()
 
-    third_coint_acquired_random: int_t = mut_field()
-    third_coint_acquired_seed: int_t = mut_field()
-    third_coint_acquired: int_t = mut_field()
+    third_coint_acquired_random = Int()
+    third_coint_acquired_seed = Int()
+    third_coint_acquired = Int()
 
-    requested_stars: int_t = mut_field()
+    requested_stars = Int()
 
-    song_warning: bool_t = mut_field()
+    song_warning = Bool()
 
-    star_ratings: int_t = mut_field()
-    total_star_ratings: int_t = mut_field()
-    max_star_ratings: int_t = mut_field()
-    min_star_ratings: int_t = mut_field()
-    demon_votes: int_t = mut_field()
-    rate_stars: int_t = mut_field()
-    rate_feature: int_t = mut_field()
+    star_ratings = Int()
+    total_star_ratings = Int()
+    max_star_ratings = Int()
+    min_star_ratings = Int()
+    demon_votes = Int()
+    rate_stars = Int()
+    rate_feature = Int()
 
-    rate_user: string_t = mut_field()
+    rate_user = StringData()
 
-    do_not_save: bool_t = mut_field()
-    downloaded: bool_t = mut_field()
+    do_not_save = Bool()
+    downloaded = Bool()
 
-    require_coins: int_t = mut_field()
-    unlocked: bool_t = mut_field()
+    require_coins = Int()
+    unlocked = Bool()
 
-    last_camera_position: CCPoint = mut_field()
+    last_camera_position = StructData(CCPoint)
 
-    last_editor_zoom: float_t = mut_field()
-    last_build_time: int_t = mut_field()
-    last_build_page: int_t = mut_field()
-    last_build_group_id: int_t = mut_field()
+    last_editor_zoom = Float()
+    last_build_time = Int()
+    last_build_page = Int()
+    last_build_group_id = Int()
 
-    level_type_value: int_t = mut_field()  # enum
+    level_type_value = Int()  # enum
 
-    some_id: int_t = mut_field()  # ?
-    temporary_name: string_t = mut_field()
-    capacity_string: string_t = mut_field()
+    some_id = Int()  # ?
+    temporary_name = StringData()
+    capacity_string = StringData()
 
-    high_detail: bool_t = mut_field()
+    high_detail = Bool()
 
-    progress_string: string_t = mut_field()
+    progress_string = StringData()
 
 
-class TriggerEffectDelegate(Struct, vtable=True):
-    pass
+@struct(virtual=True)
+class TriggerEffectDelegate(Struct):
+    default_enter_effect = Bool()
 
 
+@struct(virtual=True)
 class BaseGameManager(CCNode, vtable=True):
-    file_name: string_t = mut_field()
+    file_name = StringData()
 
-    setup: bool_t = mut_field()
-    saved: bool_t = mut_field()
+    setup = Bool()
+    saved = Bool()
+
+    quick_save = Bool()
+    reload_all = Bool()
 
 
 class GameManager(BaseGameManager, vtable=True):
-    # file: string_t
-
     ...
 
 
 class AccountManager(CCNode, vtable=True):
-    data: void_mut_pointer = mut_field()  # CCDictionary
+    data = MutPointerData(Void())
 
-    password: string_t = mut_field()
-    user_name: string_t = mut_field()
+    password = StringData()
+    user_name = StringData()
 
-    account_id: int_t = mut_field()
+    account_id_random = Int()
+    account_id_seed = Int()
+    account_id = Int()
 
-    # check types of these fields
-    _unknown_0: int_t = mut_field()
-    _unknown_1: int_t = mut_field()
-
-    register_delegate: void_mut_pointer = mut_field()
-    login_delegate: void_mut_pointer = mut_field()
-    account_delegate: void_mut_pointer = mut_field()
-    backup_delegate: void_mut_pointer = mut_field()
-    sync_delegate: void_mut_pointer = mut_field()
-    update_account_delegate: void_mut_pointer = mut_field()
+    register_delegate = MutPointerData(Void())
+    login_delegate = MutPointerData(Void())
+    account_delegate = MutPointerData(Void())
+    backup_delegate = MutPointerData(Void())
+    sync_delegate = MutPointerData(Void())
+    update_account_delegate = MutPointerData(Void())
 
 
 class BaseGameLayer(TriggerEffectDelegate, CCLayer, vtable=True):
