@@ -1,11 +1,14 @@
 from builtins import setattr as set_attribute
 from typing import ClassVar, Optional, Type, TypeVar
 
-from attrs import define, field
+from attrs import define, field, frozen
 
 from gd.decorators import cache
 from gd.enums import ByteOrder
+from gd.memory.arrays import ArrayData
 from gd.memory.constants import DEFAULT_ALIGNMENT, DEFAULT_PACKED, DEFAULT_SIZE, DEFAULT_VIRTUAL
+from gd.memory.data import U8 as Byte
+from gd.memory.data import Data
 from gd.memory.state import AbstractState
 from gd.memory.utils import set_module, set_name
 from gd.platform import PlatformConfig
@@ -72,6 +75,64 @@ class Union(Base):
         return cls.reconstruct(state.config)
 
 
+S = TypeVar("S", bound=Struct)
+
+
+@frozen()
+class StructData(Data[S]):
+    struct_type: Type[S] = field()
+
+    def read(self, state: AbstractState, address: int, order: ByteOrder = ByteOrder.NATIVE) -> S:
+        return self.compute_type(state.config)(state, address, order)
+
+    def write(
+        self,
+        state: AbstractState,
+        address: int,
+        value: S,
+        order: ByteOrder = ByteOrder.NATIVE,
+    ) -> None:
+        pass  # do nothing
+
+    def compute_size(self, config: PlatformConfig) -> int:
+        return self.compute_type(config).SIZE
+
+    def compute_alignment(self, config: PlatformConfig) -> int:
+        return self.compute_type(config).ALIGNMENT
+
+    def compute_type(self, config: PlatformConfig) -> Type[S]:
+        return self.struct_type.reconstruct(config)
+
+
+U = TypeVar("U", bound=Union)
+
+
+@frozen()
+class UnionData(Data[U]):
+    union_type: Type[U] = field()
+
+    def read(self, state: AbstractState, address: int, order: ByteOrder = ByteOrder.NATIVE) -> U:
+        return self.compute_type(state.config)(state, address, order)
+
+    def write(
+        self,
+        state: AbstractState,
+        address: int,
+        value: U,
+        order: ByteOrder = ByteOrder.NATIVE,
+    ) -> None:
+        pass  # do nothing
+
+    def compute_size(self, config: PlatformConfig) -> int:
+        return self.compute_type(config).SIZE
+
+    def compute_alignment(self, config: PlatformConfig) -> int:
+        return self.compute_type(config).ALIGNMENT
+
+    def compute_type(self, config: PlatformConfig) -> Type[U]:
+        return self.union_type.reconstruct(config)
+
+
 PAD_NAME = "__pad_{}__"
 
 pad_name = PAD_NAME.format
@@ -79,6 +140,9 @@ pad_name = PAD_NAME.format
 FINAL = "final"
 
 RESERVED_NAME = f"the field name can not be {tick(FINAL)}"
+
+
+from gd.memory.fields import Field, fetch_fields
 
 
 def struct(
@@ -156,7 +220,7 @@ def struct(
 
                     name = pad_name(main_name)
 
-                    field = Field(ArrayData(Byte(), pad_size), offset)
+                    field = Field(ArrayData(Byte(), pad_size), offset, exclude=True)
 
                     field_array.insert(index, (name, field))
 
@@ -184,7 +248,7 @@ def struct(
 
                     name = pad_name(FINAL)
 
-                    field = Field(ArrayData(Byte(), pad_size), offset)
+                    field = Field(ArrayData(Byte(), pad_size), offset, exclude=True)
 
                     fields[name] = field
 
@@ -232,9 +296,3 @@ def union(config: Optional[PlatformConfig] = None) -> ClassDecoratorIdentity[TU]
         return new_union_type
 
     return wrap
-
-
-# import cycle solution
-from gd.memory.data import U8 as Byte
-from gd.memory.data import ArrayData
-from gd.memory.fields import Field, fetch_fields

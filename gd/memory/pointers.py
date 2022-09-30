@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import Generic, Type, TypeVar
 
-from attrs import define, field
+from attrs import define, field, frozen
 
 from gd.enums import ByteOrder
-from gd.memory.data import USize
+from gd.memory.data import Data, USize
 from gd.memory.state import AbstractState
+from gd.platform import PlatformConfig
 
-if TYPE_CHECKING:
-    from gd.memory.data import Data
+__all__ = ("Pointer", "MutPointer", "PointerData", "MutPointerData")
 
 T = TypeVar("T")
 
@@ -70,3 +70,59 @@ class MutPointer(Pointer[T]):
             raise ValueError(NULL_POINTER)
 
         self.type.write(self.state, value_address, value, self.order)
+
+
+@frozen()
+class PointerData(Data[Pointer[T]]):
+    type: Data[T] = field()
+    pointer_type: Data[int] = field(factory=USize)
+
+    internal_pointer_type: Type[Pointer[T]] = field(default=Pointer[T], repr=False)
+
+    def read(
+        self, state: AbstractState, address: int, order: ByteOrder = ByteOrder.NATIVE
+    ) -> Pointer[T]:
+        return self.internal_pointer_type(state, address, self.type, self.pointer_type, order)
+
+    def write(
+        self,
+        state: AbstractState,
+        address: int,
+        value: Pointer[T],
+        order: ByteOrder = ByteOrder.NATIVE,
+    ) -> None:
+        pass  # do nothing
+
+    def compute_size(self, config: PlatformConfig) -> int:
+        return self.pointer_type.compute_size(config)
+
+    def compute_alignment(self, config: PlatformConfig) -> int:
+        return self.pointer_type.compute_alignment(config)
+
+
+@frozen()
+class MutPointerData(Data[MutPointer[T]]):
+    type: Data[T] = field()
+    pointer_type: Data[int] = field(factory=USize)
+
+    internal_pointer_type: Type[MutPointer[T]] = field(default=MutPointer[T], repr=False)
+
+    def read(
+        self, state: AbstractState, address: int, order: ByteOrder = ByteOrder.NATIVE
+    ) -> MutPointer[T]:
+        return self.internal_pointer_type(state, address, self.type, self.pointer_type, order)
+
+    def write(
+        self,
+        state: AbstractState,
+        address: int,
+        value: MutPointer[T],
+        order: ByteOrder = ByteOrder.NATIVE,
+    ) -> None:
+        pass  # do nothing
+
+    def compute_size(self, config: PlatformConfig) -> int:
+        return self.pointer_type.compute_size(config)
+
+    def compute_alignment(self, config: PlatformConfig) -> int:
+        return self.pointer_type.compute_alignment(config)

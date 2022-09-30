@@ -1,5 +1,5 @@
-from gd.memory.arrays import Array, MutArray
-from gd.memory.base import Struct, Union
+from gd.memory.arrays import Array, ArrayData, MutArray, MutArrayData
+from gd.memory.base import Struct, StructData, Union, UnionData, struct, union
 from gd.memory.data import (
     F32,
     F64,
@@ -11,7 +11,6 @@ from gd.memory.data import (
     U16,
     U32,
     U64,
-    ArrayData,
     Bool,
     Byte,
     Double,
@@ -20,24 +19,19 @@ from gd.memory.data import (
     ISize,
     Long,
     LongLong,
-    MutArrayData,
-    MutPointerData,
-    MutRef,
-    PointerData,
-    Ref,
     Short,
     Size,
-    StructData,
     UByte,
     UInt,
     ULong,
     ULongLong,
-    UnionData,
     UShort,
     USize,
 )
 from gd.memory.fields import Field
-from gd.memory.pointers import MutPointer, Pointer
+from gd.memory.pointers import MutPointer, MutPointerData, Pointer, PointerData
+from gd.memory.refs import MutRef, Ref
+from gd.memory.special import Void
 from gd.memory.state import (
     AbstractState,
     DarwinState,
@@ -49,3 +43,4 @@ from gd.memory.state import (
     get_system_state,
     get_windows_state,
 )
+from gd.memory.string import String, StringData

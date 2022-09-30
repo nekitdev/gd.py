@@ -76,7 +76,6 @@ from gd.memory.internal import (
     windows_write,
 )
 from gd.platform import DARWIN, WINDOWS, PlatformConfig
-from gd.typing import Binary
 
 __all__ = (
     "AbstractState",

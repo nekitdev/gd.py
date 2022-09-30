@@ -1,16 +1,15 @@
-from gd.memory.base import Struct, struct
+from gd.memory.arrays import MutArrayData
+from gd.memory.base import Struct, StructData, struct
 from gd.memory.data import (
     Bool,
     Float,
     Int,
-    MutArrayData,
-    MutPointerData,
-    StructData,
     UByte,
     UInt,
-    Void,
 )
 from gd.memory.fields import Field
+from gd.memory.pointers import MutPointerData
+from gd.memory.special import Void
 
 
 @struct()

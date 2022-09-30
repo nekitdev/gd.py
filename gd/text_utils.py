@@ -12,15 +12,14 @@ SNAKE_TO_CAMEL_PATTERN = rf"(?!^)_({LOWER})"
 CAMEL_TO_SNAKE = compile(CAMEL_TO_SNAKE_PATTERN)
 SNAKE_TO_CAMEL = compile(SNAKE_TO_CAMEL_PATTERN)
 
+UNDER = "_"
+
 
 def upper_case_first_group(match: Match[str]) -> str:
     return match.group(1).upper()
 
 
-PREFIX = "_"
-
-
-def lower_case_first_group(match: Match[str], prefix: str = PREFIX) -> str:
+def lower_case_first_group(match: Match[str], prefix: str = UNDER) -> str:
     return prefix + match.group(1).lower()
 
 

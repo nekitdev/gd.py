@@ -4,6 +4,7 @@ from builtins import setattr as set_attribute
 from ctypes import Structure as CStructure
 from ctypes import Union as CUnion
 from functools import wraps
+from math import ceil, log2
 from typing import Any, Type, TypeVar, get_type_hints
 
 from gd.typing import AnyCallable, AnyType, DecoratorIdentity, DynamicTuple, Namespace
@@ -14,7 +15,17 @@ __all__ = (
     "external",
     "set_name",
     "set_module",
+    "closest_power_of_two",
+    "closest_power_of_two_bits",
 )
+
+
+def closest_power_of_two_bits(value: int) -> int:
+    return ceil(log2(value))
+
+
+def closest_power_of_two(value: int) -> int:
+    return 1 << closest_power_of_two_bits(value)
 
 
 def set_name(item: Any, name: str) -> None:

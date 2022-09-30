@@ -17,8 +17,10 @@ from typing import (
 from attrs import define, field
 from typing_extensions import Never
 
-from gd.memory.constants import DEFAULT_OFFSET
-from gd.memory.data import Data, PointerData, Void
+from gd.memory.constants import DEFAULT_EXCLUDE, DEFAULT_OFFSET
+from gd.memory.data import Data
+from gd.memory.pointers import PointerData
+from gd.memory.special import Void
 from gd.typing import StringDict, get_name, is_instance
 
 if TYPE_CHECKING:
@@ -38,9 +40,13 @@ F = TypeVar("F", bound="AnyField")
 class Field(Generic[T]):
     data: Data[T] = field()
     offset: int = field(default=DEFAULT_OFFSET, repr=hex)
+    exclude: bool = field(default=DEFAULT_EXCLUDE)
 
-    def copy(self: F) -> F:
-        return type(self)(self.data.copy(), self.offset)
+    def is_excluded(self) -> bool:
+        return self.exclude
+
+    def reset(self: F) -> F:
+        return type(self)(self.data)
 
     @overload
     def __get__(self: F, instance: None, type: Optional[Type[B]] = ...) -> F:
@@ -82,11 +88,11 @@ def fetch_fields_iterator(base: Type[Base]) -> Iterator[Tuple[str, AnyField]]:
                 and is_subclass(type, other)
                 for other in reversed(types)
             ):
-                yield (virtual_name(get_name(type)), Field(PointerData(Void())))
+                yield (virtual_name(get_name(type)), Field(PointerData(Void()), exclude=True))
 
         for name, value in vars(type).items():
-            if is_instance(value, Field):
-                yield (name, value)
+            if is_instance(value, Field) and not value.is_excluded():
+                yield (name, value.reset())
 
 
 def fetch_fields(base: Type[Base]) -> StringDict[AnyField]:
