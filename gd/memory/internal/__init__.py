@@ -37,17 +37,17 @@ try:
     from gd.memory.internal.darwin import free as darwin_free
     from gd.memory.internal.darwin import get_base_address as darwin_get_base_address
     from gd.memory.internal.darwin import (
-        get_base_address_from_handle as darwin_get_base_address_from_handle,
+        get_base_address_from_handle as darwin_get_base_address_from_handle
     )
     from gd.memory.internal.darwin import get_process_bits as darwin_get_process_bits
     from gd.memory.internal.darwin import (
-        get_process_bits_from_handle as darwin_get_process_bits_from_handle,
+        get_process_bits_from_handle as darwin_get_process_bits_from_handle
     )
     from gd.memory.internal.darwin import (
-        get_process_id_from_name as darwin_get_process_id_from_name,
+        get_process_id_from_name as darwin_get_process_id_from_name
     )
     from gd.memory.internal.darwin import (
-        get_process_id_from_title as darwin_get_process_id_from_title,
+        get_process_id_from_title as darwin_get_process_id_from_title
     )
     from gd.memory.internal.darwin import open as darwin_open
     from gd.memory.internal.darwin import protect as darwin_protect
@@ -77,17 +77,17 @@ try:
     from gd.memory.internal.windows import free as windows_free
     from gd.memory.internal.windows import get_base_address as windows_get_base_address
     from gd.memory.internal.windows import (
-        get_base_address_from_handle as windows_get_base_address_from_handle,
+        get_base_address_from_handle as windows_get_base_address_from_handle
     )
     from gd.memory.internal.windows import get_process_bits as windows_get_process_bits
     from gd.memory.internal.windows import (
-        get_process_bits_from_handle as windows_get_process_bits_from_handle,
+        get_process_bits_from_handle as windows_get_process_bits_from_handle
     )
     from gd.memory.internal.windows import (
-        get_process_id_from_name as windows_get_process_id_from_name,
+        get_process_id_from_name as windows_get_process_id_from_name
     )
     from gd.memory.internal.windows import (
-        get_process_id_from_title as windows_get_process_id_from_title,
+        get_process_id_from_title as windows_get_process_id_from_title
     )
     from gd.memory.internal.windows import open as windows_open
     from gd.memory.internal.windows import protect as windows_protect

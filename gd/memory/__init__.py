@@ -40,7 +40,6 @@ from gd.memory.gd import (
     PlayLayer,
 )
 from gd.memory.pointers import MutPointer, MutPointerData, Pointer, PointerData
-from gd.memory.refs import MutRef, Ref
 from gd.memory.special import Void
 from gd.memory.state import (
     AbstractState,
