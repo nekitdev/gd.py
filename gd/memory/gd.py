@@ -1,6 +1,6 @@
 from gd.enums import GameMode, Speed
 from gd.memory.base import Struct, StructData, struct
-from gd.memory.cocos import CCLayer, CCNode, CCPoint
+from gd.memory.cocos import CCLayer, CCNode, CCNodeContainer, CCPoint
 from gd.memory.data import Bool, Float, Int
 from gd.memory.fields import Field
 from gd.memory.pointers import MutPointerData
@@ -256,21 +256,6 @@ class AccountManager(CCNode):
     update_account_delegate = Field(MutPointerData(Void()))  # AccountSettingsDelegate*
 
 
-@struct(virtual=True)
-class BaseGameLayer(TriggerEffectDelegate, CCLayer):
-    ...
-
-
-@struct(virtual=True)
-class PlayLayer(BaseGameLayer):
-    ...
-
-
-@struct(virtual=True)
-class EditorLayer(BaseGameLayer):
-    ...
-
-
 @struct()
 class LevelSettings(CCNode):
     effect_manager = Field(MutPointerData(Void()))
@@ -303,3 +288,120 @@ class LevelSettings(CCNode):
 
     def is_song_custom(self) -> bool:
         return self.song_custom
+
+
+@struct(virtual=True)
+class BaseGameLayer(TriggerEffectDelegate, CCLayer):
+    oriented_bounding_box = Field(MutPointerData(Void()))  # OBB2D*
+
+    effect_manager = Field(MutPointerData(Void()))  # EffectManager*
+
+    object_layer = Field(MutPointerData(StructData(CCLayer)))
+
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTop4;
+    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAddTop4;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTop3;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTop3;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddGlowTop3;
+    batch_node_top_3_container = Field(MutPointerData(StructData(CCNodeContainer)))
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTextTop3;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTextTop3;
+    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeTop3;
+    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAddTop3;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTop2;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTop2;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddGlowTop2;
+    batch_node_top_2_container = Field(MutPointerData(StructData(CCNodeContainer)))
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTextTop2;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTextTop2;
+    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeTop2;
+    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAddTop2;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNode;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAdd;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddGlow;
+    batch_node_top_1_container = Field(MutPointerData(StructData(CCNodeContainer)))
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTextTop1;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTextTop1;
+    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeTop1;
+    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAddTop1;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodePlayer;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddPlayer;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodePlayerGlow;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddMid;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeBot;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBot;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBotGlow;
+    batch_node_bottom_1_container = Field(MutPointerData(StructData(CCNodeContainer)))
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeText;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddText;
+    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNode;
+    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAdd;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeBot2;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBot2;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBot2Glow;
+    batch_node_bottom_2_container = Field(MutPointerData(StructData(CCNodeContainer)))
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTextBot2;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTextBot2;
+    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeBot2;
+    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAddBot2;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeBot3;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBot3;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBot3Glow;
+    batch_node_bottom_3_container = Field(MutPointerData(StructData(CCNodeContainer)))
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTextBot3;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTextBot3;
+    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeBot3;
+    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAddBot3;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeBot4;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBot4;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBot4Glow;
+    batch_node_bottom_4_container = Field(MutPointerData(StructData(CCNodeContainer)))
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTextBot4;
+    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTextBot4;
+    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeBot4;
+    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAddBot4;
+    # PlayerObject* m_pPlayer1;
+    # PlayerObject* m_pPlayer2;
+    level_settings = Field(MutPointerData(StructData(LevelSettings)))
+    # cocos2d::CCDictionary* m_pDisabledGroupsDictMaybe;
+    # cocos2d::CCArray* m_pObjects;
+    # cocos2d::CCArray* m_pSectionObjectsArray;
+    # cocos2d::CCArray* m_pSections;
+    # cocos2d::CCArray* m_pCollisionBlocksArray;
+    # cocos2d::CCArray* m_pSpawnObjectsArray;
+    # cocos2d::CCArray* m_pUnkArr4;
+    # cocos2d::CCNode* m_pGroupNodes;
+    # std::vector<GameObject*> m_pGameObjects;
+    # std::vector<GameObject*> m_pDisabledObjects;
+    # cocos2d::CCDictionary* m_pGroupDict;
+    # cocos2d::CCDictionary* m_pStaticGroupDict;
+    # cocos2d::CCDictionary* m_pOptimisedGroupDict;
+    # std::vector<cocos2d::CCArray*> m_pGroups;
+    # std::vector<cocos2d::CCArray*> m_pStaticGroups;
+    # std::vector<cocos2d::CCArray*> m_pOptimisedGroups;
+    # cocos2d::CCArray* m_pBatchNodeArray;
+    # cocos2d::CCArray* m_pProcessedGroups;
+    # cocos2d::CCDictionary* m_pCounterDict;
+    # cocos2d::CCDictionary* m_pSpawnedGroups;
+    # bool m_bUpdatedNormalCapacity;
+    # bool m_bTwoPlayer;
+    # int m_nUnk;
+    # bool m_bActiveDualTouch;
+    # int m_nPushedButtons;
+    # int m_nCurrentSection;
+    # int m_nOldSection;
+    # bool m_bDisabledObjects;
+    # bool m_bBlending;
+
+
+@struct(virtual=True)
+class PlayLayer(BaseGameLayer):
+    ...
+
+
+@struct(virtual=True)
+class EditorLayer(BaseGameLayer):
+    ...
+
+
+# TODO: Player, Vector<T>?

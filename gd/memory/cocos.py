@@ -172,3 +172,8 @@ class CCLayer(
 
     touch_priority = Field(Int())
     touch_mode = Field(Int())  # enum
+
+
+@struct()
+class CCNodeContainer(CCNode):
+    pass

@@ -40,6 +40,9 @@ from gd.binary_utils import (
     to_u64,
 )
 from gd.enums import ByteOrder, Permissions, Platform
+from gd.memory.base import StructData
+from gd.memory.constants import ACCOUNT_MANAGER_OFFSET, GAME_MANAGER_OFFSET
+from gd.memory.gd import AccountManager, GameManager
 from gd.memory.internal import (
     darwin_allocate,
     darwin_free,
@@ -75,6 +78,7 @@ from gd.memory.internal import (
     windows_terminate,
     windows_write,
 )
+from gd.memory.pointers import Pointer
 from gd.platform import DARWIN, WINDOWS, PlatformConfig
 
 __all__ = (
@@ -101,6 +105,8 @@ DEFAULT_PROCESS_ID = 0
 DEFAULT_HANDLE = 0
 DEFAULT_BASE_ADDRESS = 0
 DEFAULT_LOADED = False
+
+NULL_POINTER = "the pointer is null"
 
 
 class StateProtocol(Protocol):
@@ -368,6 +374,22 @@ class AbstractState(StateProtocol):
 
     def write_double(self, address: int, value: float, order: ByteOrder = ByteOrder.NATIVE) -> None:
         self.write_f64(address, value, order)
+
+    @property
+    def account_manager(self) -> Pointer[AccountManager]:
+        return Pointer(
+            self,
+            self.base_address + ACCOUNT_MANAGER_OFFSET,
+            StructData(AccountManager.reconstruct_for(self)),
+        )
+
+    @property
+    def game_manager(self) -> Pointer[GameManager]:
+        return Pointer(
+            self,
+            self.base_address + GAME_MANAGER_OFFSET,
+            StructData(GameManager.reconstruct_for(self)),
+        )
 
 
 @define()

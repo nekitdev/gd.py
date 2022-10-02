@@ -1,10 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from attrs import frozen
 
 from gd.enums import ByteOrder
 from gd.memory.constants import ZERO_SIZE
 from gd.memory.data import Data
-from gd.memory.state import AbstractState
 from gd.platform import PlatformConfig
+
+if TYPE_CHECKING:
+    from gd.memory.state import AbstractState
 
 __all__ = ("Void",)
 

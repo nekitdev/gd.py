@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from builtins import setattr as set_attribute
-from typing import ClassVar, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Optional, Type, TypeVar
 
 from attrs import define, field, frozen
 
@@ -9,11 +11,13 @@ from gd.memory.arrays import ArrayData
 from gd.memory.constants import DEFAULT_ALIGNMENT, DEFAULT_PACKED, DEFAULT_SIZE, DEFAULT_VIRTUAL
 from gd.memory.data import U8 as Byte
 from gd.memory.data import Data
-from gd.memory.state import AbstractState
 from gd.memory.utils import set_module, set_name
 from gd.platform import PlatformConfig
 from gd.string_utils import tick
 from gd.typing import ClassDecoratorIdentity, get_module, get_name
+
+if TYPE_CHECKING:
+    from gd.memory.state import AbstractState
 
 __all__ = ("Base", "Struct", "Union", "struct", "union")
 

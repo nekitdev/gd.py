@@ -1,4 +1,6 @@
-from typing import Type
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Type
 from typing import Union as TypingUnion
 
 from attrs import frozen
@@ -12,9 +14,11 @@ from gd.memory.data import U8 as Byte
 from gd.memory.data import Data, USize
 from gd.memory.fields import Field
 from gd.memory.pointers import MutPointerData
-from gd.memory.state import AbstractState
 from gd.memory.utils import closest_power_of_two
 from gd.platform import PlatformConfig
+
+if TYPE_CHECKING:
+    from gd.memory.state import AbstractState
 
 __all__ = ("String", "OldString", "StringData")
 

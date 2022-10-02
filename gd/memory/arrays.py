@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from typing import Iterator, Optional, Sequence, Type, TypeVar
+from typing import TYPE_CHECKING, Iterator, Optional, Sequence, Type, TypeVar
 
 from attrs import define, field, frozen
 
 from gd.enums import ByteOrder
 from gd.memory.data import Data
-from gd.memory.state import AbstractState
 from gd.platform import PlatformConfig
+
+if TYPE_CHECKING:
+    from gd.memory.state import AbstractState
 
 __all__ = ("Array", "MutArray", "ArrayData", "MutArrayData")
 
