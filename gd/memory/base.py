@@ -33,14 +33,6 @@ class Base:
     address: int = field(repr=hex)
     order: ByteOrder = field(default=ByteOrder.NATIVE)
 
-    @property
-    def size(self) -> int:
-        return type(self).SIZE
-
-    @property
-    def alignment(self) -> int:
-        return type(self).ALIGNMENT
-
 
 TS = TypeVar("TS", bound="Type[Struct]")
 

@@ -1,4 +1,4 @@
-from gd.memory.arrays import MutArrayData
+from gd.memory.arrays import ArrayData, MutArrayData
 from gd.memory.base import Struct, StructData, struct
 from gd.memory.data import Bool, Float, Int, UByte, UInt
 from gd.memory.fields import Field
@@ -16,6 +16,61 @@ class CCPoint(Struct):
 class CCSize(Struct):
     width = Field(Float())
     height = Field(Float())
+
+
+@struct()
+class CCRectangle(Struct):
+    origin = Field(StructData(CCPoint))
+    size = Field(StructData(CCSize))
+
+
+@struct()
+class CCColor3B(Struct):
+    r = Field(UByte())
+    g = Field(UByte())
+    b = Field(UByte())
+
+
+@struct()
+class CCColor4B(Struct):
+    r = Field(UByte())
+    g = Field(UByte())
+    b = Field(UByte())
+    a = Field(UByte())
+
+
+@struct()
+class CCVertex3F(Struct):
+    x = Field(Float())
+    y = Field(Float())
+    z = Field(Float())
+
+
+@struct()
+class CCTex2F(Struct):
+    u = Field(Float())
+    v = Field(Float())
+
+
+@struct()
+class CCV3F_C4B_T2F(Struct):
+    vertex = Field(StructData(CCVertex3F))
+    color = Field(StructData(CCColor4B))
+    tex = Field(StructData(CCTex2F))
+
+
+@struct()
+class CCV3F_C4B_T2F_Quad(Struct):
+    top_left = Field(StructData(CCV3F_C4B_T2F))
+    bottom_left = Field(StructData(CCV3F_C4B_T2F))
+    top_right = Field(StructData(CCV3F_C4B_T2F))
+    bottom_right = Field(StructData(CCV3F_C4B_T2F))
+
+
+@struct()
+class CCBlendFunction(Struct):
+    source = Field(UInt())
+    destination = Field(UInt())
 
 
 @struct()
@@ -124,6 +179,98 @@ class CCNode(CCObject):
     script_type = Field(Int())  # enum
 
     component_container = Field(MutPointerData(Void()))  # CCComponentContainer*
+
+
+@struct(virtual=True)
+class CCRGBAProtocol(Struct):
+    pass
+
+
+@struct(virtual=True)
+class CCBlendProtocol(Struct):
+    pass
+
+
+@struct(virtual=True)
+class CCTextureProtocol(CCBlendProtocol):
+    pass
+
+
+@struct(virtual=True)
+class CCNodeRGBA(CCRGBAProtocol, CCNode):
+    displayed_opacity = Field(UByte())
+    real_opacity = Field(UByte())
+
+    displayed_color = Field(StructData(CCColor3B))
+    real_color = Field(StructData(CCColor3B))
+
+    cascade_color_enabled = Field(Bool())
+    cascade_opacity_enabled = Field(Bool())
+
+
+@struct(virtual=True)
+class CCSpriteBatchNode(CCTextureProtocol, CCNode):
+    texture_atlas = Field(MutPointerData(Void()))  # CCTextureAtlas*
+    blend_function = Field(StructData(CCBlendFunction))
+
+    descendants = Field(MutPointerData(StructData(CCArray)))
+
+    manual_sort_children = Field(Bool())
+    manual_sort_all_children_dirty = Field(Bool())
+
+
+@struct(virtual=True)
+class CCSprite(CCTextureProtocol, CCNodeRGBA):
+    texture_atlas = Field(MutPointerData(Void()))  # CCTextureAtlas*
+    atlas_index = Field(UInt())
+    batch_node = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+
+    dirty = Field(Bool())
+    recursive_dirty = Field(Bool())
+    has_children = Field(Bool())
+    should_be_hidden = Field(Bool())
+
+    transform_to_batch_node = Field(StructData(CCAffineTransform))
+
+    blend_function = Field(StructData(CCBlendFunction))
+
+    texture = Field(MutPointerData(Void()))  # CCTexture2D*
+
+    rectangle = Field(StructData(CCRectangle))
+
+    rectangle_rotated = Field(Bool())
+
+    offset_position = Field(StructData(CCPoint))
+    unflipped_offset_position_from_center = Field(StructData(CCPoint))
+
+    quad = Field(StructData(CCV3F_C4B_T2F_Quad))
+
+    opacity_modify_rgb = Field(Bool())
+
+    flip_x = Field(Bool())
+    flip_y = Field(Bool())
+
+    do_not_draw = Field(Bool())
+
+    top_left_mod = Field(Float())
+    top_right_mod = Field(Float())
+    bottom_left_mod = Field(Float())
+    bottom_right_mod = Field(Float())
+
+    pad = Field(ArrayData(UByte(), 16))  # XXX: update this asap >:(
+
+    unknown_bool = Field(Bool())
+    unknown = Field(Int())
+
+
+@struct(virtual=True)
+class CCSpritePlus(CCSprite):
+    followers = Field(MutPointerData(StructData(CCArray)))
+    following = Field(MutPointerData(Void()))  # CCSpritePlus*
+
+    has_followers = Field(Bool())
+    scale_followers = Field(Bool())
+    flip_followers = Field(Bool())
 
 
 @struct(virtual=True)

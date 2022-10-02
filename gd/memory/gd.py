@@ -1,7 +1,8 @@
 from gd.enums import GameMode, Speed
+from gd.http import R
 from gd.memory.base import Struct, StructData, struct
-from gd.memory.cocos import CCLayer, CCNode, CCNodeContainer, CCPoint
-from gd.memory.data import Bool, Float, Int
+from gd.memory.cocos import CCLayer, CCNode, CCNodeContainer, CCPoint, CCSpriteBatchNode, CCSpritePlus
+from gd.memory.data import Bool, Double, Float, Int
 from gd.memory.fields import Field
 from gd.memory.pointers import MutPointerData
 from gd.memory.special import Void
@@ -219,43 +220,6 @@ class GameLevel(CCNode):
     progress_string = Field(StringData())
 
 
-@struct(virtual=True)
-class TriggerEffectDelegate(Struct):
-    default_enter_effect = Field(Bool())
-
-
-@struct(virtual=True)
-class BaseGameManager(CCNode):
-    file_name = Field(StringData())
-
-    setup = Field(Bool())
-    saved = Field(Bool())
-
-
-@struct(virtual=True)
-class GameManager(BaseGameManager):
-    ...
-
-
-@struct(virtual=True)
-class AccountManager(CCNode):
-    data = Field(MutPointerData(Void()))
-
-    password = Field(StringData())
-    name = Field(StringData())
-
-    account_id = Field(Int())
-    account_id_seed = Field(Int())
-    account_id_random = Field(Int())
-
-    register_delegate = Field(MutPointerData(Void()))  # AccountRegisterDelegate*
-    login_delegate = Field(MutPointerData(Void()))  # AccountLoginDelegate*
-    account_delegate = Field(MutPointerData(Void()))  # AccountDelegate*
-    backup_delegate = Field(MutPointerData(Void()))  # AccountBackupDelegate*
-    sync_delegate = Field(MutPointerData(Void()))  # AccountSyncDelegate*
-    update_account_delegate = Field(MutPointerData(Void()))  # AccountSettingsDelegate*
-
-
 @struct()
 class LevelSettings(CCNode):
     effect_manager = Field(MutPointerData(Void()))
@@ -290,6 +254,21 @@ class LevelSettings(CCNode):
         return self.song_custom
 
 
+@struct()
+class GameObject(CCSpritePlus):
+    ...
+
+
+@struct()
+class Player(GameObject):
+    ...
+
+
+@struct(virtual=True)
+class TriggerEffectDelegate(Struct):
+    pass
+
+
 @struct(virtual=True)
 class BaseGameLayer(TriggerEffectDelegate, CCLayer):
     oriented_bounding_box = Field(MutPointerData(Void()))  # OBB2D*
@@ -298,71 +277,97 @@ class BaseGameLayer(TriggerEffectDelegate, CCLayer):
 
     object_layer = Field(MutPointerData(StructData(CCLayer)))
 
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTop4;
-    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAddTop4;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTop3;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTop3;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddGlowTop3;
+    batch_node_add_top_4 = Field(MutPointerData(Void()))
+    effect_batch_node_add_top_4 = Field(MutPointerData(Void()))
+    batch_node_top_3 = Field(MutPointerData(Void()))
+
+    batch_node_add_top_3 = Field(MutPointerData(Void()))
+    batch_node_add_glow_top_3 = Field(MutPointerData(Void()))
+
     batch_node_top_3_container = Field(MutPointerData(StructData(CCNodeContainer)))
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTextTop3;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTextTop3;
-    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeTop3;
-    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAddTop3;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTop2;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTop2;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddGlowTop2;
+
+    batch_node_text_top_3 = Field(MutPointerData(Void()))
+    batch_node_add_text_top_3 = Field(MutPointerData(Void()))
+    effect_batch_node_top_3 = Field(MutPointerData(Void()))
+    effect_batch_node_add_top_3 = Field(MutPointerData(Void()))
+
+    batch_node_top_2 = Field(MutPointerData(Void()))
+    batch_node_add_top_2 = Field(MutPointerData(Void()))
+    batch_node_add_glow_top_2 = Field(MutPointerData(Void()))
+
     batch_node_top_2_container = Field(MutPointerData(StructData(CCNodeContainer)))
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTextTop2;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTextTop2;
-    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeTop2;
-    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAddTop2;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNode;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAdd;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddGlow;
+
+    batch_node_text_top_2 = Field(MutPointerData(Void()))
+    batch_node_add_text_top_2 = Field(MutPointerData(Void()))
+    effect_batch_node_top_2 = Field(MutPointerData(Void()))
+    effect_batch_node_add_top_2 = Field(MutPointerData(Void()))
+
+    batch_node = Field(MutPointerData(Void()))
+    batch_node_add = Field(MutPointerData(Void()))
+    batch_node_add_glow = Field(MutPointerData(Void()))
+
     batch_node_top_1_container = Field(MutPointerData(StructData(CCNodeContainer)))
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTextTop1;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTextTop1;
-    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeTop1;
-    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAddTop1;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodePlayer;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddPlayer;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodePlayerGlow;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddMid;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeBot;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBot;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBotGlow;
+
+    batch_node_text_top_1 = Field(MutPointerData(Void()))
+    batch_node_add_text_top_1 = Field(MutPointerData(Void()))
+    effect_batch_node_top_1 = Field(MutPointerData(Void()))
+    effect_batch_node_add_top_1 = Field(MutPointerData(Void()))
+
+    batch_node_player = Field(MutPointerData(Void()))
+    batch_node_add_player = Field(MutPointerData(Void()))
+    batch_node_player_glow = Field(MutPointerData(Void()))
+
+    batch_node_add_middle = Field(MutPointerData(Void()))
+
+    batch_node_bottom = Field(MutPointerData(Void()))
+    batch_node_add_bottom = Field(MutPointerData(Void()))
+    batch_node_add_bottom_glow = Field(MutPointerData(Void()))
+
     batch_node_bottom_1_container = Field(MutPointerData(StructData(CCNodeContainer)))
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeText;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddText;
-    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNode;
-    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAdd;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeBot2;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBot2;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBot2Glow;
+
+    batch_node_text = Field(MutPointerData(Void()))
+    batch_node_add_text = Field(MutPointerData(Void()))
+    effect_batch_node = Field(MutPointerData(Void()))
+    effect_batch_node_add = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+
+    batch_node_bottom_2 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+    batch_node_add_bottom_2 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+    batch_node_add_bottom_2_glow = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+
     batch_node_bottom_2_container = Field(MutPointerData(StructData(CCNodeContainer)))
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTextBot2;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTextBot2;
-    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeBot2;
-    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAddBot2;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeBot3;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBot3;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBot3Glow;
+
+    batch_node_text_bottom_2 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+    batch_node_add_text_bottom_2 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+    effect_batch_node_bottom_2 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+    effect_batch_node_add_bottom_2 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+
+    batch_node_bottom_3 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+    batch_node_add_bottom_3 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+    batch_node_add_bottom_3_glow = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+
     batch_node_bottom_3_container = Field(MutPointerData(StructData(CCNodeContainer)))
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTextBot3;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTextBot3;
-    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeBot3;
-    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAddBot3;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeBot4;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBot4;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddBot4Glow;
+
+    batch_node_text_bottom_3 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+    batch_node_add_text_bottom_3 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+    effect_batch_node_bottom_3 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+    effect_batch_node_add_bottom_3 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+
+    batch_node_bottom_4 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+    batch_node_add_bottom_4 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+    batch_node_add_bottom_4_glow = Field(MutPointerData(Void()))
+
     batch_node_bottom_4_container = Field(MutPointerData(StructData(CCNodeContainer)))
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeTextBot4;
-    # cocos2d::CCSpriteBatchNode* m_pBatchNodeAddTextBot4;
-    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeBot4;
-    # cocos2d::CCSpriteBatchNode* m_pEffectBatchNodeAddBot4;
-    # PlayerObject* m_pPlayer1;
-    # PlayerObject* m_pPlayer2;
+
+    batch_node_text_bottom_4 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+    batch_node_add_text_bottom_4 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+    effect_batch_node_bottom_4 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+    effect_batch_node_add_bottom_4 = Field(MutPointerData(StructData(CCSpriteBatchNode)))
+
+    player_1 = Field(MutPointerData(StructData(Player)))
+    player_2 = Field(MutPointerData(StructData(Player)))
+
     level_settings = Field(MutPointerData(StructData(LevelSettings)))
+
     # cocos2d::CCDictionary* m_pDisabledGroupsDictMaybe;
     # cocos2d::CCArray* m_pObjects;
     # cocos2d::CCArray* m_pSectionObjectsArray;
@@ -404,4 +409,246 @@ class EditorLayer(BaseGameLayer):
     ...
 
 
-# TODO: Player, Vector<T>?
+@struct(virtual=True)
+class BaseGameManager(CCNode):
+    file_name = Field(StringData())
+
+    setup = Field(Bool())
+    saving = Field(Bool())
+
+
+@struct(virtual=True)
+class GameManager(BaseGameManager):
+    switch_modes = Field(Bool())
+    to_fullscreen = Field(Bool())
+    reloading = Field(Bool())
+
+    _unknown_bool_0 = Field(Bool())
+
+    value_keeper = Field(MutPointerData(Void()))  # CCDictionary*
+    unlock_value_keeper = Field(MutPointerData(Void()))  # CCDictionary*
+    custom_objects = Field(MutPointerData(Void()))  # CCDictionary*
+
+    _unknown_int_0 = Field(Int())
+
+    ad_timer = Field(Double())
+    ad_cache = Field(Double())
+
+    _unknown_bool_1 = Field(Bool())
+
+    _unknown_int_1 = Field(Int())
+
+    _unknown_double_0 = Field(Double())
+
+    _unknown_int_2 = Field(Int())
+    _unknown_int_3 = Field(Int())
+
+    first_load = Field(Bool())
+
+    synced_platform_achievements = Field(Bool())
+
+    _unknown_string_0 = Field(StringData())
+
+    play_layer = Field(MutPointerData(StructData(PlayLayer)))
+    editor_layer = Field(MutPointerData(StructData(EditorLayer)))
+
+    _unknown_int_4 = Field(Int())
+
+    menu_layer = Field(MutPointerData(Void()))  # MenuLayer*
+
+    _unknown_bool_2 = Field(Bool())
+
+    _unknown_int_5 = Field(Int())
+
+    _unknown_bool_3 = Field(Bool())
+
+    _unknown_bool_4 = Field(Bool())
+
+    _unknown_bool_5 = Field(Bool())
+    _unknown_bool_6 = Field(Bool())
+
+    udid = Field(StringData())
+    name = Field(StringData())
+
+    comments_enabled = Field(Bool())
+
+    user_id_random = Field(Int())
+    user_id_seed = Field(Int())
+    user_id = Field(Int())
+
+    volume = Field(Float())
+    sfx_volume = Field(Float())
+    time_offset = Field(Float())
+
+    rated = Field(Bool())
+
+    facebook = Field(Bool())
+    twitter = Field(Bool())
+    youtube = Field(Bool())
+
+    _unknown_int_6 = Field(Int())
+
+    socials_duration = Field(Double())
+
+    shown_ad = Field(Bool())
+
+    _unknown_bool_7 = Field(Bool())
+
+    editor = Field(Bool())
+
+    scene_value = Field(Int())
+
+    _unknown_int_7 = Field(Int())
+
+    _unknown_bool_8 = Field(Bool())
+
+    cube_id_random = Field(Int())
+    cube_id_seed = Field(Int())
+    cube_id = Field(Int())
+
+    ship_id_random = Field(Int())
+    ship_id_seed = Field(Int())
+    ship_id = Field(Int())
+
+    ball_id_random = Field(Int())
+    ball_id_seed = Field(Int())
+    ball_id = Field(Int())
+
+    ufo_id_random = Field(Int())
+    ufo_id_seed = Field(Int())
+    ufo_id = Field(Int())
+
+    wave_id_random = Field(Int())
+    wave_id_seed = Field(Int())
+    wave_id = Field(Int())
+
+    robot_id_random = Field(Int())
+    robot_id_seed = Field(Int())
+    robot_id = Field(Int())
+
+    spider_id_random = Field(Int())
+    spider_id_seed = Field(Int())
+    spider_id = Field(Int())
+
+    color_1_id_random = Field(Int())
+    color_1_id_seed = Field(Int())
+    color_1_id = Field(Int())
+
+    color_2_id_random = Field(Int())
+    color_2_id_seed = Field(Int())
+    color_2_id = Field(Int())
+
+    streak_id_random = Field(Int())
+    streak_id_seed = Field(Int())
+    streak_id = Field(Int())
+
+    explosion_id_random = Field(Int())
+    explosion_id_seed = Field(Int())
+    explosion_id = Field(Int())
+
+    check_random = Field(Int())
+    check_seed = Field(Int())
+
+    codebreaker_random = Field(Int())
+    codebreaker_seed = Field(Int())
+
+    glow = Field(Bool())
+
+    icon_type_value = Field(Int())
+
+    everyplay_setup = Field(Bool())
+
+    show_song_markers = Field(Bool())
+
+    show_bpm_markers = Field(Bool())
+
+    record_gameplay = Field(Bool())
+
+    show_progress_bar = Field(Bool())
+
+    performance_mode = Field(Bool())
+
+    clicked_icons = Field(Bool())
+    clicked_editor = Field(Bool())
+    clicked_name = Field(Bool())
+    clicked_practice = Field(Bool())
+
+    shown_editor_guide = Field(Bool())
+    shown_rate_difficulty_dialog = Field(Bool())
+    shown_rate_star_dialog = Field(Bool())
+    shown_low_detail_dialog = Field(Bool())
+
+    game_rate_delegate = Field(MutPointerData(Void()))  # GameRateDelegate*
+    unknown_delegate = Field(MutPointerData(Void()))
+
+    _unknown_int_8 = Field(Int())
+
+    _unknown_int_9 = Field(Int())
+
+    _unknown_int_10 = Field(Int())
+
+    group_id = Field(Int())
+    background_id = Field(Int())
+    ground_id = Field(Int())
+    font_id = Field(Int())
+    explosion_id_repeated = Field(Int())
+
+    _unknown_attempts = Field(Int())
+    _unknown_attempts_another = Field(Int())
+
+    bootups = Field(Int())
+
+    rated_repeated = Field(Bool())
+
+    _unknown_bool_9 = Field(Bool())
+
+    _unknown_bool_10 = Field(Bool())
+
+    important = Field(Bool())
+
+    _unknown_bool_11 = Field(Bool())
+
+    smooth_fix = Field(Bool())
+
+    rate_power_random = Field(Int())
+    rate_power_seed = Field(Int())
+    rate_power = Field(Int())
+
+    can_get_level_data = Field(Bool())
+
+    resolution = Field(Int())
+
+    texture_quality = Field(Int())
+
+    _unknown_bool_12 = Field(Bool())
+
+    daily_level_page = Field(MutPointerData(Void()))  # DailyLevelPage*
+
+    _unknown_bool_13 = Field(Bool())
+
+    _unknown_int_11 = Field(Int())
+    _unknown_int_12 = Field(Int())
+    _unknown_int_13 = Field(Int())
+
+    ad_reward = Field(Int())
+
+    _unknown_int_14 = Field(Int())
+
+
+@struct(virtual=True)
+class AccountManager(CCNode):
+    data = Field(MutPointerData(Void()))
+
+    password = Field(StringData())
+    name = Field(StringData())
+
+    account_id = Field(Int())
+    account_id_seed = Field(Int())
+    account_id_random = Field(Int())
+
+    register_delegate = Field(MutPointerData(Void()))  # AccountRegisterDelegate*
+    login_delegate = Field(MutPointerData(Void()))  # AccountLoginDelegate*
+    account_delegate = Field(MutPointerData(Void()))  # AccountDelegate*
+    backup_delegate = Field(MutPointerData(Void()))  # AccountBackupDelegate*
+    sync_delegate = Field(MutPointerData(Void()))  # AccountSyncDelegate*
+    update_account_delegate = Field(MutPointerData(Void()))  # AccountSettingsDelegate*
