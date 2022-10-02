@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterator, Optional, Sequence, Type, TypeVar
+from typing import Iterator, Optional, Sequence, Type, TypeVar
 
 from attrs import define, field, frozen
 

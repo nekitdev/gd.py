@@ -26,7 +26,7 @@ from gd.typing import StringDict, get_name, is_instance
 if TYPE_CHECKING:
     from gd.memory.base import Base
 
-__all__ = ("Field",)
+__all__ = ("Field", "fetch_fields")
 
 T = TypeVar("T")
 

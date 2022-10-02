@@ -1,5 +1,6 @@
 from gd.memory.arrays import Array, ArrayData, MutArray, MutArrayData
 from gd.memory.base import Struct, StructData, Union, UnionData, struct, union
+from gd.memory.constants import ACCOUNT_MANAGER_OFFSET, GAME_MANAGER_OFFSET
 from gd.memory.data import (
     F32,
     F64,
@@ -29,6 +30,15 @@ from gd.memory.data import (
     USize,
 )
 from gd.memory.fields import Field
+from gd.memory.gd import (
+    AccountManager,
+    BaseGameLayer,
+    EditorLayer,
+    GameLevel,
+    GameManager,
+    LevelSettings,
+    PlayLayer,
+)
 from gd.memory.pointers import MutPointer, MutPointerData, Pointer, PointerData
 from gd.memory.refs import MutRef, Ref
 from gd.memory.special import Void

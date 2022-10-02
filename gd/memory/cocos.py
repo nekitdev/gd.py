@@ -1,12 +1,6 @@
 from gd.memory.arrays import MutArrayData
 from gd.memory.base import Struct, StructData, struct
-from gd.memory.data import (
-    Bool,
-    Float,
-    Int,
-    UByte,
-    UInt,
-)
+from gd.memory.data import Bool, Float, Int, UByte, UInt
 from gd.memory.fields import Field
 from gd.memory.pointers import MutPointerData
 from gd.memory.special import Void
@@ -32,13 +26,6 @@ class CCAffineTransform(Struct):
     d = Field(Float())
     translate_x = Field(Float())
     translate_y = Field(Float())
-
-
-@struct()
-class ColorRGB(Struct):
-    r = Field(UByte())
-    g = Field(UByte())
-    b = Field(UByte())
 
 
 @struct(virtual=True)
@@ -137,18 +124,6 @@ class CCNode(CCObject):
     script_type = Field(Int())  # enum
 
     component_container = Field(MutPointerData(Void()))  # CCComponentContainer*
-
-
-@struct(virtual=True)
-class CCNodeRGBA(CCNode):
-    displayed_opacity = Field(UByte())
-    real_opacity = Field(UByte())
-
-    displayed_color = Field(StructData(ColorRGB))
-    real_color = Field(StructData(ColorRGB))
-
-    cascade_color_enabled = Field(Bool())
-    cascade_opacity_enabled = Field(Bool())
 
 
 @struct(virtual=True)

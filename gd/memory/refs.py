@@ -1,7 +1,7 @@
 from typing import Type, TypeVar
-from typing_extensions import Never
 
 from attrs import field, frozen
+from typing_extensions import Never
 
 from gd.enums import ByteOrder
 from gd.memory.data import Data, USize

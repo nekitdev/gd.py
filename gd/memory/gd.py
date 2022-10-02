@@ -7,10 +7,20 @@ from gd.memory.pointers import MutPointerData
 from gd.memory.special import Void
 from gd.memory.string import StringData
 
+__all__ = (
+    "GameManager",
+    "AccountManager",
+    "BaseGameLayer",
+    "PlayLayer",
+    "EditorLayer",
+    "LevelSettings",
+    "GameLevel",
+)
+
 
 @struct()
 class GameLevel(CCNode):
-    last_save = Field(MutPointerData(Void()))
+    last_save = Field(MutPointerData(Void()))  # CCDictionary*
 
     level_id_random = Field(Int())
     level_id_seed = Field(Int())
@@ -21,7 +31,7 @@ class GameLevel(CCNode):
 
     unprocessed_data = Field(StringData())
 
-    user_name = Field(StringData())
+    creator_name = Field(StringData())
 
     recording_string = Field(StringData())
 
@@ -57,8 +67,8 @@ class GameLevel(CCNode):
 
     editable = Field(Bool())
 
-    gauntlet_level = Field(Bool())
-    gauntlet_level_other = Field(Bool())
+    gauntlet = Field(Bool())
+    free_game = Field(Bool())
 
     editor_seconds = Field(Int())
     copies_seconds = Field(Int())
@@ -94,10 +104,10 @@ class GameLevel(CCNode):
     attempt_time_seed = Field(Int())
     attempt_time = Field(Int())
 
-    chk = Field(Int())
+    seed = Field(Int())
 
     chk_valid = Field(Bool())
-    legit = Field(Bool())
+    anticheat = Field(Bool())
 
     normal_percent = Field(Int())
     normal_percent_seed = Field(Int())
@@ -121,9 +131,9 @@ class GameLevel(CCNode):
     score = Field(Int())
 
     epic = Field(Bool())
-    level_favorite = Field(Bool())
+    favorite = Field(Bool())
 
-    level_folder = Field(Int())
+    folder_id = Field(Int())
 
     timely_id_random = Field(Int())
     timely_id_seed = Field(Int())
@@ -157,17 +167,17 @@ class GameLevel(CCNode):
 
     failed_password_attempts = Field(Int())
 
-    first_coin_acquired_random = Field(Int())
-    first_coin_acquired_seed = Field(Int())
-    first_coin_acquired = Field(Int())
+    first_coin_collected_random = Field(Int())
+    first_coin_collected_seed = Field(Int())
+    first_coin_collected = Field(Int())
 
-    second_coin_acquired_random = Field(Int())
-    second_coin_acquired_seed = Field(Int())
-    second_coin_acquired = Field(Int())
+    second_coin_collected_random = Field(Int())
+    second_coin_collected_seed = Field(Int())
+    second_coin_collected = Field(Int())
 
-    third_coint_acquired_random = Field(Int())
-    third_coint_acquired_seed = Field(Int())
-    third_coint_acquired = Field(Int())
+    third_coin_collected_random = Field(Int())
+    third_coin_collected_seed = Field(Int())
+    third_coin_collected = Field(Int())
 
     requested_stars = Field(Int())
 
@@ -184,21 +194,23 @@ class GameLevel(CCNode):
     rate_user = Field(StringData())
 
     do_not_save = Field(Bool())
-    downloaded = Field(Bool())
+    downloadable = Field(Bool())
 
-    require_coins = Field(Int())
+    required_coins = Field(Int())
     unlocked = Field(Bool())
 
-    last_camera_position = Field(StructData(CCPoint))
+    last_editor_position = Field(StructData(CCPoint))
 
     last_editor_zoom = Field(Float())
+
     last_build_time = Field(Int())
     last_build_page = Field(Int())
     last_build_group_id = Field(Int())
 
-    level_type_value = Field(Int())  # enum
+    level_type_value = Field(Int())
 
     some_id = Field(Int())  # ?
+
     temporary_name = Field(StringData())
     capacity_string = Field(StringData())
 
@@ -219,9 +231,6 @@ class BaseGameManager(CCNode):
     setup = Field(Bool())
     saved = Field(Bool())
 
-    quick_save = Field(Bool())
-    reload_all = Field(Bool())
-
 
 @struct(virtual=True)
 class GameManager(BaseGameManager):
@@ -233,18 +242,18 @@ class AccountManager(CCNode):
     data = Field(MutPointerData(Void()))
 
     password = Field(StringData())
-    user_name = Field(StringData())
+    name = Field(StringData())
 
-    account_id_random = Field(Int())
-    account_id_seed = Field(Int())
     account_id = Field(Int())
+    account_id_seed = Field(Int())
+    account_id_random = Field(Int())
 
-    register_delegate = Field(MutPointerData(Void()))
-    login_delegate = Field(MutPointerData(Void()))
-    account_delegate = Field(MutPointerData(Void()))
-    backup_delegate = Field(MutPointerData(Void()))
-    sync_delegate = Field(MutPointerData(Void()))
-    update_account_delegate = Field(MutPointerData(Void()))
+    register_delegate = Field(MutPointerData(Void()))  # AccountRegisterDelegate*
+    login_delegate = Field(MutPointerData(Void()))  # AccountLoginDelegate*
+    account_delegate = Field(MutPointerData(Void()))  # AccountDelegate*
+    backup_delegate = Field(MutPointerData(Void()))  # AccountBackupDelegate*
+    sync_delegate = Field(MutPointerData(Void()))  # AccountSyncDelegate*
+    update_account_delegate = Field(MutPointerData(Void()))  # AccountSettingsDelegate*
 
 
 @struct(virtual=True)

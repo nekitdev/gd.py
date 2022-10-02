@@ -1,4 +1,5 @@
-from typing import Type, Union as TypingUnion
+from typing import Type
+from typing import Union as TypingUnion
 
 from attrs import frozen
 
