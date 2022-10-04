@@ -1365,27 +1365,22 @@ class GameManager(BaseGameManager):
 
     _unknown_bool_0 = Field(Bool())
 
+    _unknown_int_0 = Field(Int())
+
     value_keeper = Field(MutPointerData(Void()))  # CCDictionary*
     unlock_value_keeper = Field(MutPointerData(Void()))  # CCDictionary*
     custom_objects = Field(MutPointerData(Void()))  # CCDictionary*
 
-    _unknown_int_0 = Field(Int())
-
     ad_timer = Field(Double())
     ad_cache = Field(Double())
 
-    _unknown_bool_1 = Field(Bool())
-
-    _unknown_int_1 = Field(Int())
+    _pad_0 = Field(ArrayData(UByte(), 8))
 
     _unknown_double_0 = Field(Double())
 
-    _unknown_int_2 = Field(Int())
-    _unknown_int_3 = Field(Int())
+    _pad_1 = Field(ArrayData(UByte(), 8))
 
-    first_load = Field(Bool())
-
-    synced_platform_achievements = Field(Bool())
+    loaded = Field(Bool())
 
     _unknown_string_0 = Field(StringData())
 
@@ -1407,7 +1402,7 @@ class GameManager(BaseGameManager):
     _unknown_bool_5 = Field(Bool())
     _unknown_bool_6 = Field(Bool())
 
-    udid = Field(StringData())
+    uuid = Field(StringData())
     name = Field(StringData())
 
     comments_enabled = Field(Bool())
@@ -1418,7 +1413,7 @@ class GameManager(BaseGameManager):
 
     volume = Field(Float())
     sfx_volume = Field(Float())
-    time_offset = Field(Float())
+    # time_offset = Field(Float())  # idk why but removing this works
 
     rated = Field(Bool())
 
@@ -1434,7 +1429,7 @@ class GameManager(BaseGameManager):
 
     _unknown_bool_7 = Field(Bool())
 
-    editor = Field(Bool())
+    editor_enabled = Field(Bool())
 
     scene_value = Field(Int())
 
