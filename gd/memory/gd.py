@@ -4,6 +4,7 @@ from gd.enums import GameMode, Speed
 from gd.memory.arrays import ArrayData, MutArrayData
 from gd.memory.base import Struct, StructData, struct
 from gd.memory.cocos import (
+    CCArray,
     CCColor3B,
     CCLayer,
     CCNode,
@@ -268,7 +269,7 @@ class LevelSettings(CCNode):
 
 
 @struct()
-class ShortVector(Struct):
+class ShortVector(Struct):  # monomorphization
     pointer = Field(MutPointerData(MutArrayData(Short())))
     length = Field(USize())
     capacity = Field(USize())
@@ -617,89 +618,150 @@ class GameObject(CCSpritePlus):
 
 @struct()
 class Player(GameObject):
-    ...
-    # float m_fUnkDash;
-    # float m_fRotationButBackwards;
-    # double m_fUnkSlopeVel;
-    # bool m_bPlacedStreakPoint;
-    # cocos2d::CCNode* m_pCollisionNode;
-    # cocos2d::CCDictionary* m_pCollisionDict2;
-    # cocos2d::CCDictionary* m_pCollisionDict1;
-    # float m_fAutoCheckPointInterval;
-    # float m_fUnkCheckpoint;
-    # bool m_bAutoCheckpointEnabled;
-    # GameObject* m_pObject;
-    # GameObject* m_pCollidedObject;
-    # int m_nCurrentIcon;
-    # float m_fUnkCollisionFloat;
-    # bool m_bHasCollided;
-    # float m_fUnkCollisionFloat2;
-    # int m_nCollisionObjUID;
-    # cocos2d::CCSprite* m_pDashSprite;
-    # bool m_bRollModeRolling;
-    # int m_nCollisionObjUID2;
-    # GameObject* m_pCollidedSlope;
-    # bool m_bNotOnSlope;
-    # float m_fUnkSlopeColisionSlope;
-    # GameObject* m_pSlope;
-    # bool m_bGoingDown;
-    # int m_nSlopeUniqueID;
-    # bool m_bGlow;
-    # cocos2d::CCArray* m_pParticleArray;
-    # bool m_bIsHidden;
-    # bool m_bVisibility;
-    # GhostTrailEffect* m_pGhostTrail;
-    # int m_eGhostTrailType;
-    # cocos2d::CCSprite* m_pIconSecondary;
-    # cocos2d::CCSprite* m_pIcon;
-    # cocos2d::CCSprite* m_pIconExtra;
-    # cocos2d::CCSprite* m_pIconWhitener;
-    # cocos2d::CCSprite* m_pVehicleSecondary;
-    # cocos2d::CCSprite* m_pVehicle;
-    # cocos2d::CCSprite* m_pVehicleWhitener;
-    # cocos2d::CCSprite* m_pVehicleExtras;
-    # cocos2d::CCMotionStreak* m_pTrail;
-    # cocos2d::CCSprite* m_pShipGlow;
-    # HardStreak* m_pHardStreak;
-    # HardStreak* m_pWaveTrail;
-    # double m_dJumpAcceleration;
-    # double m_dXAcceleration;
-    # float m_fParticleLife;
-    # double m_dGravity;
-    # bool m_bUnk;
-    # float m_fSafeModeTime;
-    # bool m_bUnk3;
-    # bool m_bUnk2;
-    # bool m_bJumped;
-    # bool m_bUnk4;
-    # bool m_bUnk5;
-    # bool m_bParticleActive;
-    # bool m_bUnk7;
-    # bool m_bUnk6;
-    # double m_dUnk2;
-    # double m_dUnk;
-    # double m_dTimeCopy2;
-    # double m_dTimeCopy;
-    # float m_fUnkFlash2;
-    # float m_fUnkFlash;
-    # cocos2d::ccColor3B m_cSecondColour;
-    # cocos2d::ccColor3B m_cFirstColour;
-    # bool m_bUnk8;
-    # double m_dSafeSpiderTime;
-    # bool m_bSwitchWaveTrailCol;
-    # bool m_bUnk9;
-    # float m_fUnk;
-    # bool m_bPracticeDeathEffect;
-    # double m_dUnk4;
-    # double m_dUnk3;
-    # GameObject* m_pObject1;
-    # bool m_bUnk10;
-    # int m_nCheckpointTotal;
-    # CheckpointObject* m_pPendingCheckpoint;
-    # GJRobotSprite* m_pSpiderSprite;
-    # GJRobotSprite* m_pRobotSprite;
-    # cocos2d::CCParticleSystem* m_pParticles;
-    # bool m_bSpecialGroundHit;
+    _unknown_float_7 = Field(Float())
+
+    backwards_rotation = Field(Float())
+
+    _unknown_double_0 = Field(Double())
+
+    placed_streak_point = Field(Bool())
+
+    collision_node = Field(MutPointerData(StructData(CCNode)))
+
+    collision_dict_1 = Field(MutPointerData(Void()))  # CCDictionary*
+    collision_dict_2 = Field(MutPointerData(Void()))  # CCDictionary*
+
+    auto_checkpoints_interval = Field(Float())
+
+    _unknown_float_8 = Field(Float())
+
+    auto_checkpoints = Field(Bool())
+
+    object = Field(MutPointerData(StructData(GameObject)))
+    collided_object = Field(MutPointerData(StructData(GameObject)))
+
+    current_icon = Field(Int())
+
+    _unknown_float_9 = Field(Float())
+
+    collided = Field(Bool())
+
+    _unknown_float_10 = Field(Float())
+
+    collision_object_id_1 = Field(Int())
+
+    dash_sprite = Field(MutPointerData(StructData(CCSprite)))
+
+    rolling = Field(Bool())
+
+    collision_object_id_2 = Field(Int())
+
+    collided_slope = Field(MutPointerData(StructData(GameObject)))
+
+    not_on_slope = Field(Bool())
+
+    _unknown_float_11 = Field(Float())
+
+    slope = Field(MutPointerData(StructData(GameObject)))
+
+    going_down = Field(Bool())
+
+    slope_unique_id = Field(Int())
+
+    glow = Field(Bool())
+
+    particles = Field(MutPointerData(StructData(CCArray)))
+
+    hidden = Field(Bool())
+
+    visibility = Field(Bool())
+
+    ghost_trail = Field(MutPointerData(Void()))  # GhostTrailEffect*
+
+    ghost_trail_type_value = Field(Int())
+
+    icon_detail = Field(MutPointerData(StructData(CCSprite)))
+    icon = Field(MutPointerData(StructData(CCSprite)))
+    icon_extra = Field(MutPointerData(StructData(CCSprite)))
+    icon_white = Field(MutPointerData(StructData(CCSprite)))
+
+    vehicle_detail = Field(MutPointerData(StructData(CCSprite)))
+    vehicle = Field(MutPointerData(StructData(CCSprite)))
+    vehicle_white = Field(MutPointerData(StructData(CCSprite)))
+    vehicle_extra = Field(MutPointerData(StructData(CCSprite)))
+
+    trail = Field(MutPointerData(Void()))  # CCMotionStreak*
+
+    ship_glow = Field(MutPointerData(StructData(CCSprite)))
+
+    hard_streak = Field(MutPointerData(Void()))  # HardStreak*
+
+    wave_trail = Field(MutPointerData(Void()))
+
+    jump_acceleration = Field(Double())
+    x_acceleration = Field(Double())
+
+    particle_life = Field(Float())
+
+    gravity = Field(Double())
+
+    _unknwon_bool_0 = Field(Bool())
+
+    safe_mode_time = Field(Float())
+
+    _unknown_bool_24 = Field(Bool())
+    _unknown_bool_25 = Field(Bool())
+
+    jumped = Field(Bool())
+
+    _unknown_bool_26 = Field(Bool())
+    _unknown_bool_27 = Field(Bool())
+
+    particle_active = Field(Bool())
+
+    _unknown_bool_28 = Field(Bool())
+    _unknown_bool_29 = Field(Bool())
+
+    _unknown_double_1 = Field(Double())
+    _unknown_double_2 = Field(Double())
+
+    time_copy_1 = Field(Double())
+    time_copy_2 = Field(Double())
+
+    _unknown_float_12 = Field(Float())
+    _unknown_float_13 = Field(Float())
+
+    second_color = Field(StructData(CCColor3B))
+    first_color = Field(StructData(CCColor3B))
+
+    _unknown_bool_30 = Field(Bool())
+
+    safe_spider_time = Field(Double())
+
+    switch_wave_trail_color = Field(Bool())
+
+    _unknown_bool_31 = Field(Bool())
+
+    _unknown_float_14 = Field(Float())
+
+    particle_death_effect = Field(Bool())
+
+    _unknown_double_3 = Field(Double())
+    _unknown_double_4 = Field(Double())
+
+    object_1 = Field(MutPointerData(StructData(GameObject)))
+
+    _unknown_bool_32 = Field(Bool())
+
+    checkpoint_count = Field(Int())
+
+    pending_checkpoint = Field(MutPointerData(Void()))  # CheckpointObject*
+
+    spider_sprite = Field(MutPointerData(Void()))  # RobotSprite* (yeah)
+    robot_sprite = Field(MutPointerData(Void()))  # RobotSprite* (yeah)
+
+    special_ground_hit = Field(Bool())
+
     # cocos2d::CCParticleSystem* m_pDragEffect;
     # cocos2d::CCParticleSystem* m_pFlipParticles;
     # cocos2d::CCParticleSystem* m_pBurstEffect;
@@ -791,6 +853,20 @@ class Player(GameObject):
 @struct(virtual=True)
 class TriggerEffectDelegate(Struct):
     pass
+
+
+@struct()
+class GameObjectVector(Struct):  # monomorphization
+    pointer = Field(MutPointerData(MutArrayData(MutPointerData(StructData(GameObject)))))
+    length = Field(USize())
+    capacity = Field(USize())
+
+
+@struct()
+class CCArrayVector(Struct):  # monomorphization
+    pointer = Field(MutPointerData(MutArrayData(MutPointerData(StructData(CCArray)))))
+    length = Field(USize())
+    capacity = Field(USize())
 
 
 @struct(virtual=True)
@@ -892,35 +968,52 @@ class BaseGameLayer(TriggerEffectDelegate, CCLayer):
 
     level_settings = Field(MutPointerData(StructData(LevelSettings)))
 
-    # cocos2d::CCDictionary* m_pDisabledGroupsDictMaybe;
-    # cocos2d::CCArray* m_pObjects;
-    # cocos2d::CCArray* m_pSectionObjectsArray;
-    # cocos2d::CCArray* m_pSections;
-    # cocos2d::CCArray* m_pCollisionBlocksArray;
-    # cocos2d::CCArray* m_pSpawnObjectsArray;
-    # cocos2d::CCArray* m_pUnkArr4;
-    # cocos2d::CCNode* m_pGroupNodes;
-    # std::vector<GameObject*> m_pGameObjects;
-    # std::vector<GameObject*> m_pDisabledObjects;
-    # cocos2d::CCDictionary* m_pGroupDict;
-    # cocos2d::CCDictionary* m_pStaticGroupDict;
-    # cocos2d::CCDictionary* m_pOptimisedGroupDict;
-    # std::vector<cocos2d::CCArray*> m_pGroups;
-    # std::vector<cocos2d::CCArray*> m_pStaticGroups;
-    # std::vector<cocos2d::CCArray*> m_pOptimisedGroups;
-    # cocos2d::CCArray* m_pBatchNodeArray;
-    # cocos2d::CCArray* m_pProcessedGroups;
-    # cocos2d::CCDictionary* m_pCounterDict;
-    # cocos2d::CCDictionary* m_pSpawnedGroups;
-    # bool m_bUpdatedNormalCapacity;
-    # bool m_bTwoPlayer;
-    # int m_nUnk;
-    # bool m_bActiveDualTouch;
-    # int m_nPushedButtons;
-    # int m_nCurrentSection;
-    # int m_nOldSection;
-    # bool m_bDisabledObjects;
-    # bool m_bBlending;
+    _unknown_dictionary_0 = Field(MutPointerData(Void()))  # CCDictionary*
+
+    objects = Field(MutPointerData(StructData(CCArray)))
+    section_objects = Field(MutPointerData(StructData(CCArray)))
+    sections = Field(MutPointerData(StructData(CCArray)))
+    collision_blocks = Field(MutPointerData(StructData(CCArray)))
+
+    spawn_objects = Field(MutPointerData(StructData(CCArray)))
+
+    _unknown_array_0 = Field(MutPointerData(StructData(CCArray)))
+
+    group_nodes = Field(MutPointerData(StructData(CCNode)))
+
+    game_objects = Field(StructData(GameObjectVector))
+    disabled_objects = Field(StructData(GameObjectVector))
+
+    group_dict = Field(MutPointerData(Void()))  # CCDictionary*
+    static_group_dict = Field(MutPointerData(Void()))  # CCDictionary*
+    optimized_group_dict = Field(MutPointerData(Void()))  # CCDictionary*
+
+    groups = Field(StructData(CCArrayVector))
+    static_groups = Field(StructData(CCArrayVector))
+    optimized_groups = Field(StructData(CCArrayVector))
+
+    batch_nodes = Field(MutPointerData(StructData(CCArray)))
+    processed_groups = Field(MutPointerData(StructData(CCArray)))
+
+    count_dict = Field(MutPointerData(Void()))  # CCDictionary*
+    spawned_groups = Field(MutPointerData(Void()))  # CCDictionary*
+
+    updated_normal_capacity = Field(Bool())
+    two_player = Field(Bool())
+
+    _unknown_int_0 = Field(Int())
+
+    active_dual_touch = Field(Bool())
+
+    pushed_buttons = Field(Int())
+
+    current_section = Field(Int())
+
+    old_section = Field(Int())
+
+    disabled_objects_active = Field(Bool())
+
+    blending = Field(Bool())
 
 
 @struct(virtual=True)
