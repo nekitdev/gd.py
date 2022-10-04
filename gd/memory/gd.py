@@ -1,7 +1,20 @@
+from stat import SF_ARCHIVED
+
 from gd.enums import GameMode, Speed
 from gd.memory.arrays import ArrayData, MutArrayData
 from gd.memory.base import Struct, StructData, struct
-from gd.memory.cocos import CCColor3B, CCLayer, CCNode, CCNodeContainer, CCPoint, CCRectangle, CCSize, CCSprite, CCSpriteBatchNode, CCSpritePlus
+from gd.memory.cocos import (
+    CCColor3B,
+    CCLayer,
+    CCNode,
+    CCNodeContainer,
+    CCPoint,
+    CCRectangle,
+    CCSize,
+    CCSprite,
+    CCSpriteBatchNode,
+    CCSpritePlus,
+)
 from gd.memory.data import Bool, Double, Float, Int, Short, UByte, USize
 from gd.memory.fields import Field
 from gd.memory.pointers import MutPointerData
@@ -1060,6 +1073,7 @@ class PlayLayer(BaseGameLayer):
     # bool m_bVfDChk;
     # bool m_bDisableGravityEffect;
 
+
 @struct(virtual=True)
 class EditorLayer(BaseGameLayer):
     ...
@@ -1156,12 +1170,15 @@ class EditorLayer(BaseGameLayer):
     # cocos2d::CCArray* m_pDelayedSpawnArray1;
     # bool m_bRemovingObjects;
 
+
 @struct(virtual=True)
 class BaseGameManager(CCNode):
     file_name = Field(StringData())
 
     setup = Field(Bool())
-    saving = Field(Bool())
+    saved = Field(Bool())
+
+    quick_save = Field(Bool())
 
 
 @struct(virtual=True)
