@@ -1,8 +1,8 @@
 from gd.enums import GameMode, Speed
-from gd.memory.arrays import ArrayData
+from gd.memory.arrays import ArrayData, MutArrayData
 from gd.memory.base import Struct, StructData, struct
-from gd.memory.cocos import CCLayer, CCNode, CCNodeContainer, CCPoint, CCRectangle, CCSize, CCSprite, CCSpriteBatchNode, CCSpritePlus
-from gd.memory.data import Bool, Double, Float, Int, UByte
+from gd.memory.cocos import CCColor3B, CCLayer, CCNode, CCNodeContainer, CCPoint, CCRectangle, CCSize, CCSprite, CCSpriteBatchNode, CCSpritePlus
+from gd.memory.data import Bool, Double, Float, Int, Short, UByte, USize
 from gd.memory.fields import Field
 from gd.memory.pointers import MutPointerData
 from gd.memory.special import Void
@@ -255,6 +255,13 @@ class LevelSettings(CCNode):
 
 
 @struct()
+class ShortVector(Struct):
+    pointer = Field(MutPointerData(MutArrayData(Short())))
+    length = Field(USize())
+    capacity = Field(USize())
+
+
+@struct()
 class GameObject(CCSpritePlus):
     _unknown_bool_0 = Field(Bool())
     _unknown_bool_1 = Field(Bool())
@@ -356,7 +363,7 @@ class GameObject(CCSpritePlus):
     activated_1 = Field(Bool())
     activated_2 = Field(Bool())
 
-    pad = Field(ArrayData(UByte(), 8))  # XXX: fix this asap >:(
+    _pad_0 = Field(ArrayData(UByte(), 8))  # XXX: fix this asap >:(
 
     object_rectangle_dirty_repeated = Field(Bool())
     oriented_rectangle_dirty_repeated = Field(Bool())
@@ -445,89 +452,154 @@ class GameObject(CCSpritePlus):
 
     do_not_transform = Field(Bool())
 
-    # bool m_bDontTransform;
-    # bool m_bDefaultDontFade;
-    # bool m_bIgnoreEnter;
-    # bool m_bIgnoreFade;
-    # bool m_bDontFadeTinted;
-    # bool m_bTintObject;
-    # bool m_bDetailColourObject;
-    # bool m_bDontEnter;
-    # bool m_bDontFade;
-    # bool m_bStateVar;
-    # int m_nDefaultZOrder;
-    # bool m_bPortal;
-    # bool m_bLockColourAsChild;
-    # bool m_bCustomAudioScale;
-    # int m_fMinAudioScale;
-    # int m_fMaxAudioScale;
-    # bool m_bUnkParticleSystem2;
-    # int m_nSecretCoinID;
-    # int m_unkUnusedSaveStringKey53;
-    # bool m_bInvisibleMode;
-    # bool m_bGlowUserBackgroundColour;
-    # bool m_bUseSpecialLight;
-    # bool m_bOrbOrPad;
-    # float m_fGlowOpacityMod;
-    # bool m_bUpSlope;
-    # int m_eSlopeType;
-    # float m_fSlopeAngle;
-    # bool m_bHazardousSlope;
-    # float dword18C;
-    # GJSpriteColor* m_pColour1;
-    # GJSpriteColor* m_pColour2;
-    # bool m_bBlendingBatchNode;
-    # int m_nDefaultZLayer;
-    # int m_nZLayer;
-    # int m_nZOrder;
-    # std::string m_sText;
-    # bool m_bSpecialObject;
-    # bool m_bObjectSelected2;
-    # bool m_bObjectSelected;
-    # int m_nGlobalClickCounter;
-    # cocos2d::CCPoint m_obUnk2;
-    # bool dword1BC;
-    # bool field_3AD;
-    # float m_fMultiScaleMultiplier;
-    # std::vector<short> m_nGroupContainer;
-    # int m_nGroupCount;
-    # std::vector<short> m_nColourGroupContainer;
-    # int m_nColourGroupCount;
-    # std::vector<short> m_nOpacityGroupContainer;
-    # int m_nOpacityGroupCount;
-    # int m_nEditorLayer1;
-    # int m_nEditorLayer2;
-    # int m_nGroupDisabled;
-    # bool dword1EC;
-    # bool m_bUseCustomContentSize;
-    # bool field_3DE;
-    # cocos2d::CCSize m_obUnkSize;
-    # cocos2d::CCPoint m_obLastPosition;
-    # bool m_bDidUpdateLastPosition;
-    # bool m_bUpdateLastPos;
-    # BYTE PAD3[4]
-    # bool m_bSyncedAnimation;
-    # int m_eLavaBubbleColourID;
-    # bool dword210;
-    # bool field_401;
-    # bool field_402;
-    # bool field_403;
-    # bool dword214;
-    # bool m_bSpawnObject;
-    # bool m_bHasObjectCount;
-    # int m_nAnimFrame;
-    # bool m_bHighDetail;
-    # void* m_pMainColourSprite;
-    # void* m_pSecondaryColourSprite;
-    # GJEffectManager* m_pEffectManager;
-    # bool dword22C;
-    # bool m_bIsDecoration;
-    # bool m_bOptimisedGroup;
-    # bool field_41F;
-    # bool dword230;
-    # int m_eZagColour;
-    # bool m_bMultiActivate;
-    # cocos2d::_ccColor3B m_Colour;
+    default_do_not_fade = Field(Bool())
+
+    ignore_enter = Field(Bool())
+    ignore_fade = Field(Bool())
+
+    do_not_fade_tinted = Field(Bool())
+
+    tint_object = Field(Bool())
+
+    detail_color_object = Field(Bool())
+
+    do_not_enter = Field(Bool())
+    do_not_fade = Field(Bool())
+
+    state_variable = Field(Bool())
+
+    default_z_order = Field(Int())
+
+    portal = Field(Bool())
+
+    lock_color_as_child = Field(Bool())
+
+    custom_audio_scale = Field(Bool())
+
+    min_audio_scale = Field(Int())
+    max_audio_scale = Field(Int())
+
+    _unknown_bool_11 = Field(Bool())
+
+    secret_coin_id = Field(Int())
+
+    _unknown_int_0 = Field(Int())
+
+    invisible = Field(Bool())
+
+    glow_user_background_color = Field(Bool())
+
+    use_special_light = Field(Bool())
+
+    orb_or_pad = Field(Bool())
+
+    glow_opacity_mod = Field(Float())
+
+    up_slope = Field(Bool())
+
+    slope_type_value = Field(Int())
+
+    slope_angle = Field(Float())
+
+    hazardous_slope = Field(Bool())
+
+    _unknown_float_6 = Field(Float())
+
+    color_1 = Field(MutPointerData(Void()))  # SpriteColor*
+    color_2 = Field(MutPointerData(Void()))  # SpriteColor*
+
+    blending_batch_node = Field(Bool())
+
+    default_z_layer_value = Field(Int())
+
+    z_layer_value = Field(Int())
+    z_order = Field(Int())
+
+    content = Field(StringData())
+
+    special_object = Field(Bool())
+
+    object_selected = Field(Bool())
+    object_selected_repeated = Field(Bool())
+
+    global_click_count = Field(Int())
+
+    _unknown_point_0 = Field(StructData(CCPoint))
+
+    _unknown_bool_12 = Field(Bool())
+
+    _unknown_bool_13 = Field(Bool())
+
+    multi_scale_multiplier = Field(Float())
+
+    group_container = Field(StructData(ShortVector))
+    group_count = Field(Int())
+
+    color_channel_container = Field(StructData(ShortVector))
+    color_channel_count = Field(Int())
+
+    opacity_container = Field(StructData(ShortVector))
+    opacity_count = Field(Int())
+
+    main_editor_layer = Field(Int())
+    additional_editor_layer = Field(Int())
+
+    group_disabled = Field(Int())
+
+    _unknown_bool_14 = Field(Bool())
+
+    use_custom_content_size = Field(Bool())
+
+    _unknown_bool_15 = Field(Bool())
+
+    _unknown_size_0 = Field(StructData(CCSize))
+
+    last_position = Field(StructData(CCPoint))
+
+    updated_last_position = Field(Bool())
+
+    update_last_position = Field(Bool())
+
+    _pad_1 = Field(ArrayData(UByte(), 4))  # XXX: fix this asap >:(
+
+    synchronized_animation = Field(Bool())
+
+    lava_bubble_color_id = Field(Int())
+
+    _unknown_bool_16 = Field(Bool())
+    _unknown_bool_17 = Field(Bool())
+    _unknown_bool_18 = Field(Bool())
+    _unknown_bool_19 = Field(Bool())
+    _unknown_bool_20 = Field(Bool())
+
+    spawn_object = Field(Bool())
+
+    has_object_count = Field(Bool())
+
+    animation_frame = Field(Int())
+
+    high_detail = Field(Bool())
+
+    base_color_sprite = Field(MutPointerData(Void()))  # ?*
+    detail_color_sprite = Field(MutPointerData(Void()))  # ?*
+
+    effect_manager = Field(MutPointerData(Void()))  # EffectManager*
+
+    _unknown_bool_21 = Field(Bool())
+
+    decoration = Field(Bool())
+
+    optimized_group = Field(Bool())
+
+    _unknown_bool_22 = Field(Bool())
+
+    _unknown_bool_23 = Field(Bool())
+
+    zag_color_value = Field(Int())
+
+    multi_activate = Field(Bool())
+
+    color = Field(StructData(CCColor3B))
 
 
 @struct()
