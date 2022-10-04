@@ -337,6 +337,18 @@ class DemonDifficulty(Enum):
         return DEMON_DIFFICULTY_TO_DIFFICULTY[self]
 
 
+VALUE_TO_DEMON_DIFFICULTY = {
+    3: DemonDifficulty.EASY_DEMON,
+    4: DemonDifficulty.MEDIUM_DEMON,
+    5: DemonDifficulty.INSANE_DEMON,
+    6: DemonDifficulty.EXTREME_DEMON,
+}
+
+DEMON_DIFFICULTY_TO_VALUE = {
+    demon_difficulty: value for value, demon_difficulty in VALUE_TO_DEMON_DIFFICULTY.items()
+}
+
+
 DEMON_DIFFICULTY_TO_DIFFICULTY = {
     DemonDifficulty.UNKNOWN: Difficulty.UNKNOWN,
     DemonDifficulty.DEMON: Difficulty.DEMON,
@@ -622,7 +634,6 @@ class QuestType(Enum):
 class Scene(Enum):
     """An enumeration of different scene IDs."""
 
-    UNKNOWN = -1
     MAIN = 0
     SELECT = 1
     OLD = 2
@@ -849,6 +860,21 @@ class LevelType(Enum):
     EDITOR = 2
     SAVED = 3
     ONLINE = 4
+
+    def is_null(self) -> bool:
+        return self is type(self).NULL
+
+    def is_official(self) -> bool:
+        return self is type(self).OFFICIAL
+
+    def is_editor(self) -> bool:
+        return self is type(self).EDITOR
+
+    def is_saved(self) -> bool:
+        return self is type(self).SAVED
+
+    def is_online(self) -> bool:
+        return self is type(self).ONLINE
 
     DEFAULT = NULL
 

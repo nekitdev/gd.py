@@ -1,6 +1,15 @@
-from stat import SF_ARCHIVED
-
-from gd.enums import GameMode, Speed
+from gd.enums import (
+    VALUE_TO_DEMON_DIFFICULTY,
+    DemonDifficulty,
+    Difficulty,
+    GameMode,
+    LevelDifficulty,
+    LevelLength,
+    LevelType,
+    Scene,
+    Score,
+    Speed,
+)
 from gd.memory.arrays import ArrayData, MutArrayData
 from gd.memory.base import Struct, StructData, struct
 from gd.memory.cocos import (
@@ -61,7 +70,7 @@ class GameLevel(CCNode):
     account_id_seed = Field(Int())
     account_id = Field(Int())
 
-    difficulty = Field(Int())
+    difficulty_value = Field(Int())
     official_song_id = Field(Int())
     custom_song_id = Field(Int())
 
@@ -141,7 +150,7 @@ class GameLevel(CCNode):
     likes = Field(Int())
     dislikes = Field(Int())
 
-    level_length_value = Field(Int())
+    length_value = Field(Int())
 
     score = Field(Int())
 
@@ -158,7 +167,7 @@ class GameLevel(CCNode):
     demon_seed = Field(Int())
     demon = Field(Int())
 
-    demon_difficulty = Field(Int())
+    demon_difficulty_value = Field(Int())
 
     stars_random = Field(Int())
     stars_seed = Field(Int())
@@ -222,7 +231,7 @@ class GameLevel(CCNode):
     last_build_page = Field(Int())
     last_build_group_id = Field(Int())
 
-    level_type_value = Field(Int())
+    type_value = Field(Int())
 
     some_id = Field(Int())  # ?
 
@@ -232,6 +241,80 @@ class GameLevel(CCNode):
     high_detail = Field(Bool())
 
     progress_string = Field(StringData())
+
+    @property
+    def type(self) -> LevelType:
+        return LevelType(self.type_value)
+
+    @property
+    def length(self) -> LevelLength:
+        return LevelLength(self.length_value)
+
+    @property
+    def score_type(self) -> Score:
+        return Score(self.score)
+
+    def is_rated(self) -> bool:
+        return self.stars > 0
+
+    def is_unfeatured(self) -> bool:
+        return self.score_type.is_unfeatured()
+
+    def is_epic_only(self) -> bool:
+        return self.score_type.is_epic_only()
+
+    def is_featured(self) -> bool:
+        return self.score_type.is_featured()
+
+    def is_epic(self) -> bool:
+        return self.epic
+
+    def is_original(self) -> bool:
+        return not self.original_id
+
+    def is_two_player(self) -> bool:
+        return self.two_player
+
+    def is_demon(self) -> bool:
+        return bool(self.demon)  # thanks rob
+
+    def is_auto(self) -> bool:
+        return self.auto
+
+    def has_low_detail(self) -> bool:
+        return self.low_detail
+
+    def has_verified_coins(self) -> bool:
+        return bool(self.verified_coins)  # thanks rob
+
+    @property
+    def demon_difficulty(self) -> DemonDifficulty:
+        return VALUE_TO_DEMON_DIFFICULTY.get(
+            self.demon_difficulty_value, DemonDifficulty.HARD_DEMON
+        )
+
+    @property
+    def level_difficulty(self) -> LevelDifficulty:
+        difficulty_numerator = self.difficulty_numerator
+        difficulty_denominator = self.difficulty_denominator
+
+        if difficulty_denominator:
+            difficulty_value = difficulty_numerator // difficulty_denominator
+
+            if difficulty_value:
+                return LevelDifficulty(difficulty_value)
+
+        return LevelDifficulty.DEFAULT
+
+    @property
+    def difficulty(self) -> Difficulty:
+        if self.is_auto():
+            return Difficulty.AUTO
+
+        if self.is_demon():
+            return self.demon_difficulty.into_difficulty()
+
+        return self.level_difficulty.into_difficulty()
 
 
 @struct()
@@ -1490,6 +1573,10 @@ class GameManager(BaseGameManager):
     ad_reward = Field(Int())
 
     _unknown_int_14 = Field(Int())
+
+    @property
+    def scene(self) -> Scene:
+        return Scene(self.scene_value)
 
 
 @struct(virtual=True)

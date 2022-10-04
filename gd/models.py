@@ -59,6 +59,8 @@ from gd.encoding import (
     sha1_string_with_salt,
 )
 from gd.enums import (
+    DEMON_DIFFICULTY_TO_VALUE,
+    VALUE_TO_DEMON_DIFFICULTY,
     CommentState,
     DemonDifficulty,
     Difficulty,
@@ -1483,18 +1485,6 @@ LEVEL_COPIES_TIME = 47
 
 
 L = TypeVar("L", bound="LevelModel")
-
-
-VALUE_TO_DEMON_DIFFICULTY = {
-    3: DemonDifficulty.EASY_DEMON,
-    4: DemonDifficulty.MEDIUM_DEMON,
-    5: DemonDifficulty.INSANE_DEMON,
-    6: DemonDifficulty.EXTREME_DEMON,
-}
-
-DEMON_DIFFICULTY_TO_VALUE = {
-    demon_difficulty: value for value, demon_difficulty in VALUE_TO_DEMON_DIFFICULTY.items()
-}
 
 
 @define()
