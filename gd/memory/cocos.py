@@ -257,7 +257,7 @@ class CCSprite(CCTextureProtocol, CCNodeRGBA):
     bottom_left_mod = Field(Float())
     bottom_right_mod = Field(Float())
 
-    _pad_0 = Field(ArrayData(UByte(), 16))  # XXX: update this asap >:(
+    _pad_0 = Field(ArrayData(UByte(), 16))
 
     unknown_bool = Field(Bool())
     unknown = Field(Int())

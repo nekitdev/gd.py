@@ -457,10 +457,10 @@ class GameObject(CCSpritePlus):
     object_rectangle_dirty = Field(Bool())
     oriented_rectangle_dirty = Field(Bool())
 
-    activated_1 = Field(Bool())
-    activated_2 = Field(Bool())
+    activated = Field(Bool())
+    activated_other = Field(Bool())
 
-    _pad_0 = Field(ArrayData(UByte(), 8))  # XXX: fix this asap >:(
+    _pad_0 = Field(ArrayData(UByte(), 8))
 
     object_rectangle_dirty_repeated = Field(Bool())
     oriented_rectangle_dirty_repeated = Field(Bool())
@@ -486,8 +486,8 @@ class GameObject(CCSpritePlus):
 
     _unknown_bool_8 = Field(Bool())
 
-    blending_1 = Field(Bool())
-    blending_2 = Field(Bool())
+    blending = Field(Bool())
+    blending_other = Field(Bool())
 
     _unknown_bool_9 = Field(Bool())
 
@@ -602,8 +602,8 @@ class GameObject(CCSpritePlus):
 
     _unknown_float_6 = Field(Float())
 
-    color_1 = Field(MutPointerData(Void()))  # SpriteColor*
-    color_2 = Field(MutPointerData(Void()))  # SpriteColor*
+    first_color = Field(MutPointerData(Void()))  # SpriteColor*
+    second_color = Field(MutPointerData(Void()))  # SpriteColor*
 
     blending_batch_node = Field(Bool())
 
@@ -657,7 +657,7 @@ class GameObject(CCSpritePlus):
 
     update_last_position = Field(Bool())
 
-    _pad_1 = Field(ArrayData(UByte(), 4))  # XXX: fix this asap >:(
+    _pad_1 = Field(ArrayData(UByte(), 4))
 
     synchronized_animation = Field(Bool())
 
@@ -711,8 +711,8 @@ class Player(GameObject):
 
     collision_node = Field(MutPointerData(StructData(CCNode)))
 
-    collision_dict_1 = Field(MutPointerData(Void()))  # CCDictionary*
-    collision_dict_2 = Field(MutPointerData(Void()))  # CCDictionary*
+    collision_dict = Field(MutPointerData(Void()))  # CCDictionary*
+    collision_dict_other = Field(MutPointerData(Void()))  # CCDictionary*
 
     auto_checkpoints_interval = Field(Float())
 
@@ -731,13 +731,13 @@ class Player(GameObject):
 
     _unknown_float_10 = Field(Float())
 
-    collision_object_id_1 = Field(Int())
+    collision_object_id = Field(Int())
 
     dash_sprite = Field(MutPointerData(StructData(CCSprite)))
 
     rolling = Field(Bool())
 
-    collision_object_id_2 = Field(Int())
+    collision_object_id_other = Field(Int())
 
     collided_slope = Field(MutPointerData(StructData(GameObject)))
 
@@ -788,7 +788,7 @@ class Player(GameObject):
 
     gravity = Field(Double())
 
-    _unknwon_bool_0 = Field(Bool())
+    _unknown_bool_0 = Field(Bool())
 
     safe_mode_time = Field(Float())
 
@@ -808,14 +808,14 @@ class Player(GameObject):
     _unknown_double_1 = Field(Double())
     _unknown_double_2 = Field(Double())
 
-    time_copy_1 = Field(Double())
-    time_copy_2 = Field(Double())
+    time_copy = Field(Double())
+    time_copy_other = Field(Double())
 
     _unknown_float_12 = Field(Float())
     _unknown_float_13 = Field(Float())
 
-    second_color = Field(StructData(CCColor3B))
-    first_color = Field(StructData(CCColor3B))
+    color_2 = Field(StructData(CCColor3B))
+    color_1 = Field(StructData(CCColor3B))
 
     _unknown_bool_30 = Field(Bool())
 
@@ -832,7 +832,7 @@ class Player(GameObject):
     _unknown_double_3 = Field(Double())
     _unknown_double_4 = Field(Double())
 
-    object_1 = Field(MutPointerData(StructData(GameObject)))
+    object_other = Field(MutPointerData(StructData(GameObject)))
 
     _unknown_bool_32 = Field(Bool())
 
@@ -843,94 +843,161 @@ class Player(GameObject):
     spider_sprite = Field(MutPointerData(Void()))  # RobotSprite* (yeah)
     robot_sprite = Field(MutPointerData(Void()))  # RobotSprite* (yeah)
 
-    special_ground_hit = Field(Bool())
+    hit_special_ground = Field(Bool())
 
-    # cocos2d::CCParticleSystem* m_pDragEffect;
-    # cocos2d::CCParticleSystem* m_pFlipParticles;
-    # cocos2d::CCParticleSystem* m_pBurstEffect;
-    # cocos2d::CCParticleSystem* m_pShipDragParticles;
-    # cocos2d::CCParticleSystem* m_pDashParticles;
-    # cocos2d::CCParticleSystem* m_pBurstEffect2;
-    # cocos2d::CCParticleSystem* m_pLandEffectParticle;
-    # bool m_bHitGroundBool;
-    # float m_pParticleAngle;
-    # cocos2d::CCParticleSystem* m_pLandEffectParticle2;
-    # int m_nStreakID;
-    # float m_fParticleGravity;
-    # bool dword180;
-    # float m_fStreakStroke;
-    # float dword184;
-    # bool field_5AD;
-    # float dword18C;
-    # float dword188;
-    # bool field_5BD;
-    # bool dword190;
-    # bool m_bSlopeFlippedX;
-    # bool m_bBumpPlayer;
-    # float m_fCollisionBottom;
-    # float m_fCollisionTop;
-    # bool field_5C9;
-    # bool dword19C;
-    # cocos2d::ccColor3B m_cSecondColourCopy;
-    # cocos2d::ccColor3B m_cFirstColourCopy;
-    # bool m_bUpKeyDown;
-    # bool m_bTookDamage;
-    # bool field_5D3;
-    # bool m_bUpKeyPressed;
-    # bool field_5D5;
-    # bool dword1A8;
-    # int m_nJumpHeightSeed;
-    # bool field_5D6;
-    # int m_nJumpHeight;
-    # int m_nJumpHeightRand;
-    # double m_dYAccel;
-    # DWORD dword1B8;
-    # bool m_bWasOnSlope;
-    # bool m_bOnSlope;
-    # bool m_bFlyMode;
-    # float m_fSlopeYVelocity;
-    # bool m_bRollMode;
-    # bool m_bBirdMode;
-    # bool m_bRobotMode;
-    # bool m_bDartMode;
-    # bool m_bGravity;
-    # bool m_bSpiderMode;
-    # bool m_bCanJump;
-    # bool m_bTouchedRing;
-    # float m_fPlayerScale;
-    # bool m_bDashing;
-    # cocos2d::CCPoint m_obLastPos;
-    # float m_fTimeMod;
-    # cocos2d::CCLayer* m_pGameLayer;
-    # cocos2d::CCPoint m_onPortalPos;
-    # bool m_bJumping;
-    # bool m_bOnGround;
-    # cocos2d::CCPoint m_obLastGroundPos;
-    # bool m_bLocked;
-    # GameObject* m_pLastActivatedPortal;
-    # cocos2d::CCArray* m_pTouchedRings;
-    # bool m_bHasRingJumped;
-    # bool m_bHasJumped;
-    # cocos2d::ccColor3B m_cColour2;
-    # cocos2d::ccColor3B m_cColour;
-    # bool m_bIsSecondPlayer;
-    # cocos2d::CCPoint m_obRealPlayerPos;
-    # double m_dTime;
-    # bool m_bTwoPlayer;
-    # float m_fMeteringValue;
-    # bool m_bDisableEffects;
-    # float m_fLastYVelocity;
-    # float m_fGroundHeight;
-    # bool m_bSwitchSpiderTeleportCol;
-    # bool m_bDefaultMiniIcon;
-    # float m_fOldYPositions[200];
-    # bool m_bSwitchFireDashCol;
-    # int m_nStateBlockDash;
-    # float m_fSpecialTime;
-    # int m_nStateBlockJump;
-    # DWORD dword560;
-    # int m_nStateBlockHead;
-    # int m_nStateBlockWave;
+    drag_effect = Field(MutPointerData(Void()))  # CCParticleSystem*
+    flip_particles = Field(MutPointerData(Void()))  # CCParticleSystem*
+    burst_effect = Field(MutPointerData(Void()))  # CCParticleSystem*
+    ship_drag_particles = Field(MutPointerData(Void()))  # CCParticleSystem*
+    dash_particles = Field(MutPointerData(Void()))  # CCParticleSystem*
+    burst_effect_other = Field(MutPointerData(Void()))  # CCParticleSystem*
+    land_effect_particles = Field(MutPointerData(Void()))  # CCParticleSystem*
+
+    hit_ground = Field(Bool())
+
+    particle_angle = Field(Float())
+
+    land_effect_particles_other = Field(MutPointerData(Void()))  # CCParticleSystem*
+
+    streak_id = Field(Int())
+
+    particle_gravity = Field(Float())
+
+    _unknown_bool_33 = Field(Bool())
+
+    streak_stroke = Field(Float())
+
+    _unknown_float_15 = Field(Float())
+
+    _unknown_bool_34 = Field(Bool())
+
+    _unknown_float_16 = Field(Float())
+    _unknown_float_17 = Field(Float())
+
+    _unknown_bool_35 = Field(Bool())
+
+    _unknown_bool_36 = Field(Bool())
+
+    slope_flipped_x = Field(Bool())
+    bump_player = Field(Bool())
+
+    collision_bottom = Field(Float())
+    collision_top = Field(Float())
+
+    _unknown_bool_37 = Field(Bool())
+    _unknown_bool_38 = Field(Bool())
+
+    color_2_copy = Field(StructData(CCColor3B))
+    color_1_copy = Field(StructData(CCColor3B))
+
+    up_key_pressed = Field(Bool())
+
+    _unknown_bool_39 = Field(Bool())
+
+    up_key_pressed_other = Field(Bool())
+
+    _unknown_bool_40 = Field(Bool())
+    _unknown_bool_41 = Field(Bool())
+
+    jump_height_random = Field(Int())
+
+    _unknown_bool_42 = Field(Bool())
+
+    jump_height = Field(Int())
+    jump_height_seed = Field(Int())
+
+    y_acceleration = Field(Double())
+
+    _unknown_int_1 = Field(Int())
+
+    was_on_slope = Field(Bool())
+    on_slope = Field(Bool())
+
+    ship_mode = Field(Bool())
+
+    slope_y_velocity = Field(Float())
+
+    ball_mode = Field(Bool())
+
+    ufo_mode = Field(Bool())
+
+    robot_mode = Field(Bool())
+
+    wave_mode = Field(Bool())
+
+    gravity_bool = Field(Bool())
+
+    spider_mode = Field(Bool())
+
+    can_jump = Field(Bool())
+
+    touched_orb = Field(Bool())
+
+    player_scale = Field(Float())
+
+    dashing = Field(Bool())
+
+    last_position_other = Field(StructData(CCPoint))
+
+    time_mod = Field(Float())
+
+    game_layer = Field(MutPointerData(StructData(CCLayer)))
+
+    portal_position_other = Field(StructData(CCPoint))
+
+    jumping = Field(Bool())
+
+    on_ground = Field(Bool())
+
+    last_ground_position = Field(StructData(CCPoint))
+
+    locked = Field(Bool())
+
+    last_activated_portal = Field(MutPointerData(StructData(GameObject)))
+
+    touched_orbs = Field(MutPointerData(StructData(CCArray)))
+
+    orb_jumped = Field(Bool())
+
+    jumped_other = Field(Bool())
+
+    color_2_other = Field(StructData(CCColor3B))
+    color_1_other = Field(StructData(CCColor3B))
+
+    second_player = Field(Bool())
+
+    real_position = Field(StructData(CCPoint))
+
+    time = Field(Double())
+
+    two_player = Field(Bool())
+
+    metering_value = Field(Float())
+
+    disable_effects = Field(Bool())
+
+    last_y_velocity = Field(Float())
+
+    ground_height = Field(Float())
+
+    switch_spider_teleport_color = Field(Bool())
+
+    default_mini_icon = Field(Bool())
+
+    old_y_positions = Field(MutArrayData(Float(), 200))
+
+    switch_dash_color = Field(Bool())
+
+    state_block_dash = Field(Int())
+
+    special_time = Field(Float())
+
+    state_block_jump = Field(Int())
+
+    _unknown_int_2 = Field(Int())
+
+    block_state_head = Field(Int())
+    block_state_wave = Field(Int())
 
 
 @struct(virtual=True)
