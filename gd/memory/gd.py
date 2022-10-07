@@ -536,7 +536,7 @@ class BaseGameLayer(TriggerEffectDelegate, CCLayer):
 
 
 @struct(virtual=True)
-class PlayLayer(BaseGameLayer):
+class PlayLayer(BaseGameLayer):  # TODO: misaligned
     _unknown_float_0 = Field(Float())
 
     _unknown_bool_0 = Field(Bool())
@@ -823,7 +823,7 @@ class PlayLayer(BaseGameLayer):
 
 
 @struct(virtual=True)
-class EditorLayer(BaseGameLayer):
+class EditorLayer(BaseGameLayer):  # TODO: finish
     ...
     # bool m_bIgnoreDamage;
     # bool m_bFollowPlayer;
