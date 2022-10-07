@@ -10,11 +10,10 @@ from gd.enums import (
     Score,
     Speed,
 )
-from gd.memory.arrays import ArrayData, MutArrayData
+from gd.memory.arrays import DynamicFill, MutArrayData
 from gd.memory.base import Struct, StructData, struct
 from gd.memory.cocos import (
     CCArray,
-    CCColor3B,
     CCLayer,
     CCNode,
     CCNodeContainer,
@@ -25,7 +24,7 @@ from gd.memory.cocos import (
     CCSpriteBatchNode,
     CCSpritePlus,
 )
-from gd.memory.data import Bool, Double, Float, Int, Short, UByte, USize
+from gd.memory.data import Bool, Double, Float, Int, Short, USize
 from gd.memory.fields import Field
 from gd.memory.pointers import MutPointerData
 from gd.memory.special import Void
@@ -360,644 +359,12 @@ class ShortVector(Struct):  # monomorphization
 
 @struct()
 class GameObject(CCSpritePlus):
-    _unknown_bool_0 = Field(Bool())
-    _unknown_bool_1 = Field(Bool())
-
-    _unknown_float_0 = Field(Float())
-    _unknown_float_1 = Field(Float())
-    _unknown_float_2 = Field(Float())
-    _unknown_float_3 = Field(Float())
-
-    _unknown_bool_2 = Field(Bool())
-
-    animation_speed = Field(Float())
-    effect_object = Field(Bool())
-
-    randomize_start = Field(Bool())
-
-    animation_speed_repeated = Field(Float())
-
-    black_child = Field(Bool())
-
-    _unknown_bool_3 = Field(Bool())
-
-    black_child_opacity = Field(Float())
-
-    _unknown_bool_4 = Field(Bool())
-
-    editor = Field(Bool())
-
-    group_disabled = Field(Bool())
-
-    color_on_top = Field(Bool())
-
-    base_color = Field(MutPointerData(Void()))  # SpriteColor*
-    detail_color = Field(MutPointerData(Void()))  # SpriteColor*
-
-    color_1 = Field(Bool())
-    color_2 = Field(Bool())
-
-    object_position = Field(StructData(CCPoint))
-
-    _unknown_float_4 = Field(Float())
-
-    tint_trigger = Field(Bool())
-
-    object_flip_x = Field(Bool())
-    object_flip_y = Field(Bool())
-
-    box_offset = Field(StructData(CCPoint))
-
-    oriented = Field(Bool())
-
-    box_offset_additional = Field(StructData(CCPoint))
-
-    oriented_bounding_box = Field(MutPointerData(Void()))  # OBB2D*
-
-    glow_sprite = Field(MutPointerData(StructData(CCSprite)))
-
-    not_editor = Field(Bool())
-
-    action = Field(MutPointerData(Void()))  # CCAction*
-
-    _unknown_bool_5 = Field(Bool())
-
-    run_action_with_tag = Field(Bool())
-
-    object_powered_on = Field(Bool())
-
-    object_size = Field(StructData(CCSize))
-
-    trigger = Field(Bool())
-    active = Field(Bool())
-
-    animation_finished = Field(Bool())
-
-    particle_system = Field(MutPointerData(Void()))  # CCParticleSystemQuad*
-
-    effect_plist_name = Field(StringData())
-
-    added_particle = Field(Bool())
-    has_particles = Field(Bool())
-
-    _unknown_bool_6 = Field(Bool())
-
-    portal_position = Field(StructData(CCPoint))
-
-    _unknown_bool_7 = Field(Bool())
-
-    object_texture_rectangle = Field(StructData(CCRectangle))
-
-    texture_rectangle_dirty = Field(Bool())
-
-    _unknown_float_5 = Field(Float())
-
-    object_rectangle = Field(StructData(CCRectangle))
-
-    object_rectangle_dirty = Field(Bool())
-    oriented_rectangle_dirty = Field(Bool())
-
-    activated = Field(Bool())
-    activated_other = Field(Bool())
-
-    _pad_0 = Field(ArrayData(UByte(), 8))
-
-    object_rectangle_dirty_repeated = Field(Bool())
-    oriented_rectangle_dirty_repeated = Field(Bool())
-
-    unique_activated = Field(Bool())
-    activated = Field(Bool())
-
-    collectable = Field(Bool())
-
-    pulse = Field(Bool())
-
-    can_rotate_freely = Field(Bool())
-
-    linked_group_id = Field(Int())
-
-    rotation_trigger = Field(Bool())
-
-    custom_rotation_speed = Field(Int())  # ?
-
-    disable_rotation = Field(Bool())
-
-    main_color_black = Field(Bool())
-
-    _unknown_bool_8 = Field(Bool())
-
-    blending = Field(Bool())
-    blending_other = Field(Bool())
-
-    _unknown_bool_9 = Field(Bool())
-
-    _unknown_bool_10 = Field(Bool())
-
-    color_sprite = Field(MutPointerData(StructData(CCSprite)))
-
-    ignore_screen_check = Field(Bool())
-
-    radius = Field(Float())
-
-    snapped_rotation = Field(Bool())
-
-    scale_mod = Field(StructData(CCSize))
-
-    unique_id = Field(Int())
-
-    game_object_type_value = Field(Int())
-
-    section_index = Field(Int())
-
-    touch_triggered = Field(Bool())
-    spawn_triggered = Field(Bool())
-
-    start_position = Field(StructData(CCPoint))
-
-    texture_frame_name = Field(StringData())
-
-    use_audio_scale = Field(Bool())
-
-    sleeping = Field(Bool())
-
-    rotation = Field(Float())
-
-    start_scale = Field(StructData(CCSize))
-
-    start_flip_x = Field(Bool())
-    start_flip_y = Field(Bool())
-
-    should_hide = Field(Bool())
-
-    spawn_x_position = Field(Float())
-
-    invisible = Field(Bool())
-
-    enter_angle = Field(Float())
-
-    active_enter_effect = Field(Int())
-
-    parent_node = Field(Int())
-
-    disable_glow = Field(Bool())
-
-    color_index = Field(Int())
-
-    scale = Field(Float())
-
-    object_id = Field(Int())
-
-    do_not_transform = Field(Bool())
-
-    default_do_not_fade = Field(Bool())
-
-    ignore_enter = Field(Bool())
-    ignore_fade = Field(Bool())
-
-    do_not_fade_tinted = Field(Bool())
-
-    tint_object = Field(Bool())
-
-    detail_color_object = Field(Bool())
-
-    do_not_enter = Field(Bool())
-    do_not_fade = Field(Bool())
-
-    state_variable = Field(Bool())
-
-    default_z_order = Field(Int())
-
-    portal = Field(Bool())
-
-    lock_color_as_child = Field(Bool())
-
-    custom_audio_scale = Field(Bool())
-
-    min_audio_scale = Field(Int())
-    max_audio_scale = Field(Int())
-
-    _unknown_bool_11 = Field(Bool())
-
-    secret_coin_id = Field(Int())
-
-    _unknown_int_0 = Field(Int())
-
-    invisible = Field(Bool())
-
-    glow_user_background_color = Field(Bool())
-
-    use_special_light = Field(Bool())
-
-    orb_or_pad = Field(Bool())
-
-    glow_opacity_mod = Field(Float())
-
-    up_slope = Field(Bool())
-
-    slope_type_value = Field(Int())
-
-    slope_angle = Field(Float())
-
-    hazardous_slope = Field(Bool())
-
-    _unknown_float_6 = Field(Float())
-
-    first_color = Field(MutPointerData(Void()))  # SpriteColor*
-    second_color = Field(MutPointerData(Void()))  # SpriteColor*
-
-    blending_batch_node = Field(Bool())
-
-    default_z_layer_value = Field(Int())
-
-    z_layer_value = Field(Int())
-    z_order = Field(Int())
-
-    content = Field(StringData())
-
-    special_object = Field(Bool())
-
-    object_selected = Field(Bool())
-    object_selected_repeated = Field(Bool())
-
-    global_click_count = Field(Int())
-
-    _unknown_point_0 = Field(StructData(CCPoint))
-
-    _unknown_bool_12 = Field(Bool())
-
-    _unknown_bool_13 = Field(Bool())
-
-    multi_scale_multiplier = Field(Float())
-
-    group_container = Field(StructData(ShortVector))
-    group_count = Field(Int())
-
-    color_channel_container = Field(StructData(ShortVector))
-    color_channel_count = Field(Int())
-
-    opacity_container = Field(StructData(ShortVector))
-    opacity_count = Field(Int())
-
-    main_editor_layer = Field(Int())
-    additional_editor_layer = Field(Int())
-
-    group_disabled = Field(Int())
-
-    _unknown_bool_14 = Field(Bool())
-
-    use_custom_content_size = Field(Bool())
-
-    _unknown_bool_15 = Field(Bool())
-
-    _unknown_size_0 = Field(StructData(CCSize))
-
-    last_position = Field(StructData(CCPoint))
-
-    updated_last_position = Field(Bool())
-
-    update_last_position = Field(Bool())
-
-    _pad_1 = Field(ArrayData(UByte(), 4))
-
-    synchronized_animation = Field(Bool())
-
-    lava_bubble_color_id = Field(Int())
-
-    _unknown_bool_16 = Field(Bool())
-    _unknown_bool_17 = Field(Bool())
-    _unknown_bool_18 = Field(Bool())
-    _unknown_bool_19 = Field(Bool())
-    _unknown_bool_20 = Field(Bool())
-
-    spawn_object = Field(Bool())
-
-    has_object_count = Field(Bool())
-
-    animation_frame = Field(Int())
-
-    high_detail = Field(Bool())
-
-    base_color_sprite = Field(MutPointerData(Void()))  # ?*
-    detail_color_sprite = Field(MutPointerData(Void()))  # ?*
-
-    effect_manager = Field(MutPointerData(Void()))  # EffectManager*
-
-    _unknown_bool_21 = Field(Bool())
-
-    decoration = Field(Bool())
-
-    optimized_group = Field(Bool())
-
-    _unknown_bool_22 = Field(Bool())
-
-    _unknown_bool_23 = Field(Bool())
-
-    zag_color_value = Field(Int())
-
-    multi_activate = Field(Bool())
-
-    color = Field(StructData(CCColor3B))
+    ...
 
 
 @struct()
 class Player(GameObject):
-    _unknown_float_7 = Field(Float())
-
-    backwards_rotation = Field(Float())
-
-    _unknown_double_0 = Field(Double())
-
-    placed_streak_point = Field(Bool())
-
-    collision_node = Field(MutPointerData(StructData(CCNode)))
-
-    collision_dict = Field(MutPointerData(Void()))  # CCDictionary*
-    collision_dict_other = Field(MutPointerData(Void()))  # CCDictionary*
-
-    auto_checkpoints_interval = Field(Float())
-
-    _unknown_float_8 = Field(Float())
-
-    auto_checkpoints = Field(Bool())
-
-    object = Field(MutPointerData(StructData(GameObject)))
-    collided_object = Field(MutPointerData(StructData(GameObject)))
-
-    current_icon = Field(Int())
-
-    _unknown_float_9 = Field(Float())
-
-    collided = Field(Bool())
-
-    _unknown_float_10 = Field(Float())
-
-    collision_object_id = Field(Int())
-
-    dash_sprite = Field(MutPointerData(StructData(CCSprite)))
-
-    rolling = Field(Bool())
-
-    collision_object_id_other = Field(Int())
-
-    collided_slope = Field(MutPointerData(StructData(GameObject)))
-
-    not_on_slope = Field(Bool())
-
-    _unknown_float_11 = Field(Float())
-
-    slope = Field(MutPointerData(StructData(GameObject)))
-
-    going_down = Field(Bool())
-
-    slope_unique_id = Field(Int())
-
-    glow = Field(Bool())
-
-    particles = Field(MutPointerData(StructData(CCArray)))
-
-    hidden = Field(Bool())
-
-    visibility = Field(Bool())
-
-    ghost_trail = Field(MutPointerData(Void()))  # GhostTrailEffect*
-
-    ghost_trail_type_value = Field(Int())
-
-    icon_detail = Field(MutPointerData(StructData(CCSprite)))
-    icon = Field(MutPointerData(StructData(CCSprite)))
-    icon_extra = Field(MutPointerData(StructData(CCSprite)))
-    icon_white = Field(MutPointerData(StructData(CCSprite)))
-
-    vehicle_detail = Field(MutPointerData(StructData(CCSprite)))
-    vehicle = Field(MutPointerData(StructData(CCSprite)))
-    vehicle_white = Field(MutPointerData(StructData(CCSprite)))
-    vehicle_extra = Field(MutPointerData(StructData(CCSprite)))
-
-    trail = Field(MutPointerData(Void()))  # CCMotionStreak*
-
-    ship_glow = Field(MutPointerData(StructData(CCSprite)))
-
-    hard_streak = Field(MutPointerData(Void()))  # HardStreak*
-
-    wave_trail = Field(MutPointerData(Void()))
-
-    jump_acceleration = Field(Double())
-    x_acceleration = Field(Double())
-
-    particle_life = Field(Float())
-
-    gravity = Field(Double())
-
-    _unknown_bool_0 = Field(Bool())
-
-    safe_mode_time = Field(Float())
-
-    _unknown_bool_24 = Field(Bool())
-    _unknown_bool_25 = Field(Bool())
-
-    jumped = Field(Bool())
-
-    _unknown_bool_26 = Field(Bool())
-    _unknown_bool_27 = Field(Bool())
-
-    particle_active = Field(Bool())
-
-    _unknown_bool_28 = Field(Bool())
-    _unknown_bool_29 = Field(Bool())
-
-    _unknown_double_1 = Field(Double())
-    _unknown_double_2 = Field(Double())
-
-    time_copy = Field(Double())
-    time_copy_other = Field(Double())
-
-    _unknown_float_12 = Field(Float())
-    _unknown_float_13 = Field(Float())
-
-    color_2 = Field(StructData(CCColor3B))
-    color_1 = Field(StructData(CCColor3B))
-
-    _unknown_bool_30 = Field(Bool())
-
-    safe_spider_time = Field(Double())
-
-    switch_wave_trail_color = Field(Bool())
-
-    _unknown_bool_31 = Field(Bool())
-
-    _unknown_float_14 = Field(Float())
-
-    particle_death_effect = Field(Bool())
-
-    _unknown_double_3 = Field(Double())
-    _unknown_double_4 = Field(Double())
-
-    object_other = Field(MutPointerData(StructData(GameObject)))
-
-    _unknown_bool_32 = Field(Bool())
-
-    checkpoint_count = Field(Int())
-
-    pending_checkpoint = Field(MutPointerData(Void()))  # CheckpointObject*
-
-    spider_sprite = Field(MutPointerData(Void()))  # RobotSprite* (yeah)
-    robot_sprite = Field(MutPointerData(Void()))  # RobotSprite* (yeah)
-
-    hit_special_ground = Field(Bool())
-
-    drag_effect = Field(MutPointerData(Void()))  # CCParticleSystem*
-    flip_particles = Field(MutPointerData(Void()))  # CCParticleSystem*
-    burst_effect = Field(MutPointerData(Void()))  # CCParticleSystem*
-    ship_drag_particles = Field(MutPointerData(Void()))  # CCParticleSystem*
-    dash_particles = Field(MutPointerData(Void()))  # CCParticleSystem*
-    burst_effect_other = Field(MutPointerData(Void()))  # CCParticleSystem*
-    land_effect_particles = Field(MutPointerData(Void()))  # CCParticleSystem*
-
-    hit_ground = Field(Bool())
-
-    particle_angle = Field(Float())
-
-    land_effect_particles_other = Field(MutPointerData(Void()))  # CCParticleSystem*
-
-    streak_id = Field(Int())
-
-    particle_gravity = Field(Float())
-
-    _unknown_bool_33 = Field(Bool())
-
-    streak_stroke = Field(Float())
-
-    _unknown_float_15 = Field(Float())
-
-    _unknown_bool_34 = Field(Bool())
-
-    _unknown_float_16 = Field(Float())
-    _unknown_float_17 = Field(Float())
-
-    _unknown_bool_35 = Field(Bool())
-
-    _unknown_bool_36 = Field(Bool())
-
-    slope_flipped_x = Field(Bool())
-    bump_player = Field(Bool())
-
-    collision_bottom = Field(Float())
-    collision_top = Field(Float())
-
-    _unknown_bool_37 = Field(Bool())
-    _unknown_bool_38 = Field(Bool())
-
-    color_2_copy = Field(StructData(CCColor3B))
-    color_1_copy = Field(StructData(CCColor3B))
-
-    up_key_pressed = Field(Bool())
-
-    _unknown_bool_39 = Field(Bool())
-
-    up_key_pressed_other = Field(Bool())
-
-    _unknown_bool_40 = Field(Bool())
-    _unknown_bool_41 = Field(Bool())
-
-    jump_height_random = Field(Int())
-
-    _unknown_bool_42 = Field(Bool())
-
-    jump_height = Field(Int())
-    jump_height_seed = Field(Int())
-
-    y_acceleration = Field(Double())
-
-    _unknown_int_1 = Field(Int())
-
-    was_on_slope = Field(Bool())
-    on_slope = Field(Bool())
-
-    ship_mode = Field(Bool())
-
-    slope_y_velocity = Field(Float())
-
-    ball_mode = Field(Bool())
-
-    ufo_mode = Field(Bool())
-
-    robot_mode = Field(Bool())
-
-    wave_mode = Field(Bool())
-
-    gravity_bool = Field(Bool())
-
-    spider_mode = Field(Bool())
-
-    can_jump = Field(Bool())
-
-    touched_orb = Field(Bool())
-
-    player_scale = Field(Float())
-
-    dashing = Field(Bool())
-
-    last_position_other = Field(StructData(CCPoint))
-
-    time_mod = Field(Float())
-
-    game_layer = Field(MutPointerData(StructData(CCLayer)))
-
-    portal_position_other = Field(StructData(CCPoint))
-
-    jumping = Field(Bool())
-
-    on_ground = Field(Bool())
-
-    last_ground_position = Field(StructData(CCPoint))
-
-    locked = Field(Bool())
-
-    last_activated_portal = Field(MutPointerData(StructData(GameObject)))
-
-    touched_orbs = Field(MutPointerData(StructData(CCArray)))
-
-    orb_jumped = Field(Bool())
-
-    jumped_other = Field(Bool())
-
-    color_2_other = Field(StructData(CCColor3B))
-    color_1_other = Field(StructData(CCColor3B))
-
-    second_player = Field(Bool())
-
-    real_position = Field(StructData(CCPoint))
-
-    time = Field(Double())
-
-    two_player = Field(Bool())
-
-    metering_value = Field(Float())
-
-    disable_effects = Field(Bool())
-
-    last_y_velocity = Field(Float())
-
-    ground_height = Field(Float())
-
-    switch_spider_teleport_color = Field(Bool())
-
-    default_mini_icon = Field(Bool())
-
-    old_y_positions = Field(MutArrayData(Float(), 200))
-
-    switch_dash_color = Field(Bool())
-
-    state_block_dash = Field(Int())
-
-    special_time = Field(Float())
-
-    state_block_jump = Field(Int())
-
-    _unknown_int_2 = Field(Int())
-
-    block_state_head = Field(Int())
-    block_state_wave = Field(Int())
+    ...
 
 
 @struct(virtual=True)
@@ -1118,7 +485,7 @@ class BaseGameLayer(TriggerEffectDelegate, CCLayer):
 
     level_settings = Field(MutPointerData(StructData(LevelSettings)))
 
-    _unknown_dictionary_0 = Field(MutPointerData(Void()))  # CCDictionary*
+    disabled_groups = Field(MutPointerData(Void()))  # CCDictionary*
 
     objects = Field(MutPointerData(StructData(CCArray)))
     section_objects = Field(MutPointerData(StructData(CCArray)))
@@ -1155,166 +522,304 @@ class BaseGameLayer(TriggerEffectDelegate, CCLayer):
 
     active_dual_touch = Field(Bool())
 
-    pushed_buttons = Field(Int())
+    attempt_click_count = Field(Int())
 
     current_section = Field(Int())
 
     old_section = Field(Int())
 
-    disabled_objects_active = Field(Bool())
+    objects_disabled = Field(Bool())
 
     blending = Field(Bool())
+
+    _pad_0 = Field(DynamicFill(8, android_x32=0, android_x64=0))
 
 
 @struct(virtual=True)
 class PlayLayer(BaseGameLayer):
-    ...
-    # DWORD dwordC;
-    # bool gap2DC;
-    # bool m_bCheated;
-    # bool m_bStartGame;
-    # bool field_2DF;
-    # float dword14;
-    # bool dword18;
-    # cocos2d::CCDrawNode* m_pUnkDrawNode;
-    # float m_fToCameraY;
-    # float m_fVisibleHeightMaybe;
-    # float m_fDoubleGroundFixedYPos;
-    # float m_fPlayerToTopStartYDifference;
-    # float m_fDeathHeightMaybe;
-    # bool m_bDeactivateSectionObjects;
-    # bool m_bDisableShake2;
-    # bool m_bDisableShake;
-    # BYTE PAD1[25];
-    # StartPosObject* m_pStartPos;
-    # CheckpointObject* m_pStartPosCheckpoint;
-    # EndPortalObject* m_pEndPortal;
-    # cocos2d::CCArray* m_pCheckpointArray;
-    # cocos2d::CCArray* m_pSpeedObjects;
-    # cocos2d::CCArray* m_pSpeedPortalArray;
-    # cocos2d::CCArray* m_pSomeCollisionsArray;
-    # cocos2d::CCSprite* m_pBackground;
-    # cocos2d::CCRect m_obBackgroundRect;
-    # cocos2d::CCArray* m_pSomeGroupArray;
-    # cocos2d::CCArray* m_pActiveObjects;
-    # cocos2d::CCArray* m_pUnkVisibleObjArr;
-    # cocos2d::CCArray* m_pMoveActionsArr;
-    # bool m_bMusicDisabled;
-    # BYTE PAD2[7];
-    # cocos2d::CCArray* m_pStateObjects;
-    # cocos2d::CCParticleSystemQuad* m_pGlitterEffects;
-    # cocos2d::CCDictionary* m_pItemDict;
-    # cocos2d::CCArray* m_pCircleWaves;
-    # cocos2d::CCArray* m_pTriggeredObjects;
-    # AudioEffectsLayer* m_pAudioEffectsLayer;
-    # float m_fGroundBottomYPos;
-    # float m_fGroundTopYPos;
-    # GJGroundLayer* m_pBottomGround;
-    # GJGroundLayer* m_pTopGround;
-    # BYTE PAD3[8];
-    # bool m_bDead;
-    # bool m_bFullLevelReset2;
-    # bool m_bUnkCameraX;
-    # bool m_bUnkCameraY;
-    # BYTE PAD4[4];
-    # int m_nRand;
-    # float dwordCC;
-    # bool m_bGroundsNotEqual;
-    # float m_fTimeMod;
-    # cocos2d::CCSize m_obLevelSize;
-    # cocos2d::CCLabelBMFont* m_pAttemptLabel;
-    # cocos2d::CCLabelBMFont* m_pPercentLabel;
-    # bool m_bCameraShaking;
-    # float m_fStrength;
-    # float m_fInterval;
-    # double m_dLastShakeTime;
-    # cocos2d::CCPoint m_obCameraShake;
-    # bool m_bShowedHint;
-    # float m_fCameraXMaybe;
-    # float m_fMirrorTransition2;
-    # bool m_bFlipping;
-    # int m_nTotalUnkSprites;
-    # cocos2d::CCDictionary* m_pClaimedParticles;
-    # cocos2d::CCDictionary* m_pParticleDict;
-    # cocos2d::CCArray* m_pClaimedParticlesArray;
-    # cocos2d::CCNode* m_pLightningNode;
-    # cocos2d::CCSprite* m_pProgressBarGroove;
-    # cocos2d::CCSprite* ProgressBar;
-    # cocos2d::CCSize m_obSlider;
-    # float m_fUnkFlashEffect;
-    # int m_nTotalGravityEffectSprites;
-    # int m_nGravityEffect;
-    # int m_nGravitySpriteIdx;
-    # cocos2d::CCArray* m_pGravitySprites;
-    # bool m_bJustDont;
-    # bool m_bIsLocalLevel;
-    # bool m_bPlayer1PushedButtonMaybe;
-    # bool m_bPlayerFrozen;
-    # bool m_bPlayer2PushedButtonMaybe;
-    # bool m_bPlayer2Frozen;
-    # std::string m_sReplayData;
-    # cocos2d::CCArray* m_pReplayArray;
-    # double m_dTime;
-    # float m_fGroundBottomYPos2;
-    # BYTE PAD5[4];
-    # bool m_bUnkMirrorFloatStepping;
-    # bool m_bUseSoundManager;
-    # cocos2d::CCDictionary* m_pColourDict;
-    # std::map<short, bool> m_sBlending;
-    # DWORD dword184;
-    # DWORD dword188;
-    # bool dword18C;
-    # bool m_bForcePlaybackControl;
-    # GameObject* m_pLastActivatedPortal;
-    # GameObject* m_pPortal;
-    # bool m_bFlipped;
-    # float m_fFlipValue;
-    # UILayer* m_pUILayer;
-    # GJGameLevel* m_pLevel;
-    # cocos2d::CCPoint m_obCameraPos;
-    # bool m_bTestMode;
-    # bool m_bPracticeMode;
-    # bool m_bIsResetting;
-    # bool field_47F;
-    # cocos2d::CCArray* m_pBigActionContainer;
-    # bool m_bFullLevelReset;
-    # cocos2d::CCPoint m_obPlayerPosition;
-    # int m_nAttempts;
-    # int m_nJumpCount;
-    # bool m_bHasClicked;
-    # float m_fTime;
-    # int m_nAttemptJumps;
-    # bool m_bLeaderboardPercent;
-    # bool m_bShowUI;
-    # bool m_bTriggeredEvent;
-    # bool m_bResetQueued;
-    # int m_nBestPercent;
-    # bool m_bDidAwardStars;
-    # int m_nAwardedCurrency;
-    # int m_nAwardedDiamonds;
-    # bool m_bAwardedSecretKey;
-    # bool m_bShouldRestartAfterStopped;
-    # cocos2d::CCArray* m_pObjectStateArr;
-    # cocos2d::CCDictionary* m_pSaveRequiredGroupsUIDs;
-    # BYTE PAD6[4];
-    # double dword1FC;
-    # double dword204;
-    # double dword20C;
-    # bool dword214;
-    # float field_4E4;
-    # int dword21C;
-    # double m_dAttemptTime;
-    # double m_dTempMilliTime;
-    # double m_dAttemptTimeSeed;
-    # double m_dAttemptTimeRand;
-    # DWORD dword244;
-    # bool m_bGlitter;
-    # bool m_bBGEffectVisibility;
-    # bool gap516;
-    # bool m_bGamePaused;
-    # GameObject* m_pCollidedObject;
-    # bool m_bVfDChk;
-    # bool m_bDisableGravityEffect;
+    _unknown_float_0 = Field(Float())
+
+    _unknown_bool_0 = Field(Bool())
+
+    cheated = Field(Bool())
+
+    do_not_save_random = Field(Int())
+    do_not_save_seed = Field(Int())
+
+    _unknown_int_1 = Field(Int())
+
+    debug_pause_off = Field(Bool())
+    smooth_camera = Field(Bool())
+
+    _unknown_float_1 = Field(Float())
+
+    _pad_1 = Field(DynamicFill(4))
+
+    _unknown_draw_node = Field(MutPointerData(Void()))  # CCDrawNode*
+
+    to_camera_y = Field(Float())
+
+    _unknown_int_2 = Field(Int())
+
+    _unknown_float_3 = Field(Float())
+
+    ground_restriction = Field(Float())
+
+    ceiling_restriction = Field(Float())
+
+    full_level_reset = Field(Bool())
+
+    _unknown_bool_1 = Field(Bool())
+
+    _unknown_float_4 = Field(Float())
+    _unknown_float_5 = Field(Float())
+    _unknown_float_6 = Field(Float())
+    _unknown_float_7 = Field(Float())
+    _unknown_float_8 = Field(Float())
+
+    _pad_2 = Field(DynamicFill(4))
+
+    start_position = Field(MutPointerData(Void()))  # StartPositionObject*
+    start_position_checkpoint = Field(MutPointerData(Void()))  # CheckpointObject*
+
+    end_portal = Field(MutPointerData(Void()))  # EndPortalObject*
+
+    checkpoints = Field(MutPointerData(StructData(CCArray)))
+    speed_objects = Field(MutPointerData(StructData(CCArray)))
+    speed_portals = Field(MutPointerData(StructData(CCArray)))
+    _unknown_array_1 = Field(MutPointerData(StructData(CCArray)))
+
+    background = Field(MutPointerData(StructData(CCSprite)))
+    background_rectangle = Field(StructData(CCRectangle))
+
+    _unknown_array_2 = Field(MutPointerData(StructData(CCArray)))
+
+    active_objects = Field(MutPointerData(StructData(CCArray)))
+
+    _unknown_array_3 = Field(MutPointerData(StructData(CCArray)))
+
+    move_actions = Field(MutPointerData(StructData(CCArray)))
+
+    music_disabled = Field(Bool())
+
+    _pad_3 = Field(DynamicFill(7))
+
+    state_objects = Field(MutPointerData(StructData(CCArray)))
+
+    glitter_effects = Field(MutPointerData(Void()))  # CCParticleSystemQuad*
+
+    picked_up_items = Field(MutPointerData(Void()))  # CCDictionary*
+
+    circle_waves = Field(MutPointerData(StructData(CCArray)))
+    triggered_objects = Field(MutPointerData(StructData(CCArray)))
+
+    audio_effects_layer = Field(MutPointerData(Void()))  # AudioEffectsLayer*
+
+    ground_bottom_y_position = Field(Float())
+    ground_top_y_position = Field(Float())
+
+    bottom_ground = Field(MutPointerData(Void()))  # GroundLayer*
+    top_ground = Field(MutPointerData(Void()))  # GroundLayer*
+
+    _pad_4 = Field(DynamicFill(8))
+
+    dead = Field(Bool())
+
+    start_camera_at_corner = Field(Bool())
+
+    camera_x_locked = Field(Bool())
+    camera_y_locked = Field(Bool())
+
+    _pad_5 = Field(DynamicFill(4))
+
+    random = Field(Int())
+
+    _unknown_float_9 = Field(Float())
+
+    grounds_not_equal = Field(Bool())
+
+    time_mod = Field(Float())
+
+    level_size = Field(StructData(CCSize))
+
+    attempt_label = Field(MutPointerData(Void()))  # CCLabelBMFont*
+    percent_label = Field(MutPointerData(Void()))  # CCLabelBMFont*
+
+    shaking = Field(Bool())
+
+    strength = Field(Float())
+    interval = Field(Float())
+
+    last_shake_time = Field(Double())
+
+    shake = Field(StructData(CCPoint))
+
+    showed_hint = Field(Bool())
+
+    _unknown_float_10 = Field(Float())
+
+    mirror_transition = Field(Float())
+
+    flipping = Field(Bool())
+
+    _unknown_int_3 = Field(Int())
+
+    claimed_particles_dict = Field(MutPointerData(Void()))  # CCDictionary*
+    particle_dict = Field(MutPointerData(Void()))  # CCDictionary*
+
+    claimed_particles = Field(MutPointerData(StructData(CCArray)))
+
+    lighting_mode = Field(MutPointerData(StructData(CCNode)))
+
+    progress_bar_groove = Field(MutPointerData(StructData(CCSprite)))
+    progress_bar = Field(MutPointerData(StructData(CCSprite)))
+
+    slider = Field(StructData(CCSize))
+
+    _unknown_float_11 = Field(Float())
+
+    total_gravity_effect_sprites = Field(Int())
+
+    gravity_effect = Field(Int())
+
+    gravity_sprite_index = Field(Int())
+
+    gravity_sprites = Field(MutPointerData(StructData(CCArray)))
+
+    just_do_not = Field(Bool())
+
+    local_level = Field(Bool())
+
+    player_1_pushed_button = Field(Bool())
+    player_1_frozen = Field(Bool())
+    player_2_pushed_button = Field(Bool())
+    player_2_frozen = Field(Bool())
+
+    recording_string = Field(StringData())
+    recording = Field(MutPointerData(StructData(CCArray)))
+
+    time = Field(Double())
+
+    ground_bottom_y_position_other = Field(Float())
+
+    _pad_6 = Field(DynamicFill(5))
+
+    _unknown_bool_2 = Field(Bool())
+
+    use_sound_manager = Field(Bool())
+
+    color_dict = Field(MutPointerData(Void()))  # CCDictionary*
+
+    _pad_7 = Field(DynamicFill(windows_x32=8, windows_x64=16))
+
+    _unknown_int_4 = Field(Int())
+
+    _unknown_int_5 = Field(Int())
+
+    _unknown_bool_3 = Field(Bool())
+
+    force_recording_control = Field(Bool())
+
+    last_activated_portal = Field(MutPointerData(StructData(GameObject)))
+    portal = Field(MutPointerData(StructData(GameObject)))
+
+    flipped = Field(Bool())
+
+    flip_value = Field(Float())
+
+    ui_layer = Field(MutPointerData(Void()))  # UILayer*
+
+    level = Field(MutPointerData(StructData(GameLevel)))
+
+    camera_position = Field(StructData(CCPoint))
+
+    test = Field(Bool())
+    practice = Field(Bool())
+    resetting = Field(Bool())
+
+    _unknown_bool_4 = Field(Bool())
+
+    big_action_container = Field(MutPointerData(StructData(CCArray)))
+
+    full_level_reset_other = Field(Bool())
+
+    player_position = Field(StructData(CCPoint))
+
+    attempt = Field(Int())
+    jumps = Field(Int())
+    clicked = Field(Bool())
+
+    time_other = Field(Float())
+
+    attempt_jumps = Field(Int())
+
+    leaderboard_record = Field(Bool())
+
+    show_ui = Field(Bool())
+
+    triggered_event = Field(Bool())
+
+    reset_queued = Field(Bool())
+
+    record = Field(Int())
+
+    awarded = Field(Bool())
+
+    awarded_orbs = Field(Int())
+    awarded_diamonds = Field(Int())
+
+    awarded_secret_key = Field(Bool())
+
+    restart_after_stopped = Field(Bool())
+
+    object_states = Field(MutPointerData(StructData(CCArray)))
+
+    save_required_groups = Field(MutPointerData(Void()))  # CCDictionary*
+
+    _pad_8 = Field(DynamicFill(4))
+
+    _unknown_double_1 = Field(Double())
+    _unknown_double_2 = Field(Double())
+    _unknown_double_3 = Field(Double())
+
+    _unknown_bool_5 = Field(Bool())
+
+    _unknown_float_12 = Field(Float())
+
+    _unknown_int_6 = Field(Int())
+
+    attempt_time = Field(Double())
+
+    temporary_milliseconds = Field(Double())
+
+    attempt_time_random = Field(Double())
+    attempt_time_seed = Field(Double())
+
+    _unknown_int_7 = Field(Int())
+
+    glitter = Field(Bool())
+
+    background_effect = Field(Bool())
+
+    _unknown_bool_6 = Field(Bool())
+
+    paused = Field(Bool())
+
+    collided_object = Field(MutPointerData(StructData(GameObject)))
+
+    check = Field(Bool())
+
+    disable_gravity_effect = Field(Bool())
+
+    @property
+    def level_length(self) -> float:
+        return self.level_size.width
+
+    def is_practice(self) -> bool:
+        return self.practice
+
+    def is_test(self) -> bool:
+        return self.test
 
 
 @struct(virtual=True)
@@ -1441,11 +946,11 @@ class GameManager(BaseGameManager):
     ad_timer = Field(Double())
     ad_cache = Field(Double())
 
-    _pad_0 = Field(ArrayData(UByte(), 8))
+    _pad_0 = Field(DynamicFill(8))
 
     _unknown_double_0 = Field(Double())
 
-    _pad_1 = Field(ArrayData(UByte(), 8))
+    _pad_1 = Field(DynamicFill(8))
 
     loaded = Field(Bool())
 
@@ -1454,13 +959,13 @@ class GameManager(BaseGameManager):
     play_layer = Field(MutPointerData(StructData(PlayLayer)))
     editor_layer = Field(MutPointerData(StructData(EditorLayer)))
 
-    _unknown_int_4 = Field(Int())
+    _unknown_int_1 = Field(Int())
 
     menu_layer = Field(MutPointerData(Void()))  # MenuLayer*
 
     _unknown_bool_2 = Field(Bool())
 
-    _unknown_int_5 = Field(Int())
+    _unknown_int_2 = Field(Int())
 
     _unknown_bool_3 = Field(Bool())
 
@@ -1488,7 +993,7 @@ class GameManager(BaseGameManager):
     twitter = Field(Bool())
     youtube = Field(Bool())
 
-    _unknown_int_6 = Field(Int())
+    _unknown_int_3 = Field(Int())
 
     socials_duration = Field(Double())
 
@@ -1500,7 +1005,7 @@ class GameManager(BaseGameManager):
 
     scene_value = Field(Int())
 
-    _unknown_int_7 = Field(Int())
+    _unknown_int_4 = Field(Int())
 
     _unknown_bool_8 = Field(Bool())
 
@@ -1583,11 +1088,11 @@ class GameManager(BaseGameManager):
     game_rate_delegate = Field(MutPointerData(Void()))  # GameRateDelegate*
     unknown_delegate = Field(MutPointerData(Void()))
 
-    _unknown_int_8 = Field(Int())
+    _unknown_int_5 = Field(Int())
 
-    _unknown_int_9 = Field(Int())
+    _unknown_int_6 = Field(Int())
 
-    _unknown_int_10 = Field(Int())
+    _unknown_int_7 = Field(Int())
 
     group_id = Field(Int())
     background_id = Field(Int())
@@ -1628,13 +1133,13 @@ class GameManager(BaseGameManager):
 
     _unknown_bool_13 = Field(Bool())
 
-    _unknown_int_11 = Field(Int())
-    _unknown_int_12 = Field(Int())
-    _unknown_int_13 = Field(Int())
+    _unknown_int_8 = Field(Int())
+    _unknown_int_9 = Field(Int())
+    _unknown_int_10 = Field(Int())
 
     ad_reward = Field(Int())
 
-    _unknown_int_14 = Field(Int())
+    _unknown_int_11 = Field(Int())
 
     @property
     def scene(self) -> Scene:

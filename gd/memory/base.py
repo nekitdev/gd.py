@@ -129,16 +129,7 @@ class UnionData(Data[U]):
         return self.union_type.reconstruct(config)
 
 
-PAD_NAME = "__pad_{}__"
-
-pad_name = PAD_NAME.format
-
-FINAL = "final"
-
-RESERVED_NAME = f"the field name can not be {tick(FINAL)}"
-
-
-from gd.memory.fields import Field, fetch_fields
+from gd.memory.fields import fetch_fields
 
 
 def struct(
@@ -163,9 +154,6 @@ def struct(
 
         if packed:
             for name, field in fields.items():
-                if name == FINAL:
-                    raise ValueError(RESERVED_NAME)
-
                 field.offset = offset
 
                 field_size = field.data.compute_size(config)
@@ -182,71 +170,36 @@ def struct(
                 default=DEFAULT_ALIGNMENT,
             )
 
-            field_array = list(fields.items())
-
-            index = 0
-
-            for main_name, main_field in fields.items():
-                if main_name == FINAL:
-                    raise ValueError(RESERVED_NAME)
-
+            for name, field in fields.items():
                 # if the field has null alignment, move onto the next one
 
-                main_alignment = main_field.data.compute_alignment(config)
+                field_alignment = field.data.compute_alignment(config)
 
-                if not main_alignment:
+                if not field_alignment:
                     continue
 
-                before_size = 0
-
-                # calculate the size of all fields preceding current field
-
-                for _, field in field_array:
-                    if field is main_field:
-                        break
-
-                    before_size += field.data.compute_size(config)
-
-                remain_size = before_size % main_alignment
+                remain_size = size % field_alignment
 
                 # if the size is not divisible by the alignment of the field, pad accordingly
 
                 if remain_size:
-                    pad_size = main_alignment - remain_size
-
-                    name = pad_name(main_name)
-
-                    field = Field(ArrayData(Byte(), pad_size), offset, exclude=True)
-
-                    field_array.insert(index, (name, field))
+                    pad_size = field_alignment - remain_size
 
                     offset += pad_size
                     size += pad_size
 
-                    index += 1
+                field_size = field.data.compute_size(config)
 
-                main_field.offset = offset
+                field.offset = offset
 
-                main_size = main_field.data.compute_size(config)
-
-                offset += main_size
-                size += main_size
-
-                index += 1
-
-            fields = dict(field_array)
+                offset += field_size
+                size += field_size
 
             if alignment:
                 remain_size = size % alignment
 
                 if remain_size:
                     pad_size = alignment - remain_size
-
-                    name = pad_name(FINAL)
-
-                    field = Field(ArrayData(Byte(), pad_size), offset, exclude=True)
-
-                    fields[name] = field
 
                     offset += pad_size
                     size += pad_size

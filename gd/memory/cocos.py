@@ -1,4 +1,4 @@
-from gd.memory.arrays import ArrayData, MutArrayData
+from gd.memory.arrays import DynamicFill, MutArrayData
 from gd.memory.base import Struct, StructData, struct
 from gd.memory.data import Bool, Float, Int, UByte, UInt
 from gd.memory.fields import Field
@@ -257,7 +257,7 @@ class CCSprite(CCTextureProtocol, CCNodeRGBA):
     bottom_left_mod = Field(Float())
     bottom_right_mod = Field(Float())
 
-    _pad_0 = Field(ArrayData(UByte(), 16))
+    _pad_0 = Field(DynamicFill(16))
 
     unknown_bool = Field(Bool())
     unknown = Field(Int())

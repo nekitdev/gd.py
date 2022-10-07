@@ -1,17 +1,19 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterator, Optional, Sequence, Type, TypeVar
+from typing import TYPE_CHECKING, Dict, Iterator, Optional, Sequence, Type, TypeVar
 
 from attrs import define, field, frozen
 
 from gd.enums import ByteOrder
+from gd.memory.constants import DEFAULT_BASE
+from gd.memory.data import U8 as Byte
 from gd.memory.data import Data
 from gd.platform import PlatformConfig
 
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
 
-__all__ = ("Array", "MutArray", "ArrayData", "MutArrayData")
+__all__ = ("Array", "MutArray", "ArrayData", "MutArrayData", "DynamicFill")
 
 T = TypeVar("T")
 
@@ -144,6 +146,58 @@ class ArrayData(Data[Array[T]]):
 
     def compute_alignment(self, config: PlatformConfig) -> int:
         return self.type.compute_alignment(config)
+
+
+class DynamicFill(Data[Array[int]]):
+    def __init__(self, base: int = DEFAULT_BASE, **fills: int) -> None:
+        self._base = base
+
+        self._byte = Byte()
+
+        self._fills = {
+            PlatformConfig.from_string(string): fill for string, fill in fills.items()
+        }
+
+    @property
+    def base(self) -> int:
+        return self._base
+
+    @property
+    def byte(self) -> Byte:
+        return self._byte
+
+    @property
+    def fills(self) -> Dict[PlatformConfig, int]:
+        return self._fills
+
+    def read(
+        self, state: AbstractState, address: int, order: ByteOrder = ByteOrder.NATIVE
+    ) -> Array[int]:
+        return Array(state, address, self.byte, self.compute_length(state.config), order)
+
+    def write(
+        self,
+        state: AbstractState,
+        address: int,
+        value: Array[int],
+        order: ByteOrder = ByteOrder.NATIVE,
+    ) -> None:
+        pass  # do nothing
+
+    def compute_length(self, config: PlatformConfig) -> int:
+        fills = self.fills
+
+        if config in fills:
+            return fills[config]
+
+        return self.base
+
+    def compute_size(self, config: PlatformConfig) -> int:
+        return self.byte.compute_size(config) * self.compute_length(config)
+
+    def compute_alignment(self, config: PlatformConfig) -> int:
+        return self.byte.compute_alignment(config)
+
 
 
 @frozen()

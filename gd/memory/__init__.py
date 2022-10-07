@@ -1,4 +1,4 @@
-from gd.memory.arrays import Array, ArrayData, MutArray, MutArrayData
+from gd.memory.arrays import Array, ArrayData, DynamicFill, MutArray, MutArrayData
 from gd.memory.base import Struct, StructData, Union, UnionData, struct, union
 from gd.memory.constants import ACCOUNT_MANAGER_OFFSET, GAME_MANAGER_OFFSET
 from gd.memory.data import (
@@ -74,6 +74,8 @@ __all__ = (
     "PointerData",
     "MutPointerData",
     "StringData",
+    # dynamic fill
+    "DynamicFill",
     # basic types
     "I8",
     "U8",

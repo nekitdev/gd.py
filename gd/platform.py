@@ -28,7 +28,6 @@ SYSTEM_BITS = size(USIZE) * BITS
 
 SEPARATOR = "_x"
 
-partition_separator = SEPARATOR.partition
 concat_separator = SEPARATOR.join
 
 C = TypeVar("C", bound="PlatformConfig")
@@ -65,7 +64,7 @@ class PlatformConfig(String):
 
     @classmethod
     def from_string(cls: Type[C], string: str) -> C:
-        platform, _, bits = partition_separator(string)
+        platform, _, bits = string.partition(SEPARATOR)
 
         return cls(Platform.from_name(platform), int(bits))
 
