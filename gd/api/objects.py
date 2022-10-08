@@ -1,10 +1,11 @@
 from io import BytesIO
-from typing import BinaryIO, Iterable, Set, Type, TypeVar
+from typing import BinaryIO, Dict, Iterable, Iterator, Mapping, Optional, Tuple, Type, TypeVar
 
 from attrs import define, field
 from typing_extensions import Literal, TypeGuard
 
 from gd.api.hsv import HSV
+from gd.api.ordered_set import OrderedSet, ordered_set
 from gd.binary import VERSION, Binary
 from gd.binary_constants import BITS
 from gd.binary_utils import Reader, Writer
@@ -26,6 +27,10 @@ from gd.enums import (
     ToggleType,
     ZLayer,
 )
+from gd.models import Model
+from gd.models_constants import GROUPS_SEPARATOR, OBJECT_SEPARATOR
+from gd.models_utils import concat_groups, concat_object, int_bool, parse_get_or, partial_parse_enum, split_groups, split_object
+from gd.robtop import RobTop
 from gd.typing import is_instance
 
 __all__ = (
@@ -83,8 +88,9 @@ class ObjectFlag(Flag):
     HAS_ROTATION_AND_SCALE = 1
     HAS_EDITOR_LAYER = 2
     HAS_COLORS = 4
-    HAS_LINK = 8
-    HAS_Z = 16
+    HAS_GROUPS = 8
+    HAS_LINK = 16
+    HAS_Z = 32
 
     def has_rotation_and_scale(self) -> bool:
         return type(self).HAS_ROTATION_AND_SCALE in self
@@ -94,6 +100,9 @@ class ObjectFlag(Flag):
 
     def has_colors(self) -> bool:
         return type(self).HAS_COLORS in self
+
+    def has_groups(self) -> bool:
+        return type(self).HAS_GROUPS in self
 
     def has_link(self) -> bool:
         return type(self).HAS_LINK in self
@@ -134,45 +143,88 @@ DEFAULT_SPECIAL_CHECKED = False
 DEFAULT_LINK_ID = 0
 
 
+G = TypeVar("G", bound="Groups")
+
+
+class Groups(RobTop, OrderedSet[int]):
+    @classmethod
+    def from_robtop(cls: Type[G], string: str) -> G:
+        return cls(map(int, split_groups(string)))
+
+    def to_robtop(self) -> str:
+        return concat_groups(map(str, self))
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return GROUPS_SEPARATOR in string
+
+
+ID_NOT_PRESENT = "id not present"
+
+ID = 1
+X = 2
+Y = 3
+H_FLIPPED = 4
+V_FLIPPED = 5
+ROTATION = 6
+SCALE = 32
+DO_NOT_FADE = 64
+DO_NOT_ENTER = 67
+Z_LAYER = 24
+Z_ORDER = 25
+BASE_EDITOR_LAYER = 20
+ADDITIONAL_EDITOR_LAYER = 61
+BASE_COLOR_ID = 21
+DETAIL_COLOR_ID = 22
+BASE_COLOR_HSV = 43
+DETAIL_COLOR_HSV = 44
+GROUPS = 57
+GROUP_PARENT = 34
+HIGH_DETAIL = 103
+GLOW = 96  # negated
+SPECIAL_CHECKED = 13
+LINK_ID = 108
+
+
 @define()
-class Object(Binary):
+class Object(Model, Binary):
     id: int = field()
-    x: float = field(default=0.0)
-    y: float = field(default=0.0)
+    x: float = field(default=DEFAULT_X)
+    y: float = field(default=DEFAULT_Y)
 
-    rotation: float = field(default=0.0)
+    h_flipped: bool = field(default=DEFAULT_H_FLIPPED)
+    v_flipped: bool = field(default=DEFAULT_V_FLIPPED)
 
-    h_flipped: bool = field(default=False)
-    v_flipped: bool = field(default=False)
+    rotation: float = field(default=DEFAULT_ROTATION)
 
-    scale: float = field(default=1.0)
+    scale: float = field(default=DEFAULT_SCALE)
 
-    do_not_fade: bool = field(default=False)
-    do_not_enter: bool = field(default=False)
+    do_not_fade: bool = field(default=DEFAULT_DO_NOT_FADE)
+    do_not_enter: bool = field(default=DEFAULT_DO_NOT_ENTER)
 
     z_layer: ZLayer = field(default=ZLayer.DEFAULT)
-    z_order: int = field(default=0)
+    z_order: int = field(default=DEFAULT_Z_ORDER)
 
-    base_editor_layer: int = field(default=0)
-    additional_editor_layer: int = field(default=0)
+    base_editor_layer: int = field(default=DEFAULT_BASE_EDITOR_LAYER)
+    additional_editor_layer: int = field(default=DEFAULT_ADDITIONAL_EDITOR_LAYER)
 
-    base_color_id: int = field(default=0)
-    detail_color_id: int = field(default=0)
+    base_color_id: int = field(default=DEFAULT_BASE_COLOR_ID)
+    detail_color_id: int = field(default=DEFAULT_DETAIL_COLOR_ID)
 
     base_color_hsv: HSV = field(factory=HSV)
     detail_color_hsv: HSV = field(factory=HSV)
 
-    groups: Set[int] = field(factory=set)
+    groups: Groups = field(factory=Groups)
 
-    group_parent: bool = False
+    group_parent: bool = field(default=DEFAULT_GROUP_PARENT)
 
-    high_detail: bool = False
+    high_detail: bool = field(default=DEFAULT_HIGH_DETAIL)
 
-    glow: bool = True
+    glow: bool = field(default=DEFAULT_GLOW)
 
-    special_checked: bool = False
+    special_checked: bool = field(default=DEFAULT_SPECIAL_CHECKED)
 
-    link_id: int = 0
+    link_id: int = field(default=DEFAULT_LINK_ID)
 
     @classmethod
     def from_binary(
@@ -251,9 +303,15 @@ class Object(Binary):
             base_color_hsv = HSV()
             detail_color_hsv = HSV()
 
-        length = reader.read_u16(order)
+        groups: OrderedSet[int]
 
-        groups = {reader.read_u16(order) for _ in range(length)}
+        if flag.has_groups():
+            length = reader.read_u16(order)
+
+            groups = ordered_set(reader.read_u16(order) for _ in range(length))
+
+        else:
+            groups = ordered_set()
 
         if flag.has_link():
             link_id = reader.read_u16(order)
@@ -326,6 +384,11 @@ class Object(Binary):
         ):
             flag |= ObjectFlag.HAS_COLORS
 
+        groups = self.groups
+
+        if groups:
+            flag |= ObjectFlag.HAS_GROUPS
+
         link_id = self.link_id
 
         if link_id:
@@ -387,13 +450,35 @@ class Object(Binary):
             base_color_hsv.to_binary(binary, order, version)
             detail_color_hsv.to_binary(binary, order, version)
 
-        writer.write_u16(len(self.groups), order)
+        if flag.has_groups():
+            writer.write_u16(len(groups), order)
 
-        for group in sorted(self.groups):
-            writer.write_u16(group, order)
+            for group in sorted(groups):
+                writer.write_u16(group, order)
 
         if flag.has_link():
             writer.write_u16(link_id, order)
+
+    @classmethod
+    def from_robtop(cls: Type[O], string: str) -> O:
+        return cls.from_robtop_mapping(split_object(string))
+
+    @classmethod
+    def from_robtop_mapping(cls: Type[O], mapping: Mapping[int, str]) -> O:
+        ...
+
+    def to_robtop(self) -> str:
+        return concat_object(self.to_robtop_dict())
+
+    def to_robtop_dict(self) -> Dict[int, str]:
+        return dict(self.to_robtop_iterator())
+
+    def to_robtop_iterator(self) -> Iterator[Tuple[int, str]]:
+        ...
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return OBJECT_SEPARATOR in string
 
     def is_h_flipped(self) -> bool:
         return self.h_flipped
@@ -460,15 +545,18 @@ class Object(Binary):
 
         return self
 
-    def scale_by(self: O, scale: float = 1.0) -> O:
+    def scale_by(self: O, scale: float) -> O:
         self.scale *= scale
 
         return self
 
-    def scale_to(self: O, scale: float = 1.0) -> O:
+    def scale_to(self: O, scale: float) -> O:
         self.scale = scale
 
         return self
+
+    def scale_to_normal(self: O) -> O:
+        return self.scale_to()
 
     def is_trigger(self) -> bool:
         return False

@@ -17,9 +17,6 @@ __all__ = (
     "LoginFailed",
     "LoginRequired",
     "NothingFound",
-    "DataError",
-    "EditorError",
-    "NullPointerError",
 )
 
 T = TypeVar("T")
@@ -166,19 +163,3 @@ class NothingFound(ClientError):
     @property
     def name(self) -> str:
         return self._name
-
-
-class DataError(GDError):
-    pass
-
-
-class EditorError(DataError):
-    pass
-
-
-CAN_NOT_DEREFERENCE_NULL_POINTER = "can not dereference null pointer"
-
-
-class NullPointerError(GDError):
-    def __init__(self) -> None:
-        super().__init__(CAN_NOT_DEREFERENCE_NULL_POINTER)

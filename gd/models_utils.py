@@ -15,6 +15,7 @@ from gd.models_constants import (
     FRIEND_REQUEST_SEPARATOR,
     FRIEND_REQUESTS_RESPONSE_FRIEND_REQUESTS_SEPARATOR,
     FRIEND_REQUESTS_RESPONSE_SEPARATOR,
+    GROUPS_SEPARATOR,
     GUIDELINES_SEPARATOR,
     HEADER_SEPARATOR,
     HSV_SEPARATOR,
@@ -33,6 +34,7 @@ from gd.models_constants import (
     MESSAGE_SEPARATOR,
     MESSAGES_RESPONSE_MESSAGES_SEPARATOR,
     MESSAGES_RESPONSE_SEPARATOR,
+    OBJECT_SEPARATOR,
     OBJECTS_SEPARATOR,
     PAGE_SEPARATOR,
     PROFILE_SEPARATOR,
@@ -239,6 +241,12 @@ concat_color_channels = partial(concat_iterable, COLOR_CHANNELS_SEPARATOR)
 
 split_objects = partial(split_iterable, OBJECTS_SEPARATOR)
 concat_objects = partial(concat_iterable, OBJECTS_SEPARATOR)
+
+split_object = partial(split_mapping, OBJECT_SEPARATOR)
+concat_object = partial(concat_mapping, OBJECT_SEPARATOR)
+
+split_groups = partial(split_iterable, GROUPS_SEPARATOR)
+concat_groups = partial(concat_iterable, GROUPS_SEPARATOR)
 
 split_guidelines = partial(split_float_mapping, GUIDELINES_SEPARATOR)
 concat_guidelines = partial(concat_float_mapping, GUIDELINES_SEPARATOR)

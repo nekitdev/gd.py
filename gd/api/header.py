@@ -9,6 +9,7 @@ from gd.binary_constants import HALF_BITS, HALF_BYTE
 from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ID
 from gd.enums import ByteOrder, GameMode, Speed
+from gd.models import Model
 from gd.models_constants import HEADER_SEPARATOR
 from gd.models_utils import (
     concat_header,
@@ -18,7 +19,6 @@ from gd.models_utils import (
     partial_parse_enum,
     split_header,
 )
-from gd.robtop import RobTop
 
 DEFAULT_MINI_MODE = False
 
@@ -69,7 +69,7 @@ COLOR_CHANNELS = "kS38"
 
 
 @define()
-class Header(RobTop, Binary):
+class Header(Model, Binary):
     game_mode: GameMode = field(default=GameMode.DEFAULT)
     mini_mode: bool = field(default=DEFAULT_MINI_MODE)
     speed: Speed = field(default=Speed.DEFAULT)

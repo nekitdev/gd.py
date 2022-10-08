@@ -4,7 +4,6 @@ from builtins import isinstance as is_instance
 from builtins import issubclass as is_subclass
 from itertools import chain
 from typing import (
-    AbstractSet,
     Any,
     Dict,
     Hashable,
@@ -14,6 +13,7 @@ from typing import (
     MutableSet,
     Optional,
     Sequence,
+    Sized,
     Type,
     TypeVar,
     Union,
@@ -141,7 +141,12 @@ class OrderedSet(MutableSet[Q], Sequence[Q]):
                 if index_in >= index:
                     item_to_index[item_in] -= 1
 
-    remove = discard  # type: ignore
+    def remove(self, item: Q) -> None:
+        if item in self:
+            self.discard(item)
+
+        else:
+            raise KeyError(ITEM_NOT_IN_ORDERED_SET.format(item))
 
     def insert(self, index: int, item: Q) -> None:
         item_to_index = self.item_to_index
@@ -183,7 +188,7 @@ class OrderedSet(MutableSet[Q], Sequence[Q]):
 
         return ITEMS_REPRESENTATION.format(name, items)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Iterable[Q]) -> bool:
         if is_instance(other, Sequence):
             return self.items == list(other)
 
@@ -226,6 +231,13 @@ class OrderedSet(MutableSet[Q], Sequence[Q]):
 
         return cls(self)
 
+    def intersection_update(self, *iterables: Iterable[Q]) -> None:
+        intersection = self.intersection(*iterables)
+
+        self.clear()
+
+        self.update(intersection)
+
     @overload
     def difference(self: OS, *iterables: Iterable[Q]) -> OS:
         ...
@@ -245,15 +257,12 @@ class OrderedSet(MutableSet[Q], Sequence[Q]):
 
         return cls(self)
 
-    def is_subset(self, other: AbstractSet[Q]) -> bool:
-        return len(self) <= len(other) and all(item in other for item in self)
+    def difference_update(self, *iterables: Iterable[Q]) -> None:
+        difference = self.difference(*iterables)
 
-    issubset = is_subset
+        self.clear()
 
-    def is_superset(self, other: AbstractSet[Q]) -> bool:
-        return len(self) >= len(other) and all(item in self for item in other)
-
-    issuperset = is_superset
+        self.update(difference)
 
     @overload
     def symmetric_difference(self: OS, other: Iterable[Q]) -> OS:
@@ -271,9 +280,28 @@ class OrderedSet(MutableSet[Q], Sequence[Q]):
 
         return self_set.difference(other_set).union(other_set.difference(self_set))
 
+    def symmetric_difference_update(self, *iterables: Iterable[Q]) -> None:
+        symmetric_difference = self.symmetric_difference(*iterables)
+
+        self.clear()
+
+        self.update(symmetric_difference)
+
+    def is_subset(self, other: Iterable[Q]) -> bool:
+        other_set = set(other)
+
+        return len(self) <= len(other_set) and all(item in other_set for item in self)
+
+    def is_superset(self, other: Iterable[Q]) -> bool:
+        if is_instance(other, Sized):
+            return len(self) >= len(other) and all(item in self for item in other)
+
+        return all(item in self for item in other)
+
+    def is_disjoint(self, other: Iterable[Q]) -> bool:
+        return not any(item in self for item in other)
+
 
 AnyOrderedSet = OrderedSet[Any]
 
-
-def ordered_set(iterable: Iterable[Q] = ()) -> OrderedSet[Q]:
-    return OrderedSet(iterable)
+ordered_set = OrderedSet

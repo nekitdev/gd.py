@@ -90,8 +90,6 @@ from gd.enums import (
 from gd.errors import (
     ClientError,
     CommentBanned,
-    DataError,
-    EditorError,
     GDError,
     HTTPError,
     HTTPErrorWithOrigin,
@@ -133,8 +131,6 @@ __all__ = (
     "LoginFailed",
     "LoginRequired",
     "NothingFound",
-    "DataError",
-    "EditorError",
     # enums
     "SimpleKey",
     "Key",

@@ -18,5 +18,5 @@ class Enum(Title, Format, Order, ExtendedEnum):
     pass
 
 
-class Flag(Title, Format, Order, ExtendedFlag):
+class Flag(ExtendedFlag, Enum):
     pass

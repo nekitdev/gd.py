@@ -1,12 +1,10 @@
 from itertools import count
 from operator import attrgetter as get_attribute_factory
 from typing import (
-    AbstractSet,
     BinaryIO,
     Iterable,
     Iterator,
     List,
-    Optional,
     Sequence,
     Set,
     Type,
@@ -16,6 +14,7 @@ from typing import (
 )
 
 from attrs import define, field
+from iters import iter
 
 from gd.api.color_channels import ColorChannels
 from gd.api.header import Header
@@ -31,7 +30,9 @@ from gd.api.objects import (
 from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder, Speed, SpeedChange, SpeedMagic
-from gd.errors import EditorError
+from gd.models_constants import OBJECTS_SEPARATOR
+from gd.models_utils import concat_objects, split_objects
+from gd.robtop import RobTop
 from gd.typing import is_instance
 
 __all__ = ("Editor", "get_time_length")
@@ -101,7 +102,7 @@ DEFAULT_START = 1
 
 
 def find_next(
-    values: AbstractSet[int],
+    values: Set[int],
     start: int = DEFAULT_START,
 ) -> int:  # type: ignore
     for value in count(start):
@@ -119,7 +120,7 @@ E = TypeVar("E", bound="Editor")
 
 
 @define()
-class Editor(Binary, Sequence[Object]):
+class Editor(RobTop, Binary, Sequence[Object]):
     header: Header = field(factory=Header)
     objects: List[Object] = field(factory=list)
 
@@ -263,3 +264,30 @@ class Editor(Binary, Sequence[Object]):
 
         for object in objects:
             object_to_binary(object, binary, order, version)
+
+    @classmethod
+    def from_robtop(cls: Type[E], string: str) -> E:
+        iterator = iter(split_objects(string))
+
+        header_string = iterator.next_or_none()
+
+        if header_string is None:
+            header = Header()
+
+        else:
+            header = Header.from_robtop(header_string)
+
+        objects = list(object_from_robtop(object_string) for object_string in iterator.unwrap())
+
+        return cls(header, objects)
+
+    def to_robtop(self) -> str:
+        iterator = iter.once(self.header.to_robtop()).chain(
+            object_to_robtop(object) for object in self.objects
+        )
+
+        return concat_objects(iterator.unwrap())
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return OBJECTS_SEPARATOR in string
