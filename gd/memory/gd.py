@@ -24,7 +24,7 @@ from gd.memory.cocos import (
     CCSpriteBatchNode,
     CCSpritePlus,
 )
-from gd.memory.data import Bool, Double, Float, Int, Short, USize
+from gd.memory.data import U8, Bool, Double, Float, Int, Short, USize
 from gd.memory.fields import Field
 from gd.memory.pointers import MutPointerData
 from gd.memory.special import Void
@@ -621,7 +621,7 @@ class PlayLayer(BaseGameLayer):  # TODO: misaligned
     bottom_ground = Field(MutPointerData(Void()))  # GroundLayer*
     top_ground = Field(MutPointerData(Void()))  # GroundLayer*
 
-    _pad_4 = Field(DynamicFill(8))
+    _pad_4 = Field(DynamicFill(12))
 
     dead = Field(Bool())
 
@@ -709,8 +709,6 @@ class PlayLayer(BaseGameLayer):  # TODO: misaligned
     use_sound_manager = Field(Bool())
 
     color_dict = Field(MutPointerData(Void()))  # CCDictionary*
-
-    _pad_7 = Field(DynamicFill(windows_x32=8, windows_x64=16))
 
     _unknown_int_4 = Field(Int())
 
@@ -822,101 +820,143 @@ class PlayLayer(BaseGameLayer):  # TODO: misaligned
         return self.test
 
 
+@struct()
+class BoolVector(Struct):
+    ...  # not going to try defining this specialization
+
+
+@struct()
+class U8Vector(Struct):
+    pointer = Field(MutPointerData(MutArrayData(U8())))
+    length = Field(USize())
+    capacity = Field(USize())
+
+
+@struct()
+class FloatVector(Struct):
+    pointer = Field(MutPointerData(MutArrayData(Float())))
+    length = Field(USize())
+    capacity = Field(USize())
+
+
 @struct(virtual=True)
-class EditorLayer(BaseGameLayer):  # TODO: finish
-    ...
-    # bool m_bIgnoreDamage;
-    # bool m_bFollowPlayer;
-    # bool m_bDrawTriggerBoxes;
-    # bool m_bDebugDraw;
-    # bool m_bShowGrid;
-    # bool m_bHideGridOnPlay;
-    # bool m_bEffectLines;
-    # bool m_bShowGround;
-    # bool m_bDurationLines;
-    # bool m_bIncreaseMaxUndos;
-    # bool m_bHideBackground;
-    # bool m_bEditorSmoothFix;
-    # bool m_bHighDetail;
-    # cocos2d::CCArray* m_pTouchTriggeredGroups;
-    # cocos2d::CCArray* m_pTriggeredGroups;
-    # cocos2d::CCDictionary* m_pStickyGroups;
-    # int m_nStickyGroupID;
-    # cocos2d::CCArray* m_pUnkObjectArr;
-    # cocos2d::CCArray* m_pPulseTriggers;
-    # cocos2d::CCArray* m_pColourObjects;
-    # cocos2d::CCArray* m_pAlphaTriggers;
-    # cocos2d::CCArray* m_pSpawnTriggers;
-    # cocos2d::CCArray* m_pMoveTriggers;
-    # cocos2d::CCDictionary* m_pUnkDict5;
-    # cocos2d::CCArray* m_pEnabledGroups;
-    # GameObject* m_pCopiedObject;
-    # cocos2d::CCDictionary* m_pUnkDict6;
-    # cocos2d::CCArray* m_pUnkArray12;
-    # bool field_14;
-    # bool field_31D;
-    # int m_nCoinsSeed;
-    # int m_nCoinsRand;
-    # int m_nCoins;
-    # bool m_bMoveTrigger;
-    # bool m_bColourTrigger;
-    # bool m_bPulseTrigger;
-    # bool m_bAlphaTrigger;
-    # bool m_bSpawnTrigger;
-    # cocos2d::CCArray* m_pToggleTriggersMaybe;
-    # bool m_bUnkArr2Obj;
-    # cocos2d::CCArray* m_pDelayedSpawnArray2;
-    # bool m_bDelaySpawnNode;
-    # cocos2d::CCDictionary* m_pUnkDict3;
-    # cocos2d::CCDictionary* m_pUnkDict4;
-    # bool m_bEditorInitialising;
-    # bool field_34D;
-    # float m_fTimeMod;
-    # int m_nEditorLayer1;
-    # StartPosObject* m_pStartPos;
-    # float m_fObjectLayerScale;
-    # OBB2D* m_pOBB2D;
-    # cocos2d::CCSprite* m_pCrossSprite;
-    # cocos2d::CCPoint m_obUnkPoint2;
-    # float m_fUnkFloat1;
-    # bool m_bTwoPlayer;
-    # bool m_bUnkRectBool;
-    # GameObject* m_pCurrentPortal;
-    # GameObject* m_pPortal;
-    # EditorUI* m_pEditorUI;
-    # cocos2d::CCSprite* m_pBackgroundSprite;
-    # cocos2d::CCArray* m_pUndoArray;
-    # cocos2d::CCArray* m_pRedoArray;
-    # cocos2d::CCPoint m_obUnkPoint1;
-    # int m_nObjectCountSeed;
-    # int m_nObjectCountRand;
-    # int m_nObjectCount;
-    # DrawGridLayer* m_pDrawGridLayer;
-    # GJGameLevel* m_pLevel;
-    # int m_ePlaybackMode;
-    # cocos2d::CCPoint m_obGroundTopMaybe;
-    # float m_fTime;
-    # cocos2d::CCDictionary* m_pEnabledGroupsDict;
-    # bool field_3D;
-    # bool m_bPreviewMode;
-    # GJGroundLayer* m_pGround;
-    # std::string m_sRawLevelString;
-    # void* m_pTriggerHitbox;
-    # std::vector<GameObject*> m_pObjectVector;
-    # std::vector<GameObject*> m_pGroupVector;
-    # std::vector<cocos2d::CCArray*> m_pNestedObjects;
-    # cocos2d::CCDictionary* m_pTriggerGroupsDict;
-    # std::vector<cocos2d::CCArray*> m_pTriggerGroupsVector;
-    # bool m_bToggleGroupsMaybe;
-    # std::vector<bool> m_bUnkVector3; // everything set to false if in playbackmode
-    # std::vector<bool> m_bDisabledGroupVector;
-    # std::vector<bool> m_bBlendObjectsVector;
-    # std::vector<bool> m_bBlendColourVector;
-    # std::vector<uint8_t> m_uToggledGroupsVector;
-    # std::vector<float> m_fPreviewGroupsVector;
-    # double m_dUnkDouble1;
-    # cocos2d::CCArray* m_pDelayedSpawnArray1;
-    # bool m_bRemovingObjects;
+class EditorLayer(BaseGameLayer):
+    ignore_damage = Field(Bool())
+    follow_player = Field(Bool())
+
+    show_trigger_boxes = Field(Bool())
+
+    debug_draw = Field(Bool())
+
+    show_grid = Field(Bool())
+
+    hide_grid_on_play = Field(Bool())
+
+    effect_lines = Field(Bool())
+
+    show_ground = Field(Bool())
+
+    duration_lines = Field(Bool())
+
+    increase_max_history = Field(Bool())
+
+    hide_background = Field(Bool())
+
+    editor_smooth_fix = Field(Bool())
+
+    high_detail = Field(Bool())
+
+    _pad_1 = Field(
+        DynamicFill(
+            darwin_x32=48,
+            darwin_x64=96,
+            windows_x32=48,
+            windows_x64=96,
+            android_x32=0,
+            android_x64=0,
+        )
+    )
+
+    copied_object = Field(MutPointerData(StructData(GameObject)))
+
+    _pad_2 = Field(
+        DynamicFill(
+            darwin_x32=12,
+            darwin_x64=18,
+            windows_x32=12,
+            windows_x64=18,
+            android_x32=0,
+            android_x64=0,
+        )
+    )
+
+    coins_random = Field(Int())
+    coins_seed = Field(Int())
+    coins = Field(Int())
+
+    _pad_3 = Field(
+        DynamicFill(
+            darwin_x32=40,
+            darwin_x64=64,
+            windows_x32=40,
+            windows_x64=64,
+            android_x32=0,
+            android_x64=0,
+        )
+    )
+
+    base_game_layer = Field(Int())
+
+    _pad_4 = Field(
+        DynamicFill(
+            darwin_x32=40,
+            darwin_x64=64,
+            windows_x32=40,
+            windows_x64=64,
+            android_x32=0,
+            android_x64=0,
+        )
+    )
+
+    _pad_5 = Field(
+        DynamicFill(
+            darwin_x32=8,
+            darwin_x64=16,
+            windows_x32=8,
+            windows_x64=16,
+            android_x32=8,
+            android_x64=16,
+        )
+    )
+
+    editor_ui = Field(MutPointerData(Void()))  # EditorUI*
+    background = Field(MutPointerData(StructData(CCSprite)))
+    undo_array = Field(MutPointerData(StructData(CCArray)))
+    redo_array = Field(MutPointerData(StructData(CCArray)))
+
+    _pad_6 = Field(
+        DynamicFill(
+            darwin_x32=8, darwin_x64=8, windows_x32=8, windows_x64=8, android_x32=0, android_x64=0
+        )
+    )
+
+    object_count_random = Field(Int())
+    object_count_seed = Field(Int())
+    object_count = Field(Int())
+
+    draw_grid_layer = Field(MutPointerData(Void()))  # DrawGridLayer*
+
+    level = Field(MutPointerData(StructData(GameLevel)))
+
+    recording_mode = Field(Int())
+
+    _pad_7 = Field(
+        DynamicFill(
+            darwin_x32=4, darwin_x64=8, windows_x32=4, windows_x64=8, android_x32=0, android_x64=0
+        )
+    )
+
+    ground = Field(MutPointerData(Void()))  # GroundLayer*
 
 
 @struct(virtual=True)

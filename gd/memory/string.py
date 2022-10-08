@@ -10,8 +10,8 @@ from gd.enums import ByteOrder
 from gd.memory.arrays import MutArrayData
 from gd.memory.base import Struct, Union, UnionData, struct, union
 from gd.memory.constants import CONTENT_LENGTH
-from gd.memory.data import U8 as Byte, Int
-from gd.memory.data import Data, USize
+from gd.memory.data import U8 as Byte
+from gd.memory.data import Data, Int, USize
 from gd.memory.fields import Field
 from gd.memory.pointers import MutPointerData
 from gd.memory.utils import closest_power_of_two
@@ -45,17 +45,17 @@ class String(Struct):
 
         if capacity < CONTENT_LENGTH:
             try:
-                return self.state.read_at(  # optimized
-                    content.inline.address, length
-                ).decode(DEFAULT_ENCODING, DEFAULT_ERRORS)
+                return self.state.read_at(content.inline.address, length).decode(  # optimized
+                    DEFAULT_ENCODING, DEFAULT_ERRORS
+                )
 
             except UnicodeDecodeError:
                 pass
 
         try:
-            return self.state.read_at(  # optimized
-                content.pointer.value_address, length
-            ).decode(DEFAULT_ENCODING, DEFAULT_ERRORS)
+            return self.state.read_at(content.pointer.value_address, length).decode(  # optimized
+                DEFAULT_ENCODING, DEFAULT_ERRORS
+            )
 
         except UnicodeDecodeError:
             return EMPTY
@@ -129,9 +129,9 @@ class OldString(Struct):
         content = self.pointer.value
 
         try:
-            return self.state.read_at(  # optimized
-                content.address, string_data.length
-            ).decode(DEFAULT_ENCODING, DEFAULT_ERRORS)
+            return self.state.read_at(content.address, string_data.length).decode(  # optimized
+                DEFAULT_ENCODING, DEFAULT_ERRORS
+            )
 
         except UnicodeDecodeError:
             return EMPTY

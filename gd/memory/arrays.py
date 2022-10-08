@@ -154,9 +154,7 @@ class DynamicFill(Data[Array[int]]):
 
         self._byte = Byte()
 
-        self._fills = {
-            PlatformConfig.from_string(string): fill for string, fill in fills.items()
-        }
+        self._fills = {PlatformConfig.from_string(string): fill for string, fill in fills.items()}
 
     @property
     def base(self) -> int:
@@ -197,7 +195,6 @@ class DynamicFill(Data[Array[int]]):
 
     def compute_alignment(self, config: PlatformConfig) -> int:
         return self.byte.compute_alignment(config)
-
 
 
 @frozen()

@@ -208,6 +208,9 @@ class StateProtocol(Protocol):
         self.write_at(address, to_bool(value, order))
 
 
+AS = TypeVar("AS", bound="AbstractState")
+
+
 @define()
 class AbstractState(StateProtocol):
     config: PlatformConfig = field()
@@ -240,9 +243,11 @@ class AbstractState(StateProtocol):
         self.unload()
         self.load()
 
-    def ensure_loaded(self) -> None:
+    def ensure_loaded(self: AS) -> AS:
         if not self.is_loaded():
             self.load()
+
+        return self
 
     def is_loaded(self) -> bool:
         return self.loaded
