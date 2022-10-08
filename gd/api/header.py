@@ -204,131 +204,68 @@ class Header(Model, Binary):
         self.color_channels.to_binary(binary, order, version)
 
     @classmethod
-    def from_robtop(
-        cls: Type[H],
-        string: str,
-        # indexes
-        game_mode_index: str = GAME_MODE,
-        mini_mode_index: str = MINI_MODE,
-        speed_index: str = SPEED,
-        background_id_index: str = BACKGROUND_ID,
-        ground_id_index: str = GROUND_ID,
-        dual_mode_index: str = DUAL_MODE,
-        start_position_index: str = START_POSITION,
-        two_player_index: str = TWO_PLAYER,
-        flip_gravity_index: str = FLIP_GRAVITY,
-        song_offset_index: str = SONG_OFFSET,
-        guidelines_index: str = GUIDELINES,
-        song_fade_in_index: str = SONG_FADE_IN,
-        song_fade_out_index: str = SONG_FADE_OUT,
-        ground_line_id_index: str = GROUND_LINE_ID,
-        font_id_index: str = FONT_ID,
-        platformer_mode_index: str = PLATFORMER_MODE,
-        color_channels_index: str = COLOR_CHANNELS,
-        # defaults
-        game_mode_default: GameMode = GameMode.DEFAULT,
-        mini_mode_default: bool = DEFAULT_MINI_MODE,
-        speed_default: Speed = Speed.DEFAULT,
-        background_id_default: int = DEFAULT_ID,
-        ground_id_default: int = DEFAULT_ID,
-        dual_mode_default: bool = DEFAULT_DUAL_MODE,
-        start_position_default: bool = DEFAULT_START_POSITION,
-        two_player_default: bool = DEFAULT_TWO_PLAYER,
-        flip_gravity_default: bool = DEFAULT_FLIP_GRAVITY,
-        song_offset_default: float = DEFAULT_SONG_OFFSET,
-        guidelines_default: Optional[Guidelines] = None,
-        song_fade_in_default: bool = DEFAULT_SONG_FADE_IN,
-        song_fade_out_default: bool = DEFAULT_SONG_FADE_OUT,
-        ground_line_id_default: int = DEFAULT_ID,
-        font_id_default: int = DEFAULT_ID,
-        platformer_mode_default: bool = DEFAULT_PLATFORMER_MODE,
-        color_channels_default: Optional[ColorChannels] = None,
-    ) -> H:
-        if guidelines_default is None:
-            guidelines_default = Guidelines()
-
-        if color_channels_default is None:
-            color_channels_default = ColorChannels()
-
+    def from_robtop(cls: Type[H], string: str) -> H:
         mapping = split_header(string)
 
         return cls(
             game_mode=parse_get_or(
-                partial_parse_enum(int, GameMode), game_mode_default, mapping.get(game_mode_index)
+                partial_parse_enum(int, GameMode), GameMode.DEFAULT, mapping.get(GAME_MODE)
             ),
-            mini_mode=parse_get_or(int_bool, mini_mode_default, mapping.get(mini_mode_index)),
+            mini_mode=parse_get_or(int_bool, DEFAULT_MINI_MODE, mapping.get(MINI_MODE)),
             speed=parse_get_or(
-                partial_parse_enum(int, Speed), speed_default, mapping.get(speed_index)
+                partial_parse_enum(int, Speed), Speed.DEFAULT, mapping.get(SPEED)
             ),
             background_id=parse_get_or(
-                int, background_id_default, mapping.get(background_id_index)
+                int, DEFAULT_ID, mapping.get(BACKGROUND_ID)
             ),
-            ground_id=parse_get_or(int, ground_id_default, mapping.get(ground_id_index)),
-            dual_mode=parse_get_or(int_bool, dual_mode_default, mapping.get(dual_mode_index)),
+            ground_id=parse_get_or(int, DEFAULT_ID, mapping.get(GROUND_ID)),
+            dual_mode=parse_get_or(int_bool, DEFAULT_DUAL_MODE, mapping.get(DUAL_MODE)),
             start_position=parse_get_or(
-                int_bool, start_position_default, mapping.get(start_position_index)
+                int_bool, DEFAULT_START_POSITION, mapping.get(START_POSITION)
             ),
-            two_player=parse_get_or(int_bool, two_player_default, mapping.get(two_player_index)),
+            two_player=parse_get_or(int_bool, DEFAULT_TWO_PLAYER, mapping.get(TWO_PLAYER)),
             flip_gravity=parse_get_or(
-                int_bool, flip_gravity_default, mapping.get(flip_gravity_index)
+                int_bool, DEFAULT_FLIP_GRAVITY, mapping.get(FLIP_GRAVITY)
             ),
-            song_offset=parse_get_or(float, song_offset_default, mapping.get(song_offset_index)),
+            song_offset=parse_get_or(float, DEFAULT_SONG_OFFSET, mapping.get(SONG_OFFSET)),
+            guidelines=parse_get_or(Guidelines.from_robtop, Guidelines(), mapping.get(GUIDELINES)),
             song_fade_in=parse_get_or(
-                int_bool, song_fade_in_default, mapping.get(song_fade_in_index)
+                int_bool, DEFAULT_SONG_FADE_IN, mapping.get(SONG_FADE_IN)
             ),
             song_fade_out=parse_get_or(
-                int_bool, song_fade_out_default, mapping.get(song_fade_out_index)
+                int_bool, DEFAULT_SONG_FADE_OUT, mapping.get(SONG_FADE_OUT)
             ),
             ground_line_id=parse_get_or(
-                int, ground_line_id_default, mapping.get(ground_line_id_index)
+                int, DEFAULT_ID, mapping.get(GROUND_LINE_ID)
             ),
-            font_id=parse_get_or(int, font_id_default, mapping.get(font_id_index)),
+            font_id=parse_get_or(int, DEFAULT_ID, mapping.get(FONT_ID)),
             platformer_mode=parse_get_or(
-                int_bool, platformer_mode_default, mapping.get(platformer_mode_index)
+                int_bool, DEFAULT_PLATFORMER_MODE, mapping.get(PLATFORMER_MODE)
             ),
             color_channels=parse_get_or(
-                ColorChannels.from_robtop, color_channels_default, mapping.get(color_channels_index)
+                ColorChannels.from_robtop, ColorChannels(), mapping.get(COLOR_CHANNELS)
             ),
         )
 
-    def to_robtop(
-        self,
-        game_mode_index: str = GAME_MODE,
-        mini_mode_index: str = MINI_MODE,
-        speed_index: str = SPEED,
-        background_id_index: str = BACKGROUND_ID,
-        ground_id_index: str = GROUND_ID,
-        dual_mode_index: str = DUAL_MODE,
-        start_position_index: str = START_POSITION,
-        two_player_index: str = TWO_PLAYER,
-        flip_gravity_index: str = FLIP_GRAVITY,
-        song_offset_index: str = SONG_OFFSET,
-        guidelines_index: str = GUIDELINES,
-        song_fade_in_index: str = SONG_FADE_IN,
-        song_fade_out_index: str = SONG_FADE_OUT,
-        ground_line_id_index: str = GROUND_LINE_ID,
-        font_id_index: str = FONT_ID,
-        platformer_mode_index: str = PLATFORMER_MODE,
-        color_channels_index: str = COLOR_CHANNELS,
-    ) -> str:
+    def to_robtop(self) -> str:
         mapping = {
-            game_mode_index: str(self.game_mode.value),
-            mini_mode_index: str(int(self.mini_mode)),
-            speed_index: str(self.speed.value),
-            background_id_index: str(self.background_id),
-            ground_id_index: str(self.ground_id),
-            dual_mode_index: str(int(self.dual_mode)),
-            start_position_index: str(int(self.start_position)),
-            two_player_index: str(int(self.two_player)),
-            flip_gravity_index: str(int(self.flip_gravity)),
-            song_offset_index: float_str(self.song_offset),
-            guidelines_index: self.guidelines.to_robtop(),
-            song_fade_in_index: str(int(self.song_fade_in)),
-            song_fade_out_index: str(int(self.song_fade_out)),
-            ground_line_id_index: str(self.ground_line_id),
-            font_id_index: str(self.font_id),
-            platformer_mode_index: str(int(self.platformer_mode)),
-            color_channels_index: self.color_channels.to_robtop(),
+            GAME_MODE: str(self.game_mode.value),
+            MINI_MODE: str(int(self.mini_mode)),
+            SPEED: str(self.speed.value),
+            BACKGROUND_ID: str(self.background_id),
+            GROUND_ID: str(self.ground_id),
+            DUAL_MODE: str(int(self.dual_mode)),
+            START_POSITION: str(int(self.start_position)),
+            TWO_PLAYER: str(int(self.two_player)),
+            FLIP_GRAVITY: str(int(self.flip_gravity)),
+            SONG_OFFSET: float_str(self.song_offset),
+            GUIDELINES: self.guidelines.to_robtop(),
+            SONG_FADE_IN: str(int(self.song_fade_in)),
+            SONG_FADE_OUT: str(int(self.song_fade_out)),
+            GROUND_LINE_ID: str(self.ground_line_id),
+            FONT_ID: str(self.font_id),
+            PLATFORMER_MODE: str(int(self.platformer_mode)),
+            COLOR_CHANNELS: self.color_channels.to_robtop(),
         }
 
         return concat_header(mapping)

@@ -1,11 +1,11 @@
 from io import BytesIO
-from typing import BinaryIO, Dict, Iterable, Iterator, Mapping, Optional, Tuple, Type, TypeVar
+from typing import BinaryIO, Dict, Iterable, Iterator, Mapping, Tuple, Type, TypeVar
 
 from attrs import define, field
 from typing_extensions import Literal, TypeGuard
 
 from gd.api.hsv import HSV
-from gd.api.ordered_set import OrderedSet, ordered_set
+from gd.api.ordered_set import OrderedSet
 from gd.binary import VERSION, Binary
 from gd.binary_constants import BITS
 from gd.binary_utils import Reader, Writer
@@ -29,7 +29,7 @@ from gd.enums import (
 )
 from gd.models import Model
 from gd.models_constants import GROUPS_SEPARATOR, OBJECT_SEPARATOR
-from gd.models_utils import concat_groups, concat_object, int_bool, parse_get_or, partial_parse_enum, split_groups, split_object
+from gd.models_utils import concat_groups, concat_object, split_groups, split_object
 from gd.robtop import RobTop
 from gd.typing import is_instance
 
@@ -74,12 +74,12 @@ DO_NOT_FADE_BIT = 0b00000100
 DO_NOT_ENTER_BIT = 0b00001000
 GROUP_PARENT_BIT = 0b00010000
 HIGH_DETAIL_BIT = 0b00100000
-GLOW_BIT = 0b01000000
+DISABLE_GLOW_BIT = 0b01000000
 SPECIAL_CHECKED_BIT = 0b10000000
 
 Z_ORDER_MASK = 0b00011111_11111111
 
-Z_ORDER_BITS = Z_ORDER_MASK.bit_length()
+Z_LAYER_SHIFT = Z_ORDER_MASK.bit_length()
 
 
 class ObjectFlag(Flag):
@@ -136,7 +136,7 @@ DEFAULT_GROUP_PARENT = False
 
 DEFAULT_HIGH_DETAIL = False
 
-DEFAULT_GLOW = True
+DEFAULT_DISABLE_GLOW = False
 
 DEFAULT_SPECIAL_CHECKED = False
 
@@ -161,6 +161,7 @@ class Groups(RobTop, OrderedSet[int]):
 
 ID_NOT_PRESENT = "id not present"
 
+
 ID = 1
 X = 2
 Y = 3
@@ -181,7 +182,7 @@ DETAIL_COLOR_HSV = 44
 GROUPS = 57
 GROUP_PARENT = 34
 HIGH_DETAIL = 103
-GLOW = 96  # negated
+DISABLE_GLOW = 96
 SPECIAL_CHECKED = 13
 LINK_ID = 108
 
@@ -220,7 +221,7 @@ class Object(Model, Binary):
 
     high_detail: bool = field(default=DEFAULT_HIGH_DETAIL)
 
-    glow: bool = field(default=DEFAULT_GLOW)
+    disable_glow: bool = field(default=DEFAULT_DISABLE_GLOW)
 
     special_checked: bool = field(default=DEFAULT_SPECIAL_CHECKED)
 
@@ -236,7 +237,7 @@ class Object(Model, Binary):
         do_not_enter_bit = DO_NOT_ENTER_BIT
         group_parent_bit = GROUP_PARENT_BIT
         high_detail_bit = HIGH_DETAIL_BIT
-        glow_bit = GLOW_BIT
+        disable_glow_bit = DISABLE_GLOW_BIT
         special_checked_bit = SPECIAL_CHECKED_BIT
 
         reader = Reader(binary)
@@ -258,7 +259,7 @@ class Object(Model, Binary):
         do_not_enter = value & do_not_enter_bit == do_not_enter_bit
         group_parent = value & group_parent_bit == group_parent_bit
         high_detail = value & high_detail_bit == high_detail_bit
-        glow = value & glow_bit == glow_bit
+        disable_glow = value & disable_glow_bit == disable_glow_bit
         special_checked = value & special_checked_bit == special_checked_bit
 
         if flag.has_rotation_and_scale():
@@ -272,7 +273,7 @@ class Object(Model, Binary):
         if flag.has_z():
             z_layer_order = reader.read_u16(order)
 
-            z_layer_value = z_layer_order >> Z_ORDER_BITS
+            z_layer_value = z_layer_order >> Z_LAYER_SHIFT
             z_order = z_layer_order & Z_ORDER_MASK
 
             z_layer = ZLayer(z_layer_value)
@@ -303,15 +304,15 @@ class Object(Model, Binary):
             base_color_hsv = HSV()
             detail_color_hsv = HSV()
 
-        groups: OrderedSet[int]
+        groups: Groups
 
         if flag.has_groups():
             length = reader.read_u16(order)
 
-            groups = ordered_set(reader.read_u16(order) for _ in range(length))
+            groups = Groups(reader.read_u16(order) for _ in range(length))
 
         else:
-            groups = ordered_set()
+            groups = Groups()
 
         if flag.has_link():
             link_id = reader.read_u16(order)
@@ -340,7 +341,7 @@ class Object(Model, Binary):
             groups=groups,
             group_parent=group_parent,
             high_detail=high_detail,
-            glow=glow,
+            disable_glow=disable_glow,
             special_checked=special_checked,
             link_id=link_id,
         )
@@ -421,8 +422,8 @@ class Object(Model, Binary):
         if self.is_high_detail():
             value |= HIGH_DETAIL_BIT
 
-        if self.is_glow():
-            value |= GLOW_BIT
+        if self.is_disable_glow():
+            value |= DISABLE_GLOW_BIT
 
         if self.is_special_checked():
             value |= SPECIAL_CHECKED_BIT
@@ -435,7 +436,7 @@ class Object(Model, Binary):
 
         if flag.has_z():
             z_layer_order = z_order & Z_ORDER_MASK
-            z_layer_order |= z_layer.value << Z_ORDER_BITS
+            z_layer_order |= z_layer.value << Z_LAYER_SHIFT
 
             writer.write_u16(z_layer_order, order)
 
@@ -498,8 +499,8 @@ class Object(Model, Binary):
     def is_high_detail(self) -> bool:
         return self.high_detail
 
-    def is_glow(self) -> bool:
-        return self.glow
+    def is_disable_glow(self) -> bool:
+        return self.disable_glow
 
     def is_special_checked(self) -> bool:
         return self.special_checked
@@ -555,8 +556,8 @@ class Object(Model, Binary):
 
         return self
 
-    def scale_to_normal(self: O) -> O:
-        return self.scale_to()
+    def scale_to_default(self: O) -> O:
+        return self.scale_to(DEFAULT_SCALE)
 
     def is_trigger(self) -> bool:
         return False

@@ -81,6 +81,7 @@ from gd.models_constants import (
     FRIEND_REQUEST_SEPARATOR,
     LEADERBOARD_RESPONSE_USERS_SEPARATOR,
     LEADERBOARD_USER_SEPARATOR,
+    LEVEL_COMMENT_INNER_SEPARATOR,
     LEVEL_COMMENT_SEPARATOR,
     LEVEL_COMMENT_USER_SEPARATOR,
     LEVEL_COMMENTS_RESPONSE_SEPARATOR,
@@ -2006,7 +2007,7 @@ class LevelCommentInnerModel(Model):
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
-        return COMMENT_INNER_SEPARATOR in string
+        return LEVEL_COMMENT_INNER_SEPARATOR in string
 
     def is_spam(self) -> bool:
         return self.spam
@@ -2626,7 +2627,7 @@ class RelationshipsResponseModel(Model):
         return RELATIONSHIPS_RESPONSE_USERS_SEPARATOR in string
 
 
-LR = TypeVar("LR", bound="LeaderboardResponseModel")
+LBR = TypeVar("LBR", bound="LeaderboardResponseModel")
 
 
 @define()
@@ -2634,7 +2635,7 @@ class LeaderboardResponseModel(Model):
     users: List[LeaderboardUserModel] = field(factory=list)
 
     @classmethod
-    def from_robtop(cls: Type[LR], string: str) -> LR:
+    def from_robtop(cls: Type[LBR], string: str) -> LBR:
         users = [
             LeaderboardUserModel.from_robtop(string)
             for string in split_leaderboard_response_users(string)

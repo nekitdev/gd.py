@@ -93,95 +93,55 @@ class ColorChannel(Binary):
     unknown_another: bool = field(default=DEFAULT_UNKNOWN_ANOTHER)
 
     @classmethod
-    def from_robtop(
-        cls: Type[CC],
-        string: str,
-        # indexes
-        red_index: int = RED,
-        green_index: int = GREEN,
-        blue_index: int = BLUE,
-        player_color_index: int = PLAYER_COLOR,
-        blending_index: int = BLENDING,
-        id_index: int = ID,
-        opacity_index: int = OPACITY,
-        unknown_index: int = UNKNOWN,
-        copied_id_index: int = COPIED_ID,
-        hsv_index: int = COLOR_HSV,
-        to_red_index: int = TO_RED,
-        to_green_index: int = TO_GREEN,
-        to_blue_index: int = TO_BLUE,
-        to_opacity_index: int = TO_OPACITY,
-        copy_opacity_index: int = COPY_OPACITY,
-        unknown_another_index: int = UNKNOWN_ANOTHER,
-        # defaults
-        red_default: int = DEFAULT_RED,
-        green_default: int = DEFAULT_GREEN,
-        blue_default: int = DEFAULT_BLUE,
-        player_color_default: PlayerColor = PlayerColor.DEFAULT,
-        blending_default: bool = DEFAULT_BLENDING,
-        id_default: int = DEFAULT_ID,
-        opacity_default: float = DEFAULT_OPACITY,
-        unknown_default: bool = DEFAULT_UNKNOWN,
-        copied_id_default: int = DEFAULT_ID,
-        hsv_default: Optional[HSV] = None,
-        to_red_default: int = DEFAULT_TO_RED,
-        to_green_default: int = DEFAULT_TO_GREEN,
-        to_blue_default: int = DEFAULT_TO_BLUE,
-        to_opacity_default: float = DEFAULT_TO_OPACITY,
-        copy_opacity_default: bool = DEFAULT_COPY_OPACITY,
-        unknown_another_default: bool = DEFAULT_UNKNOWN_ANOTHER,
-    ) -> CC:
-        if hsv_default is None:
-            hsv_default = HSV()
-
+    def from_robtop(cls: Type[CC], string: str) -> CC:
         mapping = split_color_channel(string)
 
         red, green, blue = (
-            parse_get_or(int, red_default, mapping.get(red_index)),
-            parse_get_or(int, green_default, mapping.get(green_index)),
-            parse_get_or(int, blue_default, mapping.get(blue_index)),
+            parse_get_or(int, DEFAULT_RED, mapping.get(RED)),
+            parse_get_or(int, DEFAULT_GREEN, mapping.get(GREEN)),
+            parse_get_or(int, DEFAULT_BLUE, mapping.get(BLUE)),
         )
 
         color = Color.from_rgb(red, green, blue)
 
         player_color = parse_get_or(
             partial_parse_enum(int, PlayerColor),
-            player_color_default,
-            mapping.get(player_color_index),
+            PlayerColor.DEFAULT,
+            mapping.get(PLAYER_COLOR),
         )
 
-        blending = parse_get_or(int_bool, blending_default, mapping.get(blending_index))
+        blending = parse_get_or(int_bool, DEFAULT_BLENDING, mapping.get(BLENDING))
 
-        id = parse_get_or(int, id_default, mapping.get(id_index))
+        id = parse_get_or(int, DEFAULT_ID, mapping.get(ID))
 
-        opacity = parse_get_or(float, opacity_default, mapping.get(opacity_index))
+        opacity = parse_get_or(float, DEFAULT_OPACITY, mapping.get(OPACITY))
 
-        unknown = parse_get_or(int_bool, unknown_default, mapping.get(unknown_index))
+        unknown = parse_get_or(int_bool, DEFAULT_UNKNOWN, mapping.get(UNKNOWN))
 
-        copied_id = parse_get_or(int, copied_id_default, mapping.get(copied_id_index))
+        copied_id = parse_get_or(int, DEFAULT_ID, mapping.get(COPIED_ID))
 
-        hsv = parse_get_or(HSV.from_robtop, hsv_default, mapping.get(hsv_index))
+        hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(COLOR_HSV))
 
         to_red, to_green, to_blue = (
-            parse_get_or(int, to_red_default, mapping.get(to_red_index)),
-            parse_get_or(int, to_green_default, mapping.get(to_green_index)),
-            parse_get_or(int, to_blue_default, mapping.get(to_blue_index)),
+            parse_get_or(int, DEFAULT_TO_RED, mapping.get(TO_RED)),
+            parse_get_or(int, DEFAULT_TO_GREEN, mapping.get(TO_GREEN)),
+            parse_get_or(int, DEFAULT_TO_BLUE, mapping.get(TO_BLUE)),
         )
 
         to_color = Color.from_rgb(to_red, to_green, to_blue)
 
-        to_opacity = parse_get_or(float, to_opacity_default, mapping.get(to_opacity_index))
+        to_opacity = parse_get_or(float, DEFAULT_TO_OPACITY, mapping.get(TO_OPACITY))
 
         copy_opacity = parse_get_or(
             int_bool,
-            copy_opacity_default,
-            mapping.get(copy_opacity_index),
+            DEFAULT_COPY_OPACITY,
+            mapping.get(COPY_OPACITY),
         )
 
         unknown_another = parse_get_or(
             int_bool,
-            unknown_another_default,
-            mapping.get(unknown_another_index),
+            DEFAULT_UNKNOWN_ANOTHER,
+            mapping.get(UNKNOWN_ANOTHER),
         )
 
         return cls(
@@ -199,46 +159,28 @@ class ColorChannel(Binary):
             unknown_another=unknown_another,
         )
 
-    def to_robtop(
-        self,
-        red_index: int = RED,
-        green_index: int = GREEN,
-        blue_index: int = BLUE,
-        player_color_index: int = PLAYER_COLOR,
-        blending_index: int = BLENDING,
-        id_index: int = ID,
-        opacity_index: int = OPACITY,
-        unknown_index: int = UNKNOWN,
-        copied_id_index: int = COPIED_ID,
-        hsv_index: int = COLOR_HSV,
-        to_red_index: int = TO_RED,
-        to_green_index: int = TO_GREEN,
-        to_blue_index: int = TO_BLUE,
-        to_opacity_index: int = TO_OPACITY,
-        copy_opacity_index: int = COPY_OPACITY,
-        unknown_another_index: int = UNKNOWN_ANOTHER,
-    ) -> str:
+    def to_robtop(self) -> str:
         red, green, blue = self.color.to_rgb()
 
         to_red, to_green, to_blue = self.to_color.to_rgb()
 
         mapping = {
-            red_index: str(red),
-            green_index: str(green),
-            blue_index: str(blue),
-            player_color_index: str(self.player_color.value),
-            blending_index: str(int(self.blending)),
-            id_index: str(self.id),
-            opacity_index: float_str(self.opacity),
-            unknown_index: str(int(self.unknown)),
-            copied_id_index: str(self.copied_id),
-            hsv_index: self.hsv.to_robtop(),
-            to_red_index: str(to_red),
-            to_green_index: str(to_green),
-            to_blue_index: str(to_blue),
-            to_opacity_index: float_str(self.to_opacity),
-            copy_opacity_index: str(int(self.copy_opacity)),
-            unknown_another_index: str(int(self.unknown_another)),
+            RED: str(red),
+            GREEN: str(green),
+            BLUE: str(blue),
+            PLAYER_COLOR: str(self.player_color.value),
+            BLENDING: str(int(self.blending)),
+            ID: str(self.id),
+            OPACITY: float_str(self.opacity),
+            UNKNOWN: str(int(self.unknown)),
+            COPIED_ID: str(self.copied_id),
+            COLOR_HSV: self.hsv.to_robtop(),
+            TO_RED: str(to_red),
+            TO_GREEN: str(to_green),
+            TO_BLUE: str(to_blue),
+            TO_OPACITY: float_str(self.to_opacity),
+            COPY_OPACITY: str(int(self.copy_opacity)),
+            UNKNOWN_ANOTHER: str(int(self.unknown_another)),
         }
 
         return concat_color_channel(mapping)
