@@ -8,7 +8,7 @@ __author__ = "nekitdev"
 __license__ = "MIT"
 __version__ = "1.0.0-alpha.1"
 
-from gd import api, encoding, events, image, json, memory, tasks
+from gd import api, encoding, events, image, json, tasks
 from gd.artist import Artist
 from gd.client import Client
 from gd.color import Color
@@ -110,7 +110,7 @@ from gd.level import Level
 from gd.level_packs import Gauntlet, MapPack
 from gd.message import Message
 from gd.password import Password
-from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM, PlatformConfig
+from gd.platform import SYSTEM_PLATFORM
 from gd.relationship import Relationship
 from gd.rewards import Chest, Quest
 from gd.session import Session
