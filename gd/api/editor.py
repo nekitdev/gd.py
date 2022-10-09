@@ -1,17 +1,6 @@
 from itertools import count
 from operator import attrgetter as get_attribute_factory
-from typing import (
-    BinaryIO,
-    Iterable,
-    Iterator,
-    List,
-    Sequence,
-    Set,
-    Type,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import BinaryIO, Iterable, Iterator, List, Sequence, Set, Type, TypeVar, Union, overload
 
 from attrs import define, field
 from iters import iter

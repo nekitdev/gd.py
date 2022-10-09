@@ -10,7 +10,7 @@ from gd.binary import VERSION, Binary
 from gd.binary_constants import BITS
 from gd.binary_utils import Reader, Writer
 from gd.color import Color
-from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, EMPTY
+from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, EMPTY
 from gd.enum_extensions import Enum, Flag
 from gd.enums import (
     ByteOrder,
@@ -29,11 +29,20 @@ from gd.enums import (
 )
 from gd.models import Model
 from gd.models_constants import GROUPS_SEPARATOR, OBJECT_SEPARATOR
-from gd.models_utils import concat_groups, concat_object, split_groups, split_object
+from gd.models_utils import (
+    concat_groups,
+    concat_object,
+    int_bool,
+    parse_get_or,
+    partial_parse_enum,
+    split_groups,
+    split_object,
+)
 from gd.robtop import RobTop
 from gd.typing import is_instance
 
 __all__ = (
+    "Groups",
     "Object",
     "AnimatedObject",
     "Orb",
@@ -140,8 +149,6 @@ DEFAULT_DISABLE_GLOW = False
 
 DEFAULT_SPECIAL_CHECKED = False
 
-DEFAULT_LINK_ID = 0
-
 
 G = TypeVar("G", bound="Groups")
 
@@ -225,7 +232,7 @@ class Object(Model, Binary):
 
     special_checked: bool = field(default=DEFAULT_SPECIAL_CHECKED)
 
-    link_id: int = field(default=DEFAULT_LINK_ID)
+    link_id: int = field(default=DEFAULT_ID)
 
     @classmethod
     def from_binary(
@@ -466,7 +473,80 @@ class Object(Model, Binary):
 
     @classmethod
     def from_robtop_mapping(cls: Type[O], mapping: Mapping[int, str]) -> O:
-        ...
+        id_option = mapping.get(ID)
+
+        if id_option is None:
+            raise ValueError(ID_NOT_PRESENT)
+
+        id = int(id_option)
+
+        x = parse_get_or(float, DEFAULT_X, mapping.get(X))
+        y = parse_get_or(float, DEFAULT_Y, mapping.get(Y))
+
+        rotation = parse_get_or(float, DEFAULT_ROTATION, mapping.get(ROTATION))
+
+        scale = parse_get_or(float, DEFAULT_SCALE, mapping.get(SCALE))
+
+        h_flipped = parse_get_or(int_bool, DEFAULT_H_FLIPPED, mapping.get(H_FLIPPED))
+        v_flipped = parse_get_or(int_bool, DEFAULT_V_FLIPPED, mapping.get(V_FLIPPED))
+
+        do_not_fade = parse_get_or(int_bool, DEFAULT_DO_NOT_FADE, mapping.get(DO_NOT_FADE))
+        do_not_enter = parse_get_or(int_bool, DEFAULT_DO_NOT_ENTER, mapping.get(DO_NOT_ENTER))
+
+        z_layer = parse_get_or(
+            partial_parse_enum(int, ZLayer), ZLayer.DEFAULT, mapping.get(Z_LAYER)
+        )
+        z_order = parse_get_or(int, DEFAULT_Z_ORDER, mapping.get(Z_ORDER))
+
+        base_editor_layer = parse_get_or(
+            int, DEFAULT_BASE_EDITOR_LAYER, mapping.get(BASE_EDITOR_LAYER)
+        )
+        additional_editor_layer = parse_get_or(
+            int, DEFAULT_ADDITIONAL_EDITOR_LAYER, mapping.get(ADDITIONAL_EDITOR_LAYER)
+        )
+
+        base_color_id = parse_get_or(int, DEFAULT_BASE_COLOR_ID, mapping.get(BASE_COLOR_ID))
+        detail_color_id = parse_get_or(int, DEFAULT_DETAIL_COLOR_ID, mapping.get(DETAIL_COLOR_ID))
+
+        base_color_hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(BASE_COLOR_HSV))
+        detail_color_hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(DETAIL_COLOR_HSV))
+
+        groups = parse_get_or(Groups.from_robtop, Groups(), mapping.get(GROUPS))
+
+        group_parent = parse_get_or(int_bool, DEFAULT_GROUP_PARENT, mapping.get(GROUP_PARENT))
+        high_detail = parse_get_or(int_bool, DEFAULT_HIGH_DETAIL, mapping.get(HIGH_DETAIL))
+        disable_glow = parse_get_or(int_bool, DEFAULT_DISABLE_GLOW, mapping.get(DISABLE_GLOW))
+        special_checked = parse_get_or(
+            int_bool, DEFAULT_SPECIAL_CHECKED, mapping.get(SPECIAL_CHECKED)
+        )
+
+        link_id = parse_get_or(int, DEFAULT_ID, mapping.get(LINK_ID))
+
+        return cls(
+            id=id,
+            x=x,
+            y=y,
+            rotation=rotation,
+            scale=scale,
+            h_flipped=h_flipped,
+            v_flipped=v_flipped,
+            do_not_fade=do_not_fade,
+            do_not_enter=do_not_enter,
+            z_layer=z_layer,
+            z_order=z_order,
+            base_editor_layer=base_editor_layer,
+            additional_editor_layer=additional_editor_layer,
+            base_color_id=base_color_id,
+            detail_color_id=detail_color_id,
+            base_color_hsv=base_color_hsv,
+            detail_color_hsv=detail_color_hsv,
+            groups=groups,
+            group_parent=group_parent,
+            high_detail=high_detail,
+            disable_glow=disable_glow,
+            special_checked=special_checked,
+            link_id=link_id,
+        )
 
     def to_robtop(self) -> str:
         return concat_object(self.to_robtop_dict())

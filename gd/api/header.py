@@ -212,32 +212,20 @@ class Header(Model, Binary):
                 partial_parse_enum(int, GameMode), GameMode.DEFAULT, mapping.get(GAME_MODE)
             ),
             mini_mode=parse_get_or(int_bool, DEFAULT_MINI_MODE, mapping.get(MINI_MODE)),
-            speed=parse_get_or(
-                partial_parse_enum(int, Speed), Speed.DEFAULT, mapping.get(SPEED)
-            ),
-            background_id=parse_get_or(
-                int, DEFAULT_ID, mapping.get(BACKGROUND_ID)
-            ),
+            speed=parse_get_or(partial_parse_enum(int, Speed), Speed.DEFAULT, mapping.get(SPEED)),
+            background_id=parse_get_or(int, DEFAULT_ID, mapping.get(BACKGROUND_ID)),
             ground_id=parse_get_or(int, DEFAULT_ID, mapping.get(GROUND_ID)),
             dual_mode=parse_get_or(int_bool, DEFAULT_DUAL_MODE, mapping.get(DUAL_MODE)),
             start_position=parse_get_or(
                 int_bool, DEFAULT_START_POSITION, mapping.get(START_POSITION)
             ),
             two_player=parse_get_or(int_bool, DEFAULT_TWO_PLAYER, mapping.get(TWO_PLAYER)),
-            flip_gravity=parse_get_or(
-                int_bool, DEFAULT_FLIP_GRAVITY, mapping.get(FLIP_GRAVITY)
-            ),
+            flip_gravity=parse_get_or(int_bool, DEFAULT_FLIP_GRAVITY, mapping.get(FLIP_GRAVITY)),
             song_offset=parse_get_or(float, DEFAULT_SONG_OFFSET, mapping.get(SONG_OFFSET)),
             guidelines=parse_get_or(Guidelines.from_robtop, Guidelines(), mapping.get(GUIDELINES)),
-            song_fade_in=parse_get_or(
-                int_bool, DEFAULT_SONG_FADE_IN, mapping.get(SONG_FADE_IN)
-            ),
-            song_fade_out=parse_get_or(
-                int_bool, DEFAULT_SONG_FADE_OUT, mapping.get(SONG_FADE_OUT)
-            ),
-            ground_line_id=parse_get_or(
-                int, DEFAULT_ID, mapping.get(GROUND_LINE_ID)
-            ),
+            song_fade_in=parse_get_or(int_bool, DEFAULT_SONG_FADE_IN, mapping.get(SONG_FADE_IN)),
+            song_fade_out=parse_get_or(int_bool, DEFAULT_SONG_FADE_OUT, mapping.get(SONG_FADE_OUT)),
+            ground_line_id=parse_get_or(int, DEFAULT_ID, mapping.get(GROUND_LINE_ID)),
             font_id=parse_get_or(int, DEFAULT_ID, mapping.get(FONT_ID)),
             platformer_mode=parse_get_or(
                 int_bool, DEFAULT_PLATFORMER_MODE, mapping.get(PLATFORMER_MODE)

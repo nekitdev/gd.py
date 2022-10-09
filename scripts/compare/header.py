@@ -1,7 +1,7 @@
 from typing import Iterable
 
-from entrypoint import entrypoint
 import click
+from entrypoint import entrypoint
 
 from gd.api import ColorChannel, ColorChannels, Header
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
