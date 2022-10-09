@@ -1020,22 +1020,25 @@ class TriggerType(Enum):
     PICKUP = 1817
 
 
-class ZLayer(Flag):
+class ZLayer(Enum):
     """An enumeration of Z layers."""
 
-    BOTTOM_4 = B4 = 7
-    BOTTOM_3 = B3 = 6
-    BOTTOM_2 = B2 = 5
+    BOTTOM_4 = B4 = 1
+    BOTTOM_3 = B3 = 2
+    BOTTOM_2 = B2 = 3
     BOTTOM_1 = B1 = 4
 
     DEFAULT = D = 0
 
-    TOP_1 = T1 = 1
-    TOP_2 = T2 = 2
-    TOP_3 = T3 = 3
+    TOP_1 = T1 = 5
+    TOP_2 = T2 = 6
+    TOP_3 = T3 = 7
 
     def is_default(self) -> bool:
         return self is type(self).DEFAULT
+
+    def into_simple_z_layer(self) -> SimpleZLayer:
+        return Z_LAYER_TO_SIMPLE_Z_LAYER[self]
 
 
 class SimpleZLayer(Enum):
@@ -1049,7 +1052,7 @@ class SimpleZLayer(Enum):
     TOP_2 = T2 = 7
     TOP_3 = T3 = 9
 
-    DEFAULT = 0
+    DEFAULT = D = 0
 
     BOTTOM = 1
     MIDDLE = 3
@@ -1060,6 +1063,25 @@ class SimpleZLayer(Enum):
 
     def is_default(self) -> bool:
         return self is type(self).DEFAULT
+
+    def into_z_layer(self) -> ZLayer:
+        return SIMPLE_Z_LAYER_TO_Z_LAYER[self]
+
+
+Z_LAYER_TO_SIMPLE_Z_LAYER = {
+    ZLayer.BOTTOM_4: SimpleZLayer.BOTTOM_4,
+    ZLayer.BOTTOM_3: SimpleZLayer.BOTTOM_3,
+    ZLayer.BOTTOM_2: SimpleZLayer.BOTTOM_2,
+    ZLayer.BOTTOM_1: SimpleZLayer.BOTTOM_1,
+    ZLayer.DEFAULT: SimpleZLayer.DEFAULT,
+    ZLayer.TOP_1: SimpleZLayer.TOP_1,
+    ZLayer.TOP_2: SimpleZLayer.TOP_2,
+    ZLayer.TOP_3: SimpleZLayer.TOP_3,
+}
+
+SIMPLE_Z_LAYER_TO_Z_LAYER = {
+    simple_z_layer: z_layer for z_layer, simple_z_layer in Z_LAYER_TO_SIMPLE_Z_LAYER.items()
+}
 
 
 class Speed(Enum):

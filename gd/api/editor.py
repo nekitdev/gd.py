@@ -14,7 +14,9 @@ from gd.api.objects import (
     has_target_group,
     is_trigger,
     object_from_binary,
+    object_from_robtop,
     object_to_binary,
+    object_to_robtop,
 )
 from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer

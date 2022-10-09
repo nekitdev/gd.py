@@ -1,20 +1,22 @@
-from typing import Iterable
-
 import click
 from entrypoint import entrypoint
 
 from gd.api.color_channels import ColorChannel, ColorChannels
+from gd.api.editor import Editor
 from gd.api.header import Header
+from gd.api.objects import Object
+from gd.api.objects_constants import GRID_UNITS
+from gd.color import Color
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.encoding import compress
 
-
-def color_id_range(count: int) -> Iterable[int]:
-    return range(1, count + 1)
-
-
 COUNT = 1000
 ROUNDING = 2
+
+OBJECT_ID = 1
+
+COLOR_ID = 1
+COLOR = Color(0xFF0000)
 
 UNCOMPRESSED = "uncompressed: {} / {} ({}x compression)"
 COMPRESSED = "compressed: {} / {} ({}x compression)"
@@ -24,16 +26,25 @@ COMPRESSED = "compressed: {} / {} ({}x compression)"
 @click.option("--count", "-c", default=COUNT)
 @click.command()
 def main(count: int) -> None:
+    grid_units = GRID_UNITS
+    object_id = OBJECT_ID
+    color_id = COLOR_ID
     rounding = ROUNDING
 
     header = Header(
-        color_channels=ColorChannels.from_color_channel_iterable(
-            ColorChannel(color_id) for color_id in color_id_range(count)
-        )
+        color_channels=ColorChannels.from_color_channels(ColorChannel(color_id, COLOR))
     )
 
-    robtop_data = header.to_robtop().encode(DEFAULT_ENCODING, DEFAULT_ERRORS)
-    data = header.to_bytes()
+    objects = [
+        Object(
+            object_id, x=index * grid_units, y=index * grid_units, base_color_id=color_id
+        ) for index in range(count)
+    ]
+
+    editor = Editor(header, objects)
+
+    robtop_data = editor.to_robtop().encode(DEFAULT_ENCODING, DEFAULT_ERRORS)
+    data = editor.to_bytes()
 
     robtop_data_length = len(robtop_data)
     data_length = len(data)

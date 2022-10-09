@@ -1,16 +1,18 @@
 from io import BytesIO
-from typing import BinaryIO, Dict, Iterable, Iterator, Mapping, Tuple, Type, TypeVar
+from typing import BinaryIO, Dict, Iterable, Mapping, Type, TypeVar
 
 from attrs import define, field
 from typing_extensions import Literal, TypeGuard
 
 from gd.api.hsv import HSV
+from gd.api.objects_constants import TEXT_ID
 from gd.api.ordered_set import OrderedSet
 from gd.binary import VERSION, Binary
 from gd.binary_constants import BITS
 from gd.binary_utils import Reader, Writer
 from gd.color import Color
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, EMPTY
+from gd.encoding import decode_base64_string_url_safe
 from gd.enum_extensions import Enum, Flag
 from gd.enums import (
     ByteOrder,
@@ -32,6 +34,7 @@ from gd.models_constants import GROUPS_SEPARATOR, OBJECT_SEPARATOR
 from gd.models_utils import (
     concat_groups,
     concat_object,
+    float_str,
     int_bool,
     parse_get_or,
     partial_parse_enum,
@@ -74,8 +77,6 @@ __all__ = (
     "object_from_bytes",
     "object_to_bytes",
 )
-
-O = TypeVar("O", bound="Object")
 
 H_FLIPPED_BIT = 0b00000001
 V_FLIPPED_BIT = 0b00000010
@@ -166,9 +167,6 @@ class Groups(RobTop, OrderedSet[int]):
         return GROUPS_SEPARATOR in string
 
 
-ID_NOT_PRESENT = "id not present"
-
-
 ID = 1
 X = 2
 Y = 3
@@ -184,6 +182,8 @@ BASE_EDITOR_LAYER = 20
 ADDITIONAL_EDITOR_LAYER = 61
 BASE_COLOR_ID = 21
 DETAIL_COLOR_ID = 22
+BASE_COLOR_HSV_MODIFIED = 41
+DETAIL_COLOR_HSV_MODIFIED = 42
 BASE_COLOR_HSV = 43
 DETAIL_COLOR_HSV = 44
 GROUPS = 57
@@ -192,6 +192,9 @@ HIGH_DETAIL = 103
 DISABLE_GLOW = 96
 SPECIAL_CHECKED = 13
 LINK_ID = 108
+
+
+O = TypeVar("O", bound="Object")
 
 
 @define()
@@ -363,7 +366,7 @@ class Object(Model, Binary):
         rotation = self.rotation
         scale = self.scale
 
-        if rotation != DEFAULT_ROTATION or scale != DEFAULT_SCALE:
+        if rotation or scale != DEFAULT_SCALE:
             flag |= ObjectFlag.HAS_ROTATION_AND_SCALE
 
         z_layer = self.z_layer
@@ -473,12 +476,7 @@ class Object(Model, Binary):
 
     @classmethod
     def from_robtop_mapping(cls: Type[O], mapping: Mapping[int, str]) -> O:
-        id_option = mapping.get(ID)
-
-        if id_option is None:
-            raise ValueError(ID_NOT_PRESENT)
-
-        id = int(id_option)
+        id = int(mapping[ID])
 
         x = parse_get_or(float, DEFAULT_X, mapping.get(X))
         y = parse_get_or(float, DEFAULT_Y, mapping.get(Y))
@@ -552,10 +550,109 @@ class Object(Model, Binary):
         return concat_object(self.to_robtop_dict())
 
     def to_robtop_dict(self) -> Dict[int, str]:
-        return dict(self.to_robtop_iterator())
+        mapping = {ID: str(self.id), X: float_str(self.x), Y: float_str(self.y)}
 
-    def to_robtop_iterator(self) -> Iterator[Tuple[int, str]]:
-        ...
+        rotation = self.rotation
+
+        if rotation:
+            mapping[ROTATION] = float_str(rotation)
+
+        scale = self.scale
+
+        if scale != DEFAULT_SCALE:
+            mapping[SCALE] = float_str(scale)
+
+        h_flipped = self.h_flipped
+
+        if h_flipped:
+            mapping[H_FLIPPED] = str(int(h_flipped))
+
+        v_flipped = self.v_flipped
+
+        if v_flipped:
+            mapping[V_FLIPPED] = str(int(v_flipped))
+
+        do_not_fade = self.do_not_fade
+
+        if do_not_fade:
+            mapping[DO_NOT_FADE] = str(int(do_not_fade))
+
+        do_not_enter = self.do_not_enter
+
+        if do_not_enter:
+            mapping[DO_NOT_ENTER] = str(int(do_not_enter))
+
+        z_layer = self.z_layer
+
+        if not z_layer.is_default():
+            mapping[Z_LAYER] = str(z_layer.into_simple_z_layer().value)
+
+        z_order = self.z_order
+
+        if z_order:
+            mapping[Z_ORDER] = str(z_order)
+
+        base_editor_layer = self.base_editor_layer
+
+        if base_editor_layer:
+            mapping[BASE_EDITOR_LAYER] = str(base_editor_layer)
+
+        additional_editor_layer = self.additional_editor_layer
+
+        if additional_editor_layer:
+            mapping[ADDITIONAL_EDITOR_LAYER] = str(additional_editor_layer)
+
+        base_color_id = self.base_color_id
+
+        if base_color_id:
+            mapping[BASE_COLOR_ID] = str(base_color_id)
+
+        detail_color_id = self.detail_color_id
+
+        if detail_color_id:
+            mapping[DETAIL_COLOR_ID] = str(detail_color_id)
+
+        base_color_hsv = self.base_color_hsv
+
+        if not base_color_hsv.is_default():
+            mapping[BASE_COLOR_HSV] = base_color_hsv.to_robtop()
+
+        detail_color_hsv = self.detail_color_hsv
+
+        if not detail_color_hsv.is_default():
+            mapping[DETAIL_COLOR_HSV] = detail_color_hsv.to_robtop()
+
+        groups = self.groups
+
+        if groups:
+            mapping[GROUPS] = groups.to_robtop()
+
+        group_parent = self.group_parent
+
+        if group_parent:
+            mapping[GROUP_PARENT] = str(int(group_parent))
+
+        high_detail = self.high_detail
+
+        if high_detail:
+            mapping[HIGH_DETAIL] = str(int(high_detail))
+
+        disable_glow = self.disable_glow
+
+        if disable_glow:
+            mapping[DISABLE_GLOW] = str(int(disable_glow))
+
+        special_checked = self.special_checked
+
+        if special_checked:
+            mapping[SPECIAL_CHECKED] = str(int(special_checked))
+
+        link_id = self.link_id
+
+        if link_id:
+            mapping[LINK_ID] = str(link_id)
+
+        return mapping
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
@@ -659,12 +756,15 @@ PORTAL_IDS = {portal.value for portal in PortalType}
 SPEED_CHANGE_IDS = {speed_change.value for speed_change in SpeedChange}
 
 
+COIN_ID = 12
+
+
 C = TypeVar("C", bound="Coin")
 
 
 @define()
 class Coin(Object):
-    coin_id: int = 0
+    coin_id: int = DEFAULT_ID
 
     @classmethod
     def from_binary(
@@ -689,8 +789,20 @@ class Coin(Object):
 
         writer.write_u8(self.coin_id, order)
 
+    @classmethod
+    def from_robtop_mapping(cls: Type[C], mapping: Mapping[int, str]) -> C:
+        coin = super().from_robtop_mapping(mapping)
+
+        coin_id = parse_get_or(int, DEFAULT_ID, mapping.get(COIN_ID))
+
+        coin.coin_id = coin_id
+
+        return coin
+
 
 S = TypeVar("S", bound="Text")
+
+CONTENT = 31
 
 
 @define()
@@ -735,6 +847,16 @@ class Text(Object):
         writer.write_u16(len(data), order)
 
         writer.write(data)
+
+    @classmethod
+    def from_robtop_mapping(cls: Type[S], mapping: Mapping[int, str]) -> S:
+        text = super().from_robtop_mapping(mapping)
+
+        content = parse_get_or(decode_base64_string_url_safe, EMPTY, mapping.get(CONTENT))
+
+        text.content = content
+
+        return text
 
 
 P = TypeVar("P", bound="Teleport")
@@ -2421,5 +2543,24 @@ def object_to_bytes(
     return binary.read()
 
 
-# object_from_robtop
-# object_to_robtop
+OBJECT_ID_NOT_PRESENT = "object id is not present"
+
+
+def object_from_robtop(string: str) -> Object:  # TODO: extend this function
+    mapping = split_object(string)
+
+    object_id_string = mapping.get(ID)
+
+    if object_id_string is None:
+        raise ValueError(OBJECT_ID_NOT_PRESENT)
+
+    object_id = int(object_id_string)
+
+    if object_id == TEXT_ID:
+        return Text.from_robtop_mapping(mapping)
+
+    return Object.from_robtop_mapping(mapping)
+
+
+def object_to_robtop(object: Object) -> str:
+    return object.to_robtop()
