@@ -12,7 +12,7 @@ from gd.binary_constants import BITS
 from gd.binary_utils import Reader, Writer
 from gd.color import Color
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, EMPTY
-from gd.encoding import decode_base64_string_url_safe
+from gd.encoding import decode_base64_string_url_safe, encode_base64_string_url_safe
 from gd.enum_extensions import Enum, Flag
 from gd.enums import (
     ByteOrder,
@@ -547,9 +547,9 @@ class Object(Model, Binary):
         )
 
     def to_robtop(self) -> str:
-        return concat_object(self.to_robtop_dict())
+        return concat_object(self.to_robtop_mapping())
 
-    def to_robtop_dict(self) -> Dict[int, str]:
+    def to_robtop_mapping(self) -> Dict[int, str]:
         mapping = {ID: str(self.id), X: float_str(self.x), Y: float_str(self.y)}
 
         rotation = self.rotation
@@ -799,6 +799,13 @@ class Coin(Object):
 
         return coin
 
+    def to_robtop_mapping(self) -> Dict[int, str]:
+        mapping = super().to_robtop_mapping()
+
+        mapping[COIN_ID] = str(self.coin_id)
+
+        return mapping
+
 
 S = TypeVar("S", bound="Text")
 
@@ -858,17 +865,32 @@ class Text(Object):
 
         return text
 
+    def to_robtop_mapping(self) -> Dict[int, str]:
+        mapping = super().to_robtop_mapping()
+
+        mapping[CONTENT] = encode_base64_string_url_safe(self.content)
+
+        return mapping
+
+
+DEFAULT_OFFSET = 0.0
+
+
+@define(slots=False)
+class HasOffset:
+    offset: float = DEFAULT_OFFSET
+
+
+DEFAULT_SMOOTH = False
+
+SMOOTH_BIT = 0b00000001
 
 P = TypeVar("P", bound="Teleport")
 
 
-SMOOTH_BIT = 0b00000001
-
-
 @define()
-class Teleport(Object):
-    offset: float = 0.0
-    smooth: bool = False
+class Teleport(HasOffset, Object):
+    smooth: bool = DEFAULT_SMOOTH
 
     @classmethod
     def from_binary(
@@ -911,15 +933,19 @@ class Teleport(Object):
         return self.smooth
 
 
+DEFAULT_RANDOMIZE_START = False
+DEFAULT_ANIMATION_SPEED = 1.0
+
 RANDOMIZE_START_BIT = 0b00000001
+
 
 AO = TypeVar("AO", bound="AnimatedObject")
 
 
 @define()
 class AnimatedObject(Object):
-    randomize_start: bool = False
-    animation_speed: float = 0.0
+    randomize_start: bool = DEFAULT_RANDOMIZE_START
+    animation_speed: float = DEFAULT_ANIMATION_SPEED
 
     @classmethod
     def from_binary(
@@ -970,13 +996,16 @@ DYNAMIC_BIT = 0b10000000_00000000
 BLOCK_ID_MASK = 0b01111111_11111111
 
 
+DEFAULT_DYNAMIC = False
+
+
 CB = TypeVar("CB", bound="CollisionBlock")
 
 
 @define()
 class CollisionBlock(Object):
-    block_id: int = 0
-    dynamic: bool = False
+    block_id: int = DEFAULT_ID
+    dynamic: bool = DEFAULT_DYNAMIC
 
     @classmethod
     def from_binary(
@@ -1021,51 +1050,69 @@ class CollisionBlock(Object):
 
 @define(slots=False)
 class HasItem:
-    item_id: int = 0
+    item_id: int = DEFAULT_ID
+
+
+DEFAULT_COUNT = 0
 
 
 @define(slots=False)
 class HasCount:
-    count: int = 0
+    count: int = DEFAULT_COUNT
 
 
 @define(slots=False)
 class HasTargetGroup:
-    target_group_id: int = 0
+    target_group_id: int = DEFAULT_ID
 
 
 @define(slots=False)
 class HasAdditionalGroup:
-    additional_group_id: int = 0
+    additional_group_id: int = DEFAULT_ID
+
+
+DEFAULT_ACTIVATE_GROUP = False
 
 
 @define(slots=False)
 class HasActivateGroup:
-    activate_group: bool = False
+    activate_group: bool = DEFAULT_ACTIVATE_GROUP
 
     def is_activate_group(self) -> bool:
         return self.activate_group
 
 
+DEFAULT_DURATION = 0.0
+
+
 @define(slots=False)
 class HasDuration:
-    duration: float = 0.0
+    duration: float = DEFAULT_DURATION
+
+
+DEFAULT_DELAY = 0.0
 
 
 @define(slots=False)
 class HasDelay:
-    delay: float = 0.0
+    delay: float = DEFAULT_DELAY
+
+
+DEFAULT_EASING_RATE = 2.0
 
 
 @define(slots=False)
 class HasEasing:
     easing: Easing = Easing.DEFAULT
-    easing_rate: float = 0.0
+    easing_rate: float = DEFAULT_EASING_RATE
+
+
+DEFAULT_MULTI_ACTIVATE = False
 
 
 @define(slots=False)
 class HasMultiActivate:
-    multi_activate: bool = False
+    multi_activate: bool = DEFAULT_MULTI_ACTIVATE
 
     def is_multi_activate(self) -> bool:
         return self.multi_activate
@@ -1120,6 +1167,38 @@ class Orb(HasMultiActivate, Object):
         writer.write_u8(value, order)
 
 
+IC = TypeVar("IC", bound="ItemCounter")
+
+
+@define()
+class ItemCounter(HasItem, Object):
+    @classmethod
+    def from_binary(
+        cls: Type[IC],
+        binary: BinaryIO,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> IC:
+        item_counter = super().from_binary(binary, order, version)
+
+        reader = Reader(binary)
+
+        item_id = reader.read_u16(order)
+
+        item_counter.item_id = item_id
+
+        return item_counter
+
+    def to_binary(
+        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
+        super().to_binary(binary, order, version)
+
+        writer = Writer(binary)
+
+        writer.write_u16(self.item_id, order)
+
+
 PI = TypeVar("PI", bound="PickupItem")
 
 
@@ -1170,14 +1249,20 @@ TOUCH_TRIGGERED_BIT = 0b00000001
 SPAWN_TRIGGERED_BIT = 0b00000010
 MULTI_TRIGGER_BIT = 0b00000100
 
+
+DEFAULT_TOUCH_TRIGGERED = False
+DEFAULT_SPAWN_TRIGGERED = False
+DEFAULT_MULTI_TRIGGER = False
+
+
 T = TypeVar("T", bound="Trigger")
 
 
 @define()
 class Trigger(Object):
-    touch_triggered: bool = False
-    spawn_triggered: bool = False
-    multi_trigger: bool = False
+    touch_triggered: bool = DEFAULT_TOUCH_TRIGGERED
+    spawn_triggered: bool = DEFAULT_SPAWN_TRIGGERED
+    multi_trigger: bool = DEFAULT_MULTI_TRIGGER
 
     @classmethod
     def from_binary(
@@ -1241,15 +1326,19 @@ BLENDING_BIT = 0b00000100
 COPY_OPACITY_BIT = 0b00001000
 
 
+DEFAULT_BLENDING = False
+DEFAULT_COPY_OPACITY = False
+
+
 CLT = TypeVar("CLT", bound="ColorTrigger")
 
 
 @define()
 class ColorTrigger(HasColor, HasDuration, Trigger):
-    blending: bool = field(default=False)
-    target_color_id: int = field(default=0)
+    blending: bool = field(default=DEFAULT_BLENDING)
+    target_color_id: int = field(default=DEFAULT_ID)
 
-    copied_color_id: int = field(default=0)
+    copied_color_id: int = field(default=DEFAULT_ID)
     copied_color_hsv: HSV = field(factory=HSV)
 
     copy_opacity: bool = field(default=False)
@@ -1350,12 +1439,15 @@ class ColorTrigger(HasColor, HasDuration, Trigger):
         self.copied_color_hsv.to_binary(binary, order, version)
 
 
+DEFAULT_OPACITY = 1.0
+
+
 ALT = TypeVar("ALT", bound="AlphaTrigger")
 
 
 @define()
 class AlphaTrigger(HasTargetGroup, HasDuration, Trigger):
-    opacity: float = 1.0
+    opacity: float = DEFAULT_OPACITY
 
     @classmethod
     def from_binary(
@@ -1401,23 +1493,30 @@ PULSE_TYPE_SHIFT = PULSE_TARGET_TYPE_BIT.bit_length()
 PULSE_MODE_SHIFT = PULSE_TYPE_MASK.bit_length()
 
 
+DEFAULT_FADE_IN = 0.0
+DEFAULT_HOLD = 0.0
+DEFAULT_FADE_OUT = 0.0
+
+DEFAULT_EXCLUSIVE = False
+
+
 PLT = TypeVar("PLT", bound="PulseTrigger")
 
 
 @define()
 class PulseTrigger(Trigger):
-    fade_in: float = field(default=0.0)
-    hold: float = field(default=0.0)
-    fade_out: float = field(default=0.0)
+    fade_in: float = field(default=DEFAULT_FADE_IN)
+    hold: float = field(default=DEFAULT_HOLD)
+    fade_out: float = field(default=DEFAULT_FADE_OUT)
 
     color: Color = field(factory=Color.default)
     hsv: HSV = field(factory=HSV)
 
-    target_type: PulseTargetType = PulseTargetType.DEFAULT
-    type: PulseType = PulseType.DEFAULT
-    mode: PulseMode = PulseMode.DEFAULT
+    target_type: PulseTargetType = field(default=PulseTargetType.DEFAULT)
+    type: PulseType = field(default=PulseType.DEFAULT)
+    mode: PulseMode = field(default=PulseMode.DEFAULT)
 
-    exclusive: bool = False
+    exclusive: bool = field(default=DEFAULT_EXCLUSIVE)
 
     def is_exclusive(self) -> bool:
         return self.exclusive
@@ -1503,16 +1602,23 @@ LOCKED_TO_PLAYER_X_BIT = 0b00000100
 LOCKED_TO_PLAYER_Y_BIT = 0b00001000
 
 
+DEFAULT_X_OFFSET = 0.0
+DEFAULT_Y_OFFSET = 0.0
+
+DEFAULT_LOCKED_TO_PLAYER_X = False
+DEFAULT_LOCKED_TO_PLAYER_Y = False
+
+
 MT = TypeVar("MT", bound="MoveTrigger")
 
 
 @define()
 class MoveTrigger(HasTargetGroup, HasEasing, HasDuration, Trigger):
-    x_offset: float = 0.0
-    y_offset: float = 0.0
+    x_offset: float = DEFAULT_X_OFFSET
+    y_offset: float = DEFAULT_Y_OFFSET
 
-    locked_to_player_x: bool = False
-    locked_to_player_y: bool = False
+    locked_to_player_x: bool = DEFAULT_LOCKED_TO_PLAYER_X
+    locked_to_player_y: bool = DEFAULT_LOCKED_TO_PLAYER_Y
 
     target_type: TargetType = TargetType.DEFAULT
 
@@ -1632,12 +1738,15 @@ class MoveTrigger(HasTargetGroup, HasEasing, HasDuration, Trigger):
 EDITOR_DISABLE_BIT = 0b00000001
 
 
+DEFAULT_EDITOR_DISABLE = False
+
+
 SPT = TypeVar("SPT", bound="SpawnTrigger")
 
 
 @define()
 class SpawnTrigger(HasDelay, HasTargetGroup, Trigger):
-    editor_disable: bool = False
+    editor_disable: bool = DEFAULT_EDITOR_DISABLE
 
     @classmethod
     def from_binary(
@@ -1723,12 +1832,16 @@ class StopTrigger(HasTargetGroup, Trigger):
 TOGGLED_BIT = 0b10000000
 ACTIVATE_GROUP_BIT = 0b00000001
 
+
+DEFAULT_TOGGLED = False
+
+
 TT = TypeVar("TT", bound="ToggleTrigger")
 
 
 @define()
 class ToggleTrigger(HasActivateGroup, HasTargetGroup, Trigger):
-    toggled: bool = False
+    toggled: bool = DEFAULT_TOGGLED
 
     @classmethod
     def from_binary(
@@ -1791,13 +1904,17 @@ class ToggleTrigger(HasActivateGroup, HasTargetGroup, Trigger):
 ROTATION_LOCKED_BIT = 0b00000001
 
 
+DEFAULT_TARGET_ROTATION = 0.0
+DEFAULT_ROTATION_LOCKED = False
+
+
 RT = TypeVar("RT", bound="RotateTrigger")
 
 
 @define()
 class RotateTrigger(HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, Trigger):
-    target_rotation: float = 0.0
-    rotation_locked: bool = False
+    target_rotation: float = DEFAULT_TARGET_ROTATION
+    rotation_locked: bool = DEFAULT_ROTATION_LOCKED
 
     @classmethod
     def from_binary(
@@ -1884,13 +2001,17 @@ class RotateTrigger(HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, 
         return self
 
 
+DEFAULT_X_MODIFIER = 1.0
+DEFAULT_Y_MODIFIER = 1.0
+
+
 FT = TypeVar("FT", bound="FollowTrigger")
 
 
 @define()
 class FollowTrigger(HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, Trigger):
-    x_modifier: float = 1.0
-    y_modifier: float = 1.0
+    x_modifier: float = DEFAULT_X_MODIFIER
+    y_modifier: float = DEFAULT_Y_MODIFIER
 
     @classmethod
     def from_binary(
@@ -1949,13 +2070,17 @@ class FollowTrigger(HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, 
         writer.write_f32(self.y_modifier, order)
 
 
+DEFAULT_STRENGTH = 0.0
+DEFAULT_INTERVAL = 0.0
+
+
 SHT = TypeVar("SHT", bound="ShakeTrigger")
 
 
 @define()
 class ShakeTrigger(HasDuration, Trigger):
-    strength: float = 0.0
-    interval: float = 0.0
+    strength: float = DEFAULT_STRENGTH
+    interval: float = DEFAULT_INTERVAL
 
     @classmethod
     def from_binary(
@@ -1993,7 +2118,7 @@ AT = TypeVar("AT", bound="AnimateTrigger")
 
 @define()
 class AnimateTrigger(HasTargetGroup, Trigger):
-    animation_id: int = 0
+    animation_id: int = DEFAULT_ID
 
     @classmethod
     def from_binary(
@@ -2028,18 +2153,23 @@ class AnimateTrigger(HasTargetGroup, Trigger):
         writer.write_u8(self.animation_id, order)
 
 
-THT = TypeVar("THT", bound="TouchTrigger")
-
 
 TOGGLE_TYPE_MASK = 0b00000011
 HOLD_MODE_BIT = 0b00000100
 DUAL_MODE_BIT = 0b00001000
 
 
+DEFAULT_HOLD_MODE = False
+DEFAULT_DUAL_MODE = False
+
+
+THT = TypeVar("THT", bound="TouchTrigger")
+
+
 @define()
 class TouchTrigger(HasTargetGroup, Trigger):
-    hold_mode: bool = False
-    dual_mode: bool = False
+    hold_mode: bool = DEFAULT_HOLD_MODE
+    dual_mode: bool = DEFAULT_DUAL_MODE
     toggle_type: ToggleType = ToggleType.DEFAULT
 
     @classmethod
@@ -2263,14 +2393,17 @@ class PickupTrigger(HasCount, HasItem, Trigger):
         writer.write_i32(self.count, order)
 
 
+DEFAULT_SPEED = 1.0
+DEFAULT_MAX_SPEED = 0.0
+
+
 FPYT = TypeVar("FPYT", bound="FollowPlayerYTrigger")
 
 
 @define()
-class FollowPlayerYTrigger(HasDelay, HasTargetGroup, Trigger):
-    speed: float = 1.0
-    max_speed: float = 0.0
-    offset: float = 0.0
+class FollowPlayerYTrigger(HasOffset, HasDelay, HasTargetGroup, Trigger):
+    speed: float = DEFAULT_SPEED
+    max_speed: float = DEFAULT_MAX_SPEED
 
     @classmethod
     def from_binary(
@@ -2367,15 +2500,18 @@ class OnDeathTrigger(HasActivateGroup, HasTargetGroup, Trigger):
 TRIGGER_ON_EXIT_BIT = 0b10000000_00000000
 
 
+DEFAULT_TRIGGER_ON_EXIT = False
+
+
 CBT = TypeVar("CBT", bound="CollisionTrigger")
 
 
 @define()
 class CollisionTrigger(HasActivateGroup, HasTargetGroup, Trigger):
-    block_a_id: int = 0
-    block_b_id: int = 0
+    block_a_id: int = DEFAULT_ID
+    block_b_id: int = DEFAULT_ID
 
-    trigger_on_exit: bool = False
+    trigger_on_exit: bool = DEFAULT_TRIGGER_ON_EXIT
 
     @classmethod
     def from_binary(
@@ -2448,26 +2584,27 @@ class ObjectType(Enum):
     COIN = 4
     TEXT = 5
     TELEPORT = 6
-    PICKUP_ITEM = 7
-    COLLISION_BLOCK = 8
-    COLOR_TRIGGER = 9
-    PULSE_TRIGGER = 10
-    ALPHA_TRIGGER = 11
-    MOVE_TRIGGER = 12
-    SPAWN_TRIGGER = 13
-    STOP_TRIGGER = 14
-    TOGGLE_TRIGGER = 15
-    ROTATE_TRIGGER = 16
-    FOLLOW_TRIGGER = 17
-    SHAKE_TRIGGER = 18
-    ANIMATE_TRIGGER = 19
-    TOUCH_TRIGGER = 20
-    COUNT_TRIGGER = 21
-    INSTANT_COUNT_TRIGGER = 22
-    PICKUP_TRIGGER = 23
-    FOLLOW_PLAYER_Y_TRIGGER = 24
-    ON_DEATH_TRIGGER = 25
-    COLLISION_TRIGGER = 26
+    ITEM_COUNTER = 7
+    PICKUP_ITEM = 8
+    COLLISION_BLOCK = 9
+    COLOR_TRIGGER = 10
+    PULSE_TRIGGER = 11
+    ALPHA_TRIGGER = 12
+    MOVE_TRIGGER = 13
+    SPAWN_TRIGGER = 14
+    STOP_TRIGGER = 15
+    TOGGLE_TRIGGER = 16
+    ROTATE_TRIGGER = 17
+    FOLLOW_TRIGGER = 18
+    SHAKE_TRIGGER = 19
+    ANIMATE_TRIGGER = 20
+    TOUCH_TRIGGER = 21
+    COUNT_TRIGGER = 22
+    INSTANT_COUNT_TRIGGER = 23
+    PICKUP_TRIGGER = 24
+    FOLLOW_PLAYER_Y_TRIGGER = 25
+    ON_DEATH_TRIGGER = 26
+    COLLISION_TRIGGER = 27
 
 
 OBJECT_TYPE_TO_TYPE = {
@@ -2477,6 +2614,7 @@ OBJECT_TYPE_TO_TYPE = {
     ObjectType.COIN: Coin,
     ObjectType.TEXT: Text,
     ObjectType.TELEPORT: Teleport,
+    ObjectType.ITEM_COUNTER: ItemCounter,
     ObjectType.PICKUP_ITEM: PickupItem,
     ObjectType.COLLISION_BLOCK: CollisionBlock,
     ObjectType.COLOR_TRIGGER: ColorTrigger,

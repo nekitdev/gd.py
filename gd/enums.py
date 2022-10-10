@@ -61,7 +61,6 @@ __all__ = (
     "SpecialColorID",
     "TargetType",
     "TouchToggleMode",
-    "MiscType",
     "TriggerType",
     "ZLayer",
     "SimpleZLayer",
@@ -71,7 +70,6 @@ __all__ = (
     "GuidelineColor",
     "InternalType",
     "Filter",
-    "Permissions",
     "ByteOrder",
     "Platform",
     "Orientation",
@@ -979,12 +977,6 @@ class TouchToggleMode(Enum):
     OFF = 2
 
 
-class MiscType(Enum):
-    """An enumeration of IDs of miscellaneous objects."""
-
-    TEXT = 914
-
-
 class TriggerType(Enum):
     """An enumeration of IDs of triggers."""
 
@@ -1157,17 +1149,6 @@ class Filter(Enum):
     CUSTOM = 3
 
     DEFAULT = NONE
-
-
-class Permissions(Flag):
-    """An enumeration of permissions."""
-
-    NONE = 0
-    EXECUTE = 1
-    WRITE = 2
-    READ = 4
-
-    DEFAULT = READ | WRITE | EXECUTE
 
 
 class ByteOrder(Enum):
