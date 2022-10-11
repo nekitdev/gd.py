@@ -95,7 +95,7 @@ DEFAULT_START = 1
 def find_next(
     values: Set[int],
     start: int = DEFAULT_START,
-) -> int:  # type: ignore
+) -> int:
     for value in count(start):
         if value not in values:
             return value

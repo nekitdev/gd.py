@@ -1876,14 +1876,14 @@ class Database(Binary):
 
         official_levels_length = reader.read_u8(order)
 
-        official_levels = ordered_set(
+        official_levels = LevelCollection(
             LevelAPI.from_binary(binary, order, version, encoding, errors)
             for _ in range(official_levels_length)
         )
 
         saved_levels_length = reader.read_u8(order)
 
-        saved_levels = ordered_set(
+        saved_levels = LevelCollection(
             LevelAPI.from_binary(binary, order, version, encoding, errors)
             for _ in range(saved_levels_length)
         )
@@ -1900,7 +1900,7 @@ class Database(Binary):
 
         daily_levels_length = reader.read_u32(order)
 
-        daily_levels = ordered_set(
+        daily_levels = LevelCollection(
             LevelAPI.from_binary(binary, order, version, encoding, errors)
             for _ in range(daily_levels_length)
         )
@@ -1931,7 +1931,7 @@ class Database(Binary):
 
         gauntlet_levels_length = reader.read_u16(order)
 
-        gauntlet_levels = ordered_set(
+        gauntlet_levels = LevelCollection(
             LevelAPI.from_binary(binary, order, version, encoding, errors)
             for _ in range(gauntlet_levels_length)
         )
@@ -1952,7 +1952,7 @@ class Database(Binary):
 
         created_levels_length = reader.read_u32(order)
 
-        created_levels = ordered_set(
+        created_levels = LevelCollection(
             LevelAPI.from_binary(binary, order, version, encoding, errors)
             for _ in range(created_levels_length)
         )

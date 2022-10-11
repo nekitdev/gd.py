@@ -185,6 +185,7 @@ from gd.models_utils import (
 from gd.password import Password
 from gd.robtop import RobTop
 from gd.string_utils import concat_empty
+from gd.typing import DynamicTuple
 from gd.versions import CURRENT_GAME_VERSION, GameVersion
 
 __all__ = (
@@ -537,7 +538,8 @@ class SearchUserModel(Model):
         user_coins_index: int = SEARCH_USER_USER_COINS,
     ) -> str:
         glow = self.glow
-        glow += glow
+
+        glow += glow  # type: ignore
 
         mapping = {
             name_index: self.name,
@@ -1112,7 +1114,8 @@ class LeaderboardUserModel(Model):
         diamonds_index: int = LEADERBOARD_USER_DIAMONDS,
     ) -> str:
         glow = self.glow
-        glow += glow
+
+        glow += glow  # type: ignore
 
         mapping = {
             name_index: self.name,
@@ -1409,7 +1412,7 @@ class FriendRequestModel(Model):
     ) -> str:
         glow = self.glow
 
-        glow += glow
+        glow += glow  # type: ignore
 
         unread = EMPTY if self.is_read() else str(int(self.unread))
 
@@ -1618,30 +1621,30 @@ class LevelModel(Model):
 
         mapping = split_level(string)
 
-        demon_difficulty = mapping.get(demon_difficulty_index)
+        demon_difficulty_string = mapping.get(demon_difficulty_index)
 
-        if demon_difficulty is None:
+        if demon_difficulty_string is None:
             demon_difficulty = demon_difficulty_default
 
         else:
-            demon_difficulty_value = int(demon_difficulty)
+            demon_difficulty_value = int(demon_difficulty_string)
 
             demon_difficulty = VALUE_TO_DEMON_DIFFICULTY.get(
                 demon_difficulty_value, DemonDifficulty.HARD_DEMON
             )
 
-        editor_time = mapping.get(editor_time_index)
+        editor_time_string = mapping.get(editor_time_index)
 
-        if editor_time:
-            editor_time = timedelta(seconds=int(editor_time))
+        if editor_time_string:
+            editor_time = timedelta(seconds=int(editor_time_string))
 
         else:
             editor_time = editor_time_default
 
-        copies_time = mapping.get(copies_time_index)
+        copies_time_string = mapping.get(copies_time_index)
 
-        if copies_time:
-            copies_time = timedelta(seconds=int(copies_time))
+        if copies_time_string:
+            copies_time = timedelta(seconds=int(copies_time_string))
 
         else:
             copies_time = copies_time_default
@@ -2104,7 +2107,7 @@ class LevelCommentUserModel(Model):
     ) -> str:
         glow = self.glow
 
-        glow += glow
+        glow += glow  # type: ignore
 
         mapping = {
             name_index: self.name,
@@ -2319,7 +2322,7 @@ class LevelLeaderboardUserModel(Model):
     ) -> str:
         glow = self.glow
 
-        glow += glow
+        glow += glow  # type: ignore
 
         mapping = {
             name_index: self.name,
@@ -2479,6 +2482,8 @@ class LevelResponseModel:
 
     def to_robtop(self) -> str:
         creator = self.creator
+
+        values: DynamicTuple[str]
 
         if creator is None:
             values = (self.level.to_robtop(), self.smart_hash, self.hash)

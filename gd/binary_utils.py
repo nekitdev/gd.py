@@ -69,7 +69,7 @@ def create_from_int(format: str) -> Binary[bytes, ByteOrder, int]:
     def from_int(data: bytes, order: ByteOrder = ByteOrder.DEFAULT) -> int:
         (result,) = unpack(order.value + format, data)
 
-        return result
+        return result  # type: ignore
 
     return from_int
 
@@ -85,7 +85,7 @@ def create_from_float(format: str) -> Binary[bytes, ByteOrder, float]:
     def from_float(data: bytes, order: ByteOrder = ByteOrder.DEFAULT) -> float:
         (result,) = unpack(order.value + format, data)
 
-        return result
+        return result  # type: ignore
 
     return from_float
 
@@ -101,7 +101,7 @@ def create_from_bool(format: str) -> Binary[bytes, ByteOrder, bool]:
     def from_bool(data: bytes, order: ByteOrder = ByteOrder.DEFAULT) -> bool:
         (result,) = unpack(order.value + format, data)
 
-        return result
+        return result  # type: ignore
 
     return from_bool
 

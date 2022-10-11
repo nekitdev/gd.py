@@ -1,7 +1,23 @@
 from re import compile
 from typing import Match
 
-__all__ = ("camel_to_snake", "snake_to_camel")
+from gd.constants import SPACE
+from gd.string_constants import UNDER
+
+__all__ = ("camel_to_snake", "snake_to_camel", "is_upper", "is_lower", "case_fold", "create_title")
+
+is_upper = str.isupper
+is_lower = str.islower
+
+case_fold = str.casefold
+
+
+def create_title(name: str) -> str:
+    if is_upper(name) or is_lower(name):
+        return name.replace(UNDER, SPACE).title()
+
+    return name
+
 
 UPPER = r"[A-Z]"
 LOWER = r"[a-z]"
@@ -11,8 +27,6 @@ SNAKE_TO_CAMEL_PATTERN = rf"(?!^)_({LOWER})"
 
 CAMEL_TO_SNAKE = compile(CAMEL_TO_SNAKE_PATTERN)
 SNAKE_TO_CAMEL = compile(SNAKE_TO_CAMEL_PATTERN)
-
-UNDER = "_"
 
 
 def upper_case_first_group(match: Match[str]) -> str:

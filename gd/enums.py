@@ -426,7 +426,7 @@ class Score(Enum):
     FEATURED = 1
 
     @classmethod
-    def enum_missing(cls: Type[S], value: int) -> Optional[S]:
+    def _enum_missing_(cls, value: int) -> Optional[Score]:
         return cls.FEATURED if value > 0 else None
 
     def is_epic_only(self) -> bool:
@@ -462,10 +462,10 @@ class SimpleRelationshipType(Enum):
     BLOCKED = 1
 
     def is_friend(self) -> bool:
-        return self is self.FRIEND
+        return self is type(self).FRIEND
 
     def is_outgoing(self) -> bool:
-        return self is self.BLOCKED
+        return self is type(self).BLOCKED
 
     def into_relationship_type(self) -> RelationshipType:
         return RelationshipType.FRIEND if self.is_friend() else RelationshipType.BLOCKED
@@ -480,10 +480,10 @@ class FriendRequestType(Enum):
     DEFAULT = INCOMING
 
     def is_incoming(self) -> bool:
-        return self is self.INCOMING
+        return self is type(self).INCOMING
 
     def is_outgoing(self) -> bool:
-        return self is self.OUTGOING
+        return self is type(self).OUTGOING
 
     def into_relationship_type(self) -> RelationshipType:
         return (
@@ -502,10 +502,10 @@ class MessageType(Enum):
     DEFAULT = INCOMING
 
     def is_incoming(self) -> bool:
-        return self is self.INCOMING
+        return self is type(self).INCOMING
 
     def is_outgoing(self) -> bool:
-        return self is self.OUTGOING
+        return self is type(self).OUTGOING
 
 
 class CommentStrategy(Enum):
@@ -749,7 +749,7 @@ class EasingMethod(Flag):
         return Easing(value)
 
     @classmethod
-    def from_easing(cls: Type[EM], easing: Easing) -> EM:
+    def from_easing(cls, easing: Easing) -> EasingMethod:
         value = easing.value
 
         if not value:

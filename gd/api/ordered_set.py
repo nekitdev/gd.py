@@ -188,11 +188,14 @@ class OrderedSet(MutableSet[Q], Sequence[Q]):
 
         return ITEMS_REPRESENTATION.format(name, items)
 
-    def __eq__(self, other: Iterable[Q]) -> bool:
-        if is_instance(other, Sequence):
-            return self.items == list(other)
+    def __eq__(self, other: Any) -> bool:
+        if is_instance(other, Iterable):
+            if is_instance(other, Sequence):
+                return self.items == list(other)
 
-        return set(self.item_to_index) == set(other)
+            return set(self.item_to_index) == set(other)
+
+        return NotImplemented
 
     @overload
     def union(self: OS, *iterables: Iterable[Q]) -> OS:
@@ -300,6 +303,10 @@ class OrderedSet(MutableSet[Q], Sequence[Q]):
 
     def is_disjoint(self, other: Iterable[Q]) -> bool:
         return not any(item in self for item in other)
+
+    issubset = is_subset
+    issuperset = is_superset
+    isdisjoint = is_disjoint
 
 
 AnyOrderedSet = OrderedSet[Any]

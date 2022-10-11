@@ -74,7 +74,7 @@ async def gather_iterable(
 async def gather_iterable(
     awaitables: Iterable[Awaitable[T]],
     return_exceptions: bool = False,
-) -> List[AnyResult[T]]:
+) -> Union[List[T], List[AnyResult[T]]]:
     return await gather(*awaitables, return_exceptions=return_exceptions)
 
 
