@@ -24,9 +24,6 @@ jobs:
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org/ | python -
 
-      - name: Update Poetry
-        run: poetry self update --preview
-
       - name: Configure Poetry
         run: poetry config virtualenvs.in-project true
 
