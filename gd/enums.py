@@ -54,7 +54,7 @@ __all__ = (
     "GameMode",
     "LevelType",
     "PortalType",
-    "SpeedChange",
+    "SpeedChangeType",
     "PulseTargetType",
     "PulseType",
     "SpecialBlockType",
@@ -817,6 +817,10 @@ class OrbType(Enum):
     REVERSE_DASH = 1751
     TRIGGER = 1594
 
+    @property
+    def id(self) -> int:
+        return self.value
+
 
 class PadType(Enum):
     """An enumeration of IDs of pad objects."""
@@ -825,6 +829,20 @@ class PadType(Enum):
     BLUE = 67
     PINK = 140
     RED = 1332
+
+    @property
+    def id(self) -> int:
+        return self.value
+
+
+class MiscType(Enum):
+    """An enumeration of IDs of miscellaneous objects."""
+
+    TEXT = 914
+
+    @property
+    def id(self) -> int:
+        return self.value
 
 
 class PickupItemMode(Enum):
@@ -899,8 +917,12 @@ class PortalType(Enum):
     BLUE_TELEPORT = 747
     YELLOW_TELEPORT = 749
 
+    @property
+    def id(self) -> int:
+        return self.value
 
-class SpeedChange(Enum):
+
+class SpeedChangeType(Enum):
     """An enumeration of IDs of speed changes."""
 
     SLOW = 200
@@ -908,6 +930,19 @@ class SpeedChange(Enum):
     FAST = 202
     FASTER = 203
     FASTEST = 1334
+
+    @property
+    def id(self) -> int:
+        return self.value
+
+
+class CoinType(Enum):
+    SECRET = 142
+    USER = 1329
+
+    @property
+    def id(self) -> int:
+        return self.value
 
 
 class PulseTargetType(Enum):
@@ -982,7 +1017,7 @@ class TriggerType(Enum):
 
     BACKGROUND = BG = 29
     GROUND = G = 30
-    START_POS = 31
+    START_POSITION = 31
     LINE = L = 104
     OBJECT = OBJ = 105
     COLOR_1 = C1 = 221

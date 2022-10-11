@@ -20,7 +20,7 @@ from gd.api.objects import (
 )
 from gd.binary import VERSION, Binary
 from gd.binary_utils import Reader, Writer
-from gd.enums import ByteOrder, Speed, SpeedChange, SpeedMagic
+from gd.enums import ByteOrder, Speed, SpeedChangeType, SpeedMagic
 from gd.models_constants import OBJECTS_SEPARATOR
 from gd.models_utils import concat_objects, split_objects
 from gd.robtop import RobTop
@@ -37,11 +37,11 @@ SPEED_TO_MAGIC = {
 }
 
 SPEED_CHANGE_TO_MAGIC = {
-    SpeedChange.SLOW: SpeedMagic.SLOW,
-    SpeedChange.NORMAL: SpeedMagic.NORMAL,
-    SpeedChange.FAST: SpeedMagic.FAST,
-    SpeedChange.FASTER: SpeedMagic.FASTER,
-    SpeedChange.FASTEST: SpeedMagic.FASTEST,
+    SpeedChangeType.SLOW: SpeedMagic.SLOW,
+    SpeedChangeType.NORMAL: SpeedMagic.NORMAL,
+    SpeedChangeType.FAST: SpeedMagic.FAST,
+    SpeedChangeType.FASTER: SpeedMagic.FASTER,
+    SpeedChangeType.FASTEST: SpeedMagic.FASTEST,
 }
 
 
@@ -78,7 +78,7 @@ def get_time_length(
 
         total += delta / magic
 
-        magic = SPEED_CHANGE_TO_MAGIC[SpeedChange(speed_change.id)]
+        magic = SPEED_CHANGE_TO_MAGIC[SpeedChangeType(speed_change.id)]
 
         last_x = x
 
@@ -258,7 +258,7 @@ class Editor(RobTop, Binary, Sequence[Object]):
 
     @classmethod
     def from_robtop(cls: Type[E], string: str) -> E:
-        iterator = iter(split_objects(string))
+        iterator = iter(split_objects(string)).filter(None)
 
         header_string = iterator.next_or_none()
 

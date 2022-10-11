@@ -5,7 +5,6 @@ from attrs import define, field
 from typing_extensions import Literal, TypeGuard
 
 from gd.api.hsv import HSV
-from gd.api.objects_constants import TEXT_ID
 from gd.api.ordered_set import OrderedSet
 from gd.binary import VERSION, Binary
 from gd.binary_constants import BITS
@@ -16,15 +15,18 @@ from gd.encoding import decode_base64_string_url_safe, encode_base64_string_url_
 from gd.enum_extensions import Enum, Flag
 from gd.enums import (
     ByteOrder,
+    CoinType,
     Easing,
     InstantCountComparison,
+    MiscType,
+    OrbType,
     PickupItemMode,
     PlayerColor,
     PortalType,
     PulseMode,
     PulseTargetType,
     PulseType,
-    SpeedChange,
+    SpeedChangeType,
     TargetType,
     ToggleType,
     ZLayer,
@@ -42,14 +44,13 @@ from gd.models_utils import (
     split_object,
 )
 from gd.robtop import RobTop
-from gd.typing import is_instance
 
 __all__ = (
     "Groups",
     "Object",
     "AnimatedObject",
     "Orb",
-    "Coin",
+    "SecretCoin",
     "Text",
     "Teleport",
     "PickupItem",
@@ -77,6 +78,9 @@ __all__ = (
     "object_from_bytes",
     "object_to_bytes",
 )
+
+GRID_UNITS = 30.0
+
 
 H_FLIPPED_BIT = 0b00000001
 V_FLIPPED_BIT = 0b00000010
@@ -420,10 +424,10 @@ class Object(Model, Binary):
         if self.is_v_flipped():
             value |= V_FLIPPED_BIT
 
-        if self.is_do_not_fade():
+        if self.has_do_not_fade():
             value |= DO_NOT_FADE_BIT
 
-        if self.is_do_not_enter():
+        if self.has_do_not_enter():
             value |= DO_NOT_ENTER_BIT
 
         if self.is_group_parent():
@@ -432,7 +436,7 @@ class Object(Model, Binary):
         if self.is_high_detail():
             value |= HIGH_DETAIL_BIT
 
-        if self.is_disable_glow():
+        if self.has_disable_glow():
             value |= DISABLE_GLOW_BIT
 
         if self.is_special_checked():
@@ -562,22 +566,22 @@ class Object(Model, Binary):
         if scale != DEFAULT_SCALE:
             mapping[SCALE] = float_str(scale)
 
-        h_flipped = self.h_flipped
+        h_flipped = self.is_h_flipped()
 
         if h_flipped:
             mapping[H_FLIPPED] = str(int(h_flipped))
 
-        v_flipped = self.v_flipped
+        v_flipped = self.is_v_flipped()
 
         if v_flipped:
             mapping[V_FLIPPED] = str(int(v_flipped))
 
-        do_not_fade = self.do_not_fade
+        do_not_fade = self.has_do_not_fade()
 
         if do_not_fade:
             mapping[DO_NOT_FADE] = str(int(do_not_fade))
 
-        do_not_enter = self.do_not_enter
+        do_not_enter = self.has_do_not_enter()
 
         if do_not_enter:
             mapping[DO_NOT_ENTER] = str(int(do_not_enter))
@@ -627,22 +631,22 @@ class Object(Model, Binary):
         if groups:
             mapping[GROUPS] = groups.to_robtop()
 
-        group_parent = self.group_parent
+        group_parent = self.is_group_parent()
 
         if group_parent:
             mapping[GROUP_PARENT] = str(int(group_parent))
 
-        high_detail = self.high_detail
+        high_detail = self.is_high_detail()
 
         if high_detail:
             mapping[HIGH_DETAIL] = str(int(high_detail))
 
-        disable_glow = self.disable_glow
+        disable_glow = self.has_disable_glow()
 
         if disable_glow:
             mapping[DISABLE_GLOW] = str(int(disable_glow))
 
-        special_checked = self.special_checked
+        special_checked = self.is_special_checked()
 
         if special_checked:
             mapping[SPECIAL_CHECKED] = str(int(special_checked))
@@ -664,10 +668,10 @@ class Object(Model, Binary):
     def is_v_flipped(self) -> bool:
         return self.v_flipped
 
-    def is_do_not_fade(self) -> bool:
+    def has_do_not_fade(self) -> bool:
         return self.do_not_fade
 
-    def is_do_not_enter(self) -> bool:
+    def has_do_not_enter(self) -> bool:
         return self.do_not_enter
 
     def is_group_parent(self) -> bool:
@@ -676,7 +680,7 @@ class Object(Model, Binary):
     def is_high_detail(self) -> bool:
         return self.high_detail
 
-    def is_disable_glow(self) -> bool:
+    def has_disable_glow(self) -> bool:
         return self.disable_glow
 
     def is_special_checked(self) -> bool:
@@ -752,24 +756,24 @@ class Object(Model, Binary):
         return self.id in SPEED_CHANGE_IDS
 
 
-PORTAL_IDS = {portal.value for portal in PortalType}
-SPEED_CHANGE_IDS = {speed_change.value for speed_change in SpeedChange}
+PORTAL_IDS = {portal.id for portal in PortalType}
+SPEED_CHANGE_IDS = {speed_change.id for speed_change in SpeedChangeType}
 
 
 COIN_ID = 12
 
 
-C = TypeVar("C", bound="Coin")
+SC = TypeVar("SC", bound="SecretCoin")
 
 
 @define()
-class Coin(Object):
+class SecretCoin(Object):
     coin_id: int = DEFAULT_ID
 
     @classmethod
     def from_binary(
-        cls: Type[C], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> C:
+        cls: Type[SC], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> SC:
         coin = super().from_binary(binary, order, version)
 
         reader = Reader(binary)
@@ -790,7 +794,7 @@ class Coin(Object):
         writer.write_u8(self.coin_id, order)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[C], mapping: Mapping[int, str]) -> C:
+    def from_robtop_mapping(cls: Type[SC], mapping: Mapping[int, str]) -> SC:
         coin = super().from_robtop_mapping(mapping)
 
         coin_id = parse_get_or(int, DEFAULT_ID, mapping.get(COIN_ID))
@@ -807,9 +811,10 @@ class Coin(Object):
         return mapping
 
 
-S = TypeVar("S", bound="Text")
-
 CONTENT = 31
+
+
+S = TypeVar("S", bound="Text")
 
 
 @define()
@@ -873,23 +878,23 @@ class Text(Object):
         return mapping
 
 
-DEFAULT_OFFSET = 0.0
-
-
-@define(slots=False)
-class HasOffset:
-    offset: float = DEFAULT_OFFSET
+SMOOTH_BIT = 0b00000001
 
 
 DEFAULT_SMOOTH = False
+DEFAULT_PORTAL_OFFSET = 100.0
 
-SMOOTH_BIT = 0b00000001
+
+PORTAL_OFFSET = 54
+SMOOTH = 55
+
 
 P = TypeVar("P", bound="Teleport")
 
 
 @define()
-class Teleport(HasOffset, Object):
+class Teleport(Object):
+    portal_offset: float = DEFAULT_PORTAL_OFFSET
     smooth: bool = DEFAULT_SMOOTH
 
     @classmethod
@@ -902,13 +907,13 @@ class Teleport(HasOffset, Object):
 
         reader = Reader(binary)
 
-        offset = reader.read_f32(order)
+        portal_offset = reader.read_f32(order)
 
         value = reader.read_u8(order)
 
         smooth = value & smooth_bit == smooth_bit
 
-        teleport.offset = offset
+        teleport.portal_offset = portal_offset
         teleport.smooth = smooth
 
         return teleport
@@ -920,7 +925,7 @@ class Teleport(HasOffset, Object):
 
         writer = Writer(binary)
 
-        writer.write_f32(self.offset, order)
+        writer.write_f32(self.portal_offset, order)
 
         value = 0
 
@@ -928,6 +933,31 @@ class Teleport(HasOffset, Object):
             value |= SMOOTH_BIT
 
         writer.write_u8(value, order)
+
+    @classmethod
+    def from_robtop_mapping(cls: Type[P], mapping: Mapping[int, str]) -> P:
+        teleport = super().from_robtop_mapping(mapping)
+
+        portal_offset = parse_get_or(float, DEFAULT_PORTAL_OFFSET, mapping.get(PORTAL_OFFSET))
+
+        smooth = parse_get_or(int_bool, DEFAULT_SMOOTH, mapping.get(SMOOTH))
+
+        teleport.portal_offset = portal_offset
+        teleport.smooth = smooth
+
+        return teleport
+
+    def to_robtop_mapping(self) -> Dict[int, str]:
+        mapping = super().to_robtop_mapping()
+
+        mapping[PORTAL_OFFSET] = str(self.portal_offset)
+
+        smooth = self.smooth
+
+        if smooth:
+            mapping[SMOOTH] = str(int(smooth))
+
+        return mapping
 
     def is_smooth(self) -> bool:
         return self.smooth
@@ -1065,10 +1095,16 @@ class HasCount:
 class HasTargetGroup:
     target_group_id: int = DEFAULT_ID
 
+    def has_target_group(self) -> bool:
+        return True
+
 
 @define(slots=False)
 class HasAdditionalGroup:
     additional_group_id: int = DEFAULT_ID
+
+    def has_additional_group(self) -> bool:
+        return True
 
 
 DEFAULT_ACTIVATE_GROUP = False
@@ -1126,6 +1162,9 @@ class HasColor:
 MULTI_ACTIVATE_BIT = 0b00000010
 
 
+ORB_MULTI_ACTIVATE = 99
+
+
 OP = TypeVar("OP", bound="Orb")
 
 
@@ -1165,6 +1204,28 @@ class Orb(HasMultiActivate, Object):
             value |= MULTI_ACTIVATE_BIT
 
         writer.write_u8(value, order)
+
+    @classmethod
+    def from_robtop_mapping(cls: Type[OP], mapping: Mapping[int, str]) -> OP:
+        orb = super().from_robtop_mapping(mapping)
+
+        multi_activate = parse_get_or(
+            int_bool, DEFAULT_MULTI_ACTIVATE, mapping.get(ORB_MULTI_ACTIVATE)
+        )
+
+        orb.multi_activate = multi_activate
+
+        return orb
+
+    def to_robtop_mapping(self) -> Dict[int, str]:
+        mapping = super().to_robtop_mapping()
+
+        multi_activate = self.is_multi_activate()
+
+        if multi_activate:
+            mapping[ORB_MULTI_ACTIVATE] = str(int(multi_activate))
+
+        return mapping
 
 
 IC = TypeVar("IC", bound="ItemCounter")
@@ -2395,15 +2456,17 @@ class PickupTrigger(HasCount, HasItem, Trigger):
 
 DEFAULT_SPEED = 1.0
 DEFAULT_MAX_SPEED = 0.0
+DEFAULT_OFFSET = 0.0
 
 
 FPYT = TypeVar("FPYT", bound="FollowPlayerYTrigger")
 
 
 @define()
-class FollowPlayerYTrigger(HasOffset, HasDelay, HasTargetGroup, Trigger):
+class FollowPlayerYTrigger(HasDelay, HasTargetGroup, Trigger):
     speed: float = DEFAULT_SPEED
     max_speed: float = DEFAULT_MAX_SPEED
+    offset: float = DEFAULT_OFFSET
 
     @classmethod
     def from_binary(
@@ -2570,18 +2633,18 @@ def is_trigger(object: Object) -> TypeGuard[Trigger]:
 
 
 def has_target_group(object: Object) -> TypeGuard[HasTargetGroup]:
-    return is_instance(object, HasTargetGroup)
+    return object.has_target_group()
 
 
 def has_additional_group(object: Object) -> TypeGuard[HasAdditionalGroup]:
-    return is_instance(object, HasAdditionalGroup)
+    return object.has_additional_group()
 
 
 class ObjectType(Enum):
     OBJECT = 1
     ANIMATED_OBJECT = 2
     ORB = 3
-    COIN = 4
+    SECRET_COIN = 4
     TEXT = 5
     TELEPORT = 6
     ITEM_COUNTER = 7
@@ -2611,7 +2674,7 @@ OBJECT_TYPE_TO_TYPE = {
     ObjectType.OBJECT: Object,
     ObjectType.ANIMATED_OBJECT: AnimatedObject,
     ObjectType.ORB: Orb,
-    ObjectType.COIN: Coin,
+    ObjectType.SECRET_COIN: SecretCoin,
     ObjectType.TEXT: Text,
     ObjectType.TELEPORT: Teleport,
     ObjectType.ITEM_COUNTER: ItemCounter,
@@ -2681,7 +2744,23 @@ def object_to_bytes(
     return binary.read()
 
 
+TEXT_ID = MiscType.TEXT.id
+
+SECRET_COIN_ID = CoinType.SECRET.id
+
+TELEPORT_ID = PortalType.BLUE_TELEPORT.id
+
+
 OBJECT_ID_NOT_PRESENT = "object id is not present"
+
+
+OBJECT_ID_TO_TYPE = {
+    TEXT_ID: Text,
+    SECRET_COIN_ID: SecretCoin,
+    TELEPORT_ID: Teleport,
+}
+
+OBJECT_ID_TO_TYPE.update({orb.id: Orb for orb in OrbType})
 
 
 def object_from_robtop(string: str) -> Object:  # TODO: extend this function
@@ -2694,10 +2773,9 @@ def object_from_robtop(string: str) -> Object:  # TODO: extend this function
 
     object_id = int(object_id_string)
 
-    if object_id == TEXT_ID:
-        return Text.from_robtop_mapping(mapping)
+    object_type = OBJECT_ID_TO_TYPE.get(object_id, Object)
 
-    return Object.from_robtop_mapping(mapping)
+    return object_type.from_robtop_mapping(mapping)
 
 
 def object_to_robtop(object: Object) -> str:
