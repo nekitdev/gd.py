@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, EMPTY
 from gd.enum_extensions import Enum, Flag
@@ -78,13 +78,13 @@ __all__ = (
 )
 
 
-class SimpleKey(Enum, unknown=True):
+class SimpleKey(Enum):
     """An enumertion of keys used in *XOR* ciphering."""
 
     SAVE = 11
 
 
-class Key(Enum, unknown=True):
+class Key(Enum):
     """An enumeration of keys used in cyclic *XOR* ciphering."""
 
     MESSAGE = 14251
@@ -105,7 +105,7 @@ class Key(Enum, unknown=True):
         self.bytes = string.encode(encoding, errors)
 
 
-class Salt(Enum, unknown=True):
+class Salt(Enum):
     """An enumeration of salts used in hashing."""
 
     LEVEL = "xI25fpAapCQg"
@@ -426,7 +426,7 @@ class Score(Enum):
     FEATURED = 1
 
     @classmethod
-    def _enum_missing_(cls, value: int) -> Optional[Score]:
+    def _missing_(cls, value: Any) -> Optional[Score]:
         return cls.FEATURED if value > 0 else None
 
     def is_epic_only(self) -> bool:
@@ -819,7 +819,7 @@ class OrbType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value
+        return self.value  # type: ignore
 
 
 class PadType(Enum):
@@ -832,7 +832,7 @@ class PadType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value
+        return self.value  # type: ignore
 
 
 class MiscType(Enum):
@@ -842,7 +842,7 @@ class MiscType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value
+        return self.value  # type: ignore
 
 
 class PickupItemMode(Enum):
@@ -919,7 +919,7 @@ class PortalType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value
+        return self.value  # type: ignore
 
 
 class SpeedChangeType(Enum):
@@ -933,7 +933,7 @@ class SpeedChangeType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value
+        return self.value  # type: ignore
 
 
 class CoinType(Enum):
@@ -942,7 +942,7 @@ class CoinType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value
+        return self.value  # type: ignore
 
 
 class PulseTargetType(Enum):

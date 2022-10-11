@@ -1,4 +1,4 @@
-from typing import BinaryIO, Dict, Iterable, Optional, Type, TypeVar
+from typing import BinaryIO, Dict, Iterable, Type, TypeVar
 
 from attrs import define, field
 
