@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Optional, TypeVar
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, EMPTY
 from gd.enum_extensions import Enum, Flag
@@ -18,7 +18,7 @@ __all__ = (
     "FriendRequestState",
     "Role",
     "LevelLength",
-    "UnlistedType",
+    "LevelPrivacy",
     "LevelDifficulty",
     "Difficulty",
     "DemonDifficulty",
@@ -220,25 +220,23 @@ class LevelLength(Enum):
     DEFAULT = TINY
 
 
-class UnlistedType(Flag):
-    """An enumeration of unlisted flags."""
+class LevelPrivacy(Enum):
+    """An enumeration of level publicity modes."""
 
-    LISTED = 0
-    UNLISTED = 1
-    LISTED_TO_FRIENDS = 2
+    PUBLIC = 0
+    FRIENDS = 1
+    PRIVATE = 2
 
-    FRIENDS_ONLY = UNLISTED | LISTED_TO_FRIENDS
+    DEFAULT = PUBLIC
 
-    DEFAULT = LISTED
+    def is_private(self) -> bool:
+        return self is type(self).PRIVATE
 
-    def is_unlisted(self) -> bool:
-        return type(self).UNLISTED in self
+    def is_friends(self) -> bool:
+        return self is type(self).FRIENDS
 
-    def is_listed_to_friends(self) -> bool:
-        return type(self).LISTED_TO_FRIENDS in self
-
-    def is_friends_only(self) -> bool:
-        return self.is_unlisted() and self.is_listed_to_friends()
+    def is_public(self) -> bool:
+        return self is type(self).PUBLIC
 
 
 class Difficulty(Enum):
@@ -426,7 +424,7 @@ class Score(Enum):
     FEATURED = 1
 
     @classmethod
-    def _missing_(cls, value: Any) -> Optional[Score]:
+    def _missing_(cls, value: Any) -> Optional[Score]:  # type: ignore
         return cls.FEATURED if value > 0 else None
 
     def is_epic_only(self) -> bool:
@@ -730,7 +728,7 @@ class EasingMethod(Flag):
         value = self.value
 
         if not value:
-            return Easing.NONE  # type: ignore
+            return Easing.NONE
 
         has_easing_in = cls.IN in self
         has_easing_out = cls.OUT in self
@@ -1158,11 +1156,11 @@ class GuidelineColor(float, Enum):
     GREEN = 1.0
 
     @classmethod
-    def enum_missing(cls: Type[GC], value: float) -> GC:
+    def _missing_(cls, value: Any) -> GuidelineColor:  # type: ignore
         if cls.ORANGE < value < cls.GREEN:
-            return cls.ORANGE  # type: ignore
+            return cls.ORANGE
 
-        return cls.TRANSPARENT  # type: ignore
+        return cls.TRANSPARENT
 
 
 class InternalType(Enum):

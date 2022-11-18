@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, BinaryIO, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
 
 from attrs import Attribute, define, field
+from cattrs import Converter
+from cattrs.gen import make_dict_unstructure_fn, override
 from typing_extensions import TypedDict
 
-from gd.binary import VERSION, Binary
+from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder
 from gd.errors import ClientError
@@ -14,7 +16,7 @@ from gd.json import JSON
 if TYPE_CHECKING:
     from gd.client import Client
 
-__all__ = ("Entity", "EntityData")
+__all__ = ("CONVERTER", "Entity", "EntityData")
 
 E = TypeVar("E", bound="Entity")
 
@@ -81,14 +83,17 @@ class Entity(Binary, JSON[EntityData]):
 
     @classmethod
     def from_json(cls: Type[E], data: EntityData) -> E:
-        return cls(id=data[ID])
+        return CONVERTER.structure(data, cls)
 
     def to_json(self) -> EntityData:
-        return EntityData(id=self.id)
+        return CONVERTER.unstructure(self)
 
     @classmethod
     def from_binary(
-        cls: Type[E], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        cls: Type[E],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
     ) -> E:
         reader = Reader(binary)
 
@@ -97,8 +102,19 @@ class Entity(Binary, JSON[EntityData]):
         return cls(id)
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
         writer = Writer(binary)
 
         writer.write_u32(self.id, order)
+
+
+if not TYPE_CHECKING:
+    Client = Any
+
+CONVERTER = Converter(forbid_extra_keys=True)
+
+CONVERTER.register_unstructure_hook(
+    Entity,
+    make_dict_unstructure_fn(Entity, CONVERTER, maybe_client=override(omit=True)),
+)

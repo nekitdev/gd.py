@@ -1,8 +1,9 @@
 from struct import pack, unpack
-from typing import BinaryIO, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from attrs import frozen
 
+from gd.binary import BinaryReader, BinaryWriter
 from gd.binary_constants import (
     BOOL,
     BOOL_SIZE,
@@ -141,12 +142,13 @@ to_f64 = create_to_float(F64)
 
 to_bool = create_to_bool(BOOL)
 
-B = TypeVar("B", bound=BinaryIO)
+R = TypeVar("R", bound=BinaryReader)
+W = TypeVar("W", bound=BinaryWriter)
 
 
 @frozen()
-class Reader(Generic[B]):
-    reader: B
+class Reader(Generic[R]):
+    reader: R
 
     def read_i8(self, order: ByteOrder = ByteOrder.DEFAULT) -> int:
         return from_i8(self.read(I8_SIZE), order)
@@ -186,8 +188,8 @@ class Reader(Generic[B]):
 
 
 @frozen()
-class Writer(Generic[B]):
-    writer: B
+class Writer(Generic[W]):
+    writer: W
 
     def write_i8(self, value: int, order: ByteOrder = ByteOrder.DEFAULT) -> None:
         self.write(to_i8(value, order))

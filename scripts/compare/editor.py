@@ -4,8 +4,7 @@ from entrypoint import entrypoint
 from gd.api.color_channels import ColorChannel, ColorChannels
 from gd.api.editor import Editor
 from gd.api.header import Header
-from gd.api.objects import Object
-from gd.api.objects_constants import GRID_UNITS
+from gd.api.objects import GRID_UNITS, Object
 from gd.color import Color
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.encoding import compress

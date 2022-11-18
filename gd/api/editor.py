@@ -90,15 +90,15 @@ def get_time_length(
 
 
 DEFAULT_START = 1
+DEFAULT_NEXT = 0
 
 
-def find_next(
-    values: Set[int],
-    start: int = DEFAULT_START,
-) -> int:
+def find_next(values: Set[int], start: int = DEFAULT_START) -> int:
     for value in count(start):
         if value not in values:
             return value
+
+    return DEFAULT_NEXT  # pragma: never
 
 
 DEFAULT_X = 0.0

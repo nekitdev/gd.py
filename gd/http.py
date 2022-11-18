@@ -88,7 +88,7 @@ from gd.enums import (
     Secret,
     SimpleRelationshipType,
     TimelyType,
-    UnlistedType,
+    LevelPrivacy,
 )
 from gd.errors import (
     CommentBanned,
@@ -1487,7 +1487,7 @@ class HTTPClient:
         song_id: int = DEFAULT_ID,
         original_id: int = DEFAULT_ID,
         two_player: bool = DEFAULT_TWO_PLAYER,
-        type: UnlistedType = UnlistedType.DEFAULT,
+        privacy: LevelPrivacy = LevelPrivacy.DEFAULT,
         object_count: int = DEFAULT_OBJECT_COUNT,
         coins: int = DEFAULT_COINS,
         stars: int = DEFAULT_STARS,
@@ -1555,8 +1555,8 @@ class HTTPClient:
             objects=object_count,
             coins=coins,
             requested_stars=stars,
-            unlisted=type.is_unlisted(),
-            unlisted2=type.is_listed_to_friends(),
+            unlisted=not privacy.is_public(),
+            unlisted2=privacy.is_friends(),
             ldm=int(low_detail),
             password=password.to_robtop_value(),
             level_string=data,

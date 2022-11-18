@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, BinaryIO, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Optional, Type, TypeVar
 
 from attrs import define, field
 
-from gd.binary import VERSION
+from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_constants import BITS, BYTE
 from gd.binary_utils import Reader, Writer
 from gd.color import Color
@@ -105,7 +105,7 @@ class UserComment(Comment):
     @classmethod
     def from_binary(
         cls: Type[UC],
-        binary: BinaryIO,
+        binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         encoding: str = DEFAULT_ENCODING,
@@ -137,7 +137,7 @@ class UserComment(Comment):
 
     def to_binary(
         self,
-        binary: BinaryIO,
+        binary: BinaryWriter,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         encoding: str = DEFAULT_ENCODING,
@@ -219,7 +219,7 @@ class LevelComment(Comment):
     @classmethod
     def from_binary(
         cls: Type[LC],
-        binary: BinaryIO,
+        binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         encoding: str = DEFAULT_ENCODING,
@@ -264,7 +264,7 @@ class LevelComment(Comment):
 
     def to_binary(
         self,
-        binary: BinaryIO,
+        binary: BinaryWriter,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         encoding: str = DEFAULT_ENCODING,

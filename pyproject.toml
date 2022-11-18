@@ -56,10 +56,14 @@ python = ">= 3.7"
 aiohttp = ">= 3.8.1"
 click = ">= 8.1.3"
 tqdm = ">= 4.64.1"
+yarl = ">= 1.8.1"
 
-enum-extensions = ">= 0.2.0"
+attrs = ">= 22.1.0"
+cattrs = ">= 22.2.0"
+
+enum-extensions = ">= 0.3.0"
 entrypoint = ">= 1.3.0"
-versions = ">= 1.2.1"
+versions = ">= 1.3.0"
 
 [tool.poetry.dependencies.iters]
 version = ">= 0.5.0"

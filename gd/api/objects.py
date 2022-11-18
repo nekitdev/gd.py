@@ -950,7 +950,7 @@ class Teleport(Object):
     def to_robtop_mapping(self) -> Dict[int, str]:
         mapping = super().to_robtop_mapping()
 
-        mapping[PORTAL_OFFSET] = str(self.portal_offset)
+        mapping[PORTAL_OFFSET] = float_str(self.portal_offset)
 
         smooth = self.smooth
 
@@ -968,6 +968,8 @@ DEFAULT_ANIMATION_SPEED = 1.0
 
 RANDOMIZE_START_BIT = 0b00000001
 
+RANDOMIZE_START = 106
+ANIMATION_SPEED = 107
 
 AO = TypeVar("AO", bound="AnimatedObject")
 
@@ -1018,6 +1020,31 @@ class AnimatedObject(Object):
 
         writer.write_u8(value, order)
 
+    @classmethod
+    def from_robtop_mapping(cls: Type[AO], mapping: Mapping[int, str]) -> AO:
+        animated_object = cls.from_robtop_mapping(mapping)
+
+        randomize_start = parse_get_or(int_bool, DEFAULT_RANDOMIZE_START, mapping.get(RANDOMIZE_START))
+
+        animation_speed = parse_get_or(float, DEFAULT_ANIMATION_SPEED, mapping.get(ANIMATION_SPEED))
+
+        animated_object.randomize_start = randomize_start
+        animated_object.animation_speed = animation_speed
+
+        return animated_object
+
+    def to_robtop_mapping(self) -> Dict[int, str]:
+        mapping = super().to_robtop_mapping()
+
+        mapping[ANIMATION_SPEED] = str(self.animation_speed)
+
+        randomize_start = self.is_randomize_start()
+
+        if randomize_start:
+            mapping[RANDOMIZE_START] = str(int(randomize_start))
+
+        return mapping
+
     def is_randomize_start(self) -> bool:
         return self.randomize_start
 
@@ -1028,6 +1055,9 @@ BLOCK_ID_MASK = 0b01111111_11111111
 
 DEFAULT_DYNAMIC = False
 
+
+BLOCK_ID = 80
+DYNAMIC = 94
 
 CB = TypeVar("CB", bound="CollisionBlock")
 
@@ -1073,6 +1103,31 @@ class CollisionBlock(Object):
             value |= DYNAMIC_BIT
 
         writer.write_u16(value, order)
+
+    @classmethod
+    def from_robtop_mapping(cls: Type[CB], mapping: Mapping[int, str]) -> CB:
+        collision_block = super().from_robtop_mapping(mapping)
+
+        block_id = parse_get_or(int, DEFAULT_ID, mapping.get(BLOCK_ID))
+
+        dynamic = parse_get_or(int_bool, DEFAULT_DYNAMIC, mapping.get(DYNAMIC))
+
+        collision_block.block_id = block_id
+        collision_block.dynamic = dynamic
+
+        return collision_block
+
+    def to_robtop_mapping(self) -> Dict[int, str]:
+        mapping = super().to_robtop_mapping()
+
+        mapping[BLOCK_ID] = str(self.block_id)
+
+        dynamic = self.is_dynamic()
+
+        if dynamic:
+            mapping[DYNAMIC] = str(int(dynamic))
+
+        return mapping
 
     def is_dynamic(self) -> bool:
         return self.dynamic
@@ -1228,6 +1283,9 @@ class Orb(HasMultiActivate, Object):
         return mapping
 
 
+ITEM_ID = 80
+
+
 IC = TypeVar("IC", bound="ItemCounter")
 
 
@@ -1258,6 +1316,26 @@ class ItemCounter(HasItem, Object):
         writer = Writer(binary)
 
         writer.write_u16(self.item_id, order)
+
+    @classmethod
+    def from_robtop_mapping(cls: Type[IC], mapping: Mapping[int, str]) -> IC:
+        item_counter = super().from_robtop_mapping(mapping)
+
+        item_id = parse_get_or(int, DEFAULT_ID, mapping.get(ITEM_ID))
+
+        item_counter.item_id = item_id
+
+        return item_counter
+
+    def to_robtop_mapping(self) -> Dict[int, str]:
+        mapping = super().to_robtop_mapping()
+
+        item_id = self.item_id
+
+        if item_id:
+            mapping[ITEM_ID] = str(item_id)
+
+        return mapping
 
 
 PI = TypeVar("PI", bound="PickupItem")
@@ -1836,6 +1914,8 @@ class SpawnTrigger(HasDelay, HasTargetGroup, Trigger):
 
         spawn_trigger.editor_disable = editor_disable
 
+        return spawn_trigger
+
     def to_binary(
         self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
@@ -2019,6 +2099,8 @@ class RotateTrigger(HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, 
 
         rotate_trigger.rotation_locked = rotation_locked
 
+        return rotate_trigger
+
     def to_binary(
         self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
@@ -2161,6 +2243,8 @@ class ShakeTrigger(HasDuration, Trigger):
         shake_trigger.duration = duration
         shake_trigger.strength = strength
         shake_trigger.interval = interval
+
+        return shake_trigger
 
     def to_binary(
         self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
@@ -2327,6 +2411,8 @@ class CountTrigger(HasMultiActivate, HasActivateGroup, HasCount, HasItem, Trigge
 
         count_trigger.activate_group = activate_group
         count_trigger.multi_activate = multi_activate
+
+        return count_trigger
 
     def to_binary(
         self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
@@ -2670,7 +2756,7 @@ class ObjectType(Enum):
     COLLISION_TRIGGER = 27
 
 
-OBJECT_TYPE_TO_TYPE = {
+OBJECT_TYPE_TO_TYPE: Dict[ObjectType, Type[Object]] = {
     ObjectType.OBJECT: Object,
     ObjectType.ANIMATED_OBJECT: AnimatedObject,
     ObjectType.ORB: Orb,
@@ -2754,7 +2840,7 @@ TELEPORT_ID = PortalType.BLUE_TELEPORT.id
 OBJECT_ID_NOT_PRESENT = "object id is not present"
 
 
-OBJECT_ID_TO_TYPE = {
+OBJECT_ID_TO_TYPE: Dict[int, Type[Object]] = {
     TEXT_ID: Text,
     SECRET_COIN_ID: SecretCoin,
     TELEPORT_ID: Teleport,

@@ -82,7 +82,7 @@ from gd.enums import (
     ToggleType,
     TouchToggleMode,
     TriggerType,
-    UnlistedType,
+    LevelPrivacy,
     ZLayer,
 )
 from gd.errors import (
@@ -142,7 +142,7 @@ __all__ = (
     "FriendRequestState",
     "Role",
     "LevelLength",
-    "UnlistedType",
+    "LevelPrivacy",
     "LevelDifficulty",
     "Difficulty",
     "DemonDifficulty",

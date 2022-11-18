@@ -3,14 +3,14 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 # from pathlib import Path
-from typing import TYPE_CHECKING, Any, AsyncIterator, BinaryIO, Iterable, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, AsyncIterator, Iterable, Optional, Type, TypeVar
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
 from iters.iters import iter
 
 # from gd.api.editor import Editor
-from gd.binary import VERSION
+from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import (
     COMMENT_PAGE_SIZE,
@@ -130,7 +130,7 @@ class Level(Entity):
 
     def to_binary(
         self,
-        binary: BinaryIO,
+        binary: BinaryWriter,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         encoding: str = DEFAULT_ENCODING,
@@ -218,7 +218,7 @@ class Level(Entity):
     @classmethod
     def from_binary(
         cls: Type[L],
-        binary: BinaryIO,
+        binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         encoding: str = DEFAULT_ENCODING,

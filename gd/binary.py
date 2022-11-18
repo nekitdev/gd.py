@@ -1,18 +1,32 @@
 from abc import abstractmethod
 from io import BytesIO
-from typing import Any, BinaryIO, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 from typing_extensions import Protocol, TypeGuard, runtime_checkable
 
 from gd.enums import ByteOrder
 from gd.typing import is_instance
 
-__all__ = ("Binary", "FromBinary", "ToBinary", "is_from_binary", "is_to_binary")
+__all__ = (
+    "BinaryReader", "BinaryWriter", "Binary", "FromBinary", "ToBinary", "is_from_binary", "is_to_binary"
+)
 
 HEADER = b"GD"
 VERSION = 1
 
 B = TypeVar("B", bound="FromBinary")
+
+
+class BinaryReader(Protocol):
+    @abstractmethod
+    def read(self, __size: int) -> bytes:
+        ...
+
+
+class BinaryWriter(Protocol):
+    @abstractmethod
+    def write(self, __data: bytes) -> Optional[int]:
+        ...
 
 
 @runtime_checkable
@@ -21,7 +35,7 @@ class FromBinary(Protocol):
     @abstractmethod
     def from_binary(
         cls: Type[B],
-        binary: BinaryIO,
+        binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> B:
@@ -42,7 +56,10 @@ def is_from_binary(item: Any) -> TypeGuard[FromBinary]:
 class ToBinary(Protocol):
     @abstractmethod
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
     ) -> None:
         ...
 

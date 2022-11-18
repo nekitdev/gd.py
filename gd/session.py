@@ -38,7 +38,7 @@ from gd.enums import (
     RewardType,
     SimpleRelationshipType,
     TimelyType,
-    UnlistedType,
+    LevelPrivacy,
 )
 from gd.filters import Filters
 from gd.http import HTTPClient
@@ -304,7 +304,7 @@ class Session:
         song_id: int = DEFAULT_ID,
         original_id: int = DEFAULT_ID,
         two_player: bool = DEFAULT_TWO_PLAYER,
-        type: UnlistedType = UnlistedType.DEFAULT,
+        privacy: LevelPrivacy = LevelPrivacy.DEFAULT,
         object_count: int = DEFAULT_OBJECT_COUNT,
         coins: int = DEFAULT_COINS,
         stars: int = DEFAULT_STARS,
@@ -332,7 +332,7 @@ class Session:
             object_count=object_count,
             coins=coins,
             stars=stars,
-            type=type,
+            privacy=privacy,
             low_detail=low_detail,
             password=password,
             recording=recording,

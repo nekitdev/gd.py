@@ -508,28 +508,28 @@ class User(Entity):
 
         youtube_length = reader.read_u16(order)
 
-        youtube = reader.read(youtube_length).decode(encoding, errors)
+        youtube: Optional[str] = reader.read(youtube_length).decode(encoding, errors)
 
         if not youtube:
             youtube = None
 
         twitter_length = reader.read_u16(order)
 
-        twitter = reader.read(twitter_length).decode(encoding, errors)
+        twitter: Optional[str] = reader.read(twitter_length).decode(encoding, errors)
 
         if not twitter:
             twitter = None
 
         twitch_length = reader.read_u16(order)
 
-        twitch = reader.read(twitch_length).decode(encoding, errors)
+        twitch: Optional[str] = reader.read(twitch_length).decode(encoding, errors)
 
         if not twitch:
             twitch = None
 
         # discord_length = reader.read_u16(order)
 
-        # discord = reader.read(discord_length).decode(encoding, errors)
+        # discord: Optional[str] = reader.read(discord_length).decode(encoding, errors)
 
         # if not discord:
         #     discord = None

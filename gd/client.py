@@ -76,7 +76,7 @@ from gd.enums import (
     RewardType,
     SimpleRelationshipType,
     TimelyType,
-    UnlistedType,
+    LevelPrivacy,
 )
 from gd.errors import ClientError, MissingAccess, NothingFound
 from gd.events.controller import Controller
@@ -756,7 +756,7 @@ class Client:
         song_id: int = DEFAULT_ID,
         original_id: int = DEFAULT_ID,
         two_player: bool = DEFAULT_TWO_PLAYER,
-        type: UnlistedType = UnlistedType.DEFAULT,
+        privacy: LevelPrivacy = LevelPrivacy.DEFAULT,
         object_count: int = DEFAULT_OBJECT_COUNT,
         coins: int = DEFAULT_COINS,
         stars: int = DEFAULT_STARS,
@@ -780,7 +780,7 @@ class Client:
             object_count=object_count,
             coins=coins,
             stars=stars,
-            type=type,
+            privacy=privacy,
             low_detail=low_detail,
             password=password,
             recording=recording,
