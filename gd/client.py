@@ -31,7 +31,6 @@ from gd.async_utils import awaiting, run, run_iterables
 from gd.comments import Comment, LevelComment, UserComment
 from gd.constants import (
     COMMENT_PAGE_SIZE,
-    DEFAULT_AS_MOD,
     DEFAULT_CHEST_COUNT,
     DEFAULT_COINS,
     DEFAULT_COUNT,
@@ -82,9 +81,10 @@ from gd.errors import ClientError, MissingAccess, NothingFound
 from gd.events.controller import Controller
 from gd.events.listeners import (
     DailyCommentListener,
-    DailyLevelListener,
+    DailyListener,
     FriendRequestListener,
     LevelCommentListener,
+    LevelListener,
     Listener,
     MessageListener,
     RateListener,
@@ -92,7 +92,7 @@ from gd.events.listeners import (
     UserLevelCommentListener,
     UserLevelListener,
     WeeklyCommentListener,
-    WeeklyLevelListener,
+    WeeklyListener,
 )
 from gd.filters import Filters
 from gd.friend_request import FriendRequest
@@ -115,7 +115,7 @@ from gd.typing import (
     Predicate,
     URLString,
 )
-from gd.user import User
+from gd.users import LeaderboardUser, LevelLeaderboardUser, User
 
 __all__ = ("Client",)
 
@@ -123,6 +123,8 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 F = TypeVar("F", bound=AnyCallable)
+
+L = TypeVar("L", bound=Listener)
 
 
 def switch_none(value: Optional[T], default: T) -> T:
@@ -597,7 +599,7 @@ class Client:
         self,
         strategy: LeaderboardStrategy = LeaderboardStrategy.DEFAULT,
         count: int = DEFAULT_COUNT,
-    ) -> AsyncIterator[User]:
+    ) -> AsyncIterator[LeaderboardUser]:
         response_model = await self.session.get_leaderboard(
             strategy=strategy,
             count=count,
@@ -606,7 +608,7 @@ class Client:
         )
 
         for model in response_model.users:
-            yield User.from_leaderboard_user_model(model).attach_client(self)
+            yield LeaderboardUser.from_leaderboard_user_model(model).attach_client(self)
 
     def level_models_from_model(
         self, response_model: SearchLevelsResponseModel
@@ -820,16 +822,19 @@ class Client:
         )
 
     @check_login
-    async def rate_demon(
-        self,
-        level: Level,
-        rating: DemonDifficulty,
-        as_mod: bool = DEFAULT_AS_MOD,
-    ) -> None:
+    async def rate_demon(self, level: Level, rating: DemonDifficulty) -> None:
         await self.session.rate_demon(
             level_id=level.id,
             rating=rating,
-            as_mod=as_mod,
+            account_id=self.account_id,
+            encoded_password=self.encoded_password,
+        )
+
+    @check_login
+    async def suggest_demon(self, level: Level, rating: DemonDifficulty) -> None:
+        await self.session.suggest_demon(
+            level_id=level.id,
+            rating=rating,
             account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
@@ -850,7 +855,7 @@ class Client:
         self,
         level: Level,
         strategy: LevelLeaderboardStrategy = LevelLeaderboardStrategy.ALL,
-    ) -> AsyncIterator[User]:
+    ) -> AsyncIterator[LevelLeaderboardUser]:
         response_model = await self.session.get_level_leaderboard(
             level_id=level.id,
             strategy=strategy,
@@ -859,7 +864,7 @@ class Client:
         )
 
         for model in response_model.users:
-            yield User.from_level_leaderboard_user_model(model).attach_client(self)
+            yield LevelLeaderboardUser.from_level_leaderboard_user_model(model).attach_client(self)
 
     @check_login
     async def block_user(self, user: User) -> None:
@@ -1625,22 +1630,42 @@ class Client:
 
     def listen_for_daily(
         self, delay: float = DEFAULT_DELAY, reconnect: bool = DEFAULT_RECONNECT
-    ) -> None:
-        self.add_listener(DailyLevelListener(self, delay=delay, reconnect=reconnect))
+    ) -> DailyListener:
+        return self.add_listener(DailyListener(self, delay=delay, reconnect=reconnect))
 
     def listen_for_weekly(
         self, delay: float = DEFAULT_DELAY, reconnect: bool = DEFAULT_RECONNECT
-    ) -> None:
-        self.add_listener(WeeklyLevelListener(self, delay=delay, reconnect=reconnect))
+    ) -> WeeklyListener:
+        return self.add_listener(WeeklyListener(self, delay=delay, reconnect=reconnect))
 
     def listen_for_rate(
         self,
         pages_count: int = DEFAULT_PAGES_COUNT,
         delay: float = DEFAULT_DELAY,
         reconnect: bool = DEFAULT_RECONNECT,
-    ) -> None:
-        self.add_listener(
+    ) -> RateListener:
+        return self.add_listener(
             RateListener(self, delay=delay, reconnect=reconnect, pages_count=pages_count)
+        )
+
+    def listen_for_level(
+        self,
+        pages_count: int = DEFAULT_PAGES_COUNT,
+        filters: Optional[Filters] = None,
+        delay: float = DEFAULT_DELAY,
+        reconnect: bool = DEFAULT_RECONNECT,
+    ) -> LevelListener:
+        if filters is None:
+            filters = Filters()
+
+        return self.add_listener(
+            LevelListener(
+                self,
+                delay=delay,
+                reconnect=reconnect,
+                pages_count=pages_count,
+                filters=filters,
+            )
         )
 
     def listen_for_user_level(
@@ -1652,8 +1677,8 @@ class Client:
         update: bool = DEFAULT_UPDATE,
         delay: float = DEFAULT_DELAY,
         reconnect: bool = DEFAULT_RECONNECT,
-    ) -> None:
-        self.add_listener(
+    ) -> UserLevelListener:
+        return self.add_listener(
             UserLevelListener(
                 self,
                 delay=delay,
@@ -1671,8 +1696,8 @@ class Client:
         pages_count: int = DEFAULT_PAGES_COUNT,
         delay: float = DEFAULT_DELAY,
         reconnect: bool = DEFAULT_RECONNECT,
-    ) -> None:
-        self.add_listener(
+    ) -> MessageListener:
+        return self.add_listener(
             MessageListener(self, delay=delay, reconnect=reconnect, pages_count=pages_count)
         )
 
@@ -1681,8 +1706,8 @@ class Client:
         pages_count: int = DEFAULT_PAGES_COUNT,
         delay: float = DEFAULT_DELAY,
         reconnect: bool = DEFAULT_RECONNECT,
-    ) -> None:
-        self.add_listener(
+    ) -> FriendRequestListener:
+        return self.add_listener(
             FriendRequestListener(self, delay=delay, reconnect=reconnect, pages_count=pages_count)
         )
 
@@ -1694,8 +1719,8 @@ class Client:
         update: bool = DEFAULT_UPDATE,
         delay: float = DEFAULT_DELAY,
         reconnect: bool = DEFAULT_RECONNECT,
-    ) -> None:
-        self.add_listener(
+    ) -> LevelCommentListener:
+        return self.add_listener(
             LevelCommentListener(
                 self,
                 delay=delay,
@@ -1714,8 +1739,8 @@ class Client:
         update: bool = DEFAULT_UPDATE,
         delay: float = DEFAULT_DELAY,
         reconnect: bool = DEFAULT_RECONNECT,
-    ) -> None:
-        self.add_listener(
+    ) -> DailyCommentListener:
+        return self.add_listener(
             DailyCommentListener(
                 self,
                 delay=delay,
@@ -1733,8 +1758,8 @@ class Client:
         update: bool = DEFAULT_UPDATE,
         delay: float = DEFAULT_DELAY,
         reconnect: bool = DEFAULT_RECONNECT,
-    ) -> None:
-        self.add_listener(
+    ) -> WeeklyCommentListener:
+        return self.add_listener(
             WeeklyCommentListener(
                 self,
                 delay=delay,
@@ -1753,8 +1778,8 @@ class Client:
         update: bool = DEFAULT_UPDATE,
         delay: float = DEFAULT_DELAY,
         reconnect: bool = DEFAULT_RECONNECT,
-    ) -> None:
-        self.add_listener(
+    ) -> UserCommentListener:
+        return self.add_listener(
             UserCommentListener(
                 self,
                 delay=delay,
@@ -1774,8 +1799,8 @@ class Client:
         update: bool = DEFAULT_UPDATE,
         delay: float = DEFAULT_DELAY,
         reconnect: bool = DEFAULT_RECONNECT,
-    ) -> None:
-        self.add_listener(
+    ) -> UserLevelCommentListener:
+        return self.add_listener(
             UserLevelCommentListener(
                 self,
                 delay=delay,
@@ -1789,10 +1814,12 @@ class Client:
 
     # listeners
 
-    def add_listener(self, listener: Listener) -> None:
+    def add_listener(self, listener: L) -> L:
         self.check_controller()
 
         self._listeners = (*self._listeners, listener)
+
+        return listener
 
     def clear_listeners(self) -> None:
         self.check_controller()

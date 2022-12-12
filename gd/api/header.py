@@ -1,10 +1,10 @@
-from typing import BinaryIO, Optional, Type, TypeVar
+from typing import Type, TypeVar
 
 from attrs import define, field
 
 from gd.api.color_channels import ColorChannels
 from gd.api.guidelines import Guidelines
-from gd.binary import VERSION, Binary
+from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_constants import HALF_BITS, HALF_BYTE
 from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ID
@@ -90,7 +90,10 @@ class Header(Model, Binary):
 
     @classmethod
     def from_binary(
-        cls: Type[H], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        cls: Type[H],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
     ) -> H:
         mini_mode_bit = MINI_MODE_BIT
         dual_mode_bit = DUAL_MODE_BIT
@@ -154,7 +157,7 @@ class Header(Model, Binary):
         )
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
         writer = Writer(binary)
 

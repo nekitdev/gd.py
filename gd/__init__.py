@@ -8,8 +8,9 @@ __author__ = "nekitdev"
 __license__ = "MIT"
 __version__ = "1.0.0-alpha.1"
 
-from gd import api, encoding, events, image, json, tasks
+from gd import api, binary, encoding, events, image, json, tasks
 from gd.artist import Artist
+from gd.binary import BinaryInfo
 from gd.client import Client
 from gd.color import Color
 from gd.comments import Comment, LevelComment, UserComment
@@ -18,6 +19,7 @@ from gd.entity import Entity
 from gd.enums import (
     AccountURLType,
     ByteOrder,
+    CoinType,
     CollectedCoins,
     CommentState,
     CommentStrategy,
@@ -70,6 +72,7 @@ from gd.enums import (
     ShardType,
     SimpleKey,
     SimpleRelationshipType,
+    SimpleZLayer,
     SpecialBlockType,
     SpecialColorID,
     Speed,
@@ -111,11 +114,71 @@ from gd.relationship import Relationship
 from gd.rewards import Chest, Quest
 from gd.session import Session
 from gd.song import Song
-from gd.user import User
+from gd.users import LeaderboardUser, LevelLeaderboardUser, User
 from gd.version import python_version_info, version_info
 from gd.versions import GameVersion, Version
 
 __all__ = (
+    # system platform
+    "SYSTEM_PLATFORM",
+    # versions info
+    "version_info",
+    "python_version_info",
+    # modules
+    "api",
+    "binary",
+    "encoding",
+    "events",
+    "image",
+    "json",
+    "tasks",
+    # binary info
+    "BinaryInfo",
+    # colors
+    "Color",
+    # client
+    "Client",
+    # session
+    "Session",
+    # HTTP client
+    "HTTPClient",
+    # models
+    "Entity",
+    # artists
+    "Artist",
+    # comments
+    "Comment",
+    "UserComment",
+    "LevelComment",
+    # credentials
+    "Credentials",
+    # filters
+    "Filters",
+    # friend requests
+    "FriendRequest",
+    # levels
+    "Level",
+    # level packs
+    "Gauntlet",
+    "MapPack",
+    # messages
+    "Message",
+    # relationships
+    "Relationship",
+    # rewards
+    "Chest",
+    "Quest",
+    # songs
+    "Song",
+    # users
+    "User",
+    "LeaderboardUser",
+    "LevelLeaderboardUser",
+    # passwords
+    "Password",
+    # versions
+    "Version",
+    "GameVersion",
     # errors
     "InternalError",
     "GDError",
@@ -179,6 +242,7 @@ __all__ = (
     "LevelType",
     "PortalType",
     "SpeedChangeType",
+    "CoinType",
     "PulseTargetType",
     "PulseType",
     "SpecialBlockType",
@@ -187,6 +251,7 @@ __all__ = (
     "TouchToggleMode",
     "TriggerType",
     "ZLayer",
+    "SimpleZLayer",
     "Speed",
     "SpeedConstant",
     "SpeedMagic",

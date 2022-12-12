@@ -7,7 +7,7 @@ from iters import iter
 from yarl import URL
 
 from gd.artist import Artist
-from gd.binary import VERSION
+from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import (
     DEFAULT_ENCODING,
@@ -87,7 +87,7 @@ class Song(Entity):
     @classmethod
     def from_binary(
         cls: Type[S],
-        binary: BinaryIO,
+        binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         encoding: str = DEFAULT_ENCODING,
@@ -127,7 +127,7 @@ class Song(Entity):
 
     def to_binary(
         self,
-        binary: BinaryIO,
+        binary: BinaryWriter,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         encoding: str = DEFAULT_ENCODING,

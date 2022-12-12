@@ -14,7 +14,6 @@ from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import (
     COMMENT_PAGE_SIZE,
-    DEFAULT_AS_MOD,
     DEFAULT_COINS,
     DEFAULT_DEMON,
     DEFAULT_DOWNLOADS,
@@ -52,7 +51,7 @@ from gd.official_levels import OFFICIAL_LEVELS, OfficialLevel
 from gd.password import Password
 from gd.song import Song
 from gd.typing import Predicate
-from gd.user import User
+from gd.users import User
 from gd.versions import CURRENT_GAME_VERSION, GameVersion
 
 if TYPE_CHECKING:
@@ -533,10 +532,11 @@ class Level(Entity):
     async def rate(self, stars: int) -> None:
         await self.client.rate_level(self, stars)
 
-    async def rate_demon(
-        self, rating: DemonDifficulty = DemonDifficulty.DEFAULT, as_mod: bool = DEFAULT_AS_MOD
-    ) -> None:
-        await self.client.rate_demon(self, rating=rating, as_mod=as_mod)
+    async def rate_demon(self, rating: DemonDifficulty) -> None:
+        await self.client.rate_demon(self, rating=rating)
+
+    async def suggest_demon(self, rating: DemonDifficulty) -> None:
+        await self.client.suggest_demon(self, rating=rating)
 
     async def suggest(self, stars: int, feature: bool) -> None:
         await self.client.suggest_level(self, stars=stars, feature=feature)

@@ -1,8 +1,10 @@
 from datetime import timedelta
 from typing import Any, Generic, Optional, TypeVar
 
+from named import get_type_name
+
 from gd.string_utils import password_str, tick
-from gd.typing import AnyException, get_name
+from gd.typing import AnyException
 
 __all__ = (
     "InternalError",
@@ -45,7 +47,7 @@ class HTTPErrorWithOrigin(Generic[E], HTTPError):
     def __init__(self, origin: E) -> None:
         self._origin = origin
 
-        super().__init__(FAILED_TO_PROCESS.format(get_name(type(origin)), origin))  # type: ignore
+        super().__init__(FAILED_TO_PROCESS.format(get_type_name(origin)), origin)
 
     @property
     def origin(self) -> E:

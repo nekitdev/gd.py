@@ -9,7 +9,7 @@ from gd.constants import DEFAULT_READ, EMPTY
 from gd.entity import Entity
 from gd.enums import MessageType
 from gd.models import MessageModel
-from gd.user import User
+from gd.users import User
 
 if TYPE_CHECKING:
     from gd.client import Client

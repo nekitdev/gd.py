@@ -64,7 +64,7 @@ class Artist(Entity):
         return CONVERTER.structure(data, cls)
 
     def to_json(self) -> ArtistData:  # type: ignore
-        return CONVERTER.unstructure(self)
+        return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
     def from_binary(

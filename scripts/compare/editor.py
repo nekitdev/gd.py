@@ -30,14 +30,11 @@ def main(count: int) -> None:
     color_id = COLOR_ID
     rounding = ROUNDING
 
-    header = Header(
-        color_channels=ColorChannels.from_color_channels(ColorChannel(color_id, COLOR))
-    )
+    header = Header(color_channels=ColorChannels.from_color_channels(ColorChannel(color_id, COLOR)))
 
     objects = [
-        Object(
-            object_id, x=index * grid_units, y=index * grid_units, base_color_id=color_id
-        ) for index in range(count)
+        Object(object_id, x=index * grid_units, y=index * grid_units, base_color_id=color_id)
+        for index in range(count)
     ]
 
     editor = Editor(header, objects)

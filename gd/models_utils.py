@@ -130,8 +130,8 @@ def split_mapping(separator: str, string: str) -> Mapping[int, str]:
 
 def split_float_mapping(separator: str, string: str) -> Mapping[float, float]:
     return {
-        float(key): float(value) for key, value
-        in iter(string.split(separator)).filter(None).pairs().unwrap()
+        float(key): float(value)
+        for key, value in iter(string.split(separator)).filter(None).pairs().unwrap()
     }
 
 

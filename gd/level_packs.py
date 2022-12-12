@@ -73,7 +73,7 @@ class Gauntlet(Entity):
 @define()
 class MapPack(Gauntlet):
     stars: int = field(default=DEFAULT_STARS, eq=False)
-    coins: int = field(default=DEFAULT_COINS, eq=False)
+    secret_coins: int = field(default=DEFAULT_COINS, eq=False)
     difficulty: Difficulty = field(default=Difficulty.DEFAULT, eq=False)
     primary_color: Color = field(factory=Color.default, eq=False)
     secondary_color: Color = field(factory=Color.default, eq=False)

@@ -4,7 +4,7 @@ from enum_extensions.traits import Format, Order, Title
 
 __all__ = ("Enum", "Flag")
 
-ABBREVIATIONS = {"NA", "UFO", "XL"}
+ABBREVIATIONS = {"UFO", "XL"}
 
 Title.ABBREVIATIONS.update(ABBREVIATIONS)
 

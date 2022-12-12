@@ -17,6 +17,9 @@ def convert_listeners(iterable: Iterable[Listener]) -> DynamicTuple[Listener]:
     return tuple(iterable)
 
 
+STOP_LOOP = True
+
+
 @define()
 class Controller:
     listeners: DynamicTuple[Listener] = field(default=(), converter=convert_listeners)
@@ -62,7 +65,7 @@ class Controller:
 
         thread.start()
 
-    def stop(self, stop_loop: int = True) -> None:
+    def stop(self, stop_loop: int = STOP_LOOP) -> None:
         thread = self._thread
 
         if thread is None:

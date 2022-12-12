@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import BinaryIO, Dict, Type, TypeVar
+from typing import Dict, Type, TypeVar
 
-from gd.binary import VERSION
+from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder, GuidelineColor
 from gd.models_constants import GUIDELINES_SEPARATOR
@@ -14,13 +14,16 @@ __all__ = ("Guidelines",)
 G = TypeVar("G", bound="Guidelines")
 
 
-class Guidelines(RobTop, Dict[float, GuidelineColor]):
+class Guidelines(RobTop, Binary, Dict[float, GuidelineColor]):
     def add(self, timestamp: float, color: GuidelineColor = GuidelineColor.DEFAULT) -> None:
         self[timestamp] = color
 
     @classmethod
     def from_binary(
-        cls: Type[G], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        cls: Type[G],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
     ) -> G:
         reader = Reader(binary)
 
@@ -31,7 +34,7 @@ class Guidelines(RobTop, Dict[float, GuidelineColor]):
         return cls({reader.read_f32(order): color(reader.read_f32(order)) for _ in range(length)})
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
         writer = Writer(binary)
 

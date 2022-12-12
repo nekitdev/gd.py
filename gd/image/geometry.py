@@ -8,10 +8,8 @@ from attrs import Attribute, define, field
 __all__ = ("Point", "Size", "Rectangle")
 
 P = TypeVar("P", bound="Point")
-Q = TypeVar("Q", bound="Point")
 
 S = TypeVar("S", bound="Size")
-T = TypeVar("T", bound="Size")
 
 R = TypeVar("R", bound="Rectangle")
 
@@ -56,19 +54,19 @@ class Point:
 
         return self
 
-    def add(self: P, point: Q) -> P:
+    def add(self: P, point: Point) -> P:
         return self.create(self.x + point.x, self.y + point.y)
 
-    def add_in_place(self: P, point: Q) -> P:
+    def add_in_place(self: P, point: Point) -> P:
         self.x += point.x
         self.y += point.y
 
         return self
 
-    def sub(self: P, point: Q) -> P:
+    def sub(self: P, point: Point) -> P:
         return self.create(self.x - point.x, self.y - point.y)
 
-    def sub_in_place(self: P, point: Q) -> P:
+    def sub_in_place(self: P, point: Point) -> P:
         self.x -= point.x
         self.y -= point.y
 
@@ -180,10 +178,10 @@ class Size:
 
         return self
 
-    def mul_components(self: S, size: T) -> S:
+    def mul_components(self: S, size: Size) -> S:
         return self.create(self.width * size.width, self.height * size.height)
 
-    def mul_components_in_place(self: S, size: T) -> S:
+    def mul_components_in_place(self: S, size: Size) -> S:
         self.width *= size.width
         self.height *= size.height
 
@@ -198,10 +196,10 @@ class Size:
 
         return self
 
-    def div_components(self: S, size: T) -> S:
+    def div_components(self: S, size: Size) -> S:
         return self.create(self.width / size.width, self.height / size.height)
 
-    def div_components_in_place(self: S, size: T) -> S:
+    def div_components_in_place(self: S, size: Size) -> S:
         self.width /= size.width
         self.height /= size.height
 

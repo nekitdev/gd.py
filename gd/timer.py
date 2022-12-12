@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import timedelta as duration
+from time import perf_counter as clock
 from typing import Type, TypeVar, overload
 
 from attrs import field, frozen
@@ -7,18 +8,16 @@ __all__ = ("Timer", "create_timer")
 
 T = TypeVar("T", bound="Timer")
 
-clock = datetime.utcnow
-
 
 @frozen()
 class Timer:
-    created_at: datetime = field(factory=clock)
+    created_at: float = field(factory=clock)
 
-    def current(self) -> datetime:
+    def current(self) -> float:
         return clock()
 
-    def elapsed(self) -> timedelta:
-        return self.current() - self.created_at
+    def elapsed(self) -> duration:
+        return duration(seconds=self.current() - self.created_at)
 
 
 @overload

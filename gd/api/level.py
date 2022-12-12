@@ -1,10 +1,10 @@
 from datetime import timedelta
-from typing import BinaryIO, Type, TypeVar
+from typing import Type, TypeVar
 
 from attrs import define, field
 
 from gd.api.recording import Recording
-from gd.binary import VERSION, Binary
+from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import (
     DEFAULT_ATTEMPTS,
@@ -43,7 +43,7 @@ from gd.enums import ByteOrder, CollectedCoins, Difficulty, LevelLength, LevelTy
 from gd.password import Password
 from gd.progress import Progress
 from gd.song import Song
-from gd.user import User
+from gd.users import User
 from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, Version
 
 EDITABLE_BIT = 0b00000000_00000001
@@ -126,7 +126,10 @@ class LevelAPI(Binary):
 
     @classmethod
     def from_binary(
-        cls: Type[A], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        cls: Type[A],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
     ) -> A:
         reader = Reader(binary)
 
@@ -136,7 +139,7 @@ class LevelAPI(Binary):
 
     def to_binary(
         self,
-        binary: BinaryIO,
+        binary: BinaryWriter,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         encoding: str = DEFAULT_ENCODING,
@@ -144,7 +147,7 @@ class LevelAPI(Binary):
     ) -> None:
         writer = Writer(binary)
 
-        writer.write_u64(self.id, order)
+        writer.write_u32(self.id, order)
 
         data = self.name.encode(encoding, errors)
 

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, AsyncIterator, BinaryIO, Dict, Iterable, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, AsyncIterator, Dict, Iterable, Optional, Type, TypeVar
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
 
 from gd.async_utils import gather_iterable
-from gd.binary import VERSION
+from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.color import Color
 from gd.constants import (
@@ -75,7 +75,7 @@ if TYPE_CHECKING:
     from gd.level import Level
     from gd.message import Message
 
-__all__ = ("User",)
+__all__ = ("User", "LeaderboardUser", "LevelLeaderboardUser")
 
 U = TypeVar("U", bound="User")
 
@@ -125,12 +125,7 @@ class User(Entity):
     twitter: Optional[str] = field(default=None, eq=False)
     twitch: Optional[str] = field(default=None, eq=False)
     # discord: Optional[str] = field(default=None, eq=False)
-    coins: int = field(default=DEFAULT_COINS, eq=False)
-    place: int = field(default=DEFAULT_PLACE, eq=False)
-    record: int = field(default=DEFAULT_RECORD, eq=False)
     banned: bool = field(default=DEFAULT_BANNED, eq=False)
-
-    recorded_at: Optional[datetime] = None
 
     @classmethod
     def default(cls: Type[U]) -> U:
@@ -252,26 +247,6 @@ class User(Entity):
         )
 
     @classmethod
-    def from_leaderboard_user_model(cls: Type[U], model: LeaderboardUserModel) -> U:
-        return cls(
-            name=model.name,
-            id=model.id,
-            stars=model.stars,
-            demons=model.demons,
-            place=model.place,
-            creator_points=model.creator_points,
-            icon_id=model.icon_id,
-            color_1_id=model.color_1_id,
-            color_2_id=model.color_2_id,
-            secret_coins=model.secret_coins,
-            icon_type=model.icon_type,
-            glow=model.glow,
-            account_id=model.account_id,
-            user_coins=model.user_coins,
-            diamonds=model.diamonds,
-        )
-
-    @classmethod
     def from_level_comment_user_model(cls: Type[U], model: LevelCommentUserModel, id: int) -> U:
         return cls(
             id=id,
@@ -282,23 +257,6 @@ class User(Entity):
             icon_type=model.icon_type,
             glow=model.glow,
             account_id=model.account_id,
-        )
-
-    @classmethod
-    def from_level_leaderboard_user_model(cls: Type[U], model: LevelLeaderboardUserModel) -> U:
-        return cls(
-            name=model.name,
-            id=model.id,
-            record=model.record,
-            place=model.place,
-            icon_id=model.icon_id,
-            color_1_id=model.color_1_id,
-            color_2_id=model.color_2_id,
-            coins=model.coins,
-            icon_type=model.icon_type,
-            glow=model.glow,
-            account_id=model.account_id,
-            recorded_at=model.recorded_at,
         )
 
     def __str__(self) -> str:
@@ -435,7 +393,7 @@ class User(Entity):
     @classmethod
     def from_binary(
         cls: Type[U],
-        binary: BinaryIO,
+        binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         encoding: str = DEFAULT_ENCODING,
@@ -459,7 +417,7 @@ class User(Entity):
         diamonds = reader.read_u32(order)
         orbs = reader.read_u32(order)
         user_coins = reader.read_u32(order)
-        secret_coins = reader.read_u8(order)
+        secret_coins = reader.read_u16(order)
         creator_points = reader.read_u16(order)
 
         rank = reader.read_u32(order)
@@ -534,20 +492,6 @@ class User(Entity):
         # if not discord:
         #     discord = None
 
-        coins = reader.read_u8(order)
-
-        place = reader.read_u32(order)
-
-        record = reader.read_u8(order)
-
-        timestamp = reader.read_f64(order)
-
-        if timestamp:
-            recorded_at = datetime.fromtimestamp(timestamp)
-
-        else:
-            recorded_at = None
-
         return cls(
             id=id,
             name=name,
@@ -583,16 +527,12 @@ class User(Entity):
             twitter=twitter,
             twitch=twitch,
             # discord=discord,
-            coins=coins,
-            place=place,
-            record=record,
             banned=banned,
-            recorded_at=recorded_at,
         )
 
     def to_binary(
         self,
-        binary: BinaryIO,
+        binary: BinaryWriter,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         encoding: str = DEFAULT_ENCODING,
@@ -615,7 +555,7 @@ class User(Entity):
         writer.write_u32(self.diamonds, order)
         writer.write_u32(self.orbs, order)
         writer.write_u32(self.user_coins, order)
-        writer.write_u8(self.secret_coins, order)
+        writer.write_u16(self.secret_coins, order)
         writer.write_u16(self.creator_points, order)
 
         writer.write_u32(self.rank, order)
@@ -699,9 +639,139 @@ class User(Entity):
 
         # writer.write(data)
 
-        writer.write_u8(self.coins, order)
+
+LU = TypeVar("LU", bound="LeaderboardUser")
+
+
+@define()
+class LeaderboardUser(User):
+    place: int = field(default=DEFAULT_PLACE, eq=False)
+
+    @classmethod
+    def from_leaderboard_user_model(cls: Type[LU], model: LeaderboardUserModel) -> LU:
+        return cls(
+            name=model.name,
+            id=model.id,
+            stars=model.stars,
+            demons=model.demons,
+            place=model.place,
+            creator_points=model.creator_points,
+            icon_id=model.icon_id,
+            color_1_id=model.color_1_id,
+            color_2_id=model.color_2_id,
+            secret_coins=model.secret_coins,
+            icon_type=model.icon_type,
+            glow=model.glow,
+            account_id=model.account_id,
+            user_coins=model.user_coins,
+            diamonds=model.diamonds,
+        )
+
+    @classmethod
+    def from_binary(
+        cls: Type[LU],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
+    ) -> LU:
+        leaderboard_user = super().from_binary(binary, order, version, encoding, errors)
+
+        reader = Reader(binary)
+
+        place = reader.read_u32(order)
+
+        leaderboard_user.place = place
+
+        return leaderboard_user
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
+    ) -> None:
+        super().to_binary(binary, order, version, encoding, errors)
+
+        writer = Writer(binary)
 
         writer.write_u32(self.place, order)
+
+
+LLU = TypeVar("LLU", bound="LevelLeaderboardUser")
+
+
+@define()
+class LevelLeaderboardUser(LeaderboardUser):
+    coins: int = field(default=DEFAULT_COINS, eq=False)
+    record: int = field(default=DEFAULT_RECORD, eq=False)
+
+    recorded_at: Optional[datetime] = None
+
+    @classmethod
+    def from_level_leaderboard_user_model(cls: Type[LLU], model: LevelLeaderboardUserModel) -> LLU:
+        return cls(
+            name=model.name,
+            id=model.id,
+            record=model.record,
+            place=model.place,
+            icon_id=model.icon_id,
+            color_1_id=model.color_1_id,
+            color_2_id=model.color_2_id,
+            coins=model.coins,
+            icon_type=model.icon_type,
+            glow=model.glow,
+            account_id=model.account_id,
+            recorded_at=model.recorded_at,
+        )
+
+    @classmethod
+    def from_binary(
+        cls: Type[LLU],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
+    ) -> LLU:
+        level_leaderboard_user = super().from_binary(binary, order, version, encoding, errors)
+
+        reader = Reader(binary)
+
+        coins = reader.read_u8(order)
+
+        record = reader.read_u8(order)
+
+        timestamp = reader.read_f64(order)
+
+        if timestamp:
+            recorded_at = datetime.fromtimestamp(timestamp)
+
+        else:
+            recorded_at = None
+
+        level_leaderboard_user.coins = coins
+        level_leaderboard_user.record = record
+        level_leaderboard_user.recorded_at = recorded_at
+
+        return level_leaderboard_user
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
+    ) -> None:
+        super().to_binary(binary, order, version, encoding, errors)
+
+        writer = Writer(binary)
+
+        writer.write_u8(self.coins, order)
 
         writer.write_u8(self.record, order)
 

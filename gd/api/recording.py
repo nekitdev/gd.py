@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import re
 from collections import UserList as ListType
-from typing import BinaryIO, Iterable, Iterator, List, Match, Type, TypeVar, overload
+from typing import Iterable, Iterator, List, Match, Type, TypeVar, overload
 
 from attrs import define
 
-from gd.binary import VERSION, Binary
+from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import EMPTY
 from gd.enums import ByteOrder
@@ -116,7 +116,7 @@ class RecordingItem(Binary, RobTop):
     @classmethod
     def from_binary(
         cls: Type[RI],
-        binary: BinaryIO,
+        binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> RI:
@@ -137,7 +137,7 @@ class RecordingItem(Binary, RobTop):
         return cls(timestamp=timestamp, previous=previous, next=next, secondary=secondary)
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
         writer = Writer(binary)
 
@@ -210,7 +210,7 @@ class Recording(Binary, RobTop, ListType, List[RecordingItem]):  # type: ignore
     @classmethod
     def from_binary(
         cls: Type[R],
-        binary: BinaryIO,
+        binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         item_type: Type[RecordingItem] = RecordingItem,
@@ -222,7 +222,7 @@ class Recording(Binary, RobTop, ListType, List[RecordingItem]):  # type: ignore
         return cls(item_type.from_binary(binary, order, version) for _ in range(length))
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
         writer = Writer(binary)
 

@@ -1,18 +1,18 @@
 from typing import Sequence, Tuple, Type, TypeVar
 
 from attrs import define
-from typing_extensions import TypedDict
+from typing_extensions import Literal, TypedDict
 
 from gd.image.geometry import Point, Size
 
 __all__ = ("Layer", "Layers", "LayerData")
 
-PART = "part"
-POSITION = "position"
-SCALE = "scale"
-ROTATION = "rotation"
-H_FLIPPED = "h_flipped"
-V_FLIPPED = "v_flipped"
+PART: Literal["part"] = "part"
+POSITION: Literal["position"] = "position"
+SCALE: Literal["scale"] = "scale"
+ROTATION: Literal["rotation"] = "rotation"
+H_FLIPPED: Literal["h_flipped"] = "h_flipped"
+V_FLIPPED: Literal["v_flipped"] = "v_flipped"
 
 L = TypeVar("L", bound="Layer")
 

@@ -9,7 +9,7 @@ from gd.enums import RelationshipType
 
 if TYPE_CHECKING:
     from gd.client import Client
-    from gd.user import User
+    from gd.users import User
 
 __all__ = ("Relationship",)
 

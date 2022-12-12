@@ -55,6 +55,7 @@ __all__ = (
     "LevelType",
     "PortalType",
     "SpeedChangeType",
+    "CoinType",
     "PulseTargetType",
     "PulseType",
     "SpecialBlockType",
@@ -151,7 +152,7 @@ class IconType(Enum):
     WAVE = 4
     ROBOT = 5
     SPIDER = 6
-    # SWING_COPTER = 7
+    SWING_COPTER = 7
 
     DEFAULT = CUBE
 
@@ -215,7 +216,7 @@ class LevelLength(Enum):
     MEDIUM = 2
     LONG = 3
     XL = 4
-    # PLATFORMER = 5
+    PLATFORMER = 5
 
     DEFAULT = TINY
 
@@ -362,7 +363,7 @@ class TimelyType(Enum):
     NOT_TIMELY = 0
     DAILY = 1
     WEEKLY = 2
-    # EVENT = 3
+    EVENT = 3
 
     DEFAULT = NOT_TIMELY
 
@@ -385,7 +386,7 @@ class TimelyID(Enum):
     NOT_TIMELY = 0
     DAILY = -1
     WEEKLY = -2
-    # EVENT = -3
+    EVENT = -3
 
     DEFAULT = NOT_TIMELY
 
@@ -406,7 +407,7 @@ TIMELY_TYPE_TO_ID = {
     TimelyType.NOT_TIMELY: TimelyID.NOT_TIMELY,
     TimelyType.DAILY: TimelyID.DAILY,
     TimelyType.WEEKLY: TimelyID.WEEKLY,
-    # TimelyType.EVENT: TimelyID.EVENT,
+    TimelyType.EVENT: TimelyID.EVENT,
 }
 
 TIMELY_ID_TO_TYPE = {timely_id: timely_type for timely_type, timely_id in TIMELY_TYPE_TO_ID.items()}
@@ -850,6 +851,12 @@ class PickupItemMode(Enum):
     PICKUP = 1
     TOGGLE_TRIGGER = 2
 
+    def is_pickup(self) -> bool:
+        return self is type(self).PICKUP
+
+    def is_toggle_trigger(self) -> bool:
+        return self is type(self).TOGGLE_TRIGGER
+
 
 class GameMode(Enum):
     """An enumeration of game modes."""
@@ -861,7 +868,7 @@ class GameMode(Enum):
     WAVE = 4
     ROBOT = 5
     SPIDER = 6
-    # SWING_COPTER = 7
+    SWING_COPTER = 7
 
     DEFAULT = CUBE
 

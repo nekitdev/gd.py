@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from typing import BinaryIO, Type, TypeVar
+from typing import Type, TypeVar
 
 from attrs import Attribute, field, frozen
 from typing_extensions import Final
 
-from gd.binary import VERSION, Binary
+from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder
 from gd.robtop import RobTop
-from gd.string import String
 from gd.string_utils import tick
 
 __all__ = ("CURRENT_GAME_VERSION", "CURRENT_BINARY_VERSION", "Version", "GameVersion")
@@ -24,7 +23,7 @@ EXPECTED_BASE = f"expected minor <= {BASE}"
 
 
 @frozen(order=True)
-class Version(Binary, RobTop, String):
+class Version(Binary, RobTop):
     major: int = field(default=0)
     minor: int = field(default=0)
 
@@ -54,18 +53,11 @@ class Version(Binary, RobTop, String):
         return self.major * BASE + self.minor
 
     @classmethod
-    def from_string(cls: Type[V], string: str) -> V:
+    def from_robtop(cls: Type[V], string: str) -> V:
         return cls.from_value(int(string))
 
-    def to_string(self) -> str:
-        return str(self.to_value())
-
-    @classmethod
-    def from_robtop(cls: Type[V], string: str) -> V:
-        return cls.from_string(string)
-
     def to_robtop(self) -> str:
-        return self.to_string()
+        return str(self.to_value())
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
@@ -75,14 +67,17 @@ class Version(Binary, RobTop, String):
 
     @classmethod
     def from_binary(
-        cls: Type[V], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        cls: Type[V],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
     ) -> V:
         reader = Reader(binary)
 
         return cls.from_value(reader.read_u8(order))
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
         writer = Writer(binary)
 
@@ -97,7 +92,7 @@ INVALID_GAME_VERSION = "invalid game version: {}"
 @frozen()
 class GameVersion(Version):
     @classmethod
-    def from_robtop_value(cls: Type[G], value: int) -> G:
+    def from_robtop_value(cls: Type[G], value: int) -> G:  # why, RobTop?
         if not value:
             return cls()
 

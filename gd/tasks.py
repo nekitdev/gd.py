@@ -1,6 +1,6 @@
 """..., adapted from [`discord.py`](https://github.com/Rapptz/discord.py) library."""
 
-# The MIT License (MIT)
+# MIT License
 
 # Copyright (c) 2015-present Rapptz
 

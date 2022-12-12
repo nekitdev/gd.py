@@ -1,4 +1,4 @@
-from typing import BinaryIO, Dict, Iterable, List, Optional, Type, TypeVar
+from typing import Any, Dict, Iterable, List, Optional, Type, TypeVar
 
 from attrs import define, field
 
@@ -6,7 +6,7 @@ from gd.api.folder import Folder
 from gd.api.level import LevelAPI
 from gd.api.objects import Object, object_from_binary, object_to_binary
 from gd.api.ordered_set import OrderedSet, ordered_set
-from gd.binary import VERSION, Binary
+from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, EMPTY
 from gd.enums import ByteOrder, Filter, IconType, LevelLeaderboardStrategy
@@ -52,7 +52,7 @@ def level_collection(iterable: Iterable[A] = ()) -> LevelCollection[A]:
     return LevelCollection(iterable)
 
 
-AnyLevelCollection = LevelCollection[LevelAPI]
+AnyLevelCollection = LevelCollection[Any]
 
 
 OFFICIAL = "n"
@@ -546,7 +546,10 @@ class Variables(Binary):
 
     @classmethod
     def from_binary(
-        cls: Type[V], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        cls: Type[V],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
     ) -> V:
         reader = Reader(binary)
 
@@ -847,7 +850,7 @@ class Variables(Binary):
         )
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
         writer = Writer(binary)
 
@@ -1138,7 +1141,7 @@ class Values(Binary):
     colors_2: OrderedSet[int] = field(factory=ordered_set)
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
         writer = Writer(binary)
 
@@ -1165,7 +1168,7 @@ class Values(Binary):
     @classmethod
     def from_binary(
         cls: Type[VS],
-        binary: BinaryIO,
+        binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> VS:
@@ -1297,7 +1300,7 @@ class UnlockValues(Binary):
     @classmethod
     def from_binary(
         cls: Type[UV],
-        binary: BinaryIO,
+        binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> UV:
@@ -1396,7 +1399,7 @@ class UnlockValues(Binary):
         )
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
         writer = Writer(binary)
 
@@ -1598,7 +1601,7 @@ class Statistics(Binary):
     official_coins: Dict[int, int] = field(factory=dict)
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
         writer = Writer(binary)
 
@@ -1635,7 +1638,10 @@ class Statistics(Binary):
 
     @classmethod
     def from_binary(
-        cls: Type[S], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        cls: Type[S],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
     ) -> S:
         reader = Reader(binary)
 
@@ -1786,7 +1792,7 @@ class Database(Binary):
     @classmethod
     def from_binary(
         cls: Type[D],
-        binary: BinaryIO,
+        binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         encoding: str = DEFAULT_ENCODING,
@@ -2020,7 +2026,7 @@ class Database(Binary):
 
     def to_binary(
         self,
-        binary: BinaryIO,
+        binary: BinaryWriter,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         encoding: str = DEFAULT_ENCODING,
@@ -2148,7 +2154,7 @@ class Database(Binary):
         for last_played_id in last_played:
             writer.write_u32(last_played_id, order)
 
-        # TODO: filters
+        self.filters.to_binary(binary, order, version)
 
         daily_levels = self.daily_levels
 

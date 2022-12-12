@@ -1,6 +1,5 @@
 from abc import abstractmethod
 from builtins import isinstance as is_instance
-from datetime import datetime, timedelta
 from functools import partial
 from json import dump as standard_dump
 from json import dumps as standard_dumps
@@ -51,9 +50,6 @@ FromJSONType = FromJSON[JSONType]
 
 def is_from_json(some: Any) -> TypeGuard[FromJSONType]:
     return is_instance(some, FromJSONType)
-
-
-T = TypeVar("T", bound="ToJSONType")
 
 
 @runtime_checkable

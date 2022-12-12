@@ -358,7 +358,6 @@ class Session:
         self,
         level_id: int,
         rating: DemonDifficulty,
-        as_mod: bool = False,
         *,
         account_id: int,
         encoded_password: str,
@@ -366,7 +365,21 @@ class Session:
         await self.http.rate_demon(
             level_id=level_id,
             rating=rating,
-            as_mod=as_mod,
+            account_id=account_id,
+            encoded_password=encoded_password,
+        )
+
+    async def suggest_demon(
+        self,
+        level_id: int,
+        rating: DemonDifficulty,
+        *,
+        account_id: int,
+        encoded_password: str,
+    ) -> None:
+        await self.http.suggest_demon(
+            level_id=level_id,
+            rating=rating,
             account_id=account_id,
             encoded_password=encoded_password,
         )

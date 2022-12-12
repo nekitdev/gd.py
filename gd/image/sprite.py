@@ -3,17 +3,17 @@ from __future__ import annotations
 from typing import Tuple, Type, TypeVar
 
 from attrs import field, frozen
-from typing_extensions import NotRequired, TypedDict
+from typing_extensions import Literal, NotRequired, TypedDict
 
 from gd.image.geometry import Point, Rectangle, Size
 from gd.typing import StringMapping
 
 __all__ = ("Sprite", "Sprites", "SpriteData")
 
-SIZE = "size"
-OFFSET = "offset"
-LOCATION = "location"
-ROTATED = "rotated"
+SIZE: Literal["size"] = "size"
+OFFSET: Literal["offset"] = "offset"
+LOCATION: Literal["location"] = "location"
+ROTATED: Literal["rotated"] = "rotated"
 
 S = TypeVar("S", bound="Sprite")
 

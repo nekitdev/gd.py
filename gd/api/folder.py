@@ -1,8 +1,8 @@
-from typing import BinaryIO, Type, TypeVar
+from typing import Type, TypeVar
 
 from attrs import define
 
-from gd.binary import VERSION, Binary
+from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.enums import ByteOrder
@@ -25,7 +25,7 @@ class Folder(Binary):
     @classmethod
     def from_binary(
         cls: Type[F],
-        binary: BinaryIO,
+        binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         encoding: str = DEFAULT_ENCODING,
@@ -43,7 +43,7 @@ class Folder(Binary):
 
     def to_binary(
         self,
-        binary: BinaryIO,
+        binary: BinaryWriter,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         encoding: str = DEFAULT_ENCODING,

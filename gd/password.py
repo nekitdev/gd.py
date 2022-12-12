@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import BinaryIO, ClassVar, Optional, Type, TypeVar
+from typing import ClassVar, Optional, Type, TypeVar
 
 from attrs import Attribute, define, field
 
-from gd.binary import VERSION, Binary
+from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.encoding import decode_robtop_string, encode_robtop_string
 from gd.enums import ByteOrder, Key
@@ -54,7 +54,10 @@ class Password(Binary, RobTop):
 
     @classmethod
     def from_binary(
-        cls: Type[P], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        cls: Type[P],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
     ) -> P:
         reader = Reader(binary)
 
@@ -91,7 +94,7 @@ class Password(Binary, RobTop):
         return value
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
         writer = Writer(binary)
 
@@ -110,7 +113,7 @@ class Password(Binary, RobTop):
 
     @classmethod
     def from_robtop_value(cls: Type[P], value: int) -> P:
-        if value is None:
+        if not value:
             return cls(password=None, copyable=False)
 
         if value == NO_PASSWORD:

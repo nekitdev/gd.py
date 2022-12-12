@@ -23,7 +23,7 @@ from gd.entity import Entity
 from gd.enums import ByteOrder
 from gd.level import Level
 from gd.models import LevelCommentModel, UserCommentModel
-from gd.user import User
+from gd.users import User
 
 if TYPE_CHECKING:
     from gd.client import Client
@@ -119,7 +119,7 @@ class UserComment(Comment):
 
         rating = reader.read_i32(order)
 
-        content_length = reader.read_u16(order)
+        content_length = reader.read_u8(order)
 
         content = reader.read(content_length).decode(encoding, errors)
 
@@ -153,7 +153,7 @@ class UserComment(Comment):
 
         data = self.content.encode(encoding, errors)
 
-        writer.write_u16(len(data), order)
+        writer.write_u8(len(data), order)
 
         writer.write(data)
 
@@ -233,7 +233,7 @@ class LevelComment(Comment):
 
         rating = reader.read_i32(order)
 
-        content_length = reader.read_u16(order)
+        content_length = reader.read_u8(order)
 
         content = reader.read(content_length).decode(encoding, errors)
 
@@ -243,7 +243,7 @@ class LevelComment(Comment):
 
         level = Level.from_binary(binary, order, version, encoding, errors)
 
-        value = reader.read_u32()
+        value = reader.read_u32(order)
 
         record = value & BYTE
 
@@ -270,9 +270,9 @@ class LevelComment(Comment):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> None:
-        super().to_binary(binary, order, version, encoding)
+        super().to_binary(binary, order, version)
 
-        self.level.to_binary(binary, order, version, encoding)
+        self.level.to_binary(binary, order, version, encoding, errors)
 
         writer = Writer(binary)
 

@@ -101,7 +101,7 @@ from gd.errors import (
     SongRestricted,
 )
 from gd.filters import Filters
-from gd.iter_utils import tuple_args
+from gd.iter_utils import unary_tuple
 from gd.models import CommentBannedModel
 from gd.models_constants import OBJECTS_SEPARATOR
 from gd.models_utils import concat_extra_string
@@ -371,8 +371,6 @@ DEFAULT_SEND_USER_AGENT = False
 
 DEFAULT_WITH_BAR = False
 
-DEFAULT_CLOSE = True
-
 DEFUALT_RETRIES = 2
 
 DEFAULT_READ = True
@@ -570,7 +568,6 @@ class HTTPClient:
         method: str = GET,
         chunk_size: int = CHUNK_SIZE,
         with_bar: bool = DEFAULT_WITH_BAR,
-        close: bool = DEFAULT_CLOSE,
         **request_keywords: Any,
     ) -> None:
         await self.ensure_session()
@@ -596,9 +593,6 @@ class HTTPClient:
 
             if with_bar:
                 bar.close()
-
-        if close:
-            file.close()
 
     async def download_to(
         self,
@@ -635,7 +629,6 @@ class HTTPClient:
             method=method,
             chunk_size=chunk_size,
             with_bar=with_bar,
-            close=False,
             **request_keywords,
         )
 
@@ -1526,7 +1519,7 @@ class HTTPClient:
 
         random_string = generate_random_string()
 
-        seed = generate_check(tuple_args(str(level_seed)), Key.LEVEL, Salt.LEVEL)
+        seed = generate_check(unary_tuple(str(level_seed)), Key.LEVEL, Salt.LEVEL)
 
         if recording is None:
             recording = Recording()
@@ -1613,11 +1606,11 @@ class HTTPClient:
 
         return int_or(response, 0)
 
-    async def rate_demon(
+    async def apply_demon(
         self,
         level_id: int,
         rating: DemonDifficulty,
-        as_mod: bool = False,
+        as_mod: bool,
         *,
         account_id: int,
         encoded_password: str,
@@ -1645,6 +1638,38 @@ class HTTPClient:
         response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return int_or(response, 0)
+
+    async def rate_demon(
+        self,
+        level_id: int,
+        rating: DemonDifficulty,
+        *,
+        account_id: int,
+        encoded_password: str,
+    ) -> int:
+        return await self.apply_demon(
+            level_id=level_id,
+            rating=rating,
+            as_mod=False,
+            account_id=account_id,
+            encoded_password=encoded_password,
+        )
+
+    async def suggest_demon(
+        self,
+        level_id: int,
+        rating: DemonDifficulty,
+        *,
+        account_id: int,
+        encoded_password: str,
+    ) -> int:
+        return await self.apply_demon(
+            level_id=level_id,
+            rating=rating,
+            as_mod=True,
+            account_id=account_id,
+            encoded_password=encoded_password,
+        )
 
     async def suggest_level(
         self,
@@ -2696,7 +2721,7 @@ class HTTPClient:
         response = await self.request(
             GET,
             NEWGROUNDS_SEARCH.format(AUDIO),
-            parameters=dict(terms=query, page=page + 1),
+            parameters=dict(terms=query, page=page),
         )
 
         return response

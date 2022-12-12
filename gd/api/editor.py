@@ -1,6 +1,6 @@
 from itertools import count
 from operator import attrgetter as get_attribute_factory
-from typing import BinaryIO, Iterable, Iterator, List, Sequence, Set, Type, TypeVar, Union, overload
+from typing import Iterable, Iterator, List, Sequence, Set, Type, TypeVar, Union, overload
 
 from attrs import define, field
 from iters import iter
@@ -18,7 +18,7 @@ from gd.api.objects import (
     object_to_binary,
     object_to_robtop,
 )
-from gd.binary import VERSION, Binary
+from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder, Speed, SpeedChangeType, SpeedMagic
 from gd.models_constants import OBJECTS_SEPARATOR
@@ -230,7 +230,10 @@ class Editor(RobTop, Binary, Sequence[Object]):
 
     @classmethod
     def from_binary(
-        cls: Type[E], binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        cls: Type[E],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
     ) -> E:
         header = Header.from_binary(binary, order, version)
 
@@ -243,7 +246,7 @@ class Editor(RobTop, Binary, Sequence[Object]):
         return cls.from_object_iterable(iterable, header)
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
         self.header.to_binary(binary, order, version)
 

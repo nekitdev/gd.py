@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from traceback import print_exc as print_current_exception
+from traceback import print_exception
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -34,12 +34,12 @@ from gd.level import Level
 from gd.message import Message
 from gd.tasks import Loop
 from gd.typing import Nullary
-from gd.user import User
+from gd.users import User
 
 __all__ = (
     "Listener",
-    "DailyLevelListener",
-    "WeeklyLevelListener",
+    "DailyListener",
+    "WeeklyListener",
     "LevelListener",
     "RateListener",
     "MessageListener",
@@ -48,11 +48,30 @@ __all__ = (
     "DailyCommentListener",
     "WeeklyCommentListener",
     "UserCommentListener",
+    "UserLevelCommentListener",
     "UserLevelListener",
 )
 
 if TYPE_CHECKING:
     from gd.client import Client
+
+
+Q = TypeVar("Q", bound=Hashable)
+
+
+def differ_iterator(before: Iterable[Q], after: Iterable[Q]) -> Iterator[Q]:
+    before_set = set(before)
+
+    for item in after:
+        if item in before_set:
+            break
+
+        yield item
+
+
+def differ(before: Iterable[Q], after: Iterable[Q]) -> List[Q]:
+    return list(differ_iterator(before, after))
+
 
 LISTENER_ALREADY_STARTED = "listener has already started"
 
@@ -67,7 +86,7 @@ class ListenerProtocol(Protocol):
         ...
 
     async def on_error(self, error: Exception) -> None:
-        print_current_exception()
+        print_exception(error)
 
     async def schedule(self, awaitable: Awaitable[Any]) -> None:
         get_running_loop().create_task(awaiting(awaitable))
@@ -104,7 +123,7 @@ class Listener(ListenerProtocol):
 
 
 @define()
-class DailyLevelListener(Listener):
+class DailyListener(Listener):
     daily_cache: Optional[Level] = field(default=None, init=False)
 
     async def step(self) -> None:
@@ -126,7 +145,7 @@ class DailyLevelListener(Listener):
 
 
 @define()
-class WeeklyLevelListener(Listener):
+class WeeklyListener(Listener):
     weekly_cache: Optional[Level] = field(default=None, init=False)
 
     async def step(self) -> None:
@@ -478,20 +497,3 @@ class UserLevelListener(UserBasedListener):
 
         for level in difference:
             await self.schedule(client.dispatch_user_level(user, level))
-
-
-Q = TypeVar("Q", bound=Hashable)
-
-
-def differ_iterator(before: Iterable[Q], after: Iterable[Q]) -> Iterator[Q]:
-    before_set = set(before)
-
-    for item in after:
-        if item in before_set:
-            break
-
-        yield item
-
-
-def differ(before: Iterable[Q], after: Iterable[Q]) -> List[Q]:
-    return list(differ_iterator(before, after))

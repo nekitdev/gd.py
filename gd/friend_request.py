@@ -10,7 +10,7 @@ from gd.entity import Entity
 from gd.enums import FriendRequestType
 from gd.models import FriendRequestModel
 from gd.relationship import Relationship
-from gd.user import User
+from gd.users import User
 
 if TYPE_CHECKING:
     from gd.client import Client

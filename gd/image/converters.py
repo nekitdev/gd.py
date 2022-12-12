@@ -40,7 +40,7 @@ BRACES = "{}"
 remove_braces = str.maketrans(dict.fromkeys(BRACES, EMPTY))
 
 
-def simple_array_parse(string: str, parse: Parse[T], separator: str = COMMA) -> Iterator[T]:
+def parse_simple_array(string: str, parse: Parse[T], separator: str = COMMA) -> Iterator[T]:
     return map(parse, string.translate(remove_braces).split(separator))
 
 
@@ -56,15 +56,15 @@ def convert_sprite_format_0(sprite_dict: AnyCamelDict) -> SpriteData:
 
 
 def convert_sprite_format_1(sprite_dict: AnyCamelDict) -> SpriteData:
-    (x, y, width, height) = simple_array_parse(sprite_dict.frame, float)
-    (offset_x, offset_y) = simple_array_parse(sprite_dict.offset, float)
+    (x, y, width, height) = parse_simple_array(sprite_dict.frame, float)
+    (offset_x, offset_y) = parse_simple_array(sprite_dict.offset, float)
 
     return SpriteData(size=(width, height), offset=(offset_x, offset_y), location=(x, y))
 
 
 def convert_sprite_format_2(sprite_dict: AnyCamelDict) -> SpriteData:
-    (x, y, width, height) = simple_array_parse(sprite_dict.frame, float)
-    (offset_x, offset_y) = simple_array_parse(sprite_dict.offset, float)
+    (x, y, width, height) = parse_simple_array(sprite_dict.frame, float)
+    (offset_x, offset_y) = parse_simple_array(sprite_dict.offset, float)
 
     rotated = bool(sprite_dict.rotated)
 
@@ -74,8 +74,8 @@ def convert_sprite_format_2(sprite_dict: AnyCamelDict) -> SpriteData:
 
 
 def convert_sprite_format_3(sprite_dict: AnyCamelDict) -> SpriteData:
-    (offset_x, offset_y) = simple_array_parse(sprite_dict.sprite_offset, float)
-    (x, y, width, height) = simple_array_parse(sprite_dict.texture_rect, float)
+    (offset_x, offset_y) = parse_simple_array(sprite_dict.sprite_offset, float)
+    (x, y, width, height) = parse_simple_array(sprite_dict.texture_rect, float)
     rotated = bool(sprite_dict.texture_rotated)
 
     return SpriteData(
@@ -85,11 +85,16 @@ def convert_sprite_format_3(sprite_dict: AnyCamelDict) -> SpriteData:
 
 ConvertSprite = Unary[AnyCamelDict, SpriteData]
 
+FORMAT_0 = 0
+FORMAT_1 = 1
+FORMAT_2 = 2
+FORMAT_3 = 3
+
 convert_sprite_mapping: Dict[int, ConvertSprite] = {
-    0: convert_sprite_format_0,
-    1: convert_sprite_format_1,
-    2: convert_sprite_format_2,
-    3: convert_sprite_format_3,
+    FORMAT_0: convert_sprite_format_0,
+    FORMAT_1: convert_sprite_format_1,
+    FORMAT_2: convert_sprite_format_2,
+    FORMAT_3: convert_sprite_format_3,
 }
 
 CAN_NOT_CONVERT = "can not convert format `{}`"
@@ -126,10 +131,10 @@ def convert_sheet_path(
 
 def convert_layer(layer_dict: AnyCamelDict) -> LayerData:
     part = get_layer_part(layer_dict.texture)
-    position_x, position_y = simple_array_parse(layer_dict.position, float)
-    scale_width, scale_height = simple_array_parse(layer_dict.scale, float)
+    position_x, position_y = parse_simple_array(layer_dict.position, float)
+    scale_width, scale_height = parse_simple_array(layer_dict.scale, float)
     rotation = float(layer_dict.rotation)
-    h_flipped, v_flipped = map(bool, simple_array_parse(layer_dict.flipped, int))
+    h_flipped, v_flipped = map(bool, parse_simple_array(layer_dict.flipped, int))
 
     return LayerData(
         part=part,

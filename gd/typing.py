@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from builtins import hasattr as has_attribute
 from builtins import isinstance as is_instance
-from inspect import isawaitable as standard_is_awaitable
+from builtins import issubclass as is_subclass
 from os import PathLike
 from typing import (
     Any,
@@ -50,13 +50,8 @@ __all__ = (
     "is_iterable",
     "is_string",
     "is_error",
-    "Named",
-    "is_named",
-    "get_name",
-    "HasModule",
-    "has_module",
-    "get_module",
     "is_instance",
+    "is_subclass",
 )
 
 AnyType = Type[Any]
@@ -139,29 +134,6 @@ except TypeError:
 JSONType: TypeAlias = Optional[Union[bool, int, float, str, StringDict[Any], List[Any]]]
 
 
-LT = TypeVar("LT", bound="Less")
-
-
-@runtime_checkable
-class Less(Protocol):
-    @abstractmethod
-    def __lt__(self: LT, other: LT) -> bool:
-        ...
-
-
-GT = TypeVar("GT", bound="Greater")
-
-
-@runtime_checkable
-class Greater(Protocol):
-    @abstractmethod
-    def __lt__(self: GT, other: GT) -> bool:
-        ...
-
-
-StrictOrdered = Union[Less, Greater]
-
-
 def is_same_type(value: Any, item: T) -> TypeGuard[T]:
     return type(value) is type(item)
 
@@ -184,35 +156,3 @@ def is_string(item: Any) -> TypeGuard[str]:
 
 def is_error(item: Any) -> TypeGuard[AnyException]:
     return is_instance(item, AnyException)
-
-
-@runtime_checkable
-class Named(Protocol):
-    __name__: str
-
-
-NAME = "__name__"
-
-
-def is_named(item: Any) -> TypeGuard[Named]:
-    return has_attribute(item, NAME)
-
-
-def get_name(item: Named) -> str:
-    return item.__name__
-
-
-@runtime_checkable
-class HasModule(Protocol):
-    __module__: str
-
-
-MODULE = "__module__"
-
-
-def has_module(item: Any) -> TypeGuard[HasModule]:
-    return has_attribute(item, MODULE)
-
-
-def get_module(item: HasModule) -> str:
-    return item.__module__

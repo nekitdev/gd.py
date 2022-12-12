@@ -4,7 +4,6 @@ from base64 import urlsafe_b64decode as standard_decode_base64_url_safe
 from base64 import urlsafe_b64encode as standard_encode_base64_url_safe
 from gzip import decompress as gzip_decompress
 from hashlib import sha1 as standard_sha1
-from itertools import cycle
 from random import choices
 from random import randrange as random_range
 from string import ascii_letters, digits
@@ -13,6 +12,8 @@ from zlib import MAX_WBITS
 from zlib import compressobj as create_compressor
 from zlib import decompressobj as create_decompressor
 from zlib import error as ZLibError
+
+from xor_cipher import cyclic_xor, cyclic_xor_string, xor, xor_string
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.enums import Key, Salt, SimpleKey
@@ -80,7 +81,7 @@ try:
     from Crypto.Cipher import AES
 
 except ImportError:
-    AES = None
+    AES = None  # type: ignore
 
 AES_KEY = b"ipu9TUv54yv]isFMh5@;t.5w34E2Ry@{"
 
@@ -157,34 +158,6 @@ def encode_base64_string_url_safe(
     string: str, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
 ) -> str:
     return encode_base64_url_safe(string.encode(encoding, errors)).decode(encoding, errors)
-
-
-def xor(data: bytes, key: int) -> bytes:
-    return bytes(byte ^ key for byte in data)
-
-
-def cyclic_xor(data: bytes, key: bytes) -> bytes:
-    return bytes(byte ^ key_byte for (byte, key_byte) in zip(data, cycle(key)))
-
-
-def xor_string(
-    string: str,
-    key: int,
-    encoding: str = DEFAULT_ENCODING,
-    errors: str = DEFAULT_ERRORS,
-) -> str:
-    return xor(string.encode(encoding, errors), key).decode(encoding, errors)
-
-
-def cyclic_xor_string(
-    string: str,
-    key: str,
-    encoding: str = DEFAULT_ENCODING,
-    errors: str = DEFAULT_ERRORS,
-) -> str:
-    result = cyclic_xor(string.encode(encoding, errors), key.encode(encoding, errors))
-
-    return result.decode(encoding, errors)
 
 
 def decode_save(data: bytes, apply_xor: bool = True) -> bytes:
@@ -435,10 +408,3 @@ def fix_song_encoding(string: str) -> str:
 
     except (UnicodeEncodeError, UnicodeDecodeError):
         return string
-
-
-try:
-    from _gd import cyclic_xor, xor  # type: ignore
-
-except ImportError:
-    pass

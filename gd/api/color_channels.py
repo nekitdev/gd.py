@@ -1,9 +1,9 @@
-from typing import BinaryIO, Dict, Iterable, Type, TypeVar
+from typing import Dict, Iterable, Type, TypeVar
 
 from attrs import define, field
 
 from gd.api.hsv import HSV
-from gd.binary import VERSION, Binary
+from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_constants import BITS, BYTE
 from gd.binary_utils import Reader, Writer
 from gd.color import Color
@@ -188,7 +188,7 @@ class ColorChannel(Binary):
     @classmethod
     def from_binary(
         cls: Type[CC],
-        binary: BinaryIO,
+        binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> CC:
@@ -269,7 +269,7 @@ class ColorChannel(Binary):
         )
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
         bits = BITS
 
@@ -383,7 +383,7 @@ class ColorChannels(Binary, Dict[int, ColorChannel]):
     @classmethod
     def from_binary(
         cls: Type[CCS],
-        binary: BinaryIO,
+        binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
         color_channel_type: Type[ColorChannel] = ColorChannel,
@@ -399,7 +399,7 @@ class ColorChannels(Binary, Dict[int, ColorChannel]):
         return cls.from_color_channel_iterable(color_channels)
 
     def to_binary(
-        self, binary: BinaryIO, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
         writer = Writer(binary)
 

@@ -20,7 +20,7 @@ from typing import (
     overload,
 )
 
-from gd.typing import get_name
+from named import get_type_name
 
 __all__ = ("OrderedSet", "ordered_set")
 
@@ -179,7 +179,7 @@ class OrderedSet(MutableSet[Q], Sequence[Q]):
         return reversed(self.items)
 
     def __repr__(self) -> str:
-        name = get_name(type(self))
+        name = get_type_name(self)
 
         items = self.items
 
@@ -195,7 +195,7 @@ class OrderedSet(MutableSet[Q], Sequence[Q]):
 
             return set(self.item_to_index) == set(other)
 
-        return NotImplemented
+        return False
 
     @overload
     def union(self: OS, *iterables: Iterable[Q]) -> OS:
