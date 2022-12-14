@@ -91,8 +91,11 @@ optional = true
 
 [tool.poetry.group.format.dependencies]
 black = "22.8.0"
-flake8 = "6.0.0"
 flake8-pyproject = "1.2.2"
+
+[tool.poetry.group.format.dependencies.flake8]
+version = "6.0.0"
+python = ">= 3.8.1"
 
 [tool.poetry.group.format.dependencies.isort]
 version = "5.10.1"

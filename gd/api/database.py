@@ -1,4 +1,4 @@
-from typing import Any, Dict, Generic, Iterable, List, Optional, Type, TypeVar
+from typing import Any, Dict, Iterable, List, Optional, Type, TypeVar
 
 from attrs import define, field
 
