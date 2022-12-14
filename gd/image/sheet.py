@@ -8,8 +8,8 @@ from typing import Optional, Type, TypeVar
 from attrs import define, field
 
 try:
-    from PIL.Image import Image  # type: ignore
-    from PIL.Image import open as open_image  # type: ignore
+    from PIL.Image import Image
+    from PIL.Image import open as open_image
 
 except ImportError:
     pass

@@ -73,13 +73,14 @@ def differ(before: Iterable[Q], after: Iterable[Q]) -> List[Q]:
     return list(differ_iterator(before, after))
 
 
-LISTENER_ALREADY_STARTED = "listener has already started"
+LISTENER_ALREADY_RUNNING = "listener is already running"
 
 
 class ListenerProtocol(Protocol):
     delay: float
     reconnect: bool
-    _started: bool
+    _running: bool
+    _loop: Optional[Loop[[]]]
 
     @abstractmethod
     async def step(self) -> None:
@@ -99,14 +100,16 @@ class ListenerProtocol(Protocol):
             await self.on_error(error)
 
     def start(self) -> None:
-        if self._started:
-            raise RuntimeError(LISTENER_ALREADY_STARTED)
+        if self._running:  # type: ignore
+            raise RuntimeError(LISTENER_ALREADY_RUNNING)
 
         loop = Loop(function=self.main, delay=self.delay, reconnect=self.reconnect)
 
+        self._loop = loop
+
         loop.start()
 
-        self._started = True
+        self._running = True
 
 
 @define()
@@ -116,7 +119,9 @@ class Listener(ListenerProtocol):
     delay: float = field(default=DEFAULT_DELAY)
     reconnect: bool = field(default=DEFAULT_RECONNECT)
 
-    _started: bool = field(default=False, init=False)
+    _running: bool = field(default=False, init=False, repr=False)
+
+    _loop: Optional[Loop[[]]] = field(default=None, init=False, repr=False)
 
     async def step(self) -> None:
         pass
@@ -208,7 +213,7 @@ def filters_factory(strategy: SearchStrategy) -> Nullary[Filters]:
 
 @define()
 class RateListener(LevelListener):
-    filters: Filters = field(factory=filters_factory(SearchStrategy.AWARDED))
+    filters: Filters = field(factory=filters_factory(SearchStrategy.RATED))
 
     async def dispatch_level(self, level: Level) -> None:
         await self.client.dispatch_rate(level)

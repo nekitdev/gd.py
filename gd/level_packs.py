@@ -51,11 +51,11 @@ class Gauntlet(Entity):
         for level in levels:
             yield level
 
-    def maybe_attach_client(self: G, client: Optional[Client]) -> G:
+    def attach_client_unchecked(self: G, client: Optional[Client]) -> G:
         for level in self.levels:
-            level.maybe_attach_client(client)
+            level.attach_client_unchecked(client)
 
-        return super().maybe_attach_client(client)
+        return super().attach_client_unchecked(client)
 
     def attach_client(self: G, client: Client) -> G:
         for level in self.levels:

@@ -134,15 +134,16 @@ class Point:
 
     __neg__ = flipped
 
-    __add__ = __radd__ = add
-    __sub__ = __rsub__ = sub
-    __mul__ = __rmul__ = mul
+    __add__ = add
+    __sub__ = sub
+    __mul__ = mul
 
     __iadd__ = add_in_place
     __isub__ = sub_in_place
     __imul__ = mul_in_place
 
     __truediv__ = div
+
     __itruediv__ = div_in_place
 
 
@@ -216,7 +217,7 @@ class Size:
     def clone(self: S) -> S:
         return self.create(self.width, self.height)
 
-    __mul__ = __rmul__ = mul
+    __mul__ = mul
     __imul__ = mul_in_place
 
     __truediv__ = div

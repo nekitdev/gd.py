@@ -53,6 +53,7 @@ from gd.constants import (
     DEFAULT_USE_CLIENT,
     DEFAULT_VERSION,
     EMPTY,
+    EMPTY_BYTES,
     UNNAMED,
 )
 from gd.credentials import Credentials
@@ -153,7 +154,8 @@ def by_id(id: int) -> Predicate[Comment]:
 
 
 CONTROLLER_ALREADY_CREATED = "controller was already created"
-NO_DATABASE = "no database to save"
+
+NO_DATABASE = "`database` not attached to the client"
 
 DEFAULT_LOAD_AFTER_POST = True
 
@@ -168,7 +170,7 @@ class Client:
     credentials: Credentials = field(factory=Credentials)
     """The credentials of the client."""
 
-    database: Optional[Database] = field(default=None, repr=False)
+    database_unchecked: Optional[Database] = field(default=None, repr=False)
     """The database of the client."""
 
     load_after_post: bool = field(default=DEFAULT_LOAD_AFTER_POST)
@@ -189,9 +191,26 @@ class Client:
         else:
             self.credentials = credentials
 
-        self.database = database
+        self.database_unchecked = database
 
         return self
+
+    @property
+    def database(self) -> Database:
+        database = self.database_unchecked
+
+        if database is None:
+            raise ValueError(NO_DATABASE)
+
+        return database
+
+    @database.setter
+    def database(self, database: Database) -> None:
+        self.database_unchecked = database
+
+    @database.deleter
+    def database(self) -> None:
+        self.database_unchecked = None
 
     def reset_items(self: C) -> C:
         return self.apply_items()
@@ -339,9 +358,6 @@ class Client:
         """
         if database is None:
             database = self.database
-
-            if database is None:
-                raise MissingAccess(NO_DATABASE)
 
         await self.session.save(
             database, account_id=self.account_id, name=self.name, password=self.password
@@ -767,7 +783,7 @@ class Client:
         recording: Optional[Recording] = None,
         editor_time: Optional[timedelta] = None,
         copies_time: Optional[timedelta] = None,
-        data: str = EMPTY,
+        data: bytes = EMPTY_BYTES,
     ) -> Level:
         level_id = await self.session.upload_level(
             name=name,
@@ -775,8 +791,8 @@ class Client:
             version=version,
             length=length,
             official_song_id=official_song_id,
-            description=description,
             song_id=song_id,
+            description=description,
             original_id=original_id,
             two_player=two_player,
             object_count=object_count,
@@ -1382,7 +1398,7 @@ class Client:
 
     @wrap_async_iter
     async def get_newgrounds_artist_songs_on_page(
-        self, name: str, page: int = DEFAULT_PAGE
+        self, artist: Artist, page: int = DEFAULT_PAGE
     ) -> AsyncIterator[Song]:
         models = await self.session.get_newgrounds_artist_songs_on_page(name=name, page=page)
 
@@ -1391,11 +1407,11 @@ class Client:
 
     @wrap_async_iter
     def get_newgrounds_artist_songs(
-        self, name: str, pages: Iterable[int] = DEFAULT_PAGES
+        self, artist: Artist, pages: Iterable[int] = DEFAULT_PAGES
     ) -> AsyncIterator[Song]:
         return run_iterables(
             (
-                self.get_newgrounds_artist_songs_on_page(name=name, page=page).unwrap()
+                self.get_newgrounds_artist_songs_on_page(artist=artist, page=page).unwrap()
                 for page in pages
             ),
             ClientError,

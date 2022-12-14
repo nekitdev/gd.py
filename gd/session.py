@@ -20,6 +20,7 @@ from gd.constants import (
     DEFAULT_TWO_PLAYER,
     DEFAULT_VERSION,
     EMPTY,
+    EMPTY_BYTES,
     UNNAMED,
 )
 from gd.enums import (
@@ -300,8 +301,8 @@ class Session:
         version: int = DEFAULT_VERSION,
         length: LevelLength = LevelLength.DEFAULT,
         official_song_id: int = DEFAULT_ID,
-        description: str = EMPTY,
         song_id: int = DEFAULT_ID,
+        description: str = EMPTY,
         original_id: int = DEFAULT_ID,
         two_player: bool = DEFAULT_TWO_PLAYER,
         privacy: LevelPrivacy = LevelPrivacy.DEFAULT,
@@ -313,7 +314,7 @@ class Session:
         recording: Optional[Recording] = None,
         editor_time: Optional[timedelta] = None,
         copies_time: Optional[timedelta] = None,
-        data: str = EMPTY,
+        data: bytes = EMPTY_BYTES,
         *,
         account_id: int,
         account_name: str,
@@ -325,8 +326,8 @@ class Session:
             version=version,
             length=length,
             official_song_id=official_song_id,
-            description=description,
             song_id=song_id,
+            description=description,
             original_id=original_id,
             two_player=two_player,
             object_count=object_count,
@@ -772,14 +773,6 @@ class Session:
         response = await self.http.get_newgrounds_song(song_id)
 
         return find_song_model(remove_escapes(response), song_id)
-
-    async def get_artist_info(self, song_id: int) -> Dict[str, Any]:
-        response = await self.http.get_artist_info(song_id)
-
-        artist_info = find_info(response)
-        artist_info.update(id=song_id, custom=True)  # type: ignore
-
-        return artist_info
 
     async def search_newgrounds_songs_on_page(
         self, query: str, page: int = DEFAULT_PAGE

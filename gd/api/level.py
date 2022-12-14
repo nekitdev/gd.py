@@ -130,6 +130,8 @@ class LevelAPI(Binary):
         binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> A:
         reader = Reader(binary)
 

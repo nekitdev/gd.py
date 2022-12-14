@@ -3,13 +3,14 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 # from pathlib import Path
-from typing import TYPE_CHECKING, Any, AsyncIterator, Iterable, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, AsyncIterator, Iterable, Optional, Type, TypeVar
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
 from iters.iters import iter
 
-# from gd.api.editor import Editor
+from gd.api.editor import Editor
+from gd.api.recording import Recording
 from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import (
@@ -43,6 +44,7 @@ from gd.enums import (
     Difficulty,
     LevelLeaderboardStrategy,
     LevelLength,
+    LevelPrivacy,
     Score,
     TimelyType,
 )
@@ -95,7 +97,7 @@ class Level(Entity):
     creator: User = field(eq=False)
     song: Song = field(eq=False)
     description: str = field(default=EMPTY, eq=False)
-    data: bytes = field(default=EMPTY_BYTES, eq=False)
+    data: bytes = field(default=EMPTY_BYTES, eq=False, repr=False)
     version: int = field(default=DEFAULT_VERSION, eq=False)
     downloads: int = field(default=DEFAULT_DOWNLOADS, eq=False)
     game_version: GameVersion = field(default=CURRENT_GAME_VERSION, eq=False)
@@ -345,7 +347,8 @@ class Level(Entity):
             creator=creator,
             song=song,
             description=model.description,
-            # data?
+            # this might take some time, but it should be worth it
+            data=Editor.from_robtop(model.data).to_bytes(),
             version=model.version,
             difficulty=model.difficulty,
             downloads=model.downloads,
@@ -483,45 +486,65 @@ class Level(Entity):
         return self.verified_coins
 
     def open_editor(self) -> Editor:
-        ...
+        return Editor.from_bytes(self.data)
 
     async def report(self) -> None:
         await self.client.report_level(self)
 
-    async def upload(self, **kwargs: Any) -> None:
+    async def upload(
+        self,
+        name: Optional[str] = None,
+        id: Optional[int] = None,
+        version: Optional[int] = None,
+        length: Optional[LevelLength] = None,
+        official_song_id: Optional[int] = None,
+        song_id: Optional[int] = None,
+        description: Optional[str] = None,
+        original_id: Optional[int] = None,
+        two_player: Optional[bool] = None,
+        privacy: LevelPrivacy = LevelPrivacy.DEFAULT,
+        object_count: Optional[int] = None,
+        coins: Optional[int] = None,
+        stars: Optional[int] = None,
+        low_detail: Optional[bool] = None,
+        password: Optional[Password] = None,
+        recording: Optional[Recording] = None,
+        editor_time: Optional[timedelta] = None,
+        copies_time: Optional[timedelta] = None,
+        data: Optional[bytes] = None,
+    ) -> None:
         song = self.song
-        song_id = song.id
+        default_song_id = song.id
 
-        official_song_id, song_id = (0, song_id) if song.is_custom() else (song_id, 0)
-
-        args = dict(
-            name=self.name,
-            id=self.id,
-            version=self.version,
-            length=abs(self.length.value),
-            official_song_id=official_song_id,
-            description=self.description,
-            song_id=song_id,
-            two_player=self.is_two_player(),
-            original=self.original_id,
-            object_count=self.object_count,
-            coins=self.coins,
-            stars=self.stars,
-            unlisted=False,
-            friends_only=False,
-            low_detail=self.has_low_detail(),
-            password=self.password,
-            copyable=self.is_copyable(),
-            editor_seconds=self.editor_seconds,
-            copies_seconds=self.copies_seconds,
-            data=self.data,
+        default_official_song_id, default_song_id = (
+            (0, default_song_id) if song.is_custom() else (default_song_id, 0)
         )
 
-        args.update(kwargs)
+        keywords = dict(
+            name=switch_none(name, self.name),
+            id=switch_none(id, self.id),
+            version=switch_none(version, self.version),
+            length=switch_none(length, self.length),
+            official_song_id=switch_none(official_song_id, default_official_song_id),
+            song_id=switch_none(song_id, default_song_id),
+            description=switch_none(description, self.description),
+            original_id=switch_none(original_id, self.original_id),
+            two_player=switch_none(two_player, self.is_two_player()),
+            privacy=privacy,
+            object_count=switch_none(object_count, self.object_count),
+            coins=switch_none(coins, self.coins),
+            stars=switch_none(stars, self.stars),
+            low_detail=switch_none(low_detail, self.has_low_detail()),
+            password=switch_none(password, self.password_data),
+            recording=recording,
+            editor_time=switch_none(editor_time, self.editor_time),
+            copies_time=switch_none(copies_time, self.copies_time),
+            data=switch_none(data, self.data)
+        )
 
-        uploaded = await self.client.upload_level(**args)
+        uploaded = await self.client.upload_level(**keywords)
 
-        self.options.update(uploaded.options)
+        self.update_from(uploaded)
 
     async def delete(self) -> None:
         await self.client.delete_level(self)
@@ -585,11 +608,11 @@ class Level(Entity):
             pages=pages,
         ).unwrap()
 
-    def maybe_attach_client(self: L, client: Optional[Client]) -> L:
-        self.creator.maybe_attach_client(client)
-        self.song.maybe_attach_client(client)
+    def attach_client_unchecked(self: L, client: Optional[Client]) -> L:
+        self.creator.attach_client_unchecked(client)
+        self.song.attach_client_unchecked(client)
 
-        return super().maybe_attach_client(client)
+        return super().attach_client_unchecked(client)
 
     def attach_client(self: L, client: Client) -> L:
         self.creator.attach_client(client)
@@ -602,3 +625,10 @@ class Level(Entity):
         self.song.detach_client()
 
         return super().detach_client()
+
+
+T = TypeVar("T")
+
+
+def switch_none(item: Optional[T], default: T) -> T:
+    return default if item is None else item

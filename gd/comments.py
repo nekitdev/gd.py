@@ -50,10 +50,10 @@ class Comment(Entity):
     def is_disliked(self) -> bool:
         return self.rating < 0
 
-    def maybe_attach_client(self: C, client: Optional[Client]) -> C:
-        self.author.maybe_attach_client(client)
+    def attach_client_unchecked(self: C, client: Optional[Client]) -> C:
+        self.author.attach_client_unchecked(client)
 
-        return super().maybe_attach_client(client)
+        return super().attach_client_unchecked(client)
 
     def attach_client(self: C, client: Client) -> C:
         self.author.attach_client(client)
@@ -280,10 +280,10 @@ class LevelComment(Comment):
 
         writer.write_u32(value, order)
 
-    def maybe_attach_client(self: LC, client: Optional[Client]) -> LC:
-        self.level.maybe_attach_client(client)
+    def attach_client_unchecked(self: LC, client: Optional[Client]) -> LC:
+        self.level.attach_client_unchecked(client)
 
-        return super().maybe_attach_client(client)
+        return super().attach_client_unchecked(client)
 
     def attach_client(self: LC, client: Client) -> LC:
         self.level.attach_client(client)

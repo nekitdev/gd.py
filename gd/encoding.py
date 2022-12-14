@@ -164,11 +164,11 @@ def decode_save(data: bytes, apply_xor: bool = True) -> bytes:
     if apply_xor:
         data = xor(data, SAVE_KEY)
 
-    return decompress(decode_base64(data))
+    return decompress(decode_base64_url_safe(data))
 
 
 def encode_save(data: bytes, apply_xor: bool = True) -> bytes:
-    data = encode_base64(compress(data))
+    data = encode_base64_url_safe(compress(data))
 
     if apply_xor:
         data = xor(data, SAVE_KEY)

@@ -116,9 +116,6 @@ class Binary(FromBinary, ToBinary, Protocol):
     pass
 
 
-from gd.binary_utils import Reader, Writer
-
-
 BI = TypeVar("BI", bound="BinaryInfo")
 
 INVALID_HEADER = "invalid header; expected {}"
@@ -212,3 +209,6 @@ def load_bytes(data: bytes, type: Type[B], info_type: Type[BinaryInfo] = BinaryI
     item = type.from_binary_with_info(binary, info)
 
     return item
+
+
+from gd.binary_utils import Reader, Writer  # noqa

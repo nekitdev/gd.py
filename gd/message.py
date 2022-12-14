@@ -88,10 +88,10 @@ class Message(Entity):
     async def delete(self) -> None:
         await self.client.delete_message(self)
 
-    def maybe_attach_client(self: M, client: Optional[Client]) -> M:
-        self.user.maybe_attach_client(client)
+    def attach_client_unchecked(self: M, client: Optional[Client]) -> M:
+        self.user.attach_client_unchecked(client)
 
-        return super().maybe_attach_client(client)
+        return super().attach_client_unchecked(client)
 
     def attach_client(self: M, client: Client) -> M:
         self.user.attach_client(client)

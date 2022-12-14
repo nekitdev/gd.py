@@ -50,6 +50,7 @@ from gd.constants import (
     UNNAMED,
 )
 from gd.datetime import datetime_from_human, datetime_to_human
+from gd.decorators import cache_by
 from gd.encoding import (
     decode_base64_string_url_safe,
     decode_robtop_string,
@@ -57,6 +58,8 @@ from gd.encoding import (
     encode_robtop_string,
     generate_level_seed,
     sha1_string_with_salt,
+    unzip_level_string,
+    zip_level_string,
 )
 from gd.enums import (
     DEMON_DIFFICULTY_TO_VALUE,
@@ -1487,6 +1490,7 @@ LEVEL_OBJECT_COUNT = 45
 LEVEL_EDITOR_TIME = 46
 LEVEL_COPIES_TIME = 47
 
+UNPROCESSED_DATA = "unprocessed_data"
 
 L = TypeVar("L", bound="LevelModel")
 
@@ -1669,7 +1673,7 @@ class LevelModel(Model):
             description=decode_base64_string_url_safe(
                 mapping.get(description_index, description_default)
             ),
-            unprocessed_data=mapping.get(unprocessed_data_index, unprocessed_data_default),
+            unprocessed_data=mapping.get(unprocessed_data_index, unprocessed_data_default).strip(),
             version=parse_get_or(int, version_default, mapping.get(version_index)),
             creator_id=parse_get_or(int, creator_id_default, mapping.get(creator_id_index)),
             difficulty_denominator=parse_get_or(
@@ -1869,6 +1873,15 @@ class LevelModel(Model):
                 return LevelDifficulty(difficulty_value)
 
         return LevelDifficulty.DEFAULT
+
+    @property  # type: ignore
+    @cache_by(UNPROCESSED_DATA)
+    def data(self) -> str:
+        return unzip_level_string(self.unprocessed_data)
+
+    @data.setter
+    def data(self, data: str) -> None:
+        self.unprocessed_data = zip_level_string(data)
 
 
 LCI = TypeVar("LCI", bound="LevelCommentInnerModel")

@@ -30,10 +30,10 @@ class Relationship(Entity):
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
 
-    def maybe_attach_client(self: R, client: Optional[Client]) -> R:
-        self.user.maybe_attach_client(client)
+    def attach_client_unchecked(self: R, client: Optional[Client]) -> R:
+        self.user.attach_client_unchecked(client)
 
-        return super().maybe_attach_client(client)
+        return super().attach_client_unchecked(client)
 
     def attach_client(self: R, client: Client) -> R:
         self.user.attach_client(client)

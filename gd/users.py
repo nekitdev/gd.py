@@ -68,7 +68,7 @@ from gd.models import (
 from gd.relationship import Relationship
 
 if TYPE_CHECKING:
-    from PIL.Image import Image  # type: ignore
+    from PIL.Image import Image
 
     from gd.comments import LevelComment, UserComment
     from gd.friend_request import FriendRequest
@@ -263,7 +263,7 @@ class User(Entity):
         return self.name
 
     def into_relationship(self, type: RelationshipType) -> Relationship:
-        return Relationship(user=self, type=type).maybe_attach_client(self.maybe_client)
+        return Relationship(user=self, type=type).attach_client_unchecked(self.client_unchecked)
 
     def is_glow(self) -> bool:
         return self.glow

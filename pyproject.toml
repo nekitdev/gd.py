@@ -46,10 +46,6 @@ include = "gd"
 [tool.poetry.scripts]
 gd = "gd.main:gd"
 
-[tool.poetry.build]
-generate-setup-file = false
-script = "build.py"
-
 [tool.poetry.dependencies]
 python = ">= 3.7"
 
@@ -70,7 +66,7 @@ named = ">= 1.1.0"
 xor-cipher = ">= 2.3.0"
 
 [tool.poetry.dependencies.iters]
-version = ">= 0.5.0"
+version = ">= 0.6.0"
 extras = ["concurrent"]
 
 [tool.poetry.dependencies.lxml]
@@ -88,13 +84,15 @@ optional = true
 [tool.poetry.extras]
 crypto = ["pycryptodome"]
 image = ["pillow"]
-speedups = ["lxml"]
+speed = ["lxml"]
 
 [tool.poetry.group.format]
 optional = true
 
 [tool.poetry.group.format.dependencies]
 black = "22.8.0"
+flake8 = "6.0.0"
+flake8-pyproject = "1.2.2"
 
 [tool.poetry.group.format.dependencies.isort]
 version = "5.10.1"
@@ -104,7 +102,8 @@ python = "^3.7"
 optional = true
 
 [tool.poetry.group.check.dependencies]
-mypy = "0.971"
+mypy = "0.991"
+types-pillow = "9.3.0.4"
 
 [tool.poetry.group.test]
 optional = true
@@ -124,6 +123,10 @@ mkdocs-material = "8.5.3"
 [tool.poetry.group.docs.dependencies.mkdocstrings]
 version = "0.19.0"
 extras = ["python"]
+
+[tool.flake8]
+max_line_length = 100
+ignore = ["E741", "W503"]
 
 [tool.black]
 line_length = 100
@@ -178,7 +181,7 @@ warn_no_return = true
 warn_unreachable = true
 
 warn_redundant_casts = true
-warn_unused_ignores = false  # compatibility
+warn_unused_ignores = true  # compatibility
 
 [tool.changelogging]
 name = "gd.py"

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional, TypeVar
+from typing import Any, Optional
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, EMPTY
 from gd.enum_extensions import Enum, Flag
@@ -24,6 +24,7 @@ __all__ = (
     "DemonDifficulty",
     "TimelyType",
     "TimelyID",
+    "RateType",
     "Score",
     "CommentType",
     "RelationshipType",
@@ -413,7 +414,37 @@ TIMELY_TYPE_TO_ID = {
 TIMELY_ID_TO_TYPE = {timely_id: timely_type for timely_type, timely_id in TIMELY_TYPE_TO_ID.items()}
 
 
-S = TypeVar("S", bound="Score")
+class RateType(Enum):
+    NOT_RATED = 0
+    RATED = 1
+    FEATURED = 2
+    EPIC = 3
+    GODLIKE = 4
+
+    DEFAULT = NOT_RATED
+
+    def is_not_rated(self) -> bool:
+        return self is type(self).NOT_RATED
+
+    def is_rated(self) -> bool:
+        return self is type(self).RATED
+
+    def is_featured(self) -> bool:
+        return self is type(self).FEATURED
+
+    def is_epic(self) -> bool:
+        return self is type(self).EPIC
+
+    def is_godlike(self) -> bool:
+        return self is type(self).GODLIKE
+
+
+class RateFlag(Flag):
+    NOT_RATED = 1 << 0
+    RATED = 1 << 1
+    FEATURED = 1 << 2
+    EPIC = 1 << 3
+    GODLIKE = 1 << 4
 
 
 class Score(Enum):
@@ -586,7 +617,7 @@ class SearchStrategy(Enum):
     MAGIC = 7
     SENT = 8
     SEARCH_MANY = 10
-    AWARDED = 11
+    RATED = 11
     FOLLOWED = 12
     FRIENDS = 13
     MOST_LIKED_WORLD = 15
@@ -648,6 +679,7 @@ class PlayerColor(Enum):
     """An enumeration of player color settings."""
 
     NOT_USED = -1
+
     DEFAULT = 0
     COLOR_1 = 1
     COLOR_2 = 2
@@ -660,6 +692,12 @@ class PlayerColor(Enum):
 
     def is_default(self) -> bool:
         return self is type(self).DEFAULT
+
+    def is_color_1(self) -> bool:
+        return self is type(self).COLOR_1
+
+    def is_color_2(self) -> bool:
+        return self is type(self).COLOR_2
 
 
 class CustomParticleGrouping(Enum):
@@ -705,8 +743,6 @@ class Easing(Enum):
 
 IN_OUT_SHIFT = 2
 MULTIPLIER = 3
-
-EM = TypeVar("EM", bound="EasingMethod")
 
 
 class EasingMethod(Flag):
@@ -1148,9 +1184,6 @@ class SpeedMagic(float, Enum):
     FASTER = 468.0
     FASTEST = 576.0
     DEFAULT = NORMAL
-
-
-GC = TypeVar("GC", bound="GuidelineColor")
 
 
 class GuidelineColor(float, Enum):

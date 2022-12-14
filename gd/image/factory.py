@@ -11,9 +11,9 @@ from gd.image.geometry import Point, Rectangle, Size
 from gd.image.sprite import Sprite
 
 try:
-    from PIL.Image import BICUBIC, LANCZOS, Image  # type: ignore
-    from PIL.Image import new as new_image  # type: ignore
-    from PIL.ImageOps import colorize, flip, grayscale, mirror  # type: ignore
+    from PIL.Image import BICUBIC, LANCZOS, Image
+    from PIL.Image import new as new_image
+    from PIL.ImageOps import colorize, flip, grayscale, mirror
 
 except ImportError:
     pass
@@ -144,7 +144,7 @@ class Factory:
     def paint(image: Image, color: Color, black: Color = BLACK) -> Image:
         _red, _green, _blue, alpha = image.split()
 
-        colored = colorize(grayscale(image), black=black.to_rgb(), white=color.to_rgb())
+        colored = colorize(grayscale(image), black=black.value, white=color.value)
 
         colored.putalpha(alpha)
 
@@ -152,11 +152,11 @@ class Factory:
 
     @property
     def icon_sprites(self) -> Sprites:
-        return self.icon_sheet.sprites
+        return self.icon_sheet.sprites  # type: ignore  # XXX: decorator mess
 
     @property
     def glow_sprites(self) -> Sprites:
-        return self.glow_sheet.sprites
+        return self.glow_sheet.sprites  # type: ignore  # XXX: decorator mess
 
     @property
     def icon_image(self) -> Image:
@@ -168,11 +168,11 @@ class Factory:
 
     @property
     def robot_animations(self) -> Animations:
-        return self.robot_animation_sheet.animations
+        return self.robot_animation_sheet.animations  # type: ignore  # XXX: decorator mess
 
     @property
     def spider_animations(self) -> Animations:
-        return self.spider_animation_sheet.animations
+        return self.spider_animation_sheet.animations  # type: ignore  # XXX: decorator mess
 
     @property
     def robot_idle(self) -> Animation:

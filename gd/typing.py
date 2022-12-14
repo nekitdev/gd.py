@@ -1,5 +1,3 @@
-from abc import abstractmethod
-from builtins import hasattr as has_attribute
 from builtins import isinstance as is_instance
 from builtins import issubclass as is_subclass
 from os import PathLike
@@ -19,7 +17,7 @@ from typing import (
     Union,
 )
 
-from typing_extensions import Protocol, TypeAlias, TypeGuard, runtime_checkable
+from typing_extensions import TypeGuard
 from yarl import URL
 
 __all__ = (
@@ -56,6 +54,9 @@ __all__ = (
 
 AnyType = Type[Any]
 
+AnyException = BaseException
+AnyExceptionType = Type[AnyException]
+
 T = TypeVar("T")
 U = TypeVar("U")
 V = TypeVar("V")
@@ -64,9 +65,6 @@ R = TypeVar("R")
 
 DynamicCallable = Callable[..., R]
 AnyCallable = DynamicCallable[Any]
-
-AnyException: TypeAlias = BaseException
-AnyExceptionType: TypeAlias = Type[AnyException]
 
 Nullary = Callable[[], R]
 Unary = Callable[[T], R]
@@ -131,7 +129,7 @@ except TypeError:
     IntoPath = Union[str, PathLike]  # type: ignore
 
 
-JSONType: TypeAlias = Optional[Union[bool, int, float, str, StringDict[Any], List[Any]]]
+JSONType = Optional[Union[bool, int, float, str, StringDict[Any], List[Any]]]
 
 
 def is_same_type(value: Any, item: T) -> TypeGuard[T]:

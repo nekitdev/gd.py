@@ -113,6 +113,6 @@ class Artist(Entity):
 CONVERTER.register_unstructure_hook(
     Artist,
     make_dict_unstructure_fn(
-        Artist, CONVERTER, id=override(omit=True), maybe_client=override(omit=True)
+        Artist, CONVERTER, id=override(omit=True), client_unchecked=override(omit=True)
     ),
 )

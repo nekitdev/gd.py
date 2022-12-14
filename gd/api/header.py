@@ -69,7 +69,7 @@ COLOR_CHANNELS = "kS38"
 
 
 @define()
-class Header(Model, Binary):
+class Header(Model, Binary):  # TODO: compatibility?
     game_mode: GameMode = field(default=GameMode.DEFAULT)
     mini_mode: bool = field(default=DEFAULT_MINI_MODE)
     speed: Speed = field(default=Speed.DEFAULT)

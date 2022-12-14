@@ -32,7 +32,7 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Install dependencies
-        run: poetry install --with check
+        run: poetry install --with check --all-extras
 
       - name: Run type checks
         run: poetry run mypy .

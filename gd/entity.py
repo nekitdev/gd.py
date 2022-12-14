@@ -31,10 +31,10 @@ ID = "id"
 
 
 @define()
-class Entity(Binary, JSON[EntityData]):
+class Entity(Binary, JSON[EntityData]):  # type: ignore
     id: int = field()
 
-    maybe_client: Optional[Client] = field(default=None, init=False, repr=False, eq=False)
+    client_unchecked: Optional[Client] = field(default=None, init=False, repr=False, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
@@ -46,7 +46,7 @@ class Entity(Binary, JSON[EntityData]):
 
     @property
     def client(self) -> Client:
-        result = self.maybe_client
+        result = self.client_unchecked
 
         if result is None:
             raise ClientError(CLIENT_NOT_ATTACHED.format(self))
@@ -55,14 +55,14 @@ class Entity(Binary, JSON[EntityData]):
 
     @client.setter
     def client(self, client: Client) -> None:
-        self.maybe_client = client
+        self.client_unchecked = client
 
     @client.deleter
     def client(self) -> None:
-        self.maybe_client = None
+        self.client_unchecked = None
 
-    def maybe_attach_client(self: E, client: Optional[Client]) -> E:
-        self.maybe_client = client
+    def attach_client_unchecked(self: E, client: Optional[Client]) -> E:
+        self.client_unchecked = client
 
         return self
 
@@ -86,7 +86,7 @@ class Entity(Binary, JSON[EntityData]):
         return CONVERTER.structure(data, cls)
 
     def to_json(self) -> EntityData:
-        return CONVERTER.unstructure(self)
+        return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
     def from_binary(
@@ -116,5 +116,5 @@ CONVERTER = Converter(forbid_extra_keys=True)
 
 CONVERTER.register_unstructure_hook(
     Entity,
-    make_dict_unstructure_fn(Entity, CONVERTER, maybe_client=override(omit=True)),
+    make_dict_unstructure_fn(Entity, CONVERTER, client_unchecked=override(omit=True)),
 )

@@ -345,3 +345,5 @@ class SaveManager(Generic[D]):
 save_manager = SaveManager(Database)
 save = save_manager
 create_database = save_manager.create_database
+
+# TODO: rewrite?

@@ -7,7 +7,7 @@ from typing_extensions import Literal, TypeGuard
 from gd.api.hsv import HSV
 from gd.api.ordered_set import OrderedSet
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_constants import BITS
+from gd.binary_constants import BITS, BYTE
 from gd.binary_utils import Reader, Writer
 from gd.color import Color
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, EMPTY
@@ -26,6 +26,7 @@ from gd.enums import (
     PulseMode,
     PulseTargetType,
     PulseType,
+    SimpleZLayer,
     SpeedChangeType,
     TargetType,
     ToggleType,
@@ -197,6 +198,7 @@ DISABLE_GLOW = 96
 SPECIAL_CHECKED = 13
 LINK_ID = 108
 
+OBJECT_STRING = "Object (ID: {object.id}) at ({object.x}, {object.y})"
 
 O = TypeVar("O", bound="Object")
 
@@ -499,8 +501,8 @@ class Object(Model, Binary):
         do_not_enter = parse_get_or(int_bool, DEFAULT_DO_NOT_ENTER, mapping.get(DO_NOT_ENTER))
 
         z_layer = parse_get_or(
-            partial_parse_enum(int, ZLayer), ZLayer.DEFAULT, mapping.get(Z_LAYER)
-        )
+            partial_parse_enum(int, SimpleZLayer), SimpleZLayer.DEFAULT, mapping.get(Z_LAYER)
+        ).into_z_layer()
         z_order = parse_get_or(int, DEFAULT_Z_ORDER, mapping.get(Z_ORDER))
 
         base_editor_layer = parse_get_or(
@@ -757,6 +759,9 @@ class Object(Model, Binary):
 
     def is_speed_change(self) -> bool:
         return self.id in SPEED_CHANGE_IDS
+
+    def __str__(self) -> str:
+        return OBJECT_STRING.format(object=self)
 
 
 PORTAL_IDS = {portal.id for portal in PortalType}
@@ -1144,9 +1149,16 @@ class CollisionBlock(Object):
         return self.dynamic
 
 
+ITEM_ID = 80
+
+
 @define(slots=False)
 class HasItem:
     item_id: int = DEFAULT_ID
+
+
+COUNT = 78
+SUBTRACT_COUNT = 79
 
 
 DEFAULT_COUNT = 0
@@ -1157,6 +1169,9 @@ class HasCount:
     count: int = DEFAULT_COUNT
 
 
+TARGET_GROUP_ID = 79
+
+
 @define(slots=False)
 class HasTargetGroup:
     target_group_id: int = DEFAULT_ID
@@ -1165,12 +1180,18 @@ class HasTargetGroup:
         return True
 
 
+ADDITIONAL_GROUP_ID = 71
+
+
 @define(slots=False)
 class HasAdditionalGroup:
     additional_group_id: int = DEFAULT_ID
 
     def has_additional_group(self) -> bool:
         return True
+
+
+ACTIVATE_GROUP = 56
 
 
 DEFAULT_ACTIVATE_GROUP = False
@@ -1184,12 +1205,19 @@ class HasActivateGroup:
         return self.activate_group
 
 
+DURATION = 10
+
+
 DEFAULT_DURATION = 0.0
 
 
 @define(slots=False)
 class HasDuration:
     duration: float = DEFAULT_DURATION
+
+
+SPAWN_DELAY = 63
+FOLLOW_DELAY = 91
 
 
 DEFAULT_DELAY = 0.0
@@ -1200,6 +1228,10 @@ class HasDelay:
     delay: float = DEFAULT_DELAY
 
 
+EASING = 30
+EASING_RATE = 85
+
+
 DEFAULT_EASING_RATE = 2.0
 
 
@@ -1207,6 +1239,10 @@ DEFAULT_EASING_RATE = 2.0
 class HasEasing:
     easing: Easing = Easing.DEFAULT
     easing_rate: float = DEFAULT_EASING_RATE
+
+
+ORB_MULTI_ACTIVATE = 99
+TRIGGER_MULTI_ACTIVATE = 104
 
 
 DEFAULT_MULTI_ACTIVATE = False
@@ -1220,6 +1256,15 @@ class HasMultiActivate:
         return self.multi_activate
 
 
+RED = 7
+GREEN = 8
+BLUE = 9
+
+DEFAULT_RED = BYTE
+DEFAULT_GREEN = BYTE
+DEFAULT_BLUE = BYTE
+
+
 @define(slots=False)
 class HasColor:
     color: Color = field(factory=Color.default)
@@ -1228,14 +1273,11 @@ class HasColor:
 MULTI_ACTIVATE_BIT = 0b00000010
 
 
-ORB_MULTI_ACTIVATE = 99
-
-
 OP = TypeVar("OP", bound="Orb")
 
 
 @define()
-class Orb(HasMultiActivate, Object):
+class Orb(HasMultiActivate, Object):  # type: ignore
     @classmethod
     def from_binary(
         cls: Type[OP],
@@ -1294,14 +1336,11 @@ class Orb(HasMultiActivate, Object):
         return mapping
 
 
-ITEM_ID = 80
-
-
 IC = TypeVar("IC", bound="ItemCounter")
 
 
 @define()
-class ItemCounter(HasItem, Object):
+class ItemCounter(HasItem, Object):  # type: ignore
     @classmethod
     def from_binary(
         cls: Type[IC],
@@ -1351,12 +1390,11 @@ class ItemCounter(HasItem, Object):
 
 PI = TypeVar("PI", bound="PickupItem")
 
-TARGET_GROUP = 51
 PICKUP_MODE = 79
 
 
 @define()
-class PickupItem(HasTargetGroup, HasItem, Object):
+class PickupItem(HasTargetGroup, HasItem, Object):  # type: ignore
     mode: PickupItemMode = PickupItemMode.DEFAULT
 
     @classmethod
@@ -1403,13 +1441,18 @@ class PickupItem(HasTargetGroup, HasItem, Object):
         mode = self.mode
 
         if mode.is_toggle_trigger():
-            mapping[TARGET_GROUP] = str(self.target_group_id)
+            mapping[TARGET_GROUP_ID] = str(self.target_group_id)
 
         mapping[ITEM_ID] = str(self.item_id)
 
         mapping[PICKUP_MODE] = str(self.mode.value)
 
         return mapping
+
+
+TOUCH_TRIGGERED = 11
+SPAWN_TRIGGERED = 62
+MULTI_TRIGGER = 87
 
 
 TOUCH_TRIGGERED_BIT = 0b00000001
@@ -1490,6 +1533,48 @@ class Trigger(Object):
     def is_multi_trigger(self) -> bool:
         return self.multi_trigger
 
+    @classmethod
+    def from_robtop_mapping(cls: Type[T], mapping: Mapping[int, str]) -> T:
+        trigger = super().from_robtop_mapping(mapping)
+
+        touch_triggered = parse_get_or(int_bool, DEFAULT_TOUCH_TRIGGERED, mapping.get(TOUCH_TRIGGERED))
+        spawn_triggered = parse_get_or(int_bool, DEFAULT_SPAWN_TRIGGERED, mapping.get(SPAWN_TRIGGERED))
+        multi_trigger = parse_get_or(int_bool, DEFAULT_MULTI_TRIGGER, mapping.get(MULTI_TRIGGER))
+
+        trigger.touch_triggered = touch_triggered
+        trigger.spawn_triggered = spawn_triggered
+        trigger.multi_trigger = multi_trigger
+
+        return trigger
+
+    def to_robtop_mapping(self) -> Dict[int, str]:
+        mapping = super().to_robtop_mapping()
+
+        touch_triggered = self.is_touch_triggered()
+
+        if touch_triggered:
+            mapping[TOUCH_TRIGGERED] = str(int(touch_triggered))
+
+        spawn_triggered = self.is_spawn_triggered()
+
+        if spawn_triggered:
+            mapping[SPAWN_TRIGGERED] = str(int(spawn_triggered))
+
+        multi_trigger = self.is_multi_trigger()
+
+        if touch_triggered:
+            mapping[MULTI_TRIGGER] = str(int(multi_trigger))
+
+        return mapping
+
+
+BLENDING = 17
+TARGET_COLOR_ID = 23
+COPIED_COLOR_ID = 50
+COPIED_COLOR_HSV = 49
+COPY_OPACITY = 60
+PLAYER_COLOR_1 = 15
+PLAYER_COLOR_2 = 16
 
 PLAYER_COLOR_MASK = 0b00000011
 BLENDING_BIT = 0b00000100
@@ -1498,13 +1583,15 @@ COPY_OPACITY_BIT = 0b00001000
 
 DEFAULT_BLENDING = False
 DEFAULT_COPY_OPACITY = False
+DEFAULT_PLAYER_COLOR_1 = False
+DEFAULT_PLAYER_COLOR_2 = False
 
 
 CLT = TypeVar("CLT", bound="ColorTrigger")
 
 
 @define()
-class ColorTrigger(HasColor, HasDuration, Trigger):
+class ColorTrigger(HasColor, HasDuration, Trigger):  # type: ignore
     blending: bool = field(default=DEFAULT_BLENDING)
     target_color_id: int = field(default=DEFAULT_ID)
 
@@ -1583,13 +1670,7 @@ class ColorTrigger(HasColor, HasDuration, Trigger):
 
         writer = Writer(binary)
 
-        player_color = self.player_color
-
-        if player_color.is_not_used():
-            value = PLAYER_COLOR_MASK
-
-        else:
-            value = player_color.value
+        value = self.player_color.value
 
         if self.is_blending():
             value |= BLENDING_BIT
@@ -1608,6 +1689,61 @@ class ColorTrigger(HasColor, HasDuration, Trigger):
 
         self.copied_color_hsv.to_binary(binary, order, version)
 
+    @classmethod
+    def from_robtop_mapping(cls: Type[CLT], mapping: Mapping[int, str]) -> CLT:
+        color_trigger = super().from_robtop_mapping(mapping)
+
+        blending = parse_get_or(int_bool, DEFAULT_BLENDING, mapping.get(BLENDING))
+
+        copy_opacity = parse_get_or(int_bool, DEFAULT_COPY_OPACITY, mapping.get(COPY_OPACITY))
+
+        player_color_1 = parse_get_or(int_bool, DEFAULT_PLAYER_COLOR_1, mapping.get(PLAYER_COLOR_1))
+        player_color_2 = parse_get_or(int_bool, DEFAULT_PLAYER_COLOR_2, mapping.get(PLAYER_COLOR_2))
+
+        if player_color_1 and player_color_2:
+            player_color = PlayerColor.DEFAULT
+
+        else:
+            if player_color_1:
+                player_color = PlayerColor.COLOR_1
+
+            elif player_color_2:
+                player_color = PlayerColor.COLOR_2
+
+            else:
+                player_color = PlayerColor.NOT_USED
+
+        red = parse_get_or(int_bool, DEFAULT_RED, mapping.get(RED))
+        green = parse_get_or(int_bool, DEFAULT_GREEN, mapping.get(GREEN))
+        blue = parse_get_or(int_bool, DEFAULT_BLUE, mapping.get(BLUE))
+
+        color = Color.from_rgb(red, green, blue)
+
+        duration = parse_get_or(float, DEFAULT_DURATION, mapping.get(DURATION))
+
+        target_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_COLOR_ID))
+        copied_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(COPIED_COLOR_ID))
+
+        copied_color_hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(COPIED_COLOR_HSV))
+
+        color_trigger.blending = blending
+        color_trigger.copy_opacity = copy_opacity
+
+        color_trigger.player_color = player_color
+
+        color_trigger.color = color
+
+        color_trigger.duration = duration
+
+        color_trigger.target_color_id = target_color_id
+        color_trigger.copied_color_id = copied_color_id
+
+        color_trigger.copied_color_hsv = copied_color_hsv
+
+        return color_trigger
+
+    # TODO: here
+
 
 DEFAULT_OPACITY = 1.0
 
@@ -1616,7 +1752,7 @@ ALT = TypeVar("ALT", bound="AlphaTrigger")
 
 
 @define()
-class AlphaTrigger(HasTargetGroup, HasDuration, Trigger):
+class AlphaTrigger(HasTargetGroup, HasDuration, Trigger):  # type: ignore
     opacity: float = DEFAULT_OPACITY
 
     @classmethod
@@ -1783,7 +1919,7 @@ MT = TypeVar("MT", bound="MoveTrigger")
 
 
 @define()
-class MoveTrigger(HasTargetGroup, HasEasing, HasDuration, Trigger):
+class MoveTrigger(HasTargetGroup, HasEasing, HasDuration, Trigger):  # type: ignore
     x_offset: float = DEFAULT_X_OFFSET
     y_offset: float = DEFAULT_Y_OFFSET
 
@@ -1915,7 +2051,7 @@ SPT = TypeVar("SPT", bound="SpawnTrigger")
 
 
 @define()
-class SpawnTrigger(HasDelay, HasTargetGroup, Trigger):
+class SpawnTrigger(HasDelay, HasTargetGroup, Trigger):  # type: ignore
     editor_disable: bool = DEFAULT_EDITOR_DISABLE
 
     @classmethod
@@ -1973,7 +2109,7 @@ ST = TypeVar("ST", bound="StopTrigger")
 
 
 @define()
-class StopTrigger(HasTargetGroup, Trigger):
+class StopTrigger(HasTargetGroup, Trigger):  # type: ignore
     @classmethod
     def from_binary(
         cls: Type[ST],
@@ -2012,7 +2148,7 @@ TT = TypeVar("TT", bound="ToggleTrigger")
 
 
 @define()
-class ToggleTrigger(HasActivateGroup, HasTargetGroup, Trigger):
+class ToggleTrigger(HasActivateGroup, HasTargetGroup, Trigger):  # type: ignore
     toggled: bool = DEFAULT_TOGGLED
 
     @classmethod
@@ -2084,7 +2220,9 @@ RT = TypeVar("RT", bound="RotateTrigger")
 
 
 @define()
-class RotateTrigger(HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, Trigger):
+class RotateTrigger(  # type: ignore
+    HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, Trigger
+):
     target_rotation: float = DEFAULT_TARGET_ROTATION
     rotation_locked: bool = DEFAULT_ROTATION_LOCKED
 
@@ -2183,7 +2321,7 @@ FT = TypeVar("FT", bound="FollowTrigger")
 
 
 @define()
-class FollowTrigger(HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, Trigger):
+class FollowTrigger(HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, Trigger):  # type: ignore
     x_modifier: float = DEFAULT_X_MODIFIER
     y_modifier: float = DEFAULT_Y_MODIFIER
 
@@ -2252,7 +2390,7 @@ SHT = TypeVar("SHT", bound="ShakeTrigger")
 
 
 @define()
-class ShakeTrigger(HasDuration, Trigger):
+class ShakeTrigger(HasDuration, Trigger):  # type: ignore
     strength: float = DEFAULT_STRENGTH
     interval: float = DEFAULT_INTERVAL
 
@@ -2293,7 +2431,7 @@ AT = TypeVar("AT", bound="AnimateTrigger")
 
 
 @define()
-class AnimateTrigger(HasTargetGroup, Trigger):
+class AnimateTrigger(HasTargetGroup, Trigger):  # type: ignore
     animation_id: int = DEFAULT_ID
 
     @classmethod
@@ -2342,7 +2480,7 @@ THT = TypeVar("THT", bound="TouchTrigger")
 
 
 @define()
-class TouchTrigger(HasTargetGroup, Trigger):
+class TouchTrigger(HasTargetGroup, Trigger):  # type: ignore
     hold_mode: bool = DEFAULT_HOLD_MODE
     dual_mode: bool = DEFAULT_DUAL_MODE
     toggle_type: ToggleType = ToggleType.DEFAULT
@@ -2411,7 +2549,7 @@ CT = TypeVar("CT", bound="CountTrigger")
 
 
 @define()
-class CountTrigger(HasMultiActivate, HasActivateGroup, HasCount, HasItem, Trigger):
+class CountTrigger(HasMultiActivate, HasActivateGroup, HasCount, HasItem, Trigger):  # type: ignore
     @classmethod
     def from_binary(
         cls: Type[CT],
@@ -2473,7 +2611,7 @@ COMPARISON_SHIFT = ACTIVATE_GROUP_BIT.bit_length()
 
 
 @define()
-class InstantCountTrigger(HasActivateGroup, HasCount, HasItem, Trigger):
+class InstantCountTrigger(HasActivateGroup, HasCount, HasItem, Trigger):  # type: ignore
     comparison: InstantCountComparison = InstantCountComparison.DEFAULT
 
     @classmethod
@@ -2536,7 +2674,7 @@ PT = TypeVar("PT", bound="PickupTrigger")
 
 
 @define()
-class PickupTrigger(HasCount, HasItem, Trigger):
+class PickupTrigger(HasCount, HasItem, Trigger):  # type: ignore
     @classmethod
     def from_binary(
         cls: Type[PT],
@@ -2579,7 +2717,7 @@ FPYT = TypeVar("FPYT", bound="FollowPlayerYTrigger")
 
 
 @define()
-class FollowPlayerYTrigger(HasDelay, HasTargetGroup, Trigger):
+class FollowPlayerYTrigger(HasDelay, HasTargetGroup, Trigger):  # type: ignore
     speed: float = DEFAULT_SPEED
     max_speed: float = DEFAULT_MAX_SPEED
     offset: float = DEFAULT_OFFSET
@@ -2633,7 +2771,7 @@ ODT = TypeVar("ODT", bound="OnDeathTrigger")
 
 
 @define()
-class OnDeathTrigger(HasActivateGroup, HasTargetGroup, Trigger):
+class OnDeathTrigger(HasActivateGroup, HasTargetGroup, Trigger):  # type: ignore
     @classmethod
     def from_binary(
         cls: Type[ODT],
@@ -2686,7 +2824,7 @@ CBT = TypeVar("CBT", bound="CollisionTrigger")
 
 
 @define()
-class CollisionTrigger(HasActivateGroup, HasTargetGroup, Trigger):
+class CollisionTrigger(HasActivateGroup, HasTargetGroup, Trigger):  # type: ignore
     block_a_id: int = DEFAULT_ID
     block_b_id: int = DEFAULT_ID
 
@@ -2873,7 +3011,7 @@ TELEPORT_ID = PortalType.BLUE_TELEPORT.id
 OBJECT_ID_NOT_PRESENT = "object id is not present"
 
 
-OBJECT_ID_TO_TYPE: Dict[int, Type[Object]] = {
+OBJECT_ID_TO_TYPE: Dict[int, Type[Object]] = {  # TODO: extend this
     TEXT_ID: Text,
     SECRET_COIN_ID: SecretCoin,
     TELEPORT_ID: Teleport,
@@ -2882,7 +3020,7 @@ OBJECT_ID_TO_TYPE: Dict[int, Type[Object]] = {
 OBJECT_ID_TO_TYPE.update({orb.id: Orb for orb in OrbType})
 
 
-def object_from_robtop(string: str) -> Object:  # TODO: extend this function
+def object_from_robtop(string: str) -> Object:
     mapping = split_object(string)
 
     object_id_string = mapping.get(ID)
@@ -2899,3 +3037,6 @@ def object_from_robtop(string: str) -> Object:  # TODO: extend this function
 
 def object_to_robtop(object: Object) -> str:
     return object.to_robtop()
+
+
+# TODO: compatibility?

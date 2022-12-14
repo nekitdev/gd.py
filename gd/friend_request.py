@@ -85,12 +85,12 @@ class FriendRequest(Entity):
     def into_relationship(self) -> Relationship:
         return Relationship(
             id=self.id, user=self.user, type=self.type.into_relationship_type()
-        ).maybe_attach_client(self.maybe_client)
+        ).attach_client_unchecked(self.client_unchecked)
 
-    def maybe_attach_client(self: FR, client: Optional[Client]) -> FR:
-        self.user.maybe_attach_client(client)
+    def attach_client_unchecked(self: FR, client: Optional[Client]) -> FR:
+        self.user.attach_client_unchecked(client)
 
-        return super().maybe_attach_client(client)
+        return super().attach_client_unchecked(client)
 
     def attach_client(self: FR, client: Client) -> FR:
         self.user.attach_client(client)

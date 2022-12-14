@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Type, TypeVar
+from typing import Any, Dict, Generic, Iterable, List, Optional, Type, TypeVar
 
 from attrs import define, field
 
@@ -1767,23 +1767,23 @@ class Database(Binary):
 
     rated_game: bool = field(default=False)
 
-    official_levels: AnyLevelCollection = field(factory=level_collection)
-    saved_levels: AnyLevelCollection = field(factory=level_collection)
+    official_levels: LevelCollection[LevelAPI] = field(factory=level_collection)
+    saved_levels: LevelCollection[LevelAPI] = field(factory=level_collection)
     followed: OrderedSet[int] = field(factory=ordered_set)
     last_played: OrderedSet[int] = field(factory=ordered_set)
     filters: Filters = field(factory=Filters)
-    daily_levels: AnyLevelCollection = field(factory=level_collection)
+    daily_levels: LevelCollection[LevelAPI] = field(factory=level_collection)
     daily_id: int = field(default=0)
     weekly_id: int = field(default=0)
     liked: Dict[int, bool] = field(factory=dict)
     rated: Dict[int, int] = field(factory=dict)
     reported: OrderedSet[int] = field(factory=ordered_set)
     demon_rated: OrderedSet[int] = field(factory=ordered_set)
-    gauntlet_levels: AnyLevelCollection = field(factory=level_collection)
+    gauntlet_levels: LevelCollection[LevelAPI] = field(factory=level_collection)
     saved_folders: OrderedSet[Folder] = field(factory=ordered_set)
     created_folders: OrderedSet[Folder] = field(factory=ordered_set)
 
-    created_levels: AnyLevelCollection = field(factory=level_collection)
+    created_levels: LevelCollection[LevelAPI] = field(factory=level_collection)
 
     songs: OrderedSet[Song] = field(factory=ordered_set)
 

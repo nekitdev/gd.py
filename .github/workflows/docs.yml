@@ -28,7 +28,7 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Install dependencies
-        run: poetry install --with docs
+        run: poetry install --with docs --all-extras
 
       - name: Pull
         run: git pull

@@ -31,6 +31,7 @@ from tqdm import tqdm as progess  # type: ignore
 from typing_extensions import Literal
 from yarl import URL
 
+from gd.api.editor import Editor
 from gd.api.recording import Recording
 from gd.async_utils import run_blocking, shutdown_loop
 from gd.constants import (
@@ -46,6 +47,7 @@ from gd.constants import (
     DEFAULT_TWO_PLAYER,
     DEFAULT_VERSION,
     EMPTY,
+    EMPTY_BYTES,
     SLASH,
     TIMELY_ID_ADD,
     UNNAMED,
@@ -103,7 +105,6 @@ from gd.errors import (
 from gd.filters import Filters
 from gd.iter_utils import unary_tuple
 from gd.models import CommentBannedModel
-from gd.models_constants import OBJECTS_SEPARATOR
 from gd.models_utils import concat_extra_string
 from gd.password import Password
 from gd.progress import Progress
@@ -1476,8 +1477,8 @@ class HTTPClient:
         version: int = DEFAULT_VERSION,
         length: LevelLength = LevelLength.DEFAULT,
         official_song_id: int = DEFAULT_ID,
-        description: str = EMPTY,
         song_id: int = DEFAULT_ID,
+        description: str = EMPTY,
         original_id: int = DEFAULT_ID,
         two_player: bool = DEFAULT_TWO_PLAYER,
         privacy: LevelPrivacy = LevelPrivacy.DEFAULT,
@@ -1489,7 +1490,7 @@ class HTTPClient:
         recording: Optional[Recording] = None,
         editor_time: Optional[timedelta] = None,
         copies_time: Optional[timedelta] = None,
-        data: str = EMPTY,
+        data: bytes = EMPTY_BYTES,
         *,
         account_id: int,
         account_name: str,
@@ -1503,19 +1504,17 @@ class HTTPClient:
 
         error_codes = {-1: MissingAccess(FAILED_TO_UPLOAD_LEVEL)}
 
-        objects_separator = OBJECTS_SEPARATOR
+        editor = Editor.from_bytes(data)
 
-        if objects_separator in data:
-            if not object_count:
-                object_count = data.count(objects_separator)
+        object_count = len(editor)
 
-            data = zip_level_string(data)
+        string = zip_level_string(editor.to_robtop())
 
         extra_string = self.generate_extra_string()
 
         description = encode_base64_string_url_safe(description)
 
-        level_seed = generate_level_seed(data)
+        level_seed = generate_level_seed(string)
 
         random_string = generate_random_string()
 
@@ -1552,7 +1551,7 @@ class HTTPClient:
             unlisted2=privacy.is_friends(),
             ldm=int(low_detail),
             password=password.to_robtop_value(),
-            level_string=data,
+            level_string=string,
             extra_string=extra_string,
             level_info=recording_string,
             seed=random_string,
