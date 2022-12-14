@@ -25,6 +25,7 @@ from gd.constants import (
     DEFAULT_LOW_DETAIL,
     DEFAULT_OBJECT_COUNT,
     DEFAULT_PAGE,
+    DEFAULT_PAGES,
     DEFAULT_RATING,
     DEFAULT_RECORD,
     DEFAULT_SCORE,
@@ -567,7 +568,7 @@ class Level(Entity):
     async def update(self, *, get_data: bool = True) -> Optional[Level]:
         ...
 
-    async def comment(self, content: str, record: int = DEFAULT_RECORD) -> Optional[LevelComment]:
+    async def comment(self, content: Optional[str] = None, record: int = DEFAULT_RECORD) -> Optional[LevelComment]:
         return await self.client.post_level_comment(self, content, record)
 
     async def like(self) -> None:
@@ -599,7 +600,7 @@ class Level(Entity):
         self,
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
         count: int = COMMENT_PAGE_SIZE,
-        pages: Iterable[int] = DEFAULT_PAGE,
+        pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[LevelComment]:
         return self.client.get_level_comments(
             level=self,

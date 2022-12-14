@@ -640,8 +640,8 @@ class Session:
 
     async def post_level_comment(
         self,
-        content: Optional[str],
         level_id: int,
+        content: Optional[str],
         record: int,
         *,
         account_id: int,
@@ -649,8 +649,8 @@ class Session:
         encoded_password: str,
     ) -> int:
         return await self.http.post_level_comment(
-            content=content,
             level_id=level_id,
+            content=content,
             record=record,
             account_id=account_id,
             account_name=account_name,

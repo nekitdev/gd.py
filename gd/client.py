@@ -1137,12 +1137,12 @@ class Client:
 
     @check_login
     async def post_level_comment(
-        self, level: Level, record: int = DEFAULT_RECORD, content: Optional[str] = None
+        self, level: Level, content: Optional[str] = None, record: int = DEFAULT_RECORD
     ) -> Optional[LevelComment]:
         comment_id = await self.session.post_level_comment(
             level_id=level.id,
-            record=record,
             content=content,
+            record=record,
             account_id=self.account_id,
             account_name=self.name,
             encoded_password=self.encoded_password,

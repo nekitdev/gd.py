@@ -181,7 +181,7 @@ warn_no_return = true
 warn_unreachable = true
 
 warn_redundant_casts = true
-warn_unused_ignores = true  # compatibility
+warn_unused_ignores = false  # compatibility
 
 [tool.changelogging]
 name = "gd.py"
