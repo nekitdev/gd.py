@@ -2966,19 +2966,19 @@
         <span class="sd">&quot;&quot;&quot;The user representing the client.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">User</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">account_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">account_id</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">ping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">timedelta</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">ping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Duration</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Pings the Geometry Dash server.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            The [`timedelta`][datetime.timedelta] representing the latency.</span>
+<span class="sd">            The [`Duration`][gd.date_time.Duration] representing the latency.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ping_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">ping_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="n">URLString</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">timedelta</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">ping_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="n">URLString</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Duration</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Pings the given `url`.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            The [`timedelta`][datetime.timedelta] representing the latency.</span>
+<span class="sd">            The [`Duration`][gd.date_time.Duration] representing the latency.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">ping</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
 
@@ -4875,7 +4875,7 @@
 
 
 <h3 id="gd.client.Client.ping" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">ping</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">timedelta</span></code>
+<code class="highlight language-python"><span class="n">ping</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Duration</span></code>
   
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-async"><code>async</code></small>
@@ -4899,9 +4899,9 @@
     <tbody>
         <tr>
           <td>
-                <code><a class="autorefs autorefs-external" title="datetime.timedelta" href="https://docs.python.org/3/library/datetime.html#datetime.timedelta">timedelta</a></code>
+                <code><span title="gd.date_time.Duration">Duration</span></code>
           </td>
-          <td><p>The <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/datetime.html#datetime.timedelta"><code>timedelta</code></a> representing the latency.</p></td>
+          <td><p>The [<code>Duration</code>][gd.date_time.Duration] representing the latency.</p></td>
         </tr>
     </tbody>
   </table>
@@ -4914,11 +4914,11 @@
 <span class="normal">268</span>
 <span class="normal">269</span>
 <span class="normal">270</span>
-<span class="normal">271</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">ping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">timedelta</span><span class="p">:</span>
+<span class="normal">271</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">ping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Duration</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Pings the Geometry Dash server.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The [`timedelta`][datetime.timedelta] representing the latency.</span>
+<span class="sd">        The [`Duration`][gd.date_time.Duration] representing the latency.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ping_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -4932,7 +4932,7 @@
 
 
 <h3 id="gd.client.Client.ping_url" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">ping_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="n">URLString</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">timedelta</span></code>
+<code class="highlight language-python"><span class="n">ping_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="n">URLString</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Duration</span></code>
   
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-async"><code>async</code></small>
@@ -4956,9 +4956,9 @@
     <tbody>
         <tr>
           <td>
-                <code><a class="autorefs autorefs-external" title="datetime.timedelta" href="https://docs.python.org/3/library/datetime.html#datetime.timedelta">timedelta</a></code>
+                <code><span title="gd.date_time.Duration">Duration</span></code>
           </td>
-          <td><p>The <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/datetime.html#datetime.timedelta"><code>timedelta</code></a> representing the latency.</p></td>
+          <td><p>The [<code>Duration</code>][gd.date_time.Duration] representing the latency.</p></td>
         </tr>
     </tbody>
   </table>
@@ -4971,11 +4971,11 @@
 <span class="normal">276</span>
 <span class="normal">277</span>
 <span class="normal">278</span>
-<span class="normal">279</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">ping_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="n">URLString</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">timedelta</span><span class="p">:</span>
+<span class="normal">279</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">ping_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="n">URLString</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Duration</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Pings the given `url`.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The [`timedelta`][datetime.timedelta] representing the latency.</span>
+<span class="sd">        The [`Duration`][gd.date_time.Duration] representing the latency.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">ping</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
