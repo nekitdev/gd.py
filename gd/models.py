@@ -1472,7 +1472,7 @@ LEVEL_STARS = 18
 LEVEL_SCORE = 19
 LEVEL_AUTO = 25
 LEVEL_PASSWORD_DATA = 27
-LEVEL_UPLOADED_AT = 28
+LEVEL_CREATED_AT = 28
 LEVEL_UPDATED_AT = 29
 LEVEL_ORIGINAL_ID = 30
 LEVEL_TWO_PLAYER = 31
@@ -1514,7 +1514,7 @@ class LevelModel(Model):
     score: int = DEFAULT_SCORE
     auto: bool = DEFAULT_AUTO
     password_data: Password = field(factory=Password)
-    uploaded_at: DateTime = field(factory=utc_now)
+    created_at: DateTime = field(factory=utc_now)
     updated_at: DateTime = field(factory=utc_now)
     original_id: int = DEFAULT_ID
     two_player: bool = DEFAULT_TWO_PLAYER
@@ -1555,7 +1555,7 @@ class LevelModel(Model):
         score_index: int = LEVEL_SCORE,
         auto_index: int = LEVEL_AUTO,
         password_data_index: int = LEVEL_PASSWORD_DATA,
-        uploaded_at_index: int = LEVEL_UPLOADED_AT,
+        created_at_index: int = LEVEL_CREATED_AT,
         updated_at_index: int = LEVEL_UPDATED_AT,
         original_id_index: int = LEVEL_ORIGINAL_ID,
         two_player_index: int = LEVEL_TWO_PLAYER,
@@ -1590,7 +1590,7 @@ class LevelModel(Model):
         score_default: int = DEFAULT_SCORE,
         auto_default: bool = DEFAULT_AUTO,
         password_data_default: Optional[Password] = None,
-        uploaded_at_default: Optional[DateTime] = None,
+        created_at_default: Optional[DateTime] = None,
         updated_at_default: Optional[DateTime] = None,
         original_id_default: int = DEFAULT_ID,
         two_player_default: bool = DEFAULT_TWO_PLAYER,
@@ -1610,8 +1610,8 @@ class LevelModel(Model):
         if password_data_default is None:
             password_data_default = Password()
 
-        if uploaded_at_default is None:
-            uploaded_at_default = utc_now()
+        if created_at_default is None:
+            created_at_default = utc_now()
 
         if updated_at_default is None:
             updated_at_default = utc_now()
@@ -1666,6 +1666,11 @@ class LevelModel(Model):
 
         timely_id %= TIMELY_ID_ADD
 
+        score = parse_get_or(int, score_default, mapping.get(score_index))
+
+        if score < 0:
+            score = 0
+
         return cls(
             id=parse_get_or(int, id_default, mapping.get(id_index)),
             name=mapping.get(name_index, name_default),
@@ -1704,17 +1709,17 @@ class LevelModel(Model):
             ),
             demon=parse_get_or(int_bool, demon_default, mapping.get(demon_index)),
             stars=parse_get_or(int, stars_default, mapping.get(stars_index)),
-            score=parse_get_or(int, score_default, mapping.get(score_index)),
+            score=score,
             auto=parse_get_or(int_bool, auto_default, mapping.get(auto_index)),
             password_data=parse_get_or(
                 Password.from_robtop,
                 password_data_default,
                 mapping.get(password_data_index),
             ),
-            uploaded_at=parse_get_or(
+            created_at=parse_get_or(
                 date_time_from_human,
-                uploaded_at_default,
-                mapping.get(uploaded_at_index),
+                created_at_default,
+                mapping.get(created_at_index),
                 ignore_errors=True,
             ),
             updated_at=parse_get_or(
@@ -1766,7 +1771,7 @@ class LevelModel(Model):
         score_index: int = LEVEL_SCORE,
         auto_index: int = LEVEL_AUTO,
         password_data_index: int = LEVEL_PASSWORD_DATA,
-        uploaded_at_index: int = LEVEL_UPLOADED_AT,
+        created_at_index: int = LEVEL_CREATED_AT,
         updated_at_index: int = LEVEL_UPDATED_AT,
         original_id_index: int = LEVEL_ORIGINAL_ID,
         two_player_index: int = LEVEL_TWO_PLAYER,
@@ -1811,7 +1816,7 @@ class LevelModel(Model):
             score_index: str(self.score),
             auto_index: str(int(self.auto)) if self.is_auto() else EMPTY,
             password_data_index: self.password_data.to_robtop(),
-            uploaded_at_index: date_time_to_human(self.uploaded_at),
+            created_at_index: date_time_to_human(self.created_at),
             updated_at_index: date_time_to_human(self.updated_at),
             original_id_index: str(self.original_id),
             two_player_index: str(int(self.two_player)) if self.is_two_player() else EMPTY,
@@ -1850,6 +1855,9 @@ class LevelModel(Model):
     def is_epic(self) -> bool:
         return self.epic
 
+    def has_verified_coins(self) -> bool:
+        return self.verified_coins
+
     @property
     def difficulty(self) -> Difficulty:
         if self.is_auto():
@@ -1876,6 +1884,7 @@ class LevelModel(Model):
     @property  # type: ignore
     @cache_by(UNPROCESSED_DATA)
     def data(self) -> str:
+        print(unzip_level_string(self.unprocessed_data))
         return unzip_level_string(self.unprocessed_data)
 
     @data.setter

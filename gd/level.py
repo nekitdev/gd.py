@@ -13,11 +13,10 @@ from gd.binary_utils import Reader, Writer
 from gd.constants import (
     COMMENT_PAGE_SIZE,
     DEFAULT_COINS,
-    DEFAULT_DEMON,
     DEFAULT_DOWNLOADS,
     DEFAULT_ENCODING,
-    DEFAULT_EPIC,
     DEFAULT_ERRORS,
+    DEFAULT_GET_DATA,
     DEFAULT_ID,
     DEFAULT_LOW_DETAIL,
     DEFAULT_OBJECT_COUNT,
@@ -44,9 +43,10 @@ from gd.enums import (
     LevelLeaderboardStrategy,
     LevelLength,
     LevelPrivacy,
-    Score,
+    RateType,
     TimelyType,
 )
+from gd.errors import InternalError, MissingAccess
 from gd.models import LevelModel, TimelyInfoModel
 from gd.official_levels import OFFICIAL_LEVELS, OfficialLevel
 from gd.password import Password
@@ -63,11 +63,10 @@ __all__ = ("Level",)
 
 L = TypeVar("L", bound="Level")
 
-TWO_PLAYER_BIT = 0b00000001
-VERIFIED_COINS_BIT = 0b00000010
-EPIC_BIT = 0b00000100
-LOW_DETAIL_BIT = 0b00001000
-DEMON_BIT = 0b00010000
+RATE_TYPE_MASK = 0b00011111
+TWO_PLAYER_BIT = 0b00100000
+VERIFIED_COINS_BIT = 0b01000000
+LOW_DETAIL_BIT = 0b10000000
 
 EXPECTED_QUERY = "expected either `id` or `name` query"
 CAN_NOT_FIND_LEVEL = "can not find an official level by given query"
@@ -103,19 +102,18 @@ class Level(Entity):
     rating: int = field(default=DEFAULT_RATING, eq=False)
     length: LevelLength = field(default=LevelLength.DEFAULT, eq=False)
     difficulty: Difficulty = field(default=Difficulty.DEFAULT, eq=False)
-    demon: bool = field(default=DEFAULT_DEMON, eq=False)
     stars: int = field(default=DEFAULT_STARS, eq=False)
     requested_stars: int = field(default=DEFAULT_STARS, eq=False)
     score: int = field(default=DEFAULT_SCORE, eq=False)
+    rate_type: RateType = field(default=RateType.DEFAULT, eq=False)
     password_data: Password = field(factory=Password, eq=False)
     original_id: int = field(default=DEFAULT_ID, eq=False)
     two_player: bool = field(default=DEFAULT_TWO_PLAYER, eq=False)
     coins: int = field(default=DEFAULT_COINS, eq=False)
     verified_coins: bool = field(default=DEFAULT_VERIFIED_COINS, eq=False)
     low_detail: bool = field(default=DEFAULT_LOW_DETAIL, eq=False)
-    epic: bool = field(default=DEFAULT_EPIC, eq=False)
     object_count: int = field(default=DEFAULT_OBJECT_COUNT, eq=False)
-    uploaded_at: DateTime = field(factory=utc_now, eq=False)
+    created_at: DateTime = field(factory=utc_now, eq=False)
     updated_at: DateTime = field(factory=utc_now, eq=False)
     editor_time: Duration = field(factory=Duration, eq=False)
     copies_time: Duration = field(factory=Duration, eq=False)
@@ -149,7 +147,7 @@ class Level(Entity):
         self.creator.to_binary(binary, order, version, encoding, errors)
         self.song.to_binary(binary, order, version, encoding, errors)
 
-        writer.write_f64(self.uploaded_at.timestamp(), order)
+        writer.write_f64(self.created_at.timestamp(), order)
         writer.write_f64(self.updated_at.timestamp(), order)
 
         data = self.description.encode(encoding, errors)
@@ -176,7 +174,7 @@ class Level(Entity):
 
         writer.write_u8(self.difficulty.value, order)
 
-        value = 0
+        value = self.rate_type.value
 
         if self.is_two_player():
             value |= TWO_PLAYER_BIT
@@ -184,14 +182,8 @@ class Level(Entity):
         if self.has_verified_coins():
             value |= VERIFIED_COINS_BIT
 
-        if self.is_epic():
-            value |= EPIC_BIT
-
         if self.has_low_detail():
             value |= LOW_DETAIL_BIT
-
-        if self.is_demon():
-            value |= DEMON_BIT
 
         writer.write_u8(value, order)
 
@@ -199,7 +191,7 @@ class Level(Entity):
 
         writer.write_u8(self.requested_stars, order)
 
-        writer.write_i32(self.score, order)
+        writer.write_u32(self.score, order)
 
         self.password_data.to_binary(binary, order, version)
 
@@ -226,9 +218,8 @@ class Level(Entity):
     ) -> L:
         two_player_bit = TWO_PLAYER_BIT
         verified_coins_bit = VERIFIED_COINS_BIT
-        epic_bit = EPIC_BIT
         low_detail_bit = LOW_DETAIL_BIT
-        demon_bit = DEMON_BIT
+        rate_type_mask = RATE_TYPE_MASK
 
         reader = Reader(binary)
 
@@ -244,7 +235,7 @@ class Level(Entity):
         uploaded_timestamp = reader.read_f64(order)
         updated_timestamp = reader.read_f64(order)
 
-        uploaded_at = utc_from_timestamp(uploaded_timestamp)
+        created_at = utc_from_timestamp(uploaded_timestamp)
         updated_at = utc_from_timestamp(updated_timestamp)
 
         description_length = reader.read_u16(order)
@@ -275,15 +266,17 @@ class Level(Entity):
 
         two_player = value & two_player_bit == two_player_bit
         verified_coins = value & verified_coins_bit == verified_coins_bit
-        epic = value & epic_bit == epic_bit
         low_detail = value & low_detail_bit == low_detail_bit
-        demon = value & demon_bit == demon_bit
+
+        rate_type_value = value & rate_type_mask
+
+        rate_type = RateType(rate_type_value)
 
         stars = reader.read_u8(order)
 
         requested_stars = reader.read_u8(order)
 
-        score = reader.read_i32(order)
+        score = reader.read_u32(order)
 
         password_data = Password.from_binary(binary, order, version)
 
@@ -310,7 +303,7 @@ class Level(Entity):
             name=name,
             creator=creator,
             song=song,
-            uploaded_at=uploaded_at,
+            created_at=created_at,
             updated_at=updated_at,
             description=description,
             data=data,
@@ -320,17 +313,16 @@ class Level(Entity):
             rating=rating,
             length=length,
             difficulty=difficulty,
-            demon=demon,
             stars=stars,
             requested_stars=requested_stars,
             score=score,
+            rate_type=rate_type,
             password_data=password_data,
             original_id=original_id,
             two_player=two_player,
             coins=coins,
             verified_coins=verified_coins,
             low_detail=low_detail,
-            epic=epic,
             object_count=object_count,
             editor_time=editor_time,
             copies_time=copies_time,
@@ -340,6 +332,28 @@ class Level(Entity):
 
     @classmethod
     def from_model(cls: Type[L], model: LevelModel, creator: User, song: Song) -> L:
+        rate_type = RateType.NOT_RATED
+
+        stars = model.stars
+
+        if stars > 0:
+            rate_type = RateType.RATED
+
+        score = model.score
+
+        if score > 0:
+            rate_type = RateType.FEATURED
+
+        epic = model.is_epic()
+
+        if epic:
+            rate_type = RateType.EPIC
+
+        # godlike = model.is_godlike()
+
+        # if godlike:
+        #    rate_type = RateType.GODLIKE
+
         return cls(
             id=model.id,
             name=model.name,
@@ -354,21 +368,20 @@ class Level(Entity):
             game_version=model.game_version,
             rating=model.rating,
             length=model.length,
-            demon=model.demon,
             stars=model.stars,
             score=model.score,
+            rate_type=rate_type,
             password_data=model.password_data,
-            uploaded_at=model.uploaded_at,
+            created_at=model.created_at,
             updated_at=model.updated_at,
             original_id=model.original_id,
-            two_player=model.two_player,
+            two_player=model.is_two_player(),
             coins=model.coins,
-            verified_coins=model.verified_coins,
+            verified_coins=model.has_verified_coins(),
             requested_stars=model.requested_stars,
-            low_detail=model.low_detail,
+            low_detail=model.has_low_detail(),
             timely_id=model.timely_id,
             timely_type=model.timely_type,
-            epic=model.epic,
             object_count=model.object_count,
             editor_time=model.editor_time,
             copies_time=model.copies_time,
@@ -407,7 +420,11 @@ class Level(Entity):
         if official_level is None:
             raise LookupError(CAN_NOT_FIND_LEVEL)
 
-        data = EMPTY_BYTES  # TODO
+        if get_data:
+            data = EMPTY_BYTES  # TODO
+
+        else:
+            data = EMPTY_BYTES
 
         name = official_level.name
 
@@ -426,14 +443,9 @@ class Level(Entity):
             coins=official_level.coins,
             stars=official_level.stars,
             difficulty=official_level.difficulty,
-            demon=official_level.demon,
             game_version=official_level.game_version,
             length=official_level.length,
         )
-
-    @property
-    def score_type(self) -> Score:
-        return Score(self.score)
 
     @property
     def password(self) -> Optional[int]:
@@ -444,7 +456,7 @@ class Level(Entity):
 
     def is_timely(self, timely_type: Optional[TimelyType] = None) -> bool:
         if timely_type is None:
-            return not self.timely_type.is_not_timely()
+            return self.timely_type.is_timely()
 
         return self.timely_type is timely_type
 
@@ -454,20 +466,20 @@ class Level(Entity):
     def is_weekly(self) -> bool:
         return self.is_timely(TimelyType.WEEKLY)
 
+    # def is_event(self) -> bool:
+    #     return self.is_timely(TimelyType.EVENT)
+
     def is_rated(self) -> bool:
-        return self.stars > 0
-
-    def is_unfeatured(self) -> bool:
-        return self.score_type.is_unfeatured()
-
-    def is_epic_only(self) -> bool:
-        return self.score_type.is_epic_only()
+        return self.rate_type.is_rated()
 
     def is_featured(self) -> bool:
-        return self.score_type.is_featured()
+        return self.rate_type.is_featured()
 
     def is_epic(self) -> bool:
-        return self.epic
+        return self.rate_type.is_epic()
+
+    def is_godlike(self) -> bool:
+        return self.rate_type.is_godlike()
 
     def is_original(self) -> bool:
         return not self.original_id
@@ -476,7 +488,7 @@ class Level(Entity):
         return self.two_player
 
     def is_demon(self) -> bool:
-        return self.demon
+        return self.difficulty.is_demon()
 
     def has_low_detail(self) -> bool:
         return self.low_detail
@@ -538,10 +550,10 @@ class Level(Entity):
             recording=recording,
             editor_time=switch_none(editor_time, self.editor_time),
             copies_time=switch_none(copies_time, self.copies_time),
-            data=switch_none(data, self.data)
+            data=switch_none(data, self.data),
         )
 
-        uploaded = await self.client.upload_level(**keywords)
+        uploaded = await self.client.upload_level(**keywords)  # type: ignore
 
         self.update_from(uploaded)
 
@@ -563,10 +575,35 @@ class Level(Entity):
     async def suggest(self, stars: int, feature: bool) -> None:
         await self.client.suggest_level(self, stars=stars, feature=feature)
 
-    async def update(self, *, get_data: bool = True) -> Optional[Level]:
-        ...
+    async def update(self, *, get_data: bool = DEFAULT_GET_DATA) -> Optional[Level]:
+        try:
+            if self.is_timely():
+                if self.is_daily():
+                    level = await self.client.get_daily()
 
-    async def comment(self, content: Optional[str] = None, record: int = DEFAULT_RECORD) -> Optional[LevelComment]:
+                elif self.is_weekly():
+                    level = await self.client.get_weekly()
+
+                # elif self.is_event():
+                #     level = await self.client.get_event()
+
+                else:
+                    raise InternalError  # TODO: message?
+
+            else:
+                level = await self.client.get_level(self.id, get_data=get_data)
+
+        except MissingAccess:
+            return None
+
+        else:
+            self.update_from(level)
+
+            return self
+
+    async def comment(
+        self, content: Optional[str] = None, record: int = DEFAULT_RECORD
+    ) -> Optional[LevelComment]:
         return await self.client.post_level_comment(self, content, record)
 
     async def like(self) -> None:

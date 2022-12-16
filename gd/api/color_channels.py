@@ -19,6 +19,7 @@ from gd.models_utils import (
     split_color_channel,
     split_color_channels,
 )
+from gd.robtop import RobTop
 
 __all__ = ("ColorChannel", "ColorChannels", "Channel", "Channels")
 
@@ -32,7 +33,7 @@ DEFAULT_OPACITY = 1.0
 
 DEFAULT_UNKNOWN = True
 
-DEFAULT_DELTA = 0.0
+DEFAULT_DURATION = 0.0
 
 DEFAULT_TO_RED = BYTE
 DEFAULT_TO_GREEN = BYTE
@@ -68,6 +69,7 @@ COLOR_HSV = 10
 TO_RED = 11
 TO_GREEN = 12
 TO_BLUE = 13
+DURATION = 14
 TO_OPACITY = 15
 COPY_OPACITY = 17
 UNKNOWN_ANOTHER = 18
@@ -77,7 +79,7 @@ CC = TypeVar("CC", bound="ColorChannel")
 
 
 @define()
-class ColorChannel(Binary):
+class ColorChannel(Binary, RobTop):
     id: int = field()
     color: Color = field(factory=Color.default)
     player_color: PlayerColor = field(default=PlayerColor.DEFAULT)
@@ -87,7 +89,7 @@ class ColorChannel(Binary):
     copied_id: int = field(default=DEFAULT_ID)
     hsv: HSV = field(factory=HSV)
     to_color: Color = field(factory=Color.default)
-    delta: float = field(default=DEFAULT_DELTA)
+    duration: float = field(default=DEFAULT_DURATION)
     to_opacity: float = field(default=DEFAULT_TO_OPACITY)
     copy_opacity: bool = field(default=DEFAULT_COPY_OPACITY)
     unknown_another: bool = field(default=DEFAULT_UNKNOWN_ANOTHER)
@@ -130,6 +132,8 @@ class ColorChannel(Binary):
 
         to_color = Color.from_rgb(to_red, to_green, to_blue)
 
+        duration = parse_get_or(float, DEFAULT_DURATION, mapping.get(DURATION))
+
         to_opacity = parse_get_or(float, DEFAULT_TO_OPACITY, mapping.get(TO_OPACITY))
 
         copy_opacity = parse_get_or(
@@ -154,6 +158,7 @@ class ColorChannel(Binary):
             copied_id=copied_id,
             hsv=hsv,
             to_color=to_color,
+            duration=duration,
             to_opacity=to_opacity,
             copy_opacity=copy_opacity,
             unknown_another=unknown_another,
@@ -178,6 +183,7 @@ class ColorChannel(Binary):
             TO_RED: str(to_red),
             TO_GREEN: str(to_green),
             TO_BLUE: str(to_blue),
+            DURATION: float_str(self.duration),
             TO_OPACITY: float_str(self.to_opacity),
             COPY_OPACITY: str(int(self.copy_opacity)),
             UNKNOWN_ANOTHER: str(int(self.unknown_another)),
@@ -248,7 +254,7 @@ class ColorChannel(Binary):
 
         to_color = Color(to_value)
 
-        delta = reader.read_f32(order)
+        duration = reader.read_f32(order)
 
         copied_id = reader.read_u16(order)
 
@@ -262,7 +268,7 @@ class ColorChannel(Binary):
             copied_id=copied_id,
             hsv=hsv,
             to_color=to_color,
-            delta=delta,
+            duration=duration,
             to_opacity=to_opacity,
             copy_opacity=copy_opacity,
             unknown_another=unknown_another,
@@ -326,7 +332,7 @@ class ColorChannel(Binary):
 
         writer.write_u32(to_value, order)
 
-        writer.write_f32(self.delta, order)
+        writer.write_f32(self.duration, order)
 
         writer.write_u16(self.copied_id, order)
 

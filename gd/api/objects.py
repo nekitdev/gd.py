@@ -26,10 +26,12 @@ from gd.enums import (
     PulseMode,
     PulseTargetType,
     PulseType,
+    SimpleTargetType,
     SimpleZLayer,
     SpeedChangeType,
     TargetType,
     ToggleType,
+    TriggerType,
     ZLayer,
 )
 from gd.models import Model
@@ -51,6 +53,7 @@ __all__ = (
     "Object",
     "AnimatedObject",
     "Orb",
+    "TriggerOrb",
     "SecretCoin",
     "Text",
     "Teleport",
@@ -1180,6 +1183,14 @@ class HasTargetGroup:
         return True
 
 
+TARGET_COLOR_ID = 23
+
+
+@define(slots=False)
+class HasTargetColor:
+    target_color_id: int = DEFAULT_ID
+
+
 ADDITIONAL_GROUP_ID = 71
 
 
@@ -1254,6 +1265,17 @@ class HasMultiActivate:
 
     def is_multi_activate(self) -> bool:
         return self.multi_activate
+
+
+OPACITY = 35
+
+
+DEFAULT_OPACITY = 1.0
+
+
+@define(slots=False)
+class HasOpacity:
+    opacity: float = DEFAULT_OPACITY
 
 
 RED = 7
@@ -1537,8 +1559,12 @@ class Trigger(Object):
     def from_robtop_mapping(cls: Type[T], mapping: Mapping[int, str]) -> T:
         trigger = super().from_robtop_mapping(mapping)
 
-        touch_triggered = parse_get_or(int_bool, DEFAULT_TOUCH_TRIGGERED, mapping.get(TOUCH_TRIGGERED))
-        spawn_triggered = parse_get_or(int_bool, DEFAULT_SPAWN_TRIGGERED, mapping.get(SPAWN_TRIGGERED))
+        touch_triggered = parse_get_or(
+            int_bool, DEFAULT_TOUCH_TRIGGERED, mapping.get(TOUCH_TRIGGERED)
+        )
+        spawn_triggered = parse_get_or(
+            int_bool, DEFAULT_SPAWN_TRIGGERED, mapping.get(SPAWN_TRIGGERED)
+        )
         multi_trigger = parse_get_or(int_bool, DEFAULT_MULTI_TRIGGER, mapping.get(MULTI_TRIGGER))
 
         trigger.touch_triggered = touch_triggered
@@ -1569,7 +1595,6 @@ class Trigger(Object):
 
 
 BLENDING = 17
-TARGET_COLOR_ID = 23
 COPIED_COLOR_ID = 50
 COPIED_COLOR_HSV = 49
 COPY_OPACITY = 60
@@ -1591,9 +1616,8 @@ CLT = TypeVar("CLT", bound="ColorTrigger")
 
 
 @define()
-class ColorTrigger(HasColor, HasDuration, Trigger):  # type: ignore
+class ColorTrigger(HasTargetColor, HasColor, HasDuration, HasOpacity, Trigger):  # type: ignore
     blending: bool = field(default=DEFAULT_BLENDING)
-    target_color_id: int = field(default=DEFAULT_ID)
 
     copied_color_id: int = field(default=DEFAULT_ID)
     copied_color_hsv: HSV = field(factory=HSV)
@@ -1647,6 +1671,8 @@ class ColorTrigger(HasColor, HasDuration, Trigger):  # type: ignore
 
         copied_color_hsv = HSV.from_binary(binary, order, version)
 
+        opacity = reader.read_f32(order)
+
         color_trigger.blending = blending
         color_trigger.copy_opacity = copy_opacity
 
@@ -1660,6 +1686,8 @@ class ColorTrigger(HasColor, HasDuration, Trigger):  # type: ignore
         color_trigger.copied_color_id = copied_color_id
 
         color_trigger.copied_color_hsv = copied_color_hsv
+
+        color_trigger.opacity = opacity
 
         return color_trigger
 
@@ -1689,6 +1717,8 @@ class ColorTrigger(HasColor, HasDuration, Trigger):  # type: ignore
 
         self.copied_color_hsv.to_binary(binary, order, version)
 
+        writer.write_f32(self.opacity, order)
+
     @classmethod
     def from_robtop_mapping(cls: Type[CLT], mapping: Mapping[int, str]) -> CLT:
         color_trigger = super().from_robtop_mapping(mapping)
@@ -1713,9 +1743,11 @@ class ColorTrigger(HasColor, HasDuration, Trigger):  # type: ignore
             else:
                 player_color = PlayerColor.NOT_USED
 
-        red = parse_get_or(int_bool, DEFAULT_RED, mapping.get(RED))
-        green = parse_get_or(int_bool, DEFAULT_GREEN, mapping.get(GREEN))
-        blue = parse_get_or(int_bool, DEFAULT_BLUE, mapping.get(BLUE))
+        red, green, blue = (
+            parse_get_or(int_bool, DEFAULT_RED, mapping.get(RED)),
+            parse_get_or(int_bool, DEFAULT_GREEN, mapping.get(GREEN)),
+            parse_get_or(int_bool, DEFAULT_BLUE, mapping.get(BLUE)),
+        )
 
         color = Color.from_rgb(red, green, blue)
 
@@ -1725,6 +1757,8 @@ class ColorTrigger(HasColor, HasDuration, Trigger):  # type: ignore
         copied_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(COPIED_COLOR_ID))
 
         copied_color_hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(COPIED_COLOR_HSV))
+
+        opacity = parse_get_or(float, DEFAULT_OPACITY, mapping.get(OPACITY))
 
         color_trigger.blending = blending
         color_trigger.copy_opacity = copy_opacity
@@ -1740,21 +1774,64 @@ class ColorTrigger(HasColor, HasDuration, Trigger):  # type: ignore
 
         color_trigger.copied_color_hsv = copied_color_hsv
 
+        color_trigger.opacity = opacity
+
         return color_trigger
 
-    # TODO: here
+    def to_robtop_mapping(self) -> Dict[int, str]:
+        mapping = super().to_robtop_mapping()
 
+        blending = self.is_blending()
 
-DEFAULT_OPACITY = 1.0
+        if blending:
+            mapping[BLENDING] = str(int(blending))
+
+        copy_opacity = self.is_copy_opacity()
+
+        if copy_opacity:
+            mapping[COPY_OPACITY] = str(int(copy_opacity))
+
+        player_color = self.player_color
+
+        player_color_1 = player_color.is_color_1()
+        player_color_2 = player_color.is_color_2()
+
+        if player_color_1:
+            mapping[PLAYER_COLOR_1] = str(int(player_color_1))
+
+        if player_color_2:
+            mapping[PLAYER_COLOR_2] = str(int(player_color_2))
+
+        red, green, blue = self.color.to_rgb()
+
+        mapping[RED] = str(red)
+        mapping[GREEN] = str(green)
+        mapping[BLUE] = str(blue)
+
+        mapping[DURATION] = float_str(self.duration)
+
+        mapping[TARGET_COLOR_ID] = str(self.target_color_id)
+
+        copied_color_id = self.copied_color_id
+
+        if copied_color_id:
+            mapping[COPIED_COLOR_ID] = str(self.copied_color_id)
+
+        copied_color_hsv = self.copied_color_hsv
+
+        if not copied_color_hsv.is_default():
+            mapping[COPIED_COLOR_HSV] = copied_color_hsv.to_robtop()
+
+        mapping[OPACITY] = float_str(self.opacity)
+
+        return mapping
 
 
 ALT = TypeVar("ALT", bound="AlphaTrigger")
 
 
 @define()
-class AlphaTrigger(HasTargetGroup, HasDuration, Trigger):  # type: ignore
-    opacity: float = DEFAULT_OPACITY
-
+class AlphaTrigger(HasTargetGroup, HasDuration, HasOpacity, Trigger):  # type: ignore
     @classmethod
     def from_binary(
         cls: Type[ALT],
@@ -1789,6 +1866,43 @@ class AlphaTrigger(HasTargetGroup, HasDuration, Trigger):  # type: ignore
         writer.write_u16(self.target_group_id, order)
         writer.write_f32(self.opacity, order)
 
+    @classmethod
+    def from_robtop_mapping(cls: Type[ALT], mapping: Mapping[int, str]) -> ALT:
+        alpha_trigger = super().from_robtop_mapping(mapping)
+
+        duration = parse_get_or(float, DEFAULT_DURATION, mapping.get(DURATION))
+
+        target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
+
+        opacity = parse_get_or(float, DEFAULT_OPACITY, mapping.get(OPACITY))
+
+        alpha_trigger.duration = duration
+        alpha_trigger.target_group_id = target_group_id
+        alpha_trigger.opacity = opacity
+
+        return alpha_trigger
+
+    def to_robtop_mapping(self) -> Dict[int, str]:
+        mapping = super().to_robtop_mapping()
+
+        mapping[DURATION] = float_str(self.duration)
+
+        mapping[TARGET_GROUP_ID] = str(self.target_group_id)
+
+        mapping[OPACITY] = float_str(self.opacity)
+
+        return mapping
+
+
+FADE_IN = 45
+HOLD = 46
+FADE_OUT = 47
+EXCLUSIVE = 86
+PULSE_MODE = 48
+PULSE_TARGET_TYPE = 52
+MAIN_ONLY = 65
+DETAIL_ONLY = 66
+
 
 PULSE_TARGET_TYPE_BIT = 0b00000001
 PULSE_TYPE_MASK = 0b00000110
@@ -1803,6 +1917,9 @@ DEFAULT_FADE_IN = 0.0
 DEFAULT_HOLD = 0.0
 DEFAULT_FADE_OUT = 0.0
 
+DEFAULT_MAIN_ONLY = False
+DEFAULT_DETAIL_ONLY = False
+
 DEFAULT_EXCLUSIVE = False
 
 
@@ -1810,12 +1927,12 @@ PLT = TypeVar("PLT", bound="PulseTrigger")
 
 
 @define()
-class PulseTrigger(Trigger):
+class PulseTrigger(HasTargetColor, HasTargetGroup, HasColor, Trigger):  # type: ignore
     fade_in: float = field(default=DEFAULT_FADE_IN)
     hold: float = field(default=DEFAULT_HOLD)
     fade_out: float = field(default=DEFAULT_FADE_OUT)
 
-    color: Color = field(factory=Color.default)
+    color_id: int = field(default=DEFAULT_ID)
     hsv: HSV = field(factory=HSV)
 
     target_type: PulseTargetType = field(default=PulseTargetType.DEFAULT)
@@ -1862,11 +1979,28 @@ class PulseTrigger(Trigger):
 
         color = Color(value)
 
-        hsv = HSV.from_binary(binary, order, version)
+        if mode.is_hsv():
+            color_id = reader.read_u16(order)
+            hsv = HSV.from_binary(binary, order, version)
+
+        else:
+            color_id = DEFAULT_ID
+            hsv = HSV()
+
+        if target_type.is_color_channel():
+            target_color_id = reader.read_u16(order)
+            target_group_id = DEFAULT_ID
+
+        else:
+            target_color_id = DEFAULT_ID
+            target_group_id = reader.read_u16(order)
 
         pulse_trigger.fade_in = fade_in
         pulse_trigger.hold = hold
         pulse_trigger.fade_out = fade_out
+
+        pulse_trigger.target_color_id = target_color_id
+        pulse_trigger.target_group_id = target_group_id
 
         pulse_trigger.exclusive = exclusive
 
@@ -1875,6 +2009,7 @@ class PulseTrigger(Trigger):
         pulse_trigger.mode = mode
 
         pulse_trigger.color = color
+        pulse_trigger.color_id = color_id
         pulse_trigger.hsv = hsv
 
         return pulse_trigger
@@ -1882,16 +2017,22 @@ class PulseTrigger(Trigger):
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
+        super().to_binary(binary, order, version)
+
         writer = Writer(binary)
 
         writer.write_f32(self.fade_in, order)
         writer.write_f32(self.hold, order)
         writer.write_f32(self.fade_out, order)
 
-        value = self.target_type.value
+        target_type = self.target_type
+
+        value = target_type.value
+
+        mode = self.mode
 
         value |= self.type.value << PULSE_TYPE_SHIFT
-        value |= self.mode.value << PULSE_MODE_SHIFT
+        value |= mode.value << PULSE_MODE_SHIFT
 
         if self.is_exclusive():
             value |= EXCLUSIVE_BIT
@@ -1900,8 +2041,160 @@ class PulseTrigger(Trigger):
 
         writer.write_u32(value, order)
 
-        self.hsv.to_binary(binary, order, version)
+        if mode.is_hsv():
+            writer.write_u16(self.color_id, order)
+            self.hsv.to_binary(binary, order, version)
 
+        if target_type.is_color_channel():
+            writer.write_u16(self.target_color_id, order)
+
+        else:
+            writer.write_u16(self.target_group_id, order)
+
+    @classmethod
+    def from_robtop_mapping(cls: Type[PLT], mapping: Mapping[int, str]) -> PLT:
+        pulse_trigger = super().from_robtop_mapping(mapping)
+
+        fade_in = parse_get_or(float, DEFAULT_FADE_IN, mapping.get(FADE_IN))
+        hold = parse_get_or(float, DEFAULT_HOLD, mapping.get(HOLD))
+        fade_out = parse_get_or(float, DEFAULT_FADE_OUT, mapping.get(FADE_OUT))
+
+        exclusive = parse_get_or(bool, DEFAULT_EXCLUSIVE, mapping.get(EXCLUSIVE))
+
+        target_type = parse_get_or(
+            partial_parse_enum(int, PulseTargetType),
+            PulseTargetType.DEFAULT,
+            mapping.get(PULSE_TARGET_TYPE),
+        )
+
+        if target_type.is_color_channel():
+            target_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_COLOR_ID))
+            target_group_id = DEFAULT_ID
+
+        else:
+            target_color_id = DEFAULT_ID
+            target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
+
+        mode = parse_get_or(
+            partial_parse_enum(int, PulseMode), PulseMode.DEFAULT, mapping.get(PULSE_MODE)
+        )
+
+        if mode.is_color():
+            red, green, blue = (
+                parse_get_or(int, DEFAULT_RED, mapping.get(RED)),
+                parse_get_or(int, DEFAULT_GREEN, mapping.get(GREEN)),
+                parse_get_or(int, DEFAULT_BLUE, mapping.get(BLUE)),
+            )
+
+            color = Color.from_rgb(red, green, blue)
+
+            color_id = DEFAULT_ID
+            hsv = HSV()
+
+        else:
+            color = Color.default()
+
+            color_id = parse_get_or(int, DEFAULT_ID, mapping.get(COPIED_COLOR_ID))
+            hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(COPIED_COLOR_HSV))
+
+        main_only = parse_get_or(bool, DEFAULT_MAIN_ONLY, mapping.get(MAIN_ONLY))
+        detail_only = parse_get_or(bool, DEFAULT_DETAIL_ONLY, mapping.get(DETAIL_ONLY))
+
+        if main_only ^ detail_only:
+            if main_only:
+                type = PulseType.MAIN
+
+            if detail_only:
+                type = PulseType.DETAIL
+
+        else:
+            type = PulseType.BOTH
+
+        pulse_trigger.fade_in = fade_in
+        pulse_trigger.hold = hold
+        pulse_trigger.fade_out = fade_out
+
+        pulse_trigger.target_color_id = target_color_id
+        pulse_trigger.target_group_id = target_group_id
+
+        pulse_trigger.exclusive = exclusive
+
+        pulse_trigger.target_type = target_type
+        pulse_trigger.mode = mode
+        pulse_trigger.type = type
+
+        pulse_trigger.color = color
+        pulse_trigger.color_id = color_id
+        pulse_trigger.hsv = hsv
+
+        return pulse_trigger
+
+    def to_robtop_mapping(self) -> Dict[int, str]:
+        mapping = super().to_robtop_mapping()
+
+        fade_in = self.fade_in
+
+        if fade_in:
+            mapping[FADE_IN] = float_str(fade_in)
+
+        hold = self.hold
+
+        if hold:
+            mapping[HOLD] = float_str(hold)
+
+        fade_out = self.fade_out
+
+        if fade_out:
+            mapping[FADE_OUT] = float_str(fade_out)
+
+        exclusive = self.is_exclusive()
+
+        if exclusive:
+            mapping[EXCLUSIVE] = str(int(exclusive))
+
+        target_type = self.target_type
+
+        if target_type.is_color_channel():
+            mapping[TARGET_COLOR_ID] = str(self.target_color_id)
+
+        else:
+            mapping[TARGET_GROUP_ID] = str(self.target_group_id)
+
+        mapping[PULSE_TARGET_TYPE] = str(target_type.value)
+
+        mode = self.mode
+
+        if mode.is_color():
+            red, green, blue = self.color.to_rgb()
+
+            mapping[RED] = str(red)
+            mapping[GREEN] = str(green)
+            mapping[BLUE] = str(blue)
+
+        else:
+            mapping[COPIED_COLOR_ID] = str(self.color_id)
+            mapping[COPIED_COLOR_HSV] = self.hsv.to_robtop()
+
+        mapping[PULSE_MODE] = str(mode.value)
+
+        type = self.type
+
+        main_only = type.is_main_only()
+        detail_only = type.is_detail_only()
+
+        if main_only:
+            mapping[MAIN_ONLY] = str(int(main_only))
+
+        if detail_only:
+            mapping[DETAIL_ONLY] = str(int(detail_only))
+
+        return mapping
+
+
+X_OFFSET = 28
+Y_OFFSET = 29
+USE_TARGET = 100
+TARGET_TYPE = 101
 
 TARGET_TYPE_MASK = 0b00000011
 LOCKED_TO_PLAYER_X_BIT = 0b00000100
@@ -1919,7 +2212,7 @@ MT = TypeVar("MT", bound="MoveTrigger")
 
 
 @define()
-class MoveTrigger(HasTargetGroup, HasEasing, HasDuration, Trigger):  # type: ignore
+class MoveTrigger(HasAdditionalGroup, HasTargetGroup, HasEasing, HasDuration, Trigger):  # type: ignore
     x_offset: float = DEFAULT_X_OFFSET
     y_offset: float = DEFAULT_Y_OFFSET
 
@@ -1952,9 +2245,6 @@ class MoveTrigger(HasTargetGroup, HasEasing, HasDuration, Trigger):  # type: ign
 
         target_group_id = reader.read_u16(order)
 
-        x_offset = reader.read_f32(order)
-        y_offset = reader.read_f32(order)
-
         value = reader.read_u8(order)
 
         target_type_value = value & TARGET_TYPE_MASK
@@ -1962,6 +2252,18 @@ class MoveTrigger(HasTargetGroup, HasEasing, HasDuration, Trigger):  # type: ign
 
         locked_to_player_x = value & locked_to_player_x_bit == locked_to_player_x_bit
         locked_to_player_y = value & locked_to_player_y_bit == locked_to_player_y_bit
+
+        if target_type.is_none():
+            x_offset = reader.read_f32(order)
+            y_offset = reader.read_f32(order)
+
+            additional_group_id = DEFAULT_ID
+
+        else:
+            x_offset = DEFAULT_X_OFFSET
+            y_offset = DEFAULT_Y_OFFSET
+
+            additional_group_id = reader.read_u16(order)
 
         move_trigger.duration = duration
 
@@ -1977,6 +2279,8 @@ class MoveTrigger(HasTargetGroup, HasEasing, HasDuration, Trigger):  # type: ign
 
         move_trigger.locked_to_player_x = locked_to_player_x
         move_trigger.locked_to_player_y = locked_to_player_y
+
+        move_trigger.additional_group_id = additional_group_id
 
         return move_trigger
 
@@ -1995,10 +2299,9 @@ class MoveTrigger(HasTargetGroup, HasEasing, HasDuration, Trigger):  # type: ign
 
         writer.write_u16(self.target_group_id, order)
 
-        writer.write_f32(self.x_offset, order)
-        writer.write_f32(self.y_offset, order)
+        target_type = self.target_type
 
-        value = self.target_type.value
+        value = target_type.value
 
         if self.is_locked_to_player_x():
             value |= LOCKED_TO_PLAYER_X_BIT
@@ -2007,6 +2310,13 @@ class MoveTrigger(HasTargetGroup, HasEasing, HasDuration, Trigger):  # type: ign
             value |= LOCKED_TO_PLAYER_Y_BIT
 
         writer.write_u8(value, order)
+
+        if target_type.is_none():
+            writer.write_f32(self.x_offset, order)
+            writer.write_f32(self.y_offset, order)
+
+        else:
+            writer.write_u16(self.additional_group_id, order)
 
     def is_locked_to_player_x(self) -> bool:
         return self.locked_to_player_x
@@ -2040,6 +2350,76 @@ class MoveTrigger(HasTargetGroup, HasEasing, HasDuration, Trigger):  # type: ign
 
         return self
 
+    @classmethod
+    def from_robtop_mapping(cls: Type[MT], mapping: Mapping[int, str]) -> MT:
+        move_trigger = super().from_robtop_mapping(mapping)
+
+        duration = parse_get_or(int, DEFAULT_DURATION, mapping.get(DURATION))
+
+        easing = parse_get_or(partial_parse_enum(int, Easing), Easing.DEFAULT, mapping.get(EASING))
+        easing_rate = parse_get_or(float, DEFAULT_EASING_RATE, mapping.get(EASING_RATE))
+
+        target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
+
+        target_type_option = mapping.get(TARGET_TYPE)
+
+        if target_type_option is None:
+            target_type = TargetType.NONE
+
+        else:
+            target_type = SimpleTargetType(int(target_type_option)).into_target_type()
+
+        if target_type.is_none():
+            x_offset = parse_get_or(float, DEFAULT_X_OFFSET, mapping.get(X_OFFSET))
+            y_offset = parse_get_or(float, DEFAULT_Y_OFFSET, mapping.get(Y_OFFSET))
+
+            additional_group_id = DEFAULT_ID
+
+        else:
+            x_offset = DEFAULT_X_OFFSET
+            y_offset = DEFAULT_Y_OFFSET
+
+            additional_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(ADDITIONAL_GROUP_ID))
+
+        move_trigger.duration = duration
+
+        move_trigger.easing = easing
+        move_trigger.easing_rate = easing_rate
+
+        move_trigger.target_group_id = target_group_id
+
+        move_trigger.target_type = target_type
+
+        move_trigger.x_offset = x_offset
+        move_trigger.y_offset = y_offset
+
+        move_trigger.additional_group_id = additional_group_id
+
+        return move_trigger
+
+    def to_robtop_mapping(self) -> Dict[int, str]:
+        mapping = super().to_robtop_mapping()
+
+        mapping[DURATION] = float_str(self.duration)
+
+        mapping[EASING] = str(self.easing.value)
+
+        mapping[EASING_RATE] = float_str(self.easing_rate)
+
+        mapping[TARGET_GROUP_ID] = str(self.target_group_id)
+
+        target_type = self.target_type
+
+        if target_type.is_none():
+            mapping[X_OFFSET] = float_str(self.x_offset)
+            mapping[Y_OFFSET] = float_str(self.y_offset)
+
+        else:
+            mapping[TARGET_TYPE] = str(target_type.into_simple_target_type().value)
+
+            mapping[ADDITIONAL_GROUP_ID] = str(self.additional_group_id)
+
+        return mapping
 
 EDITOR_DISABLE_BIT = 0b00000001
 
@@ -3007,6 +3387,10 @@ SECRET_COIN_ID = CoinType.SECRET.id
 
 TELEPORT_ID = PortalType.BLUE_TELEPORT.id
 
+COLOR_TRIGGER_ID = TriggerType.COLOR.id
+ALPHA_TRIGGER_ID = TriggerType.ALPHA.id
+PULSE_TRIGGER_ID = TriggerType.PULSE.id
+MOVE_TRIGGER_ID = TriggerType.MOVE.id
 
 OBJECT_ID_NOT_PRESENT = "object id is not present"
 
@@ -3015,6 +3399,11 @@ OBJECT_ID_TO_TYPE: Dict[int, Type[Object]] = {  # TODO: extend this
     TEXT_ID: Text,
     SECRET_COIN_ID: SecretCoin,
     TELEPORT_ID: Teleport,
+    # TODO: add more
+    COLOR_TRIGGER_ID: ColorTrigger,
+    ALPHA_TRIGGER_ID: AlphaTrigger,
+    PULSE_TRIGGER_ID: PulseTrigger,
+    MOVE_TRIGGER_ID: MoveTrigger,
 }
 
 OBJECT_ID_TO_TYPE.update({orb.id: Orb for orb in OrbType})

@@ -426,9 +426,7 @@ class User(Entity):
     async def generate_many_async(
         self, *types: Optional[IconType], orientation: Orientation = Orientation.DEFAULT
     ) -> Image:
-        return connect_images(
-            await gather_iterable(map(self.generate_async, types)), orientation
-        )
+        return connect_images(await gather_iterable(map(self.generate_async, types)), orientation)
 
     def generate_full(self, orientation: Orientation = Orientation.DEFAULT) -> Image:
         return self.generate_many(*IconType, orientation=orientation)

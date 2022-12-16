@@ -25,7 +25,6 @@ __all__ = (
     "TimelyType",
     "TimelyID",
     "RateType",
-    "Score",
     "CommentType",
     "RelationshipType",
     "SimpleRelationshipType",
@@ -266,6 +265,19 @@ class Difficulty(Enum):
     def into_level_difficulty(self) -> LevelDifficulty:
         return DIFFICULTY_TO_LEVEL_DIFFICULTY[self]
 
+    def is_demon(self) -> bool:
+        return self in DEMON
+
+
+DEMON = {
+    Difficulty.DEMON,
+    Difficulty.EASY_DEMON,
+    Difficulty.MEDIUM_DEMON,
+    Difficulty.HARD_DEMON,
+    Difficulty.INSANE_DEMON,
+    Difficulty.EXTREME_DEMON,
+}
+
 
 class LevelDifficulty(Enum):
     """An enumeration of server level difficulties."""
@@ -374,6 +386,9 @@ class TimelyType(Enum):
     def is_not_timely(self) -> bool:
         return self is type(self).NOT_TIMELY
 
+    def is_timely(self) -> bool:
+        return not self.is_not_timely()
+
     def is_daily(self) -> bool:
         return self is type(self).DAILY
 
@@ -414,59 +429,37 @@ TIMELY_TYPE_TO_ID = {
 TIMELY_ID_TO_TYPE = {timely_id: timely_type for timely_type, timely_id in TIMELY_TYPE_TO_ID.items()}
 
 
-class RateType(Enum):
-    NOT_RATED = 0
-    RATED = 1
-    FEATURED = 2
-    EPIC = 3
-    GODLIKE = 4
+class RateType(Flag):
+    NONE = 0
 
-    DEFAULT = NOT_RATED
+    NOT_RATED_ONLY = 1 << 0
+    RATED_ONLY = 1 << 1
+    FEATURED_ONLY = 1 << 2
+    EPIC_ONLY = 1 << 3
+    GODLIKE_ONLY = 1 << 4
+
+    NOT_RATED = NONE | NOT_RATED_ONLY
+    RATED = NOT_RATED | RATED_ONLY
+    FEATURED = RATED | FEATURED_ONLY
+    EPIC = FEATURED | EPIC_ONLY
+    GODLIKE = EPIC | GODLIKE_ONLY
+
+    DEFAULT = NONE
 
     def is_not_rated(self) -> bool:
-        return self is type(self).NOT_RATED
+        return type(self).NOT_RATED_ONLY in self
 
     def is_rated(self) -> bool:
-        return self is type(self).RATED
+        return type(self).RATED_ONLY in self
 
     def is_featured(self) -> bool:
-        return self is type(self).FEATURED
+        return type(self).FEATURED_ONLY in self
 
     def is_epic(self) -> bool:
-        return self is type(self).EPIC
+        return type(self).EPIC_ONLY in self
 
     def is_godlike(self) -> bool:
-        return self is type(self).GODLIKE
-
-
-class RateFlag(Flag):
-    NOT_RATED = 1 << 0
-    RATED = 1 << 1
-    FEATURED = 1 << 2
-    EPIC = 1 << 3
-    GODLIKE = 1 << 4
-
-
-class Score(Enum):
-    """An enumeration of score types."""
-
-    EPIC_ONLY = -2
-    UNFEATURED = -1
-    NOT_FEATURED = 0
-    FEATURED = 1
-
-    @classmethod
-    def _missing_(cls, value: Any) -> Optional[Score]:  # type: ignore
-        return cls.FEATURED if value > 0 else None
-
-    def is_epic_only(self) -> bool:
-        return self is type(self).EPIC_ONLY
-
-    def is_unfeatured(self) -> bool:
-        return self is type(self).UNFEATURED
-
-    def is_featured(self) -> bool:
-        return self is type(self).FEATURED
+        return type(self).GODLIKE_ONLY in self
 
 
 class CommentType(Enum):
@@ -818,6 +811,12 @@ class PulseMode(Enum):
 
     DEFAULT = COLOR
 
+    def is_color(self) -> bool:
+        return self is type(self).COLOR
+
+    def is_hsv(self) -> bool:
+        return self is type(self).HSV
+
 
 class ToggleType(Enum):
     """An enumeration of toggle types."""
@@ -994,6 +993,12 @@ class PulseTargetType(Enum):
 
     DEFAULT = COLOR_CHANNEL
 
+    def is_color_channel(self) -> bool:
+        return self is type(self).COLOR_CHANNEL
+
+    def is_group(self) -> bool:
+        return self is type(self).GROUP
+
 
 class PulseType(Flag):
     """An enumeration of pulse types."""
@@ -1004,6 +1009,12 @@ class PulseType(Flag):
     BOTH = MAIN | DETAIL
 
     DEFAULT = BOTH
+
+    def is_main_only(self) -> bool:
+        return self is type(self).MAIN
+
+    def is_detail_only(self) -> bool:
+        return self is type(self).DETAIL
 
 
 class SpecialBlockType(Enum):
@@ -1043,6 +1054,38 @@ class TargetType(Flag):
     BOTH = X | Y
 
     DEFAULT = NONE
+
+    def is_none(self) -> bool:
+        return self is type(self).NONE
+
+    def into_simple_target_type(self) -> SimpleTargetType:
+        return TARGET_TYPE_TO_SIMPLE_TARGET_TYPE[self]
+
+
+class SimpleTargetType(Flag):
+    """An enumeration of simple move target types."""
+
+    BOTH = 0
+
+    X_ONLY = 1
+    Y_ONLY = 2
+
+    DEFAULT = BOTH
+
+    def into_target_type(self) -> TargetType:
+        return SIMPLE_TARGET_TYPE_TO_TARGET_TYPE[self]
+
+
+TARGET_TYPE_TO_SIMPLE_TARGET_TYPE = {
+    TargetType.BOTH: SimpleTargetType.BOTH,
+    TargetType.X: SimpleTargetType.X_ONLY,
+    TargetType.Y: SimpleTargetType.Y_ONLY,
+}
+
+SIMPLE_TARGET_TYPE_TO_TARGET_TYPE = {
+    simple_target_type: target_type
+    for target_type, simple_target_type in TARGET_TYPE_TO_SIMPLE_TARGET_TYPE.items()
+}
 
 
 class TouchToggleMode(Enum):
@@ -1086,6 +1129,10 @@ class TriggerType(Enum):
     FOLLOW_PLAYER_Y = 1814
     COLLISION = 1815
     PICKUP = 1817
+
+    @property
+    def id(self) -> int:
+        return self.value
 
 
 class ZLayer(Enum):

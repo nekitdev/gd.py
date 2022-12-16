@@ -47,7 +47,7 @@ class HTTPErrorWithOrigin(Generic[E], HTTPError):
     def __init__(self, origin: E) -> None:
         self._origin = origin
 
-        super().__init__(FAILED_TO_PROCESS.format(get_type_name(origin)), origin)
+        super().__init__(FAILED_TO_PROCESS.format(get_type_name(origin), origin))
 
     @property
     def origin(self) -> E:
