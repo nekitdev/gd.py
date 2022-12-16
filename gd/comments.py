@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING, Optional, Type, TypeVar
 
 from attrs import define, field
@@ -19,6 +18,7 @@ from gd.constants import (
     DEFAULT_USE_CLIENT,
     EMPTY,
 )
+from gd.date_time import DateTime, utc_from_timestamp, utc_now
 from gd.entity import Entity
 from gd.enums import ByteOrder
 from gd.level import Level
@@ -39,7 +39,7 @@ class Comment(Entity):
     rating: int = field(eq=False)
     content: str = field(eq=False)
 
-    created_at: datetime = field(eq=False)
+    created_at: DateTime = field(eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
@@ -74,7 +74,7 @@ class UserComment(Comment):
     rating: int = field(default=DEFAULT_RATING, eq=False)
     content: str = field(default=EMPTY, eq=False)
 
-    created_at: datetime = field(factory=datetime.utcnow, eq=False)
+    created_at: DateTime = field(factory=utc_now, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
@@ -125,7 +125,7 @@ class UserComment(Comment):
 
         timestamp = reader.read_f64(order)
 
-        created_at = datetime.fromtimestamp(timestamp)
+        created_at = utc_from_timestamp(timestamp)
 
         return cls(
             id=id,
@@ -174,7 +174,7 @@ class LevelComment(Comment):
     rating: int = field(default=DEFAULT_RATING, eq=False)
     content: str = field(default=EMPTY, eq=False)
 
-    created_at: datetime = field(factory=datetime.utcnow, eq=False)
+    created_at: DateTime = field(factory=utc_now, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
@@ -239,7 +239,7 @@ class LevelComment(Comment):
 
         timestamp = reader.read_f64(order)
 
-        created_at = datetime.fromtimestamp(timestamp)
+        created_at = utc_from_timestamp(timestamp)
 
         level = Level.from_binary(binary, order, version, encoding, errors)
 

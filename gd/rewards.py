@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
-
 from attrs import define, field
 
 from gd.constants import DEFAULT_CHEST_COUNT, DEFAULT_DIAMONDS, DEFAULT_KEYS, DEFAULT_ORBS, UNKNOWN
+from gd.date_time import DateTime, Duration, utc_now
 from gd.entity import Entity
 from gd.enums import QuestType, ShardType
 
@@ -25,21 +24,21 @@ class Chest(Entity):
     keys: int = field(default=DEFAULT_KEYS, eq=False)
     count: int = field(default=DEFAULT_CHEST_COUNT, eq=False)
 
-    delta: timedelta = field(factory=timedelta, eq=False)
+    duration: Duration = field(factory=Duration, eq=False)
 
-    created_at: datetime = field(factory=datetime.utcnow, init=False, eq=False)
+    created_at: DateTime = field(factory=utc_now, init=False, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
 
     def __str__(self) -> str:
         return CHEST.format(
-            self.orbs, self.diamonds, self.keys, case_fold(self.shard_type.name), self.delta
+            self.orbs, self.diamonds, self.keys, case_fold(self.shard_type.name), self.duration
         )
 
     @property
-    def ready_at(self) -> datetime:
-        return self.created_at + self.delta
+    def ready_at(self) -> DateTime:
+        return self.created_at + self.duration
 
 
 QUEST_UNKNOWN = "Quest {}; reward: {}, new in {}"
@@ -53,21 +52,21 @@ class Quest(Entity):
     amount: int = field(default=0, eq=False)
     reward: int = field(default=0, eq=False)
 
-    delta: timedelta = field(factory=timedelta, eq=False)
+    duration: Duration = field(factory=Duration, eq=False)
 
-    created_at: datetime = field(factory=datetime.utcnow, eq=False)
+    created_at: DateTime = field(factory=utc_now, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
 
     def __str__(self) -> str:
         if self.type is QuestType.UNKNOWN:
-            return QUEST_UNKNOWN.format(tick(self.name), self.reward, self.delta)
+            return QUEST_UNKNOWN.format(tick(self.name), self.reward, self.duration)
 
         return QUEST.format(
-            tick(self.name), self.amount, case_fold(self.type.name), self.reward, self.delta
+            tick(self.name), self.amount, case_fold(self.type.name), self.reward, self.duration
         )
 
     @property
-    def new_at(self) -> datetime:
-        return self.created_at + self.delta
+    def new_at(self) -> DateTime:
+        return self.created_at + self.duration

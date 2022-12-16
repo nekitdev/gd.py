@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING, AsyncIterator, Dict, Iterable, Optional, Type, TypeVar
 
 from attrs import define, field
+from cattrs.gen import make_dict_unstructure_fn, override
 from iters.async_iters import wrap_async_iter
+from typing_extensions import TypedDict
 
 from gd.async_utils import gather_iterable
 from gd.binary import VERSION, BinaryReader, BinaryWriter
@@ -40,7 +41,8 @@ from gd.constants import (
     ROBTOP_NAME,
     UNKNOWN,
 )
-from gd.entity import Entity
+from gd.date_time import DateTime, utc_from_timestamp
+from gd.entity import CONVERTER, Entity
 from gd.enums import (
     ByteOrder,
     CommentState,
@@ -90,6 +92,43 @@ FRIEND_REQUEST_STATE_SHIFT = COMMENT_STATE_MASK.bit_length()
 COMMENT_STATE_SHIFT = GLOW_BIT.bit_length()
 
 
+class UserData(TypedDict):
+    name: str
+    account_id: int
+    stars: int
+    demons: int
+    diamonds: int
+    orbs: int
+    user_coins: int
+    secret_coins: int
+    creator_points: int
+    rank: int
+    color_1_id: int
+    color_2_id: int
+    icon_type: int
+    icon_id: int
+    cube_id: int
+    ship_id: int
+    ball_id: int
+    ufo_id: int
+    wave_id: int
+    robot_id: int
+    spider_id: int
+    # swing_copter_id: int
+    explosion_id: int
+    glow: bool
+    role: int
+    message_state: int
+    friend_request_state: int
+    comment_state: int
+    friend_state: int
+    youtube: Optional[str]
+    twitter: Optional[str]
+    twitch: Optional[str]
+    # discord: Optional[str]
+    banned: bool
+
+
 @define()
 class User(Entity):
     name: str = field(eq=False)
@@ -126,6 +165,13 @@ class User(Entity):
     twitch: Optional[str] = field(default=None, eq=False)
     # discord: Optional[str] = field(default=None, eq=False)
     banned: bool = field(default=DEFAULT_BANNED, eq=False)
+
+    @classmethod
+    def from_json(cls: Type[U], data: UserData) -> U:
+        return CONVERTER.structure(data, cls)
+
+    def to_json(self) -> UserData:
+        return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
     def default(cls: Type[U]) -> U:
@@ -375,13 +421,13 @@ class User(Entity):
     def generate_many(
         self, *types: Optional[IconType], orientation: Orientation = Orientation.DEFAULT
     ) -> Image:
-        return connect_images((self.generate(type) for type in types), orientation)
+        return connect_images(map(self.generate, types), orientation)
 
     async def generate_many_async(
         self, *types: Optional[IconType], orientation: Orientation = Orientation.DEFAULT
     ) -> Image:
         return connect_images(
-            await gather_iterable(self.generate_async(type) for type in types), orientation
+            await gather_iterable(map(self.generate_async, types)), orientation
         )
 
     def generate_full(self, orientation: Orientation = Orientation.DEFAULT) -> Image:
@@ -640,12 +686,23 @@ class User(Entity):
         # writer.write(data)
 
 
+class LeaderboardUserData(UserData):
+    place: int
+
+
 LU = TypeVar("LU", bound="LeaderboardUser")
 
 
 @define()
 class LeaderboardUser(User):
     place: int = field(default=DEFAULT_PLACE, eq=False)
+
+    @classmethod
+    def from_json(cls: Type[LU], data: LeaderboardUserData) -> LU:
+        return CONVERTER.structure(data, cls)
+
+    def to_json(self) -> LeaderboardUserData:
+        return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
     def from_leaderboard_user_model(cls: Type[LU], model: LeaderboardUserModel) -> LU:
@@ -701,6 +758,13 @@ class LeaderboardUser(User):
         writer.write_u32(self.place, order)
 
 
+class LevelLeaderboardUserData(LeaderboardUserData):
+    coins: int
+    record: int
+
+    recorded_at: Optional[str]
+
+
 LLU = TypeVar("LLU", bound="LevelLeaderboardUser")
 
 
@@ -709,7 +773,14 @@ class LevelLeaderboardUser(LeaderboardUser):
     coins: int = field(default=DEFAULT_COINS, eq=False)
     record: int = field(default=DEFAULT_RECORD, eq=False)
 
-    recorded_at: Optional[datetime] = None
+    recorded_at: Optional[DateTime] = None
+
+    @classmethod
+    def from_json(cls: Type[LLU], data: LevelLeaderboardUserData) -> LLU:
+        return CONVERTER.structure(data, cls)
+
+    def to_json(self) -> LevelLeaderboardUserData:
+        return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
     def from_level_leaderboard_user_model(cls: Type[LLU], model: LevelLeaderboardUserModel) -> LLU:
@@ -748,7 +819,7 @@ class LevelLeaderboardUser(LeaderboardUser):
         timestamp = reader.read_f64(order)
 
         if timestamp:
-            recorded_at = datetime.fromtimestamp(timestamp)
+            recorded_at = utc_from_timestamp(timestamp)
 
         else:
             recorded_at = None
@@ -784,3 +855,19 @@ class LevelLeaderboardUser(LeaderboardUser):
             timestamp = recorded_at.timestamp()
 
         writer.write_f64(timestamp, order)
+
+
+CONVERTER.register_unstructure_hook(
+    User,
+    make_dict_unstructure_fn(User, CONVERTER, client_unchecked=override(omit=True)),
+)
+
+CONVERTER.register_unstructure_hook(
+    LeaderboardUser,
+    make_dict_unstructure_fn(LeaderboardUser, CONVERTER, client_unchecked=override(omit=True)),
+)
+
+CONVERTER.register_unstructure_hook(
+    LevelLeaderboardUser,
+    make_dict_unstructure_fn(LevelLeaderboardUser, CONVERTER, client_unchecked=override(omit=True)),
+)

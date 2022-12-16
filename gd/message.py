@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar, Optional, Type, TypeVar
 
 from attrs import define, field
 
 from gd.constants import DEFAULT_READ, EMPTY
+from gd.date_time import DateTime, utc_from_timestamp, utc_now
 from gd.entity import Entity
 from gd.enums import MessageType
 from gd.models import MessageModel
@@ -26,7 +26,7 @@ class Message(Entity):
     user: User = field(eq=False)
     type: MessageType = field(eq=False)
 
-    created_at: datetime = field(factory=datetime.utcnow, eq=False)
+    created_at: DateTime = field(factory=utc_now, eq=False)
 
     subject: str = field(default=EMPTY, eq=False)
     content: Optional[str] = field(default=None, eq=False)

@@ -1,8 +1,8 @@
-from datetime import timedelta
 from typing import Any, Generic, Optional, TypeVar
 
 from named import get_type_name
 
+from gd.date_time import Duration
 from gd.string_utils import password_str, tick
 from gd.typing import AnyException
 
@@ -121,14 +121,14 @@ class CommentBanned(ClientError):
     TEMPORARY = "banned for {} from posting comments; reason: {}"
     DEFAULT_REASON = "not provided"
 
-    def __init__(self, timeout: Optional[timedelta] = None, reason: Optional[str] = None) -> None:
+    def __init__(self, timeout: Optional[Duration] = None, reason: Optional[str] = None) -> None:
         self._timeout = timeout
         self._reason = reason
 
         super().__init__(self.message)
 
     @property
-    def timeout(self) -> Optional[timedelta]:
+    def timeout(self) -> Optional[Duration]:
         return self._timeout
 
     @property

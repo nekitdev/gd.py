@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import timedelta
 from typing import Any, Optional
 
 from attrs import field, frozen
@@ -23,6 +22,7 @@ from gd.constants import (
     EMPTY_BYTES,
     UNNAMED,
 )
+from gd.date_time import Duration
 from gd.enums import (
     AccountURLType,
     CommentState,
@@ -75,7 +75,7 @@ FIRST = 0
 class Session:
     http: HTTPClient = field(factory=HTTPClient)
 
-    async def ping(self, url: URLString) -> timedelta:
+    async def ping(self, url: URLString) -> Duration:
         return await self.http.ping(url)
 
     async def login(self, name: str, password: str) -> LoginModel:

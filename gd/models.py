@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 from typing import Iterator, List, Optional, Type, TypeVar
 from urllib.parse import quote, unquote
 
@@ -49,7 +48,7 @@ from gd.constants import (
     UNKNOWN,
     UNNAMED,
 )
-from gd.datetime import datetime_from_human, datetime_to_human
+from gd.date_time import DateTime, Duration, date_time_from_human, date_time_to_human, utc_now
 from gd.decorators import cache_by
 from gd.encoding import (
     decode_base64_string_url_safe,
@@ -1152,14 +1151,14 @@ TI = TypeVar("TI", bound="TimelyInfoModel")
 class TimelyInfoModel(Model):
     id: int = field(default=DEFAULT_ID)
     type: TimelyType = field(default=TimelyType.DEFAULT)
-    cooldown: timedelta = field(factory=timedelta)
+    cooldown: Duration = field(factory=Duration)
 
     @classmethod
     def from_robtop(cls: Type[TI], string: str, type: TimelyType = TimelyType.DEFAULT) -> TI:
         timely_id, cooldown_seconds = map(int, split_timely_info(string))
 
         return cls(
-            id=timely_id % TIMELY_ID_ADD, type=type, cooldown=timedelta(seconds=cooldown_seconds)
+            id=timely_id % TIMELY_ID_ADD, type=type, cooldown=Duration(seconds=cooldown_seconds)
         )
 
     def to_robtop(self) -> str:
@@ -1200,7 +1199,7 @@ class MessageModel(Model):
     subject: str = field(default=EMPTY)
     content: str = field(default=EMPTY)
     name: str = field(default=UNKNOWN)
-    created_at: datetime = field(factory=datetime.utcnow)
+    created_at: DateTime = field(factory=utc_now)
     read: bool = field(default=DEFAULT_READ)
     sent: bool = field(default=DEFAULT_SENT)
 
@@ -1228,12 +1227,12 @@ class MessageModel(Model):
         subject_default: str = EMPTY,
         content_default: str = EMPTY,
         name_default: str = UNKNOWN,
-        created_at_default: Optional[datetime] = None,
+        created_at_default: Optional[DateTime] = None,
         read_default: bool = DEFAULT_READ,
         sent_default: bool = DEFAULT_SENT,
     ) -> M:
         if created_at_default is None:
-            created_at_default = datetime.utcnow()
+            created_at_default = utc_now()
 
         mapping = split_message(string)
 
@@ -1249,7 +1248,7 @@ class MessageModel(Model):
             content=decode_robtop_string(mapping.get(content_index, content_default), Key.MESSAGE),
             name=mapping.get(name_index, name_default),
             created_at=parse_get_or(
-                datetime_from_human,
+                date_time_from_human,
                 created_at_default,
                 mapping.get(created_at_index),
                 ignore_errors=True,
@@ -1278,7 +1277,7 @@ class MessageModel(Model):
             subject_index: encode_base64_string_url_safe(self.subject),
             content_index: encode_robtop_string(self.content, Key.MESSAGE),
             name_index: self.name,
-            created_at_index: datetime_to_human(self.created_at),
+            created_at_index: date_time_to_human(self.created_at),
             read_index: str(int(self.read)),
             sent_index: str(int(self.sent)),
         }
@@ -1327,7 +1326,7 @@ class FriendRequestModel(Model):
     account_id: int = field(default=DEFAULT_ID)
     id: int = field(default=DEFAULT_ID)
     content: str = field(default=EMPTY)
-    created_at: datetime = field(factory=datetime.utcnow)
+    created_at: DateTime = field(factory=utc_now)
     unread: bool = field(default=DEFAULT_UNREAD)
 
     @classmethod
@@ -1358,11 +1357,11 @@ class FriendRequestModel(Model):
         account_id_default: int = DEFAULT_ID,
         id_default: int = DEFAULT_ID,
         content_default: str = EMPTY,
-        created_at_default: Optional[datetime] = None,
+        created_at_default: Optional[DateTime] = None,
         unread_default: bool = DEFAULT_UNREAD,
     ) -> FR:
         if created_at_default is None:
-            created_at_default = datetime.utcnow()
+            created_at_default = utc_now()
 
         mapping = split_friend_request(string)
 
@@ -1390,7 +1389,7 @@ class FriendRequestModel(Model):
             id=parse_get_or(int, id_default, mapping.get(id_index)),
             content=decode_base64_string_url_safe(mapping.get(content_index, content_default)),
             created_at=parse_get_or(
-                datetime_from_human,
+                date_time_from_human,
                 created_at_default,
                 mapping.get(created_at_index),
                 ignore_errors=True,
@@ -1430,7 +1429,7 @@ class FriendRequestModel(Model):
             account_id_index: str(self.account_id),
             id_index: str(self.id),
             content_index: encode_base64_string_url_safe(self.content),
-            created_at_index: datetime_to_human(self.created_at),
+            created_at_index: date_time_to_human(self.created_at),
             unread_index: unread,
         }
 
@@ -1515,8 +1514,8 @@ class LevelModel(Model):
     score: int = DEFAULT_SCORE
     auto: bool = DEFAULT_AUTO
     password_data: Password = field(factory=Password)
-    uploaded_at: datetime = field(factory=datetime.utcnow)
-    updated_at: datetime = field(factory=datetime.utcnow)
+    uploaded_at: DateTime = field(factory=utc_now)
+    updated_at: DateTime = field(factory=utc_now)
     original_id: int = DEFAULT_ID
     two_player: bool = DEFAULT_TWO_PLAYER
     custom_song_id: int = DEFAULT_ID
@@ -1530,8 +1529,8 @@ class LevelModel(Model):
     epic: bool = DEFAULT_EPIC
     demon_difficulty: DemonDifficulty = DemonDifficulty.DEFAULT
     object_count: int = DEFAULT_OBJECT_COUNT
-    editor_time: timedelta = field(factory=timedelta)
-    copies_time: timedelta = field(factory=timedelta)
+    editor_time: Duration = field(factory=Duration)
+    copies_time: Duration = field(factory=Duration)
 
     @classmethod
     def from_robtop(
@@ -1591,8 +1590,8 @@ class LevelModel(Model):
         score_default: int = DEFAULT_SCORE,
         auto_default: bool = DEFAULT_AUTO,
         password_data_default: Optional[Password] = None,
-        uploaded_at_default: Optional[datetime] = None,
-        updated_at_default: Optional[datetime] = None,
+        uploaded_at_default: Optional[DateTime] = None,
+        updated_at_default: Optional[DateTime] = None,
         original_id_default: int = DEFAULT_ID,
         two_player_default: bool = DEFAULT_TWO_PLAYER,
         custom_song_id_default: int = DEFAULT_ID,
@@ -1605,23 +1604,23 @@ class LevelModel(Model):
         epic_default: bool = DEFAULT_EPIC,
         demon_difficulty_default: DemonDifficulty = DemonDifficulty.DEFAULT,
         object_count_default: int = DEFAULT_OBJECT_COUNT,
-        editor_time_default: Optional[timedelta] = None,
-        copies_time_default: Optional[timedelta] = None,
+        editor_time_default: Optional[Duration] = None,
+        copies_time_default: Optional[Duration] = None,
     ) -> L:
         if password_data_default is None:
             password_data_default = Password()
 
         if uploaded_at_default is None:
-            uploaded_at_default = datetime.utcnow()
+            uploaded_at_default = utc_now()
 
         if updated_at_default is None:
-            updated_at_default = datetime.utcnow()
+            updated_at_default = utc_now()
 
         if editor_time_default is None:
-            editor_time_default = timedelta()
+            editor_time_default = Duration()
 
         if copies_time_default is None:
-            copies_time_default = timedelta()
+            copies_time_default = Duration()
 
         mapping = split_level(string)
 
@@ -1640,7 +1639,7 @@ class LevelModel(Model):
         editor_time_string = mapping.get(editor_time_index)
 
         if editor_time_string:
-            editor_time = timedelta(seconds=int(editor_time_string))
+            editor_time = Duration(seconds=int(editor_time_string))
 
         else:
             editor_time = editor_time_default
@@ -1648,7 +1647,7 @@ class LevelModel(Model):
         copies_time_string = mapping.get(copies_time_index)
 
         if copies_time_string:
-            copies_time = timedelta(seconds=int(copies_time_string))
+            copies_time = Duration(seconds=int(copies_time_string))
 
         else:
             copies_time = copies_time_default
@@ -1713,13 +1712,13 @@ class LevelModel(Model):
                 mapping.get(password_data_index),
             ),
             uploaded_at=parse_get_or(
-                datetime_from_human,
+                date_time_from_human,
                 uploaded_at_default,
                 mapping.get(uploaded_at_index),
                 ignore_errors=True,
             ),
             updated_at=parse_get_or(
-                datetime_from_human,
+                date_time_from_human,
                 updated_at_default,
                 mapping.get(updated_at_index),
                 ignore_errors=True,
@@ -1812,8 +1811,8 @@ class LevelModel(Model):
             score_index: str(self.score),
             auto_index: str(int(self.auto)) if self.is_auto() else EMPTY,
             password_data_index: self.password_data.to_robtop(),
-            uploaded_at_index: datetime_to_human(self.uploaded_at),
-            updated_at_index: datetime_to_human(self.updated_at),
+            uploaded_at_index: date_time_to_human(self.uploaded_at),
+            updated_at_index: date_time_to_human(self.updated_at),
             original_id_index: str(self.original_id),
             two_player_index: str(int(self.two_player)) if self.is_two_player() else EMPTY,
             custom_song_id_index: str(self.custom_song_id),
@@ -1907,7 +1906,7 @@ class LevelCommentInnerModel(Model):
     rating: int = field(default=DEFAULT_RATING)
     id: int = field(default=DEFAULT_ID)
     spam: bool = field(default=DEFAULT_SPAM)
-    created_at: datetime = field(factory=datetime.utcnow)
+    created_at: DateTime = field(factory=utc_now)
     record: int = field(default=DEFAULT_RECORD)
     role_id: int = field(default=DEFAULT_ID)
     color: Color = field(factory=Color.default)
@@ -1934,13 +1933,13 @@ class LevelCommentInnerModel(Model):
         rating_default: int = DEFAULT_RATING,
         id_default: int = DEFAULT_ID,
         spam_default: bool = DEFAULT_SPAM,
-        created_at_default: Optional[datetime] = None,
+        created_at_default: Optional[DateTime] = None,
         record_default: int = DEFAULT_RECORD,
         role_id_default: int = DEFAULT_ID,
         color_default: Optional[Color] = None,
     ) -> LCI:
         if created_at_default is None:
-            created_at_default = datetime.utcnow()
+            created_at_default = utc_now()
 
         if color_default is None:
             color_default = Color.default()
@@ -1971,7 +1970,7 @@ class LevelCommentInnerModel(Model):
                 mapping.get(spam_index),
             ),
             created_at=parse_get_or(
-                datetime_from_human,
+                date_time_from_human,
                 created_at_default,
                 mapping.get(created_at_index),
                 ignore_errors=True,
@@ -2013,7 +2012,7 @@ class LevelCommentInnerModel(Model):
             rating_index: str(self.rating),
             id_index: str(self.id),
             spam_index: str(int(self.spam)),
-            created_at_index: datetime_to_human(self.created_at),
+            created_at_index: date_time_to_human(self.created_at),
             record_index: str(self.record),
             role_id_index: str(self.role_id),
             color_index: self.color.to_robtop(),
@@ -2180,7 +2179,7 @@ class UserCommentModel(Model):
     content: str = field(default=EMPTY)
     rating: int = field(default=DEFAULT_RATING)
     id: int = field(default=DEFAULT_ID)
-    created_at: datetime = field(factory=datetime.utcnow)
+    created_at: DateTime = field(factory=utc_now)
 
     @classmethod
     def from_robtop(
@@ -2195,10 +2194,10 @@ class UserCommentModel(Model):
         content_default: str = EMPTY,
         rating_default: int = DEFAULT_RATING,
         id_default: int = DEFAULT_ID,
-        created_at_default: Optional[datetime] = None,
+        created_at_default: Optional[DateTime] = None,
     ) -> UC:
         if created_at_default is None:
-            created_at_default = datetime.utcnow()
+            created_at_default = utc_now()
 
         mapping = split_user_comment(string)
 
@@ -2207,7 +2206,7 @@ class UserCommentModel(Model):
             rating=parse_get_or(int, rating_default, mapping.get(rating_index)),
             id=parse_get_or(int, id_default, mapping.get(id_index)),
             created_at=parse_get_or(
-                datetime_from_human,
+                date_time_from_human,
                 created_at_default,
                 mapping.get(created_at_index),
                 ignore_errors=True,
@@ -2225,7 +2224,7 @@ class UserCommentModel(Model):
             content_index: decode_base64_string_url_safe(self.content),
             rating_index: str(self.rating),
             id_index: str(self.id),
-            created_at_index: datetime_to_human(self.created_at),
+            created_at_index: date_time_to_human(self.created_at),
         }
 
         return concat_user_comment(mapping)
@@ -2264,7 +2263,7 @@ class LevelLeaderboardUserModel(Model):
     icon_type: IconType = field(default=IconType.DEFAULT)
     glow: bool = field(default=DEFAULT_GLOW)
     account_id: int = field(default=DEFAULT_ID)
-    recorded_at: datetime = field(factory=datetime.utcnow)
+    recorded_at: DateTime = field(factory=utc_now)
 
     @classmethod
     def from_robtop(
@@ -2293,10 +2292,10 @@ class LevelLeaderboardUserModel(Model):
         coins_default: int = DEFAULT_COINS,
         icon_type_default: IconType = IconType.DEFAULT,
         glow_default: bool = DEFAULT_GLOW,
-        recorded_at_default: Optional[datetime] = None,
+        recorded_at_default: Optional[DateTime] = None,
     ) -> LLU:
         if recorded_at_default is None:
-            recorded_at_default = datetime.utcnow()
+            recorded_at_default = utc_now()
 
         mapping = split_level_leaderboard_user(string)
 
@@ -2314,7 +2313,7 @@ class LevelLeaderboardUserModel(Model):
             ),
             glow=parse_get_or(int_bool, glow_default, mapping.get(glow_index)),
             recorded_at=parse_get_or(
-                datetime_from_human, recorded_at_default, mapping.get(recorded_at_index)
+                date_time_from_human, recorded_at_default, mapping.get(recorded_at_index)
             ),
         )
 
@@ -2349,7 +2348,7 @@ class LevelLeaderboardUserModel(Model):
             icon_type_index: str(self.icon_type.value),
             glow_index: str(glow),
             account_id_index: str(self.account_id),
-            recorded_at_index: datetime_to_human(self.recorded_at),
+            recorded_at_index: date_time_to_human(self.recorded_at),
         }
 
         return concat_level_leaderboard_user(mapping)
@@ -2747,14 +2746,14 @@ B = TypeVar("B", bound="CommentBannedModel")
 @define()
 class CommentBannedModel(Model):
     string: str = field(default=TEMPORARY)
-    timeout: timedelta = field(factory=timedelta)
+    timeout: Duration = field(factory=Duration)
     reason: str = field(default=EMPTY)
 
     @classmethod
     def from_robtop(cls: Type[B], string: str) -> B:
         string, timeout, reason = split_comment_banned(string)
 
-        return cls(string, timedelta(seconds=int(timeout)), reason)
+        return cls(string, Duration(seconds=int(timeout)), reason)
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:

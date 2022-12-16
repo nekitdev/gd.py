@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
-
-# from pathlib import Path
 from typing import TYPE_CHECKING, AsyncIterator, Iterable, Optional, Type, TypeVar
 
 from attrs import define, field
@@ -37,6 +34,7 @@ from gd.constants import (
     EMPTY_BYTES,
     UNKNOWN,
 )
+from gd.date_time import DateTime, Duration, utc_now, utc_from_timestamp
 from gd.entity import Entity
 from gd.enums import (
     ByteOrder,
@@ -117,10 +115,10 @@ class Level(Entity):
     low_detail: bool = field(default=DEFAULT_LOW_DETAIL, eq=False)
     epic: bool = field(default=DEFAULT_EPIC, eq=False)
     object_count: int = field(default=DEFAULT_OBJECT_COUNT, eq=False)
-    uploaded_at: datetime = field(factory=datetime.utcnow, eq=False)
-    updated_at: datetime = field(factory=datetime.utcnow, eq=False)
-    editor_time: timedelta = field(factory=timedelta, eq=False)
-    copies_time: timedelta = field(factory=timedelta, eq=False)
+    uploaded_at: DateTime = field(factory=utc_now, eq=False)
+    updated_at: DateTime = field(factory=utc_now, eq=False)
+    editor_time: Duration = field(factory=Duration, eq=False)
+    copies_time: Duration = field(factory=Duration, eq=False)
     timely_type: TimelyType = field(default=TimelyType.DEFAULT, eq=False)
     timely_id: int = field(default=DEFAULT_ID, eq=False)
 
@@ -246,8 +244,8 @@ class Level(Entity):
         uploaded_timestamp = reader.read_f64(order)
         updated_timestamp = reader.read_f64(order)
 
-        uploaded_at = datetime.fromtimestamp(uploaded_timestamp)
-        updated_at = datetime.fromtimestamp(updated_timestamp)
+        uploaded_at = utc_from_timestamp(uploaded_timestamp)
+        updated_at = utc_from_timestamp(updated_timestamp)
 
         description_length = reader.read_u16(order)
 
@@ -298,8 +296,8 @@ class Level(Entity):
         editor_seconds = reader.read_f32(order)
         copies_seconds = reader.read_f32(order)
 
-        editor_time = timedelta(seconds=editor_seconds)
-        copies_time = timedelta(seconds=copies_seconds)
+        editor_time = Duration(seconds=editor_seconds)
+        copies_time = Duration(seconds=copies_seconds)
 
         timely_type_value = reader.read_u8(order)
 
@@ -510,8 +508,8 @@ class Level(Entity):
         low_detail: Optional[bool] = None,
         password: Optional[Password] = None,
         recording: Optional[Recording] = None,
-        editor_time: Optional[timedelta] = None,
-        copies_time: Optional[timedelta] = None,
+        editor_time: Optional[Duration] = None,
+        copies_time: Optional[Duration] = None,
         data: Optional[bytes] = None,
     ) -> None:
         song = self.song

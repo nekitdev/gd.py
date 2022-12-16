@@ -4,7 +4,6 @@ from asyncio import Lock, get_running_loop, new_event_loop, set_event_loop, slee
 from atexit import register as register_at_exit
 from builtins import getattr as get_attribute
 from builtins import setattr as set_attribute
-from datetime import timedelta
 from io import BytesIO
 from itertools import repeat
 from pathlib import Path
@@ -52,6 +51,7 @@ from gd.constants import (
     TIMELY_ID_ADD,
     UNNAMED,
 )
+from gd.date_time import Duration
 from gd.encoding import (
     ATTEMPTS_ADD,
     COINS_ADD,
@@ -888,7 +888,7 @@ class HTTPClient:
     def get_gd_world(self) -> int:
         return int(self.gd_world)
 
-    async def ping(self, url: Union[str, URL]) -> timedelta:
+    async def ping(self, url: URLString) -> Duration:
         timer = create_timer()
 
         try:
@@ -1488,8 +1488,8 @@ class HTTPClient:
         low_detail: bool = DEFAULT_LOW_DETAIL,
         password: Optional[Password] = None,
         recording: Optional[Recording] = None,
-        editor_time: Optional[timedelta] = None,
-        copies_time: Optional[timedelta] = None,
+        editor_time: Optional[Duration] = None,
+        copies_time: Optional[Duration] = None,
         data: bytes = EMPTY_BYTES,
         *,
         account_id: int,
@@ -1497,10 +1497,10 @@ class HTTPClient:
         encoded_password: str,
     ) -> int:
         if editor_time is None:
-            editor_time = timedelta()
+            editor_time = Duration()
 
         if copies_time is None:
-            copies_time = timedelta()
+            copies_time = Duration()
 
         error_codes = {-1: MissingAccess(FAILED_TO_UPLOAD_LEVEL)}
 

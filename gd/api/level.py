@@ -1,4 +1,3 @@
-from datetime import timedelta
 from typing import Type, TypeVar
 
 from attrs import define, field
@@ -39,6 +38,7 @@ from gd.constants import (
     EMPTY,
     EMPTY_BYTES,
 )
+from gd.date_time import Duration
 from gd.enums import ByteOrder, CollectedCoins, Difficulty, LevelLength, LevelType
 from gd.password import Password
 from gd.progress import Progress
@@ -111,13 +111,13 @@ class LevelAPI(Binary):
     epic: bool = field(default=DEFAULT_EPIC)
     gauntlet: bool = field(default=DEFAULT_GAUNTLET)
     unlisted: bool = field(default=DEFAULT_UNLISTED)
-    editor_time: timedelta = field(factory=timedelta)
-    copies_time: timedelta = field(factory=timedelta)
+    editor_time: Duration = field(factory=Duration)
+    copies_time: Duration = field(factory=Duration)
     favorite: bool = field(default=DEFAULT_FAVORITE)
     order: int = field(default=DEFAULT_ORDER)
     folder_id: int = field(default=DEFAULT_ID)
     best_clicks: int = field(default=DEFAULT_CLICKS)
-    best_time: timedelta = field(factory=timedelta)
+    best_time: Duration = field(factory=Duration)
     progress: Progress = field(factory=Progress)
     leaderboard_record: int = field(default=DEFAULT_RECORD)
 

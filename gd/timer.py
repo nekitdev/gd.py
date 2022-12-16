@@ -1,8 +1,9 @@
-from datetime import timedelta as duration
 from time import perf_counter as clock
 from typing import Type, TypeVar, overload
 
 from attrs import field, frozen
+
+from gd.date_time import Duration
 
 __all__ = ("Timer", "create_timer")
 
@@ -16,8 +17,8 @@ class Timer:
     def current(self) -> float:
         return clock()
 
-    def elapsed(self) -> duration:
-        return duration(seconds=self.current() - self.created_at)
+    def elapsed(self) -> Duration:
+        return Duration(seconds=self.current() - self.created_at)
 
 
 @overload

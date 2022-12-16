@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from builtins import setattr as set_attribute
-from datetime import timedelta
 from types import TracebackType as Traceback
 from typing import (
     Any,
@@ -57,6 +56,7 @@ from gd.constants import (
     UNNAMED,
 )
 from gd.credentials import Credentials
+from gd.date_time import Duration
 from gd.decorators import check_client_login, check_login
 from gd.encoding import Key, encode_robtop_string
 from gd.enums import (
@@ -262,19 +262,19 @@ class Client:
         """The user representing the client."""
         return User(id=self.id, name=self.name, account_id=self.account_id).attach_client(self)
 
-    async def ping(self) -> timedelta:
+    async def ping(self) -> Duration:
         """Pings the Geometry Dash server.
 
         Returns:
-            The [`timedelta`][datetime.timedelta] representing the latency.
+            The [`Duration`][gd.date_time.Duration] representing the latency.
         """
         return await self.ping_url(self.http.url)
 
-    async def ping_url(self, url: URLString) -> timedelta:
+    async def ping_url(self, url: URLString) -> Duration:
         """Pings the given `url`.
 
         Returns:
-            The [`timedelta`][datetime.timedelta] representing the latency.
+            The [`Duration`][gd.date_time.Duration] representing the latency.
         """
         return await self.session.ping(url)
 

@@ -1,5 +1,7 @@
 DOT = "."
 
+COLON = ":"
+
 DASH = "-"
 PIPE = "|"
 
