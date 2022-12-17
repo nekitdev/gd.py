@@ -16,6 +16,7 @@ from gd.api.objects import (
     FollowPlayerYTrigger,
     FollowTrigger,
     InstantCountTrigger,
+    ItemCounter,
     MoveTrigger,
     Object,
     OnDeathTrigger,
@@ -32,6 +33,7 @@ from gd.api.objects import (
     Text,
     ToggleTrigger,
     TouchTrigger,
+    TriggerOrb,
 )
 from gd.api.ordered_set import OrderedSet
 from gd.api.recording import Recording, RecordingItem
@@ -69,6 +71,7 @@ __all__ = (
     "FollowPlayerYTrigger",
     "FollowTrigger",
     "InstantCountTrigger",
+    "ItemCounter",
     "MoveTrigger",
     "OnDeathTrigger",
     "Orb",
@@ -84,6 +87,7 @@ __all__ = (
     "Text",
     "ToggleTrigger",
     "TouchTrigger",
+    "TriggerOrb",
     # recording
     "Recording",
     "RecordingItem",
