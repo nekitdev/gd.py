@@ -15,46 +15,12 @@ from gd.models_utils import (
     float_str,
     int_bool,
     parse_get_or,
-    partial_parse_enum,
     split_color_channel,
     split_color_channels,
 )
 from gd.robtop import RobTop
 
 __all__ = ("ColorChannel", "ColorChannels", "Channel", "Channels")
-
-DEFAULT_RED = BYTE
-DEFAULT_GREEN = BYTE
-DEFAULT_BLUE = BYTE
-
-DEFAULT_BLENDING = False
-
-DEFAULT_OPACITY = 1.0
-
-DEFAULT_UNKNOWN = True
-
-DEFAULT_DURATION = 0.0
-
-DEFAULT_TO_RED = BYTE
-DEFAULT_TO_GREEN = BYTE
-DEFAULT_TO_BLUE = BYTE
-
-DEFAULT_TO_OPACITY = 1.0
-
-DEFAULT_COPY_OPACITY = False
-
-DEFAULT_UNKNOWN_ANOTHER = False
-
-OPACITY_MULTIPLY = 100.0
-
-BLENDING_BIT = 0b100000000
-OPACITY_MASK = 0b011111111
-
-COPY_OPACITY_BIT = BLENDING_BIT
-
-PLAYER_COLOR_MASK = 0b00000011
-UNKNOWN_BIT = 0b00000100
-UNKNOWN_ANOTHER_BIT = 0b00001000
 
 RED = 1
 GREEN = 2
@@ -75,6 +41,39 @@ COPY_OPACITY = 17
 UNKNOWN_ANOTHER = 18
 
 
+PLAYER_COLOR_MASK = 0b00000110
+
+BLENDING_BIT = 0b00000001
+
+PLAYER_COLOR_SHIFT = BLENDING_BIT.bit_length()
+
+COPY_OPACITY_BIT = 0b00000010
+
+
+DEFAULT_UNKNOWN = True
+
+DEFAULT_TO_RED = BYTE
+DEFAULT_TO_GREEN = BYTE
+DEFAULT_TO_BLUE = BYTE
+
+DEFAULT_DURATION = 0.0
+
+DEFAULT_TO_OPACITY = 1.0
+
+DEFAULT_UNKNOWN_ANOTHER = True
+
+
+DEFAULT_RED = BYTE
+DEFAULT_GREEN = BYTE
+DEFAULT_BLUE = BYTE
+
+DEFAULT_BLENDING = False
+
+DEFAULT_OPACITY = 1.0
+
+DEFAULT_COPY_OPACITY = False
+
+
 CC = TypeVar("CC", bound="ColorChannel")
 
 
@@ -85,108 +84,89 @@ class ColorChannel(Binary, RobTop):
     player_color: PlayerColor = field(default=PlayerColor.DEFAULT)
     blending: bool = field(default=DEFAULT_BLENDING)
     opacity: float = field(default=DEFAULT_OPACITY)
-    unknown: bool = field(default=DEFAULT_UNKNOWN)
     copied_id: int = field(default=DEFAULT_ID)
     hsv: HSV = field(factory=HSV)
-    to_color: Color = field(factory=Color.default)
-    duration: float = field(default=DEFAULT_DURATION)
-    to_opacity: float = field(default=DEFAULT_TO_OPACITY)
     copy_opacity: bool = field(default=DEFAULT_COPY_OPACITY)
-    unknown_another: bool = field(default=DEFAULT_UNKNOWN_ANOTHER)
 
     @classmethod
     def from_robtop(cls: Type[CC], string: str) -> CC:
         mapping = split_color_channel(string)
 
-        red, green, blue = (
-            parse_get_or(int, DEFAULT_RED, mapping.get(RED)),
-            parse_get_or(int, DEFAULT_GREEN, mapping.get(GREEN)),
-            parse_get_or(int, DEFAULT_BLUE, mapping.get(BLUE)),
-        )
-
-        color = Color.from_rgb(red, green, blue)
-
-        player_color = parse_get_or(
-            partial_parse_enum(int, PlayerColor),
-            PlayerColor.DEFAULT,
-            mapping.get(PLAYER_COLOR),
-        )
-
-        blending = parse_get_or(int_bool, DEFAULT_BLENDING, mapping.get(BLENDING))
-
         id = parse_get_or(int, DEFAULT_ID, mapping.get(ID))
-
-        opacity = parse_get_or(float, DEFAULT_OPACITY, mapping.get(OPACITY))
-
-        unknown = parse_get_or(int_bool, DEFAULT_UNKNOWN, mapping.get(UNKNOWN))
 
         copied_id = parse_get_or(int, DEFAULT_ID, mapping.get(COPIED_ID))
 
-        hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(COLOR_HSV))
+        blending = parse_get_or(int_bool, DEFAULT_BLENDING, mapping.get(BLENDING))
 
-        to_red, to_green, to_blue = (
-            parse_get_or(int, DEFAULT_TO_RED, mapping.get(TO_RED)),
-            parse_get_or(int, DEFAULT_TO_GREEN, mapping.get(TO_GREEN)),
-            parse_get_or(int, DEFAULT_TO_BLUE, mapping.get(TO_BLUE)),
-        )
+        if copied_id:
+            hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(COLOR_HSV))
 
-        to_color = Color.from_rgb(to_red, to_green, to_blue)
+            copy_opacity = parse_get_or(int_bool, DEFAULT_COPY_OPACITY, mapping.get(COPY_OPACITY))
 
-        duration = parse_get_or(float, DEFAULT_DURATION, mapping.get(DURATION))
+            player_color = PlayerColor.DEFAULT
 
-        to_opacity = parse_get_or(float, DEFAULT_TO_OPACITY, mapping.get(TO_OPACITY))
+            if not copy_opacity:
+                opacity = parse_get_or(float, DEFAULT_OPACITY, mapping.get(OPACITY))
 
-        copy_opacity = parse_get_or(
-            int_bool,
-            DEFAULT_COPY_OPACITY,
-            mapping.get(COPY_OPACITY),
-        )
+            else:
+                opacity = DEFAULT_OPACITY
 
-        unknown_another = parse_get_or(
-            int_bool,
-            DEFAULT_UNKNOWN_ANOTHER,
-            mapping.get(UNKNOWN_ANOTHER),
-        )
+            color = Color.default()
+
+        else:
+            hsv = HSV()
+
+            copy_opacity = DEFAULT_COPY_OPACITY
+
+            player_color_value = parse_get_or(int, PlayerColor.DEFAULT.value, mapping.get(PLAYER_COLOR))
+
+            if player_color_value < 0:
+                player_color_value = 0
+
+            player_color = PlayerColor(player_color_value)
+
+            red, green, blue = (
+                parse_get_or(int, DEFAULT_RED, mapping.get(RED)),
+                parse_get_or(int, DEFAULT_GREEN, mapping.get(GREEN)),
+                parse_get_or(int, DEFAULT_BLUE, mapping.get(BLUE)),
+            )
+
+            color = Color.from_rgb(red, green, blue)
+
+            opacity = parse_get_or(float, DEFAULT_OPACITY, mapping.get(OPACITY))
 
         return cls(
+            id=id,
             color=color,
             player_color=player_color,
             blending=blending,
-            id=id,
             opacity=opacity,
-            unknown=unknown,
             copied_id=copied_id,
             hsv=hsv,
-            to_color=to_color,
-            duration=duration,
-            to_opacity=to_opacity,
             copy_opacity=copy_opacity,
-            unknown_another=unknown_another,
         )
 
     def to_robtop(self) -> str:
         red, green, blue = self.color.to_rgb()
-
-        to_red, to_green, to_blue = self.to_color.to_rgb()
 
         mapping = {
             RED: str(red),
             GREEN: str(green),
             BLUE: str(blue),
             PLAYER_COLOR: str(self.player_color.value),
-            BLENDING: str(int(self.blending)),
+            BLENDING: str(int(self.is_blending())),
             ID: str(self.id),
             OPACITY: float_str(self.opacity),
-            UNKNOWN: str(int(self.unknown)),
+            UNKNOWN: str(int(DEFAULT_UNKNOWN)),
             COPIED_ID: str(self.copied_id),
             COLOR_HSV: self.hsv.to_robtop(),
-            TO_RED: str(to_red),
-            TO_GREEN: str(to_green),
-            TO_BLUE: str(to_blue),
-            DURATION: float_str(self.duration),
-            TO_OPACITY: float_str(self.to_opacity),
-            COPY_OPACITY: str(int(self.copy_opacity)),
-            UNKNOWN_ANOTHER: str(int(self.unknown_another)),
+            TO_RED: str(DEFAULT_TO_RED),
+            TO_GREEN: str(DEFAULT_TO_GREEN),
+            TO_BLUE: str(DEFAULT_TO_BLUE),
+            DURATION: float_str(DEFAULT_DURATION),
+            TO_OPACITY: float_str(DEFAULT_TO_OPACITY),
+            COPY_OPACITY: str(int(self.is_copy_opacity())),
+            UNKNOWN_ANOTHER: str(int(DEFAULT_UNKNOWN_ANOTHER)),
         }
 
         return concat_color_channel(mapping)
@@ -202,61 +182,56 @@ class ColorChannel(Binary, RobTop):
         byte = BYTE
 
         player_color_mask = PLAYER_COLOR_MASK
-        unknown_bit = UNKNOWN_BIT
-        unknown_another_bit = UNKNOWN_ANOTHER_BIT
-
-        opacity_multiply = OPACITY_MULTIPLY
-
-        opacity_mask = OPACITY_MASK
-        copy_opacity_bit = COPY_OPACITY_BIT
         blending_bit = BLENDING_BIT
+        copy_opacity_bit = COPY_OPACITY_BIT
 
         reader = Reader(binary)
 
         id = reader.read_u16(order)
 
-        value = reader.read_u32(order)
+        copied_id = reader.read_u16(order)
 
-        blending_and_opacity = value & byte
+        if copied_id:
+            hsv = HSV.from_binary(binary, order, version)
 
-        blending = blending_and_opacity & blending_bit == blending_bit
+            copy_opacity_and_blending = reader.read_u8(order)
 
-        opacity = float(blending_and_opacity & opacity_mask) / opacity_multiply
+            blending = copy_opacity_and_blending & blending_bit == blending_bit
 
-        value >>= bits
+            copy_opacity = copy_opacity_and_blending & copy_opacity_bit == copy_opacity_bit
 
-        color = Color(value)
+            player_color = PlayerColor.DEFAULT
 
-        unknowns_and_player_color = reader.read_u8(order)
+            if not copy_opacity:
+                opacity = reader.read_f32(order)
 
-        unknown = unknowns_and_player_color & unknown_bit == unknown_bit
-        unknown_another = unknowns_and_player_color & unknown_another_bit == unknown_another_bit
+            else:
+                opacity = DEFAULT_OPACITY  # does not matter
 
-        player_color_value = unknowns_and_player_color & player_color_mask
-
-        if player_color_value == player_color_mask:
-            player_color = PlayerColor.NOT_USED
+            color = Color.default()
 
         else:
+            hsv = HSV()
+
+            copy_opacity = DEFAULT_COPY_OPACITY
+
+            value = reader.read_u32(order)
+
+            player_color_and_blending = value & byte
+
+            player_color_value = (
+                player_color_and_blending & player_color_mask
+            ) >> PLAYER_COLOR_SHIFT
+
             player_color = PlayerColor(player_color_value)
 
-        hsv = HSV.from_binary(binary, order, version)
+            blending = player_color_and_blending & blending_bit == blending_bit
 
-        to_value = reader.read_u32(order)
+            value >>= bits
 
-        copy_opacity_and_to_opacity = to_value & byte
+            color = Color(value)
 
-        copy_opacity = copy_opacity_and_to_opacity & copy_opacity_bit == copy_opacity_bit
-
-        to_opacity = float(copy_opacity_and_to_opacity & opacity_mask) / opacity_multiply
-
-        to_value >>= bits
-
-        to_color = Color(to_value)
-
-        duration = reader.read_f32(order)
-
-        copied_id = reader.read_u16(order)
+            opacity = reader.read_f32(order)
 
         return cls(
             id=id,
@@ -264,14 +239,9 @@ class ColorChannel(Binary, RobTop):
             player_color=player_color,
             blending=blending,
             opacity=opacity,
-            unknown=unknown,
             copied_id=copied_id,
             hsv=hsv,
-            to_color=to_color,
-            duration=duration,
-            to_opacity=to_opacity,
             copy_opacity=copy_opacity,
-            unknown_another=unknown_another,
         )
 
     def to_binary(
@@ -279,74 +249,54 @@ class ColorChannel(Binary, RobTop):
     ) -> None:
         bits = BITS
 
-        player_color_mask = PLAYER_COLOR_MASK
-        unknown_bit = UNKNOWN_BIT
-        unknown_another_bit = UNKNOWN_ANOTHER_BIT
-
-        opacity_multiply = OPACITY_MULTIPLY
-
-        copy_opacity_bit = COPY_OPACITY_BIT
-        blending_bit = BLENDING_BIT
-
         writer = Writer(binary)
 
         writer.write_u16(self.id, order)
 
-        value = self.color.value
+        copied_id = self.copied_id
 
-        opacity = round(self.opacity * opacity_multiply)
+        writer.write_u16(copied_id, order)
 
-        if self.is_blending():
-            opacity |= blending_bit
+        if copied_id:
+            self.hsv.to_binary(binary, order, version)
 
-        value = (value << bits) | opacity
+            value = 0
 
-        writer.write_u32(value, order)
+            if self.is_blending():
+                value |= BLENDING_BIT
 
-        player_color = self.player_color
+            copy_opacity = self.is_copy_opacity()
 
-        if player_color.is_not_used():
-            unknowns_and_player_color = player_color_mask
+            if copy_opacity:
+                value |= COPY_OPACITY_BIT
+
+            writer.write_u8(value, order)
+
+            if not copy_opacity:
+                writer.write_f32(self.opacity, order)
 
         else:
-            unknowns_and_player_color = player_color.value
+            value = 0
 
-        if self.is_unknown():
-            unknowns_and_player_color |= unknown_bit
+            if self.is_blending():
+                value |= BLENDING_BIT
 
-        if self.is_unknown_another():
-            unknowns_and_player_color |= unknown_another_bit
+            value |= self.player_color.value << PLAYER_COLOR_SHIFT
 
-        writer.write_u8(unknowns_and_player_color, order)
+            value |= self.color.value << bits
 
-        self.hsv.to_binary(binary, order, version)
+            writer.write_u32(value, order)
 
-        to_value = self.to_color.value
-
-        to_opacity = round(self.to_opacity * opacity_multiply)
-
-        if self.is_copy_opacity():
-            to_opacity |= copy_opacity_bit
-
-        to_value = (to_value << bits) | to_opacity
-
-        writer.write_u32(to_value, order)
-
-        writer.write_f32(self.duration, order)
-
-        writer.write_u16(self.copied_id, order)
+            writer.write_f32(self.opacity, order)
 
     def is_blending(self) -> bool:
         return self.blending
 
-    def is_unknown(self) -> bool:
-        return self.unknown
+    def is_copied(self) -> bool:
+        return bool(self.copied_id)
 
     def is_copy_opacity(self) -> bool:
         return self.copy_opacity
-
-    def is_unknown_another(self) -> bool:
-        return self.unknown_another
 
 
 Channel = ColorChannel  # alias

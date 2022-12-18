@@ -489,7 +489,12 @@ class Object(Model, Binary):
 
     @classmethod
     def from_robtop_mapping(cls: Type[O], mapping: Mapping[int, str]) -> O:
-        id = int(mapping[ID])
+        id_option = mapping.get(ID)
+
+        if id_option is None:
+            raise ValueError(OBJECT_ID_NOT_PRESENT)
+
+        id = int(id_option)
 
         x = parse_get_or(float, DEFAULT_X, mapping.get(X))
         y = parse_get_or(float, DEFAULT_Y, mapping.get(Y))
@@ -1172,7 +1177,7 @@ class HasCount:
     count: int = DEFAULT_COUNT
 
 
-TARGET_GROUP_ID = 79
+TARGET_GROUP_ID = 51
 
 
 @define(slots=False)
@@ -1361,7 +1366,8 @@ class Orb(HasMultiActivate, Object):  # type: ignore
 TO = TypeVar("TO", bound="TriggerOrb")
 
 
-class TriggerOrb(HasActivateGroup, Orb):
+@define()
+class TriggerOrb(HasTargetGroup, HasActivateGroup, Orb):
     @classmethod
     def from_binary(
         cls: Type[TO],
@@ -1376,13 +1382,17 @@ class TriggerOrb(HasActivateGroup, Orb):
 
         reader = Reader(binary)
 
-        value = reader.read_u8()
+        value = reader.read_u8(order)
 
         activate_group = value & activate_group_bit == activate_group_bit
         multi_activate = value & multi_activate_bit == multi_activate_bit
 
+        target_group_id = reader.read_u16(order)
+
         trigger_orb.activate_group = activate_group
         trigger_orb.multi_activate = multi_activate
+
+        trigger_orb.target_group_id = target_group_id
 
         return trigger_orb
 
@@ -1401,7 +1411,9 @@ class TriggerOrb(HasActivateGroup, Orb):
         if self.is_multi_activate():
             value |= MULTI_ACTIVATE_BIT
 
-        writer.write_u8(value)
+        writer.write_u8(value, order)
+
+        writer.write_u16(self.target_group_id, order)
 
     @classmethod
     def from_robtop_mapping(cls: Type[TO], mapping: Mapping[int, str]) -> TO:
@@ -1409,7 +1421,11 @@ class TriggerOrb(HasActivateGroup, Orb):
 
         activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, mapping.get(ACTIVATE_GROUP))
 
+        target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
+
         trigger_orb.activate_group = activate_group
+
+        trigger_orb.target_group_id = target_group_id
 
         return trigger_orb
 
@@ -1421,8 +1437,9 @@ class TriggerOrb(HasActivateGroup, Orb):
         if activate_group:
             mapping[ACTIVATE_GROUP] = str(int(activate_group))
 
-        return mapping
+        mapping[TARGET_GROUP_ID] = str(self.target_group_id)
 
+        return mapping
 
 IC = TypeVar("IC", bound="ItemCounter")
 
@@ -3989,32 +4006,22 @@ def object_to_bytes(
     return binary.read()
 
 
-TEXT_ID = MiscType.TEXT.id
-
-SECRET_COIN_ID = CoinType.SECRET.id
-
-TELEPORT_ID = PortalType.BLUE_TELEPORT.id
-
-COLOR_TRIGGER_ID = TriggerType.COLOR.id
-ALPHA_TRIGGER_ID = TriggerType.ALPHA.id
-PULSE_TRIGGER_ID = TriggerType.PULSE.id
-MOVE_TRIGGER_ID = TriggerType.MOVE.id
-
 OBJECT_ID_NOT_PRESENT = "object id is not present"
 
 
 OBJECT_ID_TO_TYPE: Dict[int, Type[Object]] = {  # TODO: extend this
-    TEXT_ID: Text,
-    SECRET_COIN_ID: SecretCoin,
-    TELEPORT_ID: Teleport,
+    MiscType.TEXT.id: Text,
+    CoinType.SECRET.id: SecretCoin,
+    PortalType.BLUE_TELEPORT.id: Teleport,
+    OrbType.TRIGGER.id: TriggerOrb,
     # TODO: add more
-    COLOR_TRIGGER_ID: ColorTrigger,
-    ALPHA_TRIGGER_ID: AlphaTrigger,
-    PULSE_TRIGGER_ID: PulseTrigger,
-    MOVE_TRIGGER_ID: MoveTrigger,
+    TriggerType.COLOR.id: ColorTrigger,
+    TriggerType.ALPHA.id: AlphaTrigger,
+    TriggerType.PULSE.id: PulseTrigger,
+    TriggerType.MOVE.id: MoveTrigger,
 }
 
-OBJECT_ID_TO_TYPE.update({orb.id: Orb for orb in OrbType})
+OBJECT_ID_TO_TYPE.update({orb.id: Orb for orb in OrbType if not orb.is_trigger()})
 
 
 def object_from_robtop(string: str) -> Object:

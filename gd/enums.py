@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, EMPTY
 from gd.enum_extensions import Enum, Flag
@@ -671,14 +671,15 @@ class Scene(Enum):
 class PlayerColor(Enum):
     """An enumeration of player color settings."""
 
-    NOT_USED = -1
+    NOT_USED = 0
 
-    DEFAULT = 0
     COLOR_1 = 1
     COLOR_2 = 2
 
     P1 = COLOR_1
     P2 = COLOR_2
+
+    DEFAULT = NOT_USED
 
     def is_not_used(self) -> bool:
         return self is type(self).NOT_USED
@@ -854,6 +855,9 @@ class OrbType(Enum):
     @property
     def id(self) -> int:
         return self.value  # type: ignore
+
+    def is_trigger(self) -> int:
+        return self is type(self).TRIGGER
 
 
 class PadType(Enum):
@@ -1275,7 +1279,6 @@ class ByteOrder(Enum):
     """An enumeration of byte orders."""
 
     LITTLE = "<"
-    NATIVE = "="
     BIG = ">"
 
     DEFAULT = LITTLE

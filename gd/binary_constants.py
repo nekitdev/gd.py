@@ -55,7 +55,7 @@ F64: Final[str] = "d"
 
 BOOL: Final[str] = "?"
 
-NATIVE: Final[str] = ByteOrder.NATIVE.value
+NATIVE: Final[str] = "="
 
 I8_SIZE: Final[int] = size(NATIVE + I8)
 U8_SIZE: Final[int] = size(NATIVE + U8)
