@@ -118,7 +118,9 @@ class ColorChannel(Binary, RobTop):
 
             copy_opacity = DEFAULT_COPY_OPACITY
 
-            player_color_value = parse_get_or(int, PlayerColor.DEFAULT.value, mapping.get(PLAYER_COLOR))
+            player_color_value = parse_get_or(
+                int, PlayerColor.DEFAULT.value, mapping.get(PLAYER_COLOR)
+            )
 
             if player_color_value < 0:
                 player_color_value = 0

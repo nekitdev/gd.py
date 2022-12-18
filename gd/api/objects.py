@@ -1441,6 +1441,7 @@ class TriggerOrb(HasTargetGroup, HasActivateGroup, Orb):
 
         return mapping
 
+
 IC = TypeVar("IC", bound="ItemCounter")
 
 
@@ -3394,9 +3395,7 @@ class CountTrigger(HasMultiActivate, HasActivateGroup, HasCount, HasItem, Trigge
 
         count = parse_get_or(int, DEFAULT_COUNT, mapping.get(COUNT))
 
-        activate_group = parse_get_or(
-            int_bool, DEFAULT_ACTIVATE_GROUP, mapping.get(ACTIVATE_GROUP)
-        )
+        activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, mapping.get(ACTIVATE_GROUP))
         multi_activate = parse_get_or(
             int_bool, DEFAULT_MULTI_ACTIVATE, mapping.get(TRIGGER_MULTI_ACTIVATE)
         )
@@ -3512,9 +3511,7 @@ class InstantCountTrigger(HasActivateGroup, HasCount, HasItem, Trigger):  # type
 
         count = parse_get_or(int, DEFAULT_COUNT, mapping.get(COUNT))
 
-        activate_group = parse_get_or(
-            int_bool, DEFAULT_ACTIVATE_GROUP, mapping.get(ACTIVATE_GROUP)
-        )
+        activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, mapping.get(ACTIVATE_GROUP))
 
         comparison = parse_get_or(
             partial_parse_enum(int, InstantCountComparison),

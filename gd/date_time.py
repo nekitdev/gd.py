@@ -7,8 +7,8 @@ from typing import Iterator, Optional
 from gd.constants import EMPTY
 from gd.entity import CONVERTER
 from gd.errors import InternalError
-from gd.string_constants import COLON, COMMA, DOT
 from gd.models_utils import TIME_SEPARATOR, concat_time
+from gd.string_constants import COLON, COMMA, DOT
 from gd.string_utils import clear_whitespace, concat_pipe, tick
 from gd.typing import AnyType
 

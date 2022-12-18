@@ -2,11 +2,12 @@
 Author: nekitdev.
 """
 
+import random  # for fun
 from getpass import getpass as input_password
 from typing import AbstractSet
-import random  # for fun
 
 from entrypoint import entrypoint
+
 import gd
 
 FALSE = frozenset(("false", "f", "0", "no", "n"))

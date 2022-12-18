@@ -37,6 +37,9 @@ DEFAULT_SONG_FADE_OUT = False
 
 DEFAULT_PLATFORMER_MODE = False
 
+DEFAULT_COLOR_CHANNELS_PAGE = 0
+
+
 MINI_MODE_BIT = 0b10000000
 DUAL_MODE_BIT = 0b01000000
 START_POSITION_BIT = 0b00100000
@@ -66,6 +69,7 @@ GROUND_LINE_ID = "kA17"
 FONT_ID = "kA18"
 PLATFORMER_MODE = "kA22"
 COLOR_CHANNELS = "kS38"
+COLOR_CHANNELS_PAGE = "kS39"
 
 
 @define()
@@ -87,6 +91,7 @@ class Header(Model, Binary):  # TODO: compatibility?
     font_id: int = field(default=DEFAULT_ID)
     platformer_mode: bool = field(default=DEFAULT_PLATFORMER_MODE)
     color_channels: ColorChannels = field(factory=ColorChannels)
+    color_channels_page: int = field(default=DEFAULT_COLOR_CHANNELS_PAGE)
 
     @classmethod
     def from_binary(
@@ -136,6 +141,8 @@ class Header(Model, Binary):  # TODO: compatibility?
 
         color_channels = ColorChannels.from_binary(binary, order, version)
 
+        color_channels_page = reader.read_u16(order)
+
         return cls(
             game_mode=game_mode,
             mini_mode=mini_mode,
@@ -154,6 +161,7 @@ class Header(Model, Binary):  # TODO: compatibility?
             font_id=font_id,
             platformer_mode=platformer_mode,
             color_channels=color_channels,
+            color_channels_page=color_channels_page,
         )
 
     def to_binary(
@@ -206,6 +214,8 @@ class Header(Model, Binary):  # TODO: compatibility?
 
         self.color_channels.to_binary(binary, order, version)
 
+        writer.write_u16(self.color_channels_page, order)
+
     @classmethod
     def from_robtop(cls: Type[H], string: str) -> H:
         mapping = split_header(string)
@@ -236,6 +246,9 @@ class Header(Model, Binary):  # TODO: compatibility?
             color_channels=parse_get_or(
                 ColorChannels.from_robtop, ColorChannels(), mapping.get(COLOR_CHANNELS)
             ),
+            color_channels_page=parse_get_or(
+                int, DEFAULT_COLOR_CHANNELS_PAGE, mapping.get(COLOR_CHANNELS_PAGE)
+            ),
         )
 
     def to_robtop(self) -> str:
@@ -257,6 +270,7 @@ class Header(Model, Binary):  # TODO: compatibility?
             FONT_ID: str(self.font_id),
             PLATFORMER_MODE: str(int(self.platformer_mode)),
             COLOR_CHANNELS: self.color_channels.to_robtop(),
+            COLOR_CHANNELS_PAGE: str(self.color_channels_page),
         }
 
         return concat_header(mapping)

@@ -9,7 +9,7 @@ from attrs import frozen
 from typing_extensions import Protocol, TypeGuard, runtime_checkable
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
-from gd.encoding import decompress, compress
+from gd.encoding import compress, decompress
 from gd.enums import ByteOrder
 from gd.typing import IntoPath, is_instance
 

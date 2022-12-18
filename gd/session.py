@@ -34,12 +34,12 @@ from gd.enums import (
     LeaderboardStrategy,
     LevelLeaderboardStrategy,
     LevelLength,
+    LevelPrivacy,
     MessageState,
     MessageType,
     RewardType,
     SimpleRelationshipType,
     TimelyType,
-    LevelPrivacy,
 )
 from gd.filters import Filters
 from gd.http import HTTPClient

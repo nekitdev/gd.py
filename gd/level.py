@@ -33,7 +33,7 @@ from gd.constants import (
     EMPTY_BYTES,
     UNKNOWN,
 )
-from gd.date_time import DateTime, Duration, utc_now, utc_from_timestamp
+from gd.date_time import DateTime, Duration, utc_from_timestamp, utc_now
 from gd.entity import Entity
 from gd.enums import (
     ByteOrder,

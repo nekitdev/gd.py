@@ -3,6 +3,7 @@ Author: nekitdev
 """
 
 from entrypoint import entrypoint
+
 import gd
 
 client = gd.Client()  # initialize the client

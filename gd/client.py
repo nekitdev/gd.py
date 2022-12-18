@@ -70,13 +70,13 @@ from gd.enums import (
     LeaderboardStrategy,
     LevelLeaderboardStrategy,
     LevelLength,
+    LevelPrivacy,
     MessageState,
     MessageType,
     RelationshipType,
     RewardType,
     SimpleRelationshipType,
     TimelyType,
-    LevelPrivacy,
 )
 from gd.errors import ClientError, MissingAccess, NothingFound
 from gd.events.controller import Controller

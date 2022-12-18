@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from builtins import getattr as get_attribute
+from builtins import setattr as set_attribute
 from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
 
-from attrs import Attribute, define, field
+from attrs import Attribute, define, field, fields
 from cattrs import Converter
 from cattrs.gen import make_dict_unstructure_fn, override
 from typing_extensions import TypedDict
@@ -77,7 +79,10 @@ class Entity(Binary, JSON[EntityData]):  # type: ignore
         return self
 
     def update_from(self: E, entity: Entity) -> E:
-        vars(self).update(vars(entity))
+        for attribute in fields(type(entity)):  # type: ignore
+            name = attribute.name
+
+            set_attribute(self, name, get_attribute(entity, name))
 
         return self
 

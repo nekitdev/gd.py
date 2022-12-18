@@ -45,6 +45,7 @@ from gd.enums import (
     LevelDifficulty,
     LevelLeaderboardStrategy,
     LevelLength,
+    LevelPrivacy,
     LevelType,
     LikeType,
     MessageState,
@@ -85,7 +86,6 @@ from gd.enums import (
     ToggleType,
     TouchToggleMode,
     TriggerType,
-    LevelPrivacy,
     ZLayer,
 )
 from gd.errors import (

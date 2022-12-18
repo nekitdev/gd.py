@@ -80,6 +80,7 @@ from gd.enums import (
     LeaderboardStrategy,
     LevelLeaderboardStrategy,
     LevelLength,
+    LevelPrivacy,
     LikeType,
     MessageState,
     MessageType,
@@ -90,7 +91,6 @@ from gd.enums import (
     Secret,
     SimpleRelationshipType,
     TimelyType,
-    LevelPrivacy,
 )
 from gd.errors import (
     CommentBanned,
