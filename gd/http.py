@@ -34,13 +34,19 @@ from gd.api.editor import Editor, DEFAULT_DATA
 from gd.api.recording import Recording
 from gd.async_utils import run_blocking, shutdown_loop
 from gd.constants import (
+    DEFAULT_ATTEMPTS,
     DEFAULT_CHEST_COUNT,
     DEFAULT_COINS,
     DEFAULT_COUNT,
     DEFAULT_ID,
+    DEFAULT_JUMPS,
     DEFAULT_LOW_DETAIL,
     DEFAULT_OBJECT_COUNT,
     DEFAULT_PAGE,
+    DEFAULT_PLAYED,
+    DEFAULT_RECORD,
+    DEFAULT_SECONDS,
+    DEFAULT_SEND,
     DEFAULT_SPECIAL,
     DEFAULT_STARS,
     DEFAULT_TWO_PLAYER,
@@ -1708,14 +1714,14 @@ class HTTPClient:
         strategy: LevelLeaderboardStrategy,
         timely_type: TimelyType = TimelyType.DEFAULT,
         timely_id: int = DEFAULT_ID,
-        played: bool = False,
-        record: int = 0,
-        jumps: int = 0,
-        attempts: int = 0,
-        seconds: int = 0,
-        coins: int = 0,
+        played: bool = DEFAULT_PLAYED,
+        record: int = DEFAULT_RECORD,
+        jumps: int = DEFAULT_JUMPS,
+        attempts: int = DEFAULT_ATTEMPTS,
+        seconds: int = DEFAULT_SECONDS,
+        coins: int = DEFAULT_COINS,
         progress: Optional[Progress] = None,
-        send: bool = False,
+        send: bool = DEFAULT_SEND,
         *,
         account_id: int,
         encoded_password: str,
@@ -1766,7 +1772,7 @@ class HTTPClient:
         if progress is None:
             progress = Progress()
 
-        progress_string = concat_comma(map(str, progress))
+        progress_string = progress.to_robtop()
 
         if send:
             payload.update(
@@ -2601,7 +2607,7 @@ class HTTPClient:
 
         return response
 
-    async def get_quests(self, account_id: int, encoded_password: str) -> str:
+    async def get_quests(self, *, account_id: int, encoded_password: str) -> str:
         error_codes = {-1: MissingAccess(FAILED_TO_GET_QUESTS)}
 
         udid = self.generate_udid()
@@ -2747,7 +2753,7 @@ class HTTPClient:
             headers={REQUESTED_WITH: XML_HTTP_REQUEST},
         )
 
-        return response
+        return response  # type: ignore
 
 
 E = TypeVar("E", bound=AnyException)

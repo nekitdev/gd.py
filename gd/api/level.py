@@ -11,11 +11,9 @@ from gd.constants import (
     DEFAULT_CLICKS,
     DEFAULT_COINS,
     DEFAULT_COMPLETIONS,
-    DEFAULT_DEMON,
     DEFAULT_DOWNLOADS,
     DEFAULT_EDITABLE,
     DEFAULT_ENCODING,
-    DEFAULT_EPIC,
     DEFAULT_ERRORS,
     DEFAULT_FAVORITE,
     DEFAULT_GAUNTLET,
@@ -37,38 +35,41 @@ from gd.constants import (
     DEFAULT_VERIFIED_COINS,
     DEFAULT_VERSION,
     EMPTY,
+    UNKNOWN,
 )
 from gd.date_time import Duration
-from gd.enums import ByteOrder, CollectedCoins, Difficulty, LevelLength, LevelType
+from gd.enums import ByteOrder, CollectedCoins, Difficulty, LevelLength, LevelType, RateType
+from gd.models import Model
 from gd.password import Password
 from gd.progress import Progress
 from gd.song import Song
 from gd.users import User
 from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, Version
 
-EDITABLE_BIT = 0b00000000_00000001
-VERIFIED_BIT = 0b00000000_00000010
-UPLOADED_BIT = 0b00000000_00000100
-PLAYABLE_BIT = 0b00000000_00001000
-TWO_PLAYER_BIT = 0b00000000_00010000
-LOW_DETAIL_BIT = 0b00000000_00100000
-LOW_DETAIL_TOGGLED_BIT = 0b00000000_01000000
-FAVORITE_BIT = 0b00000000_10000000
+EDITABLE_BIT = 0b00000001
+VERIFIED_BIT = 0b00000010
+UPLOADED_BIT = 0b00000100
+PLAYABLE_BIT = 0b00001000
+TWO_PLAYER_BIT = 0b00010000
+LOW_DETAIL_BIT = 0b00100000
+LOW_DETAIL_TOGGLED_BIT = 0b01000000
+FAVORITE_BIT = 0b10000000
 
-COLLECTED_COINS_SHIFT = FAVORITE_BIT.bit_length()
+COLLECTED_COINS_MASK = 0b00000111
+VERIFIED_COINS_BIT = 0b00001000
+GAUNTLET_BIT = 0b00010000
+UNLISTED_BIT = 0b00100000
 
-COLLECTED_COINS_MASK = 0b00000111_00000000
-VERIFIED_COINS_BIT = 0b00001000_00000000
-EPIC_BIT = 0b00010000_00000000
-GAUNTLET_BIT = 0b00100000_00000000
-UNLISTED_BIT = 0b01000000_00000000
-DEMON_BIT = 0b10000000_00000000
+TYPE_MASK = 0b00000111
+RATE_TYPE_MASK = 0b11111000
+
+RATE_TYPE_SHIFT = TYPE_MASK.bit_length()
 
 A = TypeVar("A", bound="LevelAPI")
 
 
 @define()
-class LevelAPI(Binary):
+class LevelAPI(Model, Binary):
     id: int = field()
     name: str = field()
     creator: User = field()
@@ -76,7 +77,6 @@ class LevelAPI(Binary):
     description: str = field(default=EMPTY)
     data: bytes = field(default=DEFAULT_DATA)
     difficulty: Difficulty = field(default=Difficulty.DEFAULT)
-    demon: bool = field(default=DEFAULT_DEMON)
     downloads: int = field(default=DEFAULT_DOWNLOADS)
     editable: bool = field(default=DEFAULT_EDITABLE)
     completions: int = field(default=DEFAULT_COMPLETIONS)
@@ -88,12 +88,12 @@ class LevelAPI(Binary):
     attempts: int = field(default=DEFAULT_ATTEMPTS)
     normal_record: int = field(default=DEFAULT_RECORD)
     practice_record: int = field(default=DEFAULT_RECORD)
-    # HERE
     type: LevelType = field(default=LevelType.DEFAULT)
     rating: int = field(default=DEFAULT_RATING)
     length: LevelLength = field(default=LevelLength.DEFAULT)
     stars: int = field(default=DEFAULT_STARS)
     score: int = field(default=DEFAULT_SCORE)
+    rate_type: RateType = field(default=RateType.DEFAULT)
     recording: Recording = field(factory=Recording)
     playable: bool = field(default=DEFAULT_PLAYABLE)
     unlocked: bool = field(default=DEFAULT_UNLOCKED)
@@ -108,7 +108,6 @@ class LevelAPI(Binary):
     low_detail: bool = field(default=DEFAULT_LOW_DETAIL)
     low_detail_toggled: bool = field(default=DEFAULT_LOW_DETAIL_TOGGLED)
     timely_id: int = field(default=DEFAULT_ID)
-    epic: bool = field(default=DEFAULT_EPIC)
     gauntlet: bool = field(default=DEFAULT_GAUNTLET)
     unlisted: bool = field(default=DEFAULT_UNLISTED)
     editor_time: Duration = field(factory=Duration)
@@ -121,8 +120,12 @@ class LevelAPI(Binary):
     progress: Progress = field(factory=Progress)
     leaderboard_record: int = field(default=DEFAULT_RECORD)
 
+    @classmethod
+    def default(cls: Type[A]) -> A:
+        return cls(id=DEFAULT_ID, name=UNKNOWN, creator=User.default(), song=Song.default())
+
     def __hash__(self) -> int:
-        return self.id
+        return self.id ^ hash(type(self))
 
     @classmethod
     def from_binary(
@@ -200,13 +203,12 @@ class LevelAPI(Binary):
         if self.is_favorite():
             value |= FAVORITE_BIT
 
-        value |= self.collected_coins.value << COLLECTED_COINS_SHIFT
+        writer.write_u8(value, order)
+
+        value = self.collected_coins.value
 
         if self.has_verified_coins():
             value |= VERIFIED_COINS_BIT
-
-        if self.is_epic():
-            value |= EPIC_BIT
 
         if self.is_gauntlet():
             value |= GAUNTLET_BIT
@@ -214,10 +216,7 @@ class LevelAPI(Binary):
         if self.is_unlisted():
             value |= UNLISTED_BIT
 
-        if self.is_demon():
-            value |= DEMON_BIT
-
-        writer.write_u16(value, order)
+        writer.write_u8(value, order)
 
         writer.write_u32(self.downloads, order)
 
@@ -232,6 +231,51 @@ class LevelAPI(Binary):
 
         writer.write_u8(self.normal_record, order)
         writer.write_u8(self.practice_record, order)
+
+        value = self.type.value
+
+        value |= self.rate_type.value << RATE_TYPE_SHIFT
+
+        writer.write_u8(value, order)
+
+        writer.write_i32(self.rating, order)
+
+        writer.write_u8(self.length.value, order)
+
+        writer.write_u8(self.stars, order)
+
+        writer.write_u32(self.score, order)
+
+        self.recording.to_binary(binary, order, version)
+
+        self.password_data.to_binary(binary, order, version)
+
+        writer.write_u32(self.original_id, order)
+
+        writer.write_u32(self.object_count, order)
+
+        writer.write_u8(self.coins, order)
+
+        writer.write_u8(self.requested_stars, order)
+
+        writer.write_u32(self.timely_id, order)
+
+        writer.write_f32(self.editor_time.total_seconds(), order)
+        writer.write_f32(self.copies_time.total_seconds(), order)
+
+        writer.write_u16(self.order, order)
+
+        writer.write_u8(self.folder_id, order)
+
+        writer.write_u16(self.best_clicks, order)
+        writer.write_f32(self.best_time.total_seconds(), order)
+
+        self.progress.to_binary(binary, order, version)
+
+        writer.write_u8(self.leaderboard_record, order)
+
+    def is_demon(self) -> bool:
+        return self.difficulty.is_demon()
 
     def is_editable(self) -> bool:
         return self.editable
@@ -260,14 +304,19 @@ class LevelAPI(Binary):
     def has_verified_coins(self) -> bool:
         return self.verified_coins
 
-    def is_epic(self) -> bool:
-        return self.epic
-
     def is_gauntlet(self) -> bool:
         return self.gauntlet
 
     def is_unlisted(self) -> bool:
         return self.unlisted
 
-    def is_demon(self) -> bool:
-        return self.demon
+    @classmethod
+    def from_robtop(cls: Type[A], string: str) -> A:
+        ...
+
+    def to_robtop(self) -> str:
+        ...
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        ...

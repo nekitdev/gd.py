@@ -20,21 +20,6 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-[[tool.poetry.include]]
-path = "_gd"
-
-[[tool.poetry.include]]
-path = "_gd/*.so"
-format = "wheel"
-
-[[tool.poetry.include]]
-path = "_gd/*.pyd"
-format = "wheel"
-
-[[tool.poetry.include]]
-path = "_gd"
-format = "wheel"
-
 [tool.poetry.urls]
 Discord = "https://nekit.dev/discord"
 Funding = "https://patreon.com/nekitdev"

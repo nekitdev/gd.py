@@ -38,6 +38,7 @@ from gd.models_constants import (
     OBJECTS_SEPARATOR,
     PAGE_SEPARATOR,
     PROFILE_SEPARATOR,
+    PROGRESS_SEPARATOR,
     RECORDING_ITEM_SEPARATOR,
     RELATIONSHIP_USER_SEPARATOR,
     RELATIONSHIPS_RESPONSE_USERS_SEPARATOR,
@@ -346,3 +347,6 @@ split_level_leaderboard_response_users = partial(
 concat_level_leaderboard_response_users = partial(
     concat_iterable, LEVEL_LEADERBOARD_RESPONSE_USERS_SEPARATOR
 )
+
+split_progress = partial(split_iterable, PROGRESS_SEPARATOR)
+concat_progress = partial(concat_iterable, PROGRESS_SEPARATOR)
