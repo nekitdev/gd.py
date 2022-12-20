@@ -18,10 +18,10 @@ from gd.constants import (
     DEFAULT_FAVORITE,
     DEFAULT_GAUNTLET,
     DEFAULT_ID,
+    DEFAULT_LEVEL_ORDER,
     DEFAULT_LOW_DETAIL,
     DEFAULT_LOW_DETAIL_TOGGLED,
     DEFAULT_OBJECT_COUNT,
-    DEFAULT_ORDER,
     DEFAULT_PLAYABLE,
     DEFAULT_RATING,
     DEFAULT_RECORD,
@@ -39,9 +39,9 @@ from gd.constants import (
 )
 from gd.date_time import Duration
 from gd.enums import ByteOrder, CollectedCoins, Difficulty, LevelLength, LevelType, RateType
-from gd.models import Model
 from gd.password import Password
 from gd.progress import Progress
+from gd.robtop import RobTop
 from gd.song import Song
 from gd.users import User
 from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, Version
@@ -59,6 +59,7 @@ COLLECTED_COINS_MASK = 0b00000111
 VERIFIED_COINS_BIT = 0b00001000
 GAUNTLET_BIT = 0b00010000
 UNLISTED_BIT = 0b00100000
+UNLOCKED_BIT = 0b01000000
 
 TYPE_MASK = 0b00000111
 RATE_TYPE_MASK = 0b11111000
@@ -69,13 +70,13 @@ A = TypeVar("A", bound="LevelAPI")
 
 
 @define()
-class LevelAPI(Model, Binary):
+class LevelAPI(Binary, RobTop):
     id: int = field()
     name: str = field()
     creator: User = field()
     song: Song = field()
     description: str = field(default=EMPTY)
-    data: bytes = field(default=DEFAULT_DATA)
+    data: bytes = field(default=DEFAULT_DATA, repr=False)
     difficulty: Difficulty = field(default=Difficulty.DEFAULT)
     downloads: int = field(default=DEFAULT_DOWNLOADS)
     editable: bool = field(default=DEFAULT_EDITABLE)
@@ -113,7 +114,7 @@ class LevelAPI(Model, Binary):
     editor_time: Duration = field(factory=Duration)
     copies_time: Duration = field(factory=Duration)
     favorite: bool = field(default=DEFAULT_FAVORITE)
-    order: int = field(default=DEFAULT_ORDER)
+    level_order: int = field(default=DEFAULT_LEVEL_ORDER)
     folder_id: int = field(default=DEFAULT_ID)
     best_clicks: int = field(default=DEFAULT_CLICKS)
     best_time: Duration = field(factory=Duration)
@@ -136,11 +137,185 @@ class LevelAPI(Model, Binary):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> A:
+        editable_bit = EDITABLE_BIT
+        verified_bit = VERIFIED_BIT
+        uploaded_bit = UPLOADED_BIT
+        playable_bit = PLAYABLE_BIT
+        two_player_bit = TWO_PLAYER_BIT
+        low_detail_bit = LOW_DETAIL_BIT
+        low_detail_toggled_bit = LOW_DETAIL_TOGGLED_BIT
+        favorite_bit = FAVORITE_BIT
+
+        verified_coins_bit = VERIFIED_COINS_BIT
+        gauntlet_bit = GAUNTLET_BIT
+        unlisted_bit = UNLISTED_BIT
+        unlocked_bit = UNLOCKED_BIT
+
         reader = Reader(binary)
 
-        ...
+        id = reader.read_u32(order)
 
-        return cls()
+        name_length = reader.read_u8(order)
+
+        name = reader.read(name_length).decode(encoding, errors)
+
+        creator = User.from_binary(binary, order, version, encoding, errors)
+
+        song = Song.from_binary(binary, order, version, encoding, errors)
+
+        description_length = reader.read_u16(order)
+
+        description = reader.read(description_length).decode(encoding, errors)
+
+        data_length = reader.read_u32(order)
+
+        data = reader.read(data_length)
+
+        difficulty_value = reader.read_u8(order)
+
+        difficulty = Difficulty(difficulty_value)
+
+        value = reader.read_u8(order)
+
+        editable = value & editable_bit == editable_bit
+        verified = value & verified_bit == verified_bit
+        uploaded = value & uploaded_bit == uploaded_bit
+        playable = value & playable_bit == playable_bit
+        two_player = value & two_player_bit == two_player_bit
+        low_detail = value & low_detail_bit == low_detail_bit
+        low_detail_toggled = value & low_detail_toggled_bit == low_detail_toggled_bit
+        favorite = value & favorite_bit == favorite_bit
+
+        value = reader.read_u8(order)
+
+        collected_coins_value = value & COLLECTED_COINS_MASK
+
+        collected_coins = CollectedCoins(collected_coins_value)
+
+        verified_coins = value & verified_coins_bit == verified_coins_bit
+        gauntlet = value & gauntlet_bit == gauntlet_bit
+        unlisted = value & unlisted_bit == unlisted_bit
+        unlocked = value & unlocked_bit == unlocked_bit
+
+        downloads = reader.read_u32(order)
+
+        completions = reader.read_u16(order)
+
+        version = reader.read_u8(order)
+
+        game_version = GameVersion.from_binary(binary, order, version)
+        binary_version = Version.from_binary(binary, order, version)
+
+        attempts = reader.read_u32(order)
+
+        normal_record = reader.read_u8(order)
+        practice_record = reader.read_u8(order)
+
+        value = reader.read_u8(order)
+
+        type_value = value & TYPE_MASK
+
+        type = LevelType(type_value)
+
+        rate_type_value = (value & RATE_TYPE_MASK) >> RATE_TYPE_SHIFT
+
+        rate_type = RateType(rate_type_value)
+
+        rating = reader.read_i32(order)
+
+        length_value = reader.read_u8(order)
+
+        length = LevelLength(length_value)
+
+        stars = reader.read_u8(order)
+
+        score = reader.read_u32(order)
+
+        recording = Recording.from_binary(binary, order, version)
+
+        password_data = Password.from_binary(binary, order, version)
+
+        original_id = reader.read_u32(order)
+
+        object_count = reader.read_u32(order)
+
+        coins = reader.read_u8(order)
+
+        requested_stars = reader.read_u8(order)
+
+        timely_id = reader.read_u32(order)
+
+        editor_seconds = reader.read_f32(order)
+        copies_seconds = reader.read_f32(order)
+
+        editor_time = Duration(seconds=editor_seconds)
+        copies_time = Duration(seconds=copies_seconds)
+
+        level_order = reader.read_u16(order)
+
+        folder_id = reader.read_u8(order)
+
+        best_clicks = reader.read_u16(order)
+
+        best_seconds = reader.read_f32(order)
+
+        best_time = Duration(seconds=best_seconds)
+
+        progress = Progress.from_binary(binary, order, version)
+
+        leaderboard_record = reader.read_u8(order)
+
+        return cls(
+            id=id,
+            name=name,
+            creator=creator,
+            song=song,
+            description=description,
+            data=data,
+            difficulty=difficulty,
+            downloads=downloads,
+            editable=editable,
+            completions=completions,
+            verified=verified,
+            uploaded=uploaded,
+            version=version,
+            game_version=game_version,
+            binary_version=binary_version,
+            attempts=attempts,
+            normal_record=normal_record,
+            practice_record=practice_record,
+            type=type,
+            rating=rating,
+            length=length,
+            stars=stars,
+            score=score,
+            rate_type=rate_type,
+            recording=recording,
+            playable=playable,
+            unlocked=unlocked,
+            password_data=password_data,
+            original_id=original_id,
+            two_player=two_player,
+            object_count=object_count,
+            collected_coins=collected_coins,
+            coins=coins,
+            verified_coins=verified_coins,
+            requested_stars=requested_stars,
+            low_detail=low_detail,
+            low_detail_toggled=low_detail_toggled,
+            timely_id=timely_id,
+            gauntlet=gauntlet,
+            unlisted=unlisted,
+            editor_time=editor_time,
+            copies_time=copies_time,
+            favorite=favorite,
+            level_order=level_order,
+            folder_id=folder_id,
+            best_clicks=best_clicks,
+            best_time=best_time,
+            progress=progress,
+            leaderboard_record=leaderboard_record,
+        )
 
     def to_binary(
         self,
@@ -160,8 +335,8 @@ class LevelAPI(Model, Binary):
 
         writer.write(data)
 
-        self.creator.to_binary(binary, order, version)
-        self.song.to_binary(binary, order, version)
+        self.creator.to_binary(binary, order, version, encoding, errors)
+        self.song.to_binary(binary, order, version, encoding, errors)
 
         data = self.description.encode(encoding, errors)
 
@@ -216,6 +391,9 @@ class LevelAPI(Model, Binary):
         if self.is_unlisted():
             value |= UNLISTED_BIT
 
+        if self.is_unlocked():
+            value |= UNLOCKED_BIT
+
         writer.write_u8(value, order)
 
         writer.write_u32(self.downloads, order)
@@ -263,7 +441,7 @@ class LevelAPI(Model, Binary):
         writer.write_f32(self.editor_time.total_seconds(), order)
         writer.write_f32(self.copies_time.total_seconds(), order)
 
-        writer.write_u16(self.order, order)
+        writer.write_u16(self.level_order, order)
 
         writer.write_u8(self.folder_id, order)
 
@@ -288,6 +466,9 @@ class LevelAPI(Model, Binary):
 
     def is_playable(self) -> bool:
         return self.playable
+
+    def is_unlocked(self) -> bool:
+        return self.unlocked
 
     def is_two_player(self) -> bool:
         return self.two_player

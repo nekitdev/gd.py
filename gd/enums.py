@@ -24,6 +24,7 @@ __all__ = (
     "DemonDifficulty",
     "TimelyType",
     "TimelyID",
+    "RateFilter",
     "RateType",
     "CommentType",
     "RelationshipType",
@@ -430,6 +431,31 @@ TIMELY_TYPE_TO_ID = {
 }
 
 TIMELY_ID_TO_TYPE = {timely_id: timely_type for timely_type, timely_id in TIMELY_TYPE_TO_ID.items()}
+
+
+class RateFilter(Enum):
+    """An enumeration of rate filters."""
+
+    NOT_RATED = 0
+    RATED = 1
+    FEATURED = 2
+    EPIC = 3
+    GODLIKE = 4
+
+    def is_not_rated(self) -> bool:
+        return self is type(self).NOT_RATED
+
+    def is_rated(self) -> bool:
+        return self is type(self).RATED
+
+    def is_featured(self) -> bool:
+        return self is type(self).FEATURED
+
+    def is_epic(self) -> bool:
+        return self is type(self).EPIC
+
+    def is_godlike(self) -> bool:
+        return self is type(self).GODLIKE
 
 
 class RateType(Flag):

@@ -2,10 +2,10 @@ from io import BytesIO
 from typing import Dict, Iterable, Mapping, Type, TypeVar
 
 from attrs import define, field
+from iters.ordered_set import OrderedSet
 from typing_extensions import Literal, TypeGuard
 
 from gd.api.hsv import HSV
-from gd.api.ordered_set import OrderedSet
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_constants import BITS, BYTE
 from gd.binary_utils import Reader, Writer

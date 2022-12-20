@@ -51,7 +51,7 @@ named = ">= 1.1.0"
 xor-cipher = ">= 2.3.0"
 
 [tool.poetry.dependencies.iters]
-version = ">= 0.6.0"
+version = ">= 0.7.0"
 extras = ["concurrent"]
 
 [tool.poetry.dependencies.lxml]

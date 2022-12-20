@@ -1,11 +1,13 @@
+from functools import partial
 from typing import Any, Dict, Iterable, List, Optional, Type, TypeVar
 
 from attrs import define, field
+from iters import iter
+from iters.ordered_set import OrderedSet, ordered_set
 
 from gd.api.folder import Folder
 from gd.api.level import LevelAPI
 from gd.api.objects import Object, object_from_binary, object_to_binary
-from gd.api.ordered_set import OrderedSet, ordered_set
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, EMPTY
@@ -1176,49 +1178,51 @@ class Values(Binary):
 
         variables = Variables.from_binary(binary, order, version)
 
+        read_u16 = partial(reader.read_u16, order)
+
         cubes_length = reader.read_u16(order)
 
-        cubes = ordered_set(reader.read_u16(order) for _ in range(cubes_length))
+        cubes = iter.repeat_exactly_with(read_u16, cubes_length).ordered_set()
 
         ships_length = reader.read_u16(order)
 
-        ships = ordered_set(reader.read_u16(order) for _ in range(ships_length))
+        ships = iter.repeat_exactly_with(read_u16, ships_length).ordered_set()
 
         balls_length = reader.read_u16(order)
 
-        balls = ordered_set(reader.read_u16(order) for _ in range(balls_length))
+        balls = iter.repeat_exactly_with(read_u16, balls_length).ordered_set()
 
         ufos_length = reader.read_u16(order)
 
-        ufos = ordered_set(reader.read_u16(order) for _ in range(ufos_length))
+        ufos = iter.repeat_exactly_with(read_u16, ufos_length).ordered_set()
 
         waves_length = reader.read_u16(order)
 
-        waves = ordered_set(reader.read_u16(order) for _ in range(waves_length))
+        waves = iter.repeat_exactly_with(read_u16, waves_length).ordered_set()
 
         robots_length = reader.read_u16(order)
 
-        robots = ordered_set(reader.read_u16(order) for _ in range(robots_length))
+        robots = iter.repeat_exactly_with(read_u16, robots_length).ordered_set()
 
         spiders_length = reader.read_u16(order)
 
-        spiders = ordered_set(reader.read_u16(order) for _ in range(spiders_length))
+        spiders = iter.repeat_exactly_with(read_u16, spiders_length).ordered_set()
 
         swing_copters_length = reader.read_u16(order)
 
-        swing_copters = ordered_set(reader.read_u16(order) for _ in range(swing_copters_length))
+        swing_copters = iter.repeat_exactly_with(read_u16, swing_copters_length).ordered_set()
 
         explosions_length = reader.read_u16(order)
 
-        explosions = ordered_set(reader.read_u16(order) for _ in range(explosions_length))
+        explosions = iter.repeat_exactly_with(read_u16, explosions_length).ordered_set()
 
         colors_1_length = reader.read_u16(order)
 
-        colors_1 = ordered_set(reader.read_u16(order) for _ in range(colors_1_length))
+        colors_1 = iter.repeat_exactly_with(read_u16, colors_1_length).ordered_set()
 
         colors_2_length = reader.read_u16(order)
 
-        colors_2 = ordered_set(reader.read_u16(order) for _ in range(colors_2_length))
+        colors_2 = iter.repeat_exactly_with(read_u16, colors_2_length).ordered_set()
 
         return cls(
             variables=variables,
@@ -2144,15 +2148,15 @@ class Database(Binary):
 
         writer.write_u32(len(followed), order)
 
-        for followed_id in followed:
-            writer.write_u32(followed_id, order)
+        for account_id in followed:
+            writer.write_u32(account_id, order)
 
         last_played = self.last_played
 
         writer.write_u16(len(last_played), order)
 
-        for last_played_id in last_played:
-            writer.write_u32(last_played_id, order)
+        for level_id in last_played:
+            writer.write_u32(level_id, order)
 
         self.filters.to_binary(binary, order, version)
 

@@ -36,15 +36,12 @@ from gd.api.objects import (
     TouchTrigger,
     TriggerOrb,
 )
-from gd.api.ordered_set import OrderedSet
 from gd.api.recording import Recording, RecordingItem
 from gd.api.save_manager import SaveManager, create_database, save, save_manager
 
 __all__ = (
     # database
     "Database",
-    # ordered set
-    "OrderedSet",
     # folder
     "Folder",
     # level API
