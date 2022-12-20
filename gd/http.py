@@ -30,7 +30,7 @@ from tqdm import tqdm as progess  # type: ignore
 from typing_extensions import Literal
 from yarl import URL
 
-from gd.api.editor import Editor
+from gd.api.editor import Editor, DEFAULT_DATA
 from gd.api.recording import Recording
 from gd.async_utils import run_blocking, shutdown_loop
 from gd.constants import (
@@ -46,7 +46,6 @@ from gd.constants import (
     DEFAULT_TWO_PLAYER,
     DEFAULT_VERSION,
     EMPTY,
-    EMPTY_BYTES,
     SLASH,
     TIMELY_ID_ADD,
     UNNAMED,
@@ -1490,7 +1489,7 @@ class HTTPClient:
         recording: Optional[Recording] = None,
         editor_time: Optional[Duration] = None,
         copies_time: Optional[Duration] = None,
-        data: bytes = EMPTY_BYTES,
+        data: bytes = DEFAULT_DATA,
         *,
         account_id: int,
         account_name: str,

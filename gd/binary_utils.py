@@ -145,6 +145,8 @@ to_bool = create_to_bool(BOOL)
 R = TypeVar("R", bound=BinaryReader)
 W = TypeVar("W", bound=BinaryWriter)
 
+ROUNDING = 6
+
 
 @frozen()
 class Reader(Generic[R]):
@@ -174,8 +176,8 @@ class Reader(Generic[R]):
     def read_u64(self, order: ByteOrder = ByteOrder.DEFAULT) -> int:
         return from_u64(self.read(U64_SIZE), order)
 
-    def read_f32(self, order: ByteOrder = ByteOrder.DEFAULT) -> float:
-        return from_f32(self.read(F32_SIZE), order)
+    def read_f32(self, order: ByteOrder = ByteOrder.DEFAULT, rounding: int = ROUNDING) -> float:
+        return round(from_f32(self.read(F32_SIZE), order), rounding)
 
     def read_f64(self, order: ByteOrder = ByteOrder.DEFAULT) -> float:
         return from_f64(self.read(F64_SIZE), order)

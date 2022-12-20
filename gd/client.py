@@ -24,6 +24,7 @@ from typing_extensions import ParamSpec
 from yarl import URL
 
 from gd.api.database import Database
+from gd.api.editor import DEFAULT_DATA
 from gd.api.recording import Recording
 from gd.artist import Artist
 from gd.async_utils import awaiting, run, run_iterables
@@ -52,7 +53,6 @@ from gd.constants import (
     DEFAULT_USE_CLIENT,
     DEFAULT_VERSION,
     EMPTY,
-    EMPTY_BYTES,
     UNNAMED,
 )
 from gd.credentials import Credentials
@@ -783,7 +783,7 @@ class Client:
         recording: Optional[Recording] = None,
         editor_time: Optional[timedelta] = None,
         copies_time: Optional[timedelta] = None,
-        data: bytes = EMPTY_BYTES,
+        data: bytes = DEFAULT_DATA,
     ) -> Level:
         level_id = await self.session.upload_level(
             name=name,

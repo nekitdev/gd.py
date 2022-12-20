@@ -6,7 +6,7 @@ from attrs import define, field
 from iters.async_iters import wrap_async_iter
 from iters.iters import iter
 
-from gd.api.editor import Editor
+from gd.api.editor import Editor, DEFAULT_DATA
 from gd.api.recording import Recording
 from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
@@ -30,7 +30,6 @@ from gd.constants import (
     DEFAULT_VERIFIED_COINS,
     DEFAULT_VERSION,
     EMPTY,
-    EMPTY_BYTES,
     UNKNOWN,
 )
 from gd.date_time import DateTime, Duration, utc_from_timestamp, utc_now
@@ -95,7 +94,7 @@ class Level(Entity):
     creator: User = field(eq=False)
     song: Song = field(eq=False)
     description: str = field(default=EMPTY, eq=False)
-    data: bytes = field(default=EMPTY_BYTES, eq=False, repr=False)
+    data: bytes = field(default=DEFAULT_DATA, eq=False, repr=False)
     version: int = field(default=DEFAULT_VERSION, eq=False)
     downloads: int = field(default=DEFAULT_DOWNLOADS, eq=False)
     game_version: GameVersion = field(default=CURRENT_GAME_VERSION, eq=False)
@@ -421,10 +420,10 @@ class Level(Entity):
             raise LookupError(CAN_NOT_FIND_LEVEL)
 
         if get_data:
-            data = EMPTY_BYTES  # TODO
+            data = DEFAULT_DATA  # TODO
 
         else:
-            data = EMPTY_BYTES
+            data = DEFAULT_DATA
 
         name = official_level.name
 

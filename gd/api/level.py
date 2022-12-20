@@ -2,6 +2,7 @@ from typing import Type, TypeVar
 
 from attrs import define, field
 
+from gd.api.editor import DEFAULT_DATA
 from gd.api.recording import Recording
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
@@ -36,7 +37,6 @@ from gd.constants import (
     DEFAULT_VERIFIED_COINS,
     DEFAULT_VERSION,
     EMPTY,
-    EMPTY_BYTES,
 )
 from gd.date_time import Duration
 from gd.enums import ByteOrder, CollectedCoins, Difficulty, LevelLength, LevelType
@@ -74,7 +74,7 @@ class LevelAPI(Binary):
     creator: User = field()
     song: Song = field()
     description: str = field(default=EMPTY)
-    data: bytes = field(default=EMPTY_BYTES)
+    data: bytes = field(default=DEFAULT_DATA)
     difficulty: Difficulty = field(default=Difficulty.DEFAULT)
     demon: bool = field(default=DEFAULT_DEMON)
     downloads: int = field(default=DEFAULT_DOWNLOADS)

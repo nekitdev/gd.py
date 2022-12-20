@@ -5,6 +5,7 @@ from typing import Any, Optional
 from attrs import field, frozen
 from yarl import URL
 
+from gd.api.editor import DEFAULT_DATA
 from gd.api.database import Database
 from gd.api.recording import Recording
 from gd.api.save_manager import save_manager
@@ -19,7 +20,6 @@ from gd.constants import (
     DEFAULT_TWO_PLAYER,
     DEFAULT_VERSION,
     EMPTY,
-    EMPTY_BYTES,
     UNNAMED,
 )
 from gd.date_time import Duration
@@ -314,7 +314,7 @@ class Session:
         recording: Optional[Recording] = None,
         editor_time: Optional[timedelta] = None,
         copies_time: Optional[timedelta] = None,
-        data: bytes = EMPTY_BYTES,
+        data: bytes = DEFAULT_DATA,
         *,
         account_id: int,
         account_name: str,

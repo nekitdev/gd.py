@@ -56,7 +56,10 @@ __all__ = (
     "PortalType",
     "SpeedChangeType",
     "CoinType",
+    "PickupItemType",
+    "RotatingObjectType",
     "PulseTargetType",
+    "PulsatingObjectType",
     "PulseType",
     "SpecialBlockType",
     "SpecialColorID",
@@ -877,6 +880,8 @@ class MiscType(Enum):
     """An enumeration of IDs of miscellaneous objects."""
 
     TEXT = 914
+    ITEM_COUNTER = 1615
+    COLLISION_BLOCK = 1816
 
     @property
     def id(self) -> int:
@@ -989,6 +994,129 @@ class CoinType(Enum):
         return self.value  # type: ignore
 
 
+class PickupItemType(Enum):
+    KEY = 1275
+    HEART = 1587
+    BOTTLE = 1589
+    SKULL = 1598
+    COIN = 1614
+
+    @property
+    def id(self) -> int:
+        return self.value  # type: ignore
+
+
+class RotatingObjectType(Enum):
+    ID_85 = 85
+    ID_86 = 86
+    ID_87 = 87
+    ID_97 = 97
+
+    ID_137 = 137
+    ID_138 = 138
+    ID_139 = 139
+
+    ID_154 = 154
+    ID_155 = 155
+    ID_156 = 156
+
+    ID_180 = 180
+    ID_181 = 181
+    ID_182 = 182
+
+    ID_183 = 183
+    ID_184 = 184
+    ID_185 = 185
+
+    ID_186 = 186
+    ID_187 = 187
+    ID_188 = 188
+
+    ID_222 = 222
+    ID_223 = 223
+    ID_224 = 224
+
+    ID_375 = 375
+    ID_376 = 376
+    ID_377 = 377
+    ID_378 = 378
+
+    ID_394 = 394
+    ID_395 = 395
+    ID_396 = 396
+
+    ID_678 = 678
+    ID_679 = 679
+    ID_680 = 680
+
+    ID_740 = 740
+    ID_741 = 741
+    ID_742 = 742
+
+    ID_997 = 997
+    ID_998 = 998
+    ID_999 = 999
+    ID_1000 = 1000
+
+    ID_1019 = 1019
+    ID_1020 = 1020
+    ID_1021 = 1021
+
+    ID_1055 = 1055
+    ID_1056 = 1056
+    ID_1057 = 1057
+
+    ID_1058 = 1058
+    ID_1059 = 1059
+    ID_1060 = 1060
+    ID_1061 = 1061
+
+    ID_1521 = 1521
+    ID_1522 = 1522
+    ID_1523 = 1523
+    ID_1524 = 1524
+
+    ID_1525 = 1525
+    ID_1526 = 1526
+    ID_1527 = 1527
+    ID_1528 = 1528
+
+    ID_1582 = 1582
+
+    ID_1619 = 1619
+    ID_1620 = 1620
+
+    ID_1705 = 1705
+    ID_1706 = 1706
+    ID_1707 = 1707
+
+    ID_1708 = 1708
+    ID_1709 = 1709
+    ID_1710 = 1710
+
+    ID_1734 = 1734
+    ID_1735 = 1735
+    ID_1736 = 1736
+
+    ID_1752 = 1752
+
+    ID_1831 = 1831
+    ID_1832 = 1832
+
+    ID_1833 = 1833
+    ID_1834 = 1834
+
+    @property
+    def id(self) -> int:
+        return self.value  # type: ignore
+
+
+class AnimatedObjectType(Enum):
+    @property
+    def id(self) -> int:
+        return self.value  # type: ignore
+
+
 class PulseTargetType(Enum):
     """An enumeration of pulse target types."""
 
@@ -1002,6 +1130,17 @@ class PulseTargetType(Enum):
 
     def is_group(self) -> bool:
         return self is type(self).GROUP
+
+
+class PulsatingObjectType(Enum):
+    OUTER_LARGE = 1839
+    OUTER_SMALL = 1840
+    INNER_LARGE = 1841
+    INNER_SMALL = 1842
+
+    @property
+    def id(self) -> int:
+        return self.value  # type: ignore
 
 
 class PulseType(Flag):

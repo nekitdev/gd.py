@@ -21,11 +21,14 @@ from gd.enums import (
     MiscType,
     OrbType,
     PickupItemMode,
+    PickupItemType,
     PlayerColor,
     PortalType,
+    PulsatingObjectType,
     PulseMode,
     PulseTargetType,
     PulseType,
+    RotatingObjectType,
     SimpleTargetType,
     SimpleZLayer,
     SpeedChangeType,
@@ -51,7 +54,8 @@ from gd.robtop import RobTop
 __all__ = (
     "Groups",
     "Object",
-    "AnimatedObject",
+    "PulsatingObject",
+    "RotatingObject",
     "Orb",
     "TriggerOrb",
     "ItemCounter",
@@ -96,20 +100,16 @@ HIGH_DETAIL_BIT = 0b00100000
 DISABLE_GLOW_BIT = 0b01000000
 SPECIAL_CHECKED_BIT = 0b10000000
 
-Z_ORDER_MASK = 0b00011111_11111111
-
-Z_LAYER_SHIFT = Z_ORDER_MASK.bit_length()
-
 
 class ObjectFlag(Flag):
     SIMPLE = 0
 
-    HAS_ROTATION_AND_SCALE = 1
-    HAS_EDITOR_LAYER = 2
-    HAS_COLORS = 4
-    HAS_GROUPS = 8
-    HAS_LINK = 16
-    HAS_Z = 32
+    HAS_ROTATION_AND_SCALE = 1 << 0
+    HAS_EDITOR_LAYER = 1 << 1
+    HAS_COLORS = 1 << 2
+    HAS_GROUPS = 1 << 3
+    HAS_LINK = 1 << 4
+    HAS_Z = 1 << 5
 
     def has_rotation_and_scale(self) -> bool:
         return type(self).HAS_ROTATION_AND_SCALE in self
@@ -147,9 +147,6 @@ DEFAULT_Z_ORDER = 0
 
 DEFAULT_BASE_EDITOR_LAYER = 0
 DEFAULT_ADDITIONAL_EDITOR_LAYER = 0
-
-DEFAULT_BASE_COLOR_ID = 0
-DEFAULT_DETAIL_COLOR_ID = 0
 
 DEFAULT_GROUP_PARENT = False
 
@@ -189,12 +186,14 @@ Z_LAYER = 24
 Z_ORDER = 25
 BASE_EDITOR_LAYER = 20
 ADDITIONAL_EDITOR_LAYER = 61
+LEGACY_COLOR_ID = 19
 BASE_COLOR_ID = 21
 DETAIL_COLOR_ID = 22
 BASE_COLOR_HSV_MODIFIED = 41
 DETAIL_COLOR_HSV_MODIFIED = 42
 BASE_COLOR_HSV = 43
 DETAIL_COLOR_HSV = 44
+SINGLE_GROUP_ID = 33
 GROUPS = 57
 GROUP_PARENT = 34
 HIGH_DETAIL = 103
@@ -229,8 +228,8 @@ class Object(Model, Binary):
     base_editor_layer: int = field(default=DEFAULT_BASE_EDITOR_LAYER)
     additional_editor_layer: int = field(default=DEFAULT_ADDITIONAL_EDITOR_LAYER)
 
-    base_color_id: int = field(default=DEFAULT_BASE_COLOR_ID)
-    detail_color_id: int = field(default=DEFAULT_DETAIL_COLOR_ID)
+    base_color_id: int = field(default=DEFAULT_ID)
+    detail_color_id: int = field(default=DEFAULT_ID)
 
     base_color_hsv: HSV = field(factory=HSV)
     detail_color_hsv: HSV = field(factory=HSV)
@@ -294,24 +293,23 @@ class Object(Model, Binary):
             scale = DEFAULT_SCALE
 
         if flag.has_z():
-            z_layer_order = reader.read_u16(order)
+            z_layer_value = reader.read_u8(order)
 
-            z_layer_value = z_layer_order >> Z_LAYER_SHIFT
-            z_order = z_layer_order & Z_ORDER_MASK
+            z_order = reader.read_i16(order)
 
             z_layer = ZLayer(z_layer_value)
 
         else:
             z_layer = ZLayer.DEFAULT
-            z_order = 0
+            z_order = DEFAULT_Z_ORDER
 
         if flag.has_editor_layer():
             base_editor_layer = reader.read_u16(order)
             additional_editor_layer = reader.read_u16(order)
 
         else:
-            base_editor_layer = 0
-            additional_editor_layer = 0
+            base_editor_layer = DEFAULT_BASE_EDITOR_LAYER
+            additional_editor_layer = DEFAULT_ADDITIONAL_EDITOR_LAYER
 
         if flag.has_colors():
             base_color_id = reader.read_u16(order)
@@ -321,8 +319,8 @@ class Object(Model, Binary):
             detail_color_hsv = HSV.from_binary(binary, order, version)
 
         else:
-            base_color_id = 0
-            detail_color_id = 0
+            base_color_id = DEFAULT_ID
+            detail_color_id = DEFAULT_ID
 
             base_color_hsv = HSV()
             detail_color_hsv = HSV()
@@ -341,7 +339,7 @@ class Object(Model, Binary):
             link_id = reader.read_u16(order)
 
         else:
-            link_id = 0
+            link_id = DEFAULT_ID
 
         return cls(
             id=id,
@@ -458,10 +456,9 @@ class Object(Model, Binary):
             writer.write_f32(self.scale, order)
 
         if flag.has_z():
-            z_layer_order = z_order & Z_ORDER_MASK
-            z_layer_order |= z_layer.value << Z_LAYER_SHIFT
+            writer.write_u8(self.z_layer.value, order)
 
-            writer.write_u16(z_layer_order, order)
+            writer.write_i16(self.z_order, order)
 
         if flag.has_editor_layer():
             writer.write_u16(base_editor_layer, order)
@@ -521,13 +518,25 @@ class Object(Model, Binary):
             int, DEFAULT_ADDITIONAL_EDITOR_LAYER, mapping.get(ADDITIONAL_EDITOR_LAYER)
         )
 
-        base_color_id = parse_get_or(int, DEFAULT_BASE_COLOR_ID, mapping.get(BASE_COLOR_ID))
-        detail_color_id = parse_get_or(int, DEFAULT_DETAIL_COLOR_ID, mapping.get(DETAIL_COLOR_ID))
+        legacy_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEGACY_COLOR_ID))
+
+        if legacy_color_id:
+            base_color_id = legacy_color_id
+            detail_color_id = legacy_color_id
+
+        else:
+            base_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(BASE_COLOR_ID))
+            detail_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(DETAIL_COLOR_ID))
 
         base_color_hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(BASE_COLOR_HSV))
         detail_color_hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(DETAIL_COLOR_HSV))
 
+        single_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(SINGLE_GROUP_ID))
+
         groups = parse_get_or(Groups.from_robtop, Groups(), mapping.get(GROUPS))
+
+        if single_group_id:
+            groups.append(single_group_id)
 
         group_parent = parse_get_or(int_bool, DEFAULT_GROUP_PARENT, mapping.get(GROUP_PARENT))
         high_detail = parse_get_or(int_bool, DEFAULT_HIGH_DETAIL, mapping.get(HIGH_DETAIL))
@@ -632,13 +641,19 @@ class Object(Model, Binary):
 
         base_color_hsv = self.base_color_hsv
 
-        if not base_color_hsv.is_default():
+        base_color_hsv_modified = not base_color_hsv.is_default()
+
+        if base_color_hsv_modified:
             mapping[BASE_COLOR_HSV] = base_color_hsv.to_robtop()
+            mapping[BASE_COLOR_HSV_MODIFIED] = str(int(base_color_hsv_modified))
 
         detail_color_hsv = self.detail_color_hsv
 
-        if not detail_color_hsv.is_default():
+        detail_color_hsv_modified = not detail_color_hsv.is_default()
+
+        if detail_color_hsv_modified:
             mapping[DETAIL_COLOR_HSV] = detail_color_hsv.to_robtop()
+            mapping[DETAIL_COLOR_HSV_MODIFIED] = str(int(detail_color_hsv_modified))
 
         groups = self.groups
 
@@ -831,6 +846,102 @@ class SecretCoin(Object):
         return mapping
 
 
+ROTATION_SPEED = 97
+DISABLE_ROTATION = 98
+
+
+DISABLE_ROTATION_BIT = 0b00000001
+
+
+DEFAULT_ROTATION_SPEED = 0.0
+DEFAULT_DISABLE_ROTATION = False
+
+
+RO = TypeVar("RO", bound="RotatingObject")
+
+
+@define()
+class RotatingObject(Object):
+    rotation_speed: float = DEFAULT_ROTATION_SPEED
+    disable_rotation: bool = DEFAULT_DISABLE_ROTATION
+
+    @classmethod
+    def from_binary(
+        cls: Type[RO],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> RO:
+        rotating_object = super().from_binary(binary, order, version)
+
+        disable_rotation_bit = DISABLE_ROTATION_BIT
+
+        reader = Reader(binary)
+
+        rotation_speed = reader.read_f32(order)
+
+        value = reader.read_u8(order)
+
+        disable_rotation = value & disable_rotation_bit == disable_rotation_bit
+
+        rotating_object.rotation_speed = rotation_speed
+        rotating_object.disable_rotation = disable_rotation
+
+        return rotating_object
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> None:
+        super().to_binary(binary, order, version)
+
+        writer = Writer(binary)
+
+        writer.write_f32(self.rotation_speed, order)
+
+        value = 0
+
+        if self.is_disable_rotation():
+            value |= DISABLE_ROTATION_BIT
+
+        writer.write_u8(value, order)
+
+    def is_disable_rotation(self) -> bool:
+        return self.disable_rotation
+
+    @classmethod
+    def from_robtop_mapping(cls: Type[RO], mapping: Mapping[int, str]) -> RO:
+        rotating_object = super().from_robtop_mapping(mapping)
+
+        rotation_speed = parse_get_or(float, DEFAULT_ROTATION_SPEED, mapping.get(ROTATION_SPEED))
+
+        disable_rotation = parse_get_or(
+            bool, DEFAULT_DISABLE_ROTATION, mapping.get(DISABLE_ROTATION)
+        )
+
+        rotating_object.rotation_speed = rotation_speed
+        rotating_object.disable_rotation = disable_rotation
+
+        return rotating_object
+
+    def to_robtop_mapping(self) -> Dict[int, str]:
+        mapping = super().to_robtop_mapping()
+
+        rotation_speed = self.rotation_speed
+
+        if self.rotation_speed:
+            mapping[ROTATION_SPEED] = float_str(rotation_speed)
+
+        disable_rotation = self.is_disable_rotation()
+
+        if disable_rotation:
+            mapping[DISABLE_ROTATION] = str(int(disable_rotation))
+
+        return mapping
+
+
 CONTENT = 31
 
 
@@ -994,24 +1105,24 @@ RANDOMIZE_START_BIT = 0b00000001
 RANDOMIZE_START = 106
 ANIMATION_SPEED = 107
 
-AO = TypeVar("AO", bound="AnimatedObject")
+PO = TypeVar("PO", bound="PulsatingObject")
 
 
 @define()
-class AnimatedObject(Object):
+class PulsatingObject(Object):
     randomize_start: bool = DEFAULT_RANDOMIZE_START
     animation_speed: float = DEFAULT_ANIMATION_SPEED
 
     @classmethod
     def from_binary(
-        cls: Type[AO],
+        cls: Type[PO],
         binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-    ) -> AO:
+    ) -> PO:
         randomize_start_bit = RANDOMIZE_START_BIT
 
-        animated_object = super().from_binary(binary, order, version)
+        pulsating_object = super().from_binary(binary, order, version)
 
         reader = Reader(binary)
 
@@ -1021,11 +1132,11 @@ class AnimatedObject(Object):
 
         randomize_start = value & randomize_start_bit == randomize_start_bit
 
-        animated_object.randomize_start = randomize_start
+        pulsating_object.randomize_start = randomize_start
 
-        animated_object.animation_speed = animation_speed
+        pulsating_object.animation_speed = animation_speed
 
-        return animated_object
+        return pulsating_object
 
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
@@ -1044,8 +1155,8 @@ class AnimatedObject(Object):
         writer.write_u8(value, order)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[AO], mapping: Mapping[int, str]) -> AO:
-        animated_object = cls.from_robtop_mapping(mapping)
+    def from_robtop_mapping(cls: Type[PO], mapping: Mapping[int, str]) -> PO:
+        pulsating_object = super().from_robtop_mapping(mapping)
 
         randomize_start = parse_get_or(
             int_bool, DEFAULT_RANDOMIZE_START, mapping.get(RANDOMIZE_START)
@@ -1053,10 +1164,10 @@ class AnimatedObject(Object):
 
         animation_speed = parse_get_or(float, DEFAULT_ANIMATION_SPEED, mapping.get(ANIMATION_SPEED))
 
-        animated_object.randomize_start = randomize_start
-        animated_object.animation_speed = animation_speed
+        pulsating_object.randomize_start = randomize_start
+        pulsating_object.animation_speed = animation_speed
 
-        return animated_object
+        return pulsating_object
 
     def to_robtop_mapping(self) -> Dict[int, str]:
         mapping = super().to_robtop_mapping()
@@ -1870,9 +1981,9 @@ class ColorTrigger(HasTargetColor, HasColor, HasDuration, HasOpacity, Trigger): 
                 player_color = PlayerColor.NOT_USED
 
         red, green, blue = (
-            parse_get_or(int_bool, DEFAULT_RED, mapping.get(RED)),
-            parse_get_or(int_bool, DEFAULT_GREEN, mapping.get(GREEN)),
-            parse_get_or(int_bool, DEFAULT_BLUE, mapping.get(BLUE)),
+            parse_get_or(int, DEFAULT_RED, mapping.get(RED)),
+            parse_get_or(int, DEFAULT_GREEN, mapping.get(GREEN)),
+            parse_get_or(int, DEFAULT_BLUE, mapping.get(BLUE)),
         )
 
         color = Color.from_rgb(red, green, blue)
@@ -2185,7 +2296,7 @@ class PulseTrigger(HasTargetColor, HasTargetGroup, HasColor, Trigger):  # type: 
         hold = parse_get_or(float, DEFAULT_HOLD, mapping.get(HOLD))
         fade_out = parse_get_or(float, DEFAULT_FADE_OUT, mapping.get(FADE_OUT))
 
-        exclusive = parse_get_or(bool, DEFAULT_EXCLUSIVE, mapping.get(EXCLUSIVE))
+        exclusive = parse_get_or(int_bool, DEFAULT_EXCLUSIVE, mapping.get(EXCLUSIVE))
 
         target_type = parse_get_or(
             partial_parse_enum(int, PulseTargetType),
@@ -2194,7 +2305,7 @@ class PulseTrigger(HasTargetColor, HasTargetGroup, HasColor, Trigger):  # type: 
         )
 
         if target_type.is_color_channel():
-            target_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_COLOR_ID))
+            target_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))  # why
             target_group_id = DEFAULT_ID
 
         else:
@@ -2223,8 +2334,8 @@ class PulseTrigger(HasTargetColor, HasTargetGroup, HasColor, Trigger):  # type: 
             color_id = parse_get_or(int, DEFAULT_ID, mapping.get(COPIED_COLOR_ID))
             hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(COPIED_COLOR_HSV))
 
-        main_only = parse_get_or(bool, DEFAULT_MAIN_ONLY, mapping.get(MAIN_ONLY))
-        detail_only = parse_get_or(bool, DEFAULT_DETAIL_ONLY, mapping.get(DETAIL_ONLY))
+        main_only = parse_get_or(int_bool, DEFAULT_MAIN_ONLY, mapping.get(MAIN_ONLY))
+        detail_only = parse_get_or(int_bool, DEFAULT_DETAIL_ONLY, mapping.get(DETAIL_ONLY))
 
         if main_only ^ detail_only:
             if main_only:
@@ -2281,7 +2392,7 @@ class PulseTrigger(HasTargetColor, HasTargetGroup, HasColor, Trigger):  # type: 
         target_type = self.target_type
 
         if target_type.is_color_channel():
-            mapping[TARGET_COLOR_ID] = str(self.target_color_id)
+            mapping[TARGET_GROUP_ID] = str(self.target_color_id)  # why
 
         else:
             mapping[TARGET_GROUP_ID] = str(self.target_group_id)
@@ -2319,6 +2430,8 @@ class PulseTrigger(HasTargetColor, HasTargetGroup, HasColor, Trigger):  # type: 
 
 X_OFFSET = 28
 Y_OFFSET = 29
+LOCKED_TO_PLAYER_X = 58
+LOCKED_TO_PLAYER_Y = 59
 USE_TARGET = 100
 TARGET_TYPE = 101
 
@@ -2480,7 +2593,7 @@ class MoveTrigger(HasAdditionalGroup, HasTargetGroup, HasEasing, HasDuration, Tr
     def from_robtop_mapping(cls: Type[MT], mapping: Mapping[int, str]) -> MT:
         move_trigger = super().from_robtop_mapping(mapping)
 
-        duration = parse_get_or(int, DEFAULT_DURATION, mapping.get(DURATION))
+        duration = parse_get_or(float, DEFAULT_DURATION, mapping.get(DURATION))
 
         easing = parse_get_or(partial_parse_enum(int, Easing), Easing.DEFAULT, mapping.get(EASING))
         easing_rate = parse_get_or(float, DEFAULT_EASING_RATE, mapping.get(EASING_RATE))
@@ -2496,12 +2609,22 @@ class MoveTrigger(HasAdditionalGroup, HasTargetGroup, HasEasing, HasDuration, Tr
             target_type = SimpleTargetType(int(target_type_option)).into_target_type()
 
         if target_type.is_none():
+            locked_to_player_x = parse_get_or(
+                int_bool, DEFAULT_LOCKED_TO_PLAYER_X, mapping.get(LOCKED_TO_PLAYER_X)
+            )
+            locked_to_player_y = parse_get_or(
+                int_bool, DEFAULT_LOCKED_TO_PLAYER_Y, mapping.get(LOCKED_TO_PLAYER_Y)
+            )
+
             x_offset = parse_get_or(float, DEFAULT_X_OFFSET, mapping.get(X_OFFSET))
             y_offset = parse_get_or(float, DEFAULT_Y_OFFSET, mapping.get(Y_OFFSET))
 
             additional_group_id = DEFAULT_ID
 
         else:
+            locked_to_player_x = DEFAULT_LOCKED_TO_PLAYER_X
+            locked_to_player_y = DEFAULT_LOCKED_TO_PLAYER_Y
+
             x_offset = DEFAULT_X_OFFSET
             y_offset = DEFAULT_Y_OFFSET
 
@@ -2515,6 +2638,9 @@ class MoveTrigger(HasAdditionalGroup, HasTargetGroup, HasEasing, HasDuration, Tr
         move_trigger.target_group_id = target_group_id
 
         move_trigger.target_type = target_type
+
+        move_trigger.locked_to_player_x = locked_to_player_x
+        move_trigger.locked_to_player_y = locked_to_player_y
 
         move_trigger.x_offset = x_offset
         move_trigger.y_offset = y_offset
@@ -2537,6 +2663,9 @@ class MoveTrigger(HasAdditionalGroup, HasTargetGroup, HasEasing, HasDuration, Tr
         target_type = self.target_type
 
         if target_type.is_none():
+            mapping[LOCKED_TO_PLAYER_X] = str(int(self.is_locked_to_player_x()))
+            mapping[LOCKED_TO_PLAYER_Y] = str(int(self.is_locked_to_player_y()))
+
             mapping[X_OFFSET] = float_str(self.x_offset)
             mapping[Y_OFFSET] = float_str(self.y_offset)
 
@@ -2621,7 +2750,7 @@ class SpawnTrigger(HasDelay, HasTargetGroup, Trigger):  # type: ignore
 
         delay = parse_get_or(float, DEFAULT_DELAY, mapping.get(SPAWN_DELAY))
 
-        editor_disable = parse_get_or(bool, DEFAULT_EDITOR_DISABLE, mapping.get(EDITOR_DISABLE))
+        editor_disable = parse_get_or(int_bool, DEFAULT_EDITOR_DISABLE, mapping.get(EDITOR_DISABLE))
 
         spawn_trigger.target_group_id = target_group_id
 
@@ -2758,7 +2887,7 @@ class ToggleTrigger(HasActivateGroup, HasTargetGroup, Trigger):  # type: ignore
 
         target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
 
-        activate_group = parse_get_or(bool, DEFAULT_ACTIVATE_GROUP, mapping.get(ACTIVATE_GROUP))
+        activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, mapping.get(ACTIVATE_GROUP))
 
         toggle_trigger.target_group_id = target_group_id
 
@@ -2911,7 +3040,7 @@ class RotateTrigger(  # type: ignore
 
         target_rotation = rotations * FULL_ROTATION + degrees
 
-        rotation_locked = parse_get_or(bool, DEFAULT_ROTATION_LOCKED, mapping.get(ROTATION_LOCKED))
+        rotation_locked = parse_get_or(int_bool, DEFAULT_ROTATION_LOCKED, mapping.get(ROTATION_LOCKED))
 
         rotate_trigger.duration = duration
 
@@ -3896,38 +4025,40 @@ def has_additional_group(object: Object) -> TypeGuard[HasAdditionalGroup]:
 
 class ObjectType(Enum):
     OBJECT = 1
-    ANIMATED_OBJECT = 2
-    ORB = 3
-    TRIGGER_ORB = 4
-    SECRET_COIN = 5
-    TEXT = 6
-    TELEPORT = 7
-    ITEM_COUNTER = 8
-    PICKUP_ITEM = 9
-    COLLISION_BLOCK = 10
-    COLOR_TRIGGER = 11
-    PULSE_TRIGGER = 12
-    ALPHA_TRIGGER = 13
-    MOVE_TRIGGER = 14
-    SPAWN_TRIGGER = 15
-    STOP_TRIGGER = 16
-    TOGGLE_TRIGGER = 17
-    ROTATE_TRIGGER = 18
-    FOLLOW_TRIGGER = 19
-    SHAKE_TRIGGER = 20
-    ANIMATE_TRIGGER = 21
-    TOUCH_TRIGGER = 22
-    COUNT_TRIGGER = 23
-    INSTANT_COUNT_TRIGGER = 24
-    PICKUP_TRIGGER = 25
-    FOLLOW_PLAYER_Y_TRIGGER = 26
-    ON_DEATH_TRIGGER = 27
-    COLLISION_TRIGGER = 28
+    PULSATING_OBJECT = 2
+    ROTATING_OBJECT = 3
+    ORB = 4
+    TRIGGER_ORB = 5
+    SECRET_COIN = 6
+    TEXT = 7
+    TELEPORT = 8
+    ITEM_COUNTER = 9
+    PICKUP_ITEM = 10
+    COLLISION_BLOCK = 11
+    COLOR_TRIGGER = 12
+    PULSE_TRIGGER = 13
+    ALPHA_TRIGGER = 14
+    MOVE_TRIGGER = 15
+    SPAWN_TRIGGER = 16
+    STOP_TRIGGER = 17
+    TOGGLE_TRIGGER = 18
+    ROTATE_TRIGGER = 19
+    FOLLOW_TRIGGER = 20
+    SHAKE_TRIGGER = 21
+    ANIMATE_TRIGGER = 22
+    TOUCH_TRIGGER = 23
+    COUNT_TRIGGER = 24
+    INSTANT_COUNT_TRIGGER = 25
+    PICKUP_TRIGGER = 26
+    FOLLOW_PLAYER_Y_TRIGGER = 27
+    ON_DEATH_TRIGGER = 28
+    COLLISION_TRIGGER = 29
 
 
 OBJECT_TYPE_TO_TYPE: Dict[ObjectType, Type[Object]] = {
     ObjectType.OBJECT: Object,
-    ObjectType.ANIMATED_OBJECT: AnimatedObject,
+    ObjectType.PULSATING_OBJECT: PulsatingObject,
+    ObjectType.ROTATING_OBJECT: RotatingObject,
     ObjectType.ORB: Orb,
     ObjectType.TRIGGER_ORB: TriggerOrb,
     ObjectType.SECRET_COIN: SecretCoin,
@@ -4006,19 +4137,41 @@ def object_to_bytes(
 OBJECT_ID_NOT_PRESENT = "object id is not present"
 
 
-OBJECT_ID_TO_TYPE: Dict[int, Type[Object]] = {  # TODO: extend this
+OBJECT_ID_TO_TYPE: Dict[int, Type[Object]] = {
     MiscType.TEXT.id: Text,
     CoinType.SECRET.id: SecretCoin,
     PortalType.BLUE_TELEPORT.id: Teleport,
     OrbType.TRIGGER.id: TriggerOrb,
-    # TODO: add more
+    MiscType.ITEM_COUNTER.id: ItemCounter,
+    MiscType.COLLISION_BLOCK.id: CollisionBlock,
     TriggerType.COLOR.id: ColorTrigger,
     TriggerType.ALPHA.id: AlphaTrigger,
     TriggerType.PULSE.id: PulseTrigger,
     TriggerType.MOVE.id: MoveTrigger,
+    TriggerType.SPAWN.id: SpawnTrigger,
+    TriggerType.STOP.id: StopTrigger,
+    TriggerType.TOGGLE.id: ToggleTrigger,
+    TriggerType.ROTATE.id: RotateTrigger,
+    TriggerType.FOLLOW.id: FollowTrigger,
+    TriggerType.SHAKE.id: ShakeTrigger,
+    TriggerType.ANIMATE.id: AnimateTrigger,
+    TriggerType.TOUCH.id: TouchTrigger,
+    TriggerType.COUNT.id: CountTrigger,
+    TriggerType.INSTANT_COUNT.id: InstantCountTrigger,
+    TriggerType.PICKUP.id: PickupTrigger,
+    TriggerType.FOLLOW_PLAYER_Y.id: FollowPlayerYTrigger,
+    TriggerType.ON_DEATH.id: OnDeathTrigger,
+    TriggerType.COLLISION.id: CollisionTrigger,
 }
 
 OBJECT_ID_TO_TYPE.update({orb.id: Orb for orb in OrbType if not orb.is_trigger()})
+OBJECT_ID_TO_TYPE.update({pickup_item.id: PickupItem for pickup_item in PickupItemType})
+OBJECT_ID_TO_TYPE.update(
+    {rotating_object.id: RotatingObject for rotating_object in RotatingObjectType}
+)
+OBJECT_ID_TO_TYPE.update(
+    {pulsating_object.id: PulsatingObject for pulsating_object in PulsatingObjectType}
+)
 
 
 def object_from_robtop(string: str) -> Object:

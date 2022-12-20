@@ -7,7 +7,6 @@ from gd.api.hsv import HSV
 from gd.api.level import LevelAPI
 from gd.api.objects import (
     AlphaTrigger,
-    AnimatedObject,
     AnimateTrigger,
     CollisionBlock,
     CollisionTrigger,
@@ -23,8 +22,10 @@ from gd.api.objects import (
     Orb,
     PickupItem,
     PickupTrigger,
+    PulsatingObject,
     PulseTrigger,
     RotateTrigger,
+    RotatingObject,
     SecretCoin,
     ShakeTrigger,
     SpawnTrigger,
@@ -62,7 +63,6 @@ __all__ = (
     # objects
     "Object",
     "AlphaTrigger",
-    "AnimatedObject",
     "AnimateTrigger",
     "CollisionBlock",
     "CollisionTrigger",
@@ -77,8 +77,10 @@ __all__ = (
     "Orb",
     "PickupItem",
     "PickupTrigger",
+    "PulsatingObject",
     "PulseTrigger",
     "RotateTrigger",
+    "RotatingObject",
     "SecretCoin",
     "ShakeTrigger",
     "SpawnTrigger",

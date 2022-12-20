@@ -283,3 +283,6 @@ class Editor(RobTop, Binary, Sequence[Object]):
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return OBJECTS_SEPARATOR in string
+
+
+DEFAULT_DATA = Editor().to_bytes()

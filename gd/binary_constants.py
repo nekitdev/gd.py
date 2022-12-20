@@ -1,7 +1,5 @@
 from struct import calcsize as size
 
-from gd.enums import ByteOrder
-
 __all__ = (
     # int sizes
     "I8_SIZE",
