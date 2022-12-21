@@ -1,6 +1,8 @@
+from collections import UserList as ListType
+from functools import partial
 from typing import List, Type, TypeVar
 
-from attrs import define, field
+from iters import iter
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
@@ -14,10 +16,7 @@ __all__ = ("Progress",)
 P = TypeVar("P", bound="Progress")
 
 
-@define()
-class Progress(Binary, Model):
-    array: List[int] = field(factory=list)
-
+class Progress(Binary, Model, ListType, List[int]):  # type: ignore
     @classmethod
     def from_binary(
         cls: Type[P],
@@ -29,30 +28,26 @@ class Progress(Binary, Model):
 
         length = reader.read_u8(order)
 
-        array = [reader.read_i8(order) for _ in range(length)]
+        read_i8 = partial(reader.read_i8, order)
 
-        return cls(array)
+        return iter.repeat_exactly_with(read_i8, length).collect(cls)
 
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
         writer = Writer(binary)
 
-        array = self.array
+        writer.write_u8(len(self), order)
 
-        writer.write_u8(len(array), order)
-
-        for item in array:
-            writer.write_i8(item, order)
+        for part in self:
+            writer.write_i8(part, order)
 
     @classmethod
     def from_robtop(cls: Type[P], string: str) -> P:
-        array = list(map(int, split_progress(string)))
-
-        return cls(array)
+        return iter(split_progress(string)).map(int).collect(cls)
 
     def to_robtop(self) -> str:
-        return concat_progress(map(str, self.array))
+        return iter(self).map(str).collect(concat_progress)
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:

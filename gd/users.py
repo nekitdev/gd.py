@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, AsyncIterator, Dict, Iterable, Optional, Type,
 from attrs import define, field
 from cattrs.gen import make_dict_unstructure_fn, override
 from iters.async_iters import wrap_async_iter
+from iters import async_iter, iter
 from typing_extensions import TypedDict
 
 from gd.async_utils import gather_iterable
@@ -421,12 +422,15 @@ class User(Entity):
     def generate_many(
         self, *types: Optional[IconType], orientation: Orientation = Orientation.DEFAULT
     ) -> Image:
-        return connect_images(map(self.generate, types), orientation)
+        return connect_images(iter(types).map(self.generate).unwrap(), orientation)
 
     async def generate_many_async(
         self, *types: Optional[IconType], orientation: Orientation = Orientation.DEFAULT
     ) -> Image:
-        return connect_images(await gather_iterable(map(self.generate_async, types)), orientation)
+        return connect_images(
+            await async_iter(iter(types).map(self.generate_async).unwrap()).wait_concurrent().list(),
+            orientation,
+        )
 
     def generate_full(self, orientation: Orientation = Orientation.DEFAULT) -> Image:
         return self.generate_many(*IconType, orientation=orientation)

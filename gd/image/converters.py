@@ -1,25 +1,22 @@
 import json
 import re
+import plistlib as plist
 from collections import defaultdict as default_dict
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple, TypeVar
+from typing import Any, Dict, List, Optional, Tuple, TypeVar
 
-from gd.constants import EMPTY
-
-try:
-    import plistlib as plist
-
-except ImportError:
-    pass
+from iters import iter
 
 from gd.assets import DATA_SUFFIX
+from gd.constants import EMPTY
 from gd.image.animation import AnimationSheetData
 from gd.image.layer import LayerData
 from gd.image.sheet import SheetData
 from gd.image.sprite import SpriteData
 from gd.json import AnyCamelDict, CamelDict
+from gd.models_utils import int_bool
 from gd.string_constants import COMMA
-from gd.typing import IntoPath, Parse, StringDict, Unary
+from gd.typing import DynamicTuple, IntoPath, Parse, StringDict, Unary
 
 __all__ = (
     "convert_animation_sheet_data",
@@ -40,8 +37,8 @@ BRACES = "{}"
 remove_braces = str.maketrans(dict.fromkeys(BRACES, EMPTY))
 
 
-def parse_simple_array(string: str, parse: Parse[T], separator: str = COMMA) -> Iterator[T]:
-    return map(parse, string.translate(remove_braces).split(separator))
+def parse_tuples(string: str, parse: Parse[T], separator: str = COMMA) -> DynamicTuple[T]:
+    return iter(string.translate(remove_braces).split(separator)).map(parse).tuple()
 
 
 def convert_sprite_format_0(sprite_dict: AnyCamelDict) -> SpriteData:
@@ -56,15 +53,15 @@ def convert_sprite_format_0(sprite_dict: AnyCamelDict) -> SpriteData:
 
 
 def convert_sprite_format_1(sprite_dict: AnyCamelDict) -> SpriteData:
-    (x, y, width, height) = parse_simple_array(sprite_dict.frame, float)
-    (offset_x, offset_y) = parse_simple_array(sprite_dict.offset, float)
+    (x, y, width, height) = parse_tuples(sprite_dict.frame, float)
+    (offset_x, offset_y) = parse_tuples(sprite_dict.offset, float)
 
     return SpriteData(size=(width, height), offset=(offset_x, offset_y), location=(x, y))
 
 
 def convert_sprite_format_2(sprite_dict: AnyCamelDict) -> SpriteData:
-    (x, y, width, height) = parse_simple_array(sprite_dict.frame, float)
-    (offset_x, offset_y) = parse_simple_array(sprite_dict.offset, float)
+    (x, y, width, height) = parse_tuples(sprite_dict.frame, float)
+    (offset_x, offset_y) = parse_tuples(sprite_dict.offset, float)
 
     rotated = bool(sprite_dict.rotated)
 
@@ -74,8 +71,8 @@ def convert_sprite_format_2(sprite_dict: AnyCamelDict) -> SpriteData:
 
 
 def convert_sprite_format_3(sprite_dict: AnyCamelDict) -> SpriteData:
-    (offset_x, offset_y) = parse_simple_array(sprite_dict.sprite_offset, float)
-    (x, y, width, height) = parse_simple_array(sprite_dict.texture_rect, float)
+    (offset_x, offset_y) = parse_tuples(sprite_dict.sprite_offset, float)
+    (x, y, width, height) = parse_tuples(sprite_dict.texture_rect, float)
     rotated = bool(sprite_dict.texture_rotated)
 
     return SpriteData(
@@ -131,10 +128,10 @@ def convert_sheet_path(
 
 def convert_layer(layer_dict: AnyCamelDict) -> LayerData:
     part = get_layer_part(layer_dict.texture)
-    position_x, position_y = parse_simple_array(layer_dict.position, float)
-    scale_width, scale_height = parse_simple_array(layer_dict.scale, float)
+    position_x, position_y = parse_tuples(layer_dict.position, float)
+    scale_width, scale_height = parse_tuples(layer_dict.scale, float)
     rotation = float(layer_dict.rotation)
-    h_flipped, v_flipped = map(bool, parse_simple_array(layer_dict.flipped, int))
+    h_flipped, v_flipped = parse_tuples(layer_dict.flipped, int_bool)
 
     return LayerData(
         part=part,
@@ -158,7 +155,7 @@ def convert_animation_sheet_data(document: AnyCamelDict) -> AnimationSheetData:
 
         layer_dicts = sorted(frame_dict.values(), key=get_z)
 
-        frame_data = list(map(convert_layer, layer_dicts))
+        frame_data = iter(layer_dicts).map(convert_layer).list()
 
         data[name].insert(index, frame_data)
 

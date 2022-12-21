@@ -2,6 +2,7 @@ from typing import Iterator, List, Optional, Type, TypeVar
 from urllib.parse import quote, unquote
 
 from attrs import define, field
+from iters import iter
 from typing_extensions import Protocol
 from yarl import URL
 
@@ -340,9 +341,9 @@ class LoginModel(Model):
         return LOGIN_SEPARATOR in string
 
     def to_robtop(self) -> str:
-        values = (self.account_id, self.id)
+        values = (str(self.account_id), str(self.id))
 
-        return concat_login(map(str, values))
+        return concat_login(values)
 
 
 CRT = TypeVar("CRT", bound="CreatorModel")
@@ -1155,7 +1156,7 @@ class TimelyInfoModel(Model):
 
     @classmethod
     def from_robtop(cls: Type[TI], string: str, type: TimelyType = TimelyType.DEFAULT) -> TI:
-        timely_id, cooldown_seconds = map(int, split_timely_info(string))
+        timely_id, cooldown_seconds = iter(split_timely_info(string)).map(int).tuple()
 
         return cls(
             id=timely_id % TIMELY_ID_ADD, type=type, cooldown=Duration(seconds=cooldown_seconds)

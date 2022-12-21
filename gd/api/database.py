@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Any, Dict, Iterable, List, Optional, Type, TypeVar
+from typing import Dict, List, Type, TypeVar
 
 from attrs import define, field
 from iters import iter
@@ -14,48 +14,8 @@ from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, EMPTY
 from gd.enums import ByteOrder, Filter, IconType, LevelLeaderboardStrategy
 from gd.filters import Filters
 from gd.song import Song
-from gd.typing import Unary
 
 __all__ = ("Database",)
-
-A = TypeVar("A", bound=LevelAPI)
-
-Callback = Unary[Iterable[A], None]
-
-C = TypeVar("C", bound="AnyLevelCollection")
-
-CAN_NOT_DUMP_NOT_LOADED = "can not `dump` level collection that was created without `load`"
-
-
-class LevelCollection(OrderedSet[A]):
-    def __init__(self, levels: Iterable[A] = (), callback: Optional[Callback[A]] = None) -> None:
-        super().__init__(levels)
-
-        self.callback = callback
-
-    @classmethod
-    def load(cls: Type[C], iterable: Iterable[A], callback: Callback[A]) -> C:
-        self = cls(iterable)
-
-        self.callback = callback
-
-        return self
-
-    def dump(self) -> None:
-        callback = self.callback
-
-        if callback is None:
-            raise ValueError(CAN_NOT_DUMP_NOT_LOADED)
-
-        callback(self)
-
-
-def level_collection(iterable: Iterable[A] = ()) -> LevelCollection[A]:
-    return LevelCollection(iterable)
-
-
-AnyLevelCollection = LevelCollection[Any]
-
 
 OFFICIAL = "n"
 NORMAL = "c"
@@ -1615,8 +1575,8 @@ class Statistics(Binary):
         writer.write_u32(self.online_levels, order)
         writer.write_u16(self.demons, order)
         writer.write_u32(self.stars, order)
-        writer.write_u8(self.map_packs, order)
-        writer.write_u8(self.secret_coins, order)
+        writer.write_u16(self.map_packs, order)
+        writer.write_u16(self.secret_coins, order)
         writer.write_u32(self.destroyed, order)
         writer.write_u32(self.liked, order)
         writer.write_u32(self.rated, order)
@@ -1655,8 +1615,8 @@ class Statistics(Binary):
         online_levels = reader.read_u32(order)
         demons = reader.read_u16(order)
         stars = reader.read_u32(order)
-        map_packs = reader.read_u8(order)
-        secret_coins = reader.read_u8(order)
+        map_packs = reader.read_u16(order)
+        secret_coins = reader.read_u16(order)
         destroyed = reader.read_u32(order)
         liked = reader.read_u32(order)
         rated = reader.read_u32(order)
@@ -1771,23 +1731,23 @@ class Database(Binary):
 
     rated_game: bool = field(default=False)
 
-    official_levels: LevelCollection[LevelAPI] = field(factory=level_collection)
-    saved_levels: LevelCollection[LevelAPI] = field(factory=level_collection)
+    official_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
+    saved_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
     followed: OrderedSet[int] = field(factory=ordered_set)
     last_played: OrderedSet[int] = field(factory=ordered_set)
     filters: Filters = field(factory=Filters)
-    daily_levels: LevelCollection[LevelAPI] = field(factory=level_collection)
+    daily_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
     daily_id: int = field(default=0)
     weekly_id: int = field(default=0)
     liked: Dict[int, bool] = field(factory=dict)
     rated: Dict[int, int] = field(factory=dict)
     reported: OrderedSet[int] = field(factory=ordered_set)
     demon_rated: OrderedSet[int] = field(factory=ordered_set)
-    gauntlet_levels: LevelCollection[LevelAPI] = field(factory=level_collection)
+    gauntlet_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
     saved_folders: OrderedSet[Folder] = field(factory=ordered_set)
     created_folders: OrderedSet[Folder] = field(factory=ordered_set)
 
-    created_levels: LevelCollection[LevelAPI] = field(factory=level_collection)
+    created_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
 
     songs: OrderedSet[Song] = field(factory=ordered_set)
 
@@ -1873,47 +1833,54 @@ class Database(Binary):
 
         custom_objects_length = reader.read_u16(order)
 
-        custom_objects: List[List[Object]] = []
+        object_from_binary_function = partial(object_from_binary, binary, order, version)
 
-        for _ in range(custom_objects_length):
-            objects_length = reader.read_u32(order)
+        def custom_object_from_binary() -> List[Object]:
+            custom_object_length = reader.read_u32(order)
 
-            objects = [object_from_binary(binary, order, version) for _ in range(objects_length)]
+            return iter.repeat_exactly_with(
+                object_from_binary_function, custom_object_length
+            ).list()
 
-            custom_objects.append(objects)
+        custom_objects = iter.repeat_exactly_with(
+            custom_object_from_binary, custom_objects_length
+        ).list()
 
         statistics = Statistics.from_binary(binary, order, version)
 
         official_levels_length = reader.read_u8(order)
 
-        official_levels = LevelCollection(
-            LevelAPI.from_binary(binary, order, version, encoding, errors)
-            for _ in range(official_levels_length)
+        level_api_from_binary = partial(
+            LevelAPI.from_binary, binary, order, version, encoding, errors
         )
 
-        saved_levels_length = reader.read_u8(order)
+        official_levels = iter.repeat_exactly_with(
+            level_api_from_binary, official_levels_length
+        ).ordered_set()
 
-        saved_levels = LevelCollection(
-            LevelAPI.from_binary(binary, order, version, encoding, errors)
-            for _ in range(saved_levels_length)
-        )
+        saved_levels_length = reader.read_u32(order)
+
+        saved_levels = iter.repeat_exactly_with(
+            level_api_from_binary, saved_levels_length
+        ).ordered_set()
+
+        read_u32 = partial(reader.read_u32, order)
 
         followed_length = reader.read_u32(order)
 
-        followed = ordered_set(reader.read_u32(order) for _ in range(followed_length))
+        followed = iter.repeat_exactly_with(read_u32, followed_length).ordered_set()
 
         last_played_length = reader.read_u16(order)
 
-        last_played = ordered_set(reader.read_u32(order) for _ in range(last_played_length))
+        last_played = iter.repeat_exactly_with(read_u32, last_played_length).ordered_set()
 
         filters = Filters.from_binary(binary, order, version)
 
         daily_levels_length = reader.read_u32(order)
 
-        daily_levels = LevelCollection(
-            LevelAPI.from_binary(binary, order, version, encoding, errors)
-            for _ in range(daily_levels_length)
-        )
+        daily_levels = iter.repeat_exactly_with(
+            level_api_from_binary, daily_levels_length
+        ).ordered_set()
 
         daily_id = reader.read_u32(order)
         weekly_id = reader.read_u32(order)
@@ -1933,45 +1900,43 @@ class Database(Binary):
 
         reported_length = reader.read_u32(order)
 
-        reported = ordered_set(reader.read_u32(order) for _ in range(reported_length))
+        reported = iter.repeat_exactly_with(read_u32, reported_length).ordered_set()
 
         demon_rated_length = reader.read_u32(order)
 
-        demon_rated = ordered_set(reader.read_u32(order) for _ in range(demon_rated_length))
+        demon_rated = iter.repeat_exactly_with(read_u32, demon_rated_length).ordered_set()
 
         gauntlet_levels_length = reader.read_u16(order)
 
-        gauntlet_levels = LevelCollection(
-            LevelAPI.from_binary(binary, order, version, encoding, errors)
-            for _ in range(gauntlet_levels_length)
-        )
+        gauntlet_levels = iter.repeat_exactly_with(
+            level_api_from_binary, gauntlet_levels_length
+        ).ordered_set()
+
+        folder_from_binary = partial(Folder.from_binary, binary, order, version, encoding, errors)
 
         saved_folders_length = reader.read_u8(order)
 
-        saved_folders = ordered_set(
-            Folder.from_binary(binary, order, version, encoding, errors)
-            for _ in range(saved_folders_length)
-        )
+        saved_folders = iter.repeat_exactly_with(
+            folder_from_binary, saved_folders_length
+        ).ordered_set()
 
         created_folders_length = reader.read_u8(order)
 
-        created_folders = ordered_set(
-            Folder.from_binary(binary, order, version, encoding, errors)
-            for _ in range(created_folders_length)
-        )
+        created_folders = iter.repeat_exactly_with(
+            folder_from_binary, created_folders_length
+        ).ordered_set()
 
         created_levels_length = reader.read_u32(order)
 
-        created_levels = LevelCollection(
-            LevelAPI.from_binary(binary, order, version, encoding, errors)
-            for _ in range(created_levels_length)
-        )
+        created_levels = iter.repeat_exactly_with(
+            level_api_from_binary, created_levels_length
+        ).ordered_set()
+
+        song_from_binary = partial(Song.from_binary, binary, order, version, encoding, errors)
 
         songs_length = reader.read_u32(order)
 
-        songs = ordered_set(
-            Song.from_binary(binary, order, version, encoding, errors) for _ in range(songs_length)
-        )
+        songs = iter.repeat_exactly_with(song_from_binary, songs_length).ordered_set()
 
         return cls(
             volume=volume,

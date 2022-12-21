@@ -1,6 +1,8 @@
+from functools import partial
 from typing import Dict, Iterable, Type, TypeVar
 
 from attrs import define, field
+from iters import iter
 
 from gd.api.hsv import HSV
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
@@ -328,11 +330,9 @@ class ColorChannels(Binary, Dict[int, ColorChannel]):
         self[color_channel.id] = color_channel
 
     @classmethod
-    def from_robtop(
-        cls: Type[CCS], string: str, color_channel_type: Type[ColorChannel] = ColorChannel
-    ) -> CCS:
+    def from_robtop(cls: Type[CCS], string: str) -> CCS:
         return cls.from_color_channel_iterable(
-            map(color_channel_type.from_robtop, split_color_channels(string))
+            iter(split_color_channels(string)).map(ColorChannel.from_robtop).unwrap()
         )
 
     def to_robtop(self) -> str:
@@ -344,15 +344,14 @@ class ColorChannels(Binary, Dict[int, ColorChannel]):
         binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        color_channel_type: Type[ColorChannel] = ColorChannel,
     ) -> CCS:
         reader = Reader(binary)
 
         length = reader.read_u16(order)
 
-        color_channels = (
-            color_channel_type.from_binary(binary, order, version) for _ in range(length)
-        )
+        color_channel_from_binary = partial(ColorChannel.from_binary, binary, order, version)
+
+        color_channels = iter.repeat_exactly_with(color_channel_from_binary, length).unwrap()
 
         return cls.from_color_channel_iterable(color_channels)
 

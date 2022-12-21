@@ -4,6 +4,7 @@ from colorsys import hsv_to_rgb, rgb_to_hsv
 from typing import ClassVar, Dict, Iterator, List, Optional, Tuple, Type, TypeVar
 
 from attrs import Attribute, field, frozen
+from iters import iter
 
 from gd.binary_constants import BITS, BYTE, DOUBLE_BITS
 from gd.constants import DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID, EMPTY
@@ -194,7 +195,7 @@ class Color(JSON[int], RobTop):
         Returns:
             The `(h, s, v)` tuple.
         """
-        r, g, b = map(byte_to_float, self.to_rgb())
+        r, g, b = iter(self.to_rgb()).map(byte_to_float).tuple()
 
         return rgb_to_hsv(r, g, b)
 
@@ -283,13 +284,13 @@ class Color(JSON[int], RobTop):
         Returns:
             The converted [`Color`][gd.color.Color].
         """
-        r, g, b = map(float_to_byte, hsv_to_rgb(h, s, v))
+        r, g, b = iter(hsv_to_rgb(h, s, v)).map(float_to_byte).tuple()
 
         return cls.from_rgb(r, g, b)
 
     @classmethod
     def from_robtop(cls: Type[C], string: str) -> C:
-        r, g, b = map(int, split_color(string))
+        r, g, b = iter(split_color(string)).map(int).tuple()
 
         return cls.from_rgb(r, g, b)
 
@@ -298,7 +299,7 @@ class Color(JSON[int], RobTop):
         return COLOR_SEPARATOR in string
 
     def to_robtop(self) -> str:
-        return concat_color(map(str, self.to_rgb()))
+        return iter(self.to_rgb()).map(str).collect(concat_color)
 
     @classmethod
     def with_id(cls: Type[C], id: int, default: Optional[C] = None) -> C:

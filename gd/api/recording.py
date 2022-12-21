@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import re
 from collections import UserList as ListType
+from functools import partial
 from typing import Iterable, Iterator, List, Match, Type, TypeVar, overload
 
 from attrs import define
+from iters import iter
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
@@ -170,35 +172,17 @@ R = TypeVar("R", bound="Recording")
 
 
 class Recording(Binary, RobTop, ListType, List[RecordingItem]):  # type: ignore
-    @overload
     @staticmethod
     def iter_robtop(string: str) -> Iterator[RecordingItem]:
-        ...
-
-    @overload
-    @staticmethod
-    def iter_robtop(string: str, item_type: Type[RI]) -> Iterator[RI]:
-        ...
-
-    @staticmethod
-    def iter_robtop(
-        string: str, item_type: Type[RecordingItem] = RecordingItem
-    ) -> Iterator[RecordingItem]:
-        matches = RECORDING_ITEM.finditer(string)
-
-        return map(item_type.from_robtop_match, matches)
+        return iter(RECORDING_ITEM.finditer(string)).map(RecordingItem.from_robtop_match).unwrap()
 
     @staticmethod
     def collect_robtop(recording: Iterable[RecordingItem]) -> str:
         return concat_empty(item.to_robtop() for item in recording)
 
     @classmethod
-    def from_robtop(
-        cls: Type[R],
-        string: str,
-        item_type: Type[RecordingItem] = RecordingItem,
-    ) -> R:
-        return cls(cls.iter_robtop(string, item_type))
+    def from_robtop(cls: Type[R], string: str) -> R:
+        return cls(cls.iter_robtop(string))
 
     def to_robtop(self) -> str:
         return self.collect_robtop(self)
@@ -213,13 +197,14 @@ class Recording(Binary, RobTop, ListType, List[RecordingItem]):  # type: ignore
         binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-        item_type: Type[RecordingItem] = RecordingItem,
     ) -> R:
         reader = Reader(binary)
 
         length = reader.read_u32(order)
 
-        return cls(item_type.from_binary(binary, order, version) for _ in range(length))
+        recording_item_from_binary = partial(RecordingItem.from_binary, binary, order, version)
+
+        return cls(iter.repeat_exactly_with(recording_item_from_binary, length).unwrap())
 
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION

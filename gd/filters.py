@@ -85,9 +85,9 @@ class Filters(Binary):
 
         difficulties_length = reader.read_u8(order)
 
-        difficulties = iter.repeat_exactly_with(read_u8, difficulties_length).map(
-            Difficulty
-        ).ordered_set()
+        difficulties = (
+            iter.repeat_exactly_with(read_u8, difficulties_length).map(Difficulty).ordered_set()
+        )
 
         lengths_length = reader.read_u8(order)
 
@@ -523,17 +523,12 @@ class Filters(Binary):
         filters.update(
             RobTopFilters(
                 type=self.strategy.value,
-                diff=concat_comma(
-                    map(
-                        str,
-                        (
-                            difficulty.into_level_difficulty().value
-                            for difficulty in self.difficulties
-                        ),
-                    )
-                )
-                or DASH,
-                len=concat_comma(map(str, (length.value for length in self.lengths))) or DASH,
+                diff=iter(
+                    difficulty.into_level_difficulty().value for difficulty in self.difficulties
+                ).map(str).collect(concat_comma) or DASH,
+                len=iter(
+                    length.value for length in self.lengths
+                ).map(str).collect(concat_comma) or DASH,
                 original=int(self.require_original),
                 two_player=int(self.require_two_player),
                 coins=int(self.require_coins),
@@ -553,13 +548,13 @@ class Filters(Binary):
 
         if completed_levels:
             filters.update(
-                RobTopFilters(completed_levels=wrap(concat_comma(map(str, completed_levels))))
+                RobTopFilters(completed_levels=wrap(iter(completed_levels).map(str).collect(concat_comma)))
             )
 
         followed = self.followed
 
         if followed:
-            filters.update(RobTopFilters(followed=concat_comma(map(str, followed))))
+            filters.update(RobTopFilters(followed=iter(followed).map(str).collect(concat_comma)))
 
         song_id = self.song_id
 

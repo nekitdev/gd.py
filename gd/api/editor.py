@@ -1,4 +1,4 @@
-from itertools import count
+from functools import partial
 from operator import attrgetter as get_attribute_factory
 from typing import Iterable, Iterator, List, Sequence, Set, Type, TypeVar, Union, overload
 
@@ -94,7 +94,7 @@ DEFAULT_NEXT = 0
 
 
 def find_next(values: Set[int], start: int = DEFAULT_START) -> int:
-    for value in count(start):
+    for value in iter.count().unwrap():
         if value not in values:
             return value
 
@@ -119,7 +119,7 @@ class Editor(RobTop, Binary, Sequence[Object]):
     def from_objects(cls: Type[E], *objects: Object, header: Header) -> E:
         return cls(header, list(objects))
 
-    # callback
+    # callback?
 
     @classmethod
     def from_object_iterable(cls: Type[E], objects: Iterable[Object], header: Header) -> E:
@@ -218,7 +218,7 @@ class Editor(RobTop, Binary, Sequence[Object]):
 
     @property
     def x_length(self) -> float:
-        return max(map(get_x, self.objects), default=DEFAULT_X)
+        return iter(self.objects).map(get_x).max_or(DEFAULT_X)
 
     @property
     def start_speed(self) -> Speed:
@@ -241,7 +241,9 @@ class Editor(RobTop, Binary, Sequence[Object]):
 
         iterable_length = reader.read_u32(order)
 
-        iterable = (object_from_binary(binary, order, version) for _ in range(iterable_length))
+        object_from_binary_function = partial(object_from_binary, binary, order, version)
+
+        iterable = iter.repeat_exactly_with(object_from_binary_function, iterable_length).unwrap()
 
         return cls.from_object_iterable(iterable, header)
 
@@ -271,12 +273,14 @@ class Editor(RobTop, Binary, Sequence[Object]):
         else:
             header = Header.from_robtop(header_string)
 
-        objects = list(map(object_from_robtop, iterator.unwrap()))
+        objects = iterator.map(object_from_robtop).list()
 
         return cls(header, objects)
 
     def to_robtop(self) -> str:
-        iterator = iter.once(self.header.to_robtop()).chain(map(object_to_robtop, self.objects))
+        iterator = iter.once(self.header.to_robtop()).chain(
+            iter(self.objects).map(object_to_robtop).unwrap()
+        )
 
         return concat_objects(iterator.unwrap())
 

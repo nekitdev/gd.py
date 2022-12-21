@@ -26,6 +26,7 @@ from uuid import uuid4 as generate_uuid
 
 from aiohttp import BasicAuth, ClientError, ClientSession, ClientTimeout
 from attrs import define, evolve, field, frozen
+from iters import iter
 from tqdm import tqdm as progess  # type: ignore
 from typing_extensions import Literal
 from yarl import URL
@@ -34,6 +35,7 @@ from gd.api.editor import Editor, DEFAULT_DATA
 from gd.api.recording import Recording
 from gd.async_utils import run_blocking, shutdown_loop
 from gd.constants import (
+    COMPLETED,
     DEFAULT_ATTEMPTS,
     DEFAULT_CHEST_COUNT,
     DEFAULT_COINS,
@@ -882,7 +884,7 @@ class HTTPClient:
 
     @staticmethod
     def generate_extra_string(count: int = EXTRA_STRING_COUNT) -> str:
-        return concat_extra_string(map(str, repeat(0, count)))
+        return concat_extra_string(iter.repeat_exactly(0, count).map(str).unwrap())
 
     def get_game_version(self) -> int:
         return self.game_version.to_robtop_value()
@@ -1112,26 +1114,26 @@ class HTTPClient:
         random_string = generate_random_string()
 
         values = (
-            account_id,
-            user_coins,
-            demons,
-            stars,
-            secret_coins,
-            icon_type.value,
-            icon_id,
-            diamonds,
-            cube_id,
-            ship_id,
-            ball_id,
-            ufo_id,
-            wave_id,
-            robot_id,
-            int(glow),
-            spider_id,
-            explosion_id,
+            str(account_id),
+            str(user_coins),
+            str(demons),
+            str(stars),
+            str(secret_coins),
+            str(icon_type.value),
+            str(icon_id),
+            str(diamonds),
+            str(cube_id),
+            str(ship_id),
+            str(ball_id),
+            str(ufo_id),
+            str(wave_id),
+            str(robot_id),
+            str(int(glow)),
+            str(spider_id),
+            str(explosion_id),
         )
 
-        check = generate_check(map(str, values), Key.USER_LEADERBOARD, Salt.USER_LEADERBOARD)
+        check = generate_check(values, Key.USER_LEADERBOARD, Salt.USER_LEADERBOARD)
 
         route = Route(POST, UPDATE_PROFILE)
 
@@ -1300,7 +1302,7 @@ class HTTPClient:
             query = EMPTY
 
         if not is_string(query) and is_iterable(query):
-            query = concat_comma(map(str, query))
+            query = iter(query).map(str).collect(concat_comma)
 
         route = Route(POST, GET_LEVELS)
 
@@ -1400,9 +1402,11 @@ class HTTPClient:
             udid = self.generate_udid()
             uuid = self.generate_uuid()
 
-            values = (level_id, increment, random_string, account_id, udid, uuid)
+            values = (
+                str(level_id), str(increment), random_string, str(account_id), udid, uuid
+            )
 
-            check = generate_check(map(str, values), Key.LEVEL, Salt.LEVEL)
+            check = generate_check(values, Key.LEVEL, Salt.LEVEL)
 
             payload.update(
                 account_id=account_id,
@@ -1584,9 +1588,9 @@ class HTTPClient:
 
         random_string = generate_random_string()
 
-        values = (level_id, stars, random_string, account_id, udid, uuid)
+        values = (str(level_id), str(stars), random_string, str(account_id), udid, uuid)
 
-        check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
+        check = generate_check(values, Key.LIKE_RATE, Salt.LIKE_RATE)
 
         route = Route(POST, RATE_LEVEL)
 
@@ -1739,21 +1743,21 @@ class HTTPClient:
         unknown = 1
 
         values = (
-            account_id,
-            level_id,
-            record,
-            seconds,
-            jumps,
-            attempts,
-            record,
-            100 - record,
-            unknown,
-            coins,
-            timely_id,
+            str(account_id),
+            str(level_id),
+            str(record),
+            str(seconds),
+            str(jumps),
+            str(attempts),
+            str(record),
+            str(COMPLETED - record),
+            str(unknown),
+            str(coins),
+            str(timely_id),
             random_string,
         )
 
-        check = generate_check(map(str, values), Key.LEVEL_LEADERBOARD, Salt.LEVEL_LEADERBOARD)
+        check = generate_check(values, Key.LEVEL_LEADERBOARD, Salt.LEVEL_LEADERBOARD)
 
         route = Route(POST, GET_LEVEL_LEADERBOARD)
 
@@ -2169,17 +2173,17 @@ class HTTPClient:
         random_string = generate_random_string()
 
         values = (
-            special_id,
-            level_id,
-            int(like),
-            type.value,
+            str(special_id),
+            str(level_id),
+            str(int(like)),
+            str(type.value),
             random_string,
-            account_id,
+            str(account_id),
             udid,
             uuid,
         )
 
-        check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
+        check = generate_check(values, Key.LIKE_RATE, Salt.LIKE_RATE)
 
         route = Route(POST, LIKE_LEVEL)
 
@@ -2226,17 +2230,17 @@ class HTTPClient:
         random_string = generate_random_string()
 
         values = (
-            special_id,
-            comment_id,
-            int(like),
-            type.value,
+            str(special_id),
+            str(comment_id),
+            str(int(like)),
+            str(type.value),
             random_string,
-            account_id,
+            str(account_id),
             udid,
             uuid,
         )
 
-        check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
+        check = generate_check(values, Key.LIKE_RATE, Salt.LIKE_RATE)
 
         route = Route(POST, LIKE_USER_COMMENT)
 
@@ -2284,17 +2288,17 @@ class HTTPClient:
         random_string = generate_random_string()
 
         values = (
-            special_id,
-            comment_id,
-            int(like),
-            type.value,
+            str(special_id),
+            str(comment_id),
+            str(int(like)),
+            str(type.value),
             random_string,
-            account_id,
+            str(account_id),
             udid,
             uuid,
         )
 
-        check = generate_check(map(str, values), Key.LIKE_RATE, Salt.LIKE_RATE)
+        check = generate_check(values, Key.LIKE_RATE, Salt.LIKE_RATE)
 
         route = Route(POST, LIKE_LEVEL_COMMENT)
 
@@ -2343,9 +2347,9 @@ class HTTPClient:
 
         type = CommentType.USER
 
-        values = (account_name, content, level_id, record, type.value)
+        values = (account_name, content, str(level_id), str(record), str(type.value))
 
-        check = generate_check(map(str, values), Key.COMMENT, Salt.COMMENT)
+        check = generate_check(values, Key.COMMENT, Salt.COMMENT)
 
         route = Route(POST, POST_USER_COMMENT)
 
@@ -2394,9 +2398,9 @@ class HTTPClient:
 
         type = CommentType.LEVEL
 
-        values = (account_name, content, level_id, record, type.value)
+        values = (account_name, content, str(level_id), str(record), str(type.value))
 
-        check = generate_check(map(str, values), Key.COMMENT, Salt.COMMENT)
+        check = generate_check(values, Key.COMMENT, Salt.COMMENT)
 
         route = Route(POST, POST_USER_COMMENT)
 

@@ -9,6 +9,8 @@ SLASH = "/"
 UNKNOWN = "unknown"
 UNNAMED = "unnamed"
 
+COMPLETED = 100
+
 DEFAULT_DELAY = 10.0
 DEFAULT_RECONNECT = True
 

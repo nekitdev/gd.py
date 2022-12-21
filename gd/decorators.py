@@ -4,6 +4,7 @@ from functools import lru_cache, wraps
 from operator import attrgetter as get_attribute_factory
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Tuple, TypeVar
 
+from iters import iter
 from typing_extensions import Concatenate, ParamSpec
 
 from gd.async_utils import awaiting, run
@@ -37,7 +38,7 @@ def cache_by(*names: str) -> DecoratorIdentity[Callable[Concatenate[S, P], T]]:
         raise ValueError(CACHE_BY_AT_LEAST_ONE)
 
     def decorator(function: Callable[Concatenate[S, P], T]) -> Callable[Concatenate[S, P], T]:
-        get_attributes = tuple(map(get_attribute_factory, names))
+        get_attributes = iter(names).map(get_attribute_factory).tuple()
 
         cache: Dict[int, Tuple[T, DynamicTuple[Any]]] = {}
 

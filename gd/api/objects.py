@@ -1,7 +1,9 @@
+from functools import partial
 from io import BytesIO
 from typing import Dict, Iterable, Mapping, Type, TypeVar
 
 from attrs import define, field
+from iters import iter
 from iters.ordered_set import OrderedSet
 from typing_extensions import Literal, TypeGuard
 
@@ -163,10 +165,10 @@ G = TypeVar("G", bound="Groups")
 class Groups(RobTop, OrderedSet[int]):
     @classmethod
     def from_robtop(cls: Type[G], string: str) -> G:
-        return cls(map(int, split_groups(string)))
+        return iter(split_groups(string)).map(int).collect(cls)
 
     def to_robtop(self) -> str:
-        return concat_groups(map(str, self))
+        return iter(self).map(str).collect(concat_groups)
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
@@ -328,9 +330,11 @@ class Object(Model, Binary):
         groups: Groups
 
         if flag.has_groups():
+            read_u16 = partial(reader.read_u16, order)
+
             length = reader.read_u16(order)
 
-            groups = Groups(reader.read_u16(order) for _ in range(length))
+            groups = Groups(iter.repeat_exactly_with(read_u16, length))
 
         else:
             groups = Groups()
@@ -3040,7 +3044,9 @@ class RotateTrigger(  # type: ignore
 
         target_rotation = rotations * FULL_ROTATION + degrees
 
-        rotation_locked = parse_get_or(int_bool, DEFAULT_ROTATION_LOCKED, mapping.get(ROTATION_LOCKED))
+        rotation_locked = parse_get_or(
+            int_bool, DEFAULT_ROTATION_LOCKED, mapping.get(ROTATION_LOCKED)
+        )
 
         rotate_trigger.duration = duration
 
