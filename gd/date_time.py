@@ -2,7 +2,7 @@ import re
 from datetime import datetime as DateTime
 from datetime import timedelta as Duration
 from datetime import timezone as TimeZone
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Type
 
 from gd.constants import EMPTY
 from gd.entity import CONVERTER
@@ -10,7 +10,6 @@ from gd.errors import InternalError
 from gd.models_utils import TIME_SEPARATOR, concat_time
 from gd.string_constants import COLON, COMMA, DOT
 from gd.string_utils import clear_whitespace, concat_pipe, tick
-from gd.typing import AnyType
 
 __all__ = (
     # human converters
@@ -360,11 +359,11 @@ def date_time_to_human(
     return duration_to_human(date_time - now, distance_only=distance_only, simple=simple)
 
 
-def parse_date_time_ignore_type(string: str, type: AnyType) -> DateTime:
+def parse_date_time_ignore_type(string: str, type: Type[DateTime]) -> DateTime:
     return parse_date_time(string)
 
 
-def parse_duration_ignore_type(string: str, type: AnyType) -> Duration:
+def parse_duration_ignore_type(string: str, type: Type[Duration]) -> Duration:
     return parse_duration(string)
 
 
