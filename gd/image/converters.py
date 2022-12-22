@@ -1,6 +1,6 @@
 import json
-import re
 import plistlib as plist
+import re
 from collections import defaultdict as default_dict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, TypeVar

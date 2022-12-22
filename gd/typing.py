@@ -47,7 +47,7 @@ __all__ = (
     "is_same_type",
     "is_iterable",
     "is_string",
-    "is_error",
+    "is_any_exception",
     "is_instance",
     "is_subclass",
 )
@@ -152,5 +152,5 @@ def is_string(item: Any) -> TypeGuard[str]:
     return is_instance(item, str)
 
 
-def is_error(item: Any) -> TypeGuard[AnyException]:
+def is_any_exception(item: Any) -> TypeGuard[AnyException]:
     return is_instance(item, AnyException)

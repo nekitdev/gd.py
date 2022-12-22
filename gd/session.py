@@ -5,8 +5,8 @@ from typing import Any, Optional
 from attrs import field, frozen
 from yarl import URL
 
-from gd.api.editor import DEFAULT_DATA
 from gd.api.database import Database
+from gd.api.editor import DEFAULT_DATA
 from gd.api.recording import Recording
 from gd.api.save_manager import save_manager
 from gd.constants import (

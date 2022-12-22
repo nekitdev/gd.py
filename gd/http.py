@@ -31,7 +31,7 @@ from tqdm import tqdm as progess  # type: ignore
 from typing_extensions import Literal
 from yarl import URL
 
-from gd.api.editor import Editor, DEFAULT_DATA
+from gd.api.editor import DEFAULT_DATA, Editor
 from gd.api.recording import Recording
 from gd.async_utils import run_blocking, shutdown_loop
 from gd.constants import (
@@ -1402,9 +1402,7 @@ class HTTPClient:
             udid = self.generate_udid()
             uuid = self.generate_uuid()
 
-            values = (
-                str(level_id), str(increment), random_string, str(account_id), udid, uuid
-            )
+            values = (str(level_id), str(increment), random_string, str(account_id), udid, uuid)
 
             check = generate_check(values, Key.LEVEL, Salt.LEVEL)
 

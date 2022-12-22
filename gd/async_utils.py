@@ -1,20 +1,13 @@
 from __future__ import annotations
 
 from asyncio import AbstractEventLoop, all_tasks, get_running_loop, run, wait
-from typing import (
-    AsyncIterator,
-    Awaitable,
-    Callable,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import AsyncIterator, Awaitable, Callable, Type, TypeVar, Union
 
 from iters.async_utils import async_iter, async_list
 from iters.concurrent import collect_iterable_with_errors
 from typing_extensions import ParamSpec
 
-from gd.typing import AnyException, AnyIterable, Nullary, is_error, is_instance
+from gd.typing import AnyException, AnyIterable, Nullary, is_any_exception, is_instance
 
 __all__ = (
     "run_blocking",
@@ -84,7 +77,7 @@ async def run_iterables(
     results = await collect_iterable_with_errors(coroutines)
 
     for result in results:
-        if is_error(result):
+        if is_any_exception(result):
             if is_instance(result, ignore):
                 continue
 

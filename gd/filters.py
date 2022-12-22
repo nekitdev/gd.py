@@ -525,10 +525,12 @@ class Filters(Binary):
                 type=self.strategy.value,
                 diff=iter(
                     difficulty.into_level_difficulty().value for difficulty in self.difficulties
-                ).map(str).collect(concat_comma) or DASH,
-                len=iter(
-                    length.value for length in self.lengths
-                ).map(str).collect(concat_comma) or DASH,
+                )
+                .map(str)
+                .collect(concat_comma)
+                or DASH,
+                len=iter(length.value for length in self.lengths).map(str).collect(concat_comma)
+                or DASH,
                 original=int(self.require_original),
                 two_player=int(self.require_two_player),
                 coins=int(self.require_coins),
@@ -548,7 +550,9 @@ class Filters(Binary):
 
         if completed_levels:
             filters.update(
-                RobTopFilters(completed_levels=wrap(iter(completed_levels).map(str).collect(concat_comma)))
+                RobTopFilters(
+                    completed_levels=wrap(iter(completed_levels).map(str).collect(concat_comma))
+                )
             )
 
         followed = self.followed

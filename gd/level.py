@@ -6,7 +6,7 @@ from attrs import define, field
 from iters.async_iters import wrap_async_iter
 from iters.iters import iter
 
-from gd.api.editor import Editor, DEFAULT_DATA
+from gd.api.editor import DEFAULT_DATA, Editor
 from gd.api.recording import Recording
 from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer

@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, AsyncIterator, Dict, Iterable, Optional, Type,
 
 from attrs import define, field
 from cattrs.gen import make_dict_unstructure_fn, override
-from iters.async_iters import wrap_async_iter
 from iters import async_iter, iter
+from iters.async_iters import wrap_async_iter
 from typing_extensions import TypedDict
 
 from gd.binary import VERSION, BinaryReader, BinaryWriter
@@ -427,7 +427,11 @@ class User(Entity):
         self, *types: Optional[IconType], orientation: Orientation = Orientation.DEFAULT
     ) -> Image:
         return connect_images(
-            await iter(types).map(self.generate_async).into_async_iter().wait_concurrent().extract(),
+            await iter(types)
+            .map(self.generate_async)
+            .into_async_iter()
+            .wait_concurrent()
+            .extract(),
             orientation,
         )
 
