@@ -8,7 +8,6 @@ from iters.async_iters import wrap_async_iter
 from iters import async_iter, iter
 from typing_extensions import TypedDict
 
-from gd.async_utils import gather_iterable
 from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.color import Color
@@ -428,7 +427,7 @@ class User(Entity):
         self, *types: Optional[IconType], orientation: Orientation = Orientation.DEFAULT
     ) -> Image:
         return connect_images(
-            await async_iter(iter(types).map(self.generate_async).unwrap()).wait_concurrent().list(),
+            await iter(types).map(self.generate_async).into_async_iter().wait_concurrent().extract(),
             orientation,
         )
 
