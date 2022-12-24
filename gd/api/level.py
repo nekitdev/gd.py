@@ -186,7 +186,7 @@ class LevelAPI(Binary):
     stars: int = field(default=DEFAULT_STARS)
     score: int = field(default=DEFAULT_SCORE)
     rate_type: RateType = field(default=RateType.DEFAULT)
-    recording: Recording = field(factory=Recording)
+    recording: Recording = field(factory=Recording, repr=False)
     playable: bool = field(default=DEFAULT_PLAYABLE)
     unlocked: bool = field(default=DEFAULT_UNLOCKED)
     password_data: Password = field(factory=Password)
@@ -368,6 +368,8 @@ class LevelAPI(Binary):
         if score < 0:
             score = 0
 
+        rate_type = RateType.NOT_RATED
+
         if stars:
             rate_type = RateType.RATED
 
@@ -400,6 +402,8 @@ class LevelAPI(Binary):
         two_player = data.get(TWO_PLAYER, DEFAULT_TWO_PLAYER)
 
         object_count = data.get(OBJECT_COUNT, DEFAULT_OBJECT_COUNT)
+
+        high_object_count = data.get(HIGH_OBJECT_COUNT, DEFAULT_HIGH_OBJECT_COUNT)
 
         collected_coins = CollectedCoins.NONE
 
@@ -485,6 +489,51 @@ class LevelAPI(Binary):
             description=description,
             unprocessed_data=unprocessed_data,
             difficulty=difficulty,
+            downloads=downloads,
+            completions=completions,
+            editable=editable,
+            verified=verified,
+            uploaded=uploaded,
+            version=version,
+            game_version=game_version,
+            binary_version=binary_version,
+            attempts=attempts,
+            jumps=jumps,
+            normal_record=normal_record,
+            practice_record=practice_record,
+            type=type,
+            rating=rating,
+            length=length,
+            stars=stars,
+            score=score,
+            rate_type=rate_type,
+            recording=recording,
+            playable=playable,
+            unlocked=unlocked,
+            password_data=password_data,
+            original_id=original_id,
+            two_player=two_player,
+            object_count=object_count,
+            high_object_count=high_object_count,
+            collected_coins=collected_coins,
+            coins=coins,
+            verified_coins=verified_coins,
+            requested_stars=requested_stars,
+            orb_percentage=orb_percentage,
+            low_detail=low_detail,
+            low_detail_toggled=low_detail_toggled,
+            timely_id=timely_id,
+            gauntlet=gauntlet,
+            unlisted=unlisted,
+            editor_time=editor_time,
+            copies_time=copies_time,
+            favorite=favorite,
+            level_order=level_order,
+            folder_id=folder_id,
+            best_clicks=best_clicks,
+            best_time=best_time,
+            progress=progress,
+            leaderboard_record=leaderboard_record,
         )
 
     def to_robtop_data(self) -> Dict[str, Any]:
