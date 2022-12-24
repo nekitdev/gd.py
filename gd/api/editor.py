@@ -278,9 +278,7 @@ class Editor(RobTop, Binary, Sequence[Object]):
         return cls(header, objects)
 
     def to_robtop(self) -> str:
-        iterator = iter.once(self.header.to_robtop()).chain(
-            iter(self.objects).map(object_to_robtop).unwrap()
-        )
+        iterator = iter(self.objects).map(object_to_robtop).prepend(self.header.to_robtop())
 
         return concat_objects(iterator.unwrap())
 

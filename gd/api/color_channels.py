@@ -310,6 +310,9 @@ CCS = TypeVar("CCS", bound="ColorChannels")
 
 
 class ColorChannels(Binary, Dict[int, ColorChannel]):
+    def copy(self: CCS) -> CCS:
+        return type(self)(self)
+
     @classmethod
     def from_color_channel_iterable(cls: Type[CCS], color_channels: Iterable[ColorChannel]) -> CCS:
         return cls({color_channel.id: color_channel for color_channel in color_channels})

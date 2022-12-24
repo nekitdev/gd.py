@@ -16,6 +16,7 @@ from gd.image.sprite import SpriteData
 from gd.json import AnyCamelDict, CamelDict
 from gd.models_utils import int_bool
 from gd.string_constants import COMMA
+from gd.string_utils import tick
 from gd.typing import DynamicTuple, IntoPath, Parse, StringDict, Unary
 
 __all__ = (
@@ -94,7 +95,7 @@ convert_sprite_mapping: Dict[int, ConvertSprite] = {
     FORMAT_3: convert_sprite_format_3,
 }
 
-CAN_NOT_CONVERT = "can not convert format `{}`"
+CAN_NOT_CONVERT = "can not convert format {}"
 
 
 def convert_sprite_format(format: int) -> ConvertSprite:

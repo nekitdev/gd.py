@@ -37,7 +37,7 @@ from gd.api.objects import (
     TriggerOrb,
 )
 from gd.api.recording import Recording, RecordingItem
-from gd.api.save_manager import SaveManager, create_database, save, save_manager
+from gd.api.save_manager import SaveManager, create_database, save
 
 __all__ = (
     # database
@@ -94,5 +94,4 @@ __all__ = (
     "SaveManager",
     "create_database",
     "save",
-    "save_manager",
 )

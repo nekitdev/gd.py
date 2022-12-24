@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 from os import getenv as get_environment
 from pathlib import Path
 from typing import Generic, Type, TypeVar
 
 from attrs import define
 
-from gd.api.database import Database
 from gd.async_utils import run_blocking
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.encoding import decode_save, decode_system_save, encode_save, encode_system_save
@@ -90,7 +91,13 @@ PATH = PATHS.get(SYSTEM_PLATFORM)
 
 SAVE_NOT_SUPPORTED = "save management is not supported on this platform"
 
-D = TypeVar("D", bound=Database)
+DEFAULT_FOLLOW_SYSTEM = False
+DEFAULT_APPLY_XOR = False
+
+DEFAULT_FOLLOW_SYSTEM_DATA = True
+DEFAULT_APPLY_XOR_DATA = True
+
+D = TypeVar("D", bound="Database")
 
 
 @define()
@@ -99,34 +106,10 @@ class SaveManager(Generic[D]):
     main_name: str = MAIN_NAME
     levels_name: str = LEVELS_NAME
 
-    def load(self, main: Optional[IntoPath] = None, levels: Optional[IntoPath] = None) -> D:
-        return self.load_local(main, levels)
-
-    async def load_async(
-        self, main: Optional[IntoPath] = None, levels: Optional[IntoPath] = None
-    ) -> D:
-        return await run_blocking(self.load_local, main, levels)
-
-    def dump(
-        self,
-        database: Database,
-        main: Optional[IntoPath] = None,
-        levels: Optional[IntoPath] = None,
-    ) -> None:
-        return self.dump_local(database, main, levels)
-
-    async def dump_async(
-        self,
-        database: Database,
-        main: Optional[IntoPath] = None,
-        levels: Optional[IntoPath] = None,
-    ) -> None:
-        return await run_blocking(self.dump_local, database, main, levels)
-
     def create_database(self) -> D:
         return self.database_type()
 
-    def load_local(self, main: Optional[IntoPath] = None, levels: Optional[IntoPath] = None) -> D:
+    def load(self, main: Optional[IntoPath] = None, levels: Optional[IntoPath] = None) -> D:
         main_path = self.compute_path(main, self.main_name)
         levels_path = self.compute_path(levels, self.levels_name)
 
@@ -135,7 +118,7 @@ class SaveManager(Generic[D]):
 
         return self.load_parts(main_data, levels_data, apply_xor=True, follow_system=True)
 
-    def dump_local(
+    def dump(
         self,
         database: Database,
         main: Optional[IntoPath] = None,
@@ -149,119 +132,6 @@ class SaveManager(Generic[D]):
         main_path.write_bytes(main_data)
         levels_path.write_bytes(levels_data)
 
-    def to_bytes(
-        self,
-        database: Database,
-        apply_xor: bool = False,
-        follow_system: bool = False,
-    ) -> Tuple[bytes, bytes]:
-        main_data, levels_data = self.dump_parts(
-            database, apply_xor=apply_xor, follow_system=follow_system
-        )
-
-        return (main_data, levels_data)
-
-    async def to_bytes_async(
-        self,
-        database: Database,
-        apply_xor: bool = False,
-        follow_system: bool = False,
-    ) -> Tuple[bytes, bytes]:
-        main_data, levels_data = await run_blocking(
-            self.dump_parts, database, apply_xor=apply_xor, follow_system=follow_system
-        )
-
-        return (main_data, levels_data)
-
-    def to_strings(
-        self,
-        database: Database,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-        apply_xor: bool = False,
-        follow_system: bool = False,
-    ) -> Tuple[str, str]:
-        main_string, levels_string = self.dump_string_parts(
-            database,
-            encoding=encoding,
-            errors=errors,
-            apply_xor=apply_xor,
-            follow_system=follow_system,
-        )
-
-        return (main_string, levels_string)
-
-    async def to_strings_async(
-        self,
-        database: Database,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-        apply_xor: bool = False,
-        follow_system: bool = False,
-    ) -> Tuple[str, str]:
-        main_string, levels_string = await run_blocking(
-            self.dump_string_parts,
-            database,
-            encoding=encoding,
-            errors=errors,
-            apply_xor=apply_xor,
-            follow_system=follow_system,
-        )
-
-        return (main_string, levels_string)
-
-    def from_bytes(
-        self,
-        main_data: bytes,
-        levels_data: bytes,
-        apply_xor: bool = False,
-        follow_system: bool = False,
-    ) -> D:
-        return self.load_parts(
-            main_data, levels_data, apply_xor=apply_xor, follow_system=follow_system
-        )
-
-    async def from_bytes_async(
-        self,
-        main_data: bytes,
-        levels_data: bytes,
-        apply_xor: bool = False,
-        follow_system: bool = False,
-    ) -> D:
-        return await run_blocking(
-            self.load_parts,
-            main_data,
-            levels_data,
-            apply_xor=apply_xor,
-            follow_system=follow_system,
-        )
-
-    def from_strings(
-        self,
-        main_string: str,
-        levels_string: str,
-        apply_xor: bool = False,
-        follow_system: bool = False,
-    ) -> D:
-        return self.load_string_parts(
-            main_string, levels_string, apply_xor=apply_xor, follow_system=follow_system
-        )
-
-    async def from_strings_async(
-        self,
-        main_string: str,
-        levels_string: str,
-        apply_xor: bool = False,
-        follow_system: bool = False,
-    ) -> D:
-        return await run_blocking(
-            self.load_string_parts,
-            main_string,
-            levels_string,
-            apply_xor=apply_xor,
-            follow_system=follow_system,
-        )
-
     def load_parts(
         self,
         main_data: bytes,
@@ -272,7 +142,7 @@ class SaveManager(Generic[D]):
         main = self.decode_data(main_data, apply_xor=apply_xor, follow_system=follow_system)
         levels = self.decode_data(levels_data, apply_xor=apply_xor, follow_system=follow_system)
 
-        return self.database_type(main, levels)
+        return self.database_type.load_parts(main, levels)
 
     def load_string_parts(
         self,
@@ -282,7 +152,6 @@ class SaveManager(Generic[D]):
         errors: str = DEFAULT_ERRORS,
         apply_xor: bool = False,
         follow_system: bool = False,
-        database_type: Type[Database] = Database,
     ) -> D:
         return self.load_parts(
             main_string.encode(encoding, errors),
@@ -295,10 +164,10 @@ class SaveManager(Generic[D]):
         self, database: Database, apply_xor: bool = False, follow_system: bool = False
     ) -> Tuple[bytes, bytes]:
         main_data = self.encode_data(
-            database.main.dump(), apply_xor=apply_xor, follow_system=follow_system
+            database.dump_main(), apply_xor=apply_xor, follow_system=follow_system
         )
         levels_data = self.encode_data(
-            database.levels.dump(), apply_xor=apply_xor, follow_system=follow_system
+            database.dump_levels(), apply_xor=apply_xor, follow_system=follow_system
         )
 
         return (main_data, levels_data)
@@ -320,7 +189,7 @@ class SaveManager(Generic[D]):
     def compute_path(self, base_path: Optional[IntoPath], additional_path: IntoPath) -> Path:
         if base_path is None:
             if PATH is None:
-                raise OSError  # TODO: message?
+                raise OSError(SAVE_NOT_SUPPORTED)
 
             return PATH / additional_path
 
@@ -331,19 +200,29 @@ class SaveManager(Generic[D]):
 
         return path
 
-    def decode_data(self, data: bytes, apply_xor: bool = True, follow_system: bool = True) -> bytes:
+    def decode_data(
+        self,
+        data: bytes,
+        apply_xor: bool = DEFAULT_APPLY_XOR_DATA,
+        follow_system: bool = DEFAULT_FOLLOW_SYSTEM_DATA,
+    ) -> bytes:
         decode = decode_system_save if follow_system else decode_save
 
         return decode(data, apply_xor=apply_xor)
 
-    def encode_data(self, data: bytes, apply_xor: bool = True, follow_system: bool = True) -> bytes:
+    def encode_data(
+        self,
+        data: bytes,
+        apply_xor: bool = DEFAULT_APPLY_XOR_DATA,
+        follow_system: bool = DEFAULT_FOLLOW_SYSTEM_DATA,
+    ) -> bytes:
         encode = encode_system_save if follow_system else encode_save
 
         return encode(data, apply_xor=apply_xor)
 
 
-save_manager = SaveManager(Database)
-save = save_manager
-create_database = save_manager.create_database
+from gd.api.database import Database
 
-# TODO: rewrite?
+
+save = SaveManager(Database)
+create_database = save.create_database

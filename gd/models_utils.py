@@ -42,6 +42,7 @@ from gd.models_constants import (
     RECORDING_ITEM_SEPARATOR,
     RELATIONSHIP_USER_SEPARATOR,
     RELATIONSHIPS_RESPONSE_USERS_SEPARATOR,
+    SAVE_SEPARATOR,
     SEARCH_LEVELS_RESPONSE_CREATORS_SEPARATOR,
     SEARCH_LEVELS_RESPONSE_LEVELS_SEPARATOR,
     SEARCH_LEVELS_RESPONSE_SEPARATOR,
@@ -252,6 +253,9 @@ concat_groups = partial(concat_iterable, GROUPS_SEPARATOR)
 
 split_guidelines = partial(split_float_mapping, GUIDELINES_SEPARATOR)
 concat_guidelines = partial(concat_float_mapping, GUIDELINES_SEPARATOR)
+
+split_save = partial(split_iterable, SAVE_SEPARATOR)
+concat_save = partial(concat_iterable, SAVE_SEPARATOR)
 
 split_time = partial(split_iterable, TIME_SEPARATOR)
 concat_time = partial(concat_iterable, TIME_SEPARATOR_SPACE)

@@ -22,6 +22,7 @@ from yarl import URL
 
 __all__ = (
     "AnyType",
+    "AnyString",
     "DynamicCallable",
     "AnyCallable",
     "AnyException",
@@ -53,6 +54,8 @@ __all__ = (
 )
 
 AnyType = Type[Any]
+
+AnyString = Union[str, bytes]
 
 AnyException = BaseException
 AnyExceptionType = Type[AnyException]

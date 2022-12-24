@@ -8,7 +8,7 @@ from yarl import URL
 from gd.api.database import Database
 from gd.api.editor import DEFAULT_DATA
 from gd.api.recording import Recording
-from gd.api.save_manager import save_manager
+from gd.api.save_manager import save
 from gd.constants import (
     DEFAULT_CHEST_COUNT,
     DEFAULT_COINS,
@@ -61,6 +61,7 @@ from gd.models import (
     TimelyInfoModel,
     UserCommentsResponseModel,
 )
+from gd.models_utils import concat_save, split_save
 from gd.newgrounds import find_song_model
 from gd.password import Password
 from gd.string_utils import remove_escapes
@@ -88,14 +89,14 @@ class Session:
     async def load(self, *, account_id: int, name: str, password: str) -> Database:
         response = await self.http.load(account_id=account_id, name=name, password=password)
 
-        main_string, levels_string, *rest = split_save(response)
+        main_string, levels_string, *_ = split_save(response)
 
-        return await save_manager.from_strings_async(
+        return save.load_string_parts(
             main_string, levels_string, apply_xor=False, follow_system=False
         )
 
     async def save(self, database: Database, *, account_id: int, name: str, password: str) -> None:
-        parts = await save_manager.to_strings_async(database, apply_xor=False, follow_system=False)
+        parts = save.dump_string_parts(database, apply_xor=False, follow_system=False)
 
         data = concat_save(parts)
 

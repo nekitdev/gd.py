@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from functools import partial
-from typing import Dict, List, Type, TypeVar
+from typing import Any, Dict, List, Type, TypeVar
 
 from attrs import define, field
 from iters import iter
 from iters.ordered_set import OrderedSet, ordered_set
+from typing_extensions import Literal, TypeGuard
 
 from gd.api.folder import Folder
 from gd.api.level import LevelAPI
@@ -14,6 +17,9 @@ from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, EMPTY
 from gd.enums import ByteOrder, Filter, IconType, LevelLeaderboardStrategy
 from gd.filters import Filters
 from gd.song import Song
+from gd.text_utils import snake_to_camel
+from gd.versions import CURRENT_BINARY_VERSION, Version
+from gd.xml_parser import XMLParser
 
 __all__ = ("Database",)
 
@@ -1678,6 +1684,23 @@ MODERATOR_BIT = 0b00000001_00000000
 LIKED_BIT = 0b10000000_00000000_00000000_00000000
 LIKED_MASK = 0b01111111_11111111_11111111_11111111
 
+
+CREATED_LEVELS = "LLM_01"
+BINARY_VERSION = "LLM_02"
+
+IS_ARRAY = snake_to_camel("_is_arr")
+
+
+KEY = "k_{}"
+key = KEY.format
+
+
+def is_true(item: Any) -> TypeGuard[Literal[True]]:
+    return item is True
+
+
+XML_PARSER = XMLParser()  # the parser is stateless, so it can be reused
+
 D = TypeVar("D", bound="Database")
 
 
@@ -1751,7 +1774,56 @@ class Database(Binary):
 
     songs: OrderedSet[Song] = field(factory=ordered_set)
 
-    # keybindings: Keybindings
+    binary_version: Version = field(default=CURRENT_BINARY_VERSION)
+
+    # keybindings: Keybindings = field(factory=Keybindings)
+
+    @classmethod
+    def load_parts(cls: Type[D], main: bytes, levels: bytes) -> D:
+        xml_parser = XML_PARSER
+
+        main_data = xml_parser.load(main)
+        levels_data = xml_parser.load(levels)
+
+        created_levels_data = levels_data[CREATED_LEVELS]
+        binary_version_data = levels_data[BINARY_VERSION]
+
+        binary_version = Version.from_value(binary_version_data)
+
+        created_levels = iter(created_levels_data.values()).drop_while(is_true).map(
+            LevelAPI.from_robtop_data
+        ).ordered_set()
+
+        return cls(created_levels=created_levels, binary_version=binary_version)
+
+    def dump_levels(self) -> bytes:
+        xml_parser = XML_PARSER
+
+        created_levels_data = {IS_ARRAY: True}
+
+        created_levels = {
+            key(index): created_level.to_robtop_data()
+            for index, created_level in enumerate(self.created_levels)
+        }
+
+        created_levels_data.update(created_levels)
+
+        binary_version_data = self.binary_version.to_value()
+
+        levels_data = {CREATED_LEVELS: created_levels_data, BINARY_VERSION: binary_version_data}
+
+        return xml_parser.dump(levels_data)
+
+    @classmethod
+    def create_save_manager(cls: Type[D]) -> SaveManager[D]:
+        return SaveManager(cls)
+
+    @classmethod
+    def load(cls: Type[D]) -> D:
+        return cls.create_save_manager().load()
+
+    def dump(self) -> None:
+        self.create_save_manager().dump(self)
 
     @classmethod
     def from_binary(
@@ -1938,6 +2010,8 @@ class Database(Binary):
 
         songs = iter.repeat_exactly_with(song_from_binary, songs_length).ordered_set()
 
+        binary_version = Version.from_binary(binary, order, version)
+
         return cls(
             volume=volume,
             sfx_volume=sfx_volume,
@@ -1991,6 +2065,7 @@ class Database(Binary):
             created_folders=created_folders,
             created_levels=created_levels,
             songs=songs,
+            binary_version=binary_version,
         )
 
     def to_binary(
@@ -2199,6 +2274,8 @@ class Database(Binary):
         for song in songs:
             song.to_binary(binary, order, version, encoding, errors)
 
+        self.binary_version.to_binary(binary, order, version)
+
     def is_moderator(self) -> bool:
         return self.moderator
 
@@ -2225,3 +2302,6 @@ class Database(Binary):
 
     def has_rated_game(self) -> bool:
         return self.rated_game
+
+
+from gd.api.save_manager import SaveManager

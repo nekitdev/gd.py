@@ -1,4 +1,4 @@
-from typing import Type, TypeVar
+from typing import Any, Dict, Type, TypeVar
 
 from attrs import define, field
 
@@ -127,6 +127,13 @@ class LevelAPI(Binary, RobTop):
 
     def __hash__(self) -> int:
         return self.id ^ hash(type(self))
+
+    @classmethod
+    def from_robtop_data(cls: Type[A], data: Dict[str, Any]) -> A:
+        return cls.default()
+
+    def to_robtop_data(self) -> Dict[str, Any]:
+        return {}
 
     @classmethod
     def from_binary(
