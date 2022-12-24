@@ -9,9 +9,11 @@ from gd.api.color_channels import ColorChannels
 from gd.api.header import Header
 from gd.api.objects import (
     Object,
+    StartPosition,
     Trigger,
     has_additional_group,
     has_target_group,
+    is_start_position,
     is_trigger,
     object_from_binary,
     object_from_robtop,
@@ -119,8 +121,6 @@ class Editor(RobTop, Binary, Sequence[Object]):
     def from_objects(cls: Type[E], *objects: Object, header: Header) -> E:
         return cls(header, list(objects))
 
-    # callback?
-
     @classmethod
     def from_object_iterable(cls: Type[E], objects: Iterable[Object], header: Header) -> E:
         return cls(header, list(objects))
@@ -175,9 +175,9 @@ class Editor(RobTop, Binary, Sequence[Object]):
         return find_next(self.groups)
 
     def iter_color_ids(self) -> Iterator[int]:
-        for editor_object in self.objects:
-            yield editor_object.base_color_id
-            yield editor_object.detail_color_id
+        for object in self.objects:
+            yield object.base_color_id
+            yield object.detail_color_id
 
         yield from self.color_channels
 
@@ -189,28 +189,29 @@ class Editor(RobTop, Binary, Sequence[Object]):
     def free_color_id(self) -> int:
         return find_next(self.color_ids)
 
+    def iter_start_positions(self) -> Iterator[StartPosition]:
+        return filter(is_start_position, self.objects)
+
+    @property
+    def start_position(self) -> List[StartPosition]:
+        return sorted(self.iter_start_positions(), key=get_x)
+
     def iter_portals(self) -> Iterator[Object]:
-        for object in self.objects:
-            if object.is_portal():
-                yield object
+        return (object for object in self.objects if object.is_portal())
 
     @property
     def portals(self) -> List[Object]:
         return sorted(self.iter_portals(), key=get_x)
 
     def iter_speed_changes(self) -> Iterator[Object]:
-        for object in self.objects:
-            if object.is_speed_change():
-                yield object
+        return (object for object in self.objects if object.is_speed_change())
 
     @property
     def speed_changes(self) -> List[Object]:
         return sorted(self.iter_speed_changes(), key=get_x)
 
     def iter_triggers(self) -> Iterator[Trigger]:
-        for object in self.objects:
-            if is_trigger(object):
-                yield object
+        return filter(is_trigger, self.objects)
 
     @property
     def triggers(self) -> List[Trigger]:
@@ -285,6 +286,3 @@ class Editor(RobTop, Binary, Sequence[Object]):
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return OBJECTS_SEPARATOR in string
-
-
-DEFAULT_DATA = Editor().to_bytes()

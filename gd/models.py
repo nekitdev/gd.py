@@ -6,6 +6,7 @@ from iters import iter
 from typing_extensions import Protocol
 from yarl import URL
 
+from gd.api.editor import Editor
 from gd.color import Color
 from gd.constants import (
     DEFAULT_ACTIVE,
@@ -1884,13 +1885,21 @@ class LevelModel(Model):
 
     @property  # type: ignore
     @cache_by(UNPROCESSED_DATA)
-    def data(self) -> str:
-        print(unzip_level_string(self.unprocessed_data))
+    def processed_data(self) -> str:
         return unzip_level_string(self.unprocessed_data)
 
-    @data.setter
-    def data(self, data: str) -> None:
+    @processed_data.setter
+    def processed_data(self, data: str) -> None:
         self.unprocessed_data = zip_level_string(data)
+
+    @property  # type: ignore
+    @cache_by(UNPROCESSED_DATA)
+    def data(self) -> bytes:
+        return Editor.from_robtop(self.processed_data).to_bytes()
+
+    @data.setter
+    def data(self, data: bytes) -> None:
+        self.processed_data = Editor.from_bytes(data).to_robtop()
 
 
 LCI = TypeVar("LCI", bound="LevelCommentInnerModel")

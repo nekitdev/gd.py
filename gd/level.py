@@ -6,9 +6,9 @@ from attrs import define, field
 from iters.async_iters import wrap_async_iter
 from iters.iters import iter
 
-from gd.api.editor import DEFAULT_DATA, Editor
+from gd.api.editor import Editor
 from gd.api.recording import Recording
-from gd.binary import VERSION, BinaryReader, BinaryWriter
+from gd.binary import VERSION, BinaryReader, BinaryWriter, load_from
 from gd.binary_utils import Reader, Writer
 from gd.constants import (
     COMMENT_PAGE_SIZE,
@@ -33,6 +33,7 @@ from gd.constants import (
     UNKNOWN,
 )
 from gd.date_time import DateTime, Duration, utc_from_timestamp, utc_now
+from gd.encoding import unzip_level_string, zip_level_string
 from gd.entity import Entity
 from gd.enums import (
     ByteOrder,
@@ -88,13 +89,16 @@ def by_id(id: int) -> Predicate[OfficialLevel]:
 OFFICIAL_LEVEL_DESCRIPTION = "Official Level: {}"
 
 
+DEFAULT_SERVER_STYLE = True
+
+
 @define(hash=True)
 class Level(Entity):
     name: str = field(eq=False)
     creator: User = field(eq=False)
     song: Song = field(eq=False)
     description: str = field(default=EMPTY, eq=False)
-    data: bytes = field(default=DEFAULT_DATA, eq=False, repr=False)
+    unprocessed_data: str = field(default=EMPTY, eq=False, repr=False)
     version: int = field(default=DEFAULT_VERSION, eq=False)
     downloads: int = field(default=DEFAULT_DOWNLOADS, eq=False)
     game_version: GameVersion = field(default=CURRENT_GAME_VERSION, eq=False)
@@ -124,6 +128,22 @@ class Level(Entity):
 
     def __str__(self) -> str:
         return self.name
+
+    @property
+    def processed_data(self) -> str:
+        return unzip_level_string(self.unprocessed_data)
+
+    @processed_data.setter
+    def processed_data(self, processed_data: str) -> None:
+        self.unprocessed_data = zip_level_string(processed_data)
+
+    @property
+    def data(self) -> bytes:
+        return self.open_editor().to_bytes()
+
+    @data.setter
+    def data(self, data: bytes) -> None:
+        self.processed_data = Editor.from_bytes(data).to_robtop()
 
     def to_binary(
         self,
@@ -297,7 +317,7 @@ class Level(Entity):
 
         timely_id = reader.read_u32(order)
 
-        return cls(
+        level = cls(
             id=id,
             name=name,
             creator=creator,
@@ -305,7 +325,6 @@ class Level(Entity):
             created_at=created_at,
             updated_at=updated_at,
             description=description,
-            data=data,
             version=version,
             downloads=downloads,
             game_version=game_version,
@@ -328,6 +347,10 @@ class Level(Entity):
             timely_type=timely_type,
             timely_id=timely_id,
         )
+
+        level.data = data
+
+        return level
 
     @classmethod
     def from_model(cls: Type[L], model: LevelModel, creator: User, song: Song) -> L:
@@ -359,8 +382,7 @@ class Level(Entity):
             creator=creator,
             song=song,
             description=model.description,
-            # this might take some time, but it should be worth it
-            data=Editor.from_robtop(model.data).to_bytes(),
+            unprocessed_data=model.unprocessed_data,
             version=model.version,
             difficulty=model.difficulty,
             downloads=model.downloads,
@@ -401,8 +423,8 @@ class Level(Entity):
         cls: Type[L],
         id: Optional[int] = None,
         name: Optional[str] = None,
-        get_data: bool = True,
-        server_style: bool = False,
+        get_data: bool = DEFAULT_GET_DATA,
+        server_style: bool = DEFAULT_SERVER_STYLE,
     ) -> L:
         official_levels = OFFICIAL_LEVELS
 
@@ -420,10 +442,12 @@ class Level(Entity):
             raise LookupError(CAN_NOT_FIND_LEVEL)
 
         if get_data:
-            data = DEFAULT_DATA  # TODO
+            unprocessed_data = zip_level_string(
+                load_from(official_level.data_path, Editor).to_robtop()
+            )
 
         else:
-            data = DEFAULT_DATA
+            unprocessed_data = EMPTY
 
         name = official_level.name
 
@@ -432,19 +456,21 @@ class Level(Entity):
         if server_style:
             song_id -= 1
 
-        return cls(
+        level = cls(
             id=official_level.id,
             name=name,
             creator=User.robtop(),
             song=Song.official(id=song_id, server_style=server_style),
+            unprocessed_data=unprocessed_data,
             description=OFFICIAL_LEVEL_DESCRIPTION.format(name),
-            data=data,
             coins=official_level.coins,
             stars=official_level.stars,
             difficulty=official_level.difficulty,
             game_version=official_level.game_version,
             length=official_level.length,
         )
+
+        return level
 
     @property
     def password(self) -> Optional[int]:
@@ -496,7 +522,7 @@ class Level(Entity):
         return self.verified_coins
 
     def open_editor(self) -> Editor:
-        return Editor.from_bytes(self.data)
+        return Editor.from_robtop(self.processed_data)
 
     async def report(self) -> None:
         await self.client.report_level(self)
@@ -521,7 +547,7 @@ class Level(Entity):
         recording: Optional[Recording] = None,
         editor_time: Optional[Duration] = None,
         copies_time: Optional[Duration] = None,
-        data: Optional[bytes] = None,
+        data: Optional[str] = None,
     ) -> None:
         song = self.song
         default_song_id = song.id
@@ -549,7 +575,7 @@ class Level(Entity):
             recording=recording,
             editor_time=switch_none(editor_time, self.editor_time),
             copies_time=switch_none(copies_time, self.copies_time),
-            data=switch_none(data, self.data),
+            data=switch_none(data, self.unprocessed_data),
         )
 
         uploaded = await self.client.upload_level(**keywords)  # type: ignore

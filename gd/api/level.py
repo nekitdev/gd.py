@@ -2,26 +2,34 @@ from typing import Any, Dict, Type, TypeVar
 
 from attrs import define, field
 
-from gd.api.editor import DEFAULT_DATA
+from gd.api.editor import Editor
 from gd.api.recording import Recording
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import (
     DEFAULT_ATTEMPTS,
+    DEFAULT_AUTO,
     DEFAULT_CLICKS,
     DEFAULT_COINS,
     DEFAULT_COMPLETIONS,
+    DEFAULT_DEMON,
+    DEFAULT_DENOMINATOR,
     DEFAULT_DOWNLOADS,
     DEFAULT_EDITABLE,
     DEFAULT_ENCODING,
+    DEFAULT_EPIC,
     DEFAULT_ERRORS,
     DEFAULT_FAVORITE,
     DEFAULT_GAUNTLET,
+    DEFAULT_HIGH_OBJECT_COUNT,
     DEFAULT_ID,
+    DEFAULT_JUMPS,
     DEFAULT_LEVEL_ORDER,
     DEFAULT_LOW_DETAIL,
     DEFAULT_LOW_DETAIL_TOGGLED,
+    DEFAULT_NUMERATOR,
     DEFAULT_OBJECT_COUNT,
+    DEFAULT_ORB_PERCENTAGE,
     DEFAULT_PLAYABLE,
     DEFAULT_RATING,
     DEFAULT_RECORD,
@@ -38,13 +46,92 @@ from gd.constants import (
     UNKNOWN,
 )
 from gd.date_time import Duration
-from gd.enums import ByteOrder, CollectedCoins, Difficulty, LevelLength, LevelType, RateType
+from gd.decorators import cache_by
+from gd.encoding import (
+    decode_base64_string_url_safe,
+    encode_base64_string_url_safe,
+    unzip_level_string,
+    zip_level_string,
+)
+from gd.enums import (
+    DEMON_DIFFICULTY_TO_VALUE,
+    VALUE_TO_DEMON_DIFFICULTY,
+    ByteOrder,
+    CollectedCoins,
+    DemonDifficulty,
+    Difficulty,
+    LevelDifficulty,
+    LevelLength,
+    LevelType,
+    RateType,
+)
 from gd.password import Password
 from gd.progress import Progress
-from gd.robtop import RobTop
 from gd.song import Song
 from gd.users import User
 from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, Version
+
+ID = "k1"
+NAME = "k2"
+DESCRIPTION = "k3"
+DATA = "k4"
+CREATOR_NAME = "k5"
+CREATOR_ID = "k6"
+CREATOR_ACCOUNT_ID = "k60"
+OFFICIAL_SONG_ID = "k8"
+SONG_ID = "k45"
+DIFFICULTY_NUMERATOR = "k9"
+DIFFICULTY_DENOMINATOR = "k10"
+AUTO = "k33"
+DEMON = "k25"
+DEMON_DIFFICULTY = "k76"
+DOWNLOADS = "k11"
+COMPLETIONS = "k12"
+EDITABLE = "k13"
+VERIFIED = "k14"
+UPLOADED = "k15"
+LEVEL_VERSION = "k16"
+GAME_VERSION = "k17"
+BINARY_VERSION = "k50"
+ATTEMPTS = "k18"
+JUMPS = "k36"
+NORMAL_RECORD = "k19"
+PRACTICE_RECORD = "k20"
+TYPE = "k21"
+RATING = "k22"
+LENGTH = "k23"
+STARS = "k26"
+SCORE = "k27"
+EPIC = "k75"
+RECORDING = "k34"
+PLAYABLE = "k35"
+UNLOCKED = "k38"
+PASSWORD = "k41"
+ORIGINAL_ID = "k42"
+TWO_PLAYER = "k43"
+OBJECT_COUNT = "k48"
+FIRST_COIN = "k61"
+SECOND_COIN = "k62"
+THIRD_COIN = "k63"
+COINS = "k64"
+VERIFIED_COINS = "k65"
+REQUESTED_STARS = "k66"
+HIGH_OBJECT_COUNT = "k69"
+ORB_PERCENTAGE = "k71"
+LOW_DETAIL = "k72"
+LOW_DETAIL_TOGGLED = "k73"
+TIMELY_ID = "k74"
+GAUNTLET = "k77"
+UNLISTED = "k79"
+EDITOR_SECONDS = "k80"
+COPIES_SECONDS = "k81"
+FAVORITE = "k82"
+LEVEL_ORDER = "k83"
+FOLDER_ID = "k84"
+BEST_CLICKS = "k85"
+BEST_SECONDS = "k86"
+PROGRESS = "k88"
+LEADERBOARD_RECORD = "k90"
 
 EDITABLE_BIT = 0b00000001
 VERIFIED_BIT = 0b00000010
@@ -60,33 +147,37 @@ VERIFIED_COINS_BIT = 0b00001000
 GAUNTLET_BIT = 0b00010000
 UNLISTED_BIT = 0b00100000
 UNLOCKED_BIT = 0b01000000
+HIGH_OBJECT_COUNT_BIT = 0b10000000
 
 TYPE_MASK = 0b00000111
 RATE_TYPE_MASK = 0b11111000
 
 RATE_TYPE_SHIFT = TYPE_MASK.bit_length()
 
+UNPROCESSED_DATA = "unprocessed_data"
+
 A = TypeVar("A", bound="LevelAPI")
 
 
 @define()
-class LevelAPI(Binary, RobTop):
+class LevelAPI(Binary):
     id: int = field()
     name: str = field()
     creator: User = field()
     song: Song = field()
     description: str = field(default=EMPTY)
-    data: bytes = field(default=DEFAULT_DATA, repr=False)
+    unprocessed_data: str = field(default=EMPTY, repr=False)
     difficulty: Difficulty = field(default=Difficulty.DEFAULT)
     downloads: int = field(default=DEFAULT_DOWNLOADS)
-    editable: bool = field(default=DEFAULT_EDITABLE)
     completions: int = field(default=DEFAULT_COMPLETIONS)
+    editable: bool = field(default=DEFAULT_EDITABLE)
     verified: bool = field(default=DEFAULT_VERIFIED)
     uploaded: bool = field(default=DEFAULT_UPLOADED)
     version: int = field(default=DEFAULT_VERSION)
     game_version: GameVersion = field(default=CURRENT_GAME_VERSION)
     binary_version: Version = field(default=CURRENT_BINARY_VERSION)
     attempts: int = field(default=DEFAULT_ATTEMPTS)
+    jumps: int = field(default=DEFAULT_JUMPS)
     normal_record: int = field(default=DEFAULT_RECORD)
     practice_record: int = field(default=DEFAULT_RECORD)
     type: LevelType = field(default=LevelType.DEFAULT)
@@ -102,10 +193,12 @@ class LevelAPI(Binary, RobTop):
     original_id: int = field(default=DEFAULT_ID)
     two_player: bool = field(default=DEFAULT_TWO_PLAYER)
     object_count: int = field(default=DEFAULT_OBJECT_COUNT)
+    high_object_count: bool = field(default=DEFAULT_HIGH_OBJECT_COUNT)
     collected_coins: CollectedCoins = field(default=CollectedCoins.DEFAULT)
     coins: int = field(default=DEFAULT_COINS)
     verified_coins: bool = field(default=DEFAULT_VERIFIED_COINS)
     requested_stars: int = field(default=DEFAULT_STARS)
+    orb_percentage: int = field(default=DEFAULT_ORB_PERCENTAGE)
     low_detail: bool = field(default=DEFAULT_LOW_DETAIL)
     low_detail_toggled: bool = field(default=DEFAULT_LOW_DETAIL_TOGGLED)
     timely_id: int = field(default=DEFAULT_ID)
@@ -128,9 +221,271 @@ class LevelAPI(Binary, RobTop):
     def __hash__(self) -> int:
         return self.id ^ hash(type(self))
 
+    @property
+    @cache_by(UNPROCESSED_DATA)
+    def processed_data(self) -> str:
+        return unzip_level_string(self.unprocessed_data)
+
+    @processed_data.setter
+    def processed_data(self, processed_data: str) -> None:
+        self.unprocessed_data = zip_level_string(processed_data)
+
+    @property
+    @cache_by(UNPROCESSED_DATA)
+    def data(self) -> bytes:
+        return self.open_editor().to_bytes()
+
+    @data.setter
+    def data(self, data: bytes) -> None:
+        self.processed_data = Editor.from_bytes(data).to_robtop()
+
+    def open_editor(self) -> Editor:
+        return Editor.from_robtop(self.processed_data)
+
     @classmethod
     def from_robtop_data(cls: Type[A], data: Dict[str, Any]) -> A:
-        return cls.default()
+        id = data.get(ID, DEFAULT_ID)
+
+        name = data.get(NAME, UNKNOWN)
+
+        description = decode_base64_string_url_safe(data.get(DESCRIPTION, EMPTY))
+
+        unprocessed_data = data.get(DATA, EMPTY)
+
+        creator_name = data.get(CREATOR_NAME, UNKNOWN)
+
+        creator_id = data.get(CREATOR_ID, DEFAULT_ID)
+
+        creator_account_id = data.get(CREATOR_ACCOUNT_ID, DEFAULT_ID)
+
+        creator = User(id=creator_id, name=creator_name, account_id=creator_account_id)
+
+        official_song_id = data.get(OFFICIAL_SONG_ID, DEFAULT_ID)
+
+        if official_song_id:
+            song = Song.official(official_song_id, server_style=False)
+
+        else:
+            song_id = data.get(SONG_ID, DEFAULT_ID)
+
+            song = Song.default()
+            song.id = song_id
+
+        difficulty_numerator = data.get(DIFFICULTY_NUMERATOR, DEFAULT_NUMERATOR)
+        difficulty_denominator = data.get(DIFFICULTY_DENOMINATOR, DEFAULT_DENOMINATOR)
+
+        if difficulty_denominator:
+            difficulty_value = difficulty_numerator // difficulty_denominator
+
+            if difficulty_value:
+                level_difficulty = LevelDifficulty(difficulty_value)
+
+            else:
+                level_difficulty = LevelDifficulty.DEFAULT
+
+        else:
+            level_difficulty = LevelDifficulty.DEFAULT
+
+        demon = data.get(DEMON, DEFAULT_DEMON)
+
+        demon_difficulty_value = data.get(DEMON_DIFFICULTY)
+
+        if demon_difficulty_value is None:
+            demon_difficulty = DemonDifficulty.DEFAULT
+
+        else:
+            demon_difficulty = VALUE_TO_DEMON_DIFFICULTY.get(
+                demon_difficulty_value, DemonDifficulty.DEFAULT
+            )
+
+        auto = data.get(AUTO, DEFAULT_AUTO)
+
+        if auto:
+            difficulty = Difficulty.AUTO
+
+        else:
+            if demon:
+                difficulty = demon_difficulty.into_difficulty()
+
+            else:
+                difficulty = level_difficulty.into_difficulty()
+
+        downloads = data.get(DOWNLOADS, DEFAULT_DOWNLOADS)
+
+        editable = data.get(EDITABLE, DEFAULT_EDITABLE)
+
+        completions = data.get(COMPLETIONS, DEFAULT_COMPLETIONS)
+
+        verified = data.get(VERIFIED, DEFAULT_VERIFIED)
+        uploaded = data.get(UPLOADED, DEFAULT_UPLOADED)
+
+        version = data.get(LEVEL_VERSION, DEFAULT_VERSION)
+
+        game_version_value = data.get(GAME_VERSION)
+
+        if game_version_value is None:
+            game_version = CURRENT_GAME_VERSION
+
+        else:
+            game_version = GameVersion.from_robtop_value(game_version_value)
+
+        binary_version_value = data.get(BINARY_VERSION)
+
+        if binary_version_value is None:
+            binary_version = CURRENT_BINARY_VERSION
+
+        else:
+            binary_version = Version.from_value(binary_version_value)
+
+        attempts = data.get(ATTEMPTS, DEFAULT_ATTEMPTS)
+        jumps = data.get(JUMPS, DEFAULT_JUMPS)
+
+        normal_record = data.get(NORMAL_RECORD, DEFAULT_RECORD)
+        practice_record = data.get(PRACTICE_RECORD, DEFAULT_RECORD)
+
+        type_value = data.get(TYPE)
+
+        if type_value is None:
+            type = LevelType.DEFAULT
+
+        else:
+            type = LevelType(type_value)
+
+        rating = data.get(RATING, DEFAULT_RATING)
+
+        length_value = data.get(LENGTH)
+
+        if length_value is None:
+            length = LevelLength.DEFAULT
+
+        else:
+            length = LevelLength(length_value)
+
+        stars = data.get(STARS, DEFAULT_STARS)
+
+        score = data.get(SCORE, DEFAULT_SCORE)
+
+        if score < 0:
+            score = 0
+
+        if stars:
+            rate_type = RateType.RATED
+
+        if score:
+            rate_type = RateType.FEATURED
+
+        epic = data.get(EPIC, DEFAULT_EPIC)
+
+        if epic:
+            rate_type = RateType.EPIC
+
+        # if godlike:
+        #     rate_type = RateType.GODLIKE
+
+        recording = Recording.from_robtop(unzip_level_string(data.get(RECORDING, EMPTY)))
+
+        playable = data.get(PLAYABLE, DEFAULT_PLAYABLE)
+        unlocked = data.get(UNLOCKED, DEFAULT_UNLOCKED)
+
+        password = data.get(PASSWORD)
+
+        if password is None:
+            password_data = Password()
+
+        else:
+            password_data = Password.from_robtop_value(password)
+
+        original_id = data.get(ORIGINAL_ID, DEFAULT_ID)
+
+        two_player = data.get(TWO_PLAYER, DEFAULT_TWO_PLAYER)
+
+        object_count = data.get(OBJECT_COUNT, DEFAULT_OBJECT_COUNT)
+
+        collected_coins = CollectedCoins.NONE
+
+        first_coin = data.get(FIRST_COIN)
+
+        if first_coin:
+            collected_coins |= CollectedCoins.FIRST
+
+        second_coin = data.get(SECOND_COIN)
+
+        if second_coin:
+            collected_coins |= CollectedCoins.SECOND
+
+        third_coin = data.get(THIRD_COIN)
+
+        if third_coin:
+            collected_coins |= CollectedCoins.THIRD
+
+        coins = data.get(COINS, DEFAULT_COINS)
+
+        verified_coins = data.get(VERIFIED_COINS, DEFAULT_VERIFIED_COINS)
+
+        requested_stars = data.get(REQUESTED_STARS, DEFAULT_STARS)
+
+        orb_percentage = data.get(ORB_PERCENTAGE, DEFAULT_ORB_PERCENTAGE)
+
+        low_detail = data.get(LOW_DETAIL, DEFAULT_LOW_DETAIL)
+        low_detail_toggled = data.get(LOW_DETAIL_TOGGLED, DEFAULT_LOW_DETAIL_TOGGLED)
+
+        timely_id = data.get(TIMELY_ID, DEFAULT_ID)
+
+        gauntlet = data.get(GAUNTLET, DEFAULT_GAUNTLET)
+
+        unlisted = data.get(UNLISTED, DEFAULT_UNLISTED)
+
+        editor_seconds = data.get(EDITOR_SECONDS)
+
+        if editor_seconds is None:
+            editor_time = Duration()
+
+        else:
+            editor_time = Duration(seconds=editor_seconds)
+
+        copies_seconds = data.get(EDITOR_SECONDS)
+
+        if copies_seconds is None:
+            copies_time = Duration()
+
+        else:
+            copies_time = Duration(seconds=copies_seconds)
+
+        favorite = data.get(FAVORITE, DEFAULT_FAVORITE)
+
+        level_order = data.get(LEVEL_ORDER, DEFAULT_LEVEL_ORDER)
+
+        folder_id = data.get(FOLDER_ID, DEFAULT_ID)
+
+        best_clicks = data.get(BEST_CLICKS, DEFAULT_CLICKS)
+
+        best_seconds = data.get(BEST_SECONDS)
+
+        if best_seconds is None:
+            best_time = Duration()
+
+        else:
+            best_time = Duration(seconds=best_seconds)
+
+        progress_string = data.get(PROGRESS)
+
+        if progress_string is None:
+            progress = Progress()
+
+        else:
+            progress = Progress.from_robtop(progress_string)
+
+        leaderboard_record = data.get(LEADERBOARD_RECORD, DEFAULT_RECORD)
+
+        return cls(
+            id=id,
+            name=name,
+            creator=creator,
+            song=song,
+            description=description,
+            unprocessed_data=unprocessed_data,
+            difficulty=difficulty,
+        )
 
     def to_robtop_data(self) -> Dict[str, Any]:
         return {}
@@ -157,6 +512,7 @@ class LevelAPI(Binary, RobTop):
         gauntlet_bit = GAUNTLET_BIT
         unlisted_bit = UNLISTED_BIT
         unlocked_bit = UNLOCKED_BIT
+        high_object_count_bit = HIGH_OBJECT_COUNT_BIT
 
         reader = Reader(binary)
 
@@ -203,6 +559,7 @@ class LevelAPI(Binary, RobTop):
         gauntlet = value & gauntlet_bit == gauntlet_bit
         unlisted = value & unlisted_bit == unlisted_bit
         unlocked = value & unlocked_bit == unlocked_bit
+        high_object_count = value & high_object_count_bit == high_object_count_bit
 
         downloads = reader.read_u32(order)
 
@@ -214,6 +571,7 @@ class LevelAPI(Binary, RobTop):
         binary_version = Version.from_binary(binary, order, version)
 
         attempts = reader.read_u32(order)
+        jumps = reader.read_u32(order)
 
         normal_record = reader.read_u8(order)
         practice_record = reader.read_u8(order)
@@ -250,6 +608,8 @@ class LevelAPI(Binary, RobTop):
 
         requested_stars = reader.read_u8(order)
 
+        orb_percentage = reader.read_u8(order)
+
         timely_id = reader.read_u32(order)
 
         editor_seconds = reader.read_f32(order)
@@ -272,13 +632,12 @@ class LevelAPI(Binary, RobTop):
 
         leaderboard_record = reader.read_u8(order)
 
-        return cls(
+        level = cls(
             id=id,
             name=name,
             creator=creator,
             song=song,
             description=description,
-            data=data,
             difficulty=difficulty,
             downloads=downloads,
             editable=editable,
@@ -289,6 +648,7 @@ class LevelAPI(Binary, RobTop):
             game_version=game_version,
             binary_version=binary_version,
             attempts=attempts,
+            jumps=jumps,
             normal_record=normal_record,
             practice_record=practice_record,
             type=type,
@@ -304,10 +664,12 @@ class LevelAPI(Binary, RobTop):
             original_id=original_id,
             two_player=two_player,
             object_count=object_count,
+            high_object_count=high_object_count,
             collected_coins=collected_coins,
             coins=coins,
             verified_coins=verified_coins,
             requested_stars=requested_stars,
+            orb_percentage=orb_percentage,
             low_detail=low_detail,
             low_detail_toggled=low_detail_toggled,
             timely_id=timely_id,
@@ -323,6 +685,10 @@ class LevelAPI(Binary, RobTop):
             progress=progress,
             leaderboard_record=leaderboard_record,
         )
+
+        level.data = data
+
+        return level
 
     def to_binary(
         self,
@@ -401,6 +767,9 @@ class LevelAPI(Binary, RobTop):
         if self.is_unlocked():
             value |= UNLOCKED_BIT
 
+        if self.has_high_object_count():
+            value |= HIGH_OBJECT_COUNT_BIT
+
         writer.write_u8(value, order)
 
         writer.write_u32(self.downloads, order)
@@ -413,6 +782,7 @@ class LevelAPI(Binary, RobTop):
         self.binary_version.to_binary(binary, order, version)
 
         writer.write_u32(self.attempts, order)
+        writer.write_u32(self.jumps, order)
 
         writer.write_u8(self.normal_record, order)
         writer.write_u8(self.practice_record, order)
@@ -442,6 +812,8 @@ class LevelAPI(Binary, RobTop):
         writer.write_u8(self.coins, order)
 
         writer.write_u8(self.requested_stars, order)
+
+        writer.write_u8(self.orb_percentage, order)
 
         writer.write_u32(self.timely_id, order)
 
@@ -498,13 +870,5 @@ class LevelAPI(Binary, RobTop):
     def is_unlisted(self) -> bool:
         return self.unlisted
 
-    @classmethod
-    def from_robtop(cls: Type[A], string: str) -> A:
-        ...
-
-    def to_robtop(self) -> str:
-        ...
-
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
-        ...
+    def has_high_object_count(self) -> bool:
+        return self.high_object_count

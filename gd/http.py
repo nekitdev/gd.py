@@ -5,7 +5,6 @@ from atexit import register as register_at_exit
 from builtins import getattr as get_attribute
 from builtins import setattr as set_attribute
 from io import BytesIO
-from itertools import repeat
 from pathlib import Path
 from random import randrange as get_random_range
 from types import TracebackType as Traceback
@@ -31,7 +30,6 @@ from tqdm import tqdm as progess  # type: ignore
 from typing_extensions import Literal
 from yarl import URL
 
-from gd.api.editor import DEFAULT_DATA, Editor
 from gd.api.recording import Recording
 from gd.async_utils import run_blocking, shutdown_loop
 from gd.constants import (
@@ -112,6 +110,7 @@ from gd.errors import (
 from gd.filters import Filters
 from gd.iter_utils import unary_tuple
 from gd.models import CommentBannedModel
+from gd.models_constants import OBJECT_SEPARATOR
 from gd.models_utils import concat_extra_string
 from gd.password import Password
 from gd.progress import Progress
@@ -1497,7 +1496,7 @@ class HTTPClient:
         recording: Optional[Recording] = None,
         editor_time: Optional[Duration] = None,
         copies_time: Optional[Duration] = None,
-        data: bytes = DEFAULT_DATA,
+        data: str = EMPTY,
         *,
         account_id: int,
         account_name: str,
@@ -1511,17 +1510,18 @@ class HTTPClient:
 
         error_codes = {-1: MissingAccess(FAILED_TO_UPLOAD_LEVEL)}
 
-        editor = Editor.from_bytes(data)
+        object_separator = OBJECT_SEPARATOR
 
-        object_count = len(editor)
+        if object_separator in data:
+            object_count = data.count(object_separator)
 
-        string = zip_level_string(editor.to_robtop())
+            data = zip_level_string(data)
 
         extra_string = self.generate_extra_string()
 
         description = encode_base64_string_url_safe(description)
 
-        level_seed = generate_level_seed(string)
+        level_seed = generate_level_seed(data)
 
         random_string = generate_random_string()
 
@@ -1558,7 +1558,7 @@ class HTTPClient:
             unlisted2=privacy.is_friends(),
             ldm=int(low_detail),
             password=password.to_robtop_value(),
-            level_string=string,
+            level_string=data,
             extra_string=extra_string,
             level_info=recording_string,
             seed=random_string,
@@ -2768,7 +2768,7 @@ class HTTPClientContextManager(Generic[C]):
     saved_attributes: Namespace = field(factory=dict, repr=False, init=False)
 
     def __init__(self, client: C, **attributes: Any) -> None:
-        self.__attrs_init__(client, attributes)
+        self.__attrs_init__(client, attributes)  # type: ignore
 
     def apply(self) -> None:
         client = self.client

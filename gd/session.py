@@ -6,7 +6,6 @@ from attrs import field, frozen
 from yarl import URL
 
 from gd.api.database import Database
-from gd.api.editor import DEFAULT_DATA
 from gd.api.recording import Recording
 from gd.api.save_manager import save
 from gd.constants import (
@@ -313,9 +312,9 @@ class Session:
         low_detail: bool = DEFAULT_LOW_DETAIL,
         password: Optional[Password] = None,
         recording: Optional[Recording] = None,
-        editor_time: Optional[timedelta] = None,
-        copies_time: Optional[timedelta] = None,
-        data: bytes = DEFAULT_DATA,
+        editor_time: Optional[Duration] = None,
+        copies_time: Optional[Duration] = None,
+        data: str = EMPTY,
         *,
         account_id: int,
         account_name: str,

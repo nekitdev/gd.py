@@ -906,6 +906,7 @@ class MiscType(Enum):
     """An enumeration of IDs of miscellaneous objects."""
 
     TEXT = 914
+    START_POSITION = 31
     ITEM_COUNTER = 1615
     COLLISION_BLOCK = 1816
 

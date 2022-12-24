@@ -1,10 +1,14 @@
-from typing import Any, Generic, Optional, TypeVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
 
 from named import get_type_name
 
-from gd.date_time import Duration
 from gd.string_utils import password_str, tick
 from gd.typing import AnyException
+
+if TYPE_CHECKING:
+    from gd.date_time import Duration
 
 __all__ = (
     "InternalError",

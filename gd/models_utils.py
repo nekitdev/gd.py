@@ -10,7 +10,6 @@ from gd.models_constants import (
     COLOR_SEPARATOR,
     COMMENT_BANNED_SEPARATOR,
     CREATOR_SEPARATOR,
-    DATABASE_SEPARATOR,
     EXTRA_STRING_SEPARATOR,
     FRIEND_REQUEST_SEPARATOR,
     FRIEND_REQUESTS_RESPONSE_FRIEND_REQUESTS_SEPARATOR,
@@ -230,9 +229,6 @@ concat_hsv = partial(concat_iterable, HSV_SEPARATOR)
 split_color = partial(split_iterable, COLOR_SEPARATOR)
 concat_color = partial(concat_iterable, COLOR_SEPARATOR)
 
-split_database = partial(split_iterable, DATABASE_SEPARATOR)
-concat_database = partial(concat_iterable, DATABASE_SEPARATOR)
-
 split_header = partial(split_string_mapping, HEADER_SEPARATOR)
 concat_header = partial(concat_string_mapping, HEADER_SEPARATOR)
 
@@ -247,6 +243,9 @@ concat_objects = partial(concat_iterable, OBJECTS_SEPARATOR)
 
 split_object = partial(split_mapping, OBJECT_SEPARATOR)
 concat_object = partial(concat_mapping, OBJECT_SEPARATOR)
+
+split_any_object = partial(split_string_mapping, OBJECT_SEPARATOR)
+concat_any_object = partial(concat_string_mapping, OBJECT_SEPARATOR)
 
 split_groups = partial(split_iterable, GROUPS_SEPARATOR)
 concat_groups = partial(concat_iterable, GROUPS_SEPARATOR)

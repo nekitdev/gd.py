@@ -222,14 +222,15 @@ class Song(Entity):
             custom=False,
         )
 
-    async def update(self: S, from_newgrounds: bool = DEFAULT_FROM_NEWGROUNDS) -> S:
+    async def get(self, from_newgrounds: bool = DEFAULT_FROM_NEWGROUNDS) -> Song:
         if from_newgrounds:
-            new = await self.client.get_newgrounds_song(self.id)
+            return await self.client.get_newgrounds_song(self.id)
 
         else:
-            new = await self.client.get_song(self.id)
+            return await self.client.get_song(self.id)
 
-        return self.update_from(new)
+    async def update(self: S, from_newgrounds: bool = DEFAULT_FROM_NEWGROUNDS) -> S:
+        return self.update_from(await self.get(from_newgrounds=from_newgrounds))
 
     async def ensure_download_url(self) -> None:
         download_url = self.download_url

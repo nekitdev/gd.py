@@ -9,7 +9,6 @@ from gd.binary_constants import HALF_BITS, HALF_BYTE
 from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ID
 from gd.enums import ByteOrder, GameMode, Speed
-from gd.models import Model
 from gd.models_constants import HEADER_SEPARATOR
 from gd.models_utils import (
     concat_header,
@@ -19,12 +18,11 @@ from gd.models_utils import (
     partial_parse_enum,
     split_header,
 )
+from gd.robtop import RobTop
 
 DEFAULT_MINI_MODE = False
 
 DEFAULT_DUAL_MODE = False
-
-DEFAULT_START_POSITION = False
 
 DEFAULT_TWO_PLAYER = False
 
@@ -40,14 +38,13 @@ DEFAULT_PLATFORMER_MODE = False
 DEFAULT_COLOR_CHANNELS_PAGE = 0
 
 
-MINI_MODE_BIT = 0b10000000
-DUAL_MODE_BIT = 0b01000000
-START_POSITION_BIT = 0b00100000
-TWO_PLAYER_BIT = 0b00010000
+MINI_MODE_BIT = 0b00000001
+DUAL_MODE_BIT = 0b00000010
+TWO_PLAYER_BIT = 0b00000100
 FLIP_GRAVITY_BIT = 0b00001000
-SONG_FADE_IN_BIT = 0b00000100
-SONG_FADE_OUT_BIT = 0b00000010
-PLATFORMER_MODE_BIT = 0b00000001
+SONG_FADE_IN_BIT = 0b00010000
+SONG_FADE_OUT_BIT = 0b00100000
+PLATFORMER_MODE_BIT = 0b01000000
 
 H = TypeVar("H", bound="Header")
 
@@ -73,14 +70,13 @@ COLOR_CHANNELS_PAGE = "kS39"
 
 
 @define()
-class Header(Model, Binary):  # TODO: compatibility?
+class Header(Binary, RobTop):  # TODO: compatibility?
     game_mode: GameMode = field(default=GameMode.DEFAULT)
     mini_mode: bool = field(default=DEFAULT_MINI_MODE)
     speed: Speed = field(default=Speed.DEFAULT)
     background_id: int = field(default=DEFAULT_ID)
     ground_id: int = field(default=DEFAULT_ID)
     dual_mode: bool = field(default=DEFAULT_DUAL_MODE)
-    start_position: bool = field(default=DEFAULT_START_POSITION)
     two_player: bool = field(default=DEFAULT_TWO_PLAYER)
     flip_gravity: bool = field(default=DEFAULT_FLIP_GRAVITY)
     song_offset: float = field(default=DEFAULT_SONG_OFFSET)
@@ -102,7 +98,6 @@ class Header(Model, Binary):  # TODO: compatibility?
     ) -> H:
         mini_mode_bit = MINI_MODE_BIT
         dual_mode_bit = DUAL_MODE_BIT
-        start_position_bit = START_POSITION_BIT
         two_player_bit = TWO_PLAYER_BIT
         flip_gravity_bit = FLIP_GRAVITY_BIT
         song_fade_in_bit = SONG_FADE_IN_BIT
@@ -124,16 +119,15 @@ class Header(Model, Binary):  # TODO: compatibility?
 
         game_mode = GameMode(value)
 
-        bits = reader.read_u8(order)
+        value = reader.read_u8(order)
 
-        mini_mode = bits & mini_mode_bit == mini_mode_bit
-        dual_mode = bits & dual_mode_bit == dual_mode_bit
-        start_position = bits & start_position_bit == start_position_bit
-        two_player = bits & two_player_bit == two_player_bit
-        flip_gravity = bits & flip_gravity_bit == flip_gravity_bit
-        song_fade_in = bits & song_fade_in_bit == song_fade_in_bit
-        song_fade_out = bits & song_fade_out_bit == song_fade_out_bit
-        platformer_mode = bits & platformer_mode_bit == platformer_mode_bit
+        mini_mode = value & mini_mode_bit == mini_mode_bit
+        dual_mode = value & dual_mode_bit == dual_mode_bit
+        two_player = value & two_player_bit == two_player_bit
+        flip_gravity = value & flip_gravity_bit == flip_gravity_bit
+        song_fade_in = value & song_fade_in_bit == song_fade_in_bit
+        song_fade_out = value & song_fade_out_bit == song_fade_out_bit
+        platformer_mode = value & platformer_mode_bit == platformer_mode_bit
 
         song_offset = reader.read_f32(order)
 
@@ -150,7 +144,6 @@ class Header(Model, Binary):  # TODO: compatibility?
             background_id=background_id,
             ground_id=ground_id,
             dual_mode=dual_mode,
-            start_position=start_position,
             two_player=two_player,
             flip_gravity=flip_gravity,
             song_offset=song_offset,
@@ -180,33 +173,30 @@ class Header(Model, Binary):  # TODO: compatibility?
 
         writer.write_u8(value, order)
 
-        bits = 0
+        value = 0
 
         if self.is_mini_mode():
-            bits |= MINI_MODE_BIT
+            value |= MINI_MODE_BIT
 
         if self.is_dual_mode():
-            bits |= DUAL_MODE_BIT
-
-        if self.is_start_position():
-            bits |= START_POSITION_BIT
+            value |= DUAL_MODE_BIT
 
         if self.is_two_player():
-            bits |= TWO_PLAYER_BIT
+            value |= TWO_PLAYER_BIT
 
         if self.is_flip_gravity():
-            bits |= FLIP_GRAVITY_BIT
+            value |= FLIP_GRAVITY_BIT
 
         if self.is_song_fade_in():
-            bits |= SONG_FADE_IN_BIT
+            value |= SONG_FADE_IN_BIT
 
         if self.is_song_fade_out():
-            bits |= SONG_FADE_OUT_BIT
+            value |= SONG_FADE_OUT_BIT
 
         if self.is_platformer_mode():
-            bits |= PLATFORMER_MODE_BIT
+            value |= PLATFORMER_MODE_BIT
 
-        writer.write_u8(bits, order)
+        writer.write_u8(value, order)
 
         writer.write_f32(self.song_offset, order)
 
@@ -229,9 +219,6 @@ class Header(Model, Binary):  # TODO: compatibility?
             background_id=parse_get_or(int, DEFAULT_ID, mapping.get(BACKGROUND_ID)),
             ground_id=parse_get_or(int, DEFAULT_ID, mapping.get(GROUND_ID)),
             dual_mode=parse_get_or(int_bool, DEFAULT_DUAL_MODE, mapping.get(DUAL_MODE)),
-            start_position=parse_get_or(
-                int_bool, DEFAULT_START_POSITION, mapping.get(START_POSITION)
-            ),
             two_player=parse_get_or(int_bool, DEFAULT_TWO_PLAYER, mapping.get(TWO_PLAYER)),
             flip_gravity=parse_get_or(int_bool, DEFAULT_FLIP_GRAVITY, mapping.get(FLIP_GRAVITY)),
             song_offset=parse_get_or(float, DEFAULT_SONG_OFFSET, mapping.get(SONG_OFFSET)),
@@ -259,7 +246,7 @@ class Header(Model, Binary):  # TODO: compatibility?
             BACKGROUND_ID: str(self.background_id),
             GROUND_ID: str(self.ground_id),
             DUAL_MODE: str(int(self.dual_mode)),
-            START_POSITION: str(int(self.start_position)),
+            START_POSITION: str(int(False)),
             TWO_PLAYER: str(int(self.two_player)),
             FLIP_GRAVITY: str(int(self.flip_gravity)),
             SONG_OFFSET: float_str(self.song_offset),

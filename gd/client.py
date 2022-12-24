@@ -24,7 +24,6 @@ from typing_extensions import ParamSpec
 from yarl import URL
 
 from gd.api.database import Database
-from gd.api.editor import DEFAULT_DATA
 from gd.api.recording import Recording
 from gd.artist import Artist
 from gd.async_utils import awaiting, run, run_iterables
@@ -78,7 +77,7 @@ from gd.enums import (
     SimpleRelationshipType,
     TimelyType,
 )
-from gd.errors import ClientError, MissingAccess, NothingFound
+from gd.errors import ClientError, NothingFound
 from gd.events.controller import Controller
 from gd.events.listeners import (
     DailyCommentListener,
@@ -781,9 +780,9 @@ class Client:
         low_detail: bool = DEFAULT_LOW_DETAIL,
         password: Optional[Password] = None,
         recording: Optional[Recording] = None,
-        editor_time: Optional[timedelta] = None,
-        copies_time: Optional[timedelta] = None,
-        data: bytes = DEFAULT_DATA,
+        editor_time: Optional[Duration] = None,
+        copies_time: Optional[Duration] = None,
+        data: str = EMPTY,
     ) -> Level:
         level_id = await self.session.upload_level(
             name=name,

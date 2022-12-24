@@ -19,7 +19,7 @@ from gd.filters import Filters
 from gd.song import Song
 from gd.text_utils import snake_to_camel
 from gd.versions import CURRENT_BINARY_VERSION, Version
-from gd.xml_parser import XMLParser
+from gd.xml import PARSER
 
 __all__ = ("Database",)
 
@@ -51,7 +51,8 @@ class Completed:
     gauntlets: Storage = field(factory=Storage)
     map_packs: OrderedSet[int] = field(factory=ordered_set)
 
-    def get_type_to_set(self) -> Dict[str, OrderedSet[int]]:
+    @property
+    def type_to_set(self) -> Dict[str, OrderedSet[int]]:
         official = self.official
         normal = self.normal
         timely = self.timely
@@ -69,7 +70,8 @@ class Completed:
             MAP_PACKS: map_packs,
         }
 
-    def get_prefix_to_set(self) -> Dict[str, OrderedSet[int]]:
+    @property
+    def prefix_to_set(self) -> Dict[str, OrderedSet[int]]:
         return {prefix(type): set for type, set in self.get_type_to_set().items()}
 
 
@@ -1699,8 +1701,6 @@ def is_true(item: Any) -> TypeGuard[Literal[True]]:
     return item is True
 
 
-XML_PARSER = XMLParser()  # the parser is stateless, so it can be reused
-
 D = TypeVar("D", bound="Database")
 
 
@@ -1780,24 +1780,39 @@ class Database(Binary):
 
     @classmethod
     def load_parts(cls: Type[D], main: bytes, levels: bytes) -> D:
-        xml_parser = XML_PARSER
+        parser = PARSER
 
-        main_data = xml_parser.load(main)
-        levels_data = xml_parser.load(levels)
+        main_data = parser.load(main)
+        levels_data = parser.load(levels)
+
+        import json
+
+        json.dump(main_data, open("main.json", "w"), indent=4)
+        json.dump(levels_data, open("levels.json", "w"), indent=4)
 
         created_levels_data = levels_data[CREATED_LEVELS]
         binary_version_data = levels_data[BINARY_VERSION]
 
         binary_version = Version.from_value(binary_version_data)
 
-        created_levels = iter(created_levels_data.values()).drop_while(is_true).map(
-            LevelAPI.from_robtop_data
-        ).ordered_set()
+        created_levels = (
+            iter(created_levels_data.values())
+            .drop_while(is_true)
+            .map(LevelAPI.from_robtop_data)
+            .ordered_set()
+        )
 
         return cls(created_levels=created_levels, binary_version=binary_version)
 
+    def dump_main(self) -> bytes:
+        parser = PARSER
+
+        main_data = {}
+
+        return parser.dump(main_data)
+
     def dump_levels(self) -> bytes:
-        xml_parser = XML_PARSER
+        parser = PARSER
 
         created_levels_data = {IS_ARRAY: True}
 
@@ -1812,7 +1827,7 @@ class Database(Binary):
 
         levels_data = {CREATED_LEVELS: created_levels_data, BINARY_VERSION: binary_version_data}
 
-        return xml_parser.dump(levels_data)
+        return parser.dump(levels_data)
 
     @classmethod
     def create_save_manager(cls: Type[D]) -> SaveManager[D]:

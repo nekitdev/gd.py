@@ -1,15 +1,15 @@
 from functools import partial
 from io import BytesIO
-from typing import Dict, Iterable, Mapping, Type, TypeVar
+from typing import Dict, Iterable, Mapping, Type, TypeVar, Union
 
 from attrs import define, field
 from iters import iter
 from iters.ordered_set import OrderedSet
-from typing_extensions import Literal, TypeGuard
+from typing_extensions import Literal, Never, TypeGuard
 
 from gd.api.hsv import HSV
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_constants import BITS, BYTE
+from gd.binary_constants import BITS, BYTE, HALF_BITS, HALF_BYTE
 from gd.binary_utils import Reader, Writer
 from gd.color import Color
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, EMPTY
@@ -19,6 +19,7 @@ from gd.enums import (
     ByteOrder,
     CoinType,
     Easing,
+    GameMode,
     InstantCountComparison,
     MiscType,
     OrbType,
@@ -33,28 +34,32 @@ from gd.enums import (
     RotatingObjectType,
     SimpleTargetType,
     SimpleZLayer,
+    Speed,
     SpeedChangeType,
     TargetType,
     ToggleType,
     TriggerType,
     ZLayer,
 )
-from gd.models import Model
 from gd.models_constants import GROUPS_SEPARATOR, OBJECT_SEPARATOR
 from gd.models_utils import (
+    concat_any_object,
     concat_groups,
     concat_object,
     float_str,
     int_bool,
     parse_get_or,
     partial_parse_enum,
+    split_any_object,
     split_groups,
     split_object,
 )
 from gd.robtop import RobTop
+from gd.typing import is_instance
 
 __all__ = (
     "Groups",
+    "Object",
     "Object",
     "PulsatingObject",
     "RotatingObject",
@@ -84,6 +89,10 @@ __all__ = (
     "FollowPlayerYTrigger",
     "OnDeathTrigger",
     "CollisionTrigger",
+    "is_start_position",
+    "is_trigger",
+    "has_target_group",
+    "has_additional_group",
     "object_from_binary",
     "object_to_binary",
     "object_from_bytes",
@@ -209,7 +218,7 @@ O = TypeVar("O", bound="Object")
 
 
 @define()
-class Object(Model, Binary):
+class Object(Binary, RobTop):
     id: int = field()
     x: float = field(default=DEFAULT_X)
     y: float = field(default=DEFAULT_Y)
@@ -776,6 +785,9 @@ class Object(Model, Binary):
     def is_trigger(self) -> bool:
         return False
 
+    def is_start_position(self) -> bool:
+        return False
+
     def has_target_group(self) -> bool:
         return False
 
@@ -794,6 +806,193 @@ class Object(Model, Binary):
 
 PORTAL_IDS = {portal.id for portal in PortalType}
 SPEED_CHANGE_IDS = {speed_change.id for speed_change in SpeedChangeType}
+
+
+ID_STRING = str(ID)
+X_STRING = str(X)
+Y_STRING = str(Y)
+
+START_POSITION_GAME_MODE = "kA2"
+START_POSITION_MINI_MODE = "kA3"
+START_POSITION_SPEED = "kA4"
+START_POSITION_DUAL_MODE = "kA8"
+START_POSITION = "kA9"
+START_POSITION_FLIP_GRAVITY = "kA11"
+
+
+DEFAULT_START_POSITION_MINI_MODE = False
+DEFAULT_START_POSITION_DUAL_MODE = False
+DEFAULT_START_POSITION_FLIP_GRAVITY = False
+
+
+START_POSITION_MINI_MODE_BIT = 0b00000001
+START_POSITION_DUAL_MODE_BIT = 0b00000010
+START_POSITION_FLIP_GRAVITY_BIT = 0b00000100
+
+
+SP = TypeVar("SP", bound="StartPosition")
+
+SPECIAL_HANDLING = (
+    "special handling is required for start positions; consider using `from_robtop` and `to_robtop`"
+)
+
+
+@define()
+class StartPosition(Object):
+    game_mode: GameMode = field(default=GameMode.DEFAULT)
+    mini_mode: bool = field(default=DEFAULT_START_POSITION_MINI_MODE)
+    speed: Speed = field(default=Speed.DEFAULT)
+    dual_mode: bool = field(default=DEFAULT_START_POSITION_DUAL_MODE)
+    flip_gravity: bool = field(default=DEFAULT_START_POSITION_FLIP_GRAVITY)
+
+    @classmethod
+    def from_binary(
+        cls: Type[SP],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> SP:
+        start_position = super().from_binary(binary, order, version)
+
+        start_position_mini_mode_bit = START_POSITION_MINI_MODE_BIT
+        start_position_dual_mode_bit = START_POSITION_DUAL_MODE_BIT
+        start_position_flip_gravity_bit = START_POSITION_FLIP_GRAVITY_BIT
+
+        reader = Reader(binary)
+
+        value = reader.read_u8(order)
+
+        speed = Speed(value & HALF_BYTE)
+
+        value >>= HALF_BITS
+
+        game_mode = GameMode(value)
+
+        value = reader.read_u8(order)
+
+        mini_mode = value & start_position_mini_mode_bit == start_position_mini_mode_bit
+        dual_mode = value & start_position_dual_mode_bit == start_position_dual_mode_bit
+        flip_gravity = value & start_position_flip_gravity_bit == start_position_flip_gravity_bit
+
+        start_position.game_mode = game_mode
+        start_position.mini_mode = mini_mode
+        start_position.speed = speed
+        start_position.dual_mode = dual_mode
+        start_position.flip_gravity = flip_gravity
+
+        return start_position
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> None:
+        super().to_binary(binary, order, version)
+
+        writer = Writer(binary)
+
+        value = (self.game_mode.value << HALF_BITS) | self.speed.value
+
+        writer.write_u8(value, order)
+
+        value = 0
+
+        if self.is_mini_mode():
+            value |= START_POSITION_MINI_MODE_BIT
+
+        if self.is_dual_mode():
+            value |= START_POSITION_DUAL_MODE_BIT
+
+        if self.is_flip_gravity():
+            value |= START_POSITION_FLIP_GRAVITY_BIT
+
+        writer.write_u8(value, order)
+
+    @classmethod
+    def from_robtop(cls: Type[SP], string: str) -> SP:
+        mapping = split_any_object(string)
+
+        id_option = mapping.get(ID_STRING)
+
+        if id_option is None:
+            raise ValueError(OBJECT_ID_NOT_PRESENT)
+
+        id = int(id_option)
+
+        x = parse_get_or(float, DEFAULT_X, mapping.get(X_STRING))
+        y = parse_get_or(float, DEFAULT_Y, mapping.get(Y_STRING))
+
+        game_mode = parse_get_or(
+            partial_parse_enum(int, GameMode),
+            GameMode.DEFAULT,
+            mapping.get(START_POSITION_GAME_MODE),
+        )
+
+        mini_mode = parse_get_or(
+            int_bool, DEFAULT_START_POSITION_MINI_MODE, mapping.get(START_POSITION_MINI_MODE)
+        )
+
+        speed = parse_get_or(
+            partial_parse_enum(int, Speed), Speed.DEFAULT, mapping.get(START_POSITION_SPEED)
+        )
+
+        dual_mode = parse_get_or(
+            int_bool, DEFAULT_START_POSITION_DUAL_MODE, mapping.get(START_POSITION_DUAL_MODE)
+        )
+
+        flip_gravity = parse_get_or(
+            int_bool, DEFAULT_START_POSITION_FLIP_GRAVITY, mapping.get(START_POSITION_FLIP_GRAVITY)
+        )
+
+        return cls(
+            id=id,
+            x=x,
+            y=y,
+            game_mode=game_mode,
+            mini_mode=mini_mode,
+            speed=speed,
+            dual_mode=dual_mode,
+            flip_gravity=flip_gravity,
+        )
+
+    def to_robtop(self) -> str:
+        mapping = {
+            ID_STRING: str(self.id),
+            X_STRING: float_str(self.x),
+            Y_STRING: float_str(self.y),
+            START_POSITION_GAME_MODE: str(self.game_mode.value),
+            START_POSITION_MINI_MODE: str(int(self.mini_mode)),
+            START_POSITION_SPEED: str(self.speed.value),
+            START_POSITION_DUAL_MODE: str(int(self.dual_mode)),
+            START_POSITION: str(int(True)),
+            START_POSITION_FLIP_GRAVITY: str(int(self.flip_gravity)),
+        }
+
+        return concat_any_object(mapping)
+
+    @classmethod
+    def from_robtop_mapping(cls, mapping: Mapping[int, str]) -> Never:
+        raise NotImplementedError(SPECIAL_HANDLING)
+
+    def to_robtop_mapping(cls) -> Never:
+        raise NotImplementedError(SPECIAL_HANDLING)
+
+    def is_start_position(self) -> bool:
+        return True
+
+    def is_mini_mode(self) -> bool:
+        return self.mini_mode
+
+    def is_dual_mode(self) -> bool:
+        return self.dual_mode
+
+    def is_flip_gravity(self) -> bool:
+        return self.flip_gravity
+
+
+def is_start_position(object: Object) -> TypeGuard[StartPosition]:
+    return object.is_start_position()
 
 
 COIN_ID = 12
@@ -3353,7 +3552,6 @@ DUAL_MODE_BIT = 0b00001000
 DEFAULT_HOLD_MODE = False
 DEFAULT_DUAL_MODE = False
 
-
 THT = TypeVar("THT", bound="TouchTrigger")
 
 
@@ -4031,38 +4229,40 @@ def has_additional_group(object: Object) -> TypeGuard[HasAdditionalGroup]:
 
 class ObjectType(Enum):
     OBJECT = 1
-    PULSATING_OBJECT = 2
-    ROTATING_OBJECT = 3
-    ORB = 4
-    TRIGGER_ORB = 5
-    SECRET_COIN = 6
-    TEXT = 7
-    TELEPORT = 8
-    ITEM_COUNTER = 9
-    PICKUP_ITEM = 10
-    COLLISION_BLOCK = 11
-    COLOR_TRIGGER = 12
-    PULSE_TRIGGER = 13
-    ALPHA_TRIGGER = 14
-    MOVE_TRIGGER = 15
-    SPAWN_TRIGGER = 16
-    STOP_TRIGGER = 17
-    TOGGLE_TRIGGER = 18
-    ROTATE_TRIGGER = 19
-    FOLLOW_TRIGGER = 20
-    SHAKE_TRIGGER = 21
-    ANIMATE_TRIGGER = 22
-    TOUCH_TRIGGER = 23
-    COUNT_TRIGGER = 24
-    INSTANT_COUNT_TRIGGER = 25
-    PICKUP_TRIGGER = 26
-    FOLLOW_PLAYER_Y_TRIGGER = 27
-    ON_DEATH_TRIGGER = 28
-    COLLISION_TRIGGER = 29
+    START_POSITION = 2
+    PULSATING_OBJECT = 3
+    ROTATING_OBJECT = 4
+    ORB = 5
+    TRIGGER_ORB = 6
+    SECRET_COIN = 7
+    TEXT = 8
+    TELEPORT = 9
+    ITEM_COUNTER = 10
+    PICKUP_ITEM = 11
+    COLLISION_BLOCK = 12
+    COLOR_TRIGGER = 13
+    PULSE_TRIGGER = 14
+    ALPHA_TRIGGER = 15
+    MOVE_TRIGGER = 16
+    SPAWN_TRIGGER = 17
+    STOP_TRIGGER = 18
+    TOGGLE_TRIGGER = 19
+    ROTATE_TRIGGER = 20
+    FOLLOW_TRIGGER = 21
+    SHAKE_TRIGGER = 22
+    ANIMATE_TRIGGER = 23
+    TOUCH_TRIGGER = 24
+    COUNT_TRIGGER = 25
+    INSTANT_COUNT_TRIGGER = 26
+    PICKUP_TRIGGER = 27
+    FOLLOW_PLAYER_Y_TRIGGER = 28
+    ON_DEATH_TRIGGER = 29
+    COLLISION_TRIGGER = 30
 
 
 OBJECT_TYPE_TO_TYPE: Dict[ObjectType, Type[Object]] = {
     ObjectType.OBJECT: Object,
+    ObjectType.START_POSITION: StartPosition,
     ObjectType.PULSATING_OBJECT: PulsatingObject,
     ObjectType.ROTATING_OBJECT: RotatingObject,
     ObjectType.ORB: Orb,
@@ -4144,6 +4344,7 @@ OBJECT_ID_NOT_PRESENT = "object id is not present"
 
 
 OBJECT_ID_TO_TYPE: Dict[int, Type[Object]] = {
+    MiscType.START_POSITION.id: StartPosition,
     MiscType.TEXT.id: Text,
     CoinType.SECRET.id: SecretCoin,
     PortalType.BLUE_TELEPORT.id: Teleport,
@@ -4181,9 +4382,9 @@ OBJECT_ID_TO_TYPE.update(
 
 
 def object_from_robtop(string: str) -> Object:
-    mapping = split_object(string)
+    mapping = split_any_object(string)
 
-    object_id_string = mapping.get(ID)
+    object_id_string = mapping.get(ID_STRING)
 
     if object_id_string is None:
         raise ValueError(OBJECT_ID_NOT_PRESENT)
@@ -4192,7 +4393,7 @@ def object_from_robtop(string: str) -> Object:
 
     object_type = OBJECT_ID_TO_TYPE.get(object_id, Object)
 
-    return object_type.from_robtop_mapping(mapping)
+    return object_type.from_robtop(string)
 
 
 def object_to_robtop(object: Object) -> str:

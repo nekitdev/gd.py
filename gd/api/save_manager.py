@@ -223,6 +223,5 @@ class SaveManager(Generic[D]):
 
 from gd.api.database import Database
 
-
 save = SaveManager(Database)
 create_database = save.create_database

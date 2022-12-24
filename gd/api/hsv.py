@@ -6,9 +6,9 @@ from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_constants import BITS, BYTE
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder
-from gd.models import Model
 from gd.models_constants import HSV_SEPARATOR
 from gd.models_utils import concat_hsv, float_str, int_bool, split_hsv
+from gd.robtop import RobTop
 
 __all__ = ("HSV",)
 
@@ -31,7 +31,7 @@ T = TypeVar("T", bound="HSV")
 
 
 @define()
-class HSV(Binary, Model):
+class HSV(Binary, RobTop):
     h: int = field(default=H_INITIAL)
     s: float = field(default=S_INITIAL)
     v: float = field(default=V_INITIAL)

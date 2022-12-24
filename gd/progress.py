@@ -7,16 +7,16 @@ from iters import iter
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder
-from gd.models import Model
 from gd.models_constants import PROGRESS_SEPARATOR
 from gd.models_utils import concat_progress, split_progress
+from gd.robtop import RobTop
 
 __all__ = ("Progress",)
 
 P = TypeVar("P", bound="Progress")
 
 
-class Progress(Binary, Model, ListType, List[int]):  # type: ignore
+class Progress(Binary, RobTop, ListType, List[int]):  # type: ignore
     @classmethod
     def from_binary(
         cls: Type[P],

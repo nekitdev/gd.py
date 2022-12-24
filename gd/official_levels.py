@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from attrs import frozen
 
 from gd.enums import Difficulty, LevelLength
@@ -16,7 +18,11 @@ class OfficialLevel:
     difficulty: Difficulty
     length: LevelLength
     game_version: GameVersion
-    demon: bool
+    data_path: Path
+
+
+NAME = "official_levels"
+DIRECTORY = Path(__file__).parent / NAME
 
 
 OFFICIAL_LEVELS = (
@@ -29,7 +35,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.EASY,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 0),
-        demon=False,
+        data_path=DIRECTORY / "stereo_madness.editor.gd.bin",
     ),
     OfficialLevel(
         id=2,
@@ -40,7 +46,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.EASY,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 0),
-        demon=False,
+        data_path=DIRECTORY / "back_on_track.editor.gd.bin",
     ),
     OfficialLevel(
         id=3,
@@ -51,7 +57,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 0),
-        demon=False,
+        data_path=DIRECTORY / "polargeist.editor.gd.bin",
     ),
     OfficialLevel(
         id=4,
@@ -62,7 +68,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 0),
-        demon=False,
+        data_path=DIRECTORY / "dry_out.editor.gd.bin",
     ),
     OfficialLevel(
         id=5,
@@ -73,7 +79,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARD,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 0),
-        demon=False,
+        data_path=DIRECTORY / "base_after_base.editor.gd.bin",
     ),
     OfficialLevel(
         id=6,
@@ -84,7 +90,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARD,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 0),
-        demon=False,
+        data_path=DIRECTORY / "can't_let_go.editor.gd.bin",
     ),
     OfficialLevel(
         id=7,
@@ -95,7 +101,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARDER,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 0),
-        demon=False,
+        data_path=DIRECTORY / "jumper.editor.gd.bin",
     ),
     OfficialLevel(
         id=8,
@@ -106,7 +112,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARDER,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 1),
-        demon=False,
+        data_path=DIRECTORY / "time_machine.editor.gd.bin",
     ),
     OfficialLevel(
         id=9,
@@ -117,7 +123,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARDER,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 2),
-        demon=False,
+        data_path=DIRECTORY / "cycles.editor.gd.bin",
     ),
     OfficialLevel(
         id=10,
@@ -128,7 +134,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.INSANE,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 3),
-        demon=False,
+        data_path=DIRECTORY / "xstep.editor.gd.bin",
     ),
     OfficialLevel(
         id=11,
@@ -139,7 +145,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.INSANE,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 4),
-        demon=False,
+        data_path=DIRECTORY / "clutterfunk.editor.gd.bin",
     ),
     OfficialLevel(
         id=12,
@@ -150,7 +156,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.INSANE,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 5),
-        demon=False,
+        data_path=DIRECTORY / "theory_of_everything.editor.gd.bin",
     ),
     OfficialLevel(
         id=13,
@@ -161,7 +167,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.INSANE,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 6),
-        demon=False,
+        data_path=DIRECTORY / "electroman_adventures.editor.gd.bin",
     ),
     OfficialLevel(
         id=14,
@@ -172,7 +178,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.EASY_DEMON,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 6),
-        demon=True,
+        data_path=DIRECTORY / "clubstep.editor.gd.bin",
     ),
     OfficialLevel(
         id=15,
@@ -183,7 +189,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.INSANE,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 7),
-        demon=False,
+        data_path=DIRECTORY / "electrodynamix.editor.gd.bin",
     ),
     OfficialLevel(
         id=16,
@@ -194,7 +200,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.INSANE,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 8),
-        demon=False,
+        data_path=DIRECTORY / "hexagon_force.editor.gd.bin",
     ),
     OfficialLevel(
         id=17,
@@ -205,7 +211,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARDER,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 9),
-        demon=False,
+        data_path=DIRECTORY / "blast_processing.editor.gd.bin",
     ),
     OfficialLevel(
         id=18,
@@ -216,7 +222,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.EASY_DEMON,
         length=LevelLength.LONG,
         game_version=GameVersion(1, 9),
-        demon=True,
+        data_path=DIRECTORY / "theory_of_everything_2.editor.gd.bin",
     ),
     OfficialLevel(
         id=19,
@@ -227,7 +233,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARDER,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 0),
-        demon=False,
+        data_path=DIRECTORY / "geometrical_dominator.editor.gd.bin",
     ),
     OfficialLevel(
         id=20,
@@ -238,7 +244,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.MEDIUM_DEMON,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 0),
-        demon=True,
+        data_path=DIRECTORY / "deadlocked.editor.gd.bin",
     ),
     OfficialLevel(
         id=21,
@@ -249,7 +255,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.INSANE,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 1),
-        demon=False,
+        data_path=DIRECTORY / "fingerdash.editor.gd.bin",
     ),
     OfficialLevel(
         id=1001,
@@ -260,7 +266,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.EASY,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 0),
-        demon=False,
+        data_path=DIRECTORY / "the_seven_seas.editor.gd.bin",
     ),
     OfficialLevel(
         id=1002,
@@ -271,7 +277,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 0),
-        demon=False,
+        data_path=DIRECTORY / "viking_arena.editor.gd.bin",
     ),
     OfficialLevel(
         id=1003,
@@ -282,7 +288,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARD,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 0),
-        demon=False,
+        data_path=DIRECTORY / "airborne_robots.editor.gd.bin",
     ),
     OfficialLevel(
         id=2001,
@@ -293,7 +299,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.EASY,
         length=LevelLength.SHORT,
         game_version=GameVersion(2, 1),
-        demon=False,
+        data_path=DIRECTORY / "payload.editor.gd.bin",
     ),
     OfficialLevel(
         id=2002,
@@ -304,7 +310,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
-        demon=False,
+        data_path=DIRECTORY / "beast_mode.editor.gd.bin",
     ),
     OfficialLevel(
         id=2003,
@@ -315,7 +321,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
-        demon=False,
+        data_path=DIRECTORY / "machina.editor.gd.bin",
     ),
     OfficialLevel(
         id=2004,
@@ -326,7 +332,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
-        demon=False,
+        data_path=DIRECTORY / "years.editor.gd.bin",
     ),
     OfficialLevel(
         id=2005,
@@ -337,7 +343,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
-        demon=False,
+        data_path=DIRECTORY / "frontlines.editor.gd.bin",
     ),
     OfficialLevel(
         id=2006,
@@ -348,7 +354,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
-        demon=False,
+        data_path=DIRECTORY / "space_pirates.editor.gd.bin",
     ),
     OfficialLevel(
         id=2007,
@@ -359,7 +365,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
-        demon=False,
+        data_path=DIRECTORY / "striker.editor.gd.bin",
     ),
     OfficialLevel(
         id=2008,
@@ -370,7 +376,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.SHORT,
         game_version=GameVersion(2, 1),
-        demon=False,
+        data_path=DIRECTORY / "embers.editor.gd.bin",
     ),
     OfficialLevel(
         id=2009,
@@ -381,7 +387,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
-        demon=False,
+        data_path=DIRECTORY / "round_1.editor.gd.bin",
     ),
     OfficialLevel(
         id=2010,
@@ -392,7 +398,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.MEDIUM,
         game_version=GameVersion(2, 1),
-        demon=False,
+        data_path=DIRECTORY / "monster_dance_off.editor.gd.bin",
     ),
     OfficialLevel(
         id=3001,
@@ -403,7 +409,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARD,
         length=LevelLength.SHORT,
         game_version=GameVersion(2, 1),
-        demon=False,
+        data_path=DIRECTORY / "the_challenge.editor.gd.bin",
     ),
     OfficialLevel(
         id=4001,
@@ -414,7 +420,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.NORMAL,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 2),
-        demon=False,
+        data_path=DIRECTORY / "press_start.editor.gd.bin",
     ),
     OfficialLevel(
         id=4002,
@@ -425,7 +431,7 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARD,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 2),
-        demon=False,
+        data_path=DIRECTORY / "nock_em.editor.gd.bin",
     ),
     OfficialLevel(
         id=4003,
@@ -436,6 +442,6 @@ OFFICIAL_LEVELS = (
         difficulty=Difficulty.HARDER,
         length=LevelLength.LONG,
         game_version=GameVersion(2, 2),
-        demon=False,
+        data_path=DIRECTORY / "power_trip.editor.gd.bin",
     ),
 )

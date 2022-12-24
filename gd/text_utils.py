@@ -46,7 +46,7 @@ def camel_to_snake(string: str) -> str:
     Returns:
         The resulting `snake_case` string.
     """
-    return CAMEL_TO_SNAKE.sub(lower_case_first_group, string).lower()
+    return CAMEL_TO_SNAKE.sub(lower_case_first_group, string)
 
 
 def snake_to_camel(string: str) -> str:
