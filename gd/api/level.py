@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type, TypeVar
+from typing import Any, Dict, Optional, Type, TypeVar
 
 from attrs import define, field
 
@@ -47,30 +47,21 @@ from gd.constants import (
 )
 from gd.date_time import Duration
 from gd.decorators import cache_by
+from gd.difficulty_parameters import DEFAULT_DEMON_DIFFICULTY_VALUE, DifficultyParameters
 from gd.encoding import (
     decode_base64_string_url_safe,
     encode_base64_string_url_safe,
     unzip_level_string,
     zip_level_string,
 )
-from gd.enums import (
-    DEMON_DIFFICULTY_TO_VALUE,
-    VALUE_TO_DEMON_DIFFICULTY,
-    ByteOrder,
-    CollectedCoins,
-    DemonDifficulty,
-    Difficulty,
-    LevelDifficulty,
-    LevelLength,
-    LevelType,
-    RateType,
-)
+from gd.enums import ByteOrder, CollectedCoins, Difficulty, InternalType, LevelLength, LevelType, RateType
 from gd.password import Password
 from gd.progress import Progress
 from gd.song import Song
 from gd.users import User
 from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, Version
 
+INTERNAL_TYPE = "kCEK"
 ID = "k1"
 NAME = "k2"
 DESCRIPTION = "k3"
@@ -80,8 +71,8 @@ CREATOR_ID = "k6"
 CREATOR_ACCOUNT_ID = "k60"
 OFFICIAL_SONG_ID = "k8"
 SONG_ID = "k45"
-DIFFICULTY_NUMERATOR = "k9"
-DIFFICULTY_DENOMINATOR = "k10"
+DIFFICULTY_DENOMINATOR = "k9"
+DIFFICULTY_NUMERATOR = "k10"
 AUTO = "k33"
 DEMON = "k25"
 DEMON_DIFFICULTY = "k76"
@@ -271,44 +262,13 @@ class LevelAPI(Binary):
             song = Song.default()
             song.id = song_id
 
-        difficulty_numerator = data.get(DIFFICULTY_NUMERATOR, DEFAULT_NUMERATOR)
-        difficulty_denominator = data.get(DIFFICULTY_DENOMINATOR, DEFAULT_DENOMINATOR)
-
-        if difficulty_denominator:
-            difficulty_value = difficulty_numerator // difficulty_denominator
-
-            if difficulty_value:
-                level_difficulty = LevelDifficulty(difficulty_value)
-
-            else:
-                level_difficulty = LevelDifficulty.DEFAULT
-
-        else:
-            level_difficulty = LevelDifficulty.DEFAULT
-
-        demon = data.get(DEMON, DEFAULT_DEMON)
-
-        demon_difficulty_value = data.get(DEMON_DIFFICULTY)
-
-        if demon_difficulty_value is None:
-            demon_difficulty = DemonDifficulty.DEFAULT
-
-        else:
-            demon_difficulty = VALUE_TO_DEMON_DIFFICULTY.get(
-                demon_difficulty_value, DemonDifficulty.DEFAULT
-            )
-
-        auto = data.get(AUTO, DEFAULT_AUTO)
-
-        if auto:
-            difficulty = Difficulty.AUTO
-
-        else:
-            if demon:
-                difficulty = demon_difficulty.into_difficulty()
-
-            else:
-                difficulty = level_difficulty.into_difficulty()
+        difficulty = DifficultyParameters(
+            data.get(DIFFICULTY_NUMERATOR, DEFAULT_NUMERATOR),
+            data.get(DIFFICULTY_DENOMINATOR, DEFAULT_DENOMINATOR),
+            data.get(DEMON_DIFFICULTY, DEFAULT_DEMON_DIFFICULTY_VALUE),
+            data.get(AUTO, DEFAULT_AUTO),
+            data.get(DEMON, DEFAULT_DEMON),
+        ).into_difficulty()
 
         downloads = data.get(DOWNLOADS, DEFAULT_DOWNLOADS)
 
@@ -537,7 +497,174 @@ class LevelAPI(Binary):
         )
 
     def to_robtop_data(self) -> Dict[str, Any]:
-        return {}
+        difficulty_parameters = DifficultyParameters.from_difficulty(self.difficulty)
+
+        data = {
+            INTERNAL_TYPE: InternalType.LEVEL.value,
+            ID: self.id,
+            NAME: self.name,
+            DESCRIPTION: encode_base64_string_url_safe(self.description),
+            DATA: self.unprocessed_data,
+            CREATOR_NAME: self.creator.name,
+            CREATOR_ID: self.creator.id,
+            CREATOR_ACCOUNT_ID: self.creator.account_id,
+            DIFFICULTY_DENOMINATOR: difficulty_parameters.difficulty_denominator,
+            DIFFICULTY_NUMERATOR: difficulty_parameters.difficulty_numerator,
+            DOWNLOADS: self.downloads,
+            COMPLETIONS: self.completions,
+            LEVEL_VERSION: self.version,
+            GAME_VERSION: self.game_version.to_robtop_value(),
+            BINARY_VERSION: self.binary_version.to_value(),
+            ATTEMPTS: self.attempts,
+            JUMPS: self.jumps,
+            NORMAL_RECORD: self.normal_record,
+            PRACTICE_RECORD: self.practice_record,
+            TYPE: self.type.value,
+            RATING: self.rating,
+            LENGTH: self.length.value,
+            STARS: self.stars,
+            SCORE: self.score,
+            ORIGINAL_ID: self.original_id,
+            OBJECT_COUNT: self.object_count,
+            COINS: self.coins,
+            REQUESTED_STARS: self.requested_stars,
+            ORB_PERCENTAGE: self.orb_percentage,
+            TIMELY_ID: self.timely_id,
+            EDITOR_SECONDS: int(self.editor_time.total_seconds()),
+            COPIES_SECONDS: int(self.copies_time.total_seconds()),
+            LEVEL_ORDER: self.level_order,
+            FOLDER_ID: self.folder_id,
+            BEST_CLICKS: self.best_clicks,
+            BEST_SECONDS: int(self.best_time.total_seconds()),
+            LEADERBOARD_RECORD: self.leaderboard_record,
+        }
+
+        song = self.song
+
+        if song.is_custom():
+            data[SONG_ID] = song.id
+
+        else:
+            data[OFFICIAL_SONG_ID] = song.id
+
+        # false values have to be ignored either way, so only set if true here
+
+        auto = difficulty_parameters.is_auto()
+
+        if auto:
+            data[AUTO] = auto
+
+        demon = difficulty_parameters.is_demon()
+
+        if demon:
+            data[DEMON] = demon
+
+            demon_difficulty_value = difficulty_parameters.demon_difficulty_value
+
+            if demon_difficulty_value:
+                data[DEMON_DIFFICULTY] = demon_difficulty_value
+
+        editable = self.is_editable()
+
+        if editable:
+            data[EDITABLE] = editable
+
+        verified = self.is_verified()
+
+        if verified:
+            data[VERIFIED] = verified
+
+        uploaded = self.is_uploaded()
+
+        if uploaded:
+            data[UPLOADED] = uploaded
+
+        epic = self.rate_type.is_epic()
+
+        if epic:
+            data[EPIC] = epic
+
+        playable = self.is_playable()
+
+        if playable:
+            data[PLAYABLE] = playable
+
+        unlocked = self.is_unlocked()
+
+        if unlocked:
+            data[UNLOCKED] = unlocked
+
+        if self.is_copyable():
+            data[PASSWORD] = self.password_data.to_robtop_value()
+
+        two_player = self.is_two_player()
+
+        if two_player:
+            data[TWO_PLAYER] = two_player
+
+        high_object_count = self.has_high_object_count()
+
+        if high_object_count:
+            data[HIGH_OBJECT_COUNT] = high_object_count
+
+        collected_coins = self.collected_coins
+
+        first_coin = collected_coins.first()
+
+        if first_coin:
+            data[FIRST_COIN] = first_coin
+
+        second_coin = collected_coins.second()
+
+        if second_coin:
+            data[SECOND_COIN] = second_coin
+
+        third_coin = collected_coins.third()
+
+        if third_coin:
+            data[THIRD_COIN] = third_coin
+
+        verified_coins = self.has_verified_coins()
+
+        if verified_coins:
+            data[VERIFIED_COINS] = verified_coins
+
+        low_detail = self.has_low_detail()
+
+        if low_detail:
+            data[LOW_DETAIL] = low_detail
+
+        low_detail_toggled = self.is_low_detail_toggled()
+
+        if low_detail_toggled:
+            data[LOW_DETAIL_TOGGLED] = low_detail_toggled
+
+        gauntlet = self.is_gauntlet()
+
+        if gauntlet:
+            data[GAUNTLET] = gauntlet
+
+        unlisted = self.is_unlisted()
+
+        if unlisted:
+            data[UNLISTED] = unlisted
+
+        favorite = self.is_favorite()
+
+        if favorite:
+            data[FAVORITE] = favorite
+
+        progress_string = self.progress.to_robtop()
+
+        if progress_string:
+            data[PROGRESS] = progress_string
+
+        recording_string = self.recording.to_robtop()
+
+        if recording_string:
+            data[RECORDING] = zip_level_string(recording_string)
+
+        return data
 
     @classmethod
     def from_binary(
@@ -879,6 +1006,13 @@ class LevelAPI(Binary):
         self.progress.to_binary(binary, order, version)
 
         writer.write_u8(self.leaderboard_record, order)
+
+    @property
+    def password(self) -> Optional[int]:
+        return self.password_data.password
+
+    def is_copyable(self) -> bool:
+        return self.password_data.is_copyable()
 
     def is_demon(self) -> bool:
         return self.difficulty.is_demon()

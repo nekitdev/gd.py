@@ -5,8 +5,6 @@ from attrs import frozen
 
 from gd.binary import BinaryReader, BinaryWriter
 from gd.binary_constants import (
-    BOOL,
-    BOOL_SIZE,
     F32,
     F32_SIZE,
     F64,
@@ -29,6 +27,7 @@ from gd.binary_constants import (
     U64_SIZE,
 )
 from gd.enums import ByteOrder
+from gd.iter_utils import unpack_unary_tuple
 from gd.typing import Binary
 
 __all__ = (
@@ -47,8 +46,6 @@ __all__ = (
     # from floats
     "from_f32",
     "from_f64",
-    # from bool
-    "from_bool",
     # to ints
     "to_i8",
     "to_u8",
@@ -61,16 +58,12 @@ __all__ = (
     # to floats
     "to_f32",
     "to_f64",
-    # to bool
-    "to_bool",
 )
 
 
 def create_from_int(format: str) -> Binary[bytes, ByteOrder, int]:
     def from_int(data: bytes, order: ByteOrder = ByteOrder.DEFAULT) -> int:
-        (result,) = unpack(order.value + format, data)
-
-        return result  # type: ignore
+        return unpack_unary_tuple(unpack(order.value + format, data))  # type: ignore
 
     return from_int
 
@@ -84,9 +77,7 @@ def create_to_int(format: str) -> Binary[int, ByteOrder, bytes]:
 
 def create_from_float(format: str) -> Binary[bytes, ByteOrder, float]:
     def from_float(data: bytes, order: ByteOrder = ByteOrder.DEFAULT) -> float:
-        (result,) = unpack(order.value + format, data)
-
-        return result  # type: ignore
+        return unpack_unary_tuple(unpack(order.value + format, data))  # type: ignore
 
     return from_float
 
@@ -96,22 +87,6 @@ def create_to_float(format: str) -> Binary[float, ByteOrder, bytes]:
         return pack(order.value + format, value)
 
     return to_float
-
-
-def create_from_bool(format: str) -> Binary[bytes, ByteOrder, bool]:
-    def from_bool(data: bytes, order: ByteOrder = ByteOrder.DEFAULT) -> bool:
-        (result,) = unpack(order.value + format, data)
-
-        return result  # type: ignore
-
-    return from_bool
-
-
-def create_to_bool(format: str) -> Binary[bool, ByteOrder, bytes]:
-    def to_bool(value: bool, order: ByteOrder = ByteOrder.DEFAULT) -> bytes:
-        return pack(order.value + format, value)
-
-    return to_bool
 
 
 from_i8 = create_from_int(I8)
@@ -126,8 +101,6 @@ from_u64 = create_from_int(U64)
 from_f32 = create_from_float(F32)
 from_f64 = create_from_float(F64)
 
-from_bool = create_from_bool(BOOL)
-
 to_i8 = create_to_int(I8)
 to_u8 = create_to_int(U8)
 to_i16 = create_to_int(I16)
@@ -139,8 +112,6 @@ to_u64 = create_to_int(U64)
 
 to_f32 = create_to_float(F32)
 to_f64 = create_to_float(F64)
-
-to_bool = create_to_bool(BOOL)
 
 R = TypeVar("R", bound=BinaryReader)
 W = TypeVar("W", bound=BinaryWriter)
@@ -182,9 +153,6 @@ class Reader(Generic[R]):
     def read_f64(self, order: ByteOrder = ByteOrder.DEFAULT) -> float:
         return from_f64(self.read(F64_SIZE), order)
 
-    def read_bool(self, order: ByteOrder = ByteOrder.DEFAULT) -> bool:
-        return from_bool(self.read(BOOL_SIZE), order)
-
     def read(self, size: int) -> bytes:
         return self.reader.read(size)
 
@@ -222,9 +190,6 @@ class Writer(Generic[W]):
 
     def write_f64(self, value: float, order: ByteOrder = ByteOrder.DEFAULT) -> None:
         self.write(to_f64(value, order))
-
-    def write_bool(self, value: bool, order: ByteOrder = ByteOrder.DEFAULT) -> None:
-        self.write(to_bool(value, order))
 
     def write(self, data: bytes) -> None:
         self.writer.write(data)

@@ -269,12 +269,26 @@ class Difficulty(Enum):
     def into_level_difficulty(self) -> LevelDifficulty:
         return DIFFICULTY_TO_LEVEL_DIFFICULTY[self]
 
-    def is_demon(self) -> bool:
+    def into_demon_difficulty(self) -> DemonDifficulty:
+        return DIFFICULTY_TO_DEMON_DIFFICULTY[self]
+
+    def is_unknown(self) -> bool:
+        return self is type(self).UNKNOWN
+
+    def is_auto(self) -> bool:
+        return self is type(self).AUTO
+
+    def is_unspecified_demon(self) -> bool:
+        return self is type(self).DEMON
+
+    def is_specified_demon(self) -> bool:
         return self in DEMON
+
+    def is_demon(self) -> bool:
+        return self.is_unspecified_demon() or self.is_specified_demon()
 
 
 DEMON = {
-    Difficulty.DEMON,
     Difficulty.EASY_DEMON,
     Difficulty.MEDIUM_DEMON,
     Difficulty.HARD_DEMON,
@@ -324,7 +338,6 @@ LEVEL_DIFFICULTY_TO_DIFFICULTY = {
     LevelDifficulty.EXTREME_DEMON: Difficulty.EXTREME_DEMON,
 }
 
-
 DIFFICULTY_TO_LEVEL_DIFFICULTY = {
     difficulty: level_difficulty
     for level_difficulty, difficulty in LEVEL_DIFFICULTY_TO_DIFFICULTY.items()
@@ -334,8 +347,6 @@ DIFFICULTY_TO_LEVEL_DIFFICULTY = {
 class DemonDifficulty(Enum):
     """An enumeration of demon difficulties."""
 
-    UNKNOWN = -1
-
     DEMON = 0
     EASY_DEMON = 1
     MEDIUM_DEMON = 2
@@ -343,34 +354,37 @@ class DemonDifficulty(Enum):
     INSANE_DEMON = 4
     EXTREME_DEMON = 5
 
-    NA = UNKNOWN
-
-    DEFAULT = UNKNOWN
+    DEFAULT = DEMON
 
     def into_difficulty(self) -> Difficulty:
         return DEMON_DIFFICULTY_TO_DIFFICULTY[self]
 
-
-VALUE_TO_DEMON_DIFFICULTY = {
-    3: DemonDifficulty.EASY_DEMON,
-    4: DemonDifficulty.MEDIUM_DEMON,
-    5: DemonDifficulty.INSANE_DEMON,
-    6: DemonDifficulty.EXTREME_DEMON,
-}
-
-DEMON_DIFFICULTY_TO_VALUE = {
-    demon_difficulty: value for value, demon_difficulty in VALUE_TO_DEMON_DIFFICULTY.items()
-}
+    def into_level_difficulty(self) -> LevelDifficulty:
+        return DEMON_DIFFICULTY_TO_LEVEL_DIFFICULTY[self]
 
 
 DEMON_DIFFICULTY_TO_DIFFICULTY = {
-    DemonDifficulty.UNKNOWN: Difficulty.UNKNOWN,
     DemonDifficulty.DEMON: Difficulty.DEMON,
     DemonDifficulty.EASY_DEMON: Difficulty.EASY_DEMON,
     DemonDifficulty.MEDIUM_DEMON: Difficulty.MEDIUM_DEMON,
     DemonDifficulty.HARD_DEMON: Difficulty.HARD_DEMON,
     DemonDifficulty.INSANE_DEMON: Difficulty.INSANE_DEMON,
     DemonDifficulty.EXTREME_DEMON: Difficulty.EXTREME_DEMON,
+}
+
+DIFFICULTY_TO_DEMON_DIFFICULTY = {
+    difficulty: demon_difficulty
+    for demon_difficulty, difficulty in DEMON_DIFFICULTY_TO_DIFFICULTY.items()
+}
+
+
+DEMON_DIFFICULTY_TO_LEVEL_DIFFICULTY = {  # because GD handles things like that (?)
+    DemonDifficulty.DEMON: LevelDifficulty.DEMON,
+    DemonDifficulty.EASY_DEMON: LevelDifficulty.EASY,
+    DemonDifficulty.MEDIUM_DEMON: LevelDifficulty.NORMAL,
+    DemonDifficulty.HARD_DEMON: LevelDifficulty.HARD,
+    DemonDifficulty.INSANE_DEMON: LevelDifficulty.HARDER,
+    DemonDifficulty.EXTREME_DEMON: LevelDifficulty.INSANE,
 }
 
 

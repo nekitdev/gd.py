@@ -1785,11 +1785,6 @@ class Database(Binary):
         main_data = parser.load(main)
         levels_data = parser.load(levels)
 
-        import json
-
-        json.dump(main_data, open("main.json", "w"), indent=4)
-        json.dump(levels_data, open("levels.json", "w"), indent=4)
-
         created_levels_data = levels_data[CREATED_LEVELS]
         binary_version_data = levels_data[BINARY_VERSION]
 

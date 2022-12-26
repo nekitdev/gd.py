@@ -1,6 +1,6 @@
 from typing import Any, Dict, Hashable, Mapping, Sized, Tuple, TypeVar, overload
 
-__all__ = ("contains_only_item", "mapping_merge", "unary_tuple")
+__all__ = ("contains_only_item", "mapping_merge", "unary_tuple", "unpack_unary_tuple")
 
 Q = TypeVar("Q", bound=Hashable)
 T = TypeVar("T")
@@ -29,6 +29,12 @@ def mapping_merge(*mappings: Mapping[Any, Any], **arguments: Any) -> Dict[Any, A
 
 def unary_tuple(item: T) -> Tuple[T]:
     return (item,)
+
+
+def unpack_unary_tuple(tuple: Tuple[T]) -> T:
+    (item,) = tuple
+
+    return item
 
 
 ONE = 1

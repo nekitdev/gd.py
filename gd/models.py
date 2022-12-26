@@ -63,8 +63,6 @@ from gd.encoding import (
     zip_level_string,
 )
 from gd.enums import (
-    DEMON_DIFFICULTY_TO_VALUE,
-    VALUE_TO_DEMON_DIFFICULTY,
     CommentState,
     DemonDifficulty,
     Difficulty,

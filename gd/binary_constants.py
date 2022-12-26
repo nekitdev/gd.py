@@ -13,8 +13,6 @@ __all__ = (
     # float sizes
     "F32_SIZE",
     "F64_SIZE",
-    # bool size
-    "BOOL_SIZE",
     # int bits
     "I8_BITS",
     "U8_BITS",
@@ -27,8 +25,6 @@ __all__ = (
     # float bits
     "F32_BITS",
     "F64_BITS",
-    # bool bits
-    "BOOL_BITS",
     # bits
     "HALF_BYTE",
     "HALF_BITS",
@@ -51,8 +47,6 @@ U64: Final[str] = "Q"
 F32: Final[str] = "f"
 F64: Final[str] = "d"
 
-BOOL: Final[str] = "?"
-
 NATIVE: Final[str] = "="
 
 I8_SIZE: Final[int] = size(NATIVE + I8)
@@ -66,8 +60,6 @@ U64_SIZE: Final[int] = size(NATIVE + U64)
 
 F32_SIZE: Final[int] = size(NATIVE + F32)
 F64_SIZE: Final[int] = size(NATIVE + F64)
-
-BOOL_SIZE: Final[int] = size(NATIVE + BOOL)
 
 HALF_BYTE: Final[int] = 0xF
 HALF_BITS: Final[int] = HALF_BYTE.bit_length()
@@ -88,5 +80,3 @@ U64_BITS: Final[int] = U64_SIZE * BITS
 
 F32_BITS: Final[int] = F32_SIZE * BITS
 F64_BITS: Final[int] = F64_SIZE * BITS
-
-BOOL_BITS: Final[int] = BOOL_SIZE * BITS

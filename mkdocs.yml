@@ -11,6 +11,7 @@ nav:
   - Index: "index.md"
   - Reference:
     - Client: "reference/client.md"
+    - Enums: "reference/enums.md"
     - Tasks: "reference/tasks.md"
   - Changelog: "changelog.md"
   - Security: "security.md"
