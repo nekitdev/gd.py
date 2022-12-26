@@ -96,7 +96,7 @@ DEFAULT_NEXT = 0
 
 
 def find_next(values: Set[int], start: int = DEFAULT_START) -> int:
-    for value in iter.count().unwrap():
+    for value in iter.count_from(start).unwrap():
         if value not in values:
             return value
 

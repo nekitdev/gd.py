@@ -59,7 +59,6 @@ __all__ = (
     "HSV",
     # objects
     "Object",
-    "Object",
     "AlphaTrigger",
     "AnimateTrigger",
     "CollisionBlock",

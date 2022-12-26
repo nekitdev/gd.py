@@ -1,11 +1,12 @@
+from abc import abstractmethod
 from functools import partial
 from io import BytesIO
-from typing import Dict, Iterable, Mapping, Type, TypeVar, Union
+from typing import ClassVar, Dict, Iterable, Mapping, Type, TypeVar, runtime_checkable
 
 from attrs import define, field
 from iters import iter
 from iters.ordered_set import OrderedSet
-from typing_extensions import Literal, Never, TypeGuard
+from typing_extensions import Literal, Never, Protocol, TypeGuard
 
 from gd.api.hsv import HSV
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
@@ -34,6 +35,7 @@ from gd.enums import (
     RotatingObjectType,
     SimpleTargetType,
     SimpleZLayer,
+    SpecialColorID,
     Speed,
     SpeedChangeType,
     TargetType,
@@ -59,7 +61,6 @@ from gd.typing import is_instance
 
 __all__ = (
     "Groups",
-    "Object",
     "Object",
     "PulsatingObject",
     "RotatingObject",
@@ -808,6 +809,17 @@ PORTAL_IDS = {portal.id for portal in PortalType}
 SPEED_CHANGE_IDS = {speed_change.id for speed_change in SpeedChangeType}
 
 
+@runtime_checkable
+class Compatibility(Protocol):
+    @abstractmethod
+    def migrate(self) -> Object:
+        ...
+
+
+def is_compatibility(object: Object) -> TypeGuard[Compatibility]:
+    return is_instance(object, Compatibility)
+
+
 ID_STRING = str(ID)
 X_STRING = str(X)
 Y_STRING = str(Y)
@@ -975,7 +987,7 @@ class StartPosition(Object):
     def from_robtop_mapping(cls, mapping: Mapping[int, str]) -> Never:
         raise NotImplementedError(SPECIAL_HANDLING)
 
-    def to_robtop_mapping(cls) -> Never:
+    def to_robtop_mapping(self) -> Never:
         raise NotImplementedError(SPECIAL_HANDLING)
 
     def is_start_position(self) -> bool:
@@ -2265,6 +2277,108 @@ class ColorTrigger(HasTargetColor, HasColor, HasDuration, HasOpacity, Trigger): 
         mapping[OPACITY] = float_str(self.opacity)
 
         return mapping
+
+
+@define()
+class CompatibilityColorTrigger(Compatibility, HasColor, HasDuration, HasOpacity, Trigger):  # type: ignore
+    TARGET_COLOR_ID: ClassVar[int]
+
+    blending: bool = field(default=DEFAULT_BLENDING)
+
+    copied_color_id: int = field(default=DEFAULT_ID)
+    copied_color_hsv: HSV = field(factory=HSV)
+
+    copy_opacity: bool = field(default=False)
+
+    player_color: PlayerColor = field(default=PlayerColor.DEFAULT)
+
+    def is_blending(self) -> bool:
+        return self.blending
+
+    def is_copy_opacity(self) -> bool:
+        return self.copy_opacity
+
+    def migrate(self) -> ColorTrigger:
+        return ColorTrigger(
+            id=self.id,
+            x=self.x,
+            y=self.y,
+            h_flipped=self.is_h_flipped(),
+            v_flipped=self.is_v_flipped(),
+            rotation=self.rotation,
+            scale=self.scale,
+            do_not_fade=self.has_do_not_fade(),
+            do_not_enter=self.has_do_not_enter(),
+            z_layer=self.z_layer,
+            z_order=self.z_order,
+            base_editor_layer=self.base_editor_layer,
+            additional_editor_layer=self.additional_editor_layer,
+            base_color_id=self.base_color_id,
+            detail_color_id=self.detail_color_id,
+            base_color_hsv=self.base_color_hsv,
+            detail_color_hsv=self.detail_color_hsv,
+            groups=self.groups,
+            group_parent=self.is_group_parent(),
+            high_detail=self.is_high_detail(),
+            disable_glow=self.has_disable_glow(),
+            special_checked=self.is_special_checked(),
+            link_id=self.link_id,
+            touch_triggered=self.is_touch_triggered(),
+            spawn_triggered=self.is_spawn_triggered(),
+            multi_trigger=self.is_multi_trigger(),
+            opacity=self.opacity,
+            duration=self.duration,
+            color=self.color,
+            target_color_id=self.TARGET_COLOR_ID,  # NOTE: here is the main difference :p
+            blending=self.is_blending(),
+            copied_color_id=self.copied_color_id,
+            copied_color_hsv=self.copied_color_hsv,
+            copy_opacity=self.is_copy_opacity(),
+            player_color=self.player_color,
+        )
+
+
+class BackgroundColorTrigger(CompatibilityColorTrigger):
+    TARGET_COLOR_ID: ClassVar[int] = SpecialColorID.BACKGROUND.id
+
+
+class GroundColorTrigger(CompatibilityColorTrigger):
+    TARGET_COLOR_ID: ClassVar[int] = SpecialColorID.GROUND.id
+
+
+class LineColorTrigger(CompatibilityColorTrigger):
+    TARGET_COLOR_ID: ClassVar[int] = SpecialColorID.LINE.id
+
+
+class ObjectColorTrigger(CompatibilityColorTrigger):
+    TARGET_COLOR_ID: ClassVar[int] = SpecialColorID.OBJECT.id
+
+
+class Color1Trigger(CompatibilityColorTrigger):
+    TARGET_COLOR_ID: ClassVar[int] = 1
+
+
+class Color2Trigger(CompatibilityColorTrigger):
+    TARGET_COLOR_ID: ClassVar[int] = 2
+
+
+class Color3Trigger(CompatibilityColorTrigger):
+    TARGET_COLOR_ID: ClassVar[int] = 3
+
+
+class Color4Trigger(CompatibilityColorTrigger):
+    TARGET_COLOR_ID: ClassVar[int] = 4
+
+
+class Line3DColorTrigger(CompatibilityColorTrigger):
+    TARGET_COLOR_ID: ClassVar[int] = SpecialColorID.LINE_3D.id
+
+
+class Ground2ColorTrigger(CompatibilityColorTrigger):
+    TARGET_COLOR_ID: ClassVar[int] = SpecialColorID.SECONDARY_GROUND.id
+
+
+# XXX: line 2 color trigger?
 
 
 ALT = TypeVar("ALT", bound="AlphaTrigger")
@@ -4351,6 +4465,16 @@ OBJECT_ID_TO_TYPE: Dict[int, Type[Object]] = {
     OrbType.TRIGGER.id: TriggerOrb,
     MiscType.ITEM_COUNTER.id: ItemCounter,
     MiscType.COLLISION_BLOCK.id: CollisionBlock,
+    TriggerType.BACKGROUND.id: BackgroundColorTrigger,
+    TriggerType.GROUND.id: GroundColorTrigger,
+    TriggerType.LINE.id: LineColorTrigger,
+    TriggerType.OBJECT.id: ObjectColorTrigger,
+    TriggerType.COLOR_1.id: Color1Trigger,
+    TriggerType.COLOR_2.id: Color2Trigger,
+    TriggerType.COLOR_3.id: Color3Trigger,
+    TriggerType.COLOR_4.id: Color4Trigger,
+    TriggerType.LINE_3D.id: Line3DColorTrigger,
+    TriggerType.SECONDARY_GROUND.id: Ground2ColorTrigger,
     TriggerType.COLOR.id: ColorTrigger,
     TriggerType.ALPHA.id: AlphaTrigger,
     TriggerType.PULSE.id: PulseTrigger,
@@ -4393,7 +4517,12 @@ def object_from_robtop(string: str) -> Object:
 
     object_type = OBJECT_ID_TO_TYPE.get(object_id, Object)
 
-    return object_type.from_robtop(string)
+    object = object_type.from_robtop(string)
+
+    if is_compatibility(object):
+        return object.migrate()
+
+    return object
 
 
 def object_to_robtop(object: Object) -> str:
