@@ -1,12 +1,12 @@
 from abc import abstractmethod
 from functools import partial
 from io import BytesIO
-from typing import ClassVar, Dict, Iterable, Mapping, Type, TypeVar, runtime_checkable
+from typing import ClassVar, Dict, Iterable, Mapping, Type, TypeVar
 
 from attrs import define, field
 from iters import iter
 from iters.ordered_set import OrderedSet
-from typing_extensions import Literal, Never, Protocol, TypeGuard
+from typing_extensions import Literal, Never, Protocol, TypeGuard, runtime_checkable
 
 from gd.api.hsv import HSV
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
