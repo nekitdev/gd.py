@@ -15,8 +15,6 @@ CAN_NOT_FIND = "can not find a song with ID {}"
 
 NAME = "newgrounds_{}.mp3"
 
-WRITE_BINARY = "wb"
-
 WITH_BAR = True
 
 DOWNLOADED = "downloaded `{}` by `{}` -> `{}`"
@@ -43,8 +41,7 @@ async def async_main() -> None:
             else:
                 name = NAME.format(song.id)
 
-                with open(name, WRITE_BINARY) as file:
-                    await song.download(file, with_bar=WITH_BAR)
+                await song.download_to(name, with_bar=WITH_BAR)
 
                 print(DOWNLOADED.format(song.name, song.artist.name, name))
 

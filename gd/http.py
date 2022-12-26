@@ -209,7 +209,7 @@ GET_GAUNTLETS = "getGJGauntlets21.php"
 GET_MAP_PACKS = "getGJMapPacks21.php"
 GET_QUESTS = "getGJChallenges.php"
 GET_CHESTS = "getGJRewards.php"
-GET_FEATURED_ARTISTS = "getGJTopArtists.php"
+GET_ARTISTS = "getGJTopArtists.php"
 GET_SONG = "getGJSongInfo.php"
 
 VALID_ERRORS = (OSError, ClientError)
@@ -499,7 +499,7 @@ FAILED_TO_GET_QUESTS = "failed to get quests"
 
 FAILED_TO_GET_CHESTS = "failed to get chests"
 
-FAILED_TO_GET_FEATURED_ARTISTS = "failed to get featured artists"
+FAILED_TO_GET_ARTISTS = "failed to get artists"
 
 FAILED_TO_GET_SONG = "failed to get the song (ID: {})"
 
@@ -2673,12 +2673,12 @@ class HTTPClient:
 
         return response
 
-    async def get_featured_artists_on_page(self, page: int = DEFAULT_PAGE) -> str:
-        error_codes = {-1: MissingAccess(FAILED_TO_GET_FEATURED_ARTISTS)}
+    async def get_artists_on_page(self, page: int = DEFAULT_PAGE) -> str:
+        error_codes = {-1: MissingAccess(FAILED_TO_GET_ARTISTS)}
 
         total = 0
 
-        route = Route(POST, GET_FEATURED_ARTISTS)
+        route = Route(POST, GET_ARTISTS)
 
         payload = Payload(
             game_version=self.get_game_version(),

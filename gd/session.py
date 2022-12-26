@@ -43,6 +43,7 @@ from gd.enums import (
 from gd.filters import Filters
 from gd.http import HTTPClient
 from gd.models import (
+    ArtistsResponseModel,
     FriendRequestsResponseModel,
     LeaderboardResponseModel,
     LevelCommentsResponseModel,
@@ -758,11 +759,12 @@ class Session:
         )
         return ChestsResponseModel.from_string(response, use_default=True)
 
-    async def get_featured_artists_on_page(
+    async def get_artists_on_page(
         self, page: int = DEFAULT_PAGE
-    ) -> FeaturedArtistsResponseModel:
-        response = await self.http.get_featured_artists_on_page(page=page)
-        return FeaturedArtistsResponseModel.from_string(response, use_default=True)
+    ) -> ArtistsResponseModel:
+        response = await self.http.get_artists_on_page(page=page)
+
+        return ArtistsResponseModel.from_robtop(response)
 
     async def get_song(self, song_id: int) -> SongModel:
         response = await self.http.get_song(song_id)

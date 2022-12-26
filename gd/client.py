@@ -1336,16 +1336,16 @@ class Client:
             yield Chest.from_model(chest_model, seconds=time_left, count=count).attach_client(Self)
 
     @wrap_async_iter
-    async def get_featured_artists_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Artist]:
-        response_model = await self.session.get_featured_artists_on_page(page=page)
+    async def get_artists_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Artist]:
+        response_model = await self.session.get_artists_on_page(page=page)
 
-        for model in response_model.featured_artists:
-            yield Song.from_model(model).attach_client(self)
+        for model in response_model.artists:
+            yield Artist.from_model(model).attach_client(self)
 
     @wrap_async_iter
-    def get_featured_artists(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Artist]:
+    def get_artists(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Artist]:
         return run_iterables(
-            (self.get_featured_artists_on_page(page=page).unwrap() for page in pages),
+            (self.get_artists_on_page(page=page).unwrap() for page in pages),
             ClientError,
         )
 

@@ -13,6 +13,7 @@ from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_PAGE, DEFAULT_PAGES, UNKNOWN
 from gd.entity import CONVERTER, Entity
 from gd.enums import ByteOrder
+from gd.models import ArtistModel
 from gd.string_utils import case_fold, clear_whitespace
 
 if TYPE_CHECKING:
@@ -58,6 +59,10 @@ class Artist(Entity):
 
     def __str__(self) -> str:
         return self.name
+
+    @classmethod
+    def from_model(cls: Type[A], model: ArtistModel) -> A:
+        return cls(name=model.name)
 
     @classmethod
     def from_json(cls: Type[A], data: ArtistData) -> A:  # type: ignore

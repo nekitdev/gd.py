@@ -76,6 +76,8 @@ from gd.enums import (
     TimelyType,
 )
 from gd.models_constants import (
+    ARTIST_SEPARATOR,
+    ARTISTS_RESPONSE_SEPARATOR,
     COMMENT_BANNED_SEPARATOR,
     CREATOR_SEPARATOR,
     FRIEND_REQUEST_SEPARATOR,
@@ -105,6 +107,11 @@ from gd.models_constants import (
     USER_COMMENTS_RESPONSE_SEPARATOR,
 )
 from gd.models_utils import (
+    split_artists_response,
+    concat_artists_response,
+    split_artists_response_artists,
+    concat_artists_response_artists,
+    concat_artist,
     concat_comment_banned,
     concat_creator,
     concat_friend_request,
@@ -145,6 +152,7 @@ from gd.models_utils import (
     int_bool,
     parse_get_or,
     partial_parse_enum,
+    split_artist,
     split_comment_banned,
     split_creator,
     split_friend_request,
@@ -190,6 +198,7 @@ from gd.versions import CURRENT_GAME_VERSION, GameVersion
 
 __all__ = (
     "Model",
+    "ArtistModel",
     "ChestModel",
     "CommentBannedModel",
     "CreatorModel",
@@ -264,10 +273,6 @@ class SongModel(Model):
             download_url=download_url,
         )
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
-        return SONG_SEPARATOR in string
-
     def to_robtop(self) -> str:
         mapping = {
             SONG_ID: str(self.id),
@@ -282,6 +287,10 @@ class SongModel(Model):
         }
 
         return concat_song(mapping)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return SONG_SEPARATOR in string
 
 
 LG = TypeVar("LG", bound="LoginModel")
@@ -298,14 +307,15 @@ class LoginModel(Model):
 
         return cls(int(account_id), int(id))
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
-        return LOGIN_SEPARATOR in string
-
     def to_robtop(self) -> str:
         values = (str(self.account_id), str(self.id))
 
         return concat_login(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return LOGIN_SEPARATOR in string
+
 
 
 CRT = TypeVar("CRT", bound="CreatorModel")
@@ -337,7 +347,7 @@ DEFAULT_START = 0
 DEFAULT_STOP = 0
 
 
-A = TypeVar("A", bound="PageModel")
+B = TypeVar("B", bound="PageModel")
 
 
 @define()
@@ -347,7 +357,7 @@ class PageModel(Model):
     stop: int = DEFAULT_STOP
 
     @classmethod
-    def from_robtop(cls: Type[A], string: str) -> A:
+    def from_robtop(cls: Type[B], string: str) -> B:
         total_string, start_string, stop_string = split_page(string)
 
         if not total_string:
@@ -361,10 +371,6 @@ class PageModel(Model):
 
         return cls(total, start, stop)
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
-        return PAGE_SEPARATOR in string
-
     def to_robtop(self) -> str:
         total = self.total
         start = self.start
@@ -377,6 +383,10 @@ class PageModel(Model):
             values = (str(total), str(start), str(stop))
 
         return concat_page(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return PAGE_SEPARATOR in string
 
 
 SEARCH_USER_NAME = 1
@@ -592,7 +602,7 @@ class ProfileModel(Model):
             wave_id=parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_WAVE_ID)),
             robot_id=parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_ROBOT_ID)),
             glow=parse_get_or(int_bool, DEFAULT_GLOW, mapping.get(PROFILE_GLOW)),
-            active=parse_get_or(int_bool, DEFAULT_ACTIVE, mapping.get(DEFAULT_ACTIVE)),
+            active=parse_get_or(int_bool, DEFAULT_ACTIVE, mapping.get(PROFILE_ACTIVE)),
             rank=parse_get_or(int, DEFAULT_RANK, mapping.get(PROFILE_RANK)),
             friend_state=parse_get_or(
                 partial_parse_enum(int, FriendState),
@@ -1654,6 +1664,32 @@ class LevelLeaderboardUserModel(Model):
         return LEVEL_LEADERBOARD_USER_SEPARATOR in string
 
 
+ARTIST_NAME = 4
+
+
+A = TypeVar("A", bound="ArtistModel")
+
+
+@define()
+class ArtistModel(Model):
+    name: str = UNKNOWN
+
+    @classmethod
+    def from_robtop(cls: Type[A], string: str) -> A:
+        mapping = split_artist(string)
+
+        return cls(name=mapping.get(ARTIST_NAME, UNKNOWN))
+
+    def to_robtop(self) -> str:
+        mapping = {ARTIST_NAME: self.name}
+
+        return concat_artist(mapping)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return ARTIST_SEPARATOR in string
+
+
 LLR = TypeVar("LLR", bound="LevelLeaderboardResponseModel")
 
 
@@ -2000,6 +2036,40 @@ class MessagesResponseModel(Model):
         return MESSAGES_RESPONSE_SEPARATOR in string
 
 
+AR = TypeVar("AR", bound="ArtistsResponseModel")
+
+
+@define()
+class ArtistsResponseModel(Model):
+    artists: List[ArtistModel] = field(factory=list)
+    page: PageModel = field(factory=PageModel)
+
+    @classmethod
+    def from_robtop(cls: Type[AR], string: str) -> AR:
+        artists_string, page_string = split_artists_response(string)
+
+        artists = [
+            ArtistModel.from_robtop(string)
+            for string in split_artists_response_artists(artists_string)
+        ]
+
+        page = PageModel.from_robtop(page_string)
+
+        return cls(artists=artists, page=page)
+
+    def to_robtop(self) -> str:
+        values = (
+            concat_artists_response_artists(artist.to_robtop() for artist in self.artists),
+            self.page.to_robtop(),
+        )
+
+        return concat_artists_response(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return ARTISTS_RESPONSE_SEPARATOR in string
+
+
 FRR = TypeVar("FRR", bound="FriendRequestsResponseModel")
 
 
@@ -2039,7 +2109,7 @@ class FriendRequestsResponseModel(Model):
 TEMPORARY = "temp"
 
 
-B = TypeVar("B", bound="CommentBannedModel")
+CB = TypeVar("CB", bound="CommentBannedModel")
 
 
 @define()
@@ -2049,16 +2119,16 @@ class CommentBannedModel(Model):
     reason: str = field(default=EMPTY)
 
     @classmethod
-    def from_robtop(cls: Type[B], string: str) -> B:
+    def from_robtop(cls: Type[CB], string: str) -> CB:
         string, timeout, reason = split_comment_banned(string)
 
         return cls(string, Duration(seconds=int(timeout)), reason)
-
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
-        return COMMENT_BANNED_SEPARATOR in string
 
     def to_robtop(self) -> str:
         values = (self.string, str(int(self.timeout.total_seconds())), self.reason)
 
         return concat_comment_banned(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return COMMENT_BANNED_SEPARATOR in string

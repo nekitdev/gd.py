@@ -5,6 +5,9 @@ from iters.iters import iter
 
 from gd.enum_extensions import Enum
 from gd.models_constants import (
+    ARTIST_SEPARATOR,
+    ARTISTS_RESPONSE_ARTISTS_SEPARATOR,
+    ARTISTS_RESPONSE_SEPARATOR,
     COLOR_CHANNEL_SEPARATOR,
     COLOR_CHANNELS_SEPARATOR,
     COLOR_SEPARATOR,
@@ -206,6 +209,9 @@ concat_level_comment_user = partial(concat_mapping, LEVEL_COMMENT_USER_SEPARATOR
 split_level_leaderboard_user = partial(split_mapping, LEVEL_LEADERBOARD_USER_SEPARATOR)
 concat_level_leaderboard_user = partial(concat_mapping, LEVEL_LEADERBOARD_USER_SEPARATOR)
 
+split_artist = partial(split_mapping, ARTIST_SEPARATOR)
+concat_artist = partial(concat_mapping, ARTIST_SEPARATOR)
+
 split_level_comment = partial(split_iterable, LEVEL_COMMENT_SEPARATOR)
 concat_level_comment = partial(concat_iterable, LEVEL_COMMENT_SEPARATOR)
 
@@ -258,6 +264,12 @@ concat_save = partial(concat_iterable, SAVE_SEPARATOR)
 
 split_time = partial(split_iterable, TIME_SEPARATOR)
 concat_time = partial(concat_iterable, TIME_SEPARATOR_SPACE)
+
+split_artists_response = partial(split_iterable, ARTISTS_RESPONSE_SEPARATOR)
+concat_artists_response = partial(concat_iterable, ARTISTS_RESPONSE_SEPARATOR)
+
+split_artists_response_artists = partial(split_iterable, ARTISTS_RESPONSE_ARTISTS_SEPARATOR)
+concat_artists_response_artists = partial(concat_iterable, ARTISTS_RESPONSE_ARTISTS_SEPARATOR)
 
 split_search_users_response = partial(split_iterable, SEARCH_USERS_RESPONSE_SEPARATOR)
 concat_search_users_response = partial(concat_iterable, SEARCH_USERS_RESPONSE_SEPARATOR)
