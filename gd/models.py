@@ -107,11 +107,9 @@ from gd.models_constants import (
     USER_COMMENTS_RESPONSE_SEPARATOR,
 )
 from gd.models_utils import (
-    split_artists_response,
-    concat_artists_response,
-    split_artists_response_artists,
-    concat_artists_response_artists,
     concat_artist,
+    concat_artists_response,
+    concat_artists_response_artists,
     concat_comment_banned,
     concat_creator,
     concat_friend_request,
@@ -153,6 +151,8 @@ from gd.models_utils import (
     parse_get_or,
     partial_parse_enum,
     split_artist,
+    split_artists_response,
+    split_artists_response_artists,
     split_comment_banned,
     split_creator,
     split_friend_request,
@@ -315,7 +315,6 @@ class LoginModel(Model):
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return LOGIN_SEPARATOR in string
-
 
 
 CRT = TypeVar("CRT", bound="CreatorModel")

@@ -759,9 +759,7 @@ class Session:
         )
         return ChestsResponseModel.from_string(response, use_default=True)
 
-    async def get_artists_on_page(
-        self, page: int = DEFAULT_PAGE
-    ) -> ArtistsResponseModel:
+    async def get_artists_on_page(self, page: int = DEFAULT_PAGE) -> ArtistsResponseModel:
         response = await self.http.get_artists_on_page(page=page)
 
         return ArtistsResponseModel.from_robtop(response)

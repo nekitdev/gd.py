@@ -3,7 +3,7 @@ from typing import Type, TypeVar
 from attrs import define
 
 from gd.constants import DEFAULT_AUTO, DEFAULT_DEMON, DEFAULT_DENOMINATOR, DEFAULT_NUMERATOR
-from gd.enums import Difficulty, LevelDifficulty, DemonDifficulty
+from gd.enums import DemonDifficulty, Difficulty, LevelDifficulty
 
 __all__ = ("DEFAULT_DEMON_DIFFICULTY_VALUE", "DifficultyParameters")
 
