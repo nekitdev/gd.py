@@ -688,6 +688,81 @@
 
             
           
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2_4" type="checkbox" id="__nav_2_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_4">
+          API
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="API" data-md-level="2">
+        <label class="md-nav__title" for="__nav_2_4">
+          <span class="md-nav__icon md-icon"></span>
+          API
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/editor/" class="md-nav__link">
+        Editor
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/folder/" class="md-nav__link">
+        Folder
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/guidelines/" class="md-nav__link">
+        Guidelines
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -4002,14 +4077,14 @@
         <span class="n">response_model</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get_gauntlets</span><span class="p">()</span>
 
         <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">response_model</span><span class="o">.</span><span class="n">gauntlets</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">Gauntlet</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">client</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">Gauntlet</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="nd">@wrap_async_iter</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get_map_packs_on_page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_PAGE</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">MapPack</span><span class="p">]:</span>
         <span class="n">response_model</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get_map_packs_on_page</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="n">page</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">response_model</span><span class="o">.</span><span class="n">map_packs</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">MapPack</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">client</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">MapPack</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="nd">@wrap_async_iter</span>
     <span class="k">def</span> <span class="nf">get_map_packs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pages</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_PAGES</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">MapPack</span><span class="p">]:</span>
@@ -4029,7 +4104,7 @@
 
         <span class="k">for</span> <span class="n">quest_model</span> <span class="ow">in</span> <span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">quest_1</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">quest_2</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">quest_3</span><span class="p">):</span>
 
-            <span class="k">yield</span> <span class="n">Quest</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">quest_model</span><span class="p">,</span> <span class="n">seconds</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">time_left</span><span class="p">,</span> <span class="n">client</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">Quest</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">quest_model</span><span class="p">,</span> <span class="n">seconds</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">time_left</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="nd">@wrap_async_iter</span>
     <span class="nd">@check_login</span>
@@ -4052,14 +4127,14 @@
             <span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">chest_1</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">chest_1_left</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">chest_1_count</span><span class="p">),</span>
             <span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">chest_2</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">chest_2_left</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">chest_2_count</span><span class="p">),</span>
         <span class="p">):</span>
-            <span class="k">yield</span> <span class="n">Chest</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">chest_model</span><span class="p">,</span> <span class="n">seconds</span><span class="o">=</span><span class="n">time_left</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="n">count</span><span class="p">,</span> <span class="n">client</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">Chest</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">chest_model</span><span class="p">,</span> <span class="n">seconds</span><span class="o">=</span><span class="n">time_left</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="n">count</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="n">Self</span><span class="p">)</span>
 
     <span class="nd">@wrap_async_iter</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get_featured_artists_on_page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_PAGE</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">Artist</span><span class="p">]:</span>
         <span class="n">response_model</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get_featured_artists_on_page</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="n">page</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">response_model</span><span class="o">.</span><span class="n">featured_artists</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">Song</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">custom</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">client</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">Song</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="nd">@wrap_async_iter</span>
     <span class="k">def</span> <span class="nf">get_featured_artists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pages</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_PAGES</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">Artist</span><span class="p">]:</span>
@@ -4085,7 +4160,7 @@
         <span class="n">models</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">search_newgrounds_songs_on_page</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">page</span><span class="o">=</span><span class="n">page</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">Song</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">custom</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">client</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">Song</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="nd">@wrap_async_iter</span>
     <span class="k">def</span> <span class="nf">search_newgrounds_songs</span><span class="p">(</span>
@@ -4303,7 +4378,7 @@
 <span class="sd">        [`on_level_comment`][gd.client.Client.on_level_comment].</span>
 
 <span class="sd">        Arguments:</span>
-<span class="sd">            level: The daily level to dispatch.</span>
+<span class="sd">            daily: The daily level to dispatch.</span>
 <span class="sd">            comment: The daily comment to dispatch.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_daily_comment</span><span class="p">(</span><span class="n">daily</span><span class="p">,</span> <span class="n">comment</span><span class="p">)</span>
@@ -6993,8 +7068,9 @@ for handling login process.</p></td>
     </thead>
     <tbody>
         <tr>
-          <td><code>level</code></td>
+          <td><code>daily</code></td>
           <td>
+                <code><span title="gd.level.Level">Level</span></code>
           </td>
           <td><p>The daily level to dispatch.</p></td>
           <td>
@@ -7029,7 +7105,7 @@ for handling login process.</p></td>
 <span class="sd">    [`on_level_comment`][gd.client.Client.on_level_comment].</span>
 
 <span class="sd">    Arguments:</span>
-<span class="sd">        level: The daily level to dispatch.</span>
+<span class="sd">        daily: The daily level to dispatch.</span>
 <span class="sd">        comment: The daily comment to dispatch.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_daily_comment</span><span class="p">(</span><span class="n">daily</span><span class="p">,</span> <span class="n">comment</span><span class="p">)</span>
