@@ -47,9 +47,9 @@ REQUIRE_ORIGINAL_BIT = 0b10000000
 @define()
 class Filters(Binary):
     strategy: SearchStrategy = field(default=SearchStrategy.DEFAULT)
-    difficulties: OrderedSet[Difficulty] = field(factory=ordered_set, converter=ordered_set)
-    lengths: OrderedSet[LevelLength] = field(factory=ordered_set, converter=ordered_set)
-    completed_levels: OrderedSet[int] = field(factory=ordered_set, converter=ordered_set)
+    difficulties: OrderedSet[Difficulty] = field(factory=ordered_set, converter=ordered_set)  # type: ignore
+    lengths: OrderedSet[LevelLength] = field(factory=ordered_set, converter=ordered_set)  # type: ignore
+    completed_levels: OrderedSet[int] = field(factory=ordered_set, converter=ordered_set)  # type: ignore
     completed: Optional[bool] = field(default=DEFAULT_COMPLETED)
     require_coins: bool = field(default=DEFAULT_REQUIRE_COINS)
     rate_filter: Optional[RateFilter] = field(default=DEFAULT_RATE_FILTER)
@@ -57,7 +57,7 @@ class Filters(Binary):
     song_id: Optional[int] = field(default=DEFAULT_SONG_ID)
     custom_song: bool = field(default=DEFAULT_CUSTOM_SONG)
     require_original: bool = field(default=DEFAULT_REQUIRE_ORIGINAL)
-    followed: OrderedSet[int] = field(factory=ordered_set, converter=ordered_set)
+    followed: OrderedSet[int] = field(factory=ordered_set, converter=ordered_set)  # type: ignore
 
     @classmethod
     def from_binary(
@@ -100,6 +100,8 @@ class Filters(Binary):
         completed_levels = iter.repeat_exactly_with(read_u32, completed_levels_length).ordered_set()
 
         value = reader.read_u8(order)
+
+        completed: Optional[bool]
 
         completed = value & completed_bit == completed_bit
 

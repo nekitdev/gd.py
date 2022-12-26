@@ -72,7 +72,7 @@ class Completed:
 
     @property
     def prefix_to_set(self) -> Dict[str, OrderedSet[int]]:
-        return {prefix(type): set for type, set in self.get_type_to_set().items()}
+        return {prefix(type): set for type, set in self.type_to_set.items()}
 
 
 DEFAULT_BUTTONS_PER_ROW = 6
@@ -1785,7 +1785,9 @@ class Database(Binary):
         main_data = parser.load(main)
         levels_data = parser.load(levels)
 
-        import json; json.dump(main_data, open("main.json", "w"), indent=4)
+        import json
+
+        json.dump(main_data, open("main.json", "w"), indent=4)
 
         created_levels_data = levels_data[CREATED_LEVELS]
         binary_version_data = levels_data[BINARY_VERSION]
@@ -1811,7 +1813,7 @@ class Database(Binary):
     def dump_levels(self) -> bytes:
         parser = PARSER
 
-        created_levels_data = {IS_ARRAY: True}
+        created_levels_data: Dict[str, Any] = {IS_ARRAY: True}
 
         created_levels = {
             key(index): created_level.to_robtop_data()

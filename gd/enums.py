@@ -1319,7 +1319,7 @@ class TriggerType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value
+        return self.value  # type: ignore
 
 
 class ZLayer(Enum):

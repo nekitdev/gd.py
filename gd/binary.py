@@ -8,7 +8,7 @@ from typing import Any, Optional, Type, TypeVar
 from attrs import frozen
 from typing_extensions import Protocol, TypeGuard, runtime_checkable
 
-from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
+from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, READ_BINARY, WRITE_BINARY
 from gd.encoding import compress, decompress
 from gd.enums import ByteOrder
 from gd.typing import IntoPath, is_instance
@@ -170,10 +170,6 @@ class BinaryInfo(Binary):
         writer.write_u8(self.version, order)
 
         writer.write(self.order.value.encode(encoding, errors))
-
-
-READ_BINARY = "rb"
-WRITE_BINARY = "wb"
 
 
 def dump(binary: BinaryWriter, item: ToBinary, info: Optional[BinaryInfo] = None) -> None:

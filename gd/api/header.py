@@ -272,9 +272,6 @@ class Header(Binary, RobTop):  # TODO: compatibility?
     def is_dual_mode(self) -> bool:
         return self.dual_mode
 
-    def is_start_position(self) -> bool:
-        return self.start_position
-
     def is_two_player(self) -> bool:
         return self.two_player
 

@@ -52,7 +52,7 @@ from gd.constants import (
 )
 from gd.date_time import DateTime, Duration, date_time_from_human, date_time_to_human, utc_now
 from gd.decorators import cache_by
-from gd.difficulty_parameters import DifficultyParameters, VALUE_TO_DEMON_DIFFICULTY, DEMON_DIFFICULTY_TO_VALUE
+from gd.difficulty_parameters import DEFAULT_DEMON_DIFFICULTY_VALUE, DifficultyParameters
 from gd.encoding import (
     decode_base64_string_url_safe,
     decode_robtop_string,
@@ -65,16 +65,13 @@ from gd.encoding import (
 )
 from gd.enums import (
     CommentState,
-    DemonDifficulty,
     Difficulty,
     FriendRequestState,
     FriendState,
     IconType,
     Key,
-    LevelDifficulty,
     LevelLength,
     MessageState,
-    Role,
     Salt,
     TimelyType,
 )
@@ -248,45 +245,22 @@ class SongModel(Model):
     download_url: Optional[URL] = None
 
     @classmethod
-    def from_robtop(
-        cls: Type[S],
-        string: str,
-        *,  # bring indexes and defaults into the scope
-        # indexes
-        id_index: int = SONG_ID,
-        name_index: int = SONG_NAME,
-        artist_name_index: int = SONG_ARTIST_NAME,
-        artist_id_index: int = SONG_ARTIST_ID,
-        size_index: int = SONG_SIZE,
-        youtube_video_id_index: int = SONG_YOUTUBE_VIDEO_ID,
-        youtube_channel_id_index: int = SONG_YOUTUBE_CHANNEL_ID,
-        unknown_index: int = SONG_UNKNOWN,
-        download_url_index: int = SONG_DOWNLOAD_URL,
-        # defaults
-        id_default: int = DEFAULT_ID,
-        name_default: str = UNKNOWN,
-        artist_name_default: str = UNKNOWN,
-        artist_id_default: int = DEFAULT_ID,
-        size_default: float = DEFAULT_SIZE,
-        youtube_video_id_default: str = EMPTY,
-        youtube_channel_id_default: str = EMPTY,
-        unknown_default: str = EMPTY,
-    ) -> S:
+    def from_robtop(cls: Type[S], string: str) -> S:
         mapping = split_song(string)
 
-        download_url_string = mapping.get(download_url_index)
+        download_url_option = mapping.get(SONG_DOWNLOAD_URL)
 
-        download_url = URL(unquote(download_url_string)) if download_url_string else None
+        download_url = URL(unquote(download_url_option)) if download_url_option else None
 
         return cls(
-            id=parse_get_or(int, id_default, mapping.get(id_index)),
-            name=mapping.get(name_index, name_default),
-            artist_name=mapping.get(artist_name_index, artist_name_default),
-            artist_id=parse_get_or(int, artist_id_default, mapping.get(artist_id_index)),
-            size=parse_get_or(float, size_default, mapping.get(size_index)),
-            youtube_video_id=mapping.get(youtube_video_id_index, youtube_video_id_default),
-            youtube_channel_id=mapping.get(youtube_channel_id_index, youtube_channel_id_default),
-            unknown=mapping.get(unknown_index, unknown_default),
+            id=parse_get_or(int, DEFAULT_ID, mapping.get(SONG_ID)),
+            name=mapping.get(SONG_NAME, UNKNOWN),
+            artist_name=mapping.get(SONG_ARTIST_NAME, UNKNOWN),
+            artist_id=parse_get_or(int, DEFAULT_ID, mapping.get(SONG_ARTIST_ID)),
+            size=parse_get_or(float, DEFAULT_SIZE, mapping.get(SONG_SIZE)),
+            youtube_video_id=mapping.get(SONG_YOUTUBE_VIDEO_ID, EMPTY),
+            youtube_channel_id=mapping.get(SONG_YOUTUBE_CHANNEL_ID, EMPTY),
+            unknown=mapping.get(SONG_UNKNOWN, EMPTY),
             download_url=download_url,
         )
 
@@ -294,29 +268,17 @@ class SongModel(Model):
     def can_be_in(cls, string: str) -> bool:
         return SONG_SEPARATOR in string
 
-    def to_robtop(
-        self,
-        *,  # bring indexes into the scope
-        id_index: int = SONG_ID,
-        name_index: int = SONG_NAME,
-        artist_name_index: int = SONG_ARTIST_NAME,
-        artist_id_index: int = SONG_ARTIST_ID,
-        size_index: int = SONG_SIZE,
-        youtube_video_id_index: int = SONG_YOUTUBE_VIDEO_ID,
-        youtube_channel_id_index: int = SONG_YOUTUBE_CHANNEL_ID,
-        unknown_index: int = SONG_UNKNOWN,
-        download_url_index: int = SONG_DOWNLOAD_URL,
-    ) -> str:
+    def to_robtop(self) -> str:
         mapping = {
-            id_index: str(self.id),
-            name_index: self.name,
-            artist_name_index: self.artist_name,
-            artist_id_index: str(self.artist_id),
-            size_index: float_str(self.size),
-            youtube_video_id_index: self.youtube_video_id,
-            youtube_channel_id_index: self.youtube_channel_id,
-            unknown_index: self.unknown,
-            download_url_index: quote(str(self.download_url or EMPTY)),
+            SONG_ID: str(self.id),
+            SONG_NAME: self.name,
+            SONG_ARTIST_NAME: self.artist_name,
+            SONG_ARTIST_ID: str(self.artist_id),
+            SONG_SIZE: float_str(self.size),
+            SONG_YOUTUBE_VIDEO_ID: self.youtube_video_id,
+            SONG_YOUTUBE_CHANNEL_ID: self.youtube_channel_id,
+            SONG_UNKNOWN: self.unknown,
+            SONG_DOWNLOAD_URL: quote(str(self.download_url or EMPTY)),
         }
 
         return concat_song(mapping)
@@ -454,111 +416,64 @@ class SearchUserModel(Model):
     user_coins: int = DEFAULT_USER_COINS
 
     @classmethod
-    def from_robtop(
-        cls: Type[SU],
-        string: str,
-        # indexes
-        name_index: int = SEARCH_USER_NAME,
-        id_index: int = SEARCH_USER_ID,
-        stars_index: int = SEARCH_USER_STARS,
-        demons_index: int = SEARCH_USER_DEMONS,
-        rank_index: int = SEARCH_USER_RANK,
-        creator_points_index: int = SEARCH_USER_CREATOR_POINTS,
-        icon_id_index: int = SEARCH_USER_ICON_ID,
-        color_1_id_index: int = SEARCH_USER_COLOR_1_ID,
-        color_2_id_index: int = SEARCH_USER_COLOR_2_ID,
-        secret_coins_index: int = SEARCH_USER_SECRET_COINS,
-        icon_type_index: int = SEARCH_USER_ICON_TYPE,
-        glow_index: int = SEARCH_USER_GLOW,
-        account_id_index: int = SEARCH_USER_ACCOUNT_ID,
-        user_coins_index: int = SEARCH_USER_USER_COINS,
-        # defaults
-        name_default: str = UNKNOWN,
-        id_default: int = DEFAULT_ID,
-        stars_default: int = DEFAULT_STARS,
-        demons_default: int = DEFAULT_DEMONS,
-        rank_default: int = DEFAULT_RANK,
-        creator_points_default: int = DEFAULT_CREATOR_POINTS,
-        icon_id_default: int = DEFAULT_ID,
-        color_1_id_default: int = DEFAULT_COLOR_2_ID,
-        color_2_id_default: int = DEFAULT_COLOR_2_ID,
-        secret_coins_default: int = DEFAULT_SECRET_COINS,
-        icon_type_default: IconType = IconType.DEFAULT,
-        glow_default: bool = DEFAULT_GLOW,
-        account_id_default: int = DEFAULT_ID,
-        user_coins_default: int = DEFAULT_USER_COINS,
-    ) -> SU:
+    def from_robtop(cls: Type[SU], string: str) -> SU:
         mapping = split_search_user(string)
 
-        rank_string = mapping.get(rank_index)
+        rank_option = mapping.get(SEARCH_USER_RANK)
 
-        if rank_string:
-            rank = int(rank_string)
+        if rank_option:
+            rank = int(rank_option)
 
         else:
-            rank = rank_default
+            rank = DEFAULT_RANK
 
         return cls(
-            name=mapping.get(name_index, name_default),
-            id=parse_get_or(int, id_default, mapping.get(id_index)),
-            stars=parse_get_or(int, stars_default, mapping.get(stars_index)),
-            demons=parse_get_or(int, demons_default, mapping.get(demons_index)),
+            name=mapping.get(SEARCH_USER_NAME, UNKNOWN),
+            id=parse_get_or(int, DEFAULT_ID, mapping.get(SEARCH_USER_ID)),
+            stars=parse_get_or(int, DEFAULT_STARS, mapping.get(SEARCH_USER_STARS)),
+            demons=parse_get_or(int, DEFAULT_DEMONS, mapping.get(SEARCH_USER_DEMONS)),
             rank=rank,
             creator_points=parse_get_or(
                 int,
-                creator_points_default,
-                mapping.get(creator_points_index),
+                DEFAULT_CREATOR_POINTS,
+                mapping.get(SEARCH_USER_CREATOR_POINTS),
             ),
-            icon_id=parse_get_or(int, icon_id_default, mapping.get(icon_id_index)),
-            color_1_id=parse_get_or(int, color_1_id_default, mapping.get(color_1_id_index)),
-            color_2_id=parse_get_or(int, color_2_id_default, mapping.get(color_2_id_index)),
-            secret_coins=parse_get_or(int, secret_coins_default, mapping.get(secret_coins_index)),
+            icon_id=parse_get_or(int, DEFAULT_ID, mapping.get(SEARCH_USER_ICON_ID)),
+            color_1_id=parse_get_or(int, DEFAULT_COLOR_1_ID, mapping.get(SEARCH_USER_COLOR_1_ID)),
+            color_2_id=parse_get_or(int, DEFAULT_COLOR_2_ID, mapping.get(SEARCH_USER_COLOR_2_ID)),
+            secret_coins=parse_get_or(
+                int, DEFAULT_SECRET_COINS, mapping.get(SEARCH_USER_SECRET_COINS)
+            ),
             icon_type=parse_get_or(
                 partial_parse_enum(int, IconType),
-                icon_type_default,
-                mapping.get(icon_type_index),
+                IconType.DEFAULT,
+                mapping.get(SEARCH_USER_ICON_TYPE),
             ),
-            glow=parse_get_or(int_bool, glow_default, mapping.get(glow_index)),
-            account_id=parse_get_or(int, account_id_default, mapping.get(account_id_index)),
-            user_coins=parse_get_or(int, user_coins_default, mapping.get(user_coins_index)),
+            glow=parse_get_or(int_bool, DEFAULT_GLOW, mapping.get(SEARCH_USER_GLOW)),
+            account_id=parse_get_or(int, DEFAULT_ID, mapping.get(SEARCH_USER_ACCOUNT_ID)),
+            user_coins=parse_get_or(int, DEFAULT_USER_COINS, mapping.get(SEARCH_USER_USER_COINS)),
         )
 
-    def to_robtop(
-        self,
-        name_index: int = SEARCH_USER_NAME,
-        id_index: int = SEARCH_USER_ID,
-        stars_index: int = SEARCH_USER_STARS,
-        demons_index: int = SEARCH_USER_DEMONS,
-        rank_index: int = SEARCH_USER_RANK,
-        creator_points_index: int = SEARCH_USER_CREATOR_POINTS,
-        icon_id_index: int = SEARCH_USER_ICON_ID,
-        color_1_id_index: int = SEARCH_USER_COLOR_1_ID,
-        color_2_id_index: int = SEARCH_USER_COLOR_2_ID,
-        secret_coins_index: int = SEARCH_USER_SECRET_COINS,
-        icon_type_index: int = SEARCH_USER_ICON_TYPE,
-        glow_index: int = SEARCH_USER_GLOW,
-        account_id_index: int = SEARCH_USER_ACCOUNT_ID,
-        user_coins_index: int = SEARCH_USER_USER_COINS,
-    ) -> str:
+    def to_robtop(self) -> str:
         glow = self.glow
 
         glow += glow  # type: ignore
 
         mapping = {
-            name_index: self.name,
-            id_index: str(self.id),
-            stars_index: str(self.stars),
-            demons_index: str(self.demons),
-            rank_index: str(self.rank),
-            creator_points_index: str(self.creator_points),
-            icon_id_index: str(self.icon_id),
-            color_1_id_index: str(self.color_1_id),
-            color_2_id_index: str(self.color_2_id),
-            secret_coins_index: str(self.secret_coins),
-            icon_type_index: str(self.icon_type.value),
-            glow_index: str(glow),
-            account_id_index: str(self.account_id),
-            user_coins_index: str(self.user_coins),
+            SEARCH_USER_NAME: self.name,
+            SEARCH_USER_ID: str(self.id),
+            SEARCH_USER_STARS: str(self.stars),
+            SEARCH_USER_DEMONS: str(self.demons),
+            SEARCH_USER_RANK: str(self.rank),
+            SEARCH_USER_CREATOR_POINTS: str(self.creator_points),
+            SEARCH_USER_ICON_ID: str(self.icon_id),
+            SEARCH_USER_COLOR_1_ID: str(self.color_1_id),
+            SEARCH_USER_COLOR_2_ID: str(self.color_2_id),
+            SEARCH_USER_SECRET_COINS: str(self.secret_coins),
+            SEARCH_USER_ICON_TYPE: str(self.icon_type.value),
+            SEARCH_USER_GLOW: str(glow),
+            SEARCH_USER_ACCOUNT_ID: str(self.account_id),
+            SEARCH_USER_USER_COINS: str(self.user_coins),
         }
 
         return concat_search_user(mapping)
@@ -599,7 +514,7 @@ PROFILE_TWITTER = 44
 PROFILE_TWITCH = 45
 PROFILE_DIAMONDS = 46
 PROFILE_EXPLOSION_ID = 48
-PROFILE_ROLE = 49
+PROFILE_ROLE_ID = 49
 PROFILE_COMMENT_STATE = 50
 
 
@@ -639,212 +554,104 @@ class ProfileModel(Model):
     twitch: Optional[str] = None
     diamonds: int = DEFAULT_DIAMONDS
     explosion_id: int = DEFAULT_ICON_ID
-    role: Role = Role.DEFAULT
+    role_id: int = DEFAULT_ID
     comment_state: CommentState = CommentState.DEFAULT
 
     @classmethod
-    def from_robtop(
-        cls: Type[P],
-        string: str,
-        # indexes
-        name_index: int = PROFILE_NAME,
-        id_index: int = PROFILE_ID,
-        stars_index: int = PROFILE_STARS,
-        demons_index: int = PROFILE_DEMONS,
-        creator_points_index: int = PROFILE_CREATOR_POINTS,
-        color_1_id_index: int = PROFILE_COLOR_1_ID,
-        color_2_id_index: int = PROFILE_COLOR_2_ID,
-        secret_coins_index: int = PROFILE_SECRET_COINS,
-        account_id_index: int = PROFILE_ACCOUNT_ID,
-        user_coins_index: int = PROFILE_USER_COINS,
-        message_state_index: int = PROFILE_MESSAGE_STATE,
-        friend_request_state_index: int = PROFILE_FRIEND_REQUEST_STATE,
-        youtube_index: int = PROFILE_YOUTUBE,
-        cube_id_index: int = PROFILE_CUBE_ID,
-        ship_id_index: int = PROFILE_SHIP_ID,
-        ball_id_index: int = PROFILE_BALL_ID,
-        ufo_id_index: int = PROFILE_UFO_ID,
-        wave_id_index: int = PROFILE_WAVE_ID,
-        robot_id_index: int = PROFILE_ROBOT_ID,
-        glow_index: int = PROFILE_GLOW,
-        active_index: int = PROFILE_ACTIVE,
-        rank_index: int = PROFILE_RANK,
-        friend_state_index: int = PROFILE_FRIEND_STATE,
-        new_messages_index: int = PROFILE_NEW_MESSAGES,
-        new_friend_requests_index: int = PROFILE_NEW_FRIEND_REQUESTS,
-        new_friends_index: int = PROFILE_NEW_FRIENDS,
-        spider_id_index: int = PROFILE_SPIDER_ID,
-        twitter_index: int = PROFILE_TWITTER,
-        twitch_index: int = PROFILE_TWITCH,
-        diamonds_index: int = PROFILE_DIAMONDS,
-        explosion_id_index: int = PROFILE_EXPLOSION_ID,
-        role_index: int = PROFILE_ROLE,
-        comment_state_index: int = PROFILE_COMMENT_STATE,
-        # defaults
-        name_default: str = UNKNOWN,
-        id_default: int = DEFAULT_ID,
-        stars_default: int = DEFAULT_STARS,
-        demons_default: int = DEFAULT_DEMONS,
-        creator_points_default: int = DEFAULT_CREATOR_POINTS,
-        color_1_id_default: int = DEFAULT_COLOR_1_ID,
-        color_2_id_default: int = DEFAULT_COLOR_2_ID,
-        secret_coins_default: int = DEFAULT_SECRET_COINS,
-        account_id_default: int = DEFAULT_ID,
-        user_coins_default: int = DEFAULT_USER_COINS,
-        message_state_default: MessageState = MessageState.DEFAULT,
-        friend_request_state_default: FriendRequestState = FriendRequestState.DEFAULT,
-        youtube_default: Optional[str] = None,
-        cube_id_default: int = DEFAULT_ICON_ID,
-        ship_id_default: int = DEFAULT_ICON_ID,
-        ball_id_default: int = DEFAULT_ICON_ID,
-        ufo_id_default: int = DEFAULT_ICON_ID,
-        wave_id_default: int = DEFAULT_ICON_ID,
-        robot_id_default: int = DEFAULT_ICON_ID,
-        glow_default: bool = DEFAULT_GLOW,
-        active_default: bool = DEFAULT_ACTIVE,
-        rank_default: int = DEFAULT_RANK,
-        friend_state_default: FriendState = FriendState.DEFAULT,
-        new_messages_default: int = DEFAULT_NEW,
-        new_friend_requests_default: int = DEFAULT_NEW,
-        new_friends_default: int = DEFAULT_NEW,
-        spider_id_default: int = DEFAULT_ICON_ID,
-        twitter_default: Optional[str] = None,
-        twitch_default: Optional[str] = None,
-        diamonds_default: int = DEFAULT_DIAMONDS,
-        explosion_id_default: int = DEFAULT_ICON_ID,
-        role_default: Role = Role.DEFAULT,
-        comment_state_default: CommentState = CommentState.DEFAULT,
-    ) -> P:
+    def from_robtop(cls: Type[P], string: str) -> P:
         mapping = split_profile(string)
 
         return cls(
-            name=mapping.get(name_index, name_default),
-            id=parse_get_or(int, id_default, mapping.get(id_index)),
-            stars=parse_get_or(int, stars_default, mapping.get(stars_index)),
-            demons=parse_get_or(int, demons_default, mapping.get(demons_index)),
+            name=mapping.get(PROFILE_NAME, UNKNOWN),
+            id=parse_get_or(int, DEFAULT_ID, mapping.get(PROFILE_ID)),
+            stars=parse_get_or(int, DEFAULT_STARS, mapping.get(PROFILE_STARS)),
+            demons=parse_get_or(int, DEFAULT_DEMONS, mapping.get(PROFILE_DEMONS)),
             creator_points=parse_get_or(
-                int, creator_points_default, mapping.get(creator_points_index)
+                int, DEFAULT_CREATOR_POINTS, mapping.get(PROFILE_CREATOR_POINTS)
             ),
-            color_1_id=parse_get_or(int, color_1_id_default, mapping.get(color_1_id_index)),
-            color_2_id=parse_get_or(int, color_2_id_default, mapping.get(color_2_id_index)),
-            secret_coins=parse_get_or(int, secret_coins_default, mapping.get(secret_coins_index)),
-            account_id=parse_get_or(int, account_id_default, mapping.get(account_id_index)),
-            user_coins=parse_get_or(int, user_coins_default, mapping.get(user_coins_index)),
+            color_1_id=parse_get_or(int, DEFAULT_COLOR_1_ID, mapping.get(PROFILE_COLOR_1_ID)),
+            color_2_id=parse_get_or(int, DEFAULT_COLOR_2_ID, mapping.get(PROFILE_COLOR_2_ID)),
+            secret_coins=parse_get_or(int, DEFAULT_SECRET_COINS, mapping.get(PROFILE_SECRET_COINS)),
+            account_id=parse_get_or(int, DEFAULT_ID, mapping.get(PROFILE_ACCOUNT_ID)),
+            user_coins=parse_get_or(int, DEFAULT_USER_COINS, mapping.get(PROFILE_USER_COINS)),
             message_state=parse_get_or(
                 partial_parse_enum(int, MessageState),
-                message_state_default,
-                mapping.get(message_state_index),
+                MessageState.DEFAULT,
+                mapping.get(PROFILE_MESSAGE_STATE),
             ),
             friend_request_state=parse_get_or(
                 partial_parse_enum(int, FriendRequestState),
-                friend_request_state_default,
-                mapping.get(friend_request_state_index),
+                FriendRequestState.DEFAULT,
+                mapping.get(PROFILE_FRIEND_REQUEST_STATE),
             ),
-            youtube=mapping.get(youtube_index) or youtube_default,
-            cube_id=parse_get_or(int, cube_id_default, mapping.get(cube_id_index)),
-            ship_id=parse_get_or(int, ship_id_default, mapping.get(ship_id_index)),
-            ball_id=parse_get_or(int, ball_id_default, mapping.get(ball_id_index)),
-            ufo_id=parse_get_or(int, ufo_id_default, mapping.get(ufo_id_index)),
-            wave_id=parse_get_or(int, wave_id_default, mapping.get(wave_id_index)),
-            robot_id=parse_get_or(int, robot_id_default, mapping.get(robot_id_index)),
-            glow=parse_get_or(int_bool, glow_default, mapping.get(glow_index)),
-            active=parse_get_or(int_bool, active_default, mapping.get(active_index)),
-            rank=parse_get_or(int, rank_default, mapping.get(rank_index)),
+            youtube=mapping.get(PROFILE_YOUTUBE) or None,
+            cube_id=parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_CUBE_ID)),
+            ship_id=parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_SHIP_ID)),
+            ball_id=parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_BALL_ID)),
+            ufo_id=parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_UFO_ID)),
+            wave_id=parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_WAVE_ID)),
+            robot_id=parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_ROBOT_ID)),
+            glow=parse_get_or(int_bool, DEFAULT_GLOW, mapping.get(PROFILE_GLOW)),
+            active=parse_get_or(int_bool, DEFAULT_ACTIVE, mapping.get(DEFAULT_ACTIVE)),
+            rank=parse_get_or(int, DEFAULT_RANK, mapping.get(PROFILE_RANK)),
             friend_state=parse_get_or(
                 partial_parse_enum(int, FriendState),
-                friend_state_default,
-                mapping.get(friend_state_index),
+                FriendState.DEFAULT,
+                mapping.get(PROFILE_FRIEND_STATE),
             ),
-            new_messages=parse_get_or(int, new_messages_default, mapping.get(new_messages_index)),
+            new_messages=parse_get_or(int, DEFAULT_NEW, mapping.get(PROFILE_NEW_MESSAGES)),
             new_friend_requests=parse_get_or(
-                int,
-                new_friend_requests_default,
-                mapping.get(new_friend_requests_index),
+                int, DEFAULT_NEW, mapping.get(PROFILE_NEW_FRIEND_REQUESTS)
             ),
-            new_friends=parse_get_or(int, new_friends_default, mapping.get(new_friends_index)),
-            spider_id=parse_get_or(int, spider_id_default, mapping.get(spider_id_index)),
-            twitter=mapping.get(twitter_index) or twitter_default,
-            twitch=mapping.get(twitch_index) or twitch_default,
-            diamonds=parse_get_or(int, diamonds_default, mapping.get(diamonds_index)),
-            explosion_id=parse_get_or(int, explosion_id_default, mapping.get(explosion_id_index)),
-            role=parse_get_or(partial_parse_enum(int, Role), role_default, mapping.get(role_index)),
+            new_friends=parse_get_or(int, DEFAULT_NEW, mapping.get(PROFILE_NEW_FRIENDS)),
+            spider_id=parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_SPIDER_ID)),
+            twitter=mapping.get(PROFILE_TWITTER) or None,
+            twitch=mapping.get(PROFILE_TWITCH) or None,
+            diamonds=parse_get_or(int, DEFAULT_DIAMONDS, mapping.get(PROFILE_DIAMONDS)),
+            explosion_id=parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_EXPLOSION_ID)),
+            role_id=parse_get_or(int, DEFAULT_ID, mapping.get(PROFILE_ROLE_ID)),
             comment_state=parse_get_or(
                 partial_parse_enum(int, CommentState),
-                comment_state_default,
-                mapping.get(comment_state_index),
+                CommentState.DEFAULT,
+                mapping.get(PROFILE_COMMENT_STATE),
             ),
         )
 
-    def to_robtop(
-        self,
-        name_index: int = PROFILE_NAME,
-        id_index: int = PROFILE_ID,
-        stars_index: int = PROFILE_STARS,
-        demons_index: int = PROFILE_DEMONS,
-        creator_points_index: int = PROFILE_CREATOR_POINTS,
-        color_1_id_index: int = PROFILE_COLOR_1_ID,
-        color_2_id_index: int = PROFILE_COLOR_2_ID,
-        secret_coins_index: int = PROFILE_SECRET_COINS,
-        account_id_index: int = PROFILE_ACCOUNT_ID,
-        user_coins_index: int = PROFILE_USER_COINS,
-        message_state_index: int = PROFILE_MESSAGE_STATE,
-        friend_request_state_index: int = PROFILE_FRIEND_REQUEST_STATE,
-        youtube_index: int = PROFILE_YOUTUBE,
-        cube_id_index: int = PROFILE_CUBE_ID,
-        ship_id_index: int = PROFILE_SHIP_ID,
-        ball_id_index: int = PROFILE_BALL_ID,
-        ufo_id_index: int = PROFILE_UFO_ID,
-        wave_id_index: int = PROFILE_WAVE_ID,
-        robot_id_index: int = PROFILE_ROBOT_ID,
-        glow_index: int = PROFILE_GLOW,
-        active_index: int = PROFILE_ACTIVE,
-        rank_index: int = PROFILE_RANK,
-        friend_state_index: int = PROFILE_FRIEND_STATE,
-        new_messages_index: int = PROFILE_NEW_MESSAGES,
-        new_friend_requests_index: int = PROFILE_NEW_FRIEND_REQUESTS,
-        new_friends_index: int = PROFILE_NEW_FRIENDS,
-        spider_id_index: int = PROFILE_SPIDER_ID,
-        twitter_index: int = PROFILE_TWITTER,
-        twitch_index: int = PROFILE_TWITCH,
-        diamonds_index: int = PROFILE_DIAMONDS,
-        explosion_id_index: int = PROFILE_EXPLOSION_ID,
-        role_index: int = PROFILE_ROLE,
-        comment_state_index: int = PROFILE_COMMENT_STATE,
-    ) -> str:
+    def to_robtop(self) -> str:
         mapping = {
-            name_index: self.name,
-            id_index: str(self.id),
-            stars_index: str(self.stars),
-            demons_index: str(self.demons),
-            creator_points_index: str(self.creator_points),
-            color_1_id_index: str(self.color_1_id),
-            color_2_id_index: str(self.color_2_id),
-            secret_coins_index: str(self.secret_coins),
-            account_id_index: str(self.account_id),
-            user_coins_index: str(self.user_coins),
-            message_state_index: str(self.message_state.value),
-            friend_request_state_index: str(self.friend_request_state.value),
-            youtube_index: self.youtube or EMPTY,
-            cube_id_index: str(self.cube_id),
-            ship_id_index: str(self.ship_id),
-            ball_id_index: str(self.ball_id),
-            ufo_id_index: str(self.ufo_id),
-            wave_id_index: str(self.wave_id),
-            robot_id_index: str(self.robot_id),
-            glow_index: str(int(self.glow)),
-            active_index: str(int(self.active)),
-            rank_index: str(int(self.rank)),
-            friend_state_index: str(self.friend_state.value),
-            new_messages_index: str(self.new_messages),
-            new_friend_requests_index: str(self.new_friend_requests),
-            new_friends_index: str(self.new_friends),
-            spider_id_index: str(self.spider_id),
-            twitter_index: self.twitter or EMPTY,
-            twitch_index: self.twitch or EMPTY,
-            diamonds_index: str(self.diamonds),
-            explosion_id_index: str(self.explosion_id),
-            role_index: str(self.role.value),
-            comment_state_index: str(self.comment_state.value),
+            PROFILE_NAME: self.name,
+            PROFILE_ID: str(self.id),
+            PROFILE_STARS: str(self.stars),
+            PROFILE_DEMONS: str(self.demons),
+            PROFILE_CREATOR_POINTS: str(self.creator_points),
+            PROFILE_COLOR_1_ID: str(self.color_1_id),
+            PROFILE_COLOR_2_ID: str(self.color_2_id),
+            PROFILE_SECRET_COINS: str(self.secret_coins),
+            PROFILE_ACCOUNT_ID: str(self.account_id),
+            PROFILE_USER_COINS: str(self.user_coins),
+            PROFILE_MESSAGE_STATE: str(self.message_state.value),
+            PROFILE_FRIEND_REQUEST_STATE: str(self.friend_request_state.value),
+            PROFILE_YOUTUBE: self.youtube or EMPTY,
+            PROFILE_CUBE_ID: str(self.cube_id),
+            PROFILE_SHIP_ID: str(self.ship_id),
+            PROFILE_BALL_ID: str(self.ball_id),
+            PROFILE_UFO_ID: str(self.ufo_id),
+            PROFILE_WAVE_ID: str(self.wave_id),
+            PROFILE_ROBOT_ID: str(self.robot_id),
+            PROFILE_GLOW: str(int(self.glow)),
+            PROFILE_ACTIVE: str(int(self.active)),
+            PROFILE_RANK: str(int(self.rank)),
+            PROFILE_FRIEND_STATE: str(self.friend_state.value),
+            PROFILE_NEW_MESSAGES: str(self.new_messages),
+            PROFILE_NEW_FRIEND_REQUESTS: str(self.new_friend_requests),
+            PROFILE_NEW_FRIENDS: str(self.new_friends),
+            PROFILE_SPIDER_ID: str(self.spider_id),
+            PROFILE_TWITTER: self.twitter or EMPTY,
+            PROFILE_TWITCH: self.twitch or EMPTY,
+            PROFILE_DIAMONDS: str(self.diamonds),
+            PROFILE_EXPLOSION_ID: str(self.explosion_id),
+            PROFILE_ROLE_ID: str(self.role_id),
+            PROFILE_COMMENT_STATE: str(self.comment_state.value),
         }
 
         return concat_profile(mapping)
@@ -889,84 +696,48 @@ class RelationshipUserModel(Model):
     message_state: MessageState = MessageState.DEFAULT
 
     @classmethod
-    def from_robtop(
-        cls: Type[RU],
-        string: str,
-        name_index: int = RELATIONSHIP_USER_NAME,
-        id_index: int = RELATIONSHIP_USER_ID,
-        icon_id_index: int = RELATIONSHIP_USER_ICON_ID,
-        color_1_id_index: int = RELATIONSHIP_USER_COLOR_1_ID,
-        color_2_id_index: int = RELATIONSHIP_USER_COLOR_2_ID,
-        icon_type_index: int = RELATIONSHIP_USER_ICON_TYPE,
-        glow_index: int = RELATIONSHIP_USER_GLOW,
-        account_id_index: int = RELATIONSHIP_USER_ACCOUNT_ID,
-        message_state_index: int = RELATIONSHIP_USER_MESSAGE_STATE,
-        name_default: str = UNKNOWN,
-        id_default: int = DEFAULT_ID,
-        icon_id_default: int = DEFAULT_ICON_ID,
-        color_1_id_default: int = DEFAULT_COLOR_1_ID,
-        color_2_id_default: int = DEFAULT_COLOR_2_ID,
-        icon_type_default: IconType = IconType.DEFAULT,
-        glow_default: bool = DEFAULT_GLOW,
-        account_id_default: int = DEFAULT_ID,
-        message_state_default: MessageState = MessageState.DEFAULT,
-    ) -> RU:
+    def from_robtop(cls: Type[RU], string: str) -> RU:
         mapping = split_relationship_user(string)
 
         return cls(
-            name=mapping.get(name_index, name_default),
-            id=parse_get_or(int, id_default, mapping.get(id_index)),
-            icon_id=parse_get_or(int, icon_id_default, mapping.get(icon_id_index)),
+            name=mapping.get(RELATIONSHIP_USER_NAME, UNKNOWN),
+            id=parse_get_or(int, DEFAULT_ID, mapping.get(RELATIONSHIP_USER_ID)),
+            icon_id=parse_get_or(int, DEFAULT_ICON_ID, mapping.get(RELATIONSHIP_USER_ICON_ID)),
             color_1_id=parse_get_or(
-                int,
-                color_1_id_default,
-                mapping.get(color_1_id_index),
+                int, DEFAULT_COLOR_1_ID, mapping.get(RELATIONSHIP_USER_COLOR_1_ID)
             ),
             color_2_id=parse_get_or(
-                int,
-                color_2_id_default,
-                mapping.get(color_2_id_index),
+                int, DEFAULT_COLOR_2_ID, mapping.get(RELATIONSHIP_USER_COLOR_2_ID)
             ),
             icon_type=parse_get_or(
                 partial_parse_enum(int, IconType),
-                icon_type_default,
-                mapping.get(icon_type_index),
+                IconType.DEFAULT,
+                mapping.get(RELATIONSHIP_USER_ICON_TYPE),
             ),
-            glow=parse_get_or(int_bool, glow_default, mapping.get(glow_index)),
-            account_id=parse_get_or(
-                int,
-                account_id_default,
-                mapping.get(account_id_index),
-            ),
+            glow=parse_get_or(int_bool, DEFAULT_GLOW, mapping.get(RELATIONSHIP_USER_GLOW)),
+            account_id=parse_get_or(int, DEFAULT_ID, mapping.get(RELATIONSHIP_USER_ACCOUNT_ID)),
             message_state=parse_get_or(
                 partial_parse_enum(int, MessageState),
-                message_state_default,
-                mapping.get(message_state_index),
+                MessageState.DEFAULT,
+                mapping.get(RELATIONSHIP_USER_MESSAGE_STATE),
             ),
         )
 
-    def to_robtop(
-        self,
-        name_index: int = RELATIONSHIP_USER_NAME,
-        id_index: int = RELATIONSHIP_USER_ID,
-        icon_id_index: int = RELATIONSHIP_USER_ICON_ID,
-        color_1_id_index: int = RELATIONSHIP_USER_COLOR_1_ID,
-        color_2_id_index: int = RELATIONSHIP_USER_COLOR_2_ID,
-        icon_type_index: int = RELATIONSHIP_USER_ICON_TYPE,
-        glow_index: int = RELATIONSHIP_USER_GLOW,
-        account_id_index: int = RELATIONSHIP_USER_ACCOUNT_ID,
-        message_state_index: int = RELATIONSHIP_USER_MESSAGE_STATE,
-    ) -> str:
+    def to_robtop(self) -> str:
+        glow = self.glow
+
+        glow += glow  # type: ignore
+
         mapping = {
-            name_index: str(self.name),
-            id_index: str(self.id),
-            icon_id_index: str(self.icon_id),
-            color_1_id_index: str(self.color_1_id),
-            color_2_id_index: str(self.color_2_id),
-            icon_type_index: str(self.icon_type.value),
-            glow_index: str(int(self.glow)),
-            account_id_index: str(self.account_id),
-            message_state_index: str(self.message_state.value),
+            RELATIONSHIP_USER_NAME: str(self.name),
+            RELATIONSHIP_USER_ID: str(self.id),
+            RELATIONSHIP_USER_ICON_ID: str(self.icon_id),
+            RELATIONSHIP_USER_COLOR_1_ID: str(self.color_1_id),
+            RELATIONSHIP_USER_COLOR_2_ID: str(self.color_2_id),
+            RELATIONSHIP_USER_ICON_TYPE: str(self.icon_type.value),
+            RELATIONSHIP_USER_GLOW: str(int(glow)),
+            RELATIONSHIP_USER_ACCOUNT_ID: str(self.account_id),
+            RELATIONSHIP_USER_MESSAGE_STATE: str(self.message_state.value),
         }
 
         return concat_relationship_user(mapping)
@@ -992,6 +763,7 @@ LEADERBOARD_USER_ACCOUNT_ID = 16
 LEADERBOARD_USER_USER_COINS = 17
 LEADERBOARD_USER_DIAMONDS = 46
 
+
 LU = TypeVar("LU", bound="LeaderboardUserModel")
 
 
@@ -1014,128 +786,62 @@ class LeaderboardUserModel(Model):
     diamonds: int = DEFAULT_DIAMONDS
 
     @classmethod
-    def from_robtop(
-        cls: Type[LU],
-        string: str,
-        # indexes
-        name_index: int = LEADERBOARD_USER_NAME,
-        id_index: int = LEADERBOARD_USER_ID,
-        stars_index: int = LEADERBOARD_USER_STARS,
-        demons_index: int = LEADERBOARD_USER_DEMONS,
-        place_index: int = LEADERBOARD_USER_PLACE,
-        creator_points_index: int = LEADERBOARD_USER_CREATOR_POINTS,
-        icon_id_index: int = LEADERBOARD_USER_ICON_ID,
-        color_1_id_index: int = LEADERBOARD_USER_COLOR_1_ID,
-        color_2_id_index: int = LEADERBOARD_USER_COLOR_2_ID,
-        secret_coins_index: int = LEADERBOARD_USER_SECRET_COINS,
-        icon_type_index: int = LEADERBOARD_USER_ICON_TYPE,
-        glow_index: int = LEADERBOARD_USER_GLOW,
-        account_id_index: int = LEADERBOARD_USER_ACCOUNT_ID,
-        user_coins_index: int = LEADERBOARD_USER_USER_COINS,
-        diamonds_index: int = LEADERBOARD_USER_DIAMONDS,
-        # defaults
-        name_default: str = UNKNOWN,
-        id_default: int = DEFAULT_ID,
-        stars_default: int = DEFAULT_STARS,
-        demons_default: int = DEFAULT_DEMONS,
-        place_default: int = DEFAULT_PLACE,
-        creator_points_default: int = DEFAULT_CREATOR_POINTS,
-        icon_id_default: int = DEFAULT_ICON_ID,
-        color_1_id_default: int = DEFAULT_COLOR_1_ID,
-        color_2_id_default: int = DEFAULT_COLOR_2_ID,
-        secret_coins_default: int = DEFAULT_SECRET_COINS,
-        icon_type_default: IconType = IconType.DEFAULT,
-        glow_default: bool = DEFAULT_GLOW,
-        account_id_default: int = DEFAULT_ID,
-        user_coins_default: int = DEFAULT_USER_COINS,
-        diamonds_default: int = DEFAULT_DIAMONDS,
-    ) -> LU:
+    def from_robtop(cls: Type[LU], string: str) -> LU:
         mapping = split_leaderboard_user(string)
 
         return cls(
-            name=mapping.get(name_index, name_default),
-            id=parse_get_or(int, id_default, mapping.get(id_index)),
-            stars=parse_get_or(int, stars_default, mapping.get(stars_index)),
-            demons=parse_get_or(int, demons_default, mapping.get(demons_index)),
-            place=parse_get_or(int, place_default, mapping.get(place_index)),
+            name=mapping.get(LEADERBOARD_USER_NAME, UNKNOWN),
+            id=parse_get_or(int, DEFAULT_ID, mapping.get(LEADERBOARD_USER_ID)),
+            stars=parse_get_or(int, DEFAULT_STARS, mapping.get(LEADERBOARD_USER_STARS)),
+            demons=parse_get_or(int, DEFAULT_DEMONS, mapping.get(LEADERBOARD_USER_DEMONS)),
+            place=parse_get_or(int, DEFAULT_PLACE, mapping.get(LEADERBOARD_USER_PLACE)),
             creator_points=parse_get_or(
-                int,
-                creator_points_default,
-                mapping.get(creator_points_index),
+                int, DEFAULT_CREATOR_POINTS, mapping.get(LEADERBOARD_USER_CREATOR_POINTS)
             ),
-            icon_id=parse_get_or(int, icon_id_default, mapping.get(icon_id_index)),
+            icon_id=parse_get_or(int, DEFAULT_ICON_ID, mapping.get(LEADERBOARD_USER_ICON_ID)),
             color_1_id=parse_get_or(
-                int,
-                color_1_id_default,
-                mapping.get(color_1_id_index),
+                int, DEFAULT_COLOR_1_ID, mapping.get(LEADERBOARD_USER_COLOR_1_ID)
             ),
             color_2_id=parse_get_or(
-                int,
-                color_2_id_default,
-                mapping.get(color_2_id_index),
+                int, DEFAULT_COLOR_2_ID, mapping.get(LEADERBOARD_USER_COLOR_2_ID)
             ),
             secret_coins=parse_get_or(
-                int,
-                secret_coins_default,
-                mapping.get(secret_coins_index),
+                int, DEFAULT_SECRET_COINS, mapping.get(LEADERBOARD_USER_SECRET_COINS)
             ),
             icon_type=parse_get_or(
                 partial_parse_enum(int, IconType),
-                icon_type_default,
-                mapping.get(icon_type_index),
+                IconType.DEFAULT,
+                mapping.get(LEADERBOARD_USER_ICON_TYPE),
             ),
-            glow=parse_get_or(int_bool, glow_default, mapping.get(glow_index)),
-            account_id=parse_get_or(
-                int,
-                account_id_default,
-                mapping.get(account_id_index),
-            ),
+            glow=parse_get_or(int_bool, DEFAULT_GLOW, mapping.get(LEADERBOARD_USER_GLOW)),
+            account_id=parse_get_or(int, DEFAULT_ID, mapping.get(LEADERBOARD_USER_ACCOUNT_ID)),
             user_coins=parse_get_or(
-                int,
-                user_coins_default,
-                mapping.get(user_coins_index),
+                int, DEFAULT_USER_COINS, mapping.get(LEADERBOARD_USER_USER_COINS)
             ),
-            diamonds=parse_get_or(int, diamonds_default, mapping.get(diamonds_index)),
+            diamonds=parse_get_or(int, DEFAULT_DIAMONDS, mapping.get(LEADERBOARD_USER_DIAMONDS)),
         )
 
-    def to_robtop(
-        self,
-        name_index: int = LEADERBOARD_USER_NAME,
-        id_index: int = LEADERBOARD_USER_ID,
-        stars_index: int = LEADERBOARD_USER_STARS,
-        demons_index: int = LEADERBOARD_USER_DEMONS,
-        place_index: int = LEADERBOARD_USER_PLACE,
-        creator_points_index: int = LEADERBOARD_USER_CREATOR_POINTS,
-        icon_id_index: int = LEADERBOARD_USER_ICON_ID,
-        color_1_id_index: int = LEADERBOARD_USER_COLOR_1_ID,
-        color_2_id_index: int = LEADERBOARD_USER_COLOR_2_ID,
-        secret_coins_index: int = LEADERBOARD_USER_SECRET_COINS,
-        icon_type_index: int = LEADERBOARD_USER_ICON_TYPE,
-        glow_index: int = LEADERBOARD_USER_GLOW,
-        account_id_index: int = LEADERBOARD_USER_ACCOUNT_ID,
-        user_coins_index: int = LEADERBOARD_USER_USER_COINS,
-        diamonds_index: int = LEADERBOARD_USER_DIAMONDS,
-    ) -> str:
+    def to_robtop(self) -> str:
         glow = self.glow
 
         glow += glow  # type: ignore
 
         mapping = {
-            name_index: self.name,
-            id_index: str(self.id),
-            stars_index: str(self.stars),
-            place_index: str(self.place),
-            demons_index: str(self.demons),
-            creator_points_index: str(self.creator_points),
-            icon_id_index: str(self.icon_id),
-            color_1_id_index: str(self.color_1_id),
-            color_2_id_index: str(self.color_2_id),
-            secret_coins_index: str(self.secret_coins),
-            icon_type_index: str(self.icon_type.value),
-            glow_index: str(glow),
-            account_id_index: str(self.account_id),
-            user_coins_index: str(self.user_coins),
-            diamonds_index: str(self.diamonds),
+            LEADERBOARD_USER_NAME: self.name,
+            LEADERBOARD_USER_ID: str(self.id),
+            LEADERBOARD_USER_STARS: str(self.stars),
+            LEADERBOARD_USER_DEMONS: str(self.demons),
+            LEADERBOARD_USER_PLACE: str(self.place),
+            LEADERBOARD_USER_CREATOR_POINTS: str(self.creator_points),
+            LEADERBOARD_USER_ICON_ID: str(self.icon_id),
+            LEADERBOARD_USER_COLOR_1_ID: str(self.color_1_id),
+            LEADERBOARD_USER_COLOR_2_ID: str(self.color_2_id),
+            LEADERBOARD_USER_SECRET_COINS: str(self.secret_coins),
+            LEADERBOARD_USER_ICON_TYPE: str(self.icon_type.value),
+            LEADERBOARD_USER_GLOW: str(glow),
+            LEADERBOARD_USER_ACCOUNT_ID: str(self.account_id),
+            LEADERBOARD_USER_USER_COINS: str(self.user_coins),
+            LEADERBOARD_USER_DIAMONDS: str(self.diamonds),
         }
 
         return concat_leaderboard_user(mapping)
@@ -1189,6 +895,7 @@ MESSAGE_CREATED_AT = 7
 MESSAGE_READ = 8
 MESSAGE_SENT = 9
 
+
 M = TypeVar("M", bound="MessageModel")
 
 
@@ -1208,79 +915,40 @@ class MessageModel(Model):
 
     @classmethod
     def from_robtop(
-        cls: Type[M],
-        string: str,
-        content_present: bool = DEFAULT_CONTENT_PRESENT,
-        # indexes
-        id_index: int = MESSAGE_ID,
-        account_id_index: int = MESSAGE_ACCOUNT_ID,
-        user_id_index: int = MESSAGE_USER_ID,
-        subject_index: int = MESSAGE_SUBJECT,
-        content_index: int = MESSAGE_CONTENT,
-        name_index: int = MESSAGE_NAME,
-        created_at_index: int = MESSAGE_CREATED_AT,
-        read_index: int = MESSAGE_READ,
-        sent_index: int = MESSAGE_SENT,
-        # defaults
-        id_default: int = DEFAULT_ID,
-        account_id_default: int = DEFAULT_ID,
-        user_id_default: int = DEFAULT_ID,
-        subject_default: str = EMPTY,
-        content_default: str = EMPTY,
-        name_default: str = UNKNOWN,
-        created_at_default: Optional[DateTime] = None,
-        read_default: bool = DEFAULT_READ,
-        sent_default: bool = DEFAULT_SENT,
+        cls: Type[M], string: str, content_present: bool = DEFAULT_CONTENT_PRESENT
     ) -> M:
-        if created_at_default is None:
-            created_at_default = utc_now()
-
         mapping = split_message(string)
 
         return cls(
-            id=parse_get_or(int, id_default, mapping.get(id_index)),
-            account_id=parse_get_or(int, account_id_default, mapping.get(account_id_index)),
+            id=parse_get_or(int, DEFAULT_ID, mapping.get(MESSAGE_ID)),
+            account_id=parse_get_or(int, DEFAULT_ID, mapping.get(MESSAGE_ACCOUNT_ID)),
             user_id=parse_get_or(
                 int,
-                user_id_default,
-                mapping.get(user_id_index),
+                DEFAULT_ID,
+                mapping.get(MESSAGE_USER_ID),
             ),
-            subject=decode_base64_string_url_safe(mapping.get(subject_index, subject_default)),
-            content=decode_robtop_string(mapping.get(content_index, content_default), Key.MESSAGE),
-            name=mapping.get(name_index, name_default),
+            subject=decode_base64_string_url_safe(mapping.get(MESSAGE_SUBJECT, EMPTY)),
+            content=decode_robtop_string(mapping.get(MESSAGE_CONTENT, EMPTY), Key.MESSAGE),
+            name=mapping.get(MESSAGE_NAME, UNKNOWN),
             created_at=parse_get_or(
-                date_time_from_human,
-                created_at_default,
-                mapping.get(created_at_index),
-                ignore_errors=True,
+                date_time_from_human, utc_now(), mapping.get(MESSAGE_CREATED_AT), ignore_errors=True
             ),
-            read=parse_get_or(int_bool, read_default, mapping.get(read_index)),
-            sent=parse_get_or(int_bool, sent_default, mapping.get(sent_index)),
+            read=parse_get_or(int_bool, DEFAULT_READ, mapping.get(MESSAGE_READ)),
+            sent=parse_get_or(int_bool, DEFAULT_SENT, mapping.get(MESSAGE_SENT)),
             content_present=content_present,
         )
 
-    def to_robtop(
-        self,
-        id_index: int = MESSAGE_ID,
-        account_id_index: int = MESSAGE_ACCOUNT_ID,
-        user_id_index: int = MESSAGE_USER_ID,
-        subject_index: int = MESSAGE_SUBJECT,
-        content_index: int = MESSAGE_CONTENT,
-        name_index: int = MESSAGE_NAME,
-        created_at_index: int = MESSAGE_CREATED_AT,
-        read_index: int = MESSAGE_READ,
-        sent_index: int = MESSAGE_SENT,
-    ) -> str:
+    def to_robtop(self) -> str:
         mapping = {
-            id_index: str(self.id),
-            account_id_index: str(self.account_id),
-            user_id_index: str(self.user_id),
-            subject_index: encode_base64_string_url_safe(self.subject),
-            content_index: encode_robtop_string(self.content, Key.MESSAGE),
-            name_index: self.name,
-            created_at_index: date_time_to_human(self.created_at),
-            read_index: str(int(self.read)),
-            sent_index: str(int(self.sent)),
+            MESSAGE_ID: str(self.id),
+            MESSAGE_ACCOUNT_ID: str(self.account_id),
+            MESSAGE_USER_ID: str(self.user_id),
+            MESSAGE_SUBJECT: encode_base64_string_url_safe(self.subject),
+            MESSAGE_CONTENT: encode_robtop_string(self.content, Key.MESSAGE),
+            MESSAGE_NAME: self.name,
+            MESSAGE_CREATED_AT: date_time_to_human(self.created_at),
+            MESSAGE_READ: str(int(self.read)),
+            MESSAGE_SENT: str(int(self.sent)),
         }
 
         return concat_message(mapping)
@@ -1312,6 +980,7 @@ FRIEND_REQUEST_CONTENT = 35
 FRIEND_REQUEST_CREATED_AT = 37
 FRIEND_REQUEST_UNREAD = 41
 
+
 FR = TypeVar("FR", bound="FriendRequestModel")
 
 
@@ -1331,107 +1000,59 @@ class FriendRequestModel(Model):
     unread: bool = field(default=DEFAULT_UNREAD)
 
     @classmethod
-    def from_robtop(
-        cls: Type[FR],
-        string: str,
-        # indexes
-        name_index: int = FRIEND_REQUEST_NAME,
-        user_id_index: int = FRIEND_REQUEST_USER_ID,
-        icon_id_index: int = FRIEND_REQUEST_ICON_ID,
-        color_1_id_index: int = FRIEND_REQUEST_COLOR_1_ID,
-        color_2_id_index: int = FRIEND_REQUEST_COLOR_2_ID,
-        icon_type_index: int = FRIEND_REQUEST_ICON_TYPE,
-        glow_index: int = FRIEND_REQUEST_GLOW,
-        account_id_index: int = FRIEND_REQUEST_ACCOUNT_ID,
-        id_index: int = FRIEND_REQUEST_ID,
-        content_index: int = FRIEND_REQUEST_CONTENT,
-        created_at_index: int = FRIEND_REQUEST_CREATED_AT,
-        unread_index: int = FRIEND_REQUEST_UNREAD,
-        # defaults
-        name_default: str = UNKNOWN,
-        user_id_default: int = DEFAULT_ID,
-        icon_id_default: int = DEFAULT_ICON_ID,
-        color_1_id_default: int = DEFAULT_COLOR_1_ID,
-        color_2_id_default: int = DEFAULT_COLOR_2_ID,
-        icon_type_default: IconType = IconType.DEFAULT,
-        glow_default: bool = DEFAULT_GLOW,
-        account_id_default: int = DEFAULT_ID,
-        id_default: int = DEFAULT_ID,
-        content_default: str = EMPTY,
-        created_at_default: Optional[DateTime] = None,
-        unread_default: bool = DEFAULT_UNREAD,
-    ) -> FR:
-        if created_at_default is None:
-            created_at_default = utc_now()
-
+    def from_robtop(cls: Type[FR], string: str) -> FR:
         mapping = split_friend_request(string)
 
         return cls(
-            name=mapping.get(name_index, name_default),
-            user_id=parse_get_or(int, user_id_default, mapping.get(user_id_index)),
-            icon_id=parse_get_or(int, icon_id_default, mapping.get(icon_id_index)),
+            name=mapping.get(FRIEND_REQUEST_NAME, UNKNOWN),
+            user_id=parse_get_or(int, DEFAULT_ID, mapping.get(FRIEND_REQUEST_USER_ID)),
+            icon_id=parse_get_or(int, DEFAULT_ICON_ID, mapping.get(FRIEND_REQUEST_ICON_ID)),
             color_1_id=parse_get_or(
-                int,
-                color_1_id_default,
-                mapping.get(color_1_id_index),
+                int, DEFAULT_COLOR_1_ID, mapping.get(FRIEND_REQUEST_COLOR_1_ID)
             ),
             color_2_id=parse_get_or(
-                int,
-                color_2_id_default,
-                mapping.get(color_2_id_index),
+                int, DEFAULT_COLOR_2_ID, mapping.get(FRIEND_REQUEST_COLOR_2_ID)
             ),
             icon_type=parse_get_or(
                 partial_parse_enum(int, IconType),
-                icon_type_default,
-                mapping.get(icon_type_index),
+                IconType.DEFAULT,
+                mapping.get(FRIEND_REQUEST_ICON_TYPE),
             ),
-            glow=parse_get_or(int_bool, glow_default, mapping.get(glow_index)),
-            account_id=parse_get_or(int, account_id_default, mapping.get(account_id_index)),
-            id=parse_get_or(int, id_default, mapping.get(id_index)),
-            content=decode_base64_string_url_safe(mapping.get(content_index, content_default)),
+            glow=parse_get_or(int_bool, DEFAULT_GLOW, mapping.get(FRIEND_REQUEST_GLOW)),
+            account_id=parse_get_or(int, DEFAULT_ID, mapping.get(FRIEND_REQUEST_ACCOUNT_ID)),
+            id=parse_get_or(int, DEFAULT_ID, mapping.get(FRIEND_REQUEST_ID)),
+            content=decode_base64_string_url_safe(mapping.get(FRIEND_REQUEST_CONTENT, EMPTY)),
             created_at=parse_get_or(
                 date_time_from_human,
-                created_at_default,
-                mapping.get(created_at_index),
+                utc_now(),
+                mapping.get(FRIEND_REQUEST_CREATED_AT),
                 ignore_errors=True,
             ),
-            unread=parse_get_or(int_bool, unread_default, mapping.get(unread_index)),
+            unread=parse_get_or(int_bool, DEFAULT_UNREAD, mapping.get(FRIEND_REQUEST_UNREAD)),
         )
 
-    def to_robtop(
-        self,
-        name_index: int = FRIEND_REQUEST_NAME,
-        user_id_index: int = FRIEND_REQUEST_USER_ID,
-        icon_id_index: int = FRIEND_REQUEST_ICON_ID,
-        color_1_id_index: int = FRIEND_REQUEST_COLOR_1_ID,
-        color_2_id_index: int = FRIEND_REQUEST_COLOR_2_ID,
-        icon_type_index: int = FRIEND_REQUEST_ICON_TYPE,
-        glow_index: int = FRIEND_REQUEST_GLOW,
-        account_id_index: int = FRIEND_REQUEST_ACCOUNT_ID,
-        id_index: int = FRIEND_REQUEST_ID,
-        content_index: int = FRIEND_REQUEST_CONTENT,
-        created_at_index: int = FRIEND_REQUEST_CREATED_AT,
-        unread_index: int = FRIEND_REQUEST_UNREAD,
-    ) -> str:
+    def to_robtop(self) -> str:
         glow = self.glow
 
         glow += glow  # type: ignore
 
-        unread = EMPTY if self.is_read() else str(int(self.unread))
+        unread = self.is_unread()
+
+        unread_string = str(int(unread)) if unread else EMPTY
 
         mapping = {
-            name_index: self.name,
-            user_id_index: str(self.user_id),
-            icon_id_index: str(self.icon_id),
-            color_1_id_index: str(self.color_1_id),
-            color_2_id_index: str(self.color_2_id),
-            icon_type_index: str(self.icon_type.value),
-            glow_index: str(glow),
-            account_id_index: str(self.account_id),
-            id_index: str(self.id),
-            content_index: encode_base64_string_url_safe(self.content),
-            created_at_index: date_time_to_human(self.created_at),
-            unread_index: unread,
+            FRIEND_REQUEST_NAME: self.name,
+            FRIEND_REQUEST_USER_ID: str(self.user_id),
+            FRIEND_REQUEST_ICON_ID: str(self.icon_id),
+            FRIEND_REQUEST_COLOR_1_ID: str(self.color_1_id),
+            FRIEND_REQUEST_COLOR_2_ID: str(self.color_2_id),
+            FRIEND_REQUEST_ICON_TYPE: str(self.icon_type.value),
+            FRIEND_REQUEST_GLOW: str(glow),
+            FRIEND_REQUEST_ACCOUNT_ID: str(self.account_id),
+            FRIEND_REQUEST_ID: str(self.id),
+            FRIEND_REQUEST_CONTENT: encode_base64_string_url_safe(self.content),
+            FRIEND_REQUEST_CREATED_AT: date_time_to_human(self.created_at),
+            FRIEND_REQUEST_UNREAD: unread_string,
         }
 
         return concat_friend_request(mapping)
@@ -1492,6 +1113,7 @@ LEVEL_COPIES_TIME = 47
 
 UNPROCESSED_DATA = "unprocessed_data"
 
+
 L = TypeVar("L", bound="LevelModel")
 
 
@@ -1503,17 +1125,14 @@ class LevelModel(Model):
     unprocessed_data: str = EMPTY
     version: int = DEFAULT_VERSION
     creator_id: int = DEFAULT_ID
-    difficulty_denominator: int = DEFAULT_DENOMINATOR
-    difficulty_numerator: int = DEFAULT_NUMERATOR
+    difficulty: Difficulty = Difficulty.DEFAULT
     downloads: int = DEFAULT_DOWNLOADS
     official_song_id: int = DEFAULT_ID
     game_version: GameVersion = CURRENT_GAME_VERSION
     rating: int = DEFAULT_RATING
     length: LevelLength = LevelLength.DEFAULT
-    demon: bool = DEFAULT_DEMON
     stars: int = DEFAULT_STARS
     score: int = DEFAULT_SCORE
-    auto: bool = DEFAULT_AUTO
     password_data: Password = field(factory=Password)
     created_at: DateTime = field(factory=utc_now)
     updated_at: DateTime = field(factory=utc_now)
@@ -1528,132 +1147,39 @@ class LevelModel(Model):
     timely_id: int = DEFAULT_ID
     timely_type: TimelyType = TimelyType.DEFAULT
     epic: bool = DEFAULT_EPIC
-    demon_difficulty: DemonDifficulty = DemonDifficulty.DEFAULT
     object_count: int = DEFAULT_OBJECT_COUNT
     editor_time: Duration = field(factory=Duration)
     copies_time: Duration = field(factory=Duration)
 
     @classmethod
-    def from_robtop(
-        cls: Type[L],
-        string: str,
-        # indexes
-        id_index: int = LEVEL_ID,
-        name_index: int = LEVEL_NAME,
-        description_index: int = LEVEL_DESCRIPTION,
-        unprocessed_data_index: int = LEVEL_UNPROCESSED_DATA,
-        version_index: int = LEVEL_VERSION,
-        creator_id_index: int = LEVEL_CREATOR_ID,
-        difficulty_denominator_index: int = LEVEL_DIFFICULTY_DENOMINATOR,
-        difficulty_numerator_index: int = LEVEL_DIFFICULTY_NUMERATOR,
-        downloads_index: int = LEVEL_DOWNLOADS,
-        official_song_id_index: int = LEVEL_OFFICIAL_SONG_ID,
-        game_version_index: int = LEVEL_GAME_VERSION,
-        rating_index: int = LEVEL_RATING,
-        length_index: int = LEVEL_LENGTH,
-        demon_index: int = LEVEL_DEMON,
-        stars_index: int = LEVEL_STARS,
-        score_index: int = LEVEL_SCORE,
-        auto_index: int = LEVEL_AUTO,
-        password_data_index: int = LEVEL_PASSWORD_DATA,
-        created_at_index: int = LEVEL_CREATED_AT,
-        updated_at_index: int = LEVEL_UPDATED_AT,
-        original_id_index: int = LEVEL_ORIGINAL_ID,
-        two_player_index: int = LEVEL_TWO_PLAYER,
-        custom_song_id_index: int = LEVEL_CUSTOM_SONG_ID,
-        extra_string_index: int = LEVEL_EXTRA_STRING,
-        coins_index: int = LEVEL_COINS,
-        verified_coins_index: int = LEVEL_VERIFIED_COINS,
-        requested_stars_index: int = LEVEL_REQUESTED_STARS,
-        low_detail_index: int = LEVEL_LOW_DETAIL,
-        timely_id_index: int = LEVEL_TIMELY_ID,
-        epic_index: int = LEVEL_EPIC,
-        demon_difficulty_index: int = LEVEL_DEMON_DIFFICULTY,
-        object_count_index: int = LEVEL_OBJECT_COUNT,
-        editor_time_index: int = LEVEL_EDITOR_TIME,
-        copies_time_index: int = LEVEL_COPIES_TIME,
-        # defaults
-        id_default: int = DEFAULT_ID,
-        name_default: str = UNNAMED,
-        description_default: str = EMPTY,
-        unprocessed_data_default: str = EMPTY,
-        version_default: int = DEFAULT_VERSION,
-        creator_id_default: int = DEFAULT_ID,
-        difficulty_denominator_default: int = DEFAULT_DENOMINATOR,
-        difficulty_numerator_default: int = DEFAULT_NUMERATOR,
-        downloads_default: int = DEFAULT_DOWNLOADS,
-        official_song_id_default: int = DEFAULT_ID,
-        game_version_default: GameVersion = CURRENT_GAME_VERSION,
-        rating_default: int = DEFAULT_RATING,
-        length_default: LevelLength = LevelLength.DEFAULT,
-        demon_default: bool = DEFAULT_DEMON,
-        stars_default: int = DEFAULT_STARS,
-        score_default: int = DEFAULT_SCORE,
-        auto_default: bool = DEFAULT_AUTO,
-        password_data_default: Optional[Password] = None,
-        created_at_default: Optional[DateTime] = None,
-        updated_at_default: Optional[DateTime] = None,
-        original_id_default: int = DEFAULT_ID,
-        two_player_default: bool = DEFAULT_TWO_PLAYER,
-        custom_song_id_default: int = DEFAULT_ID,
-        extra_string_default: str = EMPTY,
-        coins_default: int = DEFAULT_COINS,
-        verified_coins_default: bool = DEFAULT_VERIFIED_COINS,
-        requested_stars_default: int = DEFAULT_STARS,
-        low_detail_default: bool = DEFAULT_LOW_DETAIL,
-        timely_id_default: int = DEFAULT_ID,
-        epic_default: bool = DEFAULT_EPIC,
-        demon_difficulty_default: DemonDifficulty = DemonDifficulty.DEFAULT,
-        object_count_default: int = DEFAULT_OBJECT_COUNT,
-        editor_time_default: Optional[Duration] = None,
-        copies_time_default: Optional[Duration] = None,
-    ) -> L:
-        if password_data_default is None:
-            password_data_default = Password()
-
-        if created_at_default is None:
-            created_at_default = utc_now()
-
-        if updated_at_default is None:
-            updated_at_default = utc_now()
-
-        if editor_time_default is None:
-            editor_time_default = Duration()
-
-        if copies_time_default is None:
-            copies_time_default = Duration()
-
+    def from_robtop(cls: Type[L], string: str) -> L:
         mapping = split_level(string)
 
-        demon_difficulty_string = mapping.get(demon_difficulty_index)
+        difficulty = DifficultyParameters(
+            parse_get_or(int, DEFAULT_NUMERATOR, mapping.get(LEVEL_DIFFICULTY_NUMERATOR)),
+            parse_get_or(int, DEFAULT_DENOMINATOR, mapping.get(LEVEL_DIFFICULTY_DENOMINATOR)),
+            parse_get_or(int, DEFAULT_DEMON_DIFFICULTY_VALUE, mapping.get(LEVEL_DEMON_DIFFICULTY)),
+            parse_get_or(int_bool, DEFAULT_AUTO, mapping.get(LEVEL_AUTO)),
+            parse_get_or(int_bool, DEFAULT_DEMON, mapping.get(LEVEL_DEMON)),
+        ).into_difficulty()
 
-        if demon_difficulty_string is None:
-            demon_difficulty = demon_difficulty_default
+        editor_time_option = mapping.get(LEVEL_EDITOR_TIME)
 
-        else:
-            demon_difficulty_value = int(demon_difficulty_string)
-
-            demon_difficulty = VALUE_TO_DEMON_DIFFICULTY.get(
-                demon_difficulty_value, DemonDifficulty.HARD_DEMON
-            )
-
-        editor_time_string = mapping.get(editor_time_index)
-
-        if editor_time_string:
-            editor_time = Duration(seconds=int(editor_time_string))
+        if editor_time_option:
+            editor_time = Duration(seconds=int(editor_time_option))
 
         else:
-            editor_time = editor_time_default
+            editor_time = Duration()
 
-        copies_time_string = mapping.get(copies_time_index)
+        copies_time_option = mapping.get(LEVEL_COPIES_TIME)
 
-        if copies_time_string:
-            copies_time = Duration(seconds=int(copies_time_string))
+        if copies_time_option:
+            copies_time = Duration(seconds=int(copies_time_option))
 
         else:
-            copies_time = copies_time_default
+            copies_time = Duration()
 
-        timely_id = parse_get_or(int, timely_id_default, mapping.get(timely_id_index))
+        timely_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_TIMELY_ID))
 
         if timely_id:
             if timely_id // TIMELY_ID_ADD:
@@ -1667,172 +1193,122 @@ class LevelModel(Model):
 
         timely_id %= TIMELY_ID_ADD
 
-        score = parse_get_or(int, score_default, mapping.get(score_index))
+        score = parse_get_or(int, DEFAULT_SCORE, mapping.get(LEVEL_SCORE))
 
         if score < 0:
             score = 0
 
         return cls(
-            id=parse_get_or(int, id_default, mapping.get(id_index)),
-            name=mapping.get(name_index, name_default),
-            description=decode_base64_string_url_safe(
-                mapping.get(description_index, description_default)
-            ),
-            unprocessed_data=mapping.get(unprocessed_data_index, unprocessed_data_default).strip(),
-            version=parse_get_or(int, version_default, mapping.get(version_index)),
-            creator_id=parse_get_or(int, creator_id_default, mapping.get(creator_id_index)),
-            difficulty_denominator=parse_get_or(
-                int,
-                difficulty_denominator_default,
-                mapping.get(difficulty_denominator_index),
-            ),
-            difficulty_numerator=parse_get_or(
-                int,
-                difficulty_numerator_default,
-                mapping.get(difficulty_numerator_index),
-            ),
-            downloads=parse_get_or(int, downloads_default, mapping.get(downloads_index)),
-            official_song_id=parse_get_or(
-                int,
-                official_song_id_default,
-                mapping.get(official_song_id_index),
-            ),
+            id=parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_ID)),
+            name=mapping.get(LEVEL_NAME, UNNAMED),
+            description=decode_base64_string_url_safe(mapping.get(LEVEL_DESCRIPTION, EMPTY)),
+            unprocessed_data=mapping.get(LEVEL_UNPROCESSED_DATA, EMPTY).strip(),
+            version=parse_get_or(int, DEFAULT_VERSION, mapping.get(LEVEL_VERSION)),
+            creator_id=parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_CREATOR_ID)),
+            difficulty=difficulty,
+            downloads=parse_get_or(int, DEFAULT_DOWNLOADS, mapping.get(LEVEL_DOWNLOADS)),
+            official_song_id=parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_OFFICIAL_SONG_ID)),
             game_version=parse_get_or(
-                GameVersion.from_robtop,
-                game_version_default,
-                mapping.get(game_version_index),
+                GameVersion.from_robtop, CURRENT_GAME_VERSION, mapping.get(LEVEL_GAME_VERSION)
             ),
-            rating=parse_get_or(int, rating_default, mapping.get(rating_index)),
+            rating=parse_get_or(int, DEFAULT_RATING, mapping.get(LEVEL_RATING)),
             length=parse_get_or(
                 partial_parse_enum(int, LevelLength),
-                length_default,
-                mapping.get(length_index),
+                LevelLength.DEFAULT,
+                mapping.get(LEVEL_LENGTH),
             ),
-            demon=parse_get_or(int_bool, demon_default, mapping.get(demon_index)),
-            stars=parse_get_or(int, stars_default, mapping.get(stars_index)),
+            stars=parse_get_or(int, DEFAULT_STARS, mapping.get(LEVEL_STARS)),
             score=score,
-            auto=parse_get_or(int_bool, auto_default, mapping.get(auto_index)),
             password_data=parse_get_or(
-                Password.from_robtop,
-                password_data_default,
-                mapping.get(password_data_index),
+                Password.from_robtop, Password(), mapping.get(LEVEL_PASSWORD_DATA)
             ),
             created_at=parse_get_or(
                 date_time_from_human,
-                created_at_default,
-                mapping.get(created_at_index),
+                utc_now(),
+                mapping.get(LEVEL_CREATED_AT),
                 ignore_errors=True,
             ),
             updated_at=parse_get_or(
                 date_time_from_human,
-                updated_at_default,
-                mapping.get(updated_at_index),
+                utc_now(),
+                mapping.get(LEVEL_UPDATED_AT),
                 ignore_errors=True,
             ),
-            original_id=parse_get_or(int, original_id_default, mapping.get(original_id_index)),
-            two_player=parse_get_or(int_bool, two_player_default, mapping.get(two_player_index)),
-            custom_song_id=parse_get_or(
-                int, custom_song_id_default, mapping.get(custom_song_id_index)
-            ),
-            extra_string=mapping.get(extra_string_index, extra_string_default),
-            coins=parse_get_or(int, coins_default, mapping.get(coins_index)),
+            original_id=parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_ORIGINAL_ID)),
+            two_player=parse_get_or(int_bool, DEFAULT_TWO_PLAYER, mapping.get(LEVEL_TWO_PLAYER)),
+            custom_song_id=parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_CUSTOM_SONG_ID)),
+            extra_string=mapping.get(LEVEL_EXTRA_STRING, EMPTY),
+            coins=parse_get_or(int, DEFAULT_COINS, mapping.get(LEVEL_COINS)),
             verified_coins=parse_get_or(
-                int_bool, verified_coins_default, mapping.get(verified_coins_index)
+                int_bool, DEFAULT_VERIFIED_COINS, mapping.get(LEVEL_VERIFIED_COINS)
             ),
-            requested_stars=parse_get_or(
-                int, requested_stars_default, mapping.get(requested_stars_index)
-            ),
-            low_detail=parse_get_or(int_bool, low_detail_default, mapping.get(low_detail_index)),
+            requested_stars=parse_get_or(int, DEFAULT_STARS, mapping.get(LEVEL_REQUESTED_STARS)),
+            low_detail=parse_get_or(int_bool, DEFAULT_LOW_DETAIL, mapping.get(LEVEL_LOW_DETAIL)),
             timely_id=timely_id,
             timely_type=timely_type,
-            epic=parse_get_or(int_bool, epic_default, mapping.get(epic_index)),
-            demon_difficulty=demon_difficulty,
-            object_count=parse_get_or(int, object_count_default, mapping.get(object_count_index)),
+            epic=parse_get_or(int_bool, DEFAULT_EPIC, mapping.get(LEVEL_EPIC)),
+            object_count=parse_get_or(int, DEFAULT_OBJECT_COUNT, mapping.get(LEVEL_OBJECT_COUNT)),
             editor_time=editor_time,
             copies_time=copies_time,
         )
 
-    def to_robtop(
-        self,
-        id_index: int = LEVEL_ID,
-        name_index: int = LEVEL_NAME,
-        description_index: int = LEVEL_DESCRIPTION,
-        unprocessed_data_index: int = LEVEL_UNPROCESSED_DATA,
-        version_index: int = LEVEL_VERSION,
-        creator_id_index: int = LEVEL_CREATOR_ID,
-        difficulty_numerator_index: int = LEVEL_DIFFICULTY_NUMERATOR,
-        difficulty_denominator_index: int = LEVEL_DIFFICULTY_DENOMINATOR,
-        downloads_index: int = LEVEL_DOWNLOADS,
-        official_song_id_index: int = LEVEL_OFFICIAL_SONG_ID,
-        game_version_index: int = LEVEL_GAME_VERSION,
-        rating_index: int = LEVEL_RATING,
-        length_index: int = LEVEL_LENGTH,
-        demon_index: int = LEVEL_DEMON,
-        stars_index: int = LEVEL_STARS,
-        score_index: int = LEVEL_SCORE,
-        auto_index: int = LEVEL_AUTO,
-        password_data_index: int = LEVEL_PASSWORD_DATA,
-        created_at_index: int = LEVEL_CREATED_AT,
-        updated_at_index: int = LEVEL_UPDATED_AT,
-        original_id_index: int = LEVEL_ORIGINAL_ID,
-        two_player_index: int = LEVEL_TWO_PLAYER,
-        custom_song_id_index: int = LEVEL_CUSTOM_SONG_ID,
-        extra_string_index: int = LEVEL_EXTRA_STRING,
-        coins_index: int = LEVEL_COINS,
-        verified_coins_index: int = LEVEL_VERIFIED_COINS,
-        requested_stars_index: int = LEVEL_REQUESTED_STARS,
-        low_detail_index: int = LEVEL_LOW_DETAIL,
-        timely_id_index: int = LEVEL_TIMELY_ID,
-        epic_index: int = LEVEL_EPIC,
-        demon_difficulty_index: int = LEVEL_DEMON_DIFFICULTY,
-        object_count_index: int = LEVEL_OBJECT_COUNT,
-        editor_time_index: int = LEVEL_EDITOR_TIME,
-        copies_time_index: int = LEVEL_COPIES_TIME,
-    ) -> str:
+    def to_robtop(self) -> str:
         timely_id = self.timely_id
 
-        if self.timely_type.is_weekly():
+        timely_type = self.timely_type
+
+        if timely_type.is_weekly():
             timely_id += TIMELY_ID_ADD
 
-        demon_difficulty_value = DEMON_DIFFICULTY_TO_VALUE.get(
-            self.demon_difficulty, DemonDifficulty.DEMON.value
-        )
+        difficulty_parameters = DifficultyParameters.from_difficulty(self.difficulty)
+
+        demon = difficulty_parameters.is_demon()
+
+        demon_string = str(int(demon)) if demon else EMPTY
+
+        auto = difficulty_parameters.is_auto()
+
+        auto_string = str(int(auto)) if auto else EMPTY
+
+        two_player = self.is_two_player()
+
+        two_player_string = str(int(two_player)) if two_player else EMPTY
 
         mapping = {
-            id_index: str(self.id),
-            name_index: self.name,
-            description_index: encode_base64_string_url_safe(self.description),
-            unprocessed_data_index: self.unprocessed_data,
-            version_index: str(self.version),
-            creator_id_index: str(self.creator_id),
-            difficulty_denominator_index: str(self.difficulty_denominator),
-            difficulty_numerator_index: str(self.difficulty_numerator),
-            downloads_index: str(self.downloads),
-            official_song_id_index: str(self.official_song_id),
-            game_version_index: self.game_version.to_robtop(),
-            rating_index: str(self.rating),
-            length_index: str(self.length.value),
-            demon_index: str(int(self.demon)) if self.is_demon() else EMPTY,
-            stars_index: str(self.stars),
-            score_index: str(self.score),
-            auto_index: str(int(self.auto)) if self.is_auto() else EMPTY,
-            password_data_index: self.password_data.to_robtop(),
-            created_at_index: date_time_to_human(self.created_at),
-            updated_at_index: date_time_to_human(self.updated_at),
-            original_id_index: str(self.original_id),
-            two_player_index: str(int(self.two_player)) if self.is_two_player() else EMPTY,
-            custom_song_id_index: str(self.custom_song_id),
-            extra_string_index: self.extra_string,
-            coins_index: str(self.coins),
-            verified_coins_index: str(int(self.verified_coins)),
-            requested_stars_index: str(self.requested_stars),
-            low_detail_index: str(int(self.low_detail)),
-            timely_id_index: str(timely_id),
-            epic_index: str(int(self.epic)),
-            demon_difficulty_index: str(demon_difficulty_value),
-            object_count_index: str(self.object_count),
-            editor_time_index: str(int(self.editor_time.total_seconds())),
-            copies_time_index: str(int(self.copies_time.total_seconds())),
+            LEVEL_ID: str(self.id),
+            LEVEL_NAME: self.name,
+            LEVEL_DESCRIPTION: encode_base64_string_url_safe(self.description),
+            LEVEL_UNPROCESSED_DATA: self.unprocessed_data,
+            LEVEL_VERSION: str(self.version),
+            LEVEL_CREATOR_ID: str(self.creator_id),
+            LEVEL_DIFFICULTY_DENOMINATOR: str(difficulty_parameters.difficulty_denominator),
+            LEVEL_DIFFICULTY_NUMERATOR: str(difficulty_parameters.difficulty_numerator),
+            LEVEL_DOWNLOADS: str(self.downloads),
+            LEVEL_OFFICIAL_SONG_ID: str(self.official_song_id),
+            LEVEL_GAME_VERSION: self.game_version.to_robtop(),
+            LEVEL_RATING: str(self.rating),
+            LEVEL_LENGTH: str(self.length.value),
+            LEVEL_DEMON: demon_string,
+            LEVEL_STARS: str(self.stars),
+            LEVEL_SCORE: str(self.score),
+            LEVEL_AUTO: auto_string,
+            LEVEL_PASSWORD_DATA: self.password_data.to_robtop(),
+            LEVEL_CREATED_AT: date_time_to_human(self.created_at),
+            LEVEL_UPDATED_AT: date_time_to_human(self.updated_at),
+            LEVEL_ORIGINAL_ID: str(self.original_id),
+            LEVEL_TWO_PLAYER: two_player_string,
+            LEVEL_CUSTOM_SONG_ID: str(self.custom_song_id),
+            LEVEL_EXTRA_STRING: self.extra_string,
+            LEVEL_COINS: str(self.coins),
+            LEVEL_VERIFIED_COINS: str(int(self.verified_coins)),
+            LEVEL_REQUESTED_STARS: str(self.requested_stars),
+            LEVEL_LOW_DETAIL: str(int(self.low_detail)),
+            LEVEL_TIMELY_ID: str(timely_id),
+            LEVEL_EPIC: str(int(self.is_epic())),
+            LEVEL_DEMON_DIFFICULTY: str(difficulty_parameters.demon_difficulty_value),
+            LEVEL_OBJECT_COUNT: str(self.object_count),
+            LEVEL_EDITOR_TIME: str(int(self.editor_time.total_seconds())),
+            LEVEL_COPIES_TIME: str(int(self.copies_time.total_seconds())),
         }
 
         return concat_level(mapping)
@@ -1840,12 +1316,6 @@ class LevelModel(Model):
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return LEVEL_SEPARATOR in string
-
-    def is_demon(self) -> bool:
-        return self.demon
-
-    def is_auto(self) -> bool:
-        return self.auto
 
     def is_two_player(self) -> bool:
         return self.two_player
@@ -1859,29 +1329,6 @@ class LevelModel(Model):
     def has_verified_coins(self) -> bool:
         return self.verified_coins
 
-    @property
-    def difficulty(self) -> Difficulty:
-        if self.is_auto():
-            return Difficulty.AUTO
-
-        if self.is_demon():
-            return self.demon_difficulty.into_difficulty()
-
-        return self.level_difficulty.into_difficulty()
-
-    @property
-    def level_difficulty(self) -> LevelDifficulty:
-        difficulty_numerator = self.difficulty_numerator
-        difficulty_denominator = self.difficulty_denominator
-
-        if difficulty_denominator:
-            difficulty_value = difficulty_numerator // difficulty_denominator
-
-            if difficulty_value:
-                return LevelDifficulty(difficulty_value)
-
-        return LevelDifficulty.DEFAULT
-
     @property  # type: ignore
     @cache_by(UNPROCESSED_DATA)
     def processed_data(self) -> str:
@@ -1894,14 +1341,11 @@ class LevelModel(Model):
     @property  # type: ignore
     @cache_by(UNPROCESSED_DATA)
     def data(self) -> bytes:
-        return Editor.from_robtop(self.processed_data).to_bytes()
+        return Editor.from_robtop(self.processed_data).to_bytes()  # type: ignore
 
     @data.setter
     def data(self, data: bytes) -> None:
-        self.processed_data = Editor.from_bytes(data).to_robtop()
-
-
-LCI = TypeVar("LCI", bound="LevelCommentInnerModel")
+        self.processed_data = Editor.from_bytes(data).to_robtop()  # type: ignore
 
 
 LEVEL_COMMENT_INNER_LEVEL_ID = 1
@@ -1914,6 +1358,9 @@ LEVEL_COMMENT_INNER_CREATED_AT = 9
 LEVEL_COMMENT_INNER_RECORD = 10
 LEVEL_COMMENT_INNER_ROLE_ID = 11
 LEVEL_COMMENT_INNER_COLOR = 12
+
+
+LCI = TypeVar("LCI", bound="LevelCommentInnerModel")
 
 
 @define()
@@ -1930,110 +1377,41 @@ class LevelCommentInnerModel(Model):
     color: Color = field(factory=Color.default)
 
     @classmethod
-    def from_robtop(
-        cls: Type[LCI],
-        string: str,
-        # indexes
-        level_id_index: int = LEVEL_COMMENT_INNER_LEVEL_ID,
-        content_index: int = LEVEL_COMMENT_INNER_CONTENT,
-        user_id_index: int = LEVEL_COMMENT_INNER_USER_ID,
-        rating_index: int = LEVEL_COMMENT_INNER_RATING,
-        id_index: int = LEVEL_COMMENT_INNER_ID,
-        spam_index: int = LEVEL_COMMENT_INNER_SPAM,
-        created_at_index: int = LEVEL_COMMENT_INNER_CREATED_AT,
-        record_index: int = LEVEL_COMMENT_INNER_RECORD,
-        role_id_index: int = LEVEL_COMMENT_INNER_ROLE_ID,
-        color_index: int = LEVEL_COMMENT_INNER_COLOR,
-        # defaults
-        level_id_default: int = DEFAULT_ID,
-        content_default: str = EMPTY,
-        user_id_default: int = DEFAULT_ID,
-        rating_default: int = DEFAULT_RATING,
-        id_default: int = DEFAULT_ID,
-        spam_default: bool = DEFAULT_SPAM,
-        created_at_default: Optional[DateTime] = None,
-        record_default: int = DEFAULT_RECORD,
-        role_id_default: int = DEFAULT_ID,
-        color_default: Optional[Color] = None,
-    ) -> LCI:
-        if created_at_default is None:
-            created_at_default = utc_now()
-
-        if color_default is None:
-            color_default = Color.default()
-
+    def from_robtop(cls: Type[LCI], string: str) -> LCI:
         mapping = split_level_comment_inner(string)
 
         return cls(
-            level_id=parse_get_or(
-                int,
-                level_id_default,
-                mapping.get(level_id_index),
-            ),
-            content=decode_base64_string_url_safe(mapping.get(content_index, content_default)),
-            user_id=parse_get_or(
-                int,
-                user_id_default,
-                mapping.get(user_id_index),
-            ),
-            rating=parse_get_or(
-                int,
-                rating_default,
-                mapping.get(rating_index),
-            ),
-            id=parse_get_or(int, id_default, mapping.get(id_index)),
-            spam=parse_get_or(
-                int_bool,
-                spam_default,
-                mapping.get(spam_index),
-            ),
+            level_id=parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_COMMENT_INNER_LEVEL_ID)),
+            content=decode_base64_string_url_safe(mapping.get(LEVEL_COMMENT_INNER_CONTENT, EMPTY)),
+            user_id=parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_COMMENT_INNER_USER_ID)),
+            rating=parse_get_or(int, DEFAULT_RATING, mapping.get(LEVEL_COMMENT_INNER_RATING)),
+            id=parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_COMMENT_INNER_ID)),
+            spam=parse_get_or(int_bool, DEFAULT_SPAM, mapping.get(LEVEL_COMMENT_INNER_SPAM)),
             created_at=parse_get_or(
                 date_time_from_human,
-                created_at_default,
-                mapping.get(created_at_index),
+                utc_now(),
+                mapping.get(LEVEL_COMMENT_INNER_CREATED_AT),
                 ignore_errors=True,
             ),
-            record=parse_get_or(
-                int,
-                record_default,
-                mapping.get(record_index),
-            ),
-            role_id=parse_get_or(
-                int,
-                role_id_default,
-                mapping.get(role_id_index),
-            ),
+            record=parse_get_or(int, DEFAULT_RECORD, mapping.get(LEVEL_COMMENT_INNER_RECORD)),
+            role_id=parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_COMMENT_INNER_ROLE_ID)),
             color=parse_get_or(
-                Color.from_robtop,
-                color_default,
-                mapping.get(color_index),
+                Color.from_robtop, Color.default(), mapping.get(LEVEL_COMMENT_INNER_COLOR)
             ),
         )
 
-    def to_robtop(
-        self,
-        level_id_index: int = LEVEL_COMMENT_INNER_LEVEL_ID,
-        content_index: int = LEVEL_COMMENT_INNER_CONTENT,
-        user_id_index: int = LEVEL_COMMENT_INNER_USER_ID,
-        rating_index: int = LEVEL_COMMENT_INNER_RATING,
-        id_index: int = LEVEL_COMMENT_INNER_ID,
-        spam_index: int = LEVEL_COMMENT_INNER_SPAM,
-        created_at_index: int = LEVEL_COMMENT_INNER_CREATED_AT,
-        record_index: int = LEVEL_COMMENT_INNER_RECORD,
-        role_id_index: int = LEVEL_COMMENT_INNER_ROLE_ID,
-        color_index: int = LEVEL_COMMENT_INNER_COLOR,
-    ) -> str:
+    def to_robtop(self) -> str:
         mapping = {
-            level_id_index: str(self.level_id),
-            content_index: encode_base64_string_url_safe(self.content),
-            user_id_index: str(self.user_id),
-            rating_index: str(self.rating),
-            id_index: str(self.id),
-            spam_index: str(int(self.spam)),
-            created_at_index: date_time_to_human(self.created_at),
-            record_index: str(self.record),
-            role_id_index: str(self.role_id),
-            color_index: self.color.to_robtop(),
+            LEVEL_COMMENT_INNER_LEVEL_ID: str(self.level_id),
+            LEVEL_COMMENT_INNER_CONTENT: encode_base64_string_url_safe(self.content),
+            LEVEL_COMMENT_INNER_USER_ID: str(self.user_id),
+            LEVEL_COMMENT_INNER_RATING: str(self.rating),
+            LEVEL_COMMENT_INNER_ID: str(self.id),
+            LEVEL_COMMENT_INNER_SPAM: str(int(self.spam)),
+            LEVEL_COMMENT_INNER_CREATED_AT: date_time_to_human(self.created_at),
+            LEVEL_COMMENT_INNER_RECORD: str(self.record),
+            LEVEL_COMMENT_INNER_ROLE_ID: str(self.role_id),
+            LEVEL_COMMENT_INNER_COLOR: self.color.to_robtop(),
         }
 
         return concat_level_comment_inner(mapping)
@@ -2069,84 +1447,40 @@ class LevelCommentUserModel(Model):
     account_id: int = DEFAULT_ID
 
     @classmethod
-    def from_robtop(
-        cls: Type[LCU],
-        string: str,
-        # indexes
-        name_index: int = LEVEL_COMMENT_USER_NAME,
-        icon_id_index: int = LEVEL_COMMENT_USER_ICON_ID,
-        color_1_id_index: int = LEVEL_COMMENT_USER_COLOR_1_ID,
-        color_2_id_index: int = LEVEL_COMMENT_USER_COLOR_2_ID,
-        icon_type_index: int = LEVEL_COMMENT_USER_ICON_TYPE,
-        glow_index: int = LEVEL_COMMENT_USER_GLOW,
-        account_id_index: int = LEVEL_COMMENT_USER_ACCOUNT_ID,
-        # defaults
-        name_default: str = UNKNOWN,
-        icon_id_default: int = DEFAULT_ICON_ID,
-        color_1_id_default: int = DEFAULT_COLOR_1_ID,
-        color_2_id_default: int = DEFAULT_COLOR_2_ID,
-        icon_type_default: IconType = IconType.DEFAULT,
-        glow_default: bool = DEFAULT_GLOW,
-        account_id_default: int = DEFAULT_ID,
-    ) -> LCU:
+    def from_robtop(cls: Type[LCU], string: str) -> LCU:
         mapping = split_level_comment_user(string)
 
         return cls(
-            name=mapping.get(name_index, name_default),
-            icon_id=parse_get_or(
-                int,
-                icon_id_default,
-                mapping.get(icon_id_index),
-            ),
+            name=mapping.get(LEVEL_COMMENT_USER_NAME, UNKNOWN),
+            icon_id=parse_get_or(int, DEFAULT_ICON_ID, mapping.get(LEVEL_COMMENT_USER_ICON_ID)),
             color_1_id=parse_get_or(
-                int,
-                color_1_id_default,
-                mapping.get(color_1_id_index),
+                int, DEFAULT_COLOR_1_ID, mapping.get(LEVEL_COMMENT_USER_COLOR_1_ID)
             ),
             color_2_id=parse_get_or(
-                int,
-                color_2_id_default,
-                mapping.get(color_2_id_index),
+                int, DEFAULT_COLOR_2_ID, mapping.get(LEVEL_COMMENT_USER_COLOR_2_ID)
             ),
             icon_type=parse_get_or(
                 partial_parse_enum(int, IconType),
-                icon_type_default,
-                mapping.get(icon_type_index),
+                IconType.DEFAULT,
+                mapping.get(LEVEL_COMMENT_USER_ICON_TYPE),
             ),
-            glow=parse_get_or(
-                int_bool,
-                glow_default,
-                mapping.get(glow_index),
-            ),
-            account_id=parse_get_or(
-                int,
-                account_id_default,
-                mapping.get(account_id_index),
-            ),
+            glow=parse_get_or(int_bool, DEFAULT_GLOW, mapping.get(LEVEL_COMMENT_USER_GLOW)),
+            account_id=parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_COMMENT_USER_ACCOUNT_ID)),
         )
 
-    def to_robtop(
-        self,
-        name_index: int = LEVEL_COMMENT_USER_NAME,
-        icon_id_index: int = LEVEL_COMMENT_USER_ICON_ID,
-        color_1_id_index: int = LEVEL_COMMENT_USER_COLOR_1_ID,
-        color_2_id_index: int = LEVEL_COMMENT_USER_COLOR_2_ID,
-        icon_type_index: int = LEVEL_COMMENT_USER_ICON_TYPE,
-        glow_index: int = LEVEL_COMMENT_USER_GLOW,
-        account_id_index: int = LEVEL_COMMENT_USER_ACCOUNT_ID,
-    ) -> str:
+    def to_robtop(self) -> str:
         glow = self.glow
 
         glow += glow  # type: ignore
 
         mapping = {
-            name_index: self.name,
-            icon_id_index: str(self.icon_id),
-            color_1_id_index: str(self.color_1_id),
-            color_2_id_index: str(self.color_2_id),
-            icon_type_index: str(self.icon_type.value),
-            glow_index: str(glow),
-            account_id_index: str(self.account_id),
+            LEVEL_COMMENT_USER_NAME: self.name,
+            LEVEL_COMMENT_USER_ICON_ID: str(self.icon_id),
+            LEVEL_COMMENT_USER_COLOR_1_ID: str(self.color_1_id),
+            LEVEL_COMMENT_USER_COLOR_2_ID: str(self.color_2_id),
+            LEVEL_COMMENT_USER_ICON_TYPE: str(self.icon_type.value),
+            LEVEL_COMMENT_USER_GLOW: str(glow),
+            LEVEL_COMMENT_USER_ACCOUNT_ID: str(self.account_id),
         }
 
         return concat_level_comment_user(mapping)
@@ -2183,13 +1517,13 @@ class LevelCommentModel(Model):
         return LEVEL_COMMENT_SEPARATOR in string
 
 
-UC = TypeVar("UC", bound="UserCommentModel")
-
-
 USER_COMMENT_CONTENT = 2
 USER_COMMENT_RATING = 4
 USER_COMMENT_ID = 6
 USER_COMMENT_CREATED_AT = 9
+
+
+UC = TypeVar("UC", bound="UserCommentModel")
 
 
 @define()
@@ -2200,49 +1534,27 @@ class UserCommentModel(Model):
     created_at: DateTime = field(factory=utc_now)
 
     @classmethod
-    def from_robtop(
-        cls: Type[UC],
-        string: str,
-        # indexes
-        content_index: int = USER_COMMENT_CONTENT,
-        rating_index: int = USER_COMMENT_RATING,
-        id_index: int = USER_COMMENT_ID,
-        created_at_index: int = USER_COMMENT_CREATED_AT,
-        # defaults
-        content_default: str = EMPTY,
-        rating_default: int = DEFAULT_RATING,
-        id_default: int = DEFAULT_ID,
-        created_at_default: Optional[DateTime] = None,
-    ) -> UC:
-        if created_at_default is None:
-            created_at_default = utc_now()
-
+    def from_robtop(cls: Type[UC], string: str) -> UC:
         mapping = split_user_comment(string)
 
         return cls(
-            content=decode_base64_string_url_safe(mapping.get(content_index, content_default)),
-            rating=parse_get_or(int, rating_default, mapping.get(rating_index)),
-            id=parse_get_or(int, id_default, mapping.get(id_index)),
+            content=decode_base64_string_url_safe(mapping.get(USER_COMMENT_CONTENT, EMPTY)),
+            rating=parse_get_or(int, DEFAULT_RATING, mapping.get(USER_COMMENT_RATING)),
+            id=parse_get_or(int, DEFAULT_ID, mapping.get(USER_COMMENT_ID)),
             created_at=parse_get_or(
                 date_time_from_human,
-                created_at_default,
-                mapping.get(created_at_index),
+                utc_now(),
+                mapping.get(USER_COMMENT_CREATED_AT),
                 ignore_errors=True,
             ),
         )
 
-    def to_robtop(
-        self,
-        content_index: int = USER_COMMENT_CONTENT,
-        rating_index: int = USER_COMMENT_RATING,
-        id_index: int = USER_COMMENT_ID,
-        created_at_index: int = USER_COMMENT_CREATED_AT,
-    ) -> str:
+    def to_robtop(self) -> str:
         mapping = {
-            content_index: decode_base64_string_url_safe(self.content),
-            rating_index: str(self.rating),
-            id_index: str(self.id),
-            created_at_index: date_time_to_human(self.created_at),
+            USER_COMMENT_CONTENT: decode_base64_string_url_safe(self.content),
+            USER_COMMENT_RATING: str(self.rating),
+            USER_COMMENT_ID: str(self.id),
+            USER_COMMENT_CREATED_AT: date_time_to_human(self.created_at),
         }
 
         return concat_user_comment(mapping)
@@ -2265,6 +1577,7 @@ LEVEL_LEADERBOARD_USER_GLOW = 15
 LEVEL_LEADERBOARD_USER_ACCOUNT_ID = 16
 LEVEL_LEADERBOARD_USER_RECORDED_AT = 42
 
+
 LLU = TypeVar("LLU", bound="LevelLeaderboardUserModel")
 
 
@@ -2284,89 +1597,54 @@ class LevelLeaderboardUserModel(Model):
     recorded_at: DateTime = field(factory=utc_now)
 
     @classmethod
-    def from_robtop(
-        cls: Type[LLU],
-        string: str,
-        # indexes
-        name_index: int = LEVEL_LEADERBOARD_USER_NAME,
-        id_index: int = LEVEL_LEADERBOARD_USER_ID,
-        record_index: int = LEVEL_LEADERBOARD_USER_RECORD,
-        place_index: int = LEVEL_LEADERBOARD_USER_PLACE,
-        icon_id_index: int = LEVEL_LEADERBOARD_USER_ICON_ID,
-        color_1_id_index: int = LEVEL_LEADERBOARD_USER_COLOR_1_ID,
-        color_2_id_index: int = LEVEL_LEADERBOARD_USER_COLOR_2_ID,
-        coins_index: int = LEVEL_LEADERBOARD_USER_COINS,
-        icon_type_index: int = LEVEL_LEADERBOARD_USER_ICON_TYPE,
-        glow_index: int = LEVEL_LEADERBOARD_USER_GLOW,
-        recorded_at_index: int = LEVEL_LEADERBOARD_USER_RECORDED_AT,
-        # defaults
-        name_default: str = UNKNOWN,
-        id_default: int = DEFAULT_ID,
-        record_default: int = DEFAULT_RECORD,
-        place_default: int = DEFAULT_PLACE,
-        icon_id_default: int = DEFAULT_ICON_ID,
-        color_1_id_default: int = DEFAULT_COLOR_1_ID,
-        color_2_id_default: int = DEFAULT_COLOR_2_ID,
-        coins_default: int = DEFAULT_COINS,
-        icon_type_default: IconType = IconType.DEFAULT,
-        glow_default: bool = DEFAULT_GLOW,
-        recorded_at_default: Optional[DateTime] = None,
-    ) -> LLU:
-        if recorded_at_default is None:
-            recorded_at_default = utc_now()
-
+    def from_robtop(cls: Type[LLU], string: str) -> LLU:
         mapping = split_level_leaderboard_user(string)
 
         return cls(
-            name=mapping.get(name_index, name_default),
-            id=parse_get_or(int, id_default, mapping.get(id_index)),
-            record=parse_get_or(int, record_default, mapping.get(record_index)),
-            place=parse_get_or(int, place_default, mapping.get(place_index)),
-            icon_id=parse_get_or(int, icon_id_default, mapping.get(icon_id_index)),
-            color_1_id=parse_get_or(int, color_1_id_default, mapping.get(color_1_id_index)),
-            color_2_id=parse_get_or(int, color_2_id_default, mapping.get(color_2_id_index)),
-            coins=parse_get_or(int, coins_default, mapping.get(coins_index)),
-            icon_type=parse_get_or(
-                partial_parse_enum(int, IconType), icon_type_default, mapping.get(icon_type_index)
+            name=mapping.get(LEVEL_LEADERBOARD_USER_NAME, UNKNOWN),
+            id=parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_LEADERBOARD_USER_ID)),
+            record=parse_get_or(int, DEFAULT_RECORD, mapping.get(LEVEL_LEADERBOARD_USER_RECORD)),
+            place=parse_get_or(int, DEFAULT_PLACE, mapping.get(LEVEL_LEADERBOARD_USER_PLACE)),
+            icon_id=parse_get_or(int, DEFAULT_ICON_ID, mapping.get(LEVEL_LEADERBOARD_USER_ICON_ID)),
+            color_1_id=parse_get_or(
+                int, DEFAULT_COLOR_1_ID, mapping.get(LEVEL_LEADERBOARD_USER_COLOR_1_ID)
             ),
-            glow=parse_get_or(int_bool, glow_default, mapping.get(glow_index)),
+            color_2_id=parse_get_or(
+                int, DEFAULT_COLOR_2_ID, mapping.get(LEVEL_LEADERBOARD_USER_COLOR_2_ID)
+            ),
+            coins=parse_get_or(int, DEFAULT_COINS, mapping.get(LEVEL_LEADERBOARD_USER_COINS)),
+            icon_type=parse_get_or(
+                partial_parse_enum(int, IconType),
+                IconType.DEFAULT,
+                mapping.get(LEVEL_LEADERBOARD_USER_ICON_TYPE),
+            ),
+            glow=parse_get_or(int_bool, DEFAULT_GLOW, mapping.get(LEVEL_LEADERBOARD_USER_GLOW)),
             recorded_at=parse_get_or(
-                date_time_from_human, recorded_at_default, mapping.get(recorded_at_index)
+                date_time_from_human,
+                utc_now(),
+                mapping.get(LEVEL_LEADERBOARD_USER_RECORDED_AT),
+                ignore_errors=True,
             ),
         )
 
-    def to_robtop(
-        self,
-        name_index: int = LEVEL_LEADERBOARD_USER_NAME,
-        id_index: int = LEVEL_LEADERBOARD_USER_ID,
-        record_index: int = LEVEL_LEADERBOARD_USER_RECORD,
-        place_index: int = LEVEL_LEADERBOARD_USER_PLACE,
-        icon_id_index: int = LEVEL_LEADERBOARD_USER_ICON_ID,
-        color_1_id_index: int = LEVEL_LEADERBOARD_USER_COLOR_1_ID,
-        color_2_id_index: int = LEVEL_LEADERBOARD_USER_COLOR_2_ID,
-        coins_index: int = LEVEL_LEADERBOARD_USER_COINS,
-        icon_type_index: int = LEVEL_LEADERBOARD_USER_ICON_TYPE,
-        glow_index: int = LEVEL_LEADERBOARD_USER_GLOW,
-        account_id_index: int = LEVEL_LEADERBOARD_USER_ACCOUNT_ID,
-        recorded_at_index: int = LEVEL_LEADERBOARD_USER_RECORDED_AT,
-    ) -> str:
+    def to_robtop(self) -> str:
         glow = self.glow
 
         glow += glow  # type: ignore
 
         mapping = {
-            name_index: self.name,
-            id_index: str(self.id),
-            record_index: str(self.record),
-            place_index: str(self.place),
-            icon_id_index: str(self.icon_id),
-            color_1_id_index: str(self.color_1_id),
-            color_2_id_index: str(self.color_2_id),
-            coins_index: str(self.coins),
-            icon_type_index: str(self.icon_type.value),
-            glow_index: str(glow),
-            account_id_index: str(self.account_id),
-            recorded_at_index: date_time_to_human(self.recorded_at),
+            LEVEL_LEADERBOARD_USER_NAME: self.name,
+            LEVEL_LEADERBOARD_USER_ID: str(self.id),
+            LEVEL_LEADERBOARD_USER_RECORD: str(self.record),
+            LEVEL_LEADERBOARD_USER_PLACE: str(self.place),
+            LEVEL_LEADERBOARD_USER_ICON_ID: str(self.icon_id),
+            LEVEL_LEADERBOARD_USER_COLOR_1_ID: str(self.color_1_id),
+            LEVEL_LEADERBOARD_USER_COLOR_2_ID: str(self.color_2_id),
+            LEVEL_LEADERBOARD_USER_COINS: str(self.coins),
+            LEVEL_LEADERBOARD_USER_ICON_TYPE: str(self.icon_type.value),
+            LEVEL_LEADERBOARD_USER_GLOW: str(glow),
+            LEVEL_LEADERBOARD_USER_ACCOUNT_ID: str(self.account_id),
+            LEVEL_LEADERBOARD_USER_RECORDED_AT: date_time_to_human(self.recorded_at),
         }
 
         return concat_level_leaderboard_user(mapping)
@@ -2472,9 +1750,10 @@ class UserCommentsResponseModel(Model):
         return USER_COMMENTS_RESPONSE_SEPARATOR in string
 
 
-LR = TypeVar("LR", bound="LevelResponseModel")
-
 SMART_HASH_COUNT = 40
+
+
+LR = TypeVar("LR", bound="LevelResponseModel")
 
 
 @define()
@@ -2528,10 +1807,11 @@ class LevelResponseModel:
         return LEVEL_RESPONSE_SEPARATOR in string
 
 
-SLR = TypeVar("SLR", bound="SearchLevelsResponseModel")
-
 FIRST = 0
 LAST = ~0
+
+
+SLR = TypeVar("SLR", bound="SearchLevelsResponseModel")
 
 
 @define()
@@ -2757,6 +2037,7 @@ class FriendRequestsResponseModel(Model):
 
 
 TEMPORARY = "temp"
+
 
 B = TypeVar("B", bound="CommentBannedModel")
 

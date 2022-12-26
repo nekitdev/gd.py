@@ -20,6 +20,7 @@ from gd.constants import (
     DEFAULT_WITH_BAR,
     EMPTY,
     UNKNOWN,
+    WRITE_BINARY,
 )
 from gd.entity import Entity
 from gd.enums import ByteOrder
@@ -57,8 +58,6 @@ EXPECTED_QUERY = "expected either `id` or `name` query"
 CAN_NOT_FIND_SONG = "can not find an official song by given query"
 CAN_NOT_DOWNLOAD = "can not download an official song"
 CAN_NOT_FIND_URL = "can not find download URL"
-
-WRITE_BINARY = "wb"
 
 DEFAULT_CUSTOM = True
 

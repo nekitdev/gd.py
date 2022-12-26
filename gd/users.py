@@ -117,7 +117,7 @@ class UserData(TypedDict):
     # swing_copter_id: int
     explosion_id: int
     glow: bool
-    role: int
+    role_id: int
     message_state: int
     friend_request_state: int
     comment_state: int
@@ -155,7 +155,7 @@ class User(Entity):
     # swing_copter_id: int = field(default=DEFAULT_ICON_ID, eq=False)
     explosion_id: int = field(default=DEFAULT_ICON_ID, eq=False)
     glow: bool = field(default=DEFAULT_GLOW, eq=False)
-    role: Role = field(default=Role.DEFAULT, eq=False)
+    role_id: int = field(default=DEFAULT_ID, eq=False)
     message_state: MessageState = field(default=MessageState.DEFAULT, eq=False)
     friend_request_state: FriendRequestState = field(default=FriendRequestState.DEFAULT, eq=False)
     comment_state: CommentState = field(default=CommentState.DEFAULT, eq=False)
@@ -167,10 +167,10 @@ class User(Entity):
     banned: bool = field(default=DEFAULT_BANNED, eq=False)
 
     @classmethod
-    def from_json(cls: Type[U], data: UserData) -> U:
+    def from_json(cls: Type[U], data: UserData) -> U:  # type: ignore
         return CONVERTER.structure(data, cls)
 
-    def to_json(self) -> UserData:
+    def to_json(self) -> UserData:  # type: ignore
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
@@ -235,7 +235,7 @@ class User(Entity):
             twitch=model.twitch,
             diamonds=model.diamonds,
             explosion_id=model.explosion_id,
-            role=model.role,
+            role_id=model.role_id,
             comment_state=model.comment_state,
         )
 
@@ -274,7 +274,7 @@ class User(Entity):
             twitch=profile_model.twitch,
             diamonds=profile_model.diamonds,
             explosion_id=profile_model.explosion_id,
-            role=profile_model.role,
+            role_id=profile_model.role_id,
             comment_state=profile_model.comment_state,
         )
 
@@ -310,6 +310,10 @@ class User(Entity):
 
     def into_relationship(self, type: RelationshipType) -> Relationship:
         return Relationship(user=self, type=type).attach_client_unchecked(self.client_unchecked)
+
+    @property
+    def role(self) -> Role:
+        return Role(self.role_id)
 
     def is_glow(self) -> bool:
         return self.glow
@@ -492,9 +496,7 @@ class User(Entity):
 
         explosion_id = reader.read_u16(order)
 
-        role_value = reader.read_u8(order)
-
-        role = Role(role_value)
+        role_id = reader.read_u8(order)
 
         value = reader.read_u8(order)
 
@@ -569,7 +571,7 @@ class User(Entity):
             # swing_copter_id=swing_copter_id,
             explosion_id=explosion_id,
             glow=glow,
-            role=role,
+            role_id=role_id,
             message_state=message_state,
             friend_request_state=friend_request_state,
             comment_state=comment_state,
@@ -628,7 +630,7 @@ class User(Entity):
 
         writer.write_u16(self.explosion_id, order)
 
-        writer.write_u8(self.role.value, order)
+        writer.write_u8(self.role_id, order)
 
         value = 0
 
@@ -703,10 +705,10 @@ class LeaderboardUser(User):
     place: int = field(default=DEFAULT_PLACE, eq=False)
 
     @classmethod
-    def from_json(cls: Type[LU], data: LeaderboardUserData) -> LU:
+    def from_json(cls: Type[LU], data: LeaderboardUserData) -> LU:  # type: ignore
         return CONVERTER.structure(data, cls)
 
-    def to_json(self) -> LeaderboardUserData:
+    def to_json(self) -> LeaderboardUserData:  # type: ignore
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
@@ -781,10 +783,10 @@ class LevelLeaderboardUser(LeaderboardUser):
     recorded_at: Optional[DateTime] = None
 
     @classmethod
-    def from_json(cls: Type[LLU], data: LevelLeaderboardUserData) -> LLU:
+    def from_json(cls: Type[LLU], data: LevelLeaderboardUserData) -> LLU:  # type: ignore
         return CONVERTER.structure(data, cls)
 
-    def to_json(self) -> LevelLeaderboardUserData:
+    def to_json(self) -> LevelLeaderboardUserData:  # type: ignore
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod

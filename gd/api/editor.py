@@ -114,8 +114,22 @@ E = TypeVar("E", bound="Editor")
 
 @define()
 class Editor(RobTop, Binary, Sequence[Object]):
+    """Represents editors.
+
+    Binary:
+        ```text
+        struct Editor {
+            header: Header,
+            objects_length: u32,
+            objects: [Object; objects_length],
+        }
+        ```
+    """
+
     header: Header = field(factory=Header)
+    """The header of the editor."""
     objects: List[Object] = field(factory=list)
+    """The objects of the editor."""
 
     @classmethod
     def from_objects(cls: Type[E], *objects: Object, header: Header) -> E:

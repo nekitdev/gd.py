@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple, TypeVar
 from iters import iter
 
 from gd.assets import DATA_SUFFIX
-from gd.constants import EMPTY
+from gd.constants import EMPTY, READ_BINARY, WRITE
 from gd.image.animation import AnimationSheetData
 from gd.image.layer import LayerData
 from gd.image.sheet import SheetData
@@ -29,9 +29,6 @@ __all__ = (
 T = TypeVar("T")
 
 MAGIC_SCALAR = 4
-
-READ_BINARY = "rb"
-WRITE = "w"
 
 BRACES = "{}"
 
@@ -102,7 +99,7 @@ def convert_sprite_format(format: int) -> ConvertSprite:
     convert_sprite = convert_sprite_mapping.get(format)
 
     if convert_sprite is None:
-        raise ValueError(CAN_NOT_CONVERT.format(format))
+        raise ValueError(CAN_NOT_CONVERT.format(tick(format)))
 
     return convert_sprite
 

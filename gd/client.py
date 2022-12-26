@@ -1283,14 +1283,14 @@ class Client:
         response_model = await self.session.get_gauntlets()
 
         for model in response_model.gauntlets:
-            yield Gauntlet.from_model(model, client=self)
+            yield Gauntlet.from_model(model).attach_client(self)
 
     @wrap_async_iter
     async def get_map_packs_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[MapPack]:
         response_model = await self.session.get_map_packs_on_page(page=page)
 
         for model in response_model.map_packs:
-            yield MapPack.from_model(model, client=self)
+            yield MapPack.from_model(model).attach_client(self)
 
     @wrap_async_iter
     def get_map_packs(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[MapPack]:
@@ -1310,7 +1310,7 @@ class Client:
 
         for quest_model in (model.quest_1, model.quest_2, model.quest_3):
 
-            yield Quest.from_model(quest_model, seconds=model.time_left, client=self)
+            yield Quest.from_model(quest_model, seconds=model.time_left).attach_client(self)
 
     @wrap_async_iter
     @check_login
@@ -1333,14 +1333,14 @@ class Client:
             (model.chest_1, model.chest_1_left, model.chest_1_count),
             (model.chest_2, model.chest_2_left, model.chest_2_count),
         ):
-            yield Chest.from_model(chest_model, seconds=time_left, count=count, client=self)
+            yield Chest.from_model(chest_model, seconds=time_left, count=count).attach_client(Self)
 
     @wrap_async_iter
     async def get_featured_artists_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Artist]:
         response_model = await self.session.get_featured_artists_on_page(page=page)
 
         for model in response_model.featured_artists:
-            yield Song.from_model(model, custom=True, client=self)
+            yield Song.from_model(model).attach_client(self)
 
     @wrap_async_iter
     def get_featured_artists(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Artist]:
@@ -1366,7 +1366,7 @@ class Client:
         models = await self.session.search_newgrounds_songs_on_page(query=query, page=page)
 
         for model in models:
-            yield Song.from_model(model, custom=True, client=self)
+            yield Song.from_model(model).attach_client(self)
 
     @wrap_async_iter
     def search_newgrounds_songs(
@@ -1584,7 +1584,7 @@ class Client:
         [`on_level_comment`][gd.client.Client.on_level_comment].
 
         Arguments:
-            level: The daily level to dispatch.
+            daily: The daily level to dispatch.
             comment: The daily comment to dispatch.
         """
         await self.on_daily_comment(daily, comment)

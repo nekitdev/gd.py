@@ -55,6 +55,7 @@ from gd.constants import (
     SLASH,
     TIMELY_ID_ADD,
     UNNAMED,
+    WRITE_BINARY,
 )
 from gd.date_time import Duration
 from gd.encoding import (
@@ -273,7 +274,7 @@ class Payload(Namespace):
 
         super().__init__(payload)
 
-    def update(
+    def update(  # type: ignore
         self,
         into_parameters: IntoParameters = (),
         *,
@@ -392,8 +393,6 @@ LOOP = "_loop"  # NOTE: keep in sync with the upstream library
 
 UNIT = "b"
 UNIT_SCALE = True
-
-WRITE_BINARY = "wb"
 
 ErrorCodes = Mapping[int, AnyException]
 
@@ -702,7 +701,7 @@ class HTTPClient:
     ) -> ResponseData:
         url = URL(self.url if base is None else base)
 
-        return await self.request(
+        return await self.request(  # type: ignore
             method=route.method,
             url=url / route.route.strip(SLASH),
             type=type,
@@ -714,7 +713,7 @@ class HTTPClient:
         )
 
     @overload
-    async def request(
+    async def request(  # type: ignore
         self,
         method: str,
         url: URLString,
@@ -729,7 +728,7 @@ class HTTPClient:
         ...
 
     @overload
-    async def request(
+    async def request(  # type: ignore
         self,
         method: str,
         url: URLString,
@@ -744,7 +743,7 @@ class HTTPClient:
         ...
 
     @overload
-    async def request(
+    async def request(  # type: ignore
         self,
         method: str,
         url: URLString,
@@ -851,7 +850,7 @@ class HTTPClient:
                                         error_code, unexpected_error_code(error_code)
                                     )
 
-                        return response_data
+                        return response_data  # type: ignore
 
                     if status >= HTTP_ERROR:
                         reason = response.reason
@@ -1300,7 +1299,7 @@ class HTTPClient:
         if query is None:
             query = EMPTY
 
-        if not is_string(query) and is_iterable(query):
+        if not is_string(query) and is_iterable(query):  # type: ignore
             query = iter(query).map(str).collect(concat_comma)
 
         route = Route(POST, GET_LEVELS)

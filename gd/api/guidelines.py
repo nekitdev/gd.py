@@ -15,7 +15,37 @@ G = TypeVar("G", bound="Guidelines")
 
 
 class Guidelines(RobTop, Binary, Dict[float, GuidelineColor]):
+    """Represents guidelines.
+
+    Binary:
+        ```text
+        struct Guideline {
+            timestamp: f32,
+            color: f32,
+        }
+
+        struct Guidelines {
+            guidelines_length: u32,
+            guidelines: [Guideline; guidelines_length],
+        }
+        ```
+    """
+
     def add(self, timestamp: float, color: GuidelineColor = GuidelineColor.DEFAULT) -> None:
+        """Adds the guideline described by `timestamp` and `color`.
+
+        Arguments:
+            timestamp: The timestamp of the guideline.
+            color: The color of the guideline.
+
+        Example:
+            ```python
+            >>> guidelines = Guidelines()
+            >>> guidelines.add(1.0, GuidelineColor.GREEN)
+            >>> guidelines
+            {1.0: <GuidelineColor.GREEN: 1.0>}
+            ```
+        """
         self[timestamp] = color
 
     @classmethod

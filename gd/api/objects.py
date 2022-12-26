@@ -1693,7 +1693,7 @@ TO = TypeVar("TO", bound="TriggerOrb")
 
 
 @define()
-class TriggerOrb(HasTargetGroup, HasActivateGroup, Orb):
+class TriggerOrb(HasTargetGroup, HasActivateGroup, Orb):  # type: ignore
     @classmethod
     def from_binary(
         cls: Type[TO],

@@ -14,10 +14,22 @@ F = TypeVar("F", bound="Folder")
 
 @define()
 class Folder(Binary):
-    """Represents level folders."""
+    """Represents level folders.
+
+    Binary:
+        ```text
+        struct Folder {
+            id: u8,
+            name_length: u8,
+            name: [u8; name_length],
+        }
+        ```
+    """
 
     id: int
+    """The ID of the folder."""
     name: str
+    """The name of the folder."""
 
     def __hash__(self) -> int:
         return self.id

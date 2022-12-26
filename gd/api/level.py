@@ -54,7 +54,15 @@ from gd.encoding import (
     unzip_level_string,
     zip_level_string,
 )
-from gd.enums import ByteOrder, CollectedCoins, Difficulty, InternalType, LevelLength, LevelType, RateType
+from gd.enums import (
+    ByteOrder,
+    CollectedCoins,
+    Difficulty,
+    InternalType,
+    LevelLength,
+    LevelType,
+    RateType,
+)
 from gd.password import Password
 from gd.progress import Progress
 from gd.song import Song
@@ -212,7 +220,7 @@ class LevelAPI(Binary):
     def __hash__(self) -> int:
         return self.id ^ hash(type(self))
 
-    @property
+    @property  # type: ignore
     @cache_by(UNPROCESSED_DATA)
     def processed_data(self) -> str:
         return unzip_level_string(self.unprocessed_data)
@@ -221,20 +229,20 @@ class LevelAPI(Binary):
     def processed_data(self, processed_data: str) -> None:
         self.unprocessed_data = zip_level_string(processed_data)
 
-    @property
+    @property  # type: ignore
     @cache_by(UNPROCESSED_DATA)
     def data(self) -> bytes:
         return self.open_editor().to_bytes()
 
     @data.setter
     def data(self, data: bytes) -> None:
-        self.processed_data = Editor.from_bytes(data).to_robtop()
+        self.processed_data = Editor.from_bytes(data).to_robtop()  # type: ignore
 
     def open_editor(self) -> Editor:
-        return Editor.from_robtop(self.processed_data)
+        return Editor.from_robtop(self.processed_data)  # type: ignore
 
     @classmethod
-    def from_robtop_data(cls: Type[A], data: Dict[str, Any]) -> A:
+    def from_robtop_data(cls: Type[A], data: Dict[str, Any]) -> A:  # type: ignore
         id = data.get(ID, DEFAULT_ID)
 
         name = data.get(NAME, UNKNOWN)
@@ -862,7 +870,7 @@ class LevelAPI(Binary):
             leaderboard_record=leaderboard_record,
         )
 
-        level.data = data
+        level.data = data  # type: ignore
 
         return level
 
@@ -893,7 +901,7 @@ class LevelAPI(Binary):
 
         writer.write(data)
 
-        data = self.data
+        data = self.data  # type: ignore
 
         writer.write_u32(len(data), order)
 

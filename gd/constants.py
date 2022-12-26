@@ -1,3 +1,5 @@
+from typing_extensions import Literal
+
 EMPTY_BYTES = bytes()
 
 EMPTY = str()
@@ -156,3 +158,8 @@ DEFAULT_ENCODING = "utf-8"
 DEFAULT_ERRORS = "strict"
 
 TIMELY_ID_ADD = 100_000
+
+READ: Literal["r"] = "r"
+READ_BINARY: Literal["rb"] = "rb"
+WRITE: Literal["w"] = "w"
+WRITE_BINARY: Literal["wb"] = "wb"

@@ -2,6 +2,7 @@ from gd.api.color_channels import Channel, Channels, ColorChannel, ColorChannels
 from gd.api.database import Database
 from gd.api.editor import Editor
 from gd.api.folder import Folder
+from gd.api.guidelines import Guidelines
 from gd.api.header import Header
 from gd.api.hsv import HSV
 from gd.api.level import LevelAPI
@@ -87,6 +88,8 @@ __all__ = (
     "ToggleTrigger",
     "TouchTrigger",
     "TriggerOrb",
+    # guidelines
+    "Guidelines",
     # recording
     "Recording",
     "RecordingItem",
