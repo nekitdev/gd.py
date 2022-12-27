@@ -1818,6 +1818,8 @@ class GauntletModel(Model):
 
         level_ids_option = mapping.get(GAUNTLET_LEVEL_IDS)
 
+        level_ids: DynamicTuple[int]
+
         if level_ids_option is None:
             level_ids = ()
 
@@ -1877,6 +1879,8 @@ class MapPackModel(Model):
         difficulty = Difficulty(difficulty_value + 1)  # slightly hacky way to convert
 
         level_ids_option = mapping.get(MAP_PACK_LEVEL_IDS)
+
+        level_ids: DynamicTuple[int]
 
         if level_ids_option is None:
             level_ids = ()

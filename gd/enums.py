@@ -640,7 +640,7 @@ class GauntletID(Enum):
     DEATH = 15
 
     @classmethod
-    def _missing_(cls, value: Any) -> GauntletID:
+    def _missing_(cls, value: Any) -> GauntletID:  # type: ignore
         return cls.UNKNOWN
 
 
