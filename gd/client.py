@@ -255,7 +255,7 @@ class Client:
         """The encoded password of the client."""
         return encode_robtop_string(self.password, Key.USER_PASSWORD)
 
-    @property  # type: ignore
+    @property
     @check_login
     def user(self) -> User:
         """The user representing the client."""
@@ -1377,20 +1377,20 @@ class Client:
         )
 
     @wrap_async_iter
-    async def search_newgrounds_users_on_page(
+    async def search_newgrounds_artists_on_page(
         self, query: str, page: int = DEFAULT_PAGE
-    ) -> AsyncIterator[Author]:
-        data = await self.session.search_newgrounds_users_on_page(query=query, page=page)
+    ) -> AsyncIterator[Artist]:
+        models = await self.session.search_newgrounds_artists_on_page(query=query, page=page)
 
-        for part in data:
-            yield Author.from_dict(part, client=self)  # type: ignore
+        for model in models:
+            yield Artist.from_model(model).attach_client(self)
 
     @wrap_async_iter
-    def search_newgrounds_users(
+    def search_newgrounds_artists(
         self, query: str, pages: Iterable[int] = DEFAULT_PAGES
     ) -> AsyncIterator[Artist]:
         return run_iterables(
-            (self.search_newgrounds_users_on_page(query=query, page=page) for page in pages),
+            (self.search_newgrounds_artists_on_page(query=query, page=page) for page in pages),
             ClientError,
         )
 
@@ -1398,7 +1398,9 @@ class Client:
     async def get_newgrounds_artist_songs_on_page(
         self, artist: Artist, page: int = DEFAULT_PAGE
     ) -> AsyncIterator[Song]:
-        models = await self.session.get_newgrounds_artist_songs_on_page(name=name, page=page)
+        models = await self.session.get_newgrounds_artist_songs_on_page(
+            artist_name=artist.name, page=page
+        )
 
         for model in models:
             yield Song.from_model(model).attach_client(self)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import List, Optional
 
 from attrs import field, frozen
 from yarl import URL
@@ -43,6 +43,7 @@ from gd.enums import (
 from gd.filters import Filters
 from gd.http import HTTPClient
 from gd.models import (
+    ArtistModel,
     ArtistsResponseModel,
     ChestsResponseModel,
     FriendRequestsResponseModel,
@@ -66,9 +67,13 @@ from gd.models import (
     UserCommentsResponseModel,
 )
 from gd.models_utils import concat_save, split_save
-from gd.newgrounds import find_song_model
+from gd.newgrounds import (
+    find_song_model,
+    search_artist_models,
+    search_artist_song_models,
+    search_song_models,
+)
 from gd.password import Password
-from gd.string_utils import remove_escapes
 from gd.typing import IntString, MaybeIterable, URLString
 
 __all__ = ("Session",)
@@ -87,8 +92,6 @@ class Session:
         response = await self.http.login(name, password)
 
         return LoginModel.from_robtop(response)
-
-    # HERE
 
     async def load(self, *, account_id: int, name: str, password: str) -> Database:
         response = await self.http.load(account_id=account_id, name=name, password=password)
@@ -778,25 +781,27 @@ class Session:
     async def get_newgrounds_song(self, song_id: int) -> SongModel:
         response = await self.http.get_newgrounds_song(song_id)
 
-        return find_song_model(remove_escapes(response), song_id)
+        return find_song_model(response, song_id)
 
     async def search_newgrounds_songs_on_page(
         self, query: str, page: int = DEFAULT_PAGE
     ) -> List[SongModel]:
         response = await self.http.search_newgrounds_songs_on_page(query=query, page=page)
-        return list(map(SongModel.from_dict, search_song_data(response)))
 
-    async def search_newgrounds_users_on_page(
+        return list(search_song_models(response))
+
+    async def search_newgrounds_artists_on_page(
         self, query: str, page: int = DEFAULT_PAGE
-    ) -> List[Dict[str, Any]]:
-        response = await self.http.search_newgrounds_users_on_page(query=query, page=page)
-        return list(search_users(response))
+    ) -> List[ArtistModel]:
+        response = await self.http.search_newgrounds_artists_on_page(query=query, page=page)
 
-    async def get_newgrounds_user_songs_on_page(
-        self, name: str, page: int = DEFAULT_PAGE
+        return list(search_artist_models(response))
+
+    async def get_newgrounds_artist_songs_on_page(
+        self, artist_name: str, page: int = DEFAULT_PAGE
     ) -> List[SongModel]:
-        response = await self.http.get_newgrounds_user_songs_on_page(name=name, page=page)
-        return [
-            SongModel.from_dict(data, author=name)
-            for data in search_user_songs(response)  # type: ignore
-        ]
+        response = await self.http.get_newgrounds_artist_songs_on_page(
+            artist_name=artist_name, page=page
+        )
+
+        return list(search_artist_song_models(response, artist_name))

@@ -2730,7 +2730,7 @@ class HTTPClient:
 
         return response
 
-    async def search_newgrounds_users_on_page(self, query: str, page: int = DEFAULT_PAGE) -> str:
+    async def search_newgrounds_artists_on_page(self, query: str, page: int = DEFAULT_PAGE) -> str:
         page += 1  # 1-based indexing
 
         response = await self.request(
@@ -2741,14 +2741,14 @@ class HTTPClient:
 
         return response
 
-    async def get_newgrounds_user_songs_on_page(
-        self, name: str, page: int = DEFAULT_PAGE
+    async def get_newgrounds_artist_songs_on_page(
+        self, artist_name: str, page: int = DEFAULT_PAGE
     ) -> Mapping[str, Any]:
         page += 1  # 1-based indexing
 
         response = await self.request(
             GET,
-            NEWGROUNDS_SONG_PAGE.format(name, page),
+            NEWGROUNDS_SONG_PAGE.format(artist_name, page),
             type=ResponseType.JSON,
             headers={REQUESTED_WITH: XML_HTTP_REQUEST},
         )

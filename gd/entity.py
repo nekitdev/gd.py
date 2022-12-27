@@ -79,7 +79,7 @@ class Entity(Binary, JSON[EntityData]):  # type: ignore
         return self
 
     def update_from(self: E, entity: Entity) -> E:
-        for attribute in fields(type(entity)):  # type: ignore
+        for attribute in fields(type(entity)):
             name = attribute.name
 
             set_attribute(self, name, get_attribute(entity, name))
