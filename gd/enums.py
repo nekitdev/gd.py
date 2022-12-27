@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from enum import Enum, Flag
 from typing import Any
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, EMPTY
-from gd.enum_extensions import Enum, Flag
 
 __all__ = (
     "SimpleKey",

@@ -1,9 +1,9 @@
+from enum import Enum
 from functools import partial
 from typing import Iterable, Mapping, Optional, Type, TypeVar
 
 from iters.iters import iter
 
-from gd.enum_extensions import Enum
 from gd.models_constants import (
     ARTIST_SEPARATOR,
     ARTISTS_RESPONSE_ARTISTS_SEPARATOR,
@@ -94,7 +94,7 @@ T = TypeVar("T")
 
 
 def parse_enum(parse: Parse[T], enum_type: Type[E], string: str) -> E:
-    return enum_type.from_value(parse(string))
+    return enum_type(parse(string))
 
 
 def partial_parse_enum(parse: Parse[T], enum_type: Type[E]) -> Parse[E]:

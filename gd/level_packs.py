@@ -76,7 +76,7 @@ class Gauntlet(LevelPack):
     def from_model(cls: Type[G], model: GauntletModel) -> G:
         id = model.id
 
-        return cls(id=id, name=GauntletID(id).title_name, level_ids=model.level_ids)
+        return cls(id=id, name=GauntletID(id).name.title(), level_ids=model.level_ids)
 
 
 MP = TypeVar("MP", bound="MapPack")
