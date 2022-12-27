@@ -2954,7 +2954,9 @@
 <span class="normal">1864</span>
 <span class="normal">1865</span>
 <span class="normal">1866</span>
-<span class="normal">1867</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">()</span>
+<span class="normal">1867</span>
+<span class="normal">1868</span>
+<span class="normal">1869</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">()</span>
 <span class="k">class</span> <span class="nc">Client</span><span class="p">:</span>
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">factory</span><span class="o">=</span><span class="n">Session</span><span class="p">)</span>
     <span class="sd">&quot;&quot;&quot;The session of the client.&quot;&quot;&quot;</span>
@@ -3048,7 +3050,7 @@
         <span class="sd">&quot;&quot;&quot;The encoded password of the client.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">encode_robtop_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">,</span> <span class="n">Key</span><span class="o">.</span><span class="n">USER_PASSWORD</span><span class="p">)</span>
 
-    <span class="nd">@property</span>  <span class="c1"># type: ignore</span>
+    <span class="nd">@property</span>
     <span class="nd">@check_login</span>
     <span class="k">def</span> <span class="nf">user</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;The user representing the client.&quot;&quot;&quot;</span>
@@ -4170,20 +4172,20 @@
         <span class="p">)</span>
 
     <span class="nd">@wrap_async_iter</span>
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">search_newgrounds_users_on_page</span><span class="p">(</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">search_newgrounds_artists_on_page</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_PAGE</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">Author</span><span class="p">]:</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">search_newgrounds_users_on_page</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">page</span><span class="o">=</span><span class="n">page</span><span class="p">)</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">Artist</span><span class="p">]:</span>
+        <span class="n">models</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">search_newgrounds_artists_on_page</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">page</span><span class="o">=</span><span class="n">page</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">Author</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">part</span><span class="p">,</span> <span class="n">client</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">Artist</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="nd">@wrap_async_iter</span>
-    <span class="k">def</span> <span class="nf">search_newgrounds_users</span><span class="p">(</span>
+    <span class="k">def</span> <span class="nf">search_newgrounds_artists</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pages</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_PAGES</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">Artist</span><span class="p">]:</span>
         <span class="k">return</span> <span class="n">run_iterables</span><span class="p">(</span>
-            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">search_newgrounds_users_on_page</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">page</span><span class="o">=</span><span class="n">page</span><span class="p">)</span> <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">pages</span><span class="p">),</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">search_newgrounds_artists_on_page</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">page</span><span class="o">=</span><span class="n">page</span><span class="p">)</span> <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">pages</span><span class="p">),</span>
             <span class="n">ClientError</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -4191,7 +4193,9 @@
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get_newgrounds_artist_songs_on_page</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">artist</span><span class="p">:</span> <span class="n">Artist</span><span class="p">,</span> <span class="n">page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_PAGE</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">Song</span><span class="p">]:</span>
-        <span class="n">models</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get_newgrounds_artist_songs_on_page</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">page</span><span class="o">=</span><span class="n">page</span><span class="p">)</span>
+        <span class="n">models</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get_newgrounds_artist_songs_on_page</span><span class="p">(</span>
+            <span class="n">artist_name</span><span class="o">=</span><span class="n">artist</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">page</span><span class="o">=</span><span class="n">page</span>
+        <span class="p">)</span>
 
         <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
             <span class="k">yield</span> <span class="n">Song</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
@@ -5738,12 +5742,12 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1420</span>
-<span class="normal">1421</span>
-<span class="normal">1422</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1422</span>
 <span class="normal">1423</span>
 <span class="normal">1424</span>
-<span class="normal">1425</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_daily</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1425</span>
+<span class="normal">1426</span>
+<span class="normal">1427</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_daily</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Handles `daily` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -5799,12 +5803,12 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1427</span>
-<span class="normal">1428</span>
-<span class="normal">1429</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1429</span>
 <span class="normal">1430</span>
 <span class="normal">1431</span>
-<span class="normal">1432</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_weekly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1432</span>
+<span class="normal">1433</span>
+<span class="normal">1434</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_weekly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Handles `weekly` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -5860,12 +5864,12 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1434</span>
-<span class="normal">1435</span>
-<span class="normal">1436</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1436</span>
 <span class="normal">1437</span>
 <span class="normal">1438</span>
-<span class="normal">1439</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1439</span>
+<span class="normal">1440</span>
+<span class="normal">1441</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Handles `rate` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -5921,12 +5925,12 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1441</span>
-<span class="normal">1442</span>
-<span class="normal">1443</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1443</span>
 <span class="normal">1444</span>
 <span class="normal">1445</span>
-<span class="normal">1446</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1446</span>
+<span class="normal">1447</span>
+<span class="normal">1448</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Handles `level` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -5992,13 +5996,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1448</span>
-<span class="normal">1449</span>
-<span class="normal">1450</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1450</span>
 <span class="normal">1451</span>
 <span class="normal">1452</span>
 <span class="normal">1453</span>
-<span class="normal">1454</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1454</span>
+<span class="normal">1455</span>
+<span class="normal">1456</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Handles `user_level` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6055,12 +6059,12 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1456</span>
-<span class="normal">1457</span>
-<span class="normal">1458</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1458</span>
 <span class="normal">1459</span>
 <span class="normal">1460</span>
-<span class="normal">1461</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1461</span>
+<span class="normal">1462</span>
+<span class="normal">1463</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Handles `message` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6116,12 +6120,12 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1463</span>
-<span class="normal">1464</span>
-<span class="normal">1465</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1465</span>
 <span class="normal">1466</span>
 <span class="normal">1467</span>
-<span class="normal">1468</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_friend_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">friend_request</span><span class="p">:</span> <span class="n">FriendRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1468</span>
+<span class="normal">1469</span>
+<span class="normal">1470</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_friend_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">friend_request</span><span class="p">:</span> <span class="n">FriendRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Handles `friend_request` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6187,13 +6191,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1470</span>
-<span class="normal">1471</span>
-<span class="normal">1472</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1472</span>
 <span class="normal">1473</span>
 <span class="normal">1474</span>
 <span class="normal">1475</span>
-<span class="normal">1476</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1476</span>
+<span class="normal">1477</span>
+<span class="normal">1478</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Handles `level_comment` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6260,13 +6264,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1478</span>
-<span class="normal">1479</span>
-<span class="normal">1480</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1480</span>
 <span class="normal">1481</span>
 <span class="normal">1482</span>
 <span class="normal">1483</span>
-<span class="normal">1484</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_daily_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1484</span>
+<span class="normal">1485</span>
+<span class="normal">1486</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_daily_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Handles `daily_comment` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6333,13 +6337,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1486</span>
-<span class="normal">1487</span>
-<span class="normal">1488</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1488</span>
 <span class="normal">1489</span>
 <span class="normal">1490</span>
 <span class="normal">1491</span>
-<span class="normal">1492</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_weekly_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1492</span>
+<span class="normal">1493</span>
+<span class="normal">1494</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_weekly_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Handles `weekly_comment` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6406,13 +6410,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1494</span>
-<span class="normal">1495</span>
-<span class="normal">1496</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1496</span>
 <span class="normal">1497</span>
 <span class="normal">1498</span>
 <span class="normal">1499</span>
-<span class="normal">1500</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">UserComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1500</span>
+<span class="normal">1501</span>
+<span class="normal">1502</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">UserComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Handles `user_comment` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6479,13 +6483,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1502</span>
-<span class="normal">1503</span>
-<span class="normal">1504</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1504</span>
 <span class="normal">1505</span>
 <span class="normal">1506</span>
 <span class="normal">1507</span>
-<span class="normal">1508</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1508</span>
+<span class="normal">1509</span>
+<span class="normal">1510</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Handles `user_level_comment` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6542,13 +6546,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1512</span>
-<span class="normal">1513</span>
-<span class="normal">1514</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1514</span>
 <span class="normal">1515</span>
 <span class="normal">1516</span>
 <span class="normal">1517</span>
-<span class="normal">1518</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_daily</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1518</span>
+<span class="normal">1519</span>
+<span class="normal">1520</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_daily</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Dispatches `daily` events via calling [`on_daily`][gd.client.Client.on_daily].</span>
 
 <span class="sd">    Arguments:</span>
@@ -6605,13 +6609,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1520</span>
-<span class="normal">1521</span>
-<span class="normal">1522</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1522</span>
 <span class="normal">1523</span>
 <span class="normal">1524</span>
 <span class="normal">1525</span>
-<span class="normal">1526</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_weekly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1526</span>
+<span class="normal">1527</span>
+<span class="normal">1528</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_weekly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Dispatches `weekly` events via calling [`on_weekly`][gd.client.Client.on_weekly].</span>
 
 <span class="sd">    Arguments:</span>
@@ -6668,13 +6672,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1528</span>
-<span class="normal">1529</span>
-<span class="normal">1530</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1530</span>
 <span class="normal">1531</span>
 <span class="normal">1532</span>
 <span class="normal">1533</span>
-<span class="normal">1534</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1534</span>
+<span class="normal">1535</span>
+<span class="normal">1536</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Dispatches `rate` events via calling [`on_rate`][gd.client.Client.on_rate].</span>
 
 <span class="sd">    Arguments:</span>
@@ -6731,13 +6735,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1536</span>
-<span class="normal">1537</span>
-<span class="normal">1538</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1538</span>
 <span class="normal">1539</span>
 <span class="normal">1540</span>
 <span class="normal">1541</span>
-<span class="normal">1542</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1542</span>
+<span class="normal">1543</span>
+<span class="normal">1544</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Dispatches `level` events via calling [`on_level`][gd.client.Client.on_level].</span>
 
 <span class="sd">    Arguments:</span>
@@ -6805,15 +6809,15 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1544</span>
-<span class="normal">1545</span>
-<span class="normal">1546</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1546</span>
 <span class="normal">1547</span>
 <span class="normal">1548</span>
 <span class="normal">1549</span>
 <span class="normal">1550</span>
 <span class="normal">1551</span>
-<span class="normal">1552</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1552</span>
+<span class="normal">1553</span>
+<span class="normal">1554</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Dispatches `user_level` events via calling</span>
 <span class="sd">    [`on_user_level`][gd.client.Client.on_user_level].</span>
 
@@ -6872,13 +6876,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1554</span>
-<span class="normal">1555</span>
-<span class="normal">1556</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1556</span>
 <span class="normal">1557</span>
 <span class="normal">1558</span>
 <span class="normal">1559</span>
-<span class="normal">1560</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1560</span>
+<span class="normal">1561</span>
+<span class="normal">1562</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Dispatches `message` events via calling [`on_message`][gd.client.Client.on_message].</span>
 
 <span class="sd">    Arguments:</span>
@@ -6936,14 +6940,14 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1562</span>
-<span class="normal">1563</span>
-<span class="normal">1564</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1564</span>
 <span class="normal">1565</span>
 <span class="normal">1566</span>
 <span class="normal">1567</span>
 <span class="normal">1568</span>
-<span class="normal">1569</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_friend_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">friend_request</span><span class="p">:</span> <span class="n">FriendRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1569</span>
+<span class="normal">1570</span>
+<span class="normal">1571</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_friend_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">friend_request</span><span class="p">:</span> <span class="n">FriendRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Dispatches `friend_request` events via calling</span>
 <span class="sd">    [`on_friend_request`][gd.client.Client.on_friend_request].</span>
 
@@ -7012,15 +7016,15 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1571</span>
-<span class="normal">1572</span>
-<span class="normal">1573</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1573</span>
 <span class="normal">1574</span>
 <span class="normal">1575</span>
 <span class="normal">1576</span>
 <span class="normal">1577</span>
 <span class="normal">1578</span>
-<span class="normal">1579</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1579</span>
+<span class="normal">1580</span>
+<span class="normal">1581</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Dispatches `level_comment` events via calling</span>
 <span class="sd">    [`on_level_comment`][gd.client.Client.on_level_comment].</span>
 
@@ -7090,15 +7094,15 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1581</span>
-<span class="normal">1582</span>
-<span class="normal">1583</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1583</span>
 <span class="normal">1584</span>
 <span class="normal">1585</span>
 <span class="normal">1586</span>
 <span class="normal">1587</span>
 <span class="normal">1588</span>
-<span class="normal">1589</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_daily_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1589</span>
+<span class="normal">1590</span>
+<span class="normal">1591</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_daily_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Dispatches `level_comment` events via calling</span>
 <span class="sd">    [`on_level_comment`][gd.client.Client.on_level_comment].</span>
 
@@ -7168,15 +7172,15 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1591</span>
-<span class="normal">1592</span>
-<span class="normal">1593</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1593</span>
 <span class="normal">1594</span>
 <span class="normal">1595</span>
 <span class="normal">1596</span>
 <span class="normal">1597</span>
 <span class="normal">1598</span>
-<span class="normal">1599</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_weekly_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1599</span>
+<span class="normal">1600</span>
+<span class="normal">1601</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_weekly_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Dispatches `weekly_comment` events via calling</span>
 <span class="sd">    [`on_weekly_comment`][gd.client.Client.on_weekly_comment].</span>
 
@@ -7246,15 +7250,15 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1601</span>
-<span class="normal">1602</span>
-<span class="normal">1603</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1603</span>
 <span class="normal">1604</span>
 <span class="normal">1605</span>
 <span class="normal">1606</span>
 <span class="normal">1607</span>
 <span class="normal">1608</span>
-<span class="normal">1609</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">UserComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1609</span>
+<span class="normal">1610</span>
+<span class="normal">1611</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">UserComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Dispatches `user_comment` events via calling</span>
 <span class="sd">    [`on_user_comment`][gd.client.Client.on_user_comment].</span>
 
@@ -7324,15 +7328,15 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1611</span>
-<span class="normal">1612</span>
-<span class="normal">1613</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1613</span>
 <span class="normal">1614</span>
 <span class="normal">1615</span>
 <span class="normal">1616</span>
 <span class="normal">1617</span>
 <span class="normal">1618</span>
-<span class="normal">1619</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1619</span>
+<span class="normal">1620</span>
+<span class="normal">1621</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Dispatches `user_level_comment` events via calling</span>
 <span class="sd">    [`on_user_level_comment`][gd.client.Client.on_user_level_comment].</span>
 
@@ -7416,9 +7420,7 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1621</span>
-<span class="normal">1622</span>
-<span class="normal">1623</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1623</span>
 <span class="normal">1624</span>
 <span class="normal">1625</span>
 <span class="normal">1626</span>
@@ -7438,7 +7440,9 @@ for handling login process.</p></td>
 <span class="normal">1640</span>
 <span class="normal">1641</span>
 <span class="normal">1642</span>
-<span class="normal">1643</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">:</span> <span class="n">F</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">F</span><span class="p">:</span>
+<span class="normal">1643</span>
+<span class="normal">1644</span>
+<span class="normal">1645</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">:</span> <span class="n">F</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">F</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Registers an event handler.</span>
 
 <span class="sd">    Example:</span>
