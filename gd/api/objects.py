@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from enum import Enum, Flag
 from functools import partial
 from io import BytesIO
 from typing import ClassVar, Dict, Iterable, Mapping, Type, TypeVar
@@ -15,7 +16,6 @@ from gd.binary_utils import Reader, Writer
 from gd.color import Color
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, EMPTY
 from gd.encoding import decode_base64_string_url_safe, encode_base64_string_url_safe
-from gd.enum_extensions import Enum, Flag
 from gd.enums import (
     ByteOrder,
     CoinType,
