@@ -161,7 +161,7 @@ DEFAULT_LOAD_AFTER_POST = True
 C = TypeVar("C", bound="Client")
 
 
-@define(slots=False)
+@define()
 class Client:
     session: Session = field(factory=Session)
     """The session of the client."""
@@ -1309,8 +1309,7 @@ class Client:
         model = response_model.inner
 
         for quest_model in (model.quest_1, model.quest_2, model.quest_3):
-
-            yield Quest.from_model(quest_model, seconds=model.time_left).attach_client(self)
+            yield Quest.from_model(quest_model, model.duration).attach_client(self)
 
     @wrap_async_iter
     @check_login
@@ -1329,11 +1328,11 @@ class Client:
         )
         model = response_model.inner
 
-        for (chest_model, time_left, count) in (
-            (model.chest_1, model.chest_1_left, model.chest_1_count),
-            (model.chest_2, model.chest_2_left, model.chest_2_count),
+        for (id, chest_model, count, duration) in (
+            (1, model.chest_1, model.chest_1_count, model.chest_1_duration),
+            (2, model.chest_2, model.chest_2_count, model.chest_2_duration),
         ):
-            yield Chest.from_model(chest_model, seconds=time_left, count=count).attach_client(Self)
+            yield Chest.from_model(chest_model, id, count, duration).attach_client(self)
 
     @wrap_async_iter
     async def get_artists_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Artist]:

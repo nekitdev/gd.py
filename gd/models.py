@@ -9,8 +9,11 @@ from yarl import URL
 from gd.api.editor import Editor
 from gd.color import Color
 from gd.constants import (
+    CHESTS_SLICE,
     DEFAULT_ACTIVE,
+    DEFAULT_AMOUNT,
     DEFAULT_AUTO,
+    DEFAULT_CHEST_COUNT,
     DEFAULT_COINS,
     DEFAULT_COLOR_1_ID,
     DEFAULT_COLOR_2_ID,
@@ -25,15 +28,18 @@ from gd.constants import (
     DEFAULT_GLOW,
     DEFAULT_ICON_ID,
     DEFAULT_ID,
+    DEFAULT_KEYS,
     DEFAULT_LOW_DETAIL,
     DEFAULT_NEW,
     DEFAULT_NUMERATOR,
     DEFAULT_OBJECT_COUNT,
+    DEFAULT_ORBS,
     DEFAULT_PLACE,
     DEFAULT_RANK,
     DEFAULT_RATING,
     DEFAULT_READ,
     DEFAULT_RECORD,
+    DEFAULT_REWARD,
     DEFAULT_SCORE,
     DEFAULT_SECRET_COINS,
     DEFAULT_SENT,
@@ -46,6 +52,7 @@ from gd.constants import (
     DEFAULT_VERIFIED_COINS,
     DEFAULT_VERSION,
     EMPTY,
+    QUESTS_SLICE,
     TIMELY_ID_ADD,
     UNKNOWN,
     UNNAMED,
@@ -59,6 +66,7 @@ from gd.encoding import (
     encode_base64_string_url_safe,
     encode_robtop_string,
     generate_level_seed,
+    generate_random_string,
     sha1_string_with_salt,
     unzip_level_string,
     zip_level_string,
@@ -72,15 +80,23 @@ from gd.enums import (
     Key,
     LevelLength,
     MessageState,
+    QuestType,
+    RewardType,
     Salt,
+    ShardType,
     TimelyType,
 )
 from gd.models_constants import (
     ARTIST_SEPARATOR,
     ARTISTS_RESPONSE_SEPARATOR,
+    CHEST_SEPARATOR,
+    CHESTS_INNER_SEPARATOR,
+    CHESTS_RESPONSE_SEPARATOR,
     COMMENT_BANNED_SEPARATOR,
     CREATOR_SEPARATOR,
     FRIEND_REQUEST_SEPARATOR,
+    GAUNTLET_SEPARATOR,
+    GAUNTLETS_RESPONSE_SEPARATOR,
     LEADERBOARD_RESPONSE_USERS_SEPARATOR,
     LEADERBOARD_USER_SEPARATOR,
     LEVEL_COMMENT_INNER_SEPARATOR,
@@ -92,10 +108,15 @@ from gd.models_constants import (
     LEVEL_RESPONSE_SEPARATOR,
     LEVEL_SEPARATOR,
     LOGIN_SEPARATOR,
+    MAP_PACK_SEPARATOR,
+    MAP_PACKS_RESPONSE_SEPARATOR,
     MESSAGE_SEPARATOR,
     MESSAGES_RESPONSE_SEPARATOR,
     PAGE_SEPARATOR,
     PROFILE_SEPARATOR,
+    QUEST_SEPARATOR,
+    QUESTS_INNER_SEPARATOR,
+    QUESTS_RESPONSE_SEPARATOR,
     RELATIONSHIP_USER_SEPARATOR,
     RELATIONSHIPS_RESPONSE_USERS_SEPARATOR,
     SEARCH_LEVELS_RESPONSE_SEPARATOR,
@@ -110,11 +131,17 @@ from gd.models_utils import (
     concat_artist,
     concat_artists_response,
     concat_artists_response_artists,
+    concat_chest,
+    concat_chests_inner,
+    concat_chests_response,
     concat_comment_banned,
     concat_creator,
     concat_friend_request,
     concat_friend_requests_response,
     concat_friend_requests_response_friend_requests,
+    concat_gauntlet,
+    concat_gauntlets_response,
+    concat_gauntlets_response_gauntlets,
     concat_leaderboard_response_users,
     concat_leaderboard_user,
     concat_level,
@@ -123,15 +150,22 @@ from gd.models_utils import (
     concat_level_comment_user,
     concat_level_comments_response,
     concat_level_comments_response_comments,
+    concat_level_ids,
     concat_level_leaderboard_response_users,
     concat_level_leaderboard_user,
     concat_level_response,
     concat_login,
+    concat_map_pack,
+    concat_map_packs_response,
+    concat_map_packs_response_map_packs,
     concat_message,
     concat_messages_response,
     concat_messages_response_messages,
     concat_page,
     concat_profile,
+    concat_quest,
+    concat_quests_inner,
+    concat_quests_response,
     concat_relationship_user,
     concat_relationships_response_users,
     concat_search_levels_response,
@@ -153,11 +187,17 @@ from gd.models_utils import (
     split_artist,
     split_artists_response,
     split_artists_response_artists,
+    split_chest,
+    split_chests_inner,
+    split_chests_response,
     split_comment_banned,
     split_creator,
     split_friend_request,
     split_friend_requests_response,
     split_friend_requests_response_friend_requests,
+    split_gauntlet,
+    split_gauntlets_response,
+    split_gauntlets_response_gauntlets,
     split_leaderboard_response_users,
     split_leaderboard_user,
     split_level,
@@ -166,15 +206,22 @@ from gd.models_utils import (
     split_level_comment_user,
     split_level_comments_response,
     split_level_comments_response_comments,
+    split_level_ids,
     split_level_leaderboard_response_users,
     split_level_leaderboard_user,
     split_level_response,
     split_login,
+    split_map_pack,
+    split_map_packs_response,
+    split_map_packs_response_map_packs,
     split_message,
     split_messages_response,
     split_messages_response_messages,
     split_page,
     split_profile,
+    split_quest,
+    split_quests_inner,
+    split_quests_response,
     split_relationship_user,
     split_relationships_response_users,
     split_search_levels_response,
@@ -1687,6 +1734,492 @@ class ArtistModel(Model):
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return ARTIST_SEPARATOR in string
+
+
+C = TypeVar("C", bound="ChestModel")
+
+
+@define()
+class ChestModel(Model):
+    orbs: int = DEFAULT_ORBS
+    diamonds: int = DEFAULT_DIAMONDS
+    shard_type: ShardType = ShardType.DEFAULT
+    keys: int = DEFAULT_KEYS
+
+    @classmethod
+    def from_robtop(cls: Type[C], string: str) -> C:
+        orbs_string, diamonds_string, shard_type_string, keys_string = split_chest(string)
+
+        return cls(
+            orbs=int(orbs_string),
+            diamonds=int(diamonds_string),
+            shard_type=ShardType(int(shard_type_string)),
+            keys=int(keys_string),
+        )
+
+    def to_robtop(self) -> str:
+        values = (str(self.orbs), str(self.diamonds), str(self.shard_type.value), str(self.keys))
+
+        return concat_chest(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return CHEST_SEPARATOR in string
+
+
+Q = TypeVar("Q", bound="QuestModel")
+
+
+@define()
+class QuestModel(Model):
+    id: int = DEFAULT_ID
+    type: QuestType = QuestType.DEFAULT
+    amount: int = DEFAULT_AMOUNT
+    reward: int = DEFAULT_REWARD
+    name: str = UNKNOWN
+
+    @classmethod
+    def from_robtop(cls: Type[Q], string: str) -> Q:
+        id_string, type_string, amount_string, reward_string, name = split_quest(string)
+
+        return cls(
+            id=int(id_string),
+            type=QuestType(int(type_string)),
+            amount=int(amount_string),
+            reward=int(reward_string),
+            name=name,
+        )
+
+    def to_robtop(self) -> str:
+        values = (str(self.id), str(self.type.value), str(self.amount), str(self.reward), self.name)
+
+        return concat_quest(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return QUEST_SEPARATOR in string
+
+
+GAUNTLET_ID = 1
+GAUNTLET_LEVEL_IDS = 3
+
+
+G = TypeVar("G", bound="GauntletModel")
+
+
+@define()
+class GauntletModel(Model):
+    id: int = DEFAULT_ID
+    level_ids: DynamicTuple[int] = ()
+
+    @classmethod
+    def from_robtop(cls: Type[G], string: str) -> G:
+        mapping = split_gauntlet(string)
+
+        level_ids_option = mapping.get(GAUNTLET_LEVEL_IDS)
+
+        if level_ids_option is None:
+            level_ids = ()
+
+        else:
+            level_ids = iter(split_level_ids(level_ids_option)).map(int).tuple()
+
+        return cls(
+            id=parse_get_or(int, DEFAULT_ID, mapping.get(GAUNTLET_ID)),
+            level_ids=level_ids,
+        )
+
+    def to_robtop(self) -> str:
+        mapping = {
+            GAUNTLET_ID: str(self.id),
+            GAUNTLET_LEVEL_IDS: iter(self.level_ids).map(str).collect(concat_level_ids),
+        }
+
+        return concat_gauntlet(mapping)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return GAUNTLET_SEPARATOR in string
+
+
+MAP_PACK_ID = 1
+MAP_PACK_NAME = 2
+MAP_PACK_LEVEL_IDS = 3
+MAP_PACK_STARS = 4
+MAP_PACK_COINS = 5
+MAP_PACK_DIFFICULTY = 6
+MAP_PACK_COLOR = 7
+MAP_PACK_OTHER_COLOR = 8
+
+MP = TypeVar("MP", bound="MapPackModel")
+
+DEFAULT_DIFFICULTY_VALUE = Difficulty.DEFAULT.value
+
+
+@define()
+class MapPackModel(Model):
+    id: int = field(default=DEFAULT_ID)
+    name: str = field(default=UNKNOWN)
+    level_ids: DynamicTuple[int] = field(default=())
+    stars: int = field(default=DEFAULT_STARS)
+    coins: int = field(default=DEFAULT_COINS)
+    difficulty: Difficulty = field(default=Difficulty.DEFAULT)
+    color: Color = field(factory=Color.default)
+
+    @classmethod
+    def from_robtop(cls: Type[MP], string: str) -> MP:
+        mapping = split_map_pack(string)
+
+        difficulty_value = parse_get_or(
+            int, DEFAULT_DIFFICULTY_VALUE, mapping.get(MAP_PACK_DIFFICULTY)
+        )
+
+        difficulty = Difficulty(difficulty_value + 1)  # slightly hacky way to convert
+
+        level_ids_option = mapping.get(MAP_PACK_LEVEL_IDS)
+
+        if level_ids_option is None:
+            level_ids = ()
+
+        else:
+            level_ids = iter(split_level_ids(level_ids_option)).map(int).tuple()
+
+        return cls(
+            id=parse_get_or(int, DEFAULT_ID, mapping.get(MAP_PACK_ID)),
+            name=mapping.get(MAP_PACK_NAME, UNKNOWN),
+            level_ids=level_ids,
+            stars=parse_get_or(int, DEFAULT_STARS, mapping.get(MAP_PACK_STARS)),
+            coins=parse_get_or(int, DEFAULT_COINS, mapping.get(MAP_PACK_COINS)),
+            difficulty=difficulty,
+            color=parse_get_or(Color.from_robtop, Color.default(), mapping.get(MAP_PACK_COLOR)),
+        )
+
+    def to_robtop(self) -> str:
+        mapping = {
+            MAP_PACK_ID: str(self.id),
+            MAP_PACK_NAME: self.name,
+            MAP_PACK_LEVEL_IDS: iter(self.level_ids).map(str).collect(concat_level_ids),
+            MAP_PACK_STARS: str(self.stars),
+            MAP_PACK_COINS: str(self.coins),
+            MAP_PACK_DIFFICULTY: str(self.difficulty.value - 1),  # and convert back
+            MAP_PACK_COLOR: self.color.to_robtop(),
+            MAP_PACK_OTHER_COLOR: self.color.to_robtop(),
+        }
+
+        return concat_map_pack(mapping)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return MAP_PACK_SEPARATOR in string
+
+
+CI = TypeVar("CI", bound="ChestsInnerModel")
+
+
+@define()
+class ChestsInnerModel(Model):
+    random_string: str = field(default=EMPTY)
+    user_id: int = field(default=DEFAULT_ID)
+    check: str = field(default=EMPTY)
+    udid: str = field(default=EMPTY)
+    account_id: int = field(default=DEFAULT_ID)
+    chest_1_duration: Duration = field(factory=Duration)
+    chest_1: ChestModel = field(factory=ChestModel)
+    chest_1_count: int = field(default=DEFAULT_CHEST_COUNT)
+    chest_2_duration: Duration = field(factory=Duration)
+    chest_2: ChestModel = field(factory=ChestModel)
+    chest_2_count: int = field(default=DEFAULT_CHEST_COUNT)
+    reward_type: RewardType = field(default=RewardType.DEFAULT)
+
+    @classmethod
+    def from_robtop(cls: Type[CI], string: str) -> CI:
+        (
+            random_string,
+            user_id_string,
+            check,
+            udid,
+            account_id_string,
+            chest_1_duration_string,
+            chest_1_string,
+            chest_1_count_string,
+            chest_2_duration_string,
+            chest_2_string,
+            chest_2_count_string,
+            reward_type_string,
+        ) = split_chests_inner(string)
+
+        return cls(
+            random_string=random_string,
+            user_id=int(user_id_string),
+            check=check,
+            udid=udid,
+            account_id=int(account_id_string),
+            chest_1_duration=Duration(seconds=int(chest_1_duration_string)),
+            chest_1=ChestModel.from_robtop(chest_1_string),
+            chest_1_count=int(chest_1_count_string),
+            chest_2_duration=Duration(seconds=int(chest_2_duration_string)),
+            chest_2=ChestModel.from_robtop(chest_2_string),
+            chest_2_count=int(chest_2_count_string),
+            reward_type=RewardType(int(reward_type_string)),
+        )
+
+    def to_robtop(self) -> str:
+        values = (
+            self.random_string,
+            str(self.user_id),
+            self.check,
+            self.udid,
+            str(self.account_id),
+            str(int(self.chest_1_duration.total_seconds())),
+            self.chest_1.to_robtop(),
+            str(self.chest_1_count),
+            str(int(self.chest_2_duration.total_seconds())),
+            self.chest_2.to_robtop(),
+            str(self.chest_2_count),
+            str(self.reward_type.value),
+        )
+
+        return concat_chests_inner(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return CHESTS_INNER_SEPARATOR in string
+
+
+QI = TypeVar("QI", bound="QuestsInnerModel")
+
+
+@define()
+class QuestsInnerModel(Model):
+    random_string: str = field(default=EMPTY)
+    user_id: int = field(default=DEFAULT_ID)
+    check: str = field(default=EMPTY)
+    udid: str = field(default=EMPTY)
+    account_id: int = field(default=DEFAULT_ID)
+    duration: Duration = field(factory=Duration)
+    quest_1: QuestModel = field(factory=QuestModel)
+    quest_2: QuestModel = field(factory=QuestModel)
+    quest_3: QuestModel = field(factory=QuestModel)
+
+    @classmethod
+    def from_robtop(cls: Type[QI], string: str) -> QI:
+        (
+            random_string,
+            user_id_string,
+            check,
+            udid,
+            account_id_string,
+            duration_string,
+            quest_1_string,
+            quest_2_string,
+            quest_3_string,
+        ) = split_quests_inner(string)
+
+        return cls(
+            random_string=random_string,
+            user_id=int(user_id_string),
+            check=check,
+            udid=udid,
+            account_id=int(account_id_string),
+            duration=Duration(seconds=int(duration_string)),
+            quest_1=QuestModel.from_robtop(quest_1_string),
+            quest_2=QuestModel.from_robtop(quest_2_string),
+            quest_3=QuestModel.from_robtop(quest_3_string),
+        )
+
+    def to_robtop(self) -> str:
+        values = (
+            self.random_string,
+            str(self.user_id),
+            self.check,
+            self.udid,
+            str(self.account_id),
+            str(int(self.duration.total_seconds())),
+            self.quest_1.to_robtop(),
+            self.quest_2.to_robtop(),
+            self.quest_3.to_robtop(),
+        )
+
+        return concat_quests_inner(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return QUESTS_INNER_SEPARATOR in string
+
+
+CR = TypeVar("CR", bound="ChestsResponseModel")
+
+
+@define()
+class ChestsResponseModel(Model):
+    inner: ChestsInnerModel = field(factory=ChestsInnerModel)
+    hash: str = field()
+
+    @hash.default
+    def default_hash(self) -> str:
+        return sha1_string_with_salt(self.encode_inner(), Salt.CHESTS)
+
+    def encode_inner(self) -> str:
+        return generate_random_string(CHESTS_SLICE) + encode_robtop_string(
+            self.inner.to_robtop(), Key.CHESTS
+        )
+
+    @classmethod
+    def decode_inner(cls, string: str) -> str:
+        return decode_robtop_string(string[CHESTS_SLICE:], Key.CHESTS)
+
+    @classmethod
+    def from_robtop(cls: Type[CR], string: str) -> CR:
+        inner_string, hash = split_chests_response(string)
+
+        inner_string = cls.decode_inner(inner_string)
+
+        return cls(inner=ChestsInnerModel.from_robtop(inner_string), hash=hash)
+
+    def to_robtop(self) -> str:
+        values = (self.encode_inner(), self.hash)
+
+        return concat_chests_response(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return CHESTS_RESPONSE_SEPARATOR in string
+
+
+QR = TypeVar("QR", bound="QuestsResponseModel")
+
+
+@define()
+class QuestsResponseModel(Model):
+    inner: QuestsInnerModel = field(factory=QuestsInnerModel)
+    hash: str = field()
+
+    @hash.default
+    def default_hash(self) -> str:
+        return sha1_string_with_salt(self.encode_inner(), Salt.QUESTS)
+
+    def encode_inner(self) -> str:
+        return generate_random_string(QUESTS_SLICE) + encode_robtop_string(
+            self.inner.to_robtop(), Key.QUESTS
+        )
+
+    @classmethod
+    def decode_inner(cls, string: str) -> str:
+        return decode_robtop_string(string[QUESTS_SLICE:], Key.QUESTS)
+
+    @classmethod
+    def from_robtop(cls: Type[QR], string: str) -> QR:
+        inner_string, hash = split_quests_response(string)
+
+        inner_string = cls.decode_inner(inner_string)
+
+        return cls(inner=QuestsInnerModel.from_robtop(inner_string), hash=hash)
+
+    def to_robtop(self) -> str:
+        values = (self.encode_inner(), self.hash)
+
+        return concat_quests_response(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return QUESTS_RESPONSE_SEPARATOR in string
+
+
+GR = TypeVar("GR", bound="GauntletsResponseModel")
+
+
+@define()
+class GauntletsResponseModel(Model):
+    gauntlets: List[GauntletModel] = field(factory=list)
+    hash: str = field()
+
+    def default_hash_iterator(self) -> Iterator[str]:
+        for gauntlet in self.gauntlets:
+            values = (str(gauntlet.id), concat_level_ids(map(str, gauntlet.level_ids)))
+
+            yield concat_empty(values)
+
+    @hash.default
+    def default_hash(self) -> str:
+        return sha1_string_with_salt(concat_empty(self.default_hash_iterator()), Salt.LEVEL)
+
+    @classmethod
+    def from_robtop(cls: Type[GR], string: str) -> GR:
+        gauntlets_string, hash = split_gauntlets_response(string)
+
+        gauntlets = [
+            GauntletModel.from_robtop(gauntlets_string)
+            for gauntlets_string in split_gauntlets_response_gauntlets(gauntlets_string)
+        ]
+
+        return cls(gauntlets=gauntlets, hash=hash)
+
+    def to_robtop(self) -> str:
+        values = (
+            concat_gauntlets_response_gauntlets(
+                gauntlet.to_robtop() for gauntlet in self.gauntlets
+            ),
+            self.hash,
+        )
+
+        return concat_gauntlets_response(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return GAUNTLETS_RESPONSE_SEPARATOR in string
+
+
+MPR = TypeVar("MPR", bound="MapPacksResponseModel")
+
+
+@define()
+class MapPacksResponseModel(Model):
+    map_packs: List[MapPackModel] = field(factory=list)
+    page: PageModel = field(factory=PageModel)
+    hash: str = field()
+
+    def default_hash_iterator(self) -> Iterator[str]:
+        first = FIRST
+        last = LAST
+
+        for map_pack in self.map_packs:
+            string = str(map_pack.id)
+
+            values = (string[first], string[last], str(map_pack.stars), str(map_pack.coins))
+
+            yield concat_empty(values)
+
+    @hash.default
+    def default_hash(self) -> str:
+        return sha1_string_with_salt(concat_empty(self.default_hash_iterator()), Salt.LEVEL)
+
+    @classmethod
+    def from_robtop(cls: Type[MPR], string: str) -> MPR:
+        map_packs_string, page_string, hash = split_map_packs_response(string)
+
+        map_packs = [
+            MapPackModel.from_robtop(map_pack_string)
+            for map_pack_string in split_map_packs_response_map_packs(map_packs_string)
+        ]
+
+        page = PageModel.from_robtop(page_string)
+
+        return cls(map_packs=map_packs, page=page, hash=hash)
+
+    def to_robtop(self) -> str:
+        values = (
+            concat_map_packs_response_map_packs(
+                map_pack.to_robtop() for map_pack in self.map_packs
+            ),
+            self.page.to_robtop(),
+            self.hash,
+        )
+
+        return concat_map_packs_response(values)
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return MAP_PACKS_RESPONSE_SEPARATOR in string
 
 
 LLR = TypeVar("LLR", bound="LevelLeaderboardResponseModel")

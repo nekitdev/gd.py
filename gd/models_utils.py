@@ -8,6 +8,9 @@ from gd.models_constants import (
     ARTIST_SEPARATOR,
     ARTISTS_RESPONSE_ARTISTS_SEPARATOR,
     ARTISTS_RESPONSE_SEPARATOR,
+    CHEST_SEPARATOR,
+    CHESTS_INNER_SEPARATOR,
+    CHESTS_RESPONSE_SEPARATOR,
     COLOR_CHANNEL_SEPARATOR,
     COLOR_CHANNELS_SEPARATOR,
     COLOR_SEPARATOR,
@@ -17,6 +20,9 @@ from gd.models_constants import (
     FRIEND_REQUEST_SEPARATOR,
     FRIEND_REQUESTS_RESPONSE_FRIEND_REQUESTS_SEPARATOR,
     FRIEND_REQUESTS_RESPONSE_SEPARATOR,
+    GAUNTLET_SEPARATOR,
+    GAUNTLETS_RESPONSE_GAUNTLETS_SEPARATOR,
+    GAUNTLETS_RESPONSE_SEPARATOR,
     GROUPS_SEPARATOR,
     GUIDELINES_SEPARATOR,
     HEADER_SEPARATOR,
@@ -28,11 +34,15 @@ from gd.models_constants import (
     LEVEL_COMMENT_USER_SEPARATOR,
     LEVEL_COMMENTS_RESPONSE_COMMENTS_SEPARATOR,
     LEVEL_COMMENTS_RESPONSE_SEPARATOR,
+    LEVEL_IDS_SEPARATOR,
     LEVEL_LEADERBOARD_RESPONSE_USERS_SEPARATOR,
     LEVEL_LEADERBOARD_USER_SEPARATOR,
     LEVEL_RESPONSE_SEPARATOR,
     LEVEL_SEPARATOR,
     LOGIN_SEPARATOR,
+    MAP_PACK_SEPARATOR,
+    MAP_PACKS_RESPONSE_MAP_PACKS_SEPARATOR,
+    MAP_PACKS_RESPONSE_SEPARATOR,
     MESSAGE_SEPARATOR,
     MESSAGES_RESPONSE_MESSAGES_SEPARATOR,
     MESSAGES_RESPONSE_SEPARATOR,
@@ -41,6 +51,9 @@ from gd.models_constants import (
     PAGE_SEPARATOR,
     PROFILE_SEPARATOR,
     PROGRESS_SEPARATOR,
+    QUEST_SEPARATOR,
+    QUESTS_INNER_SEPARATOR,
+    QUESTS_RESPONSE_SEPARATOR,
     RECORDING_ITEM_SEPARATOR,
     RELATIONSHIP_USER_SEPARATOR,
     RELATIONSHIPS_RESPONSE_USERS_SEPARATOR,
@@ -113,26 +126,31 @@ def parse_get_or(
 DEFAULT_IGNORE_EMPTY = False
 
 
-def split_iterable(
-    separator: str, string: str, ignore_empty: bool = DEFAULT_IGNORE_EMPTY
-) -> Iterable[str]:
-    iterable = string.split(separator)
+def split_iterable(separator: str, string: str) -> Iterable[str]:
+    if not string:
+        return []
 
-    if ignore_empty:
-        return filter(None, iterable)
-
-    return iterable
+    return string.split(separator)
 
 
 def split_string_mapping(separator: str, string: str) -> Mapping[str, str]:
+    if not string:
+        return {}
+
     return {index: value for index, value in iter(string.split(separator)).pairs().unwrap()}
 
 
 def split_mapping(separator: str, string: str) -> Mapping[int, str]:
+    if not string:
+        return {}
+
     return {int(index): value for index, value in iter(string.split(separator)).pairs().unwrap()}
 
 
 def split_float_mapping(separator: str, string: str) -> Mapping[float, float]:
+    if not string:
+        return {}
+
     return {
         float(key): float(value)
         for key, value in iter(string.split(separator)).filter(None).pairs().unwrap()
@@ -218,6 +236,27 @@ concat_level_comment = partial(concat_iterable, LEVEL_COMMENT_SEPARATOR)
 split_user_comment = partial(split_mapping, USER_COMMENT_SEPARATOR)
 concat_user_comment = partial(concat_mapping, USER_COMMENT_SEPARATOR)
 
+split_gauntlet = partial(split_mapping, GAUNTLET_SEPARATOR)
+concat_gauntlet = partial(concat_mapping, GAUNTLET_SEPARATOR)
+
+split_map_pack = partial(split_mapping, MAP_PACK_SEPARATOR)
+concat_map_pack = partial(concat_mapping, MAP_PACK_SEPARATOR)
+
+split_chest = partial(split_iterable, CHEST_SEPARATOR)
+concat_chest = partial(concat_iterable, CHEST_SEPARATOR)
+
+split_quest = partial(split_iterable, QUEST_SEPARATOR)
+concat_quest = partial(concat_iterable, QUEST_SEPARATOR)
+
+split_chests_inner = partial(split_iterable, CHESTS_INNER_SEPARATOR)
+concat_chests_inner = partial(concat_iterable, CHESTS_INNER_SEPARATOR)
+
+split_quests_inner = partial(split_iterable, QUESTS_INNER_SEPARATOR)
+concat_quests_inner = partial(concat_iterable, QUESTS_INNER_SEPARATOR)
+
+split_level_ids = partial(split_iterable, LEVEL_IDS_SEPARATOR)
+concat_level_ids = partial(concat_iterable, LEVEL_IDS_SEPARATOR)
+
 split_page = partial(split_iterable, PAGE_SEPARATOR)
 concat_page = partial(concat_iterable, PAGE_SEPARATOR)
 
@@ -274,36 +313,28 @@ concat_artists_response_artists = partial(concat_iterable, ARTISTS_RESPONSE_ARTI
 split_search_users_response = partial(split_iterable, SEARCH_USERS_RESPONSE_SEPARATOR)
 concat_search_users_response = partial(concat_iterable, SEARCH_USERS_RESPONSE_SEPARATOR)
 
-split_search_users_response_users = partial(
-    split_iterable, SEARCH_USERS_RESPONSE_USERS_SEPARATOR, ignore_empty=True
-)
+split_search_users_response_users = partial(split_iterable, SEARCH_USERS_RESPONSE_USERS_SEPARATOR)
 concat_search_users_response_users = partial(concat_iterable, SEARCH_USERS_RESPONSE_USERS_SEPARATOR)
 
-split_relationships_response_users = partial(
-    split_iterable, RELATIONSHIPS_RESPONSE_USERS_SEPARATOR, ignore_empty=True
-)
+split_relationships_response_users = partial(split_iterable, RELATIONSHIPS_RESPONSE_USERS_SEPARATOR)
 concat_relationships_response_users = partial(
     concat_iterable, RELATIONSHIPS_RESPONSE_USERS_SEPARATOR
 )
 
-split_leaderboard_response_users = partial(
-    split_iterable, LEADERBOARD_RESPONSE_USERS_SEPARATOR, ignore_empty=True
-)
+split_leaderboard_response_users = partial(split_iterable, LEADERBOARD_RESPONSE_USERS_SEPARATOR)
 concat_leaderboard_response_users = partial(concat_iterable, LEADERBOARD_RESPONSE_USERS_SEPARATOR)
 
 split_messages_response = partial(split_iterable, MESSAGES_RESPONSE_SEPARATOR)
 concat_messages_response = partial(concat_iterable, MESSAGES_RESPONSE_SEPARATOR)
 
-split_messages_response_messages = partial(
-    split_iterable, MESSAGES_RESPONSE_MESSAGES_SEPARATOR, ignore_empty=True
-)
+split_messages_response_messages = partial(split_iterable, MESSAGES_RESPONSE_MESSAGES_SEPARATOR)
 concat_messages_response_messages = partial(concat_iterable, MESSAGES_RESPONSE_MESSAGES_SEPARATOR)
 
 split_friend_requests_response = partial(split_iterable, FRIEND_REQUESTS_RESPONSE_SEPARATOR)
 concat_friend_requests_response = partial(concat_iterable, FRIEND_REQUESTS_RESPONSE_SEPARATOR)
 
 split_friend_requests_response_friend_requests = partial(
-    split_iterable, FRIEND_REQUESTS_RESPONSE_FRIEND_REQUESTS_SEPARATOR, ignore_empty=True
+    split_iterable, FRIEND_REQUESTS_RESPONSE_FRIEND_REQUESTS_SEPARATOR
 )
 concat_friend_requests_response_friend_requests = partial(
     concat_iterable, FRIEND_REQUESTS_RESPONSE_FRIEND_REQUESTS_SEPARATOR
@@ -316,22 +347,20 @@ split_search_levels_response = partial(split_iterable, SEARCH_LEVELS_RESPONSE_SE
 concat_search_levels_response = partial(concat_iterable, SEARCH_LEVELS_RESPONSE_SEPARATOR)
 
 split_search_levels_response_levels = partial(
-    split_iterable, SEARCH_LEVELS_RESPONSE_LEVELS_SEPARATOR, ignore_empty=True
+    split_iterable, SEARCH_LEVELS_RESPONSE_LEVELS_SEPARATOR
 )
 concat_search_levels_response_levels = partial(
     concat_iterable, SEARCH_LEVELS_RESPONSE_LEVELS_SEPARATOR
 )
 
 split_search_levels_response_creators = partial(
-    split_iterable, SEARCH_LEVELS_RESPONSE_CREATORS_SEPARATOR, ignore_empty=True
+    split_iterable, SEARCH_LEVELS_RESPONSE_CREATORS_SEPARATOR
 )
 concat_search_levels_response_creators = partial(
     concat_iterable, SEARCH_LEVELS_RESPONSE_CREATORS_SEPARATOR
 )
 
-split_search_levels_response_songs = partial(
-    split_iterable, SEARCH_LEVELS_RESPONSE_SONGS_SEPARATOR, ignore_empty=True
-)
+split_search_levels_response_songs = partial(split_iterable, SEARCH_LEVELS_RESPONSE_SONGS_SEPARATOR)
 concat_search_levels_response_songs = partial(
     concat_iterable, SEARCH_LEVELS_RESPONSE_SONGS_SEPARATOR
 )
@@ -340,7 +369,7 @@ split_user_comments_response = partial(split_iterable, USER_COMMENTS_RESPONSE_SE
 concat_user_comments_response = partial(concat_iterable, USER_COMMENTS_RESPONSE_SEPARATOR)
 
 split_user_comments_response_comments = partial(
-    split_iterable, USER_COMMENTS_RESPONSE_COMMENTS_SEPARATOR, ignore_empty=True
+    split_iterable, USER_COMMENTS_RESPONSE_COMMENTS_SEPARATOR
 )
 concat_user_comments_response_comments = partial(
     concat_iterable, USER_COMMENTS_RESPONSE_COMMENTS_SEPARATOR
@@ -350,14 +379,14 @@ split_level_comments_response = partial(split_iterable, LEVEL_COMMENTS_RESPONSE_
 concat_level_comments_response = partial(concat_iterable, LEVEL_COMMENTS_RESPONSE_SEPARATOR)
 
 split_level_comments_response_comments = partial(
-    split_iterable, LEVEL_COMMENTS_RESPONSE_COMMENTS_SEPARATOR, ignore_empty=True
+    split_iterable, LEVEL_COMMENTS_RESPONSE_COMMENTS_SEPARATOR
 )
 concat_level_comments_response_comments = partial(
     concat_iterable, LEVEL_COMMENTS_RESPONSE_COMMENTS_SEPARATOR
 )
 
 split_level_leaderboard_response_users = partial(
-    split_iterable, LEVEL_LEADERBOARD_RESPONSE_USERS_SEPARATOR, ignore_empty=True
+    split_iterable, LEVEL_LEADERBOARD_RESPONSE_USERS_SEPARATOR
 )
 concat_level_leaderboard_response_users = partial(
     concat_iterable, LEVEL_LEADERBOARD_RESPONSE_USERS_SEPARATOR
@@ -365,3 +394,25 @@ concat_level_leaderboard_response_users = partial(
 
 split_progress = partial(split_iterable, PROGRESS_SEPARATOR)
 concat_progress = partial(concat_iterable, PROGRESS_SEPARATOR)
+
+split_chests_response = partial(split_iterable, CHESTS_RESPONSE_SEPARATOR)
+concat_chests_response = partial(concat_iterable, CHESTS_RESPONSE_SEPARATOR)
+
+split_quests_response = partial(split_iterable, QUESTS_RESPONSE_SEPARATOR)
+concat_quests_response = partial(concat_iterable, QUESTS_RESPONSE_SEPARATOR)
+
+split_map_packs_response = partial(split_iterable, MAP_PACKS_RESPONSE_SEPARATOR)
+concat_map_packs_response = partial(concat_iterable, MAP_PACKS_RESPONSE_SEPARATOR)
+
+split_map_packs_response_map_packs = partial(split_iterable, MAP_PACKS_RESPONSE_MAP_PACKS_SEPARATOR)
+concat_map_packs_response_map_packs = partial(
+    concat_iterable, MAP_PACKS_RESPONSE_MAP_PACKS_SEPARATOR
+)
+
+split_gauntlets_response = partial(split_iterable, GAUNTLETS_RESPONSE_SEPARATOR)
+concat_gauntlets_response = partial(concat_iterable, GAUNTLETS_RESPONSE_SEPARATOR)
+
+split_gauntlets_response_gauntlets = partial(split_iterable, GAUNTLETS_RESPONSE_GAUNTLETS_SEPARATOR)
+concat_gauntlets_response_gauntlets = partial(
+    concat_iterable, GAUNTLETS_RESPONSE_GAUNTLETS_SEPARATOR
+)

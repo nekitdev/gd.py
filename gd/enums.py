@@ -639,6 +639,10 @@ class GauntletID(Enum):
     DOOM = 14
     DEATH = 15
 
+    @classmethod
+    def _missing_(cls, value: Any) -> GauntletID:
+        return cls.UNKNOWN
+
 
 class SearchStrategy(Enum):
     """An enumeration of search strategies."""
@@ -685,6 +689,8 @@ class ShardType(Enum):
     LAVA = 5
     NULL = 6
 
+    DEFAULT = UNKNOWN
+
 
 class QuestType(Enum):
     """An enumeration of quest types."""
@@ -693,6 +699,11 @@ class QuestType(Enum):
     ORBS = 1
     COINS = 2
     STARS = 3
+
+    DEFAULT = UNKNOWN
+
+    def is_unknown(self) -> bool:
+        return self is type(self).UNKNOWN
 
 
 class Scene(Enum):

@@ -44,15 +44,19 @@ from gd.filters import Filters
 from gd.http import HTTPClient
 from gd.models import (
     ArtistsResponseModel,
+    ChestsResponseModel,
     FriendRequestsResponseModel,
+    GauntletsResponseModel,
     LeaderboardResponseModel,
     LevelCommentsResponseModel,
     LevelLeaderboardResponseModel,
     LevelResponseModel,
     LoginModel,
+    MapPacksResponseModel,
     MessageModel,
     MessagesResponseModel,
     ProfileModel,
+    QuestsResponseModel,
     RelationshipsResponseModel,
     SearchLevelsResponseModel,
     SearchUserModel,
@@ -729,17 +733,19 @@ class Session:
 
     async def get_gauntlets(self) -> GauntletsResponseModel:
         response = await self.http.get_gauntlets()
-        return GauntletsResponseModel.from_string(response, use_default=True)
+
+        return GauntletsResponseModel.from_robtop(response)
 
     async def get_map_packs_on_page(self, page: int = DEFAULT_PAGE) -> MapPacksResponseModel:
         response = await self.http.get_map_packs_on_page(page=page)
-        return MapPacksResponseModel.from_string(response, use_default=True)
+
+        return MapPacksResponseModel.from_robtop(response)
 
     async def get_quests(self, *, account_id: int, encoded_password: str) -> QuestsResponseModel:
         response = await self.http.get_quests(
             account_id=account_id, encoded_password=encoded_password
         )
-        return QuestsResponseModel.from_string(response, use_default=True)
+        return QuestsResponseModel.from_robtop(response)
 
     async def get_chests(
         self,
@@ -757,7 +763,7 @@ class Session:
             account_id=account_id,
             encoded_password=encoded_password,
         )
-        return ChestsResponseModel.from_string(response, use_default=True)
+        return ChestsResponseModel.from_robtop(response)
 
     async def get_artists_on_page(self, page: int = DEFAULT_PAGE) -> ArtistsResponseModel:
         response = await self.http.get_artists_on_page(page=page)

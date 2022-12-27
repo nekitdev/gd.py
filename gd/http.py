@@ -2608,33 +2608,6 @@ class HTTPClient:
 
         return response
 
-    async def get_quests(self, *, account_id: int, encoded_password: str) -> str:
-        error_codes = {-1: MissingAccess(FAILED_TO_GET_QUESTS)}
-
-        udid = self.generate_udid()
-        uuid = self.generate_uuid()
-
-        check = generate_random_string_and_encode_value(key=Key.QUESTS)
-
-        route = Route(POST, GET_QUESTS)
-
-        payload = Payload(
-            game_version=self.get_game_version(),
-            binary_version=self.get_binary_version(),
-            gdw=self.get_gd_world(),
-            account_id=account_id,
-            gjp=encoded_password,
-            udid=udid,
-            uuid=uuid,
-            chk=check,
-            secret=Secret.MAIN.value,
-            to_camel=True,
-        )
-
-        response = await self.request_route(route, data=payload, error_codes=error_codes)
-
-        return response
-
     async def get_chests(
         self,
         reward_type: RewardType,
@@ -2646,10 +2619,7 @@ class HTTPClient:
     ) -> str:
         error_codes = {-1: MissingAccess(FAILED_TO_GET_CHESTS)}
 
-        udid = self.generate_udid()
-        uuid = self.generate_uuid()
-
-        chk = generate_random_string_and_encode_value(key=Key.CHESTS)
+        check = generate_random_string_and_encode_value(Key.CHESTS)
 
         route = Route(POST, GET_CHESTS)
 
@@ -2660,11 +2630,40 @@ class HTTPClient:
             reward_type=reward_type.value,
             account_id=account_id,
             gjp=encoded_password,
-            udid=udid,
-            uuid=uuid,
-            chk=chk,
+            # no idea why they got swapped
+            udid=self.generate_uuid(),
+            uuid=self.generate_udid(),
+            chk=check,
             r1=chest_1_count,
             r2=chest_2_count,
+            secret=Secret.MAIN.value,
+            to_camel=True,
+        )
+
+        response = await self.request_route(route, data=payload, error_codes=error_codes)
+
+        return response
+
+    async def get_quests(self, *, account_id: int, encoded_password: str) -> str:
+        error_codes = {-1: MissingAccess(FAILED_TO_GET_QUESTS)}
+
+        check = generate_random_string_and_encode_value(Key.QUESTS)
+
+        world = self.get_gd_world()
+
+        route = Route(POST, GET_QUESTS)
+
+        payload = Payload(
+            game_version=self.get_game_version(),
+            binary_version=self.get_binary_version(),
+            gdw=world,
+            account_id=account_id,
+            gjp=encoded_password,
+            # no idea why they got swapped
+            udid=self.generate_uuid(),
+            uuid=self.generate_udid(),
+            chk=check,
+            world=world,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
