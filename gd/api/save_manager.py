@@ -18,7 +18,6 @@ __all__ = (
     "PATH",
     "SaveManager",
     "create_database",
-    "save_manager",
     "save",
 )
 

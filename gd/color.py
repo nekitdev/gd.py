@@ -52,7 +52,7 @@ VALUE_TOO_SMALL = "color value too small: {}"
 
 
 @frozen(order=True)
-class Color(JSON[int], RobTop):
+class Color(RobTop):
     value: int = field(default=BLACK, repr=hex_value)
 
     ID_TO_VALUE: ClassVar[Dict[int, int]] = {

@@ -479,6 +479,7 @@ class Object(Binary, RobTop):
             writer.write_u16(additional_editor_layer, order)
 
         if flag.has_colors():
+            print(base_color_id)
             writer.write_u16(base_color_id, order)
             writer.write_u16(detail_color_id, order)
 
@@ -2279,8 +2280,15 @@ class ColorTrigger(HasTargetColor, HasColor, HasDuration, HasOpacity, Trigger): 
         return mapping
 
 
+MIGRATE = "this is the compatibility color trigger; use `migrate` method to migrate to newer system"
+
+CCT = TypeVar("CCT", bound="CompatibilityColorTrigger")
+
+
 @define()
-class CompatibilityColorTrigger(Compatibility, HasColor, HasDuration, HasOpacity, Trigger):  # type: ignore
+class CompatibilityColorTrigger(  # type: ignore
+    Compatibility, HasColor, HasDuration, HasOpacity, Trigger
+):
     TARGET_COLOR_ID: ClassVar[int]
 
     blending: bool = field(default=DEFAULT_BLENDING)
@@ -2298,9 +2306,69 @@ class CompatibilityColorTrigger(Compatibility, HasColor, HasDuration, HasOpacity
     def is_copy_opacity(self) -> bool:
         return self.copy_opacity
 
+    @classmethod
+    def from_robtop_mapping(cls: Type[CCT], mapping: Mapping[int, str]) -> CCT:
+        compatibility_color_trigger = super().from_robtop_mapping(mapping)
+
+        blending = parse_get_or(int_bool, DEFAULT_BLENDING, mapping.get(BLENDING))
+
+        copy_opacity = parse_get_or(int_bool, DEFAULT_COPY_OPACITY, mapping.get(COPY_OPACITY))
+
+        player_color_1 = parse_get_or(int_bool, DEFAULT_PLAYER_COLOR_1, mapping.get(PLAYER_COLOR_1))
+        player_color_2 = parse_get_or(int_bool, DEFAULT_PLAYER_COLOR_2, mapping.get(PLAYER_COLOR_2))
+
+        if player_color_1 and player_color_2:
+            player_color = PlayerColor.DEFAULT
+
+        else:
+            if player_color_1:
+                player_color = PlayerColor.COLOR_1
+
+            elif player_color_2:
+                player_color = PlayerColor.COLOR_2
+
+            else:
+                player_color = PlayerColor.NOT_USED
+
+        red, green, blue = (
+            parse_get_or(int, DEFAULT_RED, mapping.get(RED)),
+            parse_get_or(int, DEFAULT_GREEN, mapping.get(GREEN)),
+            parse_get_or(int, DEFAULT_BLUE, mapping.get(BLUE)),
+        )
+
+        color = Color.from_rgb(red, green, blue)
+
+        duration = parse_get_or(float, DEFAULT_DURATION, mapping.get(DURATION))
+
+        copied_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(COPIED_COLOR_ID))
+
+        copied_color_hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(COPIED_COLOR_HSV))
+
+        opacity = parse_get_or(float, DEFAULT_OPACITY, mapping.get(OPACITY))
+
+        compatibility_color_trigger.blending = blending
+
+        compatibility_color_trigger.copy_opacity = copy_opacity
+
+        compatibility_color_trigger.player_color = player_color
+
+        compatibility_color_trigger.color = color
+
+        compatibility_color_trigger.duration = duration
+
+        compatibility_color_trigger.copied_color_id = copied_color_id
+        compatibility_color_trigger.copied_color_hsv = copied_color_hsv
+
+        compatibility_color_trigger.opacity = opacity
+
+        return compatibility_color_trigger
+
+    def to_robtop_mapping(self) -> Never:
+        raise NotImplementedError(MIGRATE)
+
     def migrate(self) -> ColorTrigger:
         return ColorTrigger(
-            id=self.id,
+            id=TriggerType.COLOR.id,  # NOTE: here is the small difference :)
             x=self.x,
             y=self.y,
             h_flipped=self.is_h_flipped(),
@@ -2768,7 +2836,9 @@ MT = TypeVar("MT", bound="MoveTrigger")
 
 
 @define()
-class MoveTrigger(HasAdditionalGroup, HasTargetGroup, HasEasing, HasDuration, Trigger):  # type: ignore
+class MoveTrigger(  # type: ignore
+    HasAdditionalGroup, HasTargetGroup, HasEasing, HasDuration, Trigger
+):
     x_offset: float = DEFAULT_X_OFFSET
     y_offset: float = DEFAULT_Y_OFFSET
 
@@ -3411,7 +3481,9 @@ FT = TypeVar("FT", bound="FollowTrigger")
 
 
 @define()
-class FollowTrigger(HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, Trigger):  # type: ignore
+class FollowTrigger(  # type: ignore
+    HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, Trigger
+):
     x_modifier: float = DEFAULT_X_MODIFIER
     y_modifier: float = DEFAULT_Y_MODIFIER
 

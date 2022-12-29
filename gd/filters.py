@@ -13,7 +13,6 @@ from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder, Difficulty, LevelLength, RateFilter, SearchStrategy
 from gd.string_constants import DASH
 from gd.string_utils import concat_comma, wrap
-from gd.typing import DynamicTuple
 
 __all__ = ("Filters",)
 
@@ -47,9 +46,15 @@ REQUIRE_ORIGINAL_BIT = 0b10000000
 @define()
 class Filters(Binary):
     strategy: SearchStrategy = field(default=SearchStrategy.DEFAULT)
-    difficulties: OrderedSet[Difficulty] = field(factory=ordered_set, converter=ordered_set)  # type: ignore
-    lengths: OrderedSet[LevelLength] = field(factory=ordered_set, converter=ordered_set)  # type: ignore
-    completed_levels: OrderedSet[int] = field(factory=ordered_set, converter=ordered_set)  # type: ignore
+    difficulties: OrderedSet[Difficulty] = field(
+        factory=ordered_set, converter=ordered_set  # type: ignore
+    )
+    lengths: OrderedSet[LevelLength] = field(
+        factory=ordered_set, converter=ordered_set  # type: ignore
+    )
+    completed_levels: OrderedSet[int] = field(
+        factory=ordered_set, converter=ordered_set  # type: ignore
+    )
     completed: Optional[bool] = field(default=DEFAULT_COMPLETED)
     require_coins: bool = field(default=DEFAULT_REQUIRE_COINS)
     rate_filter: Optional[RateFilter] = field(default=DEFAULT_RATE_FILTER)

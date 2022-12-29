@@ -42,7 +42,7 @@ from gd.constants import (
     UNKNOWN,
 )
 from gd.date_time import DateTime, utc_from_timestamp
-from gd.entity import CONVERTER, Entity
+from gd.entity import CONVERTER, Entity, EntityData
 from gd.enums import (
     ByteOrder,
     CommentState,
@@ -92,7 +92,7 @@ FRIEND_REQUEST_STATE_SHIFT = COMMENT_STATE_MASK.bit_length()
 COMMENT_STATE_SHIFT = GLOW_BIT.bit_length()
 
 
-class UserData(TypedDict):
+class UserData(EntityData):
     name: str
     account_id: int
     stars: int
@@ -170,7 +170,7 @@ class User(Entity):
     def from_json(cls: Type[U], data: UserData) -> U:  # type: ignore
         return CONVERTER.structure(data, cls)
 
-    def to_json(self) -> UserData:  # type: ignore
+    def to_json(self) -> UserData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
@@ -708,7 +708,7 @@ class LeaderboardUser(User):
     def from_json(cls: Type[LU], data: LeaderboardUserData) -> LU:  # type: ignore
         return CONVERTER.structure(data, cls)
 
-    def to_json(self) -> LeaderboardUserData:  # type: ignore
+    def to_json(self) -> LeaderboardUserData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
@@ -786,7 +786,7 @@ class LevelLeaderboardUser(LeaderboardUser):
     def from_json(cls: Type[LLU], data: LevelLeaderboardUserData) -> LLU:  # type: ignore
         return CONVERTER.structure(data, cls)
 
-    def to_json(self) -> LevelLeaderboardUserData:  # type: ignore
+    def to_json(self) -> LevelLeaderboardUserData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod

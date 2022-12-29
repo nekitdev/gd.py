@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from collections import UserList as ListType
 from functools import partial
-from typing import Iterable, Iterator, List, Match, Type, TypeVar, overload
+from typing import Iterable, Iterator, List, Match, Type, TypeVar
 
 from attrs import define
 from iters import iter

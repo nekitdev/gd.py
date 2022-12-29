@@ -13,7 +13,6 @@ from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder
 from gd.errors import ClientError
-from gd.json import JSON
 
 if TYPE_CHECKING:
     from gd.client import Client
@@ -33,7 +32,7 @@ ID = "id"
 
 
 @define()
-class Entity(Binary, JSON[EntityData]):  # type: ignore
+class Entity(Binary):
     id: int = field()
 
     client_unchecked: Optional[Client] = field(default=None, init=False, repr=False, eq=False)
