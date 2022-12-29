@@ -156,7 +156,7 @@ class IconType(Enum):
     WAVE = 4
     ROBOT = 5
     SPIDER = 6
-    SWING_COPTER = 7
+    # SWING_COPTER = 7
 
     DEFAULT = CUBE
 
@@ -964,7 +964,7 @@ class GameMode(Enum):
     WAVE = 4
     ROBOT = 5
     SPIDER = 6
-    SWING_COPTER = 7
+    # SWING_COPTER = 7
 
     DEFAULT = CUBE
 

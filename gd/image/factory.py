@@ -144,7 +144,9 @@ class Factory:
     def paint(image: Image, color: Color, black: Color = BLACK) -> Image:
         _red, _green, _blue, alpha = image.split()
 
-        colored = colorize(grayscale(image), black=black.value, white=color.value)
+        colored = colorize(
+            grayscale(image), black=black.to_rgb(), white=color.to_rgb()  # type: ignore
+        )
 
         colored.putalpha(alpha)
 
