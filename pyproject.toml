@@ -29,7 +29,8 @@ Issues = "https://github.com/nekitdev/gd.py/issues"
 include = "gd"
 
 [tool.poetry.scripts]
-gd = "gd.main:gd"
+"gd" = "gd.main:gd"
+"gd.server" = "gd.server.main:server"
 
 [tool.poetry.dependencies]
 python = ">= 3.7"
@@ -65,10 +66,20 @@ optional = true
 version = ">= 3.15.0"
 optional = true
 
+[tool.poetry.dependencies.fastapi]
+version = ">= 0.88.0"
+optional = true
+
+[tool.poetry.dependencies.uvicorn]
+version = ">= 0.20.0"
+optional = true
+extras = ["standard"]
+
 [tool.poetry.extras]
 crypto = ["pycryptodome"]
 image = ["pillow"]
 speed = ["lxml"]
+server = ["fastapi", "uvicorn"]
 
 [tool.poetry.group.format]
 optional = true

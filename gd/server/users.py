@@ -41,3 +41,19 @@ async def search_user(query: str) -> UserData:
     user = await client.search_user(query)
 
     return user.to_json()
+
+
+@v1.get("/users/search/{query}/icons", summary="Searches for the user icons by the query.")
+async def search_user_icons(query: str) -> FileResponse:
+    path = PATH / SEARCH_ICONS.format(query)
+
+    # if path.exists():
+    #     return FileResponse(path)
+
+    user = await client.search_user(query)
+
+    image = await user.generate_full_async()
+
+    await run_blocking(image.save, path)
+
+    return FileResponse(path)

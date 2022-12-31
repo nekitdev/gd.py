@@ -21,7 +21,7 @@ from typing import (
     Union,
     overload,
 )
-from uuid import uuid4 as generate_uuid
+from uuid import UUID, uuid4 as generate_uuid
 
 from aiohttp import BasicAuth, ClientError, ClientSession, ClientTimeout
 from attrs import define, evolve, field, frozen
@@ -116,7 +116,7 @@ from gd.models_utils import concat_extra_string
 from gd.password import Password
 from gd.progress import Progress
 from gd.string_utils import concat_comma, password_str, tick
-from gd.text_utils import snake_to_camel
+from gd.text_utils import snake_to_camel_with_abbreviations
 from gd.timer import create_timer
 from gd.typing import (
     AnyException,
@@ -243,14 +243,6 @@ def unexpected_error_code(error_code: int) -> MissingAccess:
     return MissingAccess(UNEXPECTED_ERROR_CODE.format(tick(error_code)))
 
 
-ID = "ID"
-ID_TITLE = ID.title()
-
-
-def snake_to_camel_with_id(string: str) -> str:
-    return snake_to_camel(string).replace(ID_TITLE, ID)
-
-
 DEFAULT_TO_CAMEL = False
 
 
@@ -270,7 +262,7 @@ class Payload(Namespace):
         payload.update(parameters)
 
         if to_camel:
-            payload = {snake_to_camel_with_id(name): value for name, value in payload.items()}
+            payload = {snake_to_camel_with_abbreviations(name): value for name, value in payload.items()}
 
         super().__init__(payload)
 
@@ -286,7 +278,7 @@ class Payload(Namespace):
         payload.update(parameters)
 
         if to_camel:
-            payload = {snake_to_camel_with_id(name): value for name, value in payload.items()}
+            payload = {snake_to_camel_with_abbreviations(name): value for name, value in payload.items()}
 
         super().update(payload)
 
@@ -877,8 +869,8 @@ class HTTPClient:
         return prefix + str(get_random_range(start, stop))
 
     @staticmethod
-    def generate_uuid() -> str:
-        return str(generate_uuid())
+    def generate_uuid() -> UUID:
+        return generate_uuid()
 
     @staticmethod
     def generate_extra_string(count: int = EXTRA_STRING_COUNT) -> str:
@@ -1400,7 +1392,7 @@ class HTTPClient:
             udid = self.generate_udid()
             uuid = self.generate_uuid()
 
-            values = (str(level_id), str(increment), random_string, str(account_id), udid, uuid)
+            values = (str(level_id), str(increment), random_string, str(account_id), udid, str(uuid))
 
             check = generate_check(values, Key.LEVEL, Salt.LEVEL)
 
@@ -1585,7 +1577,7 @@ class HTTPClient:
 
         random_string = generate_random_string()
 
-        values = (str(level_id), str(stars), random_string, str(account_id), udid, uuid)
+        values = (str(level_id), str(stars), random_string, str(account_id), udid, str(uuid))
 
         check = generate_check(values, Key.LIKE_RATE, Salt.LIKE_RATE)
 
@@ -2177,7 +2169,7 @@ class HTTPClient:
             random_string,
             str(account_id),
             udid,
-            uuid,
+            str(uuid),
         )
 
         check = generate_check(values, Key.LIKE_RATE, Salt.LIKE_RATE)
@@ -2234,7 +2226,7 @@ class HTTPClient:
             random_string,
             str(account_id),
             udid,
-            uuid,
+            str(uuid),
         )
 
         check = generate_check(values, Key.LIKE_RATE, Salt.LIKE_RATE)
@@ -2292,7 +2284,7 @@ class HTTPClient:
             random_string,
             str(account_id),
             udid,
-            uuid,
+            str(uuid),
         )
 
         check = generate_check(values, Key.LIKE_RATE, Salt.LIKE_RATE)

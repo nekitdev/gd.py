@@ -1549,3 +1549,12 @@ class CollectedCoins(Flag):
 
     def all(self) -> bool:
         return type(self).ALL in self
+
+
+class Quality(Enum):
+    AUTO = 0
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
+
+    DEFAULT = AUTO

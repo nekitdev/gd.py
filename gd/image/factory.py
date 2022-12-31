@@ -42,8 +42,6 @@ IDLE = "idle"
 
 RGBA = "RGBA"
 
-DEFAULT_ERROR_ON_NOT_FOUND = False
-
 ZERO = 0
 
 BLACK = Color.black()
@@ -109,11 +107,10 @@ class Factory:
     glow_sheet: Sheet
     robot_animation_sheet: AnimationSheet
     spider_animation_sheet: AnimationSheet
-    error_on_not_found: bool = DEFAULT_ERROR_ON_NOT_FOUND
 
     @classmethod
-    def default(cls: Type[F], error_on_not_found: bool = DEFAULT_ERROR_ON_NOT_FOUND) -> F:
-        return cls.from_paths(error_on_not_found=error_on_not_found)
+    def default(cls: Type[F]) -> F:
+        return cls.from_paths()
 
     @classmethod
     def from_paths(
@@ -124,14 +121,12 @@ class Factory:
         glow_data_path: IntoPath = GLOW_DATA_PATH,
         robot_animation_path: IntoPath = ROBOT_ANIMATION_PATH,
         spider_animation_path: IntoPath = SPIDER_ANIMATION_PATH,
-        error_on_not_found: bool = DEFAULT_ERROR_ON_NOT_FOUND,
     ) -> F:
         return cls(
             Sheet.from_paths(icon_image_path, icon_data_path),
             Sheet.from_paths(glow_image_path, glow_data_path),
             AnimationSheet.from_path(robot_animation_path),
             AnimationSheet.from_path(spider_animation_path),
-            error_on_not_found=error_on_not_found,
         )
 
     @staticmethod

@@ -1,10 +1,11 @@
 from re import compile
-from typing import Match
+from typing import Iterable, Match
 
 from gd.constants import SPACE
+from gd.iter_utils import unary_tuple
 from gd.string_constants import UNDER
 
-__all__ = ("camel_to_snake", "snake_to_camel", "is_upper", "is_lower", "case_fold", "create_title")
+__all__ = ("camel_to_snake", "snake_to_camel", "snake_to_camel_with_abbreviations", "is_upper", "is_lower", "case_fold", "create_title")
 
 is_upper = str.isupper
 is_lower = str.islower
@@ -19,8 +20,8 @@ def create_title(name: str) -> str:
     return name
 
 
-UPPER = r"[A-Z]"
-LOWER = r"[a-z]"
+UPPER = r"[0-9A-Z]"
+LOWER = r"[0-9a-z]"
 
 CAMEL_TO_SNAKE_PATTERN = rf"(?!^)({UPPER}+)"
 SNAKE_TO_CAMEL_PATTERN = rf"(?!^)_({LOWER})"
@@ -59,3 +60,24 @@ def snake_to_camel(string: str) -> str:
         The resulting `camelCase` string.
     """
     return SNAKE_TO_CAMEL.sub(upper_case_first_group, string)
+
+
+ABBREVIATIONS = unary_tuple("ID")
+
+
+def snake_to_camel_with_abbreviations(string: str, abbreviations: Iterable[str] = ABBREVIATIONS) -> str:
+    """Converts `string` from `snake_case` to `camelCase` with abbreviations.
+
+    Arguments:
+        string: The `snake_case` string to convert to `camelCase`.
+        abbreviations: Abbreviations to keep.
+
+    Returns:
+        The resulting `camelCase` string.
+    """
+    string = snake_to_camel(string)
+
+    for abbreviation in abbreviations:
+        string = string.replace(abbreviation.title(), abbreviation)
+
+    return string

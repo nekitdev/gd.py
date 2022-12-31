@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import partial
 from typing import Any, Dict, List, Type, TypeVar
+from uuid import UUID, uuid4 as generate_uuid
 
 from attrs import define, field
 from iters import iter
@@ -13,11 +14,12 @@ from gd.api.level import LevelAPI
 from gd.api.objects import Object, object_from_binary, object_to_binary
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
-from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, EMPTY
-from gd.enums import ByteOrder, Filter, IconType, LevelLeaderboardStrategy
+from gd.constants import UNKNOWN, DEFAULT_ICON_ID, DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID, DEFAULT_RESOLUTION, DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, EMPTY
+from gd.enums import Quality, ByteOrder, Filter, IconType, LevelLeaderboardStrategy
 from gd.filters import Filters
+from gd.iter_utils import unary_tuple
 from gd.song import Song
-from gd.text_utils import snake_to_camel
+from gd.text_utils import snake_to_camel, snake_to_camel_with_abbreviations
 from gd.versions import CURRENT_BINARY_VERSION, Version
 from gd.xml import PARSER
 
@@ -1105,7 +1107,7 @@ class Values(Binary):
     waves: OrderedSet[int] = field(factory=ordered_set)
     robots: OrderedSet[int] = field(factory=ordered_set)
     spiders: OrderedSet[int] = field(factory=ordered_set)
-    swing_copters: OrderedSet[int] = field(factory=ordered_set)
+    # swing_copters: OrderedSet[int] = field(factory=ordered_set)
     explosions: OrderedSet[int] = field(factory=ordered_set)
     colors_1: OrderedSet[int] = field(factory=ordered_set)
     colors_2: OrderedSet[int] = field(factory=ordered_set)
@@ -1125,7 +1127,7 @@ class Values(Binary):
             self.waves,
             self.robots,
             self.spiders,
-            self.swing_copters,
+            # self.swing_copters,
             self.explosions,
             self.colors_1,
             self.colors_2,
@@ -1176,9 +1178,9 @@ class Values(Binary):
 
         spiders = iter.repeat_exactly_with(read_u16, spiders_length).ordered_set()
 
-        swing_copters_length = reader.read_u16(order)
+        # swing_copters_length = reader.read_u16(order)
 
-        swing_copters = iter.repeat_exactly_with(read_u16, swing_copters_length).ordered_set()
+        # swing_copters = iter.repeat_exactly_with(read_u16, swing_copters_length).ordered_set()
 
         explosions_length = reader.read_u16(order)
 
@@ -1201,7 +1203,7 @@ class Values(Binary):
             waves=waves,
             robots=robots,
             spiders=spiders,
-            swing_copters=swing_copters,
+            # swing_copters=swing_copters,
             explosions=explosions,
             colors_1=colors_1,
             colors_2=colors_2,
@@ -1681,14 +1683,99 @@ CLICKED_PRACTICE_BIT = 0b00010000
 SHOWN_EDITOR_GUIDE_BIT = 0b00100000
 SHOWN_LOW_DETAIL_BIT = 0b01000000
 RATED_GAME_BIT = 0b10000000
-MODERATOR_BIT = 0b00000001_00000000
+MODERATOR_BIT = 0b00000001
+QUALITY_MASK = 0b00000110
+QUALITY_SHIFT = MODERATOR_BIT.bit_length()
+
 
 LIKED_BIT = 0b10000000_00000000_00000000_00000000
 LIKED_MASK = 0b01111111_11111111_11111111_11111111
 
+DEFAULT_VOLUME = 1.0
+DEFAULT_SFX_VOLUME = 1.0
+
+DEFAULT_SECRET_VALUE = 0
+DEFAULT_MODERATOR = False
+
+DEFAULT_SHOW_SONG_MARKERS = True
+DEFAULT_SHOW_PROGRESS_BAR = True
+
+DEFAULT_CLICKED_ICONS = True
+DEFAULT_CLICKED_EDITOR = True
+DEFAULT_CLICKED_PRACTICE = True
+
+DEFAULT_SHOWN_EDITOR_GUIDE = True
+DEFAULT_SHOWN_LOW_DETAIL = True
+
+DEFAULT_RATED_GAME = False
+
+DEFAULT_BOOTUPS = 0
+
+VOLUME = snake_to_camel("bg_volume")
+SFX_VOLUME = snake_to_camel("sfx_volume")
+
+UUID_LITERAL = snake_to_camel_with_abbreviations("player_udid", unary_tuple("UDID"))  # funny, huh?
+
+PLAYER_NAME = snake_to_camel("player_name")
+USER_ID = snake_to_camel_with_abbreviations("player_user_id")
+
+CUBE_ID = snake_to_camel("player_frame")
+SHIP_ID = snake_to_camel("player_ship")
+BALL_ID = snake_to_camel("player_ball")
+UFO_ID = snake_to_camel("player_bird")
+WAVE_ID = snake_to_camel("player_dart")
+ROBOT_ID = snake_to_camel("player_robot")
+SPIDER_ID = snake_to_camel("player_spider")
+COLOR_1_ID = snake_to_camel("player_color")
+COLOR_2_ID = snake_to_camel("player_color_2")
+
+TRAIL_ID = snake_to_camel("player_streak")
+
+EXPLOSION_ID = snake_to_camel("player_death_effect")
+
+ICON_TYPE = snake_to_camel("player_icon_type")
+
+GLOW = snake_to_camel("player_glow")
+
+SECRET_VALUE = snake_to_camel("secret_number")
+
+MODERATOR = snake_to_camel_with_abbreviations("has_rp", unary_tuple("RP"))
+
+VALUES = snake_to_camel("value_keeper")
+
+UNLOCK_VALUES = snake_to_camel("unlock_value_keeper")
+
+CUSTOM_OBJECTS = snake_to_camel("custom_object_dict")
+
+ACHIEVEMENTS = snake_to_camel("reported_achievements")
+
+SHOW_SONG_MARKERS = snake_to_camel("show_song_markers")
+SHOW_PROGRESS_BAR = snake_to_camel("show_progress_bar")
+
+CLICKED_ICONS = snake_to_camel("clicked_garage")
+CLICKED_EDITOR = snake_to_camel("clicked_editor")
+CLICKED_PRACTICE = snake_to_camel("clicked_practice")
+
+SHOWN_EDITOR_GUIDE = snake_to_camel("showed_editor_guide")
+SHOWN_LOW_DETAIL = snake_to_camel("show_low_detail_dialog")
+
+BOOTUPS = snake_to_camel("bootups")
+
+RATED_GAME = snake_to_camel("has_rated_game")
+
+BINARY_VERSION = snake_to_camel("binary_version")
+
+RESOLUTION = snake_to_camel("resolution")
+
+QUALITY = snake_to_camel("tex_quality")
+
+NAME = "GJA_001"
+PASSWORD = "GJA_002"
+ACCOUNT_ID = "GJA_003"
+SESSION_ID = "GJA_004"
 
 CREATED_LEVELS = "LLM_01"
-BINARY_VERSION = "LLM_02"
+BINARY_VERSION_LEVELS = "LLM_02"
 
 IS_ARRAY = snake_to_camel("_is_arr")
 
@@ -1706,33 +1793,37 @@ D = TypeVar("D", bound="Database")
 
 @define()
 class Database(Binary):
-    volume: float = field(default=1.0)
-    sfx_volume: float = field(default=1.0)
+    volume: float = field(default=DEFAULT_VOLUME)
+    sfx_volume: float = field(default=DEFAULT_SFX_VOLUME)
 
-    udid: str = field(default=EMPTY)
-    name: str = field(default=EMPTY)
+    uuid: UUID = field(factory=generate_uuid)
+
+    player_name: str = field(default=UNKNOWN)
+
+    name: str = field(default=UNKNOWN)
     id: int = field(default=DEFAULT_ID)
     account_id: int = field(default=DEFAULT_ID)
     password: str = field(default=EMPTY)
     session_id: int = field(default=DEFAULT_ID)
 
-    cube_id: int = field(default=DEFAULT_ID)
-    ship_id: int = field(default=DEFAULT_ID)
-    ball_id: int = field(default=DEFAULT_ID)
-    ufo_id: int = field(default=DEFAULT_ID)
-    wave_id: int = field(default=DEFAULT_ID)
-    robot_id: int = field(default=DEFAULT_ID)
-    spider_id: int = field(default=DEFAULT_ID)
-    color_1_id: int = field(default=DEFAULT_ID)
-    color_2_id: int = field(default=DEFAULT_ID)
-    trail_id: int = field(default=DEFAULT_ID)
-    explosion_id: int = field(default=DEFAULT_ID)
+    cube_id: int = field(default=DEFAULT_ICON_ID)
+    ship_id: int = field(default=DEFAULT_ICON_ID)
+    ball_id: int = field(default=DEFAULT_ICON_ID)
+    ufo_id: int = field(default=DEFAULT_ICON_ID)
+    wave_id: int = field(default=DEFAULT_ICON_ID)
+    robot_id: int = field(default=DEFAULT_ICON_ID)
+    spider_id: int = field(default=DEFAULT_ICON_ID)
+    # swing_copter_id: int = field(default=DEFAULT_ICON_ID)
+    color_1_id: int = field(default=DEFAULT_COLOR_1_ID)
+    color_2_id: int = field(default=DEFAULT_COLOR_2_ID)
+    trail_id: int = field(default=DEFAULT_ICON_ID)
+    explosion_id: int = field(default=DEFAULT_ICON_ID)
 
     icon_type: IconType = field(default=IconType.DEFAULT)
 
-    secret_value: int = field(default=0)
+    secret_value: int = field(default=DEFAULT_SECRET_VALUE)
 
-    moderator: bool = field(default=False)
+    moderator: bool = field(default=DEFAULT_MODERATOR)
 
     values: Values = field(factory=Values)
     unlock_values: UnlockValues = field(factory=UnlockValues)
@@ -1740,19 +1831,23 @@ class Database(Binary):
 
     statistics: Statistics = field(factory=Statistics)
 
-    show_song_markers: bool = field(default=True)
-    show_progress_bar: bool = field(default=True)
+    show_song_markers: bool = field(default=DEFAULT_SHOW_SONG_MARKERS)
+    show_progress_bar: bool = field(default=DEFAULT_SHOW_PROGRESS_BAR)
 
-    clicked_icons: bool = field(default=True)
-    clicked_editor: bool = field(default=True)
-    clicked_practice: bool = field(default=True)
+    clicked_icons: bool = field(default=DEFAULT_CLICKED_ICONS)
+    clicked_editor: bool = field(default=DEFAULT_CLICKED_EDITOR)
+    clicked_practice: bool = field(default=DEFAULT_CLICKED_PRACTICE)
 
-    shown_editor_guide: bool = field(default=True)
-    shown_low_detail: bool = field(default=True)
+    shown_editor_guide: bool = field(default=DEFAULT_SHOWN_EDITOR_GUIDE)
+    shown_low_detail: bool = field(default=DEFAULT_SHOWN_LOW_DETAIL)
 
-    bootups: int = field(default=0)
+    bootups: int = field(default=DEFAULT_BOOTUPS)
 
-    rated_game: bool = field(default=False)
+    rated_game: bool = field(default=DEFAULT_RATED_GAME)
+
+    resolution: int = field(default=DEFAULT_RESOLUTION)
+
+    quality: Quality = field(default=Quality.DEFAULT)
 
     official_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
     saved_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
@@ -1760,8 +1855,8 @@ class Database(Binary):
     last_played: OrderedSet[int] = field(factory=ordered_set)
     filters: Filters = field(factory=Filters)
     daily_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
-    daily_id: int = field(default=0)
-    weekly_id: int = field(default=0)
+    daily_id: int = field(default=DEFAULT_ID)
+    weekly_id: int = field(default=DEFAULT_ID)
     liked: Dict[int, bool] = field(factory=dict)
     rated: Dict[int, int] = field(factory=dict)
     reported: OrderedSet[int] = field(factory=ordered_set)
@@ -1783,12 +1878,56 @@ class Database(Binary):
         parser = PARSER
 
         main_data = parser.load(main)
+
+        volume = main_data.get(VOLUME, DEFAULT_VOLUME)
+        sfx_volume = main_data.get(SFX_VOLUME, DEFAULT_VOLUME)
+
+        uuid_option = main_data.get(UUID_LITERAL)
+
+        if uuid_option is None:
+            uuid = generate_uuid()
+
+        else:
+            uuid = UUID(uuid_option)
+
+        player_name = main_data.get(PLAYER_NAME, UNKNOWN)
+
+        id = main_data.get(USER_ID, DEFAULT_ID)
+
+        cube_id = main_data.get(CUBE_ID, DEFAULT_ICON_ID)
+        ship_id = main_data.get(SHIP_ID, DEFAULT_ICON_ID)
+        ball_id = main_data.get(BALL_ID, DEFAULT_ICON_ID)
+        ufo_id = main_data.get(UFO_ID, DEFAULT_ICON_ID)
+        wave_id = main_data.get(WAVE_ID, DEFAULT_ICON_ID)
+        robot_id = main_data.get(ROBOT_ID, DEFAULT_ICON_ID)
+        spider_id = main_data.get(SPIDER_ID, DEFAULT_ICON_ID)
+        # swing_copter_id = main_data.get(SWING_COPTER_ID, DEFAULT_ICON_ID)
+
+        color_1_id = main_data.get(COLOR_1_ID, DEFAULT_COLOR_1_ID)
+        color_2_id = main_data.get(COLOR_2_ID, DEFAULT_COLOR_2_ID)
+
+        trail_id = main_data.get(TRAIL_ID, DEFAULT_ICON_ID)
+
+        explosion_id = main_data.get(EXPLOSION_ID, DEFAULT_ICON_ID)
+
+        name = main_data.get(NAME, UNKNOWN)
+
+        password = main_data.get(PASSWORD, EMPTY)
+
+        account_id = main_data.get(ACCOUNT_ID, DEFAULT_ID)
+
+        session_id = main_data.get(SESSION_ID, DEFAULT_ID)
+
+        import json
+        with open("main.json", "w") as file:
+            json.dump(main_data, file, indent=2)
+
         levels_data = parser.load(levels)
 
         # TODO: finish here
 
-        created_levels_data = levels_data[CREATED_LEVELS]
-        binary_version_data = levels_data[BINARY_VERSION]
+        created_levels_data = levels_data.get(CREATED_LEVELS, {})
+        binary_version_data = levels_data.get(BINARY_VERSION_LEVELS, CURRENT_BINARY_VERSION)
 
         binary_version = Version.from_value(binary_version_data)
 
@@ -1799,12 +1938,36 @@ class Database(Binary):
             .ordered_set()
         )
 
-        return cls(created_levels=created_levels, binary_version=binary_version)
+        return cls(
+            volume=volume,
+            sfx_volume=sfx_volume,
+            uuid=uuid,
+            player_name=player_name,
+            id=id,
+            name=name,
+            password=password,
+            account_id=account_id,
+            session_id=session_id,
+            cube_id=cube_id,
+            ship_id=ship_id,
+            ball_id=ball_id,
+            ufo_id=ufo_id,
+            wave_id=wave_id,
+            robot_id=robot_id,
+            spider_id=spider_id,
+            # swing_copter_id=swing_copter_id,
+            color_1_id=color_1_id,
+            color_2_id=color_2_id,
+            trail_id=trail_id,
+            explosion_id=explosion_id,
+            created_levels=created_levels,
+            binary_version=binary_version,
+        )
 
     def dump_main(self) -> bytes:
         parser = PARSER
 
-        main_data = {}  # type: ignore  # TODO: finish here
+        main_data = {VOLUME: self.volume, SFX_VOLUME: self.sfx_volume, UUID: self.uuid, PLAYER_NAME: self.player_name}
 
         return parser.dump(main_data)
 
@@ -1864,9 +2027,13 @@ class Database(Binary):
         volume = reader.read_f32(order)
         sfx_volume = reader.read_f32(order)
 
-        udid_length = reader.read_u8(order)
+        uuid_length = reader.read_u8(order)
 
-        udid = reader.read(udid_length).decode(encoding, errors)
+        uuid = UUID(reader.read(uuid_length).decode(encoding, errors))
+
+        player_name_length = reader.read_u8(order)
+
+        player_name = reader.read(player_name_length).decode(encoding, errors)
 
         name_length = reader.read_u8(order)
 
@@ -1898,7 +2065,7 @@ class Database(Binary):
 
         secret_value = reader.read_u32(order)
 
-        value = reader.read_u16(order)
+        value = reader.read_u8(order)
 
         show_song_markers = value & show_song_markers_bit == show_song_markers_bit
         show_progress_bar = value & show_progress_bar_bit == show_progress_bar_bit
@@ -1908,9 +2075,18 @@ class Database(Binary):
         shown_editor_guide = value & shown_editor_guide_bit == shown_editor_guide_bit
         shown_low_detail = value & shown_low_detail_bit == shown_low_detail_bit
         rated_game = value & rated_game_bit == rated_game_bit
+
+        value = reader.read_u8(order)
+
         moderator = value & moderator_bit == moderator_bit
 
+        quality_value = (value >> QUALITY_SHIFT) & QUALITY_MASK
+
+        quality = Quality(quality_value)
+
         bootups = reader.read_u32(order)
+
+        resolution = reader.read_i8(order)
 
         values = Values.from_binary(binary, order, version)
         unlock_values = UnlockValues.from_binary(binary, order, version)
@@ -2027,7 +2203,8 @@ class Database(Binary):
         return cls(
             volume=volume,
             sfx_volume=sfx_volume,
-            udid=udid,
+            uuid=uuid,
+            player_name=player_name,
             name=name,
             id=id,
             account_id=account_id,
@@ -2056,6 +2233,8 @@ class Database(Binary):
             shown_low_detail=shown_low_detail,
             rated_game=rated_game,
             bootups=bootups,
+            resolution=resolution,
+            quality=quality,
             values=values,
             unlock_values=unlock_values,
             custom_objects=custom_objects,
@@ -2095,7 +2274,13 @@ class Database(Binary):
         writer.write_f32(self.volume, order)
         writer.write_f32(self.sfx_volume, order)
 
-        data = self.udid.encode(encoding, errors)
+        data = str(self.uuid).encode(encoding, errors)
+
+        writer.write_u8(len(data), order)
+
+        writer.write(data)
+
+        data = self.player_name.encode(encoding, errors)
 
         writer.write_u8(len(data), order)
 
@@ -2160,12 +2345,20 @@ class Database(Binary):
         if self.has_rated_game():
             value |= RATED_GAME_BIT
 
+        writer.write_u8(value, order)
+
+        value = 0
+
         if self.is_moderator():
             value |= MODERATOR_BIT
 
-        writer.write_u16(value, order)
+        value |= (self.quality.value << QUALITY_SHIFT)
+
+        writer.write_u8(value, order)
 
         writer.write_u32(self.bootups, order)
+
+        writer.write_i8(self.resolution, order)
 
         self.values.to_binary(binary, order, version)
         self.unlock_values.to_binary(binary, order, version)
