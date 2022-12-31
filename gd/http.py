@@ -21,7 +21,8 @@ from typing import (
     Union,
     overload,
 )
-from uuid import UUID, uuid4 as generate_uuid
+from uuid import UUID
+from uuid import uuid4 as generate_uuid
 
 from aiohttp import BasicAuth, ClientError, ClientSession, ClientTimeout
 from attrs import define, evolve, field, frozen
@@ -53,7 +54,7 @@ from gd.constants import (
     DEFAULT_VERSION,
     EMPTY,
     SLASH,
-    TIMELY_ID_ADD,
+    WEEKLY_ID_ADD,
     UNNAMED,
     WRITE_BINARY,
 )
@@ -262,7 +263,9 @@ class Payload(Namespace):
         payload.update(parameters)
 
         if to_camel:
-            payload = {snake_to_camel_with_abbreviations(name): value for name, value in payload.items()}
+            payload = {
+                snake_to_camel_with_abbreviations(name): value for name, value in payload.items()
+            }
 
         super().__init__(payload)
 
@@ -278,7 +281,9 @@ class Payload(Namespace):
         payload.update(parameters)
 
         if to_camel:
-            payload = {snake_to_camel_with_abbreviations(name): value for name, value in payload.items()}
+            payload = {
+                snake_to_camel_with_abbreviations(name): value for name, value in payload.items()
+            }
 
         super().update(payload)
 
@@ -1314,7 +1319,7 @@ class HTTPClient:
                 filters.to_robtop_filters(), str=query, page=page, total=total, to_camel=True
             )
 
-            if filters.strategy is SearchStrategy.BY_USER:
+            if filters.strategy.is_by_user():
                 if user_id is None:
                     if (
                         client_account_id is None
@@ -1333,7 +1338,7 @@ class HTTPClient:
                 else:
                     payload.update(str=user_id)
 
-            elif filters.strategy is SearchStrategy.FRIENDS:
+            elif filters.strategy.is_friends():
                 if client_account_id is None or encoded_password is None:
                     raise MissingAccess(FRIENDS_STRATEGY_REQUIRES_LOGIN)
 
@@ -1392,7 +1397,14 @@ class HTTPClient:
             udid = self.generate_udid()
             uuid = self.generate_uuid()
 
-            values = (str(level_id), str(increment), random_string, str(account_id), udid, str(uuid))
+            values = (
+                str(level_id),
+                str(increment),
+                random_string,
+                str(account_id),
+                udid,
+                str(uuid),
+            )
 
             check = generate_check(values, Key.LEVEL, Salt.LEVEL)
 
@@ -1724,8 +1736,8 @@ class HTTPClient:
 
         seed = generate_leaderboard_seed(jumps, record, seconds, played)
 
-        if timely_type is TimelyType.WEEKLY:
-            timely_id += TIMELY_ID_ADD
+        if timely_type.is_weekly():
+            timely_id += WEEKLY_ID_ADD
 
         random_string = generate_random_string()
 
@@ -1921,7 +1933,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        if type is MessageType.OUTGOING:
+        if type.is_outgoing():
             payload.update(is_sender=1, to_camel=True)
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)
@@ -1951,7 +1963,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        if type is MessageType.OUTGOING:
+        if type.is_outgoing():
             payload.update(is_sender=1, to_camel=True)
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)
@@ -1980,7 +1992,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        if type is MessageType.OUTGOING:
+        if type.is_outgoing():
             payload.update(get_sent=1, to_camel=True)
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)
@@ -2044,7 +2056,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        if type is FriendRequestType.OUTGOING:
+        if type.is_outgoing():
             payload.update(is_sender=1, to_camel=True)
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)
@@ -2076,7 +2088,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        if type is FriendRequestType.OUTGOING:
+        if type.is_outgoing():
             payload.update(is_sender=1, to_camel=True)
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)
@@ -2134,7 +2146,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        if type is FriendRequestType.OUTGOING:
+        if type.is_outgoing():
             payload.update(get_sent=1, to_camel=True)
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)

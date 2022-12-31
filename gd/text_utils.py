@@ -5,7 +5,15 @@ from gd.constants import SPACE
 from gd.iter_utils import unary_tuple
 from gd.string_constants import UNDER
 
-__all__ = ("camel_to_snake", "snake_to_camel", "snake_to_camel_with_abbreviations", "is_upper", "is_lower", "case_fold", "create_title")
+__all__ = (
+    "camel_to_snake",
+    "snake_to_camel",
+    "snake_to_camel_with_abbreviations",
+    "is_upper",
+    "is_lower",
+    "case_fold",
+    "create_title",
+)
 
 is_upper = str.isupper
 is_lower = str.islower
@@ -65,7 +73,9 @@ def snake_to_camel(string: str) -> str:
 ABBREVIATIONS = unary_tuple("ID")
 
 
-def snake_to_camel_with_abbreviations(string: str, abbreviations: Iterable[str] = ABBREVIATIONS) -> str:
+def snake_to_camel_with_abbreviations(
+    string: str, abbreviations: Iterable[str] = ABBREVIATIONS
+) -> str:
     """Converts `string` from `snake_case` to `camelCase` with abbreviations.
 
     Arguments:

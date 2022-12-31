@@ -1,24 +1,54 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, Dict, List, Type, TypeVar
-from uuid import UUID, uuid4 as generate_uuid
+from typing import Any, Dict, List, Tuple, Type, TypeVar
+from uuid import UUID
+from uuid import uuid4 as generate_uuid
 
 from attrs import define, field
 from iters import iter
 from iters.ordered_set import OrderedSet, ordered_set
+from iters.utils import unpack_binary
 from typing_extensions import Literal, TypeGuard
 
 from gd.api.folder import Folder
 from gd.api.level import LevelAPI
+from gd.api.like import Like
 from gd.api.objects import Object, object_from_binary, object_to_binary
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
-from gd.constants import UNKNOWN, DEFAULT_ICON_ID, DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID, DEFAULT_RESOLUTION, DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, EMPTY
-from gd.enums import Quality, ByteOrder, Filter, IconType, LevelLeaderboardStrategy
+from gd.constants import (
+    DEFAULT_ATTEMPTS,
+    DEFAULT_COLOR_1_ID,
+    DEFAULT_COLOR_2_ID,
+    DEFAULT_DEMONS,
+    DEFAULT_DESTROYED,
+    DEFAULT_DIAMONDS,
+    DEFAULT_ENCODING,
+    DEFAULT_ERRORS,
+    DEFAULT_GLOW,
+    DEFAULT_ICON_ID,
+    DEFAULT_ID,
+    DEFAULT_JUMPS,
+    DEFAULT_LEVELS,
+    DEFAULT_LIKED,
+    DEFAULT_MAP_PACKS,
+    DEFAULT_ORBS,
+    DEFAULT_RATED,
+    DEFAULT_RESOLUTION,
+    DEFAULT_SECRET_COINS,
+    DEFAULT_SHARDS,
+    DEFAULT_STARS,
+    DEFAULT_USER_COINS,
+    EMPTY,
+    WEEKLY_ID_ADD,
+    UNKNOWN,
+)
+from gd.enums import ByteOrder, Filter, IconType, LevelLeaderboardStrategy, Quality
 from gd.filters import Filters
 from gd.iter_utils import unary_tuple
 from gd.song import Song
+from gd.string_utils import password_repr
 from gd.text_utils import snake_to_camel, snake_to_camel_with_abbreviations
 from gd.versions import CURRENT_BINARY_VERSION, Version
 from gd.xml import PARSER
@@ -29,9 +59,9 @@ OFFICIAL = "n"
 NORMAL = "c"
 NORMAL_DEMONS = "demon"
 TIMELY = "d"
-TIMELY_DEMONS = "ddemon"
+TIMELY_DEMONS = TIMELY + NORMAL_DEMONS
 GAUNTLETS = "g"
-GAUNTLETS_DEMONS = "gdemon"
+GAUNTLETS_DEMONS = GAUNTLETS + NORMAL_DEMONS
 MAP_PACKS = "pack"
 
 PREFIX = "{}_"
@@ -173,6 +203,90 @@ FILTER_ID_MASK = 0b00111111_11111111
 FILTER_SHIFT = FILTER_ID_MASK.bit_length()
 
 
+DEFAULT_FOLLOW_PLAYER = True
+DEFAULT_PLAY_MUSIC = True
+DEFAULT_SWIPE = False
+DEFAULT_FREE_MOVE = False
+DEFAULT_ROTATE_TOGGLED = False
+DEFAULT_SNAP_TOGGLED = False
+DEFAULT_IGNORE_DAMAGE = True
+DEFAULT_FLIP_TWO_PLAYER_CONTROLS = False
+DEFAULT_ALWAYS_LIMIT_CONTROLS = False
+DEFAULT_SHOWN_COMMENT_RULES = True
+DEFAULT_INCREASE_MAX_HISTORY = True
+DEFAULT_DISABLE_EXPLOSION_SHAKE = False
+DEFAULT_FLIP_PAUSE_BUTTON = False
+DEFAULT_SHOWN_SONG_TERMS = False
+DEFAULT_NO_SONG_LIMIT = True
+DEFAULT_IN_MEMORY_SONGS = True
+DEFAULT_HIGHER_AUDIO_QUALITY = True
+DEFAULT_SMOOTH_FIX = False
+DEFAULT_SHOW_CURSOR_IN_GAME = False
+DEFAULT_WINDOWED = False
+DEFAULT_AUTO_RETRY = True
+DEFAULT_AUTO_CHECKPOINTS = True
+DEFAULT_DISABLE_ANALOG_STICK = False
+DEFAULT_SHOWN_OPTIONS = True
+DEFAULT_VSYNC = True
+DEFAULT_CALL_GL_FINISH = False
+DEFAULT_FORCE_TIMER_ENABLED = False
+DEFAULT_CHANGE_SONG_PATH = False
+DEFAULT_GAME_CENTER_ENABLED = False
+DEFAULT_PREVIEW_MODE = True
+DEFAULT_SHOW_GROUND = False
+DEFAULT_SHOW_GRID = True
+DEFAULT_GRID_ON_TOP = False
+DEFAULT_SHOW_PERCENTAGE = True
+DEFAULT_SHOW_OBJECT_INFO = True
+DEFAULT_INCREASE_MAX_LEVELS = True
+DEFAULT_SHOW_EFFECT_LINES = True
+DEFAULT_SHOW_TRIGGER_BOXES = True
+DEFAULT_DEBUG_DRAW = False
+DEFAULT_HIDE_UI_ON_TEST = False
+DEFAULT_SHOWN_PROFILE_INFO = True
+DEFAULT_VIEWED_SELF_PROFILE = True
+DEFAULT_SHOWN_NEWGROUNDS_MESSAGE = True
+DEFAULT_FAST_PRACTICE_RESET = False
+DEFAULT_FREE_GAMES = False
+DEFAULT_CHECK_SERVER_ONLINE = True
+DEFAULT_HOLD_TO_SWIPE = False
+DEFAULT_SHOW_DURATION_LINES = False
+DEFAULT_SWIPE_CYCLE = False
+DEFAULT_DEFAULT_MINI_ICON = False
+DEFAULT_SWITCH_SPIDER_TELEPORT_COLOR = False
+DEFAULT_SWITCH_DASH_FIRE_COLOR = False
+DEFAULT_SHOWN_UNVERIFIED_COINS_MESSAGE = True
+DEFAULT_ENABLE_MOVE_OPTIMIZATION = False
+DEFAULT_HIGH_CAPACITY = True
+DEFAULT_QUICK_CHECKPOINTS = False
+DEFAULT_SHOW_LEVEL_DESCRIPTION = True
+DEFAULT_SHOWN_UNLISTED_LEVEL_MESSAGE = True
+DEFAULT_DISABLE_GRAVITY_EFFECT = False
+DEFAULT_NEW_COMPLETED_FILTER = False
+DEFAULT_SHOW_RESTART_BUTTON = True
+DEFAULT_DISABLE_LEVEL_COMMENTS = False
+DEFAULT_DISABLE_USER_COMMENTS = False
+DEFAULT_FEATURED_LEVELS_ONLY = False
+DEFAULT_HIDE_BACKGROUND = False
+DEFAULT_HIDE_GRID_ON_PLAY = True
+DEFAULT_DISABLE_SHAKE = False
+DEFAULT_DISABLE_HIGH_DETAIL_ALERT = True
+DEFAULT_DISABLE_SONG_ALERT = True
+DEFAULT_MANUAL_ORDER = False
+DEFAULT_SMALL_COMMENTS = False
+DEFAULT_EXTENDED_INFO = True
+DEFAULT_AUTO_LOAD_COMMENTS = True
+DEFAULT_INCREASE_LOCAL_LEVELS_PER_PAGE = True
+DEFAULT_MORE_COMMENTS = False
+DEFAULT_JUST_DO_NOT = False
+DEFAULT_SWITCH_WAVE_TRAIL_COLOR = False
+DEFAULT_ENABLE_LINK_CONTROLS = False
+DEFAULT_SHOW_RECORD = True
+DEFAULT_PRACTICE_DEATH_EFFECT = False
+DEFAULT_FORCE_SMOOTH_FIX = False
+DEFAULT_SMOOTH_FIX_IN_EDITOR = False
+
+
 V = TypeVar("V", bound="Variables")
 
 
@@ -180,95 +294,95 @@ V = TypeVar("V", bound="Variables")
 class Variables(Binary):
     """Represents game variables."""
 
-    follow_player: bool = True  # editor
-    play_music: bool = True  # editor
-    swipe: bool = False  # editor
-    free_move: bool = False  # editor
+    follow_player: bool = DEFAULT_FOLLOW_PLAYER  # editor
+    play_music: bool = DEFAULT_PLAY_MUSIC  # editor
+    swipe: bool = DEFAULT_SWIPE  # editor
+    free_move: bool = DEFAULT_FREE_MOVE  # editor
     filter: Filter = Filter.DEFAULT
     filter_id: int = DEFAULT_ID
-    rotate_toggled: bool = False  # editor
-    snap_toggled: bool = False  # editor
-    ignore_damage: bool = True  # editor
-    flip_two_player_controls: bool = False  # normal
-    always_limit_controls: bool = False  # normal
-    shown_comment_rules: bool = True  # normal
-    increase_max_history: bool = True  # normal
-    disable_explosion_shake: bool = False  # normal
-    flip_pause_button: bool = False  # normal
-    shown_song_terms: bool = False  # normal
-    no_song_limit: bool = True  # normal
-    in_memory_songs: bool = True  # normal
-    higher_audio_quality: bool = True  # normal
-    smooth_fix: bool = False  # normal
-    show_cursor_in_game: bool = False  # normal
-    windowed: bool = False  # normal
-    auto_retry: bool = True  # normal
-    auto_checkpoints: bool = True  # normal
-    disable_analog_stick: bool = False  # normal
-    shown_options: bool = True  # normal
-    vsync: bool = True  # normal
-    call_gl_finish: bool = False  # normal
-    force_timer_enabled: bool = False  # normal
-    change_song_path: bool = False  # normal
-    game_center_enabled: bool = False  # normal
-    preview_mode: bool = True  # editor
-    show_ground: bool = False  # editor
-    show_grid: bool = True  # editor
-    grid_on_top: bool = False  # editor
-    show_percentage: bool = True  # normal
-    show_object_info: bool = True  # editor
-    increase_max_levels: bool = True  # normal
-    show_effect_lines: bool = True  # editor
-    show_trigger_boxes: bool = True  # editor
-    debug_draw: bool = False  # editor
-    hide_ui_on_test: bool = False  # editor
-    shown_profile_info: bool = True  # normal
-    viewed_self_profile: bool = True  # normal
+    rotate_toggled: bool = DEFAULT_ROTATE_TOGGLED  # editor
+    snap_toggled: bool = DEFAULT_SNAP_TOGGLED  # editor
+    ignore_damage: bool = DEFAULT_IGNORE_DAMAGE  # editor
+    flip_two_player_controls: bool = DEFAULT_FLIP_TWO_PLAYER_CONTROLS  # normal
+    always_limit_controls: bool = DEFAULT_ALWAYS_LIMIT_CONTROLS  # normal
+    shown_comment_rules: bool = DEFAULT_SHOWN_COMMENT_RULES  # normal
+    increase_max_history: bool = DEFAULT_INCREASE_MAX_HISTORY  # normal
+    disable_explosion_shake: bool = DEFAULT_DISABLE_EXPLOSION_SHAKE  # normal
+    flip_pause_button: bool = DEFAULT_FLIP_PAUSE_BUTTON  # normal
+    shown_song_terms: bool = DEFAULT_SHOWN_SONG_TERMS  # normal
+    no_song_limit: bool = DEFAULT_NO_SONG_LIMIT  # normal
+    in_memory_songs: bool = DEFAULT_IN_MEMORY_SONGS  # normal
+    higher_audio_quality: bool = DEFAULT_HIGHER_AUDIO_QUALITY  # normal
+    smooth_fix: bool = DEFAULT_SMOOTH_FIX  # normal
+    show_cursor_in_game: bool = DEFAULT_SHOW_CURSOR_IN_GAME  # normal
+    windowed: bool = DEFAULT_WINDOWED  # normal
+    auto_retry: bool = DEFAULT_AUTO_RETRY  # normal
+    auto_checkpoints: bool = DEFAULT_AUTO_CHECKPOINTS  # normal
+    disable_analog_stick: bool = DEFAULT_DISABLE_ANALOG_STICK  # normal
+    shown_options: bool = DEFAULT_SHOWN_OPTIONS  # normal
+    vsync: bool = DEFAULT_VSYNC  # normal
+    call_gl_finish: bool = DEFAULT_CALL_GL_FINISH  # normal
+    force_timer_enabled: bool = DEFAULT_FORCE_TIMER_ENABLED  # normal
+    change_song_path: bool = DEFAULT_CHANGE_SONG_PATH  # normal
+    game_center_enabled: bool = DEFAULT_GAME_CENTER_ENABLED  # normal
+    preview_mode: bool = DEFAULT_PREVIEW_MODE  # editor
+    show_ground: bool = DEFAULT_SHOW_GROUND  # editor
+    show_grid: bool = DEFAULT_SHOW_GRID  # editor
+    grid_on_top: bool = DEFAULT_GRID_ON_TOP  # editor
+    show_percentage: bool = DEFAULT_SHOW_PERCENTAGE  # normal
+    show_object_info: bool = DEFAULT_SHOW_OBJECT_INFO  # editor
+    increase_max_levels: bool = DEFAULT_INCREASE_MAX_LEVELS  # normal
+    show_effect_lines: bool = DEFAULT_SHOW_EFFECT_LINES  # editor
+    show_trigger_boxes: bool = DEFAULT_SHOW_TRIGGER_BOXES  # editor
+    debug_draw: bool = DEFAULT_DEBUG_DRAW  # editor
+    hide_ui_on_test: bool = DEFAULT_HIDE_UI_ON_TEST  # editor
+    shown_profile_info: bool = DEFAULT_SHOWN_PROFILE_INFO  # normal
+    viewed_self_profile: bool = DEFAULT_VIEWED_SELF_PROFILE  # normal
     buttons_per_row: int = DEFAULT_BUTTONS_PER_ROW  # editor
     button_rows: int = DEFAULT_BUTTON_ROWS  # editor
-    shown_newgrounds_message: bool = True  # normal
-    fast_practice_reset: bool = False  # normal
-    free_games: bool = False  # normal
-    check_server_online: bool = True  # normal
-    hold_to_swipe: bool = False  # editor
-    show_duration_lines: bool = False  # editor
-    swipe_cycle: bool = False  # editor
-    default_mini_icon: bool = False  # normal
-    switch_spider_teleport_color: bool = False  # normal
-    switch_dash_fire_color: bool = False  # normal
-    shown_unverified_coins_message: bool = True  # normal
-    enable_move_optimization: bool = False  # normal
-    high_capacity: bool = True  # normal
-    quick_checkpoints: bool = False  # normal
-    show_level_description: bool = True  # normal
-    shown_unlisted_level_message: bool = True  # normal
-    disable_gravity_effect: bool = False  # normal
-    new_completed_filter: bool = False  # normal
-    show_restart_button: bool = True  # normal
-    disable_level_comments: bool = False  # normal
-    disable_user_comments: bool = False  # normal
-    featured_levels_only: bool = False  # normal
-    hide_background: bool = False  # editor
-    hide_grid_on_play: bool = True  # editor
-    disable_shake: bool = False  # normal
-    disable_high_detail_alert: bool = True  # normal
-    disable_song_alert: bool = True  # normal
-    manual_order: bool = False  # normal
-    small_comments: bool = False  # normal
-    extended_info: bool = True  # normal
-    auto_load_comments: bool = True  # normal
+    shown_newgrounds_message: bool = DEFAULT_SHOWN_NEWGROUNDS_MESSAGE  # normal
+    fast_practice_reset: bool = DEFAULT_FAST_PRACTICE_RESET  # normal
+    free_games: bool = DEFAULT_FREE_GAMES  # normal
+    check_server_online: bool = DEFAULT_CHECK_SERVER_ONLINE  # normal
+    hold_to_swipe: bool = DEFAULT_HOLD_TO_SWIPE  # editor
+    show_duration_lines: bool = DEFAULT_SHOW_DURATION_LINES  # editor
+    swipe_cycle: bool = DEFAULT_SWIPE_CYCLE  # editor
+    default_mini_icon: bool = DEFAULT_DEFAULT_MINI_ICON  # normal
+    switch_spider_teleport_color: bool = DEFAULT_SWITCH_SPIDER_TELEPORT_COLOR  # normal
+    switch_dash_fire_color: bool = DEFAULT_SWITCH_DASH_FIRE_COLOR  # normal
+    shown_unverified_coins_message: bool = DEFAULT_SHOWN_UNVERIFIED_COINS_MESSAGE  # normal
+    enable_move_optimization: bool = DEFAULT_ENABLE_MOVE_OPTIMIZATION  # normal
+    high_capacity: bool = DEFAULT_HIGH_CAPACITY  # normal
+    quick_checkpoints: bool = DEFAULT_QUICK_CHECKPOINTS  # normal
+    show_level_description: bool = DEFAULT_SHOW_LEVEL_DESCRIPTION  # normal
+    shown_unlisted_level_message: bool = DEFAULT_SHOWN_UNLISTED_LEVEL_MESSAGE  # normal
+    disable_gravity_effect: bool = DEFAULT_DISABLE_GRAVITY_EFFECT  # normal
+    new_completed_filter: bool = DEFAULT_NEW_COMPLETED_FILTER  # normal
+    show_restart_button: bool = DEFAULT_SHOW_RESTART_BUTTON  # normal
+    disable_level_comments: bool = DEFAULT_DISABLE_LEVEL_COMMENTS  # normal
+    disable_user_comments: bool = DEFAULT_DISABLE_USER_COMMENTS  # normal
+    featured_levels_only: bool = DEFAULT_FEATURED_LEVELS_ONLY  # normal
+    hide_background: bool = DEFAULT_HIDE_BACKGROUND  # editor
+    hide_grid_on_play: bool = DEFAULT_HIDE_GRID_ON_PLAY  # editor
+    disable_shake: bool = DEFAULT_DISABLE_SHAKE  # normal
+    disable_high_detail_alert: bool = DEFAULT_DISABLE_HIGH_DETAIL_ALERT  # normal
+    disable_song_alert: bool = DEFAULT_DISABLE_SONG_ALERT  # normal
+    manual_order: bool = DEFAULT_MANUAL_ORDER  # normal
+    small_comments: bool = DEFAULT_SMALL_COMMENTS  # normal
+    extended_info: bool = DEFAULT_EXTENDED_INFO  # normal
+    auto_load_comments: bool = DEFAULT_AUTO_LOAD_COMMENTS  # normal
     created_levels_folder_id: int = DEFAULT_CREATED_LEVELS_FOLDER_ID
     saved_levels_folder_id: int = DEFAULT_SAVED_LEVELS_FOLDER_ID
-    increase_local_levels_per_page: bool = True  # normal
-    more_comments: bool = False  # normal
-    just_do_not: bool = False  # normal
-    switch_wave_trail_color: bool = False  # normal
-    enable_link_controls: bool = False  # editor
+    increase_local_levels_per_page: bool = DEFAULT_INCREASE_LOCAL_LEVELS_PER_PAGE  # normal
+    more_comments: bool = DEFAULT_MORE_COMMENTS  # normal
+    just_do_not: bool = DEFAULT_JUST_DO_NOT  # normal
+    switch_wave_trail_color: bool = DEFAULT_SWITCH_WAVE_TRAIL_COLOR  # normal
+    enable_link_controls: bool = DEFAULT_ENABLE_LINK_CONTROLS  # editor
     level_leaderboard_strategy: LevelLeaderboardStrategy = LevelLeaderboardStrategy.DEFAULT
-    show_record: bool = True  # normal
-    practice_death_effect: bool = False  # normal
-    force_smooth_fix: bool = False  # normal
-    smooth_fix_in_editor: bool = False  # editor
+    show_record: bool = DEFAULT_SHOW_RECORD  # normal
+    practice_death_effect: bool = DEFAULT_PRACTICE_DEATH_EFFECT  # normal
+    force_smooth_fix: bool = DEFAULT_FORCE_SMOOTH_FIX  # normal
+    smooth_fix_in_editor: bool = DEFAULT_SMOOTH_FIX_IN_EDITOR  # editor
 
     def is_follow_player(self) -> bool:
         return self.follow_player
@@ -1238,38 +1352,68 @@ TWITTER_CHEST_UNLOCKED_BIT = 0b10000000_00000000_00000000
 # TWITCH_CHEST_UNLOCKED_BIT = 0b10_00000000_00000000_00000000
 # DISCORD_CHEST_UNLOCKED_BIT = 0b100_00000000_00000000_00000000
 
+
+DEFAULT_THE_CHALLENGE_UNLOCKED = False
+DEFAULT_GUBFLUB_HINT_1 = False
+DEFAULT_GUBFLUB_HINT_2 = False
+DEFAULT_THE_CHALLENGE_COMPLETED = False
+DEFAULT_TREASURE_ROOM_UNLOCKED = False
+DEFAULT_CHAMBER_OF_TIME_UNLOCKED = False
+DEFAULT_CHAMBER_OF_TIME_DISCOVERED = False
+DEFAULT_MASTER_EMBLEM_SHOWN = False
+DEFAULT_GATE_KEEPER_DIALOG = False
+DEFAULT_SCRATCH_DIALOG = False
+DEFAULT_SECRET_SHOP_UNLOCKED = False
+DEFAULT_DEMON_GUARDIAN_DIALOG = False
+DEFAULT_DEMON_FREED = False
+DEFAULT_DEMON_KEY_1 = False
+DEFAULT_DEMON_KEY_2 = False
+DEFAULT_DEMON_KEY_3 = False
+DEFAULT_SHOP_KEEPER_DIALOG = False
+DEFAULT_WORLD_ONLINE_LEVELS = False
+DEFAULT_DEMON_DISCOVERED = False
+DEFAULT_COMMUNITY_SHOP_UNLOCKED = False
+DEFAULT_POTBOR_DIALOG = False
+DEFAULT_YOUTUBE_CHEST_UNLOCKED = False
+DEFAULT_FACEBOOK_CHEST_UNLOCKED = False
+DEFAULT_TWITTER_CHEST_UNLOCKED = False
+# DEFAULT_FIREBIRD_GATE_KEEPER = False
+# DEFAULT_TWITCH_CHEST_UNLOCKED = False
+# DEFAULT_DISCORD_CHEST_UNLOCKED = False
+
+
 UV = TypeVar("UV", bound="UnlockValues")
 
 
 @define()
 class UnlockValues(Binary):
-    the_challenge_unlocked: bool = False
-    gubflub_hint_1: bool = False
-    gubflub_hint_2: bool = False
-    the_challenge_completed: bool = False
-    treasure_room_unlocked: bool = False
-    chamber_of_time_unlocked: bool = False
-    chamber_of_time_discovered: bool = False
-    master_emblem_shown: bool = False
-    gate_keeper_dialog: bool = False
-    scratch_dialog: bool = False
-    secret_shop_unlocked: bool = False
-    demon_guardian_dialog: bool = False
-    demon_freed: bool = False
-    demon_key_1: bool = False
-    demon_key_2: bool = False
-    demon_key_3: bool = False
-    shop_keeper_dialog: bool = False
-    world_online_levels: bool = False
-    demon_discovered: bool = False
-    community_shop_unlocked: bool = False
-    potbor_dialog: bool = False
-    youtube_chest_unlocked: bool = False
-    facebook_chest_unlocked: bool = False
-    twitter_chest_unlocked: bool = False
-    # firebird_gate_keeper: bool = False
-    # twitch_chest_unlocked: bool = False
-    # discord_chest_unlocked: bool = False
+    the_challenge_unlocked: bool = DEFAULT_THE_CHALLENGE_UNLOCKED
+    gubflub_hint_1: bool = DEFAULT_GUBFLUB_HINT_1
+    gubflub_hint_2: bool = DEFAULT_GUBFLUB_HINT_2
+    the_challenge_completed: bool = DEFAULT_THE_CHALLENGE_COMPLETED
+    treasure_room_unlocked: bool = DEFAULT_TREASURE_ROOM_UNLOCKED
+    chamber_of_time_unlocked: bool = DEFAULT_CHAMBER_OF_TIME_UNLOCKED
+    chamber_of_time_discovered: bool = DEFAULT_CHAMBER_OF_TIME_DISCOVERED
+    master_emblem_shown: bool = DEFAULT_MASTER_EMBLEM_SHOWN
+    gate_keeper_dialog: bool = DEFAULT_GATE_KEEPER_DIALOG
+    scratch_dialog: bool = DEFAULT_SCRATCH_DIALOG
+    secret_shop_unlocked: bool = DEFAULT_SECRET_SHOP_UNLOCKED
+    demon_guardian_dialog: bool = DEFAULT_DEMON_GUARDIAN_DIALOG
+    demon_freed: bool = DEFAULT_DEMON_FREED
+    demon_key_1: bool = DEFAULT_DEMON_KEY_1
+    demon_key_2: bool = DEFAULT_DEMON_KEY_2
+    demon_key_3: bool = DEFAULT_DEMON_KEY_3
+    shop_keeper_dialog: bool = DEFAULT_SHOP_KEEPER_DIALOG
+    world_online_levels: bool = DEFAULT_WORLD_ONLINE_LEVELS
+    demon_discovered: bool = DEFAULT_DEMON_DISCOVERED
+    community_shop_unlocked: bool = DEFAULT_COMMUNITY_SHOP_UNLOCKED
+    potbor_dialog: bool = DEFAULT_POTBOR_DIALOG
+    youtube_chest_unlocked: bool = DEFAULT_YOUTUBE_CHEST_UNLOCKED
+    facebook_chest_unlocked: bool = DEFAULT_FACEBOOK_CHEST_UNLOCKED
+    twitter_chest_unlocked: bool = DEFAULT_TWITTER_CHEST_UNLOCKED
+    # firebird_gate_keeper: bool = DEFAULT_FIREBIRD_GATE_KEEPER
+    # twitch_chest_unlocked: bool = DEFAULT_TWITCH_CHEST_UNLOCKED
+    # discord_chest_unlocked: bool = DEFAULT_DISCORD_CHEST_UNLOCKED
 
     @classmethod
     def from_binary(
@@ -1549,28 +1693,28 @@ S = TypeVar("S", bound="Statistics")
 
 @define()
 class Statistics(Binary):
-    jumps: int = field(default=0)
-    attempts: int = field(default=0)
-    official_levels: int = field(default=0)
-    online_levels: int = field(default=0)
-    demons: int = field(default=0)
-    stars: int = field(default=0)
-    map_packs: int = field(default=0)
-    secret_coins: int = field(default=0)
-    destroyed: int = field(default=0)
-    liked: int = field(default=0)
-    rated: int = field(default=0)
-    user_coins: int = field(default=0)
-    diamonds: int = field(default=0)
-    orbs: int = field(default=0)
-    daily_levels: int = field(default=0)
-    fire_shards: int = field(default=0)
-    ice_shards: int = field(default=0)
-    poison_shards: int = field(default=0)
-    shadow_shards: int = field(default=0)
-    lava_shards: int = field(default=0)
-    bonus_shards: int = field(default=0)
-    total_orbs: int = field(default=0)
+    jumps: int = field(default=DEFAULT_JUMPS)
+    attempts: int = field(default=DEFAULT_ATTEMPTS)
+    official_levels: int = field(default=DEFAULT_LEVELS)
+    online_levels: int = field(default=DEFAULT_LEVELS)
+    demons: int = field(default=DEFAULT_DEMONS)
+    stars: int = field(default=DEFAULT_STARS)
+    map_packs: int = field(default=DEFAULT_MAP_PACKS)
+    secret_coins: int = field(default=DEFAULT_SECRET_COINS)
+    destroyed: int = field(default=DEFAULT_DESTROYED)
+    liked: int = field(default=DEFAULT_LIKED)
+    rated: int = field(default=DEFAULT_RATED)
+    user_coins: int = field(default=DEFAULT_USER_COINS)
+    diamonds: int = field(default=DEFAULT_DIAMONDS)
+    orbs: int = field(default=DEFAULT_ORBS)
+    daily_levels: int = field(default=DEFAULT_LEVELS)
+    fire_shards: int = field(default=DEFAULT_SHARDS)
+    ice_shards: int = field(default=DEFAULT_SHARDS)
+    poison_shards: int = field(default=DEFAULT_SHARDS)
+    shadow_shards: int = field(default=DEFAULT_SHARDS)
+    lava_shards: int = field(default=DEFAULT_SHARDS)
+    bonus_shards: int = field(default=DEFAULT_SHARDS)
+    total_orbs: int = field(default=DEFAULT_ORBS)
 
     official_coins: Dict[int, int] = field(factory=dict)
 
@@ -1684,12 +1828,9 @@ SHOWN_EDITOR_GUIDE_BIT = 0b00100000
 SHOWN_LOW_DETAIL_BIT = 0b01000000
 RATED_GAME_BIT = 0b10000000
 MODERATOR_BIT = 0b00000001
-QUALITY_MASK = 0b00000110
-QUALITY_SHIFT = MODERATOR_BIT.bit_length()
-
-
-LIKED_BIT = 0b10000000_00000000_00000000_00000000
-LIKED_MASK = 0b01111111_11111111_11111111_11111111
+GLOW_BIT = 0b00000010
+QUALITY_MASK = 0b00001100
+QUALITY_SHIFT = GLOW_BIT.bit_length()
 
 DEFAULT_VOLUME = 1.0
 DEFAULT_SFX_VOLUME = 1.0
@@ -1769,13 +1910,33 @@ RESOLUTION = snake_to_camel("resolution")
 
 QUALITY = snake_to_camel("tex_quality")
 
+ACHIVEMENTS = snake_to_camel("reported_achievements")
+
 NAME = "GJA_001"
 PASSWORD = "GJA_002"
 ACCOUNT_ID = "GJA_003"
 SESSION_ID = "GJA_004"
 
+LAST_PLAYED = "GLM_07"
+FILTERS = "GLM_08"  # TODO
+AVAILABLE_FILTERS = "GLM_09"  # TODO
+DAILY_LEVELS = "GLM_10"
+DAILY_ID = "GLM_11"
+LIKED = "GLM_12"
+RATED = "GLM_13"
+REPORTED = "GLM_14"
+DEMON_RATED = "GLM_15"
+GAUNTLET_LEVELS = "GLM_16"
+WEEKLY_ID = "GLM_17"
+SAVED_FOLDERS = "GLM_18"
+CREATED_FOLDERS = "GLM_19"
+
 CREATED_LEVELS = "LLM_01"
 BINARY_VERSION_LEVELS = "LLM_02"
+
+UUID_SIZE = 16
+
+ONE = str(1)
 
 IS_ARRAY = snake_to_camel("_is_arr")
 
@@ -1803,7 +1964,7 @@ class Database(Binary):
     name: str = field(default=UNKNOWN)
     id: int = field(default=DEFAULT_ID)
     account_id: int = field(default=DEFAULT_ID)
-    password: str = field(default=EMPTY)
+    password: str = field(default=EMPTY, repr=password_repr)
     session_id: int = field(default=DEFAULT_ID)
 
     cube_id: int = field(default=DEFAULT_ICON_ID)
@@ -1820,6 +1981,8 @@ class Database(Binary):
     explosion_id: int = field(default=DEFAULT_ICON_ID)
 
     icon_type: IconType = field(default=IconType.DEFAULT)
+
+    glow: bool = field(default=DEFAULT_GLOW)
 
     secret_value: int = field(default=DEFAULT_SECRET_VALUE)
 
@@ -1849,6 +2012,8 @@ class Database(Binary):
 
     quality: Quality = field(default=Quality.DEFAULT)
 
+    achievements: Dict[str, int] = field(factory=dict)
+
     official_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
     saved_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
     followed: OrderedSet[int] = field(factory=ordered_set)
@@ -1857,8 +2022,8 @@ class Database(Binary):
     daily_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
     daily_id: int = field(default=DEFAULT_ID)
     weekly_id: int = field(default=DEFAULT_ID)
-    liked: Dict[int, bool] = field(factory=dict)
-    rated: Dict[int, int] = field(factory=dict)
+    liked: OrderedSet[Like] = field(factory=dict)
+    rated: OrderedSet[int] = field(factory=ordered_set)
     reported: OrderedSet[int] = field(factory=ordered_set)
     demon_rated: OrderedSet[int] = field(factory=ordered_set)
     gauntlet_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
@@ -1910,6 +2075,18 @@ class Database(Binary):
 
         explosion_id = main_data.get(EXPLOSION_ID, DEFAULT_ICON_ID)
 
+        icon_type_option = main_data.get(ICON_TYPE)
+
+        if icon_type_option is None:
+            icon_type = IconType.DEFAULT
+
+        else:
+            icon_type = IconType(icon_type_option)
+
+        glow = main_data.get(GLOW, DEFAULT_GLOW)
+
+        moderator = main_data.get(MODERATOR, DEFAULT_MODERATOR)
+
         name = main_data.get(NAME, UNKNOWN)
 
         password = main_data.get(PASSWORD, EMPTY)
@@ -1918,18 +2095,71 @@ class Database(Binary):
 
         session_id = main_data.get(SESSION_ID, DEFAULT_ID)
 
+        secret_value = main_data.get(SECRET_VALUE, DEFAULT_SECRET_VALUE)
+
+        last_played_data = main_data.get(LAST_PLAYED, {})
+
+        last_played = iter(last_played_data.keys()).map(int).ordered_set()
+
+        daily_levels_data = main_data.get(DAILY_LEVELS, {})
+
+        daily_levels = iter(daily_levels_data.values()).map(LevelAPI.from_robtop_data).ordered_set()
+
+        daily_id = main_data.get(DAILY_ID, DEFAULT_ID)
+        weekly_id = main_data.get(WEEKLY_ID, DEFAULT_ID) % WEEKLY_ID_ADD
+
+        liked_data = main_data.get(LIKED, {})
+
+        liked = iter(liked_data.keys()).map(Like.from_robtop).ordered_set()
+
+        rated_data = main_data.get(RATED, {})
+
+        rated = iter(rated_data.keys()).map(int).ordered_set()
+
+        reported_data = main_data.get(REPORTED, {})
+
+        reported = iter(reported_data.keys()).map(int).ordered_set()
+
+        demon_rated_data = main_data.get(DEMON_RATED, {})
+
+        demon_rated = iter(demon_rated_data.keys()).map(int).ordered_set()
+
+        gauntlet_levels_data = main_data.get(GAUNTLET_LEVELS, {})
+
+        gauntlet_levels = iter(gauntlet_levels_data.values()).map(LevelAPI.from_robtop_data).ordered_set()
+
+        ...
+
+        def create_folder(string: str, name: str) -> Folder:
+            return Folder(int(string), name)
+
+        saved_folders_data = main_data.get(SAVED_FOLDERS, {})
+
+        saved_folders = iter(saved_folders_data.items()).map(
+            unpack_binary(create_folder)
+        ).ordered_set()
+
+        created_folders_data = main_data.get(CREATED_FOLDERS, {})
+
+        created_folders = iter(created_folders_data.items()).map(
+            unpack_binary(create_folder)
+        ).ordered_set()
+
         import json
+
         with open("main.json", "w") as file:
             json.dump(main_data, file, indent=2)
 
         levels_data = parser.load(levels)
 
-        # TODO: finish here
-
         created_levels_data = levels_data.get(CREATED_LEVELS, {})
-        binary_version_data = levels_data.get(BINARY_VERSION_LEVELS, CURRENT_BINARY_VERSION)
+        binary_version_data = levels_data.get(BINARY_VERSION_LEVELS)
 
-        binary_version = Version.from_value(binary_version_data)
+        if binary_version_data is None:
+            binary_version = CURRENT_BINARY_VERSION
+
+        else:
+            binary_version = Version.from_value(binary_version_data)
 
         created_levels = (
             iter(created_levels_data.values())
@@ -1939,6 +2169,7 @@ class Database(Binary):
         )
 
         return cls(
+            # main
             volume=volume,
             sfx_volume=sfx_volume,
             uuid=uuid,
@@ -1960,14 +2191,112 @@ class Database(Binary):
             color_2_id=color_2_id,
             trail_id=trail_id,
             explosion_id=explosion_id,
+            icon_type=icon_type,
+            glow=glow,
+            secret_value=secret_value,
+            moderator=moderator,
+            # ...
+            last_played=last_played,
+            # ...
+            daily_levels=daily_levels,
+            daily_id=daily_id,
+            weekly_id=weekly_id,
+            liked=liked,
+            rated=rated,
+            reported=reported,
+            demon_rated=demon_rated,
+            gauntlet_levels=gauntlet_levels,
+            saved_folders=saved_folders,
+            created_folders=created_folders,
+            # levels
             created_levels=created_levels,
             binary_version=binary_version,
         )
 
     def dump_main(self) -> bytes:
+        one = ONE
         parser = PARSER
 
-        main_data = {VOLUME: self.volume, SFX_VOLUME: self.sfx_volume, UUID: self.uuid, PLAYER_NAME: self.player_name}
+        main_data = {
+            VOLUME: self.volume,
+            SFX_VOLUME: self.sfx_volume,
+            UUID_LITERAL: str(self.uuid),
+            PLAYER_NAME: self.player_name,
+            USER_ID: self.id,
+            CUBE_ID: self.cube_id,
+            SHIP_ID: self.ship_id,
+            BALL_ID: self.ball_id,
+            UFO_ID: self.ufo_id,
+            WAVE_ID: self.wave_id,
+            ROBOT_ID: self.robot_id,
+            SPIDER_ID: self.spider_id,
+            # SWING_COPTER_ID: self.swing_copter_id,
+            COLOR_1_ID: self.color_1_id,
+            COLOR_2_ID: self.color_2_id,
+            TRAIL_ID: self.trail_id,
+            EXPLOSION_ID: self.explosion_id,
+            ICON_TYPE: self.icon_type.value,
+            SECRET_VALUE: self.secret_value,
+            DAILY_ID: self.daily_id,
+            WEEKLY_ID: self.weekly_id,
+            NAME: self.name,
+            PASSWORD: self.password,
+            ACCOUNT_ID: self.account_id,
+            SESSION_ID: self.session_id,
+        }
+
+        glow = self.has_glow()
+
+        if glow:
+            main_data[GLOW] = glow
+
+        moderator = self.is_moderator()
+
+        if moderator:
+            main_data[MODERATOR] = moderator
+
+        last_played_data = {str(level_id): one for level_id in self.last_played}
+
+        main_data[LAST_PLAYED] = last_played_data
+
+        daily_levels_data = {str(level.id): level.to_robtop_data() for level in self.daily_levels}
+
+        main_data[DAILY_LEVELS] = daily_levels_data
+
+        liked_data = {like.to_robtop(): one for like in self.liked}
+
+        main_data[LIKED] = liked_data
+
+        rated_data = {str(level_id): one for level_id in self.rated}
+
+        main_data[RATED] = rated_data
+
+        reported_data = {str(level_id): one for level_id in self.reported}
+
+        main_data[REPORTED] = reported_data
+
+        demon_rated_data = {str(demon_id): one for demon_id in self.demon_rated}
+
+        main_data[DEMON_RATED] = demon_rated_data
+
+        gauntlet_levels_data = {
+            str(gauntlet_level.id): gauntlet_level.to_robtop_data()
+            for gauntlet_level in self.gauntlet_levels
+        }
+
+        main_data[GAUNTLET_LEVELS] = gauntlet_levels_data
+
+        saved_folders_data = {
+            str(saved_folder.id): saved_folder.name for saved_folder in self.saved_folders
+        }
+
+        main_data[SAVED_FOLDERS] = saved_folders_data
+
+        created_folders_data = {
+            str(created_folder.id): created_folder.name for created_folder in self.created_folders
+        }
+
+        main_data[CREATED_FOLDERS] = created_folders_data
 
         return parser.dump(main_data)
 
@@ -1976,18 +2305,21 @@ class Database(Binary):
 
         created_levels_data: Dict[str, Any] = {IS_ARRAY: True}
 
-        created_levels = {
-            key(index): created_level.to_robtop_data()
-            for index, created_level in enumerate(self.created_levels)
-        }
-
-        created_levels_data.update(created_levels)
+        created_levels_data.update(
+            {
+                key(index): created_level.to_robtop_data()
+                for index, created_level in enumerate(self.created_levels)
+            }
+        )
 
         binary_version_data = self.binary_version.to_value()
 
         levels_data = {CREATED_LEVELS: created_levels_data, BINARY_VERSION: binary_version_data}
 
         return parser.dump(levels_data)
+
+    def dump_parts(self) -> Tuple[bytes, bytes]:
+        return (self.dump_main(), self.dump_levels())
 
     @classmethod
     def create_save_manager(cls: Type[D]) -> SaveManager[D]:
@@ -2018,18 +2350,20 @@ class Database(Binary):
         shown_low_detail_bit = SHOWN_LOW_DETAIL_BIT
         rated_game_bit = RATED_GAME_BIT
         moderator_bit = MODERATOR_BIT
-
-        liked_bit = LIKED_BIT
-        liked_mask = LIKED_MASK
+        glow_bit = GLOW_BIT
 
         reader = Reader(binary)
 
         volume = reader.read_f32(order)
         sfx_volume = reader.read_f32(order)
 
-        uuid_length = reader.read_u8(order)
+        data = reader.read(UUID_SIZE)
 
-        uuid = UUID(reader.read(uuid_length).decode(encoding, errors))
+        if order.is_little():
+            uuid = UUID(bytes_le=data)
+
+        else:
+            uuid = UUID(bytes=data)
 
         player_name_length = reader.read_u8(order)
 
@@ -2080,9 +2414,24 @@ class Database(Binary):
 
         moderator = value & moderator_bit == moderator_bit
 
-        quality_value = (value >> QUALITY_SHIFT) & QUALITY_MASK
+        glow = value & glow_bit == glow_bit
+
+        quality_value = (value & QUALITY_MASK) >> QUALITY_SHIFT
 
         quality = Quality(quality_value)
+
+        achievements_length = reader.read_u16(order)
+
+        achievements = {}
+
+        for _ in range(achievements_length):
+            name_length = reader.read_u8(order)
+
+            name = reader.read(name_length).decode(encoding, errors)
+
+            progress = reader.read_u16(order)
+
+            achievements[name] = progress
 
         bootups = reader.read_u32(order)
 
@@ -2108,11 +2457,11 @@ class Database(Binary):
 
         statistics = Statistics.from_binary(binary, order, version)
 
-        official_levels_length = reader.read_u8(order)
-
         level_api_from_binary = partial(
             LevelAPI.from_binary, binary, order, version, encoding, errors
         )
+
+        official_levels_length = reader.read_u8(order)
 
         official_levels = iter.repeat_exactly_with(
             level_api_from_binary, official_levels_length
@@ -2145,18 +2494,15 @@ class Database(Binary):
         daily_id = reader.read_u32(order)
         weekly_id = reader.read_u32(order)
 
+        like_from_binary = partial(Like.from_binary, binary, order, version)
+
         liked_length = reader.read_u32(order)
 
-        liked = {}
-
-        for _ in range(liked_length):
-            liked_id = reader.read_u32(order)
-
-            liked[liked_id & liked_mask] = liked_id & liked_bit == liked_bit
+        liked = iter.repeat_exactly_with(like_from_binary, liked_length).ordered_set()
 
         rated_length = reader.read_u32(order)
 
-        rated = {reader.read_u32(order): reader.read_u8(order) for _ in range(rated_length)}
+        rated = iter.repeat_exactly_with(read_u32, rated_length).ordered_set()
 
         reported_length = reader.read_u32(order)
 
@@ -2200,6 +2546,8 @@ class Database(Binary):
 
         binary_version = Version.from_binary(binary, order, version)
 
+        # keybindings = Keybindings.from_binary(binary, order, version, encoding, errors)
+
         return cls(
             volume=volume,
             sfx_volume=sfx_volume,
@@ -2222,6 +2570,7 @@ class Database(Binary):
             trail_id=trail_id,
             explosion_id=explosion_id,
             icon_type=icon_type,
+            glow=glow,
             secret_value=secret_value,
             moderator=moderator,
             show_song_markers=show_song_markers,
@@ -2235,6 +2584,7 @@ class Database(Binary):
             bootups=bootups,
             resolution=resolution,
             quality=quality,
+            achievements=achievements,
             values=values,
             unlock_values=unlock_values,
             custom_objects=custom_objects,
@@ -2257,6 +2607,7 @@ class Database(Binary):
             created_levels=created_levels,
             songs=songs,
             binary_version=binary_version,
+            # keybindings=keybindings,
         )
 
     def to_binary(
@@ -2267,16 +2618,14 @@ class Database(Binary):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> None:
-        liked_bit = LIKED_BIT
-
         writer = Writer(binary)
 
         writer.write_f32(self.volume, order)
         writer.write_f32(self.sfx_volume, order)
 
-        data = str(self.uuid).encode(encoding, errors)
+        uuid = self.uuid
 
-        writer.write_u8(len(data), order)
+        data = uuid.bytes_le if order.is_little() else uuid.bytes
 
         writer.write(data)
 
@@ -2347,14 +2696,28 @@ class Database(Binary):
 
         writer.write_u8(value, order)
 
-        value = 0
+        value = self.quality.value << QUALITY_SHIFT
 
         if self.is_moderator():
             value |= MODERATOR_BIT
 
-        value |= (self.quality.value << QUALITY_SHIFT)
+        if self.has_glow():
+            value |= GLOW_BIT
 
         writer.write_u8(value, order)
+
+        achievements = self.achievements
+
+        writer.write_u16(len(achievements), order)
+
+        for name, progress in achievements.items():
+            data = name.encode(encoding, errors)
+
+            writer.write_u8(len(data), order)
+
+            writer.write(data)
+
+            writer.write_u16(progress, order)
 
         writer.write_u32(self.bootups, order)
 
@@ -2419,19 +2782,15 @@ class Database(Binary):
 
         writer.write_u32(len(liked), order)
 
-        for level_id, is_liked in liked.items():
-            if is_liked:
-                level_id |= liked_bit
-
-            writer.write_u32(level_id, order)
+        for like in liked:
+            like.to_binary(binary, order, version)
 
         rated = self.rated
 
         writer.write_u32(len(rated), order)
 
-        for level_id, stars in rated.items():
+        for level_id in rated:
             writer.write_u32(level_id, order)
-            writer.write_u8(stars, order)
 
         reported = self.reported
 
@@ -2465,6 +2824,9 @@ class Database(Binary):
 
         writer.write_u8(len(created_folders), order)
 
+        for created_folder in created_folders:
+            created_folder.to_binary(binary, order, version, encoding, errors)
+
         created_levels = self.created_levels
 
         writer.write_u32(len(created_levels), order)
@@ -2480,6 +2842,8 @@ class Database(Binary):
             song.to_binary(binary, order, version, encoding, errors)
 
         self.binary_version.to_binary(binary, order, version)
+
+        # self.keybindings.to_binary(binary, order, version, encoding, errors)
 
     def is_moderator(self) -> bool:
         return self.moderator
@@ -2507,6 +2871,9 @@ class Database(Binary):
 
     def has_rated_game(self) -> bool:
         return self.rated_game
+
+    def has_glow(self) -> bool:
+        return self.glow
 
 
 from gd.api.save_manager import SaveManager

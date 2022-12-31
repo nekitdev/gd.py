@@ -228,10 +228,10 @@ class Factory:
 
         # ensure `idle` is configured
 
-        if icon.type is IconType.ROBOT:
+        if icon.type.is_robot():
             icon.idle = self.robot_idle
 
-        if icon.type is IconType.SPIDER:
+        if icon.type.is_spider():
             icon.idle = self.spider_idle
 
         result = new_image(RGBA, (width, height), EMPTY)

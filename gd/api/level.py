@@ -49,7 +49,9 @@ from gd.date_time import Duration
 from gd.decorators import cache_by
 from gd.difficulty_parameters import DEFAULT_DEMON_DIFFICULTY_VALUE, DifficultyParameters
 from gd.encoding import (
+    compress,
     decode_base64_string_url_safe,
+    decompress,
     encode_base64_string_url_safe,
     unzip_level_string,
     zip_level_string,
@@ -707,7 +709,6 @@ class LevelAPI(Binary):
         name = reader.read(name_length).decode(encoding, errors)
 
         creator = User.from_binary(binary, order, version, encoding, errors)
-
         song = Song.from_binary(binary, order, version, encoding, errors)
 
         description_length = reader.read_u16(order)
@@ -716,7 +717,7 @@ class LevelAPI(Binary):
 
         data_length = reader.read_u32(order)
 
-        data = reader.read(data_length)
+        data = decompress(reader.read(data_length))
 
         difficulty_value = reader.read_u8(order)
 
@@ -901,7 +902,7 @@ class LevelAPI(Binary):
 
         writer.write(data)
 
-        data = self.data  # type: ignore
+        data = compress(self.data)  # type: ignore
 
         writer.write_u32(len(data), order)
 

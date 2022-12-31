@@ -33,7 +33,7 @@ from gd.constants import (
     UNKNOWN,
 )
 from gd.date_time import DateTime, Duration, utc_from_timestamp, utc_now
-from gd.encoding import unzip_level_string, zip_level_string
+from gd.encoding import compress, decompress, unzip_level_string, zip_level_string
 from gd.entity import Entity
 from gd.enums import (
     ByteOrder,
@@ -175,7 +175,7 @@ class Level(Entity):
 
         writer.write(data)
 
-        data = self.data
+        data = compress(self.data)
 
         writer.write_u32(len(data), order)
 
@@ -263,7 +263,7 @@ class Level(Entity):
 
         data_length = reader.read_u32(order)
 
-        data = reader.read(data_length)
+        data = decompress(reader.read(data_length))
 
         version = reader.read_u8(order)
 

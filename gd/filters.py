@@ -141,7 +141,7 @@ class Filters(Binary):
 
         require_original = value & require_original_bit == require_original_bit
 
-        followed_length = reader.read_u16(order)
+        followed_length = reader.read_u32(order)
 
         followed = iter.repeat_exactly_with(read_u32, followed_length).ordered_set()
 

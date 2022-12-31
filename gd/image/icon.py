@@ -87,17 +87,11 @@ class Icon:
     def name(self) -> str:
         return ICON_TYPE_TO_NAME[self.type]
 
-    def is_glowing(self) -> bool:
+    def has_glow(self) -> bool:
         return self.glow or self.color_1.is_black()
 
-    def is_robot(self) -> bool:
-        return self.type is IconType.ROBOT
-
-    def is_spider(self) -> bool:
-        return self.type is IconType.SPIDER
-
     def is_complex(self) -> bool:
-        return self.is_robot() or self.is_spider()
+        return self.type.is_robot() or self.type.is_spider()
 
     def is_simple(self) -> bool:
         return not self.is_complex()
@@ -162,10 +156,10 @@ class Icon:
         )
 
     def get_value(self, index: int) -> int:
-        if self.is_robot() and index < ROBOT_VALUE_COUNT:
+        if self.type.is_robot() and index < ROBOT_VALUE_COUNT:
             return ROBOT_VALUE
 
-        if self.is_spider() and index < SPIDER_VALUE_COUNT:
+        if self.type.is_spider() and index < SPIDER_VALUE_COUNT:
             return SPIDER_VALUE
 
         return FULL_VALUE
@@ -174,10 +168,10 @@ class Icon:
         if self.is_complex():
             raise ValueError  # TODO: message?
 
-        if self.is_glowing():
+        if self.has_glow():
             yield IconLayer(self.generate_name(glow=True), self.glow_color)
 
-        if self.type is IconType.UFO:
+        if self.type.is_ufo():
             yield IconLayer(self.generate_name(sub_part=3), self.extra_color)
 
         yield IconLayer(self.generate_name(sub_part=2), self.color_2)
@@ -201,7 +195,7 @@ class Icon:
 
         layers = frame.layers
 
-        if self.is_glowing():
+        if self.has_glow():
             for layer in layers:
                 yield ComplexIconLayer(
                     self.generate_name(part=layer.part, glow=True), self.glow_color, layer

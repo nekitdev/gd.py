@@ -479,7 +479,6 @@ class Object(Binary, RobTop):
             writer.write_u16(additional_editor_layer, order)
 
         if flag.has_colors():
-            print(base_color_id)
             writer.write_u16(base_color_id, order)
             writer.write_u16(detail_color_id, order)
 

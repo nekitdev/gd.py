@@ -15,7 +15,15 @@ from zlib import error as ZLibError
 
 from xor_cipher import cyclic_xor, cyclic_xor_string, xor, xor_string
 
-from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
+from gd.constants import (
+    DEFAULT_APPLY_XOR,
+    DEFAULT_ENCODING,
+    DEFAULT_ERRORS,
+    DEFAULT_JUMPS,
+    DEFAULT_PLAYED,
+    DEFAULT_RECORD,
+    DEFAULT_SECONDS,
+)
 from gd.enums import Key, Salt, SimpleKey
 from gd.platform import DARWIN
 from gd.string_utils import concat_empty
@@ -160,14 +168,14 @@ def encode_base64_string_url_safe(
     return encode_base64_url_safe(string.encode(encoding, errors)).decode(encoding, errors)
 
 
-def decode_save(data: bytes, apply_xor: bool = True) -> bytes:
+def decode_save(data: bytes, apply_xor: bool = DEFAULT_APPLY_XOR) -> bytes:
     if apply_xor:
         data = xor(data, SAVE_KEY)
 
     return decompress(decode_base64_url_safe(data))
 
 
-def encode_save(data: bytes, apply_xor: bool = True) -> bytes:
+def encode_save(data: bytes, apply_xor: bool = DEFAULT_APPLY_XOR) -> bytes:
     data = encode_base64_url_safe(compress(data))
 
     if apply_xor:
@@ -178,7 +186,7 @@ def encode_save(data: bytes, apply_xor: bool = True) -> bytes:
 
 def decode_save_string(
     string: str,
-    apply_xor: bool = True,
+    apply_xor: bool = DEFAULT_APPLY_XOR,
     encoding: str = DEFAULT_ENCODING,
     errors: str = DEFAULT_ERRORS,
 ) -> str:
@@ -187,7 +195,7 @@ def decode_save_string(
 
 def encode_save_string(
     string: str,
-    apply_xor: bool = True,
+    apply_xor: bool = DEFAULT_APPLY_XOR,
     encoding: str = DEFAULT_ENCODING,
     errors: str = DEFAULT_ERRORS,
 ) -> str:
@@ -239,7 +247,7 @@ def encode_robtop_string(
 
 
 def decode_darwin_save(
-    data: bytes, apply_xor: bool = True  # `apply_xor` is here for compatibility
+    data: bytes, apply_xor: bool = DEFAULT_APPLY_XOR  # `apply_xor` is here for compatibility
 ) -> bytes:
     cipher = CIPHER
 
@@ -258,7 +266,7 @@ def decode_darwin_save(
 
 def encode_darwin_save(
     data: bytes,
-    apply_xor: bool = True,  # `apply_xor` is here, again, for compatibility
+    apply_xor: bool = DEFAULT_APPLY_XOR,  # `apply_xor` is here, again, for compatibility
 ) -> bytes:
     cipher = CIPHER
 
@@ -348,7 +356,7 @@ def generate_level_seed(data: AnyStr, count: int = DEFAULT_COUNT) -> AnyStr:
     return data[:: length // count][:count]
 
 
-HAS_PLAYED_MULTIPLY = 1482
+PLAYED_MULTIPLY = 1482
 ATTEMPTS_ADD = 8354
 JUMPS_ADD = 3991
 RECORD_ADD = 8354
@@ -359,10 +367,13 @@ TOTAL_SUBTRACT = JUMPS_ADD * RECORD_ADD + SECONDS_ADD * SECONDS_ADD
 
 
 def generate_leaderboard_seed(
-    jumps: int = 0, record: int = 0, seconds: int = 0, has_played: bool = True
+    jumps: int = DEFAULT_JUMPS,
+    record: int = DEFAULT_RECORD,
+    seconds: int = DEFAULT_SECONDS,
+    played: bool = DEFAULT_PLAYED,
 ) -> int:
     return (
-        HAS_PLAYED_MULTIPLY * (has_played + 1)
+        PLAYED_MULTIPLY * (played + 1)
         + (jumps + JUMPS_ADD) * (record + RECORD_ADD)
         + pow(seconds + SECONDS_ADD, 2)
         - TOTAL_SUBTRACT

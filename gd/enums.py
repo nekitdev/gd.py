@@ -160,6 +160,33 @@ class IconType(Enum):
 
     DEFAULT = CUBE
 
+    def is_default(self) -> bool:
+        return self is type(self).DEFAULT
+
+    def is_cube(self) -> bool:
+        return self is type(self).CUBE
+
+    def is_ship(self) -> bool:
+        return self is type(self).SHIP
+
+    def is_ball(self) -> bool:
+        return self is type(self).BALL
+
+    def is_ufo(self) -> bool:
+        return self is type(self).UFO
+
+    def is_wave(self) -> bool:
+        return self is type(self).WAVE
+
+    def is_robot(self) -> bool:
+        return self is type(self).ROBOT
+
+    def is_spider(self) -> bool:
+        return self is type(self).SPIDER
+
+    # def is_swing_copter(self) -> bool:
+    #     return self is type(self).SWING_COPTER
+
 
 class MessageState(Enum):
     """An enumeration of message states."""
@@ -666,6 +693,63 @@ class SearchStrategy(Enum):
     UNKNOWN = 18
     DAILY_HISTORY = 21
     WEEKLY_HISTORY = 22
+
+    def is_default(self) -> bool:
+        return self is type(self).DEFAULT
+
+    def is_most_downloaded(self) -> bool:
+        return self is type(self).MOST_DOWNLOADED
+
+    def is_most_liked(self) -> bool:
+        return self is type(self).MOST_LIKED
+
+    def is_trending(self) -> bool:
+        return self is type(self).TRENDING
+
+    def is_recent(self) -> bool:
+        return self is type(self).RECENT
+
+    def is_by_user(self) -> bool:
+        return self is type(self).BY_USER
+
+    def is_featured(self) -> bool:
+        return self is type(self).FEATURED
+
+    def is_magic(self) -> bool:
+        return self is type(self).MAGIC
+
+    def is_sent(self) -> bool:
+        return self is type(self).SENT
+
+    def is_search_many(self) -> bool:
+        return self is type(self).SEARCH_MANY
+
+    def is_rated(self) -> bool:
+        return self is type(self).RATED
+
+    def is_followed(self) -> bool:
+        return self is type(self).FOLLOWED
+
+    def is_friends(self) -> bool:
+        return self is type(self).FRIENDS
+
+    def is_most_liked_world(self) -> bool:
+        return self is type(self).MOST_LIKED_WORLD
+
+    def is_hall_of_fame(self) -> bool:
+        return self is type(self).HALL_OF_FAME
+
+    def is_featured_world(self) -> bool:
+        return self is type(self).FEATURED_WORLD
+
+    def is_unknown(self) -> bool:
+        return self is type(self).UNKNOWN
+
+    def is_daily_history(self) -> bool:
+        return self is type(self).DAILY_HISTORY
+
+    def is_weekly_history(self) -> bool:
+        return self is type(self).WEEKLY_HISTORY
 
 
 class RewardType(Enum):
@@ -1476,6 +1560,15 @@ class ByteOrder(Enum):
     BIG = ">"
 
     DEFAULT = LITTLE
+
+    def is_little(self) -> bool:
+        return self is type(self).LITTLE
+
+    def is_big(self) -> bool:
+        return self is type(self).BIG
+
+    def is_default(self) -> bool:
+        return self is type(self).DEFAULT
 
 
 class Platform(Enum):

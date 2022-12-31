@@ -315,7 +315,7 @@ class User(Entity):
     def role(self) -> Role:
         return Role(self.role_id)
 
-    def is_glow(self) -> bool:
+    def has_glow(self) -> bool:
         return self.glow
 
     def is_banned(self) -> bool:
@@ -517,28 +517,28 @@ class User(Entity):
 
         friend_state = FriendState(friend_state_value)
 
-        youtube_length = reader.read_u16(order)
+        youtube_length = reader.read_u8(order)
 
         youtube: Optional[str] = reader.read(youtube_length).decode(encoding, errors)
 
         if not youtube:
             youtube = None
 
-        twitter_length = reader.read_u16(order)
+        twitter_length = reader.read_u8(order)
 
         twitter: Optional[str] = reader.read(twitter_length).decode(encoding, errors)
 
         if not twitter:
             twitter = None
 
-        twitch_length = reader.read_u16(order)
+        twitch_length = reader.read_u8(order)
 
         twitch: Optional[str] = reader.read(twitch_length).decode(encoding, errors)
 
         if not twitch:
             twitch = None
 
-        # discord_length = reader.read_u16(order)
+        # discord_length = reader.read_u8(order)
 
         # discord: Optional[str] = reader.read(discord_length).decode(encoding, errors)
 
@@ -634,7 +634,7 @@ class User(Entity):
 
         value = 0
 
-        if self.is_glow():
+        if self.has_glow():
             value |= GLOW_BIT
 
         if self.is_banned():
@@ -655,7 +655,7 @@ class User(Entity):
 
         data = youtube.encode(encoding, errors)
 
-        writer.write_u16(len(data), order)
+        writer.write_u8(len(data), order)
 
         writer.write(data)
 
@@ -666,7 +666,7 @@ class User(Entity):
 
         data = twitter.encode(encoding, errors)
 
-        writer.write_u16(len(data), order)
+        writer.write_u8(len(data), order)
 
         writer.write(data)
 
@@ -677,7 +677,7 @@ class User(Entity):
 
         data = twitch.encode(encoding, errors)
 
-        writer.write_u16(len(data), order)
+        writer.write_u8(len(data), order)
 
         writer.write(data)
 
@@ -688,7 +688,7 @@ class User(Entity):
 
         # data = discord.encode(encoding, errors)
 
-        # writer.write_u16(len(data), order)
+        # writer.write_u8(len(data), order)
 
         # writer.write(data)
 

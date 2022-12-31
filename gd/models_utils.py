@@ -39,6 +39,7 @@ from gd.models_constants import (
     LEVEL_LEADERBOARD_USER_SEPARATOR,
     LEVEL_RESPONSE_SEPARATOR,
     LEVEL_SEPARATOR,
+    LIKE_SEPARATOR,
     LOGIN_SEPARATOR,
     MAP_PACK_SEPARATOR,
     MAP_PACKS_RESPONSE_MAP_PACKS_SEPARATOR,
@@ -256,6 +257,9 @@ concat_quests_inner = partial(concat_iterable, QUESTS_INNER_SEPARATOR)
 
 split_level_ids = partial(split_iterable, LEVEL_IDS_SEPARATOR)
 concat_level_ids = partial(concat_iterable, LEVEL_IDS_SEPARATOR)
+
+split_like = partial(split_iterable, LIKE_SEPARATOR)
+concat_like = partial(concat_iterable, LIKE_SEPARATOR)
 
 split_page = partial(split_iterable, PAGE_SEPARATOR)
 concat_page = partial(concat_iterable, PAGE_SEPARATOR)

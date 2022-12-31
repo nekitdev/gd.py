@@ -53,7 +53,7 @@ from gd.constants import (
     DEFAULT_VERSION,
     EMPTY,
     QUESTS_SLICE,
-    TIMELY_ID_ADD,
+    WEEKLY_ID_ADD,
     UNKNOWN,
     UNNAMED,
 )
@@ -921,14 +921,14 @@ class TimelyInfoModel(Model):
         timely_id, cooldown_seconds = iter(split_timely_info(string)).map(int).tuple()
 
         return cls(
-            id=timely_id % TIMELY_ID_ADD, type=type, cooldown=Duration(seconds=cooldown_seconds)
+            id=timely_id % WEEKLY_ID_ADD, type=type, cooldown=Duration(seconds=cooldown_seconds)
         )
 
     def to_robtop(self) -> str:
         timely_id = self.id
 
         if self.type.is_weekly():
-            timely_id += TIMELY_ID_ADD
+            timely_id += WEEKLY_ID_ADD
 
         cooldown = int(self.cooldown.total_seconds())
 
@@ -1238,7 +1238,7 @@ class LevelModel(Model):
         timely_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_TIMELY_ID))
 
         if timely_id:
-            if timely_id // TIMELY_ID_ADD:
+            if timely_id // WEEKLY_ID_ADD:
                 timely_type = TimelyType.WEEKLY
 
             else:
@@ -1247,7 +1247,7 @@ class LevelModel(Model):
         else:
             timely_type = TimelyType.NOT_TIMELY
 
-        timely_id %= TIMELY_ID_ADD
+        timely_id %= WEEKLY_ID_ADD
 
         score = parse_get_or(int, DEFAULT_SCORE, mapping.get(LEVEL_SCORE))
 
@@ -1314,7 +1314,7 @@ class LevelModel(Model):
         timely_type = self.timely_type
 
         if timely_type.is_weekly():
-            timely_id += TIMELY_ID_ADD
+            timely_id += WEEKLY_ID_ADD
 
         difficulty_parameters = DifficultyParameters.from_difficulty(self.difficulty)
 
