@@ -2959,16 +2959,16 @@
 <span class="normal">1869</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">()</span>
 <span class="k">class</span> <span class="nc">Client</span><span class="p">:</span>
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">factory</span><span class="o">=</span><span class="n">Session</span><span class="p">)</span>
-    <span class="sd">&quot;&quot;&quot;The session of the client.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The session of the client.&quot;&quot;&quot;</span>
 
     <span class="n">credentials</span><span class="p">:</span> <span class="n">Credentials</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">factory</span><span class="o">=</span><span class="n">Credentials</span><span class="p">)</span>
-    <span class="sd">&quot;&quot;&quot;The credentials of the client.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The credentials of the client.&quot;&quot;&quot;</span>
 
     <span class="n">database_unchecked</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Database</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="sd">&quot;&quot;&quot;The database of the client.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The database of the client.&quot;&quot;&quot;</span>
 
     <span class="n">load_after_post</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_LOAD_AFTER_POST</span><span class="p">)</span>
-    <span class="sd">&quot;&quot;&quot;Whether to load items after posting them.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether to load items after posting them.&quot;&quot;&quot;</span>
 
     <span class="n">_listeners</span><span class="p">:</span> <span class="n">DynamicTuple</span><span class="p">[</span><span class="n">Listener</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">(),</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">_controller</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Controller</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -3010,7 +3010,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_items</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">is_logged_in</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Checks if the client is logged in.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the client is logged in.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Whether the client is logged in.</span>
@@ -3022,42 +3022,42 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">account_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The account ID of the client.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The account ID of the client.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">account_id</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The user ID of the client.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The user ID of the client.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">id</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The name of the client.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The name of the client.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">name</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">password</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The password of the client.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The password of the client.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">password</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">http</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HTTPClient</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The [`HTTPClient`][gd.http.HTTPClient] used by the client session.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The [`HTTPClient`][gd.http.HTTPClient] used by the client session.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">http</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">encoded_password</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The encoded password of the client.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The encoded password of the client.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">encode_robtop_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">,</span> <span class="n">Key</span><span class="o">.</span><span class="n">USER_PASSWORD</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="nd">@check_login</span>
     <span class="k">def</span> <span class="nf">user</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The user representing the client.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The user representing the client.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">User</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">account_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">account_id</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">ping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Duration</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Pings the Geometry Dash server.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pings the Geometry Dash server.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The [`Duration`][gd.date_time.Duration] representing the latency.</span>
@@ -3065,7 +3065,7 @@
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ping_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">ping_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="n">URLString</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Duration</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Pings the given `url`.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pings the given `url`.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The [`Duration`][gd.date_time.Duration] representing the latency.</span>
@@ -3073,11 +3073,11 @@
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">ping</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">logout</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Performs the logout.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Performs the logout.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">reset_items</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">login</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">C</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LoginContextManager</span><span class="p">[</span><span class="n">C</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Performs the login.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Performs the login.</span>
 
 <span class="sd">        This function returns a context manager that can be used for temporarily logging in:</span>
 
@@ -3099,7 +3099,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">apply_items</span><span class="p">(</span><span class="n">Credentials</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">account_id</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">password</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">unsafe_login</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">C</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UnsafeLoginContextManager</span><span class="p">[</span><span class="n">C</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Performs the *unsafe* login.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Performs the *unsafe* login.</span>
 
 <span class="sd">        *Unsafe* means that the credentials are not confirmed.</span>
 
@@ -3125,7 +3125,7 @@
 
     <span class="nd">@check_login</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Database</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Loads the save from the cloud, saving it in the</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Loads the save from the cloud, saving it in the</span>
 <span class="sd">        [`database`][gd.client.Client.database] attribute.</span>
 
 <span class="sd">        Note:</span>
@@ -3144,7 +3144,7 @@
 
     <span class="nd">@check_login</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">database</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Database</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Saves the the `database` to the cloud, optionally fetching it from the</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Saves the the `database` to the cloud, optionally fetching it from the</span>
 <span class="sd">        [`database`][gd.client.Client.database] attribute.</span>
 
 <span class="sd">        Note:</span>
@@ -3251,7 +3251,7 @@
 
     <span class="nd">@check_login</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get_self</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">simple</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_SIMPLE</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Gets the user representing this client.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the user representing this client.</span>
 
 <span class="sd">        This is a shorthand for:</span>
 
@@ -3278,7 +3278,7 @@
         <span class="n">simple</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_SIMPLE</span><span class="p">,</span>
         <span class="n">friend_state</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_FRIEND_STATE</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Fetches the user by `account_id`.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetches the user by `account_id`.</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            account_id: The account ID of the user to fetch.</span>
@@ -4215,35 +4215,35 @@
     <span class="c1"># handlers</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">on_daily</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Handles `daily` events.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles `daily` events.</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            daily: The daily level to handle.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">on_weekly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Handles `weekly` events.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles `weekly` events.</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            weekly: The weekly level to handle.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">on_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Handles `rate` events.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles `rate` events.</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            level: The rated level to handle.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">on_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Handles `level` events.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles `level` events.</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            level: The level to handle.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Handles `user_level` events.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles `user_level` events.</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            user: The user to handle.</span>
@@ -4251,21 +4251,21 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Handles `message` events.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles `message` events.</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            message: The message to handle.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">on_friend_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">friend_request</span><span class="p">:</span> <span class="n">FriendRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Handles `friend_request` events.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles `friend_request` events.</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            friend_request: The friend request to handle.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">on_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Handles `level_comment` events.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles `level_comment` events.</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            level: The level to handle.</span>
@@ -4273,7 +4273,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">on_daily_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Handles `daily_comment` events.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles `daily_comment` events.</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            daily: The daily level to handle.</span>
@@ -4281,7 +4281,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">on_weekly_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Handles `weekly_comment` events.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles `weekly_comment` events.</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            weekly: The weekly level to handle.</span>
@@ -4289,7 +4289,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">UserComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Handles `user_comment` events.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles `user_comment` events.</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            user: The user to handle.</span>
@@ -4297,7 +4297,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Handles `user_level_comment` events.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handles `user_level_comment` events.</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            user: The user to handle.</span>
@@ -4307,7 +4307,7 @@
     <span class="c1"># dispatchers</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_daily</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Dispatches `daily` events via calling [`on_daily`][gd.client.Client.on_daily].</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dispatches `daily` events via calling [`on_daily`][gd.client.Client.on_daily].</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            daily: The daily level to dispatch.</span>
@@ -4315,7 +4315,7 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_daily</span><span class="p">(</span><span class="n">daily</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_weekly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Dispatches `weekly` events via calling [`on_weekly`][gd.client.Client.on_weekly].</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dispatches `weekly` events via calling [`on_weekly`][gd.client.Client.on_weekly].</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            weekly: The weekly level to dispatch.</span>
@@ -4323,7 +4323,7 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_weekly</span><span class="p">(</span><span class="n">weekly</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Dispatches `rate` events via calling [`on_rate`][gd.client.Client.on_rate].</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dispatches `rate` events via calling [`on_rate`][gd.client.Client.on_rate].</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            level: The rated level to dispatch.</span>
@@ -4331,7 +4331,7 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_rate</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Dispatches `level` events via calling [`on_level`][gd.client.Client.on_level].</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dispatches `level` events via calling [`on_level`][gd.client.Client.on_level].</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            level: The level to dispatch.</span>
@@ -4339,7 +4339,7 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_level</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Dispatches `user_level` events via calling</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dispatches `user_level` events via calling</span>
 <span class="sd">        [`on_user_level`][gd.client.Client.on_user_level].</span>
 
 <span class="sd">        Arguments:</span>
@@ -4349,7 +4349,7 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_user_level</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">level</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Dispatches `message` events via calling [`on_message`][gd.client.Client.on_message].</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dispatches `message` events via calling [`on_message`][gd.client.Client.on_message].</span>
 
 <span class="sd">        Arguments:</span>
 <span class="sd">            message: The message to dispatch.</span>
@@ -4357,7 +4357,7 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_message</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_friend_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">friend_request</span><span class="p">:</span> <span class="n">FriendRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Dispatches `friend_request` events via calling</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dispatches `friend_request` events via calling</span>
 <span class="sd">        [`on_friend_request`][gd.client.Client.on_friend_request].</span>
 
 <span class="sd">        Arguments:</span>
@@ -4366,7 +4366,7 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_friend_request</span><span class="p">(</span><span class="n">friend_request</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Dispatches `level_comment` events via calling</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dispatches `level_comment` events via calling</span>
 <span class="sd">        [`on_level_comment`][gd.client.Client.on_level_comment].</span>
 
 <span class="sd">        Arguments:</span>
@@ -4376,7 +4376,7 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_level_comment</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">comment</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_daily_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Dispatches `level_comment` events via calling</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dispatches `level_comment` events via calling</span>
 <span class="sd">        [`on_level_comment`][gd.client.Client.on_level_comment].</span>
 
 <span class="sd">        Arguments:</span>
@@ -4386,7 +4386,7 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_daily_comment</span><span class="p">(</span><span class="n">daily</span><span class="p">,</span> <span class="n">comment</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_weekly_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Dispatches `weekly_comment` events via calling</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dispatches `weekly_comment` events via calling</span>
 <span class="sd">        [`on_weekly_comment`][gd.client.Client.on_weekly_comment].</span>
 
 <span class="sd">        Arguments:</span>
@@ -4396,7 +4396,7 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_weekly_comment</span><span class="p">(</span><span class="n">weekly</span><span class="p">,</span> <span class="n">comment</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">UserComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Dispatches `user_comment` events via calling</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dispatches `user_comment` events via calling</span>
 <span class="sd">        [`on_user_comment`][gd.client.Client.on_user_comment].</span>
 
 <span class="sd">        Arguments:</span>
@@ -4406,7 +4406,7 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_user_comment</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">comment</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Dispatches `user_level_comment` events via calling</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dispatches `user_level_comment` events via calling</span>
 <span class="sd">        [`on_user_level_comment`][gd.client.Client.on_user_level_comment].</span>
 
 <span class="sd">        Arguments:</span>
@@ -4416,7 +4416,7 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_user_level_comment</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">comment</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">:</span> <span class="n">F</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">F</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Registers an event handler.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers an event handler.</span>
 
 <span class="sd">        Example:</span>
 <span class="sd">            ```python</span>
@@ -4949,7 +4949,7 @@
 <span class="normal">221</span>
 <span class="normal">222</span>
 <span class="normal">223</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">is_logged_in</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks if the client is logged in.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if the client is logged in.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Whether the client is logged in.</span>
@@ -5006,7 +5006,7 @@
 <span class="normal">268</span>
 <span class="normal">269</span>
 <span class="normal">270</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">ping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Duration</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Pings the Geometry Dash server.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pings the Geometry Dash server.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The [`Duration`][gd.date_time.Duration] representing the latency.</span>
@@ -5063,7 +5063,7 @@
 <span class="normal">276</span>
 <span class="normal">277</span>
 <span class="normal">278</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">ping_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="n">URLString</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Duration</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Pings the given `url`.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pings the given `url`.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The [`Duration`][gd.date_time.Duration] representing the latency.</span>
@@ -5098,7 +5098,7 @@
         <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">280</span>
 <span class="normal">281</span>
 <span class="normal">282</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">logout</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Performs the logout.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Performs the logout.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">reset_items</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
       </details>
@@ -5162,7 +5162,7 @@
 <span class="normal">297</span>
 <span class="normal">298</span>
 <span class="normal">299</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">login</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">C</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LoginContextManager</span><span class="p">[</span><span class="n">C</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Performs the login.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Performs the login.</span>
 
 <span class="sd">    This function returns a context manager that can be used for temporarily logging in:</span>
 
@@ -5244,7 +5244,7 @@ for handling login process.</p></td>
 <span class="normal">322</span>
 <span class="normal">323</span>
 <span class="normal">324</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">unsafe_login</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">C</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UnsafeLoginContextManager</span><span class="p">[</span><span class="n">C</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Performs the *unsafe* login.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Performs the *unsafe* login.</span>
 
 <span class="sd">    *Unsafe* means that the credentials are not confirmed.</span>
 
@@ -5330,7 +5330,7 @@ for handling login process.</p></td>
 <span class="normal">347</span>
 <span class="normal">348</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@check_login</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Database</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Loads the save from the cloud, saving it in the</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads the save from the cloud, saving it in the</span>
 <span class="sd">    [`database`][gd.client.Client.database] attribute.</span>
 
 <span class="sd">    Note:</span>
@@ -5392,7 +5392,7 @@ for handling login process.</p></td>
 <span class="normal">362</span>
 <span class="normal">363</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@check_login</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">database</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Database</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Saves the the `database` to the cloud, optionally fetching it from the</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Saves the the `database` to the cloud, optionally fetching it from the</span>
 <span class="sd">    [`database`][gd.client.Client.database] attribute.</span>
 
 <span class="sd">    Note:</span>
@@ -5503,7 +5503,7 @@ for handling login process.</p></td>
 <span class="normal">477</span>
 <span class="normal">478</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@check_login</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">get_self</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">simple</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_SIMPLE</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Gets the user representing this client.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the user representing this client.</span>
 
 <span class="sd">    This is a shorthand for:</span>
 
@@ -5659,7 +5659,7 @@ for handling login process.</p></td>
     <span class="n">simple</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_SIMPLE</span><span class="p">,</span>
     <span class="n">friend_state</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_FRIEND_STATE</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Fetches the user by `account_id`.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches the user by `account_id`.</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        account_id: The account ID of the user to fetch.</span>
@@ -5748,7 +5748,7 @@ for handling login process.</p></td>
 <span class="normal">1425</span>
 <span class="normal">1426</span>
 <span class="normal">1427</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_daily</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Handles `daily` events.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `daily` events.</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        daily: The daily level to handle.</span>
@@ -5809,7 +5809,7 @@ for handling login process.</p></td>
 <span class="normal">1432</span>
 <span class="normal">1433</span>
 <span class="normal">1434</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_weekly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Handles `weekly` events.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `weekly` events.</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        weekly: The weekly level to handle.</span>
@@ -5870,7 +5870,7 @@ for handling login process.</p></td>
 <span class="normal">1439</span>
 <span class="normal">1440</span>
 <span class="normal">1441</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Handles `rate` events.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `rate` events.</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        level: The rated level to handle.</span>
@@ -5931,7 +5931,7 @@ for handling login process.</p></td>
 <span class="normal">1446</span>
 <span class="normal">1447</span>
 <span class="normal">1448</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Handles `level` events.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `level` events.</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        level: The level to handle.</span>
@@ -6003,7 +6003,7 @@ for handling login process.</p></td>
 <span class="normal">1454</span>
 <span class="normal">1455</span>
 <span class="normal">1456</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Handles `user_level` events.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `user_level` events.</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        user: The user to handle.</span>
@@ -6065,7 +6065,7 @@ for handling login process.</p></td>
 <span class="normal">1461</span>
 <span class="normal">1462</span>
 <span class="normal">1463</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Handles `message` events.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `message` events.</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        message: The message to handle.</span>
@@ -6126,7 +6126,7 @@ for handling login process.</p></td>
 <span class="normal">1468</span>
 <span class="normal">1469</span>
 <span class="normal">1470</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_friend_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">friend_request</span><span class="p">:</span> <span class="n">FriendRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Handles `friend_request` events.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `friend_request` events.</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        friend_request: The friend request to handle.</span>
@@ -6198,7 +6198,7 @@ for handling login process.</p></td>
 <span class="normal">1476</span>
 <span class="normal">1477</span>
 <span class="normal">1478</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Handles `level_comment` events.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `level_comment` events.</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        level: The level to handle.</span>
@@ -6271,7 +6271,7 @@ for handling login process.</p></td>
 <span class="normal">1484</span>
 <span class="normal">1485</span>
 <span class="normal">1486</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_daily_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Handles `daily_comment` events.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `daily_comment` events.</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        daily: The daily level to handle.</span>
@@ -6344,7 +6344,7 @@ for handling login process.</p></td>
 <span class="normal">1492</span>
 <span class="normal">1493</span>
 <span class="normal">1494</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_weekly_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Handles `weekly_comment` events.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `weekly_comment` events.</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        weekly: The weekly level to handle.</span>
@@ -6417,7 +6417,7 @@ for handling login process.</p></td>
 <span class="normal">1500</span>
 <span class="normal">1501</span>
 <span class="normal">1502</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">UserComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Handles `user_comment` events.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `user_comment` events.</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        user: The user to handle.</span>
@@ -6490,7 +6490,7 @@ for handling login process.</p></td>
 <span class="normal">1508</span>
 <span class="normal">1509</span>
 <span class="normal">1510</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Handles `user_level_comment` events.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `user_level_comment` events.</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        user: The user to handle.</span>
@@ -6553,7 +6553,7 @@ for handling login process.</p></td>
 <span class="normal">1518</span>
 <span class="normal">1519</span>
 <span class="normal">1520</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_daily</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Dispatches `daily` events via calling [`on_daily`][gd.client.Client.on_daily].</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `daily` events via calling [`on_daily`][gd.client.Client.on_daily].</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        daily: The daily level to dispatch.</span>
@@ -6616,7 +6616,7 @@ for handling login process.</p></td>
 <span class="normal">1526</span>
 <span class="normal">1527</span>
 <span class="normal">1528</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_weekly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Dispatches `weekly` events via calling [`on_weekly`][gd.client.Client.on_weekly].</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `weekly` events via calling [`on_weekly`][gd.client.Client.on_weekly].</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        weekly: The weekly level to dispatch.</span>
@@ -6679,7 +6679,7 @@ for handling login process.</p></td>
 <span class="normal">1534</span>
 <span class="normal">1535</span>
 <span class="normal">1536</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Dispatches `rate` events via calling [`on_rate`][gd.client.Client.on_rate].</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `rate` events via calling [`on_rate`][gd.client.Client.on_rate].</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        level: The rated level to dispatch.</span>
@@ -6742,7 +6742,7 @@ for handling login process.</p></td>
 <span class="normal">1542</span>
 <span class="normal">1543</span>
 <span class="normal">1544</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Dispatches `level` events via calling [`on_level`][gd.client.Client.on_level].</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `level` events via calling [`on_level`][gd.client.Client.on_level].</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        level: The level to dispatch.</span>
@@ -6818,7 +6818,7 @@ for handling login process.</p></td>
 <span class="normal">1552</span>
 <span class="normal">1553</span>
 <span class="normal">1554</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Dispatches `user_level` events via calling</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `user_level` events via calling</span>
 <span class="sd">    [`on_user_level`][gd.client.Client.on_user_level].</span>
 
 <span class="sd">    Arguments:</span>
@@ -6883,7 +6883,7 @@ for handling login process.</p></td>
 <span class="normal">1560</span>
 <span class="normal">1561</span>
 <span class="normal">1562</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Dispatches `message` events via calling [`on_message`][gd.client.Client.on_message].</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `message` events via calling [`on_message`][gd.client.Client.on_message].</span>
 
 <span class="sd">    Arguments:</span>
 <span class="sd">        message: The message to dispatch.</span>
@@ -6948,7 +6948,7 @@ for handling login process.</p></td>
 <span class="normal">1569</span>
 <span class="normal">1570</span>
 <span class="normal">1571</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_friend_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">friend_request</span><span class="p">:</span> <span class="n">FriendRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Dispatches `friend_request` events via calling</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `friend_request` events via calling</span>
 <span class="sd">    [`on_friend_request`][gd.client.Client.on_friend_request].</span>
 
 <span class="sd">    Arguments:</span>
@@ -7025,7 +7025,7 @@ for handling login process.</p></td>
 <span class="normal">1579</span>
 <span class="normal">1580</span>
 <span class="normal">1581</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Dispatches `level_comment` events via calling</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `level_comment` events via calling</span>
 <span class="sd">    [`on_level_comment`][gd.client.Client.on_level_comment].</span>
 
 <span class="sd">    Arguments:</span>
@@ -7103,7 +7103,7 @@ for handling login process.</p></td>
 <span class="normal">1589</span>
 <span class="normal">1590</span>
 <span class="normal">1591</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_daily_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Dispatches `level_comment` events via calling</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `level_comment` events via calling</span>
 <span class="sd">    [`on_level_comment`][gd.client.Client.on_level_comment].</span>
 
 <span class="sd">    Arguments:</span>
@@ -7181,7 +7181,7 @@ for handling login process.</p></td>
 <span class="normal">1599</span>
 <span class="normal">1600</span>
 <span class="normal">1601</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_weekly_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Dispatches `weekly_comment` events via calling</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `weekly_comment` events via calling</span>
 <span class="sd">    [`on_weekly_comment`][gd.client.Client.on_weekly_comment].</span>
 
 <span class="sd">    Arguments:</span>
@@ -7259,7 +7259,7 @@ for handling login process.</p></td>
 <span class="normal">1609</span>
 <span class="normal">1610</span>
 <span class="normal">1611</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">UserComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Dispatches `user_comment` events via calling</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `user_comment` events via calling</span>
 <span class="sd">    [`on_user_comment`][gd.client.Client.on_user_comment].</span>
 
 <span class="sd">    Arguments:</span>
@@ -7337,7 +7337,7 @@ for handling login process.</p></td>
 <span class="normal">1619</span>
 <span class="normal">1620</span>
 <span class="normal">1621</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Dispatches `user_level_comment` events via calling</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `user_level_comment` events via calling</span>
 <span class="sd">    [`on_user_level_comment`][gd.client.Client.on_user_level_comment].</span>
 
 <span class="sd">    Arguments:</span>
@@ -7443,7 +7443,7 @@ for handling login process.</p></td>
 <span class="normal">1643</span>
 <span class="normal">1644</span>
 <span class="normal">1645</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">:</span> <span class="n">F</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">F</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Registers an event handler.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers an event handler.</span>
 
 <span class="sd">    Example:</span>
 <span class="sd">        ```python</span>

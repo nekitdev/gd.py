@@ -716,7 +716,7 @@ and is reset if no more attempts are needed in a period of <span class="arithmat
 <span class="normal">116</span>
 <span class="normal">117</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">()</span>
 <span class="k">class</span> <span class="nc">ExponentialBackoff</span><span class="p">:</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;An implementation of the *exponential backoff* algorithm.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;An implementation of the *exponential backoff* algorithm.</span>
 
 <span class="sd">    Provides a convenient interface to implement an exponential backoff</span>
 <span class="sd">    for reconnecting or retrying transmissions in a distributed network.</span>
@@ -747,7 +747,7 @@ and is reset if no more attempts are needed in a period of <span class="arithmat
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">multiply</span> <span class="o">*</span> <span class="nb">pow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">delay</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Computes the next delay.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Computes the next delay.</span>
 
 <span class="sd">        Returns the next delay to wait according to the exponential</span>
 <span class="sd">        backoff algorithm. This is a value between $0$ and $m \cdot b^e$</span>
@@ -829,7 +829,7 @@ retry, the <code>exponent</code> (<span class="arithmatex">\(e\)</span>) is rese
 <span class="normal">115</span>
 <span class="normal">116</span>
 <span class="normal">117</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">delay</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Computes the next delay.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Computes the next delay.</span>
 
 <span class="sd">    Returns the next delay to wait according to the exponential</span>
 <span class="sd">    backoff algorithm. This is a value between $0$ and $m \cdot b^e$</span>
@@ -1090,7 +1090,7 @@ retry, the <code>exponent</code> (<span class="arithmatex">\(e\)</span>) is rese
 <span class="normal">333</span>
 <span class="normal">334</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">()</span>
 <span class="k">class</span> <span class="nc">Loop</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">P</span><span class="p">]):</span>
-    <span class="sd">&quot;&quot;&quot;A background task helper that abstracts the loop and reconnection logic.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A background task helper that abstracts the loop and reconnection logic.</span>
 
 <span class="sd">    The main interface to create this is through [`loop`][gd.tasks.loop].</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1362,7 +1362,7 @@ retry, the <code>exponent</code> (<span class="arithmatex">\(e\)</span>) is rese
     <span class="n">count</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">reconnect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_RECONNECT</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Unary</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="n">P</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]],</span> <span class="n">Loop</span><span class="p">[</span><span class="n">P</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;...&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;...&quot;&quot;&quot;</span>
 
     <span class="n">delay</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">seconds</span> <span class="o">+</span> <span class="n">minutes</span> <span class="o">*</span> <span class="n">MINUTES_TO_SECONDS</span> <span class="o">+</span> <span class="n">hours</span> <span class="o">*</span> <span class="n">HOURS_TO_SECONDS</span> <span class="o">+</span> <span class="n">days</span> <span class="o">*</span> <span class="n">DAYS_TO_SECONDS</span>
