@@ -1917,6 +1917,9 @@ PASSWORD = "GJA_002"
 ACCOUNT_ID = "GJA_003"
 SESSION_ID = "GJA_004"
 
+OFFICIAL_LEVELS = "GLM_01"
+SAVED_LEVELS = "GLM_03"
+FOLLOWED = "GLM_06"
 LAST_PLAYED = "GLM_07"
 FILTERS = "GLM_08"  # TODO
 AVAILABLE_FILTERS = "GLM_09"  # TODO
@@ -2097,6 +2100,18 @@ class Database(Binary):
 
         secret_value = main_data.get(SECRET_VALUE, DEFAULT_SECRET_VALUE)
 
+        official_levels_data = main_data.get(OFFICIAL_LEVELS, {})
+
+        official_levels = iter(official_levels_data.values()).map(LevelAPI.from_robtop_data).ordered_set()
+
+        saved_levels_data = main_data.get(SAVED_LEVELS, {})
+
+        saved_levels = iter(saved_levels_data.values()).map(LevelAPI.from_robtop_data).ordered_set()
+
+        followed_data = main_data.get(FOLLOWED, {})
+
+        followed = iter(followed_data.keys()).map(int).ordered_set()
+
         last_played_data = main_data.get(LAST_PLAYED, {})
 
         last_played = iter(last_played_data.keys()).map(int).ordered_set()
@@ -2195,7 +2210,9 @@ class Database(Binary):
             glow=glow,
             secret_value=secret_value,
             moderator=moderator,
-            # ...
+            official_levels=official_levels,
+            saved_levels=saved_levels,
+            followed=followed,
             last_played=last_played,
             # ...
             daily_levels=daily_levels,
@@ -2254,6 +2271,18 @@ class Database(Binary):
 
         if moderator:
             main_data[MODERATOR] = moderator
+
+        official_levels_data = {str(level.id): level.to_robtop_data() for level in self.official_levels}
+
+        main_data[OFFICIAL_LEVELS] = official_levels_data
+
+        saved_levels_data = {str(level.id): level.to_robtop_data() for level in self.saved_levels}
+
+        main_data[SAVED_LEVELS] = saved_levels_data
+
+        followed_data = {str(account_id): one for account_id in self.followed}
+
+        main_data[FOLLOWED] = followed_data
 
         last_played_data = {str(level_id): one for level_id in self.last_played}
 

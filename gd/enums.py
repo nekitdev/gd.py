@@ -251,6 +251,13 @@ class LevelLength(Enum):
 
     DEFAULT = TINY
 
+    @classmethod
+    def _missing_(cls, value: Any) -> LevelLength:  # type: ignore
+        if value < 0:
+            return cls.TINY
+
+        return cls.XL
+
 
 class LevelPrivacy(Enum):
     """An enumeration of level publicity modes."""

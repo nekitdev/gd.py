@@ -11,6 +11,8 @@ COMPRESSED = "compressed: {} / {} ({}x compression)"
 LOADING = "Loading the database..."
 DUMPING = "Dumping the database..."
 CONVERTING = "Converting the database..."
+COMPRESSING = "Compressing the database..."
+
 
 @entrypoint(__name__)
 def main() -> None:
@@ -34,6 +36,8 @@ def main() -> None:
     compression = round(robtop_data_length / data_length, rounding)
 
     print(UNCOMPRESSED.format(data_length, robtop_data_length, compression))
+
+    print(COMPRESSING)
 
     compressed_robtop_data = compress(robtop_data)
     compressed_data = compress(data)
