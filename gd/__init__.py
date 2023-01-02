@@ -8,7 +8,7 @@ __author__ = "nekitdev"
 __license__ = "MIT"
 __version__ = "1.0.0-alpha.1"
 
-from gd import api, binary, encoding, events, image, json, tasks
+from gd import api, binary, encoding, events, image, json, memory, tasks
 from gd.artist import Artist
 from gd.binary import BinaryInfo
 from gd.client import Client

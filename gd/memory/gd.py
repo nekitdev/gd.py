@@ -1,3 +1,4 @@
+from gd.constants import COMPLETED
 from gd.difficulty_parameters import DifficultyParameters
 from gd.enums import (
     Difficulty,
@@ -793,6 +794,10 @@ class PlayLayer(BaseGameLayer):  # TODO: misaligned
     @property
     def level_length(self) -> float:
         return self.level_size.width
+
+    @property
+    def progress(self, total: float = COMPLETED) -> float:
+        return min(self.player_1.value.position.x / self.level_length * total, total)
 
     def is_practice(self) -> bool:
         return self.practice
