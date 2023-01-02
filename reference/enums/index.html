@@ -925,6 +925,53 @@
 
             
           
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2_5" type="checkbox" id="__nav_2_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_5">
+          Memory
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Memory" data-md-level="2">
+        <label class="md-nav__title" for="__nav_2_5">
+          <span class="md-nav__icon md-icon"></span>
+          Memory
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memory/internal/" class="md-nav__link">
+        Internal
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -6542,7 +6589,7 @@
         Bases: <code><a class="autorefs autorefs-external" title="enum.Enum" href="https://docs.python.org/3/library/enum.html#enum.Enum">Enum</a></code></p>
 
   
-      <p>An enumeration of byte orders.</p>
+      <p>An enumeration of binary orders (used in binary protocols).</p>
 
 
         <details class="quote">
@@ -6562,13 +6609,21 @@
 <span class="normal">1575</span>
 <span class="normal">1576</span>
 <span class="normal">1577</span>
-<span class="normal">1578</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ByteOrder</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;An enumeration of byte orders.&quot;&quot;&quot;</span>
+<span class="normal">1578</span>
+<span class="normal">1579</span>
+<span class="normal">1580</span>
+<span class="normal">1581</span>
+<span class="normal">1582</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ByteOrder</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An enumeration of binary orders (used in binary protocols).&quot;&quot;&quot;</span>
 
+    <span class="n">NATIVE</span> <span class="o">=</span> <span class="s2">&quot;=&quot;</span>
     <span class="n">LITTLE</span> <span class="o">=</span> <span class="s2">&quot;&lt;&quot;</span>
     <span class="n">BIG</span> <span class="o">=</span> <span class="s2">&quot;&gt;&quot;</span>
 
     <span class="n">DEFAULT</span> <span class="o">=</span> <span class="n">LITTLE</span>
+
+    <span class="k">def</span> <span class="nf">is_native</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">NATIVE</span>
 
     <span class="k">def</span> <span class="nf">is_little</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">LITTLE</span>
@@ -6622,11 +6677,7 @@
 
         <details class="quote">
           <summary>Source code in <code>gd/enums.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1581</span>
-<span class="normal">1582</span>
-<span class="normal">1583</span>
-<span class="normal">1584</span>
-<span class="normal">1585</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1585</span>
 <span class="normal">1586</span>
 <span class="normal">1587</span>
 <span class="normal">1588</span>
@@ -6641,14 +6692,24 @@
 <span class="normal">1597</span>
 <span class="normal">1598</span>
 <span class="normal">1599</span>
-<span class="normal">1600</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Platform</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="normal">1600</span>
+<span class="normal">1601</span>
+<span class="normal">1602</span>
+<span class="normal">1603</span>
+<span class="normal">1604</span>
+<span class="normal">1605</span>
+<span class="normal">1606</span>
+<span class="normal">1607</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Platform</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;An enumeration of system platforms.&quot;&quot;&quot;</span>
 
     <span class="n">UNKNOWN</span> <span class="o">=</span> <span class="mi">0</span>
+
     <span class="n">ANDROID</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">DARWIN</span> <span class="o">=</span> <span class="mi">2</span>
     <span class="n">LINUX</span> <span class="o">=</span> <span class="mi">3</span>
     <span class="n">WINDOWS</span> <span class="o">=</span> <span class="mi">4</span>
+
+    <span class="n">DEFAULT</span> <span class="o">=</span> <span class="n">UNKNOWN</span>
 
     <span class="k">def</span> <span class="nf">is_android</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">ANDROID</span>
@@ -6705,19 +6766,19 @@
 
         <details class="quote">
           <summary>Source code in <code>gd/enums.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1603</span>
-<span class="normal">1604</span>
-<span class="normal">1605</span>
-<span class="normal">1606</span>
-<span class="normal">1607</span>
-<span class="normal">1608</span>
-<span class="normal">1609</span>
-<span class="normal">1610</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1610</span>
 <span class="normal">1611</span>
 <span class="normal">1612</span>
 <span class="normal">1613</span>
 <span class="normal">1614</span>
-<span class="normal">1615</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Orientation</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="normal">1615</span>
+<span class="normal">1616</span>
+<span class="normal">1617</span>
+<span class="normal">1618</span>
+<span class="normal">1619</span>
+<span class="normal">1620</span>
+<span class="normal">1621</span>
+<span class="normal">1622</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Orientation</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;An enumeration of orientations.&quot;&quot;&quot;</span>
 
     <span class="n">HORIZONTAL</span> <span class="o">=</span> <span class="mi">0</span>
@@ -6774,14 +6835,14 @@
 
         <details class="quote">
           <summary>Source code in <code>gd/enums.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1618</span>
-<span class="normal">1619</span>
-<span class="normal">1620</span>
-<span class="normal">1621</span>
-<span class="normal">1622</span>
-<span class="normal">1623</span>
-<span class="normal">1624</span>
-<span class="normal">1625</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ResponseType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1625</span>
+<span class="normal">1626</span>
+<span class="normal">1627</span>
+<span class="normal">1628</span>
+<span class="normal">1629</span>
+<span class="normal">1630</span>
+<span class="normal">1631</span>
+<span class="normal">1632</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ResponseType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;An enumeration of response types.&quot;&quot;&quot;</span>
 
     <span class="n">BYTES</span> <span class="o">=</span> <span class="mi">0</span>
@@ -6833,14 +6894,7 @@
 
         <details class="quote">
           <summary>Source code in <code>gd/enums.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1628</span>
-<span class="normal">1629</span>
-<span class="normal">1630</span>
-<span class="normal">1631</span>
-<span class="normal">1632</span>
-<span class="normal">1633</span>
-<span class="normal">1634</span>
-<span class="normal">1635</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1635</span>
 <span class="normal">1636</span>
 <span class="normal">1637</span>
 <span class="normal">1638</span>
@@ -6856,7 +6910,14 @@
 <span class="normal">1648</span>
 <span class="normal">1649</span>
 <span class="normal">1650</span>
-<span class="normal">1651</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">CollectedCoins</span><span class="p">(</span><span class="n">Flag</span><span class="p">):</span>
+<span class="normal">1651</span>
+<span class="normal">1652</span>
+<span class="normal">1653</span>
+<span class="normal">1654</span>
+<span class="normal">1655</span>
+<span class="normal">1656</span>
+<span class="normal">1657</span>
+<span class="normal">1658</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">CollectedCoins</span><span class="p">(</span><span class="n">Flag</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;An enumeration of collected coins.&quot;&quot;&quot;</span>
 
     <span class="n">NONE</span> <span class="o">=</span> <span class="mi">0</span>
