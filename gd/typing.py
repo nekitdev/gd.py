@@ -17,7 +17,7 @@ from typing import (
     Union,
 )
 
-from typing_extensions import TypeGuard
+from typing_extensions import Protocol, TypeGuard, runtime_checkable
 from yarl import URL
 
 __all__ = (
@@ -45,10 +45,13 @@ __all__ = (
     "Namespace",
     "IntoPath",
     "JSONType",
+    "HasModule",
     "is_same_type",
     "is_iterable",
     "is_string",
     "is_any_exception",
+    "get_module",
+    "has_module",
     "is_instance",
     "is_subclass",
 )
@@ -157,3 +160,16 @@ def is_string(item: Any) -> TypeGuard[str]:
 
 def is_any_exception(item: Any) -> TypeGuard[AnyException]:
     return is_instance(item, AnyException)
+
+
+@runtime_checkable
+class HasModule(Protocol):
+    __module__: str
+
+
+def get_module(item: HasModule) -> str:
+    return item.__module__
+
+
+def has_module(item: Any) -> TypeGuard[HasModule]:
+    return is_instance(item, HasModule)

@@ -1,6 +1,10 @@
 from struct import calcsize as size
 
+from gd.enums import ByteOrder
+
 __all__ = (
+    # bool size
+    "BOOL_SIZE",
     # int sizes
     "I8_SIZE",
     "U8_SIZE",
@@ -13,6 +17,8 @@ __all__ = (
     # float sizes
     "F32_SIZE",
     "F64_SIZE",
+    # bool bits
+    "BOOL_BITS",
     # int bits
     "I8_BITS",
     "U8_BITS",
@@ -35,6 +41,8 @@ __all__ = (
 
 from typing_extensions import Final
 
+BOOL: Final[str] = "?"
+
 I8: Final[str] = "b"
 U8: Final[str] = "B"
 I16: Final[str] = "h"
@@ -47,7 +55,9 @@ U64: Final[str] = "Q"
 F32: Final[str] = "f"
 F64: Final[str] = "d"
 
-NATIVE: Final[str] = "="
+NATIVE: Final[str] = ByteOrder.NATIVE.value
+
+BOOL_SIZE: Final[int] = size(NATIVE + BOOL)
 
 I8_SIZE: Final[int] = size(NATIVE + I8)
 U8_SIZE: Final[int] = size(NATIVE + U8)
@@ -68,6 +78,8 @@ BYTE: Final[int] = 0xFF
 BITS: Final[int] = BYTE.bit_length()
 
 DOUBLE_BITS: Final[int] = BITS + BITS
+
+BOOL_BITS: Final[int] = BOOL_SIZE * BITS
 
 I8_BITS: Final[int] = I8_SIZE * BITS
 U8_BITS: Final[int] = U8_SIZE * BITS

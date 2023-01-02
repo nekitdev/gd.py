@@ -17,6 +17,8 @@ nav:
       - Editor: "reference/api/editor.md"
       - Folder: "reference/api/folder.md"
       - Guidelines: "reference/api/guidelines.md"
+    - Memory:
+      - Internal: "reference/memory/internal.md"
   - Changelog: "changelog.md"
   - Security: "security.md"
   - Code of Conduct: "code_of_conduct.md"

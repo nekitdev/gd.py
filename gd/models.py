@@ -53,9 +53,9 @@ from gd.constants import (
     DEFAULT_VERSION,
     EMPTY,
     QUESTS_SLICE,
-    WEEKLY_ID_ADD,
     UNKNOWN,
     UNNAMED,
+    WEEKLY_ID_ADD,
 )
 from gd.date_time import DateTime, Duration, date_time_from_human, date_time_to_human, utc_now
 from gd.decorators import cache_by
@@ -1238,7 +1238,9 @@ class LevelModel(Model):
         timely_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_TIMELY_ID))
 
         if timely_id:
-            if timely_id // WEEKLY_ID_ADD:
+            result, timely_id = divmod(timely_id, WEEKLY_ID_ADD)
+
+            if result:
                 timely_type = TimelyType.WEEKLY
 
             else:
@@ -1246,8 +1248,6 @@ class LevelModel(Model):
 
         else:
             timely_type = TimelyType.NOT_TIMELY
-
-        timely_id %= WEEKLY_ID_ADD
 
         score = parse_get_or(int, DEFAULT_SCORE, mapping.get(LEVEL_SCORE))
 
@@ -1311,9 +1311,7 @@ class LevelModel(Model):
     def to_robtop(self) -> str:
         timely_id = self.timely_id
 
-        timely_type = self.timely_type
-
-        if timely_type.is_weekly():
+        if self.timely_type.is_weekly():
             timely_id += WEEKLY_ID_ADD
 
         difficulty_parameters = DifficultyParameters.from_difficulty(self.difficulty)

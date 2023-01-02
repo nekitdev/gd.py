@@ -5,6 +5,7 @@ from attrs import frozen
 
 from gd.binary import BinaryReader, BinaryWriter
 from gd.binary_constants import (
+    BOOL,
     F32,
     F32_SIZE,
     F64,
@@ -89,6 +90,22 @@ def create_to_float(format: str) -> Binary[float, ByteOrder, bytes]:
     return to_float
 
 
+def create_from_bool(format: str) -> Binary[bytes, ByteOrder, bool]:
+    def from_bool(data: bytes, order: ByteOrder = ByteOrder.DEFAULT) -> bool:
+        return unpack_unary_tuple(unpack(order.value + format, data))  # type: ignore
+
+    return from_bool
+
+
+def create_to_bool(format: str) -> Binary[bool, ByteOrder, bytes]:
+    def to_bool(value: bool, order: ByteOrder = ByteOrder.DEFAULT) -> bytes:
+        return pack(order.value + format, value)
+
+    return to_bool
+
+
+from_bool = create_from_bool(BOOL)
+
 from_i8 = create_from_int(I8)
 from_u8 = create_from_int(U8)
 from_i16 = create_from_int(I16)
@@ -100,6 +117,8 @@ from_u64 = create_from_int(U64)
 
 from_f32 = create_from_float(F32)
 from_f64 = create_from_float(F64)
+
+to_bool = create_to_bool(BOOL)
 
 to_i8 = create_to_int(I8)
 to_u8 = create_to_int(U8)

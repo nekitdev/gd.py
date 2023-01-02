@@ -1,11 +1,13 @@
 from typing import Type, TypeVar
+
 from attrs import frozen
+from iters import iter
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ID
 from gd.enums import ByteOrder, LikeType
-from gd.models_utils import concat_like, int_bool, split_like
+from gd.models_utils import concat_like, split_like
 from gd.robtop import RobTop
 
 __all__ = ("Like",)
@@ -29,17 +31,22 @@ class Like(Binary, RobTop):
 
     @classmethod
     def from_robtop(cls: Type[L], string: str) -> L:
-        _, type_string, id_string, liked_string, other_id_string = split_like(string)
+        type_value, id, liked_value, other_id = (
+            iter(split_like(string)).map(int).skip(1).unwrap()
+        )
 
         return cls(
-            type=LikeType(int(type_string)),
-            id=int(id_string),
-            other_id=int(other_id_string),
-            liked=int_bool(liked_string),
+            type=LikeType(type_value), id=id, other_id=other_id, liked=bool(liked_value)
         )
 
     def to_robtop(self) -> str:
-        values = (LIKE, str(self.type.value), str(self.id), str(int(self.liked)), str(self.other_id))
+        values = (
+            LIKE,
+            str(self.type.value),
+            str(self.id),
+            str(int(self.liked)),
+            str(self.other_id),
+        )
 
         return concat_like(values)
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, Dict, List, Tuple, Type, TypeVar
+from typing import Any, Dict, List, Mapping, Tuple, Type, TypeVar
 from uuid import UUID
 from uuid import uuid4 as generate_uuid
 
@@ -41,10 +41,10 @@ from gd.constants import (
     DEFAULT_STARS,
     DEFAULT_USER_COINS,
     EMPTY,
-    WEEKLY_ID_ADD,
     UNKNOWN,
+    WEEKLY_ID_ADD,
 )
-from gd.enums import ByteOrder, Filter, IconType, LevelLeaderboardStrategy, Quality
+from gd.enums import ByteOrder, CollectedCoins, Filter, IconType, LevelLeaderboardStrategy, Quality
 from gd.filters import Filters
 from gd.iter_utils import unary_tuple
 from gd.song import Song
@@ -1688,6 +1688,35 @@ class UnlockValues(Binary):
     #     return self.discord_chest_unlocked
 
 
+JUMPS_STATISTICS = "1"
+ATTEMPTS_STATISTICS = "2"
+OFFICIAL_LEVELS_STATISTICS = "3"
+ONLINE_LEVELS_STATISTICS = "4"
+DEMONS_STATISTICS = "5"
+STARS_STATISTICS = "6"
+MAP_PACKS_STATISTICS = "7"
+SECRET_COINS_STATISTICS = "8"
+DESTROYED_STATISTICS = "9"
+LIKED_STATISTICS = "10"
+RATED_STATISTICS = "11"
+USER_COINS_STATISTICS = "12"
+DIAMONDS_STATISTICS = "13"
+ORBS_STATISTICS = "14"
+TIMELY_LEVELS_STATISTICS = "15"
+FIRE_SHARDS_STATISTICS = "16"
+ICE_SHARDS_STATISTICS = "17"
+POISON_SHARDS_STATISTICS = "18"
+SHADOW_SHARDS_STATISTICS = "19"
+LAVA_SHARDS_STATISTICS = "20"
+BONUS_SHARDS_STATISTICS = "21"
+TOTAL_ORBS_STATISTICS = "22"
+
+FIRST = 1
+SECOND = 2
+THIRD = 3
+
+UNIQUE = "unique"
+
 S = TypeVar("S", bound="Statistics")
 
 
@@ -1707,7 +1736,7 @@ class Statistics(Binary):
     user_coins: int = field(default=DEFAULT_USER_COINS)
     diamonds: int = field(default=DEFAULT_DIAMONDS)
     orbs: int = field(default=DEFAULT_ORBS)
-    daily_levels: int = field(default=DEFAULT_LEVELS)
+    timely_levels: int = field(default=DEFAULT_LEVELS)
     fire_shards: int = field(default=DEFAULT_SHARDS)
     ice_shards: int = field(default=DEFAULT_SHARDS)
     poison_shards: int = field(default=DEFAULT_SHARDS)
@@ -1716,7 +1745,7 @@ class Statistics(Binary):
     bonus_shards: int = field(default=DEFAULT_SHARDS)
     total_orbs: int = field(default=DEFAULT_ORBS)
 
-    official_coins: Dict[int, int] = field(factory=dict)
+    official_coins: Dict[int, CollectedCoins] = field(factory=dict)
 
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
@@ -1737,7 +1766,7 @@ class Statistics(Binary):
         writer.write_u32(self.user_coins, order)
         writer.write_u32(self.diamonds, order)
         writer.write_u32(self.orbs, order)
-        writer.write_u32(self.daily_levels, order)
+        writer.write_u32(self.timely_levels, order)
         writer.write_u16(self.fire_shards, order)
         writer.write_u16(self.ice_shards, order)
         writer.write_u16(self.poison_shards, order)
@@ -1750,9 +1779,9 @@ class Statistics(Binary):
 
         writer.write_u16(len(official_coins))
 
-        for level_id, count in official_coins.items():
+        for level_id, collected_coins in official_coins.items():
             writer.write_u16(level_id, order)
-            writer.write_u8(count, order)
+            writer.write_u8(collected_coins.value, order)
 
     @classmethod
     def from_binary(
@@ -1777,7 +1806,7 @@ class Statistics(Binary):
         user_coins = reader.read_u32(order)
         diamonds = reader.read_u32(order)
         orbs = reader.read_u32(order)
-        daily_levels = reader.read_u32(order)
+        timely_levels = reader.read_u32(order)
         fire_shards = reader.read_u16(order)
         ice_shards = reader.read_u16(order)
         poison_shards = reader.read_u16(order)
@@ -1786,10 +1815,13 @@ class Statistics(Binary):
         bonus_shards = reader.read_u16(order)
         total_orbs = reader.read_u32(order)
 
+        collected_coins = CollectedCoins
+
         official_coins_length = reader.read_u16(order)
 
         official_coins = {
-            reader.read_u16(order): reader.read_u8(order) for _ in range(official_coins_length)
+            reader.read_u16(order): collected_coins(reader.read_u8(order))
+            for _ in range(official_coins_length)
         }
 
         return cls(
@@ -1807,7 +1839,7 @@ class Statistics(Binary):
             user_coins=user_coins,
             diamonds=diamonds,
             orbs=orbs,
-            daily_levels=daily_levels,
+            timely_levels=timely_levels,
             fire_shards=fire_shards,
             ice_shards=ice_shards,
             poison_shards=poison_shards,
@@ -1923,7 +1955,7 @@ FOLLOWED = "GLM_06"
 LAST_PLAYED = "GLM_07"
 FILTERS = "GLM_08"  # TODO
 AVAILABLE_FILTERS = "GLM_09"  # TODO
-DAILY_LEVELS = "GLM_10"
+TIMELY_LEVELS = "GLM_10"
 DAILY_ID = "GLM_11"
 LIKED = "GLM_12"
 RATED = "GLM_13"
@@ -2022,7 +2054,7 @@ class Database(Binary):
     followed: OrderedSet[int] = field(factory=ordered_set)
     last_played: OrderedSet[int] = field(factory=ordered_set)
     filters: Filters = field(factory=Filters)
-    daily_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
+    timely_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
     daily_id: int = field(default=DEFAULT_ID)
     weekly_id: int = field(default=DEFAULT_ID)
     liked: OrderedSet[Like] = field(factory=dict)
@@ -2102,7 +2134,9 @@ class Database(Binary):
 
         official_levels_data = main_data.get(OFFICIAL_LEVELS, {})
 
-        official_levels = iter(official_levels_data.values()).map(LevelAPI.from_robtop_data).ordered_set()
+        official_levels = (
+            iter(official_levels_data.values()).map(LevelAPI.from_robtop_data).ordered_set()
+        )
 
         saved_levels_data = main_data.get(SAVED_LEVELS, {})
 
@@ -2116,9 +2150,11 @@ class Database(Binary):
 
         last_played = iter(last_played_data.keys()).map(int).ordered_set()
 
-        daily_levels_data = main_data.get(DAILY_LEVELS, {})
+        timely_levels_data = main_data.get(TIMELY_LEVELS, {})
 
-        daily_levels = iter(daily_levels_data.values()).map(LevelAPI.from_robtop_data).ordered_set()
+        timely_levels = (
+            iter(timely_levels_data.values()).map(LevelAPI.from_robtop_data).ordered_set()
+        )
 
         daily_id = main_data.get(DAILY_ID, DEFAULT_ID)
         weekly_id = main_data.get(WEEKLY_ID, DEFAULT_ID) % WEEKLY_ID_ADD
@@ -2141,7 +2177,9 @@ class Database(Binary):
 
         gauntlet_levels_data = main_data.get(GAUNTLET_LEVELS, {})
 
-        gauntlet_levels = iter(gauntlet_levels_data.values()).map(LevelAPI.from_robtop_data).ordered_set()
+        gauntlet_levels = (
+            iter(gauntlet_levels_data.values()).map(LevelAPI.from_robtop_data).ordered_set()
+        )
 
         ...
 
@@ -2150,15 +2188,15 @@ class Database(Binary):
 
         saved_folders_data = main_data.get(SAVED_FOLDERS, {})
 
-        saved_folders = iter(saved_folders_data.items()).map(
-            unpack_binary(create_folder)
-        ).ordered_set()
+        saved_folders = (
+            iter(saved_folders_data.items()).map(unpack_binary(create_folder)).ordered_set()
+        )
 
         created_folders_data = main_data.get(CREATED_FOLDERS, {})
 
-        created_folders = iter(created_folders_data.items()).map(
-            unpack_binary(create_folder)
-        ).ordered_set()
+        created_folders = (
+            iter(created_folders_data.items()).map(unpack_binary(create_folder)).ordered_set()
+        )
 
         import json
 
@@ -2215,7 +2253,7 @@ class Database(Binary):
             followed=followed,
             last_played=last_played,
             # ...
-            daily_levels=daily_levels,
+            timely_levels=timely_levels,
             daily_id=daily_id,
             weekly_id=weekly_id,
             liked=liked,
@@ -2272,7 +2310,9 @@ class Database(Binary):
         if moderator:
             main_data[MODERATOR] = moderator
 
-        official_levels_data = {str(level.id): level.to_robtop_data() for level in self.official_levels}
+        official_levels_data = {
+            str(level.id): level.to_robtop_data() for level in self.official_levels
+        }
 
         main_data[OFFICIAL_LEVELS] = official_levels_data
 
@@ -2288,9 +2328,9 @@ class Database(Binary):
 
         main_data[LAST_PLAYED] = last_played_data
 
-        daily_levels_data = {str(level.id): level.to_robtop_data() for level in self.daily_levels}
+        timely_levels_data = {str(level.id): level.to_robtop_data() for level in self.timely_levels}
 
-        main_data[DAILY_LEVELS] = daily_levels_data
+        main_data[TIMELY_LEVELS] = timely_levels_data
 
         liked_data = {like.to_robtop(): one for like in self.liked}
 
@@ -2514,10 +2554,10 @@ class Database(Binary):
 
         filters = Filters.from_binary(binary, order, version)
 
-        daily_levels_length = reader.read_u32(order)
+        timely_levels_length = reader.read_u32(order)
 
-        daily_levels = iter.repeat_exactly_with(
-            level_api_from_binary, daily_levels_length
+        timely_levels = iter.repeat_exactly_with(
+            level_api_from_binary, timely_levels_length
         ).ordered_set()
 
         daily_id = reader.read_u32(order)
@@ -2623,7 +2663,7 @@ class Database(Binary):
             followed=followed,
             last_played=last_played,
             filters=filters,
-            daily_levels=daily_levels,
+            timely_levels=timely_levels,
             daily_id=daily_id,
             weekly_id=weekly_id,
             liked=liked,
@@ -2797,12 +2837,12 @@ class Database(Binary):
 
         self.filters.to_binary(binary, order, version)
 
-        daily_levels = self.daily_levels
+        timely_levels = self.timely_levels
 
-        writer.write_u32(len(daily_levels), order)
+        writer.write_u32(len(timely_levels), order)
 
-        for daily_level in daily_levels:
-            daily_level.to_binary(binary, order, version, encoding, errors)
+        for timely_level in timely_levels:
+            timely_level.to_binary(binary, order, version, encoding, errors)
 
         writer.write_u32(self.daily_id, order)
         writer.write_u32(self.weekly_id, order)

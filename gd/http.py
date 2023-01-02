@@ -54,8 +54,8 @@ from gd.constants import (
     DEFAULT_VERSION,
     EMPTY,
     SLASH,
-    WEEKLY_ID_ADD,
     UNNAMED,
+    WEEKLY_ID_ADD,
     WRITE_BINARY,
 )
 from gd.date_time import Duration

@@ -1561,12 +1561,16 @@ class Filter(Enum):
 
 
 class ByteOrder(Enum):
-    """An enumeration of byte orders."""
+    """An enumeration of binary orders (used in binary protocols)."""
 
+    NATIVE = "="
     LITTLE = "<"
     BIG = ">"
 
     DEFAULT = LITTLE
+
+    def is_native(self) -> bool:
+        return self is type(self).NATIVE
 
     def is_little(self) -> bool:
         return self is type(self).LITTLE
@@ -1582,10 +1586,13 @@ class Platform(Enum):
     """An enumeration of system platforms."""
 
     UNKNOWN = 0
+
     ANDROID = 1
     DARWIN = 2
     LINUX = 3
     WINDOWS = 4
+
+    DEFAULT = UNKNOWN
 
     def is_android(self) -> bool:
         return self is type(self).ANDROID
@@ -1658,3 +1665,15 @@ class Quality(Enum):
     HIGH = 3
 
     DEFAULT = AUTO
+
+
+class Permissions(Flag):
+    NONE = 0
+
+    EXECUTE = 1
+    WRITE = 2
+    READ = 4
+
+    ALL = EXECUTE | WRITE | READ
+
+    DEFAULT = ALL

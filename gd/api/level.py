@@ -44,6 +44,7 @@ from gd.constants import (
     DEFAULT_VERSION,
     EMPTY,
     UNKNOWN,
+    WEEKLY_ID_ADD,
 )
 from gd.date_time import Duration
 from gd.decorators import cache_by
@@ -64,6 +65,7 @@ from gd.enums import (
     LevelLength,
     LevelType,
     RateType,
+    TimelyType,
 )
 from gd.password import Password
 from gd.progress import Progress
@@ -203,6 +205,7 @@ class LevelAPI(Binary):
     low_detail: bool = field(default=DEFAULT_LOW_DETAIL)
     low_detail_toggled: bool = field(default=DEFAULT_LOW_DETAIL_TOGGLED)
     timely_id: int = field(default=DEFAULT_ID)
+    timely_type: TimelyType = field(default=TimelyType.DEFAULT)
     gauntlet: bool = field(default=DEFAULT_GAUNTLET)
     unlisted: bool = field(default=DEFAULT_UNLISTED)
     editor_time: Duration = field(factory=Duration)
@@ -405,6 +408,18 @@ class LevelAPI(Binary):
 
         timely_id = data.get(TIMELY_ID, DEFAULT_ID)
 
+        if timely_id:
+            result, timely_id = divmod(timely_id, WEEKLY_ID_ADD)
+
+            if result:
+                timely_type = TimelyType.WEEKLY
+
+            else:
+                timely_type = TimelyType.DAILY
+
+        else:
+            timely_type = TimelyType.NOT_TIMELY
+
         gauntlet = data.get(GAUNTLET, DEFAULT_GAUNTLET)
 
         unlisted = data.get(UNLISTED, DEFAULT_UNLISTED)
@@ -493,6 +508,7 @@ class LevelAPI(Binary):
             low_detail=low_detail,
             low_detail_toggled=low_detail_toggled,
             timely_id=timely_id,
+            timely_type=timely_type,
             gauntlet=gauntlet,
             unlisted=unlisted,
             editor_time=editor_time,
@@ -508,6 +524,11 @@ class LevelAPI(Binary):
 
     def to_robtop_data(self) -> Dict[str, Any]:
         difficulty_parameters = DifficultyParameters.from_difficulty(self.difficulty)
+
+        timely_id = self.timely_id
+
+        if self.timely_type.is_weekly():
+            timely_id += WEEKLY_ID_ADD
 
         data = {
             INTERNAL_TYPE: InternalType.LEVEL.value,
@@ -539,7 +560,7 @@ class LevelAPI(Binary):
             COINS: self.coins,
             REQUESTED_STARS: self.requested_stars,
             ORB_PERCENTAGE: self.orb_percentage,
-            TIMELY_ID: self.timely_id,
+            TIMELY_ID: timely_id,
             EDITOR_SECONDS: int(self.editor_time.total_seconds()),
             COPIES_SECONDS: int(self.copies_time.total_seconds()),
             LEVEL_ORDER: self.level_order,
