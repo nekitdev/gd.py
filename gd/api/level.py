@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 from attrs import define, field
 
@@ -70,6 +70,7 @@ from gd.enums import (
 from gd.password import Password
 from gd.progress import Progress
 from gd.song import Song
+from gd.typing import StringDict, StringMapping
 from gd.users import User
 from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, Version
 
@@ -247,7 +248,7 @@ class LevelAPI(Binary):
         return Editor.from_robtop(self.processed_data)  # type: ignore
 
     @classmethod
-    def from_robtop_data(cls: Type[A], data: Dict[str, Any]) -> A:  # type: ignore
+    def from_robtop_data(cls: Type[A], data: StringMapping[Any]) -> A:  # type: ignore
         id = data.get(ID, DEFAULT_ID)
 
         name = data.get(NAME, UNKNOWN)
@@ -343,10 +344,10 @@ class LevelAPI(Binary):
 
         rate_type = RateType.NOT_RATED
 
-        if stars:
+        if stars > 0:
             rate_type = RateType.RATED
 
-        if score:
+        if score > 0:
             rate_type = RateType.FEATURED
 
         epic = data.get(EPIC, DEFAULT_EPIC)
@@ -522,7 +523,7 @@ class LevelAPI(Binary):
             leaderboard_record=leaderboard_record,
         )
 
-    def to_robtop_data(self) -> Dict[str, Any]:
+    def to_robtop_data(self) -> StringDict[Any]:
         difficulty_parameters = DifficultyParameters.from_difficulty(self.difficulty)
 
         timely_id = self.timely_id
@@ -1043,6 +1044,36 @@ class LevelAPI(Binary):
 
     def is_copyable(self) -> bool:
         return self.password_data.is_copyable()
+
+    def is_timely(self, timely_type: Optional[TimelyType] = None) -> bool:
+        if timely_type is None:
+            return self.timely_type.is_timely()
+
+        return self.timely_type is timely_type
+
+    def is_daily(self) -> bool:
+        return self.is_timely(TimelyType.DAILY)
+
+    def is_weekly(self) -> bool:
+        return self.is_timely(TimelyType.WEEKLY)
+
+    # def is_event(self) -> bool:
+    #     return self.is_timely(TimelyType.EVENT)
+
+    def is_rated(self) -> bool:
+        return self.rate_type.is_rated()
+
+    def is_featured(self) -> bool:
+        return self.rate_type.is_featured()
+
+    def is_epic(self) -> bool:
+        return self.rate_type.is_epic()
+
+    def is_godlike(self) -> bool:
+        return self.rate_type.is_godlike()
+
+    def is_original(self) -> bool:
+        return not self.original_id
 
     def is_demon(self) -> bool:
         return self.difficulty.is_demon()

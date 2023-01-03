@@ -1,7 +1,9 @@
+from typing import Optional, Tuple
+
 from gd.api.editor import Editor
-from gd.constants import COMPLETED
+from gd.constants import COMPLETED, WEEKLY_ID_ADD
 from gd.difficulty_parameters import DifficultyParameters
-from gd.encoding import unzip_level_string, zip_level_string
+from gd.encoding import decode_base64_string_url_safe, encode_base64_string_url_safe, unzip_level_string, zip_level_string
 from gd.enums import (
     Difficulty,
     GameMode,
@@ -10,6 +12,7 @@ from gd.enums import (
     RateType,
     Scene,
     Speed,
+    TimelyType,
 )
 from gd.memory.arrays import DynamicFill, MutArrayData
 from gd.memory.base import Struct, StructData, struct
@@ -25,7 +28,7 @@ from gd.memory.cocos import (
     CCSpriteBatchNode,
     CCSpritePlus,
 )
-from gd.memory.data import U8, Bool, Double, Float, Int, Short, USize
+from gd.memory.data import Bool, Double, Float, Int, Short, USize
 from gd.memory.fields import Field
 from gd.memory.pointers import MutPointerData
 from gd.memory.special import Void
@@ -53,7 +56,7 @@ class GameLevel(CCNode):
     level_id = Field(Int())
 
     name = Field(StringData())
-    description = Field(StringData())
+    unprocessed_description = Field(StringData())
 
     unprocessed_data = Field(StringData())
 
@@ -161,9 +164,9 @@ class GameLevel(CCNode):
 
     folder_id = Field(Int())
 
-    timely_id_random = Field(Int())
-    timely_id_seed = Field(Int())
-    timely_id = Field(Int())
+    timely_id_value_random = Field(Int())
+    timely_id_value_seed = Field(Int())
+    timely_id_value = Field(Int())
 
     demon_random = Field(Int())
     demon_seed = Field(Int())
@@ -243,6 +246,57 @@ class GameLevel(CCNode):
     high_detail = Field(Bool())
 
     progress_string = Field(StringData())
+
+    @property
+    def description(self) -> str:
+        return decode_base64_string_url_safe(self.unprocessed_description)
+
+    @description.setter
+    def description(self, description: str) -> None:
+        self.unprocessed_description = encode_base64_string_url_safe(description)
+
+    @property
+    def timely_id_and_type(self) -> Tuple[int, TimelyType]:
+        result, timely_id = divmod(self.timely_id_value, WEEKLY_ID_ADD)
+
+        if timely_id:
+            if result:
+                timely_type = TimelyType.WEEKLY
+
+            else:
+                timely_type = TimelyType.DAILY
+
+        else:
+            timely_type = TimelyType.NOT_TIMELY
+
+        return (timely_id, timely_type)
+
+    @property
+    def timely_id(self) -> int:
+        timely_id, _ = self.timely_id_and_type
+
+        return timely_id
+
+    @property
+    def timely_type(self) -> TimelyType:
+        _, timely_type = self.timely_id_and_type
+
+        return timely_type
+
+    def is_timely(self, timely_type: Optional[TimelyType] = None) -> bool:
+        if timely_type is None:
+            return self.timely_type.is_timely()
+
+        return self.timely_type is timely_type
+
+    def is_daily(self) -> bool:
+        return self.is_timely(TimelyType.DAILY)
+
+    def is_weekly(self) -> bool:
+        return self.is_timely(TimelyType.WEEKLY)
+
+    # def is_event(self) -> bool:
+    #     return self.is_timely(TimelyType.EVENT)
 
     @property
     def processed_data(self) -> str:

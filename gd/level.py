@@ -473,6 +473,7 @@ class Level(Entity):
             game_version=official_level.game_version,
             length=official_level.length,
             rate_type=RateType.FEATURED,
+            verified_coins=True,
         )
 
         return level

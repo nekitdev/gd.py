@@ -32,7 +32,7 @@ class Like(Binary, RobTop):
     @classmethod
     def from_robtop(cls: Type[L], string: str) -> L:
         type_value, id, liked_value, other_id = (
-            iter(split_like(string)).map(int).skip(1).unwrap()
+            iter(split_like(string)).skip(1).map(int).unwrap()
         )
 
         return cls(

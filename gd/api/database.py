@@ -47,9 +47,11 @@ from gd.constants import (
 from gd.enums import ByteOrder, CollectedCoins, Filter, IconType, LevelLeaderboardStrategy, Quality
 from gd.filters import Filters
 from gd.iter_utils import unary_tuple
+from gd.models_utils import concat_official_coins, parse_get_or, split_official_coins
 from gd.song import Song
 from gd.string_utils import password_repr
 from gd.text_utils import snake_to_camel, snake_to_camel_with_abbreviations
+from gd.typing import StringDict, StringMapping
 from gd.versions import CURRENT_BINARY_VERSION, Version
 from gd.xml import PARSER
 
@@ -68,13 +70,17 @@ PREFIX = "{}_"
 prefix = PREFIX.format
 
 
+@define()
 class Storage:
     levels: OrderedSet[int] = field(factory=ordered_set)
     demons: OrderedSet[int] = field(factory=ordered_set)
 
 
+C = TypeVar("C", bound="Completed")
+
+
 @define()
-class Completed:
+class Completed(Binary):
     """Represents completed levels in the database."""
 
     official: OrderedSet[int] = field(factory=ordered_set)
@@ -82,6 +88,119 @@ class Completed:
     timely: Storage = field(factory=Storage)
     gauntlets: Storage = field(factory=Storage)
     map_packs: OrderedSet[int] = field(factory=ordered_set)
+
+    @classmethod
+    def from_binary(cls: Type[C], binary: BinaryReader, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION) -> C:
+        reader = Reader(binary)
+
+        read_u32 = partial(reader.read_u32, order)
+
+        official_length = reader.read_u8(order)
+
+        official = iter.repeat_exactly_with(read_u32, official_length).ordered_set()
+
+        normal_levels_length = reader.read_u32(order)
+
+        normal_levels = iter.repeat_exactly_with(read_u32, normal_levels_length).ordered_set()
+
+        normal_demons_length = reader.read_u16(order)
+
+        normal_demons = iter.repeat_exactly_with(read_u32, normal_demons_length).ordered_set()
+
+        normal = Storage(normal_levels, normal_demons)
+
+        timely_levels_length = reader.read_u32(order)
+
+        timely_levels = iter.repeat_exactly_with(read_u32, timely_levels_length).ordered_set()
+
+        timely_demons_length = reader.read_u16(order)
+
+        timely_demons = iter.repeat_exactly_with(read_u32, timely_demons_length).ordered_set()
+
+        timely = Storage(timely_levels, timely_demons)
+
+        gauntlets_levels_length = reader.read_u16(order)
+
+        gauntlets_levels = iter.repeat_exactly_with(read_u32, gauntlets_levels_length).ordered_set()
+
+        gauntlets_demons_length = reader.read_u8(order)
+
+        gauntlets_demons = iter.repeat_exactly_with(read_u32, gauntlets_demons_length).ordered_set()
+
+        gauntlets = Storage(gauntlets_levels, gauntlets_demons)
+
+        read_u16 = partial(reader.read_u16, order)
+
+        map_packs_length = reader.read_u16(order)
+
+        map_packs = iter.repeat_exactly_with(read_u16, map_packs_length).ordered_set()
+
+        return cls(official=official, normal=normal, timely=timely, gauntlets=gauntlets, map_packs=map_packs)
+
+    def to_binary(self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION) -> None:
+        writer = Writer(binary)
+
+        official = self.official
+
+        writer.write_u8(len(official), order)
+
+        for level_id in official:
+            writer.write_u32(level_id, order)
+
+        normal = self.normal
+
+        normal_levels = normal.levels
+
+        writer.write_u32(len(normal_levels), order)
+
+        for level_id in normal_levels:
+            writer.write_u32(level_id, order)
+
+        normal_demons = normal.demons
+
+        writer.write_u16(len(normal_demons), order)
+
+        for demon_id in normal_demons:
+            writer.write_u32(demon_id, order)
+
+        timely = self.timely
+
+        timely_levels = timely.levels
+
+        writer.write_u32(len(timely_levels), order)
+
+        for level_id in timely_levels:
+            writer.write_u32(level_id, order)
+
+        timely_demons = timely.demons
+
+        writer.write_u16(len(timely_demons), order)
+
+        for demon_id in timely_demons:
+            writer.write_u32(demon_id, order)
+
+        gauntlets = self.gauntlets
+
+        gauntlets_levels = gauntlets.levels
+
+        writer.write_u16(len(gauntlets_levels), order)
+
+        for level_id in gauntlets_levels:
+            writer.write_u32(level_id, order)
+
+        gauntlets_demons = gauntlets.demons
+
+        writer.write_u8(len(gauntlets_demons), order)
+
+        for demon_id in gauntlets_demons:
+            writer.write_u32(demon_id, order)
+
+        map_packs = self.map_packs
+
+        writer.write_u16(len(map_packs), order)
+
+        for map_pack_id in map_packs:
+            writer.write_u16(map_pack_id, order)
 
     @property
     def type_to_set(self) -> Dict[str, OrderedSet[int]]:
@@ -105,6 +224,32 @@ class Completed:
     @property
     def prefix_to_set(self) -> Dict[str, OrderedSet[int]]:
         return {prefix(type): set for type, set in self.type_to_set.items()}
+
+    @classmethod
+    def from_robtop_data(cls: Type[C], data: StringMapping[Any]) -> C:  # type: ignore
+        self = cls()
+
+        for prefix, ordered_set in self.prefix_to_set.items():
+            length = len(prefix)
+
+            for name in data.keys():
+                if name.startswith(prefix):
+                    level_id = int(name[length:])
+
+                    ordered_set.append(level_id)
+
+        return self
+
+    def to_robtop_data(self) -> StringDict[Any]:
+        one = ONE
+
+        data: StringDict[Any] = {}
+
+        for prefix, ordered_set in self.prefix_to_set.items():
+            for level_id in ordered_set:
+                data[prefix + str(level_id)] = one
+
+        return data
 
 
 DEFAULT_BUTTONS_PER_ROW = 6
@@ -1691,7 +1836,7 @@ class UnlockValues(Binary):
 JUMPS_STATISTICS = "1"
 ATTEMPTS_STATISTICS = "2"
 OFFICIAL_LEVELS_STATISTICS = "3"
-ONLINE_LEVELS_STATISTICS = "4"
+NORMAL_LEVELS_STATISTICS = "4"
 DEMONS_STATISTICS = "5"
 STARS_STATISTICS = "6"
 MAP_PACKS_STATISTICS = "7"
@@ -1715,6 +1860,14 @@ FIRST = 1
 SECOND = 2
 THIRD = 3
 
+VALUE_TO_COLLECTED_COINS = {
+    FIRST: CollectedCoins.FIRST,
+    SECOND: CollectedCoins.SECOND,
+    THIRD: CollectedCoins.THIRD,
+}
+
+NONE = CollectedCoins.NONE
+
 UNIQUE = "unique"
 
 S = TypeVar("S", bound="Statistics")
@@ -1725,7 +1878,7 @@ class Statistics(Binary):
     jumps: int = field(default=DEFAULT_JUMPS)
     attempts: int = field(default=DEFAULT_ATTEMPTS)
     official_levels: int = field(default=DEFAULT_LEVELS)
-    online_levels: int = field(default=DEFAULT_LEVELS)
+    normal_levels: int = field(default=DEFAULT_LEVELS)
     demons: int = field(default=DEFAULT_DEMONS)
     stars: int = field(default=DEFAULT_STARS)
     map_packs: int = field(default=DEFAULT_MAP_PACKS)
@@ -1747,6 +1900,133 @@ class Statistics(Binary):
 
     official_coins: Dict[int, CollectedCoins] = field(factory=dict)
 
+    @classmethod
+    def from_robtop_data(cls: Type[S], data: StringMapping[Any]) -> S:  # type: ignore
+        jumps = parse_get_or(int, DEFAULT_JUMPS, data.get(JUMPS_STATISTICS))
+        attempts = parse_get_or(int, DEFAULT_ATTEMPTS, data.get(ATTEMPTS_STATISTICS))
+
+        official_levels = parse_get_or(int, DEFAULT_LEVELS, data.get(OFFICIAL_LEVELS_STATISTICS))
+        normal_levels = parse_get_or(int, DEFAULT_LEVELS, data.get(NORMAL_LEVELS_STATISTICS))
+
+        demons = parse_get_or(int, DEFAULT_DEMONS, data.get(DEMONS_STATISTICS))
+
+        stars = parse_get_or(int, DEFAULT_STARS, data.get(STARS_STATISTICS))
+
+        map_packs = parse_get_or(int, DEFAULT_MAP_PACKS, data.get(MAP_PACKS_STATISTICS))
+
+        secret_coins = parse_get_or(int, DEFAULT_SECRET_COINS, data.get(SECRET_COINS_STATISTICS))
+
+        destroyed = parse_get_or(int, DEFAULT_DESTROYED, data.get(DESTROYED_STATISTICS))
+
+        liked = parse_get_or(int, DEFAULT_LIKED, data.get(LIKED_STATISTICS))
+
+        rated = parse_get_or(int, DEFAULT_RATED, data.get(RATED_STATISTICS))
+
+        user_coins = parse_get_or(int, DEFAULT_USER_COINS, data.get(USER_COINS_STATISTICS))
+
+        diamonds = parse_get_or(int, DEFAULT_DIAMONDS, data.get(DIAMONDS_STATISTICS))
+
+        orbs = parse_get_or(int, DEFAULT_ORBS, data.get(ORBS_STATISTICS))
+
+        timely_levels = parse_get_or(int, DEFAULT_LEVELS, data.get(TIMELY_LEVELS_STATISTICS))
+
+        fire_shards = parse_get_or(int, DEFAULT_SHARDS, data.get(FIRE_SHARDS_STATISTICS))
+
+        ice_shards = parse_get_or(int, DEFAULT_SHARDS, data.get(ICE_SHARDS_STATISTICS))
+
+        poison_shards = parse_get_or(int, DEFAULT_SHARDS, data.get(POISON_SHARDS_STATISTICS))
+
+        shadow_shards = parse_get_or(int, DEFAULT_SHARDS, data.get(SHADOW_SHARDS_STATISTICS))
+
+        lava_shards = parse_get_or(int, DEFAULT_SHARDS, data.get(LAVA_SHARDS_STATISTICS))
+
+        bonus_shards = parse_get_or(int, DEFAULT_SHARDS, data.get(BONUS_SHARDS_STATISTICS))
+
+        total_orbs = parse_get_or(int, DEFAULT_ORBS, data.get(TOTAL_ORBS_STATISTICS))
+
+        value_to_collected_coins = VALUE_TO_COLLECTED_COINS
+        none = NONE
+
+        official_coins: Dict[int, CollectedCoins] = {}
+
+        for name in data.keys():
+            try:
+                level_id, value = iter(split_official_coins(name)).skip(1).map(int).unwrap()
+
+            except ValueError:
+                pass
+
+            else:
+                if level_id not in official_coins:
+                    official_coins[level_id] = none
+
+                official_coins[level_id] |= value_to_collected_coins[value]
+
+        return cls(
+            jumps=jumps,
+            attempts=attempts,
+            official_levels=official_levels,
+            normal_levels=normal_levels,
+            demons=demons,
+            stars=stars,
+            map_packs=map_packs,
+            secret_coins=secret_coins,
+            destroyed=destroyed,
+            liked=liked,
+            rated=rated,
+            user_coins=user_coins,
+            diamonds=diamonds,
+            orbs=orbs,
+            timely_levels=timely_levels,
+            fire_shards=fire_shards,
+            ice_shards=ice_shards,
+            poison_shards=poison_shards,
+            shadow_shards=shadow_shards,
+            lava_shards=lava_shards,
+            bonus_shards=bonus_shards,
+            total_orbs=total_orbs,
+            official_coins=official_coins,
+        )
+
+    def to_robtop_data(self) -> StringDict[Any]:
+        data = {
+            JUMPS_STATISTICS: str(self.jumps),
+            ATTEMPTS_STATISTICS: str(self.attempts),
+            OFFICIAL_LEVELS_STATISTICS: str(self.official_levels),
+            NORMAL_LEVELS_STATISTICS: str(self.normal_levels),
+            DEMONS_STATISTICS: str(self.demons),
+            STARS_STATISTICS: str(self.stars),
+            MAP_PACKS_STATISTICS: str(self.map_packs),
+            SECRET_COINS_STATISTICS: str(self.secret_coins),
+            DESTROYED_STATISTICS: str(self.destroyed),
+            LIKED_STATISTICS: str(self.liked),
+            RATED_STATISTICS: str(self.rated),
+            USER_COINS_STATISTICS: str(self.user_coins),
+            DIAMONDS_STATISTICS: str(self.diamonds),
+            ORBS_STATISTICS: str(self.orbs),
+            TIMELY_LEVELS_STATISTICS: str(self.timely_levels),
+            FIRE_SHARDS_STATISTICS: str(self.fire_shards),
+            ICE_SHARDS_STATISTICS: str(self.ice_shards),
+            POISON_SHARDS_STATISTICS: str(self.poison_shards),
+            SHADOW_SHARDS_STATISTICS: str(self.shadow_shards),
+            LAVA_SHARDS_STATISTICS: str(self.lava_shards),
+            BONUS_SHARDS_STATISTICS: str(self.bonus_shards),
+            TOTAL_ORBS_STATISTICS: str(self.total_orbs),
+        }
+
+        value_to_collected_coins = VALUE_TO_COLLECTED_COINS
+        unique = UNIQUE
+        one = ONE
+
+        for level_id, collected_coins in self.official_coins.items():
+            for value, collected_coin in value_to_collected_coins.items():
+                if collected_coins & collected_coin:
+                    values = (unique, str(level_id), str(value))
+
+                    data[concat_official_coins(values)] = one
+
+        return data
+
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
@@ -1755,7 +2035,7 @@ class Statistics(Binary):
         writer.write_u32(self.jumps, order)
         writer.write_u32(self.attempts, order)
         writer.write_u8(self.official_levels, order)
-        writer.write_u32(self.online_levels, order)
+        writer.write_u32(self.normal_levels, order)
         writer.write_u16(self.demons, order)
         writer.write_u32(self.stars, order)
         writer.write_u16(self.map_packs, order)
@@ -1795,7 +2075,7 @@ class Statistics(Binary):
         jumps = reader.read_u32(order)
         attempts = reader.read_u32(order)
         official_levels = reader.read_u8(order)
-        online_levels = reader.read_u32(order)
+        normal_levels = reader.read_u32(order)
         demons = reader.read_u16(order)
         stars = reader.read_u32(order)
         map_packs = reader.read_u16(order)
@@ -1828,7 +2108,7 @@ class Statistics(Binary):
             jumps=jumps,
             attempts=attempts,
             official_levels=official_levels,
-            online_levels=online_levels,
+            normal_levels=normal_levels,
             demons=demons,
             stars=stars,
             map_packs=map_packs,
@@ -1944,6 +2224,9 @@ QUALITY = snake_to_camel("tex_quality")
 
 ACHIVEMENTS = snake_to_camel("reported_achievements")
 
+COMPLETED = "GS_completed"
+STATISTICS = "GS_value"
+
 NAME = "GJA_001"
 PASSWORD = "GJA_002"
 ACCOUNT_ID = "GJA_003"
@@ -2027,6 +2310,7 @@ class Database(Binary):
     unlock_values: UnlockValues = field(factory=UnlockValues)
     custom_objects: List[List[Object]] = field(factory=list)
 
+    completed: Completed = field(factory=Completed)
     statistics: Statistics = field(factory=Statistics)
 
     show_song_markers: bool = field(default=DEFAULT_SHOW_SONG_MARKERS)
@@ -2132,6 +2416,14 @@ class Database(Binary):
 
         secret_value = main_data.get(SECRET_VALUE, DEFAULT_SECRET_VALUE)
 
+        completed_data = main_data.get(COMPLETED, {})
+
+        completed = Completed.from_robtop_data(completed_data)
+
+        statistics_data = main_data.get(STATISTICS, {})
+
+        statistics = Statistics.from_robtop_data(statistics_data)
+
         official_levels_data = main_data.get(OFFICIAL_LEVELS, {})
 
         official_levels = (
@@ -2180,8 +2472,6 @@ class Database(Binary):
         gauntlet_levels = (
             iter(gauntlet_levels_data.values()).map(LevelAPI.from_robtop_data).ordered_set()
         )
-
-        ...
 
         def create_folder(string: str, name: str) -> Folder:
             return Folder(int(string), name)
@@ -2248,6 +2538,9 @@ class Database(Binary):
             glow=glow,
             secret_value=secret_value,
             moderator=moderator,
+            # ...
+            completed=completed,
+            statistics=statistics,
             official_levels=official_levels,
             saved_levels=saved_levels,
             followed=followed,
@@ -2309,6 +2602,14 @@ class Database(Binary):
 
         if moderator:
             main_data[MODERATOR] = moderator
+
+        completed_data = self.completed.to_robtop_data()
+
+        main_data[COMPLETED] = completed_data
+
+        statistics_data = self.statistics.to_robtop_data()
+
+        main_data[STATISTICS] = statistics_data
 
         official_levels_data = {
             str(level.id): level.to_robtop_data() for level in self.official_levels
@@ -2524,6 +2825,8 @@ class Database(Binary):
             custom_object_from_binary, custom_objects_length
         ).list()
 
+        completed = Completed.from_binary(binary, order, version)
+
         statistics = Statistics.from_binary(binary, order, version)
 
         level_api_from_binary = partial(
@@ -2657,6 +2960,7 @@ class Database(Binary):
             values=values,
             unlock_values=unlock_values,
             custom_objects=custom_objects,
+            completed=completed,
             statistics=statistics,
             official_levels=official_levels,
             saved_levels=saved_levels,
@@ -2804,6 +3108,8 @@ class Database(Binary):
 
             for object in objects:
                 object_to_binary(object, binary, order)
+
+        self.completed.to_binary(binary, order, version)
 
         self.statistics.to_binary(binary, order, version)
 
