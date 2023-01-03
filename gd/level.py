@@ -442,9 +442,13 @@ class Level(Entity):
             raise LookupError(CAN_NOT_FIND_LEVEL)
 
         if get_data:
-            unprocessed_data = zip_level_string(
-                load_from(official_level.data_path, Editor).to_robtop()
-            )
+            try:
+                unprocessed_data = zip_level_string(
+                    load_from(official_level.data_path, Editor).to_robtop()
+                )
+
+            except FileNotFoundError:
+                unprocessed_data = EMPTY
 
         else:
             unprocessed_data = EMPTY
@@ -468,6 +472,7 @@ class Level(Entity):
             difficulty=official_level.difficulty,
             game_version=official_level.game_version,
             length=official_level.length,
+            rate_type=RateType.FEATURED,
         )
 
         return level

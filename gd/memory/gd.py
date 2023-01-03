@@ -1,5 +1,7 @@
+from gd.api.editor import Editor
 from gd.constants import COMPLETED
 from gd.difficulty_parameters import DifficultyParameters
+from gd.encoding import unzip_level_string, zip_level_string
 from gd.enums import (
     Difficulty,
     GameMode,
@@ -38,6 +40,8 @@ __all__ = (
     "LevelSettings",
     "GameLevel",
 )
+
+TOTAL = float(COMPLETED)
 
 
 @struct()  # type: ignore
@@ -150,7 +154,7 @@ class GameLevel(CCNode):
 
     length_value = Field(Int())
 
-    score = Field(Int())
+    score_value = Field(Int())
 
     epic = Field(Bool())
     favorite = Field(Bool())
@@ -241,12 +245,46 @@ class GameLevel(CCNode):
     progress_string = Field(StringData())
 
     @property
+    def processed_data(self) -> str:
+        return unzip_level_string(self.unprocessed_data)
+
+    @processed_data.setter
+    def processed_data(self, processed_data: str) -> None:
+        self.unprocessed_data = zip_level_string(processed_data)
+
+    @property
+    def data(self) -> bytes:
+        return self.open_editor().to_bytes()
+
+    @data.setter
+    def data(self, data: bytes) -> None:
+        self.processed_data = Editor.from_bytes(data).to_robtop()
+
+    def open_editor(self) -> Editor:
+        return Editor.from_robtop(self.processed_data)
+
+    @property
     def type(self) -> LevelType:
         return LevelType(self.type_value)
 
     @property
+    def score(self) -> int:
+        score = self.score_value
+
+        if score < 0:
+            score = 0
+
+        return score
+
+    @property
     def length(self) -> LevelLength:
         return LevelLength(self.length_value)
+
+    def is_rated(self) -> bool:
+        return self.stars > 0
+
+    def is_featured(self) -> bool:
+        return self.score > 0
 
     def is_epic(self) -> bool:
         return self.epic
@@ -273,10 +311,10 @@ class GameLevel(CCNode):
     def rate_type(self) -> RateType:
         rate_type = RateType.NOT_RATED
 
-        if self.stars > 0:
+        if self.is_rated():
             rate_type = RateType.RATED
 
-        if self.score > 0:
+        if self.is_featured():
             rate_type = RateType.FEATURED
 
         if self.is_epic():
@@ -796,28 +834,19 @@ class PlayLayer(BaseGameLayer):  # TODO: misaligned
         return self.level_size.width
 
     @property
-    def progress(self, total: float = COMPLETED) -> float:
-        return min(self.player_1.value.position.x / self.level_length * total, total)
+    def progress(self, total: float = TOTAL) -> float:
+        level_length = self.level_length
+
+        if not level_length:
+            return level_length
+
+        return min(self.player_1.value.position.x / level_length * total, total)
 
     def is_practice(self) -> bool:
         return self.practice
 
     def is_test(self) -> bool:
         return self.test
-
-
-@struct()  # type: ignore
-class U8Vector(Struct):
-    pointer = Field(MutPointerData(MutArrayData(U8())))
-    length = Field(USize())
-    capacity = Field(USize())
-
-
-@struct()  # type: ignore
-class FloatVector(Struct):
-    pointer = Field(MutPointerData(MutArrayData(Float())))
-    length = Field(USize())
-    capacity = Field(USize())
 
 
 @struct(virtual=True)  # type: ignore
