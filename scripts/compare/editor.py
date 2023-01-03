@@ -1,40 +1,44 @@
-from typing import Iterable
-
 import click
 from entrypoint import entrypoint
 
-from gd.api.color_channels import ColorChannel, ColorChannels
-from gd.api.header import Header
+from gd.client import Client
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.encoding import compress
 
-
-def color_id_range(count: int) -> Iterable[int]:
-    return range(1, count + 1)
-
-
-COUNT = 1000
+LEVEL_ID = 37361518
 ROUNDING = 2
+
+FETCHING = "fetching level with ID {}..."
+OPENING = "opening the editor..."
+DUMPING = "dumping the editor..."
+CONVERTING = "converting the editor..."
 
 UNCOMPRESSED = "uncompressed: {} / {} ({}x compression)"
 COMPRESSED = "compressed: {} / {} ({}x compression)"
 
+client = Client()
+
 
 @entrypoint(__name__)
-@click.option("--count", "-c", default=COUNT, type=int)
+@click.option("--level-id", "-l", default=LEVEL_ID, type=int)
 @click.option("--rounding", "-r", default=ROUNDING, type=int)
 @click.command()
-def main(count: int, rounding: int) -> None:
-    rounding = ROUNDING
+def main(level_id: int, rounding: int) -> None:
+    click.echo(FETCHING.format(level_id))
 
-    header = Header(
-        color_channels=ColorChannels.from_color_channel_iterable(
-            ColorChannel(color_id) for color_id in color_id_range(count)
-        )
-    )
+    level = client.run(client.get_level(level_id))
 
-    robtop_data = header.to_robtop().encode(DEFAULT_ENCODING, DEFAULT_ERRORS)
-    data = header.to_bytes()
+    click.echo(OPENING)
+
+    editor = level.open_editor()
+
+    click.echo(DUMPING)
+
+    robtop_data = editor.to_robtop().encode(DEFAULT_ENCODING, DEFAULT_ERRORS)
+
+    click.echo(CONVERTING)
+
+    data = editor.to_bytes()
 
     robtop_data_length = len(robtop_data)
     data_length = len(data)
