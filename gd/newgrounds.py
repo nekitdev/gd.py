@@ -161,34 +161,33 @@ def empty_if_none(option: Optional[str]) -> str:
     return EMPTY if option is None else option
 
 
-ARTIST_SONG_URL_PATH = r"""
-.//a[@class="item-link"]
-""".strip()
-
-YEARS = "years"
 ITEMS = "items"
-TITLE = "title"
 
 
 def search_artist_song_models(data: Any, artist_name: str) -> Iterator[SongModel]:
     try:
-        years = data[YEARS].values()
+        items = data[ITEMS].values()
 
     except Exception:
         return
 
-    for string in iter.create_chain_from_iterable(year[ITEMS] for year in years):
+    for string in iter.create_chain_from_iterable(items).unwrap():
         root = from_string(string)
 
-        a_element = root.findall(ARTIST_SONG_URL_PATH)[FIRST]
+        a_element = root.findall(SONG_URL_PATH)[FIRST]
 
         url = URL(a_element.attrib[HREF]).with_scheme(HTTPS)  # type: ignore
 
         id = int(url.parts[LAST])
 
-        name = a_element.attrib[TITLE]
+        div_element = root.findall(DETAILS_PATH)[FIRST]
 
-        yield SongModel(id=id, name=name, artist_name=artist_name)  # type: ignore
+        h_element = div_element[FIRST]
+
+        name = h_element.text
+
+        if name:
+            yield SongModel(id=id, name=name, artist_name=artist_name)
 
 
 ARTIST_URL_PATH = r"""

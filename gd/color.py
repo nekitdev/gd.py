@@ -4,11 +4,10 @@ from colorsys import hsv_to_rgb, rgb_to_hsv
 from typing import ClassVar, Dict, Iterator, List, Optional, Tuple, Type, TypeVar
 
 from attrs import Attribute, field, frozen
-from iters import iter
+from iters import iter, wrap_iter
 
 from gd.binary_constants import BITS, BYTE, DOUBLE_BITS
 from gd.constants import DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID, EMPTY
-from gd.json import JSON
 from gd.models_constants import COLOR_SEPARATOR
 from gd.models_utils import concat_color, split_color
 from gd.robtop import RobTop
@@ -326,20 +325,20 @@ class Color(RobTop):
         return cls(value)
 
     @classmethod
-    def iter_color(cls: Type[C]) -> Iterator[C]:
+    @wrap_iter
+    def iter_colors(cls: Type[C]) -> Iterator[C]:
         """Returns an iterator over all in-game colors.
 
         Returns:
             An iterator over in-game colors.
         """
-        for value in cls.VALUE_TO_ID:
-            yield cls(value)
+        return iter(cls.VALUE_TO_ID).map(cls).unwrap()
 
     @classmethod
-    def list_color(cls: Type[C]) -> List[C]:
-        """Same as [`iter_color`][gd.color.Color.iter_color], but returns a list.
+    def list_colors(cls: Type[C]) -> List[C]:
+        """Same as [`iter_colors`][gd.color.Color.iter_colors], but returns a list.
 
         Returns:
             The list of in-game colors.
         """
-        return list(cls.iter_color())
+        return cls.iter_colors().list()

@@ -15,6 +15,7 @@ from typing import (
 )
 
 from attrs import define, field
+from iters import wrap_iter
 from named import get_name
 from typing_extensions import Never
 
@@ -79,6 +80,7 @@ VIRTUAL_NAME = "__virtual_{}__"
 virtual_name = VIRTUAL_NAME.format
 
 
+@wrap_iter
 def fetch_fields_iterator(base: Type[Base]) -> Iterator[Tuple[str, AnyField]]:
     types = base.mro()
 
@@ -102,7 +104,7 @@ def fetch_fields_iterator(base: Type[Base]) -> Iterator[Tuple[str, AnyField]]:
 
 
 def fetch_fields(base: Type[Base]) -> StringDict[AnyField]:
-    return dict(fetch_fields_iterator(base))
+    return fetch_fields_iterator(base).dict()
 
 
 # import cycle solution

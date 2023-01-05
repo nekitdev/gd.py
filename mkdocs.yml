@@ -12,6 +12,8 @@ nav:
   - Reference:
     - Client: "reference/client.md"
     - Enums: "reference/enums.md"
+    - Song: "reference/song.md"
+    - Artist: "reference/artist.md"
     - Tasks: "reference/tasks.md"
     - API:
       - Editor: "reference/api/editor.md"

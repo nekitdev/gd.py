@@ -2227,6 +2227,28 @@ ACHIVEMENTS = snake_to_camel("reported_achievements")
 COMPLETED = "GS_completed"
 STATISTICS = "GS_value"
 
+UNVERIFIED_COINS = "GS_03"
+VERIFIED_COINS = "GS_04"
+MAP_PACKS_STARS = "GS_05"
+PURCHASED_ICONS = "GS_06"
+LEVEL_RECORDS = "GS_07"
+STARS = "GS_09"
+OFFICIAL_RECORDS = "GS_10"
+CHEST_REWARDS = "GS_11"
+ACTIVE_QUESTS = "GS_12"
+DIAMONDS = "GS_14"
+UPCOMING_QUESTS = "GS_15"
+# TIMELY_RECORDS = "GS_16"
+TIMELY_STARS = "GS_17"
+# GAUNTLET_RECORDS = "GS_18"
+TREASURE_CHEST_REWARDS = "GS_19"
+TOTAL_KEYS = "GS_20"
+REWARDS = "GS_21"
+AD_REWARDS = "GS_22"
+GAUNTLET_RECORDS = "GS_23"
+TIMELY_RECORDS = "GS_24"
+WEEKLY_REWARDS = "GS_25"
+
 NAME = "GJA_001"
 PASSWORD = "GJA_002"
 ACCOUNT_ID = "GJA_003"
@@ -2511,6 +2533,9 @@ class Database(Binary):
             .ordered_set()
         )
 
+        with open("levels.json", "w") as file:
+            json.dump(levels_data, file, indent=2)
+
         return cls(
             # main
             volume=volume,
@@ -2684,7 +2709,7 @@ class Database(Binary):
 
         binary_version_data = self.binary_version.to_value()
 
-        levels_data = {CREATED_LEVELS: created_levels_data, BINARY_VERSION: binary_version_data}
+        levels_data = {CREATED_LEVELS: created_levels_data, BINARY_VERSION_LEVELS: binary_version_data}
 
         return parser.dump(levels_data)
 

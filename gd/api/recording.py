@@ -6,7 +6,7 @@ from functools import partial
 from typing import Iterable, Iterator, List, Match, Type, TypeVar
 
 from attrs import define
-from iters import iter
+from iters import Iter, iter
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
@@ -173,8 +173,8 @@ R = TypeVar("R", bound="Recording")
 
 class Recording(Binary, RobTop, ListType, List[RecordingItem]):  # type: ignore
     @staticmethod
-    def iter_robtop(string: str) -> Iterator[RecordingItem]:
-        return iter(RECORDING_ITEM.finditer(string)).map(RecordingItem.from_robtop_match).unwrap()
+    def iter_robtop(string: str) -> Iter[RecordingItem]:
+        return iter(RECORDING_ITEM.finditer(string)).map(RecordingItem.from_robtop_match)
 
     @staticmethod
     def collect_robtop(recording: Iterable[RecordingItem]) -> str:
@@ -182,7 +182,7 @@ class Recording(Binary, RobTop, ListType, List[RecordingItem]):  # type: ignore
 
     @classmethod
     def from_robtop(cls: Type[R], string: str) -> R:
-        return cls(cls.iter_robtop(string))
+        return cls.iter_robtop(string).collect(cls)
 
     def to_robtop(self) -> str:
         return self.collect_robtop(self)

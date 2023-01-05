@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import BinaryIO, Optional, Type, TypeVar
 
 from attrs import define
+from cattrs.gen import make_dict_unstructure_fn, override
 from iters import iter
 from yarl import URL
 
-from gd.artist import Artist
+from gd.artist import Artist, ArtistData
 from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import (
@@ -20,9 +21,8 @@ from gd.constants import (
     DEFAULT_WITH_BAR,
     EMPTY,
     UNKNOWN,
-    WRITE_BINARY,
 )
-from gd.entity import Entity
+from gd.entity import CONVERTER, Entity, EntityData
 from gd.enums import ByteOrder
 from gd.errors import MissingAccess
 from gd.http import NEWGROUNDS_SONG
@@ -64,9 +64,35 @@ DEFAULT_CUSTOM = True
 CUSTOM_BIT = 0b00000001
 
 
+class SongData(EntityData):
+    name: str
+    artist: ArtistData
+    size: float
+    custom: bool
+    download_url: Optional[str]
+
+
 @define()
 class Song(Entity):
-    """Represents *Geometry Dash* and *Newgrounds* songs."""
+    """Represents *Geometry Dash* and *Newgrounds* songs.
+
+    Binary:
+
+        ```text
+        const CUSTOM_BIT: u8 = 0b00000001;
+
+        struct Song {
+            id: u32,
+            name_length: u8,
+            name: [u8; name_length],  // utf-8 string
+            artist: Artist,
+            size: f32,
+            value: u8,  // contains `custom`
+            download_url_length: u16,
+            download_url: [u8; download_url_length],  // utf-8 string
+        }
+        ```
+    """
 
     name: str
     artist: Artist
@@ -82,6 +108,13 @@ class Song(Entity):
     @property
     def url(self) -> URL:
         return URL(NEWGROUNDS_SONG.format(self.id))
+
+    @classmethod
+    def from_json(cls: Type[S], data: SongData) -> S:  # type: ignore
+        return CONVERTER.structure(data, cls)
+
+    def to_json(self) -> SongData:
+        return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
     def from_binary(
@@ -273,3 +306,21 @@ class Song(Entity):
 
         else:
             raise MissingAccess(CAN_NOT_DOWNLOAD)
+
+
+def dump_url(url: URL) -> str:
+    return url.human_repr()
+
+
+def parse_url_ignore_type(string: str, type: Type[URL]) -> URL:
+    return URL(string)
+
+
+CONVERTER.register_unstructure_hook(URL, dump_url)
+CONVERTER.register_structure_hook(URL, parse_url_ignore_type)
+
+
+CONVERTER.register_unstructure_hook(
+    Song,
+    make_dict_unstructure_fn(Song, CONVERTER, client_unchecked=override(omit=True)),
+)

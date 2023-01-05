@@ -3,7 +3,12 @@ from typing import Optional, Tuple
 from gd.api.editor import Editor
 from gd.constants import COMPLETED, WEEKLY_ID_ADD
 from gd.difficulty_parameters import DifficultyParameters
-from gd.encoding import decode_base64_string_url_safe, encode_base64_string_url_safe, unzip_level_string, zip_level_string
+from gd.encoding import (
+    decode_base64_string_url_safe,
+    encode_base64_string_url_safe,
+    unzip_level_string,
+    zip_level_string,
+)
 from gd.enums import (
     Difficulty,
     GameMode,

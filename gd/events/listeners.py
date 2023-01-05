@@ -15,6 +15,7 @@ from typing import (
 )
 
 from attrs import define, field
+from iters import wrap_iter
 from typing_extensions import Protocol
 
 from gd.async_utils import awaiting, get_running_loop
@@ -59,6 +60,7 @@ if TYPE_CHECKING:
 Q = TypeVar("Q", bound=Hashable)
 
 
+@wrap_iter
 def differ_iterator(before: Iterable[Q], after: Iterable[Q]) -> Iterator[Q]:
     before_set = set(before)
 
@@ -70,7 +72,7 @@ def differ_iterator(before: Iterable[Q], after: Iterable[Q]) -> Iterator[Q]:
 
 
 def differ(before: Iterable[Q], after: Iterable[Q]) -> List[Q]:
-    return list(differ_iterator(before, after))
+    return differ_iterator(before, after).list()
 
 
 LISTENER_ALREADY_RUNNING = "listener is already running"

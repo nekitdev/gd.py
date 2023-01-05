@@ -3,6 +3,7 @@ DEFAULT_PORT = 8000
 
 CACHE = ".gd"
 ICONS = "icons"
+SONGS = "songs"
 
 NAME = "gd.py"
 VERSION_1 = "1.0.0"

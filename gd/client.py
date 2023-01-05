@@ -161,7 +161,7 @@ DEFAULT_LOAD_AFTER_POST = True
 C = TypeVar("C", bound="Client")
 
 
-@define()
+@define(slots=False)
 class Client:
     session: Session = field(factory=Session)
     """The session of the client."""

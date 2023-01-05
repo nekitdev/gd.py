@@ -3,7 +3,7 @@ from operator import attrgetter as get_attribute_factory
 from typing import Iterable, Iterator, List, Sequence, Set, Type, TypeVar, Union, overload
 
 from attrs import define, field
-from iters import iter
+from iters import iter, wrap_iter
 
 from gd.api.color_channels import ColorChannels
 from gd.api.header import Header
@@ -170,6 +170,7 @@ class Editor(RobTop, Binary, Sequence[Object]):
 
         return self
 
+    @wrap_iter
     def iter_groups(self) -> Iterator[int]:
         for object in self.objects:
             yield from object.groups
@@ -182,12 +183,13 @@ class Editor(RobTop, Binary, Sequence[Object]):
 
     @property
     def groups(self) -> Set[int]:
-        return set(self.iter_groups())
+        return self.iter_groups().set()
 
     @property
     def free_group(self) -> int:
         return find_next(self.groups)
 
+    @wrap_iter
     def iter_color_ids(self) -> Iterator[int]:
         for object in self.objects:
             yield object.base_color_id
@@ -197,39 +199,43 @@ class Editor(RobTop, Binary, Sequence[Object]):
 
     @property
     def color_ids(self) -> Set[int]:
-        return set(self.iter_color_ids())
+        return self.iter_color_ids().set()
 
     @property
     def free_color_id(self) -> int:
         return find_next(self.color_ids)
 
+    @wrap_iter
     def iter_start_positions(self) -> Iterator[StartPosition]:
         return filter(is_start_position, self.objects)
 
     @property
     def start_position(self) -> List[StartPosition]:
-        return sorted(self.iter_start_positions(), key=get_x)
+        return self.iter_start_positions().sorted_by(get_x)
 
+    @wrap_iter
     def iter_portals(self) -> Iterator[Object]:
         return (object for object in self.objects if object.is_portal())
 
     @property
     def portals(self) -> List[Object]:
-        return sorted(self.iter_portals(), key=get_x)
+        return self.iter_portals().sorted_by(get_x)
 
+    @wrap_iter
     def iter_speed_changes(self) -> Iterator[Object]:
         return (object for object in self.objects if object.is_speed_change())
 
     @property
     def speed_changes(self) -> List[Object]:
-        return sorted(self.iter_speed_changes(), key=get_x)
+        return self.iter_speed_changes().sorted_by(get_x)
 
+    @wrap_iter
     def iter_triggers(self) -> Iterator[Trigger]:
         return filter(is_trigger, self.objects)
 
     @property
     def triggers(self) -> List[Trigger]:
-        return sorted(self.iter_triggers(), key=get_x)
+        return self.iter_triggers().sorted_by(get_x)
 
     @property
     def x_length(self) -> float:

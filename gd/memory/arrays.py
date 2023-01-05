@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Iterator, Optional, Sequence, Type, TypeVar
 
 from attrs import define, field, frozen
+from iters import wrap_iter
 
 from gd.enums import ByteOrder
 from gd.memory.constants import DEFAULT_BASE
@@ -50,6 +51,7 @@ class Array(Sequence[T]):
 
         return type.read(state, self.address + size * index, order)
 
+    @wrap_iter
     def iter(self) -> Iterator[T]:
         state = self.state
         order = self.order
@@ -86,7 +88,7 @@ class Array(Sequence[T]):
         return length
 
     def __iter__(self) -> Iterator[T]:
-        return self.iter()
+        return self.iter().unwrap()
 
 
 @define()

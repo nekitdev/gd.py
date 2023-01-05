@@ -32,7 +32,16 @@ class ArtistData(TypedDict):
 
 @define()
 class Artist(Entity):
-    """Represents artists on *Newgrounds*."""
+    """Represents artists on *Newgrounds*.
+
+    Binary:
+        ```rust
+        struct Artist {
+            name_length: u8,
+            name: [u8; name_length],
+        }
+        ```
+    """
 
     name: str = field(eq=False)
 
