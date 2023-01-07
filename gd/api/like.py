@@ -31,13 +31,9 @@ class Like(Binary, RobTop):
 
     @classmethod
     def from_robtop(cls: Type[L], string: str) -> L:
-        type_value, id, liked_value, other_id = (
-            iter(split_like(string)).skip(1).map(int).unwrap()
-        )
+        type_value, id, liked_value, other_id = iter(split_like(string)).skip(1).map(int).unwrap()
 
-        return cls(
-            type=LikeType(type_value), id=id, other_id=other_id, liked=bool(liked_value)
-        )
+        return cls(type=LikeType(type_value), id=id, other_id=other_id, liked=bool(liked_value))
 
     def to_robtop(self) -> str:
         values = (
@@ -59,35 +55,35 @@ class Like(Binary, RobTop):
     ) -> L:
         liked_bit = LIKED_BIT
 
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        value = reader.read_u8(order)
+        value = reader.read_u8()
 
         type = LikeType(value & TYPE_MASK)
 
         liked = value & liked_bit == liked_bit
 
-        id = reader.read_u32(order)
+        id = reader.read_u32()
 
-        other_id = reader.read_u32(order)
+        other_id = reader.read_u32()
 
         return cls(type=type, id=id, other_id=other_id, liked=liked)
 
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
         value = self.type.value
 
         if self.is_liked():
             value |= LIKED_BIT
 
-        writer.write_u8(value, order)
+        writer.write_u8(value)
 
-        writer.write_u32(self.id, order)
+        writer.write_u32(self.id)
 
-        writer.write_u32(self.other_id, order)
+        writer.write_u32(self.other_id)
 
     def is_liked(self) -> bool:
         return self.liked

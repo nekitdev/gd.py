@@ -41,8 +41,9 @@ from gd.constants import (
     ROBTOP_NAME,
     UNKNOWN,
 )
+from gd.converter import CONVERTER
 from gd.date_time import DateTime, utc_from_timestamp
-from gd.entity import CONVERTER, Entity, EntityData
+from gd.entity import Entity, EntityData
 from gd.enums import (
     ByteOrder,
     CommentState,
@@ -457,48 +458,48 @@ class User(Entity):
         glow_bit = GLOW_BIT
         banned_bit = BANNED_BIT
 
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        id = reader.read_u32(order)
+        id = reader.read_u32()
 
-        name_length = reader.read_u8(order)
+        name_length = reader.read_u8()
 
         name = reader.read(name_length).decode(encoding, errors)
 
-        account_id = reader.read_u32(order)
+        account_id = reader.read_u32()
 
-        stars = reader.read_u32(order)
-        demons = reader.read_u16(order)
-        diamonds = reader.read_u32(order)
-        orbs = reader.read_u32(order)
-        user_coins = reader.read_u32(order)
-        secret_coins = reader.read_u16(order)
-        creator_points = reader.read_u16(order)
+        stars = reader.read_u32()
+        demons = reader.read_u16()
+        diamonds = reader.read_u32()
+        orbs = reader.read_u32()
+        user_coins = reader.read_u32()
+        secret_coins = reader.read_u16()
+        creator_points = reader.read_u16()
 
-        rank = reader.read_u32(order)
+        rank = reader.read_u32()
 
-        color_1_id = reader.read_u16(order)
-        color_2_id = reader.read_u16(order)
+        color_1_id = reader.read_u16()
+        color_2_id = reader.read_u16()
 
-        icon_type_value = reader.read_u8(order)
+        icon_type_value = reader.read_u8()
 
         icon_type = IconType(icon_type_value)
 
-        icon_id = reader.read_u16(order)
-        cube_id = reader.read_u16(order)
-        ship_id = reader.read_u16(order)
-        ball_id = reader.read_u16(order)
-        ufo_id = reader.read_u16(order)
-        wave_id = reader.read_u16(order)
-        robot_id = reader.read_u16(order)
-        spider_id = reader.read_u16(order)
-        # swing_copter_id = reader.read_u16(order)
+        icon_id = reader.read_u16()
+        cube_id = reader.read_u16()
+        ship_id = reader.read_u16()
+        ball_id = reader.read_u16()
+        ufo_id = reader.read_u16()
+        wave_id = reader.read_u16()
+        robot_id = reader.read_u16()
+        spider_id = reader.read_u16()
+        # swing_copter_id = reader.read_u16()
 
-        explosion_id = reader.read_u16(order)
+        explosion_id = reader.read_u16()
 
-        role_id = reader.read_u8(order)
+        role_id = reader.read_u8()
 
-        value = reader.read_u8(order)
+        value = reader.read_u8()
 
         glow = value & glow_bit == glow_bit
         banned = value & banned_bit == banned_bit
@@ -513,32 +514,32 @@ class User(Entity):
         friend_request_state = FriendRequestState(friend_request_state_value)
         comment_state = CommentState(comment_state_value)
 
-        friend_state_value = reader.read_u8(order)
+        friend_state_value = reader.read_u8()
 
         friend_state = FriendState(friend_state_value)
 
-        youtube_length = reader.read_u8(order)
+        youtube_length = reader.read_u8()
 
         youtube: Optional[str] = reader.read(youtube_length).decode(encoding, errors)
 
         if not youtube:
             youtube = None
 
-        twitter_length = reader.read_u8(order)
+        twitter_length = reader.read_u8()
 
         twitter: Optional[str] = reader.read(twitter_length).decode(encoding, errors)
 
         if not twitter:
             twitter = None
 
-        twitch_length = reader.read_u8(order)
+        twitch_length = reader.read_u8()
 
         twitch: Optional[str] = reader.read(twitch_length).decode(encoding, errors)
 
         if not twitch:
             twitch = None
 
-        # discord_length = reader.read_u8(order)
+        # discord_length = reader.read_u8()
 
         # discord: Optional[str] = reader.read(discord_length).decode(encoding, errors)
 
@@ -593,44 +594,44 @@ class User(Entity):
     ) -> None:
         super().to_binary(binary, order, version)
 
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
         data = self.name.encode(encoding, errors)
 
-        writer.write_u8(len(data), order)
+        writer.write_u8(len(data))
 
         writer.write(data)
 
-        writer.write_u32(self.account_id, order)
+        writer.write_u32(self.account_id)
 
-        writer.write_u32(self.stars, order)
-        writer.write_u16(self.demons, order)
-        writer.write_u32(self.diamonds, order)
-        writer.write_u32(self.orbs, order)
-        writer.write_u32(self.user_coins, order)
-        writer.write_u16(self.secret_coins, order)
-        writer.write_u16(self.creator_points, order)
+        writer.write_u32(self.stars)
+        writer.write_u16(self.demons)
+        writer.write_u32(self.diamonds)
+        writer.write_u32(self.orbs)
+        writer.write_u32(self.user_coins)
+        writer.write_u16(self.secret_coins)
+        writer.write_u16(self.creator_points)
 
-        writer.write_u32(self.rank, order)
+        writer.write_u32(self.rank)
 
-        writer.write_u16(self.color_1_id, order)
-        writer.write_u16(self.color_2_id, order)
+        writer.write_u16(self.color_1_id)
+        writer.write_u16(self.color_2_id)
 
-        writer.write_u8(self.icon_type.value, order)
+        writer.write_u8(self.icon_type.value)
 
-        writer.write_u16(self.icon_id, order)
-        writer.write_u16(self.cube_id, order)
-        writer.write_u16(self.ship_id, order)
-        writer.write_u16(self.ball_id, order)
-        writer.write_u16(self.ufo_id, order)
-        writer.write_u16(self.wave_id, order)
-        writer.write_u16(self.robot_id, order)
-        writer.write_u16(self.spider_id, order)
-        # writer.write_u16(self.swing_copter_id, order)
+        writer.write_u16(self.icon_id)
+        writer.write_u16(self.cube_id)
+        writer.write_u16(self.ship_id)
+        writer.write_u16(self.ball_id)
+        writer.write_u16(self.ufo_id)
+        writer.write_u16(self.wave_id)
+        writer.write_u16(self.robot_id)
+        writer.write_u16(self.spider_id)
+        # writer.write_u16(self.swing_copter_id)
 
-        writer.write_u16(self.explosion_id, order)
+        writer.write_u16(self.explosion_id)
 
-        writer.write_u8(self.role_id, order)
+        writer.write_u8(self.role_id)
 
         value = 0
 
@@ -644,9 +645,9 @@ class User(Entity):
         value |= self.friend_request_state.value << FRIEND_REQUEST_STATE_SHIFT
         value |= self.comment_state.value << COMMENT_STATE_SHIFT
 
-        writer.write_u8(value, order)
+        writer.write_u8(value)
 
-        writer.write_u8(self.friend_state.value, order)
+        writer.write_u8(self.friend_state.value)
 
         youtube = self.youtube
 
@@ -655,7 +656,7 @@ class User(Entity):
 
         data = youtube.encode(encoding, errors)
 
-        writer.write_u8(len(data), order)
+        writer.write_u8(len(data))
 
         writer.write(data)
 
@@ -666,7 +667,7 @@ class User(Entity):
 
         data = twitter.encode(encoding, errors)
 
-        writer.write_u8(len(data), order)
+        writer.write_u8(len(data))
 
         writer.write(data)
 
@@ -677,7 +678,7 @@ class User(Entity):
 
         data = twitch.encode(encoding, errors)
 
-        writer.write_u8(len(data), order)
+        writer.write_u8(len(data))
 
         writer.write(data)
 
@@ -688,7 +689,7 @@ class User(Entity):
 
         # data = discord.encode(encoding, errors)
 
-        # writer.write_u8(len(data), order)
+        # writer.write_u8(len(data))
 
         # writer.write(data)
 
@@ -742,9 +743,9 @@ class LeaderboardUser(User):
     ) -> LU:
         leaderboard_user = super().from_binary(binary, order, version, encoding, errors)
 
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        place = reader.read_u32(order)
+        place = reader.read_u32()
 
         leaderboard_user.place = place
 
@@ -760,9 +761,9 @@ class LeaderboardUser(User):
     ) -> None:
         super().to_binary(binary, order, version, encoding, errors)
 
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_u32(self.place, order)
+        writer.write_u32(self.place)
 
 
 class LevelLeaderboardUserData(LeaderboardUserData):
@@ -817,13 +818,13 @@ class LevelLeaderboardUser(LeaderboardUser):
     ) -> LLU:
         level_leaderboard_user = super().from_binary(binary, order, version, encoding, errors)
 
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        coins = reader.read_u8(order)
+        coins = reader.read_u8()
 
-        record = reader.read_u8(order)
+        record = reader.read_u8()
 
-        timestamp = reader.read_f64(order)
+        timestamp = reader.read_f64()
 
         if timestamp:
             recorded_at = utc_from_timestamp(timestamp)
@@ -847,11 +848,11 @@ class LevelLeaderboardUser(LeaderboardUser):
     ) -> None:
         super().to_binary(binary, order, version, encoding, errors)
 
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_u8(self.coins, order)
+        writer.write_u8(self.coins)
 
-        writer.write_u8(self.record, order)
+        writer.write_u8(self.record)
 
         recorded_at = self.recorded_at
 
@@ -861,7 +862,7 @@ class LevelLeaderboardUser(LeaderboardUser):
         else:
             timestamp = recorded_at.timestamp()
 
-        writer.write_f64(timestamp, order)
+        writer.write_f64(timestamp)
 
 
 CONVERTER.register_unstructure_hook(

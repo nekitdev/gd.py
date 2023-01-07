@@ -3,15 +3,22 @@ from __future__ import annotations
 from typing import Type, TypeVar
 
 from attrs import Attribute, field, frozen
-from typing_extensions import Final
+from typing_extensions import Final, TypedDict
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
+from gd.converter import CONVERTER
 from gd.enums import ByteOrder
 from gd.robtop import RobTop
 from gd.string_utils import tick
 
-__all__ = ("CURRENT_GAME_VERSION", "CURRENT_BINARY_VERSION", "Version", "GameVersion")
+__all__ = (
+    "CURRENT_GAME_VERSION",
+    "CURRENT_BINARY_VERSION",
+    "Version",
+    "VersionData",
+    "GameVersion",
+)
 
 BASE: Final[int] = 10
 
@@ -20,6 +27,11 @@ V = TypeVar("V", bound="Version")
 EXPECTED_MAJOR = "expected major >= 0"
 EXPECTED_MINOR = "expected minor >= 0"
 EXPECTED_BASE = f"expected minor <= {BASE}"
+
+
+class VersionData(TypedDict):
+    major: int
+    minor: int
 
 
 @frozen(order=True)
@@ -42,6 +54,13 @@ class Version(Binary, RobTop):
 
         if minor >= BASE:
             raise ValueError(EXPECTED_BASE)
+
+    @classmethod
+    def from_json(cls: Type[V], data: VersionData) -> V:
+        return CONVERTER.structure(data, cls)
+
+    def to_json(self) -> VersionData:
+        return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
     def from_value(cls: Type[V], value: int) -> V:
@@ -72,16 +91,16 @@ class Version(Binary, RobTop):
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> V:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        return cls.from_value(reader.read_u8(order))
+        return cls.from_value(reader.read_u8())
 
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_u8(self.to_value(), order)
+        writer.write_u8(self.to_value())
 
 
 G = TypeVar("G", bound="GameVersion")

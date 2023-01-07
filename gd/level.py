@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, AsyncIterator, Iterable, Optional, Type, TypeVar
 
 from attrs import define, field
+from cattrs.gen import make_dict_unstructure_fn, override
 from iters.async_iters import wrap_async_iter
 from iters.iters import iter
 
@@ -32,9 +33,10 @@ from gd.constants import (
     EMPTY,
     UNKNOWN,
 )
+from gd.converter import CONVERTER
 from gd.date_time import DateTime, Duration, utc_from_timestamp, utc_now
 from gd.encoding import compress, decompress, unzip_level_string, zip_level_string
-from gd.entity import Entity
+from gd.entity import Entity, EntityData
 from gd.enums import (
     ByteOrder,
     CommentStrategy,
@@ -49,11 +51,11 @@ from gd.enums import (
 from gd.errors import InternalError, MissingAccess
 from gd.models import LevelModel, TimelyInfoModel
 from gd.official_levels import OFFICIAL_LEVELS, OfficialLevel
-from gd.password import Password
-from gd.song import Song
+from gd.password import Password, PasswordData
+from gd.song import Song, SongData
 from gd.typing import Predicate
-from gd.users import User
-from gd.versions import CURRENT_GAME_VERSION, GameVersion
+from gd.users import User, UserData
+from gd.versions import CURRENT_GAME_VERSION, GameVersion, VersionData
 
 if TYPE_CHECKING:
     from gd.client import Client
@@ -90,6 +92,37 @@ OFFICIAL_LEVEL_DESCRIPTION = "Official Level: {}"
 
 
 DEFAULT_SERVER_STYLE = True
+
+
+class LevelData(EntityData):
+    name: str
+    creator: UserData
+    song: SongData
+    description: str
+    unprocessed_data: str
+    version: int
+    downloads: int
+    game_version: VersionData
+    rating: int
+    length: int
+    difficulty: int
+    stars: int
+    requested_stars: int
+    score: int
+    rate_type: int
+    password_data: PasswordData
+    original_id: int
+    two_player: bool
+    coins: int
+    verified_coins: bool
+    low_detail: bool
+    object_count: int
+    created_at: str
+    updated_at: str
+    editor_time: str
+    copies_time: str
+    timely_type: int
+    timely_id: int
 
 
 @define(hash=True)
@@ -145,6 +178,13 @@ class Level(Entity):
     def data(self, data: bytes) -> None:
         self.processed_data = Editor.from_bytes(data).to_robtop()
 
+    @classmethod
+    def from_json(cls: Type[L], data: LevelData) -> L:  # type: ignore
+        return CONVERTER.structure(data, cls)
+
+    def to_json(self) -> LevelData:
+        return CONVERTER.unstructure(self)  # type: ignore
+
     def to_binary(
         self,
         binary: BinaryWriter,
@@ -153,45 +193,45 @@ class Level(Entity):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
         super().to_binary(binary, order, version)
 
         data = self.name.encode(encoding, errors)
 
-        writer.write_u8(len(data), order)
+        writer.write_u8(len(data))
 
         writer.write(data)
 
         self.creator.to_binary(binary, order, version, encoding, errors)
         self.song.to_binary(binary, order, version, encoding, errors)
 
-        writer.write_f64(self.created_at.timestamp(), order)
-        writer.write_f64(self.updated_at.timestamp(), order)
+        writer.write_f64(self.created_at.timestamp())
+        writer.write_f64(self.updated_at.timestamp())
 
         data = self.description.encode(encoding, errors)
 
-        writer.write_u16(len(data), order)
+        writer.write_u16(len(data))
 
         writer.write(data)
 
         data = compress(self.data)
 
-        writer.write_u32(len(data), order)
+        writer.write_u32(len(data))
 
         writer.write(data)
 
-        writer.write_u8(self.version, order)
+        writer.write_u8(self.version)
 
-        writer.write_u32(self.downloads, order)
+        writer.write_u32(self.downloads)
 
         self.game_version.to_binary(binary, order, version)
 
-        writer.write_i32(self.rating, order)
+        writer.write_i32(self.rating)
 
-        writer.write_u8(self.length.value, order)
+        writer.write_u8(self.length.value)
 
-        writer.write_u8(self.difficulty.value, order)
+        writer.write_u8(self.difficulty.value)
 
         value = self.rate_type.value
 
@@ -204,27 +244,27 @@ class Level(Entity):
         if self.has_low_detail():
             value |= LOW_DETAIL_BIT
 
-        writer.write_u8(value, order)
+        writer.write_u8(value)
 
-        writer.write_u8(self.stars, order)
+        writer.write_u8(self.stars)
 
-        writer.write_u8(self.requested_stars, order)
+        writer.write_u8(self.requested_stars)
 
-        writer.write_u32(self.score, order)
+        writer.write_u32(self.score)
 
         self.password_data.to_binary(binary, order, version)
 
-        writer.write_u32(self.original_id, order)
+        writer.write_u32(self.original_id)
 
-        writer.write_u8(self.coins, order)
+        writer.write_u8(self.coins)
 
-        writer.write_u32(self.object_count, order)
+        writer.write_u32(self.object_count)
 
-        writer.write_f32(self.editor_time.total_seconds(), order)
-        writer.write_f32(self.copies_time.total_seconds(), order)
+        writer.write_f32(self.editor_time.total_seconds())
+        writer.write_f32(self.copies_time.total_seconds())
 
-        writer.write_u8(self.timely_type.value, order)
-        writer.write_u32(self.timely_id, order)
+        writer.write_u8(self.timely_type.value)
+        writer.write_u32(self.timely_id)
 
     @classmethod
     def from_binary(
@@ -240,48 +280,48 @@ class Level(Entity):
         low_detail_bit = LOW_DETAIL_BIT
         rate_type_mask = RATE_TYPE_MASK
 
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        id = reader.read_u32(order)
+        id = reader.read_u32()
 
-        name_length = reader.read_u8(order)
+        name_length = reader.read_u8()
 
         name = reader.read(name_length).decode(encoding, errors)
 
         creator = User.from_binary(binary, order, version, encoding, errors)
         song = Song.from_binary(binary, order, version, encoding, errors)
 
-        uploaded_timestamp = reader.read_f64(order)
-        updated_timestamp = reader.read_f64(order)
+        uploaded_timestamp = reader.read_f64()
+        updated_timestamp = reader.read_f64()
 
         created_at = utc_from_timestamp(uploaded_timestamp)
         updated_at = utc_from_timestamp(updated_timestamp)
 
-        description_length = reader.read_u16(order)
+        description_length = reader.read_u16()
 
         description = reader.read(description_length).decode(encoding, errors)
 
-        data_length = reader.read_u32(order)
+        data_length = reader.read_u32()
 
         data = decompress(reader.read(data_length))
 
-        version = reader.read_u8(order)
+        version = reader.read_u8()
 
-        downloads = reader.read_u32(order)
+        downloads = reader.read_u32()
 
         game_version = GameVersion.from_binary(binary, order, version)
 
-        rating = reader.read_i32(order)
+        rating = reader.read_i32()
 
-        length_value = reader.read_u8(order)
+        length_value = reader.read_u8()
 
         length = LevelLength(length_value)
 
-        difficulty_value = reader.read_u8(order)
+        difficulty_value = reader.read_u8()
 
         difficulty = Difficulty(difficulty_value)
 
-        value = reader.read_u8(order)
+        value = reader.read_u8()
 
         two_player = value & two_player_bit == two_player_bit
         verified_coins = value & verified_coins_bit == verified_coins_bit
@@ -291,31 +331,31 @@ class Level(Entity):
 
         rate_type = RateType(rate_type_value)
 
-        stars = reader.read_u8(order)
+        stars = reader.read_u8()
 
-        requested_stars = reader.read_u8(order)
+        requested_stars = reader.read_u8()
 
-        score = reader.read_u32(order)
+        score = reader.read_u32()
 
         password_data = Password.from_binary(binary, order, version)
 
-        original_id = reader.read_u32(order)
+        original_id = reader.read_u32()
 
-        coins = reader.read_u8(order)
+        coins = reader.read_u8()
 
-        object_count = reader.read_u32(order)
+        object_count = reader.read_u32()
 
-        editor_seconds = reader.read_f32(order)
-        copies_seconds = reader.read_f32(order)
+        editor_seconds = reader.read_f32()
+        copies_seconds = reader.read_f32()
 
         editor_time = Duration(seconds=editor_seconds)
         copies_time = Duration(seconds=copies_seconds)
 
-        timely_type_value = reader.read_u8(order)
+        timely_type_value = reader.read_u8()
 
         timely_type = TimelyType(timely_type_value)
 
-        timely_id = reader.read_u32(order)
+        timely_id = reader.read_u32()
 
         level = cls(
             id=id,
@@ -699,3 +739,9 @@ T = TypeVar("T")
 
 def switch_none(item: Optional[T], default: T) -> T:
     return default if item is None else item
+
+
+CONVERTER.register_unstructure_hook(
+    Level,
+    make_dict_unstructure_fn(Level, CONVERTER, client_unchecked=override(omit=True)),
+)

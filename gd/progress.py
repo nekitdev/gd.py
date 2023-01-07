@@ -24,23 +24,21 @@ class Progress(Binary, RobTop, ListType, List[int]):  # type: ignore
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> P:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        length = reader.read_u8(order)
+        length = reader.read_u8()
 
-        read_i8 = partial(reader.read_i8, order)
-
-        return iter.repeat_exactly_with(read_i8, length).collect(cls)
+        return iter.repeat_exactly_with(reader.read_i8, length).collect(cls)
 
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_u8(len(self), order)
+        writer.write_u8(len(self))
 
         for part in self:
-            writer.write_i8(part, order)
+            writer.write_i8(part)
 
     @classmethod
     def from_robtop(cls: Type[P], string: str) -> P:

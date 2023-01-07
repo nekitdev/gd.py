@@ -104,14 +104,14 @@ class Header(Binary, RobTop):  # TODO: compatibility?
         song_fade_out_bit = SONG_FADE_OUT_BIT
         platformer_mode_bit = PLATFORMER_MODE_BIT
 
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        background_id = reader.read_u8(order)
-        ground_id = reader.read_u8(order)
-        ground_line_id = reader.read_u8(order)
-        font_id = reader.read_u8(order)
+        background_id = reader.read_u8()
+        ground_id = reader.read_u8()
+        ground_line_id = reader.read_u8()
+        font_id = reader.read_u8()
 
-        value = reader.read_u8(order)
+        value = reader.read_u8()
 
         speed = Speed(value & HALF_BYTE)
 
@@ -119,7 +119,7 @@ class Header(Binary, RobTop):  # TODO: compatibility?
 
         game_mode = GameMode(value)
 
-        value = reader.read_u8(order)
+        value = reader.read_u8()
 
         mini_mode = value & mini_mode_bit == mini_mode_bit
         dual_mode = value & dual_mode_bit == dual_mode_bit
@@ -129,13 +129,13 @@ class Header(Binary, RobTop):  # TODO: compatibility?
         song_fade_out = value & song_fade_out_bit == song_fade_out_bit
         platformer_mode = value & platformer_mode_bit == platformer_mode_bit
 
-        song_offset = reader.read_f32(order)
+        song_offset = reader.read_f32()
 
         guidelines = Guidelines.from_binary(binary, order, version)
 
         color_channels = ColorChannels.from_binary(binary, order, version)
 
-        color_channels_page = reader.read_u16(order)
+        color_channels_page = reader.read_u16()
 
         return cls(
             game_mode=game_mode,
@@ -160,18 +160,18 @@ class Header(Binary, RobTop):  # TODO: compatibility?
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_u8(self.background_id, order)
-        writer.write_u8(self.ground_id, order)
-        writer.write_u8(self.ground_line_id, order)
-        writer.write_u8(self.font_id, order)
+        writer.write_u8(self.background_id)
+        writer.write_u8(self.ground_id)
+        writer.write_u8(self.ground_line_id)
+        writer.write_u8(self.font_id)
 
         value = self.game_mode.value
 
         value = (value << HALF_BITS) | self.speed.value
 
-        writer.write_u8(value, order)
+        writer.write_u8(value)
 
         value = 0
 
@@ -196,15 +196,15 @@ class Header(Binary, RobTop):  # TODO: compatibility?
         if self.is_platformer_mode():
             value |= PLATFORMER_MODE_BIT
 
-        writer.write_u8(value, order)
+        writer.write_u8(value)
 
-        writer.write_f32(self.song_offset, order)
+        writer.write_f32(self.song_offset)
 
         self.guidelines.to_binary(binary, order, version)
 
         self.color_channels.to_binary(binary, order, version)
 
-        writer.write_u16(self.color_channels_page, order)
+        writer.write_u16(self.color_channels_page)
 
     @classmethod
     def from_robtop(cls: Type[H], string: str) -> H:

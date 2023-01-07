@@ -17,7 +17,7 @@ class Folder(Binary):
     """Represents level folders.
 
     Binary:
-        ```text
+        ```rust
         struct Folder {
             id: u8,
             name_length: u8,
@@ -43,11 +43,11 @@ class Folder(Binary):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> F:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        id = reader.read_u8(order)
+        id = reader.read_u8()
 
-        name_length = reader.read_u8(order)
+        name_length = reader.read_u8()
 
         name = reader.read(name_length).decode(encoding, errors)
 
@@ -61,12 +61,12 @@ class Folder(Binary):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_u8(self.id, order)
+        writer.write_u8(self.id)
 
         data = self.name.encode(encoding, errors)
 
-        writer.write_u8(len(data), order)
+        writer.write_u8(len(data))
 
         writer.write(data)

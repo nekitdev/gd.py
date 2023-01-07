@@ -27,7 +27,7 @@ from uuid import uuid4 as generate_uuid
 from aiohttp import BasicAuth, ClientError, ClientSession, ClientTimeout
 from attrs import define, evolve, field, frozen
 from iters import iter
-from tqdm import tqdm as progess  # type: ignore
+from tqdm import tqdm as progress  # type: ignore
 from typing_extensions import Literal
 from yarl import URL
 
@@ -118,7 +118,7 @@ from gd.password import Password
 from gd.progress import Progress
 from gd.string_utils import concat_comma, password_str, tick
 from gd.text_utils import snake_to_camel_with_abbreviations
-from gd.timer import create_timer
+from gd.timer import now
 from gd.typing import (
     AnyException,
     DynamicTuple,
@@ -581,7 +581,7 @@ class HTTPClient:
             url=url, method=method, **request_keywords
         ) as response:
             if with_bar:
-                bar = progess(total=response.content_length, unit=UNIT, unit_scale=UNIT_SCALE)
+                bar = progress(total=response.content_length, unit=UNIT, unit_scale=UNIT_SCALE)
 
             while True:
                 chunk = await response.content.read(chunk_size)
@@ -891,7 +891,7 @@ class HTTPClient:
         return int(self.gd_world)
 
     async def ping(self, url: URLString) -> Duration:
-        timer = create_timer()
+        timer = now()
 
         try:
             await self.request(GET, url, read=False)

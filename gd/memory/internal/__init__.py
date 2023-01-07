@@ -20,6 +20,9 @@
 Functions marked with `?` are not required for the library to work.
 """
 
+# fmt: off
+# isort: off
+
 from typing import Any
 
 from typing_extensions import Never

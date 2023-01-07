@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Iterable
+from typing import Iterable, List
 
 from fastapi import Depends
 from fastapi.responses import FileResponse

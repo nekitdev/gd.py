@@ -769,6 +769,21 @@ class RewardType(Enum):
     DEFAULT = GET_INFO
 
 
+class ChestType(Enum):
+    SMALL = 1
+    LARGE = 2
+
+
+class DiamondLocation(Enum):
+    QUEST = 1  # `c`
+    WEEKLY = 2  # `d`
+
+
+class RewardLocation(Enum):
+    GAUNTLET = 1
+    LORE = 2
+
+
 class ShardType(Enum):
     """An enumeration of shard types."""
 
@@ -781,6 +796,27 @@ class ShardType(Enum):
     NULL = 6
 
     DEFAULT = UNKNOWN
+
+
+class ItemType(Enum):
+    """An enumeration of item types."""
+
+    UNKNOWN = 0
+
+    FIRE_SHARD = 1
+    ICE_SHARD = 2
+    POISON_SHARD = 3
+    SHADOW_SHARD = 4
+    LAVA_SHARD = 5
+    KEY = 6
+    ORB = 7
+    DIAMOND = 8
+    CUSTOM = 9
+
+    DEFAULT = UNKNOWN
+
+    def is_custom(self) -> bool:
+        return self is type(self).CUSTOM
 
 
 class QuestType(Enum):
@@ -1544,9 +1580,9 @@ class InternalType(Enum):
 
     LEVEL = 4
     SONG = 6
-    CHALLENGE = 7
-    REWARD = 8
-    REWARD_OBJECT = 9
+    QUEST = 7
+    REWARD_ITEM = 8
+    REWARD = 9
 
 
 class Filter(Enum):
@@ -1593,6 +1629,9 @@ class Platform(Enum):
     WINDOWS = 4
 
     DEFAULT = UNKNOWN
+
+    def is_unknown(self) -> bool:
+        return self is type(self).UNKNOWN
 
     def is_android(self) -> bool:
         return self is type(self).ANDROID

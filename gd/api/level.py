@@ -75,6 +75,7 @@ from gd.users import User
 from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, Version
 
 INTERNAL_TYPE = "kCEK"
+
 ID = "k1"
 NAME = "k2"
 DESCRIPTION = "k3"
@@ -722,30 +723,30 @@ class LevelAPI(Binary):
         unlocked_bit = UNLOCKED_BIT
         high_object_count_bit = HIGH_OBJECT_COUNT_BIT
 
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        id = reader.read_u32(order)
+        id = reader.read_u32()
 
-        name_length = reader.read_u8(order)
+        name_length = reader.read_u8()
 
         name = reader.read(name_length).decode(encoding, errors)
 
         creator = User.from_binary(binary, order, version, encoding, errors)
         song = Song.from_binary(binary, order, version, encoding, errors)
 
-        description_length = reader.read_u16(order)
+        description_length = reader.read_u16()
 
         description = reader.read(description_length).decode(encoding, errors)
 
-        data_length = reader.read_u32(order)
+        data_length = reader.read_u32()
 
         data = decompress(reader.read(data_length))
 
-        difficulty_value = reader.read_u8(order)
+        difficulty_value = reader.read_u8()
 
         difficulty = Difficulty(difficulty_value)
 
-        value = reader.read_u8(order)
+        value = reader.read_u8()
 
         editable = value & editable_bit == editable_bit
         verified = value & verified_bit == verified_bit
@@ -756,7 +757,7 @@ class LevelAPI(Binary):
         low_detail_toggled = value & low_detail_toggled_bit == low_detail_toggled_bit
         favorite = value & favorite_bit == favorite_bit
 
-        value = reader.read_u8(order)
+        value = reader.read_u8()
 
         collected_coins_value = value & COLLECTED_COINS_MASK
 
@@ -768,22 +769,22 @@ class LevelAPI(Binary):
         unlocked = value & unlocked_bit == unlocked_bit
         high_object_count = value & high_object_count_bit == high_object_count_bit
 
-        downloads = reader.read_u32(order)
+        downloads = reader.read_u32()
 
-        completions = reader.read_u16(order)
+        completions = reader.read_u16()
 
-        version = reader.read_u8(order)
+        version = reader.read_u8()
 
         game_version = GameVersion.from_binary(binary, order, version)
         binary_version = Version.from_binary(binary, order, version)
 
-        attempts = reader.read_u32(order)
-        jumps = reader.read_u32(order)
+        attempts = reader.read_u32()
+        jumps = reader.read_u32()
 
-        normal_record = reader.read_u8(order)
-        practice_record = reader.read_u8(order)
+        normal_record = reader.read_u8()
+        practice_record = reader.read_u8()
 
-        value = reader.read_u8(order)
+        value = reader.read_u8()
 
         type_value = value & TYPE_MASK
 
@@ -793,51 +794,51 @@ class LevelAPI(Binary):
 
         rate_type = RateType(rate_type_value)
 
-        rating = reader.read_i32(order)
+        rating = reader.read_i32()
 
-        length_value = reader.read_u8(order)
+        length_value = reader.read_u8()
 
         length = LevelLength(length_value)
 
-        stars = reader.read_u8(order)
+        stars = reader.read_u8()
 
-        score = reader.read_u32(order)
+        score = reader.read_u32()
 
         recording = Recording.from_binary(binary, order, version)
 
         password_data = Password.from_binary(binary, order, version)
 
-        original_id = reader.read_u32(order)
+        original_id = reader.read_u32()
 
-        object_count = reader.read_u32(order)
+        object_count = reader.read_u32()
 
-        coins = reader.read_u8(order)
+        coins = reader.read_u8()
 
-        requested_stars = reader.read_u8(order)
+        requested_stars = reader.read_u8()
 
-        orb_percentage = reader.read_u8(order)
+        orb_percentage = reader.read_u8()
 
-        timely_id = reader.read_u32(order)
+        timely_id = reader.read_u32()
 
-        editor_seconds = reader.read_f32(order)
-        copies_seconds = reader.read_f32(order)
+        editor_seconds = reader.read_f32()
+        copies_seconds = reader.read_f32()
 
         editor_time = Duration(seconds=editor_seconds)
         copies_time = Duration(seconds=copies_seconds)
 
-        level_order = reader.read_u16(order)
+        level_order = reader.read_u16()
 
-        folder_id = reader.read_u8(order)
+        folder_id = reader.read_u8()
 
-        best_clicks = reader.read_u16(order)
+        best_clicks = reader.read_u16()
 
-        best_seconds = reader.read_f32(order)
+        best_seconds = reader.read_f32()
 
         best_time = Duration(seconds=best_seconds)
 
         progress = Progress.from_binary(binary, order, version)
 
-        leaderboard_record = reader.read_u8(order)
+        leaderboard_record = reader.read_u8()
 
         level = cls(
             id=id,
@@ -905,13 +906,13 @@ class LevelAPI(Binary):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_u32(self.id, order)
+        writer.write_u32(self.id)
 
         data = self.name.encode(encoding, errors)
 
-        writer.write_u8(len(data), order)
+        writer.write_u8(len(data))
 
         writer.write(data)
 
@@ -920,17 +921,17 @@ class LevelAPI(Binary):
 
         data = self.description.encode(encoding, errors)
 
-        writer.write_u16(len(data), order)
+        writer.write_u16(len(data))
 
         writer.write(data)
 
         data = compress(self.data)  # type: ignore
 
-        writer.write_u32(len(data), order)
+        writer.write_u32(len(data))
 
         writer.write(data)
 
-        writer.write_u8(self.difficulty.value, order)
+        writer.write_u8(self.difficulty.value)
 
         value = 0
 
@@ -958,7 +959,7 @@ class LevelAPI(Binary):
         if self.is_favorite():
             value |= FAVORITE_BIT
 
-        writer.write_u8(value, order)
+        writer.write_u8(value)
 
         value = self.collected_coins.value
 
@@ -977,66 +978,66 @@ class LevelAPI(Binary):
         if self.has_high_object_count():
             value |= HIGH_OBJECT_COUNT_BIT
 
-        writer.write_u8(value, order)
+        writer.write_u8(value)
 
-        writer.write_u32(self.downloads, order)
+        writer.write_u32(self.downloads)
 
-        writer.write_u16(self.completions, order)
+        writer.write_u16(self.completions)
 
-        writer.write_u8(self.version, order)
+        writer.write_u8(self.version)
 
         self.game_version.to_binary(binary, order, version)
         self.binary_version.to_binary(binary, order, version)
 
-        writer.write_u32(self.attempts, order)
-        writer.write_u32(self.jumps, order)
+        writer.write_u32(self.attempts)
+        writer.write_u32(self.jumps)
 
-        writer.write_u8(self.normal_record, order)
-        writer.write_u8(self.practice_record, order)
+        writer.write_u8(self.normal_record)
+        writer.write_u8(self.practice_record)
 
         value = self.type.value
 
         value |= self.rate_type.value << RATE_TYPE_SHIFT
 
-        writer.write_u8(value, order)
+        writer.write_u8(value)
 
-        writer.write_i32(self.rating, order)
+        writer.write_i32(self.rating)
 
-        writer.write_u8(self.length.value, order)
+        writer.write_u8(self.length.value)
 
-        writer.write_u8(self.stars, order)
+        writer.write_u8(self.stars)
 
-        writer.write_u32(self.score, order)
+        writer.write_u32(self.score)
 
         self.recording.to_binary(binary, order, version)
 
         self.password_data.to_binary(binary, order, version)
 
-        writer.write_u32(self.original_id, order)
+        writer.write_u32(self.original_id)
 
-        writer.write_u32(self.object_count, order)
+        writer.write_u32(self.object_count)
 
-        writer.write_u8(self.coins, order)
+        writer.write_u8(self.coins)
 
-        writer.write_u8(self.requested_stars, order)
+        writer.write_u8(self.requested_stars)
 
-        writer.write_u8(self.orb_percentage, order)
+        writer.write_u8(self.orb_percentage)
 
-        writer.write_u32(self.timely_id, order)
+        writer.write_u32(self.timely_id)
 
-        writer.write_f32(self.editor_time.total_seconds(), order)
-        writer.write_f32(self.copies_time.total_seconds(), order)
+        writer.write_f32(self.editor_time.total_seconds())
+        writer.write_f32(self.copies_time.total_seconds())
 
-        writer.write_u16(self.level_order, order)
+        writer.write_u16(self.level_order)
 
-        writer.write_u8(self.folder_id, order)
+        writer.write_u8(self.folder_id)
 
-        writer.write_u16(self.best_clicks, order)
-        writer.write_f32(self.best_time.total_seconds(), order)
+        writer.write_u16(self.best_clicks)
+        writer.write_f32(self.best_time.total_seconds())
 
         self.progress.to_binary(binary, order, version)
 
-        writer.write_u8(self.leaderboard_record, order)
+        writer.write_u8(self.leaderboard_record)
 
     @property
     def password(self) -> Optional[int]:

@@ -5,7 +5,7 @@ from datetime import timezone as TimeZone
 from typing import Iterator, Optional, Type
 
 from gd.constants import EMPTY
-from gd.entity import CONVERTER
+from gd.converter import CONVERTER
 from gd.errors import InternalError
 from gd.models_utils import TIME_SEPARATOR, concat_time
 from gd.string_constants import COLON, COMMA, DOT

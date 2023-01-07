@@ -133,13 +133,13 @@ class HSV(Binary, RobTop):
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> T:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        return cls.from_value(reader.read_u32(order))
+        return cls.from_value(reader.read_u32())
 
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_u32(self.to_value(), order)
+        writer.write_u32(self.to_value())

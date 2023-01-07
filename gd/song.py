@@ -22,7 +22,8 @@ from gd.constants import (
     EMPTY,
     UNKNOWN,
 )
-from gd.entity import CONVERTER, Entity, EntityData
+from gd.converter import CONVERTER
+from gd.entity import Entity, EntityData
 from gd.enums import ByteOrder
 from gd.errors import MissingAccess
 from gd.http import NEWGROUNDS_SONG
@@ -78,7 +79,7 @@ class Song(Entity):
 
     Binary:
 
-        ```text
+        ```rust
         const CUSTOM_BIT: u8 = 0b00000001;
 
         struct Song {
@@ -127,23 +128,23 @@ class Song(Entity):
     ) -> S:
         custom_bit = CUSTOM_BIT
 
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        id = reader.read_u32(order)
+        id = reader.read_u32()
 
-        name_length = reader.read_u8(order)
+        name_length = reader.read_u8()
 
         name = reader.read(name_length).decode(encoding, errors)
 
         artist = Artist.from_binary(binary, order, version, encoding, errors)
 
-        size = reader.read_f32(order)
+        size = reader.read_f32()
 
-        value = reader.read_u8(order)
+        value = reader.read_u8()
 
         custom = value & custom_bit == custom_bit
 
-        download_url_length = reader.read_u16(order)
+        download_url_length = reader.read_u16()
 
         string = reader.read(download_url_length).decode(encoding, errors)
 
@@ -165,26 +166,26 @@ class Song(Entity):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_u32(self.id, order)
+        writer.write_u32(self.id)
 
         data = self.name.encode(encoding, errors)
 
-        writer.write_u8(len(data), order)
+        writer.write_u8(len(data))
 
         writer.write(data)
 
         self.artist.to_binary(binary, order, version, encoding, errors)
 
-        writer.write_f32(self.size, order)
+        writer.write_f32(self.size)
 
         value = 0
 
         if self.is_custom():
             value |= CUSTOM_BIT
 
-        writer.write_u8(value, order)
+        writer.write_u8(value)
 
         download_url = self.download_url
 
@@ -196,7 +197,7 @@ class Song(Entity):
 
         data = string.encode(encoding, errors)
 
-        writer.write_u16(len(data), order)
+        writer.write_u16(len(data))
 
         writer.write(data)
 

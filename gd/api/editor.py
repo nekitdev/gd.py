@@ -28,7 +28,7 @@ from gd.models_utils import concat_objects, split_objects
 from gd.robtop import RobTop
 from gd.typing import is_instance
 
-__all__ = ("Editor", "get_time_length")
+__all__ = ("Editor", "time_length")
 
 SPEED_TO_MAGIC = {
     Speed.SLOW: SpeedMagic.SLOW,
@@ -47,7 +47,7 @@ SPEED_CHANGE_TO_MAGIC = {
 }
 
 
-def get_time_length(
+def time_length(
     distance: float,
     start_speed: Speed = Speed.NORMAL,
     speed_changes: Iterable[Object] = (),
@@ -117,7 +117,7 @@ class Editor(RobTop, Binary, Sequence[Object]):
     """Represents editors.
 
     Binary:
-        ```text
+        ```rust
         struct Editor {
             header: Header,
             objects_length: u32,
@@ -247,7 +247,7 @@ class Editor(RobTop, Binary, Sequence[Object]):
 
     @property
     def length(self) -> float:
-        return get_time_length(self.x_length, self.start_speed, self.speed_changes)
+        return time_length(self.x_length, self.start_speed, self.speed_changes)
 
     @classmethod
     def from_binary(
@@ -258,9 +258,9 @@ class Editor(RobTop, Binary, Sequence[Object]):
     ) -> E:
         header = Header.from_binary(binary, order, version)
 
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        iterable_length = reader.read_u32(order)
+        iterable_length = reader.read_u32()
 
         object_from_binary_function = partial(object_from_binary, binary, order, version)
 
@@ -273,11 +273,11 @@ class Editor(RobTop, Binary, Sequence[Object]):
     ) -> None:
         self.header.to_binary(binary, order, version)
 
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
         objects = self.objects
 
-        writer.write_u32(len(objects), order)
+        writer.write_u32(len(objects))
 
         for object in objects:
             object_to_binary(object, binary, order, version)
@@ -299,10 +299,16 @@ class Editor(RobTop, Binary, Sequence[Object]):
         return cls(header, objects)
 
     def to_robtop(self) -> str:
-        iterator = iter(self.objects).map(object_to_robtop).prepend(self.header.to_robtop())
-
-        return concat_objects(iterator.unwrap())
+        return (
+            iter(self.objects)
+            .map(object_to_robtop)
+            .prepend(self.header.to_robtop())
+            .collect(concat_objects)
+        )
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return OBJECTS_SEPARATOR in string
+
+
+DEFAULT_DATA = Editor().to_bytes()

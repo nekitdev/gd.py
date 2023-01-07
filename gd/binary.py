@@ -140,7 +140,7 @@ class BinaryInfo(Binary):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> BI:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
         header = reader.read(HEADER_SIZE)
 
@@ -149,7 +149,7 @@ class BinaryInfo(Binary):
         if header != expected:
             raise ValueError(INVALID_HEADER.format(expected))
 
-        version = reader.read_u8(order)
+        version = reader.read_u8()
 
         order = ByteOrder(reader.read(BYTE_ORDER_SIZE).decode(encoding, errors))
 
@@ -163,11 +163,11 @@ class BinaryInfo(Binary):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
         writer.write(HEADER)
 
-        writer.write_u8(self.version, order)
+        writer.write_u8(self.version)
 
         writer.write(self.order.value.encode(encoding, errors))
 

@@ -5,19 +5,19 @@ from builtins import setattr as set_attribute
 from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
 
 from attrs import Attribute, define, field, fields
-from cattrs import Converter
 from cattrs.gen import make_dict_unstructure_fn, override
 from typing_extensions import TypedDict
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
+from gd.converter import CONVERTER
 from gd.enums import ByteOrder
 from gd.errors import ClientError
 
 if TYPE_CHECKING:
     from gd.client import Client
 
-__all__ = ("CONVERTER", "Entity", "EntityData")
+__all__ = ("Entity", "EntityData")
 
 E = TypeVar("E", bound="Entity")
 
@@ -99,24 +99,23 @@ class Entity(Binary):
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> E:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        id = reader.read_u32(order)
+        id = reader.read_u32()
 
         return cls(id)
 
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_u32(self.id, order)
+        writer.write_u32(self.id)
 
 
 if not TYPE_CHECKING:
     Client = Any
 
-CONVERTER = Converter(forbid_extra_keys=True)
 
 CONVERTER.register_unstructure_hook(
     Entity,

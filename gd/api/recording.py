@@ -126,11 +126,11 @@ class RecordingItem(Binary, RobTop):
         next_bit = NEXT_BIT
         secondary_bit = SECONDARY_BIT
 
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        timestamp = reader.read_f32(order)
+        timestamp = reader.read_f32()
 
-        value = reader.read_u8(order)
+        value = reader.read_u8()
 
         previous = value & previous_bit == previous_bit
         next = value & next_bit == next_bit
@@ -141,9 +141,9 @@ class RecordingItem(Binary, RobTop):
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_f32(self.timestamp, order)
+        writer.write_f32(self.timestamp)
 
         value = 0
 
@@ -156,7 +156,7 @@ class RecordingItem(Binary, RobTop):
         if self.is_secondary():
             value |= SECONDARY_BIT
 
-        writer.write_u8(value, order)
+        writer.write_u8(value)
 
     def is_previous(self) -> bool:
         return self.previous
@@ -198,9 +198,9 @@ class Recording(Binary, RobTop, ListType, List[RecordingItem]):  # type: ignore
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> R:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        length = reader.read_u32(order)
+        length = reader.read_u32()
 
         recording_item_from_binary = partial(RecordingItem.from_binary, binary, order, version)
 
@@ -209,9 +209,9 @@ class Recording(Binary, RobTop, ListType, List[RecordingItem]):  # type: ignore
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_u32(len(self), order)
+        writer.write_u32(len(self))
 
         for item in self:
             item.to_binary(binary, order, version)

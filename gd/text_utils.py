@@ -1,11 +1,13 @@
 from re import compile
-from typing import Iterable, Match
+from typing import AbstractSet, Iterable, Match
 
 from gd.constants import SPACE
 from gd.iter_utils import unary_tuple
 from gd.string_constants import UNDER
+from gd.string_utils import tick
 
 __all__ = (
+    "parse_bool",
     "camel_to_snake",
     "snake_to_camel",
     "snake_to_camel_with_abbreviations",
@@ -14,6 +16,24 @@ __all__ = (
     "case_fold",
     "create_title",
 )
+
+FALSE = frozenset(("false", "f", "no", "n", "0", "off"))
+TRUE = frozenset(("true", "t", "yes", "y", "1", "on"))
+
+CAN_NOT_PARSE = "can not parse {} as bool"
+
+
+def parse_bool(string: str, false: AbstractSet[str] = FALSE, true: AbstractSet[str] = TRUE) -> bool:
+    string = case_fold(string)
+
+    if string in false:
+        return False
+
+    if string in true:
+        return True
+
+    raise ValueError(CAN_NOT_PARSE.format(tick(string)))
+
 
 is_upper = str.isupper
 is_lower = str.islower

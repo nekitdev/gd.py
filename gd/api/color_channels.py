@@ -189,16 +189,16 @@ class ColorChannel(Binary, RobTop):
         blending_bit = BLENDING_BIT
         copy_opacity_bit = COPY_OPACITY_BIT
 
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        id = reader.read_u16(order)
+        id = reader.read_u16()
 
-        copied_id = reader.read_u16(order)
+        copied_id = reader.read_u16()
 
         if copied_id:
             hsv = HSV.from_binary(binary, order, version)
 
-            copy_opacity_and_blending = reader.read_u8(order)
+            copy_opacity_and_blending = reader.read_u8()
 
             blending = copy_opacity_and_blending & blending_bit == blending_bit
 
@@ -207,7 +207,7 @@ class ColorChannel(Binary, RobTop):
             player_color = PlayerColor.DEFAULT
 
             if not copy_opacity:
-                opacity = reader.read_f32(order)
+                opacity = reader.read_f32()
 
             else:
                 opacity = DEFAULT_OPACITY  # does not matter
@@ -219,7 +219,7 @@ class ColorChannel(Binary, RobTop):
 
             copy_opacity = DEFAULT_COPY_OPACITY
 
-            value = reader.read_u32(order)
+            value = reader.read_u32()
 
             player_color_and_blending = value & byte
 
@@ -235,7 +235,7 @@ class ColorChannel(Binary, RobTop):
 
             color = Color(value)
 
-            opacity = reader.read_f32(order)
+            opacity = reader.read_f32()
 
         return cls(
             id=id,
@@ -253,13 +253,13 @@ class ColorChannel(Binary, RobTop):
     ) -> None:
         bits = BITS
 
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_u16(self.id, order)
+        writer.write_u16(self.id)
 
         copied_id = self.copied_id
 
-        writer.write_u16(copied_id, order)
+        writer.write_u16(copied_id)
 
         if copied_id:
             self.hsv.to_binary(binary, order, version)
@@ -274,10 +274,10 @@ class ColorChannel(Binary, RobTop):
             if copy_opacity:
                 value |= COPY_OPACITY_BIT
 
-            writer.write_u8(value, order)
+            writer.write_u8(value)
 
             if not copy_opacity:
-                writer.write_f32(self.opacity, order)
+                writer.write_f32(self.opacity)
 
         else:
             value = 0
@@ -289,9 +289,9 @@ class ColorChannel(Binary, RobTop):
 
             value |= self.color.value << bits
 
-            writer.write_u32(value, order)
+            writer.write_u32(value)
 
-            writer.write_f32(self.opacity, order)
+            writer.write_f32(self.opacity)
 
     def is_blending(self) -> bool:
         return self.blending
@@ -348,9 +348,9 @@ class ColorChannels(Binary, Dict[int, ColorChannel]):
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> CCS:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        length = reader.read_u16(order)
+        length = reader.read_u16()
 
         color_channel_from_binary = partial(ColorChannel.from_binary, binary, order, version)
 
@@ -361,9 +361,9 @@ class ColorChannels(Binary, Dict[int, ColorChannel]):
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_u16(self.length, order)
+        writer.write_u16(self.length)
 
         for color_channel in self.values():
             color_channel.to_binary(binary, order, version)

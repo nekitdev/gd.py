@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, Dict, List, Mapping, Tuple, Type, TypeVar
+from typing import Any, Dict, List, Tuple, Type, TypeVar
 from uuid import UUID
 from uuid import uuid4 as generate_uuid
 
@@ -15,6 +15,7 @@ from gd.api.folder import Folder
 from gd.api.level import LevelAPI
 from gd.api.like import Like
 from gd.api.objects import Object, object_from_binary, object_to_binary
+from gd.api.rewards import ChestKey, DiamondKey, RewardKey, RewardItem, Quest
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import (
@@ -30,6 +31,7 @@ from gd.constants import (
     DEFAULT_ICON_ID,
     DEFAULT_ID,
     DEFAULT_JUMPS,
+    DEFAULT_KEYS,
     DEFAULT_LEVELS,
     DEFAULT_LIKED,
     DEFAULT_MAP_PACKS,
@@ -90,117 +92,138 @@ class Completed(Binary):
     map_packs: OrderedSet[int] = field(factory=ordered_set)
 
     @classmethod
-    def from_binary(cls: Type[C], binary: BinaryReader, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION) -> C:
-        reader = Reader(binary)
+    def from_binary(
+        cls: Type[C],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> C:
+        reader = Reader(binary, order)
 
-        read_u32 = partial(reader.read_u32, order)
+        official_length = reader.read_u8()
 
-        official_length = reader.read_u8(order)
+        official = iter.repeat_exactly_with(reader.read_u32, official_length).ordered_set()
 
-        official = iter.repeat_exactly_with(read_u32, official_length).ordered_set()
+        normal_levels_length = reader.read_u32()
 
-        normal_levels_length = reader.read_u32(order)
+        normal_levels = iter.repeat_exactly_with(
+            reader.read_u32, normal_levels_length
+        ).ordered_set()
 
-        normal_levels = iter.repeat_exactly_with(read_u32, normal_levels_length).ordered_set()
+        normal_demons_length = reader.read_u16()
 
-        normal_demons_length = reader.read_u16(order)
-
-        normal_demons = iter.repeat_exactly_with(read_u32, normal_demons_length).ordered_set()
+        normal_demons = iter.repeat_exactly_with(
+            reader.read_u32, normal_demons_length
+        ).ordered_set()
 
         normal = Storage(normal_levels, normal_demons)
 
-        timely_levels_length = reader.read_u32(order)
+        timely_levels_length = reader.read_u32()
 
-        timely_levels = iter.repeat_exactly_with(read_u32, timely_levels_length).ordered_set()
+        timely_levels = iter.repeat_exactly_with(
+            reader.read_u32, timely_levels_length
+        ).ordered_set()
 
-        timely_demons_length = reader.read_u16(order)
+        timely_demons_length = reader.read_u16()
 
-        timely_demons = iter.repeat_exactly_with(read_u32, timely_demons_length).ordered_set()
+        timely_demons = iter.repeat_exactly_with(
+            reader.read_u32, timely_demons_length
+        ).ordered_set()
 
         timely = Storage(timely_levels, timely_demons)
 
-        gauntlets_levels_length = reader.read_u16(order)
+        gauntlets_levels_length = reader.read_u16()
 
-        gauntlets_levels = iter.repeat_exactly_with(read_u32, gauntlets_levels_length).ordered_set()
+        gauntlets_levels = iter.repeat_exactly_with(
+            reader.read_u32, gauntlets_levels_length
+        ).ordered_set()
 
-        gauntlets_demons_length = reader.read_u8(order)
+        gauntlets_demons_length = reader.read_u8()
 
-        gauntlets_demons = iter.repeat_exactly_with(read_u32, gauntlets_demons_length).ordered_set()
+        gauntlets_demons = iter.repeat_exactly_with(
+            reader.read_u32, gauntlets_demons_length
+        ).ordered_set()
 
         gauntlets = Storage(gauntlets_levels, gauntlets_demons)
 
-        read_u16 = partial(reader.read_u16, order)
+        map_packs_length = reader.read_u16()
 
-        map_packs_length = reader.read_u16(order)
+        map_packs = iter.repeat_exactly_with(reader.read_u16, map_packs_length).ordered_set()
 
-        map_packs = iter.repeat_exactly_with(read_u16, map_packs_length).ordered_set()
+        return cls(
+            official=official,
+            normal=normal,
+            timely=timely,
+            gauntlets=gauntlets,
+            map_packs=map_packs,
+        )
 
-        return cls(official=official, normal=normal, timely=timely, gauntlets=gauntlets, map_packs=map_packs)
-
-    def to_binary(self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION) -> None:
-        writer = Writer(binary)
+    def to_binary(
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
+        writer = Writer(binary, order)
 
         official = self.official
 
-        writer.write_u8(len(official), order)
+        writer.write_u8(len(official))
 
         for level_id in official:
-            writer.write_u32(level_id, order)
+            writer.write_u32(level_id)
 
         normal = self.normal
 
         normal_levels = normal.levels
 
-        writer.write_u32(len(normal_levels), order)
+        writer.write_u32(len(normal_levels))
 
         for level_id in normal_levels:
-            writer.write_u32(level_id, order)
+            writer.write_u32(level_id)
 
         normal_demons = normal.demons
 
-        writer.write_u16(len(normal_demons), order)
+        writer.write_u16(len(normal_demons))
 
         for demon_id in normal_demons:
-            writer.write_u32(demon_id, order)
+            writer.write_u32(demon_id)
 
         timely = self.timely
 
         timely_levels = timely.levels
 
-        writer.write_u32(len(timely_levels), order)
+        writer.write_u32(len(timely_levels))
 
         for level_id in timely_levels:
-            writer.write_u32(level_id, order)
+            writer.write_u32(level_id)
 
         timely_demons = timely.demons
 
-        writer.write_u16(len(timely_demons), order)
+        writer.write_u16(len(timely_demons))
 
         for demon_id in timely_demons:
-            writer.write_u32(demon_id, order)
+            writer.write_u32(demon_id)
 
         gauntlets = self.gauntlets
 
         gauntlets_levels = gauntlets.levels
 
-        writer.write_u16(len(gauntlets_levels), order)
+        writer.write_u16(len(gauntlets_levels))
 
         for level_id in gauntlets_levels:
-            writer.write_u32(level_id, order)
+            writer.write_u32(level_id)
 
         gauntlets_demons = gauntlets.demons
 
-        writer.write_u8(len(gauntlets_demons), order)
+        writer.write_u8(len(gauntlets_demons))
 
         for demon_id in gauntlets_demons:
-            writer.write_u32(demon_id, order)
+            writer.write_u32(demon_id)
 
         map_packs = self.map_packs
 
-        writer.write_u16(len(map_packs), order)
+        writer.write_u16(len(map_packs))
 
         for map_pack_id in map_packs:
-            writer.write_u16(map_pack_id, order)
+            writer.write_u16(map_pack_id)
 
     @property
     def type_to_set(self) -> Dict[str, OrderedSet[int]]:
@@ -782,7 +805,7 @@ class Variables(Binary):
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> V:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
         follow_player_bit = FOLLOW_PLAYER_BIT
         play_music_bit = PLAY_MUSIC_BIT
@@ -868,7 +891,7 @@ class Variables(Binary):
         practice_death_effect_bit = PRACTICE_DEATH_EFFECT_BIT
         force_smooth_fix_bit = FORCE_SMOOTH_FIX_BIT
 
-        value = reader.read_u32(order)
+        value = reader.read_u32()
 
         follow_player = value & follow_player_bit == follow_player_bit
         play_music = value & play_music_bit == play_music_bit
@@ -894,23 +917,23 @@ class Variables(Binary):
         enable_link_controls = value & enable_link_controls_bit == enable_link_controls_bit
         smooth_fix_in_editor = value & smooth_fix_in_editor_bit == smooth_fix_in_editor_bit
 
-        filter_value = reader.read_u16(order)
+        filter_value = reader.read_u16()
 
         filter_id = filter_value & FILTER_ID_MASK
 
         filter = Filter(filter_value >> FILTER_SHIFT)
 
-        buttons_per_row = reader.read_u8(order)
-        button_rows = reader.read_u8(order)
+        buttons_per_row = reader.read_u8()
+        button_rows = reader.read_u8()
 
-        created_levels_folder_id = reader.read_u8(order)
-        saved_levels_folder_id = reader.read_u8(order)
+        created_levels_folder_id = reader.read_u8()
+        saved_levels_folder_id = reader.read_u8()
 
-        level_leaderboard_strategy_value = reader.read_u8(order)
+        level_leaderboard_strategy_value = reader.read_u8()
 
         level_leaderboard_strategy = LevelLeaderboardStrategy(level_leaderboard_strategy_value)
 
-        value = reader.read_u64(order)
+        value = reader.read_u64()
 
         flip_two_player_controls = (
             value & flip_two_player_controls_bit == flip_two_player_controls_bit
@@ -1083,7 +1106,7 @@ class Variables(Binary):
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
         value = 0
 
@@ -1156,19 +1179,19 @@ class Variables(Binary):
         if self.is_smooth_fix_in_editor():
             value |= SMOOTH_FIX_IN_EDITOR_BIT
 
-        writer.write_u32(value, order)
+        writer.write_u32(value)
 
         filter_value = (self.filter.value << FILTER_SHIFT) | self.filter_id
 
-        writer.write_u16(filter_value, order)
+        writer.write_u16(filter_value)
 
-        writer.write_u8(self.buttons_per_row, order)
-        writer.write_u8(self.button_rows, order)
+        writer.write_u8(self.buttons_per_row)
+        writer.write_u8(self.button_rows)
 
-        writer.write_u8(self.created_levels_folder_id, order)
-        writer.write_u8(self.saved_levels_folder_id, order)
+        writer.write_u8(self.created_levels_folder_id)
+        writer.write_u8(self.saved_levels_folder_id)
 
-        writer.write_u8(self.level_leaderboard_strategy.value, order)
+        writer.write_u8(self.level_leaderboard_strategy.value)
 
         value = 0
 
@@ -1349,7 +1372,7 @@ class Variables(Binary):
         if self.is_force_smooth_fix():
             value |= FORCE_SMOOTH_FIX_BIT
 
-        writer.write_u64(value, order)
+        writer.write_u64(value)
 
 
 VS = TypeVar("VS", bound="Values")
@@ -1374,7 +1397,7 @@ class Values(Binary):
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
         self.variables.to_binary(binary, order, version)
 
@@ -1391,10 +1414,10 @@ class Values(Binary):
             self.colors_1,
             self.colors_2,
         ):
-            writer.write_u16(len(items), order)
+            writer.write_u16(len(items))
 
             for item in items:
-                writer.write_u16(item, order)
+                writer.write_u16(item)
 
     @classmethod
     def from_binary(
@@ -1403,55 +1426,53 @@ class Values(Binary):
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> VS:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
         variables = Variables.from_binary(binary, order, version)
 
-        read_u16 = partial(reader.read_u16, order)
+        cubes_length = reader.read_u16()
 
-        cubes_length = reader.read_u16(order)
+        cubes = iter.repeat_exactly_with(reader.read_u16, cubes_length).ordered_set()
 
-        cubes = iter.repeat_exactly_with(read_u16, cubes_length).ordered_set()
+        ships_length = reader.read_u16()
 
-        ships_length = reader.read_u16(order)
+        ships = iter.repeat_exactly_with(reader.read_u16, ships_length).ordered_set()
 
-        ships = iter.repeat_exactly_with(read_u16, ships_length).ordered_set()
+        balls_length = reader.read_u16()
 
-        balls_length = reader.read_u16(order)
+        balls = iter.repeat_exactly_with(reader.read_u16, balls_length).ordered_set()
 
-        balls = iter.repeat_exactly_with(read_u16, balls_length).ordered_set()
+        ufos_length = reader.read_u16()
 
-        ufos_length = reader.read_u16(order)
+        ufos = iter.repeat_exactly_with(reader.read_u16, ufos_length).ordered_set()
 
-        ufos = iter.repeat_exactly_with(read_u16, ufos_length).ordered_set()
+        waves_length = reader.read_u16()
 
-        waves_length = reader.read_u16(order)
+        waves = iter.repeat_exactly_with(reader.read_u16, waves_length).ordered_set()
 
-        waves = iter.repeat_exactly_with(read_u16, waves_length).ordered_set()
+        robots_length = reader.read_u16()
 
-        robots_length = reader.read_u16(order)
+        robots = iter.repeat_exactly_with(reader.read_u16, robots_length).ordered_set()
 
-        robots = iter.repeat_exactly_with(read_u16, robots_length).ordered_set()
+        spiders_length = reader.read_u16()
 
-        spiders_length = reader.read_u16(order)
+        spiders = iter.repeat_exactly_with(reader.read_u16, spiders_length).ordered_set()
 
-        spiders = iter.repeat_exactly_with(read_u16, spiders_length).ordered_set()
+        # swing_copters_length = reader.read_u16()
 
-        # swing_copters_length = reader.read_u16(order)
+        # swing_copters = iter.repeat_exactly_with(reader.read_u16, swing_copters_length).ordered_set()
 
-        # swing_copters = iter.repeat_exactly_with(read_u16, swing_copters_length).ordered_set()
+        explosions_length = reader.read_u16()
 
-        explosions_length = reader.read_u16(order)
+        explosions = iter.repeat_exactly_with(reader.read_u16, explosions_length).ordered_set()
 
-        explosions = iter.repeat_exactly_with(read_u16, explosions_length).ordered_set()
+        colors_1_length = reader.read_u16()
 
-        colors_1_length = reader.read_u16(order)
+        colors_1 = iter.repeat_exactly_with(reader.read_u16, colors_1_length).ordered_set()
 
-        colors_1 = iter.repeat_exactly_with(read_u16, colors_1_length).ordered_set()
+        colors_2_length = reader.read_u16()
 
-        colors_2_length = reader.read_u16(order)
-
-        colors_2 = iter.repeat_exactly_with(read_u16, colors_2_length).ordered_set()
+        colors_2 = iter.repeat_exactly_with(reader.read_u16, colors_2_length).ordered_set()
 
         return cls(
             variables=variables,
@@ -1567,7 +1588,7 @@ class UnlockValues(Binary):
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> UV:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
         the_challenge_unlocked_bit = THE_CHALLENGE_UNLOCKED_BIT
         gubflub_hint_1_bit = GUBFLUB_HINT_1_BIT
@@ -1597,7 +1618,7 @@ class UnlockValues(Binary):
         # twitch_chest_unlocked_bit = TWITCH_CHEST_UNLOCKED_BIT
         # discord_chest_unlocked_bit = DISCORD_CHEST_UNLOCKED_BIT
 
-        value = reader.read_u64(order)
+        value = reader.read_u64()
 
         the_challenge_unlocked = value & the_challenge_unlocked_bit == the_challenge_unlocked_bit
         gubflub_hint_1 = value & gubflub_hint_1_bit == gubflub_hint_1_bit
@@ -1664,7 +1685,7 @@ class UnlockValues(Binary):
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
         value = 0
 
@@ -1749,7 +1770,7 @@ class UnlockValues(Binary):
         # if self.is_discord_chest_unlocked():
         #     value |= DISCORD_CHEST_UNLOCKED_BIT
 
-        writer.write_u64(value, order)
+        writer.write_u64(value)
 
     def is_the_challenge_unlocked(self) -> bool:
         return self.the_challenge_unlocked
@@ -2030,38 +2051,38 @@ class Statistics(Binary):
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_u32(self.jumps, order)
-        writer.write_u32(self.attempts, order)
-        writer.write_u8(self.official_levels, order)
-        writer.write_u32(self.normal_levels, order)
-        writer.write_u16(self.demons, order)
-        writer.write_u32(self.stars, order)
-        writer.write_u16(self.map_packs, order)
-        writer.write_u16(self.secret_coins, order)
-        writer.write_u32(self.destroyed, order)
-        writer.write_u32(self.liked, order)
-        writer.write_u32(self.rated, order)
-        writer.write_u32(self.user_coins, order)
-        writer.write_u32(self.diamonds, order)
-        writer.write_u32(self.orbs, order)
-        writer.write_u32(self.timely_levels, order)
-        writer.write_u16(self.fire_shards, order)
-        writer.write_u16(self.ice_shards, order)
-        writer.write_u16(self.poison_shards, order)
-        writer.write_u16(self.shadow_shards, order)
-        writer.write_u16(self.lava_shards, order)
-        writer.write_u16(self.bonus_shards, order)
-        writer.write_u32(self.total_orbs, order)
+        writer.write_u32(self.jumps)
+        writer.write_u32(self.attempts)
+        writer.write_u8(self.official_levels)
+        writer.write_u32(self.normal_levels)
+        writer.write_u16(self.demons)
+        writer.write_u32(self.stars)
+        writer.write_u16(self.map_packs)
+        writer.write_u16(self.secret_coins)
+        writer.write_u32(self.destroyed)
+        writer.write_u32(self.liked)
+        writer.write_u32(self.rated)
+        writer.write_u32(self.user_coins)
+        writer.write_u32(self.diamonds)
+        writer.write_u32(self.orbs)
+        writer.write_u32(self.timely_levels)
+        writer.write_u16(self.fire_shards)
+        writer.write_u16(self.ice_shards)
+        writer.write_u16(self.poison_shards)
+        writer.write_u16(self.shadow_shards)
+        writer.write_u16(self.lava_shards)
+        writer.write_u16(self.bonus_shards)
+        writer.write_u32(self.total_orbs)
 
         official_coins = self.official_coins
 
         writer.write_u16(len(official_coins))
 
         for level_id, collected_coins in official_coins.items():
-            writer.write_u16(level_id, order)
-            writer.write_u8(collected_coins.value, order)
+            writer.write_u16(level_id)
+            writer.write_u8(collected_coins.value)
 
     @classmethod
     def from_binary(
@@ -2070,37 +2091,37 @@ class Statistics(Binary):
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> S:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        jumps = reader.read_u32(order)
-        attempts = reader.read_u32(order)
-        official_levels = reader.read_u8(order)
-        normal_levels = reader.read_u32(order)
-        demons = reader.read_u16(order)
-        stars = reader.read_u32(order)
-        map_packs = reader.read_u16(order)
-        secret_coins = reader.read_u16(order)
-        destroyed = reader.read_u32(order)
-        liked = reader.read_u32(order)
-        rated = reader.read_u32(order)
-        user_coins = reader.read_u32(order)
-        diamonds = reader.read_u32(order)
-        orbs = reader.read_u32(order)
-        timely_levels = reader.read_u32(order)
-        fire_shards = reader.read_u16(order)
-        ice_shards = reader.read_u16(order)
-        poison_shards = reader.read_u16(order)
-        shadow_shards = reader.read_u16(order)
-        lava_shards = reader.read_u16(order)
-        bonus_shards = reader.read_u16(order)
-        total_orbs = reader.read_u32(order)
+        jumps = reader.read_u32()
+        attempts = reader.read_u32()
+        official_levels = reader.read_u8()
+        normal_levels = reader.read_u32()
+        demons = reader.read_u16()
+        stars = reader.read_u32()
+        map_packs = reader.read_u16()
+        secret_coins = reader.read_u16()
+        destroyed = reader.read_u32()
+        liked = reader.read_u32()
+        rated = reader.read_u32()
+        user_coins = reader.read_u32()
+        diamonds = reader.read_u32()
+        orbs = reader.read_u32()
+        timely_levels = reader.read_u32()
+        fire_shards = reader.read_u16()
+        ice_shards = reader.read_u16()
+        poison_shards = reader.read_u16()
+        shadow_shards = reader.read_u16()
+        lava_shards = reader.read_u16()
+        bonus_shards = reader.read_u16()
+        total_orbs = reader.read_u32()
 
         collected_coins = CollectedCoins
 
-        official_coins_length = reader.read_u16(order)
+        official_coins_length = reader.read_u16()
 
         official_coins = {
-            reader.read_u16(order): collected_coins(reader.read_u8(order))
+            reader.read_u16(): collected_coins(reader.read_u8())
             for _ in range(official_coins_length)
         }
 
@@ -2227,26 +2248,26 @@ ACHIVEMENTS = snake_to_camel("reported_achievements")
 COMPLETED = "GS_completed"
 STATISTICS = "GS_value"
 
-UNVERIFIED_COINS = "GS_03"
-VERIFIED_COINS = "GS_04"
-MAP_PACKS_STARS = "GS_05"
-PURCHASED_ICONS = "GS_06"
-LEVEL_RECORDS = "GS_07"
-STARS = "GS_09"
+UNVERIFIED_COINS = "GS_3"
+VERIFIED_COINS = "GS_4"
+MAP_PACKS_STARS = "GS_5"
+PURCHASED_ICONS = "GS_6"
+NORMAL_RECORDS = "GS_7"
+NORMAL_STARS = "GS_9"
 OFFICIAL_RECORDS = "GS_10"
 CHEST_REWARDS = "GS_11"
 ACTIVE_QUESTS = "GS_12"
 DIAMONDS = "GS_14"
 UPCOMING_QUESTS = "GS_15"
-# TIMELY_RECORDS = "GS_16"
+TIMELY_RECORDS = "GS_16"
 TIMELY_STARS = "GS_17"
-# GAUNTLET_RECORDS = "GS_18"
-TREASURE_CHEST_REWARDS = "GS_19"
+GAUNTLETS_RECORDS = "GS_18"
+TREASURE_CHESTS_REWARDS = "GS_19"
 TOTAL_KEYS = "GS_20"
 REWARDS = "GS_21"
-AD_REWARDS = "GS_22"
-GAUNTLET_RECORDS = "GS_23"
-TIMELY_RECORDS = "GS_24"
+ADS_REWARDS = "GS_22"
+NEW_GAUNTLETS_RECORDS = "GS_23"
+NEW_TIMELY_RECORDS = "GS_24"
 WEEKLY_REWARDS = "GS_25"
 
 NAME = "GJA_001"
@@ -2331,6 +2352,45 @@ class Database(Binary):
     values: Values = field(factory=Values)
     unlock_values: UnlockValues = field(factory=UnlockValues)
     custom_objects: List[List[Object]] = field(factory=list)
+
+    unverified_coins: Dict[int, CollectedCoins] = field(factory=dict)
+    verified_coins: Dict[int, CollectedCoins] = field(factory=dict)
+
+    map_pack_stars: Dict[int, int] = field(factory=dict)
+
+    purchased_icons: Dict[int, int] = field(factory=dict)
+
+    normal_records: Dict[int, int] = field(factory=dict)
+    normal_stars: Dict[int, int] = field(factory=dict)
+
+    official_records: Dict[int, int] = field(factory=dict)
+
+    chest_rewards: Dict[ChestKey, RewardItem] = field(factory=dict)
+
+    active_quests: Dict[int, Quest] = field(factory=dict)
+
+    diamonds: Dict[DiamondKey, int] = field(factory=dict)
+
+    upcoming_quests: Dict[int, Quest] = field(factory=dict)
+
+    timely_records: Dict[int, int] = field(factory=dict)
+    timely_stars: Dict[int, int] = field(factory=dict)
+
+    gauntlets_records: Dict[int, int] = field(factory=dict)
+
+    treasure_chests_rewards: Dict[int, RewardItem] = field(factory=dict)
+
+    total_keys: int = field(default=DEFAULT_KEYS)
+
+    rewards: Dict[RewardKey, RewardItem] = field(factory=dict)
+
+    ads_rewards: Dict[float, RewardItem] = field(factory=dict)
+
+    new_gauntlets_records: Dict[int, int] = field(factory=dict)
+
+    new_timely_records: Dict[int, int] = field(factory=dict)
+
+    weekly_rewards: Dict[int, RewardItem] = field(factory=dict)
 
     completed: Completed = field(factory=Completed)
     statistics: Statistics = field(factory=Statistics)
@@ -2528,7 +2588,7 @@ class Database(Binary):
 
         created_levels = (
             iter(created_levels_data.values())
-            .drop_while(is_true)
+            .skip_while(is_true)
             .map(LevelAPI.from_robtop_data)
             .ordered_set()
         )
@@ -2709,7 +2769,10 @@ class Database(Binary):
 
         binary_version_data = self.binary_version.to_value()
 
-        levels_data = {CREATED_LEVELS: created_levels_data, BINARY_VERSION_LEVELS: binary_version_data}
+        levels_data = {
+            CREATED_LEVELS: created_levels_data,
+            BINARY_VERSION_LEVELS: binary_version_data,
+        }
 
         return parser.dump(levels_data)
 
@@ -2747,10 +2810,10 @@ class Database(Binary):
         moderator_bit = MODERATOR_BIT
         glow_bit = GLOW_BIT
 
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        volume = reader.read_f32(order)
-        sfx_volume = reader.read_f32(order)
+        volume = reader.read_f32()
+        sfx_volume = reader.read_f32()
 
         data = reader.read(UUID_SIZE)
 
@@ -2760,41 +2823,41 @@ class Database(Binary):
         else:
             uuid = UUID(bytes=data)
 
-        player_name_length = reader.read_u8(order)
+        player_name_length = reader.read_u8()
 
         player_name = reader.read(player_name_length).decode(encoding, errors)
 
-        name_length = reader.read_u8(order)
+        name_length = reader.read_u8()
 
         name = reader.read(name_length).decode(encoding, errors)
 
-        id = reader.read_u32(order)
-        account_id = reader.read_u32(order)
+        id = reader.read_u32()
+        account_id = reader.read_u32()
 
-        password_length = reader.read_u8(order)
+        password_length = reader.read_u8()
 
         password = reader.read(password_length).decode(encoding, errors)
 
-        session_id = reader.read_u32(order)
+        session_id = reader.read_u32()
 
-        cube_id = reader.read_u16(order)
-        ship_id = reader.read_u16(order)
-        ball_id = reader.read_u16(order)
-        ufo_id = reader.read_u16(order)
-        wave_id = reader.read_u16(order)
-        robot_id = reader.read_u16(order)
-        spider_id = reader.read_u16(order)
-        color_1_id = reader.read_u16(order)
-        color_2_id = reader.read_u16(order)
-        trail_id = reader.read_u16(order)
-        explosion_id = reader.read_u16(order)
+        cube_id = reader.read_u16()
+        ship_id = reader.read_u16()
+        ball_id = reader.read_u16()
+        ufo_id = reader.read_u16()
+        wave_id = reader.read_u16()
+        robot_id = reader.read_u16()
+        spider_id = reader.read_u16()
+        color_1_id = reader.read_u16()
+        color_2_id = reader.read_u16()
+        trail_id = reader.read_u16()
+        explosion_id = reader.read_u16()
 
-        icon_type_value = reader.read_u8(order)
+        icon_type_value = reader.read_u8()
         icon_type = IconType(icon_type_value)
 
-        secret_value = reader.read_u32(order)
+        secret_value = reader.read_u32()
 
-        value = reader.read_u8(order)
+        value = reader.read_u8()
 
         show_song_markers = value & show_song_markers_bit == show_song_markers_bit
         show_progress_bar = value & show_progress_bar_bit == show_progress_bar_bit
@@ -2805,7 +2868,7 @@ class Database(Binary):
         shown_low_detail = value & shown_low_detail_bit == shown_low_detail_bit
         rated_game = value & rated_game_bit == rated_game_bit
 
-        value = reader.read_u8(order)
+        value = reader.read_u8()
 
         moderator = value & moderator_bit == moderator_bit
 
@@ -2815,32 +2878,32 @@ class Database(Binary):
 
         quality = Quality(quality_value)
 
-        achievements_length = reader.read_u16(order)
+        achievements_length = reader.read_u16()
 
         achievements = {}
 
         for _ in range(achievements_length):
-            name_length = reader.read_u8(order)
+            name_length = reader.read_u8()
 
             name = reader.read(name_length).decode(encoding, errors)
 
-            progress = reader.read_u16(order)
+            progress = reader.read_u16()
 
             achievements[name] = progress
 
-        bootups = reader.read_u32(order)
+        bootups = reader.read_u32()
 
-        resolution = reader.read_i8(order)
+        resolution = reader.read_i8()
 
         values = Values.from_binary(binary, order, version)
         unlock_values = UnlockValues.from_binary(binary, order, version)
 
-        custom_objects_length = reader.read_u16(order)
+        custom_objects_length = reader.read_u16()
 
         object_from_binary_function = partial(object_from_binary, binary, order, version)
 
         def custom_object_from_binary() -> List[Object]:
-            custom_object_length = reader.read_u32(order)
+            custom_object_length = reader.read_u32()
 
             return iter.repeat_exactly_with(
                 object_from_binary_function, custom_object_length
@@ -2858,58 +2921,56 @@ class Database(Binary):
             LevelAPI.from_binary, binary, order, version, encoding, errors
         )
 
-        official_levels_length = reader.read_u8(order)
+        official_levels_length = reader.read_u8()
 
         official_levels = iter.repeat_exactly_with(
             level_api_from_binary, official_levels_length
         ).ordered_set()
 
-        saved_levels_length = reader.read_u32(order)
+        saved_levels_length = reader.read_u32()
 
         saved_levels = iter.repeat_exactly_with(
             level_api_from_binary, saved_levels_length
         ).ordered_set()
 
-        read_u32 = partial(reader.read_u32, order)
+        followed_length = reader.read_u32()
 
-        followed_length = reader.read_u32(order)
+        followed = iter.repeat_exactly_with(reader.read_u32, followed_length).ordered_set()
 
-        followed = iter.repeat_exactly_with(read_u32, followed_length).ordered_set()
+        last_played_length = reader.read_u16()
 
-        last_played_length = reader.read_u16(order)
-
-        last_played = iter.repeat_exactly_with(read_u32, last_played_length).ordered_set()
+        last_played = iter.repeat_exactly_with(reader.read_u32, last_played_length).ordered_set()
 
         filters = Filters.from_binary(binary, order, version)
 
-        timely_levels_length = reader.read_u32(order)
+        timely_levels_length = reader.read_u32()
 
         timely_levels = iter.repeat_exactly_with(
             level_api_from_binary, timely_levels_length
         ).ordered_set()
 
-        daily_id = reader.read_u32(order)
-        weekly_id = reader.read_u32(order)
+        daily_id = reader.read_u32()
+        weekly_id = reader.read_u32()
 
         like_from_binary = partial(Like.from_binary, binary, order, version)
 
-        liked_length = reader.read_u32(order)
+        liked_length = reader.read_u32()
 
         liked = iter.repeat_exactly_with(like_from_binary, liked_length).ordered_set()
 
-        rated_length = reader.read_u32(order)
+        rated_length = reader.read_u32()
 
-        rated = iter.repeat_exactly_with(read_u32, rated_length).ordered_set()
+        rated = iter.repeat_exactly_with(reader.read_u32, rated_length).ordered_set()
 
-        reported_length = reader.read_u32(order)
+        reported_length = reader.read_u32()
 
-        reported = iter.repeat_exactly_with(read_u32, reported_length).ordered_set()
+        reported = iter.repeat_exactly_with(reader.read_u32, reported_length).ordered_set()
 
-        demon_rated_length = reader.read_u32(order)
+        demon_rated_length = reader.read_u32()
 
-        demon_rated = iter.repeat_exactly_with(read_u32, demon_rated_length).ordered_set()
+        demon_rated = iter.repeat_exactly_with(reader.read_u32, demon_rated_length).ordered_set()
 
-        gauntlet_levels_length = reader.read_u16(order)
+        gauntlet_levels_length = reader.read_u16()
 
         gauntlet_levels = iter.repeat_exactly_with(
             level_api_from_binary, gauntlet_levels_length
@@ -2917,19 +2978,19 @@ class Database(Binary):
 
         folder_from_binary = partial(Folder.from_binary, binary, order, version, encoding, errors)
 
-        saved_folders_length = reader.read_u8(order)
+        saved_folders_length = reader.read_u8()
 
         saved_folders = iter.repeat_exactly_with(
             folder_from_binary, saved_folders_length
         ).ordered_set()
 
-        created_folders_length = reader.read_u8(order)
+        created_folders_length = reader.read_u8()
 
         created_folders = iter.repeat_exactly_with(
             folder_from_binary, created_folders_length
         ).ordered_set()
 
-        created_levels_length = reader.read_u32(order)
+        created_levels_length = reader.read_u32()
 
         created_levels = iter.repeat_exactly_with(
             level_api_from_binary, created_levels_length
@@ -2937,7 +2998,7 @@ class Database(Binary):
 
         song_from_binary = partial(Song.from_binary, binary, order, version, encoding, errors)
 
-        songs_length = reader.read_u32(order)
+        songs_length = reader.read_u32()
 
         songs = iter.repeat_exactly_with(song_from_binary, songs_length).ordered_set()
 
@@ -3016,10 +3077,10 @@ class Database(Binary):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_f32(self.volume, order)
-        writer.write_f32(self.sfx_volume, order)
+        writer.write_f32(self.volume)
+        writer.write_f32(self.sfx_volume)
 
         uuid = self.uuid
 
@@ -3029,42 +3090,42 @@ class Database(Binary):
 
         data = self.player_name.encode(encoding, errors)
 
-        writer.write_u8(len(data), order)
+        writer.write_u8(len(data))
 
         writer.write(data)
 
         data = self.name.encode(encoding, errors)
 
-        writer.write_u8(len(data), order)
+        writer.write_u8(len(data))
 
         writer.write(data)
 
-        writer.write_u32(self.id, order)
-        writer.write_u32(self.account_id, order)
+        writer.write_u32(self.id)
+        writer.write_u32(self.account_id)
 
         data = self.password.encode(encoding, errors)
 
-        writer.write_u8(len(data), order)
+        writer.write_u8(len(data))
 
         writer.write(data)
 
-        writer.write_u32(self.session_id, order)
+        writer.write_u32(self.session_id)
 
-        writer.write_u16(self.cube_id, order)
-        writer.write_u16(self.ship_id, order)
-        writer.write_u16(self.ball_id, order)
-        writer.write_u16(self.ufo_id, order)
-        writer.write_u16(self.wave_id, order)
-        writer.write_u16(self.robot_id, order)
-        writer.write_u16(self.spider_id, order)
-        writer.write_u16(self.color_1_id, order)
-        writer.write_u16(self.color_2_id, order)
-        writer.write_u16(self.trail_id, order)
-        writer.write_u16(self.explosion_id, order)
+        writer.write_u16(self.cube_id)
+        writer.write_u16(self.ship_id)
+        writer.write_u16(self.ball_id)
+        writer.write_u16(self.ufo_id)
+        writer.write_u16(self.wave_id)
+        writer.write_u16(self.robot_id)
+        writer.write_u16(self.spider_id)
+        writer.write_u16(self.color_1_id)
+        writer.write_u16(self.color_2_id)
+        writer.write_u16(self.trail_id)
+        writer.write_u16(self.explosion_id)
 
-        writer.write_u8(self.icon_type.value, order)
+        writer.write_u8(self.icon_type.value)
 
-        writer.write_u32(self.secret_value, order)
+        writer.write_u32(self.secret_value)
 
         value = 0
 
@@ -3092,7 +3153,7 @@ class Database(Binary):
         if self.has_rated_game():
             value |= RATED_GAME_BIT
 
-        writer.write_u8(value, order)
+        writer.write_u8(value)
 
         value = self.quality.value << QUALITY_SHIFT
 
@@ -3102,34 +3163,34 @@ class Database(Binary):
         if self.has_glow():
             value |= GLOW_BIT
 
-        writer.write_u8(value, order)
+        writer.write_u8(value)
 
         achievements = self.achievements
 
-        writer.write_u16(len(achievements), order)
+        writer.write_u16(len(achievements))
 
         for name, progress in achievements.items():
             data = name.encode(encoding, errors)
 
-            writer.write_u8(len(data), order)
+            writer.write_u8(len(data))
 
             writer.write(data)
 
-            writer.write_u16(progress, order)
+            writer.write_u16(progress)
 
-        writer.write_u32(self.bootups, order)
+        writer.write_u32(self.bootups)
 
-        writer.write_i8(self.resolution, order)
+        writer.write_i8(self.resolution)
 
         self.values.to_binary(binary, order, version)
         self.unlock_values.to_binary(binary, order, version)
 
         custom_objects = self.custom_objects
 
-        writer.write_u16(len(custom_objects), order)
+        writer.write_u16(len(custom_objects))
 
         for objects in custom_objects:
-            writer.write_u32(len(objects), order)
+            writer.write_u32(len(objects))
 
             for object in objects:
                 object_to_binary(object, binary, order)
@@ -3140,103 +3201,103 @@ class Database(Binary):
 
         official_levels = self.official_levels
 
-        writer.write_u8(len(official_levels), order)
+        writer.write_u8(len(official_levels))
 
         for official_level in official_levels:
             official_level.to_binary(binary, order, version, encoding, errors)
 
         saved_levels = self.saved_levels
 
-        writer.write_u32(len(saved_levels), order)
+        writer.write_u32(len(saved_levels))
 
         for saved_level in saved_levels:
             saved_level.to_binary(binary, order, version, encoding, errors)
 
         followed = self.followed
 
-        writer.write_u32(len(followed), order)
+        writer.write_u32(len(followed))
 
         for account_id in followed:
-            writer.write_u32(account_id, order)
+            writer.write_u32(account_id)
 
         last_played = self.last_played
 
-        writer.write_u16(len(last_played), order)
+        writer.write_u16(len(last_played))
 
         for level_id in last_played:
-            writer.write_u32(level_id, order)
+            writer.write_u32(level_id)
 
         self.filters.to_binary(binary, order, version)
 
         timely_levels = self.timely_levels
 
-        writer.write_u32(len(timely_levels), order)
+        writer.write_u32(len(timely_levels))
 
         for timely_level in timely_levels:
             timely_level.to_binary(binary, order, version, encoding, errors)
 
-        writer.write_u32(self.daily_id, order)
-        writer.write_u32(self.weekly_id, order)
+        writer.write_u32(self.daily_id)
+        writer.write_u32(self.weekly_id)
 
         liked = self.liked
 
-        writer.write_u32(len(liked), order)
+        writer.write_u32(len(liked))
 
         for like in liked:
             like.to_binary(binary, order, version)
 
         rated = self.rated
 
-        writer.write_u32(len(rated), order)
+        writer.write_u32(len(rated))
 
         for level_id in rated:
-            writer.write_u32(level_id, order)
+            writer.write_u32(level_id)
 
         reported = self.reported
 
-        writer.write_u32(len(reported), order)
+        writer.write_u32(len(reported))
 
         for level_id in reported:
-            writer.write_u32(level_id, order)
+            writer.write_u32(level_id)
 
         demon_rated = self.demon_rated
 
-        writer.write_u32(len(demon_rated), order)
+        writer.write_u32(len(demon_rated))
 
         for level_id in demon_rated:
-            writer.write_u32(level_id, order)
+            writer.write_u32(level_id)
 
         gauntlet_levels = self.gauntlet_levels
 
-        writer.write_u16(len(gauntlet_levels), order)
+        writer.write_u16(len(gauntlet_levels))
 
         for gauntlet_level in gauntlet_levels:
             gauntlet_level.to_binary(binary, order, version, encoding, errors)
 
         saved_folders = self.saved_folders
 
-        writer.write_u8(len(saved_folders), order)
+        writer.write_u8(len(saved_folders))
 
         for saved_folder in saved_folders:
             saved_folder.to_binary(binary, order, version, encoding, errors)
 
         created_folders = self.created_folders
 
-        writer.write_u8(len(created_folders), order)
+        writer.write_u8(len(created_folders))
 
         for created_folder in created_folders:
             created_folder.to_binary(binary, order, version, encoding, errors)
 
         created_levels = self.created_levels
 
-        writer.write_u32(len(created_levels), order)
+        writer.write_u32(len(created_levels))
 
         for created_level in created_levels:
             created_level.to_binary(binary, order, version, encoding, errors)
 
         songs = self.songs
 
-        writer.write_u32(len(songs), order)
+        writer.write_u32(len(songs))
 
         for song in songs:
             song.to_binary(binary, order, version, encoding, errors)

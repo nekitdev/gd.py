@@ -113,7 +113,7 @@ from gd.level import Level
 from gd.level_packs import Gauntlet, MapPack
 from gd.message import Message
 from gd.password import Password
-from gd.platform import SYSTEM_PLATFORM
+from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM, SYSTEM_PLATFORM_CONFIG
 from gd.relationship import Relationship
 from gd.rewards import Chest, Quest
 from gd.session import Session
@@ -123,8 +123,10 @@ from gd.version import python_version_info, version_info
 from gd.versions import GameVersion, Version
 
 __all__ = (
-    # system platform
+    # system configuration
+    "SYSTEM_BITS",
     "SYSTEM_PLATFORM",
+    "SYSTEM_PLATFORM_CONFIG",
     # versions info
     "version_info",
     "python_version_info",

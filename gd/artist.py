@@ -11,7 +11,8 @@ from yarl import URL
 from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_PAGE, DEFAULT_PAGES, UNKNOWN
-from gd.entity import CONVERTER, Entity
+from gd.converter import CONVERTER
+from gd.entity import Entity
 from gd.enums import ByteOrder
 from gd.models import ArtistModel
 from gd.string_utils import case_fold, clear_whitespace
@@ -89,9 +90,9 @@ class Artist(Entity):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> A:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        length = reader.read_u8(order)
+        length = reader.read_u8()
 
         data = reader.read(length)
 
@@ -107,11 +108,11 @@ class Artist(Entity):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
         data = self.name.encode(encoding, errors)
 
-        writer.write_u8(len(data), order)
+        writer.write_u8(len(data))
 
         writer.write(data)
 

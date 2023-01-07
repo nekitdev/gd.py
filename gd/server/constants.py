@@ -8,3 +8,7 @@ SONGS = "songs"
 NAME = "gd.py"
 VERSION_1 = "1.0.0"
 V1 = "/gd/api/v1"
+
+ME = "@me"
+
+DEFAULT_SIZE = 32

@@ -16,7 +16,7 @@ CONVERTING = "converting the editor..."
 UNCOMPRESSED = "uncompressed: {} / {} ({}x compression)"
 COMPRESSED = "compressed: {} / {} ({}x compression)"
 
-client = Client()
+CLIENT = Client()
 
 
 @entrypoint(__name__)
@@ -24,6 +24,8 @@ client = Client()
 @click.option("--rounding", "-r", default=ROUNDING, type=int)
 @click.command()
 def main(level_id: int, rounding: int) -> None:
+    client = CLIENT
+
     click.echo(FETCHING.format(level_id))
 
     level = client.run(client.get_level(level_id))

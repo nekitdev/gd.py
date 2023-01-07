@@ -5,7 +5,7 @@ from attrs import field, frozen
 
 from gd.date_time import Duration
 
-__all__ = ("Timer", "create_timer")
+__all__ = ("Timer", "now")
 
 T = TypeVar("T", bound="Timer")
 
@@ -20,16 +20,19 @@ class Timer:
     def elapsed(self) -> Duration:
         return Duration(seconds=self.current() - self.created_at)
 
+    def reset(self: T) -> T:
+        return type(self)()
+
 
 @overload
-def create_timer() -> Timer:
+def now() -> Timer:
     ...
 
 
 @overload
-def create_timer(timer_type: Type[T]) -> T:
+def now(timer_type: Type[T]) -> T:
     ...
 
 
-def create_timer(timer_type: Type[Timer] = Timer) -> Timer:
+def now(timer_type: Type[Timer] = Timer) -> Timer:
     return timer_type()

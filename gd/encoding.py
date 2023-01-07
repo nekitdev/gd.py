@@ -353,7 +353,7 @@ def generate_level_seed(data: AnyStr, count: int = DEFAULT_COUNT) -> AnyStr:
     if length < count:
         return data
 
-    return data[:: length // count][:count]
+    return data[:: length // count][:count]  # type: ignore
 
 
 PLAYED_MULTIPLY = 1482

@@ -80,31 +80,33 @@ class Filters(Binary):
         song_id_set_bit = SONG_ID_SET_BIT
         require_original_bit = REQUIRE_ORIGINAL_BIT
 
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        strategy_value = reader.read_u8(order)
+        strategy_value = reader.read_u8()
 
         strategy = SearchStrategy(strategy_value)
 
-        read_u8 = partial(reader.read_u8, order)
-
-        difficulties_length = reader.read_u8(order)
+        difficulties_length = reader.read_u8()
 
         difficulties = (
-            iter.repeat_exactly_with(read_u8, difficulties_length).map(Difficulty).ordered_set()
+            iter.repeat_exactly_with(reader.read_u8, difficulties_length)
+            .map(Difficulty)
+            .ordered_set()
         )
 
-        lengths_length = reader.read_u8(order)
+        lengths_length = reader.read_u8()
 
-        lengths = iter.repeat_exactly_with(read_u8, lengths_length).map(LevelLength).ordered_set()
+        lengths = (
+            iter.repeat_exactly_with(reader.read_u8, lengths_length).map(LevelLength).ordered_set()
+        )
 
-        read_u32 = partial(reader.read_u32, order)
+        completed_levels_length = reader.read_u32()
 
-        completed_levels_length = reader.read_u32(order)
+        completed_levels = iter.repeat_exactly_with(
+            reader.read_u32, completed_levels_length
+        ).ordered_set()
 
-        completed_levels = iter.repeat_exactly_with(read_u32, completed_levels_length).ordered_set()
-
-        value = reader.read_u8(order)
+        value = reader.read_u8()
 
         completed: Optional[bool]
 
@@ -120,7 +122,7 @@ class Filters(Binary):
         rate_filter_set = value & rate_filter_set_bit == rate_filter_set_bit
 
         if rate_filter_set:
-            rate_filter_value = reader.read_u8(order)
+            rate_filter_value = reader.read_u8()
 
             rate_filter = RateFilter(rate_filter_value)
 
@@ -134,16 +136,16 @@ class Filters(Binary):
         song_id_set = value & song_id_set_bit == song_id_set_bit
 
         if song_id_set:
-            song_id = reader.read_u32(order)
+            song_id = reader.read_u32()
 
         else:
             song_id = None
 
         require_original = value & require_original_bit == require_original_bit
 
-        followed_length = reader.read_u32(order)
+        followed_length = reader.read_u32()
 
-        followed = iter.repeat_exactly_with(read_u32, followed_length).ordered_set()
+        followed = iter.repeat_exactly_with(reader.read_u32, followed_length).ordered_set()
 
         return cls(
             strategy=strategy,
@@ -163,30 +165,30 @@ class Filters(Binary):
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_u8(self.strategy.value, order)
+        writer.write_u8(self.strategy.value)
 
         difficulties = self.difficulties
 
-        writer.write_u8(len(difficulties), order)
+        writer.write_u8(len(difficulties))
 
         for difficulty in difficulties:
-            writer.write_u8(difficulty.value, order)
+            writer.write_u8(difficulty.value)
 
         lengths = self.lengths
 
-        writer.write_u8(len(lengths), order)
+        writer.write_u8(len(lengths))
 
         for length in lengths:
-            writer.write_u8(length.value, order)
+            writer.write_u8(length.value)
 
         completed_levels = self.completed_levels
 
-        writer.write_u32(len(completed_levels), order)
+        writer.write_u32(len(completed_levels))
 
         for level_id in completed_levels:
-            writer.write_u32(level_id, order)
+            writer.write_u32(level_id)
 
         value = 0
 
@@ -206,7 +208,7 @@ class Filters(Binary):
         if rate_filter is not None:
             value |= RATE_FILTER_SET_BIT
 
-            writer.write_u8(rate_filter.value, order)
+            writer.write_u8(rate_filter.value)
 
         if self.require_two_player:
             value |= REQUIRE_TWO_PLAYER_BIT
@@ -219,19 +221,19 @@ class Filters(Binary):
         if song_id is not None:
             value |= SONG_ID_SET_BIT
 
-            writer.write_u32(song_id, order)
+            writer.write_u32(song_id)
 
         if self.require_original:
             value |= REQUIRE_ORIGINAL_BIT
 
-        writer.write_u8(value, order)
+        writer.write_u8(value)
 
         followed = self.followed
 
-        writer.write_u32(len(followed), order)
+        writer.write_u32(len(followed))
 
         for account_id in followed:
-            writer.write_u32(account_id, order)
+            writer.write_u32(account_id)
 
     @classmethod
     def create(

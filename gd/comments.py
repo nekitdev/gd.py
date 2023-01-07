@@ -111,19 +111,19 @@ class UserComment(Comment):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> UC:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        id = reader.read_u32(order)
+        id = reader.read_u32()
 
         author = User.from_binary(binary, order, version, encoding, errors)
 
-        rating = reader.read_i32(order)
+        rating = reader.read_i32()
 
-        content_length = reader.read_u8(order)
+        content_length = reader.read_u8()
 
         content = reader.read(content_length).decode(encoding, errors)
 
-        timestamp = reader.read_f64(order)
+        timestamp = reader.read_f64()
 
         created_at = utc_from_timestamp(timestamp)
 
@@ -147,17 +147,17 @@ class UserComment(Comment):
 
         self.author.to_binary(binary, order, version, encoding, errors)
 
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
-        writer.write_i32(self.rating, order)
+        writer.write_i32(self.rating)
 
         data = self.content.encode(encoding, errors)
 
-        writer.write_u8(len(data), order)
+        writer.write_u8(len(data))
 
         writer.write(data)
 
-        writer.write_f64(self.created_at.timestamp(), order)
+        writer.write_f64(self.created_at.timestamp())
 
 
 LC = TypeVar("LC", bound="LevelComment")
@@ -225,25 +225,25 @@ class LevelComment(Comment):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> LC:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        id = reader.read_u32(order)
+        id = reader.read_u32()
 
         author = User.from_binary(binary, order, version, encoding, errors)
 
-        rating = reader.read_i32(order)
+        rating = reader.read_i32()
 
-        content_length = reader.read_u8(order)
+        content_length = reader.read_u8()
 
         content = reader.read(content_length).decode(encoding, errors)
 
-        timestamp = reader.read_f64(order)
+        timestamp = reader.read_f64()
 
         created_at = utc_from_timestamp(timestamp)
 
         level = Level.from_binary(binary, order, version, encoding, errors)
 
-        value = reader.read_u32(order)
+        value = reader.read_u32()
 
         record = value & BYTE
 
@@ -274,11 +274,11 @@ class LevelComment(Comment):
 
         self.level.to_binary(binary, order, version, encoding, errors)
 
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
         value = (self.color.value << BITS) | self.record
 
-        writer.write_u32(value, order)
+        writer.write_u32(value)
 
     def attach_client_unchecked(self: LC, client: Optional[Client]) -> LC:
         self.level.attach_client_unchecked(client)

@@ -3,14 +3,16 @@ from __future__ import annotations
 from typing import ClassVar, Optional, Type, TypeVar
 
 from attrs import Attribute, define, field
+from typing_extensions import TypedDict
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
+from gd.converter import CONVERTER
 from gd.encoding import decode_robtop_string, encode_robtop_string
 from gd.enums import ByteOrder, Key
 from gd.robtop import RobTop
 
-__all__ = ("Password",)
+__all__ = ("Password", "PasswordData")
 
 COPYABLE_NO_PASSWORD = "copyable, no password"
 COPYABLE_PASSWORD = "copyable, password {}"
@@ -25,6 +27,11 @@ PASSWORD_BIT = 0b01000000_00000000_00000000_00000000
 PASSWORD_MASK = 0b00111111_11111111_11111111_11111111
 
 DEFAULT_COPYABLE = False
+
+
+class PasswordData(TypedDict):
+    password: Optional[int]
+    copyable: bool
 
 
 @define()
@@ -53,15 +60,22 @@ class Password(Binary, RobTop):
         return self.copyable
 
     @classmethod
+    def from_json(cls: Type[P], data: PasswordData) -> P:
+        return CONVERTER.structure(data, cls)
+
+    def to_json(self) -> PasswordData:
+        return CONVERTER.unstructure(self)  # type: ignore
+
+    @classmethod
     def from_binary(
         cls: Type[P],
         binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> P:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        return cls.from_value(reader.read_u32(order))
+        return cls.from_value(reader.read_u32())
 
     @classmethod
     def from_value(cls: Type[P], value: int) -> P:
@@ -96,7 +110,7 @@ class Password(Binary, RobTop):
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
         writer.write_u32(self.to_value())
 

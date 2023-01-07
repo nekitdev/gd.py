@@ -95,7 +95,7 @@ def fetch_fields_iterator(base: Type[Base]) -> Iterator[Tuple[str, AnyField]]:
             ):
                 yield (
                     virtual_name(get_name(type)),  # type: ignore
-                    Field(PointerData(Void()), exclude=True)
+                    Field(PointerData(Void()), exclude=True),
                 )
 
         for name, value in vars(type).items():

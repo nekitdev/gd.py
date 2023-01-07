@@ -18,7 +18,7 @@ class Guidelines(RobTop, Binary, Dict[float, GuidelineColor]):
     """Represents guidelines.
 
     Binary:
-        ```text
+        ```rust
         struct Guideline {
             timestamp: f32,
             color: f32,
@@ -55,18 +55,18 @@ class Guidelines(RobTop, Binary, Dict[float, GuidelineColor]):
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> G:
-        reader = Reader(binary)
+        reader = Reader(binary, order)
 
-        length = reader.read_u32(order)
+        length = reader.read_u32()
 
         color = GuidelineColor
 
-        return cls({reader.read_f32(order): color(reader.read_f32(order)) for _ in range(length)})
+        return cls({reader.read_f32(): color(reader.read_f32()) for _ in range(length)})
 
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        writer = Writer(binary)
+        writer = Writer(binary, order)
 
         writer.write_u32(len(self))
 
