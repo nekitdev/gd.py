@@ -22,7 +22,7 @@ from gd.constants import (
 )
 from gd.enums import ByteOrder, ChestType, DiamondLocation, InternalType, ItemType, RewardLocation
 from gd.text_utils import snake_to_camel
-from gd.typing import StringDict
+from gd.typing import StringDict, StringMapping
 
 __all__ = ("ChestKey", "DiamondKey", "Reward", "RewardItem", "RewardKey", "Quest")
 
@@ -152,7 +152,7 @@ class Quest(Binary):
         writer.write(data)
 
     @classmethod
-    def from_robtop_data(cls: Type[Q], data: StringDict[Any]) -> Q:
+    def from_robtop_data(cls: Type[Q], data: StringMapping[Any]) -> Q:  # type: ignore
         quest_order = data.get(QUEST_ORDER, DEFAULT_QUEST_ORDER)
         id = data.get(QUEST_ID, DEFAULT_ID)
         amount = data.get(QUEST_AMOUNT, DEFAULT_AMOUNT)
@@ -246,7 +246,7 @@ class Reward(Binary):
         writer.write_i32(self.magic)
 
     @classmethod
-    def from_robtop_data(cls: Type[R], data: StringDict[Any]) -> R:
+    def from_robtop_data(cls: Type[R], data: StringMapping[Any]) -> R:  # type: ignore
         item_type_option = data.get(REWARD_ITEM_TYPE)
 
         if item_type_option is None:
@@ -342,7 +342,7 @@ class RewardItem(Binary):
             reward.to_binary(binary, order, version)
 
     @classmethod
-    def from_robtop_data(cls: Type[RI], data: StringDict[Any]) -> RI:
+    def from_robtop_data(cls: Type[RI], data: StringMapping[Any]) -> RI:  # type: ignore
         id = data.get(REWARD_ITEM_ID, DEFAULT_ID)
         location = data.get(REWARD_ITEM_LOCATION, DEFAULT_LOCATION)
 
