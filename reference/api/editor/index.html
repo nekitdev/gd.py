@@ -442,8 +442,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#gd.api.editor.get_time_length" class="md-nav__link">
-    get_time_length()
+  <a href="#gd.api.editor.time_length" class="md-nav__link">
+    time_length()
   </a>
   
 </li>
@@ -664,8 +664,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#gd.api.editor.get_time_length" class="md-nav__link">
-    get_time_length()
+  <a href="#gd.api.editor.time_length" class="md-nav__link">
+    time_length()
   </a>
   
 </li>
@@ -729,11 +729,11 @@
 
 <details class="binary">
   <summary>Binary</summary>
-  <div class="highlight"><pre><span></span><code>struct Editor {
-    header: Header,
-    objects_length: u32,
-    objects: [Object; objects_length],
-}
+  <div class="highlight"><pre><span></span><code><span class="k">struct</span> <span class="nc">Editor</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">header</span>: <span class="nc">Header</span><span class="p">,</span>
+<span class="w">    </span><span class="n">objects_length</span>: <span class="kt">u32</span><span class="p">,</span>
+<span class="w">    </span><span class="n">objects</span>: <span class="p">[</span><span class="n">Object</span><span class="p">;</span><span class="w"> </span><span class="n">objects_length</span><span class="p">],</span>
+<span class="p">}</span>
 </code></pre></div>
 </details>
 
@@ -932,12 +932,15 @@
 <span class="normal">305</span>
 <span class="normal">306</span>
 <span class="normal">307</span>
-<span class="normal">308</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">()</span>
+<span class="normal">308</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">()</span>
 <span class="k">class</span> <span class="nc">Editor</span><span class="p">(</span><span class="n">RobTop</span><span class="p">,</span> <span class="n">Binary</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Object</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents editors.</span>
 
 <span class="sd">    Binary:</span>
-<span class="sd">        ```text</span>
+<span class="sd">        ```rust</span>
 <span class="sd">        struct Editor {</span>
 <span class="sd">            header: Header,</span>
 <span class="sd">            objects_length: u32,</span>
@@ -1067,7 +1070,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">get_time_length</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_speed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_changes</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">time_length</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_speed</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_changes</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_binary</span><span class="p">(</span>
@@ -1078,9 +1081,9 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">E</span><span class="p">:</span>
         <span class="n">header</span> <span class="o">=</span> <span class="n">Header</span><span class="o">.</span><span class="n">from_binary</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span>
 
-        <span class="n">reader</span> <span class="o">=</span> <span class="n">Reader</span><span class="p">(</span><span class="n">binary</span><span class="p">)</span>
+        <span class="n">reader</span> <span class="o">=</span> <span class="n">Reader</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
 
-        <span class="n">iterable_length</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u32</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+        <span class="n">iterable_length</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u32</span><span class="p">()</span>
 
         <span class="n">object_from_binary_function</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">object_from_binary</span><span class="p">,</span> <span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span>
 
@@ -1093,11 +1096,11 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">to_binary</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span>
 
-        <span class="n">writer</span> <span class="o">=</span> <span class="n">Writer</span><span class="p">(</span><span class="n">binary</span><span class="p">)</span>
+        <span class="n">writer</span> <span class="o">=</span> <span class="n">Writer</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
 
         <span class="n">objects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span>
 
-        <span class="n">writer</span><span class="o">.</span><span class="n">write_u32</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">objects</span><span class="p">),</span> <span class="n">order</span><span class="p">)</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">write_u32</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">objects</span><span class="p">))</span>
 
         <span class="k">for</span> <span class="nb">object</span> <span class="ow">in</span> <span class="n">objects</span><span class="p">:</span>
             <span class="n">object_to_binary</span><span class="p">(</span><span class="nb">object</span><span class="p">,</span> <span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span>
@@ -1119,9 +1122,12 @@
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">objects</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">to_robtop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="n">iterator</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">object_to_robtop</span><span class="p">)</span><span class="o">.</span><span class="n">prepend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">to_robtop</span><span class="p">())</span>
-
-        <span class="k">return</span> <span class="n">concat_objects</span><span class="p">(</span><span class="n">iterator</span><span class="o">.</span><span class="n">unwrap</span><span class="p">())</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">object_to_robtop</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">prepend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">to_robtop</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">collect</span><span class="p">(</span><span class="n">concat_objects</span><span class="p">)</span>
+        <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">can_be_in</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">string</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -1196,8 +1202,8 @@
 
 
 
-<h2 id="gd.api.editor.get_time_length" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">get_time_length</span><span class="p">(</span><span class="n">distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">start_speed</span><span class="p">:</span> <span class="n">Speed</span> <span class="o">=</span> <span class="n">Speed</span><span class="o">.</span><span class="n">NORMAL</span><span class="p">,</span> <span class="n">speed_changes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Object</span><span class="p">]</span> <span class="o">=</span> <span class="p">())</span> <span class="o">-&gt;</span> <span class="nb">float</span></code>
+<h2 id="gd.api.editor.time_length" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">time_length</span><span class="p">(</span><span class="n">distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">start_speed</span><span class="p">:</span> <span class="n">Speed</span> <span class="o">=</span> <span class="n">Speed</span><span class="o">.</span><span class="n">NORMAL</span><span class="p">,</span> <span class="n">speed_changes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Object</span><span class="p">]</span> <span class="o">=</span> <span class="p">())</span> <span class="o">-&gt;</span> <span class="nb">float</span></code>
 
 </h2>
 
@@ -1311,7 +1317,7 @@
 <span class="normal">88</span>
 <span class="normal">89</span>
 <span class="normal">90</span>
-<span class="normal">91</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_time_length</span><span class="p">(</span>
+<span class="normal">91</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">time_length</span><span class="p">(</span>
     <span class="n">distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">start_speed</span><span class="p">:</span> <span class="n">Speed</span> <span class="o">=</span> <span class="n">Speed</span><span class="o">.</span><span class="n">NORMAL</span><span class="p">,</span>
     <span class="n">speed_changes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Object</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>

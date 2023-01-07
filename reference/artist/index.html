@@ -682,8 +682,7 @@
 
         <details class="quote">
           <summary>Source code in <code>gd/artist.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 33</span>
-<span class="normal"> 34</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 34</span>
 <span class="normal"> 35</span>
 <span class="normal"> 36</span>
 <span class="normal"> 37</span>
@@ -773,7 +772,8 @@
 <span class="normal">121</span>
 <span class="normal">122</span>
 <span class="normal">123</span>
-<span class="normal">124</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">()</span>
+<span class="normal">124</span>
+<span class="normal">125</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">()</span>
 <span class="k">class</span> <span class="nc">Artist</span><span class="p">(</span><span class="n">Entity</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents artists on *Newgrounds*.</span>
 
@@ -832,9 +832,9 @@
         <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_ENCODING</span><span class="p">,</span>
         <span class="n">errors</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_ERRORS</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">A</span><span class="p">:</span>
-        <span class="n">reader</span> <span class="o">=</span> <span class="n">Reader</span><span class="p">(</span><span class="n">binary</span><span class="p">)</span>
+        <span class="n">reader</span> <span class="o">=</span> <span class="n">Reader</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
 
-        <span class="n">length</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u8</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+        <span class="n">length</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u8</span><span class="p">()</span>
 
         <span class="n">data</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">length</span><span class="p">)</span>
 
@@ -850,11 +850,11 @@
         <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_ENCODING</span><span class="p">,</span>
         <span class="n">errors</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_ERRORS</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">writer</span> <span class="o">=</span> <span class="n">Writer</span><span class="p">(</span><span class="n">binary</span><span class="p">)</span>
+        <span class="n">writer</span> <span class="o">=</span> <span class="n">Writer</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
 
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
 
-        <span class="n">writer</span><span class="o">.</span><span class="n">write_u8</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">order</span><span class="p">)</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">write_u8</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
 
         <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 

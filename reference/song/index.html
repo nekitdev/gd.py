@@ -673,25 +673,24 @@
 
 <details class="binary">
   <summary>Binary</summary>
-  <div class="highlight"><pre><span></span><code>const CUSTOM_BIT: u8 = 0b00000001;
+  <div class="highlight"><pre><span></span><code><span class="k">const</span><span class="w"> </span><span class="n">CUSTOM_BIT</span>: <span class="kt">u8</span> <span class="o">=</span><span class="w"> </span><span class="mb">0b00000001</span><span class="p">;</span>
 
-struct Song {
-    id: u32,
-    name_length: u8,
-    name: [u8; name_length],  // utf-8 string
-    artist: Artist,
-    size: f32,
-    value: u8,  // contains `custom`
-    download_url_length: u16,
-    download_url: [u8; download_url_length],  // utf-8 string
-}
+<span class="k">struct</span> <span class="nc">Song</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>: <span class="kt">u32</span><span class="p">,</span>
+<span class="w">    </span><span class="n">name_length</span>: <span class="kt">u8</span><span class="p">,</span>
+<span class="w">    </span><span class="n">name</span>: <span class="p">[</span><span class="kt">u8</span><span class="p">;</span><span class="w"> </span><span class="n">name_length</span><span class="p">],</span><span class="w">  </span><span class="c1">// utf-8 string</span>
+<span class="w">    </span><span class="n">artist</span>: <span class="nc">Artist</span><span class="p">,</span>
+<span class="w">    </span><span class="n">size</span>: <span class="kt">f32</span><span class="p">,</span>
+<span class="w">    </span><span class="n">value</span>: <span class="kt">u8</span><span class="p">,</span><span class="w">  </span><span class="c1">// contains `custom`</span>
+<span class="w">    </span><span class="n">download_url_length</span>: <span class="kt">u16</span><span class="p">,</span>
+<span class="w">    </span><span class="n">download_url</span>: <span class="p">[</span><span class="kt">u8</span><span class="p">;</span><span class="w"> </span><span class="n">download_url_length</span><span class="p">],</span><span class="w">  </span><span class="c1">// utf-8 string</span>
+<span class="p">}</span>
 </code></pre></div>
 </details>
 
         <details class="quote">
           <summary>Source code in <code>gd/song.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 75</span>
-<span class="normal"> 76</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 76</span>
 <span class="normal"> 77</span>
 <span class="normal"> 78</span>
 <span class="normal"> 79</span>
@@ -923,13 +922,14 @@ struct Song {
 <span class="normal">305</span>
 <span class="normal">306</span>
 <span class="normal">307</span>
-<span class="normal">308</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">()</span>
+<span class="normal">308</span>
+<span class="normal">309</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">()</span>
 <span class="k">class</span> <span class="nc">Song</span><span class="p">(</span><span class="n">Entity</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents *Geometry Dash* and *Newgrounds* songs.</span>
 
 <span class="sd">    Binary:</span>
 
-<span class="sd">        ```text</span>
+<span class="sd">        ```rust</span>
 <span class="sd">        const CUSTOM_BIT: u8 = 0b00000001;</span>
 
 <span class="sd">        struct Song {</span>
@@ -978,23 +978,23 @@ struct Song {
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">S</span><span class="p">:</span>
         <span class="n">custom_bit</span> <span class="o">=</span> <span class="n">CUSTOM_BIT</span>
 
-        <span class="n">reader</span> <span class="o">=</span> <span class="n">Reader</span><span class="p">(</span><span class="n">binary</span><span class="p">)</span>
+        <span class="n">reader</span> <span class="o">=</span> <span class="n">Reader</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
 
-        <span class="nb">id</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u32</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+        <span class="nb">id</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u32</span><span class="p">()</span>
 
-        <span class="n">name_length</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u8</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+        <span class="n">name_length</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u8</span><span class="p">()</span>
 
         <span class="n">name</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">name_length</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
 
         <span class="n">artist</span> <span class="o">=</span> <span class="n">Artist</span><span class="o">.</span><span class="n">from_binary</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
 
-        <span class="n">size</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_f32</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_f32</span><span class="p">()</span>
 
-        <span class="n">value</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u8</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u8</span><span class="p">()</span>
 
         <span class="n">custom</span> <span class="o">=</span> <span class="n">value</span> <span class="o">&amp;</span> <span class="n">custom_bit</span> <span class="o">==</span> <span class="n">custom_bit</span>
 
-        <span class="n">download_url_length</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u16</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+        <span class="n">download_url_length</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u16</span><span class="p">()</span>
 
         <span class="n">string</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">download_url_length</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
 
@@ -1016,26 +1016,26 @@ struct Song {
         <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_ENCODING</span><span class="p">,</span>
         <span class="n">errors</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_ERRORS</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">writer</span> <span class="o">=</span> <span class="n">Writer</span><span class="p">(</span><span class="n">binary</span><span class="p">)</span>
+        <span class="n">writer</span> <span class="o">=</span> <span class="n">Writer</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
 
-        <span class="n">writer</span><span class="o">.</span><span class="n">write_u32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">write_u32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
 
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
 
-        <span class="n">writer</span><span class="o">.</span><span class="n">write_u8</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">order</span><span class="p">)</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">write_u8</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
 
         <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">artist</span><span class="o">.</span><span class="n">to_binary</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
 
-        <span class="n">writer</span><span class="o">.</span><span class="n">write_f32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">write_f32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
 
         <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_custom</span><span class="p">():</span>
             <span class="n">value</span> <span class="o">|=</span> <span class="n">CUSTOM_BIT</span>
 
-        <span class="n">writer</span><span class="o">.</span><span class="n">write_u8</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">write_u8</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
         <span class="n">download_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">download_url</span>
 
@@ -1047,7 +1047,7 @@ struct Song {
 
         <span class="n">data</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
 
-        <span class="n">writer</span><span class="o">.</span><span class="n">write_u16</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">order</span><span class="p">)</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">write_u16</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
 
         <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 

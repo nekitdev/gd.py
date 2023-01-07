@@ -715,11 +715,11 @@
 
 <details class="binary">
   <summary>Binary</summary>
-  <div class="highlight"><pre><span></span><code>struct Folder {
-    id: u8,
-    name_length: u8,
-    name: [u8; name_length],
-}
+  <div class="highlight"><pre><span></span><code><span class="k">struct</span> <span class="nc">Folder</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>: <span class="kt">u8</span><span class="p">,</span>
+<span class="w">    </span><span class="n">name_length</span>: <span class="kt">u8</span><span class="p">,</span>
+<span class="w">    </span><span class="n">name</span>: <span class="p">[</span><span class="kt">u8</span><span class="p">;</span><span class="w"> </span><span class="n">name_length</span><span class="p">],</span>
+<span class="p">}</span>
 </code></pre></div>
 </details>
 
@@ -787,7 +787,7 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents level folders.</span>
 
 <span class="sd">    Binary:</span>
-<span class="sd">        ```text</span>
+<span class="sd">        ```rust</span>
 <span class="sd">        struct Folder {</span>
 <span class="sd">            id: u8,</span>
 <span class="sd">            name_length: u8,</span>
@@ -813,11 +813,11 @@
         <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_ENCODING</span><span class="p">,</span>
         <span class="n">errors</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_ERRORS</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">F</span><span class="p">:</span>
-        <span class="n">reader</span> <span class="o">=</span> <span class="n">Reader</span><span class="p">(</span><span class="n">binary</span><span class="p">)</span>
+        <span class="n">reader</span> <span class="o">=</span> <span class="n">Reader</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
 
-        <span class="nb">id</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u8</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+        <span class="nb">id</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u8</span><span class="p">()</span>
 
-        <span class="n">name_length</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u8</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+        <span class="n">name_length</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u8</span><span class="p">()</span>
 
         <span class="n">name</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">name_length</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
 
@@ -831,13 +831,13 @@
         <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_ENCODING</span><span class="p">,</span>
         <span class="n">errors</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_ERRORS</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">writer</span> <span class="o">=</span> <span class="n">Writer</span><span class="p">(</span><span class="n">binary</span><span class="p">)</span>
+        <span class="n">writer</span> <span class="o">=</span> <span class="n">Writer</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
 
-        <span class="n">writer</span><span class="o">.</span><span class="n">write_u8</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">write_u8</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
 
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
 
-        <span class="n">writer</span><span class="o">.</span><span class="n">write_u8</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">order</span><span class="p">)</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">write_u8</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
 
         <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
