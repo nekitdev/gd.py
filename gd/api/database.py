@@ -2414,6 +2414,33 @@ class Variables(Binary):
         return data
 
 
+CUBES = "i"
+SHIPS = "ship"
+BALLS = "ball"
+UFOS = "bird"
+WAVES = "dart"
+ROBOTS = "robot"
+SPIDERS = "spider"
+# SWING_COPTERS = "swing_copter"
+EXPLOSIONS = "death"
+STREAKS = "special"
+COLORS_1 = "c0"
+COLORS_2 = "c1"
+
+CUBES_PREFIX = prefix(CUBES)
+SHIPS_PREFIX = prefix(SHIPS)
+BALLS_PREFIX = prefix(BALLS)
+UFOS_PREFIX = prefix(UFOS)
+WAVES_PREFIX = prefix(WAVES)
+ROBOTS_PREFIX = prefix(ROBOTS)
+SPIDERS_PREFIX = prefix(SPIDERS)
+# SWING_COPTERS_PREFIX = prefix(SWING_COPTERS)
+EXPLOSIONS_PREFIX = prefix(EXPLOSIONS)
+STREAKS_PREFIX = prefix(STREAKS)
+COLORS_1_PREFIX = prefix(COLORS_1)
+COLORS_2_PREFIX = prefix(COLORS_2)
+
+
 VS = TypeVar("VS", bound="Values")
 
 
@@ -2430,6 +2457,7 @@ class Values(Binary):
     spiders: OrderedSet[int] = field(factory=ordered_set)
     # swing_copters: OrderedSet[int] = field(factory=ordered_set)
     explosions: OrderedSet[int] = field(factory=ordered_set)
+    streaks: OrderedSet[int] = field(factory=ordered_set)
     colors_1: OrderedSet[int] = field(factory=ordered_set)
     colors_2: OrderedSet[int] = field(factory=ordered_set)
 
@@ -2450,6 +2478,7 @@ class Values(Binary):
             self.spiders,
             # self.swing_copters,
             self.explosions,
+            self.streaks,
             self.colors_1,
             self.colors_2,
         ):
@@ -2505,6 +2534,10 @@ class Values(Binary):
 
         explosions = iter.repeat_exactly_with(reader.read_u16, explosions_length).ordered_set()
 
+        streaks_length = reader.read_u16()
+
+        streaks = iter.repeat_exactly_with(reader.read_u16, streaks_length).ordered_set()
+
         colors_1_length = reader.read_u16()
 
         colors_1 = iter.repeat_exactly_with(reader.read_u16, colors_1_length).ordered_set()
@@ -2524,9 +2557,52 @@ class Values(Binary):
             spiders=spiders,
             # swing_copters=swing_copters,
             explosions=explosions,
+            streaks=streaks,
             colors_1=colors_1,
             colors_2=colors_2,
         )
+
+    @property
+    def prefix_to_ordered_set(self) -> StringDict[OrderedSet[int]]:
+        return {
+            CUBES_PREFIX: self.cubes,
+            SHIPS_PREFIX: self.ships,
+            BALLS_PREFIX: self.balls,
+            UFOS_PREFIX: self.ufos,
+            WAVES_PREFIX: self.waves,
+            ROBOTS_PREFIX: self.robots,
+            SPIDERS_PREFIX: self.spiders,
+            # SWING_COPTERS_PREFIX: self.swing_copters,
+            EXPLOSIONS_PREFIX: self.explosions,
+            STREAKS_PREFIX: self.streaks,
+            COLORS_1_PREFIX: self.colors_1,
+            COLORS_2_PREFIX: self.colors_2,
+        }
+
+    @classmethod
+    def from_robtop_data(cls: Type[VS], data: StringMapping[Any]) -> VS:
+        self = cls(variables=Variables.from_robtop_data(data))
+
+        for prefix, ordered_set in self.prefix_to_ordered_set.items():
+            length = len(prefix)
+
+            for name in data.keys():
+                if name.startswith(prefix):
+                    icon_id = int(name[length:])
+
+                    ordered_set.append(icon_id)
+
+        return self
+
+    def to_robtop_data(self) -> StringDict[Any]:
+        data = self.variables.to_robtop_data()
+        one = ONE
+
+        for prefix, ordered_set in self.prefix_to_ordered_set.items():
+            for string in iter(ordered_set).map(str).unwrap():
+                data[prefix + string] = one
+
+        return data
 
 
 THE_CHALLENGE_UNLOCKED_BIT = 0b1
@@ -3589,6 +3665,10 @@ class Database(Binary):
 
         secret_value = main_data.get(SECRET_VALUE, DEFAULT_SECRET_VALUE)
 
+        values_data = main_data.get(VALUES, {})
+
+        values = Values.from_robtop_data(values_data)
+
         storage = Storage.from_robtop_data(main_data)
 
         completed_data = main_data.get(COMPLETED, {})
@@ -3716,6 +3796,7 @@ class Database(Binary):
             glow=glow,
             secret_value=secret_value,
             moderator=moderator,
+            values=values,
             # ...
             storage=storage,
             completed=completed,
@@ -3782,6 +3863,10 @@ class Database(Binary):
 
         if moderator:
             main_data[MODERATOR] = moderator
+
+        values_data = self.values.to_robtop_data()
+
+        main_data[VALUES] = values_data
 
         storage_data = self.storage.to_robtop_data()
 
