@@ -2580,7 +2580,7 @@ class Values(Binary):
         }
 
     @classmethod
-    def from_robtop_data(cls: Type[VS], data: StringMapping[Any]) -> VS:
+    def from_robtop_data(cls: Type[VS], data: StringMapping[Any]) -> VS:  # type: ignore
         self = cls(variables=Variables.from_robtop_data(data))
 
         for prefix, ordered_set in self.prefix_to_ordered_set.items():

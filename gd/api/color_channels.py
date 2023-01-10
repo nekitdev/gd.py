@@ -81,6 +81,42 @@ CC = TypeVar("CC", bound="ColorChannel")
 
 @define()
 class ColorChannel(Binary, RobTop):
+    """Represents color channels.
+
+    Binary:
+        ```rust
+        struct ColorChannel {
+            id: u16,
+            copied_id: u16,
+            nested: NestedColorChannel,
+        }
+
+        enum NestedColorChannel {
+            Normal(NormalColorChannel),  // if `copied_id == 0`
+            Copied(CopiedColorChannel),  // if `copied_id != 0`
+        }
+
+        const BLENDING_BIT: u8 = 0b00000001;
+        const COPY_OPACITY_BIT: u8 = 0b00000010;
+
+        struct CopiedColorChannel {
+            hsv: HSV,
+            copy_opacity_and_blending: u8,
+            opacity: Option<f32>,  // if `!copy_opacity`
+        }
+
+        const BYTE: u32 = 0b11111111;
+
+        const PLAYER_COLOR_MASK: u8 = 0b00000110;
+        const PLAYER_COLOR_SHIFT: u8 = PLAYER_COLOR_MASK.leading_zeros() as u8;
+
+        struct NormalColorChannel {
+            color_player_color_and_blending: u32,
+            opacity: f32,
+        }
+        ```
+    """
+
     id: int = field()
     color: Color = field(factory=Color.default)
     player_color: PlayerColor = field(default=PlayerColor.DEFAULT)
