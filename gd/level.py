@@ -264,7 +264,7 @@ class Level(Entity):
         writer.write_f32(self.copies_time.total_seconds())
 
         writer.write_u8(self.timely_type.value)
-        writer.write_u32(self.timely_id)
+        writer.write_u16(self.timely_id)
 
     @classmethod
     def from_binary(
@@ -355,7 +355,7 @@ class Level(Entity):
 
         timely_type = TimelyType(timely_type_value)
 
-        timely_id = reader.read_u32()
+        timely_id = reader.read_u16()
 
         level = cls(
             id=id,

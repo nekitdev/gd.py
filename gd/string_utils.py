@@ -1,5 +1,5 @@
 from gd.constants import BACKSLASH, EMPTY
-from gd.string_constants import COMMA, MAPS, NEW_LINE, PIPE, STAR, TICK, UNDER, WRAP
+from gd.string_constants import COMMA, MAPS, NEW_LINE, PIPE, STAR, TICK, UNDER, WRAP, ZERO_PAD
 
 wrap = WRAP.format
 tick = TICK.format
@@ -10,6 +10,10 @@ concat_empty = EMPTY.join
 concat_new_line = NEW_LINE.join
 concat_pipe = PIPE.join
 concat_under = UNDER.join
+
+
+def zero_pad(align: int, value: int) -> str:
+    return ZERO_PAD.format(value=value, align=align)
 
 
 def clear_whitespace(string: str) -> str:

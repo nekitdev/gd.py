@@ -47,9 +47,9 @@ from gd.models_constants import (
     MESSAGE_SEPARATOR,
     MESSAGES_RESPONSE_MESSAGES_SEPARATOR,
     MESSAGES_RESPONSE_SEPARATOR,
+    NAME_SEPARATOR,
     OBJECT_SEPARATOR,
     OBJECTS_SEPARATOR,
-    OFFICIAL_COINS_SEPARATOR,
     PAGE_SEPARATOR,
     PROFILE_SEPARATOR,
     PROGRESS_SEPARATOR,
@@ -259,8 +259,8 @@ concat_quests_inner = partial(concat_iterable, QUESTS_INNER_SEPARATOR)
 split_level_ids = partial(split_iterable, LEVEL_IDS_SEPARATOR)
 concat_level_ids = partial(concat_iterable, LEVEL_IDS_SEPARATOR)
 
-split_official_coins = partial(split_iterable, OFFICIAL_COINS_SEPARATOR)
-concat_official_coins = partial(concat_iterable, OFFICIAL_COINS_SEPARATOR)
+split_name = partial(split_iterable, NAME_SEPARATOR)
+concat_name = partial(concat_iterable, NAME_SEPARATOR)
 
 split_like = partial(split_iterable, LIKE_SEPARATOR)
 concat_like = partial(concat_iterable, LIKE_SEPARATOR)

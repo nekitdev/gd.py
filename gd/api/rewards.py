@@ -1,7 +1,7 @@
 from functools import partial
 from typing import Any, List, Type, TypeVar
 
-from attrs import define, field, frozen
+from attrs import define, field
 from iters import iter
 from typing_extensions import Literal, TypeGuard
 
@@ -20,29 +20,11 @@ from gd.constants import (
     DEFAULT_QUEST_ORDER,
     EMPTY,
 )
-from gd.enums import ByteOrder, ChestType, DiamondLocation, InternalType, ItemType, RewardLocation
+from gd.enums import ByteOrder, InternalType, ItemType
 from gd.text_utils import snake_to_camel
 from gd.typing import StringDict, StringMapping
 
-__all__ = ("ChestKey", "DiamondKey", "Reward", "RewardItem", "RewardKey", "Quest")
-
-
-@frozen()
-class ChestKey:
-    type: ChestType
-    id: int = DEFAULT_ID
-
-
-@frozen()
-class DiamondKey:
-    location: DiamondLocation
-    id: int = DEFAULT_ID
-
-
-@frozen()
-class RewardKey:
-    location: RewardLocation
-    id: int = DEFAULT_ID
+__all__ = ("Reward", "RewardItem", "Quest")
 
 
 ORDER_MASK = 0b00000011
@@ -348,7 +330,9 @@ class RewardItem(Binary):
 
         rewards_data = data.get(REWARD_ITEM_REWARDS, {})
 
-        rewards = iter(rewards_data.values()).skip_while(is_true).map(Reward.from_robtop_data).list()
+        rewards = (
+            iter(rewards_data.values()).skip_while(is_true).map(Reward.from_robtop_data).list()
+        )
 
         return cls(id=id, location=location, rewards=rewards)
 

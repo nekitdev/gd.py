@@ -15,7 +15,7 @@ from gd.api.folder import Folder
 from gd.api.level import LevelAPI
 from gd.api.like import Like
 from gd.api.objects import Object, object_from_binary, object_to_binary
-from gd.api.rewards import ChestKey, DiamondKey, RewardKey, RewardItem, Quest
+from gd.api.rewards import Quest, RewardItem
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import (
@@ -46,10 +46,12 @@ from gd.constants import (
     UNKNOWN,
     WEEKLY_ID_ADD,
 )
-from gd.enums import ByteOrder, CollectedCoins, Filter, IconType, LevelLeaderboardStrategy, Quality
+from gd.enums import (
+    ByteOrder, CollectedCoins, CommentStrategy, Filter, IconType, LevelLeaderboardStrategy, Quality
+)
 from gd.filters import Filters
 from gd.iter_utils import unary_tuple
-from gd.models_utils import concat_official_coins, parse_get_or, split_official_coins
+from gd.models_utils import concat_name, int_bool, parse_get_or, partial_parse_enum, split_name
 from gd.song import Song
 from gd.string_utils import password_repr
 from gd.text_utils import snake_to_camel, snake_to_camel_with_abbreviations
@@ -59,23 +61,46 @@ from gd.xml import PARSER
 
 __all__ = ("Database",)
 
-OFFICIAL = "n"
-NORMAL = "c"
-NORMAL_DEMONS = "demon"
-TIMELY = "d"
-TIMELY_DEMONS = TIMELY + NORMAL_DEMONS
-GAUNTLETS = "g"
-GAUNTLETS_DEMONS = GAUNTLETS + NORMAL_DEMONS
-MAP_PACKS = "pack"
+OFFICIAL_COMPLETED = "n"
+NORMAL_LEVELS_COMPLETED = "c"
+NORMAL_DEMONS_COMPLETED = "demon"
+NORMAL_STARS_COMPLETED = "star"
+TIMELY_LEVELS_COMPLETED = "d"
+TIMELY_DEMONS_COMPLETED = TIMELY_LEVELS_COMPLETED + NORMAL_DEMONS_COMPLETED
+TIMELY_STARS_COMPLETED = TIMELY_LEVELS_COMPLETED + NORMAL_STARS_COMPLETED
+GAUNTLETS_LEVELS_COMPLETED = "g"
+GAUNTLETS_DEMONS_COMPLETED = GAUNTLETS_LEVELS_COMPLETED + NORMAL_DEMONS_COMPLETED
+GAUNTLETS_STARS_COMPLETED = GAUNTLETS_LEVELS_COMPLETED + NORMAL_STARS_COMPLETED
+MAP_PACKS_COMPLETED = "pack"
 
 PREFIX = "{}_"
 prefix = PREFIX.format
 
+OFFICIAL_PREFIX = prefix(OFFICIAL_COMPLETED)
+NORMAL_LEVELS_PREFIX = prefix(NORMAL_LEVELS_COMPLETED)
+NORMAL_DEMONS_PREFIX = prefix(NORMAL_DEMONS_COMPLETED)
+NORMAL_STARS_PREFIX = prefix(NORMAL_STARS_COMPLETED)
+TIMELY_LEVELS_PREFIX = prefix(TIMELY_LEVELS_COMPLETED)
+TIMELY_DEMONS_PREFIX = prefix(TIMELY_DEMONS_COMPLETED)
+TIMELY_STARS_PREFIX = prefix(TIMELY_STARS_COMPLETED)
+GAUNTLETS_LEVELS_PREFIX = prefix(GAUNTLETS_LEVELS_COMPLETED)
+GAUNTLETS_DEMONS_PREFIX = prefix(GAUNTLETS_DEMONS_COMPLETED)
+GAUNTLETS_STARS_PREFIX = prefix(GAUNTLETS_STARS_COMPLETED)
+MAP_PACKS_PREFIX = prefix(MAP_PACKS_COMPLETED)
+
 
 @define()
-class Storage:
+class CompletedPair:
     levels: OrderedSet[int] = field(factory=ordered_set)
     demons: OrderedSet[int] = field(factory=ordered_set)
+
+
+@define()
+class Stars:
+    normal: OrderedSet[int] = field(factory=ordered_set)
+    daily: OrderedSet[int] = field(factory=ordered_set)
+    weekly: OrderedSet[int] = field(factory=ordered_set)
+    gauntlets: OrderedSet[int] = field(factory=ordered_set)
 
 
 C = TypeVar("C", bound="Completed")
@@ -86,10 +111,11 @@ class Completed(Binary):
     """Represents completed levels in the database."""
 
     official: OrderedSet[int] = field(factory=ordered_set)
-    normal: Storage = field(factory=Storage)
-    timely: Storage = field(factory=Storage)
-    gauntlets: Storage = field(factory=Storage)
+    normal: CompletedPair = field(factory=CompletedPair)
+    timely: CompletedPair = field(factory=CompletedPair)
+    gauntlets: CompletedPair = field(factory=CompletedPair)
     map_packs: OrderedSet[int] = field(factory=ordered_set)
+    stars: Stars = field(factory=Stars)
 
     @classmethod
     def from_binary(
@@ -102,7 +128,7 @@ class Completed(Binary):
 
         official_length = reader.read_u8()
 
-        official = iter.repeat_exactly_with(reader.read_u32, official_length).ordered_set()
+        official = iter.repeat_exactly_with(reader.read_u16, official_length).ordered_set()
 
         normal_levels_length = reader.read_u32()
 
@@ -116,21 +142,21 @@ class Completed(Binary):
             reader.read_u32, normal_demons_length
         ).ordered_set()
 
-        normal = Storage(normal_levels, normal_demons)
+        normal = CompletedPair(normal_levels, normal_demons)
 
-        timely_levels_length = reader.read_u32()
+        timely_levels_length = reader.read_u16()
 
         timely_levels = iter.repeat_exactly_with(
-            reader.read_u32, timely_levels_length
+            reader.read_u32, timely_levels_length  # literally why would level ID be here
         ).ordered_set()
 
         timely_demons_length = reader.read_u16()
 
         timely_demons = iter.repeat_exactly_with(
-            reader.read_u32, timely_demons_length
+            reader.read_u16, timely_demons_length  # while here we have timely ID
         ).ordered_set()
 
-        timely = Storage(timely_levels, timely_demons)
+        timely = CompletedPair(timely_levels, timely_demons)
 
         gauntlets_levels_length = reader.read_u16()
 
@@ -144,11 +170,31 @@ class Completed(Binary):
             reader.read_u32, gauntlets_demons_length
         ).ordered_set()
 
-        gauntlets = Storage(gauntlets_levels, gauntlets_demons)
+        gauntlets = CompletedPair(gauntlets_levels, gauntlets_demons)
 
         map_packs_length = reader.read_u16()
 
         map_packs = iter.repeat_exactly_with(reader.read_u16, map_packs_length).ordered_set()
+
+        normal_stars_length = reader.read_u32()
+
+        normal_stars = iter.repeat_exactly_with(reader.read_u32, normal_stars_length).ordered_set()
+
+        daily_stars_length = reader.read_u16()
+
+        daily_stars = iter.repeat_exactly_with(reader.read_u16, daily_stars_length).ordered_set()
+
+        weekly_stars_length = reader.read_u16()
+
+        weekly_stars = iter.repeat_exactly_with(reader.read_u16, weekly_stars_length).ordered_set()
+
+        gauntlets_stars_length = reader.read_u16()
+
+        gauntlets_stars = iter.repeat_exactly_with(
+            reader.read_u32, gauntlets_stars_length
+        ).ordered_set()
+
+        stars = Stars(normal_stars, daily_stars, weekly_stars, gauntlets_stars)
 
         return cls(
             official=official,
@@ -156,6 +202,7 @@ class Completed(Binary):
             timely=timely,
             gauntlets=gauntlets,
             map_packs=map_packs,
+            stars=stars,
         )
 
     def to_binary(
@@ -168,7 +215,7 @@ class Completed(Binary):
         writer.write_u8(len(official))
 
         for level_id in official:
-            writer.write_u32(level_id)
+            writer.write_u16(level_id)
 
         normal = self.normal
 
@@ -183,14 +230,14 @@ class Completed(Binary):
 
         writer.write_u16(len(normal_demons))
 
-        for demon_id in normal_demons:
-            writer.write_u32(demon_id)
+        for level_id in normal_demons:
+            writer.write_u32(level_id)
 
         timely = self.timely
 
         timely_levels = timely.levels
 
-        writer.write_u32(len(timely_levels))
+        writer.write_u16(len(timely_levels))
 
         for level_id in timely_levels:
             writer.write_u32(level_id)
@@ -199,8 +246,8 @@ class Completed(Binary):
 
         writer.write_u16(len(timely_demons))
 
-        for demon_id in timely_demons:
-            writer.write_u32(demon_id)
+        for timely_id in timely_demons:
+            writer.write_u16(timely_id)
 
         gauntlets = self.gauntlets
 
@@ -215,8 +262,8 @@ class Completed(Binary):
 
         writer.write_u8(len(gauntlets_demons))
 
-        for demon_id in gauntlets_demons:
-            writer.write_u32(demon_id)
+        for level_id in gauntlets_demons:
+            writer.write_u32(level_id)
 
         map_packs = self.map_packs
 
@@ -225,55 +272,285 @@ class Completed(Binary):
         for map_pack_id in map_packs:
             writer.write_u16(map_pack_id)
 
-    @property
-    def type_to_set(self) -> Dict[str, OrderedSet[int]]:
-        official = self.official
-        normal = self.normal
-        timely = self.timely
-        gauntlets = self.gauntlets
-        map_packs = self.map_packs
+        stars = self.stars
 
-        return {
-            OFFICIAL: official,
-            NORMAL: normal.levels,
-            NORMAL_DEMONS: normal.demons,
-            TIMELY: timely.levels,
-            TIMELY_DEMONS: timely.demons,
-            GAUNTLETS: gauntlets.levels,
-            GAUNTLETS_DEMONS: gauntlets.demons,
-            MAP_PACKS: map_packs,
-        }
+        normal_stars = stars.normal
 
-    @property
-    def prefix_to_set(self) -> Dict[str, OrderedSet[int]]:
-        return {prefix(type): set for type, set in self.type_to_set.items()}
+        writer.write_u32(len(normal_stars))
+
+        for level_id in normal_stars:
+            writer.write_u32(level_id)
+
+        daily_stars = stars.daily
+
+        writer.write_u16(len(daily_stars))
+
+        for daily_id in daily_stars:
+            writer.write_u16(daily_id)
+
+        weekly_stars = stars.weekly
+
+        writer.write_u16(len(weekly_stars))
+
+        for weekly_id in weekly_stars:
+            writer.write_u16(weekly_id)
+
+        gauntlets_stars = stars.gauntlets
+
+        writer.write_u16(len(gauntlets_stars))
+
+        for level_id in gauntlets_stars:
+            writer.write_u32(level_id)
 
     @classmethod
     def from_robtop_data(cls: Type[C], data: StringMapping[Any]) -> C:  # type: ignore
         self = cls()
 
-        for prefix, ordered_set in self.prefix_to_set.items():
+        normal = self.normal
+        timely = self.timely
+        gauntlets = self.gauntlets
+        stars = self.stars
+
+        prefix_to_ordered_set = {
+            OFFICIAL_PREFIX: self.official,
+            NORMAL_LEVELS_PREFIX: normal.levels,
+            NORMAL_DEMONS_PREFIX: normal.demons,
+            TIMELY_LEVELS_PREFIX: timely.levels,
+            GAUNTLETS_LEVELS_PREFIX: gauntlets.levels,
+            GAUNTLETS_DEMONS_PREFIX: gauntlets.demons,
+            MAP_PACKS_PREFIX: self.map_packs,
+            NORMAL_STARS_PREFIX: stars.normal,
+            GAUNTLETS_STARS_PREFIX: stars.gauntlets,
+        }
+
+        for prefix, ordered_set in prefix_to_ordered_set.items():
             length = len(prefix)
 
             for name in data.keys():
                 if name.startswith(prefix):
-                    level_id = int(name[length:])
+                    ordered_set.add(int(name[length:]))
 
-                    ordered_set.append(level_id)
+        weekly_id_add = WEEKLY_ID_ADD
+
+        # special handling for timely demons (weeklies)
+
+        timely_demons = timely.demons
+
+        prefix = TIMELY_DEMONS_PREFIX
+        length = len(prefix)
+
+        for name in data.keys():
+            if name.startswith(prefix):
+                timely_id = int(name[length:])
+
+                result, timely_id = divmod(timely_id, weekly_id_add)
+
+                if result:
+                    timely_demons.add(timely_id)
+
+        # special handling for timely stars
+
+        daily_stars = stars.daily
+        weekly_stars = stars.weekly
+
+        prefix = TIMELY_STARS_PREFIX
+        length = len(prefix)
+
+        for name in data.keys():
+            if name.startswith(prefix):
+                timely_id = int(name[length:])
+
+                result, timely_id = divmod(timely_id, weekly_id_add)
+
+                if result:
+                    weekly_stars.add(timely_id)
+
+                else:
+                    daily_stars.add(timely_id)
 
         return self
 
     def to_robtop_data(self) -> StringDict[Any]:
+        data = {}
         one = ONE
 
-        data: StringDict[Any] = {}
+        official = self.official
+        official_prefix = OFFICIAL_PREFIX
 
-        for prefix, ordered_set in self.prefix_to_set.items():
-            for level_id in ordered_set:
-                data[prefix + str(level_id)] = one
+        for level_id in official:
+            data[official_prefix + str(level_id)] = one
+
+        normal = self.normal
+
+        normal_levels = normal.levels
+        normal_levels_prefix = NORMAL_LEVELS_PREFIX
+
+        for level_id in normal_levels:
+            data[normal_levels_prefix + str(level_id)] = one
+
+        normal_demons = normal.demons
+        normal_demons_prefix = NORMAL_DEMONS_PREFIX
+
+        for level_id in normal_demons:
+            data[normal_demons_prefix + str(level_id)] = one
+
+        timely = self.timely
+
+        timely_levels = timely.levels
+        timely_levels_prefix = TIMELY_LEVELS_PREFIX
+
+        for level_id in timely_levels:
+            data[timely_levels_prefix + str(level_id)] = one
+
+        weekly_id_add = WEEKLY_ID_ADD
+
+        timely_demons = timely.demons
+        timely_demons_prefix = TIMELY_DEMONS_PREFIX
+
+        for timely_id in timely_demons:
+            data[timely_demons_prefix + str(timely_id + weekly_id_add)] = one
+
+        gauntlets = self.gauntlets
+
+        gauntlets_levels = gauntlets.levels
+        gauntlets_levels_prefix = GAUNTLETS_LEVELS_PREFIX
+
+        for level_id in gauntlets_levels:
+            data[gauntlets_levels_prefix + str(level_id)] = one
+
+        gauntlets_demons = gauntlets.demons
+        gauntlets_demons_prefix = GAUNTLETS_DEMONS_PREFIX
+
+        for level_id in gauntlets_demons:
+            data[gauntlets_demons_prefix + str(level_id)] = one
+
+        map_packs = self.map_packs
+        map_packs_prefix = MAP_PACKS_PREFIX
+
+        for map_pack_id in map_packs:
+            data[map_packs_prefix + str(map_pack_id)] = one
+
+        stars = self.stars
+
+        normal_stars = stars.normal
+        normal_stars_prefix = NORMAL_STARS_PREFIX
+
+        for level_id in normal_stars:
+            data[normal_stars_prefix + str(level_id)] = one
+
+        timely_stars_prefix = TIMELY_STARS_PREFIX
+
+        daily_stars = stars.daily
+
+        for timely_id in daily_stars:
+            data[timely_stars_prefix + str(timely_id)] = one
+
+        weekly_stars = stars.weekly
+
+        for timely_id in weekly_stars:
+            data[timely_stars_prefix + str(timely_id + weekly_id_add)] = one
+
+        gauntlets_stars = stars.gauntlets
+        gauntlets_stars_prefix = GAUNTLETS_STARS_PREFIX
+
+        for level_id in gauntlets_stars:
+            data[gauntlets_stars_prefix + str(level_id)] = one
 
         return data
 
+
+FOLLOW_PLAYER = "gv_0001"
+PLAY_MUSIC = "gv_0002"
+SWIPE = "gv_0003"
+FREE_MOVE = "gv_0004"
+FILTER = "gv_0005"
+FILTER_ID = "gv_0006"
+ROTATE_TOGGLED = "gv_0007"
+SNAP_TOGGLED = "gv_0008"
+IGNORE_DAMAGE = "gv_0009"
+FLIP_TWO_PLAYER_CONTROLS = "gv_0010"
+ALWAYS_LIMIT_CONTROLS = "gv_0011"
+SHOWN_COMMENT_RULES = "gv_0012"
+INCREASE_MAX_HISTORY = "gv_0013"
+DISABLE_EXPLOSION_SHAKE = "gv_0014"
+FLIP_PAUSE_BUTTON = "gv_0015"
+SHOWN_SONG_TERMS = "gv_0016"
+NO_SONG_LIMIT = "gv_0018"
+IN_MEMORY_SONGS = "gv_0019"
+HIGHER_AUDIO_QUALITY = "gv_0022"
+SMOOTH_FIX = "gv_0023"
+SHOW_CURSOR_IN_GAME = "gv_0024"
+WINDOWED = "gv_0025"
+AUTO_RETRY = "gv_0026"
+AUTO_CHECKPOINTS = "gv_0027"
+DISABLE_ANALOG_STICK = "gv_0028"
+SHOWN_OPTIONS = "gv_0029"
+VSYNC = "gv_0030"
+CALL_GL_FINISH = "gv_0031"
+FORCE_TIMER = "gv_0032"
+CHANGE_SONG_PATH = "gv_0033"
+GAME_CENTER = "gv_0034"
+PREVIEW_MODE = "gv_0036"
+SHOW_GROUND = "gv_0037"
+SHOW_GRID = "gv_0038"
+GRID_ON_TOP = "gv_0039"
+SHOW_PERCENTAGE = "gv_0040"
+SHOW_OBJECT_INFO = "gv_0041"
+INCREASE_MAX_LEVELS = "gv_0042"
+SHOW_EFFECT_LINES = "gv_0043"
+SHOW_TRIGGER_BOXES = "gv_0044"
+DEBUG_DRAW = "gv_0045"
+HIDE_UI_ON_TEST = "gv_0046"
+SHOWN_PROFILE_INFO = "gv_0047"
+VIEWED_SELF_PROFILE = "gv_0048"
+BUTTONS_PER_ROW = "gv_0049"
+BUTTON_ROWS = "gv_0050"
+SHOWN_NEWGROUNDS_MESSAGE = "gv_0051"
+FAST_PRACTICE_RESET = "gv_0052"
+FREE_GAMES = "gv_0053"
+CHECK_SERVER_ONLINE = "gv_0055"
+DISABLE_HIGH_DETAIL_ALERT =  "gv_0056"
+HOLD_TO_SWIPE = "gv_0057"
+SHOW_DURATION_LINES = "gv_0058"
+SWIPE_CYCLE = "gv_0059"
+DEFAULT_MINI_ICON = "gv_0060"
+SWITCH_SPIDER_TELEPORT_COLOR = "gv_0061"
+SWITCH_DASH_FIRE_COLOR = "gv_0062"
+SHOWN_UNVERIFIED_COINS_MESSAGE = "gv_0063"
+SELECT_FILTER = "gv_0064"  # copies `FILTER`
+ENABLE_MOVE_OPTIMIZATION = "gv_0065"
+HIGH_CAPACITY = "gv_0066"
+HIGH_START_POSITION_ACCURACY = "gv_0067"
+QUICK_CHECKPOINTS = "gv_0068"
+COMMENT_STRATEGY = "gv_0069"
+SHOWN_UNLISTED_LEVEL_MESSAGE = "gv_0070"
+DISABLE_GRAVITY_EFFECT = "gv_0072"
+NEW_COMPLETED_FILTER = "gv_0073"
+SHOW_RESTART_BUTTON = "gv_0074"
+DISABLE_LEVEL_COMMENTS = "gv_0075"
+DISABLE_USER_COMMENTS = "gv_0076"
+FEATURED_LEVELS_ONLY = "gv_0077"
+HIDE_BACKGROUND = "gv_0078"
+HIDE_GRID_ON_PLAY = "gv_0079"
+DISABLE_SHAKE = "gv_0081"
+DISABLE_HIGH_DETAIL_ALERT_OTHER = "gv_0082"
+DISABLE_SONG_ALERT = "gv_0083"
+MANUAL_ORDER = "gv_0084"
+SMALL_COMMENTS = "gv_0088"
+HIDE_DESCRIPTION = "gv_0089"
+AUTO_LOAD_COMMENTS = "gv_0090"
+CREATED_LEVELS_FOLDER_ID = "gv_0091"
+SAVED_LEVELS_FOLDER_ID = "gv_0092"
+INCREASE_LOCAL_LEVELS_PER_PAGE = "gv_0093"
+MORE_COMMENTS = "gv_0094"
+JUST_DO_NOT = "gv_0095"
+SWITCH_WAVE_TRAIL_COLOR = "gv_0096"
+ENABLE_LINK_CONTROLS = "gv_0097"
+LEVEL_LEADERBOARD_STRATEGY = "gv_0098"
+SHOW_RECORD = "gv_0099"
+PRACTICE_DEATH_EFFECT = "gv_100"
+FORCE_SMOOTH_FIX = "gv_0101"
+SMOOTH_FIX_IN_EDITOR = "gv_0102"
 
 DEFAULT_BUTTONS_PER_ROW = 6
 DEFAULT_BUTTON_ROWS = 2
@@ -324,9 +601,9 @@ DISABLE_ANALOG_STICK_BIT = 0b10000000_00000000
 SHOWN_OPTIONS_BIT = 0b1_00000000_00000000
 VSYNC_BIT = 0b10_00000000_00000000
 CALL_GL_FINISH_BIT = 0b100_00000000_00000000
-FORCE_TIMER_ENABLED_BIT = 0b1000_00000000_00000000
+FORCE_TIMER_BIT = 0b1000_00000000_00000000
 CHANGE_SONG_PATH_BIT = 0b10000_00000000_00000000
-GAME_CENTER_ENABLED_BIT = 0b100000_00000000_00000000
+GAME_CENTER_BIT = 0b100000_00000000_00000000
 SHOW_PERCENTAGE_BIT = 0b1000000_00000000_00000000
 INCREASE_MAX_LEVELS_BIT = 0b10000000_00000000_00000000
 SHOWN_PROFILE_INFO_BIT = 0b1_00000000_00000000_00000000
@@ -341,8 +618,8 @@ SWITCH_DASH_FIRE_COLOR_BIT = 0b1_00000000_00000000_00000000_00000000
 SHOWN_UNVERIFIED_COINS_MESSAGE_BIT = 0b10_00000000_00000000_00000000_00000000
 ENABLE_MOVE_OPTIMIZATION_BIT = 0b100_00000000_00000000_00000000_00000000
 HIGH_CAPACITY_BIT = 0b1000_00000000_00000000_00000000_00000000
-QUICK_CHECKPOINTS_BIT = 0b10000_00000000_00000000_00000000_00000000
-SHOW_LEVEL_DESCRIPTION_BIT = 0b100000_00000000_00000000_00000000_00000000
+HIGH_START_POSITION_ACCURACY_BIT = 0b10000_00000000_00000000_00000000_00000000
+QUICK_CHECKPOINTS_BIT = 0b100000_00000000_00000000_00000000_00000000
 SHOWN_UNLISTED_LEVEL_MESSAGE_BIT = 0b1000000_00000000_00000000_00000000_00000000
 DISABLE_GRAVITY_EFFECT_BIT = 0b10000000_00000000_00000000_00000000_00000000
 NEW_COMPLETED_FILTER_BIT = 0b1_00000000_00000000_00000000_00000000_00000000
@@ -355,7 +632,7 @@ DISABLE_HIGH_DETAIL_ALERT_BIT = 0b1000000_00000000_00000000_00000000_00000000_00
 DISABLE_SONG_ALERT_BIT = 0b10000000_00000000_00000000_00000000_00000000_00000000
 MANUAL_ORDER_BIT = 0b1_00000000_00000000_00000000_00000000_00000000_00000000
 SMALL_COMMENTS_BIT = 0b10_00000000_00000000_00000000_00000000_00000000_00000000
-EXTENDED_INFO_BIT = 0b100_00000000_00000000_00000000_00000000_00000000_00000000
+HIDE_DESCRIPTION_BIT = 0b100_00000000_00000000_00000000_00000000_00000000_00000000
 AUTO_LOAD_COMMENTS_BIT = 0b1000_00000000_00000000_00000000_00000000_00000000_00000000
 INCREASE_LOCAL_LEVELS_PER_PAGE_BIT = 0b10000_00000000_00000000_00000000_00000000_00000000_00000000
 MORE_COMMENTS_BIT = 0b100000_00000000_00000000_00000000_00000000_00000000_00000000
@@ -365,11 +642,12 @@ SHOW_RECORD_BIT = 0b1_00000000_00000000_00000000_00000000_00000000_00000000_0000
 PRACTICE_DEATH_EFFECT_BIT = 0b10_00000000_00000000_00000000_00000000_00000000_00000000_00000000
 FORCE_SMOOTH_FIX_BIT = 0b100_00000000_00000000_00000000_00000000_00000000_00000000_00000000
 
-FILTER_MASK = 0b11000000_00000000
-FILTER_ID_MASK = 0b00111111_11111111
+FILTER_MASK = 0b00000011
+LEVEL_LEADERBOARD_STRATEGY_MASK = 0b00001100
+COMMENT_STRATEGY_MASK = 0b00010000
 
-FILTER_SHIFT = FILTER_ID_MASK.bit_length()
-
+LEVEL_LEADERBOARD_STRATEGY_SHIFT = FILTER_MASK.bit_length()
+COMMENT_STRATEGY_SHIFT = LEVEL_LEADERBOARD_STRATEGY_MASK.bit_length()
 
 DEFAULT_FOLLOW_PLAYER = True
 DEFAULT_PLAY_MUSIC = True
@@ -397,9 +675,9 @@ DEFAULT_DISABLE_ANALOG_STICK = False
 DEFAULT_SHOWN_OPTIONS = True
 DEFAULT_VSYNC = True
 DEFAULT_CALL_GL_FINISH = False
-DEFAULT_FORCE_TIMER_ENABLED = False
+DEFAULT_FORCE_TIMER = False
 DEFAULT_CHANGE_SONG_PATH = False
-DEFAULT_GAME_CENTER_ENABLED = False
+DEFAULT_GAME_CENTER = False
 DEFAULT_PREVIEW_MODE = True
 DEFAULT_SHOW_GROUND = False
 DEFAULT_SHOW_GRID = True
@@ -426,8 +704,8 @@ DEFAULT_SWITCH_DASH_FIRE_COLOR = False
 DEFAULT_SHOWN_UNVERIFIED_COINS_MESSAGE = True
 DEFAULT_ENABLE_MOVE_OPTIMIZATION = False
 DEFAULT_HIGH_CAPACITY = True
+DEFAULT_HIGH_START_POSITION_ACCURACY = True
 DEFAULT_QUICK_CHECKPOINTS = False
-DEFAULT_SHOW_LEVEL_DESCRIPTION = True
 DEFAULT_SHOWN_UNLISTED_LEVEL_MESSAGE = True
 DEFAULT_DISABLE_GRAVITY_EFFECT = False
 DEFAULT_NEW_COMPLETED_FILTER = False
@@ -442,7 +720,7 @@ DEFAULT_DISABLE_HIGH_DETAIL_ALERT = True
 DEFAULT_DISABLE_SONG_ALERT = True
 DEFAULT_MANUAL_ORDER = False
 DEFAULT_SMALL_COMMENTS = False
-DEFAULT_EXTENDED_INFO = True
+DEFAULT_HIDE_DESCRIPTION = True
 DEFAULT_AUTO_LOAD_COMMENTS = True
 DEFAULT_INCREASE_LOCAL_LEVELS_PER_PAGE = True
 DEFAULT_MORE_COMMENTS = False
@@ -490,9 +768,9 @@ class Variables(Binary):
     shown_options: bool = DEFAULT_SHOWN_OPTIONS  # normal
     vsync: bool = DEFAULT_VSYNC  # normal
     call_gl_finish: bool = DEFAULT_CALL_GL_FINISH  # normal
-    force_timer_enabled: bool = DEFAULT_FORCE_TIMER_ENABLED  # normal
+    force_timer: bool = DEFAULT_FORCE_TIMER  # normal
     change_song_path: bool = DEFAULT_CHANGE_SONG_PATH  # normal
-    game_center_enabled: bool = DEFAULT_GAME_CENTER_ENABLED  # normal
+    game_center: bool = DEFAULT_GAME_CENTER  # normal
     preview_mode: bool = DEFAULT_PREVIEW_MODE  # editor
     show_ground: bool = DEFAULT_SHOW_GROUND  # editor
     show_grid: bool = DEFAULT_SHOW_GRID  # editor
@@ -521,8 +799,9 @@ class Variables(Binary):
     shown_unverified_coins_message: bool = DEFAULT_SHOWN_UNVERIFIED_COINS_MESSAGE  # normal
     enable_move_optimization: bool = DEFAULT_ENABLE_MOVE_OPTIMIZATION  # normal
     high_capacity: bool = DEFAULT_HIGH_CAPACITY  # normal
+    high_start_position_accuracy: bool = DEFAULT_HIGH_START_POSITION_ACCURACY  # normal
     quick_checkpoints: bool = DEFAULT_QUICK_CHECKPOINTS  # normal
-    show_level_description: bool = DEFAULT_SHOW_LEVEL_DESCRIPTION  # normal
+    comment_strategy: CommentStrategy = CommentStrategy.DEFAULT  # normal
     shown_unlisted_level_message: bool = DEFAULT_SHOWN_UNLISTED_LEVEL_MESSAGE  # normal
     disable_gravity_effect: bool = DEFAULT_DISABLE_GRAVITY_EFFECT  # normal
     new_completed_filter: bool = DEFAULT_NEW_COMPLETED_FILTER  # normal
@@ -537,7 +816,7 @@ class Variables(Binary):
     disable_song_alert: bool = DEFAULT_DISABLE_SONG_ALERT  # normal
     manual_order: bool = DEFAULT_MANUAL_ORDER  # normal
     small_comments: bool = DEFAULT_SMALL_COMMENTS  # normal
-    extended_info: bool = DEFAULT_EXTENDED_INFO  # normal
+    hide_description: bool = DEFAULT_HIDE_DESCRIPTION  # normal
     auto_load_comments: bool = DEFAULT_AUTO_LOAD_COMMENTS  # normal
     created_levels_folder_id: int = DEFAULT_CREATED_LEVELS_FOLDER_ID
     saved_levels_folder_id: int = DEFAULT_SAVED_LEVELS_FOLDER_ID
@@ -630,14 +909,14 @@ class Variables(Binary):
     def is_call_gl_finish(self) -> bool:
         return self.call_gl_finish
 
-    def is_force_timer_enabled(self) -> bool:
-        return self.force_timer_enabled
+    def is_force_timer(self) -> bool:
+        return self.force_timer
 
     def is_change_song_path(self) -> bool:
         return self.change_song_path
 
-    def is_game_center_enabled(self) -> bool:
-        return self.game_center_enabled
+    def is_game_center(self) -> bool:
+        return self.game_center
 
     def is_preview_mode(self) -> bool:
         return self.preview_mode
@@ -717,11 +996,11 @@ class Variables(Binary):
     def is_high_capacity(self) -> bool:
         return self.high_capacity
 
+    def is_high_start_position_accuracy(self) -> bool:
+        return self.high_start_position_accuracy
+
     def is_quick_checkpoints(self) -> bool:
         return self.quick_checkpoints
-
-    def is_show_level_description(self) -> bool:
-        return self.show_level_description
 
     def has_shown_unlisted_level_message(self) -> bool:
         return self.shown_unlisted_level_message
@@ -765,8 +1044,8 @@ class Variables(Binary):
     def is_small_comments(self) -> bool:
         return self.small_comments
 
-    def is_extended_info(self) -> bool:
-        return self.extended_info
+    def is_hide_description(self) -> bool:
+        return self.hide_description
 
     def is_auto_load_comments(self) -> bool:
         return self.auto_load_comments
@@ -850,9 +1129,9 @@ class Variables(Binary):
         shown_options_bit = SHOWN_OPTIONS_BIT
         vsync_bit = VSYNC_BIT
         call_gl_finish_bit = CALL_GL_FINISH_BIT
-        force_timer_enabled_bit = FORCE_TIMER_ENABLED_BIT
+        force_timer_bit = FORCE_TIMER_BIT
         change_song_path_bit = CHANGE_SONG_PATH_BIT
-        game_center_enabled_bit = GAME_CENTER_ENABLED_BIT
+        game_center_bit = GAME_CENTER_BIT
         show_percentage_bit = SHOW_PERCENTAGE_BIT
         increase_max_levels_bit = INCREASE_MAX_LEVELS_BIT
         shown_profile_info_bit = SHOWN_PROFILE_INFO_BIT
@@ -867,8 +1146,8 @@ class Variables(Binary):
         shown_unverified_coins_message_bit = SHOWN_UNVERIFIED_COINS_MESSAGE_BIT
         enable_move_optimization_bit = ENABLE_MOVE_OPTIMIZATION_BIT
         high_capacity_bit = HIGH_CAPACITY_BIT
+        high_start_position_accuracy_bit = HIGH_START_POSITION_ACCURACY_BIT
         quick_checkpoints_bit = QUICK_CHECKPOINTS_BIT
-        show_level_description_bit = SHOW_LEVEL_DESCRIPTION_BIT
         shown_unlisted_level_message_bit = SHOWN_UNLISTED_LEVEL_MESSAGE_BIT
         disable_gravity_effect_bit = DISABLE_GRAVITY_EFFECT_BIT
         new_completed_filter_bit = NEW_COMPLETED_FILTER_BIT
@@ -881,7 +1160,7 @@ class Variables(Binary):
         disable_song_alert_bit = DISABLE_SONG_ALERT_BIT
         manual_order_bit = MANUAL_ORDER_BIT
         small_comments_bit = SMALL_COMMENTS_BIT
-        extended_info_bit = EXTENDED_INFO_BIT
+        hide_description_bit = HIDE_DESCRIPTION_BIT
         auto_load_comments_bit = AUTO_LOAD_COMMENTS_BIT
         increase_local_levels_per_page_bit = INCREASE_LOCAL_LEVELS_PER_PAGE_BIT
         more_comments_bit = MORE_COMMENTS_BIT
@@ -917,21 +1196,31 @@ class Variables(Binary):
         enable_link_controls = value & enable_link_controls_bit == enable_link_controls_bit
         smooth_fix_in_editor = value & smooth_fix_in_editor_bit == smooth_fix_in_editor_bit
 
-        filter_value = reader.read_u16()
+        filter_id = reader.read_u16()
 
-        filter_id = filter_value & FILTER_ID_MASK
+        filter_and_strategies = reader.read_u8()
 
-        filter = Filter(filter_value >> FILTER_SHIFT)
+        filter_value = filter_and_strategies & FILTER_MASK
+
+        filter = Filter(filter_value)
+
+        level_leaderboard_strategy_value = (
+            filter_and_strategies & LEVEL_LEADERBOARD_STRATEGY_MASK
+        ) >> LEVEL_LEADERBOARD_STRATEGY_SHIFT
+
+        level_leaderboard_strategy = LevelLeaderboardStrategy(level_leaderboard_strategy_value)
+
+        comment_strategy_value = (
+            filter_and_strategies & COMMENT_STRATEGY_MASK
+        ) >> COMMENT_STRATEGY_SHIFT
+
+        comment_strategy = CommentStrategy(comment_strategy_value)
 
         buttons_per_row = reader.read_u8()
         button_rows = reader.read_u8()
 
         created_levels_folder_id = reader.read_u8()
         saved_levels_folder_id = reader.read_u8()
-
-        level_leaderboard_strategy_value = reader.read_u8()
-
-        level_leaderboard_strategy = LevelLeaderboardStrategy(level_leaderboard_strategy_value)
 
         value = reader.read_u64()
 
@@ -956,9 +1245,9 @@ class Variables(Binary):
         shown_options = value & shown_options_bit == shown_options_bit
         vsync = value & vsync_bit == vsync_bit
         call_gl_finish = value & call_gl_finish_bit == call_gl_finish_bit
-        force_timer_enabled = value & force_timer_enabled_bit == force_timer_enabled_bit
+        force_timer = value & force_timer_bit == force_timer_bit
         change_song_path = value & change_song_path_bit == change_song_path_bit
-        game_center_enabled = value & game_center_enabled_bit == game_center_enabled_bit
+        game_center = value & game_center_bit == game_center_bit
         show_percentage = value & show_percentage_bit == show_percentage_bit
         increase_max_levels = value & increase_max_levels_bit == increase_max_levels_bit
         shown_profile_info = value & shown_profile_info_bit == shown_profile_info_bit
@@ -981,8 +1270,10 @@ class Variables(Binary):
             value & enable_move_optimization_bit == enable_move_optimization_bit
         )
         high_capacity = value & high_capacity_bit == high_capacity_bit
+        high_start_position_accuracy = (
+            value & high_start_position_accuracy_bit == high_start_position_accuracy_bit
+        )
         quick_checkpoints = value & quick_checkpoints_bit == quick_checkpoints_bit
-        show_level_description = value & show_level_description_bit == show_level_description_bit
         shown_unlisted_level_message = (
             value & shown_unlisted_level_message_bit == shown_unlisted_level_message_bit
         )
@@ -999,7 +1290,7 @@ class Variables(Binary):
         disable_song_alert = value & disable_song_alert_bit == disable_song_alert_bit
         manual_order = value & manual_order_bit == manual_order_bit
         small_comments = value & small_comments_bit == small_comments_bit
-        extended_info = value & extended_info_bit == extended_info_bit
+        hide_description = value & hide_description_bit == hide_description_bit
         auto_load_comments = value & auto_load_comments_bit == auto_load_comments_bit
         increase_local_levels_per_page = (
             value & increase_local_levels_per_page_bit == increase_local_levels_per_page_bit
@@ -1040,9 +1331,9 @@ class Variables(Binary):
             shown_options=shown_options,
             vsync=vsync,
             call_gl_finish=call_gl_finish,
-            force_timer_enabled=force_timer_enabled,
+            force_timer=force_timer,
             change_song_path=change_song_path,
-            game_center_enabled=game_center_enabled,
+            game_center=game_center,
             preview_mode=preview_mode,
             show_ground=show_ground,
             show_grid=show_grid,
@@ -1071,8 +1362,9 @@ class Variables(Binary):
             shown_unverified_coins_message=shown_unverified_coins_message,
             enable_move_optimization=enable_move_optimization,
             high_capacity=high_capacity,
+            high_start_position_accuracy=high_start_position_accuracy,
             quick_checkpoints=quick_checkpoints,
-            show_level_description=show_level_description,
+            comment_strategy=comment_strategy,
             shown_unlisted_level_message=shown_unlisted_level_message,
             disable_gravity_effect=disable_gravity_effect,
             new_completed_filter=new_completed_filter,
@@ -1087,7 +1379,7 @@ class Variables(Binary):
             disable_song_alert=disable_song_alert,
             manual_order=manual_order,
             small_comments=small_comments,
-            extended_info=extended_info,
+            hide_description=hide_description,
             auto_load_comments=auto_load_comments,
             created_levels_folder_id=created_levels_folder_id,
             saved_levels_folder_id=saved_levels_folder_id,
@@ -1181,9 +1473,8 @@ class Variables(Binary):
 
         writer.write_u32(value)
 
-        filter_value = (self.filter.value << FILTER_SHIFT) | self.filter_id
-
-        writer.write_u16(filter_value)
+        writer.write_u16(self.filter_id)
+        writer.write_u8(self.filter.value)
 
         writer.write_u8(self.buttons_per_row)
         writer.write_u8(self.button_rows)
@@ -1252,14 +1543,14 @@ class Variables(Binary):
         if self.is_call_gl_finish():
             value |= CALL_GL_FINISH_BIT
 
-        if self.is_force_timer_enabled():
-            value |= FORCE_TIMER_ENABLED_BIT
+        if self.is_force_timer():
+            value |= FORCE_TIMER_BIT
 
         if self.is_change_song_path():
             value |= CHANGE_SONG_PATH_BIT
 
-        if self.is_game_center_enabled():
-            value |= GAME_CENTER_ENABLED_BIT
+        if self.is_game_center():
+            value |= GAME_CENTER_BIT
 
         if self.is_show_percentage():
             value |= SHOW_PERCENTAGE_BIT
@@ -1303,11 +1594,11 @@ class Variables(Binary):
         if self.is_high_capacity():
             value |= HIGH_CAPACITY_BIT
 
+        if self.is_high_start_position_accuracy():
+            value |= HIGH_START_POSITION_ACCURACY_BIT
+
         if self.is_quick_checkpoints():
             value |= QUICK_CHECKPOINTS_BIT
-
-        if self.is_show_level_description():
-            value |= SHOW_LEVEL_DESCRIPTION_BIT
 
         if self.has_shown_unlisted_level_message():
             value |= SHOWN_UNLISTED_LEVEL_MESSAGE_BIT
@@ -1345,8 +1636,8 @@ class Variables(Binary):
         if self.is_small_comments():
             value |= SMALL_COMMENTS_BIT
 
-        if self.is_extended_info():
-            value |= EXTENDED_INFO_BIT
+        if self.is_hide_description():
+            value |= HIDE_DESCRIPTION_BIT
 
         if self.is_auto_load_comments():
             value |= AUTO_LOAD_COMMENTS_BIT
@@ -1373,6 +1664,754 @@ class Variables(Binary):
             value |= FORCE_SMOOTH_FIX_BIT
 
         writer.write_u64(value)
+
+    @classmethod
+    def from_robtop_data(cls: Type[V], data: StringMapping[Any]) -> V:  # type: ignore
+        follow_player = parse_get_or(int_bool, DEFAULT_FOLLOW_PLAYER, data.get(FOLLOW_PLAYER))
+        play_music = parse_get_or(int_bool, DEFAULT_PLAY_MUSIC, data.get(PLAY_MUSIC))
+        swipe = parse_get_or(int_bool, DEFAULT_SWIPE, data.get(SWIPE))
+        free_move = parse_get_or(int_bool, DEFAULT_FREE_MOVE, data.get(FREE_MOVE))
+        filter = parse_get_or(partial_parse_enum(int, Filter), Filter.DEFAULT, data.get(FILTER))
+        filter_id = parse_get_or(int, DEFAULT_ID, data.get(FILTER_ID))
+        rotate_toggled = parse_get_or(int_bool, DEFAULT_ROTATE_TOGGLED, data.get(ROTATE_TOGGLED))
+        snap_toggled = parse_get_or(int_bool, DEFAULT_SNAP_TOGGLED, data.get(SNAP_TOGGLED))
+        ignore_damage = parse_get_or(int_bool, DEFAULT_IGNORE_DAMAGE, data.get(IGNORE_DAMAGE))
+        flip_two_player_controls = parse_get_or(
+            int_bool, DEFAULT_FLIP_TWO_PLAYER_CONTROLS, data.get(FLIP_TWO_PLAYER_CONTROLS)
+        )
+        always_limit_controls = parse_get_or(
+            int_bool, DEFAULT_ALWAYS_LIMIT_CONTROLS, data.get(ALWAYS_LIMIT_CONTROLS)
+        )
+        shown_comment_rules = parse_get_or(
+            int_bool, DEFAULT_SHOWN_COMMENT_RULES, data.get(SHOWN_COMMENT_RULES)
+        )
+        increase_max_history = parse_get_or(
+            int_bool, DEFAULT_INCREASE_MAX_HISTORY, data.get(INCREASE_MAX_HISTORY)
+        )
+        disable_explosion_shake = parse_get_or(
+            int_bool, DEFAULT_DISABLE_EXPLOSION_SHAKE, data.get(DISABLE_EXPLOSION_SHAKE)
+        )
+        flip_pause_button = parse_get_or(
+            int_bool, DEFAULT_FLIP_PAUSE_BUTTON, data.get(FLIP_PAUSE_BUTTON)
+        )
+        shown_song_terms = parse_get_or(
+            int_bool, DEFAULT_SHOWN_SONG_TERMS, data.get(SHOWN_SONG_TERMS)
+        )
+        no_song_limit = parse_get_or(int_bool, DEFAULT_NO_SONG_LIMIT, data.get(NO_SONG_LIMIT))
+        in_memory_songs = parse_get_or(int_bool, DEFAULT_IN_MEMORY_SONGS, data.get(IN_MEMORY_SONGS))
+        higher_audio_quality = parse_get_or(
+            int_bool, DEFAULT_HIGHER_AUDIO_QUALITY, data.get(HIGHER_AUDIO_QUALITY)
+        )
+        smooth_fix = parse_get_or(int_bool, DEFAULT_SMOOTH_FIX, data.get(SMOOTH_FIX))
+        show_cursor_in_game = parse_get_or(
+            int_bool, DEFAULT_SHOW_CURSOR_IN_GAME, data.get(SHOW_CURSOR_IN_GAME)
+        )
+        windowed = parse_get_or(int_bool, DEFAULT_WINDOWED, data.get(WINDOWED))
+        auto_retry = parse_get_or(int_bool, DEFAULT_AUTO_RETRY, data.get(AUTO_RETRY))
+        auto_checkpoints = parse_get_or(
+            int_bool, DEFAULT_AUTO_CHECKPOINTS, data.get(AUTO_CHECKPOINTS)
+        )
+        disable_analog_stick = parse_get_or(
+            int_bool, DEFAULT_DISABLE_ANALOG_STICK, data.get(DISABLE_ANALOG_STICK)
+        )
+        shown_options = parse_get_or(int_bool, DEFAULT_SHOWN_OPTIONS, data.get(SHOWN_OPTIONS))
+        vsync = parse_get_or(int_bool, DEFAULT_VSYNC, data.get(VSYNC))
+        call_gl_finish = parse_get_or(int_bool, DEFAULT_CALL_GL_FINISH, data.get(CALL_GL_FINISH))
+        force_timer = parse_get_or(int_bool, DEFAULT_FORCE_TIMER, data.get(FORCE_TIMER))
+        change_song_path = parse_get_or(
+            int_bool, DEFAULT_CHANGE_SONG_PATH, data.get(CHANGE_SONG_PATH)
+        )
+        game_center = parse_get_or(int_bool, DEFAULT_GAME_CENTER, data.get(GAME_CENTER))
+        preview_mode = parse_get_or(int_bool, DEFAULT_PREVIEW_MODE, data.get(PREVIEW_MODE))
+        show_ground = parse_get_or(int_bool, DEFAULT_SHOW_GROUND, data.get(SHOW_GROUND))
+        show_grid = parse_get_or(int_bool, DEFAULT_SHOW_GRID, data.get(SHOW_GRID))
+        grid_on_top = parse_get_or(int_bool, DEFAULT_GRID_ON_TOP, data.get(GRID_ON_TOP))
+        show_percentage = parse_get_or(int_bool, DEFAULT_SHOW_PERCENTAGE, data.get(SHOW_PERCENTAGE))
+        show_object_info = parse_get_or(
+            int_bool, DEFAULT_SHOW_OBJECT_INFO, data.get(SHOW_OBJECT_INFO)
+        )
+        increase_max_levels = parse_get_or(
+            int_bool, DEFAULT_INCREASE_MAX_LEVELS, data.get(INCREASE_MAX_LEVELS)
+        )
+        show_effect_lines = parse_get_or(
+            int_bool, DEFAULT_SHOW_EFFECT_LINES, data.get(SHOW_EFFECT_LINES)
+        )
+        show_trigger_boxes = parse_get_or(
+            int_bool, DEFAULT_SHOW_TRIGGER_BOXES, data.get(SHOW_TRIGGER_BOXES)
+        )
+        debug_draw = parse_get_or(int_bool, DEFAULT_DEBUG_DRAW, data.get(DEBUG_DRAW))
+        hide_ui_on_test = parse_get_or(
+            int_bool, DEFAULT_HIDE_UI_ON_TEST, data.get(HIDE_UI_ON_TEST)
+        )
+        shown_profile_info = parse_get_or(
+            int_bool, DEFAULT_SHOWN_PROFILE_INFO, data.get(SHOWN_PROFILE_INFO)
+        )
+        viewed_self_profile = parse_get_or(
+            int_bool, DEFAULT_VIEWED_SELF_PROFILE, data.get(VIEWED_SELF_PROFILE)
+        )
+        buttons_per_row = parse_get_or(int, DEFAULT_BUTTONS_PER_ROW, data.get(BUTTONS_PER_ROW))
+        button_rows = parse_get_or(int, DEFAULT_BUTTON_ROWS, data.get(BUTTON_ROWS))
+        shown_newgrounds_message = parse_get_or(
+            int_bool, DEFAULT_SHOWN_NEWGROUNDS_MESSAGE, data.get(SHOWN_NEWGROUNDS_MESSAGE)
+        )
+        fast_practice_reset = parse_get_or(
+            int_bool, DEFAULT_FAST_PRACTICE_RESET, data.get(FAST_PRACTICE_RESET)
+        )
+        free_games = parse_get_or(int_bool, DEFAULT_FREE_GAMES, data.get(FREE_GAMES))
+        check_server_online = parse_get_or(
+            int_bool, DEFAULT_CHECK_SERVER_ONLINE, data.get(CHECK_SERVER_ONLINE)
+        )
+        hold_to_swipe = parse_get_or(int_bool, DEFAULT_HOLD_TO_SWIPE, data.get(HOLD_TO_SWIPE))
+        show_duration_lines = parse_get_or(
+            int_bool, DEFAULT_SHOW_DURATION_LINES, data.get(SHOW_DURATION_LINES)
+        )
+        swipe_cycle = parse_get_or(int_bool, DEFAULT_SWIPE_CYCLE, data.get(SWIPE_CYCLE))
+        default_mini_icon = parse_get_or(
+            int_bool, DEFAULT_DEFAULT_MINI_ICON, data.get(DEFAULT_MINI_ICON)
+        )
+        switch_spider_teleport_color = parse_get_or(
+            int_bool, DEFAULT_SWITCH_SPIDER_TELEPORT_COLOR, data.get(SWITCH_SPIDER_TELEPORT_COLOR)
+        )
+        switch_dash_fire_color = parse_get_or(
+            int_bool, DEFAULT_SWITCH_DASH_FIRE_COLOR, data.get(SWITCH_DASH_FIRE_COLOR)
+        )
+        shown_unverified_coins_message = parse_get_or(
+            int_bool,
+            DEFAULT_SHOWN_UNVERIFIED_COINS_MESSAGE,
+            data.get(SHOWN_UNVERIFIED_COINS_MESSAGE),
+        )
+        enable_move_optimization = parse_get_or(
+            int_bool, DEFAULT_ENABLE_MOVE_OPTIMIZATION, data.get(ENABLE_MOVE_OPTIMIZATION)
+        )
+        high_capacity = parse_get_or(int_bool, DEFAULT_HIGH_CAPACITY, data.get(HIGH_CAPACITY))
+        high_start_position_accuracy = parse_get_or(
+            int_bool, DEFAULT_HIGH_START_POSITION_ACCURACY, data.get(HIGH_START_POSITION_ACCURACY)
+        )
+        quick_checkpoints = parse_get_or(
+            int_bool, DEFAULT_QUICK_CHECKPOINTS, data.get(QUICK_CHECKPOINTS)
+        )
+        comment_strategy = parse_get_or(
+            partial_parse_enum(int, CommentStrategy),
+            CommentStrategy.DEFAULT,
+            data.get(COMMENT_STRATEGY),
+        )
+        shown_unlisted_level_message = parse_get_or(
+            int_bool, DEFAULT_SHOWN_UNLISTED_LEVEL_MESSAGE, data.get(SHOWN_UNLISTED_LEVEL_MESSAGE)
+        )
+        disable_gravity_effect = parse_get_or(
+            int_bool, DEFAULT_DISABLE_GRAVITY_EFFECT, data.get(DISABLE_GRAVITY_EFFECT)
+        )
+        new_completed_filter = parse_get_or(
+            int_bool, DEFAULT_NEW_COMPLETED_FILTER, data.get(NEW_COMPLETED_FILTER)
+        )
+        show_restart_button = parse_get_or(
+            int_bool, DEFAULT_SHOW_RESTART_BUTTON, data.get(SHOW_RESTART_BUTTON)
+        )
+        disable_level_comments = parse_get_or(
+            int_bool, DEFAULT_DISABLE_LEVEL_COMMENTS, data.get(DISABLE_LEVEL_COMMENTS)
+        )
+        disable_user_comments = parse_get_or(
+            int_bool, DEFAULT_DISABLE_USER_COMMENTS, data.get(DISABLE_USER_COMMENTS)
+        )
+        featured_levels_only = parse_get_or(
+            int_bool, DEFAULT_FEATURED_LEVELS_ONLY, data.get(FEATURED_LEVELS_ONLY)
+        )
+        hide_background = parse_get_or(int_bool, DEFAULT_HIDE_BACKGROUND, data.get(HIDE_BACKGROUND))
+        hide_grid_on_play = parse_get_or(
+            int_bool, DEFAULT_HIDE_GRID_ON_PLAY, data.get(HIDE_GRID_ON_PLAY)
+        )
+        disable_shake = parse_get_or(int_bool, DEFAULT_DISABLE_SHAKE, data.get(DISABLE_SHAKE))
+        disable_high_detail_alert = parse_get_or(
+            int_bool, DEFAULT_DISABLE_HIGH_DETAIL_ALERT, data.get(DISABLE_HIGH_DETAIL_ALERT)
+        )
+        disable_song_alert = parse_get_or(
+            int_bool, DEFAULT_DISABLE_SONG_ALERT, data.get(DISABLE_SONG_ALERT)
+        )
+        manual_order = parse_get_or(int_bool, DEFAULT_MANUAL_ORDER, data.get(MANUAL_ORDER))
+        small_comments = parse_get_or(int_bool, DEFAULT_SMALL_COMMENTS, data.get(SMALL_COMMENTS))
+        hide_description = parse_get_or(int_bool, DEFAULT_HIDE_DESCRIPTION, data.get(HIDE_DESCRIPTION))
+        auto_load_comments = parse_get_or(
+            int_bool, DEFAULT_AUTO_LOAD_COMMENTS, data.get(AUTO_LOAD_COMMENTS)
+        )
+        created_levels_folder_id = parse_get_or(
+            int, DEFAULT_CREATED_LEVELS_FOLDER_ID, data.get(CREATED_LEVELS_FOLDER_ID)
+        )
+        saved_levels_folder_id = parse_get_or(
+            int, DEFAULT_SAVED_LEVELS_FOLDER_ID, data.get(SAVED_LEVELS_FOLDER_ID)
+        )
+        increase_local_levels_per_page = parse_get_or(
+            int_bool,
+            DEFAULT_INCREASE_LOCAL_LEVELS_PER_PAGE,
+            data.get(INCREASE_LOCAL_LEVELS_PER_PAGE),
+        )
+        more_comments = parse_get_or(int_bool, DEFAULT_MORE_COMMENTS, data.get(MORE_COMMENTS))
+        just_do_not = parse_get_or(int_bool, DEFAULT_JUST_DO_NOT, data.get(JUST_DO_NOT))
+        switch_wave_trail_color = parse_get_or(
+            int_bool, DEFAULT_SWITCH_WAVE_TRAIL_COLOR, data.get(SWITCH_WAVE_TRAIL_COLOR)
+        )
+        enable_link_controls = parse_get_or(
+            int_bool, DEFAULT_ENABLE_LINK_CONTROLS, data.get(ENABLE_LINK_CONTROLS)
+        )
+        level_leaderboard_strategy = parse_get_or(
+            partial_parse_enum(int, LevelLeaderboardStrategy),
+            LevelLeaderboardStrategy.DEFAULT,
+            data.get(LEVEL_LEADERBOARD_STRATEGY),
+        )
+        show_record = parse_get_or(int_bool, DEFAULT_SHOW_RECORD, data.get(SHOW_RECORD))
+        practice_death_effect = parse_get_or(
+            int_bool, DEFAULT_PRACTICE_DEATH_EFFECT, data.get(PRACTICE_DEATH_EFFECT)
+        )
+        force_smooth_fix = parse_get_or(
+            int_bool, DEFAULT_FORCE_SMOOTH_FIX, data.get(FORCE_SMOOTH_FIX)
+        )
+        smooth_fix_in_editor = parse_get_or(
+            int_bool, DEFAULT_SMOOTH_FIX_IN_EDITOR, data.get(SMOOTH_FIX_IN_EDITOR)
+        )
+
+        return cls(
+            follow_player=follow_player,
+            play_music=play_music,
+            swipe=swipe,
+            free_move=free_move,
+            filter=filter,
+            filter_id=filter_id,
+            rotate_toggled=rotate_toggled,
+            snap_toggled=snap_toggled,
+            ignore_damage=ignore_damage,
+            flip_two_player_controls=flip_two_player_controls,
+            always_limit_controls=always_limit_controls,
+            shown_comment_rules=shown_comment_rules,
+            increase_max_history=increase_max_history,
+            disable_explosion_shake=disable_explosion_shake,
+            flip_pause_button=flip_pause_button,
+            shown_song_terms=shown_song_terms,
+            no_song_limit=no_song_limit,
+            in_memory_songs=in_memory_songs,
+            higher_audio_quality=higher_audio_quality,
+            smooth_fix=smooth_fix,
+            show_cursor_in_game=show_cursor_in_game,
+            windowed=windowed,
+            auto_retry=auto_retry,
+            auto_checkpoints=auto_checkpoints,
+            disable_analog_stick=disable_analog_stick,
+            shown_options=shown_options,
+            vsync=vsync,
+            call_gl_finish=call_gl_finish,
+            force_timer=force_timer,
+            change_song_path=change_song_path,
+            game_center=game_center,
+            preview_mode=preview_mode,
+            show_ground=show_ground,
+            show_grid=show_grid,
+            grid_on_top=grid_on_top,
+            show_percentage=show_percentage,
+            show_object_info=show_object_info,
+            increase_max_levels=increase_max_levels,
+            show_effect_lines=show_effect_lines,
+            show_trigger_boxes=show_trigger_boxes,
+            debug_draw=debug_draw,
+            hide_ui_on_test=hide_ui_on_test,
+            shown_profile_info=shown_profile_info,
+            viewed_self_profile=viewed_self_profile,
+            buttons_per_row=buttons_per_row,
+            button_rows=button_rows,
+            shown_newgrounds_message=shown_newgrounds_message,
+            fast_practice_reset=fast_practice_reset,
+            free_games=free_games,
+            check_server_online=check_server_online,
+            hold_to_swipe=hold_to_swipe,
+            show_duration_lines=show_duration_lines,
+            swipe_cycle=swipe_cycle,
+            default_mini_icon=default_mini_icon,
+            switch_spider_teleport_color=switch_spider_teleport_color,
+            switch_dash_fire_color=switch_dash_fire_color,
+            shown_unverified_coins_message=shown_unverified_coins_message,
+            enable_move_optimization=enable_move_optimization,
+            high_capacity=high_capacity,
+            high_start_position_accuracy=high_start_position_accuracy,
+            quick_checkpoints=quick_checkpoints,
+            comment_strategy=comment_strategy,
+            shown_unlisted_level_message=shown_unlisted_level_message,
+            disable_gravity_effect=disable_gravity_effect,
+            new_completed_filter=new_completed_filter,
+            show_restart_button=show_restart_button,
+            disable_level_comments=disable_level_comments,
+            disable_user_comments=disable_user_comments,
+            featured_levels_only=featured_levels_only,
+            hide_background=hide_background,
+            hide_grid_on_play=hide_grid_on_play,
+            disable_shake=disable_shake,
+            disable_high_detail_alert=disable_high_detail_alert,
+            disable_song_alert=disable_song_alert,
+            manual_order=manual_order,
+            small_comments=small_comments,
+            hide_description=hide_description,
+            auto_load_comments=auto_load_comments,
+            created_levels_folder_id=created_levels_folder_id,
+            saved_levels_folder_id=saved_levels_folder_id,
+            increase_local_levels_per_page=increase_local_levels_per_page,
+            more_comments=more_comments,
+            just_do_not=just_do_not,
+            switch_wave_trail_color=switch_wave_trail_color,
+            enable_link_controls=enable_link_controls,
+            level_leaderboard_strategy=level_leaderboard_strategy,
+            show_record=show_record,
+            practice_death_effect=practice_death_effect,
+            force_smooth_fix=force_smooth_fix,
+            smooth_fix_in_editor=smooth_fix_in_editor,
+        )
+
+    def to_robtop_data(self) -> StringDict[Any]:
+        data = {}
+
+        follow_player = self.is_follow_player()
+
+        if follow_player:
+            data[FOLLOW_PLAYER] = str(int(follow_player))
+
+        play_music = self.is_play_music()
+
+        if play_music:
+            data[PLAY_MUSIC] = str(int(play_music))
+
+        swipe = self.is_swipe()
+
+        if swipe:
+            data[SWIPE] = str(int(swipe))
+
+        free_move = self.is_free_move()
+
+        if free_move:
+            data[SWIPE] = str(int(free_move))
+
+        filter = self.filter
+
+        if not filter.is_none():
+            string = str(filter.value)
+
+            data[FILTER] = string
+            data[SELECT_FILTER] = string
+
+        filter_id = self.filter_id
+
+        if filter_id:
+            data[FILTER_ID] = str(filter_id)
+
+        rotate_toggled = self.is_rotate_toggled()
+
+        if rotate_toggled:
+            data[ROTATE_TOGGLED] = str(int(rotate_toggled))
+
+        snap_toggled = self.is_snap_toggled()
+
+        if snap_toggled:
+            data[SNAP_TOGGLED] = str(int(snap_toggled))
+
+        ignore_damage = self.is_ignore_damage()
+
+        if ignore_damage:
+            data[IGNORE_DAMAGE] = str(int(ignore_damage))
+
+        flip_two_player_controls = self.is_flip_two_player_controls()
+
+        if flip_two_player_controls:
+            data[FLIP_TWO_PLAYER_CONTROLS] = str(int(flip_two_player_controls))
+
+        always_limit_controls = self.is_always_limit_controls()
+
+        if always_limit_controls:
+            data[ALWAYS_LIMIT_CONTROLS] = str(int(always_limit_controls))
+
+        shown_comment_rules = self.has_shown_comment_rules()
+
+        if shown_comment_rules:
+            data[SHOWN_COMMENT_RULES] = str(int(shown_comment_rules))
+
+        increase_max_history = self.is_increase_max_history()
+
+        if increase_max_history:
+            data[INCREASE_MAX_HISTORY] = str(int(increase_max_history))
+
+        disable_explosion_shake = self.is_disable_explosion_shake()
+
+        if disable_explosion_shake:
+            data[DISABLE_EXPLOSION_SHAKE] = str(int(disable_explosion_shake))
+
+        flip_pause_button = self.is_flip_pause_button()
+
+        if flip_pause_button:
+            data[FLIP_PAUSE_BUTTON] = str(int(flip_pause_button))
+
+        shown_song_terms = self.has_shown_song_terms()
+
+        if shown_song_terms:
+            data[SHOWN_SONG_TERMS] = str(int(shown_song_terms))
+
+        no_song_limit = self.is_no_song_limit()
+
+        if no_song_limit:
+            data[NO_SONG_LIMIT] = str(int(no_song_limit))
+
+        in_memory_songs = self.is_in_memory_songs()
+
+        if in_memory_songs:
+            data[IN_MEMORY_SONGS] = str(int(in_memory_songs))
+
+        higher_audio_quality = self.is_higher_audio_quality()
+
+        if higher_audio_quality:
+            data[HIGHER_AUDIO_QUALITY] = str(int(higher_audio_quality))
+
+        smooth_fix = self.is_smooth_fix()
+
+        if smooth_fix:
+            data[SMOOTH_FIX] = str(int(smooth_fix))
+
+        show_cursor_in_game = self.is_show_cursor_in_game()
+
+        if show_cursor_in_game:
+            data[SHOW_CURSOR_IN_GAME] = str(int(show_cursor_in_game))
+
+        windowed = self.is_windowed()
+
+        if windowed:
+            data[WINDOWED] = str(int(windowed))
+
+        auto_retry = self.is_auto_retry()
+
+        if auto_retry:
+            data[AUTO_RETRY] = str(int(auto_retry))
+
+        auto_checkpoints = self.is_auto_checkpoints()
+
+        if auto_checkpoints:
+            data[AUTO_CHECKPOINTS] = str(int(auto_checkpoints))
+
+        disable_analog_stick = self.is_disable_analog_stick()
+
+        if disable_analog_stick:
+            data[DISABLE_ANALOG_STICK] = str(int(disable_analog_stick))
+
+        shown_options = self.has_shown_options()
+
+        if shown_options:
+            data[SHOWN_OPTIONS] = str(int(shown_options))
+
+        vsync = self.is_vsync()
+
+        if vsync:
+            data[VSYNC] = str(int(vsync))
+
+        call_gl_finish = self.is_call_gl_finish()
+
+        if call_gl_finish:
+            data[CALL_GL_FINISH] = str(int(call_gl_finish))
+
+        force_timer = self.is_force_timer()
+
+        if force_timer:
+            data[FORCE_TIMER] = str(int(force_timer))
+
+        change_song_path = self.is_change_song_path()
+
+        if change_song_path:
+            data[CHANGE_SONG_PATH] = str(int(change_song_path))
+
+        game_center = self.is_game_center()
+
+        if game_center:
+            data[GAME_CENTER] = str(int(game_center))
+
+        preview_mode = self.is_preview_mode()
+
+        if preview_mode:
+            data[PREVIEW_MODE] = str(int(preview_mode))
+
+        show_ground = self.is_show_ground()
+
+        if show_ground:
+            data[SHOW_GROUND] = str(int(show_ground))
+
+        show_grid = self.is_show_grid()
+
+        if show_grid:
+            data[SHOW_GRID] = str(int(show_grid))
+
+        grid_on_top = self.is_grid_on_top()
+
+        if grid_on_top:
+            data[GRID_ON_TOP] = str(int(grid_on_top))
+
+        show_percentage = self.is_show_percentage()
+
+        if show_percentage:
+            data[SHOW_PERCENTAGE] = str(int(show_percentage))
+
+        show_object_info = self.is_show_object_info()
+
+        if show_object_info:
+            data[SHOW_OBJECT_INFO] = str(int(show_object_info))
+
+        increase_max_levels = self.is_increase_max_levels()
+
+        if increase_max_levels:
+            data[INCREASE_MAX_LEVELS] = str(int(increase_max_levels))
+
+        show_effect_lines = self.is_show_effect_lines()
+
+        if show_effect_lines:
+            data[SHOW_EFFECT_LINES] = str(int(show_effect_lines))
+
+        show_trigger_boxes = self.is_show_trigger_boxes()
+
+        if show_trigger_boxes:
+            data[SHOW_TRIGGER_BOXES] = str(int(show_trigger_boxes))
+
+        debug_draw = self.is_debug_draw()
+
+        if debug_draw:
+            data[DEBUG_DRAW] = str(int(debug_draw))
+
+        hide_ui_on_test = self.is_hide_ui_on_test()
+
+        if hide_ui_on_test:
+            data[HIDE_UI_ON_TEST] = str(int(hide_ui_on_test))
+
+        shown_profile_info = self.has_shown_profile_info()
+
+        if shown_profile_info:
+            data[SHOWN_PROFILE_INFO] = str(int(shown_profile_info))
+
+        viewed_self_profile = self.has_viewed_self_profile()
+
+        if viewed_self_profile:
+            data[VIEWED_SELF_PROFILE] = str(int(viewed_self_profile))
+
+        buttons_per_row = self.buttons_per_row
+
+        data[BUTTONS_PER_ROW] = str(buttons_per_row)
+
+        button_rows = self.button_rows
+
+        data[BUTTON_ROWS] = str(button_rows)
+
+        shown_newgrounds_message = self.has_shown_newgrounds_message()
+
+        if shown_newgrounds_message:
+            data[SHOWN_NEWGROUNDS_MESSAGE] = str(int(shown_newgrounds_message))
+
+        fast_practice_reset = self.is_fast_practice_reset()
+
+        if fast_practice_reset:
+            data[FAST_PRACTICE_RESET] = str(int(fast_practice_reset))
+
+        free_games = self.is_free_games()
+
+        if free_games:
+            data[FREE_GAMES] = str(int(free_games))
+
+        check_server_online = self.is_check_server_online()
+
+        if check_server_online:
+            data[CHECK_SERVER_ONLINE] = str(int(check_server_online))
+
+        hold_to_swipe = self.is_hold_to_swipe()
+
+        if hold_to_swipe:
+            data[HOLD_TO_SWIPE] = str(int(hold_to_swipe))
+
+        show_duration_lines = self.is_show_duration_lines()
+
+        if show_duration_lines:
+            data[SHOW_DURATION_LINES] = str(int(show_duration_lines))
+
+        swipe_cycle = self.is_swipe_cycle()
+
+        if swipe_cycle:
+            data[SWIPE_CYCLE] = str(int(swipe_cycle))
+
+        default_mini_icon = self.is_default_mini_icon()
+
+        if default_mini_icon:
+            data[DEFAULT_MINI_ICON] = str(int(default_mini_icon))
+
+        switch_spider_teleport_color = self.is_switch_spider_teleport_color()
+
+        if switch_spider_teleport_color:
+            data[SWITCH_SPIDER_TELEPORT_COLOR] = str(int(switch_spider_teleport_color))
+
+        switch_dash_fire_color = self.is_switch_dash_fire_color()
+
+        if switch_dash_fire_color:
+            data[SWITCH_DASH_FIRE_COLOR] = str(int(switch_dash_fire_color))
+
+        shown_unverified_coins_message = self.has_shown_unverified_coins_message()
+
+        if shown_unverified_coins_message:
+            data[SHOWN_UNVERIFIED_COINS_MESSAGE] = str(int(shown_unverified_coins_message))
+
+        enable_move_optimization = self.is_enable_move_optimization()
+
+        if enable_move_optimization:
+            data[ENABLE_MOVE_OPTIMIZATION] = str(int(enable_move_optimization))
+
+        high_capacity = self.is_high_capacity()
+
+        if high_capacity:
+            data[HIGH_CAPACITY] = str(int(high_capacity))
+
+        high_start_position_accuracy = self.is_high_start_position_accuracy()
+
+        if high_start_position_accuracy:
+            data[HIGH_START_POSITION_ACCURACY] = str(int(high_start_position_accuracy))
+
+        quick_checkpoints = self.is_quick_checkpoints()
+
+        if quick_checkpoints:
+            data[QUICK_CHECKPOINTS] = str(int(quick_checkpoints))
+
+        comment_strategy = self.comment_strategy
+
+        data[COMMENT_STRATEGY] = str(comment_strategy.value)
+
+        shown_unlisted_level_message = self.has_shown_unlisted_level_message()
+
+        if shown_unlisted_level_message:
+            data[SHOWN_UNLISTED_LEVEL_MESSAGE] = str(int(shown_unlisted_level_message))
+
+        disable_gravity_effect = self.is_disable_gravity_effect()
+
+        if disable_gravity_effect:
+            data[DISABLE_GRAVITY_EFFECT] = str(int(disable_gravity_effect))
+
+        new_completed_filter = self.is_new_completed_filter()
+
+        if new_completed_filter:
+            data[NEW_COMPLETED_FILTER] = str(int(new_completed_filter))
+
+        show_restart_button = self.is_show_restart_button()
+
+        if show_restart_button:
+            data[SHOW_RESTART_BUTTON] = str(int(show_restart_button))
+
+        disable_level_comments = self.is_disable_level_comments()
+
+        if disable_level_comments:
+            data[DISABLE_LEVEL_COMMENTS] = str(int(disable_level_comments))
+
+        disable_user_comments = self.is_disable_user_comments()
+
+        if disable_user_comments:
+            data[DISABLE_USER_COMMENTS] = str(int(disable_user_comments))
+
+        featured_levels_only = self.is_featured_levels_only()
+
+        if featured_levels_only:
+            data[FEATURED_LEVELS_ONLY] = str(int(featured_levels_only))
+
+        hide_background = self.is_hide_background()
+
+        if hide_background:
+            data[HIDE_BACKGROUND] = str(int(hide_background))
+
+        hide_grid_on_play = self.is_hide_grid_on_play()
+
+        if hide_grid_on_play:
+            data[HIDE_GRID_ON_PLAY] = str(int(hide_grid_on_play))
+
+        disable_shake = self.is_disable_shake()
+
+        if disable_shake:
+            data[DISABLE_SHAKE] = str(int(disable_shake))
+
+        disable_high_detail_alert = self.is_disable_high_detail_alert()
+
+        if disable_high_detail_alert:
+            data[DISABLE_HIGH_DETAIL_ALERT] = str(int(disable_high_detail_alert))
+
+        disable_song_alert = self.is_disable_song_alert()
+
+        if disable_song_alert:
+            data[DISABLE_SONG_ALERT] = str(int(disable_song_alert))
+
+        manual_order = self.is_manual_order()
+
+        if manual_order:
+            data[MANUAL_ORDER] = str(int(manual_order))
+
+        small_comments = self.is_small_comments()
+
+        if small_comments:
+            data[SMALL_COMMENTS] = str(int(small_comments))
+
+        hide_description = self.is_hide_description()
+
+        if hide_description:
+            data[HIDE_DESCRIPTION] = str(int(hide_description))
+
+        auto_load_comments = self.is_auto_load_comments()
+
+        if auto_load_comments:
+            data[AUTO_LOAD_COMMENTS] = str(int(auto_load_comments))
+
+        created_levels_folder_id = self.created_levels_folder_id
+
+        data[CREATED_LEVELS_FOLDER_ID] = str(created_levels_folder_id)
+
+        saved_levels_folder_id = self.saved_levels_folder_id
+
+        data[SAVED_LEVELS_FOLDER_ID] = str(saved_levels_folder_id)
+
+        increase_local_levels_per_page = self.is_increase_local_levels_per_page()
+
+        if increase_local_levels_per_page:
+            data[INCREASE_LOCAL_LEVELS_PER_PAGE] = str(int(increase_local_levels_per_page))
+
+        more_comments = self.is_more_comments()
+
+        if more_comments:
+            data[MORE_COMMENTS] = str(int(more_comments))
+
+        just_do_not = self.is_just_do_not()
+
+        if just_do_not:
+            data[JUST_DO_NOT] = str(int(just_do_not))
+
+        switch_wave_trail_color = self.is_switch_wave_trail_color()
+
+        if switch_wave_trail_color:
+            data[SWITCH_WAVE_TRAIL_COLOR] = str(int(switch_wave_trail_color))
+
+        enable_link_controls = self.is_enable_link_controls()
+
+        if enable_link_controls:
+            data[ENABLE_LINK_CONTROLS] = str(int(enable_link_controls))
+
+        level_leaderboard_strategy = self.level_leaderboard_strategy
+
+        data[LEVEL_LEADERBOARD_STRATEGY] = str(level_leaderboard_strategy.value)
+
+        show_record = self.is_show_record()
+
+        if show_record:
+            data[SHOW_RECORD] = str(int(show_record))
+
+        practice_death_effect = self.is_practice_death_effect()
+
+        if practice_death_effect:
+            data[PRACTICE_DEATH_EFFECT] = str(int(practice_death_effect))
+
+        force_smooth_fix = self.is_force_smooth_fix()
+
+        if force_smooth_fix:
+            data[FORCE_SMOOTH_FIX] = str(int(force_smooth_fix))
+
+        smooth_fix_in_editor = self.is_smooth_fix_in_editor()
+
+        if smooth_fix_in_editor:
+            data[SMOOTH_FIX_IN_EDITOR] = str(int(smooth_fix_in_editor))
+
+        return data
 
 
 VS = TypeVar("VS", bound="Values")
@@ -1972,7 +3011,7 @@ class Statistics(Binary):
 
         for name in data.keys():
             try:
-                level_id, value = iter(split_official_coins(name)).skip(1).map(int).unwrap()
+                level_id, value = iter(split_name(name)).skip(1).map(int).unwrap()
 
             except ValueError:
                 pass
@@ -2044,7 +3083,7 @@ class Statistics(Binary):
                 if collected_coins & collected_coin:
                     values = (unique, str(level_id), str(value))
 
-                    data[concat_official_coins(values)] = one
+                    data[concat_name(values)] = one
 
         return data
 
@@ -2152,6 +3191,117 @@ class Statistics(Binary):
         )
 
 
+UNVERIFIED_COINS_STORAGE = "GS_3"
+VERIFIED_COINS_STORAGE = "GS_4"
+MAP_PACKS_STARS_STORAGE = "GS_5"
+PURCHASED_ITEMS_STORAGE = "GS_6"
+NORMAL_RECORDS_STORAGE = "GS_7"
+NORMAL_STARS_STORAGE = "GS_9"
+OFFICIAL_RECORDS_STORAGE = "GS_10"
+CHESTS_REWARDS_STORAGE = "GS_11"
+ACTIVE_QUESTS_STORAGE = "GS_12"
+DIAMONDS_STORAGE = "GS_14"
+UPCOMING_QUESTS_STORAGE = "GS_15"
+TIMELY_RECORDS_STORAGE = "GS_16"
+TIMELY_STARS_STORAGE = "GS_17"
+GAUNTLETS_RECORDS_STORAGE = "GS_18"
+TREASURE_CHESTS_REWARDS_STORAGE = "GS_19"
+TOTAL_KEYS_STORAGE = "GS_20"
+REWARDS_STORAGE = "GS_21"
+ADS_REWARDS_STORAGE = "GS_22"
+NEW_GAUNTLETS_RECORDS_STORAGE = "GS_23"
+NEW_TIMELY_RECORDS_STORAGE = "GS_24"
+WEEKLY_REWARDS_STORAGE = "GS_25"
+
+WEEKLY = "d"
+
+GS = TypeVar("GS", bound="Storage")
+
+
+@define()
+class Storage(Binary):
+    normal_unverified_coins: Dict[int, CollectedCoins] = field(factory=dict)
+    gauntlet_unverified_coins: Dict[int, CollectedCoins] = field(factory=dict)
+    daily_unverified_coins: Dict[int, CollectedCoins] = field(factory=dict)
+    weekly_unverified_coins: Dict[int, CollectedCoins] = field(factory=dict)
+
+    normal_verified_coins: Dict[int, CollectedCoins] = field(factory=dict)
+    gauntlet_verified_coins: Dict[int, CollectedCoins] = field(factory=dict)
+    daily_verified_coins: Dict[int, CollectedCoins] = field(factory=dict)
+    weekly_verified_coins: Dict[int, CollectedCoins] = field(factory=dict)
+
+    map_packs_stars: Dict[int, int] = field(factory=dict)
+
+    purchased_items: Dict[int, int] = field(factory=dict)
+
+    normal_records: Dict[int, int] = field(factory=dict)
+    normal_stars: Dict[int, int] = field(factory=dict)
+
+    official_records: Dict[int, int] = field(factory=dict)
+
+    small_chests_rewards: Dict[int, RewardItem] = field(factory=dict)
+    large_chests_rewards: Dict[int, RewardItem] = field(factory=dict)
+
+    active_quests: Dict[int, Quest] = field(factory=dict)
+
+    quest_diamonds: Dict[int, int] = field(factory=dict)
+
+    daily_diamonds: Dict[int, int] = field(factory=dict)
+
+    upcoming_quests: Dict[int, Quest] = field(factory=dict)
+
+    daily_records: Dict[int, int] = field(factory=dict)
+    weekly_records: Dict[int, int] = field(factory=dict)
+
+    daily_stars: Dict[int, int] = field(factory=dict)
+    weekly_stars: Dict[int, int] = field(factory=dict)
+
+    gauntlets_records: Dict[int, int] = field(factory=dict)
+
+    treasure_chests_rewards: Dict[int, RewardItem] = field(factory=dict)
+
+    total_keys: int = field(default=DEFAULT_KEYS)
+
+    gauntlets_rewards: Dict[int, RewardItem] = field(factory=dict)
+    official_rewards: Dict[int, RewardItem] = field(factory=dict)
+
+    ads_rewards: Dict[float, RewardItem] = field(factory=dict)
+
+    new_gauntlets_records: Dict[int, int] = field(factory=dict)
+
+    new_daily_records: Dict[int, int] = field(factory=dict)
+    new_weekly_records: Dict[int, int] = field(factory=dict)
+
+    weekly_rewards: Dict[int, RewardItem] = field(factory=dict)
+
+    @classmethod
+    def from_binary(
+        cls: Type[GS],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> GS:
+        ...  # TODO
+
+        return cls()
+
+    def to_binary(
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
+        ...  # TODO
+
+    @classmethod
+    def from_robtop_data(cls: Type[GS], data: StringMapping[Any]) -> GS:  # type: ignore
+        ...  # TODO
+
+        return cls()
+
+    def to_robtop_data(self) -> StringDict[Any]:
+        ...
+
+        return {}
+
+
 SHOW_SONG_MARKERS_BIT = 0b00000001
 SHOW_PROGRESS_BAR_BIT = 0b00000010
 CLICKED_ICONS_BIT = 0b00000100
@@ -2248,28 +3398,6 @@ ACHIVEMENTS = snake_to_camel("reported_achievements")
 COMPLETED = "GS_completed"
 STATISTICS = "GS_value"
 
-UNVERIFIED_COINS = "GS_3"
-VERIFIED_COINS = "GS_4"
-MAP_PACKS_STARS = "GS_5"
-PURCHASED_ICONS = "GS_6"
-NORMAL_RECORDS = "GS_7"
-NORMAL_STARS = "GS_9"
-OFFICIAL_RECORDS = "GS_10"
-CHEST_REWARDS = "GS_11"
-ACTIVE_QUESTS = "GS_12"
-DIAMONDS = "GS_14"
-UPCOMING_QUESTS = "GS_15"
-TIMELY_RECORDS = "GS_16"
-TIMELY_STARS = "GS_17"
-GAUNTLETS_RECORDS = "GS_18"
-TREASURE_CHESTS_REWARDS = "GS_19"
-TOTAL_KEYS = "GS_20"
-REWARDS = "GS_21"
-ADS_REWARDS = "GS_22"
-NEW_GAUNTLETS_RECORDS = "GS_23"
-NEW_TIMELY_RECORDS = "GS_24"
-WEEKLY_REWARDS = "GS_25"
-
 NAME = "GJA_001"
 PASSWORD = "GJA_002"
 ACCOUNT_ID = "GJA_003"
@@ -2353,44 +3481,7 @@ class Database(Binary):
     unlock_values: UnlockValues = field(factory=UnlockValues)
     custom_objects: List[List[Object]] = field(factory=list)
 
-    unverified_coins: Dict[int, CollectedCoins] = field(factory=dict)
-    verified_coins: Dict[int, CollectedCoins] = field(factory=dict)
-
-    map_pack_stars: Dict[int, int] = field(factory=dict)
-
-    purchased_icons: Dict[int, int] = field(factory=dict)
-
-    normal_records: Dict[int, int] = field(factory=dict)
-    normal_stars: Dict[int, int] = field(factory=dict)
-
-    official_records: Dict[int, int] = field(factory=dict)
-
-    chest_rewards: Dict[ChestKey, RewardItem] = field(factory=dict)
-
-    active_quests: Dict[int, Quest] = field(factory=dict)
-
-    diamonds: Dict[DiamondKey, int] = field(factory=dict)
-
-    upcoming_quests: Dict[int, Quest] = field(factory=dict)
-
-    timely_records: Dict[int, int] = field(factory=dict)
-    timely_stars: Dict[int, int] = field(factory=dict)
-
-    gauntlets_records: Dict[int, int] = field(factory=dict)
-
-    treasure_chests_rewards: Dict[int, RewardItem] = field(factory=dict)
-
-    total_keys: int = field(default=DEFAULT_KEYS)
-
-    rewards: Dict[RewardKey, RewardItem] = field(factory=dict)
-
-    ads_rewards: Dict[float, RewardItem] = field(factory=dict)
-
-    new_gauntlets_records: Dict[int, int] = field(factory=dict)
-
-    new_timely_records: Dict[int, int] = field(factory=dict)
-
-    weekly_rewards: Dict[int, RewardItem] = field(factory=dict)
+    storage: Storage = field(factory=Storage)
 
     completed: Completed = field(factory=Completed)
     statistics: Statistics = field(factory=Statistics)
@@ -2497,6 +3588,8 @@ class Database(Binary):
         session_id = main_data.get(SESSION_ID, DEFAULT_ID)
 
         secret_value = main_data.get(SECRET_VALUE, DEFAULT_SECRET_VALUE)
+
+        storage = Storage.from_robtop_data(main_data)
 
         completed_data = main_data.get(COMPLETED, {})
 
@@ -2624,6 +3717,7 @@ class Database(Binary):
             secret_value=secret_value,
             moderator=moderator,
             # ...
+            storage=storage,
             completed=completed,
             statistics=statistics,
             official_levels=official_levels,
@@ -2641,6 +3735,7 @@ class Database(Binary):
             gauntlet_levels=gauntlet_levels,
             saved_folders=saved_folders,
             created_folders=created_folders,
+            # ...
             # levels
             created_levels=created_levels,
             binary_version=binary_version,
@@ -2688,6 +3783,10 @@ class Database(Binary):
         if moderator:
             main_data[MODERATOR] = moderator
 
+        storage_data = self.storage.to_robtop_data()
+
+        main_data.update(storage_data)
+
         completed_data = self.completed.to_robtop_data()
 
         main_data[COMPLETED] = completed_data
@@ -2730,7 +3829,7 @@ class Database(Binary):
 
         main_data[REPORTED] = reported_data
 
-        demon_rated_data = {str(demon_id): one for demon_id in self.demon_rated}
+        demon_rated_data = {str(level_id): one for level_id in self.demon_rated}
 
         main_data[DEMON_RATED] = demon_rated_data
 
@@ -2752,6 +3851,10 @@ class Database(Binary):
         }
 
         main_data[CREATED_FOLDERS] = created_folders_data
+
+        # keybindings_data = self.keybindings.to_robtop_data()
+
+        # main_data[KEYBINDINGS] = keybindings_data
 
         return parser.dump(main_data)
 
@@ -2847,6 +3950,7 @@ class Database(Binary):
         wave_id = reader.read_u16()
         robot_id = reader.read_u16()
         spider_id = reader.read_u16()
+        # swing_copter_id = reader.read_u16()
         color_1_id = reader.read_u16()
         color_2_id = reader.read_u16()
         trail_id = reader.read_u16()
@@ -2912,6 +4016,8 @@ class Database(Binary):
         custom_objects = iter.repeat_exactly_with(
             custom_object_from_binary, custom_objects_length
         ).list()
+
+        storage = Storage.from_binary(binary, order, version)
 
         completed = Completed.from_binary(binary, order, version)
 
@@ -3023,6 +4129,7 @@ class Database(Binary):
             wave_id=wave_id,
             robot_id=robot_id,
             spider_id=spider_id,
+            # swing_copter_id=swing_copter_id,
             color_1_id=color_1_id,
             color_2_id=color_2_id,
             trail_id=trail_id,
@@ -3046,6 +4153,7 @@ class Database(Binary):
             values=values,
             unlock_values=unlock_values,
             custom_objects=custom_objects,
+            storage=storage,
             completed=completed,
             statistics=statistics,
             official_levels=official_levels,
@@ -3194,6 +4302,8 @@ class Database(Binary):
 
             for object in objects:
                 object_to_binary(object, binary, order)
+
+        self.storage.to_binary(binary, order, version)
 
         self.completed.to_binary(binary, order, version)
 

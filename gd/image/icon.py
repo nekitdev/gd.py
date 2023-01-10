@@ -8,7 +8,7 @@ from gd.constants import DEFAULT_GLOW, DEFAULT_ICON_ID
 from gd.enums import IconType
 from gd.image.animation import Animation
 from gd.image.layer import Layer
-from gd.string_utils import concat_under
+from gd.string_utils import concat_under, zero_pad
 
 __all__ = ("Icon",)
 
@@ -29,12 +29,6 @@ ICON_TYPE_TO_NAME = {
     IconType.ROBOT: ROBOT,
     IconType.SPIDER: SPIDER,
 }
-
-ZERO_PAD = "{value:>0{align}}"
-
-
-def zero_pad(align: int, value: int) -> str:
-    return ZERO_PAD.format(value=value, align=align)
 
 
 EXTRA = "extra"

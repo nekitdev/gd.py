@@ -1,12 +1,12 @@
 from abc import abstractmethod
 from enum import Enum, Flag
-from functools import partial
 from io import BytesIO
 from typing import ClassVar, Dict, Iterable, Mapping, Type, TypeVar
 
 from attrs import define, field
 from iters import iter
 from iters.ordered_set import OrderedSet
+from named import get_type_name
 from typing_extensions import Literal, Never, Protocol, TypeGuard, runtime_checkable
 
 from gd.api.hsv import HSV
@@ -213,7 +213,7 @@ DISABLE_GLOW = 96
 SPECIAL_CHECKED = 13
 LINK_ID = 108
 
-OBJECT_STRING = "Object (ID: {object.id}) at ({object.x}, {object.y})"
+OBJECT_STRING = "{object_type} (ID: {object.id}) at ({object.x}, {object.y})"
 
 O = TypeVar("O", bound="Object")
 
@@ -800,7 +800,7 @@ class Object(Binary, RobTop):
         return self.id in SPEED_CHANGE_IDS
 
     def __str__(self) -> str:
-        return OBJECT_STRING.format(object=self)
+        return OBJECT_STRING.format(object_type=get_type_name(self), object=self)
 
 
 PORTAL_IDS = {portal.id for portal in PortalType}
@@ -1208,7 +1208,7 @@ class Text(Object):
     def from_robtop_mapping(cls: Type[S], mapping: Mapping[int, str]) -> S:
         text = super().from_robtop_mapping(mapping)
 
-        content = parse_get_or(decode_base64_string_url_safe, EMPTY, mapping.get(CONTENT))
+        content = parse_get_or(decode_base64_string_url_safe, EMPTY, mapping.get(CONTENT), ignore_errors=True)
 
         text.content = content
 

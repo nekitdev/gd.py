@@ -39,6 +39,7 @@ __all__ = (
     "SearchStrategy",
     "RewardType",
     "ShardType",
+    "ItemType",
     "QuestType",
     "Scene",
     "PlayerColor",
@@ -51,6 +52,7 @@ __all__ = (
     "InstantCountComparison",
     "OrbType",
     "PadType",
+    "MiscType",
     "PickupItemMode",
     "GameMode",
     "LevelType",
@@ -65,6 +67,7 @@ __all__ = (
     "SpecialBlockType",
     "SpecialColorID",
     "TargetType",
+    "SimpleTargetType",
     "TouchToggleMode",
     "TriggerType",
     "ZLayer",
@@ -80,6 +83,8 @@ __all__ = (
     "Orientation",
     "ResponseType",
     "CollectedCoins",
+    "Quality",
+    "Permissions",
 )
 
 
@@ -769,21 +774,6 @@ class RewardType(Enum):
     DEFAULT = GET_INFO
 
 
-class ChestType(Enum):
-    SMALL = 1
-    LARGE = 2
-
-
-class DiamondLocation(Enum):
-    QUEST = 1  # `c`
-    WEEKLY = 2  # `d`
-
-
-class RewardLocation(Enum):
-    GAUNTLET = 1
-    LORE = 2
-
-
 class ShardType(Enum):
     """An enumeration of shard types."""
 
@@ -1290,12 +1280,6 @@ class RotatingObjectType(Enum):
         return self.value  # type: ignore
 
 
-class AnimatedObjectType(Enum):
-    @property
-    def id(self) -> int:
-        return self.value  # type: ignore
-
-
 class PulseTargetType(Enum):
     """An enumeration of pulse target types."""
 
@@ -1594,6 +1578,21 @@ class Filter(Enum):
     CUSTOM = 3
 
     DEFAULT = NONE
+
+    def is_none(self) -> bool:
+        return self is type(self).NONE
+
+    def is_detail(self) -> bool:
+        return self is type(self).DETAIL
+
+    def is_static(self) -> bool:
+        return self is type(self).STATIC
+
+    def is_custom(self) -> bool:
+        return self is type(self).CUSTOM
+
+    def is_default(self) -> bool:
+        return self is type(self).DEFAULT
 
 
 class ByteOrder(Enum):

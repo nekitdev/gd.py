@@ -18,3 +18,5 @@ WRAP = "({})"
 TICK = "`{}`"
 
 MAPS = "{} -> {}"
+
+ZERO_PAD = "{value:>0{align}}"
