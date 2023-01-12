@@ -17,8 +17,9 @@ nav:
     - Tasks: "reference/tasks.md"
     - API:
       - Editor: "reference/api/editor.md"
-      - Folder: "reference/api/folder.md"
+      - Color Channels: "reference/api/color_channels.md"
       - Guidelines: "reference/api/guidelines.md"
+      - Folder: "reference/api/folder.md"
     - Memory:
       - Internal: "reference/memory/internal.md"
   - Changelog: "changelog.md"

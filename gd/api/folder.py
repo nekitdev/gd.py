@@ -21,7 +21,7 @@ class Folder(Binary):
         struct Folder {
             id: u8,
             name_length: u8,
-            name: [u8; name_length],
+            name: [u8; name_length],  // utf-8 string
         }
         ```
     """

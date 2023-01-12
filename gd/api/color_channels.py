@@ -101,17 +101,24 @@ class ColorChannel(Binary, RobTop):
 
         struct CopiedColorChannel {
             hsv: HSV,
-            copy_opacity_and_blending: u8,
+            value: u8,
+            // copy_opacity = value & COPY_OPACITY_BIT == COPY_OPACITY_BIT
+            // blending = value & BLENDING_BIT == BLENDING_BIT
             opacity: Option<f32>,  // if `!copy_opacity`
         }
 
         const BYTE: u32 = 0b11111111;
+        const BITS: u32 = u8::BITS;
 
         const PLAYER_COLOR_MASK: u8 = 0b00000110;
-        const PLAYER_COLOR_SHIFT: u8 = PLAYER_COLOR_MASK.leading_zeros() as u8;
+        const PLAYER_COLOR_SHIFT: u8 = PLAYER_COLOR_MASK.trailing_zeros() as u8;
 
         struct NormalColorChannel {
-            color_player_color_and_blending: u32,
+            value: u32,
+            // player_color_and_blending = (value & BYTE) as u8
+            // player_color = (value & PLAYER_COLOR_MASK) >> PLAYER_COLOR_SHIFT
+            // blending = value & BLENDING_BIT == BLENDING_BIT
+            // color = value >> BITS
             opacity: f32,
         }
         ```
@@ -346,6 +353,16 @@ CCS = TypeVar("CCS", bound="ColorChannels")
 
 
 class ColorChannels(Binary, Dict[int, ColorChannel]):
+    """Represents collections of color channels.
+
+    Binary:
+        ```rust
+        struct ColorChannels {
+            color_channels_length: u16,
+            color_channels: [ColorChannel; color_channels_length],
+        }
+        ```
+    """
     def copy(self: CCS) -> CCS:
         return type(self)(self)
 

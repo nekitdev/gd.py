@@ -258,7 +258,7 @@ def decode_darwin_save(
 
     pad = data[LAST]
 
-    if pad < ECB_PAD:
+    if pad <= ECB_PAD:
         data = data[:-pad]
 
     return data
@@ -277,9 +277,8 @@ def encode_darwin_save(
 
     required = len(data) % pad
 
-    if required:
-        byte = pad - required
-        data += bytes([byte] * byte)
+    byte = pad - required
+    data += bytes([byte] * byte)
 
     return cipher.encrypt(data)
 
