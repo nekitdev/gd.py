@@ -139,6 +139,8 @@ W = TypeVar("W", bound=BinaryWriter)
 
 DEFAULT_ROUNDING = 6
 
+NATIVE_NOT_ALLOWED = "`native` byte order is not allowed"
+
 
 @frozen()
 class Reader(Generic[R]):
@@ -182,9 +184,6 @@ class Reader(Generic[R]):
 
     def read(self, size: int) -> bytes:
         return self.reader.read(size)
-
-
-NATIVE_NOT_ALLOWED = "`native` byte order is not allowed"
 
 
 @frozen()

@@ -24,7 +24,7 @@ const UNKNOWN_BYTE_ORDER: &'static str = "unknown byte order";
 const NOT_ENOUGH_DATA: &'static str = "not enough data";
 
 
-#[py_class(module = "_gd")]
+#[py_class]
 enum ByteOrder {
     Little,
     Big,
@@ -51,7 +51,7 @@ struct Converter {
 }
 
 
-#[py_methods(module = "_gd")]
+#[py_methods]
 impl Converter {
     #[new]
     fn new(order: Option<Py<PyAny>>) -> Self {
@@ -70,7 +70,7 @@ impl Converter {
 }
 
 
-#[py_class]
+#[py_class(module = "_gd")]
 struct Reader {
     reader: Py<PyAny>,
     order: ByteOrder,
@@ -210,7 +210,7 @@ impl Reader {
 }
 
 
-#[py_class]
+#[py_class(module = "_gd")]
 struct Writer {
     writer: Py<PyAny>,
     order: ByteOrder,
