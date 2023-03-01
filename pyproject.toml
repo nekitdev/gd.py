@@ -119,7 +119,7 @@ python = "^3.7"
 optional = true
 
 [tool.poetry.group.check.dependencies]
-mypy = "0.991"
+mypy = "1.0.1"
 types-pillow = "9.3.0.4"
 lxml-stubs = "0.4.0"
 
