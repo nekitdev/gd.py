@@ -120,7 +120,7 @@ optional = true
 
 [tool.poetry.group.check.dependencies]
 mypy = "0.991"
-types-pillow = "9.3.0.4"
+types-pillow = "9.4.0.17"
 lxml-stubs = "0.4.0"
 
 [tool.poetry.group.test]
