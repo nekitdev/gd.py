@@ -105,7 +105,7 @@ optional = true
 
 [tool.poetry.group.format.dependencies]
 black = "22.8.0"
-flake8-pyproject = "1.2.2"
+flake8-pyproject = "1.2.3"
 
 [tool.poetry.group.format.dependencies.flake8]
 version = "6.0.0"
