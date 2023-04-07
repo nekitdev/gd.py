@@ -126,7 +126,7 @@ optional = true
 pytest = "7.2.1"
 pytest-cov = "4.0.0"
 pytest-benchmark = "4.0.0"
-pytest-asyncio = "0.20.3"
+pytest-asyncio = "0.21.0"
 
 [tool.poetry.group.docs]
 optional = true
