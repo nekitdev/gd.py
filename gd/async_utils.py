@@ -3,8 +3,8 @@ from __future__ import annotations
 from asyncio import AbstractEventLoop, all_tasks, get_running_loop, run, wait
 from typing import AsyncIterator, Awaitable, Callable, Type, TypeVar, Union
 
+from async_extensions.collect import collect_iterable_results
 from iters.async_utils import async_iter, async_list
-from iters.concurrent import collect_iterable_with_errors
 from typing_extensions import ParamSpec
 
 from gd.typing import AnyException, AnyIterable, Nullary, is_any_exception, is_instance
@@ -74,7 +74,7 @@ async def run_iterables(
 ) -> AsyncIterator[T]:
     coroutines = [async_list(async_iter(iterable)) async for iterable in async_iter(iterables)]
 
-    results = await collect_iterable_with_errors(coroutines)
+    results = await collect_iterable_results(coroutines)
 
     for result in results:
         if is_any_exception(result):
