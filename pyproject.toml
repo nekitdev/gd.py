@@ -71,7 +71,7 @@ named = ">= 1.1.0"
 
 xor-cipher = ">= 3.0.0"
 
-async-extensions = ">= 1.2.1"
+async-extensions = ">= 1.2.2"
 iters = ">= 0.11.0"
 
 [tool.poetry.dependencies.lxml]
