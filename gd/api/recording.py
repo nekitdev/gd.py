@@ -177,7 +177,7 @@ def recording_item_to_robtop(item: RecordingItem) -> str:
 R = TypeVar("R", bound="Recording")
 
 
-class Recording(Binary, RobTop, ListType, List[RecordingItem]):  # type: ignore
+class Recording(ListType, List[RecordingItem], Binary, RobTop):  # type: ignore
     @staticmethod
     @wrap_iter
     def iter_robtop(string: str) -> Iterator[RecordingItem]:

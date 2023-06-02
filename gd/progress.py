@@ -15,7 +15,7 @@ __all__ = ("Progress",)
 P = TypeVar("P", bound="Progress")
 
 
-class Progress(Binary, RobTop, ListType, List[int]):  # type: ignore
+class Progress(ListType, List[int], Binary, RobTop):  # type: ignore
     @classmethod
     def from_binary(
         cls: Type[P],
