@@ -5,17 +5,19 @@ from builtins import setattr as set_attribute
 from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
 
 from attrs import Attribute, define, field, fields
-from cattrs.gen import make_dict_unstructure_fn, override
-from typing_extensions import TypedDict
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
-from gd.converter import CONVERTER
+from gd.converter import CONVERTER, register_unstructure_hook_omit_client
 from gd.enums import ByteOrder
 from gd.errors import ClientError
+from gd.typing import Data
 
 if TYPE_CHECKING:
     from gd.client import Client
+
+else:
+    Client = Any
 
 __all__ = ("Entity", "EntityData")
 
@@ -24,13 +26,11 @@ E = TypeVar("E", bound="Entity")
 CLIENT_NOT_ATTACHED = "`client` not attached to the entity: {}"
 
 
-class EntityData(TypedDict):
+class EntityData(Data):
     id: int
 
 
-ID = "id"
-
-
+@register_unstructure_hook_omit_client
 @define()
 class Entity(Binary):
     id: int = field()
@@ -86,10 +86,10 @@ class Entity(Binary):
         return self
 
     @classmethod
-    def from_json(cls: Type[E], data: EntityData) -> E:
+    def from_data(cls: Type[E], data: EntityData) -> E:
         return CONVERTER.structure(data, cls)
 
-    def to_json(self) -> EntityData:
+    def into_data(self) -> EntityData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
@@ -111,13 +111,3 @@ class Entity(Binary):
         writer = Writer(binary, order)
 
         writer.write_u32(self.id)
-
-
-if not TYPE_CHECKING:
-    Client = Any
-
-
-CONVERTER.register_unstructure_hook(
-    Entity,
-    make_dict_unstructure_fn(Entity, CONVERTER, client_unchecked=override(omit=True)),
-)

@@ -25,19 +25,27 @@
 from __future__ import annotations
 
 from asyncio import CancelledError, Task, TimeoutError, get_event_loop, sleep
-from builtins import issubclass as is_subclass
-from functools import partial
 from random import Random
 from time import monotonic as clock
-from typing import Any, Awaitable, Callable, Generic, Optional, Type, TypeVar, Union
+from typing import Any, Generic, Optional, Type, TypeVar, Union
 
 from aiohttp import ClientError
 from attrs import define, field
+from funcs.application import partial
+from typing_aliases import (
+    AnyErrorType,
+    AnyErrorTypes,
+    AsyncCallable,
+    AsyncNullary,
+    AsyncUnary,
+    DynamicTuple,
+    Nullary,
+    StringDict,
+)
 from typing_extensions import ParamSpec
 
 from gd.constants import DEFAULT_RECONNECT
 from gd.errors import GDError
-from gd.typing import AnyException, DynamicTuple, Nullary, StringDict, Unary
 
 __all__ = ("ExponentialBackoff", "Loop", "loop")
 
@@ -62,7 +70,7 @@ DEFAULT_LIMIT = 10
 
 @define()
 class ExponentialBackoff:
-    r"""An implementation of the *exponential backoff* algorithm.
+    """Implements the *exponential backoff* algorithm.
 
     Provides a convenient interface to implement an exponential backoff
     for reconnecting or retrying transmissions in a distributed network.
@@ -70,8 +78,8 @@ class ExponentialBackoff:
     Once instantiated, the delay method will return the next interval to
     wait for when retrying a connection or transmission. The maximum
     delay increases exponentially with each retry up to a maximum of
-    $m \cdot b^l$ (where $m$ is `multiply`, $b$ is `base` and $l$ is `limit`),
-    and is reset if no more attempts are needed in a period of $m \cdot b^{l + 1}$ seconds.
+    $m \\cdot b^l$ (where $m$ is `multiply`, $b$ is `base` and $l$ is `limit`),
+    and is reset if no more attempts are needed in a period of $m \\cdot b^{l + 1}$ seconds.
     """
 
     multiply: float = field(default=DEFAULT_MULTIPLY)
@@ -93,14 +101,14 @@ class ExponentialBackoff:
         return self.multiply * pow(self.base, self.limit + 1)
 
     def delay(self) -> float:
-        r"""Computes the next delay.
+        """Computes the next delay.
 
         Returns the next delay to wait according to the exponential
-        backoff algorithm. This is a value between $0$ and $m \cdot b^e$
+        backoff algorithm. This is a value between $0$ and $m \\cdot b^e$
         where $e$ (`exponent`) starts off at $0$ and is incremented at every
         invocation of this method up to a maximum of $l$ (`limit`).
 
-        If a period of more than $m \cdot b^{l + 1}$ has passed since the last
+        If a period of more than $m \\cdot b^{l + 1}$ has passed since the last
         retry, the `exponent` ($e$) is reset to $0$.
         """
         called = self._clock()
@@ -120,24 +128,25 @@ class ExponentialBackoff:
 P = ParamSpec("P")
 S = TypeVar("S")
 
-LoopFunction = Union[Nullary[Awaitable[None]], Unary[S, Awaitable[None]]]
+LoopFunction = Union[AsyncNullary[None], AsyncUnary[S, None]]
+
 
 TASK_ALREADY_LAUNCHED = "task is already launched and has not completed yet"
 
 DEFAULT_DELAY = 0.0
 
 F = TypeVar("F", bound=LoopFunction[Any])
-L = TypeVar("L", bound="Loop[Any]")
+L = TypeVar("L", bound="Loop[...]")
 
 
 @define()
 class Loop(Generic[P]):
-    """A background task helper that abstracts the loop and reconnection logic.
+    """Abstracts away event loop handling and reconnection logic.
 
     The main interface to create this is through [`loop`][gd.tasks.loop].
     """
 
-    function: Callable[P, Awaitable[None]] = field()
+    function: AsyncCallable[P, None] = field()
 
     delay: float = field(default=DEFAULT_DELAY)
 
@@ -149,7 +158,7 @@ class Loop(Generic[P]):
 
     _current_count: int = field(default=0, init=False)
 
-    _error_types: DynamicTuple[Type[AnyException]] = field(
+    _error_types: AnyErrorTypes = field(
         default=(OSError, GDError, ClientError, TimeoutError),
         init=False,
     )
@@ -295,16 +304,13 @@ class Loop(Generic[P]):
             self._task.add_done_callback(restart_when_over)  # type: ignore
             self._task.cancel()  # type: ignore
 
-    def add_error_type(self, error_type: Type[AnyException]) -> None:
-        if not is_subclass(error_type, AnyException):
-            raise TypeError  # TODO: message?
-
+    def add_error_type(self, error_type: AnyErrorType) -> None:
         self._error_types = (*self._error_types, error_type)
 
     def clear_error_types(self) -> None:
         self._error_types = ()
 
-    def remove_error_type(self, error_type: Type[AnyException]) -> bool:
+    def remove_error_type(self, error_type: AnyErrorType) -> bool:
         error_types = self._error_types
 
         length = len(error_types)
@@ -340,6 +346,21 @@ DEFAULT_HOURS = 0.0
 DEFAULT_DAYS = 0.0
 
 
+@define()
+class CreateLoop:
+    delay: float = DEFAULT_DELAY
+    count: Optional[int] = None
+    reconnect: bool = DEFAULT_RECONNECT
+
+    def __call__(self, function: AsyncCallable[P, None]) -> Loop[P]:
+        return Loop(
+            function=function,
+            delay=self.delay,
+            count=self.count,
+            reconnect=self.reconnect,
+        )
+
+
 def loop(
     *,
     seconds: float = DEFAULT_SECONDS,
@@ -348,19 +369,9 @@ def loop(
     days: float = DEFAULT_DAYS,
     count: Optional[int] = None,
     reconnect: bool = DEFAULT_RECONNECT,
-) -> Unary[Callable[P, Awaitable[None]], Loop[P]]:
-    """..."""
-
+) -> CreateLoop:
     delay = (
         seconds + minutes * MINUTES_TO_SECONDS + hours * HOURS_TO_SECONDS + days * DAYS_TO_SECONDS
     )
 
-    def wrap(function: Callable[P, Awaitable[None]]) -> Loop[P]:
-        return Loop(
-            function=function,
-            delay=delay,
-            count=count,
-            reconnect=reconnect,
-        )
-
-    return wrap
+    return CreateLoop(delay=delay, count=count, reconnect=reconnect)

@@ -1,13 +1,14 @@
 import re
-from datetime import datetime as DateTime
-from datetime import timedelta as Duration
-from datetime import timezone as TimeZone
-from typing import Iterator, Optional, Type
+from typing import Iterator, Type
+
+from pendulum import UTC, DateTime, Duration, duration, from_timestamp, now, parse
+from typing_aliases import is_instance
 
 from gd.constants import EMPTY
 from gd.converter import CONVERTER
 from gd.errors import InternalError
-from gd.models_utils import TIME_SEPARATOR, concat_time
+from gd.models_constants import TIME_SEPARATOR
+from gd.models_utils import concat_time
 from gd.string_constants import COLON, COMMA, DOT
 from gd.string_utils import clear_whitespace, concat_pipe, tick
 
@@ -19,32 +20,22 @@ __all__ = (
     "date_time_to_human",
     # parse duration
     "parse_duration",
-    # UTC things
-    "UTC",
+    # UTC functions
+    "utc_from_timestamp",
     "utc_now",
-    "utc_offset",
-    # date, time and duration
-    "DateTime",
-    "Duration",
-    "TimeZone",
 )
-
-UTC = TimeZone.utc
 
 
 def utc_from_timestamp(timestamp: float) -> DateTime:
-    return DateTime.fromtimestamp(timestamp, UTC)
+    return from_timestamp(timestamp, UTC)
 
 
 def utc_now() -> DateTime:
-    return DateTime.now(UTC)
+    return now(UTC)
 
 
-def utc_offset(date_time: DateTime) -> Optional[Duration]:
-    return date_time.utcoffset()
-
-
-MONTH_DAYS = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)  # January to December
+# month days: Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
+MONTH_DAYS = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
 AVERAGE_MONTH_DAYS = sum(MONTH_DAYS) / len(MONTH_DAYS)
 
@@ -139,9 +130,8 @@ MINUTES = "minutes"
 HOURS = "hours"
 DAYS = "days"
 
-
 DURATION_PATTERN = rf"""
-   (?:(?P<{DAYS}>{DIGIT}+){DAY}{S}{COMMA})?
+   (?:(?P<{DAYS}>{DIGIT}+){DAY}{S}?{COMMA})?
    (?P<{HOURS}>{DIGIT}{{1,2}})
    {COLON}
    (?P<{MINUTES}>{DIGIT}{{2}})
@@ -200,7 +190,7 @@ def parse_duration(string: str) -> Duration:
     else:
         milliseconds = int(milliseconds_option)
 
-    return Duration(
+    return duration(
         days=days,
         hours=hours,
         minutes=minutes,
@@ -210,15 +200,23 @@ def parse_duration(string: str) -> Duration:
 
 
 def dump_duration(duration: Duration) -> str:
-    return str(duration)
+    return str(duration.as_timedelta())  # type: ignore
+
+
+NOT_DATE_TIME = "{} does not represent date/time"
 
 
 def parse_date_time(string: str) -> DateTime:
-    return DateTime.fromisoformat(string)
+    result = parse(string)
+
+    if is_instance(result, DateTime):
+        return result
+
+    raise ValueError(NOT_DATE_TIME.format(tick(string)))
 
 
 def dump_date_time(date_time: DateTime) -> str:
-    return date_time.isoformat()
+    return str(date_time)
 
 
 DOES_NOT_MATCH_HUMAN_TIME = "{} does not match human time pattern"
@@ -252,7 +250,7 @@ def duration_from_human(string: str, simple: bool = DEFAULT_SIMPLE) -> Duration:
     is_now = match.group(NOW) is not None
 
     if is_now:
-        return Duration()
+        return duration()
 
     is_future = match.group(FUTURE) is not None
     is_past = match.group(PAST) is not None
@@ -281,13 +279,13 @@ def duration_from_human(string: str, simple: bool = DEFAULT_SIMPLE) -> Duration:
 
         seconds += name_to_seconds[name] * duration_seconds
 
-    return Duration(seconds=seconds)
+    return duration(seconds=seconds)
 
 
 def duration_to_human(
     duration: Duration, distance_only: bool = DEFAULT_DISTANCE_ONLY, simple: bool = DEFAULT_SIMPLE
 ) -> str:
-    seconds = round(duration.total_seconds())
+    seconds = round(duration.total_seconds())  # type: ignore
 
     return string_duration(seconds, distance_only=distance_only, simple=simple)
 
@@ -317,6 +315,8 @@ def string_duration(
 
 HUMAN_DURATION_FORMAT = "{} {}{}"
 
+ONE = 1
+
 
 def iter_duration(seconds: int) -> Iterator[str]:
     if not seconds:
@@ -327,6 +327,8 @@ def iter_duration(seconds: int) -> Iterator[str]:
 
     human_duration = HUMAN_DURATION_FORMAT
 
+    one = ONE
+
     empty = EMPTY
     s = S
 
@@ -334,7 +336,7 @@ def iter_duration(seconds: int) -> Iterator[str]:
         duration, absolute_seconds = divmod(absolute_seconds, unit_seconds)
 
         if duration:
-            end = empty if duration == 1 else s
+            end = empty if duration == one else s
 
             yield human_duration.format(duration, name, end)
 
@@ -343,18 +345,18 @@ def iter_duration(seconds: int) -> Iterator[str]:
 
 
 def date_time_from_human(string: str, simple: bool = DEFAULT_SIMPLE) -> DateTime:
-    return utc_now() + duration_from_human(string, simple=simple)
+    return utc_now() + duration_from_human(string, simple=simple)  # type: ignore
 
 
 def date_time_to_human(
     date_time: DateTime, distance_only: bool = DEFAULT_DISTANCE_ONLY, simple: bool = DEFAULT_SIMPLE
 ) -> str:
-    now = utc_now()
+    timezone = date_time.timezone
 
-    offset = utc_offset(date_time)
+    if timezone is None:
+        timezone = UTC
 
-    if offset is not None:
-        now += offset
+    now = utc_now().in_timezone(timezone)
 
     return duration_to_human(date_time - now, distance_only=distance_only, simple=simple)
 

@@ -3,10 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, AsyncIterator, Dict, Iterable, Optional, Type, TypeVar
 
 from attrs import define, field
-from cattrs.gen import make_dict_unstructure_fn, override
-from iters import async_iter, iter
+from iters.iters import iter
 from iters.async_iters import wrap_async_iter
-from typing_extensions import TypedDict
 
 from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
@@ -41,7 +39,7 @@ from gd.constants import (
     ROBTOP_NAME,
     UNKNOWN,
 )
-from gd.converter import CONVERTER
+from gd.converter import CONVERTER, register_unstructure_hook_omit_client
 from gd.date_time import DateTime, utc_from_timestamp
 from gd.entity import Entity, EntityData
 from gd.enums import (
@@ -130,6 +128,7 @@ class UserData(EntityData):
     banned: bool
 
 
+@register_unstructure_hook_omit_client
 @define()
 class User(Entity):
     name: str = field(eq=False)
@@ -168,10 +167,10 @@ class User(Entity):
     banned: bool = field(default=DEFAULT_BANNED, eq=False)
 
     @classmethod
-    def from_json(cls: Type[U], data: UserData) -> U:  # type: ignore
+    def from_data(cls: Type[U], data: UserData) -> U:  # type: ignore
         return CONVERTER.structure(data, cls)
 
-    def to_json(self) -> UserData:
+    def into_data(self) -> UserData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
@@ -702,14 +701,15 @@ LU = TypeVar("LU", bound="LeaderboardUser")
 
 
 @define()
+@register_unstructure_hook_omit_client
 class LeaderboardUser(User):
     place: int = field(default=DEFAULT_PLACE, eq=False)
 
     @classmethod
-    def from_json(cls: Type[LU], data: LeaderboardUserData) -> LU:  # type: ignore
+    def from_data(cls: Type[LU], data: LeaderboardUserData) -> LU:  # type: ignore
         return CONVERTER.structure(data, cls)
 
-    def to_json(self) -> LeaderboardUserData:
+    def into_data(self) -> LeaderboardUserData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
@@ -777,6 +777,7 @@ LLU = TypeVar("LLU", bound="LevelLeaderboardUser")
 
 
 @define()
+@register_unstructure_hook_omit_client
 class LevelLeaderboardUser(LeaderboardUser):
     coins: int = field(default=DEFAULT_COINS, eq=False)
     record: int = field(default=DEFAULT_RECORD, eq=False)
@@ -784,10 +785,10 @@ class LevelLeaderboardUser(LeaderboardUser):
     recorded_at: Optional[DateTime] = None
 
     @classmethod
-    def from_json(cls: Type[LLU], data: LevelLeaderboardUserData) -> LLU:  # type: ignore
+    def from_data(cls: Type[LLU], data: LevelLeaderboardUserData) -> LLU:  # type: ignore
         return CONVERTER.structure(data, cls)
 
-    def to_json(self) -> LevelLeaderboardUserData:
+    def into_data(self) -> LevelLeaderboardUserData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
@@ -860,22 +861,6 @@ class LevelLeaderboardUser(LeaderboardUser):
             timestamp = 0.0
 
         else:
-            timestamp = recorded_at.timestamp()
+            timestamp = recorded_at.timestamp()  # type: ignore
 
         writer.write_f64(timestamp)
-
-
-CONVERTER.register_unstructure_hook(
-    User,
-    make_dict_unstructure_fn(User, CONVERTER, client_unchecked=override(omit=True)),
-)
-
-CONVERTER.register_unstructure_hook(
-    LeaderboardUser,
-    make_dict_unstructure_fn(LeaderboardUser, CONVERTER, client_unchecked=override(omit=True)),
-)
-
-CONVERTER.register_unstructure_hook(
-    LevelLeaderboardUser,
-    make_dict_unstructure_fn(LevelLeaderboardUser, CONVERTER, client_unchecked=override(omit=True)),
-)

@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import BinaryIO, Optional, Type, TypeVar
 
 from attrs import define
-from cattrs.gen import make_dict_unstructure_fn, override
-from iters import iter
+from iters.iters import iter
+from typing_aliases import IntoPath, Predicate
 from yarl import URL
 
 from gd.artist import Artist, ArtistData
@@ -22,7 +22,7 @@ from gd.constants import (
     EMPTY,
     UNKNOWN,
 )
-from gd.converter import CONVERTER
+from gd.converter import CONVERTER, register_unstructure_hook_omit_client
 from gd.entity import Entity, EntityData
 from gd.enums import ByteOrder
 from gd.errors import MissingAccess
@@ -34,7 +34,6 @@ from gd.official_songs import (
     OfficialSong,
     default_official_song,
 )
-from gd.typing import IntoPath, Predicate
 
 __all__ = ("Song",)
 
@@ -73,6 +72,7 @@ class SongData(EntityData):
     download_url: Optional[str]
 
 
+@register_unstructure_hook_omit_client
 @define()
 class Song(Entity):
     """Represents *Geometry Dash* and *Newgrounds* songs.
@@ -111,10 +111,10 @@ class Song(Entity):
         return URL(NEWGROUNDS_SONG.format(self.id))
 
     @classmethod
-    def from_json(cls: Type[S], data: SongData) -> S:  # type: ignore
+    def from_data(cls: Type[S], data: SongData) -> S:  # type: ignore
         return CONVERTER.structure(data, cls)
 
-    def to_json(self) -> SongData:
+    def into_data(self) -> SongData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
@@ -235,10 +235,10 @@ class Song(Entity):
             if name is None:
                 raise LookupError(EXPECTED_QUERY)
 
-            official_song = iter(official_songs).find_or_none(by_name(name))
+            official_song = iter(official_songs).find(by_name(name)).extract()
 
         else:
-            official_song = iter(official_songs).find_or_none(by_id(id))
+            official_song = iter(official_songs).find(by_id(id)).extract()
 
         if official_song is None:
             if return_default:
@@ -319,9 +319,3 @@ def parse_url_ignore_type(string: str, type: Type[URL]) -> URL:
 
 CONVERTER.register_unstructure_hook(URL, dump_url)
 CONVERTER.register_structure_hook(URL, parse_url_ignore_type)
-
-
-CONVERTER.register_unstructure_hook(
-    Song,
-    make_dict_unstructure_fn(Song, CONVERTER, client_unchecked=override(omit=True)),
-)

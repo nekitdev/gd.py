@@ -1,9 +1,8 @@
-from abc import abstractmethod
+from abc import abstractmethod as required
 from typing import Any, Type, TypeVar
 
+from typing_aliases import is_instance
 from typing_extensions import Protocol, TypeGuard, runtime_checkable
-
-from gd.typing import is_instance
 
 __all__ = ("RobTop", "FromRobTop", "ToRobTop", "is_from_robtop", "is_to_robtop")
 
@@ -13,7 +12,7 @@ F = TypeVar("F", bound="FromRobTop")
 @runtime_checkable
 class FromRobTop(Protocol):
     @classmethod
-    @abstractmethod
+    @required
     def from_robtop(cls: Type[F], string: str) -> F:
         ...
 
@@ -28,7 +27,7 @@ def is_from_robtop(item: Any) -> TypeGuard[FromRobTop]:
 
 @runtime_checkable
 class ToRobTop(Protocol):
-    @abstractmethod
+    @required
     def to_robtop(self) -> str:
         ...
 

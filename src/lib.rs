@@ -21,6 +21,7 @@ const WRITE: &'static str = "write";
 const VALUE: &'static str = "value";
 
 const UNKNOWN_BYTE_ORDER: &'static str = "unknown byte order";
+const NATIVE_NOT_ALLOWED: &'static str = "`native` byte order is not allowed";
 const NOT_ENOUGH_DATA: &'static str = "not enough data";
 
 
@@ -39,6 +40,7 @@ impl ByteOrder {
         match string {
             "<" => Ok(Self::Little),
             ">" => Ok(Self::Big),
+            "=" => Err(PyValueError::new_err(NATIVE_NOT_ALLOWED)),
             _ => Err(PyValueError::new_err(UNKNOWN_BYTE_ORDER)),
         }
     }

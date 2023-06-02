@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from functools import partial
 from typing import TYPE_CHECKING, Iterable, Optional, Type, TypeVar
 
 from attrs import define, field
-from iters import iter
+from iters.iters import iter
 from iters.ordered_set import OrderedSet, ordered_set
 from typing_extensions import TypedDict
 
@@ -253,9 +252,9 @@ class Filters(Binary):
     ) -> F:
         return cls(
             strategy=strategy,
-            difficulties=difficulties,  # type: ignore
-            lengths=lengths,  # type: ignore
-            completed_levels=completed_levels,  # type: ignore
+            difficulties=difficulties,
+            lengths=lengths,
+            completed_levels=completed_levels,
             completed=completed,
             require_coins=require_coins,
             rate_filter=rate_filter,
@@ -263,7 +262,7 @@ class Filters(Binary):
             song_id=song_id,
             custom_song=custom_song,
             require_original=require_original,
-            followed=followed,  # type: ignore
+            followed=followed,
         )
 
     @classmethod

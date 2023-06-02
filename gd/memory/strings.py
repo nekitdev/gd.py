@@ -14,7 +14,7 @@ from gd.memory.data import U8 as Byte
 from gd.memory.data import Data, Int, USize
 from gd.memory.fields import Field
 from gd.memory.pointers import MutPointerData
-from gd.memory.utils import closest_power_of_two
+from gd.memory.utils import next_power_of_two
 from gd.platform import PlatformConfig
 
 if TYPE_CHECKING:
@@ -25,13 +25,13 @@ __all__ = ("String", "OldString", "StringData")
 NULL_BYTE = bytes(1)
 
 
-@union()  # type: ignore
+@union()
 class StringContent(Union):
     inline = Field(MutArrayData(Byte(), CONTENT_LENGTH))
     pointer = Field(MutPointerData(MutArrayData(Byte())))
 
 
-@struct()  # type: ignore
+@struct()
 class String(Struct):
     content = Field(UnionData(StringContent))
     length = Field(USize())
@@ -82,7 +82,7 @@ class String(Struct):
                 self.state.write_at(content.inline.address, data)  # optimized
 
             else:
-                size = closest_power_of_two(size)
+                size = next_power_of_two(size)
 
                 address = self.state.allocate(size)
 
@@ -99,14 +99,14 @@ class String(Struct):
             return self.state.write_at(content.pointer.value_address, data)
 
 
-@struct()  # type: ignore
+@struct()
 class OldStringData(Struct):
     length = Field(USize())
     capacity = Field(USize())
     ref_count = Field(Int())
 
 
-@struct()  # type: ignore
+@struct()
 class OldString(Struct):
     pointer = Field(MutPointerData(MutArrayData(Byte())))
 
@@ -153,7 +153,7 @@ class OldString(Struct):
         offset = string_data.SIZE
 
         if length > capacity:
-            size = closest_power_of_two(size + offset)
+            size = next_power_of_two(size + offset)
 
             address = self.state.allocate(size)
 

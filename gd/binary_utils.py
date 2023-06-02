@@ -4,6 +4,8 @@ from struct import pack, unpack
 from typing import Generic, TypeVar
 
 from attrs import Attribute, field, frozen
+from iters.utils import unpack_unary_tuple
+from typing_aliases import Binary
 
 from gd.binary import BinaryReader, BinaryWriter
 from gd.binary_constants import (
@@ -30,8 +32,6 @@ from gd.binary_constants import (
     U64_SIZE,
 )
 from gd.enums import ByteOrder
-from gd.iter_utils import unpack_unary_tuple
-from gd.typing import Binary
 
 __all__ = (
     # reader, writer
@@ -137,8 +137,6 @@ to_f64 = create_to_float(F64)
 R = TypeVar("R", bound=BinaryReader)
 W = TypeVar("W", bound=BinaryWriter)
 
-DEFAULT_ROUNDING = 6
-
 NATIVE_NOT_ALLOWED = "`native` byte order is not allowed"
 
 
@@ -176,8 +174,8 @@ class Reader(Generic[R]):
     def read_u64(self) -> int:
         return from_u64(self.read(U64_SIZE), self.order)
 
-    def read_f32(self, rounding: int = DEFAULT_ROUNDING) -> float:
-        return round(from_f32(self.read(F32_SIZE), self.order), rounding)
+    def read_f32(self) -> float:
+        return from_f32(self.read(F32_SIZE), self.order)
 
     def read_f64(self) -> float:
         return from_f64(self.read(F64_SIZE), self.order)
@@ -231,7 +229,7 @@ class Writer(Generic[W]):
 
 
 try:
-    from _gd import Reader, Writer
+    from _gd import Reader, Writer  # noqa
 
 except ImportError:
     pass

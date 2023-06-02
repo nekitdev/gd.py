@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from abc import abstractmethod
+from abc import abstractmethod as required
+from asyncio import get_running_loop
 from traceback import print_exception
 from typing import (
     TYPE_CHECKING,
@@ -8,17 +9,17 @@ from typing import (
     Awaitable,
     Hashable,
     Iterable,
-    Iterator,
     List,
     Optional,
     TypeVar,
 )
 
 from attrs import define, field
-from iters import wrap_iter
+from funcs.functions import awaiting
+from iters.iters import Iter, iter
+from typing_aliases import Nullary, Predicate
 from typing_extensions import Protocol
 
-from gd.async_utils import awaiting, get_running_loop
 from gd.comments import LevelComment, UserComment
 from gd.constants import (
     DEFAULT_COUNT,
@@ -34,7 +35,6 @@ from gd.friend_request import FriendRequest
 from gd.level import Level
 from gd.message import Message
 from gd.tasks import Loop
-from gd.typing import Nullary
 from gd.users import User
 
 __all__ = (
@@ -60,15 +60,17 @@ if TYPE_CHECKING:
 Q = TypeVar("Q", bound=Hashable)
 
 
-@wrap_iter
-def differ_iterator(before: Iterable[Q], after: Iterable[Q]) -> Iterator[Q]:
+def not_in_before_set(before: Iterable[Q]) -> Predicate[Q]:
     before_set = set(before)
 
-    for item in after:
-        if item in before_set:
-            break
+    def predicate(item: Q) -> bool:
+        return item not in before_set
 
-        yield item
+    return predicate
+
+
+def differ_iterator(before: Iterable[Q], after: Iterable[Q]) -> Iter[Q]:
+    return iter(after).take_while(not_in_before_set(before))
 
 
 def differ(before: Iterable[Q], after: Iterable[Q]) -> List[Q]:
@@ -84,7 +86,7 @@ class ListenerProtocol(Protocol):
     _running: bool
     _loop: Optional[Loop[[]]]
 
-    @abstractmethod
+    @required
     async def step(self) -> None:
         ...
 
@@ -499,6 +501,9 @@ class UserLevelListener(UserBasedListener):
         difference = differ(user_levels_cache, user_levels)
 
         self.user_levels_cache = user_levels
+
+        if difference and self.update:
+            await user.update()
 
         client = self.client
 

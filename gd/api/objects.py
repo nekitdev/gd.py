@@ -1,12 +1,13 @@
-from abc import abstractmethod
+from abc import abstractmethod as required
 from enum import Enum, Flag
 from io import BytesIO
 from typing import ClassVar, Dict, Iterable, Mapping, Type, TypeVar
 
 from attrs import define, field
-from iters import iter
+from iters.iters import iter
 from iters.ordered_set import OrderedSet
 from named import get_type_name
+from typing_aliases import is_instance
 from typing_extensions import Literal, Never, Protocol, TypeGuard, runtime_checkable
 
 from gd.api.hsv import HSV
@@ -57,7 +58,6 @@ from gd.models_utils import (
     split_object,
 )
 from gd.robtop import RobTop
-from gd.typing import is_instance
 
 __all__ = (
     "Groups",
@@ -172,7 +172,7 @@ DEFAULT_SPECIAL_CHECKED = False
 G = TypeVar("G", bound="Groups")
 
 
-class Groups(RobTop, OrderedSet[int]):
+class Groups(OrderedSet[int], RobTop):
     @classmethod
     def from_robtop(cls: Type[G], string: str) -> G:
         return iter(split_groups(string)).map(int).collect(cls)
@@ -809,7 +809,7 @@ SPEED_CHANGE_IDS = {speed_change.id for speed_change in SpeedChangeType}
 
 @runtime_checkable
 class Compatibility(Protocol):
-    @abstractmethod
+    @required
     def migrate(self) -> Object:
         ...
 
@@ -1208,7 +1208,9 @@ class Text(Object):
     def from_robtop_mapping(cls: Type[S], mapping: Mapping[int, str]) -> S:
         text = super().from_robtop_mapping(mapping)
 
-        content = parse_get_or(decode_base64_string_url_safe, EMPTY, mapping.get(CONTENT), ignore_errors=True)
+        content = parse_get_or(
+            decode_base64_string_url_safe, EMPTY, mapping.get(CONTENT), ignore_errors=True
+        )
 
         text.content = content
 

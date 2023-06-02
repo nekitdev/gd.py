@@ -19,7 +19,7 @@ SONG = "{}.mp3"
 async def get_song(song_id: int) -> SongData:
     song = await client.get_song(song_id)
 
-    return song.to_json()
+    return song.into_data()
 
 
 @v1.get("/songs/{song_id}/download", summary="Downloads the song by the ID.")

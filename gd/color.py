@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from colorsys import hsv_to_rgb, rgb_to_hsv
-from typing import ClassVar, Dict, Iterator, List, Optional, Tuple, Type, TypeVar
+from typing import ClassVar, Dict, Iterator, List, Optional, Type, TypeVar
 
-from attrs import Attribute, field, frozen
-from iters import iter, wrap_iter
+from attrs import frozen
+from colors import Color as ColorCore
+from iters.iters import iter, wrap_iter
 
-from gd.binary_constants import BITS, BYTE, DOUBLE_BITS
-from gd.constants import DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID, EMPTY
+from gd.constants import DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID
 from gd.models_constants import COLOR_SEPARATOR
 from gd.models_utils import concat_color, split_color
 from gd.robtop import RobTop
@@ -17,43 +16,11 @@ __all__ = ("Color",)
 
 C = TypeVar("C", bound="Color")
 
-BLACK = 0x000000
-WHITE = 0xFFFFFF
-
-
-def float_to_byte(value: float) -> int:
-    return int(value * BYTE)
-
-
-def byte_to_float(value: int) -> float:
-    return value / BYTE
-
-
-HEX_BASE = 16
-HEX_PREFIX = "0x"
-HEX_VALUE_PREFIX = "#"
-
-HEX_FORMAT = "{:0>6X}"
-
-HEX = HEX_VALUE_PREFIX + HEX_FORMAT
-HEX_VALUE = HEX_PREFIX + HEX_FORMAT
-
-hex_string = HEX.format
-hex_value = HEX_VALUE.format
-
-ANSI_RGB = "\x1b[38;2;{};{};{}m"
-ANSI_RESET = "\x1b[0m"
-
-ID_NOT_PRESENT = "color ID not present: {}"
-
-VALUE_TOO_LARGE = "color value too large: {}"
-VALUE_TOO_SMALL = "color value too small: {}"
+ID_NOT_PRESENT = "color with ID {} is not present"
 
 
 @frozen(order=True)
-class Color(RobTop):
-    value: int = field(default=BLACK, repr=hex_value)
-
+class Color(RobTop, ColorCore):
     ID_TO_VALUE: ClassVar[Dict[int, int]] = {
         0: 0x7DFF00,
         1: 0x00FF00,
@@ -101,143 +68,21 @@ class Color(RobTop):
 
     VALUE_TO_ID: ClassVar[Dict[int, int]] = {color: id for id, color in ID_TO_VALUE.items()}
 
-    @value.validator
-    def check_value(self, attribute: Attribute[int], value: int) -> None:
-        if value > WHITE:
-            raise ValueError(VALUE_TOO_LARGE.format(tick(hex(value))))
-
-        if value < BLACK:
-            raise ValueError(VALUE_TOO_SMALL.format(tick(hex(value))))
-
-    def get_byte(self, index: int) -> int:
-        """Gets the byte at `index`.
-
-        Arguments:
-            index: The index to get the byte at.
-
-        Returns:
-            The byte at `index`.
-        """
-        return (self.value >> (BITS * index)) & BYTE
-
-    def __str__(self) -> str:
-        return self.to_hex()
-
-    def __hash__(self) -> int:
-        return self.value
-
     @property
     def id(self) -> Optional[int]:
-        """An in-game ID of the color (if present)."""
+        """The in-game ID of the color (if present)."""
         return self.VALUE_TO_ID.get(self.value)
 
-    @property
-    def red(self) -> int:
-        """The red component of the color."""
-        return self.get_byte(2)
-
-    @property
-    def green(self) -> int:
-        """The green component of the color."""
-        return self.get_byte(1)
-
-    @property
-    def blue(self) -> int:
-        """The blue component of the color."""
-        return self.get_byte(0)
-
-    r, g, b = red, green, blue
-
-    def to_hex(self) -> str:
-        """Returns the color in hex format.
-
-        Returns:
-            The string representing the color.
-        """
-        return hex_string(self.value)
-
-    def to_hex_value(self) -> str:
-        """Returns the color in hex value format.
-
-        Returns:
-            The string representing the color.
-        """
-        return hex_value(self.value)
-
-    def to_rgb(self) -> Tuple[int, int, int]:
-        """Returns the `(r, g, b)` tuple representing the color.
-
-        Returns:
-            The `(r, g, b)` tuple.
-        """
-        return (self.red, self.green, self.blue)
-
-    def to_rgba(self, alpha: Optional[int] = None) -> Tuple[int, int, int, int]:
-        """Returns the `(r, g, b, a)` tuple representing the color.
-
-        Arguments:
-            alpha: The alpha component of the color to use.
-
-        Returns:
-            The `(r, g, b, a)` tuple.
-        """
-        byte = BYTE
-
-        if alpha is None:
-            alpha = byte
-
-        return (self.red, self.green, self.blue, alpha & byte)
-
-    def to_hsv(self) -> Tuple[float, float, float]:
-        """Returns the `(h, s, v)` tuple representing the color.
-
-        Returns:
-            The `(h, s, v)` tuple.
-        """
-        r, g, b = iter(self.to_rgb()).map(byte_to_float).tuple()
-
-        return rgb_to_hsv(r, g, b)
-
-    def ansi_escape(self, string: Optional[str] = None) -> str:
-        """Colors the `string` (or [`self.to_hex()`][gd.color.Color.to_hex]) using ANSI escapes.
-
-        Returns:
-            The colored `string` (or [`self.to_hex()`][gd.color.Color.to_hex]).
-        """
-        if string is None:
-            string = self.to_hex()
-
-        color = ANSI_RGB.format(self.red, self.green, self.blue)
-        reset = ANSI_RESET
-
-        return color + string + reset
-
-    paint = ansi_escape
-
     @classmethod
-    def from_json(cls: Type[C], data: int) -> C:
+    def from_data(cls: Type[C], data: int) -> C:
         return cls(data)
 
-    def to_json(self) -> int:
+    def into_data(self) -> int:
         return self.value
 
     @classmethod
     def default(cls: Type[C]) -> C:
         return cls.white()
-
-    @classmethod
-    def black(cls: Type[C]) -> C:
-        return cls(BLACK)
-
-    @classmethod
-    def white(cls: Type[C]) -> C:
-        return cls(WHITE)
-
-    def is_black(self) -> bool:
-        return self.value == BLACK
-
-    def is_white(self) -> bool:
-        return self.value == WHITE
 
     @classmethod
     def default_color_1(cls: Type[C]) -> C:
@@ -246,46 +91,6 @@ class Color(RobTop):
     @classmethod
     def default_color_2(cls: Type[C]) -> C:
         return cls.with_id(DEFAULT_COLOR_2_ID)
-
-    @classmethod
-    def from_hex(cls: Type[C], hex_string: str) -> C:
-        """Converts a `hex_string` to [`Color`][gd.color.Color].
-
-        Returns:
-            The converted [`Color`][gd.color.Color].
-        """
-        return cls(int(hex_string.replace(HEX_VALUE_PREFIX, EMPTY), HEX_BASE))
-
-    @classmethod
-    def from_rgb(cls: Type[C], r: int, g: int, b: int) -> C:
-        """Converts an `(r, g, b)` tuple to [`Color`][gd.color.Color].
-
-        Returns:
-            The converted [`Color`][gd.color.Color].
-        """
-        return cls((r << DOUBLE_BITS) + (g << BITS) + b)
-
-    @classmethod
-    def from_rgba(cls: Type[C], r: int, g: int, b: int, a: int) -> C:
-        """Converts an `(r, g, b, a)` tuple to [`Color`][gd.color.Color].
-
-        The alpha component is ignored.
-
-        Returns:
-            The converted [`Color`][gd.color.Color].
-        """
-        return cls.from_rgb(r, g, b)
-
-    @classmethod
-    def from_hsv(cls: Type[C], h: float, s: float, v: float) -> C:
-        """Converts an `(h, s, v)` tuple to [`Color`][gd.color.Color].
-
-        Returns:
-            The converted [`Color`][gd.color.Color].
-        """
-        r, g, b = iter(hsv_to_rgb(h, s, v)).map(float_to_byte).tuple()
-
-        return cls.from_rgb(r, g, b)
 
     @classmethod
     def from_robtop(cls: Type[C], string: str) -> C:
@@ -298,7 +103,7 @@ class Color(RobTop):
         return COLOR_SEPARATOR in string
 
     def to_robtop(self) -> str:
-        return iter(self.to_rgb()).map(str).collect(concat_color)
+        return iter.of(self.red, self.green, self.blue).map(str).collect(concat_color)
 
     @classmethod
     def with_id(cls: Type[C], id: int, default: Optional[C] = None) -> C:
@@ -318,7 +123,7 @@ class Color(RobTop):
 
         if value is None:
             if default is None:
-                raise ValueError(ID_NOT_PRESENT.format(id))
+                raise ValueError(ID_NOT_PRESENT.format(tick(id)))
 
             return default
 

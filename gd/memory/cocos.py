@@ -6,32 +6,32 @@ from gd.memory.pointers import MutPointerData
 from gd.memory.special import Void
 
 
-@struct()  # type: ignore
+@struct()
 class CCPoint(Struct):
     x = Field(Float())
     y = Field(Float())
 
 
-@struct()  # type: ignore
+@struct()
 class CCSize(Struct):
     width = Field(Float())
     height = Field(Float())
 
 
-@struct()  # type: ignore
+@struct()
 class CCRectangle(Struct):
     origin = Field(StructData(CCPoint))
     size = Field(StructData(CCSize))
 
 
-@struct()  # type: ignore
+@struct()
 class CCColor3B(Struct):
     r = Field(UByte())
     g = Field(UByte())
     b = Field(UByte())
 
 
-@struct()  # type: ignore
+@struct()
 class CCColor4B(Struct):
     r = Field(UByte())
     g = Field(UByte())
@@ -39,27 +39,27 @@ class CCColor4B(Struct):
     a = Field(UByte())
 
 
-@struct()  # type: ignore
+@struct()
 class CCVertex3F(Struct):
     x = Field(Float())
     y = Field(Float())
     z = Field(Float())
 
 
-@struct()  # type: ignore
+@struct()
 class CCTex2F(Struct):
     u = Field(Float())
     v = Field(Float())
 
 
-@struct()  # type: ignore
+@struct()
 class CCV3F_C4B_T2F(Struct):
     vertex = Field(StructData(CCVertex3F))
     color = Field(StructData(CCColor4B))
     tex = Field(StructData(CCTex2F))
 
 
-@struct()  # type: ignore
+@struct()
 class CCV3F_C4B_T2F_Quad(Struct):
     top_left = Field(StructData(CCV3F_C4B_T2F))
     bottom_left = Field(StructData(CCV3F_C4B_T2F))
@@ -67,13 +67,13 @@ class CCV3F_C4B_T2F_Quad(Struct):
     bottom_right = Field(StructData(CCV3F_C4B_T2F))
 
 
-@struct()  # type: ignore
+@struct()
 class CCBlendFunction(Struct):
     source = Field(UInt())
     destination = Field(UInt())
 
 
-@struct()  # type: ignore
+@struct()
 class CCAffineTransform(Struct):
     a = Field(Float())
     b = Field(Float())
@@ -83,12 +83,12 @@ class CCAffineTransform(Struct):
     translate_y = Field(Float())
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class CCCopying(Struct):
     pass
 
 
-@struct()  # type: ignore
+@struct()
 class CCObject(CCCopying):
     id = Field(UInt())
     ref_id = Field(Int())
@@ -102,7 +102,7 @@ class CCObject(CCCopying):
     index_in_array = Field(UInt())
 
 
-@struct()  # type: ignore
+@struct()
 class CCArrayStruct(Struct):
     length = Field(UInt())
     capacity = Field(UInt())
@@ -112,12 +112,12 @@ class CCArrayStruct(Struct):
     array = Field(MutPointerData(MutArrayData(MutPointerData(StructData(CCObject)))))
 
 
-@struct()  # type: ignore
+@struct()
 class CCArray(CCObject):
     data = Field(MutPointerData(StructData(CCArrayStruct)))
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class CCNode(CCObject):
     rotation_x = Field(Float())
     rotation_y = Field(Float())
@@ -181,22 +181,22 @@ class CCNode(CCObject):
     component_container = Field(MutPointerData(Void()))  # CCComponentContainer*
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class CCRGBAProtocol(Struct):
     pass
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class CCBlendProtocol(Struct):
     pass
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class CCTextureProtocol(CCBlendProtocol):
     pass
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class CCNodeRGBA(CCRGBAProtocol, CCNode):
     displayed_opacity = Field(UByte())
     real_opacity = Field(UByte())
@@ -208,7 +208,7 @@ class CCNodeRGBA(CCRGBAProtocol, CCNode):
     cascade_opacity_enabled = Field(Bool())
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class CCSpriteBatchNode(CCTextureProtocol, CCNode):
     texture_atlas = Field(MutPointerData(Void()))  # CCTextureAtlas*
     blend_function = Field(StructData(CCBlendFunction))
@@ -219,7 +219,7 @@ class CCSpriteBatchNode(CCTextureProtocol, CCNode):
     manual_sort_all_children_dirty = Field(Bool())
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class CCSprite(CCTextureProtocol, CCNodeRGBA):
     texture_atlas = Field(MutPointerData(Void()))  # CCTextureAtlas*
     atlas_index = Field(UInt())
@@ -263,7 +263,7 @@ class CCSprite(CCTextureProtocol, CCNodeRGBA):
     unknown = Field(Int())
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class CCSpritePlus(CCSprite):
     followers = Field(MutPointerData(StructData(CCArray)))
     following = Field(MutPointerData(Void()))  # CCSpritePlus*
@@ -273,32 +273,32 @@ class CCSpritePlus(CCSprite):
     flip_followers = Field(Bool())
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class CCTouchDelegate(Struct):
     pass
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class CCAccelerometerDelegate(Struct):
     pass
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class CCKeypadDelegate(Struct):
     pass
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class CCKeyboardDelegate(Struct):
     pass
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class CCMouseDelegate(Struct):
     pass
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class CCLayer(
     CCMouseDelegate,
     CCKeyboardDelegate,
@@ -321,6 +321,6 @@ class CCLayer(
     touch_mode = Field(Int())  # enum
 
 
-@struct()  # type: ignore
+@struct()
 class CCNodeContainer(CCNode):
     pass

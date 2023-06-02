@@ -18,6 +18,7 @@ from gd.constants import (
     DEFAULT_USE_CLIENT,
     EMPTY,
 )
+from gd.converter import CONVERTER, register_unstructure_hook_omit_client
 from gd.date_time import DateTime, utc_from_timestamp, utc_now
 from gd.entity import Entity
 from gd.enums import ByteOrder
@@ -33,6 +34,7 @@ __all__ = ("Comment", "LevelComment", "UserComment")
 C = TypeVar("C", bound="Comment")
 
 
+@register_unstructure_hook_omit_client
 @define()
 class Comment(Entity):
     author: User = field(eq=False)
@@ -69,6 +71,7 @@ class Comment(Entity):
 UC = TypeVar("UC", bound="UserComment")
 
 
+@register_unstructure_hook_omit_client
 @define()
 class UserComment(Comment):
     rating: int = field(default=DEFAULT_RATING, eq=False)
@@ -157,12 +160,13 @@ class UserComment(Comment):
 
         writer.write(data)
 
-        writer.write_f64(self.created_at.timestamp())
+        writer.write_f64(self.created_at.timestamp())  # type: ignore
 
 
 LC = TypeVar("LC", bound="LevelComment")
 
 
+@register_unstructure_hook_omit_client
 @define()
 class LevelComment(Comment):
     level: Level = field(eq=False)

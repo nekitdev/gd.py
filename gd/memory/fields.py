@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from builtins import issubclass as is_subclass
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -17,13 +16,13 @@ from typing import (
 from attrs import define, field
 from iters import wrap_iter
 from named import get_name
+from typing_aliases import StringDict, is_instance, is_subclass
 from typing_extensions import Never
 
 from gd.memory.constants import DEFAULT_EXCLUDE, DEFAULT_OFFSET
 from gd.memory.data import Data
 from gd.memory.pointers import PointerData
 from gd.memory.special import Void
-from gd.typing import StringDict, is_instance
 
 if TYPE_CHECKING:
     from gd.memory.base import Base
@@ -73,7 +72,10 @@ class Field(Generic[T]):
         raise AttributeError(CAN_NOT_DELETE_FIELDS)
 
 
+Fields = StringDict[Field[T]]
+
 AnyField = Field[Any]
+AnyFields = Fields[Any]
 
 VIRTUAL_NAME = "__virtual_{}__"
 
@@ -103,7 +105,7 @@ def fetch_fields_iterator(base: Type[Base]) -> Iterator[Tuple[str, AnyField]]:
                 yield (name, value.reset())
 
 
-def fetch_fields(base: Type[Base]) -> StringDict[AnyField]:
+def fetch_fields(base: Type[Base]) -> AnyFields:
     return fetch_fields_iterator(base).dict()
 
 

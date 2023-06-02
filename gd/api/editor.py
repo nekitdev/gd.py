@@ -3,7 +3,8 @@ from operator import attrgetter as get_attribute_factory
 from typing import Iterable, Iterator, List, Sequence, Set, Type, TypeVar, Union, overload
 
 from attrs import define, field
-from iters import iter, wrap_iter
+from iters.iters import iter, wrap_iter
+from typing_aliases import is_int
 
 from gd.api.color_channels import ColorChannels
 from gd.api.header import Header
@@ -26,7 +27,6 @@ from gd.enums import ByteOrder, Speed, SpeedChangeType, SpeedMagic
 from gd.models_constants import OBJECTS_SEPARATOR
 from gd.models_utils import concat_objects, split_objects
 from gd.robtop import RobTop
-from gd.typing import is_instance
 
 __all__ = ("Editor", "time_length")
 
@@ -151,10 +151,10 @@ class Editor(RobTop, Binary, Sequence[Object]):
         ...
 
     def __getitem__(self: E, index: Union[int, slice]) -> Union[Object, E]:
-        if is_instance(index, int):
+        if is_int(index):
             return self.objects[index]
 
-        return self.from_object_iterable(self.objects[index], self.header)
+        return self.from_object_iterable(self.objects[index], self.header)  # type: ignore
 
     @property
     def color_channels(self) -> ColorChannels:
@@ -239,7 +239,7 @@ class Editor(RobTop, Binary, Sequence[Object]):
 
     @property
     def x_length(self) -> float:
-        return iter(self.objects).map(get_x).max_or(DEFAULT_X)
+        return iter(self.objects).map(get_x).max().unwrap_or(DEFAULT_X)
 
     @property
     def start_speed(self) -> Speed:
@@ -286,13 +286,13 @@ class Editor(RobTop, Binary, Sequence[Object]):
     def from_robtop(cls: Type[E], string: str) -> E:
         iterator = iter(split_objects(string)).filter(None)
 
-        header_string = iterator.next_or_none()
+        header_option = iterator.next().extract()
 
-        if header_string is None:
+        if header_option is None:
             header = Header()
 
         else:
-            header = Header.from_robtop(header_string)
+            header = Header.from_robtop(header_option)
 
         objects = iterator.map(object_from_robtop).list()
 

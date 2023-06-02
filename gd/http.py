@@ -26,13 +26,26 @@ from uuid import uuid4 as generate_uuid
 
 from aiohttp import BasicAuth, ClientError, ClientSession, ClientTimeout
 from attrs import define, evolve, field, frozen
-from iters import iter
-from tqdm import tqdm as progress  # type: ignore
+from iters.iters import iter
+from iters.utils import unary_tuple
+from pendulum import Duration, duration
+from tqdm import tqdm as progress
+from typing_aliases import (
+    AnyError,
+    DynamicTuple,
+    Headers,
+    IntoParameters,
+    IntoPath,
+    Namespace,
+    Parameters,
+)
+from typing_aliases import Payload as JSON
+from typing_aliases import is_bytes, is_string
 from typing_extensions import Literal
 from yarl import URL
 
 from gd.api.recording import Recording
-from gd.async_utils import run_blocking, shutdown_loop
+from gd.asyncio import run_blocking, shutdown_loop
 from gd.constants import (
     COMPLETED,
     DEFAULT_ATTEMPTS,
@@ -58,7 +71,6 @@ from gd.constants import (
     WEEKLY_ID_ADD,
     WRITE_BINARY,
 )
-from gd.date_time import Duration
 from gd.encoding import (
     ATTEMPTS_ADD,
     COINS_ADD,
@@ -94,7 +106,6 @@ from gd.enums import (
     ResponseType,
     RewardType,
     Salt,
-    SearchStrategy,
     Secret,
     SimpleRelationshipType,
     TimelyType,
@@ -110,31 +121,14 @@ from gd.errors import (
     SongRestricted,
 )
 from gd.filters import Filters
-from gd.iter_utils import unary_tuple
 from gd.models import CommentBannedModel
 from gd.models_constants import OBJECT_SEPARATOR
 from gd.models_utils import concat_extra_string
 from gd.password import Password
 from gd.progress import Progress
-from gd.string_utils import concat_comma, password_str, tick
-from gd.text_utils import snake_to_camel_with_abbreviations
+from gd.string_utils import concat_comma, password_str, snake_to_camel_with_abbreviations, tick
 from gd.timer import now
-from gd.typing import (
-    AnyException,
-    DynamicTuple,
-    Headers,
-    IntoParameters,
-    IntoPath,
-    IntString,
-    JSONType,
-    MaybeIterable,
-    Namespace,
-    Parameters,
-    URLString,
-    is_bytes,
-    is_iterable,
-    is_string,
-)
+from gd.typing import AnyString, IntString, MaybeIterable, URLString, is_iterable
 from gd.version import python_version_info, version_info
 from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, Version
 
@@ -234,7 +228,7 @@ HTTP_ERROR = 400
 
 CHUNK_SIZE = 65536
 
-ResponseData = Union[bytes, str, JSONType]
+ResponseData = Union[bytes, str, JSON]
 
 
 UNEXPECTED_ERROR_CODE = "got an unexpected error code: {}"
@@ -344,7 +338,7 @@ def close_all_clients_sync() -> None:
 register_at_exit(close_all_clients_sync)
 
 
-def try_parse_error_code(string: Union[str, bytes]) -> Optional[int]:
+def try_parse_error_code(string: AnyString) -> Optional[int]:
     try:
         error_code = int(string)
 
@@ -391,10 +385,9 @@ LOOP = "_loop"  # NOTE: keep in sync with the upstream library
 UNIT = "b"
 UNIT_SCALE = True
 
-ErrorCodes = Mapping[int, AnyException]
+ErrorCodes = Mapping[int, AnyError]
 
 C = TypeVar("C", bound="HTTPClient")
-
 
 NAME_TOO_SHORT = "`name` is too short"
 PASSWORD_TOO_SHORT = "`password` is too short"
@@ -533,7 +526,7 @@ class HTTPClient:
         return id(self)
 
     def change(self: C, **attributes: Any) -> HTTPClientContextManager[C]:
-        return HTTPClientContextManager(self, **attributes)
+        return HTTPClientContextManager(self, attributes)
 
     def create_timeout(self) -> ClientTimeout:
         return ClientTimeout(total=self.timeout)
@@ -682,7 +675,7 @@ class HTTPClient:
         headers: Optional[Headers] = ...,
         base: Optional[URLString] = ...,
         retries: int = ...,
-    ) -> JSONType:
+    ) -> JSON:
         ...
 
     async def request_route(
@@ -751,7 +744,7 @@ class HTTPClient:
         error_codes: Optional[ErrorCodes] = ...,
         headers: Optional[Headers] = ...,
         retries: int = ...,
-    ) -> JSONType:
+    ) -> JSON:
         ...
 
     @overload
@@ -804,7 +797,7 @@ class HTTPClient:
             headers.setdefault(FORWARDED_FOR, forwarded_for)
 
         lock = Lock()
-        error: Optional[AnyException] = None
+        error: Optional[AnyError] = None
 
         utf_8 = UTF_8
 
@@ -847,12 +840,10 @@ class HTTPClient:
                                         error_code, unexpected_error_code(error_code)
                                     )
 
-                        return response_data  # type: ignore
+                        return response_data
 
                     if status >= HTTP_ERROR:
-                        reason = response.reason
-
-                        error = HTTPStatusError(status, reason)
+                        error = HTTPStatusError(status)
 
             except VALID_ERRORS as valid_error:
                 error = HTTPErrorWithOrigin(valid_error)
@@ -903,7 +894,7 @@ class HTTPClient:
 
     async def login(self, name: str, password: str) -> str:
         error_codes = {
-            -1: LoginFailed(name=name, password=password),
+            -1: LoginFailed(name, password_str(password)),
             -8: MissingAccess(NAME_TOO_SHORT),
             -9: MissingAccess(PASSWORD_TOO_SHORT),
             -10: MissingAccess(LINKED_TO_DIFFERENT),
@@ -1168,7 +1159,7 @@ class HTTPClient:
 
         return int_or(response, 0)
 
-    async def search_users_on_page(self, query: Union[int, str], page: int = DEFAULT_PAGE) -> str:
+    async def search_users_on_page(self, query: IntString, page: int = DEFAULT_PAGE) -> str:
         error_codes = {-1: MissingAccess(CAN_NOT_FIND_USERS.format(tick(query)))}
 
         route = Route(POST, GET_USERS)
@@ -1506,10 +1497,10 @@ class HTTPClient:
         encoded_password: str,
     ) -> int:
         if editor_time is None:
-            editor_time = Duration()
+            editor_time = duration()
 
         if copies_time is None:
-            copies_time = Duration()
+            copies_time = duration()
 
         error_codes = {-1: MissingAccess(FAILED_TO_UPLOAD_LEVEL)}
 
@@ -1566,8 +1557,8 @@ class HTTPClient:
             level_info=recording_string,
             seed=random_string,
             seed2=seed,
-            wt=int(editor_time.total_seconds()),
-            wt2=int(copies_time.total_seconds()),
+            wt=int(editor_time.total_seconds()),  # type: ignore
+            wt2=int(copies_time.total_seconds()),  # type: ignore
             account_id=account_id,
             user_name=account_name,
             gjp=encoded_password,
@@ -2760,7 +2751,7 @@ class HTTPClient:
         return response  # type: ignore
 
 
-E = TypeVar("E", bound=AnyException)
+E = TypeVar("E", bound=AnyError)
 
 
 @frozen()
@@ -2768,9 +2759,6 @@ class HTTPClientContextManager(Generic[C]):
     client: C = field()
     attributes: Namespace = field(repr=False)
     saved_attributes: Namespace = field(factory=dict, repr=False, init=False)
-
-    def __init__(self, client: C, **attributes: Any) -> None:
-        self.__attrs_init__(client, attributes)  # type: ignore
 
     def apply(self) -> None:
         client = self.client

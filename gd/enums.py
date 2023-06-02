@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum, Flag
-from typing import Any
+from typing import Any, Optional
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, EMPTY
 
@@ -257,7 +257,7 @@ class LevelLength(Enum):
     DEFAULT = TINY
 
     @classmethod
-    def _missing_(cls, value: Any) -> LevelLength:  # type: ignore
+    def _missing_(cls, value: Any) -> Optional[LevelLength]:  # type: ignore
         if value < 0:
             return cls.TINY
 
@@ -573,7 +573,13 @@ class SimpleRelationshipType(Enum):
         return self is type(self).BLOCKED
 
     def into_relationship_type(self) -> RelationshipType:
-        return RelationshipType.FRIEND if self.is_friend() else RelationshipType.BLOCKED
+        return SIMPLE_RELATIONSHIP_TYPE_TO_RELATIONSHIP_TYPE[self]
+
+
+SIMPLE_RELATIONSHIP_TYPE_TO_RELATIONSHIP_TYPE = {
+    SimpleRelationshipType.FRIEND: RelationshipType.FRIEND,
+    SimpleRelationshipType.BLOCKED: RelationshipType.BLOCKED,
+}
 
 
 class FriendRequestType(Enum):
@@ -591,11 +597,13 @@ class FriendRequestType(Enum):
         return self is type(self).OUTGOING
 
     def into_relationship_type(self) -> RelationshipType:
-        return (
-            RelationshipType.INCOMING_REQUEST
-            if self.is_incoming()
-            else RelationshipType.OUTGOING_REQUEST
-        )
+        return FRIEND_REQUEST_TYPE_TO_RELATIONSHIP_TYPE[self]
+
+
+FRIEND_REQUEST_TYPE_TO_RELATIONSHIP_TYPE = {
+    FriendRequestType.INCOMING: RelationshipType.INCOMING_REQUEST,
+    FriendRequestType.OUTGOING: RelationshipType.OUTGOING_REQUEST,
+}
 
 
 class MessageType(Enum):
@@ -625,7 +633,6 @@ class CommentStrategy(Enum):
 class LeaderboardStrategy(Enum):
     """An enumeration of leaderboard strategies."""
 
-    TOP = 0
     PLAYERS = 0
     FRIENDS = 1
     RELATIVE = 2
@@ -1025,7 +1032,7 @@ class OrbType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value  # type: ignore
+        return self.value
 
     def is_trigger(self) -> int:
         return self is type(self).TRIGGER
@@ -1041,7 +1048,7 @@ class PadType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value  # type: ignore
+        return self.value
 
 
 class MiscType(Enum):
@@ -1054,7 +1061,7 @@ class MiscType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value  # type: ignore
+        return self.value
 
 
 class PickupItemMode(Enum):
@@ -1137,7 +1144,7 @@ class PortalType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value  # type: ignore
+        return self.value
 
 
 class SpeedChangeType(Enum):
@@ -1151,7 +1158,7 @@ class SpeedChangeType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value  # type: ignore
+        return self.value
 
 
 class CoinType(Enum):
@@ -1160,7 +1167,7 @@ class CoinType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value  # type: ignore
+        return self.value
 
 
 class PickupItemType(Enum):
@@ -1172,7 +1179,7 @@ class PickupItemType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value  # type: ignore
+        return self.value
 
 
 class RotatingObjectType(Enum):
@@ -1277,7 +1284,7 @@ class RotatingObjectType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value  # type: ignore
+        return self.value
 
 
 class PulseTargetType(Enum):
@@ -1303,7 +1310,7 @@ class PulsatingObjectType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value  # type: ignore
+        return self.value
 
 
 class PulseType(Flag):
@@ -1350,7 +1357,7 @@ class SpecialColorID(Enum):
 
     @property
     def id(self) -> int:
-        return self.value  # type: ignore
+        return self.value
 
 
 class TargetType(Flag):
@@ -1441,7 +1448,7 @@ class TriggerType(Enum):
 
     @property
     def id(self) -> int:
-        return self.value  # type: ignore
+        return self.value
 
 
 class ZLayer(Enum):

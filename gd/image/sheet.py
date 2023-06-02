@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional, Type, TypeVar
 
 from attrs import define, field
+from typing_aliases import IntoPath, StringMapping
 
 try:
     from PIL.Image import Image
@@ -16,7 +17,6 @@ except ImportError:
 
 from gd.decorators import cache_by
 from gd.image.sprite import Sprite, SpriteData, Sprites
-from gd.typing import IntoPath, StringMapping
 
 __all__ = ("Sheet", "SheetData")
 
@@ -41,7 +41,7 @@ class Sheet:
 
     loaded: bool = field(default=False, init=False)
 
-    @property  # type: ignore
+    @property
     @cache_by(IMAGE_PATH, DATA_PATH)
     def sprites(self) -> Sprites:
         self.ensure_loaded()

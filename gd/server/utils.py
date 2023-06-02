@@ -38,19 +38,19 @@ def parse_pages(string: str) -> Iterable[int]:
     if match is None:
         return iter(split_pages(string)).map(int).unwrap()
 
-    start_string = match.group(START)
+    start_option = match.group(START)
 
-    if start_string is None:
+    if start_option is None:
         raise InternalError  # TODO: message?
 
-    start = int(start_string)
+    start = int(start_option)
 
-    stop_string = match.group(STOP)
+    stop_option = match.group(STOP)
 
-    if stop_string is None:
+    if stop_option is None:
         raise InternalError  # TODO: message?
 
-    stop = int(stop_string)
+    stop = int(stop_option)
 
     inclusive = match.group(INCLUSIVE) is not None
 

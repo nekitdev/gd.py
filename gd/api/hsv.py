@@ -49,15 +49,22 @@ class HSV(Binary, RobTop):
 
     @classmethod
     def from_robtop(cls: Type[T], string: str) -> T:
-        h, s, v, s_checked, v_checked = split_hsv(string)
+        h_string, s_string, v_string, s_checked_string, v_checked_string = split_hsv(string)
 
-        return cls(
-            int(h),
-            float(s),
-            float(v),
-            int_bool(s_checked),
-            int_bool(v_checked),
-        )
+        h = round(float(h_string))
+        s = float(s_string)
+        v = float(v_string)
+
+        s_checked = int_bool(s_checked_string)
+        v_checked = int_bool(v_checked_string)
+
+        if s < 0:
+            s_checked = True
+
+        if v < 0:
+            v_checked = True
+
+        return cls(h, s, v, s_checked, v_checked)
 
     def to_robtop(self) -> str:
         values = (

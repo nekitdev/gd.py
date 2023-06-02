@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, TypeVar, Union
+from typing import Dict, List, Optional, Tuple
 
 try:
     from lxml import etree as xml
@@ -11,14 +11,17 @@ except ImportError:
     Element = xml.Element  # type: ignore
 
 from attrs import define, field
-from iters import iter
+from funcs.unpacking import unpack_binary
+from iters.iters import iter
 from named import get_type_name
-from solus import Singleton
+from typing_aliases import Attributes, NormalError, Payload, StringDict, Unary, is_instance
+from wraps.option import is_some
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.models_utils import float_str
 from gd.string_utils import tick
-from gd.typing import AnyString, Unary, is_instance
+from gd.types import NoDefaultOr, is_no_default, no_default
+from gd.typing import AnyString
 
 __all__ = ("PARSER", "XML")
 
@@ -49,30 +52,12 @@ DEFAULT_FIRST_SHOT = True
 NOT_FIRST_SHOT = False
 
 
-class NoDefault(Singleton):
-    pass
-
-
-no_default = NoDefault()
-
-T = TypeVar("T")
-
-NoDefaultOr = Union[NoDefault, T]
-
-
 from_string = xml.fromstring
 to_string = xml.tostring
 
 
-def plist_attrs_factory() -> Dict[str, Any]:
+def plist_attributes_factory() -> Attributes:
     return {PLIST_VERSION_LITERAL: PLIST_VERSION, GD_VERSION_LITERAL: GD_VERSION}
-
-
-FIRST = 0
-
-
-def first(sequence: Sequence[T]) -> T:
-    return sequence[FIRST]
 
 
 DICT = "dict"
@@ -93,186 +78,189 @@ FLOAT_SHORT = "r"
 TRUE_SHORT = "t"
 FALSE_SHORT = "f"
 
-EXPECTED = "expected int, float, str, bool, mapping or iterable, got {}"
+EXPECTED = """
+expected primitive (`None`, `bool`, `int`, `float`, `str`), primitive list or string dict, got {}
+""".strip()
 
 
 @define()
 class XML:
     plist: bool = field(default=DEFAULT_PLIST)
-    plist_attrs: Dict[str, Any] = field(factory=plist_attrs_factory, repr=False)
+    plist_attributes: Attributes = field(factory=plist_attributes_factory, repr=False)
 
-    def load(self, string: AnyString, default: NoDefaultOr[Any] = no_default) -> Any:
+    def load(self, string: AnyString, default: NoDefaultOr[Payload] = no_default) -> Payload:
         element = from_string(string)
 
         if element.tag == PLIST:
             self.plist = True
 
-            try:
-                element = first(element)  # type: ignore
+            first = iter(element).first()
 
-            except IndexError:
-                return {}
+            if is_some(first):
+                element = first.unwrap()
 
         try:
-            return self.load_value(element)
+            return self.load_item(element)
 
-        except Exception:
-            if default is no_default:
+        except NormalError:
+            if is_no_default(default):
                 raise
 
-            return default
+            return default  # type: ignore
 
     def dump(
         self,
-        value: Any,
+        item: Payload,
         *,
         ignore_false: bool = DEFAULT_IGNORE_FALSE,
         short: bool = DEFAULT_SHORT,
     ) -> bytes:
-        if self.plist:
-            root = create_element(PLIST, attrib=self.plist_attrs)
+        root: Optional[Element]
 
-            element = self.dump_value(value, root, ignore_false=ignore_false, short=short)
+        if self.plist:
+            root = create_element(PLIST, attrib=self.plist_attributes)
+
+            element = self.dump_item(item, root, ignore_false=ignore_false, short=short)
 
         else:
-            root = element = self.dump_value(  # type: ignore
-                value, ignore_false=ignore_false, short=short
+            root = element = self.dump_item(
+                item, ignore_false=ignore_false, short=short
             )
 
         if element is None:
             return DECLARATION
 
-        return DECLARATION + to_string(root)
+        return DECLARATION + to_string(root)  # type: ignore
 
     def dump_string(
         self,
-        value: Any,
+        item: Payload,
         *,
         encoding: str = DEFAULT_ENCODING,
         ignore_false: bool = DEFAULT_IGNORE_FALSE,
         short: bool = DEFAULT_SHORT,
     ) -> str:
-        return self.dump(value, ignore_false=ignore_false, short=short).decode(
+        return self.dump(item, ignore_false=ignore_false, short=short).decode(
             encoding, XML_CHAR_REF_REPLACE
         )
 
-    def dump_value(
+    def dump_item(
         self,
-        value: Optional[Any],
+        item: Payload,
         root: Optional[Element] = None,
         *,
         ignore_false: bool = DEFAULT_IGNORE_FALSE,
         short: bool = DEFAULT_SHORT,
     ) -> Optional[Element]:
         return (
-            self.dump_value_short(value, root, ignore_false=ignore_false)
+            self.dump_item_short(item, root, ignore_false=ignore_false)
             if short
-            else self.dump_value_long(value, root, ignore_false=ignore_false)
+            else self.dump_item_long(item, root, ignore_false=ignore_false)
         )
 
-    def dump_value_long(
+    def dump_item_long(
         self,
-        value: Optional[Any],
+        item: Payload,
         root: Optional[Element] = None,
         *,
         ignore_false: bool = DEFAULT_IGNORE_FALSE,
     ) -> Optional[Element]:
-        if value is None:
+        if item is None:
             return None
 
-        if ignore_false and value is False:
-            return None
-
-        if is_instance(value, str):
+        if is_instance(item, str):
             element = create_element(STRING)
-            element.text = value
+            element.text = item
 
-        elif is_instance(value, float):
+        elif is_instance(item, float):
             element = create_element(FLOAT)
-            element.text = float_str(value)
+            element.text = float_str(item)
 
-        elif value is True:
+        elif item is True:
             element = create_element(TRUE)
 
-        elif value is False:
+        elif item is False:
+            if ignore_false:
+                return None
+
             element = create_element(FALSE)
 
-        elif is_instance(value, int):
+        elif is_instance(item, int):
             element = create_element(INT)
-            element.text = str(value)
+            element.text = str(item)
 
-        elif is_instance(value, Mapping):
+        elif is_instance(item, Dict):
             element = create_element(DICT)
 
-            for sub_key, sub_value in value.items():
+            for sub_key, sub_item in item.items():
                 sub_element = create_sub_element(element, KEY)
                 sub_element.text = sub_key
 
-                self.dump_value_long(sub_value, element)
+                self.dump_item_long(sub_item, element)
 
-        elif is_instance(value, Iterable):
+        elif is_instance(item, List):
             element = create_element(ARRAY)
 
-            for item in value:
-                self.dump_value_long(item, element)
+            for sub_item in item:
+                self.dump_item_long(sub_item, element)
 
         else:
-            raise ValueError(EXPECTED.format(tick(get_type_name(value))))
+            raise ValueError(EXPECTED.format(tick(get_type_name(item))))
 
         if root is not None:
             root.append(element)
 
         return element
 
-    def dump_value_short(
+    def dump_item_short(
         self,
-        value: Optional[Any],
+        item: Payload,
         root: Optional[Element] = None,
         *,
         first_shot: bool = DEFAULT_FIRST_SHOT,
         ignore_false: bool = DEFAULT_IGNORE_FALSE,
     ) -> Optional[Element]:
-        if value is None:
+        if item is None:
             return None
 
-        if ignore_false and value is False:
-            return None
-
-        if is_instance(value, str):
+        if is_instance(item, str):
             element = create_element(STRING_SHORT)
-            element.text = value
+            element.text = item
 
-        elif is_instance(value, float):
+        elif is_instance(item, float):
             element = create_element(FLOAT_SHORT)
-            element.text = float_str(value)
+            element.text = float_str(item)
 
-        elif value is True:
+        elif item is True:
             element = create_element(TRUE_SHORT)
 
-        elif value is False:
+        elif item is False:
             element = create_element(FALSE_SHORT)
 
-        elif is_instance(value, int):
-            element = create_element(INT_SHORT)
-            element.text = str(value)
+            if ignore_false:
+                return None
 
-        elif is_instance(value, Mapping):
+        elif is_instance(item, int):
+            element = create_element(INT_SHORT)
+            element.text = str(item)
+
+        elif is_instance(item, Dict):
             element = create_element(DICT if first_shot else DICT_SHORT)
 
-            for sub_key, sub_value in value.items():
+            for sub_key, sub_item in item.items():
                 sub_element = create_sub_element(element, KEY_SHORT)
                 sub_element.text = sub_key
 
-                self.dump_value_short(sub_value, element, first_shot=NOT_FIRST_SHOT)
+                self.dump_item_short(sub_item, element, first_shot=NOT_FIRST_SHOT)
 
-        elif is_instance(value, Iterable):
+        elif is_instance(item, List):
             element = create_element(ARRAY_SHORT)
 
-            for sub_value in value:
-                self.dump_value_short(sub_value, element, first_shot=False)
+            for sub_item in item:
+                self.dump_item_short(sub_item, element, first_shot=False)
 
         else:
-            raise ValueError(EXPECTED.format(tick(get_type_name(value))))
+            raise ValueError(EXPECTED.format(tick(get_type_name(item))))
 
         if root is not None:
             root.append(element)
@@ -280,14 +268,14 @@ class XML:
         return element
 
     @staticmethod
-    def load_value(element: Element) -> Any:  # type: ignore
-        return LOAD.get(element.tag, load_string)(element)
+    def load_item(element: Element) -> Payload:
+        return LOAD[element.tag](element)
 
 
 PARSER = XML()  # the parser is essentially stateless, so it can be reused
 
 
-load_value = XML.load_value
+load_item = XML.load_item
 
 
 DEFAULT_STRING = str()
@@ -295,12 +283,19 @@ DEFAULT_FLOAT = 0.0
 DEFAULT_INT = 0
 
 
-def load_array(elements: Element) -> List[Any]:
-    return iter(elements).map(load_value).list()
+def load_array(elements: Element) -> List[Payload]:
+    return iter(elements).map(load_item).list()
 
 
-def load_dict(elements: Element) -> Dict[str, Any]:
-    return iter(elements).map(load_value).pairs().dict()
+StringEntry = Tuple[str, Payload]
+
+
+def load_entry(key: Element, item: Element) -> StringEntry:
+    return load_string(key), load_item(item)
+
+
+def load_dict(elements: Element) -> StringDict[Payload]:
+    return iter(elements).pairs().map(unpack_binary(load_entry)).dict()
 
 
 def load_false(element: Element) -> bool:
@@ -329,7 +324,9 @@ def load_string(element: Element) -> str:
     return DEFAULT_STRING if string is None else string
 
 
-LOAD: Dict[str, Unary[Element, Any]] = {
+Load = Unary[Element, Payload]
+
+LOAD: StringDict[Load] = {
     ARRAY_SHORT: load_array,
     ARRAY: load_array,
     DICT_SHORT: load_dict,

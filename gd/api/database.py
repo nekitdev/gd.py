@@ -1,20 +1,27 @@
 from __future__ import annotations
 
-from functools import partial
-from typing import Any, Dict, List, Tuple, Type, TypeVar
+from typing import Any, Dict, Iterable, List, Tuple, Type, TypeVar
 from uuid import UUID
 from uuid import uuid4 as generate_uuid
 
 from attrs import define, field
-from iters import iter
+from funcs.application import partial
+from funcs.unpacking import unpack_binary
+from iters.iters import iter
 from iters.ordered_set import OrderedSet, ordered_set
-from iters.utils import unpack_binary
-from typing_extensions import Literal, TypeGuard
+from iters.utils import unary_tuple
+from typing_aliases import StringDict, StringMapping, is_instance, is_true
 
 from gd.api.folder import Folder
 from gd.api.level import LevelAPI
 from gd.api.like import Like
-from gd.api.objects import Object, object_from_binary, object_to_binary
+from gd.api.objects import (
+    Object,
+    object_from_binary,
+    object_from_robtop,
+    object_to_binary,
+    object_to_robtop,
+)
 from gd.api.rewards import Quest, RewardItem
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
@@ -47,15 +54,26 @@ from gd.constants import (
     WEEKLY_ID_ADD,
 )
 from gd.enums import (
-    ByteOrder, CollectedCoins, CommentStrategy, Filter, IconType, LevelLeaderboardStrategy, Quality
+    ByteOrder,
+    CollectedCoins,
+    CommentStrategy,
+    Filter,
+    IconType,
+    LevelLeaderboardStrategy,
+    Quality,
 )
 from gd.filters import Filters
-from gd.iter_utils import unary_tuple
-from gd.models_utils import concat_name, int_bool, parse_get_or, partial_parse_enum, split_name
+from gd.models_utils import (
+    concat_name,
+    concat_objects,
+    int_bool,
+    parse_get_or,
+    partial_parse_enum,
+    split_name,
+    split_objects,
+)
 from gd.song import Song
-from gd.string_utils import password_repr
-from gd.text_utils import snake_to_camel, snake_to_camel_with_abbreviations
-from gd.typing import StringDict, StringMapping
+from gd.string_utils import password_repr, snake_to_camel, snake_to_camel_with_abbreviations
 from gd.versions import CURRENT_BINARY_VERSION, Version
 from gd.xml import PARSER
 
@@ -371,7 +389,7 @@ class Completed(Binary):
         return self
 
     def to_robtop_data(self) -> StringDict[Any]:
-        data = {}
+        data: StringDict[Any] = {}
         one = ONE
 
         official = self.official
@@ -509,7 +527,7 @@ SHOWN_NEWGROUNDS_MESSAGE = "gv_0051"
 FAST_PRACTICE_RESET = "gv_0052"
 FREE_GAMES = "gv_0053"
 CHECK_SERVER_ONLINE = "gv_0055"
-DISABLE_HIGH_DETAIL_ALERT =  "gv_0056"
+DISABLE_HIGH_DETAIL_ALERT = "gv_0056"
 HOLD_TO_SWIPE = "gv_0057"
 SHOW_DURATION_LINES = "gv_0058"
 SWIPE_CYCLE = "gv_0059"
@@ -1740,9 +1758,7 @@ class Variables(Binary):
             int_bool, DEFAULT_SHOW_TRIGGER_BOXES, data.get(SHOW_TRIGGER_BOXES)
         )
         debug_draw = parse_get_or(int_bool, DEFAULT_DEBUG_DRAW, data.get(DEBUG_DRAW))
-        hide_ui_on_test = parse_get_or(
-            int_bool, DEFAULT_HIDE_UI_ON_TEST, data.get(HIDE_UI_ON_TEST)
-        )
+        hide_ui_on_test = parse_get_or(int_bool, DEFAULT_HIDE_UI_ON_TEST, data.get(HIDE_UI_ON_TEST))
         shown_profile_info = parse_get_or(
             int_bool, DEFAULT_SHOWN_PROFILE_INFO, data.get(SHOWN_PROFILE_INFO)
         )
@@ -1829,7 +1845,9 @@ class Variables(Binary):
         )
         manual_order = parse_get_or(int_bool, DEFAULT_MANUAL_ORDER, data.get(MANUAL_ORDER))
         small_comments = parse_get_or(int_bool, DEFAULT_SMALL_COMMENTS, data.get(SMALL_COMMENTS))
-        hide_description = parse_get_or(int_bool, DEFAULT_HIDE_DESCRIPTION, data.get(HIDE_DESCRIPTION))
+        hide_description = parse_get_or(
+            int_bool, DEFAULT_HIDE_DESCRIPTION, data.get(HIDE_DESCRIPTION)
+        )
         auto_load_comments = parse_get_or(
             int_bool, DEFAULT_AUTO_LOAD_COMMENTS, data.get(AUTO_LOAD_COMMENTS)
         )
@@ -2528,7 +2546,9 @@ class Values(Binary):
 
         # swing_copters_length = reader.read_u16()
 
-        # swing_copters = iter.repeat_exactly_with(reader.read_u16, swing_copters_length).ordered_set()
+        # swing_copters = (
+        #     iter.repeat_exactly_with(reader.read_u16, swing_copters_length).ordered_set()
+        # )
 
         explosions_length = reader.read_u16()
 
@@ -2604,6 +2624,34 @@ class Values(Binary):
 
         return data
 
+
+THE_CHALLENGE_UNLOCKED = "ugv_1"
+GUBFLUB_HINT_1 = "ugv_2"
+GUBFLUB_HINT_2 = "ugv_3"
+THE_CHALLENGE_COMPLETED = "ugv_4"
+TREASURE_ROOM_UNLOCKED = "ugv_5"
+CHAMBER_OF_TIME_UNLOCKED = "ugv_6"
+CHAMBER_OF_TIME_DISCOVERED = "ugv_7"
+MASTER_EMBLEM_SHOWN = "ugv_8"
+GATE_KEEPER_DIALOG = "ugv_9"
+SCRATCH_DIALOG = "ugv_10"
+SECRET_SHOP_UNLOCKED = "ugv_11"
+DEMON_GUARDIAN_DIALOG = "ugv_12"
+DEMON_FREED = "ugv_13"
+DEMON_KEY_1 = "ugv_14"
+DEMON_KEY_2 = "ugv_15"
+DEMON_KEY_3 = "ugv_16"
+SHOP_KEEPER_DIALOG = "ugv_17"
+WORLD_ONLINE_LEVELS = "ugv_18"
+DEMON_DISCOVERED = "ugv_19"
+COMMUNITY_SHOP_UNLOCKED = "ugv_20"
+POTBOR_DIALOG = "ugv_21"
+YOUTUBE_CHEST_UNLOCKED = "ugv_22"
+FACEBOOK_CHEST_UNLOCKED = "ugv_23"
+TWITTER_CHEST_UNLOCKED = "ugv_24"
+# FIREBIRD_GATE_KEEPER = "ugv_25"
+# TWITCH_CHEST_UNLOCKED_BIT = "ugv_26"
+# DISCORD_CHEST_UNLOCKED_BIT = "ugv_27"
 
 THE_CHALLENGE_UNLOCKED_BIT = 0b1
 GUBFLUB_HINT_1_BIT = 0b10
@@ -2886,6 +2934,244 @@ class UnlockValues(Binary):
         #     value |= DISCORD_CHEST_UNLOCKED_BIT
 
         writer.write_u64(value)
+
+    @classmethod
+    def from_robtop_data(cls: Type[UV], data: StringMapping[Any]) -> UV:  # type: ignore
+        the_challenge_unlocked = parse_get_or(
+            int_bool, DEFAULT_THE_CHALLENGE_UNLOCKED, data.get(THE_CHALLENGE_UNLOCKED)
+        )
+        gubflub_hint_1 = parse_get_or(int_bool, DEFAULT_GUBFLUB_HINT_1, data.get(GUBFLUB_HINT_1))
+        gubflub_hint_2 = parse_get_or(int_bool, DEFAULT_GUBFLUB_HINT_2, data.get(GUBFLUB_HINT_2))
+        the_challenge_completed = parse_get_or(
+            int_bool, DEFAULT_THE_CHALLENGE_COMPLETED, data.get(THE_CHALLENGE_COMPLETED)
+        )
+        treasure_room_unlocked = parse_get_or(
+            int_bool, DEFAULT_TREASURE_ROOM_UNLOCKED, data.get(TREASURE_ROOM_UNLOCKED)
+        )
+        chamber_of_time_unlocked = parse_get_or(
+            int_bool, DEFAULT_CHAMBER_OF_TIME_UNLOCKED, data.get(CHAMBER_OF_TIME_UNLOCKED)
+        )
+        chamber_of_time_discovered = parse_get_or(
+            int_bool, DEFAULT_CHAMBER_OF_TIME_DISCOVERED, data.get(CHAMBER_OF_TIME_DISCOVERED)
+        )
+        master_emblem_shown = parse_get_or(
+            int_bool, DEFAULT_MASTER_EMBLEM_SHOWN, data.get(MASTER_EMBLEM_SHOWN)
+        )
+        gate_keeper_dialog = parse_get_or(
+            int_bool, DEFAULT_GATE_KEEPER_DIALOG, data.get(GATE_KEEPER_DIALOG)
+        )
+        scratch_dialog = parse_get_or(int_bool, DEFAULT_SCRATCH_DIALOG, data.get(SCRATCH_DIALOG))
+        secret_shop_unlocked = parse_get_or(
+            int_bool, DEFAULT_SECRET_SHOP_UNLOCKED, data.get(SECRET_SHOP_UNLOCKED)
+        )
+        demon_guardian_dialog = parse_get_or(
+            int_bool, DEFAULT_DEMON_GUARDIAN_DIALOG, data.get(DEMON_GUARDIAN_DIALOG)
+        )
+        demon_freed = parse_get_or(int_bool, DEFAULT_DEMON_FREED, data.get(DEMON_FREED))
+        demon_key_1 = parse_get_or(int_bool, DEFAULT_DEMON_KEY_1, data.get(DEMON_KEY_1))
+        demon_key_2 = parse_get_or(int_bool, DEFAULT_DEMON_KEY_2, data.get(DEMON_KEY_2))
+        demon_key_3 = parse_get_or(int_bool, DEFAULT_DEMON_KEY_3, data.get(DEMON_KEY_3))
+        shop_keeper_dialog = parse_get_or(
+            int_bool, DEFAULT_SHOP_KEEPER_DIALOG, data.get(SHOP_KEEPER_DIALOG)
+        )
+        world_online_levels = parse_get_or(
+            int_bool, DEFAULT_WORLD_ONLINE_LEVELS, data.get(WORLD_ONLINE_LEVELS)
+        )
+        demon_discovered = parse_get_or(
+            int_bool, DEFAULT_DEMON_DISCOVERED, data.get(DEMON_DISCOVERED)
+        )
+        community_shop_unlocked = parse_get_or(
+            int_bool, DEFAULT_COMMUNITY_SHOP_UNLOCKED, data.get(COMMUNITY_SHOP_UNLOCKED)
+        )
+        potbor_dialog = parse_get_or(int_bool, DEFAULT_POTBOR_DIALOG, data.get(POTBOR_DIALOG))
+        youtube_chest_unlocked = parse_get_or(
+            int_bool, DEFAULT_YOUTUBE_CHEST_UNLOCKED, data.get(YOUTUBE_CHEST_UNLOCKED)
+        )
+        facebook_chest_unlocked = parse_get_or(
+            int_bool, DEFAULT_FACEBOOK_CHEST_UNLOCKED, data.get(FACEBOOK_CHEST_UNLOCKED)
+        )
+        twitter_chest_unlocked = parse_get_or(
+            int_bool, DEFAULT_TWITTER_CHEST_UNLOCKED, data.get(TWITTER_CHEST_UNLOCKED)
+        )
+        # firebird_gate_keeper = parse_get_or(
+        #     int_bool, DEFAULT_FIREBIRD_GATE_KEEPER, data.get(FIREBIRD_GATE_KEEPER)
+        # )
+        # twitch_chest_unlocked = parse_get_or(
+        #     int_bool, DEFAULT_TWITCH_CHEST_UNLOCKED, data.get(TWITCH_CHEST_UNLOCKED)
+        # )
+        # discord_chest_unlocked = parse_get_or(
+        #     int_bool, DEFAULT_DISCORD_CHEST_UNLOCKED, data.get(DISCORD_CHEST_UNLOCKED)
+        # )
+
+        return cls(
+            the_challenge_unlocked=the_challenge_unlocked,
+            gubflub_hint_1=gubflub_hint_1,
+            gubflub_hint_2=gubflub_hint_2,
+            the_challenge_completed=the_challenge_completed,
+            treasure_room_unlocked=treasure_room_unlocked,
+            chamber_of_time_unlocked=chamber_of_time_unlocked,
+            chamber_of_time_discovered=chamber_of_time_discovered,
+            master_emblem_shown=master_emblem_shown,
+            gate_keeper_dialog=gate_keeper_dialog,
+            scratch_dialog=scratch_dialog,
+            secret_shop_unlocked=secret_shop_unlocked,
+            demon_guardian_dialog=demon_guardian_dialog,
+            demon_freed=demon_freed,
+            demon_key_1=demon_key_1,
+            demon_key_2=demon_key_2,
+            demon_key_3=demon_key_3,
+            shop_keeper_dialog=shop_keeper_dialog,
+            world_online_levels=world_online_levels,
+            demon_discovered=demon_discovered,
+            community_shop_unlocked=community_shop_unlocked,
+            potbor_dialog=potbor_dialog,
+            youtube_chest_unlocked=youtube_chest_unlocked,
+            facebook_chest_unlocked=facebook_chest_unlocked,
+            twitter_chest_unlocked=twitter_chest_unlocked,
+            # firebird_gate_keeper=firebird_gate_keeper,
+            # twitch_chest_unlocked=twitch_chest_unlocked,
+            # discord_chest_unlocked=discord_chest_unlocked,
+        )
+
+    def to_robtop_data(self) -> StringDict[Any]:
+        data = {}
+
+        the_challenge_unlocked = self.is_the_challenge_unlocked()
+
+        if the_challenge_unlocked:
+            data[THE_CHALLENGE_UNLOCKED] = str(int(the_challenge_unlocked))
+
+        gubflub_hint_1 = self.is_gubflub_hint_1()
+
+        if gubflub_hint_1:
+            data[GUBFLUB_HINT_1] = str(int(gubflub_hint_1))
+
+        gubflub_hint_2 = self.is_gubflub_hint_2()
+
+        if gubflub_hint_2:
+            data[GUBFLUB_HINT_2] = str(int(gubflub_hint_2))
+
+        the_challenge_completed = self.is_the_challenge_completed()
+
+        if the_challenge_completed:
+            data[THE_CHALLENGE_COMPLETED] = str(int(the_challenge_completed))
+
+        treasure_room_unlocked = self.is_treasure_room_unlocked()
+
+        if treasure_room_unlocked:
+            data[TREASURE_ROOM_UNLOCKED] = str(int(treasure_room_unlocked))
+
+        chamber_of_time_unlocked = self.is_chamber_of_time_unlocked()
+
+        if chamber_of_time_unlocked:
+            data[CHAMBER_OF_TIME_UNLOCKED] = str(int(chamber_of_time_unlocked))
+
+        chamber_of_time_discovered = self.is_chamber_of_time_discovered()
+
+        if chamber_of_time_discovered:
+            data[CHAMBER_OF_TIME_DISCOVERED] = str(int(chamber_of_time_discovered))
+
+        master_emblem_shown = self.is_master_emblem_shown()
+
+        if master_emblem_shown:
+            data[MASTER_EMBLEM_SHOWN] = str(int(master_emblem_shown))
+
+        gate_keeper_dialog = self.is_gate_keeper_dialog()
+
+        if gate_keeper_dialog:
+            data[GATE_KEEPER_DIALOG] = str(int(gate_keeper_dialog))
+
+        scratch_dialog = self.is_scratch_dialog()
+
+        if scratch_dialog:
+            data[SCRATCH_DIALOG] = str(int(scratch_dialog))
+
+        secret_shop_unlocked = self.is_secret_shop_unlocked()
+
+        if secret_shop_unlocked:
+            data[SECRET_SHOP_UNLOCKED] = str(int(secret_shop_unlocked))
+
+        demon_guardian_dialog = self.is_demon_guardian_dialog()
+
+        if demon_guardian_dialog:
+            data[DEMON_GUARDIAN_DIALOG] = str(int(demon_guardian_dialog))
+
+        demon_freed = self.is_demon_freed()
+
+        if demon_freed:
+            data[DEMON_FREED] = str(int(demon_freed))
+
+        demon_key_1 = self.is_demon_key_1()
+
+        if demon_key_1:
+            data[DEMON_KEY_1] = str(int(demon_key_1))
+
+        demon_key_2 = self.is_demon_key_2()
+
+        if demon_key_2:
+            data[DEMON_KEY_2] = str(int(demon_key_2))
+
+        demon_key_3 = self.is_demon_key_3()
+
+        if demon_key_3:
+            data[DEMON_KEY_3] = str(int(demon_key_3))
+
+        shop_keeper_dialog = self.is_shop_keeper_dialog()
+
+        if shop_keeper_dialog:
+            data[SHOP_KEEPER_DIALOG] = str(int(shop_keeper_dialog))
+
+        world_online_levels = self.is_world_online_levels()
+
+        if world_online_levels:
+            data[WORLD_ONLINE_LEVELS] = str(int(world_online_levels))
+
+        demon_discovered = self.is_demon_discovered()
+
+        if demon_discovered:
+            data[DEMON_DISCOVERED] = str(int(demon_discovered))
+
+        community_shop_unlocked = self.is_community_shop_unlocked()
+
+        if community_shop_unlocked:
+            data[COMMUNITY_SHOP_UNLOCKED] = str(int(community_shop_unlocked))
+
+        potbor_dialog = self.is_potbor_dialog()
+
+        if potbor_dialog:
+            data[POTBOR_DIALOG] = str(int(potbor_dialog))
+
+        youtube_chest_unlocked = self.is_youtube_chest_unlocked()
+
+        if youtube_chest_unlocked:
+            data[YOUTUBE_CHEST_UNLOCKED] = str(int(youtube_chest_unlocked))
+
+        facebook_chest_unlocked = self.is_facebook_chest_unlocked()
+
+        if facebook_chest_unlocked:
+            data[FACEBOOK_CHEST_UNLOCKED] = str(int(facebook_chest_unlocked))
+
+        twitter_chest_unlocked = self.is_twitter_chest_unlocked()
+
+        if twitter_chest_unlocked:
+            data[TWITTER_CHEST_UNLOCKED] = str(int(twitter_chest_unlocked))
+
+        # firebird_gate_keeper = self.is_firebird_gate_keeper()
+
+        # if firebird_gate_keeper:
+        #     data[FIREBIRD_GATE_KEEPER] = str(int(firebird_gate_keeper))
+
+        # twitch_chest_unlocked = self.is_twitch_chest_unlocked()
+
+        # if twitch_chest_unlocked:
+        #     data[TWITCH_CHEST_UNLOCKED] = str(int(twitch_chest_unlocked))
+
+        # discord_chest_unlocked = self.is_discord_chest_unlocked()
+
+        # if discord_chest_unlocked:
+        #     data[DISCORD_CHEST_UNLOCKED] = str(int(discord_chest_unlocked))
+
+        return data
 
     def is_the_challenge_unlocked(self) -> bool:
         return self.the_challenge_unlocked
@@ -3510,8 +3796,7 @@ KEY = "k_{}"
 key = KEY.format
 
 
-def is_true(item: Any) -> TypeGuard[Literal[True]]:
-    return item is True
+EXPECTED_STRING_DICT = "expected string dict"
 
 
 D = TypeVar("D", bound="Database")
@@ -3610,7 +3895,13 @@ class Database(Binary):
     def load_parts(cls: Type[D], main: bytes, levels: bytes) -> D:
         parser = PARSER
 
-        main_data = parser.load(main)
+        main_payload = parser.load(main)
+
+        if is_instance(main_payload, Dict):
+            main_data: StringDict[Any] = main_payload
+
+        else:
+            raise ValueError(EXPECTED_STRING_DICT)
 
         volume = main_data.get(VOLUME, DEFAULT_VOLUME)
         sfx_volume = main_data.get(SFX_VOLUME, DEFAULT_VOLUME)
@@ -3668,6 +3959,19 @@ class Database(Binary):
         values_data = main_data.get(VALUES, {})
 
         values = Values.from_robtop_data(values_data)
+
+        unlock_values_data = main_data.get(UNLOCK_VALUES, {})
+
+        unlock_values = UnlockValues.from_robtop_data(unlock_values_data)
+
+        custom_objects_data = main_data.get(CUSTOM_OBJECTS, {})
+
+        def objects_from_robtop(iterable: Iterable[str]) -> List[Object]:
+            return iter(iterable).filter(None).map(object_from_robtop).list()
+
+        custom_objects = (
+            iter(custom_objects_data.values()).map(split_objects).map(objects_from_robtop).list()
+        )
 
         storage = Storage.from_robtop_data(main_data)
 
@@ -3743,12 +4047,13 @@ class Database(Binary):
             iter(created_folders_data.items()).map(unpack_binary(create_folder)).ordered_set()
         )
 
-        import json
+        levels_payload = parser.load(levels)
 
-        with open("main.json", "w") as file:
-            json.dump(main_data, file, indent=2)
+        if is_instance(levels_payload, Dict):
+            levels_data: StringDict[Any] = levels_payload
 
-        levels_data = parser.load(levels)
+        else:
+            raise ValueError(EXPECTED_STRING_DICT)
 
         created_levels_data = levels_data.get(CREATED_LEVELS, {})
         binary_version_data = levels_data.get(BINARY_VERSION_LEVELS)
@@ -3765,9 +4070,6 @@ class Database(Binary):
             .map(LevelAPI.from_robtop_data)
             .ordered_set()
         )
-
-        with open("levels.json", "w") as file:
-            json.dump(levels_data, file, indent=2)
 
         return cls(
             # main
@@ -3797,6 +4099,8 @@ class Database(Binary):
             secret_value=secret_value,
             moderator=moderator,
             values=values,
+            unlock_values=unlock_values,
+            custom_objects=custom_objects,
             # ...
             storage=storage,
             completed=completed,
@@ -3823,10 +4127,11 @@ class Database(Binary):
         )
 
     def dump_main(self) -> bytes:
-        one = ONE
         parser = PARSER
 
-        main_data = {
+        one = ONE
+
+        main_data: StringDict[Any] = {
             VOLUME: self.volume,
             SFX_VOLUME: self.sfx_volume,
             UUID_LITERAL: str(self.uuid),
@@ -3867,6 +4172,19 @@ class Database(Binary):
         values_data = self.values.to_robtop_data()
 
         main_data[VALUES] = values_data
+
+        unlock_values_data = self.unlock_values.to_robtop_data()
+
+        main_data[UNLOCK_VALUES] = unlock_values_data
+
+        custom_objects = self.custom_objects
+
+        custom_objects_data = {
+            str(-index): iter(objects).map(object_to_robtop).collect(concat_objects)
+            for index, objects in iter(custom_objects).enumerate_from(1).unwrap()
+        }
+
+        main_data[CUSTOM_OBJECTS] = custom_objects_data
 
         storage_data = self.storage.to_robtop_data()
 
@@ -3946,7 +4264,7 @@ class Database(Binary):
     def dump_levels(self) -> bytes:
         parser = PARSER
 
-        created_levels_data: Dict[str, Any] = {IS_ARRAY: True}
+        created_levels_data: StringDict[Any] = {IS_ARRAY: True}
 
         created_levels_data.update(
             {
@@ -3957,7 +4275,7 @@ class Database(Binary):
 
         binary_version_data = self.binary_version.to_value()
 
-        levels_data = {
+        levels_data: StringDict[Any] = {
             CREATED_LEVELS: created_levels_data,
             BINARY_VERSION_LEVELS: binary_version_data,
         }

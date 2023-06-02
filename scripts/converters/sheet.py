@@ -4,7 +4,7 @@ from typing import Optional
 import click
 from entrypoint import entrypoint
 
-from gd.image import convert_sheet_path
+from gd.image.converters import convert_sheet_path
 
 
 @entrypoint(__name__)

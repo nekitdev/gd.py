@@ -1,50 +1,48 @@
 from __future__ import annotations
 
-from functools import lru_cache, wraps
-from operator import attrgetter as get_attribute_factory
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, TypeVar, Union
 
-from iters import iter
-from typing_extensions import Concatenate, ParamSpec
+from attrs import Attribute, field, frozen
+from funcs.decorators import wraps
+from funcs.getters import attribute_getter
+from typing_aliases import DynamicTuple
+from typing_extensions import Concatenate, ParamSpec, final
 
-from gd.async_utils import awaiting, run
 from gd.errors import LoginRequired
-from gd.typing import DecoratorIdentity, DynamicTuple
 
 if TYPE_CHECKING:
     from gd.client import Client
 
-__all__ = (
-    "cache",
-    "cache_by",
-    "check_client_login",
-    "check_login",
-    "sync",
-)
+__all__ = ("cache_by", "check_client_login", "check_login")
 
 P = ParamSpec("P")
 T = TypeVar("T")
 S = TypeVar("S")
 
-cache = lru_cache(None)
-
 CACHE_BY_AT_LEAST_ONE = "`cache_by` expects at least one name to be provided"
 
+Names = DynamicTuple[str]
+Values = Union[Any, DynamicTuple[Any]]
 
-def cache_by(*names: str) -> DecoratorIdentity[Callable[Concatenate[S, P], T]]:
-    """Caches method calls based on object's attributes given by `names`."""
 
-    if not names:
-        raise ValueError(CACHE_BY_AT_LEAST_ONE)
+@final
+@frozen()
+class CacheBy:
+    names: Names = field()
 
-    def decorator(function: Callable[Concatenate[S, P], T]) -> Callable[Concatenate[S, P], T]:
-        get_attributes = iter(names).map(get_attribute_factory).tuple()
+    @names.validator
+    def validate_names(self, attribute: Attribute[Names], value: Names) -> None:
+        if not value:
+            raise ValueError(CACHE_BY_AT_LEAST_ONE)
 
-        cache: Dict[int, Tuple[T, DynamicTuple[Any]]] = {}
+    def __call__(self, function: Callable[Concatenate[S, P], T]) -> Callable[Concatenate[S, P], T]:
+        get_attributes = attribute_getter(*self.names)
+
+        cache: Dict[int, Tuple[T, Values]] = {}
 
         @wraps(function)
         def wrap(self: S, *args: P.args, **kwargs: P.kwargs) -> T:
-            actual = tuple(get_attribute(self) for get_attribute in get_attributes)
+            actual = get_attributes(self)
 
             key = id(self)
 
@@ -62,17 +60,9 @@ def cache_by(*names: str) -> DecoratorIdentity[Callable[Concatenate[S, P], T]]:
 
         return wrap
 
-    return decorator
 
-
-def sync(function: Callable[P, Awaitable[T]]) -> Callable[P, T]:
-    """Wraps the `function` to be called synchronously."""
-
-    @wraps(function)
-    def wrap(*args: P.args, **kwargs: P.kwargs) -> T:
-        return run(awaiting(function(*args, **kwargs)))
-
-    return wrap
+def cache_by(*names: str) -> CacheBy:
+    return CacheBy(names)
 
 
 C = TypeVar("C", bound="Client")

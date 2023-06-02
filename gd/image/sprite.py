@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import Tuple, Type, TypeVar
 
 from attrs import field, frozen
+from typing_aliases import StringMapping
 from typing_extensions import Literal, NotRequired, TypedDict
 
 from gd.image.geometry import Point, Rectangle, Size
-from gd.typing import StringMapping
 
 __all__ = ("Sprite", "Sprites", "SpriteData")
 

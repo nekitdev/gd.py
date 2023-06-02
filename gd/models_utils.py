@@ -3,6 +3,7 @@ from functools import partial
 from typing import Iterable, Mapping, Optional, Type, TypeVar
 
 from iters.iters import iter
+from typing_aliases import Pair, Parse
 
 from gd.models_constants import (
     ARTIST_SEPARATOR,
@@ -75,7 +76,6 @@ from gd.models_constants import (
     USER_COMMENTS_RESPONSE_COMMENTS_SEPARATOR,
     USER_COMMENTS_RESPONSE_SEPARATOR,
 )
-from gd.typing import Parse
 
 
 def float_str(value: float) -> str:
@@ -160,7 +160,11 @@ def split_float_mapping(separator: str, string: str) -> Mapping[float, float]:
 
 
 def string_mapping_to_iterable(mapping: Mapping[str, str]) -> Iterable[str]:
-    return iter((index, value) for index, value in mapping.items()).flatten().unwrap()
+    return iter(mapping.items()).flatten().unwrap()
+
+
+def str_left(left: int, right: str) -> Pair[str]:
+    return (str(left), right)
 
 
 def mapping_to_iterable(mapping: Mapping[int, str]) -> Iterable[str]:

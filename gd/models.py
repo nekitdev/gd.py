@@ -2,7 +2,9 @@ from typing import Iterator, List, Optional, Type, TypeVar
 from urllib.parse import quote, unquote
 
 from attrs import define, field
-from iters import iter
+from iters.iters import iter
+from pendulum import DateTime, Duration, duration
+from typing_aliases import DynamicTuple
 from typing_extensions import Protocol
 from yarl import URL
 
@@ -57,7 +59,7 @@ from gd.constants import (
     UNNAMED,
     WEEKLY_ID_ADD,
 )
-from gd.date_time import DateTime, Duration, date_time_from_human, date_time_to_human, utc_now
+from gd.date_time import date_time_from_human, date_time_to_human, utc_now
 from gd.decorators import cache_by
 from gd.difficulty_parameters import DEFAULT_DEMON_DIFFICULTY_VALUE, DifficultyParameters
 from gd.encoding import (
@@ -240,7 +242,6 @@ from gd.models_utils import (
 from gd.password import Password
 from gd.robtop import RobTop
 from gd.string_utils import concat_empty
-from gd.typing import DynamicTuple
 from gd.versions import CURRENT_GAME_VERSION, GameVersion
 
 __all__ = (
@@ -914,14 +915,14 @@ TI = TypeVar("TI", bound="TimelyInfoModel")
 class TimelyInfoModel(Model):
     id: int = field(default=DEFAULT_ID)
     type: TimelyType = field(default=TimelyType.DEFAULT)
-    cooldown: Duration = field(factory=Duration)
+    cooldown: Duration = field(factory=duration)
 
     @classmethod
     def from_robtop(cls: Type[TI], string: str, type: TimelyType = TimelyType.DEFAULT) -> TI:
         timely_id, cooldown_seconds = iter(split_timely_info(string)).map(int).tuple()
 
         return cls(
-            id=timely_id % WEEKLY_ID_ADD, type=type, cooldown=Duration(seconds=cooldown_seconds)
+            id=timely_id % WEEKLY_ID_ADD, type=type, cooldown=duration(seconds=cooldown_seconds)
         )
 
     def to_robtop(self) -> str:
@@ -930,7 +931,7 @@ class TimelyInfoModel(Model):
         if self.type.is_weekly():
             timely_id += WEEKLY_ID_ADD
 
-        cooldown = int(self.cooldown.total_seconds())
+        cooldown = int(self.cooldown.total_seconds())  # type: ignore
 
         values = (str(timely_id), str(cooldown))
 
@@ -1204,8 +1205,8 @@ class LevelModel(Model):
     timely_type: TimelyType = TimelyType.DEFAULT
     epic: bool = DEFAULT_EPIC
     object_count: int = DEFAULT_OBJECT_COUNT
-    editor_time: Duration = field(factory=Duration)
-    copies_time: Duration = field(factory=Duration)
+    editor_time: Duration = field(factory=duration)
+    copies_time: Duration = field(factory=duration)
 
     @classmethod
     def from_robtop(cls: Type[L], string: str) -> L:
@@ -1222,18 +1223,18 @@ class LevelModel(Model):
         editor_time_option = mapping.get(LEVEL_EDITOR_TIME)
 
         if editor_time_option:
-            editor_time = Duration(seconds=int(editor_time_option))
+            editor_time = duration(seconds=int(editor_time_option))
 
         else:
-            editor_time = Duration()
+            editor_time = duration()
 
         copies_time_option = mapping.get(LEVEL_COPIES_TIME)
 
         if copies_time_option:
-            copies_time = Duration(seconds=int(copies_time_option))
+            copies_time = duration(seconds=int(copies_time_option))
 
         else:
-            copies_time = Duration()
+            copies_time = duration()
 
         timely_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_TIMELY_ID))
 
@@ -1361,8 +1362,8 @@ class LevelModel(Model):
             LEVEL_EPIC: str(int(self.is_epic())),
             LEVEL_DEMON_DIFFICULTY: str(difficulty_parameters.demon_difficulty_value),
             LEVEL_OBJECT_COUNT: str(self.object_count),
-            LEVEL_EDITOR_TIME: str(int(self.editor_time.total_seconds())),
-            LEVEL_COPIES_TIME: str(int(self.copies_time.total_seconds())),
+            LEVEL_EDITOR_TIME: str(int(self.editor_time.total_seconds())),  # type: ignore
+            LEVEL_COPIES_TIME: str(int(self.copies_time.total_seconds())),  # type: ignore
         }
 
         return concat_level(mapping)
@@ -1383,7 +1384,7 @@ class LevelModel(Model):
     def has_verified_coins(self) -> bool:
         return self.verified_coins
 
-    @property  # type: ignore
+    @property
     @cache_by(UNPROCESSED_DATA)
     def processed_data(self) -> str:
         return unzip_level_string(self.unprocessed_data)
@@ -1392,14 +1393,14 @@ class LevelModel(Model):
     def processed_data(self, data: str) -> None:
         self.unprocessed_data = zip_level_string(data)
 
-    @property  # type: ignore
+    @property
     @cache_by(UNPROCESSED_DATA)
     def data(self) -> bytes:
-        return Editor.from_robtop(self.processed_data).to_bytes()  # type: ignore
+        return Editor.from_robtop(self.processed_data).to_bytes()
 
     @data.setter
     def data(self, data: bytes) -> None:
-        self.processed_data = Editor.from_bytes(data).to_robtop()  # type: ignore
+        self.processed_data = Editor.from_bytes(data).to_robtop()
 
 
 LEVEL_COMMENT_INNER_LEVEL_ID = 1
@@ -1925,10 +1926,10 @@ class ChestsInnerModel(Model):
     check: str = field(default=EMPTY)
     udid: str = field(default=EMPTY)
     account_id: int = field(default=DEFAULT_ID)
-    chest_1_duration: Duration = field(factory=Duration)
+    chest_1_duration: Duration = field(factory=duration)
     chest_1: ChestModel = field(factory=ChestModel)
     chest_1_count: int = field(default=DEFAULT_CHEST_COUNT)
-    chest_2_duration: Duration = field(factory=Duration)
+    chest_2_duration: Duration = field(factory=duration)
     chest_2: ChestModel = field(factory=ChestModel)
     chest_2_count: int = field(default=DEFAULT_CHEST_COUNT)
     reward_type: RewardType = field(default=RewardType.DEFAULT)
@@ -1956,10 +1957,10 @@ class ChestsInnerModel(Model):
             check=check,
             udid=udid,
             account_id=int(account_id_string),
-            chest_1_duration=Duration(seconds=int(chest_1_duration_string)),
+            chest_1_duration=duration(seconds=int(chest_1_duration_string)),
             chest_1=ChestModel.from_robtop(chest_1_string),
             chest_1_count=int(chest_1_count_string),
-            chest_2_duration=Duration(seconds=int(chest_2_duration_string)),
+            chest_2_duration=duration(seconds=int(chest_2_duration_string)),
             chest_2=ChestModel.from_robtop(chest_2_string),
             chest_2_count=int(chest_2_count_string),
             reward_type=RewardType(int(reward_type_string)),
@@ -1972,10 +1973,10 @@ class ChestsInnerModel(Model):
             self.check,
             self.udid,
             str(self.account_id),
-            str(int(self.chest_1_duration.total_seconds())),
+            str(int(self.chest_1_duration.total_seconds())),  # type: ignore
             self.chest_1.to_robtop(),
             str(self.chest_1_count),
-            str(int(self.chest_2_duration.total_seconds())),
+            str(int(self.chest_2_duration.total_seconds())),  # type: ignore
             self.chest_2.to_robtop(),
             str(self.chest_2_count),
             str(self.reward_type.value),
@@ -1998,7 +1999,7 @@ class QuestsInnerModel(Model):
     check: str = field(default=EMPTY)
     udid: str = field(default=EMPTY)
     account_id: int = field(default=DEFAULT_ID)
-    duration: Duration = field(factory=Duration)
+    duration: Duration = field(factory=duration)
     quest_1: QuestModel = field(factory=QuestModel)
     quest_2: QuestModel = field(factory=QuestModel)
     quest_3: QuestModel = field(factory=QuestModel)
@@ -2023,7 +2024,7 @@ class QuestsInnerModel(Model):
             check=check,
             udid=udid,
             account_id=int(account_id_string),
-            duration=Duration(seconds=int(duration_string)),
+            duration=duration(seconds=int(duration_string)),
             quest_1=QuestModel.from_robtop(quest_1_string),
             quest_2=QuestModel.from_robtop(quest_2_string),
             quest_3=QuestModel.from_robtop(quest_3_string),
@@ -2036,7 +2037,7 @@ class QuestsInnerModel(Model):
             self.check,
             self.udid,
             str(self.account_id),
-            str(int(self.duration.total_seconds())),
+            str(int(self.duration.total_seconds())),  # type: ignore
             self.quest_1.to_robtop(),
             self.quest_2.to_robtop(),
             self.quest_3.to_robtop(),
@@ -2649,17 +2650,17 @@ CB = TypeVar("CB", bound="CommentBannedModel")
 @define()
 class CommentBannedModel(Model):
     string: str = field(default=TEMPORARY)
-    timeout: Duration = field(factory=Duration)
+    timeout: Duration = field(factory=duration)
     reason: str = field(default=EMPTY)
 
     @classmethod
     def from_robtop(cls: Type[CB], string: str) -> CB:
         string, timeout, reason = split_comment_banned(string)
 
-        return cls(string, Duration(seconds=int(timeout)), reason)
+        return cls(string, duration(seconds=int(timeout)), reason)
 
     def to_robtop(self) -> str:
-        values = (self.string, str(int(self.timeout.total_seconds())), self.reason)
+        values = (self.string, str(int(self.timeout.total_seconds())), self.reason)  # type: ignore
 
         return concat_comment_banned(values)
 

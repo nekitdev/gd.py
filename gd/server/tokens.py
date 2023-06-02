@@ -3,11 +3,11 @@ from typing import Any, Optional, Type, TypeVar
 
 from attrs import field, frozen
 from iters import iter
+from typing_aliases import Predicate, StringDict
 from typing_extensions import TypedDict
 
 from gd.client import Client
 from gd.server.constants import DEFAULT_SIZE
-from gd.typing import Predicate, StringDict
 
 __all__ = ("ServerToken", "ServerTokens", "Token", "TokenData", "Tokens")
 
@@ -72,7 +72,7 @@ AnyTokens = Tokens[Any]
 
 class ServerTokens(Tokens[ST]):
     def find(self, name: str, password: str) -> Optional[ST]:
-        return iter(self.values()).find_or_none(by_name_and_password(name, password))
+        return iter(self.values()).find(by_name_and_password(name, password)).extract()
 
     async def register(self, name: str, password: str) -> ST:
         token = self.token_type()

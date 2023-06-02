@@ -1,23 +1,23 @@
 import json
-import plistlib as plist
+import plistlib as plist  # NOTE: assuming valid plist files
 import re
 from collections import defaultdict as default_dict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, TypeVar
 
-from iters import iter
+from iters.iters import iter
+from typing_aliases import DynamicTuple, IntoPath, Parse, StringDict, Unary
 
 from gd.assets import DATA_SUFFIX
-from gd.constants import EMPTY, READ_BINARY, WRITE
+from gd.constants import READ_BINARY, WRITE
 from gd.image.animation import AnimationSheetData
 from gd.image.layer import LayerData
 from gd.image.sheet import SheetData
 from gd.image.sprite import SpriteData
-from gd.json import AnyCamelDict, CamelDict
+from gd.named_dicts import AnyCamelDict, CamelDict
 from gd.models_utils import int_bool
 from gd.string_constants import COMMA
-from gd.string_utils import tick
-from gd.typing import DynamicTuple, IntoPath, Parse, StringDict, Unary
+from gd.string_utils import remove_braces, tick
 
 __all__ = (
     "convert_animation_sheet_data",
@@ -29,10 +29,6 @@ __all__ = (
 T = TypeVar("T")
 
 MAGIC_SCALAR = 4
-
-BRACES = "{}"
-
-remove_braces = str.maketrans(dict.fromkeys(BRACES, EMPTY))
 
 
 def parse_tuples(string: str, parse: Parse[T], separator: str = COMMA) -> DynamicTuple[T]:

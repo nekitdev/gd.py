@@ -1,7 +1,8 @@
-from versions import parse_version, python_version_info
+from versions.meta import python_version_info
+from versions.versioned import get_version
 
-from gd import __version__ as version
+import gd
 
 __all__ = ("version_info", "python_version_info")
 
-version_info = parse_version(version)
+version_info = get_version(gd)  # type: ignore

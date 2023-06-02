@@ -5,7 +5,6 @@ from gd.server.dependencies import token_dependency
 from gd.server.tokens import ServerToken, TokenData
 
 
-@v1.get("/login", summary="Performs the login and returns the token for future use.")
 @v1.post("/login", summary="Performs the login and returns the token for future use.")
 async def login(name: str, password: str) -> TokenData:
     token = tokens.find(name, password)
@@ -16,7 +15,6 @@ async def login(name: str, password: str) -> TokenData:
     return TokenData(token=token.value)
 
 
-@v1.get("/logout", summary="Performs the logout.")
 @v1.post("/logout", summary="Performs the logout.")
 async def logout(token: ServerToken = Depends(token_dependency)) -> None:
     tokens.remove(token)

@@ -13,6 +13,8 @@ UNDER = "_"
 
 NEW_LINE = "\n"
 
+BRACES = "{}"
+
 WRAP = "({})"
 
 TICK = "`{}`"

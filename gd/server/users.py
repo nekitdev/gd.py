@@ -4,7 +4,7 @@ from typing import Iterable, List
 from fastapi import Depends
 from fastapi.responses import FileResponse
 
-from gd.async_utils import run_blocking
+from gd.asyncio import run_blocking
 from gd.enums import ByteOrder  # HERE
 from gd.level import Level, LevelData
 from gd.server.constants import CACHE, ICONS, ME
@@ -39,14 +39,14 @@ SELF_ICONS = "me.{}.icon.png"
 async def get_self(token: ServerToken = Depends(token_dependency)) -> UserData:
     user = await token.client.user.get()
 
-    return user.to_json()
+    return user.into_data()
 
 
 @v1.get("/users/{account_id}", summary="Fetches the user by the account ID.")
 async def get_user(account_id: int) -> UserData:
     user = await client.get_user(account_id)
 
-    return user.to_json()
+    return user.into_data()
 
 
 @v1.get(f"/users/{ME}/icons", summary="Fetches the self user icons.")
@@ -83,15 +83,15 @@ async def get_user_icons(account_id: int) -> FileResponse:
     return FileResponse(path)
 
 
-def level_to_json(level: Level) -> LevelData:
-    return level.to_json()
+def level_into_data(level: Level) -> LevelData:
+    return level.into_data()
 
 
 @v1.get(f"/users/{ME}/levels", summary="Fetches the self user levels.")
 async def get_self_levels(
     pages: Iterable[int] = Depends(pages_dependency), token: ServerToken = Depends(token_dependency)
 ) -> List[LevelData]:
-    return await token.client.user.get_levels(pages=pages).map(level_to_json).list()
+    return await token.client.user.get_levels(pages=pages).map(level_into_data).list()
 
 
 @v1.get("/users/{account_id}/levels", summary="Fetches the user levels by the account ID.")
@@ -100,14 +100,14 @@ async def get_user_levels(
 ) -> List[LevelData]:
     user = await client.get_user(account_id)
 
-    return await user.get_levels(pages=pages).map(level_to_json).list()
+    return await user.get_levels(pages=pages).map(level_into_data).list()
 
 
 @v1.get("/search/user/{query}", summary="Searches for the user by the query.")
 async def search_user(query: str) -> UserData:
     user = await client.search_user(query)
 
-    return user.to_json()
+    return user.into_data()
 
 
 @v1.get("/search/user/{query}/icons", summary="Searches for the user icons by the query.")
@@ -132,15 +132,15 @@ async def search_user_levels(
 ) -> List[LevelData]:
     user = await client.search_user(query)
 
-    return await user.get_levels(pages=pages).map(level_to_json).list()
+    return await user.get_levels(pages=pages).map(level_into_data).list()
 
 
-def user_to_json(user: User) -> UserData:
-    return user.to_json()
+def user_into_data(user: User) -> UserData:
+    return user.into_data()
 
 
 @v1.get("/search/users/{query}", summary="Searches for users by the query.")
 async def search_users(
     query: str, pages: Iterable[int] = Depends(pages_dependency)
 ) -> List[UserData]:
-    return await client.search_users(query, pages=pages).map(user_to_json).list()
+    return await client.search_users(query, pages=pages).map(user_into_data).list()

@@ -23,18 +23,8 @@ Functions marked with `?` are not required for the library to work.
 # fmt: off
 # isort: off
 
-from typing import Any
-
-from typing_extensions import Never
-
+from gd.memory.internal.utils import unimplemented
 from gd.platform import DARWIN, WINDOWS
-
-UNIMPLEMENTED = "this function is not implemented"
-
-
-def unimplemented(*args: Any, **kwargs: Any) -> Never:
-    raise NotImplementedError(UNIMPLEMENTED)
-
 
 try:
     from gd.memory.internal.darwin import allocate as darwin_allocate  # type: ignore
@@ -170,3 +160,51 @@ if WINDOWS:
     system_read = windows_read
     system_terminate = windows_terminate
     system_write = windows_write
+
+__all__ = (
+    # darwin
+    "darwin_allocate",
+    "darwin_close",
+    "darwin_free",
+    "darwin_get_base_address",
+    "darwin_get_base_address_from_handle",
+    "darwin_get_process_bits",
+    "darwin_get_process_bits_from_handle",
+    "darwin_get_process_id_from_name",
+    "darwin_get_process_id_from_title",
+    "darwin_open",
+    "darwin_protect",
+    "darwin_read",
+    "darwin_terminate",
+    "darwin_write",
+    # windows
+    "windows_allocate",
+    "windows_close",
+    "windows_free",
+    "windows_get_base_address",
+    "windows_get_base_address_from_handle",
+    "windows_get_process_bits",
+    "windows_get_process_bits_from_handle",
+    "windows_get_process_id_from_name",
+    "windows_get_process_id_from_title",
+    "windows_open",
+    "windows_protect",
+    "windows_read",
+    "windows_terminate",
+    "windows_write",
+    # system
+    "system_allocate",
+    "system_close",
+    "system_free",
+    "system_get_base_address",
+    "system_get_base_address_from_handle",
+    "system_get_process_bits",
+    "system_get_process_bits_from_handle",
+    "system_get_process_id_from_name",
+    "system_get_process_id_from_title",
+    "system_open",
+    "system_protect",
+    "system_read",
+    "system_terminate",
+    "system_write",
+)

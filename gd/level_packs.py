@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, AsyncIterator, Optional, Type, TypeVar
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
+from typing_aliases import DynamicTuple
 
 from gd.color import Color
 from gd.constants import DEFAULT_COINS, DEFAULT_STARS
@@ -11,7 +12,6 @@ from gd.entity import Entity
 from gd.enums import Difficulty, GauntletID
 from gd.filters import Filters
 from gd.models import GauntletModel, MapPackModel
-from gd.typing import DynamicTuple
 
 if TYPE_CHECKING:
     from gd.client import Client

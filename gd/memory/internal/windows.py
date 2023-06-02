@@ -1,19 +1,20 @@
-# type: ignore
+# type: ignore  # XXX: we need to be extremely careful here
 
 import ctypes
 from pathlib import Path
 from types import TracebackType as Traceback
-from typing import Generator, Optional, Type, TypeVar, overload
+from typing import Generator, Optional, Type, TypeVar
 
-from typing_extensions import TypeAlias
+from attrs import frozen
+from typing_aliases import AnyError
+from typing_extensions import TypeAlias, final
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.enums import Permissions
 from gd.memory.internal import unimplemented
-from gd.memory.utils import Structure, external
+from gd.memory.internal.utils import Struct, external
 from gd.platform import SYSTEM_BITS
 from gd.string_utils import tick
-from gd.typing import AnyException
 
 __all__ = (
     "open",
@@ -32,19 +33,19 @@ __all__ = (
     "get_process_id_from_title",
 )
 
-CAN_NOT_DEFINE_FUNCTIONS_FOR_WINDOWS = "can not define internal functions for windows"
+CAN_NOT_DEFINE_INTERNAL_FUNCTIONS_FOR_WINDOWS = "can not define internal functions for windows"
 
 try:
     from ctypes import wintypes
 
 except ValueError:
-    raise ImportError(CAN_NOT_DEFINE_FUNCTIONS_FOR_WINDOWS) from None
+    raise ImportError(CAN_NOT_DEFINE_INTERNAL_FUNCTIONS_FOR_WINDOWS) from None
 
 try:
     ctypes.WinDLL
 
 except AttributeError:
-    raise ImportError(CAN_NOT_DEFINE_FUNCTIONS_FOR_WINDOWS) from None
+    raise ImportError(CAN_NOT_DEFINE_INTERNAL_FUNCTIONS_FOR_WINDOWS) from None
 
 KERNEL_DLL = "kernel32.dll"
 USER_DLL = "user32.dll"
@@ -54,10 +55,8 @@ try:
     USER = ctypes.WinDLL(USER_DLL)
 
 except OSError:
-    raise ImportError(CAN_NOT_DEFINE_FUNCTIONS_FOR_WINDOWS) from None
+    raise ImportError(CAN_NOT_DEFINE_INTERNAL_FUNCTIONS_FOR_WINDOWS) from None
 
-
-INFINITE = 0xFFFFFFFF
 
 MAX_MODULE_NAME = 0xFF
 
@@ -78,7 +77,7 @@ READ = Permissions.READ
 WRITE = Permissions.WRITE
 EXECUTE = Permissions.EXECUTE
 
-PERMISSIONS = {
+PERMISSIONS = {  # closest approximations
     NONE: PAGE_NO_ACCESS,
     READ: PAGE_READ_ONLY,
     WRITE: PAGE_READ_WRITE,
@@ -101,7 +100,7 @@ ULONG_POINTER: TypeAlias = ctypes.POINTER(wintypes.ULONG)
 CHAR_MAX_PATH: TypeAlias = wintypes.CHAR * wintypes.MAX_PATH
 
 
-class ProcessEntry(Structure):
+class ProcessEntry(Struct):
     size: wintypes.DWORD
     count_usage: wintypes.DWORD
     process_id: wintypes.DWORD
@@ -134,7 +133,7 @@ BYTE_POINTER: TypeAlias = ctypes.POINTER(wintypes.BYTE)
 CHAR_MAX_MODULE_NAME: TypeAlias = wintypes.CHAR * MAX_MODULE_NAME_NULL
 
 
-class ModuleEntry(Structure):
+class ModuleEntry(Struct):
     size: wintypes.DWORD
     module_id: wintypes.DWORD
     process_id: wintypes.DWORD
@@ -166,7 +165,7 @@ class ModuleEntry(Structure):
 LP_MODULE_ENTRY = ctypes.POINTER(ModuleEntry)
 
 
-class SecurityAttributes(Structure):
+class SecurityAttributes(Struct):
     length: wintypes.DWORD
     security_descriptor: wintypes.LPVOID
     inherit_handle: wintypes.BOOL
@@ -305,23 +304,16 @@ def _is_wow_64_process_via_pointer(
     pass
 
 
-E = TypeVar("E", bound=AnyException)
+E = TypeVar("E", bound=AnyError)
 
 
+@final
+@frozen()
 class _CloseHandleManager:
-    def __init__(self, handle: int) -> None:
-        self._handle = handle
+    _handle: int
 
     def __enter__(self) -> int:
         return self._handle
-
-    @overload
-    def __exit__(self, error_type: None, error: None, traceback: None) -> None:
-        ...
-
-    @overload
-    def __exit__(self, error_type: Type[E], error: E, traceback: Traceback) -> None:
-        ...
 
     def __exit__(
         self, error_type: Optional[Type[E]], error: Optional[E], traceback: Optional[Traceback]

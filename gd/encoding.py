@@ -33,7 +33,7 @@ __all__ = (
     "CIPHER",
     "ECB_PAD",
     "SAVE_KEY",
-    "CHARSET",
+    "CHARACTERS",
     "enforce_valid_base64",
     "decode_base64",
     "encode_base64",
@@ -107,9 +107,9 @@ ECB_PAD = 16
 
 SAVE_KEY = SimpleKey.SAVE.value
 
-# charset
+# characters
 
-CHARSET = ascii_letters + digits
+CHARACTERS = ascii_letters + digits
 
 
 LAST = ~0
@@ -212,9 +212,9 @@ def generate_random_string_and_encode_value(
     length: int = DEFAULT_LENGTH_WITH_VALUE,
     start: int = DEFAULT_START,
     stop: int = DEFAULT_STOP,
-    charset: str = CHARSET,
+    characters: str = CHARACTERS,
 ) -> str:
-    return generate_random_string(length, charset) + encode_robtop_string(
+    return generate_random_string(length, characters) + encode_robtop_string(
         str(random_range(start, stop)), key
     )
 
@@ -222,8 +222,8 @@ def generate_random_string_and_encode_value(
 DEFAULT_LENGTH = 10
 
 
-def generate_random_string(length: int = 10, charset: str = CHARSET) -> str:
-    return concat_empty(choices(charset, k=length))
+def generate_random_string(length: int = 10, characters: str = CHARACTERS) -> str:
+    return concat_empty(choices(characters, k=length))
 
 
 def decode_robtop(data: bytes, key: Key) -> bytes:
@@ -352,7 +352,7 @@ def generate_level_seed(data: AnyStr, count: int = DEFAULT_COUNT) -> AnyStr:
     if length < count:
         return data
 
-    return data[:: length // count][:count]  # type: ignore
+    return data[:: length // count][:count]
 
 
 PLAYED_MULTIPLY = 1482

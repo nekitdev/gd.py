@@ -52,7 +52,7 @@ __all__ = (
 TOTAL = float(COMPLETED)
 
 
-@struct()  # type: ignore
+@struct()
 class GameLevel(CCNode):
     last_save = Field(MutPointerData(Void()))  # CCDictionary*
 
@@ -395,7 +395,7 @@ class GameLevel(CCNode):
         ).into_difficulty()
 
 
-@struct()  # type: ignore
+@struct()
 class LevelSettings(CCNode):
     effect_manager = Field(MutPointerData(Void()))
     game_mode_value = Field(Int())
@@ -429,43 +429,43 @@ class LevelSettings(CCNode):
         return self.song_custom
 
 
-@struct()  # type: ignore
+@struct()
 class ShortVector(Struct):  # monomorphization
     pointer = Field(MutPointerData(MutArrayData(Short())))
     length = Field(USize())
     capacity = Field(USize())
 
 
-@struct()  # type: ignore
+@struct()
 class GameObject(CCSpritePlus):
     ...
 
 
-@struct()  # type: ignore
+@struct()
 class Player(GameObject):
     ...
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class TriggerEffectDelegate(Struct):
     pass
 
 
-@struct()  # type: ignore
+@struct()
 class GameObjectVector(Struct):  # monomorphization
     pointer = Field(MutPointerData(MutArrayData(MutPointerData(StructData(GameObject)))))
     length = Field(USize())
     capacity = Field(USize())
 
 
-@struct()  # type: ignore
+@struct()
 class CCArrayVector(Struct):  # monomorphization
     pointer = Field(MutPointerData(MutArrayData(MutPointerData(StructData(CCArray)))))
     length = Field(USize())
     capacity = Field(USize())
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class BaseGameLayer(TriggerEffectDelegate, CCLayer):
     oriented_bounding_box = Field(MutPointerData(Void()))  # OBB2D*
 
@@ -614,7 +614,7 @@ class BaseGameLayer(TriggerEffectDelegate, CCLayer):
     _pad_0 = Field(DynamicFill(8, android_x32=0, android_x64=0))
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class PlayLayer(BaseGameLayer):  # TODO: misaligned
     _unknown_float_0 = Field(Float())
 
@@ -908,7 +908,7 @@ class PlayLayer(BaseGameLayer):  # TODO: misaligned
         return self.test
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class EditorLayer(BaseGameLayer):
     ignore_damage = Field(Bool())
     follow_player = Field(Bool())
@@ -1028,7 +1028,7 @@ class EditorLayer(BaseGameLayer):
     ground = Field(MutPointerData(Void()))  # GroundLayer*
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class BaseGameManager(CCNode):
     file_name = Field(StringData())
 
@@ -1038,7 +1038,7 @@ class BaseGameManager(CCNode):
     quick_save = Field(Bool())
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class GameManager(BaseGameManager):
     switch_modes = Field(Bool())
     to_fullscreen = Field(Bool())
@@ -1255,7 +1255,7 @@ class GameManager(BaseGameManager):
         return Scene(self.scene_value)
 
 
-@struct(virtual=True)  # type: ignore
+@struct(virtual=True)
 class AccountManager(CCNode):
     data = Field(MutPointerData(Void()))
 

@@ -3,9 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, AsyncIterator, Iterable, Optional, Type, TypeVar
 
 from attrs import define, field
-from cattrs.gen import make_dict_unstructure_fn, override
 from iters.async_iters import wrap_async_iter
 from iters.iters import iter
+from pendulum import DateTime, Duration, duration
+from typing_aliases import Predicate
 
 from gd.api.editor import Editor
 from gd.api.recording import Recording
@@ -33,8 +34,8 @@ from gd.constants import (
     EMPTY,
     UNKNOWN,
 )
-from gd.converter import CONVERTER
-from gd.date_time import DateTime, Duration, utc_from_timestamp, utc_now
+from gd.converter import CONVERTER, register_unstructure_hook_omit_client
+from gd.date_time import utc_from_timestamp, utc_now
 from gd.encoding import compress, decompress, unzip_level_string, zip_level_string
 from gd.entity import Entity, EntityData
 from gd.enums import (
@@ -53,7 +54,6 @@ from gd.models import LevelModel, TimelyInfoModel
 from gd.official_levels import OFFICIAL_LEVELS, OfficialLevel
 from gd.password import Password, PasswordData
 from gd.song import Song, SongData
-from gd.typing import Predicate
 from gd.users import User, UserData
 from gd.versions import CURRENT_GAME_VERSION, GameVersion, VersionData
 
@@ -125,6 +125,7 @@ class LevelData(EntityData):
     timely_id: int
 
 
+@register_unstructure_hook_omit_client
 @define(hash=True)
 class Level(Entity):
     name: str = field(eq=False)
@@ -179,10 +180,10 @@ class Level(Entity):
         self.processed_data = Editor.from_bytes(data).to_robtop()
 
     @classmethod
-    def from_json(cls: Type[L], data: LevelData) -> L:  # type: ignore
+    def from_data(cls: Type[L], data: LevelData) -> L:  # type: ignore
         return CONVERTER.structure(data, cls)
 
-    def to_json(self) -> LevelData:
+    def into_data(self) -> LevelData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     def to_binary(
@@ -206,8 +207,8 @@ class Level(Entity):
         self.creator.to_binary(binary, order, version, encoding, errors)
         self.song.to_binary(binary, order, version, encoding, errors)
 
-        writer.write_f64(self.created_at.timestamp())
-        writer.write_f64(self.updated_at.timestamp())
+        writer.write_f64(self.created_at.timestamp())  # type: ignore
+        writer.write_f64(self.updated_at.timestamp())  # type: ignore
 
         data = self.description.encode(encoding, errors)
 
@@ -260,8 +261,8 @@ class Level(Entity):
 
         writer.write_u32(self.object_count)
 
-        writer.write_f32(self.editor_time.total_seconds())
-        writer.write_f32(self.copies_time.total_seconds())
+        writer.write_f32(self.editor_time.total_seconds())  # type: ignore
+        writer.write_f32(self.copies_time.total_seconds())  # type: ignore
 
         writer.write_u8(self.timely_type.value)
         writer.write_u16(self.timely_id)
@@ -348,8 +349,8 @@ class Level(Entity):
         editor_seconds = reader.read_f32()
         copies_seconds = reader.read_f32()
 
-        editor_time = Duration(seconds=editor_seconds)
-        copies_time = Duration(seconds=copies_seconds)
+        editor_time = duration(seconds=editor_seconds)
+        copies_time = duration(seconds=copies_seconds)
 
         timely_type_value = reader.read_u8()
 
@@ -473,10 +474,10 @@ class Level(Entity):
                 raise ValueError(EXPECTED_QUERY)
 
             else:
-                official_level = iter(official_levels).find_or_none(by_name(name))
+                official_level = iter(official_levels).find(by_name(name)).extract()
 
         else:
-            official_level = iter(official_levels).find_or_none(by_id(id))
+            official_level = iter(official_levels).find(by_id(id)).extract()
 
         if official_level is None:
             raise LookupError(CAN_NOT_FIND_LEVEL)
@@ -739,9 +740,3 @@ T = TypeVar("T")
 
 def switch_none(item: Optional[T], default: T) -> T:
     return default if item is None else item
-
-
-CONVERTER.register_unstructure_hook(
-    Level,
-    make_dict_unstructure_fn(Level, CONVERTER, client_unchecked=override(omit=True)),
-)

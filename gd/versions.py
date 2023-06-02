@@ -3,14 +3,15 @@ from __future__ import annotations
 from typing import Type, TypeVar
 
 from attrs import Attribute, field, frozen
-from typing_extensions import Final, TypedDict
+from typing_extensions import Final
+from typing_extensions import TypedDict as Data
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.converter import CONVERTER
 from gd.enums import ByteOrder
 from gd.robtop import RobTop
-from gd.string_utils import tick
+from gd.string_utils import is_digit, tick
 
 __all__ = (
     "CURRENT_GAME_VERSION",
@@ -20,16 +21,16 @@ __all__ = (
     "GameVersion",
 )
 
-BASE: Final[int] = 10
+BASE: Final = 10
 
 V = TypeVar("V", bound="Version")
 
 EXPECTED_MAJOR = "expected major >= 0"
 EXPECTED_MINOR = "expected minor >= 0"
-EXPECTED_BASE = f"expected minor <= {BASE}"
+EXPECTED_BASE = f"expected minor < {BASE}"
 
 
-class VersionData(TypedDict):
+class VersionData(Data):
     major: int
     minor: int
 
@@ -56,10 +57,10 @@ class Version(Binary, RobTop):
             raise ValueError(EXPECTED_BASE)
 
     @classmethod
-    def from_json(cls: Type[V], data: VersionData) -> V:
+    def from_data(cls: Type[V], data: VersionData) -> V:
         return CONVERTER.structure(data, cls)
 
-    def to_json(self) -> VersionData:
+    def into_data(self) -> VersionData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
@@ -80,7 +81,7 @@ class Version(Binary, RobTop):
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
-        return string.isdigit()
+        return is_digit(string)
 
     # assume `u8` is enough
 
@@ -129,7 +130,7 @@ class GameVersion(Version):
 
         return cls.from_value(value)
 
-    def to_robtop_value(self) -> int:
+    def to_robtop_value(self) -> int:  # whyyy
         major = self.major
         minor = self.minor
 
@@ -154,7 +155,7 @@ class GameVersion(Version):
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
-        return string.isdigit()
+        return is_digit(string)
 
 
 CURRENT_GAME_VERSION = GameVersion(2, 1)

@@ -1,6 +1,8 @@
 from typing import Any, Optional, Type, TypeVar
 
 from attrs import define, field
+from pendulum import Duration, duration
+from typing_aliases import StringDict, StringMapping
 
 from gd.api.editor import Editor
 from gd.api.recording import Recording
@@ -46,7 +48,6 @@ from gd.constants import (
     UNKNOWN,
     WEEKLY_ID_ADD,
 )
-from gd.date_time import Duration
 from gd.decorators import cache_by
 from gd.difficulty_parameters import DEFAULT_DEMON_DIFFICULTY_VALUE, DifficultyParameters
 from gd.encoding import (
@@ -70,7 +71,6 @@ from gd.enums import (
 from gd.password import Password
 from gd.progress import Progress
 from gd.song import Song
-from gd.typing import StringDict, StringMapping
 from gd.users import User
 from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, Version
 
@@ -227,7 +227,7 @@ class LevelAPI(Binary):
     def __hash__(self) -> int:
         return self.id ^ hash(type(self))
 
-    @property  # type: ignore
+    @property
     @cache_by(UNPROCESSED_DATA)
     def processed_data(self) -> str:
         return unzip_level_string(self.unprocessed_data)
@@ -236,17 +236,17 @@ class LevelAPI(Binary):
     def processed_data(self, processed_data: str) -> None:
         self.unprocessed_data = zip_level_string(processed_data)
 
-    @property  # type: ignore
+    @property
     @cache_by(UNPROCESSED_DATA)
     def data(self) -> bytes:
         return self.open_editor().to_bytes()
 
     @data.setter
     def data(self, data: bytes) -> None:
-        self.processed_data = Editor.from_bytes(data).to_robtop()  # type: ignore
+        self.processed_data = Editor.from_bytes(data).to_robtop()
 
     def open_editor(self) -> Editor:
-        return Editor.from_robtop(self.processed_data)  # type: ignore
+        return Editor.from_robtop(self.processed_data)
 
     @classmethod
     def from_robtop_data(cls: Type[A], data: StringMapping[Any]) -> A:  # type: ignore
@@ -429,18 +429,18 @@ class LevelAPI(Binary):
         editor_seconds = data.get(EDITOR_SECONDS)
 
         if editor_seconds is None:
-            editor_time = Duration()
+            editor_time = duration()
 
         else:
-            editor_time = Duration(seconds=editor_seconds)
+            editor_time = duration(seconds=editor_seconds)
 
         copies_seconds = data.get(EDITOR_SECONDS)
 
         if copies_seconds is None:
-            copies_time = Duration()
+            copies_time = duration()
 
         else:
-            copies_time = Duration(seconds=copies_seconds)
+            copies_time = duration(seconds=copies_seconds)
 
         favorite = data.get(FAVORITE, DEFAULT_FAVORITE)
 
@@ -453,10 +453,10 @@ class LevelAPI(Binary):
         best_seconds = data.get(BEST_SECONDS)
 
         if best_seconds is None:
-            best_time = Duration()
+            best_time = duration()
 
         else:
-            best_time = Duration(seconds=best_seconds)
+            best_time = duration(seconds=best_seconds)
 
         progress_string = data.get(PROGRESS)
 
@@ -563,12 +563,12 @@ class LevelAPI(Binary):
             REQUESTED_STARS: self.requested_stars,
             ORB_PERCENTAGE: self.orb_percentage,
             TIMELY_ID: timely_id,
-            EDITOR_SECONDS: int(self.editor_time.total_seconds()),
-            COPIES_SECONDS: int(self.copies_time.total_seconds()),
+            EDITOR_SECONDS: int(self.editor_time.total_seconds()),  # type: ignore
+            COPIES_SECONDS: int(self.copies_time.total_seconds()),  # type: ignore
             LEVEL_ORDER: self.level_order,
             FOLDER_ID: self.folder_id,
             BEST_CLICKS: self.best_clicks,
-            BEST_SECONDS: int(self.best_time.total_seconds()),
+            BEST_SECONDS: int(self.best_time.total_seconds()),  # type: ignore
             LEADERBOARD_RECORD: self.leaderboard_record,
         }
 
@@ -823,8 +823,8 @@ class LevelAPI(Binary):
         editor_seconds = reader.read_f32()
         copies_seconds = reader.read_f32()
 
-        editor_time = Duration(seconds=editor_seconds)
-        copies_time = Duration(seconds=copies_seconds)
+        editor_time = duration(seconds=editor_seconds)
+        copies_time = duration(seconds=copies_seconds)
 
         level_order = reader.read_u16()
 
@@ -834,7 +834,7 @@ class LevelAPI(Binary):
 
         best_seconds = reader.read_f32()
 
-        best_time = Duration(seconds=best_seconds)
+        best_time = duration(seconds=best_seconds)
 
         progress = Progress.from_binary(binary, order, version)
 
@@ -894,7 +894,7 @@ class LevelAPI(Binary):
             leaderboard_record=leaderboard_record,
         )
 
-        level.data = data  # type: ignore
+        level.data = data
 
         return level
 
@@ -925,7 +925,7 @@ class LevelAPI(Binary):
 
         writer.write(data)
 
-        data = compress(self.data)  # type: ignore
+        data = compress(self.data)
 
         writer.write_u32(len(data))
 
@@ -1025,15 +1025,15 @@ class LevelAPI(Binary):
 
         writer.write_u32(self.timely_id)
 
-        writer.write_f32(self.editor_time.total_seconds())
-        writer.write_f32(self.copies_time.total_seconds())
+        writer.write_f32(self.editor_time.total_seconds())  # type: ignore
+        writer.write_f32(self.copies_time.total_seconds())  # type: ignore
 
         writer.write_u16(self.level_order)
 
         writer.write_u8(self.folder_id)
 
         writer.write_u16(self.best_clicks)
-        writer.write_f32(self.best_time.total_seconds())
+        writer.write_f32(self.best_time.total_seconds())  # type: ignore
 
         self.progress.to_binary(binary, order, version)
 

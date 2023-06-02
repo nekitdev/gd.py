@@ -2,7 +2,7 @@ from functools import partial
 from typing import Dict, Iterable, Type, TypeVar
 
 from attrs import define, field
-from iters import iter
+from iters.iters import iter
 
 from gd.api.hsv import HSV
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
@@ -74,6 +74,8 @@ DEFAULT_BLENDING = False
 DEFAULT_OPACITY = 1.0
 
 DEFAULT_COPY_OPACITY = False
+
+DEFAULT_PLAYER_COLOR_VALUE = PlayerColor.DEFAULT.value
 
 
 CC = TypeVar("CC", bound="ColorChannel")
@@ -164,7 +166,7 @@ class ColorChannel(Binary, RobTop):
             copy_opacity = DEFAULT_COPY_OPACITY
 
             player_color_value = parse_get_or(
-                int, PlayerColor.DEFAULT.value, mapping.get(PLAYER_COLOR)
+                int, DEFAULT_PLAYER_COLOR_VALUE, mapping.get(PLAYER_COLOR)
             )
 
             if player_color_value < 0:
@@ -363,6 +365,7 @@ class ColorChannels(Binary, Dict[int, ColorChannel]):
         }
         ```
     """
+
     def copy(self: CCS) -> CCS:
         return type(self)(self)
 

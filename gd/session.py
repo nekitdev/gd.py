@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 from attrs import field, frozen
+from pendulum import Duration
 from yarl import URL
 
 from gd.api.database import Database
@@ -21,7 +22,6 @@ from gd.constants import (
     EMPTY,
     UNNAMED,
 )
-from gd.date_time import Duration
 from gd.enums import (
     AccountURLType,
     CommentState,

@@ -1,4 +1,4 @@
-# type: ignore
+# type: ignore  # XXX: we need to be extremely careful here
 
 import ctypes
 from pathlib import Path
@@ -9,7 +9,7 @@ from typing_extensions import TypeAlias
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.enums import Permissions
 from gd.memory.internal import unimplemented
-from gd.memory.utils import Structure, external
+from gd.memory.internal.utils import Struct, external
 from gd.string_utils import tick
 
 __all__ = (
@@ -31,11 +31,13 @@ __all__ = (
 
 LIBC_DYLIB = "libc.dylib"
 
+CAN_NOT_DEFINE_INTERNAL_FUNCTIONS_FOR_DARWIN = "can not define internal functions for darwin"
+
 try:
     LIBC = ctypes.CDLL(LIBC_DYLIB)
 
 except OSError:
-    raise ImportError("Can not define memory functions for MacOS.") from None
+    raise ImportError(CAN_NOT_DEFINE_INTERNAL_FUNCTIONS_FOR_DARWIN) from None
 
 
 KERNEL_SUCCESS = 0
@@ -100,7 +102,7 @@ vm_task_entry_t = mach_port_t
 vm32_object_id_t = ctypes.c_uint32
 
 
-class vm_region_submap_info_64(Structure):
+class vm_region_submap_info_64(Struct):
     protection: vm_protection_t
     max_protection: vm_protection_t
     inheritance: vm_inherit_t
@@ -121,7 +123,7 @@ class vm_region_submap_info_64(Structure):
 CHAR_MAX_SHORT_PROCESS_NAME_LENGTH: TypeAlias = ctypes.c_char * MAX_SHORT_PROCESS_NAME_LENGTH
 
 
-class proc_bsdshortinfo(Structure):
+class proc_bsdshortinfo(Struct):
     process_id: ctypes.c_uint
     parent_process_id: ctypes.c_uint
     persistent_process_id: ctypes.c_uint

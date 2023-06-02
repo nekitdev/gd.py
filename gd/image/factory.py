@@ -3,8 +3,9 @@ from __future__ import annotations
 from typing import Iterable, Optional, Tuple, Type, TypeVar
 
 from attrs import define
+from typing_aliases import IntoPath
 
-from gd.async_utils import run_blocking
+from gd.asyncio import run_blocking
 from gd.constants import DEFAULT_HEIGHT, DEFAULT_WIDTH
 from gd.errors import InternalError
 from gd.image.geometry import Point, Rectangle, Size
@@ -23,16 +24,15 @@ from gd.assets import (
     GLOW_IMAGE_PATH,
     ICON_DATA_PATH,
     ICON_IMAGE_PATH,
-    ROBOT_ANIMATION_PATH,
-    SPIDER_ANIMATION_PATH,
+    ROBOT_ANIMATION_SHEET_PATH,
+    SPIDER_ANIMATION_SHEET_PATH,
 )
 from gd.color import Color
-from gd.enums import IconType, Orientation
+from gd.enums import Orientation
 from gd.image.animation import Animation, Animations, AnimationSheet
 from gd.image.icon import Icon
 from gd.image.sheet import Sheet
 from gd.image.sprite import Sprites
-from gd.typing import IntoPath
 
 __all__ = ("FACTORY", "Factory")
 
@@ -119,14 +119,14 @@ class Factory:
         icon_data_path: IntoPath = ICON_DATA_PATH,
         glow_image_path: IntoPath = GLOW_IMAGE_PATH,
         glow_data_path: IntoPath = GLOW_DATA_PATH,
-        robot_animation_path: IntoPath = ROBOT_ANIMATION_PATH,
-        spider_animation_path: IntoPath = SPIDER_ANIMATION_PATH,
+        robot_animation_sheet_path: IntoPath = ROBOT_ANIMATION_SHEET_PATH,
+        spider_animation_sheet_path: IntoPath = SPIDER_ANIMATION_SHEET_PATH,
     ) -> F:
         return cls(
             Sheet.from_paths(icon_image_path, icon_data_path),
             Sheet.from_paths(glow_image_path, glow_data_path),
-            AnimationSheet.from_path(robot_animation_path),
-            AnimationSheet.from_path(spider_animation_path),
+            AnimationSheet.from_path(robot_animation_sheet_path),
+            AnimationSheet.from_path(spider_animation_sheet_path),
         )
 
     @staticmethod
@@ -148,12 +148,20 @@ class Factory:
         return colored
 
     @property
+    def robot_animations(self) -> Animations:
+        return self.robot_animation_sheet.animations
+
+    @property
+    def spider_animations(self) -> Animations:
+        return self.spider_animation_sheet.animations
+
+    @property
     def icon_sprites(self) -> Sprites:
-        return self.icon_sheet.sprites  # type: ignore  # XXX: decorator mess
+        return self.icon_sheet.sprites
 
     @property
     def glow_sprites(self) -> Sprites:
-        return self.glow_sheet.sprites  # type: ignore  # XXX: decorator mess
+        return self.glow_sheet.sprites
 
     @property
     def icon_image(self) -> Image:
@@ -162,14 +170,6 @@ class Factory:
     @property
     def glow_image(self) -> Image:
         return self.glow_sheet.image
-
-    @property
-    def robot_animations(self) -> Animations:
-        return self.robot_animation_sheet.animations  # type: ignore  # XXX: decorator mess
-
-    @property
-    def spider_animations(self) -> Animations:
-        return self.spider_animation_sheet.animations  # type: ignore  # XXX: decorator mess
 
     @property
     def robot_idle(self) -> Animation:
@@ -294,7 +294,7 @@ class Factory:
                         center - self.image_rectangle(part).center + sprite.offset.y_flipped()
                     )
 
-                    if icon.type is IconType.UFO:
+                    if icon.type.is_ufo():
                         position.y += UFO_OFFSET
 
                     result.alpha_composite(part, position.round_tuple())

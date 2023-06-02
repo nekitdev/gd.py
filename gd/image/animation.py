@@ -3,12 +3,14 @@ from pathlib import Path
 from typing import Optional, Sequence, Type, TypeVar
 
 from attrs import define, field
+from typing_aliases import IntoPath, StringMapping
 
 from gd.decorators import cache_by
 from gd.image.layer import Layer, LayerData, Layers
-from gd.typing import IntoPath, StringMapping
 
-__all__ = ("Animation", "Animations", "AnimationSheet", "AnimationSheetData", "Frame", "Frames")
+__all__ = (
+    "Animation", "Animations", "AnimationSheet", "AnimationSheetData", "Frame", "Frames"
+)
 
 AS = TypeVar("AS", bound="AnimationSheet")
 
@@ -44,7 +46,7 @@ FrameData = Sequence[LayerData]
 AnimationData = Sequence[FrameData]
 AnimationSheetData = StringMapping[AnimationData]
 
-NO_DATA = "`data` not attached to the animation sheet"
+NO_DATA = "`data` not attached to the animation container"
 
 PATH = "path"
 
@@ -57,7 +59,7 @@ class AnimationSheet:
 
     loaded: bool = field(default=False, init=False)
 
-    @property  # type: ignore
+    @property
     @cache_by(PATH)
     def animations(self) -> Animations:
         self.ensure_loaded()

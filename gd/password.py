@@ -60,10 +60,10 @@ class Password(Binary, RobTop):
         return self.copyable
 
     @classmethod
-    def from_json(cls: Type[P], data: PasswordData) -> P:
+    def from_data(cls: Type[P], data: PasswordData) -> P:
         return CONVERTER.structure(data, cls)
 
-    def to_json(self) -> PasswordData:
+    def into_data(self) -> PasswordData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod

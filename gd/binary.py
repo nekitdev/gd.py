@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from abc import abstractmethod
+from abc import abstractmethod as required
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Optional, Type, TypeVar
 
-from attrs import frozen
+from attrs import Attribute, field, frozen
+from typing_aliases import IntoPath, is_instance
 from typing_extensions import Protocol, TypeGuard, runtime_checkable
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, READ_BINARY, WRITE_BINARY
 from gd.encoding import compress, decompress
 from gd.enums import ByteOrder
-from gd.typing import IntoPath, is_instance
 
 __all__ = (
     "VERSION",
@@ -38,13 +38,13 @@ DEFAULT_SIZE = -1
 
 
 class BinaryReader(Protocol):
-    @abstractmethod
+    @required
     def read(self, __size: int = DEFAULT_SIZE) -> bytes:
         ...
 
 
 class BinaryWriter(Protocol):
-    @abstractmethod
+    @required
     def write(self, __data: bytes) -> Optional[int]:
         ...
 
@@ -52,7 +52,7 @@ class BinaryWriter(Protocol):
 @runtime_checkable
 class FromBinary(Protocol):
     @classmethod
-    @abstractmethod
+    @required
     def from_binary(
         cls: Type[B],
         binary: BinaryReader,
@@ -82,7 +82,7 @@ def is_from_binary(item: Any) -> TypeGuard[FromBinary]:
 
 @runtime_checkable
 class ToBinary(Protocol):
-    @abstractmethod
+    @required
     def to_binary(
         self,
         binary: BinaryWriter,
@@ -125,11 +125,18 @@ HEADER = b"GD"
 HEADER_SIZE = len(HEADER)
 BYTE_ORDER_SIZE = 1
 
+NATIVE_NOT_ALLOWED = "`native` byte order is not allowed"
+
 
 @frozen()
 class BinaryInfo(Binary):
-    version: int = VERSION
-    order: ByteOrder = ByteOrder.DEFAULT
+    version: int = field(default=VERSION)
+    order: ByteOrder = field(default=ByteOrder.DEFAULT)
+
+    @order.validator
+    def validate_order(self, attribute: Attribute[ByteOrder], value: ByteOrder) -> None:
+        if value.is_native():
+            raise ValueError(NATIVE_NOT_ALLOWED)
 
     @classmethod
     def from_binary(

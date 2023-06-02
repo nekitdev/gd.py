@@ -1,25 +1,22 @@
 from __future__ import annotations
 
 from builtins import setattr as set_attribute
-from typing import TYPE_CHECKING, ClassVar, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Type, TypeVar
 
 from attrs import define, field, frozen
-from named import get_name
+from funcs.decorators import cache
+from named import get_module, get_name, set_module, set_name
+from typing_extensions import final
 
-from gd.decorators import cache
 from gd.enums import ByteOrder
 from gd.memory.constants import DEFAULT_ALIGNMENT, DEFAULT_PACKED, DEFAULT_SIZE, DEFAULT_VIRTUAL
 from gd.memory.data import Data
-from gd.memory.utils import set_module, set_name
 from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
-from gd.typing import ClassDecoratorIdentity, get_module
 
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
 
 __all__ = ("Base", "Struct", "Union", "struct", "union")
-
-TB = TypeVar("TB", bound="Type[Base]")
 
 
 @define()
@@ -45,7 +42,7 @@ class Struct(Base):
     @classmethod
     @cache
     def reconstruct(cls: TS, config: PlatformConfig) -> TS:
-        return struct(cls.PACKED, cls.VIRTUAL, config)(cls)  # type: ignore
+        return struct(cls.PACKED, cls.VIRTUAL, config)(cls)
 
     @classmethod
     def reconstruct_for(cls: TS, state: AbstractState) -> TS:
@@ -62,7 +59,7 @@ class Union(Base):
     @classmethod
     @cache
     def reconstruct(cls: TU, config: PlatformConfig) -> TU:
-        return union(config)(cls)  # type: ignore
+        return union(config)(cls)
 
     @classmethod
     def reconstruct_for(cls: TU, state: AbstractState) -> TU:
@@ -127,18 +124,18 @@ class UnionData(Data[U]):
         return self.union_type.reconstruct(config)  # type: ignore
 
 
-from gd.memory.fields import fetch_fields
+@final
+@frozen()
+class CreateStruct:
+    packed: bool = DEFAULT_PACKED
+    virtual: bool = DEFAULT_VIRTUAL
+    config: PlatformConfig = SYSTEM_PLATFORM_CONFIG
 
+    def __call__(self, struct_type: TS) -> TS:
+        packed = self.packed
+        virtual = self.virtual
+        config = self.config
 
-def struct(
-    packed: bool = DEFAULT_PACKED,
-    virtual: bool = DEFAULT_VIRTUAL,
-    config: Optional[PlatformConfig] = None,
-) -> ClassDecoratorIdentity[TS]:
-    if config is None:
-        config = SYSTEM_PLATFORM_CONFIG
-
-    def wrap(struct_type: TS) -> TS:
         struct_type.PACKED = packed
         struct_type.VIRTUAL = virtual
 
@@ -154,7 +151,7 @@ def struct(
             for name, field in fields.items():
                 field.offset = offset
 
-                field_size = field.data.compute_size(config)  # type: ignore
+                field_size = field.data.compute_size(config)
 
                 offset += field_size
                 size += field_size
@@ -164,14 +161,14 @@ def struct(
 
         else:
             new_struct_type.ALIGNMENT = alignment = max(
-                (field.data.compute_alignment(config) for field in fields.values()),  # type: ignore
+                (field.data.compute_alignment(config) for field in fields.values()),
                 default=DEFAULT_ALIGNMENT,
             )
 
             for name, field in fields.items():
                 # if the field has null alignment, move onto the next one
 
-                field_alignment = field.data.compute_alignment(config)  # type: ignore
+                field_alignment = field.data.compute_alignment(config)
 
                 if not field_alignment:
                     continue
@@ -186,7 +183,7 @@ def struct(
                     offset += pad_size
                     size += pad_size
 
-                field_size = field.data.compute_size(config)  # type: ignore
+                field_size = field.data.compute_size(config)
 
                 field.offset = offset
 
@@ -212,25 +209,34 @@ def struct(
 
         return new_struct_type  # type: ignore
 
-    return wrap
+
+def struct(
+    packed: bool = DEFAULT_PACKED,
+    virtual: bool = DEFAULT_VIRTUAL,
+    config: PlatformConfig = SYSTEM_PLATFORM_CONFIG,
+) -> CreateStruct:
+    return CreateStruct(packed, virtual, config)
 
 
-def union(config: Optional[PlatformConfig] = None) -> ClassDecoratorIdentity[TU]:
-    if config is None:
-        config = SYSTEM_PLATFORM_CONFIG
+@final
+@frozen()
+class CreateUnion:
+    config: PlatformConfig = SYSTEM_PLATFORM_CONFIG
 
-    def wrap(union_type: TU) -> TU:
+    def __call__(self, union_type: TU) -> TU:
+        config = self.config
+
         fields = fetch_fields(union_type)
 
         class new_union_type(union_type):  # type: ignore
             pass
 
         new_union_type.SIZE = max(
-            (field.data.compute_size(config) for field in fields.values()),  # type: ignore
+            (field.data.compute_size(config) for field in fields.values()),
             default=DEFAULT_SIZE,
         )
         new_union_type.ALIGNMENT = max(
-            (field.data.compute_alignment(config) for field in fields.values()),  # type: ignore
+            (field.data.compute_alignment(config) for field in fields.values()),
             default=DEFAULT_ALIGNMENT,
         )
 
@@ -242,4 +248,9 @@ def union(config: Optional[PlatformConfig] = None) -> ClassDecoratorIdentity[TU]
 
         return new_union_type  # type: ignore
 
-    return wrap
+
+def union(config: PlatformConfig = SYSTEM_PLATFORM_CONFIG) -> CreateUnion:
+    return CreateUnion(config)
+
+
+from gd.memory.fields import fetch_fields

@@ -1,6 +1,5 @@
 from gd.memory.arrays import Array, ArrayData, DynamicFill, MutArray, MutArrayData
 from gd.memory.base import Struct, StructData, Union, UnionData, struct, union
-from gd.memory.constants import ACCOUNT_MANAGER_OFFSET, GAME_MANAGER_OFFSET
 from gd.memory.data import (
     F32,
     F64,
@@ -128,9 +127,6 @@ __all__ = (
     "EditorLayer",
     "LevelSettings",
     "GameLevel",
-    # offsets
-    "ACCOUNT_MANAGER_OFFSET",
-    "GAME_MANAGER_OFFSET",
     # unimplemented
     "unimplemented",
 )

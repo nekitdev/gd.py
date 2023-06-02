@@ -4,25 +4,25 @@ from threading import Thread
 from typing import Iterable, Optional
 
 from attrs import define, field
+from typing_aliases import DynamicTuple
 
-from gd.async_utils import shutdown_loop
+from gd.asyncio import shutdown_loop
 from gd.events.listeners import Listener
-from gd.typing import DynamicTuple
 
 CONTROLLER_NOT_RUNNING = "the controller is not running"
 CONTROLLER_ALREADY_STARTED = "the controller has already started"
 
+Listeners = DynamicTuple[Listener]
+ListenerIterable = Iterable[Listener]
 
-def convert_listeners(iterable: Iterable[Listener]) -> DynamicTuple[Listener]:
+
+def convert_listeners(iterable: ListenerIterable) -> Listeners:
     return tuple(iterable)
-
-
-STOP_LOOP = True
 
 
 @define()
 class Controller:
-    listeners: DynamicTuple[Listener] = field(default=(), converter=convert_listeners)
+    listeners: Listeners = field(default=(), converter=convert_listeners)
 
     loop: AbstractEventLoop = field(factory=new_event_loop)
 
@@ -65,16 +65,13 @@ class Controller:
 
         thread.start()
 
-    def stop(self, stop_loop: int = STOP_LOOP) -> None:
+    def stop(self) -> None:
         thread = self._thread
 
         if thread is None:
             raise RuntimeError(CONTROLLER_NOT_RUNNING)
 
         loop = self.loop
-
-        if stop_loop:
-            loop.stop()
 
         loop.call_soon_threadsafe(shutdown_loop, loop)
 

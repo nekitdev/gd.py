@@ -3,7 +3,7 @@
 import re
 from typing import Any, Iterator, Optional
 
-from iters import iter
+from iters.iters import iter
 
 try:
     from lxml.html import fromstring as from_string
@@ -171,7 +171,7 @@ def search_artist_song_models(data: Any, artist_name: str) -> Iterator[SongModel
     except Exception:
         return
 
-    for string in iter.create_chain_from_iterable(items).unwrap():
+    for string in iter.chain_with(items).unwrap():  # type: ignore
         root = from_string(string)
 
         a_element = root.findall(SONG_URL_PATH)[FIRST]

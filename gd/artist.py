@@ -3,15 +3,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, AsyncIterator, Iterable, Type, TypeVar
 
 from attrs import define, field
-from cattrs.gen import make_dict_unstructure_fn, override
 from iters.async_iters import wrap_async_iter
-from typing_extensions import TypedDict
+from typing_extensions import TypedDict as Data
 from yarl import URL
 
 from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_PAGE, DEFAULT_PAGES, UNKNOWN
-from gd.converter import CONVERTER
+from gd.converter import CONVERTER, register_unstructure_hook_omit_id_and_client
 from gd.entity import Entity
 from gd.enums import ByteOrder
 from gd.models import ArtistModel
@@ -27,10 +26,11 @@ A = TypeVar("A", bound="Artist")
 ARTIST = "https://{}.newgrounds.com/"
 
 
-class ArtistData(TypedDict):
+class ArtistData(Data):
     name: str
 
 
+@register_unstructure_hook_omit_id_and_client
 @define()
 class Artist(Entity):
     """Represents artists on *Newgrounds*.
@@ -39,7 +39,7 @@ class Artist(Entity):
         ```rust
         struct Artist {
             name_length: u8,
-            name: [u8; name_length],
+            name: [u8; name_length],  // utf-8 string
         }
         ```
     """
@@ -75,10 +75,10 @@ class Artist(Entity):
         return cls(name=model.name)
 
     @classmethod
-    def from_json(cls: Type[A], data: ArtistData) -> A:  # type: ignore
+    def from_data(cls: Type[A], data: ArtistData) -> A:  # type: ignore
         return CONVERTER.structure(data, cls)
 
-    def to_json(self) -> ArtistData:  # type: ignore
+    def into_data(self) -> ArtistData:  # type: ignore
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
@@ -123,11 +123,3 @@ class Artist(Entity):
     @wrap_async_iter
     def get_songs(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Song]:
         return self.client.get_newgrounds_artist_songs(self, pages=pages).unwrap()
-
-
-CONVERTER.register_unstructure_hook(
-    Artist,
-    make_dict_unstructure_fn(
-        Artist, CONVERTER, id=override(omit=True), client_unchecked=override(omit=True)
-    ),
-)

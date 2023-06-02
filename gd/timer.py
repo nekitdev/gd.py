@@ -2,8 +2,7 @@ from time import perf_counter as clock
 from typing import Type, TypeVar, overload
 
 from attrs import field, frozen
-
-from gd.date_time import Duration
+from pendulum import Duration, duration
 
 __all__ = ("Timer", "now")
 
@@ -18,7 +17,7 @@ class Timer:
         return clock()
 
     def elapsed(self) -> Duration:
-        return Duration(seconds=self.current() - self.created_at)
+        return duration(seconds=self.current() - self.created_at)
 
     def reset(self: T) -> T:
         return type(self)()

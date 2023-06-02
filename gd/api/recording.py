@@ -6,7 +6,7 @@ from functools import partial
 from typing import Iterable, Iterator, List, Match, Type, TypeVar
 
 from attrs import define
-from iters import Iter, iter
+from iters.iters import iter, wrap_iter
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
@@ -46,6 +46,8 @@ RECORDING_ITEM_PATTERN = rf"""
 
 RECORDING_ITEM = re.compile(RECORDING_ITEM_PATTERN, re.VERBOSE)
 
+recording_item_find_iter = RECORDING_ITEM.finditer
+
 RI = TypeVar("RI", bound="RecordingItem")
 
 PREVIOUS_BIT = 0b00000001
@@ -64,16 +66,16 @@ class RecordingItem(Binary, RobTop):
         one = ONE
         empty = EMPTY
 
-        if self.previous:
+        if self.is_previous():
             yield one
 
         yield float_str(self.timestamp)
 
-        yield one if self.next else empty
+        yield one if self.is_next() else empty
 
         yield empty
 
-        if self.secondary:
+        if self.is_secondary():
             yield empty
 
     @classmethod
@@ -168,17 +170,22 @@ class RecordingItem(Binary, RobTop):
         return self.secondary
 
 
+def recording_item_to_robtop(item: RecordingItem) -> str:
+    return item.to_robtop()
+
+
 R = TypeVar("R", bound="Recording")
 
 
 class Recording(Binary, RobTop, ListType, List[RecordingItem]):  # type: ignore
     @staticmethod
-    def iter_robtop(string: str) -> Iter[RecordingItem]:
-        return iter(RECORDING_ITEM.finditer(string)).map(RecordingItem.from_robtop_match)
+    @wrap_iter
+    def iter_robtop(string: str) -> Iterator[RecordingItem]:
+        return iter(recording_item_find_iter(string)).map(RecordingItem.from_robtop_match).unwrap()
 
     @staticmethod
     def collect_robtop(recording: Iterable[RecordingItem]) -> str:
-        return concat_empty(item.to_robtop() for item in recording)
+        return iter(recording).map(recording_item_to_robtop).collect(concat_empty)
 
     @classmethod
     def from_robtop(cls: Type[R], string: str) -> R:

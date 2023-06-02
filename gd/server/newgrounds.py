@@ -28,7 +28,7 @@ SONG = "{}.newgrounds.mp3"
 async def get_newgrounds_song(song_id: int) -> SongData:
     song = await client.get_newgrounds_song(song_id)
 
-    return song.to_json()
+    return song.into_data()
 
 
 @v1.get("/newgrounds/songs/{song_id}/download", summary="Downloads the song by the ID.")
@@ -45,8 +45,8 @@ async def download_song(song_id: int) -> FileResponse:
     return FileResponse(path)
 
 
-def artist_to_json(artist: Artist) -> ArtistData:
-    return artist.to_json()
+def artist_into_data(artist: Artist) -> ArtistData:
+    return artist.into_data()
 
 
 @v1.get(
@@ -55,18 +55,18 @@ def artist_to_json(artist: Artist) -> ArtistData:
 async def search_newgrounds_artists(
     query: str, pages: Iterable[int] = Depends(pages_dependency)
 ) -> List[ArtistData]:
-    return await client.search_newgrounds_artists(query, pages=pages).map(artist_to_json).list()
+    return await client.search_newgrounds_artists(query, pages=pages).map(artist_into_data).list()
 
 
-def song_to_json(song: Song) -> SongData:
-    return song.to_json()
+def song_into_data(song: Song) -> SongData:
+    return song.into_data()
 
 
 @v1.get("/search/newgrounds/songs/{query}", summary="Searches for Newgrounds songs by the query.")
 async def search_newgrounds_songs(
     query: str, pages: Iterable[int] = Depends(pages_dependency)
 ) -> List[SongData]:
-    return await client.search_newgrounds_songs(query, pages=pages).map(song_to_json).list()
+    return await client.search_newgrounds_songs(query, pages=pages).map(song_into_data).list()
 
 
 @v1.get("/newgrounds/artists/{name}/songs", summary="Fetches songs by the Newgrounds artist.")
@@ -75,4 +75,4 @@ async def get_newgrounds_artist_songs(
 ) -> List[SongData]:
     artist = Artist(name).attach_client(client)
 
-    return await artist.get_songs(pages=pages).map(song_to_json).list()
+    return await artist.get_songs(pages=pages).map(song_into_data).list()

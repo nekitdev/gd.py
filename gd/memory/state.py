@@ -1,5 +1,5 @@
-from abc import abstractmethod
-from typing import Type, TypeVar
+from abc import abstractmethod as required
+from typing import TypeVar
 
 from attrs import define, field
 from typing_extensions import Protocol
@@ -43,7 +43,12 @@ from gd.binary_utils import (
 )
 from gd.enums import ByteOrder, Permissions, Platform
 from gd.memory.base import StructData
-from gd.memory.constants import ACCOUNT_MANAGER_OFFSET, GAME_MANAGER_OFFSET
+from gd.memory.constants import (
+    DARWIN_ACCOUNT_MANAGER_OFFSET,
+    DARWIN_GAME_MANAGER_OFFSET,
+    WINDOWS_ACCOUNT_MANAGER_OFFSET,
+    WINDOWS_GAME_MANAGER_OFFSET,
+)
 from gd.memory.gd import AccountManager, GameManager
 from gd.memory.internal import (
     darwin_allocate,
@@ -82,7 +87,6 @@ from gd.memory.internal import (
 )
 from gd.memory.pointers import Pointer
 from gd.platform import DARWIN, WINDOWS, PlatformConfig
-from gd.typing import Binary
 
 __all__ = (
     "AbstractState",
@@ -95,8 +99,6 @@ __all__ = (
     "get_windows_state",
     "get_state",
 )
-
-T = TypeVar("T")
 
 DEFAULT_TITLE = "Geometry Dash"
 
@@ -113,31 +115,31 @@ NULL_POINTER = "the pointer is null"
 
 
 class StateProtocol(Protocol):
-    @abstractmethod
+    @required
     def allocate_at(
         self, address: int, size: int, permissions: Permissions = Permissions.DEFAULT
     ) -> int:
         ...
 
-    @abstractmethod
+    @required
     def free_at(self, address: int, size: int) -> None:
         ...
 
-    @abstractmethod
+    @required
     def protect_at(
         self, address: int, size: int, permissions: Permissions = Permissions.DEFAULT
     ) -> int:
         ...
 
-    @abstractmethod
+    @required
     def read_at(self, address: int, size: int) -> bytes:
         ...
 
-    @abstractmethod
+    @required
     def write_at(self, address: int, data: bytes) -> None:
         ...
 
-    @abstractmethod
+    @required
     def terminate(self) -> bool:
         ...
 
@@ -383,22 +385,6 @@ class AbstractState(StateProtocol):
     def write_double(self, address: int, value: float, order: ByteOrder = ByteOrder.NATIVE) -> None:
         self.write_f64(address, value, order)
 
-    @property
-    def account_manager(self) -> Pointer[AccountManager]:
-        return Pointer(
-            self,
-            self.base_address + ACCOUNT_MANAGER_OFFSET,
-            StructData(AccountManager.reconstruct_for(self)),
-        )
-
-    @property
-    def game_manager(self) -> Pointer[GameManager]:
-        return Pointer(
-            self,
-            self.base_address + GAME_MANAGER_OFFSET,
-            StructData(GameManager.reconstruct_for(self)),
-        )
-
 
 @define()
 class SystemState(AbstractState):
@@ -496,6 +482,22 @@ class DarwinState(AbstractState):
     def terminate(self) -> bool:
         return darwin_terminate(self.handle)  # type: ignore
 
+    @property
+    def account_manager(self) -> Pointer[AccountManager]:
+        return Pointer(
+            self,
+            self.base_address + DARWIN_ACCOUNT_MANAGER_OFFSET,
+            StructData(AccountManager.reconstruct_for(self)),
+        )
+
+    @property
+    def game_manager(self) -> Pointer[GameManager]:
+        return Pointer(
+            self,
+            self.base_address + DARWIN_GAME_MANAGER_OFFSET,
+            StructData(GameManager.reconstruct_for(self)),
+        )
+
 
 @define()
 class WindowsState(AbstractState):
@@ -546,6 +548,22 @@ class WindowsState(AbstractState):
     def terminate(self) -> bool:
         return windows_terminate(self.handle)  # type: ignore
 
+    @property
+    def account_manager(self) -> Pointer[AccountManager]:
+        return Pointer(
+            self,
+            self.base_address + WINDOWS_ACCOUNT_MANAGER_OFFSET,
+            StructData(AccountManager.reconstruct_for(self)),
+        )
+
+    @property
+    def game_manager(self) -> Pointer[GameManager]:
+        return Pointer(
+            self,
+            self.base_address + WINDOWS_GAME_MANAGER_OFFSET,
+            StructData(GameManager.reconstruct_for(self)),
+        )
+
 
 def get_darwin_state(
     process_name: str = DEFAULT_DARWIN_NAME,
@@ -568,19 +586,14 @@ def get_system_state(
     return SystemState(process_name=process_name, title=title)
 
 
-State: Type[AbstractState]
-
-get_state: Binary[str, str, AbstractState]
-
-
 if DARWIN:
-    State = DarwinState
-    get_state = get_darwin_state
+    State = DarwinState  # type: ignore
+    get_state = get_darwin_state  # type: ignore
 
 elif WINDOWS:
-    State = WindowsState
-    get_state = get_windows_state
+    State = WindowsState  # type: ignore
+    get_state = get_windows_state  # type: ignore
 
 else:
-    State = SystemState
-    get_state = get_system_state
+    State = SystemState  # type: ignore
+    get_state = get_system_state  # type: ignore

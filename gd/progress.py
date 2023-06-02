@@ -1,8 +1,7 @@
 from collections import UserList as ListType
-from functools import partial
 from typing import List, Type, TypeVar
 
-from iters import iter
+from iters.iters import iter
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
@@ -37,8 +36,7 @@ class Progress(Binary, RobTop, ListType, List[int]):  # type: ignore
 
         writer.write_u8(len(self))
 
-        for part in self:
-            writer.write_i8(part)
+        iter(self).for_each(writer.write_i8)
 
     @classmethod
     def from_robtop(cls: Type[P], string: str) -> P:

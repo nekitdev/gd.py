@@ -4,11 +4,11 @@ from sysconfig import get_config_var as get_config_variable
 from typing import Type, TypeVar
 
 from attrs import define
+from typing_aliases import Nullary
 
 from gd.binary_constants import BITS
 from gd.enums import Platform
 from gd.string_utils import case_fold
-from gd.typing import Nullary
 
 __all__ = (
     "ANDROID",

@@ -2,6 +2,7 @@ from typing import Iterable
 
 import click
 from entrypoint import entrypoint
+from iters.iters import iter
 
 from gd.api.color_channels import ColorChannel, ColorChannels
 from gd.api.header import Header
@@ -29,7 +30,7 @@ def main(count: int, rounding: int) -> None:
 
     header = Header(
         color_channels=ColorChannels.from_color_channel_iterable(
-            ColorChannel(color_id) for color_id in color_id_range(count)
+            iter(color_id_range(count)).map(ColorChannel).unwrap()
         )
     )
 

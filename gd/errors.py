@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
+from typing import Generic, Optional, TypeVar
 
+from attrs import frozen
 from named import get_type_name
+from pendulum import Duration
+from typing_aliases import AnyError, NormalError
 
-from gd.string_utils import password_str, tick
-from gd.typing import AnyException
-
-if TYPE_CHECKING:
-    from gd.date_time import Duration
+from gd.string_utils import tick
 
 __all__ = (
     "InternalError",
@@ -33,7 +32,7 @@ class InternalError(RuntimeError):
     pass
 
 
-class GDError(Exception):
+class GDError(NormalError):
     pass
 
 
@@ -41,40 +40,33 @@ class HTTPError(GDError):
     pass
 
 
-E = TypeVar("E", bound=AnyException, covariant=True)
+E = TypeVar("E", bound=AnyError, covariant=True)
 
 
 FAILED_TO_PROCESS = "failed to process HTTP request. {}: {}"
 
 
+@frozen()
 class HTTPErrorWithOrigin(Generic[E], HTTPError):
-    def __init__(self, origin: E) -> None:
-        self._origin = origin
+    origin: E
 
+    def __init__(self, origin: E) -> None:
         super().__init__(FAILED_TO_PROCESS.format(get_type_name(origin), origin))
 
-    @property
-    def origin(self) -> E:
-        return self._origin
+        self.__attrs_init__(origin)  # type: ignore
 
 
-STATUS_REASON = "{} {}"
+HTTP_STATUS = "HTTP {}"
 
 
+@frozen()
 class HTTPStatusError(HTTPError):
-    def __init__(self, status: int, reason: Optional[Any]) -> None:
-        self._status = status
-        self._reason = reason
+    status: int
 
-        super().__init__(STATUS_REASON.format(status, reason))
+    def __init__(self, status: int, reason: str) -> None:
+        super().__init__(HTTP_STATUS.format(self.status))
 
-    @property
-    def status(self) -> int:
-        return self._status
-
-    @property
-    def reason(self) -> Optional[Any]:  # type: ignore
-        return self._reason
+        self.__attrs_init__(status)  # type: ignore
 
 
 class ClientError(GDError):
@@ -85,72 +77,56 @@ class MissingAccess(ClientError):
     pass
 
 
-SONG_RESTRICTED = "song with id {} is not allowed for use"
+SONG_RESTRICTED = "song with ID {} is not allowed for use"
 
 
+@frozen()
 class SongRestricted(ClientError):
-    def __init__(self, id: int) -> None:
-        self._id = id
+    song_id: int
 
-        super().__init__(SONG_RESTRICTED.format(tick(id)))
+    def __attrs_post_init__(self, song_id: int) -> None:
+        super().__init__(SONG_RESTRICTED.format(tick(song_id)))
 
-    @property
-    def id(self) -> int:
-        return self._id
+        self.__attrs_init__(song_id)  # type: ignore
 
 
 LOGIN_FAILED = "login failed with name {} and password {}"
 
 
+@frozen()
 class LoginFailed(ClientError):
+    name: str
+    password: str
+
     def __init__(self, name: str, password: str) -> None:
-        password = password_str(password)
-
-        self._name = name
-        self._password = password
-
         super().__init__(LOGIN_FAILED.format(tick(name), tick(password)))
 
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def password(self) -> str:
-        return self._password
+        self.__attrs_init__(name, password)  # type: ignore
 
 
+PERMANENT = "permanently banned from posting comments; reason: {}"
+TEMPORARY = "banned for {} from posting comments; reason: {}"
+DEFAULT_REASON = "not provided"
+
+
+@frozen()
 class CommentBanned(ClientError):
-    PERMANENT = "permanently banned from posting comments; reason: {}"
-    TEMPORARY = "banned for {} from posting comments; reason: {}"
-    DEFAULT_REASON = "not provided"
+    timeout: Optional[Duration] = None
+    reason: Optional[str] = None
 
     def __init__(self, timeout: Optional[Duration] = None, reason: Optional[str] = None) -> None:
-        self._timeout = timeout
-        self._reason = reason
-
-        super().__init__(self.message)
-
-    @property
-    def timeout(self) -> Optional[Duration]:
-        return self._timeout
-
-    @property
-    def reason(self) -> Optional[str]:
-        return self._reason
-
-    @property
-    def message(self) -> str:
-        timeout = self.timeout
-        reason = self.reason
-
         if reason is None:
-            reason = self.DEFAULT_REASON
+            reason = DEFAULT_REASON
 
         if timeout is None:
-            return self.PERMANENT.format(reason)
+            message = PERMANENT.format(reason)
 
-        return self.TEMPORARY.format(timeout, reason)
+        else:
+            message = TEMPORARY.format(timeout, reason)
+
+        super().__init__(message)
+
+        self.__attrs_init__(timeout, reason)  # type: ignore
 
 
 class LoginRequired(ClientError):
@@ -160,12 +136,11 @@ class LoginRequired(ClientError):
 NOTHING_FOUND = "{} not found"
 
 
+@frozen()
 class NothingFound(ClientError):
-    def __init__(self, name: str) -> None:
-        self._name = name
+    name: str
 
+    def __init__(self, name: str) -> None:
         super().__init__(NOTHING_FOUND.format(tick(name)))
 
-    @property
-    def name(self) -> str:
-        return self._name
+        self.__attrs_init__(name)  # type: ignore

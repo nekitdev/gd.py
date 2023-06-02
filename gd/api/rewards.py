@@ -3,6 +3,7 @@ from typing import Any, List, Type, TypeVar
 
 from attrs import define, field
 from iters import iter
+from typing_aliases import StringDict, StringMapping
 from typing_extensions import Literal, TypeGuard
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
@@ -21,8 +22,7 @@ from gd.constants import (
     EMPTY,
 )
 from gd.enums import ByteOrder, InternalType, ItemType
-from gd.text_utils import snake_to_camel
-from gd.typing import StringDict, StringMapping
+from gd.string_utils import snake_to_camel
 
 __all__ = ("Reward", "RewardItem", "Quest")
 

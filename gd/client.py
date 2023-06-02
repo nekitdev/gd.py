@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from asyncio import run
 from builtins import setattr as set_attribute
 from types import TracebackType as Traceback
 from typing import (
@@ -15,18 +16,19 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    overload,
 )
 
 from attrs import define, field, frozen
+from funcs.functions import awaiting
 from iters.async_iters import wrap_async_iter
+from typing_aliases import AnyCallable, AnyError, DynamicTuple, Predicate
 from typing_extensions import ParamSpec
 from yarl import URL
 
 from gd.api.database import Database
 from gd.api.recording import Recording
 from gd.artist import Artist
-from gd.async_utils import awaiting, run, run_iterables
+from gd.run_iterables import run_iterables
 from gd.comments import Comment, LevelComment, UserComment
 from gd.constants import (
     COMMENT_PAGE_SIZE,
@@ -77,7 +79,7 @@ from gd.enums import (
     SimpleRelationshipType,
     TimelyType,
 )
-from gd.errors import ClientError, NothingFound
+from gd.errors import ClientError, InternalError, NothingFound
 from gd.events.controller import Controller
 from gd.events.listeners import (
     DailyCommentListener,
@@ -106,15 +108,7 @@ from gd.relationship import Relationship
 from gd.rewards import Chest, Quest
 from gd.session import Session
 from gd.song import Song
-from gd.typing import (
-    AnyCallable,
-    AnyException,
-    DynamicTuple,
-    IntString,
-    MaybeIterable,
-    Predicate,
-    URLString,
-)
+from gd.typing import IntString, MaybeIterable, URLString
 from gd.users import LeaderboardUser, LevelLeaderboardUser, User
 
 __all__ = ("Client",)
@@ -690,7 +684,10 @@ class Client:
 
             level_id = model.id
 
-        level = await self.search_levels_on_page(level_id).next()
+        level = await self.search_levels_on_page(level_id).next().extract()
+
+        if level is None:
+            raise InternalError  # TODO: message?
 
         if get_data:
             return Level.from_model(model, level.creator, level.song).attach_client(self)
@@ -922,7 +919,7 @@ class Client:
                 subject = EMPTY
 
             messages = self.get_messages_on_page(MessageType.OUTGOING)
-            message = await messages.find_or_none(by_subject_and_user(subject, user))
+            message = await messages.find(by_subject_and_user(subject, user)).extract()
 
             if message is None:
                 return message
@@ -998,7 +995,7 @@ class Client:
         if self.load_after_post:
             friend_requests = self.get_friend_requests_on_page(FriendRequestType.OUTGOING)
 
-            return await friend_requests.find_or_none(by_user(user))
+            return await friend_requests.find(by_user(user)).extract()
 
         return None
 
@@ -1130,7 +1127,7 @@ class Client:
         if self.load_after_post:
             comments = self.user.get_comments_on_page()
 
-            return await comments.find_or_none(by_id(comment_id))
+            return await comments.find(by_id(comment_id)).extract()
 
         return None
 
@@ -1150,7 +1147,7 @@ class Client:
         if self.load_after_post:
             comments = level.get_comments_on_page(count=DEFAULT_COUNT)
 
-            return await comments.find_or_none(by_id(comment_id))
+            return await comments.find(by_id(comment_id)).extract()
 
         return None
 
@@ -1869,7 +1866,7 @@ class Client:
         return controller
 
 
-E = TypeVar("E", bound=AnyException)
+E = TypeVar("E", bound=AnyError)
 
 
 @frozen()
@@ -1891,14 +1888,6 @@ class LoginContextManager(Generic[C]):
         await self.login()
 
         return self.client
-
-    @overload
-    async def __aexit__(self, error_type: None, error: None, traceback: None) -> None:
-        ...
-
-    @overload
-    async def __aexit__(self, error_type: Type[E], error: E, traceback: Traceback) -> None:
-        ...
 
     async def __aexit__(
         self, error_type: Optional[Type[E]], error: Optional[E], traceback: Optional[Traceback]

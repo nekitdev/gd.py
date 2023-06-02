@@ -1,5 +1,7 @@
 from attrs import field, frozen
 
+from iters.iters import iter
+
 from gd.constants import DEFAULT_ID, EMPTY
 from gd.string_utils import password_repr
 
@@ -14,4 +16,4 @@ class Credentials:
     password: str = field(default=EMPTY, repr=password_repr)
 
     def is_loaded(self) -> bool:
-        return bool(self.account_id and self.id and self.name and self.password)
+        return iter.of(self.account_id, self.id, self.name, self.password).all()

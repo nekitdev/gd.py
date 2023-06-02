@@ -8,7 +8,7 @@ __author__ = "nekitdev"
 __license__ = "MIT"
 __version__ = "1.0.0-alpha.1"
 
-from gd import api, binary, encoding, events, image, json, memory, tasks
+from gd import api, binary, encoding, events, image, memory, named_dicts, tasks
 from gd.artist import Artist
 from gd.binary import BinaryInfo
 from gd.client import Client
@@ -97,20 +97,6 @@ from gd.enums import (
     TriggerType,
     ZLayer,
 )
-from gd.errors import (
-    ClientError,
-    CommentBanned,
-    GDError,
-    HTTPError,
-    HTTPErrorWithOrigin,
-    HTTPStatusError,
-    InternalError,
-    LoginFailed,
-    LoginRequired,
-    MissingAccess,
-    NothingFound,
-    SongRestricted,
-)
 from gd.filters import Filters
 from gd.friend_request import FriendRequest
 from gd.http import HTTPClient
@@ -141,7 +127,8 @@ __all__ = (
     "encoding",
     "events",
     "image",
-    "json",
+    "named_dicts",
+    "memory",
     "tasks",
     # binary info
     "BinaryInfo",
@@ -190,19 +177,6 @@ __all__ = (
     # versions
     "Version",
     "GameVersion",
-    # errors
-    "InternalError",
-    "GDError",
-    "HTTPError",
-    "HTTPErrorWithOrigin",
-    "HTTPStatusError",
-    "ClientError",
-    "MissingAccess",
-    "SongRestricted",
-    "CommentBanned",
-    "LoginFailed",
-    "LoginRequired",
-    "NothingFound",
     # enums
     "SimpleKey",
     "Key",
