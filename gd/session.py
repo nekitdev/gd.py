@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List, Optional, Sequence, TypeVar
 
 from attrs import field, frozen
+from iters.utils import unary_tuple
 from pendulum import Duration
 from yarl import URL
 
 from gd.api.database import Database
 from gd.api.recording import Recording
 from gd.api.save_manager import save
+from gd.capacity import Capacity
 from gd.constants import (
     DEFAULT_CHEST_COUNT,
     DEFAULT_COINS,
@@ -16,6 +18,7 @@ from gd.constants import (
     DEFAULT_LOW_DETAIL,
     DEFAULT_OBJECT_COUNT,
     DEFAULT_PAGE,
+    DEFAULT_SPECIAL,
     DEFAULT_STARS,
     DEFAULT_TWO_PLAYER,
     DEFAULT_VERSION,
@@ -36,8 +39,8 @@ from gd.enums import (
     LevelPrivacy,
     MessageState,
     MessageType,
+    RelationshipType,
     RewardType,
-    SimpleRelationshipType,
     TimelyType,
 )
 from gd.filters import Filters
@@ -76,9 +79,15 @@ from gd.newgrounds import (
 from gd.password import Password
 from gd.typing import IntString, MaybeIterable, URLString
 
-__all__ = ("Session",)
+__all__ = unary_tuple("Session")
 
 FIRST = 0
+
+T = TypeVar("T")
+
+
+def first(sequence: Sequence[T]) -> T:
+    return sequence[FIRST]
 
 
 @frozen()
@@ -93,7 +102,7 @@ class Session:
 
         return LoginModel.from_robtop(response)
 
-    async def load(self, *, account_id: int, name: str, password: str) -> Database:
+    async def load(self, account_id: int, name: str, password: str) -> Database:
         response = await self.http.load(account_id=account_id, name=name, password=password)
 
         main_string, levels_string, *_ = split_save(response)
@@ -102,7 +111,7 @@ class Session:
             main_string, levels_string, apply_xor=False, follow_system=False
         )
 
-    async def save(self, database: Database, *, account_id: int, name: str, password: str) -> None:
+    async def save(self, database: Database, account_id: int, name: str, password: str) -> None:
         parts = save.dump_string_parts(database, apply_xor=False, follow_system=False)
 
         data = concat_save(parts)
@@ -159,7 +168,7 @@ class Session:
         spider_id: int,
         # swing_copter_id: int,
         explosion_id: int,
-        special: int = 0,
+        special: int = DEFAULT_SPECIAL,
         *,
         account_id: int,
         name: str,
@@ -194,7 +203,7 @@ class Session:
     async def search_user(self, query: IntString) -> SearchUserModel:
         response_model = await self.search_users_on_page(query)
 
-        return response_model.users[FIRST]
+        return first(response_model.users)
 
     async def search_users_on_page(
         self, query: IntString, page: int = DEFAULT_PAGE
@@ -218,10 +227,10 @@ class Session:
 
         return ProfileModel.from_robtop(response)
 
-    async def get_simple_relationships(
-        self, type: SimpleRelationshipType, *, account_id: int, encoded_password: str
+    async def get_relationships(
+        self, type: RelationshipType, *, account_id: int, encoded_password: str
     ) -> RelationshipsResponseModel:
-        response = await self.http.get_simple_relationships(
+        response = await self.http.get_relationships(
             type=type, account_id=account_id, encoded_password=encoded_password
         )
 
@@ -318,6 +327,7 @@ class Session:
         coins: int = DEFAULT_COINS,
         stars: int = DEFAULT_STARS,
         low_detail: bool = DEFAULT_LOW_DETAIL,
+        capacity: Optional[Capacity] = None,
         password: Optional[Password] = None,
         recording: Optional[Recording] = None,
         editor_time: Optional[Duration] = None,
@@ -343,6 +353,7 @@ class Session:
             stars=stars,
             privacy=privacy,
             low_detail=low_detail,
+            capacity=capacity,
             password=password,
             recording=recording,
             editor_time=editor_time,

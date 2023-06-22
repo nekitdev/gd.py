@@ -1,10 +1,10 @@
-from functools import partial
 from operator import attrgetter as get_attribute_factory
 from typing import Iterable, Iterator, List, Sequence, Set, Type, TypeVar, Union, overload
 
 from attrs import define, field
+from funcs.application import partial
 from iters.iters import iter, wrap_iter
-from typing_aliases import is_int
+from typing_aliases import is_slice
 
 from gd.api.color_channels import ColorChannels
 from gd.api.header import Header
@@ -151,10 +151,10 @@ class Editor(RobTop, Binary, Sequence[Object]):
         ...
 
     def __getitem__(self: E, index: Union[int, slice]) -> Union[Object, E]:
-        if is_int(index):
-            return self.objects[index]
+        if is_slice(index):
+            return self.from_object_iterable(self.objects[index], self.header)
 
-        return self.from_object_iterable(self.objects[index], self.header)  # type: ignore
+        return self.objects[index]  # type: ignore
 
     @property
     def color_channels(self) -> ColorChannels:
@@ -306,8 +306,8 @@ class Editor(RobTop, Binary, Sequence[Object]):
             .collect(concat_objects)
         )
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
+    @staticmethod
+    def can_be_in(string: str) -> bool:
         return OBJECTS_SEPARATOR in string
 
 

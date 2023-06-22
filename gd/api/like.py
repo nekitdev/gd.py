@@ -41,8 +41,8 @@ class Like(Binary, RobTop):
             LIKE, str(self.type.value), str(self.id), str(int(self.liked)), str(self.other_id)
         ).collect(concat_like)
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
+    @staticmethod
+    def can_be_in(string: str) -> bool:
         return LIKE_SEPARATOR in string
 
     @classmethod

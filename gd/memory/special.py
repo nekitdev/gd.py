@@ -12,6 +12,8 @@ from gd.platform import PlatformConfig
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
 
+# TODO: add `this`?
+
 __all__ = ("Void",)
 
 

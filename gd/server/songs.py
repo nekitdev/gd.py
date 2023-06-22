@@ -4,7 +4,7 @@ from fastapi.responses import FileResponse
 
 from gd.server.constants import CACHE, SONGS
 from gd.server.core import client, v1
-from gd.song import SongData
+from gd.songs import SongData
 
 __all__ = ("download_song", "get_song")
 

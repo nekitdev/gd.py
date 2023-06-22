@@ -21,7 +21,6 @@ from typing import (
     Union,
     overload,
 )
-from uuid import UUID
 from uuid import uuid4 as generate_uuid
 
 from aiohttp import BasicAuth, ClientError, ClientSession, ClientTimeout
@@ -39,6 +38,7 @@ from typing_aliases import (
     Namespace,
     Parameters,
 )
+from typing_aliases import NormalError
 from typing_aliases import Payload as JSON
 from typing_aliases import is_bytes, is_string
 from typing_extensions import Literal
@@ -46,18 +46,19 @@ from yarl import URL
 
 from gd.api.recording import Recording
 from gd.asyncio import run_blocking, shutdown_loop
+from gd.capacity import Capacity
 from gd.constants import (
     COMPLETED,
     DEFAULT_ATTEMPTS,
+    DEFAULT_CHECK,
     DEFAULT_CHEST_COUNT,
+    DEFAULT_CLICKS,
     DEFAULT_COINS,
     DEFAULT_COUNT,
     DEFAULT_ID,
-    DEFAULT_JUMPS,
     DEFAULT_LOW_DETAIL,
     DEFAULT_OBJECT_COUNT,
     DEFAULT_PAGE,
-    DEFAULT_PLAYED,
     DEFAULT_RECORD,
     DEFAULT_SECONDS,
     DEFAULT_SEND,
@@ -73,8 +74,8 @@ from gd.constants import (
 )
 from gd.encoding import (
     ATTEMPTS_ADD,
+    CLICKS_ADD,
     COINS_ADD,
-    JUMPS_ADD,
     SECONDS_ADD,
     UTF_8,
     encode_base64_string_url_safe,
@@ -103,11 +104,11 @@ from gd.enums import (
     LikeType,
     MessageState,
     MessageType,
+    RelationshipType,
     ResponseType,
     RewardType,
     Salt,
     Secret,
-    SimpleRelationshipType,
     TimelyType,
 )
 from gd.errors import (
@@ -123,19 +124,18 @@ from gd.errors import (
 from gd.filters import Filters
 from gd.models import CommentBannedModel
 from gd.models_constants import OBJECT_SEPARATOR
-from gd.models_utils import concat_extra_string
+from gd.models_utils import bool_str
 from gd.password import Password
 from gd.progress import Progress
 from gd.string_utils import concat_comma, password_str, snake_to_camel_with_abbreviations, tick
 from gd.timer import now
 from gd.typing import AnyString, IntString, MaybeIterable, URLString, is_iterable
 from gd.version import python_version_info, version_info
-from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, Version
+from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, RobTopVersion
 
 __all__ = ("Route", "HTTPClient")
 
 DATABASE = "database"
-ROOT = "/"
 
 BASE = "http://www.boomlings.com/database"
 GD_BASE = "http://geometrydash.com/database"
@@ -227,6 +227,8 @@ HTTP_REDIRECT = 300
 HTTP_ERROR = 400
 
 CHUNK_SIZE = 65536
+
+NO_TOTAL = 0
 
 ResponseData = Union[bytes, str, JSON]
 
@@ -378,7 +380,8 @@ UDID_PREFIX = "S"
 UDID_START = 100_000
 UDID_STOP = 100_000_000
 
-EXTRA_STRING_COUNT = 55
+VALUE_START = 100
+VALUE_STOP = 100000
 
 LOOP = "_loop"  # NOTE: keep in sync with the upstream library
 
@@ -512,7 +515,7 @@ class HTTPClient:
     proxy_auth: Optional[BasicAuth] = field(default=None, repr=False)
     timeout: float = field(default=DEFAULT_TIMEOUT)
     game_version: GameVersion = field(default=CURRENT_GAME_VERSION)
-    binary_version: Version = field(default=CURRENT_BINARY_VERSION)
+    binary_version: RobTopVersion = field(default=CURRENT_BINARY_VERSION)
     gd_world: bool = field(default=DEFAULT_GD_WORLD)
     forwarded_for: Optional[str] = field(default=None, repr=False)
     send_user_agent: bool = field(default=DEFAULT_SEND_USER_AGENT, repr=False)
@@ -865,12 +868,12 @@ class HTTPClient:
         return prefix + str(get_random_range(start, stop))
 
     @staticmethod
-    def generate_uuid() -> UUID:
-        return generate_uuid()
+    def generate_uuid() -> str:
+        return str(generate_uuid())
 
     @staticmethod
-    def generate_extra_string(count: int = EXTRA_STRING_COUNT) -> str:
-        return concat_extra_string(iter.repeat_exactly(0, count).map(str).unwrap())
+    def generate_random_value(start: int = VALUE_START, stop: int = VALUE_STOP) -> int:
+        return get_random_range(start, stop)
 
     def get_game_version(self) -> int:
         return self.game_version.to_robtop_value()
@@ -887,7 +890,7 @@ class HTTPClient:
         try:
             await self.request(GET, url, read=False)
 
-        except Exception:
+        except NormalError:
             pass
 
         return timer.elapsed()
@@ -994,10 +997,7 @@ class HTTPClient:
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)
 
-        url = URL(response)
-
-        if url.path == ROOT:
-            return url / DATABASE
+        url = URL(response) / DATABASE
 
         return url
 
@@ -1114,7 +1114,7 @@ class HTTPClient:
             str(ufo_id),
             str(wave_id),
             str(robot_id),
-            str(int(glow)),
+            bool_str(glow),
             str(spider_id),
             str(explosion_id),
         )
@@ -1169,7 +1169,7 @@ class HTTPClient:
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             str=query,
-            total=0,
+            total=NO_TOTAL,
             page=page,
             secret=Secret.MAIN.value,
             to_camel=True,
@@ -1206,8 +1206,8 @@ class HTTPClient:
 
         return response
 
-    async def get_simple_relationships(
-        self, type: SimpleRelationshipType, *, account_id: int, encoded_password: str
+    async def get_relationships(
+        self, type: RelationshipType, *, account_id: int, encoded_password: str
     ) -> str:
         error_codes = {
             -1: MissingAccess(CAN_NOT_FIND_USERS),
@@ -1323,7 +1323,7 @@ class HTTPClient:
                         account_id=client_account_id,
                         str=client_user_id,
                         gjp=encoded_password,
-                        local=1,
+                        local=int(True),
                     )
 
                 else:
@@ -1394,7 +1394,7 @@ class HTTPClient:
                 random_string,
                 str(account_id),
                 udid,
-                str(uuid),
+                uuid,
             )
 
             check = generate_check(values, Key.LEVEL, Salt.LEVEL)
@@ -1486,6 +1486,7 @@ class HTTPClient:
         coins: int = DEFAULT_COINS,
         stars: int = DEFAULT_STARS,
         low_detail: bool = DEFAULT_LOW_DETAIL,
+        capacity: Optional[Capacity] = None,
         password: Optional[Password] = None,
         recording: Optional[Recording] = None,
         editor_time: Optional[Duration] = None,
@@ -1502,6 +1503,9 @@ class HTTPClient:
         if copies_time is None:
             copies_time = duration()
 
+        if capacity is None:
+            capacity = Capacity()
+
         error_codes = {-1: MissingAccess(FAILED_TO_UPLOAD_LEVEL)}
 
         object_separator = OBJECT_SEPARATOR
@@ -1511,9 +1515,9 @@ class HTTPClient:
 
             data = zip_level_string(data)
 
-        extra_string = self.generate_extra_string()
-
         description = encode_base64_string_url_safe(description)
+
+        extra_string = capacity.to_robtop()
 
         level_seed = generate_level_seed(data)
 
@@ -1548,8 +1552,8 @@ class HTTPClient:
             objects=object_count,
             coins=coins,
             requested_stars=stars,
-            unlisted=not privacy.is_public(),
-            unlisted2=privacy.is_friends(),
+            unlisted=int(not privacy.is_public()),
+            unlisted2=int(privacy.is_friends()),
             ldm=int(low_detail),
             password=password.to_robtop_value(),
             level_string=data,
@@ -1580,7 +1584,7 @@ class HTTPClient:
 
         random_string = generate_random_string()
 
-        values = (str(level_id), str(stars), random_string, str(account_id), udid, str(uuid))
+        values = (str(level_id), str(stars), random_string, str(account_id), udid, uuid)
 
         check = generate_check(values, Key.LIKE_RATE, Salt.LIKE_RATE)
 
@@ -1710,46 +1714,19 @@ class HTTPClient:
         strategy: LevelLeaderboardStrategy,
         timely_type: TimelyType = TimelyType.DEFAULT,
         timely_id: int = DEFAULT_ID,
-        played: bool = DEFAULT_PLAYED,
         record: int = DEFAULT_RECORD,
-        jumps: int = DEFAULT_JUMPS,
+        clicks: int = DEFAULT_CLICKS,
         attempts: int = DEFAULT_ATTEMPTS,
         seconds: int = DEFAULT_SECONDS,
         coins: int = DEFAULT_COINS,
+        check: bool = DEFAULT_CHECK,
         progress: Optional[Progress] = None,
         send: bool = DEFAULT_SEND,
         *,
         account_id: int,
         encoded_password: str,
     ) -> str:
-
         error_codes = {-1: MissingAccess(FAILED_TO_GET_LEADERBOARD.format(level_id))}
-
-        seed = generate_leaderboard_seed(jumps, record, seconds, played)
-
-        if timely_type.is_weekly():
-            timely_id += WEEKLY_ID_ADD
-
-        random_string = generate_random_string()
-
-        unknown = 1
-
-        values = (
-            str(account_id),
-            str(level_id),
-            str(record),
-            str(seconds),
-            str(jumps),
-            str(attempts),
-            str(record),
-            str(COMPLETED - record),
-            str(unknown),
-            str(coins),
-            str(timely_id),
-            random_string,
-        )
-
-        check = generate_check(values, Key.LEVEL_LEADERBOARD, Salt.LEVEL_LEADERBOARD)
 
         route = Route(POST, GET_LEVEL_LEADERBOARD)
 
@@ -1765,25 +1742,50 @@ class HTTPClient:
             to_camel=True,
         )
 
-        if progress is None:
-            progress = Progress()
-
-        progress_string = progress.to_robtop()
-
         if send:
+            if progress is None:
+                progress = Progress()
+
+            progress_string = progress.to_robtop()
+
+            seed = generate_leaderboard_seed(clicks, record, seconds, check)
+
+            if timely_type.is_weekly():
+                timely_id += WEEKLY_ID_ADD
+
+            random_string = generate_random_string()
+
+            unknown = 1
+
+            values = (  # TODO: we need to figure out if this is correct
+                str(account_id),
+                str(level_id),
+                str(record),
+                str(seconds),
+                str(clicks),
+                str(attempts),
+                progress_string,
+                str(unknown),
+                str(coins),
+                str(timely_id),
+                random_string,
+            )
+
+            generated_check = generate_check(values, Key.LEVEL_LEADERBOARD, Salt.LEVEL_LEADERBOARD)
+
             payload.update(
                 percent=record,
                 s1=attempts + ATTEMPTS_ADD,
-                s2=jumps + JUMPS_ADD,
+                s2=clicks + CLICKS_ADD,
                 s3=seconds + SECONDS_ADD,
                 s4=seed,
-                s5=get_random_range(100, 100000),
-                s6=progress_string,
+                s5=self.generate_random_value(),
+                s6=encode_robtop_string(progress.to_robtop(), Key.LEVEL),
                 s7=random_string,
                 s8=attempts,
                 s9=coins + COINS_ADD,
                 s10=timely_id,
-                chk=check,
+                chk=generated_check,
                 to_camel=True,
             )
 
@@ -1925,7 +1927,7 @@ class HTTPClient:
         )
 
         if type.is_outgoing():
-            payload.update(is_sender=1, to_camel=True)
+            payload.update(is_sender=int(True), to_camel=True)
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)
 
@@ -1955,7 +1957,7 @@ class HTTPClient:
         )
 
         if type.is_outgoing():
-            payload.update(is_sender=1, to_camel=True)
+            payload.update(is_sender=int(True), to_camel=True)
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)
 
@@ -1976,7 +1978,7 @@ class HTTPClient:
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             page=page,
-            total=0,
+            total=NO_TOTAL,
             account_id=account_id,
             gjp=encoded_password,
             secret=Secret.MAIN.value,
@@ -1984,7 +1986,7 @@ class HTTPClient:
         )
 
         if type.is_outgoing():
-            payload.update(get_sent=1, to_camel=True)
+            payload.update(get_sent=int(True), to_camel=True)
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)
 
@@ -2048,7 +2050,7 @@ class HTTPClient:
         )
 
         if type.is_outgoing():
-            payload.update(is_sender=1, to_camel=True)
+            payload.update(is_sender=int(True), to_camel=True)
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)
 
@@ -2080,7 +2082,7 @@ class HTTPClient:
         )
 
         if type.is_outgoing():
-            payload.update(is_sender=1, to_camel=True)
+            payload.update(is_sender=int(True), to_camel=True)
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)
 
@@ -2138,7 +2140,7 @@ class HTTPClient:
         )
 
         if type.is_outgoing():
-            payload.update(get_sent=1, to_camel=True)
+            payload.update(get_sent=int(True), to_camel=True)
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)
 
@@ -2167,12 +2169,12 @@ class HTTPClient:
         values = (
             str(special_id),
             str(level_id),
-            str(int(like)),
+            bool_str(like),
             str(type.value),
             random_string,
             str(account_id),
             udid,
-            str(uuid),
+            uuid,
         )
 
         check = generate_check(values, Key.LIKE_RATE, Salt.LIKE_RATE)
@@ -2224,12 +2226,12 @@ class HTTPClient:
         values = (
             str(special_id),
             str(comment_id),
-            str(int(like)),
+            bool_str(like),
             str(type.value),
             random_string,
             str(account_id),
             udid,
-            str(uuid),
+            uuid,
         )
 
         check = generate_check(values, Key.LIKE_RATE, Salt.LIKE_RATE)
@@ -2282,12 +2284,12 @@ class HTTPClient:
         values = (
             str(special_id),
             str(comment_id),
-            str(int(like)),
+            bool_str(like),
             str(type.value),
             random_string,
             str(account_id),
             udid,
-            str(uuid),
+            uuid,
         )
 
         check = generate_check(values, Key.LIKE_RATE, Salt.LIKE_RATE)
@@ -2498,7 +2500,7 @@ class HTTPClient:
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             page=page,
-            total=0,
+            total=NO_TOTAL,
             account_id=account_id,
             secret=Secret.MAIN.value,
             to_camel=True,
@@ -2525,7 +2527,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             page=page,
             count=count,
-            total=0,
+            total=NO_TOTAL,
             mode=strategy.value,
             user_id=user_id,
             secret=Secret.MAIN.value,
@@ -2557,7 +2559,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             level_id=level_id,
             page=page,
-            total=0,
+            total=NO_TOTAL,
             count=count,
             mode=strategy.value,
             secret=Secret.MAIN.value,
@@ -2625,9 +2627,8 @@ class HTTPClient:
             reward_type=reward_type.value,
             account_id=account_id,
             gjp=encoded_password,
-            # no idea why they got swapped
-            udid=self.generate_uuid(),
-            uuid=self.generate_udid(),
+            uuid=self.generate_uuid(),
+            udid=self.generate_udid(),
             chk=check,
             r1=chest_1_count,
             r2=chest_2_count,
@@ -2654,9 +2655,8 @@ class HTTPClient:
             gdw=world,
             account_id=account_id,
             gjp=encoded_password,
-            # no idea why they got swapped
-            udid=self.generate_uuid(),
-            uuid=self.generate_udid(),
+            uuid=self.generate_uuid(),
+            udid=self.generate_udid(),
             chk=check,
             world=world,
             secret=Secret.MAIN.value,

@@ -4,7 +4,9 @@ from typing import ClassVar, Dict, Iterator, List, Optional, Type, TypeVar
 
 from attrs import frozen
 from colors import Color as ColorCore
+from funcs.composition import compose_once
 from iters.iters import iter, wrap_iter
+from iters.utils import unary_tuple
 
 from gd.constants import DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID
 from gd.models_constants import COLOR_SEPARATOR
@@ -12,7 +14,7 @@ from gd.models_utils import concat_color, split_color
 from gd.robtop import RobTop
 from gd.string_utils import tick
 
-__all__ = ("Color",)
+__all__ = unary_tuple("Color")
 
 C = TypeVar("C", bound="Color")
 
@@ -66,7 +68,7 @@ class Color(RobTop, ColorCore):
         41: 0x7D7DAF,
     }
 
-    VALUE_TO_ID: ClassVar[Dict[int, int]] = {color: id for id, color in ID_TO_VALUE.items()}
+    VALUE_TO_ID: ClassVar[Dict[int, int]] = {value: id for id, value in ID_TO_VALUE.items()}
 
     @property
     def id(self) -> Optional[int]:
@@ -94,12 +96,12 @@ class Color(RobTop, ColorCore):
 
     @classmethod
     def from_robtop(cls: Type[C], string: str) -> C:
-        r, g, b = iter(split_color(string)).map(int).tuple()
+        r, g, b = iter(split_color(string)).map(compose_once(round, float)).tuple()  # type: ignore
 
         return cls.from_rgb(r, g, b)
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
+    @staticmethod
+    def can_be_in(string: str) -> bool:
         return COLOR_SEPARATOR in string
 
     def to_robtop(self) -> str:

@@ -2,22 +2,13 @@ from __future__ import annotations
 
 from abc import abstractmethod as required
 from asyncio import get_running_loop
-from traceback import print_exception
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Awaitable,
-    Hashable,
-    Iterable,
-    List,
-    Optional,
-    TypeVar,
-)
+from traceback import print_exception as print_error
+from typing import TYPE_CHECKING, Any, Awaitable, Hashable, Iterable, List, Optional, TypeVar
 
 from attrs import define, field
 from funcs.functions import awaiting
 from iters.iters import Iter, iter
-from typing_aliases import Nullary, Predicate
+from typing_aliases import NormalError, Nullary, Predicate
 from typing_extensions import Protocol
 
 from gd.comments import LevelComment, UserComment
@@ -90,8 +81,8 @@ class ListenerProtocol(Protocol):
     async def step(self) -> None:
         ...
 
-    async def on_error(self, error: Exception) -> None:
-        print_exception(error)
+    async def on_error(self, error: NormalError) -> None:
+        print_error(error)
 
     async def schedule(self, awaitable: Awaitable[Any]) -> None:
         get_running_loop().create_task(awaiting(awaitable))
@@ -100,7 +91,7 @@ class ListenerProtocol(Protocol):
         try:
             await self.step()
 
-        except Exception as error:
+        except NormalError as error:
             await self.on_error(error)
 
     def start(self) -> None:

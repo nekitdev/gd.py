@@ -1,11 +1,37 @@
 import re
+from math import copysign as copy_sign
+from typing import AbstractSet as AnySet
 from typing import Iterable
 
-from iters import iter
+from iters.iters import iter
+from iters.ordered_set import ordered_set_unchecked
+from typing_extensions import Final
 
 from gd.errors import InternalError
+from gd.string_utils import tick
 
-__all__ = ("parse_pages",)
+__all__ = ("parse_bool", "parse_pages")
+
+# SAFETY: we ensure that items are unique
+
+FALSE_TUPLE: Final = ("false", "f", "no", "n", "0", "off")
+TRUE_TUPLE: Final = ("true", "t", "yes", "y", "1", "on")
+
+FALSE: Final = ordered_set_unchecked(FALSE_TUPLE)
+TRUE: Final = ordered_set_unchecked(TRUE_TUPLE)
+
+CAN_NOT_PARSE_BOOL = "can not parse {} to `bool`"
+
+
+def parse_bool(string: str, false: AnySet[str] = FALSE, true: AnySet[str] = TRUE) -> bool:
+    if string in false:
+        return False
+
+    if string in true:
+        return True
+
+    raise ValueError(CAN_NOT_PARSE_BOOL.format(tick(string)))
+
 
 START = "start"
 STOP = "stop"
@@ -26,6 +52,14 @@ RANGE_PATTERN = rf"""
 RANGE = re.compile(RANGE_PATTERN, re.VERBOSE)
 
 PAGES_SEPARATOR = ","
+
+
+def inclusive_range(item: range) -> range:
+    step = item.step
+
+    shift = int(copy_sign(1, step))
+
+    return range(item.start, item.stop + shift, step)
 
 
 def split_pages(string: str) -> Iterable[str]:
@@ -53,8 +87,5 @@ def parse_pages(string: str) -> Iterable[int]:
     stop = int(stop_option)
 
     inclusive = match.group(INCLUSIVE) is not None
-
-    if inclusive:
-        stop += 1
 
     return range(start, stop)

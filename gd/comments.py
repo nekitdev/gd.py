@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Type, TypeVar
 
 from attrs import define, field
+from pendulum import DateTime
 
 from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_constants import BITS, BYTE
@@ -18,8 +19,8 @@ from gd.constants import (
     DEFAULT_USE_CLIENT,
     EMPTY,
 )
-from gd.converter import CONVERTER, register_unstructure_hook_omit_client
-from gd.date_time import DateTime, utc_from_timestamp, utc_now
+from gd.converter import register_unstructure_hook_omit_client
+from gd.date_time import utc_from_timestamp, utc_now
 from gd.entity import Entity
 from gd.enums import ByteOrder
 from gd.level import Level
@@ -32,6 +33,9 @@ if TYPE_CHECKING:
 __all__ = ("Comment", "LevelComment", "UserComment")
 
 C = TypeVar("C", bound="Comment")
+
+COMMENT = "{}: {}"
+comment = COMMENT.format
 
 
 @register_unstructure_hook_omit_client
@@ -47,7 +51,7 @@ class Comment(Entity):
         return hash(type(self)) ^ self.id
 
     def __str__(self) -> str:
-        return self.content
+        return comment(self.author, self.content)
 
     def is_disliked(self) -> bool:
         return self.rating < 0
@@ -92,8 +96,13 @@ class UserComment(Comment):
         await self.client.delete_user_comment(self)
 
     @classmethod
-    def default(cls: Type[UC]) -> UC:
-        return cls(id=DEFAULT_ID, author=User.default())
+    def default(
+        cls: Type[UC],
+        id: int = DEFAULT_ID,
+        author_id: int = DEFAULT_ID,
+        author_account_id: int = DEFAULT_ID,
+    ) -> UC:
+        return cls(id=id, author=User.default(author_id, author_account_id))
 
     @classmethod
     def from_model(cls: Type[UC], model: UserCommentModel, author: User) -> UC:
@@ -184,16 +193,22 @@ class LevelComment(Comment):
         return hash(type(self)) ^ self.id
 
     @classmethod
-    def default(cls: Type[LC]) -> LC:
-        return cls(id=DEFAULT_ID, author=User.default(), level=Level.default())
+    def default(
+        cls: Type[LC],
+        id: int = DEFAULT_ID,
+        author_id: int = DEFAULT_ID,
+        author_account_id: int = DEFAULT_ID,
+        level_id: int = DEFAULT_ID,
+    ) -> LC:
+        return cls(
+            id=id, author=User.default(author_id, author_account_id), level=Level.default(level_id)
+        )
 
     @classmethod
     def from_model(cls: Type[LC], model: LevelCommentModel) -> LC:
-        level = Level.default()
-
         inner = model.inner
 
-        level.id = inner.level_id
+        level = Level.default(inner.level_id)
 
         return cls(
             id=inner.id,

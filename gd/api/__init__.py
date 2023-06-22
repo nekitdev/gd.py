@@ -1,11 +1,24 @@
-from gd.api.color_channels import Channel, Channels, ColorChannel, ColorChannels
+from gd.api.color_channels import (
+    ColorChannel,
+    ColorChannels,
+    CopiedColorChannel,
+    NormalColorChannel,
+)
 from gd.api.database import Database
 from gd.api.editor import Editor
 from gd.api.folder import Folder
 from gd.api.guidelines import Guidelines
 from gd.api.header import Header
 from gd.api.hsv import HSV
-from gd.api.level import LevelAPI
+from gd.api.levels import (
+    BaseLevelAPI,
+    CreatedLevelAPI,
+    CustomLevelAPI,
+    GauntletLevelAPI,
+    OfficialLevelAPI,
+    SavedLevelAPI,
+    TimelyLevelAPI,
+)
 from gd.api.objects import (
     AlphaTrigger,
     AnimateTrigger,
@@ -46,7 +59,13 @@ __all__ = (
     # folder
     "Folder",
     # level API
-    "LevelAPI",
+    "BaseLevelAPI",
+    "CreatedLevelAPI",
+    "CustomLevelAPI",
+    "GauntletLevelAPI",
+    "OfficialLevelAPI",
+    "SavedLevelAPI",
+    "TimelyLevelAPI",
     # editor
     "Editor",
     # header
@@ -54,8 +73,8 @@ __all__ = (
     # color channels
     "ColorChannel",
     "ColorChannels",
-    "Channel",
-    "Channels",
+    "CopiedColorChannel",
+    "NormalColorChannel",
     # hsv
     "HSV",
     # objects

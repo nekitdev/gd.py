@@ -1,73 +1,65 @@
-from attrs import evolve, field, frozen
+from typing import Type, TypeVar
 
-from gd.artist import Artist
-from gd.constants import UNKNOWN
+from attrs import frozen
 
-__all__ = (
-    "OFFICIAL_CLIENT_SONGS",
-    "OFFICIAL_SERVER_SONGS",
-    "OfficialSong",
-    "default_official_song",
-)
+from gd.constants import DEFAULT_ID, EMPTY
 
+__all__ = ("OfficialSong", "OFFICIAL_SONGS", "ID_TO_OFFICIAL_SONG", "NAME_TO_OFFICIAL_SONG")
 
-def create_artist(name: str = UNKNOWN) -> Artist:
-    return Artist(name=name)
+OS = TypeVar("OS", bound="OfficialSong")
 
 
 @frozen()
 class OfficialSong:
-    id: int = field(default=0)
-    name: str = field(default=UNKNOWN)
-    artist: Artist = field(factory=create_artist)
+    id: int
+    name: str
+    artist_name: str
+
+    @classmethod
+    def default(cls: Type[OS], id: int = DEFAULT_ID, name: str = EMPTY) -> OS:
+        return cls(id=id, name=name, artist_name=EMPTY)
 
 
-def default_official_song(id: int = 0) -> OfficialSong:
-    return OfficialSong(id=id)
-
-
-OFFICIAL_CLIENT_SONGS = (
-    OfficialSong(id=0, name="Stay Inside Me", artist=create_artist("OcularNebula")),
-    OfficialSong(id=1, name="Stereo Madness", artist=create_artist("ForeverBound")),
-    OfficialSong(id=2, name="Back On Track", artist=create_artist("DJVI")),
-    OfficialSong(id=3, name="Polargeist", artist=create_artist("Step")),
-    OfficialSong(id=4, name="Dry Out", artist=create_artist("DJVI")),
-    OfficialSong(id=5, name="Base After Base", artist=create_artist("DJVI")),
-    OfficialSong(id=6, name="Can't Let Go", artist=create_artist("DJVI")),
-    OfficialSong(id=7, name="Jumper", artist=create_artist("Waterflame")),
-    OfficialSong(id=8, name="Time Machine", artist=create_artist("Waterflame")),
-    OfficialSong(id=9, name="Cycles", artist=create_artist("DJVI")),
-    OfficialSong(id=10, name="xStep", artist=create_artist("DJVI")),
-    OfficialSong(id=11, name="Clutterfunk", artist=create_artist("Waterflame")),
-    OfficialSong(id=12, name="Theory of Everything", artist=create_artist("DJ-Nate")),
-    OfficialSong(id=13, name="Electroman Adventures", artist=create_artist("Waterflame")),
-    OfficialSong(id=14, name="Clubstep", artist=create_artist("DJ-Nate")),
-    OfficialSong(id=15, name="Electrodynamix", artist=create_artist("DJ-Nate")),
-    OfficialSong(id=16, name="Hexagon Force", artist=create_artist("Waterflame")),
-    OfficialSong(id=17, name="Blast Processing", artist=create_artist("Waterflame")),
-    OfficialSong(id=18, name="Theory of Everything 2", artist=create_artist("DJ-Nate")),
-    OfficialSong(id=19, name="Geometrical Dominator", artist=create_artist("Waterflame")),
-    OfficialSong(id=20, name="Deadlocked", artist=create_artist("F-777")),
-    OfficialSong(id=21, name="Fingerdash", artist=create_artist("MDK")),
-    OfficialSong(id=22, name="The Seven Seas", artist=create_artist("F-777")),
-    OfficialSong(id=23, name="Viking Arena", artist=create_artist("F-777")),
-    OfficialSong(id=24, name="Airborne Robots", artist=create_artist("F-777")),
-    OfficialSong(id=25, name="Secret", artist=create_artist("RobTop")),
-    OfficialSong(id=26, name="Payload", artist=create_artist("Dex Arson")),
-    OfficialSong(id=27, name="Beast Mode", artist=create_artist("Dex Arson")),
-    OfficialSong(id=28, name="Machina", artist=create_artist("Dex Arson")),
-    OfficialSong(id=29, name="Years", artist=create_artist("Dex Arson")),
-    OfficialSong(id=30, name="Frontlines", artist=create_artist("Dex Arson")),
-    OfficialSong(id=31, name="Space Pirates", artist=create_artist("Waterflame")),
-    OfficialSong(id=32, name="Striker", artist=create_artist("Waterflame")),
-    OfficialSong(id=33, name="Embers", artist=create_artist("Dex Arson")),
-    OfficialSong(id=34, name="Round 1", artist=create_artist("Dex Arson")),
-    OfficialSong(id=35, name="Monster Dance Off", artist=create_artist("F-777")),
-    OfficialSong(id=36, name="Press Start", artist=create_artist("MDK")),
-    OfficialSong(id=37, name="Nock Em", artist=create_artist("Bossfight")),
-    OfficialSong(id=38, name="Power Trip", artist=create_artist("Boom Kitty")),
+OFFICIAL_SONGS = (
+    OfficialSong(id=0, name="Stereo Madness", artist_name="ForeverBound"),
+    OfficialSong(id=1, name="Back On Track", artist_name="DJVI"),
+    OfficialSong(id=2, name="Polargeist", artist_name="Step"),
+    OfficialSong(id=3, name="Dry Out", artist_name="DJVI"),
+    OfficialSong(id=4, name="Base After Base", artist_name="DJVI"),
+    OfficialSong(id=5, name="Can't Let Go", artist_name="DJVI"),
+    OfficialSong(id=6, name="Jumper", artist_name="Waterflame"),
+    OfficialSong(id=7, name="Time Machine", artist_name="Waterflame"),
+    OfficialSong(id=8, name="Cycles", artist_name="DJVI"),
+    OfficialSong(id=9, name="xStep", artist_name="DJVI"),
+    OfficialSong(id=10, name="Clutterfunk", artist_name="Waterflame"),
+    OfficialSong(id=11, name="Theory of Everything", artist_name="DJ-Nate"),
+    OfficialSong(id=12, name="Electroman Adventures", artist_name="Waterflame"),
+    OfficialSong(id=13, name="Clubstep", artist_name="DJ-Nate"),
+    OfficialSong(id=14, name="Electrodynamix", artist_name="DJ-Nate"),
+    OfficialSong(id=15, name="Hexagon Force", artist_name="Waterflame"),
+    OfficialSong(id=16, name="Blast Processing", artist_name="Waterflame"),
+    OfficialSong(id=17, name="Theory of Everything 2", artist_name="DJ-Nate"),
+    OfficialSong(id=18, name="Geometrical Dominator", artist_name="Waterflame"),
+    OfficialSong(id=19, name="Deadlocked", artist_name="F-777"),
+    OfficialSong(id=20, name="Fingerdash", artist_name="MDK"),
+    OfficialSong(id=21, name="The Seven Seas", artist_name="F-777"),
+    OfficialSong(id=22, name="Viking Arena", artist_name="F-777"),
+    OfficialSong(id=23, name="Airborne Robots", artist_name="F-777"),
+    OfficialSong(id=24, name="Secret", artist_name="RobTop"),
+    OfficialSong(id=25, name="Payload", artist_name="Dex Arson"),
+    OfficialSong(id=26, name="Beast Mode", artist_name="Dex Arson"),
+    OfficialSong(id=27, name="Machina", artist_name="Dex Arson"),
+    OfficialSong(id=28, name="Years", artist_name="Dex Arson"),
+    OfficialSong(id=29, name="Frontlines", artist_name="Dex Arson"),
+    OfficialSong(id=30, name="Space Pirates", artist_name="Waterflame"),
+    OfficialSong(id=31, name="Striker", artist_name="Waterflame"),
+    OfficialSong(id=32, name="Embers", artist_name="Dex Arson"),
+    OfficialSong(id=33, name="Round 1", artist_name="Dex Arson"),
+    OfficialSong(id=34, name="Monster Dance Off", artist_name="F-777"),
+    OfficialSong(id=35, name="Press Start", artist_name="MDK"),
+    OfficialSong(id=36, name="Nock Em", artist_name="Bossfight"),
+    OfficialSong(id=37, name="Power Trip", artist_name="Boom Kitty"),
 )
 
-OFFICIAL_SERVER_SONGS = tuple(
-    evolve(official_song, id=official_song.id - 1) for official_song in OFFICIAL_CLIENT_SONGS
-)
+ID_TO_OFFICIAL_SONG = {official_song.id: official_song for official_song in OFFICIAL_SONGS}
+NAME_TO_OFFICIAL_SONG = {official_song.name: official_song for official_song in OFFICIAL_SONGS}

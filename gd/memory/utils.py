@@ -1,4 +1,6 @@
-__all__ = ("next_power_of_two",)
+from iters.utils import unary_tuple
+
+__all__ = unary_tuple("next_power_of_two")
 
 
 def next_power_of_two(value: int) -> int:

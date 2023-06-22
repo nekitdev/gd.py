@@ -5,15 +5,16 @@ from typing import TYPE_CHECKING, Iterable, Optional, Type, TypeVar
 from attrs import define, field
 from iters.iters import iter
 from iters.ordered_set import OrderedSet, ordered_set
+from iters.utils import unary_tuple
 from typing_extensions import TypedDict
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
-from gd.enums import ByteOrder, Difficulty, LevelLength, RateFilter, SearchStrategy
+from gd.enums import ByteOrder, Difficulty, LevelLength, RateFilter, SearchStrategy, SpecialRateType
 from gd.string_constants import DASH
 from gd.string_utils import concat_comma, wrap
 
-__all__ = ("Filters",)
+__all__ = unary_tuple("Filters")
 
 if TYPE_CHECKING:
     from gd.client import Client
@@ -30,8 +31,6 @@ DEFAULT_SONG_ID = None
 DEFAULT_CUSTOM_SONG = False
 DEFAULT_REQUIRE_ORIGINAL = False
 
-GODLIKE = 2
-
 COMPLETED_BIT = 0b00000001
 COMPLETED_SET_BIT = 0b00000010
 REQUIRE_COINS_BIT = 0b00000100
@@ -40,6 +39,14 @@ REQUIRE_TWO_PLAYER_BIT = 0b00010000
 CUSTOM_SONG_BIT = 0b00100000
 SONG_ID_SET_BIT = 0b01000000
 REQUIRE_ORIGINAL_BIT = 0b10000000
+
+
+def level_difficulty_value(difficulty: Difficulty) -> int:
+    return difficulty.into_level_difficulty().value
+
+
+def length_value(length: LevelLength) -> int:
+    return length.value
 
 
 @define()
@@ -207,8 +214,6 @@ class Filters(Binary):
         if rate_filter is not None:
             value |= RATE_FILTER_SET_BIT
 
-            writer.write_u8(rate_filter.value)
-
         if self.require_two_player:
             value |= REQUIRE_TWO_PLAYER_BIT
 
@@ -220,12 +225,16 @@ class Filters(Binary):
         if song_id is not None:
             value |= SONG_ID_SET_BIT
 
-            writer.write_u32(song_id)
-
         if self.require_original:
             value |= REQUIRE_ORIGINAL_BIT
 
         writer.write_u8(value)
+
+        if rate_filter is not None:
+            writer.write_u8(rate_filter.value)
+
+        if song_id is not None:
+            writer.write_u32(song_id)
 
         followed = self.followed
 
@@ -513,32 +522,41 @@ class Filters(Binary):
         rate_filter = self.rate_filter
 
         if rate_filter is not None:
-            if rate_filter.is_not_rated():
-                filters.update(RobTopFilters(no_star=int(True)))
+            not_rated = rate_filter.is_not_rated()
 
-            if rate_filter.is_rated():
-                filters.update(RobTopFilters(star=int(True)))
+            if not_rated:
+                filters.update(RobTopFilters(no_star=int(not_rated)))
 
-            if rate_filter.is_featured():
-                filters.update(RobTopFilters(featured=int(True)))
+            rated = rate_filter.is_rated()
+
+            if rated:
+                filters.update(RobTopFilters(star=int(rated)))
+
+            featured = rate_filter.is_featured()
+
+            if featured:
+                filters.update(RobTopFilters(featured=int(featured)))
+
+            special_rate_type = SpecialRateType.NONE
 
             if rate_filter.is_epic():
-                filters.update(RobTopFilters(epic=int(True)))
+                special_rate_type = SpecialRateType.EPIC
 
             if rate_filter.is_godlike():
-                filters.update(RobTopFilters(epic=GODLIKE))  # why
+                special_rate_type = SpecialRateType.GODLIKE
+
+            if not special_rate_type.is_none():
+                filters.update(RobTopFilters(epic=special_rate_type.value))
 
         filters.update(
             RobTopFilters(
                 type=self.strategy.value,
-                diff=iter(
-                    difficulty.into_level_difficulty().value for difficulty in self.difficulties
-                )
+                diff=iter(self.difficulties)
+                .map(level_difficulty_value)
                 .map(str)
                 .collect(concat_comma)
                 or DASH,
-                len=iter(length.value for length in self.lengths).map(str).collect(concat_comma)
-                or DASH,
+                len=iter(self.lengths).map(length_value).map(str).collect(concat_comma) or DASH,
                 original=int(self.require_original),
                 two_player=int(self.require_two_player),
                 coins=int(self.require_coins),

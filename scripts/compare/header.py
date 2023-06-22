@@ -4,7 +4,7 @@ import click
 from entrypoint import entrypoint
 from iters.iters import iter
 
-from gd.api.color_channels import ColorChannel, ColorChannels
+from gd.api.color_channels import ColorChannels, NormalColorChannel
 from gd.api.header import Header
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.encoding import compress
@@ -30,7 +30,7 @@ def main(count: int, rounding: int) -> None:
 
     header = Header(
         color_channels=ColorChannels.from_color_channel_iterable(
-            iter(color_id_range(count)).map(ColorChannel).unwrap()
+            iter(color_id_range(count)).map(NormalColorChannel).unwrap()
         )
     )
 

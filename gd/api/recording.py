@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import re
 from collections import UserList as ListType
-from functools import partial
 from typing import Iterable, Iterator, List, Match, Type, TypeVar
 
 from attrs import define
+from funcs.application import partial
 from iters.iters import iter, wrap_iter
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
@@ -113,8 +113,8 @@ class RecordingItem(Binary, RobTop):
     def to_robtop(self) -> str:
         return concat_recording_item(self.to_robtop_iterator())
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
+    @staticmethod
+    def can_be_in(string: str) -> bool:
         return RECORDING_ITEM_SEPARATOR in string
 
     @classmethod
@@ -194,8 +194,8 @@ class Recording(ListType, List[RecordingItem], Binary, RobTop):  # type: ignore
     def to_robtop(self) -> str:
         return self.collect_robtop(self)
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
+    @staticmethod
+    def can_be_in(string: str) -> bool:
         return RECORDING_ITEM_SEPARATOR in string
 
     @classmethod

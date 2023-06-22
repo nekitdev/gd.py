@@ -14,7 +14,7 @@ __all__ = ("Guidelines",)
 G = TypeVar("G", bound="Guidelines")
 
 
-class Guidelines(RobTop, Binary, Dict[float, GuidelineColor]):
+class Guidelines(Dict[float, GuidelineColor], RobTop, Binary):
     """Represents guidelines.
 
     Binary:
@@ -85,6 +85,6 @@ class Guidelines(RobTop, Binary, Dict[float, GuidelineColor]):
     def to_robtop(self) -> str:
         return concat_guidelines({timestamp: color.value for timestamp, color in self.items()})
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
+    @staticmethod
+    def can_be_in(string: str) -> bool:
         return GUIDELINES_SEPARATOR in string

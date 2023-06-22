@@ -1,9 +1,10 @@
+import sys
+from builtins import hasattr as has_attribute
 from struct import calcsize as size
-from sys import platform as SYSTEM_PLATFORM_STRING
-from sysconfig import get_config_var as get_config_variable
+from platform import system
 from typing import Type, TypeVar
 
-from attrs import define
+from attrs import evolve, frozen
 from typing_aliases import Nullary
 
 from gd.binary_constants import BITS
@@ -27,42 +28,23 @@ USIZE_BITS = USIZE_SIZE * BITS
 SYSTEM_BITS = USIZE_BITS
 
 
-WINDOWS_LITERAL = "win"
-CYGWIN_LITERAL = "cygwin"
+WINDOWS_LITERAL = "Windows"
 
-DARWIN_LITERAL = "darwin"
+DARWIN_LITERAL = "Darwin"
 
-FREE_BSD_LITERAL = "freebsd"
-LINUX_LITERAL = "linux"
+LINUX_LITERAL = "Linux"
 
-ANDROID_LITERAL = "android"
+GET_ANDROID_API_LEVEL = "getandroidapilevel"
 
+SYSTEM = system()
 
-ANDROID_API_LEVEL_NAME = "ANDROID_API_LEVEL"
-ANDROID_API_LEVEL = get_config_variable(ANDROID_API_LEVEL_NAME)
+ANDROID = has_attribute(sys, GET_ANDROID_API_LEVEL)
 
-if ANDROID_API_LEVEL:
-    SYSTEM_PLATFORM_STRING = ANDROID_LITERAL  # noqa
+DARWIN = SYSTEM == DARWIN_LITERAL
 
+LINUX = SYSTEM == LINUX_LITERAL and not ANDROID
 
-ANDROID = False
-DARWIN = False
-LINUX = False
-WINDOWS = False
-
-
-if SYSTEM_PLATFORM_STRING.startswith((WINDOWS_LITERAL, CYGWIN_LITERAL)):
-    WINDOWS = True
-
-elif SYSTEM_PLATFORM_STRING.startswith(DARWIN_LITERAL):
-    DARWIN = True
-
-elif SYSTEM_PLATFORM_STRING.startswith((LINUX_LITERAL, FREE_BSD_LITERAL)):
-    LINUX = True
-
-elif SYSTEM_PLATFORM_STRING.startswith(ANDROID_LITERAL):
-    ANDROID = True
-
+WINDOWS = SYSTEM == WINDOWS_LITERAL
 
 SYSTEM_PLATFORM = {
     ANDROID: Platform.ANDROID,
@@ -80,7 +62,7 @@ concat_separator = SEPARATOR.join
 PC = TypeVar("PC", bound="PlatformConfig")
 
 
-@define()
+@frozen()
 class PlatformConfig:
     platform: Platform = Platform.DEFAULT
     bits: int = DEFAULT_BITS
@@ -100,12 +82,18 @@ class PlatformConfig:
 
         return factory
 
-    def __hash__(self) -> int:
-        return hash(type(self)) ^ hash(self.platform) ^ hash(self.bits)
+    def with_platform(self: PC, platform: Platform) -> PC:
+        return evolve(self, platform=platform)
+
+    def with_bits(self: PC, bits: int) -> PC:
+        return evolve(self, bits=bits)
 
     @classmethod
     def from_string(cls: Type[PC], string: str) -> PC:
-        platform_string, bits_string = string.split(SEPARATOR)
+        platform_string, separator, bits_string = string.partition(SEPARATOR)
+
+        if not separator:
+            raise ValueError  # TODO: message?
 
         platform = Platform[platform_string.upper()]
         bits = int(bits_string)

@@ -406,8 +406,10 @@ class SystemState(AbstractState):
 
         self.process_id = process_id  # type: ignore
 
-        if not self.config.bits:
-            self.config.bits = system_get_process_bits(process_id)
+        config = self.config
+
+        if not config.bits:
+            self.config = config.with_bits(system_get_process_bits(process_id))
 
         self.handle = handle = system_open(process_id)
 
@@ -451,8 +453,10 @@ class DarwinState(AbstractState):
     def load(self) -> None:
         self.process_id = process_id = darwin_get_process_id_from_name(self.process_name)
 
-        if not self.config.bits:
-            self.config.bits = darwin_get_process_bits(process_id)
+        config = self.config
+
+        if not config.bits:
+            self.config = config.with_bits(darwin_get_process_bits(process_id))
 
         self.handle = handle = darwin_open(process_id)
 
@@ -519,8 +523,10 @@ class WindowsState(AbstractState):
 
         self.handle = handle = windows_open(process_id)
 
-        if not self.config.bits:
-            self.config.bits = windows_get_process_bits_from_handle(handle)
+        config = self.config
+
+        if not config.bits:
+            self.config = config.with_bits(windows_get_process_bits_from_handle(handle))
 
         self.base_address = windows_get_base_address(process_id, process_name)
 

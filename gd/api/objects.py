@@ -35,14 +35,12 @@ from gd.enums import (
     PulseType,
     RotatingObjectType,
     SimpleTargetType,
-    SimpleZLayer,
     SpecialColorID,
     Speed,
     SpeedChangeType,
     TargetType,
     ToggleType,
     TriggerType,
-    ZLayer,
 )
 from gd.models_constants import GROUPS_SEPARATOR, OBJECT_SEPARATOR
 from gd.models_utils import (
@@ -155,6 +153,7 @@ DEFAULT_SCALE = 1.0
 DEFAULT_DO_NOT_FADE = False
 DEFAULT_DO_NOT_ENTER = False
 
+DEFAULT_Z_LAYER = 0
 DEFAULT_Z_ORDER = 0
 
 DEFAULT_BASE_EDITOR_LAYER = 0
@@ -180,8 +179,8 @@ class Groups(OrderedSet[int], RobTop):
     def to_robtop(self) -> str:
         return iter(self).map(str).collect(concat_groups)
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
+    @staticmethod
+    def can_be_in(string: str) -> bool:
         return GROUPS_SEPARATOR in string
 
 
@@ -234,7 +233,7 @@ class Object(Binary, RobTop):
     do_not_fade: bool = field(default=DEFAULT_DO_NOT_FADE)
     do_not_enter: bool = field(default=DEFAULT_DO_NOT_ENTER)
 
-    z_layer: ZLayer = field(default=ZLayer.DEFAULT)
+    z_layer: int = field(default=DEFAULT_Z_LAYER)
     z_order: int = field(default=DEFAULT_Z_ORDER)
 
     base_editor_layer: int = field(default=DEFAULT_BASE_EDITOR_LAYER)
@@ -305,14 +304,11 @@ class Object(Binary, RobTop):
             scale = DEFAULT_SCALE
 
         if flag.has_z():
-            z_layer_value = reader.read_u8()
-
+            z_layer = reader.read_i8()
             z_order = reader.read_i16()
 
-            z_layer = ZLayer(z_layer_value)
-
         else:
-            z_layer = ZLayer.DEFAULT
+            z_layer = DEFAULT_Z_LAYER
             z_order = DEFAULT_Z_ORDER
 
         if flag.has_editor_layer():
@@ -395,7 +391,7 @@ class Object(Binary, RobTop):
         z_layer = self.z_layer
         z_order = self.z_order
 
-        if not z_layer.is_default() or z_order:
+        if z_layer or z_order:
             flag |= ObjectFlag.HAS_Z
 
         base_editor_layer = self.base_editor_layer
@@ -468,7 +464,7 @@ class Object(Binary, RobTop):
             writer.write_f32(self.scale)
 
         if flag.has_z():
-            writer.write_u8(self.z_layer.value)
+            writer.write_i8(self.z_layer)
 
             writer.write_i16(self.z_order)
 
@@ -518,9 +514,7 @@ class Object(Binary, RobTop):
         do_not_fade = parse_get_or(int_bool, DEFAULT_DO_NOT_FADE, mapping.get(DO_NOT_FADE))
         do_not_enter = parse_get_or(int_bool, DEFAULT_DO_NOT_ENTER, mapping.get(DO_NOT_ENTER))
 
-        z_layer = parse_get_or(
-            partial_parse_enum(int, SimpleZLayer), SimpleZLayer.DEFAULT, mapping.get(Z_LAYER)
-        ).into_z_layer()
+        z_layer = parse_get_or(int, DEFAULT_Z_LAYER, mapping.get(Z_LAYER))
         z_order = parse_get_or(int, DEFAULT_Z_ORDER, mapping.get(Z_ORDER))
 
         base_editor_layer = parse_get_or(
@@ -623,8 +617,8 @@ class Object(Binary, RobTop):
 
         z_layer = self.z_layer
 
-        if not z_layer.is_default():
-            mapping[Z_LAYER] = str(z_layer.into_simple_z_layer().value)
+        if z_layer:
+            mapping[Z_LAYER] = str(z_layer)
 
         z_order = self.z_order
 
@@ -699,8 +693,8 @@ class Object(Binary, RobTop):
 
         return mapping
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
+    @staticmethod
+    def can_be_in(string: str) -> bool:
         return OBJECT_SEPARATOR in string
 
     def is_h_flipped(self) -> bool:
@@ -4525,7 +4519,7 @@ def object_to_bytes(
     return binary.read()
 
 
-OBJECT_ID_NOT_PRESENT = "object id is not present"
+OBJECT_ID_NOT_PRESENT = "object ID is not present"
 
 
 OBJECT_ID_TO_TYPE: Dict[int, Type[Object]] = {

@@ -9,7 +9,6 @@ __all__ = (
     "CONVERTER",
     "register_unstructure_hook",
     "register_unstructure_hook_omit_client",
-    "register_unstructure_hook_omit_id_and_client",
 )
 
 CONVERTER = Converter(forbid_extra_keys=True)
@@ -37,7 +36,4 @@ def register_unstructure_hook(**overrides: AttributeOverride) -> RegisterUnstruc
 
 register_unstructure_hook_omit_client = register_unstructure_hook(
     client_unchecked=override(omit=True)
-)
-register_unstructure_hook_omit_id_and_client = register_unstructure_hook(
-    id=override(omit=True), client_unchecked=override(omit=True)
 )

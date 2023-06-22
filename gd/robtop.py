@@ -6,18 +6,18 @@ from typing_extensions import Protocol, TypeGuard, runtime_checkable
 
 __all__ = ("RobTop", "FromRobTop", "ToRobTop", "is_from_robtop", "is_to_robtop")
 
-F = TypeVar("F", bound="FromRobTop")
+T = TypeVar("T", bound="FromRobTop")
 
 
 @runtime_checkable
 class FromRobTop(Protocol):
     @classmethod
     @required
-    def from_robtop(cls: Type[F], string: str) -> F:
+    def from_robtop(cls: Type[T], string: str) -> T:
         ...
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
+    @staticmethod
+    def can_be_in(string: str) -> bool:
         return False
 
 

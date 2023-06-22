@@ -21,6 +21,8 @@ from typing import (
 from attrs import define, field, frozen
 from funcs.functions import awaiting
 from iters.async_iters import wrap_async_iter
+from iters.utils import unary_tuple
+from pendulum import Duration
 from typing_aliases import AnyCallable, AnyError, DynamicTuple, Predicate
 from typing_extensions import ParamSpec
 from yarl import URL
@@ -28,7 +30,7 @@ from yarl import URL
 from gd.api.database import Database
 from gd.api.recording import Recording
 from gd.artist import Artist
-from gd.run_iterables import run_iterables
+from gd.capacity import Capacity
 from gd.comments import Comment, LevelComment, UserComment
 from gd.constants import (
     COMMENT_PAGE_SIZE,
@@ -57,7 +59,6 @@ from gd.constants import (
     UNNAMED,
 )
 from gd.credentials import Credentials
-from gd.date_time import Duration
 from gd.decorators import check_client_login, check_login
 from gd.encoding import Key, encode_robtop_string
 from gd.enums import (
@@ -76,7 +77,6 @@ from gd.enums import (
     MessageType,
     RelationshipType,
     RewardType,
-    SimpleRelationshipType,
     TimelyType,
 )
 from gd.errors import ClientError, InternalError, NothingFound
@@ -104,14 +104,14 @@ from gd.level_packs import Gauntlet, MapPack
 from gd.message import Message
 from gd.models import LevelModel, SearchLevelsResponseModel
 from gd.password import Password
-from gd.relationship import Relationship
 from gd.rewards import Chest, Quest
+from gd.run_iterables import run_iterables
 from gd.session import Session
-from gd.song import Song
+from gd.songs import Song
 from gd.typing import IntString, MaybeIterable, URLString
-from gd.users import LeaderboardUser, LevelLeaderboardUser, User
+from gd.users import User
 
-__all__ = ("Client",)
+__all__ = unary_tuple("Client")
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -391,26 +391,35 @@ class Client:
         else:
             user = set_as_user
 
+        statistics = user.statistics
+        cosmetics = user.cosmetics
+
+        if statistics is None:
+            raise InternalError  # TODO: message?
+
+        if cosmetics is None:
+            raise InternalError  # TODO: message?
+
         await self.session.update_profile(
-            stars=switch_none(stars, user.stars),
-            diamonds=switch_none(diamonds, user.diamonds),
-            secret_coins=switch_none(secret_coins, user.secret_coins),
-            user_coins=switch_none(user_coins, user.user_coins),
-            demons=switch_none(demons, user.demons),
-            icon_type=switch_none(icon_type, user.icon_type),
-            icon_id=switch_none(icon_id, user.icon_id),
-            color_1_id=switch_none(color_1_id, user.color_1_id),
-            color_2_id=switch_none(color_2_id, user.color_2_id),
-            glow=switch_none(glow, user.glow),
-            cube_id=switch_none(cube_id, user.cube_id),
-            ship_id=switch_none(ship_id, user.ship_id),
-            ball_id=switch_none(ball_id, user.ball_id),
-            ufo_id=switch_none(ufo_id, user.ufo_id),
-            wave_id=switch_none(wave_id, user.wave_id),
-            robot_id=switch_none(robot_id, user.robot_id),
-            spider_id=switch_none(spider_id, user.spider_id),
-            # swing_copter_id=switch_none(swing_copter_id, user.swing_copter_id),
-            explosion_id=switch_none(explosion_id, user.explosion_id),
+            stars=switch_none(stars, statistics.stars),
+            diamonds=switch_none(diamonds, statistics.diamonds),
+            secret_coins=switch_none(secret_coins, statistics.secret_coins),
+            user_coins=switch_none(user_coins, statistics.user_coins),
+            demons=switch_none(demons, statistics.demons),
+            icon_type=switch_none(icon_type, cosmetics.icon_type),
+            icon_id=switch_none(icon_id, cosmetics.icon_id),
+            color_1_id=switch_none(color_1_id, cosmetics.color_1_id),
+            color_2_id=switch_none(color_2_id, cosmetics.color_2_id),
+            glow=switch_none(glow, cosmetics.glow),
+            cube_id=switch_none(cube_id, cosmetics.cube_id),
+            ship_id=switch_none(ship_id, cosmetics.ship_id),
+            ball_id=switch_none(ball_id, cosmetics.ball_id),
+            ufo_id=switch_none(ufo_id, cosmetics.ufo_id),
+            wave_id=switch_none(wave_id, cosmetics.wave_id),
+            robot_id=switch_none(robot_id, cosmetics.robot_id),
+            spider_id=switch_none(spider_id, cosmetics.spider_id),
+            # swing_copter_id=switch_none(swing_copter_id, cosmetics.swing_copter_id),
+            explosion_id=switch_none(explosion_id, cosmetics.explosion_id),
             special=special,
             account_id=self.account_id,
             name=self.name,
@@ -436,14 +445,23 @@ class Client:
         else:
             user = set_as_user
 
+        states = user.states
+        socials = user.socials
+
+        if states is None:
+            raise InternalError  # TODO: message?
+
+        if socials is None:
+            raise InternalError  # TODO: message?
+
         await self.session.update_settings(
-            message_state=switch_none(message_state, user.message_state),
-            friend_request_state=switch_none(friend_request_state, user.friend_request_state),
-            comment_state=switch_none(comment_state, user.comment_state),
-            youtube=switch_none(youtube, user.youtube),
-            twitter=switch_none(twitter, user.twitter),
-            twitch=switch_none(twitch, user.twitch),
-            # discord=switch_none(discord, user.discord),
+            message_state=switch_none(message_state, states.message_state),
+            friend_request_state=switch_none(friend_request_state, states.friend_request_state),
+            comment_state=switch_none(comment_state, states.comment_state),
+            youtube=switch_none(youtube, socials.youtube),
+            twitter=switch_none(twitter, socials.twitter),
+            twitch=switch_none(twitch, socials.twitch),
+            # discord=switch_none(discord, socials.discord),
             account_id=self.account_id,
             encoded_password=self.encoded_password,
         )
@@ -564,9 +582,9 @@ class Client:
 
     @wrap_async_iter
     @check_login
-    async def get_simple_relationships(self, type: SimpleRelationshipType) -> AsyncIterator[User]:
+    async def get_relationships(self, type: RelationshipType) -> AsyncIterator[User]:
         try:
-            response_model = await self.session.get_simple_relationships(
+            response_model = await self.session.get_relationships(
                 type=type,
                 account_id=self.account_id,
                 encoded_password=self.encoded_password,
@@ -581,34 +599,19 @@ class Client:
     @wrap_async_iter
     @check_login
     def get_friends(self) -> AsyncIterator[User]:
-        return self.get_simple_relationships(SimpleRelationshipType.FRIEND).unwrap()
+        return self.get_relationships(RelationshipType.FRIEND).unwrap()
 
     @wrap_async_iter
     @check_login
     def get_blocked(self) -> AsyncIterator[User]:
-        return self.get_simple_relationships(SimpleRelationshipType.BLOCKED).unwrap()
-
-    @wrap_async_iter
-    @check_login
-    async def get_relationships(self) -> AsyncIterator[Relationship]:
-        async for friend in self.get_friends():
-            yield friend.into_relationship(RelationshipType.FRIEND)
-
-        async for blocked in self.get_blocked():
-            yield blocked.into_relationship(RelationshipType.BLOCKED)
-
-        async for friend_request in self.get_friend_requests(type=FriendRequestType.INCOMING):
-            yield friend_request.into_relationship()
-
-        async for friend_request in self.get_friend_requests(type=FriendRequestType.OUTGOING):
-            yield friend_request.into_relationship()
+        return self.get_relationships(RelationshipType.BLOCKED).unwrap()
 
     @wrap_async_iter
     async def get_leaderboard(
         self,
         strategy: LeaderboardStrategy = LeaderboardStrategy.DEFAULT,
         count: int = DEFAULT_COUNT,
-    ) -> AsyncIterator[LeaderboardUser]:
+    ) -> AsyncIterator[User]:
         response_model = await self.session.get_leaderboard(
             strategy=strategy,
             count=count,
@@ -617,7 +620,7 @@ class Client:
         )
 
         for model in response_model.users:
-            yield LeaderboardUser.from_leaderboard_user_model(model).attach_client(self)
+            yield User.from_leaderboard_user_model(model).attach_client(self)
 
     def level_models_from_model(
         self, response_model: SearchLevelsResponseModel
@@ -634,7 +637,7 @@ class Client:
             song = id_to_song.get(model.custom_song_id)
 
             if song is None:
-                song = Song.official(model.official_song_id, server_style=True).attach_client(self)
+                song = Song.official(model.official_song_id).attach_client(self)
 
             creator = id_to_creator.get(model.creator_id)
 
@@ -649,13 +652,13 @@ class Client:
     async def get_weekly(self, use_client: bool = DEFAULT_USE_CLIENT) -> Level:
         return await self.get_timely(TimelyType.WEEKLY, use_client=use_client)
 
-    # async def get_event(self, use_client: bool = DEFAULT_USE_CLIENT) -> Level:
-    #     return await self.get_timely(TimelyType.EVENT, use_client=use_client)
+    async def get_event(self, use_client: bool = DEFAULT_USE_CLIENT) -> Level:
+        return await self.get_timely(TimelyType.EVENT, use_client=use_client)
 
     async def get_timely(self, type: TimelyType, use_client: bool = DEFAULT_USE_CLIENT) -> Level:
         timely_model = await self.session.get_timely_info(type=type)
 
-        level = await self.get_level(type.into_timely_id().value)
+        level = await self.get_level(type.into_timely_id().value, use_client=use_client)
 
         return level.update_with_timely_model(timely_model)
 
@@ -775,6 +778,7 @@ class Client:
         coins: int = DEFAULT_COINS,
         stars: int = DEFAULT_STARS,
         low_detail: bool = DEFAULT_LOW_DETAIL,
+        capacity: Optional[Capacity] = None,
         password: Optional[Password] = None,
         recording: Optional[Recording] = None,
         editor_time: Optional[Duration] = None,
@@ -796,6 +800,7 @@ class Client:
             stars=stars,
             privacy=privacy,
             low_detail=low_detail,
+            capacity=capacity,
             password=password,
             recording=recording,
             editor_time=editor_time,
@@ -809,9 +814,7 @@ class Client:
         if self.load_after_post:
             return await self.get_level(level_id)
 
-        level = Level.default()
-
-        level.id = level_id
+        level = Level.default(level_id).attach_client(self)
 
         return level
 
@@ -867,7 +870,7 @@ class Client:
         self,
         level: Level,
         strategy: LevelLeaderboardStrategy = LevelLeaderboardStrategy.ALL,
-    ) -> AsyncIterator[LevelLeaderboardUser]:
+    ) -> AsyncIterator[User]:
         response_model = await self.session.get_level_leaderboard(
             level_id=level.id,
             strategy=strategy,
@@ -876,7 +879,7 @@ class Client:
         )
 
         for model in response_model.users:
-            yield LevelLeaderboardUser.from_level_leaderboard_user_model(model).attach_client(self)
+            yield User.from_level_leaderboard_user_model(model).attach_client(self)
 
     @check_login
     async def block_user(self, user: User) -> None:
@@ -1306,7 +1309,7 @@ class Client:
         model = response_model.inner
 
         for quest_model in (model.quest_1, model.quest_2, model.quest_3):
-            yield Quest.from_model(quest_model, model.duration).attach_client(self)
+            yield Quest.from_model(quest_model, model.quest_duration).attach_client(self)
 
     @wrap_async_iter
     @check_login
@@ -1325,7 +1328,7 @@ class Client:
         )
         model = response_model.inner
 
-        for (id, chest_model, count, duration) in (
+        for id, chest_model, count, duration in (
             (1, model.chest_1, model.chest_1_count, model.chest_1_duration),
             (2, model.chest_2, model.chest_2_count, model.chest_2_duration),
         ):

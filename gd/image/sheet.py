@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional, Type, TypeVar
 
 from attrs import define, field
-from typing_aliases import IntoPath, StringMapping
+from typing_aliases import IntoPath, NormalError, StringMapping
 
 try:
     from PIL.Image import Image
@@ -93,7 +93,7 @@ class Sheet:
 
             self.image.load()
 
-        except Exception:
+        except NormalError:
             self.loaded = False
 
             raise

@@ -23,9 +23,8 @@ NO_PASSWORD = 1
 P = TypeVar("P", bound="Password")
 
 COPYABLE_BIT = 0b10000000_00000000_00000000_00000000
-PASSWORD_BIT = 0b01000000_00000000_00000000_00000000
+HAS_PASSWORD_BIT = 0b01000000_00000000_00000000_00000000
 PASSWORD_MASK = 0b00111111_11111111_11111111_11111111
-
 DEFAULT_COPYABLE = False
 
 
@@ -48,7 +47,7 @@ class Password(Binary, RobTop):
                 raise ValueError  # TODO: message?
 
     def __hash__(self) -> int:
-        return self.to_value()
+        return hash(self.to_value())
 
     def has_no_password(self) -> bool:
         return self.password is None
@@ -75,23 +74,34 @@ class Password(Binary, RobTop):
     ) -> P:
         reader = Reader(binary, order)
 
-        return cls.from_value(reader.read_u32())
+        value = reader.read_u32()
+
+        return cls.from_value(value)
 
     @classmethod
     def from_value(cls: Type[P], value: int) -> P:
         copyable_bit = COPYABLE_BIT
-        password_bit = PASSWORD_BIT
+        has_password_bit = HAS_PASSWORD_BIT
 
         copyable = value & copyable_bit == copyable_bit
-        password_present = value & password_bit == password_bit
+        has_password = value & has_password_bit == has_password_bit
 
-        if password_present:
+        if has_password:
             password = value & PASSWORD_MASK
 
         else:
             password = None
 
         return cls(password=password, copyable=copyable)
+
+    def to_binary(
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
+        writer = Writer(binary, order)
+
+        value = self.to_value()
+
+        writer.write_u32(value)
 
     def to_value(self) -> int:
         value = self.password
@@ -100,19 +110,12 @@ class Password(Binary, RobTop):
             value = 0
 
         else:
-            value |= PASSWORD_BIT
+            value |= HAS_PASSWORD_BIT
 
         if self.is_copyable():
             value |= COPYABLE_BIT
 
         return value
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u32(self.to_value())
 
     def __str__(self) -> str:
         if self.is_copyable():
@@ -161,6 +164,6 @@ class Password(Binary, RobTop):
     def to_robtop(self) -> str:
         return encode_robtop_string(str(self.to_robtop_value()), Key.LEVEL_LEADERBOARD)
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
+    @staticmethod
+    def can_be_in(string: str) -> bool:
         return True

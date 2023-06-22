@@ -3,14 +3,12 @@ from pathlib import Path
 from typing import Optional, Sequence, Type, TypeVar
 
 from attrs import define, field
-from typing_aliases import IntoPath, StringMapping
+from typing_aliases import IntoPath, NormalError, StringMapping
 
 from gd.decorators import cache_by
 from gd.image.layer import Layer, LayerData, Layers
 
-__all__ = (
-    "Animation", "Animations", "AnimationSheet", "AnimationSheetData", "Frame", "Frames"
-)
+__all__ = ("Animation", "Animations", "AnimationSheet", "AnimationSheetData", "Frame", "Frames")
 
 AS = TypeVar("AS", bound="AnimationSheet")
 
@@ -98,7 +96,7 @@ class AnimationSheet:
             with self.path.open() as file:
                 self.data = json.load(file)
 
-        except Exception:
+        except NormalError:
             self.loaded = False
 
             raise

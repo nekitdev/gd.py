@@ -10,7 +10,7 @@ from gd.image.animation import Animation
 from gd.image.layer import Layer
 from gd.string_utils import concat_under, zero_pad
 
-__all__ = ("Icon",)
+__all__ = ("Icon", "generate_name")
 
 CUBE = "player"
 SHIP = "ship"

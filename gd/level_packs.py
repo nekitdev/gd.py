@@ -4,12 +4,24 @@ from typing import TYPE_CHECKING, AsyncIterator, Optional, Type, TypeVar
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
+from iters.iters import iter
 from typing_aliases import DynamicTuple
 
+from gd.binary import VERSION, BinaryReader, BinaryWriter
+from gd.binary_constants import BITS
+from gd.binary_utils import Reader, Writer
 from gd.color import Color
-from gd.constants import DEFAULT_COINS, DEFAULT_STARS
+from gd.constants import (
+    DEFAULT_COINS,
+    DEFAULT_ENCODING,
+    DEFAULT_ERRORS,
+    DEFAULT_ID,
+    DEFAULT_STARS,
+    EMPTY,
+    UNKNOWN,
+)
 from gd.entity import Entity
-from gd.enums import Difficulty, GauntletID
+from gd.enums import ByteOrder, Difficulty, GauntletID
 from gd.filters import Filters
 from gd.models import GauntletModel, MapPackModel
 
@@ -28,11 +40,61 @@ class LevelPack(Entity):
     level_ids: DynamicTuple[int] = field(default=(), eq=False)
     levels: DynamicTuple[Level] = field(default=(), eq=False, init=False)
 
+    @classmethod
+    def from_binary(
+        cls: Type[LP],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
+    ) -> LP:
+        reader = Reader(binary, order)
+
+        id = reader.read_u32()
+
+        name_length = reader.read_u8()
+
+        name = reader.read(name_length).decode(encoding, errors)
+
+        level_ids_length = reader.read_u8()
+
+        level_ids = iter.repeat_exactly_with(reader.read_u32, level_ids_length).tuple()
+
+        return cls(id=id, name=name, level_ids=level_ids)
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
+    ) -> None:
+        super().to_binary(binary, order, version)
+
+        writer = Writer(binary, order)
+
+        data = self.name.encode(encoding, errors)
+
+        writer.write_u8(len(data))
+        writer.write(data)
+
+        level_ids = self.level_ids
+
+        writer.write_u8(len(level_ids))
+
+        iter(level_ids).for_each(writer.write_u32)
+
+    @classmethod
+    def default(cls: Type[LP], id: int = DEFAULT_ID) -> LP:
+        return cls(id=id, name=EMPTY)
+
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
 
     def __str__(self) -> str:
-        return self.name
+        return self.name or UNKNOWN
 
     @wrap_async_iter
     async def get_levels(self) -> AsyncIterator[Level]:
@@ -81,6 +143,8 @@ class Gauntlet(LevelPack):
 
 MP = TypeVar("MP", bound="MapPack")
 
+DIFFICULTY_MASK = 0b11111111
+
 
 @define()
 class MapPack(LevelPack):
@@ -88,6 +152,60 @@ class MapPack(LevelPack):
     coins: int = field(default=DEFAULT_COINS, eq=False)
     difficulty: Difficulty = field(default=Difficulty.DEFAULT, eq=False)
     color: Color = field(factory=Color.default, eq=False)
+
+    @classmethod
+    def from_binary(
+        cls: Type[MP],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
+    ) -> MP:
+        map_pack = super().from_binary(binary, order, version, encoding, errors)
+
+        reader = Reader(binary, order)
+
+        stars = reader.read_u8()
+        coins = reader.read_u8()
+
+        value = reader.read_u32()
+
+        difficulty_value = value & DIFFICULTY_MASK
+
+        difficulty = Difficulty(difficulty_value)
+
+        value >>= BITS
+
+        color = Color(value)
+
+        map_pack.stars = stars
+        map_pack.coins = coins
+        map_pack.difficulty = difficulty
+        map_pack.color = color
+
+        return map_pack
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
+    ) -> None:
+        super().to_binary(binary, order, version, encoding, errors)
+
+        writer = Writer(binary, order)
+
+        writer.write_u8(self.stars)
+        writer.write_u8(self.coins)
+
+        value = self.difficulty.value
+
+        value |= self.color.value << BITS
+
+        writer.write_u32(value)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id

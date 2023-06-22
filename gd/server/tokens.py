@@ -2,7 +2,7 @@ from secrets import token_hex as standard_generate_token
 from typing import Any, Optional, Type, TypeVar
 
 from attrs import field, frozen
-from iters import iter
+from iters.iters import iter
 from typing_aliases import Predicate, StringDict
 from typing_extensions import TypedDict
 

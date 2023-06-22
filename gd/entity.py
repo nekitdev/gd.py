@@ -30,6 +30,10 @@ class EntityData(Data):
     id: int
 
 
+def attribute_name(attribute: Attribute[Any]) -> str:
+    return attribute.name
+
+
 @register_unstructure_hook_omit_client
 @define()
 class Entity(Binary):
@@ -78,9 +82,7 @@ class Entity(Binary):
         return self
 
     def update_from(self: E, entity: Entity) -> E:
-        for attribute in fields(type(entity)):
-            name = attribute.name
-
+        for name in iter(fields(type(entity))).map(attribute_name).unwrap():
             set_attribute(self, name, get_attribute(entity, name))
 
         return self
@@ -103,7 +105,7 @@ class Entity(Binary):
 
         id = reader.read_u32()
 
-        return cls(id)
+        return cls(id=id)
 
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION

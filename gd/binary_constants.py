@@ -41,54 +41,54 @@ __all__ = (
 
 from typing_extensions import Final
 
-BOOL: Final[str] = "?"
+BOOL: Final = "?"
 
-I8: Final[str] = "b"
-U8: Final[str] = "B"
-I16: Final[str] = "h"
-U16: Final[str] = "H"
-I32: Final[str] = "i"
-U32: Final[str] = "I"
-I64: Final[str] = "q"
-U64: Final[str] = "Q"
+I8: Final = "b"
+U8: Final = "B"
+I16: Final = "h"
+U16: Final = "H"
+I32: Final = "i"
+U32: Final = "I"
+I64: Final = "q"
+U64: Final = "Q"
 
-F32: Final[str] = "f"
-F64: Final[str] = "d"
+F32: Final = "f"
+F64: Final = "d"
 
-NATIVE: Final[str] = ByteOrder.NATIVE.value
+NATIVE: Final = ByteOrder.NATIVE.value
 
-BOOL_SIZE: Final[int] = size(NATIVE + BOOL)
+BOOL_SIZE: Final = size(NATIVE + BOOL)
 
-I8_SIZE: Final[int] = size(NATIVE + I8)
-U8_SIZE: Final[int] = size(NATIVE + U8)
-I16_SIZE: Final[int] = size(NATIVE + I16)
-U16_SIZE: Final[int] = size(NATIVE + U16)
-I32_SIZE: Final[int] = size(NATIVE + I32)
-U32_SIZE: Final[int] = size(NATIVE + U32)
-I64_SIZE: Final[int] = size(NATIVE + I64)
-U64_SIZE: Final[int] = size(NATIVE + U64)
+I8_SIZE: Final = size(NATIVE + I8)
+U8_SIZE: Final = size(NATIVE + U8)
+I16_SIZE: Final = size(NATIVE + I16)
+U16_SIZE: Final = size(NATIVE + U16)
+I32_SIZE: Final = size(NATIVE + I32)
+U32_SIZE: Final = size(NATIVE + U32)
+I64_SIZE: Final = size(NATIVE + I64)
+U64_SIZE: Final = size(NATIVE + U64)
 
-F32_SIZE: Final[int] = size(NATIVE + F32)
-F64_SIZE: Final[int] = size(NATIVE + F64)
+F32_SIZE: Final = size(NATIVE + F32)
+F64_SIZE: Final = size(NATIVE + F64)
 
-HALF_BYTE: Final[int] = 0xF
-HALF_BITS: Final[int] = HALF_BYTE.bit_length()
+HALF_BYTE: Final = 0xF
+HALF_BITS: Final = HALF_BYTE.bit_length()
 
-BYTE: Final[int] = 0xFF
-BITS: Final[int] = BYTE.bit_length()
+BYTE: Final = 0xFF
+BITS: Final = BYTE.bit_length()
 
-DOUBLE_BITS: Final[int] = BITS + BITS
+DOUBLE_BITS: Final = BITS + BITS
 
-BOOL_BITS: Final[int] = BOOL_SIZE * BITS
+BOOL_BITS: Final = BOOL_SIZE * BITS
 
-I8_BITS: Final[int] = I8_SIZE * BITS
-U8_BITS: Final[int] = U8_SIZE * BITS
-I16_BITS: Final[int] = I16_SIZE * BITS
-U16_BITS: Final[int] = U16_SIZE * BITS
-I32_BITS: Final[int] = I32_SIZE * BITS
-U32_BITS: Final[int] = U32_SIZE * BITS
-I64_BITS: Final[int] = I64_SIZE * BITS
-U64_BITS: Final[int] = U64_SIZE * BITS
+I8_BITS: Final = I8_SIZE * BITS
+U8_BITS: Final = U8_SIZE * BITS
+I16_BITS: Final = I16_SIZE * BITS
+U16_BITS: Final = U16_SIZE * BITS
+I32_BITS: Final = I32_SIZE * BITS
+U32_BITS: Final = U32_SIZE * BITS
+I64_BITS: Final = I64_SIZE * BITS
+U64_BITS: Final = U64_SIZE * BITS
 
-F32_BITS: Final[int] = F32_SIZE * BITS
-F64_BITS: Final[int] = F64_SIZE * BITS
+F32_BITS: Final = F32_SIZE * BITS
+F64_BITS: Final = F64_SIZE * BITS

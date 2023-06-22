@@ -1,10 +1,7 @@
 from re import compile
-from typing import AbstractSet as AnySet
 from typing import Iterable, Match
 
-from iters.ordered_set import ordered_set_unchecked
 from iters.utils import unary_tuple
-from typing_extensions import Final
 
 from gd.constants import BACKSLASH, EMPTY, SPACE
 from gd.string_constants import BRACES, COMMA, MAPS, PIPE, STAR, TICK, UNDER, WRAP, ZERO_PAD
@@ -31,8 +28,6 @@ __all__ = (
     # passwords
     "password_str",
     "password_repr",
-    # parsing
-    "parse_bool",
     # case convertions
     "create_title",
     "camel_to_snake",
@@ -80,26 +75,6 @@ def password_str(password: str) -> str:
 
 def password_repr(password: str) -> str:
     return repr(password_str(password))
-
-
-# SAFETY: we ensure that `FALSE` and `TRUE` contain only unique strings
-
-FALSE: Final = ordered_set_unchecked(("false", "f", "no", "n", "0", "off"))
-TRUE: Final = ordered_set_unchecked(("true", "t", "yes", "y", "1", "on"))
-
-CAN_NOT_PARSE_BOOL = "can not parse {} to `bool`"
-
-
-def parse_bool(string: str, false: AnySet[str] = FALSE, true: AnySet[str] = TRUE) -> bool:
-    string = case_fold(string)
-
-    if string in false:
-        return False
-
-    if string in true:
-        return True
-
-    raise ValueError(CAN_NOT_PARSE_BOOL.format(tick(string)))
 
 
 def create_title(name: str) -> str:

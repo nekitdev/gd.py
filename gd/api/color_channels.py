@@ -1,28 +1,40 @@
-from functools import partial
-from typing import Dict, Iterable, Type, TypeVar
+from enum import Flag
+from typing import Dict, Iterable, Mapping, Optional, Type, TypeVar, Union
 
 from attrs import define, field
+from funcs.application import partial
 from iters.iters import iter
+from typing_aliases import IntoMapping
+from typing_extensions import TypeGuard
 
 from gd.api.hsv import HSV
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_constants import BITS, BYTE
 from gd.binary_utils import Reader, Writer
 from gd.color import Color
-from gd.constants import DEFAULT_ID
 from gd.enums import ByteOrder, PlayerColor
 from gd.models_utils import (
+    bool_str,
     concat_color_channel,
     concat_color_channels,
     float_str,
     int_bool,
     parse_get_or,
+    parse_get_or_else,
     split_color_channel,
     split_color_channels,
 )
 from gd.robtop import RobTop
 
-__all__ = ("ColorChannel", "ColorChannels", "Channel", "Channels")
+__all__ = (
+    # cases (variants)
+    "NormalColorChannel",
+    "CopiedColorChannel",
+    # union
+    "ColorChannel",
+    # color channels
+    "ColorChannels",
+)
 
 RED = 1
 GREEN = 2
@@ -78,159 +90,272 @@ DEFAULT_COPY_OPACITY = False
 DEFAULT_PLAYER_COLOR_VALUE = PlayerColor.DEFAULT.value
 
 
-CC = TypeVar("CC", bound="ColorChannel")
+class ColorChannelFlag(Flag):
+    NORMAL = 0
+
+    COPIED = 1 << 0
+
+    def is_copied(self) -> bool:
+        return type(self).COPIED in self
+
+
+COLOR_CHANNEL_ID_NOT_PRESENT = "color channel ID is not present"
+
+BCC = TypeVar("BCC", bound="BaseColorChannel")
 
 
 @define()
-class ColorChannel(Binary, RobTop):
-    """Represents color channels.
+class BaseColorChannel(Binary, RobTop):
+    """Represents base color channels."""
 
-    Binary:
-        ```rust
-        struct ColorChannel {
-            id: u16,
-            copied_id: u16,
-            nested: NestedColorChannel,
-        }
-
-        enum NestedColorChannel {
-            Normal(NormalColorChannel),  // if `copied_id == 0`
-            Copied(CopiedColorChannel),  // if `copied_id != 0`
-        }
-
-        const BLENDING_BIT: u8 = 0b00000001;
-        const COPY_OPACITY_BIT: u8 = 0b00000010;
-
-        struct CopiedColorChannel {
-            hsv: HSV,
-            value: u8,
-            // copy_opacity = value & COPY_OPACITY_BIT == COPY_OPACITY_BIT
-            // blending = value & BLENDING_BIT == BLENDING_BIT
-            opacity: Option<f32>,  // if `!copy_opacity`
-        }
-
-        const BYTE: u32 = 0b11111111;
-        const BITS: u32 = u8::BITS;
-
-        const PLAYER_COLOR_MASK: u8 = 0b00000110;
-        const PLAYER_COLOR_SHIFT: u8 = PLAYER_COLOR_MASK.trailing_zeros() as u8;
-
-        struct NormalColorChannel {
-            value: u32,
-            // player_color_and_blending = (value & BYTE) as u8
-            // player_color = (value & PLAYER_COLOR_MASK) >> PLAYER_COLOR_SHIFT
-            // blending = value & BLENDING_BIT == BLENDING_BIT
-            // color = value >> BITS
-            opacity: f32,
-        }
-        ```
-    """
-
-    id: int = field()
-    color: Color = field(factory=Color.default)
-    player_color: PlayerColor = field(default=PlayerColor.DEFAULT)
-    blending: bool = field(default=DEFAULT_BLENDING)
-    opacity: float = field(default=DEFAULT_OPACITY)
-    copied_id: int = field(default=DEFAULT_ID)
-    hsv: HSV = field(factory=HSV)
-    copy_opacity: bool = field(default=DEFAULT_COPY_OPACITY)
+    id: int
+    blending: bool = DEFAULT_BLENDING
 
     @classmethod
-    def from_robtop(cls: Type[CC], string: str) -> CC:
-        mapping = split_color_channel(string)
+    def from_robtop(cls: Type[BCC], string: str) -> BCC:
+        return cls.from_robtop_data(split_color_channel(string))
 
-        id = parse_get_or(int, DEFAULT_ID, mapping.get(ID))
+    @classmethod
+    def from_robtop_data(cls: Type[BCC], data: Mapping[int, str]) -> BCC:
+        id_option = data.get(ID)
 
-        copied_id = parse_get_or(int, DEFAULT_ID, mapping.get(COPIED_ID))
+        if id_option is None:
+            raise ValueError(COLOR_CHANNEL_ID_NOT_PRESENT)
 
-        blending = parse_get_or(int_bool, DEFAULT_BLENDING, mapping.get(BLENDING))
+        id = int(id_option)
 
-        if copied_id:
-            hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(COLOR_HSV))
+        blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
 
-            copy_opacity = parse_get_or(int_bool, DEFAULT_COPY_OPACITY, mapping.get(COPY_OPACITY))
-
-            player_color = PlayerColor.DEFAULT
-
-            if not copy_opacity:
-                opacity = parse_get_or(float, DEFAULT_OPACITY, mapping.get(OPACITY))
-
-            else:
-                opacity = DEFAULT_OPACITY
-
-            color = Color.default()
-
-        else:
-            hsv = HSV()
-
-            copy_opacity = DEFAULT_COPY_OPACITY
-
-            player_color_value = parse_get_or(
-                int, DEFAULT_PLAYER_COLOR_VALUE, mapping.get(PLAYER_COLOR)
-            )
-
-            if player_color_value < 0:
-                player_color_value = 0
-
-            player_color = PlayerColor(player_color_value)
-
-            red, green, blue = (
-                parse_get_or(int, DEFAULT_RED, mapping.get(RED)),
-                parse_get_or(int, DEFAULT_GREEN, mapping.get(GREEN)),
-                parse_get_or(int, DEFAULT_BLUE, mapping.get(BLUE)),
-            )
-
-            color = Color.from_rgb(red, green, blue)
-
-            opacity = parse_get_or(float, DEFAULT_OPACITY, mapping.get(OPACITY))
-
-        return cls(
-            id=id,
-            color=color,
-            player_color=player_color,
-            blending=blending,
-            opacity=opacity,
-            copied_id=copied_id,
-            hsv=hsv,
-            copy_opacity=copy_opacity,
-        )
+        return cls(id=id, blending=blending)
 
     def to_robtop(self) -> str:
-        red, green, blue = self.color.to_rgb()
+        return concat_color_channel(self.to_robtop_data())
 
-        mapping = {
-            RED: str(red),
-            GREEN: str(green),
-            BLUE: str(blue),
-            PLAYER_COLOR: str(self.player_color.value),
-            BLENDING: str(int(self.is_blending())),
-            ID: str(self.id),
-            OPACITY: float_str(self.opacity),
-            UNKNOWN: str(int(DEFAULT_UNKNOWN)),
-            COPIED_ID: str(self.copied_id),
-            COLOR_HSV: self.hsv.to_robtop(),
-            TO_RED: str(DEFAULT_TO_RED),
-            TO_GREEN: str(DEFAULT_TO_GREEN),
-            TO_BLUE: str(DEFAULT_TO_BLUE),
-            DURATION: float_str(DEFAULT_DURATION),
-            TO_OPACITY: float_str(DEFAULT_TO_OPACITY),
-            COPY_OPACITY: str(int(self.is_copy_opacity())),
-            UNKNOWN_ANOTHER: str(int(DEFAULT_UNKNOWN_ANOTHER)),
-        }
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = {ID: str(self.id), BLENDING: bool_str(self.is_blending())}
 
-        return concat_color_channel(mapping)
+        return data
 
     @classmethod
     def from_binary(
-        cls: Type[CC],
+        cls: Type[BCC],
         binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-    ) -> CC:
-        bits = BITS
-        byte = BYTE
+    ) -> BCC:
+        blending_bit = BLENDING_BIT
 
-        player_color_mask = PLAYER_COLOR_MASK
+        reader = Reader(binary, order)
+
+        id = reader.read_u16()
+
+        value = reader.read_u8()
+
+        blending = value & blending_bit == blending_bit
+
+        return cls(id=id, blending=blending)
+
+    def to_binary(
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
+        writer = Writer(binary, order)
+
+        writer.write_u16(self.id)
+
+        value = 0
+
+        if self.is_blending():
+            value |= BLENDING_BIT
+
+        writer.write_u8(value)
+
+    def is_blending(self) -> bool:
+        return self.blending
+
+    def is_normal(self) -> bool:
+        return False
+
+    def is_copied(self) -> bool:
+        return False
+
+
+NCC = TypeVar("NCC", bound="NormalColorChannel")
+
+
+@define()
+class NormalColorChannel(BaseColorChannel):
+    """Represents normal color channels."""
+
+    color: Color = field(factory=Color.default)
+    player_color: PlayerColor = field(default=PlayerColor.DEFAULT)
+    opacity: float = field(default=DEFAULT_OPACITY)
+
+    @classmethod
+    def from_robtop_data(cls: Type[NCC], data: Mapping[int, str]) -> NCC:
+        color_channel = super().from_robtop_data(data)
+
+        red = parse_get_or(int, DEFAULT_RED, data.get(RED))
+        green = parse_get_or(int, DEFAULT_GREEN, data.get(GREEN))
+        blue = parse_get_or(int, DEFAULT_BLUE, data.get(BLUE))
+
+        color = Color.from_rgb(red, green, blue)
+
+        player_color_value = parse_get_or(int, DEFAULT_PLAYER_COLOR_VALUE, data.get(PLAYER_COLOR))
+
+        player_color_value = max(player_color_value, 0)
+
+        player_color = PlayerColor(player_color_value)
+
+        opacity = parse_get_or(float, DEFAULT_OPACITY, data.get(OPACITY))
+
+        color_channel.color = color
+        color_channel.player_color = player_color
+        color_channel.opacity = opacity
+
+        return color_channel
+
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
+
+        color = self.color
+
+        data[RED] = str(color.red)
+        data[GREEN] = str(color.green)
+        data[BLUE] = str(color.blue)
+
+        data[PLAYER_COLOR] = str(self.player_color.value)
+
+        data[OPACITY] = float_str(self.opacity)
+
+        return data
+
+    @classmethod
+    def from_binary(
+        cls: Type[NCC],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> NCC:
+        blending_bit = BLENDING_BIT
+
+        reader = Reader(binary, order)
+
+        id = reader.read_u16()
+
+        value = reader.read_u32()
+
+        blending = value & blending_bit == blending_bit
+
+        player_color_value = (value & PLAYER_COLOR_MASK) >> PLAYER_COLOR_SHIFT
+
+        player_color = PlayerColor(player_color_value)
+
+        value >>= BITS
+
+        color = Color(value)
+
+        opacity = reader.read_f32()
+
+        return cls(
+            id=id, blending=blending, color=color, player_color=player_color, opacity=opacity
+        )
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> None:
+        writer = Writer(binary, order)
+
+        writer.write_u16(self.id)
+
+        value = 0
+
+        if self.is_blending():
+            value |= BLENDING_BIT
+
+        value |= self.player_color.value << PLAYER_COLOR_SHIFT
+
+        value |= self.color.value << BITS
+
+        writer.write_u32(value)
+
+        writer.write_f32(self.opacity)
+
+    def is_normal(self) -> bool:
+        return True
+
+
+COLOR_CHANNEL_COPIED_ID_NOT_PRESENT = "color channel copied ID is not present"
+
+CCC = TypeVar("CCC", bound="CopiedColorChannel")
+
+
+@define()
+class CopiedColorChannel(BaseColorChannel):
+    """Represents copied color channels."""
+
+    copied_id: int = field()
+    blending: bool = field(default=DEFAULT_BLENDING)
+    hsv: HSV = field(factory=HSV)
+    opacity: Optional[float] = field(default=None)
+
+    @classmethod
+    def from_robtop_data(cls: Type[CCC], data: Mapping[int, str]) -> CCC:
+        id_option = data.get(ID)
+
+        if id_option is None:
+            raise ValueError(COLOR_CHANNEL_ID_NOT_PRESENT)
+
+        id = int(id_option)
+
+        copied_id_option = data.get(COPIED_ID)
+
+        if copied_id_option is None:
+            raise ValueError(COLOR_CHANNEL_COPIED_ID_NOT_PRESENT)
+
+        copied_id = int(copied_id_option)
+
+        blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
+
+        hsv = parse_get_or_else(HSV.from_robtop, HSV, data.get(COLOR_HSV))
+
+        copy_opacity = parse_get_or(int_bool, DEFAULT_COPY_OPACITY, data.get(COPY_OPACITY))
+
+        if copy_opacity:
+            opacity = None
+
+        else:
+            opacity = parse_get_or(float, DEFAULT_OPACITY, data.get(OPACITY))
+
+        return cls(id=id, copied_id=copied_id, blending=blending, hsv=hsv, opacity=opacity)
+
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
+
+        data[COPIED_ID] = str(self.copied_id)
+
+        data[COLOR_HSV] = self.hsv.to_robtop()
+
+        copy_opacity = self.is_copy_opacity()
+
+        data[COPY_OPACITY] = bool_str(copy_opacity)
+
+        opacity = self.opacity
+
+        if opacity is not None:
+            data[OPACITY] = float_str(opacity)
+
+        return data
+
+    @classmethod
+    def from_binary(
+        cls: Type[CCC],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> CCC:
         blending_bit = BLENDING_BIT
         copy_opacity_bit = COPY_OPACITY_BIT
 
@@ -240,125 +365,139 @@ class ColorChannel(Binary, RobTop):
 
         copied_id = reader.read_u16()
 
-        if copied_id:
-            hsv = HSV.from_binary(binary, order, version)
+        value = reader.read_u8()
 
-            copy_opacity_and_blending = reader.read_u8()
+        blending = value & blending_bit == blending_bit
+        copy_opacity = value & copy_opacity_bit == copy_opacity_bit
 
-            blending = copy_opacity_and_blending & blending_bit == blending_bit
+        hsv = HSV.from_binary(binary, order, version)
 
-            copy_opacity = copy_opacity_and_blending & copy_opacity_bit == copy_opacity_bit
-
-            player_color = PlayerColor.DEFAULT
-
-            if not copy_opacity:
-                opacity = reader.read_f32()
-
-            else:
-                opacity = DEFAULT_OPACITY  # does not matter
-
-            color = Color.default()
+        if copy_opacity:
+            opacity = None
 
         else:
-            hsv = HSV()
-
-            copy_opacity = DEFAULT_COPY_OPACITY
-
-            value = reader.read_u32()
-
-            player_color_and_blending = value & byte
-
-            player_color_value = (
-                player_color_and_blending & player_color_mask
-            ) >> PLAYER_COLOR_SHIFT
-
-            player_color = PlayerColor(player_color_value)
-
-            blending = player_color_and_blending & blending_bit == blending_bit
-
-            value >>= bits
-
-            color = Color(value)
-
             opacity = reader.read_f32()
 
-        return cls(
-            id=id,
-            color=color,
-            player_color=player_color,
-            blending=blending,
-            opacity=opacity,
-            copied_id=copied_id,
-            hsv=hsv,
-            copy_opacity=copy_opacity,
-        )
+        return cls(id=id, copied_id=copied_id, blending=blending, hsv=hsv, opacity=opacity)
 
     def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
     ) -> None:
-        bits = BITS
-
         writer = Writer(binary, order)
 
         writer.write_u16(self.id)
 
-        copied_id = self.copied_id
+        writer.write_u16(self.copied_id)
 
-        writer.write_u16(copied_id)
+        value = 0
 
-        if copied_id:
-            self.hsv.to_binary(binary, order, version)
+        if self.is_blending():
+            value |= BLENDING_BIT
 
-            value = 0
+        if self.is_copy_opacity():
+            value |= COPY_OPACITY_BIT
 
-            if self.is_blending():
-                value |= BLENDING_BIT
+        writer.write_u8(value)
 
-            copy_opacity = self.is_copy_opacity()
+        self.hsv.to_binary(binary, order, version)
 
-            if copy_opacity:
-                value |= COPY_OPACITY_BIT
+        opacity = self.opacity
 
-            writer.write_u8(value)
-
-            if not copy_opacity:
-                writer.write_f32(self.opacity)
-
-        else:
-            value = 0
-
-            if self.is_blending():
-                value |= BLENDING_BIT
-
-            value |= self.player_color.value << PLAYER_COLOR_SHIFT
-
-            value |= self.color.value << bits
-
-            writer.write_u32(value)
-
-            writer.write_f32(self.opacity)
-
-    def is_blending(self) -> bool:
-        return self.blending
+        if opacity is not None:
+            writer.write_f32(opacity)
 
     def is_copied(self) -> bool:
-        return bool(self.copied_id)
+        return True
 
     def is_copy_opacity(self) -> bool:
-        return self.copy_opacity
+        return self.opacity is None
+
+    def copy_opacity(self: CCC) -> CCC:
+        self.opacity = None
+
+        return self
 
 
-Channel = ColorChannel  # alias
+ColorChannel = Union[NormalColorChannel, CopiedColorChannel]
+
+
+def is_normal_color_channel(color_channel: ColorChannel) -> TypeGuard[NormalColorChannel]:
+    return color_channel.is_normal()
+
+
+def is_copied_color_channel(color_channel: ColorChannel) -> TypeGuard[CopiedColorChannel]:
+    return color_channel.is_copied()
+
+
+def color_channel_from_robtop(string: str) -> ColorChannel:
+    data = split_color_channel(string)
+
+    copied_id_option = data.get(COPIED_ID)
+
+    if copied_id_option is None:
+        return NormalColorChannel.from_robtop_data(data)
+
+    copied_id = int(copied_id_option)
+
+    if not copied_id:
+        return NormalColorChannel.from_robtop_data(data)
+
+    return CopiedColorChannel.from_robtop_data(data)
+
+
+def color_channel_to_robtop(color_channel: ColorChannel) -> str:
+    return color_channel.to_robtop()
+
+
+def color_channel_from_binary(
+    binary: BinaryReader, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+) -> ColorChannel:
+    reader = Reader(binary, order)
+
+    color_channel_flag_value = reader.read_u8()
+
+    color_channel_flag = ColorChannelFlag(color_channel_flag_value)
+
+    if color_channel_flag.is_copied():
+        return CopiedColorChannel.from_binary(binary, order, version)
+
+    return NormalColorChannel.from_binary(binary, order, version)
+
+
+def color_channel_to_binary(
+    color_channel: ColorChannel,
+    binary: BinaryWriter,
+    order: ByteOrder = ByteOrder.DEFAULT,
+    version: int = VERSION,
+) -> None:
+    writer = Writer(binary, order)
+
+    color_channel_flag = ColorChannelFlag.NORMAL
+
+    if is_copied_color_channel(color_channel):
+        color_channel_flag |= ColorChannelFlag.COPIED
+
+    writer.write_u8(color_channel_flag.value)
+
+    color_channel.to_binary(binary, order, version)
 
 
 CCS = TypeVar("CCS", bound="ColorChannels")
 
 
-class ColorChannels(Binary, Dict[int, ColorChannel]):
+class ColorChannels(Dict[int, ColorChannel], Binary):
     """Represents collections of color channels.
 
     Binary:
         ```rust
+        enum ColorChannel {
+            Normal(NormalColorChannel),
+            Copied(CopiedColorChannel),
+        }
+
         struct ColorChannels {
             color_channels_length: u16,
             color_channels: [ColorChannel; color_channels_length],
@@ -373,13 +512,9 @@ class ColorChannels(Binary, Dict[int, ColorChannel]):
     def from_color_channel_iterable(cls: Type[CCS], color_channels: Iterable[ColorChannel]) -> CCS:
         return cls({color_channel.id: color_channel for color_channel in color_channels})
 
-    from_channel_iterable = from_color_channel_iterable
-
     @classmethod
     def from_color_channels(cls: Type[CCS], *color_channels: ColorChannel) -> CCS:
         return cls.from_color_channel_iterable(color_channels)
-
-    from_channels = from_color_channels
 
     @property
     def length(self) -> int:
@@ -391,11 +526,11 @@ class ColorChannels(Binary, Dict[int, ColorChannel]):
     @classmethod
     def from_robtop(cls: Type[CCS], string: str) -> CCS:
         return cls.from_color_channel_iterable(
-            iter(split_color_channels(string)).map(ColorChannel.from_robtop).unwrap()
+            iter(split_color_channels(string)).filter(None).map(color_channel_from_robtop).unwrap()
         )
 
     def to_robtop(self) -> str:
-        return concat_color_channels(color_channel.to_robtop() for color_channel in self.values())
+        return concat_color_channels(map(color_channel_to_robtop, self.values()))
 
     @classmethod
     def from_binary(
@@ -408,9 +543,13 @@ class ColorChannels(Binary, Dict[int, ColorChannel]):
 
         length = reader.read_u16()
 
-        color_channel_from_binary = partial(ColorChannel.from_binary, binary, order, version)
+        color_channel_from_binary_function = partial(
+            color_channel_from_binary, binary, order, version
+        )
 
-        color_channels = iter.repeat_exactly_with(color_channel_from_binary, length).unwrap()
+        color_channels = iter.repeat_exactly_with(
+            color_channel_from_binary_function, length
+        ).unwrap()
 
         return cls.from_color_channel_iterable(color_channels)
 
@@ -422,7 +561,4 @@ class ColorChannels(Binary, Dict[int, ColorChannel]):
         writer.write_u16(self.length)
 
         for color_channel in self.values():
-            color_channel.to_binary(binary, order, version)
-
-
-Channels = ColorChannels
+            color_channel_to_binary(color_channel, binary, order, version)

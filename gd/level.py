@@ -4,14 +4,14 @@ from typing import TYPE_CHECKING, AsyncIterator, Iterable, Optional, Type, TypeV
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
-from iters.iters import iter
+from iters.utils import unary_tuple
 from pendulum import DateTime, Duration, duration
-from typing_aliases import Predicate
 
 from gd.api.editor import Editor
 from gd.api.recording import Recording
-from gd.binary import VERSION, BinaryReader, BinaryWriter, load_from
+from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
+from gd.capacity import Capacity
 from gd.constants import (
     COMMENT_PAGE_SIZE,
     DEFAULT_COINS,
@@ -29,6 +29,7 @@ from gd.constants import (
     DEFAULT_SCORE,
     DEFAULT_STARS,
     DEFAULT_TWO_PLAYER,
+    DEFAULT_USE_CLIENT,
     DEFAULT_VERIFIED_COINS,
     DEFAULT_VERSION,
     EMPTY,
@@ -49,19 +50,19 @@ from gd.enums import (
     RateType,
     TimelyType,
 )
-from gd.errors import InternalError, MissingAccess
+from gd.errors import MissingAccess
 from gd.models import LevelModel, TimelyInfoModel
-from gd.official_levels import OFFICIAL_LEVELS, OfficialLevel
+from gd.official_levels import ID_TO_OFFICIAL_LEVEL, NAME_TO_OFFICIAL_LEVEL
 from gd.password import Password, PasswordData
-from gd.song import Song, SongData
+from gd.songs import Song, SongData
 from gd.users import User, UserData
-from gd.versions import CURRENT_GAME_VERSION, GameVersion, VersionData
+from gd.versions import CURRENT_GAME_VERSION, GameVersion, RobTopVersionData
 
 if TYPE_CHECKING:
     from gd.client import Client
     from gd.comments import LevelComment
 
-__all__ = ("Level",)
+__all__ = unary_tuple("Level")
 
 L = TypeVar("L", bound="Level")
 
@@ -74,24 +75,7 @@ EXPECTED_QUERY = "expected either `id` or `name` query"
 CAN_NOT_FIND_LEVEL = "can not find an official level by given query"
 
 
-def by_name(name: str) -> Predicate[OfficialLevel]:
-    def predicate(level: OfficialLevel) -> bool:
-        return level.name == name
-
-    return predicate
-
-
-def by_id(id: int) -> Predicate[OfficialLevel]:
-    def predicate(level: OfficialLevel) -> bool:
-        return level.id == id
-
-    return predicate
-
-
-OFFICIAL_LEVEL_DESCRIPTION = "Official Level: {}"
-
-
-DEFAULT_SERVER_STYLE = True
+OFFICIAL_LEVEL_DESCRIPTION = "Official level: {}"
 
 
 class LevelData(EntityData):
@@ -102,7 +86,7 @@ class LevelData(EntityData):
     unprocessed_data: str
     version: int
     downloads: int
-    game_version: VersionData
+    game_version: RobTopVersionData
     rating: int
     length: int
     difficulty: int
@@ -146,14 +130,15 @@ class Level(Entity):
     password_data: Password = field(factory=Password, eq=False)
     original_id: int = field(default=DEFAULT_ID, eq=False)
     two_player: bool = field(default=DEFAULT_TWO_PLAYER, eq=False)
+    capacity: Capacity = field(factory=Capacity, eq=False)
     coins: int = field(default=DEFAULT_COINS, eq=False)
     verified_coins: bool = field(default=DEFAULT_VERIFIED_COINS, eq=False)
     low_detail: bool = field(default=DEFAULT_LOW_DETAIL, eq=False)
     object_count: int = field(default=DEFAULT_OBJECT_COUNT, eq=False)
     created_at: DateTime = field(factory=utc_now, eq=False)
     updated_at: DateTime = field(factory=utc_now, eq=False)
-    editor_time: Duration = field(factory=Duration, eq=False)
-    copies_time: Duration = field(factory=Duration, eq=False)
+    editor_time: Duration = field(factory=duration, eq=False)
+    copies_time: Duration = field(factory=duration, eq=False)
     timely_type: TimelyType = field(default=TimelyType.DEFAULT, eq=False)
     timely_id: int = field(default=DEFAULT_ID, eq=False)
 
@@ -161,7 +146,7 @@ class Level(Entity):
         return hash(type(self)) ^ self.id
 
     def __str__(self) -> str:
-        return self.name
+        return self.name or UNKNOWN
 
     @property
     def processed_data(self) -> str:
@@ -212,7 +197,7 @@ class Level(Entity):
 
         data = self.description.encode(encoding, errors)
 
-        writer.write_u16(len(data))
+        writer.write_u8(len(data))
 
         writer.write(data)
 
@@ -259,6 +244,8 @@ class Level(Entity):
 
         writer.write_u8(self.coins)
 
+        self.capacity.to_binary(binary, order, version)
+
         writer.write_u32(self.object_count)
 
         writer.write_f32(self.editor_time.total_seconds())  # type: ignore
@@ -298,7 +285,7 @@ class Level(Entity):
         created_at = utc_from_timestamp(uploaded_timestamp)
         updated_at = utc_from_timestamp(updated_timestamp)
 
-        description_length = reader.read_u16()
+        description_length = reader.read_u8()
 
         description = reader.read(description_length).decode(encoding, errors)
 
@@ -344,6 +331,8 @@ class Level(Entity):
 
         coins = reader.read_u8()
 
+        capacity = Capacity.from_binary(binary, order, version)
+
         object_count = reader.read_u32()
 
         editor_seconds = reader.read_f32()
@@ -379,6 +368,7 @@ class Level(Entity):
             password_data=password_data,
             original_id=original_id,
             two_player=two_player,
+            capacity=capacity,
             coins=coins,
             verified_coins=verified_coins,
             low_detail=low_detail,
@@ -407,15 +397,11 @@ class Level(Entity):
         if score > 0:
             rate_type = RateType.FEATURED
 
-        epic = model.is_epic()
-
-        if epic:
+        if model.is_epic():
             rate_type = RateType.EPIC
 
-        # godlike = model.is_godlike()
-
-        # if godlike:
-        #    rate_type = RateType.GODLIKE
+        if model.is_godlike():
+            rate_type = RateType.GODLIKE
 
         return cls(
             id=model.id,
@@ -456,8 +442,19 @@ class Level(Entity):
         return self
 
     @classmethod
-    def default(cls: Type[L]) -> L:
-        return cls(id=DEFAULT_ID, name=UNKNOWN, creator=User.default(), song=Song.default())
+    def default(
+        cls: Type[L],
+        id: int = DEFAULT_ID,
+        creator_id: int = DEFAULT_ID,
+        creator_account_id: int = DEFAULT_ID,
+        song_id: int = DEFAULT_ID,
+    ) -> L:
+        return cls(
+            id=id,
+            name=EMPTY,
+            creator=User.default(creator_id, creator_account_id),
+            song=Song.default(song_id),
+        )
 
     @classmethod
     def official(
@@ -465,48 +462,39 @@ class Level(Entity):
         id: Optional[int] = None,
         name: Optional[str] = None,
         get_data: bool = DEFAULT_GET_DATA,
-        server_style: bool = DEFAULT_SERVER_STYLE,
     ) -> L:
-        official_levels = OFFICIAL_LEVELS
-
         if id is None:
             if name is None:
                 raise ValueError(EXPECTED_QUERY)
 
             else:
-                official_level = iter(official_levels).find(by_name(name)).extract()
+                official_level = NAME_TO_OFFICIAL_LEVEL.get(name)
 
         else:
-            official_level = iter(official_levels).find(by_id(id)).extract()
+            official_level = ID_TO_OFFICIAL_LEVEL.get(id)
 
         if official_level is None:
             raise LookupError(CAN_NOT_FIND_LEVEL)
 
         if get_data:
             try:
-                unprocessed_data = zip_level_string(
-                    load_from(official_level.data_path, Editor).to_robtop()
-                )
+                data = decompress(official_level.data_path.read_bytes())
 
             except FileNotFoundError:
-                unprocessed_data = EMPTY
+                data = None
 
         else:
-            unprocessed_data = EMPTY
+            data = None
 
         name = official_level.name
 
         song_id = official_level.song_id
 
-        if server_style:
-            song_id -= 1
-
         level = cls(
             id=official_level.id,
             name=name,
             creator=User.robtop(),
-            song=Song.official(id=song_id, server_style=server_style),
-            unprocessed_data=unprocessed_data,
+            song=Song.official(id=song_id),
             description=OFFICIAL_LEVEL_DESCRIPTION.format(name),
             coins=official_level.coins,
             stars=official_level.stars,
@@ -516,6 +504,9 @@ class Level(Entity):
             rate_type=RateType.FEATURED,
             verified_coins=True,
         )
+
+        if data is not None:
+            level.data = data
 
         return level
 
@@ -538,8 +529,8 @@ class Level(Entity):
     def is_weekly(self) -> bool:
         return self.is_timely(TimelyType.WEEKLY)
 
-    # def is_event(self) -> bool:
-    #     return self.is_timely(TimelyType.EVENT)
+    def is_event(self) -> bool:
+        return self.is_timely(TimelyType.EVENT)
 
     def is_rated(self) -> bool:
         return self.rate_type.is_rated()
@@ -590,6 +581,7 @@ class Level(Entity):
         coins: Optional[int] = None,
         stars: Optional[int] = None,
         low_detail: Optional[bool] = None,
+        capacity: Optional[Capacity] = None,
         password: Optional[Password] = None,
         recording: Optional[Recording] = None,
         editor_time: Optional[Duration] = None,
@@ -618,6 +610,7 @@ class Level(Entity):
             coins=switch_none(coins, self.coins),
             stars=switch_none(stars, self.stars),
             low_detail=switch_none(low_detail, self.has_low_detail()),
+            capacity=switch_none(capacity, self.capacity),
             password=switch_none(password, self.password_data),
             recording=recording,
             editor_time=switch_none(editor_time, self.editor_time),
@@ -647,20 +640,12 @@ class Level(Entity):
     async def suggest(self, stars: int, feature: bool) -> None:
         await self.client.suggest_level(self, stars=stars, feature=feature)
 
-    async def update(self, *, get_data: bool = DEFAULT_GET_DATA) -> Optional[Level]:
+    async def update(
+        self, *, get_data: bool = DEFAULT_GET_DATA, use_client: bool = DEFAULT_USE_CLIENT
+    ) -> Optional[Level]:
         try:
             if self.is_timely():
-                if self.is_daily():
-                    level = await self.client.get_daily()
-
-                elif self.is_weekly():
-                    level = await self.client.get_weekly()
-
-                # elif self.is_event():
-                #     level = await self.client.get_event()
-
-                else:
-                    raise InternalError  # TODO: message?
+                level = await self.client.get_timely(self.timely_type)
 
             else:
                 level = await self.client.get_level(self.id, get_data=get_data)

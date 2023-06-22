@@ -1,4 +1,4 @@
-"""..., adapted from [`discord.py`](https://github.com/Rapptz/discord.py) library."""
+"""Task loops, adapted from the [`discord.py`](https://github.com/Rapptz/discord.py) library."""
 
 # MIT License
 
@@ -39,6 +39,7 @@ from typing_aliases import (
     AsyncNullary,
     AsyncUnary,
     DynamicTuple,
+    NormalError,
     Nullary,
     StringDict,
 )
@@ -211,7 +212,6 @@ class Loop(Generic[P]):
                     await self.function(*args, **kwargs)
 
                 except self._error_types:
-
                     if not self.reconnect:
                         raise
 
@@ -233,7 +233,7 @@ class Loop(Generic[P]):
 
             raise
 
-        except Exception:
+        except NormalError:
             self._has_failed = True
 
             raise

@@ -6,7 +6,7 @@ __url__ = "https://github.com/nekitdev/gd.py"
 __title__ = "gd"
 __author__ = "nekitdev"
 __license__ = "MIT"
-__version__ = "1.0.0-alpha.1"
+__version__ = "1.0.0"
 
 from gd import api, binary, encoding, events, image, memory, named_dicts, tasks
 from gd.artist import Artist
@@ -24,8 +24,6 @@ from gd.enums import (
     CommentState,
     CommentStrategy,
     CommentType,
-    CustomParticleGrouping,
-    CustomParticleProperty,
     DemonDifficulty,
     Difficulty,
     Easing,
@@ -80,11 +78,10 @@ from gd.enums import (
     Secret,
     ShardType,
     SimpleKey,
-    SimpleRelationshipType,
     SimpleTargetType,
-    SimpleZLayer,
     SpecialBlockType,
     SpecialColorID,
+    SpecialRateType,
     Speed,
     SpeedChangeType,
     SpeedConstant,
@@ -95,7 +92,6 @@ from gd.enums import (
     ToggleType,
     TouchToggleMode,
     TriggerType,
-    ZLayer,
 )
 from gd.filters import Filters
 from gd.friend_request import FriendRequest
@@ -105,13 +101,12 @@ from gd.level_packs import Gauntlet, MapPack
 from gd.message import Message
 from gd.password import Password
 from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM, SYSTEM_PLATFORM_CONFIG
-from gd.relationship import Relationship
 from gd.rewards import Chest, Quest
 from gd.session import Session
-from gd.song import Song
-from gd.users import LeaderboardUser, LevelLeaderboardUser, User
+from gd.songs import Song, SongReference
+from gd.users import User
 from gd.version import python_version_info, version_info
-from gd.versions import GameVersion, Version
+from gd.versions import GameVersion, RobTopVersion
 
 __all__ = (
     # system configuration
@@ -161,21 +156,18 @@ __all__ = (
     "MapPack",
     # messages
     "Message",
-    # relationships
-    "Relationship",
     # rewards
     "Chest",
     "Quest",
     # songs
+    "SongReference",
     "Song",
     # users
     "User",
-    "LeaderboardUser",
-    "LevelLeaderboardUser",
     # passwords
     "Password",
     # versions
-    "Version",
+    "RobTopVersion",
     "GameVersion",
     # enums
     "SimpleKey",
@@ -197,10 +189,10 @@ __all__ = (
     "TimelyType",
     "TimelyID",
     "RateFilter",
+    "SpecialRateType",
     "RateType",
     "CommentType",
     "RelationshipType",
-    "SimpleRelationshipType",
     "FriendRequestType",
     "MessageType",
     "CommentStrategy",
@@ -215,8 +207,8 @@ __all__ = (
     "QuestType",
     "Scene",
     "PlayerColor",
-    "CustomParticleGrouping",
-    "CustomParticleProperty",
+    # "CustomParticleGrouping",
+    # "CustomParticleProperty",
     "Easing",
     "EasingMethod",
     "PulseMode",
@@ -242,8 +234,6 @@ __all__ = (
     "SimpleTargetType",
     "TouchToggleMode",
     "TriggerType",
-    "ZLayer",
-    "SimpleZLayer",
     "Speed",
     "SpeedConstant",
     "SpeedMagic",

@@ -13,6 +13,8 @@ except ImportError:
         "failed to import `lxml`; large portion of `newgrounds` functionality is not going to work."
     )
 
+from typing_aliases import NormalError
+
 from yarl import URL
 
 from gd.constants import EMPTY
@@ -168,7 +170,7 @@ def search_artist_song_models(data: Any, artist_name: str) -> Iterator[SongModel
     try:
         items = data[ITEMS].values()
 
-    except Exception:
+    except NormalError:
         return
 
     for string in iter.chain_with(items).unwrap():  # type: ignore

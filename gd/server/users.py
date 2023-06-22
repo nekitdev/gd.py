@@ -5,7 +5,7 @@ from fastapi import Depends
 from fastapi.responses import FileResponse
 
 from gd.asyncio import run_blocking
-from gd.enums import ByteOrder  # HERE
+from gd.errors import InternalError
 from gd.level import Level, LevelData
 from gd.server.constants import CACHE, ICONS, ME
 from gd.server.core import client, v1
@@ -60,7 +60,12 @@ async def get_self_icons(token: ServerToken = Depends(token_dependency)) -> File
 
     user = await client.user.get()
 
-    image = await user.generate_full_async()
+    cosmetics = user.cosmetics
+
+    if cosmetics is None:
+        raise InternalError  # TODO: message?
+
+    image = await cosmetics.generate_full_async()
 
     await run_blocking(image.save, path)
 
@@ -76,7 +81,12 @@ async def get_user_icons(account_id: int) -> FileResponse:
 
     user = await client.get_user(account_id)
 
-    image = await user.generate_full_async()
+    cosmetics = user.cosmetics
+
+    if cosmetics is None:
+        raise InternalError  # TODO: message?
+
+    image = await cosmetics.generate_full_async()
 
     await run_blocking(image.save, path)
 
@@ -119,7 +129,12 @@ async def search_user_icons(query: str) -> FileResponse:
 
     user = await client.search_user(query)
 
-    image = await user.generate_full_async()
+    cosmetics = user.cosmetics
+
+    if cosmetics is None:
+        raise InternalError  # TODO: message?
+
+    image = await cosmetics.generate_full_async()
 
     await run_blocking(image.save, path)
 

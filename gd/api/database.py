@@ -13,7 +13,13 @@ from iters.utils import unary_tuple
 from typing_aliases import StringDict, StringMapping, is_instance, is_true
 
 from gd.api.folder import Folder
-from gd.api.level import LevelAPI
+from gd.api.levels import (
+    CreatedLevelAPI,
+    GauntletLevelAPI,
+    OfficialLevelAPI,
+    SavedLevelAPI,
+    TimelyLevelAPI,
+)
 from gd.api.like import Like
 from gd.api.objects import (
     Object,
@@ -50,7 +56,6 @@ from gd.constants import (
     DEFAULT_STARS,
     DEFAULT_USER_COINS,
     EMPTY,
-    UNKNOWN,
     WEEKLY_ID_ADD,
 )
 from gd.enums import (
@@ -72,10 +77,10 @@ from gd.models_utils import (
     split_name,
     split_objects,
 )
-from gd.song import Song
+from gd.plist import PARSER
+from gd.songs import Song
 from gd.string_utils import password_repr, snake_to_camel, snake_to_camel_with_abbreviations
-from gd.versions import CURRENT_BINARY_VERSION, Version
-from gd.xml import PARSER
+from gd.versions import CURRENT_BINARY_VERSION, RobTopVersion
 
 __all__ = ("Database",)
 
@@ -712,7 +717,7 @@ DEFAULT_VIEWED_SELF_PROFILE = True
 DEFAULT_SHOWN_NEWGROUNDS_MESSAGE = True
 DEFAULT_FAST_PRACTICE_RESET = False
 DEFAULT_FREE_GAMES = False
-DEFAULT_CHECK_SERVER_ONLINE = True
+DEFAULT_CHECK_SERVER_ONLINE = False
 DEFAULT_HOLD_TO_SWIPE = False
 DEFAULT_SHOW_DURATION_LINES = False
 DEFAULT_SWIPE_CYCLE = False
@@ -2486,8 +2491,14 @@ class Values(Binary):
 
         self.variables.to_binary(binary, order, version)
 
+        cubes = self.cubes
+
+        writer.write_u16(len(cubes))
+
+        for cube in cubes:
+            writer.write_u16(cube)
+
         for items in (
-            self.cubes,
             self.ships,
             self.balls,
             self.ufos,
@@ -2500,10 +2511,10 @@ class Values(Binary):
             self.colors_1,
             self.colors_2,
         ):
-            writer.write_u16(len(items))
+            writer.write_u8(len(items))
 
             for item in items:
-                writer.write_u16(item)
+                writer.write_u8(item)
 
     @classmethod
     def from_binary(
@@ -2520,51 +2531,51 @@ class Values(Binary):
 
         cubes = iter.repeat_exactly_with(reader.read_u16, cubes_length).ordered_set()
 
-        ships_length = reader.read_u16()
+        ships_length = reader.read_u8()
 
-        ships = iter.repeat_exactly_with(reader.read_u16, ships_length).ordered_set()
+        ships = iter.repeat_exactly_with(reader.read_u8, ships_length).ordered_set()
 
-        balls_length = reader.read_u16()
+        balls_length = reader.read_u8()
 
-        balls = iter.repeat_exactly_with(reader.read_u16, balls_length).ordered_set()
+        balls = iter.repeat_exactly_with(reader.read_u8, balls_length).ordered_set()
 
-        ufos_length = reader.read_u16()
+        ufos_length = reader.read_u8()
 
-        ufos = iter.repeat_exactly_with(reader.read_u16, ufos_length).ordered_set()
+        ufos = iter.repeat_exactly_with(reader.read_u8, ufos_length).ordered_set()
 
-        waves_length = reader.read_u16()
+        waves_length = reader.read_u8()
 
-        waves = iter.repeat_exactly_with(reader.read_u16, waves_length).ordered_set()
+        waves = iter.repeat_exactly_with(reader.read_u8, waves_length).ordered_set()
 
-        robots_length = reader.read_u16()
+        robots_length = reader.read_u8()
 
-        robots = iter.repeat_exactly_with(reader.read_u16, robots_length).ordered_set()
+        robots = iter.repeat_exactly_with(reader.read_u8, robots_length).ordered_set()
 
-        spiders_length = reader.read_u16()
+        spiders_length = reader.read_u8()
 
-        spiders = iter.repeat_exactly_with(reader.read_u16, spiders_length).ordered_set()
+        spiders = iter.repeat_exactly_with(reader.read_u8, spiders_length).ordered_set()
 
-        # swing_copters_length = reader.read_u16()
+        # swing_copters_length = reader.read_u8()
 
         # swing_copters = (
-        #     iter.repeat_exactly_with(reader.read_u16, swing_copters_length).ordered_set()
+        #     iter.repeat_exactly_with(reader.read_u8, swing_copters_length).ordered_set()
         # )
 
-        explosions_length = reader.read_u16()
+        explosions_length = reader.read_u8()
 
-        explosions = iter.repeat_exactly_with(reader.read_u16, explosions_length).ordered_set()
+        explosions = iter.repeat_exactly_with(reader.read_u8, explosions_length).ordered_set()
 
-        streaks_length = reader.read_u16()
+        streaks_length = reader.read_u8()
 
-        streaks = iter.repeat_exactly_with(reader.read_u16, streaks_length).ordered_set()
+        streaks = iter.repeat_exactly_with(reader.read_u8, streaks_length).ordered_set()
 
-        colors_1_length = reader.read_u16()
+        colors_1_length = reader.read_u8()
 
-        colors_1 = iter.repeat_exactly_with(reader.read_u16, colors_1_length).ordered_set()
+        colors_1 = iter.repeat_exactly_with(reader.read_u8, colors_1_length).ordered_set()
 
-        colors_2_length = reader.read_u16()
+        colors_2_length = reader.read_u8()
 
-        colors_2 = iter.repeat_exactly_with(reader.read_u16, colors_2_length).ordered_set()
+        colors_2 = iter.repeat_exactly_with(reader.read_u8, colors_2_length).ordered_set()
 
         return cls(
             variables=variables,
@@ -3809,9 +3820,9 @@ class Database(Binary):
 
     uuid: UUID = field(factory=generate_uuid)
 
-    player_name: str = field(default=UNKNOWN)
+    player_name: str = field(default=EMPTY)
 
-    name: str = field(default=UNKNOWN)
+    name: str = field(default=EMPTY)
     id: int = field(default=DEFAULT_ID)
     account_id: int = field(default=DEFAULT_ID)
     password: str = field(default=EMPTY, repr=password_repr)
@@ -3867,27 +3878,27 @@ class Database(Binary):
 
     achievements: Dict[str, int] = field(factory=dict)
 
-    official_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
-    saved_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
+    official_levels: OrderedSet[OfficialLevelAPI] = field(factory=ordered_set)
+    saved_levels: OrderedSet[SavedLevelAPI] = field(factory=ordered_set)
     followed: OrderedSet[int] = field(factory=ordered_set)
     last_played: OrderedSet[int] = field(factory=ordered_set)
     filters: Filters = field(factory=Filters)
-    timely_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
+    timely_levels: OrderedSet[TimelyLevelAPI] = field(factory=ordered_set)
     daily_id: int = field(default=DEFAULT_ID)
     weekly_id: int = field(default=DEFAULT_ID)
     liked: OrderedSet[Like] = field(factory=dict)
     rated: OrderedSet[int] = field(factory=ordered_set)
     reported: OrderedSet[int] = field(factory=ordered_set)
     demon_rated: OrderedSet[int] = field(factory=ordered_set)
-    gauntlet_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
+    gauntlet_levels: OrderedSet[GauntletLevelAPI] = field(factory=ordered_set)
     saved_folders: OrderedSet[Folder] = field(factory=ordered_set)
     created_folders: OrderedSet[Folder] = field(factory=ordered_set)
 
-    created_levels: OrderedSet[LevelAPI] = field(factory=ordered_set)
+    created_levels: OrderedSet[CreatedLevelAPI] = field(factory=ordered_set)
 
     songs: OrderedSet[Song] = field(factory=ordered_set)
 
-    binary_version: Version = field(default=CURRENT_BINARY_VERSION)
+    binary_version: RobTopVersion = field(default=CURRENT_BINARY_VERSION)
 
     # keybindings: Keybindings = field(factory=Keybindings)
 
@@ -3914,7 +3925,7 @@ class Database(Binary):
         else:
             uuid = UUID(uuid_option)
 
-        player_name = main_data.get(PLAYER_NAME, UNKNOWN)
+        player_name = main_data.get(PLAYER_NAME, EMPTY)
 
         id = main_data.get(USER_ID, DEFAULT_ID)
 
@@ -3946,7 +3957,7 @@ class Database(Binary):
 
         moderator = main_data.get(MODERATOR, DEFAULT_MODERATOR)
 
-        name = main_data.get(NAME, UNKNOWN)
+        name = main_data.get(NAME, EMPTY)
 
         password = main_data.get(PASSWORD, EMPTY)
 
@@ -3986,12 +3997,14 @@ class Database(Binary):
         official_levels_data = main_data.get(OFFICIAL_LEVELS, {})
 
         official_levels = (
-            iter(official_levels_data.values()).map(LevelAPI.from_robtop_data).ordered_set()
+            iter(official_levels_data.values()).map(OfficialLevelAPI.from_robtop_data).ordered_set()
         )
 
         saved_levels_data = main_data.get(SAVED_LEVELS, {})
 
-        saved_levels = iter(saved_levels_data.values()).map(LevelAPI.from_robtop_data).ordered_set()
+        saved_levels = (
+            iter(saved_levels_data.values()).map(SavedLevelAPI.from_robtop_data).ordered_set()
+        )
 
         followed_data = main_data.get(FOLLOWED, {})
 
@@ -4004,7 +4017,7 @@ class Database(Binary):
         timely_levels_data = main_data.get(TIMELY_LEVELS, {})
 
         timely_levels = (
-            iter(timely_levels_data.values()).map(LevelAPI.from_robtop_data).ordered_set()
+            iter(timely_levels_data.values()).map(TimelyLevelAPI.from_robtop_data).ordered_set()
         )
 
         daily_id = main_data.get(DAILY_ID, DEFAULT_ID)
@@ -4029,7 +4042,7 @@ class Database(Binary):
         gauntlet_levels_data = main_data.get(GAUNTLET_LEVELS, {})
 
         gauntlet_levels = (
-            iter(gauntlet_levels_data.values()).map(LevelAPI.from_robtop_data).ordered_set()
+            iter(gauntlet_levels_data.values()).map(GauntletLevelAPI.from_robtop_data).ordered_set()
         )
 
         def create_folder(string: str, name: str) -> Folder:
@@ -4062,12 +4075,12 @@ class Database(Binary):
             binary_version = CURRENT_BINARY_VERSION
 
         else:
-            binary_version = Version.from_value(binary_version_data)
+            binary_version = RobTopVersion.from_value(binary_version_data)
 
         created_levels = (
             iter(created_levels_data.values())
             .skip_while(is_true)
-            .map(LevelAPI.from_robtop_data)
+            .map(CreatedLevelAPI.from_robtop_data)
             .ordered_set()
         )
 
@@ -4316,6 +4329,8 @@ class Database(Binary):
         moderator_bit = MODERATOR_BIT
         glow_bit = GLOW_BIT
 
+        breakpoint()
+
         reader = Reader(binary, order)
 
         volume = reader.read_f32()
@@ -4347,17 +4362,17 @@ class Database(Binary):
         session_id = reader.read_u32()
 
         cube_id = reader.read_u16()
-        ship_id = reader.read_u16()
-        ball_id = reader.read_u16()
-        ufo_id = reader.read_u16()
-        wave_id = reader.read_u16()
-        robot_id = reader.read_u16()
-        spider_id = reader.read_u16()
-        # swing_copter_id = reader.read_u16()
-        color_1_id = reader.read_u16()
-        color_2_id = reader.read_u16()
-        trail_id = reader.read_u16()
-        explosion_id = reader.read_u16()
+        ship_id = reader.read_u8()
+        ball_id = reader.read_u8()
+        ufo_id = reader.read_u8()
+        wave_id = reader.read_u8()
+        robot_id = reader.read_u8()
+        spider_id = reader.read_u8()
+        # swing_copter_id = reader.read_u8()
+        color_1_id = reader.read_u8()
+        color_2_id = reader.read_u8()
+        trail_id = reader.read_u8()
+        explosion_id = reader.read_u8()
 
         icon_type_value = reader.read_u8()
         icon_type = IconType(icon_type_value)
@@ -4426,20 +4441,24 @@ class Database(Binary):
 
         statistics = Statistics.from_binary(binary, order, version)
 
-        level_api_from_binary = partial(
-            LevelAPI.from_binary, binary, order, version, encoding, errors
+        official_level_api_from_binary = partial(
+            OfficialLevelAPI.from_binary, binary, order, version, encoding, errors
         )
 
         official_levels_length = reader.read_u8()
 
         official_levels = iter.repeat_exactly_with(
-            level_api_from_binary, official_levels_length
+            official_level_api_from_binary, official_levels_length
         ).ordered_set()
+
+        saved_level_api_from_binary = partial(
+            SavedLevelAPI.from_binary, binary, order, version, encoding, errors
+        )
 
         saved_levels_length = reader.read_u32()
 
         saved_levels = iter.repeat_exactly_with(
-            level_api_from_binary, saved_levels_length
+            saved_level_api_from_binary, saved_levels_length
         ).ordered_set()
 
         followed_length = reader.read_u32()
@@ -4452,10 +4471,14 @@ class Database(Binary):
 
         filters = Filters.from_binary(binary, order, version)
 
+        timely_level_api_from_binary = partial(
+            TimelyLevelAPI.from_binary, binary, order, version, encoding, errors
+        )
+
         timely_levels_length = reader.read_u32()
 
         timely_levels = iter.repeat_exactly_with(
-            level_api_from_binary, timely_levels_length
+            timely_level_api_from_binary, timely_levels_length
         ).ordered_set()
 
         daily_id = reader.read_u32()
@@ -4479,10 +4502,14 @@ class Database(Binary):
 
         demon_rated = iter.repeat_exactly_with(reader.read_u32, demon_rated_length).ordered_set()
 
+        gauntlet_level_api_from_binary = partial(
+            GauntletLevelAPI.from_binary, binary, order, version, encoding, errors
+        )
+
         gauntlet_levels_length = reader.read_u16()
 
         gauntlet_levels = iter.repeat_exactly_with(
-            level_api_from_binary, gauntlet_levels_length
+            gauntlet_level_api_from_binary, gauntlet_levels_length
         ).ordered_set()
 
         folder_from_binary = partial(Folder.from_binary, binary, order, version, encoding, errors)
@@ -4499,10 +4526,14 @@ class Database(Binary):
             folder_from_binary, created_folders_length
         ).ordered_set()
 
+        created_level_api_from_binary = partial(
+            CreatedLevelAPI.from_binary, binary, order, version, encoding, errors
+        )
+
         created_levels_length = reader.read_u32()
 
         created_levels = iter.repeat_exactly_with(
-            level_api_from_binary, created_levels_length
+            created_level_api_from_binary, created_levels_length
         ).ordered_set()
 
         song_from_binary = partial(Song.from_binary, binary, order, version, encoding, errors)
@@ -4511,7 +4542,7 @@ class Database(Binary):
 
         songs = iter.repeat_exactly_with(song_from_binary, songs_length).ordered_set()
 
-        binary_version = Version.from_binary(binary, order, version)
+        binary_version = RobTopVersion.from_binary(binary, order, version)
 
         # keybindings = Keybindings.from_binary(binary, order, version, encoding, errors)
 
@@ -4623,16 +4654,17 @@ class Database(Binary):
         writer.write_u32(self.session_id)
 
         writer.write_u16(self.cube_id)
-        writer.write_u16(self.ship_id)
-        writer.write_u16(self.ball_id)
-        writer.write_u16(self.ufo_id)
-        writer.write_u16(self.wave_id)
-        writer.write_u16(self.robot_id)
-        writer.write_u16(self.spider_id)
-        writer.write_u16(self.color_1_id)
-        writer.write_u16(self.color_2_id)
-        writer.write_u16(self.trail_id)
-        writer.write_u16(self.explosion_id)
+        writer.write_u8(self.ship_id)
+        writer.write_u8(self.ball_id)
+        writer.write_u8(self.ufo_id)
+        writer.write_u8(self.wave_id)
+        writer.write_u8(self.robot_id)
+        writer.write_u8(self.spider_id)
+        # writer.write_u8(self.swing_copter_id)
+        writer.write_u8(self.color_1_id)
+        writer.write_u8(self.color_2_id)
+        writer.write_u8(self.trail_id)
+        writer.write_u8(self.explosion_id)
 
         writer.write_u8(self.icon_type.value)
 

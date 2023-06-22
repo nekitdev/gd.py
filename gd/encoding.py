@@ -2,25 +2,23 @@ from base64 import b64decode as standard_decode_base64
 from base64 import b64encode as standard_encode_base64
 from base64 import urlsafe_b64decode as standard_decode_base64_url_safe
 from base64 import urlsafe_b64encode as standard_encode_base64_url_safe
-from gzip import decompress as gzip_decompress
+from gzip import decompress
 from hashlib import sha1 as standard_sha1
 from random import choices
 from random import randrange as random_range
 from string import ascii_letters, digits
-from typing import AnyStr, Iterable
+from typing import AnyStr, Iterable, Sequence, TypeVar
 from zlib import MAX_WBITS
 from zlib import compressobj as create_compressor
-from zlib import decompressobj as create_decompressor
-from zlib import error as ZLibError
 
 from xor_cipher import cyclic_xor, cyclic_xor_string, xor, xor_string
 
 from gd.constants import (
     DEFAULT_APPLY_XOR,
+    DEFAULT_CHECK,
+    DEFAULT_CLICKS,
     DEFAULT_ENCODING,
     DEFAULT_ERRORS,
-    DEFAULT_JUMPS,
-    DEFAULT_PLAYED,
     DEFAULT_RECORD,
     DEFAULT_SECONDS,
 )
@@ -79,9 +77,7 @@ __all__ = (
 
 # zlib headers
 
-Z_NONE_HEADER = 0x00
 Z_GZIP_HEADER = 0x10
-Z_AUTO_HEADER = 0x20
 
 # AES
 
@@ -114,16 +110,30 @@ CHARACTERS = ascii_letters + digits
 
 LAST = ~0
 
+T = TypeVar("T")
+
+
+def last(sequence: Sequence[T]) -> T:
+    return sequence[LAST]
+
+
+def drop_last(count: int, data: bytes) -> bytes:
+    return data[:-count]
+
 
 def enforce_valid_base64(data: bytes) -> bytes:
-    required = len(data) % BASE64_PAD
+    base64_pad = BASE64_PAD
+    base64_padding = BASE64_PADDING
+    base64_invalid_to_pad = BASE64_INVALID_TO_PAD
+
+    required = len(data) % base64_pad
 
     if required:
-        if required == BASE64_INVALID_TO_PAD:
-            data = data[:LAST]
+        if required == base64_invalid_to_pad:
+            data = drop_last(base64_invalid_to_pad, data)
 
         else:
-            data += BASE64_PADDING * (BASE64_PAD - required)
+            data += base64_padding * (base64_pad - required)
 
     return data
 
@@ -256,10 +266,7 @@ def decode_darwin_save(
 
     data = cipher.decrypt(data)
 
-    pad = data[LAST]
-
-    if pad <= ECB_PAD:
-        data = data[:-pad]
+    data = drop_last(last(data), data)
 
     return data
 
@@ -355,25 +362,25 @@ def generate_level_seed(data: AnyStr, count: int = DEFAULT_COUNT) -> AnyStr:
     return data[:: length // count][:count]
 
 
-PLAYED_MULTIPLY = 1482
+CHECK_MULTIPLY = 1482
 ATTEMPTS_ADD = 8354
-JUMPS_ADD = 3991
+CLICKS_ADD = 3991
 RECORD_ADD = 8354
 SECONDS_ADD = 4085
 COINS_ADD = 5819
 
-TOTAL_SUBTRACT = JUMPS_ADD * RECORD_ADD + SECONDS_ADD * SECONDS_ADD
+TOTAL_SUBTRACT = CLICKS_ADD * RECORD_ADD + SECONDS_ADD * SECONDS_ADD
 
 
 def generate_leaderboard_seed(
-    jumps: int = DEFAULT_JUMPS,
+    clicks: int = DEFAULT_CLICKS,
     record: int = DEFAULT_RECORD,
     seconds: int = DEFAULT_SECONDS,
-    played: bool = DEFAULT_PLAYED,
+    check: bool = DEFAULT_CHECK,
 ) -> int:
     return (
-        PLAYED_MULTIPLY * (played + 1)
-        + (jumps + JUMPS_ADD) * (record + RECORD_ADD)
+        CHECK_MULTIPLY * (check + 1)
+        + (clicks + CLICKS_ADD) * (record + RECORD_ADD)
         + pow(seconds + SECONDS_ADD, 2)
         - TOTAL_SUBTRACT
     )
@@ -385,36 +392,13 @@ def compress(data: bytes) -> bytes:
     return compressor.compress(data) + compressor.flush()
 
 
-FAILED_TO_DECOMPRESS = "failed to decompress data"
-
-
-def decompress(data: bytes) -> bytes:
-    try:
-        return gzip_decompress(data)
-
-    except (OSError, ZLibError):
-        pass
-
-    # fall back and try other options
-    for header in (Z_AUTO_HEADER, Z_GZIP_HEADER, Z_NONE_HEADER):
-        try:
-            decompressor = create_decompressor(wbits=MAX_WBITS | header)
-
-            return decompressor.decompress(data) + decompressor.flush()
-
-        except ZLibError:
-            pass
-
-    raise ValueError(FAILED_TO_DECOMPRESS)
-
-
 LEGACY = "cp1252"
 UTF_8 = "utf-8"
 
 
-def fix_song_encoding(string: str) -> str:
+def fix_song_encoding(string: str, errors: str = DEFAULT_ERRORS) -> str:
     try:
-        return string.encode(LEGACY).decode(UTF_8)
+        return string.encode(LEGACY, errors).decode(UTF_8, errors)
 
     except (UnicodeEncodeError, UnicodeDecodeError):
         return string

@@ -1,8 +1,8 @@
-from functools import partial
 from typing import Any, List, Type, TypeVar
 
 from attrs import define, field
-from iters import iter
+from funcs.application import partial
+from iters.iters import iter
 from typing_aliases import StringDict, StringMapping
 from typing_extensions import Literal, TypeGuard
 

@@ -14,16 +14,15 @@ from attrs import define, field
 from funcs.unpacking import unpack_binary
 from iters.iters import iter
 from named import get_type_name
-from typing_aliases import Attributes, NormalError, Payload, StringDict, Unary, is_instance
-from wraps.option import is_some
+from typing_aliases import Attributes, StringDict, Unary, is_instance
+from typing_extensions import Literal
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.models_utils import float_str
 from gd.string_utils import tick
-from gd.types import NoDefaultOr, is_no_default, no_default
-from gd.typing import AnyString
+from gd.typing import AnyString, StrictPayload
 
-__all__ = ("PARSER", "XML")
+__all__ = ("PARSER", "PropertyList")
 
 XML_CHAR_REF_REPLACE = "xmlcharrefreplace"
 
@@ -46,7 +45,7 @@ create_sub_element = xml.SubElement
 
 DEFAULT_PLIST = False
 
-DEFAULT_IGNORE_FALSE = True
+DEFAULT_IGNORE_FALSY = True
 DEFAULT_SHORT = True
 DEFAULT_FIRST_SHOT = True
 NOT_FIRST_SHOT = False
@@ -56,7 +55,7 @@ from_string = xml.fromstring
 to_string = xml.tostring
 
 
-def plist_attributes_factory() -> Attributes:
+def attributes_factory() -> Attributes:
     return {PLIST_VERSION_LITERAL: PLIST_VERSION, GD_VERSION_LITERAL: GD_VERSION}
 
 
@@ -79,93 +78,74 @@ TRUE_SHORT = "t"
 FALSE_SHORT = "f"
 
 EXPECTED = """
-expected primitive (`None`, `bool`, `int`, `float`, `str`), primitive list or string dict, got {}
+expected primitive (`bool`, `int`, `float`, `str`), primitive `list` or string `dict`, got {}
 """.strip()
 
 
 @define()
-class XML:
-    plist: bool = field(default=DEFAULT_PLIST)
-    plist_attributes: Attributes = field(factory=plist_attributes_factory, repr=False)
+class PropertyList:
+    attributes: Attributes = field(factory=attributes_factory, repr=False)
 
-    def load(self, string: AnyString, default: NoDefaultOr[Payload] = no_default) -> Payload:
-        element = from_string(string)
+    def load(self, string: AnyString) -> Optional[StrictPayload]:
+        plist = from_string(string)
 
-        if element.tag == PLIST:
-            self.plist = True
+        element = iter(plist).first().extract()
 
-            first = iter(element).first()
+        if element is None:
+            return None
 
-            if is_some(first):
-                element = first.unwrap()
-
-        try:
-            return self.load_item(element)
-
-        except NormalError:
-            if is_no_default(default):
-                raise
-
-            return default  # type: ignore
+        return self.load_item(element)
 
     def dump(
         self,
-        item: Payload,
+        item: Optional[StrictPayload],
         *,
-        ignore_false: bool = DEFAULT_IGNORE_FALSE,
+        ignore_falsy: bool = DEFAULT_IGNORE_FALSY,
         short: bool = DEFAULT_SHORT,
     ) -> bytes:
-        root: Optional[Element]
+        plist = create_element(PLIST, attrib=self.attributes)
 
-        if self.plist:
-            root = create_element(PLIST, attrib=self.plist_attributes)
+        self.dump_item(item, plist, ignore_falsy=ignore_falsy, short=short)
 
-            element = self.dump_item(item, root, ignore_false=ignore_false, short=short)
-
-        else:
-            root = element = self.dump_item(
-                item, ignore_false=ignore_false, short=short
-            )
-
-        if element is None:
-            return DECLARATION
-
-        return DECLARATION + to_string(root)  # type: ignore
+        return DECLARATION + to_string(plist)
 
     def dump_string(
         self,
-        item: Payload,
+        item: Optional[StrictPayload],
         *,
         encoding: str = DEFAULT_ENCODING,
-        ignore_false: bool = DEFAULT_IGNORE_FALSE,
+        ignore_falsy: bool = DEFAULT_IGNORE_FALSY,
         short: bool = DEFAULT_SHORT,
     ) -> str:
-        return self.dump(item, ignore_false=ignore_false, short=short).decode(
+        return self.dump(item, ignore_falsy=ignore_falsy, short=short).decode(
             encoding, XML_CHAR_REF_REPLACE
         )
 
     def dump_item(
         self,
-        item: Payload,
+        item: Optional[StrictPayload],
         root: Optional[Element] = None,
         *,
-        ignore_false: bool = DEFAULT_IGNORE_FALSE,
+        ignore_falsy: bool = DEFAULT_IGNORE_FALSY,
         short: bool = DEFAULT_SHORT,
     ) -> Optional[Element]:
         return (
-            self.dump_item_short(item, root, ignore_false=ignore_false)
+            self.dump_item_short(item, root, ignore_falsy=ignore_falsy)
             if short
-            else self.dump_item_long(item, root, ignore_false=ignore_false)
+            else self.dump_item_long(item, root, ignore_falsy=ignore_falsy)
         )
 
     def dump_item_long(
         self,
-        item: Payload,
+        item: Optional[StrictPayload],
         root: Optional[Element] = None,
         *,
-        ignore_false: bool = DEFAULT_IGNORE_FALSE,
+        ignore_falsy: bool = DEFAULT_IGNORE_FALSY,
     ) -> Optional[Element]:
         if item is None:
+            return None
+
+        if not item and ignore_falsy:
             return None
 
         if is_instance(item, str):
@@ -180,9 +160,6 @@ class XML:
             element = create_element(TRUE)
 
         elif item is False:
-            if ignore_false:
-                return None
-
             element = create_element(FALSE)
 
         elif is_instance(item, int):
@@ -214,13 +191,16 @@ class XML:
 
     def dump_item_short(
         self,
-        item: Payload,
+        item: Optional[StrictPayload],
         root: Optional[Element] = None,
         *,
         first_shot: bool = DEFAULT_FIRST_SHOT,
-        ignore_false: bool = DEFAULT_IGNORE_FALSE,
+        ignore_falsy: bool = DEFAULT_IGNORE_FALSY,
     ) -> Optional[Element]:
         if item is None:
+            return None
+
+        if not item and ignore_falsy:
             return None
 
         if is_instance(item, str):
@@ -236,9 +216,6 @@ class XML:
 
         elif item is False:
             element = create_element(FALSE_SHORT)
-
-            if ignore_false:
-                return None
 
         elif is_instance(item, int):
             element = create_element(INT_SHORT)
@@ -268,14 +245,14 @@ class XML:
         return element
 
     @staticmethod
-    def load_item(element: Element) -> Payload:
+    def load_item(element: Element) -> StrictPayload:
         return LOAD[element.tag](element)
 
 
-PARSER = XML()  # the parser is essentially stateless, so it can be reused
+PARSER = PropertyList()  # the parser is stateless, so it can be reused
 
 
-load_item = XML.load_item
+load_item = PropertyList.load_item
 
 
 DEFAULT_STRING = str()
@@ -283,26 +260,26 @@ DEFAULT_FLOAT = 0.0
 DEFAULT_INT = 0
 
 
-def load_array(elements: Element) -> List[Payload]:
+def load_array(elements: Element) -> List[StrictPayload]:
     return iter(elements).map(load_item).list()
 
 
-StringEntry = Tuple[str, Payload]
+StringEntry = Tuple[str, StrictPayload]
 
 
 def load_entry(key: Element, item: Element) -> StringEntry:
     return load_string(key), load_item(item)
 
 
-def load_dict(elements: Element) -> StringDict[Payload]:
+def load_dict(elements: Element) -> StringDict[StrictPayload]:
     return iter(elements).pairs().map(unpack_binary(load_entry)).dict()
 
 
-def load_false(element: Element) -> bool:
+def load_false(element: Element) -> Literal[False]:
     return False
 
 
-def load_true(element: Element) -> bool:
+def load_true(element: Element) -> Literal[True]:
     return True
 
 
@@ -324,7 +301,7 @@ def load_string(element: Element) -> str:
     return DEFAULT_STRING if string is None else string
 
 
-Load = Unary[Element, Payload]
+Load = Unary[Element, StrictPayload]
 
 LOAD: StringDict[Load] = {
     ARRAY_SHORT: load_array,

@@ -1,14 +1,15 @@
 from enum import Enum
-from functools import partial
 from typing import Iterable, Mapping, Optional, Type, TypeVar
 
+from funcs.application import partial
 from iters.iters import iter
-from typing_aliases import Pair, Parse
+from typing_aliases import NormalError, Nullary, Pair, Parse
 
 from gd.models_constants import (
     ARTIST_SEPARATOR,
     ARTISTS_RESPONSE_ARTISTS_SEPARATOR,
     ARTISTS_RESPONSE_SEPARATOR,
+    CAPACITY_SEPARATOR,
     CHEST_SEPARATOR,
     CHESTS_INNER_SEPARATOR,
     CHESTS_RESPONSE_SEPARATOR,
@@ -17,7 +18,6 @@ from gd.models_constants import (
     COLOR_SEPARATOR,
     COMMENT_BANNED_SEPARATOR,
     CREATOR_SEPARATOR,
-    EXTRA_STRING_SEPARATOR,
     FRIEND_REQUEST_SEPARATOR,
     FRIEND_REQUESTS_RESPONSE_FRIEND_REQUESTS_SEPARATOR,
     FRIEND_REQUESTS_RESPONSE_SEPARATOR,
@@ -78,6 +78,14 @@ from gd.models_constants import (
 )
 
 
+def round_float(string: str) -> int:
+    return round(float(string))
+
+
+def bool_str(value: bool) -> str:
+    return str(int(value))
+
+
 def float_str(value: float) -> str:
     whole = int(value)
 
@@ -118,14 +126,30 @@ def parse_get_or(
     try:
         return parse(option)
 
-    except Exception:
+    except NormalError:
         if ignore_errors:
             return default
 
         raise
 
 
-DEFAULT_IGNORE_EMPTY = False
+def parse_get_or_else(
+    parse: Parse[T],
+    default: Nullary[T],
+    option: Optional[str],
+    ignore_errors: bool = DEFAULT_IGNORE_ERRORS,
+) -> T:
+    if option is None:
+        return default()
+
+    try:
+        return parse(option)
+
+    except NormalError:
+        if ignore_errors:
+            return default()
+
+        raise
 
 
 def split_iterable(separator: str, string: str) -> Iterable[str]:
@@ -277,9 +301,6 @@ concat_comment_banned = partial(concat_iterable, COMMENT_BANNED_SEPARATOR)
 
 concat_recording_item = partial(concat_iterable, RECORDING_ITEM_SEPARATOR)
 
-split_extra_string = partial(split_iterable, EXTRA_STRING_SEPARATOR)
-concat_extra_string = partial(concat_iterable, EXTRA_STRING_SEPARATOR)
-
 split_hsv = partial(split_iterable, HSV_SEPARATOR)
 concat_hsv = partial(concat_iterable, HSV_SEPARATOR)
 
@@ -428,3 +449,6 @@ split_gauntlets_response_gauntlets = partial(split_iterable, GAUNTLETS_RESPONSE_
 concat_gauntlets_response_gauntlets = partial(
     concat_iterable, GAUNTLETS_RESPONSE_GAUNTLETS_SEPARATOR
 )
+
+split_capacity = partial(split_iterable, CAPACITY_SEPARATOR)
+concat_capacity = partial(concat_iterable, CAPACITY_SEPARATOR)

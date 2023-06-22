@@ -10,7 +10,8 @@ from typing_aliases import IntoPath
 # from gd.asyncio import run_blocking
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.encoding import decode_save, decode_system_save, encode_save, encode_system_save
-from gd.platform import SYSTEM_PLATFORM, Platform
+from gd.enums import Platform
+from gd.platform import SYSTEM_PLATFORM
 
 __all__ = (
     "MAIN_NAME",

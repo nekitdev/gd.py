@@ -4,10 +4,11 @@ from typing import AsyncIterator, Type, TypeVar
 
 from async_extensions.collect import collect_iterable_results
 from iters.async_utils import async_iter, async_list
+from iters.utils import unary_tuple
 from typing_aliases import AnyError, AnyIterable, is_instance
 from wraps.result import is_error
 
-__all__ = ("run_iterables",)
+__all__ = unary_tuple("run_iterables")
 
 T = TypeVar("T")
 

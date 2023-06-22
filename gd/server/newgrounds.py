@@ -8,7 +8,7 @@ from gd.artist import Artist, ArtistData
 from gd.server.constants import CACHE, SONGS
 from gd.server.core import client, v1
 from gd.server.dependencies import pages_dependency
-from gd.song import Song, SongData
+from gd.songs import Song, SongData
 
 __all__ = (
     "get_newgrounds_artist_songs",
@@ -73,6 +73,6 @@ async def search_newgrounds_songs(
 async def get_newgrounds_artist_songs(
     name: str, pages: Iterable[int] = Depends(pages_dependency)
 ) -> List[SongData]:
-    artist = Artist(name).attach_client(client)
+    artist = Artist.name_only(name).attach_client(client)
 
     return await artist.get_songs(pages=pages).map(song_into_data).list()

@@ -4,7 +4,7 @@ from threading import Thread
 from typing import Iterable, Optional
 
 from attrs import define, field
-from typing_aliases import DynamicTuple
+from typing_aliases import DynamicTuple, NormalError
 
 from gd.asyncio import shutdown_loop
 from gd.events.listeners import Listener
@@ -52,7 +52,7 @@ class Controller:
         try:
             shutdown_loop(loop)
 
-        except Exception:
+        except NormalError:
             pass  # uwu
 
     def start(self) -> None:

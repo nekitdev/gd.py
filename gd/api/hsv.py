@@ -7,7 +7,7 @@ from gd.binary_constants import BITS, BYTE
 from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder
 from gd.models_constants import HSV_SEPARATOR
-from gd.models_utils import concat_hsv, float_str, int_bool, split_hsv
+from gd.models_utils import bool_str, concat_hsv, float_str, int_bool, round_float, split_hsv
 from gd.robtop import RobTop
 
 __all__ = ("HSV",)
@@ -15,6 +15,39 @@ __all__ = ("HSV",)
 H_INITIAL = 0
 S_INITIAL = 1.0
 V_INITIAL = 1.0
+
+S_MIN = 0.0
+V_MIN = 0.0
+
+S_MAX = 2.0
+V_MAX = 2.0
+
+S_MIN_CHECKED = -1.0
+V_MIN_CHECKED = -1.0
+
+S_MAX_CHECKED = 1.0
+V_MAX_CHECKED = 1.0
+
+
+def clamp(value: float, min_value: float, max_value: float) -> float:
+    return max(min_value, min(value, max_value))
+
+
+def clamp_s(value: float) -> float:
+    return clamp(value, S_MIN, S_MAX)
+
+
+def clamp_v(value: float) -> float:
+    return clamp(value, V_MIN, V_MAX)
+
+
+def clamp_s_checked(value: float) -> float:
+    return clamp(value, S_MIN_CHECKED, S_MAX_CHECKED)
+
+
+def clamp_v_checked(value: float) -> float:
+    return clamp(value, V_MIN_CHECKED, V_MAX_CHECKED)
+
 
 S_CHECKED = False
 V_CHECKED = False
@@ -51,9 +84,14 @@ class HSV(Binary, RobTop):
     def from_robtop(cls: Type[T], string: str) -> T:
         h_string, s_string, v_string, s_checked_string, v_checked_string = split_hsv(string)
 
-        h = round(float(h_string))
+        h = round_float(h_string)
         s = float(s_string)
         v = float(v_string)
+
+        h_add = H_ADD
+
+        if abs(h) > h_add:
+            h %= h_add
 
         s_checked = int_bool(s_checked_string)
         v_checked = int_bool(v_checked_string)
@@ -64,6 +102,9 @@ class HSV(Binary, RobTop):
         if v < 0:
             v_checked = True
 
+        s = clamp_s_checked(s) if s_checked else clamp_s(s)
+        v = clamp_v_checked(v) if v_checked else clamp_v(v)
+
         return cls(h, s, v, s_checked, v_checked)
 
     def to_robtop(self) -> str:
@@ -71,14 +112,14 @@ class HSV(Binary, RobTop):
             str(self.h),
             float_str(self.s),
             float_str(self.v),
-            str(int(self.s_checked)),
-            str(int(self.v_checked)),
+            bool_str(self.s_checked),
+            bool_str(self.v_checked),
         )
 
         return concat_hsv(values)
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
+    @staticmethod
+    def can_be_in(string: str) -> bool:
         return HSV_SEPARATOR in string
 
     # 00000VSH HHHHHHHH SSSSSSSS VVVVVVVV

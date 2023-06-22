@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import Type, TypeVar
 
 from attrs import define, field
+from pendulum import DateTime, Duration
+from pendulum import duration as duration_factory
 
 from gd.constants import (
     DEFAULT_AMOUNT,
@@ -11,9 +13,10 @@ from gd.constants import (
     DEFAULT_KEYS,
     DEFAULT_ORBS,
     DEFAULT_REWARD,
+    EMPTY,
     UNKNOWN,
 )
-from gd.date_time import DateTime, Duration, utc_now
+from gd.date_time import utc_now
 from gd.entity import Entity
 from gd.enums import QuestType, ShardType
 from gd.models import ChestModel, QuestModel
@@ -34,7 +37,7 @@ class Chest(Entity):
     keys: int = field(default=DEFAULT_KEYS, eq=False)
     count: int = field(default=DEFAULT_CHEST_COUNT, eq=False)
 
-    duration: Duration = field(factory=Duration, eq=False)
+    duration: Duration = field(factory=duration_factory, eq=False)
 
     created_at: DateTime = field(factory=utc_now, init=False, eq=False)
 
@@ -72,12 +75,12 @@ Q = TypeVar("Q", bound="Quest")
 
 @define()
 class Quest(Entity):
-    name: str = field(default=UNKNOWN, eq=False)
+    name: str = field(default=EMPTY, eq=False)
     type: QuestType = field(default=QuestType.DEFAULT, eq=False)
     amount: int = field(default=DEFAULT_AMOUNT, eq=False)
     reward: int = field(default=DEFAULT_REWARD, eq=False)
 
-    duration: Duration = field(factory=Duration, eq=False)
+    duration: Duration = field(factory=duration_factory, eq=False)
 
     created_at: DateTime = field(factory=utc_now, eq=False)
 
@@ -86,10 +89,14 @@ class Quest(Entity):
 
     def __str__(self) -> str:
         if self.type.is_unknown():
-            return QUEST_UNKNOWN.format(tick(self.name), self.reward, self.duration)
+            return QUEST_UNKNOWN.format(tick(self.name or UNKNOWN), self.reward, self.duration)
 
         return QUEST.format(
-            tick(self.name), self.amount, case_fold(self.type.name), self.reward, self.duration
+            tick(self.name or UNKNOWN),
+            self.amount,
+            case_fold(self.type.name),
+            self.reward,
+            self.duration,
         )
 
     @classmethod

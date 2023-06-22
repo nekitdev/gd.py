@@ -15,6 +15,7 @@ from gd.models_utils import (
     float_str,
     int_bool,
     parse_get_or,
+    parse_get_or_else,
     partial_parse_enum,
     split_header,
 )
@@ -230,8 +231,8 @@ class Header(Binary, RobTop):  # TODO: compatibility?
             platformer_mode=parse_get_or(
                 int_bool, DEFAULT_PLATFORMER_MODE, mapping.get(PLATFORMER_MODE)
             ),
-            color_channels=parse_get_or(
-                ColorChannels.from_robtop, ColorChannels(), mapping.get(COLOR_CHANNELS)
+            color_channels=parse_get_or_else(
+                ColorChannels.from_robtop, ColorChannels, mapping.get(COLOR_CHANNELS)
             ),
             color_channels_page=parse_get_or(
                 int, DEFAULT_COLOR_CHANNELS_PAGE, mapping.get(COLOR_CHANNELS_PAGE)
@@ -262,8 +263,8 @@ class Header(Binary, RobTop):  # TODO: compatibility?
 
         return concat_header(mapping)
 
-    @classmethod
-    def can_be_in(cls, string: str) -> bool:
+    @staticmethod
+    def can_be_in(string: str) -> bool:
         return HEADER_SEPARATOR in string
 
     def is_mini_mode(self) -> bool:

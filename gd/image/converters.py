@@ -10,12 +10,13 @@ from typing_aliases import DynamicTuple, IntoPath, Parse, StringDict, Unary
 
 from gd.assets import DATA_SUFFIX
 from gd.constants import READ_BINARY, WRITE
+from gd.errors import InternalError
 from gd.image.animation import AnimationSheetData
 from gd.image.layer import LayerData
 from gd.image.sheet import SheetData
 from gd.image.sprite import SpriteData
-from gd.named_dicts import AnyCamelDict, CamelDict
 from gd.models_utils import int_bool
+from gd.named_dicts import AnyCamelDict, CamelDict
 from gd.string_constants import COMMA
 from gd.string_utils import remove_braces, tick
 
@@ -210,7 +211,19 @@ def get_animation_name_index(frame_name: str) -> Tuple[str, int]:
     if match is None:
         raise ValueError  # TODO: message?
 
-    return match.group(NAME), int(match.group(FRAME)) - 1
+    name = match.group(NAME)
+
+    if name is None:
+        raise InternalError  # TODO: message?
+
+    frame_option = match.group(FRAME)
+
+    if frame_option is None:
+        raise InternalError  # TODO: message?
+
+    frame = int(frame_option) - 1
+
+    return (name, frame)
 
 
 def get_layer_part(layer_name: str) -> int:
@@ -219,4 +232,11 @@ def get_layer_part(layer_name: str) -> int:
     if match is None:
         raise ValueError  # TODO: message?
 
-    return int(match.group(PART))
+    part_option = match.group(PART)
+
+    if part_option is None:
+        raise InternalError  # TODO: message?
+
+    part = int(part_option)
+
+    return part

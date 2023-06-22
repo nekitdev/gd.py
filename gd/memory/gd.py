@@ -300,8 +300,8 @@ class GameLevel(CCNode):
     def is_weekly(self) -> bool:
         return self.is_timely(TimelyType.WEEKLY)
 
-    # def is_event(self) -> bool:
-    #     return self.is_timely(TimelyType.EVENT)
+    def is_event(self) -> bool:
+        return self.is_timely(TimelyType.EVENT)
 
     @property
     def processed_data(self) -> str:

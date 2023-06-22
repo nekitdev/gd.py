@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Iterator, Optional, Sequence, Type, TypeVar
 
 from attrs import define, field, frozen
-from iters import wrap_iter
+from iters.iters import wrap_iter
 
 from gd.enums import ByteOrder
 from gd.memory.constants import DEFAULT_BASE
