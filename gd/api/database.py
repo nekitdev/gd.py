@@ -1497,15 +1497,19 @@ class Variables(Binary):
         writer.write_u32(value)
 
         writer.write_u16(self.filter_id)
-        writer.write_u8(self.filter.value)
+
+        value = self.filter.value
+
+        value |= self.level_leaderboard_strategy.value << LEVEL_LEADERBOARD_STRATEGY_SHIFT
+        value |= self.comment_strategy.value << COMMENT_STRATEGY_SHIFT
+
+        writer.write_u8(value)
 
         writer.write_u8(self.buttons_per_row)
         writer.write_u8(self.button_rows)
 
         writer.write_u8(self.created_levels_folder_id)
         writer.write_u8(self.saved_levels_folder_id)
-
-        writer.write_u8(self.level_leaderboard_strategy.value)
 
         value = 0
 
