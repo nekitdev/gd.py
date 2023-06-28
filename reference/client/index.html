@@ -3060,7 +3060,10 @@
 <span class="normal">1863</span>
 <span class="normal">1864</span>
 <span class="normal">1865</span>
-<span class="normal">1866</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="normal">1866</span>
+<span class="normal">1867</span>
+<span class="normal">1868</span>
+<span class="normal">1869</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="k">class</span> <span class="nc">Client</span><span class="p">:</span>
     <span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">factory</span><span class="o">=</span><span class="n">Session</span><span class="p">)</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The session of the client.&quot;&quot;&quot;</span>
@@ -3296,26 +3299,35 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">user</span> <span class="o">=</span> <span class="n">set_as_user</span>
 
+        <span class="n">statistics</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">statistics</span>
+        <span class="n">cosmetics</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">cosmetics</span>
+
+        <span class="k">if</span> <span class="n">statistics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InternalError</span>  <span class="c1"># TODO: message?</span>
+
+        <span class="k">if</span> <span class="n">cosmetics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InternalError</span>  <span class="c1"># TODO: message?</span>
+
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">update_profile</span><span class="p">(</span>
-            <span class="n">stars</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">stars</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">stars</span><span class="p">),</span>
-            <span class="n">diamonds</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">diamonds</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">diamonds</span><span class="p">),</span>
-            <span class="n">secret_coins</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">secret_coins</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">secret_coins</span><span class="p">),</span>
-            <span class="n">user_coins</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">user_coins</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">user_coins</span><span class="p">),</span>
-            <span class="n">demons</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">demons</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">demons</span><span class="p">),</span>
-            <span class="n">icon_type</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">icon_type</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">icon_type</span><span class="p">),</span>
-            <span class="n">icon_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">icon_id</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">icon_id</span><span class="p">),</span>
-            <span class="n">color_1_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">color_1_id</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">color_1_id</span><span class="p">),</span>
-            <span class="n">color_2_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">color_2_id</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">color_2_id</span><span class="p">),</span>
-            <span class="n">glow</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">glow</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">glow</span><span class="p">),</span>
-            <span class="n">cube_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">cube_id</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">cube_id</span><span class="p">),</span>
-            <span class="n">ship_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">ship_id</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">ship_id</span><span class="p">),</span>
-            <span class="n">ball_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">ball_id</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">ball_id</span><span class="p">),</span>
-            <span class="n">ufo_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">ufo_id</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">ufo_id</span><span class="p">),</span>
-            <span class="n">wave_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">wave_id</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">wave_id</span><span class="p">),</span>
-            <span class="n">robot_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">robot_id</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">robot_id</span><span class="p">),</span>
-            <span class="n">spider_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">spider_id</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">spider_id</span><span class="p">),</span>
-            <span class="c1"># swing_copter_id=switch_none(swing_copter_id, user.swing_copter_id),</span>
-            <span class="n">explosion_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">explosion_id</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">explosion_id</span><span class="p">),</span>
+            <span class="n">stars</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">stars</span><span class="p">,</span> <span class="n">statistics</span><span class="o">.</span><span class="n">stars</span><span class="p">),</span>
+            <span class="n">diamonds</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">diamonds</span><span class="p">,</span> <span class="n">statistics</span><span class="o">.</span><span class="n">diamonds</span><span class="p">),</span>
+            <span class="n">secret_coins</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">secret_coins</span><span class="p">,</span> <span class="n">statistics</span><span class="o">.</span><span class="n">secret_coins</span><span class="p">),</span>
+            <span class="n">user_coins</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">user_coins</span><span class="p">,</span> <span class="n">statistics</span><span class="o">.</span><span class="n">user_coins</span><span class="p">),</span>
+            <span class="n">demons</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">demons</span><span class="p">,</span> <span class="n">statistics</span><span class="o">.</span><span class="n">demons</span><span class="p">),</span>
+            <span class="n">icon_type</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">icon_type</span><span class="p">,</span> <span class="n">cosmetics</span><span class="o">.</span><span class="n">icon_type</span><span class="p">),</span>
+            <span class="n">icon_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">icon_id</span><span class="p">,</span> <span class="n">cosmetics</span><span class="o">.</span><span class="n">icon_id</span><span class="p">),</span>
+            <span class="n">color_1_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">color_1_id</span><span class="p">,</span> <span class="n">cosmetics</span><span class="o">.</span><span class="n">color_1_id</span><span class="p">),</span>
+            <span class="n">color_2_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">color_2_id</span><span class="p">,</span> <span class="n">cosmetics</span><span class="o">.</span><span class="n">color_2_id</span><span class="p">),</span>
+            <span class="n">glow</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">glow</span><span class="p">,</span> <span class="n">cosmetics</span><span class="o">.</span><span class="n">glow</span><span class="p">),</span>
+            <span class="n">cube_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">cube_id</span><span class="p">,</span> <span class="n">cosmetics</span><span class="o">.</span><span class="n">cube_id</span><span class="p">),</span>
+            <span class="n">ship_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">ship_id</span><span class="p">,</span> <span class="n">cosmetics</span><span class="o">.</span><span class="n">ship_id</span><span class="p">),</span>
+            <span class="n">ball_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">ball_id</span><span class="p">,</span> <span class="n">cosmetics</span><span class="o">.</span><span class="n">ball_id</span><span class="p">),</span>
+            <span class="n">ufo_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">ufo_id</span><span class="p">,</span> <span class="n">cosmetics</span><span class="o">.</span><span class="n">ufo_id</span><span class="p">),</span>
+            <span class="n">wave_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">wave_id</span><span class="p">,</span> <span class="n">cosmetics</span><span class="o">.</span><span class="n">wave_id</span><span class="p">),</span>
+            <span class="n">robot_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">robot_id</span><span class="p">,</span> <span class="n">cosmetics</span><span class="o">.</span><span class="n">robot_id</span><span class="p">),</span>
+            <span class="n">spider_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">spider_id</span><span class="p">,</span> <span class="n">cosmetics</span><span class="o">.</span><span class="n">spider_id</span><span class="p">),</span>
+            <span class="c1"># swing_copter_id=switch_none(swing_copter_id, cosmetics.swing_copter_id),</span>
+            <span class="n">explosion_id</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">explosion_id</span><span class="p">,</span> <span class="n">cosmetics</span><span class="o">.</span><span class="n">explosion_id</span><span class="p">),</span>
             <span class="n">special</span><span class="o">=</span><span class="n">special</span><span class="p">,</span>
             <span class="n">account_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">account_id</span><span class="p">,</span>
             <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
@@ -3341,14 +3353,23 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">user</span> <span class="o">=</span> <span class="n">set_as_user</span>
 
+        <span class="n">states</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">states</span>
+        <span class="n">socials</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">socials</span>
+
+        <span class="k">if</span> <span class="n">states</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InternalError</span>  <span class="c1"># TODO: message?</span>
+
+        <span class="k">if</span> <span class="n">socials</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InternalError</span>  <span class="c1"># TODO: message?</span>
+
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">update_settings</span><span class="p">(</span>
-            <span class="n">message_state</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">message_state</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">message_state</span><span class="p">),</span>
-            <span class="n">friend_request_state</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">friend_request_state</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">friend_request_state</span><span class="p">),</span>
-            <span class="n">comment_state</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">comment_state</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">comment_state</span><span class="p">),</span>
-            <span class="n">youtube</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">youtube</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">youtube</span><span class="p">),</span>
-            <span class="n">twitter</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">twitter</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">twitter</span><span class="p">),</span>
-            <span class="n">twitch</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">twitch</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">twitch</span><span class="p">),</span>
-            <span class="c1"># discord=switch_none(discord, user.discord),</span>
+            <span class="n">message_state</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">message_state</span><span class="p">,</span> <span class="n">states</span><span class="o">.</span><span class="n">message_state</span><span class="p">),</span>
+            <span class="n">friend_request_state</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">friend_request_state</span><span class="p">,</span> <span class="n">states</span><span class="o">.</span><span class="n">friend_request_state</span><span class="p">),</span>
+            <span class="n">comment_state</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">comment_state</span><span class="p">,</span> <span class="n">states</span><span class="o">.</span><span class="n">comment_state</span><span class="p">),</span>
+            <span class="n">youtube</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">youtube</span><span class="p">,</span> <span class="n">socials</span><span class="o">.</span><span class="n">youtube</span><span class="p">),</span>
+            <span class="n">twitter</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">twitter</span><span class="p">,</span> <span class="n">socials</span><span class="o">.</span><span class="n">twitter</span><span class="p">),</span>
+            <span class="n">twitch</span><span class="o">=</span><span class="n">switch_none</span><span class="p">(</span><span class="n">twitch</span><span class="p">,</span> <span class="n">socials</span><span class="o">.</span><span class="n">twitch</span><span class="p">),</span>
+            <span class="c1"># discord=switch_none(discord, socials.discord),</span>
             <span class="n">account_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">account_id</span><span class="p">,</span>
             <span class="n">encoded_password</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">encoded_password</span><span class="p">,</span>
         <span class="p">)</span>
@@ -3469,9 +3490,9 @@
 
     <span class="nd">@wrap_async_iter</span>
     <span class="nd">@check_login</span>
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_simple_relationships</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">:</span> <span class="n">SimpleRelationshipType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_relationships</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">:</span> <span class="n">RelationshipType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">response_model</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get_simple_relationships</span><span class="p">(</span>
+            <span class="n">response_model</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get_relationships</span><span class="p">(</span>
                 <span class="nb">type</span><span class="o">=</span><span class="nb">type</span><span class="p">,</span>
                 <span class="n">account_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">account_id</span><span class="p">,</span>
                 <span class="n">encoded_password</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">encoded_password</span><span class="p">,</span>
@@ -3486,34 +3507,19 @@
     <span class="nd">@wrap_async_iter</span>
     <span class="nd">@check_login</span>
     <span class="k">def</span> <span class="nf">get_friends</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_simple_relationships</span><span class="p">(</span><span class="n">SimpleRelationshipType</span><span class="o">.</span><span class="n">FRIEND</span><span class="p">)</span><span class="o">.</span><span class="n">unwrap</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_relationships</span><span class="p">(</span><span class="n">RelationshipType</span><span class="o">.</span><span class="n">FRIEND</span><span class="p">)</span><span class="o">.</span><span class="n">unwrap</span><span class="p">()</span>
 
     <span class="nd">@wrap_async_iter</span>
     <span class="nd">@check_login</span>
     <span class="k">def</span> <span class="nf">get_blocked</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_simple_relationships</span><span class="p">(</span><span class="n">SimpleRelationshipType</span><span class="o">.</span><span class="n">BLOCKED</span><span class="p">)</span><span class="o">.</span><span class="n">unwrap</span><span class="p">()</span>
-
-    <span class="nd">@wrap_async_iter</span>
-    <span class="nd">@check_login</span>
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_relationships</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">Relationship</span><span class="p">]:</span>
-        <span class="k">async</span> <span class="k">for</span> <span class="n">friend</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_friends</span><span class="p">():</span>
-            <span class="k">yield</span> <span class="n">friend</span><span class="o">.</span><span class="n">into_relationship</span><span class="p">(</span><span class="n">RelationshipType</span><span class="o">.</span><span class="n">FRIEND</span><span class="p">)</span>
-
-        <span class="k">async</span> <span class="k">for</span> <span class="n">blocked</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_blocked</span><span class="p">():</span>
-            <span class="k">yield</span> <span class="n">blocked</span><span class="o">.</span><span class="n">into_relationship</span><span class="p">(</span><span class="n">RelationshipType</span><span class="o">.</span><span class="n">BLOCKED</span><span class="p">)</span>
-
-        <span class="k">async</span> <span class="k">for</span> <span class="n">friend_request</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_friend_requests</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="n">FriendRequestType</span><span class="o">.</span><span class="n">INCOMING</span><span class="p">):</span>
-            <span class="k">yield</span> <span class="n">friend_request</span><span class="o">.</span><span class="n">into_relationship</span><span class="p">()</span>
-
-        <span class="k">async</span> <span class="k">for</span> <span class="n">friend_request</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_friend_requests</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="n">FriendRequestType</span><span class="o">.</span><span class="n">OUTGOING</span><span class="p">):</span>
-            <span class="k">yield</span> <span class="n">friend_request</span><span class="o">.</span><span class="n">into_relationship</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_relationships</span><span class="p">(</span><span class="n">RelationshipType</span><span class="o">.</span><span class="n">BLOCKED</span><span class="p">)</span><span class="o">.</span><span class="n">unwrap</span><span class="p">()</span>
 
     <span class="nd">@wrap_async_iter</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get_leaderboard</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">strategy</span><span class="p">:</span> <span class="n">LeaderboardStrategy</span> <span class="o">=</span> <span class="n">LeaderboardStrategy</span><span class="o">.</span><span class="n">DEFAULT</span><span class="p">,</span>
         <span class="n">count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_COUNT</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">LeaderboardUser</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
         <span class="n">response_model</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get_leaderboard</span><span class="p">(</span>
             <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span>
             <span class="n">count</span><span class="o">=</span><span class="n">count</span><span class="p">,</span>
@@ -3522,7 +3528,7 @@
         <span class="p">)</span>
 
         <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">response_model</span><span class="o">.</span><span class="n">users</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">LeaderboardUser</span><span class="o">.</span><span class="n">from_leaderboard_user_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">User</span><span class="o">.</span><span class="n">from_leaderboard_user_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">level_models_from_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">response_model</span><span class="p">:</span> <span class="n">SearchLevelsResponseModel</span>
@@ -3539,7 +3545,7 @@
             <span class="n">song</span> <span class="o">=</span> <span class="n">id_to_song</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">custom_song_id</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">song</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">song</span> <span class="o">=</span> <span class="n">Song</span><span class="o">.</span><span class="n">official</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">official_song_id</span><span class="p">,</span> <span class="n">server_style</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+                <span class="n">song</span> <span class="o">=</span> <span class="n">Song</span><span class="o">.</span><span class="n">official</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">official_song_id</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
             <span class="n">creator</span> <span class="o">=</span> <span class="n">id_to_creator</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">creator_id</span><span class="p">)</span>
 
@@ -3554,13 +3560,13 @@
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get_weekly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">use_client</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_USE_CLIENT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Level</span><span class="p">:</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_timely</span><span class="p">(</span><span class="n">TimelyType</span><span class="o">.</span><span class="n">WEEKLY</span><span class="p">,</span> <span class="n">use_client</span><span class="o">=</span><span class="n">use_client</span><span class="p">)</span>
 
-    <span class="c1"># async def get_event(self, use_client: bool = DEFAULT_USE_CLIENT) -&gt; Level:</span>
-    <span class="c1">#     return await self.get_timely(TimelyType.EVENT, use_client=use_client)</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">use_client</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_USE_CLIENT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Level</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_timely</span><span class="p">(</span><span class="n">TimelyType</span><span class="o">.</span><span class="n">EVENT</span><span class="p">,</span> <span class="n">use_client</span><span class="o">=</span><span class="n">use_client</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get_timely</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">:</span> <span class="n">TimelyType</span><span class="p">,</span> <span class="n">use_client</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_USE_CLIENT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Level</span><span class="p">:</span>
         <span class="n">timely_model</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get_timely_info</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="nb">type</span><span class="p">)</span>
 
-        <span class="n">level</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_level</span><span class="p">(</span><span class="nb">type</span><span class="o">.</span><span class="n">into_timely_id</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">level</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_level</span><span class="p">(</span><span class="nb">type</span><span class="o">.</span><span class="n">into_timely_id</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">use_client</span><span class="o">=</span><span class="n">use_client</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">level</span><span class="o">.</span><span class="n">update_with_timely_model</span><span class="p">(</span><span class="n">timely_model</span><span class="p">)</span>
 
@@ -3680,6 +3686,7 @@
         <span class="n">coins</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_COINS</span><span class="p">,</span>
         <span class="n">stars</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_STARS</span><span class="p">,</span>
         <span class="n">low_detail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_LOW_DETAIL</span><span class="p">,</span>
+        <span class="n">capacity</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Capacity</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">password</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Password</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">recording</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Recording</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">editor_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Duration</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3701,6 +3708,7 @@
             <span class="n">stars</span><span class="o">=</span><span class="n">stars</span><span class="p">,</span>
             <span class="n">privacy</span><span class="o">=</span><span class="n">privacy</span><span class="p">,</span>
             <span class="n">low_detail</span><span class="o">=</span><span class="n">low_detail</span><span class="p">,</span>
+            <span class="n">capacity</span><span class="o">=</span><span class="n">capacity</span><span class="p">,</span>
             <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">,</span>
             <span class="n">recording</span><span class="o">=</span><span class="n">recording</span><span class="p">,</span>
             <span class="n">editor_time</span><span class="o">=</span><span class="n">editor_time</span><span class="p">,</span>
@@ -3714,9 +3722,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_after_post</span><span class="p">:</span>
             <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_level</span><span class="p">(</span><span class="n">level_id</span><span class="p">)</span>
 
-        <span class="n">level</span> <span class="o">=</span> <span class="n">Level</span><span class="o">.</span><span class="n">default</span><span class="p">()</span>
-
-        <span class="n">level</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">level_id</span>
+        <span class="n">level</span> <span class="o">=</span> <span class="n">Level</span><span class="o">.</span><span class="n">default</span><span class="p">(</span><span class="n">level_id</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">level</span>
 
@@ -3772,7 +3778,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span>
         <span class="n">strategy</span><span class="p">:</span> <span class="n">LevelLeaderboardStrategy</span> <span class="o">=</span> <span class="n">LevelLeaderboardStrategy</span><span class="o">.</span><span class="n">ALL</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">LevelLeaderboardUser</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
         <span class="n">response_model</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get_level_leaderboard</span><span class="p">(</span>
             <span class="n">level_id</span><span class="o">=</span><span class="n">level</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
             <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span>
@@ -3781,7 +3787,7 @@
         <span class="p">)</span>
 
         <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">response_model</span><span class="o">.</span><span class="n">users</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">LevelLeaderboardUser</span><span class="o">.</span><span class="n">from_level_leaderboard_user_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">User</span><span class="o">.</span><span class="n">from_level_leaderboard_user_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="nd">@check_login</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">block_user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -4211,7 +4217,7 @@
         <span class="n">model</span> <span class="o">=</span> <span class="n">response_model</span><span class="o">.</span><span class="n">inner</span>
 
         <span class="k">for</span> <span class="n">quest_model</span> <span class="ow">in</span> <span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">quest_1</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">quest_2</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">quest_3</span><span class="p">):</span>
-            <span class="k">yield</span> <span class="n">Quest</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">quest_model</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">Quest</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">quest_model</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">quest_duration</span><span class="p">)</span><span class="o">.</span><span class="n">attach_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="nd">@wrap_async_iter</span>
     <span class="nd">@check_login</span>
@@ -4230,7 +4236,7 @@
         <span class="p">)</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">response_model</span><span class="o">.</span><span class="n">inner</span>
 
-        <span class="k">for</span> <span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">chest_model</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span>
+        <span class="k">for</span> <span class="nb">id</span><span class="p">,</span> <span class="n">chest_model</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">duration</span> <span class="ow">in</span> <span class="p">(</span>
             <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">chest_1</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">chest_1_count</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">chest_1_duration</span><span class="p">),</span>
             <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">chest_2</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">chest_2_count</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">chest_2_duration</span><span class="p">),</span>
         <span class="p">):</span>
@@ -4790,8 +4796,8 @@
 <code class="highlight language-python"><span class="n">session</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">factory</span><span class="o">=</span><span class="n">Session</span><span class="p">)</span></code>
   
   <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
       <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
   </span>
 
 </h3>
@@ -4812,8 +4818,8 @@
 <code class="highlight language-python"><span class="n">credentials</span><span class="p">:</span> <span class="n">Credentials</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">factory</span><span class="o">=</span><span class="n">Credentials</span><span class="p">)</span></code>
   
   <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
       <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
   </span>
 
 </h3>
@@ -4834,8 +4840,8 @@
 <code class="highlight language-python"><span class="n">database_unchecked</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Database</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
   
   <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
       <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
   </span>
 
 </h3>
@@ -4856,8 +4862,8 @@
 <code class="highlight language-python"><span class="n">load_after_post</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_LOAD_AFTER_POST</span><span class="p">)</span></code>
   
   <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
       <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
   </span>
 
 </h3>
@@ -5046,7 +5052,11 @@
           <td>
                 <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
           </td>
-          <td><p>Whether the client is logged in.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>Whether the client is logged in.</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
@@ -5101,9 +5111,13 @@
     <tbody>
         <tr>
           <td>
-                <code><span title="gd.date_time.Duration">Duration</span></code>
+                <code><span title="pendulum.Duration">Duration</span></code>
           </td>
-          <td><p>The [<code>Duration</code>][gd.date_time.Duration] representing the latency.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The [<code>Duration</code>][gd.date_time.Duration] representing the latency.</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
@@ -5158,9 +5172,13 @@
     <tbody>
         <tr>
           <td>
-                <code><span title="gd.date_time.Duration">Duration</span></code>
+                <code><span title="pendulum.Duration">Duration</span></code>
           </td>
-          <td><p>The [<code>Duration</code>][gd.date_time.Duration] representing the latency.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The [<code>Duration</code>][gd.date_time.Duration] representing the latency.</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
@@ -5250,7 +5268,11 @@
           <td>
                 <code><span title="gd.client.LoginContextManager">LoginContextManager</span>[<span title="gd.client.C">C</span>]</code>
           </td>
-          <td><p>The [<code>LoginContextManager</code>][gd.client.LoginContextManager] for handling login process.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The [<code>LoginContextManager</code>][gd.client.LoginContextManager] for handling login process.</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
@@ -5328,8 +5350,12 @@
           <td>
                 <code><span title="gd.client.UnsafeLoginContextManager">UnsafeLoginContextManager</span>[<span title="gd.client.C">C</span>]</code>
           </td>
-          <td><p>The [<code>UnsafeLoginContextManager</code>][gd.client.UnsafeLoginContextManager]
-for handling login process.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The [<code>UnsafeLoginContextManager</code>][gd.client.UnsafeLoginContextManager]
+for handling login process.</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
@@ -5415,7 +5441,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.api.database.Database">Database</span></code>
           </td>
-          <td><p>The [<code>Database</code>][gd.api.database.Database] loaded.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The [<code>Database</code>][gd.api.database.Database] loaded.</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
@@ -5563,7 +5593,11 @@ for handling login process.</p></td>
           <td>
                 <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
           </td>
-          <td><p>Whether to fetch simple information.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>Whether to fetch simple information.</p>
+            </div>
+          </td>
           <td>
                 <code>DEFAULT_SIMPLE</code>
           </td>
@@ -5584,35 +5618,39 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.users.User">User</span></code>
           </td>
-          <td><p>The [<code>User</code>][gd.user.User] representing the client.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The [<code>User</code>][gd.user.User] representing the client.</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">451</span>
-<span class="normal">452</span>
-<span class="normal">453</span>
-<span class="normal">454</span>
-<span class="normal">455</span>
-<span class="normal">456</span>
-<span class="normal">457</span>
-<span class="normal">458</span>
-<span class="normal">459</span>
-<span class="normal">460</span>
-<span class="normal">461</span>
-<span class="normal">462</span>
-<span class="normal">463</span>
-<span class="normal">464</span>
-<span class="normal">465</span>
-<span class="normal">466</span>
-<span class="normal">467</span>
-<span class="normal">468</span>
-<span class="normal">469</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">469</span>
 <span class="normal">470</span>
 <span class="normal">471</span>
-<span class="normal">472</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@check_login</span>
+<span class="normal">472</span>
+<span class="normal">473</span>
+<span class="normal">474</span>
+<span class="normal">475</span>
+<span class="normal">476</span>
+<span class="normal">477</span>
+<span class="normal">478</span>
+<span class="normal">479</span>
+<span class="normal">480</span>
+<span class="normal">481</span>
+<span class="normal">482</span>
+<span class="normal">483</span>
+<span class="normal">484</span>
+<span class="normal">485</span>
+<span class="normal">486</span>
+<span class="normal">487</span>
+<span class="normal">488</span>
+<span class="normal">489</span>
+<span class="normal">490</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@check_login</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">get_self</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">simple</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_SIMPLE</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the user representing this client.</span>
 
@@ -5674,7 +5712,11 @@ for handling login process.</p></td>
           <td>
                 <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
           </td>
-          <td><p>The account ID of the user to fetch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The account ID of the user to fetch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -5684,7 +5726,11 @@ for handling login process.</p></td>
           <td>
                 <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
           </td>
-          <td><p>Whether to fetch simple information only.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>Whether to fetch simple information only.</p>
+            </div>
+          </td>
           <td>
                 <code>DEFAULT_SIMPLE</code>
           </td>
@@ -5694,7 +5740,11 @@ for handling login process.</p></td>
           <td>
                 <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
           </td>
-          <td><p>Whether to fetch friend state.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>Whether to fetch friend state.</p>
+            </div>
+          </td>
           <td>
                 <code>DEFAULT_FRIEND_STATE</code>
           </td>
@@ -5719,32 +5769,18 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.users.User">User</span></code>
           </td>
-          <td><p>The [<code>User</code>][gd.user.User] fetched.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The [<code>User</code>][gd.user.User] fetched.</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">474</span>
-<span class="normal">475</span>
-<span class="normal">476</span>
-<span class="normal">477</span>
-<span class="normal">478</span>
-<span class="normal">479</span>
-<span class="normal">480</span>
-<span class="normal">481</span>
-<span class="normal">482</span>
-<span class="normal">483</span>
-<span class="normal">484</span>
-<span class="normal">485</span>
-<span class="normal">486</span>
-<span class="normal">487</span>
-<span class="normal">488</span>
-<span class="normal">489</span>
-<span class="normal">490</span>
-<span class="normal">491</span>
-<span class="normal">492</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">492</span>
 <span class="normal">493</span>
 <span class="normal">494</span>
 <span class="normal">495</span>
@@ -5764,7 +5800,25 @@ for handling login process.</p></td>
 <span class="normal">509</span>
 <span class="normal">510</span>
 <span class="normal">511</span>
-<span class="normal">512</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">get_user</span><span class="p">(</span>
+<span class="normal">512</span>
+<span class="normal">513</span>
+<span class="normal">514</span>
+<span class="normal">515</span>
+<span class="normal">516</span>
+<span class="normal">517</span>
+<span class="normal">518</span>
+<span class="normal">519</span>
+<span class="normal">520</span>
+<span class="normal">521</span>
+<span class="normal">522</span>
+<span class="normal">523</span>
+<span class="normal">524</span>
+<span class="normal">525</span>
+<span class="normal">526</span>
+<span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">get_user</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">account_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">simple</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_SIMPLE</span><span class="p">,</span>
@@ -5843,7 +5897,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The daily level to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The daily level to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -5853,12 +5911,12 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1419</span>
-<span class="normal">1420</span>
-<span class="normal">1421</span>
-<span class="normal">1422</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1422</span>
 <span class="normal">1423</span>
-<span class="normal">1424</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_daily</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1424</span>
+<span class="normal">1425</span>
+<span class="normal">1426</span>
+<span class="normal">1427</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_daily</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `daily` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -5904,7 +5962,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The weekly level to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The weekly level to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -5914,12 +5976,12 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1426</span>
-<span class="normal">1427</span>
-<span class="normal">1428</span>
-<span class="normal">1429</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1429</span>
 <span class="normal">1430</span>
-<span class="normal">1431</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_weekly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1431</span>
+<span class="normal">1432</span>
+<span class="normal">1433</span>
+<span class="normal">1434</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_weekly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `weekly` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -5965,7 +6027,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The rated level to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The rated level to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -5975,12 +6041,12 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1433</span>
-<span class="normal">1434</span>
-<span class="normal">1435</span>
-<span class="normal">1436</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1436</span>
 <span class="normal">1437</span>
-<span class="normal">1438</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1438</span>
+<span class="normal">1439</span>
+<span class="normal">1440</span>
+<span class="normal">1441</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `rate` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6026,7 +6092,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The level to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The level to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6036,12 +6106,12 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1440</span>
-<span class="normal">1441</span>
-<span class="normal">1442</span>
-<span class="normal">1443</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1443</span>
 <span class="normal">1444</span>
-<span class="normal">1445</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1445</span>
+<span class="normal">1446</span>
+<span class="normal">1447</span>
+<span class="normal">1448</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `level` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6087,7 +6157,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.users.User">User</span></code>
           </td>
-          <td><p>The user to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The user to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6097,7 +6171,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The level to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The level to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6107,13 +6185,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1447</span>
-<span class="normal">1448</span>
-<span class="normal">1449</span>
-<span class="normal">1450</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1450</span>
 <span class="normal">1451</span>
 <span class="normal">1452</span>
-<span class="normal">1453</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1453</span>
+<span class="normal">1454</span>
+<span class="normal">1455</span>
+<span class="normal">1456</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `user_level` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6160,7 +6238,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.message.Message">Message</span></code>
           </td>
-          <td><p>The message to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The message to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6170,12 +6252,12 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1455</span>
-<span class="normal">1456</span>
-<span class="normal">1457</span>
-<span class="normal">1458</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1458</span>
 <span class="normal">1459</span>
-<span class="normal">1460</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1460</span>
+<span class="normal">1461</span>
+<span class="normal">1462</span>
+<span class="normal">1463</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `message` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6221,7 +6303,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.friend_request.FriendRequest">FriendRequest</span></code>
           </td>
-          <td><p>The friend request to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The friend request to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6231,12 +6317,12 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1462</span>
-<span class="normal">1463</span>
-<span class="normal">1464</span>
-<span class="normal">1465</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1465</span>
 <span class="normal">1466</span>
-<span class="normal">1467</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_friend_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">friend_request</span><span class="p">:</span> <span class="n">FriendRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1467</span>
+<span class="normal">1468</span>
+<span class="normal">1469</span>
+<span class="normal">1470</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_friend_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">friend_request</span><span class="p">:</span> <span class="n">FriendRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `friend_request` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6282,7 +6368,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The level to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The level to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6292,7 +6382,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.comments.LevelComment">LevelComment</span></code>
           </td>
-          <td><p>The level comment to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The level comment to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6302,13 +6396,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1469</span>
-<span class="normal">1470</span>
-<span class="normal">1471</span>
-<span class="normal">1472</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1472</span>
 <span class="normal">1473</span>
 <span class="normal">1474</span>
-<span class="normal">1475</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1475</span>
+<span class="normal">1476</span>
+<span class="normal">1477</span>
+<span class="normal">1478</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `level_comment` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6355,7 +6449,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The daily level to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The daily level to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6365,7 +6463,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.comments.LevelComment">LevelComment</span></code>
           </td>
-          <td><p>The daily comment to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The daily comment to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6375,13 +6477,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1477</span>
-<span class="normal">1478</span>
-<span class="normal">1479</span>
-<span class="normal">1480</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1480</span>
 <span class="normal">1481</span>
 <span class="normal">1482</span>
-<span class="normal">1483</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_daily_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1483</span>
+<span class="normal">1484</span>
+<span class="normal">1485</span>
+<span class="normal">1486</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_daily_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `daily_comment` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6428,7 +6530,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The weekly level to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The weekly level to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6438,7 +6544,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.comments.LevelComment">LevelComment</span></code>
           </td>
-          <td><p>The weekly comment to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The weekly comment to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6448,13 +6558,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1485</span>
-<span class="normal">1486</span>
-<span class="normal">1487</span>
-<span class="normal">1488</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1488</span>
 <span class="normal">1489</span>
 <span class="normal">1490</span>
-<span class="normal">1491</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_weekly_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1491</span>
+<span class="normal">1492</span>
+<span class="normal">1493</span>
+<span class="normal">1494</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_weekly_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `weekly_comment` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6501,7 +6611,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.users.User">User</span></code>
           </td>
-          <td><p>The user to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The user to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6511,7 +6625,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.comments.UserComment">UserComment</span></code>
           </td>
-          <td><p>The comment to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The comment to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6521,13 +6639,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1493</span>
-<span class="normal">1494</span>
-<span class="normal">1495</span>
-<span class="normal">1496</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1496</span>
 <span class="normal">1497</span>
 <span class="normal">1498</span>
-<span class="normal">1499</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">UserComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1499</span>
+<span class="normal">1500</span>
+<span class="normal">1501</span>
+<span class="normal">1502</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">UserComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `user_comment` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6574,7 +6692,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.users.User">User</span></code>
           </td>
-          <td><p>The user to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The user to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6584,7 +6706,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.comments.LevelComment">LevelComment</span></code>
           </td>
-          <td><p>The level comment to handle.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The level comment to handle.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6594,13 +6720,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1501</span>
-<span class="normal">1502</span>
-<span class="normal">1503</span>
-<span class="normal">1504</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1504</span>
 <span class="normal">1505</span>
 <span class="normal">1506</span>
-<span class="normal">1507</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1507</span>
+<span class="normal">1508</span>
+<span class="normal">1509</span>
+<span class="normal">1510</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">on_user_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles `user_level_comment` events.</span>
 
 <span class="sd">    Arguments:</span>
@@ -6647,7 +6773,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The daily level to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The daily level to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6657,13 +6787,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1511</span>
-<span class="normal">1512</span>
-<span class="normal">1513</span>
-<span class="normal">1514</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1514</span>
 <span class="normal">1515</span>
 <span class="normal">1516</span>
-<span class="normal">1517</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_daily</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1517</span>
+<span class="normal">1518</span>
+<span class="normal">1519</span>
+<span class="normal">1520</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_daily</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `daily` events via calling [`on_daily`][gd.client.Client.on_daily].</span>
 
 <span class="sd">    Arguments:</span>
@@ -6710,7 +6840,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The weekly level to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The weekly level to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6720,13 +6854,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1519</span>
-<span class="normal">1520</span>
-<span class="normal">1521</span>
-<span class="normal">1522</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1522</span>
 <span class="normal">1523</span>
 <span class="normal">1524</span>
-<span class="normal">1525</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_weekly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1525</span>
+<span class="normal">1526</span>
+<span class="normal">1527</span>
+<span class="normal">1528</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_weekly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `weekly` events via calling [`on_weekly`][gd.client.Client.on_weekly].</span>
 
 <span class="sd">    Arguments:</span>
@@ -6773,7 +6907,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The rated level to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The rated level to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6783,13 +6921,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1527</span>
-<span class="normal">1528</span>
-<span class="normal">1529</span>
-<span class="normal">1530</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1530</span>
 <span class="normal">1531</span>
 <span class="normal">1532</span>
-<span class="normal">1533</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1533</span>
+<span class="normal">1534</span>
+<span class="normal">1535</span>
+<span class="normal">1536</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `rate` events via calling [`on_rate`][gd.client.Client.on_rate].</span>
 
 <span class="sd">    Arguments:</span>
@@ -6836,7 +6974,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The level to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The level to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6846,13 +6988,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1535</span>
-<span class="normal">1536</span>
-<span class="normal">1537</span>
-<span class="normal">1538</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1538</span>
 <span class="normal">1539</span>
 <span class="normal">1540</span>
-<span class="normal">1541</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1541</span>
+<span class="normal">1542</span>
+<span class="normal">1543</span>
+<span class="normal">1544</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `level` events via calling [`on_level`][gd.client.Client.on_level].</span>
 
 <span class="sd">    Arguments:</span>
@@ -6900,7 +7042,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.users.User">User</span></code>
           </td>
-          <td><p>The user to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The user to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6910,7 +7056,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The level to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The level to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6920,15 +7070,15 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1543</span>
-<span class="normal">1544</span>
-<span class="normal">1545</span>
-<span class="normal">1546</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1546</span>
 <span class="normal">1547</span>
 <span class="normal">1548</span>
 <span class="normal">1549</span>
 <span class="normal">1550</span>
-<span class="normal">1551</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1551</span>
+<span class="normal">1552</span>
+<span class="normal">1553</span>
+<span class="normal">1554</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_level</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `user_level` events via calling</span>
 <span class="sd">    [`on_user_level`][gd.client.Client.on_user_level].</span>
 
@@ -6977,7 +7127,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.message.Message">Message</span></code>
           </td>
-          <td><p>The message to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The message to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -6987,13 +7141,13 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1553</span>
-<span class="normal">1554</span>
-<span class="normal">1555</span>
-<span class="normal">1556</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1556</span>
 <span class="normal">1557</span>
 <span class="normal">1558</span>
-<span class="normal">1559</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1559</span>
+<span class="normal">1560</span>
+<span class="normal">1561</span>
+<span class="normal">1562</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `message` events via calling [`on_message`][gd.client.Client.on_message].</span>
 
 <span class="sd">    Arguments:</span>
@@ -7041,7 +7195,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.friend_request.FriendRequest">FriendRequest</span></code>
           </td>
-          <td><p>The friend request to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The friend request to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -7051,14 +7209,14 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1561</span>
-<span class="normal">1562</span>
-<span class="normal">1563</span>
-<span class="normal">1564</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1564</span>
 <span class="normal">1565</span>
 <span class="normal">1566</span>
 <span class="normal">1567</span>
-<span class="normal">1568</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_friend_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">friend_request</span><span class="p">:</span> <span class="n">FriendRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1568</span>
+<span class="normal">1569</span>
+<span class="normal">1570</span>
+<span class="normal">1571</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_friend_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">friend_request</span><span class="p">:</span> <span class="n">FriendRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `friend_request` events via calling</span>
 <span class="sd">    [`on_friend_request`][gd.client.Client.on_friend_request].</span>
 
@@ -7107,7 +7265,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The level to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The level to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -7117,7 +7279,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.comments.LevelComment">LevelComment</span></code>
           </td>
-          <td><p>The level comment to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The level comment to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -7127,15 +7293,15 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1570</span>
-<span class="normal">1571</span>
-<span class="normal">1572</span>
-<span class="normal">1573</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1573</span>
 <span class="normal">1574</span>
 <span class="normal">1575</span>
 <span class="normal">1576</span>
 <span class="normal">1577</span>
-<span class="normal">1578</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1578</span>
+<span class="normal">1579</span>
+<span class="normal">1580</span>
+<span class="normal">1581</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `level_comment` events via calling</span>
 <span class="sd">    [`on_level_comment`][gd.client.Client.on_level_comment].</span>
 
@@ -7185,7 +7351,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The daily level to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The daily level to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -7195,7 +7365,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.comments.LevelComment">LevelComment</span></code>
           </td>
-          <td><p>The daily comment to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The daily comment to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -7205,15 +7379,15 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1580</span>
-<span class="normal">1581</span>
-<span class="normal">1582</span>
-<span class="normal">1583</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1583</span>
 <span class="normal">1584</span>
 <span class="normal">1585</span>
 <span class="normal">1586</span>
 <span class="normal">1587</span>
-<span class="normal">1588</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_daily_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1588</span>
+<span class="normal">1589</span>
+<span class="normal">1590</span>
+<span class="normal">1591</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_daily_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">daily</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `level_comment` events via calling</span>
 <span class="sd">    [`on_level_comment`][gd.client.Client.on_level_comment].</span>
 
@@ -7263,7 +7437,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.level.Level">Level</span></code>
           </td>
-          <td><p>The weekly level to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The weekly level to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -7273,7 +7451,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.comments.LevelComment">LevelComment</span></code>
           </td>
-          <td><p>The weekly comment to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The weekly comment to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -7283,15 +7465,15 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1590</span>
-<span class="normal">1591</span>
-<span class="normal">1592</span>
-<span class="normal">1593</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1593</span>
 <span class="normal">1594</span>
 <span class="normal">1595</span>
 <span class="normal">1596</span>
 <span class="normal">1597</span>
-<span class="normal">1598</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_weekly_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1598</span>
+<span class="normal">1599</span>
+<span class="normal">1600</span>
+<span class="normal">1601</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_weekly_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weekly</span><span class="p">:</span> <span class="n">Level</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `weekly_comment` events via calling</span>
 <span class="sd">    [`on_weekly_comment`][gd.client.Client.on_weekly_comment].</span>
 
@@ -7341,7 +7523,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.users.User">User</span></code>
           </td>
-          <td><p>The user to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The user to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -7351,7 +7537,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.comments.UserComment">UserComment</span></code>
           </td>
-          <td><p>The comment to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The comment to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -7361,15 +7551,15 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1600</span>
-<span class="normal">1601</span>
-<span class="normal">1602</span>
-<span class="normal">1603</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1603</span>
 <span class="normal">1604</span>
 <span class="normal">1605</span>
 <span class="normal">1606</span>
 <span class="normal">1607</span>
-<span class="normal">1608</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">UserComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1608</span>
+<span class="normal">1609</span>
+<span class="normal">1610</span>
+<span class="normal">1611</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">UserComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `user_comment` events via calling</span>
 <span class="sd">    [`on_user_comment`][gd.client.Client.on_user_comment].</span>
 
@@ -7419,7 +7609,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.users.User">User</span></code>
           </td>
-          <td><p>The user to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The user to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -7429,7 +7623,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.comments.LevelComment">LevelComment</span></code>
           </td>
-          <td><p>The level comment to dispatch.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The level comment to dispatch.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -7439,15 +7637,15 @@ for handling login process.</p></td>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1610</span>
-<span class="normal">1611</span>
-<span class="normal">1612</span>
-<span class="normal">1613</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1613</span>
 <span class="normal">1614</span>
 <span class="normal">1615</span>
 <span class="normal">1616</span>
 <span class="normal">1617</span>
-<span class="normal">1618</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1618</span>
+<span class="normal">1619</span>
+<span class="normal">1620</span>
+<span class="normal">1621</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">dispatch_user_level_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">LevelComment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatches `user_level_comment` events via calling</span>
 <span class="sd">    [`on_user_level_comment`][gd.client.Client.on_user_level_comment].</span>
 
@@ -7503,7 +7701,11 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.client.F">F</span></code>
           </td>
-          <td><p>The function to register as an event handler.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The function to register as an event handler.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -7524,17 +7726,18 @@ for handling login process.</p></td>
           <td>
                 <code><span title="gd.client.F">F</span></code>
           </td>
-          <td><p>The function passed.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The function passed.</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
 
       <details class="quote">
         <summary>Source code in <code>gd/client.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1620</span>
-<span class="normal">1621</span>
-<span class="normal">1622</span>
-<span class="normal">1623</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1623</span>
 <span class="normal">1624</span>
 <span class="normal">1625</span>
 <span class="normal">1626</span>
@@ -7553,7 +7756,10 @@ for handling login process.</p></td>
 <span class="normal">1639</span>
 <span class="normal">1640</span>
 <span class="normal">1641</span>
-<span class="normal">1642</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">:</span> <span class="n">F</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">F</span><span class="p">:</span>
+<span class="normal">1642</span>
+<span class="normal">1643</span>
+<span class="normal">1644</span>
+<span class="normal">1645</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">:</span> <span class="n">F</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">F</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers an event handler.</span>
 
 <span class="sd">    Example:</span>

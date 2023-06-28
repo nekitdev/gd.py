@@ -699,24 +699,37 @@
 
 <details class="binary" open>
   <summary>Binary</summary>
-  <div class="highlight"><pre><span></span><code><span class="k">const</span><span class="w"> </span><span class="n">CUSTOM_BIT</span>: <span class="kt">u8</span> <span class="o">=</span><span class="w"> </span><span class="mb">0b00000001</span><span class="p">;</span>
+  <div class="highlight"><pre><span></span><code><span class="k">const</span><span class="w"> </span><span class="n">CUSTOM_BIT</span>: <span class="kt">u8</span> <span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="k">const</span><span class="w"> </span><span class="n">HAS_SIZE_BIT</span>: <span class="kt">u8</span> <span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="k">const</span><span class="w"> </span><span class="n">HAS_DOWNLOAD_URL_BIT</span>: <span class="kt">u8</span> <span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+
+<span class="k">struct</span> <span class="nc">DownloadURL</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">length</span>: <span class="kt">u16</span><span class="p">,</span>
+<span class="w">    </span><span class="n">url</span>: <span class="p">[</span><span class="kt">u8</span><span class="p">;</span><span class="w"> </span><span class="n">length</span><span class="p">],</span><span class="w">  </span><span class="c1">// utf-8 string</span>
+<span class="p">}</span>
 
 <span class="k">struct</span> <span class="nc">Song</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">value</span>: <span class="kt">u8</span><span class="p">,</span><span class="w">  </span><span class="c1">// contains `custom`, `has_size` and `has_download_url`</span>
 <span class="w">    </span><span class="n">id</span>: <span class="kt">u32</span><span class="p">,</span>
 <span class="w">    </span><span class="n">name_length</span>: <span class="kt">u8</span><span class="p">,</span>
 <span class="w">    </span><span class="n">name</span>: <span class="p">[</span><span class="kt">u8</span><span class="p">;</span><span class="w"> </span><span class="n">name_length</span><span class="p">],</span><span class="w">  </span><span class="c1">// utf-8 string</span>
 <span class="w">    </span><span class="n">artist</span>: <span class="nc">Artist</span><span class="p">,</span>
-<span class="w">    </span><span class="n">size</span>: <span class="kt">f32</span><span class="p">,</span>
-<span class="w">    </span><span class="n">value</span>: <span class="kt">u8</span><span class="p">,</span><span class="w">  </span><span class="c1">// contains `custom`</span>
-<span class="w">    </span><span class="n">download_url_length</span>: <span class="kt">u16</span><span class="p">,</span>
-<span class="w">    </span><span class="n">download_url</span>: <span class="p">[</span><span class="kt">u8</span><span class="p">;</span><span class="w"> </span><span class="n">download_url_length</span><span class="p">],</span><span class="w">  </span><span class="c1">// utf-8 string</span>
+<span class="w">    </span><span class="n">size</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="kt">f32</span><span class="o">&gt;</span><span class="p">,</span><span class="w">  </span><span class="c1">// if `has_size`</span>
+<span class="w">    </span><span class="n">download_url</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">DownloadURL</span><span class="o">&gt;</span><span class="p">,</span><span class="w">  </span><span class="c1">// if `has_download_url`</span>
 <span class="p">}</span>
 </code></pre></div>
 </details>
 
         <details class="quote">
           <summary>Source code in <code>gd/song.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 75</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 68</span>
+<span class="normal"> 69</span>
+<span class="normal"> 70</span>
+<span class="normal"> 71</span>
+<span class="normal"> 72</span>
+<span class="normal"> 73</span>
+<span class="normal"> 74</span>
+<span class="normal"> 75</span>
 <span class="normal"> 76</span>
 <span class="normal"> 77</span>
 <span class="normal"> 78</span>
@@ -950,7 +963,22 @@
 <span class="normal">306</span>
 <span class="normal">307</span>
 <span class="normal">308</span>
-<span class="normal">309</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@register_unstructure_hook_omit_client</span>
+<span class="normal">309</span>
+<span class="normal">310</span>
+<span class="normal">311</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@register_unstructure_hook_omit_client</span>
 <span class="nd">@define</span><span class="p">()</span>
 <span class="k">class</span> <span class="nc">Song</span><span class="p">(</span><span class="n">Entity</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents *Geometry Dash* and *Newgrounds* songs.</span>
@@ -958,28 +986,36 @@
 <span class="sd">    Binary:</span>
 
 <span class="sd">        ```rust</span>
-<span class="sd">        const CUSTOM_BIT: u8 = 0b00000001;</span>
+<span class="sd">        const CUSTOM_BIT: u8 = 1 &lt;&lt; 0;</span>
+<span class="sd">        const HAS_SIZE_BIT: u8 = 1 &lt;&lt; 1;</span>
+<span class="sd">        const HAS_DOWNLOAD_URL_BIT: u8 = 1 &lt;&lt; 2;</span>
+
+<span class="sd">        struct DownloadURL {</span>
+<span class="sd">            length: u16,</span>
+<span class="sd">            url: [u8; length],  // utf-8 string</span>
+<span class="sd">        }</span>
 
 <span class="sd">        struct Song {</span>
+<span class="sd">            value: u8,  // contains `custom`, `has_size` and `has_download_url`</span>
 <span class="sd">            id: u32,</span>
 <span class="sd">            name_length: u8,</span>
 <span class="sd">            name: [u8; name_length],  // utf-8 string</span>
 <span class="sd">            artist: Artist,</span>
-<span class="sd">            size: f32,</span>
-<span class="sd">            value: u8,  // contains `custom`</span>
-<span class="sd">            download_url_length: u16,</span>
-<span class="sd">            download_url: [u8; download_url_length],  // utf-8 string</span>
+<span class="sd">            size: Option&lt;f32&gt;,  // if `has_size`</span>
+<span class="sd">            download_url: Option&lt;DownloadURL&gt;,  // if `has_download_url`</span>
 <span class="sd">        }</span>
 <span class="sd">        ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">artist</span><span class="p">:</span> <span class="n">Artist</span>
-    <span class="n">size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DEFAULT_SIZE</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">eq</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="n">custom</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_CUSTOM</span>
+    <span class="n">artist</span><span class="p">:</span> <span class="n">Artist</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">eq</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="n">download_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">URL</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">custom</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">eq</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">eq</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">download_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">URL</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">eq</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span> <span class="o">^</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
@@ -1004,11 +1040,17 @@
         <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_ENCODING</span><span class="p">,</span>
         <span class="n">errors</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_ERRORS</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">S</span><span class="p">:</span>
-        <span class="n">custom_bit</span> <span class="o">=</span> <span class="n">CUSTOM_BIT</span>
+        <span class="n">rounding</span> <span class="o">=</span> <span class="n">DEFAULT_ROUNDING</span>
 
         <span class="n">reader</span> <span class="o">=</span> <span class="n">Reader</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
 
+        <span class="n">song_flag_value</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u8</span><span class="p">()</span>
+
+        <span class="n">song_flag</span> <span class="o">=</span> <span class="n">SongFlag</span><span class="p">(</span><span class="n">song_flag_value</span><span class="p">)</span>
+
         <span class="nb">id</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u32</span><span class="p">()</span>
+
+        <span class="n">custom</span> <span class="o">=</span> <span class="n">song_flag</span><span class="o">.</span><span class="n">is_custom</span><span class="p">()</span>
 
         <span class="n">name_length</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u8</span><span class="p">()</span>
 
@@ -1016,24 +1058,24 @@
 
         <span class="n">artist</span> <span class="o">=</span> <span class="n">Artist</span><span class="o">.</span><span class="n">from_binary</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
 
-        <span class="n">size</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_f32</span><span class="p">()</span>
-
-        <span class="n">value</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u8</span><span class="p">()</span>
-
-        <span class="n">custom</span> <span class="o">=</span> <span class="n">value</span> <span class="o">&amp;</span> <span class="n">custom_bit</span> <span class="o">==</span> <span class="n">custom_bit</span>
-
-        <span class="n">download_url_length</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u16</span><span class="p">()</span>
-
-        <span class="n">string</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">download_url_length</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">string</span><span class="p">:</span>
-            <span class="n">download_url</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">song_flag</span><span class="o">.</span><span class="n">has_size</span><span class="p">():</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">reader</span><span class="o">.</span><span class="n">read_f32</span><span class="p">(),</span> <span class="n">rounding</span><span class="p">)</span>
 
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">download_url</span> <span class="o">=</span> <span class="n">URL</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">song_flag</span><span class="o">.</span><span class="n">has_download_url</span><span class="p">():</span>
+            <span class="n">download_url_length</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read_u16</span><span class="p">()</span>
+
+            <span class="n">download_url_string</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">download_url_length</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
+
+            <span class="n">download_url</span> <span class="o">=</span> <span class="n">URL</span><span class="p">(</span><span class="n">download_url_string</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">download_url</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-            <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">artist</span><span class="o">=</span><span class="n">artist</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">custom</span><span class="o">=</span><span class="n">custom</span><span class="p">,</span> <span class="n">download_url</span><span class="o">=</span><span class="n">download_url</span>
+            <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">custom</span><span class="o">=</span><span class="n">custom</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">artist</span><span class="o">=</span><span class="n">artist</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">download_url</span><span class="o">=</span><span class="n">download_url</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">to_binary</span><span class="p">(</span>
@@ -1046,6 +1088,23 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">writer</span> <span class="o">=</span> <span class="n">Writer</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
 
+        <span class="n">song_flag</span> <span class="o">=</span> <span class="n">SongFlag</span><span class="o">.</span><span class="n">SIMPLE</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_custom</span><span class="p">():</span>
+            <span class="n">song_flag</span> <span class="o">|=</span> <span class="n">SongFlag</span><span class="o">.</span><span class="n">CUSTOM</span>
+
+        <span class="n">size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span>
+
+        <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">song_flag</span> <span class="o">|=</span> <span class="n">SongFlag</span><span class="o">.</span><span class="n">SIZE</span>
+
+        <span class="n">download_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">download_url</span>
+
+        <span class="k">if</span> <span class="n">download_url</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">song_flag</span> <span class="o">|=</span> <span class="n">SongFlag</span><span class="o">.</span><span class="n">DOWNLOAD_URL</span>
+
+        <span class="n">writer</span><span class="o">.</span><span class="n">write_u8</span><span class="p">(</span><span class="n">song_flag</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
         <span class="n">writer</span><span class="o">.</span><span class="n">write_u32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
 
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
@@ -1056,89 +1115,80 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">artist</span><span class="o">.</span><span class="n">to_binary</span><span class="p">(</span><span class="n">binary</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
 
-        <span class="n">writer</span><span class="o">.</span><span class="n">write_f32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">writer</span><span class="o">.</span><span class="n">write_f32</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
 
-        <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">download_url</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">dump_url</span><span class="p">(</span><span class="n">download_url</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_custom</span><span class="p">():</span>
-            <span class="n">value</span> <span class="o">|=</span> <span class="n">CUSTOM_BIT</span>
+            <span class="n">writer</span><span class="o">.</span><span class="n">write_u16</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
 
-        <span class="n">writer</span><span class="o">.</span><span class="n">write_u8</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-
-        <span class="n">download_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">download_url</span>
-
-        <span class="k">if</span> <span class="n">download_url</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">string</span> <span class="o">=</span> <span class="n">EMPTY</span>
-
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">string</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">download_url</span><span class="p">)</span>
-
-        <span class="n">data</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
-
-        <span class="n">writer</span><span class="o">.</span><span class="n">write_u16</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
-
-        <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">default</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">S</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">S</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">DEFAULT_ID</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">UNKNOWN</span><span class="p">,</span> <span class="n">artist</span><span class="o">=</span><span class="n">Artist</span><span class="o">.</span><span class="n">default</span><span class="p">())</span>
+    <span class="k">def</span> <span class="nf">default</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">S</span><span class="p">],</span>
+        <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_ID</span><span class="p">,</span>
+        <span class="n">artist_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_ID</span><span class="p">,</span>
+        <span class="n">custom</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_CUSTOM</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">S</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">EMPTY</span><span class="p">,</span> <span class="n">artist</span><span class="o">=</span><span class="n">Artist</span><span class="o">.</span><span class="n">default</span><span class="p">(</span><span class="n">artist_id</span><span class="p">),</span> <span class="n">custom</span><span class="o">=</span><span class="n">custom</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">official</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">S</span><span class="p">],</span> <span class="nb">id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">S</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">EXPECTED_QUERY</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">official_song</span> <span class="o">=</span> <span class="n">NAME_TO_OFFICIAL_SONG</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">official_song</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">official_song</span> <span class="o">=</span> <span class="n">OfficialSong</span><span class="o">.</span><span class="n">default</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">official_song</span> <span class="o">=</span> <span class="n">ID_TO_OFFICIAL_SONG</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">official_song</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">official_song</span> <span class="o">=</span> <span class="n">OfficialSong</span><span class="o">.</span><span class="n">default</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="n">official_song</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">custom</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">official_song</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">artist</span><span class="o">=</span><span class="n">Artist</span><span class="o">.</span><span class="n">name_only</span><span class="p">(</span><span class="n">official_song</span><span class="o">.</span><span class="n">artist_name</span><span class="p">),</span>
+        <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">S</span><span class="p">],</span> <span class="n">model</span><span class="p">:</span> <span class="n">SongModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">S</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
             <span class="nb">id</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">custom</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">name</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-            <span class="n">artist</span><span class="o">=</span><span class="n">Artist</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">artist_name</span><span class="p">),</span>
-            <span class="n">size</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+            <span class="n">artist</span><span class="o">=</span><span class="n">Artist</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">artist_id</span><span class="p">,</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">artist_name</span><span class="p">,</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">is_artist_verified</span><span class="p">(),</span>
+            <span class="p">),</span>
+            <span class="n">size</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">size</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">download_url</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">download_url</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="n">UNKNOWN</span>
 
     <span class="k">def</span> <span class="nf">is_custom</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom</span>
 
-    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">official</span><span class="p">(</span>
-        <span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">S</span><span class="p">],</span>
-        <span class="nb">id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">server_style</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_SERVER_STYLE</span><span class="p">,</span>
-        <span class="n">return_default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_RETURN_DEFAULT</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">S</span><span class="p">:</span>
-        <span class="n">official_songs</span> <span class="o">=</span> <span class="n">OFFICIAL_SERVER_SONGS</span> <span class="k">if</span> <span class="n">server_style</span> <span class="k">else</span> <span class="n">OFFICIAL_CLIENT_SONGS</span>
-
-        <span class="k">if</span> <span class="nb">id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">LookupError</span><span class="p">(</span><span class="n">EXPECTED_QUERY</span><span class="p">)</span>
-
-            <span class="n">official_song</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">official_songs</span><span class="p">)</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">by_name</span><span class="p">(</span><span class="n">name</span><span class="p">))</span><span class="o">.</span><span class="n">extract</span><span class="p">()</span>
-
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">official_song</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">official_songs</span><span class="p">)</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">by_id</span><span class="p">(</span><span class="nb">id</span><span class="p">))</span><span class="o">.</span><span class="n">extract</span><span class="p">()</span>
-
-        <span class="k">if</span> <span class="n">official_song</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">return_default</span><span class="p">:</span>
-                <span class="n">official_song</span> <span class="o">=</span> <span class="n">default_official_song</span><span class="p">()</span> <span class="k">if</span> <span class="nb">id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default_official_song</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_newgrounds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_FROM_NEWGROUNDS</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Song</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_custom</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">from_newgrounds</span><span class="p">:</span>
+                <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_newgrounds_song</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
 
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">LookupError</span><span class="p">(</span><span class="n">CAN_NOT_FIND_SONG</span><span class="p">)</span>
+                <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_song</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-            <span class="nb">id</span><span class="o">=</span><span class="n">official_song</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-            <span class="n">name</span><span class="o">=</span><span class="n">official_song</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-            <span class="n">size</span><span class="o">=</span><span class="n">DEFAULT_SIZE</span><span class="p">,</span>
-            <span class="n">artist</span><span class="o">=</span><span class="n">official_song</span><span class="o">.</span><span class="n">artist</span><span class="p">,</span>
-            <span class="n">custom</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_newgrounds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_FROM_NEWGROUNDS</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Song</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">from_newgrounds</span><span class="p">:</span>
-            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_newgrounds_song</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_song</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">MissingAccess</span><span class="p">(</span><span class="n">CAN_NOT_GET</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">S</span><span class="p">,</span> <span class="n">from_newgrounds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_FROM_NEWGROUNDS</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">S</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_from</span><span class="p">(</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">from_newgrounds</span><span class="o">=</span><span class="n">from_newgrounds</span><span class="p">))</span>

@@ -765,8 +765,7 @@
 
         <details class="quote">
           <summary>Source code in <code>gd/api/editor.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">115</span>
-<span class="normal">116</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">116</span>
 <span class="normal">117</span>
 <span class="normal">118</span>
 <span class="normal">119</span>
@@ -961,7 +960,8 @@
 <span class="normal">308</span>
 <span class="normal">309</span>
 <span class="normal">310</span>
-<span class="normal">311</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">()</span>
+<span class="normal">311</span>
+<span class="normal">312</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">()</span>
 <span class="k">class</span> <span class="nc">Editor</span><span class="p">(</span><span class="n">RobTop</span><span class="p">,</span> <span class="n">Binary</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Object</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents editors.</span>
 
@@ -1000,10 +1000,10 @@
         <span class="o">...</span>
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">E</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">slice</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Object</span><span class="p">,</span> <span class="n">E</span><span class="p">]:</span>
-        <span class="k">if</span> <span class="n">is_int</span><span class="p">(</span><span class="n">index</span><span class="p">):</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">is_slice</span><span class="p">(</span><span class="n">index</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_object_iterable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_object_iterable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>  <span class="c1"># type: ignore</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">color_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ColorChannels</span><span class="p">:</span>
@@ -1143,7 +1143,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">header</span> <span class="o">=</span> <span class="n">Header</span><span class="o">.</span><span class="n">from_robtop</span><span class="p">(</span><span class="n">header_option</span><span class="p">)</span>
 
-        <span class="n">objects</span> <span class="o">=</span> <span class="n">iterator</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">object_from_robtop</span><span class="p">)</span><span class="o">.</span><span class="n">list</span><span class="p">()</span>
+        <span class="n">objects</span> <span class="o">=</span> <span class="n">iterator</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">object_from_robtop</span><span class="p">)</span><span class="o">.</span><span class="n">collect_iter</span><span class="p">(</span><span class="n">migrate_objects</span><span class="p">)</span><span class="o">.</span><span class="n">list</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">objects</span><span class="p">)</span>
 
@@ -1155,8 +1155,8 @@
             <span class="o">.</span><span class="n">collect</span><span class="p">(</span><span class="n">concat_objects</span><span class="p">)</span>
         <span class="p">)</span>
 
-    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">can_be_in</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">string</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">can_be_in</span><span class="p">(</span><span class="n">string</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">OBJECTS_SEPARATOR</span> <span class="ow">in</span> <span class="n">string</span>
 </code></pre></div></td></tr></table></div>
         </details>
@@ -1179,8 +1179,8 @@
 <code class="highlight language-python"><span class="n">header</span><span class="p">:</span> <span class="n">Header</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">factory</span><span class="o">=</span><span class="n">Header</span><span class="p">)</span></code>
   
   <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
       <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
   </span>
 
 </h3>
@@ -1201,8 +1201,8 @@
 <code class="highlight language-python"><span class="n">objects</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Object</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span></code>
   
   <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
       <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
   </span>
 
 </h3>
@@ -1256,7 +1256,11 @@
           <td>
                 <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>
           </td>
-          <td><p>The distance to stop calculating at.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The distance to stop calculating at.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -1266,7 +1270,11 @@
           <td>
                 <code><a class="autorefs autorefs-internal" title="gd.enums.Speed" href="../../enums/#gd.enums.Speed">Speed</a></code>
           </td>
-          <td><p>The starting speed (found in the header).</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The starting speed (found in the header).</p>
+            </div>
+          </td>
           <td>
                 <code>Speed.NORMAL</code>
           </td>
@@ -1276,7 +1284,11 @@
           <td>
                 <code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<span title="gd.api.objects.Object">Object</span>]</code>
           </td>
-          <td><p>Speed changes in the level, ordered by <code>x</code> position.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>Speed changes in the level, ordered by <code>x</code> position.</p>
+            </div>
+          </td>
           <td>
                 <code>()</code>
           </td>
@@ -1297,15 +1309,18 @@
           <td>
                 <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>
           </td>
-          <td><p>The calculated time (in seconds).</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The calculated time (in seconds).</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
 
       <details class="quote">
         <summary>Source code in <code>gd/api/editor.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">50</span>
-<span class="normal">51</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">51</span>
 <span class="normal">52</span>
 <span class="normal">53</span>
 <span class="normal">54</span>
@@ -1345,7 +1360,8 @@
 <span class="normal">88</span>
 <span class="normal">89</span>
 <span class="normal">90</span>
-<span class="normal">91</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">time_length</span><span class="p">(</span>
+<span class="normal">91</span>
+<span class="normal">92</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">time_length</span><span class="p">(</span>
     <span class="n">distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">start_speed</span><span class="p">:</span> <span class="n">Speed</span> <span class="o">=</span> <span class="n">Speed</span><span class="o">.</span><span class="n">NORMAL</span><span class="p">,</span>
     <span class="n">speed_changes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Object</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>

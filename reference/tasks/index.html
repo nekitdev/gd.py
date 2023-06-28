@@ -708,7 +708,7 @@
 <a id="gd.tasks"></a>
   <div class="doc doc-contents first">
   
-      <p>..., adapted from <a href="https://github.com/Rapptz/discord.py"><code>discord.py</code></a> library.</p>
+      <p>Task loops, adapted from the <a href="https://github.com/Rapptz/discord.py"><code>discord.py</code></a> library.</p>
 
   
 
@@ -747,8 +747,7 @@ and is reset if no more attempts are needed in a period of <span class="arithmat
 
         <details class="quote">
           <summary>Source code in <code>gd/tasks.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 71</span>
-<span class="normal"> 72</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 72</span>
 <span class="normal"> 73</span>
 <span class="normal"> 74</span>
 <span class="normal"> 75</span>
@@ -801,7 +800,8 @@ and is reset if no more attempts are needed in a period of <span class="arithmat
 <span class="normal">122</span>
 <span class="normal">123</span>
 <span class="normal">124</span>
-<span class="normal">125</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">()</span>
+<span class="normal">125</span>
+<span class="normal">126</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@define</span><span class="p">()</span>
 <span class="k">class</span> <span class="nc">ExponentialBackoff</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Implements the *exponential backoff* algorithm.</span>
 
@@ -893,8 +893,7 @@ retry, the <code>exponent</code> (<span class="arithmatex">\(e\)</span>) is rese
 
       <details class="quote">
         <summary>Source code in <code>gd/tasks.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">103</span>
-<span class="normal">104</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">104</span>
 <span class="normal">105</span>
 <span class="normal">106</span>
 <span class="normal">107</span>
@@ -915,7 +914,8 @@ retry, the <code>exponent</code> (<span class="arithmatex">\(e\)</span>) is rese
 <span class="normal">122</span>
 <span class="normal">123</span>
 <span class="normal">124</span>
-<span class="normal">125</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">delay</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="normal">125</span>
+<span class="normal">126</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">delay</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes the next delay.</span>
 
 <span class="sd">    Returns the next delay to wait according to the exponential</span>
@@ -974,8 +974,7 @@ retry, the <code>exponent</code> (<span class="arithmatex">\(e\)</span>) is rese
 
         <details class="quote">
           <summary>Source code in <code>gd/tasks.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">142</span>
-<span class="normal">143</span>
+          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">143</span>
 <span class="normal">144</span>
 <span class="normal">145</span>
 <span class="normal">146</span>
@@ -1244,7 +1243,6 @@ retry, the <code>exponent</code> (<span class="arithmatex">\(e\)</span>) is rese
                     <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
                 <span class="k">except</span> <span class="bp">self</span><span class="o">.</span><span class="n">_error_types</span><span class="p">:</span>
-
                     <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">reconnect</span><span class="p">:</span>
                         <span class="k">raise</span>
 
@@ -1266,7 +1264,7 @@ retry, the <code>exponent</code> (<span class="arithmatex">\(e\)</span>) is rese
 
             <span class="k">raise</span>
 
-        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">except</span> <span class="n">NormalError</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_has_failed</span> <span class="o">=</span> <span class="kc">True</span>
 
             <span class="k">raise</span>
