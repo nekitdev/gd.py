@@ -608,7 +608,9 @@ class UserLeaderboard:
 
         writer.write_u8(self.coins)
 
-        writer.write_f64(self.recorded_at.timestamp())  # type: ignore
+        timestamp = self.recorded_at.timestamp()  # type: ignore
+
+        writer.write_f64(timestamp)
 
 
 class UserData(EntityData):

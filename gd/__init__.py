@@ -13,7 +13,7 @@ from gd.artist import Artist
 from gd.binary import BinaryInfo
 from gd.client import Client
 from gd.color import Color
-from gd.comments import Comment, LevelComment, UserComment
+from gd.comments import LevelComment, UserComment
 from gd.credentials import Credentials
 from gd.entity import Entity
 from gd.enums import (
@@ -38,15 +38,18 @@ from gd.enums import (
     IconType,
     InstantCountComparison,
     InternalType,
+    ItemMode,
     ItemType,
     Key,
     LeaderboardStrategy,
+    LegacyColorID,
     LevelDifficulty,
     LevelLeaderboardStrategy,
     LevelLength,
     LevelPrivacy,
     LevelType,
     LikeType,
+    LockedType,
     MessageState,
     MessageType,
     MiscType,
@@ -54,8 +57,6 @@ from gd.enums import (
     Orientation,
     PadType,
     Permissions,
-    PickupItemMode,
-    PickupItemType,
     Platform,
     PlayerColor,
     PortalType,
@@ -69,6 +70,7 @@ from gd.enums import (
     RateType,
     RelationshipType,
     ResponseType,
+    RewardItemType,
     RewardType,
     Role,
     RotatingObjectType,
@@ -103,8 +105,8 @@ from gd.password import Password
 from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM, SYSTEM_PLATFORM_CONFIG
 from gd.rewards import Chest, Quest
 from gd.session import Session
-from gd.songs import Song, SongReference
-from gd.users import User
+from gd.song import Song
+from gd.users import User, UserCosmetics, UserLeaderboard, UserSocials, UserStates, UserStatistics
 from gd.version import python_version_info, version_info
 from gd.versions import GameVersion, RobTopVersion
 
@@ -140,7 +142,6 @@ __all__ = (
     # artists
     "Artist",
     # comments
-    "Comment",
     "UserComment",
     "LevelComment",
     # credentials
@@ -159,11 +160,15 @@ __all__ = (
     # rewards
     "Chest",
     "Quest",
-    # songs
-    "SongReference",
+    # song
     "Song",
     # users
     "User",
+    "UserStatistics",
+    "UserCosmetics",
+    "UserStates",
+    "UserSocials",
+    "UserLeaderboard",
     # passwords
     "Password",
     # versions
@@ -203,7 +208,7 @@ __all__ = (
     "SearchStrategy",
     "RewardType",
     "ShardType",
-    "ItemType",
+    "RewardItemType",
     "QuestType",
     "Scene",
     "PlayerColor",
@@ -217,19 +222,21 @@ __all__ = (
     "OrbType",
     "PadType",
     "MiscType",
-    "PickupItemMode",
+    "ItemMode",
     "GameMode",
     "LevelType",
     "PortalType",
     "SpeedChangeType",
     "CoinType",
-    "PickupItemType",
+    "ItemType",
     "RotatingObjectType",
     "PulseTargetType",
     "PulsatingObjectType",
     "PulseType",
     "SpecialBlockType",
     "SpecialColorID",
+    "LegacyColorID",
+    "LockedType",
     "TargetType",
     "SimpleTargetType",
     "TouchToggleMode",

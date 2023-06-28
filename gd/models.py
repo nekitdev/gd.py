@@ -1,4 +1,5 @@
 from typing import List, Optional, Sequence, Type, TypeVar
+from urllib.parse import quote, unquote
 
 from attrs import define, field
 from iters.iters import iter
@@ -342,7 +343,7 @@ class SongModel(Model):
 
         download_url_option = mapping.get(SONG_DOWNLOAD_URL)
 
-        download_url = URL(download_url_option) if download_url_option else None
+        download_url = URL(unquote(download_url_option)) if download_url_option else None
 
         return cls(
             id=id,
@@ -357,6 +358,8 @@ class SongModel(Model):
         )
 
     def to_robtop(self) -> str:
+        download_url = self.download_url
+
         mapping = {
             SONG_ID: str(self.id),
             SONG_NAME: self.name,
@@ -366,7 +369,7 @@ class SongModel(Model):
             SONG_YOUTUBE_VIDEO_ID: self.youtube_video_id,
             SONG_YOUTUBE_CHANNEL_ID: self.youtube_channel_id,
             SONG_ARTIST_VERIFIED: bool_str(self.is_artist_verified()),
-            SONG_DOWNLOAD_URL: str(self.download_url or EMPTY),
+            SONG_DOWNLOAD_URL: EMPTY if download_url else quote(str(download_url)),
         }
 
         return concat_song(mapping)

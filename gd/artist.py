@@ -26,7 +26,7 @@ from gd.models import ArtistModel
 from gd.string_utils import case_fold, clear_whitespace
 
 if TYPE_CHECKING:
-    from gd.songs import Song
+    from gd.song import Song
 
 __all__ = ("Artist", "ArtistData")
 
@@ -93,7 +93,7 @@ class Artist(Entity):
         return cls(id=DEFAULT_ID, name=name)
 
     def __hash__(self) -> int:
-        return hash(type(self)) ^ self.id
+        return hash(type(self)) ^ hash(self.id_name)
 
     def __str__(self) -> str:
         return self.name or UNKNOWN

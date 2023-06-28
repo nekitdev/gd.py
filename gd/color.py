@@ -9,6 +9,7 @@ from iters.iters import iter, wrap_iter
 from iters.utils import unary_tuple
 
 from gd.constants import DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID
+from gd.converter import CONVERTER
 from gd.models_constants import COLOR_SEPARATOR
 from gd.models_utils import concat_color, split_color
 from gd.robtop import RobTop
@@ -149,3 +150,15 @@ class Color(RobTop, ColorCore):
             The list of in-game colors.
         """
         return cls.iter_colors().list()
+
+
+def dump_color(color: Color) -> int:
+    return color.value
+
+
+def load_color(value: int, color_type: Type[C]) -> C:
+    return color_type(value)
+
+
+CONVERTER.register_structure_hook(Color, load_color)
+CONVERTER.register_unstructure_hook(Color, dump_color)

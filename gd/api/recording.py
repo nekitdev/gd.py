@@ -10,7 +10,7 @@ from iters.iters import iter, wrap_iter
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
-from gd.constants import EMPTY
+from gd.constants import DEFAULT_ROUNDING, EMPTY
 from gd.enums import ByteOrder
 from gd.errors import InternalError
 from gd.models_constants import RECORDING_ITEM_SEPARATOR
@@ -124,13 +124,15 @@ class RecordingItem(Binary, RobTop):
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> RI:
+        rounding = DEFAULT_ROUNDING
+
         previous_bit = PREVIOUS_BIT
         next_bit = NEXT_BIT
         secondary_bit = SECONDARY_BIT
 
         reader = Reader(binary, order)
 
-        timestamp = reader.read_f32()
+        timestamp = round(reader.read_f32(), rounding)
 
         value = reader.read_u8()
 

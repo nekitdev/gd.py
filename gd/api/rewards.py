@@ -21,7 +21,7 @@ from gd.constants import (
     DEFAULT_QUEST_ORDER,
     EMPTY,
 )
-from gd.enums import ByteOrder, InternalType, ItemType
+from gd.enums import ByteOrder, InternalType, RewardItemType
 from gd.string_utils import snake_to_camel
 
 __all__ = ("Reward", "RewardItem", "Quest")
@@ -163,14 +163,10 @@ class Quest(Binary):
             QUEST_TARGET_AMOUNT: self.target_amount,
             QUEST_DIAMONDS: self.diamonds,
             QUEST_COUNT: self.count,
+            QUEST_COMPLETED: self.is_completed(),
             QUEST_NAME: self.name,
             QUEST_ID: self.id,
         }
-
-        completed = self.is_completed()
-
-        if completed:
-            data[QUEST_COMPLETED] = completed
 
         return data
 
@@ -188,7 +184,7 @@ R = TypeVar("R", bound="Reward")
 
 @define()
 class Reward(Binary):
-    item_type: ItemType = ItemType.DEFAULT
+    item_type: RewardItemType = RewardItemType.DEFAULT
     custom_id: int = DEFAULT_ID
     amount: int = DEFAULT_AMOUNT
     magic: int = DEFAULT_MAGIC
@@ -204,7 +200,7 @@ class Reward(Binary):
 
         item_type_value = reader.read_u8()
 
-        item_type = ItemType(item_type_value)
+        item_type = RewardItemType(item_type_value)
 
         custom_id = reader.read_u16()
 
@@ -232,10 +228,10 @@ class Reward(Binary):
         item_type_option = data.get(REWARD_ITEM_TYPE)
 
         if item_type_option is None:
-            item_type = ItemType.DEFAULT
+            item_type = RewardItemType.DEFAULT
 
         else:
-            item_type = ItemType(item_type_option)
+            item_type = RewardItemType(item_type_option)
 
         custom_id = data.get(REWARD_CUSTOM_ID, DEFAULT_ID)
         amount = data.get(REWARD_AMOUNT, DEFAULT_AMOUNT)
@@ -249,16 +245,10 @@ class Reward(Binary):
         data = {
             INTERNAL_TYPE: InternalType.REWARD.value,
             REWARD_ITEM_TYPE: item_type.value,
+            REWARD_CUSTOM_ID: self.custom_id,
             REWARD_AMOUNT: self.amount,
+            REWARD_MAGIC: self.magic,
         }
-
-        if item_type.is_custom():
-            data[REWARD_CUSTOM_ID] = self.custom_id
-
-        magic = self.magic
-
-        if magic:
-            data[REWARD_MAGIC] = magic
 
         return data
 

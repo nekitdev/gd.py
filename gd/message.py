@@ -82,7 +82,9 @@ class Message(Entity):
         else:
             content = None
 
-        created_at = utc_from_timestamp(reader.read_f64())
+        timestamp = reader.read_f64()
+
+        created_at = utc_from_timestamp(timestamp)
 
         return cls(
             id=id,
@@ -129,7 +131,9 @@ class Message(Entity):
             writer.write_u8(len(data))
             writer.write(data)
 
-        writer.write_f64(self.created_at.timestamp())  # type: ignore
+        timestamp = self.created_at.timestamp()  # type: ignore
+
+        writer.write_f64(timestamp)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id

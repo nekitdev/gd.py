@@ -14,7 +14,6 @@ except ImportError:
     )
 
 from typing_aliases import NormalError
-
 from yarl import URL
 
 from gd.constants import EMPTY

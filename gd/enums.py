@@ -39,7 +39,7 @@ __all__ = (
     "SearchStrategy",
     "RewardType",
     "ShardType",
-    "ItemType",
+    "RewardItemType",
     "QuestType",
     "Scene",
     "PlayerColor",
@@ -53,19 +53,21 @@ __all__ = (
     "OrbType",
     "PadType",
     "MiscType",
-    "PickupItemMode",
+    "ItemMode",
     "GameMode",
     "LevelType",
     "PortalType",
     "SpeedChangeType",
     "CoinType",
-    "PickupItemType",
+    "ItemType",
     "RotatingObjectType",
     "PulseTargetType",
     "PulsatingObjectType",
     "PulseType",
     "SpecialBlockType",
     "SpecialColorID",
+    "LegacyColorID",
+    "LockedType",
     "TargetType",
     "SimpleTargetType",
     "TouchToggleMode",
@@ -796,7 +798,7 @@ class ShardType(Enum):
     DEFAULT = UNKNOWN
 
 
-class ItemType(Enum):
+class RewardItemType(Enum):
     """Represents item types."""
 
     UNKNOWN = 0
@@ -862,6 +864,9 @@ class PlayerColor(Enum):
 
     def is_not_used(self) -> bool:
         return self is type(self).NOT_USED
+
+    def is_used(self) -> bool:
+        return not self.is_not_used()
 
     def is_default(self) -> bool:
         return self is type(self).DEFAULT
@@ -1067,18 +1072,18 @@ class MiscType(Enum):
         return self.value
 
 
-class PickupItemMode(Enum):
-    """Represents pickup item modes."""
+class ItemMode(Enum):
+    """Represents item modes."""
 
     DEFAULT = 0
     PICKUP = 1
-    TOGGLE_TRIGGER = 2
+    TOGGLE = 2
 
     def is_pickup(self) -> bool:
         return self is type(self).PICKUP
 
-    def is_toggle_trigger(self) -> bool:
-        return self is type(self).TOGGLE_TRIGGER
+    def is_toggle(self) -> bool:
+        return self is type(self).TOGGLE
 
 
 class GameMode(Enum):
@@ -1175,7 +1180,7 @@ class CoinType(Enum):
         return self.value
 
 
-class PickupItemType(Enum):
+class ItemType(Enum):
     """Represents pickup item object IDs."""
 
     KEY = 1275
@@ -1371,6 +1376,51 @@ class SpecialColorID(Enum):
         return self.value
 
 
+class LegacyColorID(Enum):
+    DEFAULT = 0
+    PLAYER_1 = 1
+    PLAYER_2 = 2
+    COLOR_1 = 3
+    COLOR_2 = 4
+    LIGHT_BACKGROUND = 5
+    COLOR_3 = 6
+    COLOR_4 = 7
+    LINE_3D = 8
+
+    def migrate(self) -> int:
+        return LEGACY_COLOR_ID_TO_COLOR_ID[self]
+
+
+LEGACY_COLOR_ID_TO_COLOR_ID = {
+    LegacyColorID.DEFAULT: 0,
+    LegacyColorID.PLAYER_1: SpecialColorID.PLAYER_1.id,
+    LegacyColorID.PLAYER_2: SpecialColorID.PLAYER_2.id,
+    LegacyColorID.COLOR_1: 1,
+    LegacyColorID.COLOR_2: 2,
+    LegacyColorID.LIGHT_BACKGROUND: SpecialColorID.LIGHT_BACKGROUND.id,
+    LegacyColorID.COLOR_3: 3,
+    LegacyColorID.COLOR_4: 4,
+    LegacyColorID.LINE_3D: SpecialColorID.LINE_3D.id,
+}
+
+
+class LockedType(Flag):
+    NONE = 0
+
+    X = 1
+    Y = 2
+
+    BOTH = X | Y
+
+    DEFAULT = NONE
+
+    def x(self) -> bool:
+        return type(self).X in self
+
+    def y(self) -> bool:
+        return type(self).Y in self
+
+
 class TargetType(Flag):
     """Represents move target types."""
 
@@ -1439,7 +1489,7 @@ class TriggerType(Enum):
     COLOR = 899
     SECONDARY_GROUND = GROUND_2 = G2 = 900
     MOVE = 901
-    LINE_2 = L2 = 915
+    # LINE_2 = L2 = 915
     PULSE = 1006
     ALPHA = 1007
     TOGGLE = 1049

@@ -5,6 +5,7 @@ from builtins import setattr as set_attribute
 from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
 
 from attrs import Attribute, define, field, fields
+from iters.iters import iter
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer

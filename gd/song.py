@@ -4,6 +4,7 @@ from enum import Flag
 from typing import BinaryIO, Optional, Type, TypeVar
 
 from attrs import define, field
+from iters.utils import unary_tuple
 from typing_aliases import IntoPath
 from yarl import URL
 
@@ -16,11 +17,12 @@ from gd.constants import (
     DEFAULT_ERRORS,
     DEFAULT_FROM_NEWGROUNDS,
     DEFAULT_ID,
+    DEFAULT_ROUNDING,
     DEFAULT_WITH_BAR,
     EMPTY,
     UNKNOWN,
 )
-from gd.converter import CONVERTER, register_unstructure_hook_omit_client
+from gd.converter import CONVERTER, dump_url, register_unstructure_hook_omit_client
 from gd.entity import Entity, EntityData
 from gd.enums import ByteOrder
 from gd.errors import MissingAccess
@@ -28,7 +30,7 @@ from gd.http import NEWGROUNDS_SONG
 from gd.models import SongModel
 from gd.official_songs import ID_TO_OFFICIAL_SONG, NAME_TO_OFFICIAL_SONG, OfficialSong
 
-__all__ = ("Song", "SongReference")
+__all__ = unary_tuple("Song")
 
 
 class SongFlag(Flag):
@@ -48,77 +50,7 @@ class SongFlag(Flag):
         return type(self).DOWNLOAD_URL in self
 
 
-class SongReferenceData(EntityData):
-    custom: bool
-
-
-SR = TypeVar("SR", bound="SongReference")
-
-
-@register_unstructure_hook_omit_client
-@define()
-class SongReference(Entity):
-    """Represents song references.
-
-    Binary:
-
-        ```rust
-        const CUSTOM_BIT: u8 = 1 << 0;
-
-        struct SongReference {
-            value: u8,  // contains `custom`
-            id: u32,
-        }
-        ```
-    """
-
-    custom: bool
-
-    def is_custom(self) -> bool:
-        return self.custom
-
-    @classmethod
-    def from_binary(
-        cls: Type[SR],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> SR:
-        reader = Reader(binary, order)
-
-        song_flag_value = reader.read_u8()
-
-        song_flag = SongFlag(song_flag_value)
-
-        id = reader.read_u32()
-
-        custom = song_flag.is_custom()
-
-        return cls(id=id, custom=custom)
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u32(self.id)
-
-        song_flag = SongFlag.SIMPLE
-
-        if self.is_custom():
-            song_flag |= SongFlag.CUSTOM
-
-        writer.write_u8(song_flag.value)
-
-    @classmethod
-    def default(cls: Type[SR], id: int = DEFAULT_ID, custom: bool = DEFAULT_CUSTOM) -> SR:
-        return cls(id=id, custom=custom)
-
-
-class SongData(SongReferenceData):
+class SongData(EntityData):
     name: str
     artist: ArtistData
     size: Optional[float]
@@ -135,7 +67,7 @@ CAN_NOT_FIND_URL = "can not find download URL"
 
 @register_unstructure_hook_omit_client
 @define()
-class Song(SongReference):
+class Song(Entity):
     """Represents *Geometry Dash* and *Newgrounds* songs.
 
     Binary:
@@ -166,6 +98,8 @@ class Song(SongReference):
 
     artist: Artist = field(eq=False)
 
+    custom: bool = field(eq=False)
+
     size: Optional[float] = field(default=None, eq=False)
 
     download_url: Optional[URL] = field(default=None, eq=False)
@@ -193,6 +127,8 @@ class Song(SongReference):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> S:
+        rounding = DEFAULT_ROUNDING
+
         reader = Reader(binary, order)
 
         song_flag_value = reader.read_u8()
@@ -210,7 +146,7 @@ class Song(SongReference):
         artist = Artist.from_binary(binary, order, version, encoding, errors)
 
         if song_flag.has_size():
-            size = reader.read_f32()
+            size = round(reader.read_f32(), rounding)
 
         else:
             size = None
@@ -277,8 +213,13 @@ class Song(SongReference):
             writer.write(data)
 
     @classmethod
-    def default(cls: Type[S], id: int = DEFAULT_ID, custom: bool = DEFAULT_CUSTOM) -> S:
-        return cls(id=id, custom=custom, name=EMPTY, artist=Artist.default())
+    def default(
+        cls: Type[S],
+        id: int = DEFAULT_ID,
+        artist_id: int = DEFAULT_ID,
+        custom: bool = DEFAULT_CUSTOM,
+    ) -> S:
+        return cls(id=id, name=EMPTY, artist=Artist.default(artist_id), custom=custom)
 
     @classmethod
     def official(cls: Type[S], id: Optional[int] = None, name: Optional[str] = None) -> S:
@@ -316,7 +257,7 @@ class Song(SongReference):
                 model.artist_name,
                 model.is_artist_verified(),
             ),
-            size=model.size,
+            size=model.size or None,
             download_url=model.download_url,
         )
 
@@ -381,15 +322,3 @@ class Song(SongReference):
 
         else:
             raise MissingAccess(CAN_NOT_DOWNLOAD)
-
-
-def dump_url(url: URL) -> str:
-    return url.human_repr()
-
-
-def parse_url_ignore_type(string: str, type: Type[URL]) -> URL:
-    return URL(string)
-
-
-CONVERTER.register_unstructure_hook(URL, dump_url)
-CONVERTER.register_structure_hook(URL, parse_url_ignore_type)

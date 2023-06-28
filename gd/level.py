@@ -26,6 +26,7 @@ from gd.constants import (
     DEFAULT_PAGES,
     DEFAULT_RATING,
     DEFAULT_RECORD,
+    DEFAULT_ROUNDING,
     DEFAULT_SCORE,
     DEFAULT_STARS,
     DEFAULT_TWO_PLAYER,
@@ -54,7 +55,7 @@ from gd.errors import MissingAccess
 from gd.models import LevelModel, TimelyInfoModel
 from gd.official_levels import ID_TO_OFFICIAL_LEVEL, NAME_TO_OFFICIAL_LEVEL
 from gd.password import Password, PasswordData
-from gd.songs import Song, SongData
+from gd.song import Song, SongData
 from gd.users import User, UserData
 from gd.versions import CURRENT_GAME_VERSION, GameVersion, RobTopVersionData
 
@@ -192,8 +193,11 @@ class Level(Entity):
         self.creator.to_binary(binary, order, version, encoding, errors)
         self.song.to_binary(binary, order, version, encoding, errors)
 
-        writer.write_f64(self.created_at.timestamp())  # type: ignore
-        writer.write_f64(self.updated_at.timestamp())  # type: ignore
+        created_timestamp = self.created_at.timestamp()  # type: ignore
+        updated_timestamp = self.updated_at.timestamp()  # type: ignore
+
+        writer.write_f64(created_timestamp)
+        writer.write_f64(updated_timestamp)
 
         data = self.description.encode(encoding, errors)
 
@@ -248,8 +252,11 @@ class Level(Entity):
 
         writer.write_u32(self.object_count)
 
-        writer.write_f32(self.editor_time.total_seconds())  # type: ignore
-        writer.write_f32(self.copies_time.total_seconds())  # type: ignore
+        editor_seconds = self.editor_time.total_seconds()  # type: ignore
+        copies_seconds = self.copies_time.total_seconds()  # type: ignore
+
+        writer.write_f32(editor_seconds)
+        writer.write_f32(copies_seconds)
 
         writer.write_u8(self.timely_type.value)
         writer.write_u16(self.timely_id)
@@ -263,6 +270,8 @@ class Level(Entity):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> L:
+        rounding = DEFAULT_ROUNDING
+
         two_player_bit = TWO_PLAYER_BIT
         verified_coins_bit = VERIFIED_COINS_BIT
         low_detail_bit = LOW_DETAIL_BIT
@@ -335,8 +344,8 @@ class Level(Entity):
 
         object_count = reader.read_u32()
 
-        editor_seconds = reader.read_f32()
-        copies_seconds = reader.read_f32()
+        editor_seconds = round(reader.read_f32(), rounding)
+        copies_seconds = round(reader.read_f32(), rounding)
 
         editor_time = duration(seconds=editor_seconds)
         copies_time = duration(seconds=copies_seconds)

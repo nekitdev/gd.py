@@ -1,9 +1,10 @@
-from typing import TypeVar
+from typing import Type, TypeVar
 
 from attrs import field, frozen
 from cattrs import Converter
 from cattrs.gen import AttributeOverride, make_dict_unstructure_fn, override
 from typing_aliases import AnyType, StringDict
+from yarl import URL
 
 __all__ = (
     "CONVERTER",
@@ -12,6 +13,19 @@ __all__ = (
 )
 
 CONVERTER = Converter(forbid_extra_keys=True)
+
+
+def dump_url(url: URL) -> str:
+    return url.human_repr()
+
+
+def parse_url_ignore_type(string: str, type: Type[URL]) -> URL:
+    return URL(string)
+
+
+CONVERTER.register_unstructure_hook(URL, dump_url)
+CONVERTER.register_structure_hook(URL, parse_url_ignore_type)
+
 
 AttributeOverrides = StringDict[AttributeOverride]
 

@@ -4,6 +4,7 @@ from typing import Dict, Type, TypeVar
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
+from gd.constants import DEFAULT_ROUNDING
 from gd.enums import ByteOrder, GuidelineColor
 from gd.models_constants import GUIDELINES_SEPARATOR
 from gd.models_utils import concat_guidelines, split_guidelines
@@ -55,13 +56,20 @@ class Guidelines(Dict[float, GuidelineColor], RobTop, Binary):
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> G:
+        rounding = DEFAULT_ROUNDING
+
         reader = Reader(binary, order)
 
         length = reader.read_u32()
 
         color = GuidelineColor
 
-        return cls({reader.read_f32(): color(reader.read_f32()) for _ in range(length)})
+        return cls(
+            {
+                round(reader.read_f32(), rounding): color(round(reader.read_f32(), rounding))
+                for _ in range(length)
+            }
+        )
 
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION

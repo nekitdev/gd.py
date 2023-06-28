@@ -1,7 +1,8 @@
 from abc import abstractmethod as required
+from builtins import hasattr as has_attribute
 from enum import Enum, Flag
 from io import BytesIO
-from typing import ClassVar, Dict, Iterable, Mapping, Type, TypeVar
+from typing import Dict, Iterable, Iterator, Mapping, Optional, Tuple, Type, TypeVar, Union
 
 from attrs import define, field
 from iters.iters import iter
@@ -10,12 +11,24 @@ from named import get_type_name
 from typing_aliases import is_instance
 from typing_extensions import Literal, Never, Protocol, TypeGuard, runtime_checkable
 
+from gd.api.color_channels import (
+    BACKGROUND_COLOR_ID,
+    GROUND_COLOR_ID,
+    LINE_COLOR_ID,
+    LINE_3D_COLOR_ID,
+    OBJECT_COLOR_ID,
+    SECONDARY_GROUND_COLOR_ID,
+    COLOR_1_ID,
+    COLOR_2_ID,
+    COLOR_3_ID,
+    COLOR_4_ID,
+)
 from gd.api.hsv import HSV
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_constants import BITS, BYTE, HALF_BITS, HALF_BYTE
 from gd.binary_utils import Reader, Writer
 from gd.color import Color
-from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, EMPTY
+from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, DEFAULT_ROUNDING, EMPTY
 from gd.encoding import decode_base64_string_url_safe, encode_base64_string_url_safe
 from gd.enums import (
     ByteOrder,
@@ -23,10 +36,12 @@ from gd.enums import (
     Easing,
     GameMode,
     InstantCountComparison,
+    ItemMode,
+    ItemType,
+    LegacyColorID,
+    LockedType,
     MiscType,
     OrbType,
-    PickupItemMode,
-    PickupItemType,
     PlayerColor,
     PortalType,
     PulsatingObjectType,
@@ -35,7 +50,6 @@ from gd.enums import (
     PulseType,
     RotatingObjectType,
     SimpleTargetType,
-    SpecialColorID,
     Speed,
     SpeedChangeType,
     TargetType,
@@ -44,12 +58,14 @@ from gd.enums import (
 )
 from gd.models_constants import GROUPS_SEPARATOR, OBJECT_SEPARATOR
 from gd.models_utils import (
+    bool_str,
     concat_any_object,
     concat_groups,
     concat_object,
     float_str,
     int_bool,
     parse_get_or,
+    parse_get_or_else,
     partial_parse_enum,
     split_any_object,
     split_groups,
@@ -58,7 +74,9 @@ from gd.models_utils import (
 from gd.robtop import RobTop
 
 __all__ = (
+    # groups
     "Groups",
+    # objects
     "Object",
     "PulsatingObject",
     "RotatingObject",
@@ -68,12 +86,19 @@ __all__ = (
     "SecretCoin",
     "Text",
     "Teleport",
+    "ToggleItem",
     "PickupItem",
     "CollisionBlock",
-    "ColorTrigger",
-    "PulseTrigger",
+    "PlayerColorTrigger",
+    "NormalColorTrigger",
+    "CopiedColorTrigger",
+    "PulseColorChannelTrigger",
+    "PulseHSVChannelTrigger",
+    "PulseColorGroupTrigger",
+    "PulseHSVGroupTrigger",
     "AlphaTrigger",
-    "MoveTrigger",
+    "NormalMoveTrigger",
+    "TargetMoveTrigger",
     "SpawnTrigger",
     "StopTrigger",
     "ToggleTrigger",
@@ -88,27 +113,127 @@ __all__ = (
     "FollowPlayerYTrigger",
     "OnDeathTrigger",
     "CollisionTrigger",
+    # unions
+    "Item",
+    "ColorTrigger",
+    "PulseTrigger",
+    "MoveTrigger",
+    # type guards
     "is_start_position",
     "is_trigger",
     "has_target_group",
     "has_additional_group",
+    # conversion
     "object_from_binary",
     "object_to_binary",
     "object_from_bytes",
     "object_to_bytes",
+    # migration
+    "migrate_objects",
 )
 
 GRID_UNITS = 30.0
 
-
-H_FLIPPED_BIT = 0b00000001
-V_FLIPPED_BIT = 0b00000010
-DO_NOT_FADE_BIT = 0b00000100
-DO_NOT_ENTER_BIT = 0b00001000
-GROUP_PARENT_BIT = 0b00010000
-HIGH_DETAIL_BIT = 0b00100000
-DISABLE_GLOW_BIT = 0b01000000
-SPECIAL_CHECKED_BIT = 0b10000000
+ID = 1
+X = 2
+Y = 3
+H_FLIPPED = 4
+V_FLIPPED = 5
+ROTATION = 6
+RED = 7
+GREEN = 8
+BLUE = 9
+DURATION = 10
+TOUCH_TRIGGERED = 11
+COIN_ID = 12
+SPECIAL_CHECKED = 13
+TINT_GROUND = 14
+PLAYER_COLOR_1 = 15
+PLAYER_COLOR_2 = 16
+BLENDING = 17
+LEGACY_COLOR_ID = 19
+BASE_EDITOR_LAYER = 20
+BASE_COLOR_ID = 21
+DETAIL_COLOR_ID = 22
+TARGET_COLOR_ID = 23
+Z_LAYER = 24
+Z_ORDER = 25
+X_OFFSET = 28
+Y_OFFSET = 29
+EASING = 30
+CONTENT = 31
+SCALE = 32
+SINGLE_GROUP_ID = 33
+GROUP_PARENT = 34
+OPACITY = 35
+UNKNOWN = 36
+BASE_COLOR_HSV_MODIFIED = 41
+DETAIL_COLOR_HSV_MODIFIED = 42
+BASE_COLOR_HSV = 43
+DETAIL_COLOR_HSV = 44
+FADE_IN = 45
+HOLD = 46
+FADE_OUT = 47
+PULSE_MODE = 48
+COPIED_COLOR_HSV = 49
+COPIED_COLOR_ID = 50
+TARGET_GROUP_ID = 51
+PULSE_TARGET_TYPE = 52
+PORTAL_OFFSET = 54
+SMOOTH = 55
+ACTIVATE_GROUP = 56
+GROUPS = 57
+LOCKED_TO_PLAYER_X = 58
+LOCKED_TO_PLAYER_Y = 59
+COPY_OPACITY = 60
+ADDITIONAL_EDITOR_LAYER = 61
+SPAWN_TRIGGERED = 62
+SPAWN_DELAY = 63
+DO_NOT_FADE = 64
+MAIN_ONLY = 65
+DETAIL_ONLY = 66
+DO_NOT_ENTER = 67
+DEGREES = 68
+ROTATIONS = 69
+ROTATION_LOCKED = 70
+ADDITIONAL_GROUP_ID = 71
+X_MODIFIER = 72
+Y_MODIFIER = 73
+STRENGTH = 75
+ANIMATION_ID = 76
+COUNT = 77
+SUBTRACT_COUNT = 78
+ITEM_MODE = 79
+ITEM_ID = 80
+BLOCK_ID = 80
+BLOCK_A_ID = 80
+HOLD_MODE = 81
+TOGGLE_TYPE = 82
+INTERVAL = 84
+EASING_RATE = 85
+EXCLUSIVE = 86
+MULTI_TRIGGER = 87
+COMPARISON = 88
+DUAL_MODE = 89
+SPEED = 90
+FOLLOW_DELAY = 91
+OFFSET = 92
+TRIGGER_ON_EXIT = 93
+DYNAMIC = 94
+BLOCK_B_ID = 95
+DISABLE_GLOW = 96
+ROTATION_SPEED = 97
+DISABLE_ROTATION = 98
+ORB_MULTI_ACTIVATE = 99
+USE_TARGET = 100
+TARGET_TYPE = 101
+EDITOR_DISABLE = 102
+HIGH_DETAIL = 103
+TRIGGER_MULTI_ACTIVATE = 104
+MAX_SPEED = 105
+RANDOMIZE_START = 106
+ANIMATION_SPEED = 107
+LINK_ID = 108
 
 
 class ObjectFlag(Flag):
@@ -140,6 +265,48 @@ class ObjectFlag(Flag):
         return type(self).HAS_Z in self
 
 
+G = TypeVar("G", bound="Groups")
+
+
+class Groups(OrderedSet[int], RobTop):
+    @classmethod
+    def from_robtop(cls: Type[G], string: str) -> G:
+        return iter(split_groups(string)).map(int).collect(cls)
+
+    def to_robtop(self) -> str:
+        return iter(self).map(str).collect(concat_groups)
+
+    @classmethod
+    def from_binary(
+        cls: Type[G],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> G:
+        reader = Reader(binary, order)
+
+        length = reader.read_u16()
+
+        return iter.repeat_exactly_with(reader.read_u16, length).collect(cls)
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> None:
+        writer = Writer(binary, order)
+
+        writer.write_u16(len(self))
+
+        for group in self:
+            writer.write_u16(group)
+
+    @staticmethod
+    def can_be_in(string: str) -> bool:
+        return GROUPS_SEPARATOR in string
+
+
 DEFAULT_X = 0.0
 DEFAULT_Y = 0.0
 
@@ -167,52 +334,23 @@ DEFAULT_DISABLE_GLOW = False
 
 DEFAULT_SPECIAL_CHECKED = False
 
-
-G = TypeVar("G", bound="Groups")
-
-
-class Groups(OrderedSet[int], RobTop):
-    @classmethod
-    def from_robtop(cls: Type[G], string: str) -> G:
-        return iter(split_groups(string)).map(int).collect(cls)
-
-    def to_robtop(self) -> str:
-        return iter(self).map(str).collect(concat_groups)
-
-    @staticmethod
-    def can_be_in(string: str) -> bool:
-        return GROUPS_SEPARATOR in string
+DEFAULT_UNKNOWN = False
 
 
-ID = 1
-X = 2
-Y = 3
-H_FLIPPED = 4
-V_FLIPPED = 5
-ROTATION = 6
-SCALE = 32
-DO_NOT_FADE = 64
-DO_NOT_ENTER = 67
-Z_LAYER = 24
-Z_ORDER = 25
-BASE_EDITOR_LAYER = 20
-ADDITIONAL_EDITOR_LAYER = 61
-LEGACY_COLOR_ID = 19
-BASE_COLOR_ID = 21
-DETAIL_COLOR_ID = 22
-BASE_COLOR_HSV_MODIFIED = 41
-DETAIL_COLOR_HSV_MODIFIED = 42
-BASE_COLOR_HSV = 43
-DETAIL_COLOR_HSV = 44
-SINGLE_GROUP_ID = 33
-GROUPS = 57
-GROUP_PARENT = 34
-HIGH_DETAIL = 103
-DISABLE_GLOW = 96
-SPECIAL_CHECKED = 13
-LINK_ID = 108
+H_FLIPPED_BIT = 0b00000001
+V_FLIPPED_BIT = 0b00000010
+DO_NOT_FADE_BIT = 0b00000100
+DO_NOT_ENTER_BIT = 0b00001000
+GROUP_PARENT_BIT = 0b00010000
+HIGH_DETAIL_BIT = 0b00100000
+DISABLE_GLOW_BIT = 0b01000000
+SPECIAL_CHECKED_BIT = 0b10000000
+
+UNKNOWN_BIT = 0b00000001
+
 
 OBJECT_STRING = "{object_type} (ID: {object.id}) at ({object.x}, {object.y})"
+object_string = OBJECT_STRING.format
 
 O = TypeVar("O", bound="Object")
 
@@ -257,6 +395,8 @@ class Object(Binary, RobTop):
 
     link_id: int = field(default=DEFAULT_ID)
 
+    unknown: bool = field(default=DEFAULT_UNKNOWN)
+
     @classmethod
     def from_binary(
         cls: Type[O],
@@ -264,6 +404,8 @@ class Object(Binary, RobTop):
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> O:
+        rounding = DEFAULT_ROUNDING
+
         h_flipped_bit = H_FLIPPED_BIT
         v_flipped_bit = V_FLIPPED_BIT
         do_not_fade_bit = DO_NOT_FADE_BIT
@@ -273,6 +415,8 @@ class Object(Binary, RobTop):
         disable_glow_bit = DISABLE_GLOW_BIT
         special_checked_bit = SPECIAL_CHECKED_BIT
 
+        unknown_bit = UNKNOWN_BIT
+
         reader = Reader(binary, order)
 
         flag_value = reader.read_u8()
@@ -281,8 +425,8 @@ class Object(Binary, RobTop):
 
         id = reader.read_u16()
 
-        x = reader.read_f32()
-        y = reader.read_f32()
+        x = round(reader.read_f32(), rounding)
+        y = round(reader.read_f32(), rounding)
 
         value = reader.read_u8()
 
@@ -296,8 +440,8 @@ class Object(Binary, RobTop):
         special_checked = value & special_checked_bit == special_checked_bit
 
         if flag.has_rotation_and_scale():
-            rotation = reader.read_f32()
-            scale = reader.read_f32()
+            rotation = round(reader.read_f32(), rounding)
+            scale = round(reader.read_f32(), rounding)
 
         else:
             rotation = DEFAULT_ROTATION
@@ -333,12 +477,8 @@ class Object(Binary, RobTop):
             base_color_hsv = HSV()
             detail_color_hsv = HSV()
 
-        groups: Groups
-
         if flag.has_groups():
-            length = reader.read_u16()
-
-            groups = Groups(iter.repeat_exactly_with(reader.read_u16, length))
+            groups = Groups.from_binary(binary, order, version)
 
         else:
             groups = Groups()
@@ -348,6 +488,10 @@ class Object(Binary, RobTop):
 
         else:
             link_id = DEFAULT_ID
+
+        value = reader.read_u8()
+
+        unknown = value & unknown_bit == unknown_bit
 
         return cls(
             id=id,
@@ -373,6 +517,7 @@ class Object(Binary, RobTop):
             disable_glow=disable_glow,
             special_checked=special_checked,
             link_id=link_id,
+            unknown=unknown,
         )
 
     def to_binary(
@@ -480,78 +625,88 @@ class Object(Binary, RobTop):
             detail_color_hsv.to_binary(binary, order, version)
 
         if flag.has_groups():
-            writer.write_u16(len(groups))
-
-            for group in sorted(groups):
-                writer.write_u16(group)
+            self.groups.to_binary(binary, order, version)
 
         if flag.has_link():
             writer.write_u16(link_id)
 
-    @classmethod
-    def from_robtop(cls: Type[O], string: str) -> O:
-        return cls.from_robtop_mapping(split_object(string))
+        value = 0
+
+        if self.is_unknown():
+            value |= UNKNOWN_BIT
+
+        writer.write_u8(value)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[O], mapping: Mapping[int, str]) -> O:
-        id_option = mapping.get(ID)
+    def from_robtop(cls: Type[O], string: str) -> O:
+        return cls.from_robtop_data(split_object(string))
+
+    @classmethod
+    def from_robtop_data(cls: Type[O], data: Mapping[int, str]) -> O:
+        id_option = data.get(ID)
 
         if id_option is None:
             raise ValueError(OBJECT_ID_NOT_PRESENT)
 
         id = int(id_option)
 
-        x = parse_get_or(float, DEFAULT_X, mapping.get(X))
-        y = parse_get_or(float, DEFAULT_Y, mapping.get(Y))
+        x = parse_get_or(float, DEFAULT_X, data.get(X))
+        y = parse_get_or(float, DEFAULT_Y, data.get(Y))
 
-        rotation = parse_get_or(float, DEFAULT_ROTATION, mapping.get(ROTATION))
+        rotation = parse_get_or(float, DEFAULT_ROTATION, data.get(ROTATION))
 
-        scale = parse_get_or(float, DEFAULT_SCALE, mapping.get(SCALE))
+        scale = parse_get_or(float, DEFAULT_SCALE, data.get(SCALE))
 
-        h_flipped = parse_get_or(int_bool, DEFAULT_H_FLIPPED, mapping.get(H_FLIPPED))
-        v_flipped = parse_get_or(int_bool, DEFAULT_V_FLIPPED, mapping.get(V_FLIPPED))
+        h_flipped = parse_get_or(int_bool, DEFAULT_H_FLIPPED, data.get(H_FLIPPED))
+        v_flipped = parse_get_or(int_bool, DEFAULT_V_FLIPPED, data.get(V_FLIPPED))
 
-        do_not_fade = parse_get_or(int_bool, DEFAULT_DO_NOT_FADE, mapping.get(DO_NOT_FADE))
-        do_not_enter = parse_get_or(int_bool, DEFAULT_DO_NOT_ENTER, mapping.get(DO_NOT_ENTER))
+        do_not_fade = parse_get_or(int_bool, DEFAULT_DO_NOT_FADE, data.get(DO_NOT_FADE))
+        do_not_enter = parse_get_or(int_bool, DEFAULT_DO_NOT_ENTER, data.get(DO_NOT_ENTER))
 
-        z_layer = parse_get_or(int, DEFAULT_Z_LAYER, mapping.get(Z_LAYER))
-        z_order = parse_get_or(int, DEFAULT_Z_ORDER, mapping.get(Z_ORDER))
+        z_layer = parse_get_or(int, DEFAULT_Z_LAYER, data.get(Z_LAYER))
+        z_order = parse_get_or(int, DEFAULT_Z_ORDER, data.get(Z_ORDER))
 
         base_editor_layer = parse_get_or(
-            int, DEFAULT_BASE_EDITOR_LAYER, mapping.get(BASE_EDITOR_LAYER)
+            int, DEFAULT_BASE_EDITOR_LAYER, data.get(BASE_EDITOR_LAYER)
         )
         additional_editor_layer = parse_get_or(
-            int, DEFAULT_ADDITIONAL_EDITOR_LAYER, mapping.get(ADDITIONAL_EDITOR_LAYER)
+            int, DEFAULT_ADDITIONAL_EDITOR_LAYER, data.get(ADDITIONAL_EDITOR_LAYER)
         )
 
-        legacy_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEGACY_COLOR_ID))
+        legacy_color_id = parse_get_or(
+            partial_parse_enum(int, LegacyColorID),
+            LegacyColorID.DEFAULT,
+            data.get(LEGACY_COLOR_ID),
+        )
 
-        if legacy_color_id:
-            base_color_id = legacy_color_id
-            detail_color_id = legacy_color_id
+        migrated_color_id = legacy_color_id.migrate()
+
+        if migrated_color_id:
+            base_color_id = migrated_color_id
+            detail_color_id = migrated_color_id
 
         else:
-            base_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(BASE_COLOR_ID))
-            detail_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(DETAIL_COLOR_ID))
+            base_color_id = parse_get_or(int, DEFAULT_ID, data.get(BASE_COLOR_ID))
+            detail_color_id = parse_get_or(int, DEFAULT_ID, data.get(DETAIL_COLOR_ID))
 
-        base_color_hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(BASE_COLOR_HSV))
-        detail_color_hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(DETAIL_COLOR_HSV))
+        base_color_hsv = parse_get_or_else(HSV.from_robtop, HSV, data.get(BASE_COLOR_HSV))
+        detail_color_hsv = parse_get_or_else(HSV.from_robtop, HSV, data.get(DETAIL_COLOR_HSV))
 
-        single_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(SINGLE_GROUP_ID))
+        single_group_id = parse_get_or(int, DEFAULT_ID, data.get(SINGLE_GROUP_ID))
 
-        groups = parse_get_or(Groups.from_robtop, Groups(), mapping.get(GROUPS))
+        groups = parse_get_or_else(Groups.from_robtop, Groups, data.get(GROUPS))
 
         if single_group_id:
             groups.append(single_group_id)
 
-        group_parent = parse_get_or(int_bool, DEFAULT_GROUP_PARENT, mapping.get(GROUP_PARENT))
-        high_detail = parse_get_or(int_bool, DEFAULT_HIGH_DETAIL, mapping.get(HIGH_DETAIL))
-        disable_glow = parse_get_or(int_bool, DEFAULT_DISABLE_GLOW, mapping.get(DISABLE_GLOW))
-        special_checked = parse_get_or(
-            int_bool, DEFAULT_SPECIAL_CHECKED, mapping.get(SPECIAL_CHECKED)
-        )
+        group_parent = parse_get_or(int_bool, DEFAULT_GROUP_PARENT, data.get(GROUP_PARENT))
+        high_detail = parse_get_or(int_bool, DEFAULT_HIGH_DETAIL, data.get(HIGH_DETAIL))
+        disable_glow = parse_get_or(int_bool, DEFAULT_DISABLE_GLOW, data.get(DISABLE_GLOW))
+        special_checked = parse_get_or(int_bool, DEFAULT_SPECIAL_CHECKED, data.get(SPECIAL_CHECKED))
 
-        link_id = parse_get_or(int, DEFAULT_ID, mapping.get(LINK_ID))
+        link_id = parse_get_or(int, DEFAULT_ID, data.get(LINK_ID))
+
+        unknown = parse_get_or(int_bool, DEFAULT_UNKNOWN, data.get(UNKNOWN))
 
         return cls(
             id=id,
@@ -577,121 +732,127 @@ class Object(Binary, RobTop):
             disable_glow=disable_glow,
             special_checked=special_checked,
             link_id=link_id,
+            unknown=unknown,
         )
 
     def to_robtop(self) -> str:
-        return concat_object(self.to_robtop_mapping())
+        return concat_object(self.to_robtop_data())
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = {ID: str(self.id), X: float_str(self.x), Y: float_str(self.y)}
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = {ID: str(self.id), X: float_str(self.x), Y: float_str(self.y)}
 
         rotation = self.rotation
 
         if rotation:
-            mapping[ROTATION] = float_str(rotation)
+            data[ROTATION] = float_str(rotation)
 
         scale = self.scale
 
         if scale != DEFAULT_SCALE:
-            mapping[SCALE] = float_str(scale)
+            data[SCALE] = float_str(scale)
 
         h_flipped = self.is_h_flipped()
 
         if h_flipped:
-            mapping[H_FLIPPED] = str(int(h_flipped))
+            data[H_FLIPPED] = bool_str(h_flipped)
 
         v_flipped = self.is_v_flipped()
 
         if v_flipped:
-            mapping[V_FLIPPED] = str(int(v_flipped))
+            data[V_FLIPPED] = bool_str(v_flipped)
 
         do_not_fade = self.has_do_not_fade()
 
         if do_not_fade:
-            mapping[DO_NOT_FADE] = str(int(do_not_fade))
+            data[DO_NOT_FADE] = bool_str(do_not_fade)
 
         do_not_enter = self.has_do_not_enter()
 
         if do_not_enter:
-            mapping[DO_NOT_ENTER] = str(int(do_not_enter))
+            data[DO_NOT_ENTER] = bool_str(do_not_enter)
 
         z_layer = self.z_layer
 
         if z_layer:
-            mapping[Z_LAYER] = str(z_layer)
+            data[Z_LAYER] = str(z_layer)
 
         z_order = self.z_order
 
         if z_order:
-            mapping[Z_ORDER] = str(z_order)
+            data[Z_ORDER] = str(z_order)
 
         base_editor_layer = self.base_editor_layer
 
         if base_editor_layer:
-            mapping[BASE_EDITOR_LAYER] = str(base_editor_layer)
+            data[BASE_EDITOR_LAYER] = str(base_editor_layer)
 
         additional_editor_layer = self.additional_editor_layer
 
         if additional_editor_layer:
-            mapping[ADDITIONAL_EDITOR_LAYER] = str(additional_editor_layer)
+            data[ADDITIONAL_EDITOR_LAYER] = str(additional_editor_layer)
 
         base_color_id = self.base_color_id
 
         if base_color_id:
-            mapping[BASE_COLOR_ID] = str(base_color_id)
+            data[BASE_COLOR_ID] = str(base_color_id)
 
         detail_color_id = self.detail_color_id
 
         if detail_color_id:
-            mapping[DETAIL_COLOR_ID] = str(detail_color_id)
+            data[DETAIL_COLOR_ID] = str(detail_color_id)
 
         base_color_hsv = self.base_color_hsv
 
         base_color_hsv_modified = not base_color_hsv.is_default()
 
         if base_color_hsv_modified:
-            mapping[BASE_COLOR_HSV] = base_color_hsv.to_robtop()
-            mapping[BASE_COLOR_HSV_MODIFIED] = str(int(base_color_hsv_modified))
+            data[BASE_COLOR_HSV] = base_color_hsv.to_robtop()
+            data[BASE_COLOR_HSV_MODIFIED] = bool_str(base_color_hsv_modified)
 
         detail_color_hsv = self.detail_color_hsv
 
         detail_color_hsv_modified = not detail_color_hsv.is_default()
 
         if detail_color_hsv_modified:
-            mapping[DETAIL_COLOR_HSV] = detail_color_hsv.to_robtop()
-            mapping[DETAIL_COLOR_HSV_MODIFIED] = str(int(detail_color_hsv_modified))
+            data[DETAIL_COLOR_HSV] = detail_color_hsv.to_robtop()
+            data[DETAIL_COLOR_HSV_MODIFIED] = bool_str(detail_color_hsv_modified)
 
         groups = self.groups
 
         if groups:
-            mapping[GROUPS] = groups.to_robtop()
+            data[GROUPS] = groups.to_robtop()
 
         group_parent = self.is_group_parent()
 
         if group_parent:
-            mapping[GROUP_PARENT] = str(int(group_parent))
+            data[GROUP_PARENT] = bool_str(group_parent)
 
         high_detail = self.is_high_detail()
 
         if high_detail:
-            mapping[HIGH_DETAIL] = str(int(high_detail))
+            data[HIGH_DETAIL] = bool_str(high_detail)
 
         disable_glow = self.has_disable_glow()
 
         if disable_glow:
-            mapping[DISABLE_GLOW] = str(int(disable_glow))
+            data[DISABLE_GLOW] = bool_str(disable_glow)
 
         special_checked = self.is_special_checked()
 
         if special_checked:
-            mapping[SPECIAL_CHECKED] = str(int(special_checked))
+            data[SPECIAL_CHECKED] = bool_str(special_checked)
 
         link_id = self.link_id
 
         if link_id:
-            mapping[LINK_ID] = str(link_id)
+            data[LINK_ID] = str(link_id)
 
-        return mapping
+        unknown = self.is_unknown()
+
+        if unknown:
+            data[UNKNOWN] = bool_str(unknown)
+
+        return data
 
     @staticmethod
     def can_be_in(string: str) -> bool:
@@ -720,6 +881,9 @@ class Object(Binary, RobTop):
 
     def is_special_checked(self) -> bool:
         return self.special_checked
+
+    def is_unknown(self) -> bool:
+        return self.unknown
 
     def add_groups(self: O, *groups: int) -> O:
         self.groups.update(groups)
@@ -794,22 +958,11 @@ class Object(Binary, RobTop):
         return self.id in SPEED_CHANGE_IDS
 
     def __str__(self) -> str:
-        return OBJECT_STRING.format(object_type=get_type_name(self), object=self)
+        return object_string(object_type=get_type_name(self), object=self)
 
 
 PORTAL_IDS = {portal.id for portal in PortalType}
 SPEED_CHANGE_IDS = {speed_change.id for speed_change in SpeedChangeType}
-
-
-@runtime_checkable
-class Compatibility(Protocol):
-    @required
-    def migrate(self) -> Object:
-        ...
-
-
-def is_compatibility(object: Object) -> TypeGuard[Compatibility]:
-    return is_instance(object, Compatibility)
 
 
 ID_STRING = str(ID)
@@ -822,7 +975,6 @@ START_POSITION_SPEED = "kA4"
 START_POSITION_DUAL_MODE = "kA8"
 START_POSITION = "kA9"
 START_POSITION_FLIP_GRAVITY = "kA11"
-
 
 DEFAULT_START_POSITION_MINI_MODE = False
 DEFAULT_START_POSITION_DUAL_MODE = False
@@ -915,38 +1067,38 @@ class StartPosition(Object):
 
     @classmethod
     def from_robtop(cls: Type[SP], string: str) -> SP:
-        mapping = split_any_object(string)
+        data = split_any_object(string)
 
-        id_option = mapping.get(ID_STRING)
+        id_option = data.get(ID_STRING)
 
         if id_option is None:
             raise ValueError(OBJECT_ID_NOT_PRESENT)
 
         id = int(id_option)
 
-        x = parse_get_or(float, DEFAULT_X, mapping.get(X_STRING))
-        y = parse_get_or(float, DEFAULT_Y, mapping.get(Y_STRING))
+        x = parse_get_or(float, DEFAULT_X, data.get(X_STRING))
+        y = parse_get_or(float, DEFAULT_Y, data.get(Y_STRING))
 
         game_mode = parse_get_or(
             partial_parse_enum(int, GameMode),
             GameMode.DEFAULT,
-            mapping.get(START_POSITION_GAME_MODE),
+            data.get(START_POSITION_GAME_MODE),
         )
 
         mini_mode = parse_get_or(
-            int_bool, DEFAULT_START_POSITION_MINI_MODE, mapping.get(START_POSITION_MINI_MODE)
+            int_bool, DEFAULT_START_POSITION_MINI_MODE, data.get(START_POSITION_MINI_MODE)
         )
 
         speed = parse_get_or(
-            partial_parse_enum(int, Speed), Speed.DEFAULT, mapping.get(START_POSITION_SPEED)
+            partial_parse_enum(int, Speed), Speed.DEFAULT, data.get(START_POSITION_SPEED)
         )
 
         dual_mode = parse_get_or(
-            int_bool, DEFAULT_START_POSITION_DUAL_MODE, mapping.get(START_POSITION_DUAL_MODE)
+            int_bool, DEFAULT_START_POSITION_DUAL_MODE, data.get(START_POSITION_DUAL_MODE)
         )
 
         flip_gravity = parse_get_or(
-            int_bool, DEFAULT_START_POSITION_FLIP_GRAVITY, mapping.get(START_POSITION_FLIP_GRAVITY)
+            int_bool, DEFAULT_START_POSITION_FLIP_GRAVITY, data.get(START_POSITION_FLIP_GRAVITY)
         )
 
         return cls(
@@ -961,25 +1113,25 @@ class StartPosition(Object):
         )
 
     def to_robtop(self) -> str:
-        mapping = {
+        data = {
             ID_STRING: str(self.id),
             X_STRING: float_str(self.x),
             Y_STRING: float_str(self.y),
             START_POSITION_GAME_MODE: str(self.game_mode.value),
-            START_POSITION_MINI_MODE: str(int(self.mini_mode)),
+            START_POSITION_MINI_MODE: bool_str(self.is_mini_mode()),
             START_POSITION_SPEED: str(self.speed.value),
-            START_POSITION_DUAL_MODE: str(int(self.dual_mode)),
-            START_POSITION: str(int(True)),
-            START_POSITION_FLIP_GRAVITY: str(int(self.flip_gravity)),
+            START_POSITION_DUAL_MODE: bool_str(self.is_dual_mode()),
+            START_POSITION: bool_str(self.is_start_position()),
+            START_POSITION_FLIP_GRAVITY: bool_str(self.is_flip_gravity()),
         }
 
-        return concat_any_object(mapping)
+        return concat_any_object(data)
 
     @classmethod
-    def from_robtop_mapping(cls, mapping: Mapping[int, str]) -> Never:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Never:
         raise NotImplementedError(SPECIAL_HANDLING)
 
-    def to_robtop_mapping(self) -> Never:
+    def to_robtop_data(self) -> Never:
         raise NotImplementedError(SPECIAL_HANDLING)
 
     def is_start_position(self) -> bool:
@@ -997,9 +1149,6 @@ class StartPosition(Object):
 
 def is_start_position(object: Object) -> TypeGuard[StartPosition]:
     return object.is_start_position()
-
-
-COIN_ID = 12
 
 
 SC = TypeVar("SC", bound="SecretCoin")
@@ -1036,25 +1185,21 @@ class SecretCoin(Object):
         writer.write_u8(self.coin_id)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[SC], mapping: Mapping[int, str]) -> SC:
-        coin = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[SC], data: Mapping[int, str]) -> SC:
+        coin = super().from_robtop_data(data)
 
-        coin_id = parse_get_or(int, DEFAULT_ID, mapping.get(COIN_ID))
+        coin_id = parse_get_or(int, DEFAULT_ID, data.get(COIN_ID))
 
         coin.coin_id = coin_id
 
         return coin
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[COIN_ID] = str(self.coin_id)
+        data[COIN_ID] = str(self.coin_id)
 
-        return mapping
-
-
-ROTATION_SPEED = 97
-DISABLE_ROTATION = 98
+        return data
 
 
 DISABLE_ROTATION_BIT = 0b00000001
@@ -1079,13 +1224,15 @@ class RotatingObject(Object):
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> RO:
+        rounding = DEFAULT_ROUNDING
+
         rotating_object = super().from_binary(binary, order, version)
 
         disable_rotation_bit = DISABLE_ROTATION_BIT
 
         reader = Reader(binary, order)
 
-        rotation_speed = reader.read_f32()
+        rotation_speed = round(reader.read_f32(), rounding)
 
         value = reader.read_u8()
 
@@ -1119,13 +1266,13 @@ class RotatingObject(Object):
         return self.disable_rotation
 
     @classmethod
-    def from_robtop_mapping(cls: Type[RO], mapping: Mapping[int, str]) -> RO:
-        rotating_object = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[RO], data: Mapping[int, str]) -> RO:
+        rotating_object = super().from_robtop_data(data)
 
-        rotation_speed = parse_get_or(float, DEFAULT_ROTATION_SPEED, mapping.get(ROTATION_SPEED))
+        rotation_speed = parse_get_or(float, DEFAULT_ROTATION_SPEED, data.get(ROTATION_SPEED))
 
         disable_rotation = parse_get_or(
-            bool, DEFAULT_DISABLE_ROTATION, mapping.get(DISABLE_ROTATION)
+            int_bool, DEFAULT_DISABLE_ROTATION, data.get(DISABLE_ROTATION)
         )
 
         rotating_object.rotation_speed = rotation_speed
@@ -1133,23 +1280,20 @@ class RotatingObject(Object):
 
         return rotating_object
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
         rotation_speed = self.rotation_speed
 
         if self.rotation_speed:
-            mapping[ROTATION_SPEED] = float_str(rotation_speed)
+            data[ROTATION_SPEED] = float_str(rotation_speed)
 
         disable_rotation = self.is_disable_rotation()
 
         if disable_rotation:
-            mapping[DISABLE_ROTATION] = str(int(disable_rotation))
+            data[DISABLE_ROTATION] = bool_str(disable_rotation)
 
-        return mapping
-
-
-CONTENT = 31
+        return data
 
 
 S = TypeVar("S", bound="Text")
@@ -1199,23 +1343,23 @@ class Text(Object):
         writer.write(data)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[S], mapping: Mapping[int, str]) -> S:
-        text = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[S], data: Mapping[int, str]) -> S:
+        text = super().from_robtop_data(data)
 
         content = parse_get_or(
-            decode_base64_string_url_safe, EMPTY, mapping.get(CONTENT), ignore_errors=True
+            decode_base64_string_url_safe, EMPTY, data.get(CONTENT), ignore_errors=True
         )
 
         text.content = content
 
         return text
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[CONTENT] = encode_base64_string_url_safe(self.content)
+        data[CONTENT] = encode_base64_string_url_safe(self.content)
 
-        return mapping
+        return data
 
 
 SMOOTH_BIT = 0b00000001
@@ -1223,10 +1367,6 @@ SMOOTH_BIT = 0b00000001
 
 DEFAULT_SMOOTH = False
 DEFAULT_PORTAL_OFFSET = 100.0
-
-
-PORTAL_OFFSET = 54
-SMOOTH = 55
 
 
 P = TypeVar("P", bound="Teleport")
@@ -1244,13 +1384,15 @@ class Teleport(Object):
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> P:
+        rounding = DEFAULT_ROUNDING
+
         smooth_bit = SMOOTH_BIT
 
         teleport = super().from_binary(binary, order, version)
 
         reader = Reader(binary, order)
 
-        portal_offset = reader.read_f32()
+        portal_offset = round(reader.read_f32(), rounding)
 
         value = reader.read_u8()
 
@@ -1278,29 +1420,29 @@ class Teleport(Object):
         writer.write_u8(value)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[P], mapping: Mapping[int, str]) -> P:
-        teleport = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[P], data: Mapping[int, str]) -> P:
+        teleport = super().from_robtop_data(data)
 
-        portal_offset = parse_get_or(float, DEFAULT_PORTAL_OFFSET, mapping.get(PORTAL_OFFSET))
+        portal_offset = parse_get_or(float, DEFAULT_PORTAL_OFFSET, data.get(PORTAL_OFFSET))
 
-        smooth = parse_get_or(int_bool, DEFAULT_SMOOTH, mapping.get(SMOOTH))
+        smooth = parse_get_or(int_bool, DEFAULT_SMOOTH, data.get(SMOOTH))
 
         teleport.portal_offset = portal_offset
         teleport.smooth = smooth
 
         return teleport
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[PORTAL_OFFSET] = float_str(self.portal_offset)
+        data[PORTAL_OFFSET] = float_str(self.portal_offset)
 
         smooth = self.smooth
 
         if smooth:
-            mapping[SMOOTH] = str(int(smooth))
+            data[SMOOTH] = bool_str(smooth)
 
-        return mapping
+        return data
 
     def is_smooth(self) -> bool:
         return self.smooth
@@ -1311,8 +1453,6 @@ DEFAULT_ANIMATION_SPEED = 1.0
 
 RANDOMIZE_START_BIT = 0b00000001
 
-RANDOMIZE_START = 106
-ANIMATION_SPEED = 107
 
 PO = TypeVar("PO", bound="PulsatingObject")
 
@@ -1329,13 +1469,15 @@ class PulsatingObject(Object):
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> PO:
+        rounding = DEFAULT_ROUNDING
+
         randomize_start_bit = RANDOMIZE_START_BIT
 
         pulsating_object = super().from_binary(binary, order, version)
 
         reader = Reader(binary, order)
 
-        animation_speed = reader.read_f32()
+        animation_speed = round(reader.read_f32(), rounding)
 
         value = reader.read_u8()
 
@@ -1364,31 +1506,29 @@ class PulsatingObject(Object):
         writer.write_u8(value)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[PO], mapping: Mapping[int, str]) -> PO:
-        pulsating_object = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[PO], data: Mapping[int, str]) -> PO:
+        pulsating_object = super().from_robtop_data(data)
 
-        randomize_start = parse_get_or(
-            int_bool, DEFAULT_RANDOMIZE_START, mapping.get(RANDOMIZE_START)
-        )
+        randomize_start = parse_get_or(int_bool, DEFAULT_RANDOMIZE_START, data.get(RANDOMIZE_START))
 
-        animation_speed = parse_get_or(float, DEFAULT_ANIMATION_SPEED, mapping.get(ANIMATION_SPEED))
+        animation_speed = parse_get_or(float, DEFAULT_ANIMATION_SPEED, data.get(ANIMATION_SPEED))
 
         pulsating_object.randomize_start = randomize_start
         pulsating_object.animation_speed = animation_speed
 
         return pulsating_object
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[ANIMATION_SPEED] = str(self.animation_speed)
+        data[ANIMATION_SPEED] = str(self.animation_speed)
 
         randomize_start = self.is_randomize_start()
 
         if randomize_start:
-            mapping[RANDOMIZE_START] = str(int(randomize_start))
+            data[RANDOMIZE_START] = bool_str(randomize_start)
 
-        return mapping
+        return data
 
     def is_randomize_start(self) -> bool:
         return self.randomize_start
@@ -1400,9 +1540,6 @@ BLOCK_ID_MASK = 0b01111111_11111111
 
 DEFAULT_DYNAMIC = False
 
-
-BLOCK_ID = 80
-DYNAMIC = 94
 
 CB = TypeVar("CB", bound="CollisionBlock")
 
@@ -1450,181 +1587,50 @@ class CollisionBlock(Object):
         writer.write_u16(value)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[CB], mapping: Mapping[int, str]) -> CB:
-        collision_block = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[CB], data: Mapping[int, str]) -> CB:
+        collision_block = super().from_robtop_data(data)
 
-        block_id = parse_get_or(int, DEFAULT_ID, mapping.get(BLOCK_ID))
+        block_id = parse_get_or(int, DEFAULT_ID, data.get(BLOCK_ID))
 
-        dynamic = parse_get_or(int_bool, DEFAULT_DYNAMIC, mapping.get(DYNAMIC))
+        dynamic = parse_get_or(int_bool, DEFAULT_DYNAMIC, data.get(DYNAMIC))
 
         collision_block.block_id = block_id
         collision_block.dynamic = dynamic
 
         return collision_block
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[BLOCK_ID] = str(self.block_id)
+        data[BLOCK_ID] = str(self.block_id)
 
         dynamic = self.is_dynamic()
 
         if dynamic:
-            mapping[DYNAMIC] = str(int(dynamic))
+            data[DYNAMIC] = bool_str(dynamic)
 
-        return mapping
+        return data
 
     def is_dynamic(self) -> bool:
         return self.dynamic
 
 
-ITEM_ID = 80
-
-
-@define(slots=False)
-class HasItem:
-    item_id: int = DEFAULT_ID
-
-
-COUNT = 77
-
-
-DEFAULT_COUNT = 0
-
-
-@define(slots=False)
-class HasCount:
-    count: int = DEFAULT_COUNT
-
-
-TARGET_GROUP_ID = 51
-
-
-@define(slots=False)
-class HasTargetGroup:
-    target_group_id: int = DEFAULT_ID
-
-    def has_target_group(self) -> bool:
-        return True
-
-
-TARGET_COLOR_ID = 23
-
-
-@define(slots=False)
-class HasTargetColor:
-    target_color_id: int = DEFAULT_ID
-
-
-ADDITIONAL_GROUP_ID = 71
-
-
-@define(slots=False)
-class HasAdditionalGroup:
-    additional_group_id: int = DEFAULT_ID
-
-    def has_additional_group(self) -> bool:
-        return True
-
-
-ACTIVATE_GROUP = 56
-
-
-DEFAULT_ACTIVATE_GROUP = False
-
-
-@define(slots=False)
-class HasActivateGroup:
-    activate_group: bool = DEFAULT_ACTIVATE_GROUP
-
-    def is_activate_group(self) -> bool:
-        return self.activate_group
-
-
-DURATION = 10
-
-
-DEFAULT_DURATION = 0.0
-
-
-@define(slots=False)
-class HasDuration:
-    duration: float = DEFAULT_DURATION
-
-
-SPAWN_DELAY = 63
-FOLLOW_DELAY = 91
-
-
-DEFAULT_DELAY = 0.0
-
-
-@define(slots=False)
-class HasDelay:
-    delay: float = DEFAULT_DELAY
-
-
-EASING = 30
-EASING_RATE = 85
-
-
-DEFAULT_EASING_RATE = 2.0
-
-
-@define(slots=False)
-class HasEasing:
-    easing: Easing = Easing.DEFAULT
-    easing_rate: float = DEFAULT_EASING_RATE
-
-
-ORB_MULTI_ACTIVATE = 99
-TRIGGER_MULTI_ACTIVATE = 104
+MULTI_ACTIVATE_BIT = 0b00000010
 
 
 DEFAULT_MULTI_ACTIVATE = False
-
-
-@define(slots=False)
-class HasMultiActivate:
-    multi_activate: bool = DEFAULT_MULTI_ACTIVATE
-
-    def is_multi_activate(self) -> bool:
-        return self.multi_activate
-
-
-OPACITY = 35
-
-
-DEFAULT_OPACITY = 1.0
-
-
-@define(slots=False)
-class HasOpacity:
-    opacity: float = DEFAULT_OPACITY
-
-
-RED = 7
-GREEN = 8
-BLUE = 9
-
-DEFAULT_RED = BYTE
-DEFAULT_GREEN = BYTE
-DEFAULT_BLUE = BYTE
-
-
-@define(slots=False)
-class HasColor:
-    color: Color = field(factory=Color.default)
-
-
-MULTI_ACTIVATE_BIT = 0b00000010
 
 
 OP = TypeVar("OP", bound="Orb")
 
 
 @define()
-class Orb(HasMultiActivate, Object):  # type: ignore
+class Orb(Object):
+    multi_activate: bool = DEFAULT_MULTI_ACTIVATE
+
+    def is_multi_activate(self) -> bool:
+        return self.multi_activate
+
     @classmethod
     def from_binary(
         cls: Type[OP],
@@ -1661,33 +1667,43 @@ class Orb(HasMultiActivate, Object):  # type: ignore
         writer.write_u8(value)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[OP], mapping: Mapping[int, str]) -> OP:
-        orb = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[OP], data: Mapping[int, str]) -> OP:
+        orb = super().from_robtop_data(data)
 
         multi_activate = parse_get_or(
-            int_bool, DEFAULT_MULTI_ACTIVATE, mapping.get(ORB_MULTI_ACTIVATE)
+            int_bool, DEFAULT_MULTI_ACTIVATE, data.get(ORB_MULTI_ACTIVATE)
         )
 
         orb.multi_activate = multi_activate
 
         return orb
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
         multi_activate = self.is_multi_activate()
 
         if multi_activate:
-            mapping[ORB_MULTI_ACTIVATE] = str(int(multi_activate))
+            data[ORB_MULTI_ACTIVATE] = bool_str(multi_activate)
 
-        return mapping
+        return data
+
+
+DEFAULT_ACTIVATE_GROUP = False
 
 
 TO = TypeVar("TO", bound="TriggerOrb")
 
 
 @define()
-class TriggerOrb(HasTargetGroup, HasActivateGroup, Orb):  # type: ignore
+class TriggerOrb(Orb):
+    target_group_id: int = DEFAULT_ID
+
+    activate_group: bool = DEFAULT_ACTIVATE_GROUP
+
+    def is_activate_group(self) -> bool:
+        return self.activate_group
+
     @classmethod
     def from_binary(
         cls: Type[TO],
@@ -1736,12 +1752,12 @@ class TriggerOrb(HasTargetGroup, HasActivateGroup, Orb):  # type: ignore
         writer.write_u16(self.target_group_id)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[TO], mapping: Mapping[int, str]) -> TO:
-        trigger_orb = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[TO], data: Mapping[int, str]) -> TO:
+        trigger_orb = super().from_robtop_data(data)
 
-        activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, mapping.get(ACTIVATE_GROUP))
+        activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, data.get(ACTIVATE_GROUP))
 
-        target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
 
         trigger_orb.activate_group = activate_group
 
@@ -1749,24 +1765,26 @@ class TriggerOrb(HasTargetGroup, HasActivateGroup, Orb):  # type: ignore
 
         return trigger_orb
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
         activate_group = self.is_activate_group()
 
         if activate_group:
-            mapping[ACTIVATE_GROUP] = str(int(activate_group))
+            data[ACTIVATE_GROUP] = bool_str(activate_group)
 
-        mapping[TARGET_GROUP_ID] = str(self.target_group_id)
+        data[TARGET_GROUP_ID] = str(self.target_group_id)
 
-        return mapping
+        return data
 
 
 IC = TypeVar("IC", bound="ItemCounter")
 
 
 @define()
-class ItemCounter(HasItem, Object):  # type: ignore
+class ItemCounter(Object):
+    item_id: int = DEFAULT_ID
+
     @classmethod
     def from_binary(
         cls: Type[IC],
@@ -1794,86 +1812,62 @@ class ItemCounter(HasItem, Object):  # type: ignore
         writer.write_u16(self.item_id)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[IC], mapping: Mapping[int, str]) -> IC:
-        item_counter = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[IC], data: Mapping[int, str]) -> IC:
+        item_counter = super().from_robtop_data(data)
 
-        item_id = parse_get_or(int, DEFAULT_ID, mapping.get(ITEM_ID))
+        item_id = parse_get_or(int, DEFAULT_ID, data.get(ITEM_ID))
 
         item_counter.item_id = item_id
 
         return item_counter
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
         item_id = self.item_id
 
         if item_id:
-            mapping[ITEM_ID] = str(item_id)
+            data[ITEM_ID] = str(item_id)
 
-        return mapping
-
-
-SUBTRACT_COUNT = 78
-PICKUP_MODE = 79
-
-SUBTRACT_COUNT_BIT = 0b10000000
-PICKUP_MODE_MASK = 0b00000011
+        return data
 
 
-PI = TypeVar("PI", bound="PickupItem")
-
-
-DEFAULT_SUBTRACT_COUNT = False
+TI = TypeVar("TI", bound="ToggleItem")
 
 
 @define()
-class PickupItem(HasTargetGroup, HasItem, Object):  # type: ignore
-    subtract_count: bool = DEFAULT_SUBTRACT_COUNT
-    mode: PickupItemMode = PickupItemMode.DEFAULT
+class ToggleItem(Object):
+    target_group_id: int = DEFAULT_ID
+
+    activate_group: bool = DEFAULT_ACTIVATE_GROUP
+
+    def is_activate_group(self) -> bool:
+        return self.activate_group
 
     @classmethod
     def from_binary(
-        cls: Type[PI],
+        cls: Type[TI],
         binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-    ) -> PI:
-        pickup_mode_mask = PICKUP_MODE_MASK
-        subtract_count_bit = SUBTRACT_COUNT_BIT
+    ) -> TI:
+        activate_group_bit = ACTIVATE_GROUP_BIT
 
-        pickup_item = super().from_binary(binary, order, version)
+        toggle_item = super().from_binary(binary, order, version)
 
         reader = Reader(binary, order)
 
         value = reader.read_u8()
 
-        mode_value = value & pickup_mode_mask
+        activate_group = value & activate_group_bit == activate_group_bit
 
-        mode = PickupItemMode(mode_value)
+        target_group_id = reader.read_u16()
 
-        if mode.is_toggle_trigger():
-            target_group_id = reader.read_u16()
-            item_id = DEFAULT_ID
+        toggle_item.activate_group = activate_group
 
-        else:
-            target_group_id = DEFAULT_ID
-            item_id = reader.read_u16()
+        toggle_item.target_group_id = target_group_id
 
-        subtract_count = value & subtract_count_bit == subtract_count_bit
-
-        pickup_item.target_group_id = target_group_id
-
-        pickup_item.subtract_count = subtract_count
-
-        pickup_item.item_id = item_id
-
-        pickup_item.mode = mode
-
-        return pickup_item
-
-    def is_subtract_count(self) -> bool:
-        return self.subtract_count
+        return toggle_item
 
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
@@ -1882,45 +1876,123 @@ class PickupItem(HasTargetGroup, HasItem, Object):  # type: ignore
 
         writer = Writer(binary, order)
 
-        mode = self.mode
+        value = 0
 
-        value = mode.value
+        if self.is_activate_group():
+            value |= ACTIVATE_GROUP_BIT
+
+        writer.write_u8(value)
+
+        writer.write_u16(self.target_group_id)
+
+    @classmethod
+    def from_robtop_data(cls: Type[TI], data: Mapping[int, str]) -> TI:
+        toggle_item = super().from_robtop_data(data)
+
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
+
+        toggle_item.target_group_id = target_group_id
+
+        return toggle_item
+
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
+
+        data[TARGET_GROUP_ID] = str(self.target_group_id)
+
+        data[ITEM_MODE] = str(ItemMode.TOGGLE.value)
+
+        return data
+
+
+SUBTRACT_COUNT_BIT = 0b00000001
+
+DEFAULT_SUBTRACT_COUNT = False
+
+
+PI = TypeVar("PI", bound="PickupItem")
+
+
+@define()
+class PickupItem(Object):
+    item_id: int = DEFAULT_ID
+
+    subtract_count: bool = DEFAULT_SUBTRACT_COUNT
+
+    def is_subtract_count(self) -> bool:
+        return self.subtract_count
+
+    @classmethod
+    def from_binary(
+        cls: Type[PI],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> PI:
+        subtract_count_bit = SUBTRACT_COUNT_BIT
+
+        pickup_item = super().from_binary(binary, order, version)
+
+        reader = Reader(binary, order)
+
+        value = reader.read_u8()
+
+        subtract_count = value & subtract_count_bit == subtract_count_bit
+
+        item_id = reader.read_u16()
+
+        pickup_item.subtract_count = subtract_count
+
+        pickup_item.item_id = item_id
+
+        return pickup_item
+
+    def to_binary(
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
+        super().to_binary(binary, order, version)
+
+        writer = Writer(binary, order)
+
+        value = 0
 
         if self.is_subtract_count():
             value |= SUBTRACT_COUNT_BIT
 
         writer.write_u8(value)
 
-        if mode.is_toggle_trigger():
-            writer.write_u16(self.target_group_id)
+        writer.write_u16(self.item_id)
 
-        else:
-            writer.write_u16(self.item_id)
+    @classmethod
+    def from_robtop_data(cls: Type[PI], data: Mapping[int, str]) -> PI:
+        pickup_item = super().from_robtop_data(data)
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+        item_id = parse_get_or(int, DEFAULT_ID, data.get(ITEM_ID))
 
-        mode = self.mode
+        subtract_count = parse_get_or(int_bool, DEFAULT_SUBTRACT_COUNT, data.get(SUBTRACT_COUNT))
 
-        if mode.is_toggle_trigger():
-            mapping[TARGET_GROUP_ID] = str(self.target_group_id)
+        pickup_item.item_id = item_id
 
-        else:
-            subtract_count = self.subtract_count
+        pickup_item.subtract_count = subtract_count
 
-            if subtract_count:
-                mapping[SUBTRACT_COUNT] = str(int(subtract_count))
+        return pickup_item
 
-            mapping[ITEM_ID] = str(self.item_id)
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[PICKUP_MODE] = str(mode.value)
+        subtract_count = self.is_subtract_count()
 
-        return mapping
+        if subtract_count:
+            data[SUBTRACT_COUNT] = bool_str(subtract_count)
+
+        data[ITEM_ID] = str(self.item_id)
+
+        data[ITEM_MODE] = str(ItemMode.PICKUP.value)
+
+        return data
 
 
-TOUCH_TRIGGERED = 11
-SPAWN_TRIGGERED = 62
-MULTI_TRIGGER = 87
+Item = Union[PickupItem, ToggleItem]
 
 
 TOUCH_TRIGGERED_BIT = 0b00000001
@@ -2002,16 +2074,12 @@ class Trigger(Object):
         return self.multi_trigger
 
     @classmethod
-    def from_robtop_mapping(cls: Type[T], mapping: Mapping[int, str]) -> T:
-        trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[T], data: Mapping[int, str]) -> T:
+        trigger = super().from_robtop_data(data)
 
-        touch_triggered = parse_get_or(
-            int_bool, DEFAULT_TOUCH_TRIGGERED, mapping.get(TOUCH_TRIGGERED)
-        )
-        spawn_triggered = parse_get_or(
-            int_bool, DEFAULT_SPAWN_TRIGGERED, mapping.get(SPAWN_TRIGGERED)
-        )
-        multi_trigger = parse_get_or(int_bool, DEFAULT_MULTI_TRIGGER, mapping.get(MULTI_TRIGGER))
+        touch_triggered = parse_get_or(int_bool, DEFAULT_TOUCH_TRIGGERED, data.get(TOUCH_TRIGGERED))
+        spawn_triggered = parse_get_or(int_bool, DEFAULT_SPAWN_TRIGGERED, data.get(SPAWN_TRIGGERED))
+        multi_trigger = parse_get_or(int_bool, DEFAULT_MULTI_TRIGGER, data.get(MULTI_TRIGGER))
 
         trigger.touch_triggered = touch_triggered
         trigger.spawn_triggered = spawn_triggered
@@ -2019,123 +2087,61 @@ class Trigger(Object):
 
         return trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
         touch_triggered = self.is_touch_triggered()
 
         if touch_triggered:
-            mapping[TOUCH_TRIGGERED] = str(int(touch_triggered))
+            data[TOUCH_TRIGGERED] = bool_str(touch_triggered)
 
         spawn_triggered = self.is_spawn_triggered()
 
         if spawn_triggered:
-            mapping[SPAWN_TRIGGERED] = str(int(spawn_triggered))
+            data[SPAWN_TRIGGERED] = bool_str(spawn_triggered)
 
         multi_trigger = self.is_multi_trigger()
 
-        if touch_triggered:
-            mapping[MULTI_TRIGGER] = str(int(multi_trigger))
+        if multi_trigger:
+            data[MULTI_TRIGGER] = bool_str(multi_trigger)
 
-        return mapping
-
-
-BLENDING = 17
-COPIED_COLOR_ID = 50
-COPIED_COLOR_HSV = 49
-COPY_OPACITY = 60
-PLAYER_COLOR_1 = 15
-PLAYER_COLOR_2 = 16
-
-PLAYER_COLOR_MASK = 0b00000011
-BLENDING_BIT = 0b00000100
-COPY_OPACITY_BIT = 0b00001000
+        return data
 
 
-DEFAULT_BLENDING = False
-DEFAULT_COPY_OPACITY = False
-DEFAULT_PLAYER_COLOR_1 = False
-DEFAULT_PLAYER_COLOR_2 = False
+DEFAULT_DURATION = 0.0
 
 
-CLT = TypeVar("CLT", bound="ColorTrigger")
+BCT = TypeVar("BCT", bound="BaseColorTrigger")
 
 
 @define()
-class ColorTrigger(HasTargetColor, HasColor, HasDuration, HasOpacity, Trigger):  # type: ignore
-    blending: bool = field(default=DEFAULT_BLENDING)
+class BaseColorTrigger(Trigger):
+    target_color_id: int = DEFAULT_ID
 
-    copied_color_id: int = field(default=DEFAULT_ID)
-    copied_color_hsv: HSV = field(factory=HSV)
-
-    copy_opacity: bool = field(default=False)
-
-    player_color: PlayerColor = field(default=PlayerColor.DEFAULT)
-
-    def is_blending(self) -> bool:
-        return self.blending
-
-    def is_copy_opacity(self) -> bool:
-        return self.copy_opacity
+    duration: float = DEFAULT_DURATION
 
     @classmethod
     def from_binary(
-        cls: Type[CLT],
+        cls: Type[BCT],
         binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-    ) -> CLT:
-        color_trigger = super().from_binary(binary, order, version)
+    ) -> BCT:
+        rounding = DEFAULT_ROUNDING
 
-        blending_bit = BLENDING_BIT
-        copy_opacity_bit = COPY_OPACITY_BIT
-        player_color_mask = PLAYER_COLOR_MASK
+        base_color_trigger = super().from_binary(binary, order, version)
 
         reader = Reader(binary, order)
 
-        value = reader.read_u32()
-
-        blending = value & blending_bit == blending_bit
-        copy_opacity = value & copy_opacity_bit == copy_opacity_bit
-
-        player_color_value = value & player_color_mask
-
-        if player_color_value == player_color_mask:
-            player_color = PlayerColor.NOT_USED
-
-        else:
-            player_color = PlayerColor(player_color_value)
-
-        value >>= BITS
-
-        color = Color(value)
-
-        duration = reader.read_f32()
-
         target_color_id = reader.read_u16()
-        copied_color_id = reader.read_u16()
 
-        copied_color_hsv = HSV.from_binary(binary, order, version)
+        duration = round(reader.read_f32(), rounding)
 
-        opacity = reader.read_f32()
+        base_color_trigger.target_color_id = target_color_id
 
-        color_trigger.blending = blending
-        color_trigger.copy_opacity = copy_opacity
+        base_color_trigger.duration = duration
 
-        color_trigger.player_color = player_color
-
-        color_trigger.color = color
-
-        color_trigger.duration = duration
-
-        color_trigger.target_color_id = target_color_id
-        color_trigger.copied_color_id = copied_color_id
-
-        color_trigger.copied_color_hsv = copied_color_hsv
-
-        color_trigger.opacity = opacity
-
-        return color_trigger
+        return base_color_trigger
 
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
@@ -2144,98 +2150,152 @@ class ColorTrigger(HasTargetColor, HasColor, HasDuration, HasOpacity, Trigger): 
 
         writer = Writer(binary, order)
 
-        value = self.player_color.value
+        writer.write_u16(self.target_color_id)
+
+        writer.write_f32(self.duration)
+
+    @classmethod
+    def from_robtop_data(cls: Type[BCT], data: Mapping[int, str]) -> BCT:
+        base_color_trigger = super().from_robtop_data(data)
+
+        target_color_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_COLOR_ID))
+
+        duration = parse_get_or(float, DEFAULT_DURATION, data.get(DURATION))
+
+        base_color_trigger.target_color_id = target_color_id
+
+        base_color_trigger.duration = duration
+
+        return base_color_trigger
+
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
+
+        data[TARGET_COLOR_ID] = str(self.target_color_id)
+
+        data[DURATION] = float_str(self.duration)
+
+        return data
+
+
+BLENDING_BIT = 0b00000001
+PLAYER_COLOR_MASK = 0b00000110
+PLAYER_COLOR_SHIFT = BLENDING_BIT.bit_length()
+
+
+DEFAULT_PLAYER_COLOR_1 = False
+DEFAULT_PLAYER_COLOR_2 = False
+
+
+def compute_player_color(player_color_1: bool, player_color_2: bool) -> PlayerColor:
+    if player_color_1 and player_color_2:
+        return PlayerColor.NOT_USED
+
+    if player_color_1:
+        return PlayerColor.COLOR_1
+
+    if player_color_2:
+        return PlayerColor.COLOR_2
+
+    return PlayerColor.NOT_USED
+
+
+DEFAULT_BLENDING = False
+DEFAULT_OPACITY = 1.0
+
+
+PLCT = TypeVar("PLCT", bound="PlayerColorTrigger")
+
+
+@define()
+class PlayerColorTrigger(BaseColorTrigger):
+    blending: bool = DEFAULT_BLENDING
+    opacity: float = DEFAULT_OPACITY
+
+    player_color: PlayerColor = PlayerColor.DEFAULT
+
+    def is_blending(self) -> bool:
+        return self.blending
+
+    @classmethod
+    def from_binary(
+        cls: Type[PLCT],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> PLCT:
+        rounding = DEFAULT_ROUNDING
+
+        blending_bit = BLENDING_BIT
+
+        player_color_trigger = super().from_binary(binary, order, version)
+
+        reader = Reader(binary, order)
+
+        value = reader.read_u8()
+
+        blending = value & blending_bit == blending_bit
+
+        player_color_value = (value & PLAYER_COLOR_MASK) >> PLAYER_COLOR_SHIFT
+
+        player_color = PlayerColor(player_color_value)
+
+        opacity = round(reader.read_f32(), rounding)
+
+        player_color_trigger.blending = blending
+
+        player_color_trigger.player_color = player_color
+
+        player_color_trigger.opacity = opacity
+
+        return player_color_trigger
+
+    def to_binary(
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
+        super().to_binary(binary, order, version)
+
+        writer = Writer(binary, order)
+
+        value = 0
 
         if self.is_blending():
             value |= BLENDING_BIT
 
-        if self.is_copy_opacity():
-            value |= COPY_OPACITY_BIT
+        value |= self.player_color.value << PLAYER_COLOR_SHIFT
 
-        value |= self.color.value << BITS
-
-        writer.write_u32(value)
-
-        writer.write_f32(self.duration)
-
-        writer.write_u16(self.target_color_id)
-        writer.write_u16(self.copied_color_id)
-
-        self.copied_color_hsv.to_binary(binary, order, version)
+        writer.write_u8(value)
 
         writer.write_f32(self.opacity)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[CLT], mapping: Mapping[int, str]) -> CLT:
-        color_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[PLCT], data: Mapping[int, str]) -> PLCT:
+        player_color_trigger = super().from_robtop_data(data)
 
-        blending = parse_get_or(int_bool, DEFAULT_BLENDING, mapping.get(BLENDING))
+        blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
 
-        copy_opacity = parse_get_or(int_bool, DEFAULT_COPY_OPACITY, mapping.get(COPY_OPACITY))
+        player_color_1 = parse_get_or(int_bool, DEFAULT_PLAYER_COLOR_1, data.get(PLAYER_COLOR_1))
+        player_color_2 = parse_get_or(int_bool, DEFAULT_PLAYER_COLOR_2, data.get(PLAYER_COLOR_2))
 
-        player_color_1 = parse_get_or(int_bool, DEFAULT_PLAYER_COLOR_1, mapping.get(PLAYER_COLOR_1))
-        player_color_2 = parse_get_or(int_bool, DEFAULT_PLAYER_COLOR_2, mapping.get(PLAYER_COLOR_2))
+        player_color = compute_player_color(player_color_1, player_color_2)
 
-        if player_color_1 and player_color_2:
-            player_color = PlayerColor.DEFAULT
+        opacity = parse_get_or(float, DEFAULT_OPACITY, data.get(OPACITY))
 
-        else:
-            if player_color_1:
-                player_color = PlayerColor.COLOR_1
+        player_color_trigger.blending = blending
 
-            elif player_color_2:
-                player_color = PlayerColor.COLOR_2
+        player_color_trigger.player_color = player_color
 
-            else:
-                player_color = PlayerColor.NOT_USED
+        player_color_trigger.opacity = opacity
 
-        red, green, blue = (
-            parse_get_or(int, DEFAULT_RED, mapping.get(RED)),
-            parse_get_or(int, DEFAULT_GREEN, mapping.get(GREEN)),
-            parse_get_or(int, DEFAULT_BLUE, mapping.get(BLUE)),
-        )
+        return player_color_trigger
 
-        color = Color.from_rgb(red, green, blue)
-
-        duration = parse_get_or(float, DEFAULT_DURATION, mapping.get(DURATION))
-
-        target_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_COLOR_ID))
-        copied_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(COPIED_COLOR_ID))
-
-        copied_color_hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(COPIED_COLOR_HSV))
-
-        opacity = parse_get_or(float, DEFAULT_OPACITY, mapping.get(OPACITY))
-
-        color_trigger.blending = blending
-        color_trigger.copy_opacity = copy_opacity
-
-        color_trigger.player_color = player_color
-
-        color_trigger.color = color
-
-        color_trigger.duration = duration
-
-        color_trigger.target_color_id = target_color_id
-        color_trigger.copied_color_id = copied_color_id
-
-        color_trigger.copied_color_hsv = copied_color_hsv
-
-        color_trigger.opacity = opacity
-
-        return color_trigger
-
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
         blending = self.is_blending()
 
         if blending:
-            mapping[BLENDING] = str(int(blending))
-
-        copy_opacity = self.is_copy_opacity()
-
-        if copy_opacity:
-            mapping[COPY_OPACITY] = str(int(copy_opacity))
+            data[BLENDING] = bool_str(blending)
 
         player_color = self.player_color
 
@@ -2243,124 +2303,371 @@ class ColorTrigger(HasTargetColor, HasColor, HasDuration, HasOpacity, Trigger): 
         player_color_2 = player_color.is_color_2()
 
         if player_color_1:
-            mapping[PLAYER_COLOR_1] = str(int(player_color_1))
+            data[PLAYER_COLOR_1] = bool_str(player_color_1)
 
         if player_color_2:
-            mapping[PLAYER_COLOR_2] = str(int(player_color_2))
+            data[PLAYER_COLOR_2] = bool_str(player_color_2)
 
-        red, green, blue = self.color.to_rgb()
+        data[OPACITY] = float_str(self.opacity)
 
-        mapping[RED] = str(red)
-        mapping[GREEN] = str(green)
-        mapping[BLUE] = str(blue)
-
-        mapping[DURATION] = float_str(self.duration)
-
-        mapping[TARGET_COLOR_ID] = str(self.target_color_id)
-
-        copied_color_id = self.copied_color_id
-
-        if copied_color_id:
-            mapping[COPIED_COLOR_ID] = str(self.copied_color_id)
-
-        copied_color_hsv = self.copied_color_hsv
-
-        if not copied_color_hsv.is_default():
-            mapping[COPIED_COLOR_HSV] = copied_color_hsv.to_robtop()
-
-        mapping[OPACITY] = float_str(self.opacity)
-
-        return mapping
+        return data
 
 
-MIGRATE = "this is the compatibility color trigger; use `migrate` method to migrate to newer system"
+DEFAULT_RED = BYTE
+DEFAULT_GREEN = BYTE
+DEFAULT_BLUE = BYTE
 
-CCT = TypeVar("CCT", bound="CompatibilityColorTrigger")
+
+NCT = TypeVar("NCT", bound="NormalColorTrigger")
 
 
 @define()
-class CompatibilityColorTrigger(  # type: ignore
-    Compatibility, HasColor, HasDuration, HasOpacity, Trigger
-):
-    TARGET_COLOR_ID: ClassVar[int]
+class NormalColorTrigger(BaseColorTrigger):
+    blending: bool = field(default=DEFAULT_BLENDING)
+    opacity: float = field(default=DEFAULT_OPACITY)
+    color: Color = field(factory=Color.default)
 
+    def is_blending(self) -> bool:
+        return self.blending
+
+    @classmethod
+    def from_binary(
+        cls: Type[NCT],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> NCT:
+        rounding = DEFAULT_ROUNDING
+
+        blending_bit = BLENDING_BIT
+
+        normal_color_trigger = super().from_binary(binary, order, version)
+
+        reader = Reader(binary, order)
+
+        value = reader.read_u32()
+
+        blending = value & blending_bit == blending_bit
+
+        value >>= BITS
+
+        color = Color(value)
+
+        opacity = round(reader.read_f32(), rounding)
+
+        normal_color_trigger.blending = blending
+        normal_color_trigger.color = color
+        normal_color_trigger.opacity = opacity
+
+        return normal_color_trigger
+
+    def to_binary(
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
+        super().to_binary(binary, order, version)
+
+        writer = Writer(binary, order)
+
+        value = 0
+
+        if self.is_blending():
+            value |= BLENDING_BIT
+
+        value |= self.color.value << BITS
+
+        writer.write_u32(value)
+
+        writer.write_f32(self.opacity)
+
+    @classmethod
+    def from_robtop_data(cls: Type[NCT], data: Mapping[int, str]) -> NCT:
+        normal_color_trigger = super().from_robtop_data(data)
+
+        blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
+
+        red = parse_get_or(int, DEFAULT_RED, data.get(RED))
+        green = parse_get_or(int, DEFAULT_GREEN, data.get(GREEN))
+        blue = parse_get_or(int, DEFAULT_BLUE, data.get(BLUE))
+
+        color = Color.from_rgb(red, green, blue)
+
+        opacity = parse_get_or(float, DEFAULT_OPACITY, data.get(OPACITY))
+
+        normal_color_trigger.blending = blending
+
+        normal_color_trigger.color = color
+
+        normal_color_trigger.opacity = opacity
+
+        return normal_color_trigger
+
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
+
+        color = self.color
+
+        actual = {
+            RED: str(color.red),
+            GREEN: str(color.green),
+            BLUE: str(color.blue),
+            OPACITY: float_str(self.opacity),
+        }
+
+        data.update(actual)
+
+        blending = self.is_blending()
+
+        if blending:
+            data[BLENDING] = bool_str(blending)
+
+        return data
+
+
+COPY_OPACITY_BIT = 0b00000010
+
+DEFAULT_COPY_OPACITY = False
+
+
+CCT = TypeVar("CCT", bound="CopiedColorTrigger")
+
+
+@define()
+class CopiedColorTrigger(BaseColorTrigger):
     blending: bool = field(default=DEFAULT_BLENDING)
 
     copied_color_id: int = field(default=DEFAULT_ID)
     copied_color_hsv: HSV = field(factory=HSV)
 
-    copy_opacity: bool = field(default=False)
-
-    player_color: PlayerColor = field(default=PlayerColor.DEFAULT)
+    opacity: Optional[float] = field(default=None)
 
     def is_blending(self) -> bool:
         return self.blending
 
     def is_copy_opacity(self) -> bool:
-        return self.copy_opacity
+        return self.opacity is None
 
     @classmethod
-    def from_robtop_mapping(cls: Type[CCT], mapping: Mapping[int, str]) -> CCT:
-        compatibility_color_trigger = super().from_robtop_mapping(mapping)
+    def from_binary(
+        cls: Type[CCT],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> CCT:
+        rounding = DEFAULT_ROUNDING
 
-        blending = parse_get_or(int_bool, DEFAULT_BLENDING, mapping.get(BLENDING))
+        blending_bit = BLENDING_BIT
+        copy_opacity_bit = COPY_OPACITY_BIT
 
-        copy_opacity = parse_get_or(int_bool, DEFAULT_COPY_OPACITY, mapping.get(COPY_OPACITY))
+        copied_color_trigger = super().from_binary(binary, order, version)
 
-        player_color_1 = parse_get_or(int_bool, DEFAULT_PLAYER_COLOR_1, mapping.get(PLAYER_COLOR_1))
-        player_color_2 = parse_get_or(int_bool, DEFAULT_PLAYER_COLOR_2, mapping.get(PLAYER_COLOR_2))
+        reader = Reader(binary, order)
 
-        if player_color_1 and player_color_2:
-            player_color = PlayerColor.DEFAULT
+        value = reader.read_u8()
+
+        blending = value & blending_bit == blending_bit
+        copy_opacity = value & copy_opacity_bit == copy_opacity_bit
+
+        if copy_opacity:
+            opacity = None
 
         else:
-            if player_color_1:
-                player_color = PlayerColor.COLOR_1
+            opacity = round(reader.read_f32(), rounding)
 
-            elif player_color_2:
-                player_color = PlayerColor.COLOR_2
+        copied_color_id = reader.read_u16()
+        copied_color_hsv = HSV.from_binary(binary, order, version)
 
-            else:
-                player_color = PlayerColor.NOT_USED
+        copied_color_trigger.blending = blending
+        copied_color_trigger.opacity = opacity
 
-        red, green, blue = (
-            parse_get_or(int, DEFAULT_RED, mapping.get(RED)),
-            parse_get_or(int, DEFAULT_GREEN, mapping.get(GREEN)),
-            parse_get_or(int, DEFAULT_BLUE, mapping.get(BLUE)),
-        )
+        copied_color_trigger.copied_color_id = copied_color_id
+        copied_color_trigger.copied_color_hsv = copied_color_hsv
 
-        color = Color.from_rgb(red, green, blue)
+        return copied_color_trigger
 
-        duration = parse_get_or(float, DEFAULT_DURATION, mapping.get(DURATION))
+    def to_binary(
+        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+    ) -> None:
+        super().to_binary(binary, order, version)
 
-        copied_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(COPIED_COLOR_ID))
+        writer = Writer(binary, order)
 
-        copied_color_hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(COPIED_COLOR_HSV))
+        value = 0
 
-        opacity = parse_get_or(float, DEFAULT_OPACITY, mapping.get(OPACITY))
+        if self.is_blending():
+            value |= BLENDING_BIT
 
-        compatibility_color_trigger.blending = blending
+        if self.is_copy_opacity():
+            value |= COPY_OPACITY_BIT
 
-        compatibility_color_trigger.copy_opacity = copy_opacity
+        writer.write_u8(value)
 
-        compatibility_color_trigger.player_color = player_color
+        opacity = self.opacity
 
-        compatibility_color_trigger.color = color
+        if opacity is not None:
+            writer.write_f32(opacity)
 
-        compatibility_color_trigger.duration = duration
+        writer.write_u16(self.copied_color_id)
 
-        compatibility_color_trigger.copied_color_id = copied_color_id
-        compatibility_color_trigger.copied_color_hsv = copied_color_hsv
+        self.copied_color_hsv.to_binary(binary, order, version)
 
-        compatibility_color_trigger.opacity = opacity
+    @classmethod
+    def from_robtop_data(cls: Type[CCT], data: Mapping[int, str]) -> CCT:
+        copied_color_trigger = super().from_robtop_data(data)
 
-        return compatibility_color_trigger
+        blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
 
-    def to_robtop_mapping(self) -> Never:
+        copied_color_id = parse_get_or(int, DEFAULT_ID, data.get(COPIED_COLOR_ID))
+        copied_color_hsv = parse_get_or_else(HSV.from_robtop, HSV, data.get(COPIED_COLOR_HSV))
+
+        copy_opacity = parse_get_or(int_bool, DEFAULT_COPY_OPACITY, data.get(COPY_OPACITY))
+
+        if copy_opacity:
+            opacity = None
+
+        else:
+            opacity = parse_get_or(float, DEFAULT_OPACITY, data.get(OPACITY))
+
+        copied_color_trigger.blending = blending
+
+        copied_color_trigger.copied_color_id = copied_color_id
+        copied_color_trigger.copied_color_hsv = copied_color_hsv
+
+        copied_color_trigger.opacity = opacity
+
+        return copied_color_trigger
+
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
+
+        actual = {
+            COPIED_COLOR_ID: str(self.copied_color_id),
+            COPIED_COLOR_HSV: self.copied_color_hsv.to_robtop(),
+            COPY_OPACITY: bool_str(self.is_copy_opacity()),
+        }
+
+        data.update(actual)
+
+        opacity = self.opacity
+
+        if opacity is not None:
+            data[OPACITY] = float_str(opacity)
+
+        blending = self.is_blending()
+
+        if blending:
+            data[BLENDING] = bool_str(blending)
+
+        return data
+
+
+ColorTrigger = Union[PlayerColorTrigger, NormalColorTrigger, CopiedColorTrigger]
+
+
+# compatibility
+
+@runtime_checkable
+class Compatibility(Protocol):
+    @required
+    def migrate(self) -> Object:
+        ...
+
+    def migrate_additional(self) -> Optional[Object]:
+        pass
+
+
+def is_compatibility(object: Object) -> TypeGuard[Compatibility]:
+    return is_instance(object, Compatibility)
+
+
+def migrate_objects(objects: Iterable[Object]) -> Iterator[Object]:
+    for object in objects:
+        if is_compatibility(object):
+            yield object.migrate()
+
+            additional = object.migrate_additional()
+
+            if additional is not None:
+                yield additional
+
+        else:
+            yield object
+
+
+MIGRATE = (
+    "this is the compatibility color trigger; use `migrate` method to migrate to the newer system"
+)
+
+
+BCMCT = TypeVar("BCMCT", bound="BaseCompatibilityColorTrigger")
+
+
+class BaseCompatibilityColorTrigger(Compatibility, Trigger):
+    duration: float = DEFAULT_DURATION
+
+    @classmethod
+    def from_robtop_data(cls: Type[BCMCT], data: Mapping[int, str]) -> BCMCT:
+        base_compatibility_color_trigger = super().from_robtop_data(data)
+
+        duration = parse_get_or(float, DEFAULT_DURATION, data.get(DURATION))
+
+        base_compatibility_color_trigger.duration = duration
+
+        return base_compatibility_color_trigger
+
+    def to_robtop_data(self) -> Never:
         raise NotImplementedError(MIGRATE)
 
-    def migrate(self) -> ColorTrigger:
-        return ColorTrigger(
+    @classmethod
+    def from_binary(
+        cls: Type[BCMCT],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> Never:
+        raise NotImplementedError(MIGRATE)
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> Never:
+        raise NotImplementedError(MIGRATE)
+
+
+PCMCT = TypeVar("PCMCT", bound="PlayerCompatibilityColorTrigger")
+
+
+@define()
+class PlayerCompatibilityColorTrigger(BaseCompatibilityColorTrigger):
+    blending: bool = DEFAULT_BLENDING
+    opacity: float = DEFAULT_OPACITY
+
+    player_color: PlayerColor = PlayerColor.DEFAULT
+
+    def is_blending(self) -> bool:
+        return self.blending
+
+    @classmethod
+    def from_robtop_data(cls: Type[PCMCT], data: Mapping[int, str]) -> PCMCT:
+        player_compatibility_color_trigger = super().from_robtop_data(data)
+
+        blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
+        opacity = parse_get_or(float, DEFAULT_OPACITY, data.get(OPACITY))
+
+        player_color_1 = parse_get_or(int_bool, DEFAULT_PLAYER_COLOR_1, data.get(PLAYER_COLOR_1))
+        player_color_2 = parse_get_or(int_bool, DEFAULT_PLAYER_COLOR_2, data.get(PLAYER_COLOR_2))
+
+        player_color = compute_player_color(player_color_1, player_color_2)
+
+        player_compatibility_color_trigger.blending = blending
+        player_compatibility_color_trigger.opacity = opacity
+        player_compatibility_color_trigger.player_color = player_color
+
+        return player_compatibility_color_trigger
+
+    def generate_migration(self, target_color_id: int) -> PlayerColorTrigger:
+        return PlayerColorTrigger(
             id=TriggerType.COLOR.id,  # NOTE: here is the small difference :)
             x=self.x,
             y=self.y,
@@ -2384,69 +2691,431 @@ class CompatibilityColorTrigger(  # type: ignore
             disable_glow=self.has_disable_glow(),
             special_checked=self.is_special_checked(),
             link_id=self.link_id,
+            unknown=self.is_unknown(),
             touch_triggered=self.is_touch_triggered(),
             spawn_triggered=self.is_spawn_triggered(),
             multi_trigger=self.is_multi_trigger(),
-            opacity=self.opacity,
+            target_color_id=target_color_id,  # NOTE: here is the main difference :p
             duration=self.duration,
-            color=self.color,
-            target_color_id=self.TARGET_COLOR_ID,  # NOTE: here is the main difference :p
             blending=self.is_blending(),
-            copied_color_id=self.copied_color_id,
-            copied_color_hsv=self.copied_color_hsv,
-            copy_opacity=self.is_copy_opacity(),
+            opacity=self.opacity,
             player_color=self.player_color,
         )
 
 
-class BackgroundColorTrigger(CompatibilityColorTrigger):
-    TARGET_COLOR_ID: ClassVar[int] = SpecialColorID.BACKGROUND.id
+NCMCT = TypeVar("NCMCT", bound="NormalCompatibilityColorTrigger")
 
 
-class GroundColorTrigger(CompatibilityColorTrigger):
-    TARGET_COLOR_ID: ClassVar[int] = SpecialColorID.GROUND.id
+@define()
+class NormalCompatibilityColorTrigger(BaseCompatibilityColorTrigger):
+    blending: bool = field(default=DEFAULT_BLENDING)
+    opacity: float = field(default=DEFAULT_OPACITY)
+    color: Color = field(factory=Color.default)
+
+    def is_blending(self) -> bool:
+        return self.blending
+
+    @classmethod
+    def from_robtop_data(cls: Type[NCMCT], data: Mapping[int, str]) -> NCMCT:
+        normal_compatibility_color_trigger = super().from_robtop_data(data)
+
+        blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
+        opacity = parse_get_or(float, DEFAULT_OPACITY, data.get(OPACITY))
+
+        red = parse_get_or(int, DEFAULT_RED, data.get(RED))
+        green = parse_get_or(int, DEFAULT_GREEN, data.get(GREEN))
+        blue = parse_get_or(int, DEFAULT_BLUE, data.get(BLUE))
+
+        color = Color.from_rgb(red, green, blue)
+
+        normal_compatibility_color_trigger.blending = blending
+        normal_compatibility_color_trigger.opacity = opacity
+        normal_compatibility_color_trigger.color = color
+
+        return normal_compatibility_color_trigger
+
+    def generate_migration(self, target_color_id: int) -> NormalColorTrigger:
+        return NormalColorTrigger(
+            id=TriggerType.COLOR.id,  # NOTE: here is the small difference :)
+            x=self.x,
+            y=self.y,
+            h_flipped=self.is_h_flipped(),
+            v_flipped=self.is_v_flipped(),
+            rotation=self.rotation,
+            scale=self.scale,
+            do_not_fade=self.has_do_not_fade(),
+            do_not_enter=self.has_do_not_enter(),
+            z_layer=self.z_layer,
+            z_order=self.z_order,
+            base_editor_layer=self.base_editor_layer,
+            additional_editor_layer=self.additional_editor_layer,
+            base_color_id=self.base_color_id,
+            detail_color_id=self.detail_color_id,
+            base_color_hsv=self.base_color_hsv,
+            detail_color_hsv=self.detail_color_hsv,
+            groups=self.groups,
+            group_parent=self.is_group_parent(),
+            high_detail=self.is_high_detail(),
+            disable_glow=self.has_disable_glow(),
+            special_checked=self.is_special_checked(),
+            link_id=self.link_id,
+            unknown=self.is_unknown(),
+            touch_triggered=self.is_touch_triggered(),
+            spawn_triggered=self.is_spawn_triggered(),
+            multi_trigger=self.is_multi_trigger(),
+            target_color_id=target_color_id,  # NOTE: here is the main difference :p
+            duration=self.duration,
+            blending=self.is_blending(),
+            opacity=self.opacity,
+            color=self.color,
+        )
 
 
-class LineColorTrigger(CompatibilityColorTrigger):
-    TARGET_COLOR_ID: ClassVar[int] = SpecialColorID.LINE.id
+CCMCT = TypeVar("CCMCT", bound="CopiedCompatibilityColorTrigger")
 
 
-class ObjectColorTrigger(CompatibilityColorTrigger):
-    TARGET_COLOR_ID: ClassVar[int] = SpecialColorID.OBJECT.id
+@define()
+class CopiedCompatibilityColorTrigger(BaseCompatibilityColorTrigger):
+    blending: bool = field(default=DEFAULT_BLENDING)
+
+    copied_color_id: int = field(default=DEFAULT_ID)
+    copied_color_hsv: HSV = field(factory=HSV)
+
+    opacity: Optional[float] = field(default=None)
+
+    def is_blending(self) -> bool:
+        return self.blending
+
+    def is_copy_opacity(self) -> bool:
+        return self.opacity is None
+
+    @classmethod
+    def from_robtop_data(cls: Type[CCMCT], data: Mapping[int, str]) -> CCMCT:
+        copied_compatibility_color_trigger = super().from_robtop_data(data)
+
+        blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
+
+        copied_color_id = parse_get_or(int, DEFAULT_ID, data.get(COPIED_COLOR_ID))
+
+        copied_color_hsv = parse_get_or_else(HSV.from_robtop, HSV, data.get(COPIED_COLOR_HSV))
+
+        copy_opacity = parse_get_or(int_bool, DEFAULT_COPY_OPACITY, data.get(COPY_OPACITY))
+
+        if copy_opacity:
+            opacity = None
+
+        else:
+            opacity = parse_get_or(float, DEFAULT_OPACITY, data.get(OPACITY))
+
+        copied_compatibility_color_trigger.blending = blending
+
+        copied_compatibility_color_trigger.copied_color_id = copied_color_id
+        copied_compatibility_color_trigger.copied_color_hsv = copied_color_hsv
+
+        copied_compatibility_color_trigger.opacity = opacity
+
+        return copied_compatibility_color_trigger
+
+    def generate_migration(self, target_color_id: int) -> CopiedColorTrigger:
+        return CopiedColorTrigger(
+            id=TriggerType.COLOR.id,  # NOTE: here is the small difference :)
+            x=self.x,
+            y=self.y,
+            h_flipped=self.is_h_flipped(),
+            v_flipped=self.is_v_flipped(),
+            rotation=self.rotation,
+            scale=self.scale,
+            do_not_fade=self.has_do_not_fade(),
+            do_not_enter=self.has_do_not_enter(),
+            z_layer=self.z_layer,
+            z_order=self.z_order,
+            base_editor_layer=self.base_editor_layer,
+            additional_editor_layer=self.additional_editor_layer,
+            base_color_id=self.base_color_id,
+            detail_color_id=self.detail_color_id,
+            base_color_hsv=self.base_color_hsv,
+            detail_color_hsv=self.detail_color_hsv,
+            groups=self.groups,
+            group_parent=self.is_group_parent(),
+            high_detail=self.is_high_detail(),
+            disable_glow=self.has_disable_glow(),
+            special_checked=self.is_special_checked(),
+            link_id=self.link_id,
+            unknown=self.is_unknown(),
+            touch_triggered=self.is_touch_triggered(),
+            spawn_triggered=self.is_spawn_triggered(),
+            multi_trigger=self.is_multi_trigger(),
+            target_color_id=target_color_id,  # NOTE: here is the main difference :p
+            duration=self.duration,
+            blending=self.is_blending(),
+            copied_color_id=self.copied_color_id,
+            copied_color_hsv=self.copied_color_hsv,
+            opacity=self.opacity,
+        )
 
 
-class Color1Trigger(CompatibilityColorTrigger):
-    TARGET_COLOR_ID: ClassVar[int] = 1
+CompatibilityColorTrigger = Union[
+    PlayerCompatibilityColorTrigger,
+    NormalCompatibilityColorTrigger,
+    CopiedCompatibilityColorTrigger,
+]
 
 
-class Color2Trigger(CompatibilityColorTrigger):
-    TARGET_COLOR_ID: ClassVar[int] = 2
+DEFAULT_TINT_GROUND = False
 
 
-class Color3Trigger(CompatibilityColorTrigger):
-    TARGET_COLOR_ID: ClassVar[int] = 3
+PBGT = TypeVar("PBGT", bound="PlayerBackgroundTrigger")
 
 
-class Color4Trigger(CompatibilityColorTrigger):
-    TARGET_COLOR_ID: ClassVar[int] = 4
+@define()
+class PlayerBackgroundTrigger(PlayerCompatibilityColorTrigger):
+    tint_ground: bool = DEFAULT_TINT_GROUND
+
+    def is_tint_ground(self) -> bool:
+        return self.tint_ground
+
+    @classmethod
+    def from_robtop_data(cls: Type[PBGT], data: Mapping[int, str]) -> PBGT:
+        player_background_color_trigger = super().from_robtop_data(data)
+
+        tint_ground = parse_get_or(int_bool, DEFAULT_TINT_GROUND, data.get(TINT_GROUND))
+
+        player_background_color_trigger.tint_ground = tint_ground
+
+        return player_background_color_trigger
+
+    def migrate(self) -> PlayerColorTrigger:
+        return self.generate_migration(BACKGROUND_COLOR_ID)
+
+    def migrate_additional(self) -> Optional[PlayerColorTrigger]:
+        return self.generate_migration(GROUND_COLOR_ID) if self.is_tint_ground() else None
 
 
-class Line3DColorTrigger(CompatibilityColorTrigger):
-    TARGET_COLOR_ID: ClassVar[int] = SpecialColorID.LINE_3D.id
+NBGT = TypeVar("NBGT", bound="NormalBackgroundTrigger")
 
 
-class Ground2ColorTrigger(CompatibilityColorTrigger):
-    TARGET_COLOR_ID: ClassVar[int] = SpecialColorID.SECONDARY_GROUND.id
+@define()
+class NormalBackgroundTrigger(NormalCompatibilityColorTrigger):
+    tint_ground: bool = DEFAULT_TINT_GROUND
+
+    def is_tint_ground(self) -> bool:
+        return self.tint_ground
+
+    @classmethod
+    def from_robtop_data(cls: Type[NBGT], data: Mapping[int, str]) -> NBGT:
+        normal_background_color_trigger = super().from_robtop_data(data)
+
+        tint_ground = parse_get_or(int_bool, DEFAULT_TINT_GROUND, data.get(TINT_GROUND))
+
+        normal_background_color_trigger.tint_ground = tint_ground
+
+        return normal_background_color_trigger
+
+    def migrate(self) -> NormalColorTrigger:
+        return self.generate_migration(BACKGROUND_COLOR_ID)
+
+    def migrate_additional(self) -> Optional[NormalColorTrigger]:
+        return self.generate_migration(GROUND_COLOR_ID) if self.is_tint_ground() else None
 
 
-# XXX: line 2 color trigger?
+CBGT = TypeVar("CBGT", bound="CopiedBackgroundTrigger")
+
+
+@define()
+class CopiedBackgroundTrigger(CopiedCompatibilityColorTrigger):
+    tint_ground: bool = DEFAULT_TINT_GROUND
+
+    def is_tint_ground(self) -> bool:
+        return self.tint_ground
+
+    @classmethod
+    def from_robtop_data(cls: Type[CBGT], data: Mapping[int, str]) -> CBGT:
+        copied_background_color_trigger = super().from_robtop_data(data)
+
+        tint_ground = parse_get_or(int_bool, DEFAULT_TINT_GROUND, data.get(TINT_GROUND))
+
+        copied_background_color_trigger.tint_ground = tint_ground
+
+        return copied_background_color_trigger
+
+    def migrate(self) -> CopiedColorTrigger:
+        return self.generate_migration(BACKGROUND_COLOR_ID)
+
+    def migrate_additional(self) -> Optional[CopiedColorTrigger]:
+        return self.generate_migration(GROUND_COLOR_ID) if self.is_tint_ground() else None
+
+
+@define()
+class PlayerGroundTrigger(PlayerCompatibilityColorTrigger):
+    def migrate(self) -> PlayerColorTrigger:
+        return self.generate_migration(GROUND_COLOR_ID)
+
+
+@define()
+class NormalGroundTrigger(NormalCompatibilityColorTrigger):
+    def migrate(self) -> NormalColorTrigger:
+        return self.generate_migration(GROUND_COLOR_ID)
+
+
+@define()
+class CopiedGroundTrigger(CopiedCompatibilityColorTrigger):
+    def migrate(self) -> CopiedColorTrigger:
+        return self.generate_migration(GROUND_COLOR_ID)
+
+
+@define()
+class PlayerLineTrigger(PlayerCompatibilityColorTrigger):
+    def migrate(self) -> PlayerColorTrigger:
+        return self.generate_migration(LINE_COLOR_ID)
+
+
+@define()
+class NormalLineTrigger(NormalCompatibilityColorTrigger):
+    def migrate(self) -> NormalColorTrigger:
+        return self.generate_migration(LINE_COLOR_ID)
+
+
+@define()
+class CopiedLineTrigger(CopiedCompatibilityColorTrigger):
+    def migrate(self) -> CopiedColorTrigger:
+        return self.generate_migration(LINE_COLOR_ID)
+
+
+@define()
+class PlayerObjectTrigger(PlayerCompatibilityColorTrigger):
+    def migrate(self) -> PlayerColorTrigger:
+        return self.generate_migration(OBJECT_COLOR_ID)
+
+
+@define()
+class NormalObjectTrigger(NormalCompatibilityColorTrigger):
+    def migrate(self) -> NormalColorTrigger:
+        return self.generate_migration(OBJECT_COLOR_ID)
+
+
+@define()
+class CopiedObjectTrigger(CopiedCompatibilityColorTrigger):
+    def migrate(self) -> CopiedColorTrigger:
+        return self.generate_migration(OBJECT_COLOR_ID)
+
+
+@define()
+class PlayerLine3DTrigger(PlayerCompatibilityColorTrigger):
+    def migrate(self) -> PlayerColorTrigger:
+        return self.generate_migration(LINE_3D_COLOR_ID)
+
+
+@define()
+class NormalLine3DTrigger(NormalCompatibilityColorTrigger):
+    def migrate(self) -> NormalColorTrigger:
+        return self.generate_migration(LINE_3D_COLOR_ID)
+
+
+@define()
+class CopiedLine3DTrigger(CopiedCompatibilityColorTrigger):
+    def migrate(self) -> CopiedColorTrigger:
+        return self.generate_migration(LINE_3D_COLOR_ID)
+
+
+@define()
+class PlayerSecondaryGroundTrigger(PlayerCompatibilityColorTrigger):
+    def migrate(self) -> PlayerColorTrigger:
+        return self.generate_migration(SECONDARY_GROUND_COLOR_ID)
+
+
+@define()
+class NormalSecondaryGroundTrigger(NormalCompatibilityColorTrigger):
+    def migrate(self) -> NormalColorTrigger:
+        return self.generate_migration(SECONDARY_GROUND_COLOR_ID)
+
+
+@define()
+class CopiedSecondaryGroundTrigger(CopiedCompatibilityColorTrigger):
+    def migrate(self) -> CopiedColorTrigger:
+        return self.generate_migration(SECONDARY_GROUND_COLOR_ID)
+
+
+@define()
+class PlayerColor1Trigger(PlayerCompatibilityColorTrigger):
+    def migrate(self) -> PlayerColorTrigger:
+        return self.generate_migration(COLOR_1_ID)
+
+
+@define()
+class NormalColor1Trigger(NormalCompatibilityColorTrigger):
+    def migrate(self) -> NormalColorTrigger:
+        return self.generate_migration(COLOR_1_ID)
+
+
+@define()
+class CopiedColor1Trigger(CopiedCompatibilityColorTrigger):
+    def migrate(self) -> CopiedColorTrigger:
+        return self.generate_migration(COLOR_1_ID)
+
+
+@define()
+class PlayerColor2Trigger(PlayerCompatibilityColorTrigger):
+    def migrate(self) -> PlayerColorTrigger:
+        return self.generate_migration(COLOR_2_ID)
+
+
+@define()
+class NormalColor2Trigger(NormalCompatibilityColorTrigger):
+    def migrate(self) -> NormalColorTrigger:
+        return self.generate_migration(COLOR_2_ID)
+
+
+@define()
+class CopiedColor2Trigger(CopiedCompatibilityColorTrigger):
+    def migrate(self) -> CopiedColorTrigger:
+        return self.generate_migration(COLOR_2_ID)
+
+
+@define()
+class PlayerColor3Trigger(PlayerCompatibilityColorTrigger):
+    def migrate(self) -> PlayerColorTrigger:
+        return self.generate_migration(COLOR_3_ID)
+
+
+@define()
+class NormalColor3Trigger(NormalCompatibilityColorTrigger):
+    def migrate(self) -> NormalColorTrigger:
+        return self.generate_migration(COLOR_3_ID)
+
+
+@define()
+class CopiedColor3Trigger(CopiedCompatibilityColorTrigger):
+    def migrate(self) -> CopiedColorTrigger:
+        return self.generate_migration(COLOR_3_ID)
+
+
+@define()
+class PlayerColor4Trigger(PlayerCompatibilityColorTrigger):
+    def migrate(self) -> PlayerColorTrigger:
+        return self.generate_migration(COLOR_4_ID)
+
+
+@define()
+class NormalColor4Trigger(NormalCompatibilityColorTrigger):
+    def migrate(self) -> NormalColorTrigger:
+        return self.generate_migration(COLOR_4_ID)
+
+
+@define()
+class CopiedColor4Trigger(CopiedCompatibilityColorTrigger):
+    def migrate(self) -> CopiedColorTrigger:
+        return self.generate_migration(COLOR_4_ID)
 
 
 ALT = TypeVar("ALT", bound="AlphaTrigger")
 
 
 @define()
-class AlphaTrigger(HasTargetGroup, HasDuration, HasOpacity, Trigger):  # type: ignore
+class AlphaTrigger(Trigger):
+    target_group_id: int = DEFAULT_ID
+    duration: float = DEFAULT_DURATION
+    opacity: float = DEFAULT_OPACITY
+
     @classmethod
     def from_binary(
         cls: Type[ALT],
@@ -2454,15 +3123,17 @@ class AlphaTrigger(HasTargetGroup, HasDuration, HasOpacity, Trigger):  # type: i
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> ALT:
+        rounding = DEFAULT_ROUNDING
+
         alpha_trigger = super().from_binary(binary, order, version)
 
         reader = Reader(binary, order)
 
-        duration = reader.read_f32()
+        duration = round(reader.read_f32(), rounding)
 
         target_group_id = reader.read_u16()
 
-        opacity = reader.read_f32()
+        opacity = round(reader.read_f32(), rounding)
 
         alpha_trigger.duration = duration
         alpha_trigger.target_group_id = target_group_id
@@ -2482,14 +3153,14 @@ class AlphaTrigger(HasTargetGroup, HasDuration, HasOpacity, Trigger):  # type: i
         writer.write_f32(self.opacity)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[ALT], mapping: Mapping[int, str]) -> ALT:
-        alpha_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[ALT], data: Mapping[int, str]) -> ALT:
+        alpha_trigger = super().from_robtop_data(data)
 
-        duration = parse_get_or(float, DEFAULT_DURATION, mapping.get(DURATION))
+        duration = parse_get_or(float, DEFAULT_DURATION, data.get(DURATION))
 
-        target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
 
-        opacity = parse_get_or(float, DEFAULT_OPACITY, mapping.get(OPACITY))
+        opacity = parse_get_or(float, DEFAULT_OPACITY, data.get(OPACITY))
 
         alpha_trigger.duration = duration
         alpha_trigger.target_group_id = target_group_id
@@ -2497,140 +3168,60 @@ class AlphaTrigger(HasTargetGroup, HasDuration, HasOpacity, Trigger):  # type: i
 
         return alpha_trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[DURATION] = float_str(self.duration)
+        data[DURATION] = float_str(self.duration)
 
-        mapping[TARGET_GROUP_ID] = str(self.target_group_id)
+        data[TARGET_GROUP_ID] = str(self.target_group_id)
 
-        mapping[OPACITY] = float_str(self.opacity)
+        data[OPACITY] = float_str(self.opacity)
 
-        return mapping
-
-
-FADE_IN = 45
-HOLD = 46
-FADE_OUT = 47
-EXCLUSIVE = 86
-PULSE_MODE = 48
-PULSE_TARGET_TYPE = 52
-MAIN_ONLY = 65
-DETAIL_ONLY = 66
-
-
-PULSE_TARGET_TYPE_BIT = 0b00000001
-PULSE_TYPE_MASK = 0b00000110
-PULSE_MODE_BIT = 0b00001000
-EXCLUSIVE_BIT = 0b00010000
-
-PULSE_TYPE_SHIFT = PULSE_TARGET_TYPE_BIT.bit_length()
-PULSE_MODE_SHIFT = PULSE_TYPE_MASK.bit_length()
+        return data
 
 
 DEFAULT_FADE_IN = 0.0
 DEFAULT_HOLD = 0.0
 DEFAULT_FADE_OUT = 0.0
 
-DEFAULT_MAIN_ONLY = False
-DEFAULT_DETAIL_ONLY = False
 
-DEFAULT_EXCLUSIVE = False
-
-
-PLT = TypeVar("PLT", bound="PulseTrigger")
+BPT = TypeVar("BPT", bound="BasePulseTrigger")
 
 
 @define()
-class PulseTrigger(HasTargetColor, HasTargetGroup, HasColor, Trigger):  # type: ignore
-    fade_in: float = field(default=DEFAULT_FADE_IN)
-    hold: float = field(default=DEFAULT_HOLD)
-    fade_out: float = field(default=DEFAULT_FADE_OUT)
-
-    color_id: int = field(default=DEFAULT_ID)
-    hsv: HSV = field(factory=HSV)
-
-    target_type: PulseTargetType = field(default=PulseTargetType.DEFAULT)
-    type: PulseType = field(default=PulseType.DEFAULT)
-    mode: PulseMode = field(default=PulseMode.DEFAULT)
-
-    exclusive: bool = field(default=DEFAULT_EXCLUSIVE)
-
-    def is_exclusive(self) -> bool:
-        return self.exclusive
+class BasePulseTrigger(Trigger):
+    fade_in: float = DEFAULT_FADE_IN
+    hold: float = DEFAULT_HOLD
+    fade_out: float = DEFAULT_FADE_OUT
 
     @classmethod
     def from_binary(
-        cls: Type[PLT],
+        cls: Type[BPT],
         binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-    ) -> PLT:
-        exclusive_bit = EXCLUSIVE_BIT
+    ) -> BPT:
+        rounding = DEFAULT_ROUNDING
 
         pulse_trigger = super().from_binary(binary, order, version)
 
         reader = Reader(binary, order)
 
-        fade_in = reader.read_f32()
-        hold = reader.read_f32()
-        fade_out = reader.read_f32()
-
-        value = reader.read_u32()
-
-        exclusive = value & exclusive_bit == exclusive_bit
-
-        target_type_value = value & PULSE_TARGET_TYPE_BIT
-
-        type_value = (value & PULSE_TYPE_MASK) >> PULSE_TYPE_SHIFT
-
-        mode_value = (value & PULSE_MODE_BIT) >> PULSE_MODE_SHIFT
-
-        target_type = PulseTargetType(target_type_value)
-        type = PulseType(type_value)
-        mode = PulseMode(mode_value)
-
-        value >>= BITS
-
-        color = Color(value)
-
-        if mode.is_hsv():
-            color_id = reader.read_u16()
-            hsv = HSV.from_binary(binary, order, version)
-
-        else:
-            color_id = DEFAULT_ID
-            hsv = HSV()
-
-        if target_type.is_color_channel():
-            target_color_id = reader.read_u16()
-            target_group_id = DEFAULT_ID
-
-        else:
-            target_color_id = DEFAULT_ID
-            target_group_id = reader.read_u16()
+        fade_in = round(reader.read_f32(), rounding)
+        hold = round(reader.read_f32(), rounding)
+        fade_out = round(reader.read_f32(), rounding)
 
         pulse_trigger.fade_in = fade_in
         pulse_trigger.hold = hold
         pulse_trigger.fade_out = fade_out
 
-        pulse_trigger.target_color_id = target_color_id
-        pulse_trigger.target_group_id = target_group_id
-
-        pulse_trigger.exclusive = exclusive
-
-        pulse_trigger.target_type = target_type
-        pulse_trigger.type = type
-        pulse_trigger.mode = mode
-
-        pulse_trigger.color = color
-        pulse_trigger.color_id = color_id
-        pulse_trigger.hsv = hsv
-
         return pulse_trigger
 
     def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
     ) -> None:
         super().to_binary(binary, order, version)
 
@@ -2640,14 +3231,89 @@ class PulseTrigger(HasTargetColor, HasTargetGroup, HasColor, Trigger):  # type: 
         writer.write_f32(self.hold)
         writer.write_f32(self.fade_out)
 
-        target_type = self.target_type
+    @classmethod
+    def from_robtop_data(cls: Type[BPT], data: Mapping[int, str]) -> BPT:
+        base_pulse_trigger = super().from_robtop_data(data)
 
-        value = target_type.value
+        fade_in = parse_get_or(float, DEFAULT_FADE_IN, data.get(FADE_IN))
+        hold = parse_get_or(float, DEFAULT_HOLD, data.get(HOLD))
+        fade_out = parse_get_or(float, DEFAULT_FADE_OUT, data.get(FADE_OUT))
 
-        mode = self.mode
+        base_pulse_trigger.fade_in = fade_in
+        base_pulse_trigger.hold = hold
+        base_pulse_trigger.fade_out = fade_out
 
-        value |= self.type.value << PULSE_TYPE_SHIFT
-        value |= mode.value << PULSE_MODE_SHIFT
+        return base_pulse_trigger
+
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
+
+        actual = {
+            FADE_IN: float_str(self.fade_in),
+            HOLD: float_str(self.hold),
+            FADE_OUT: float_str(self.fade_out),
+        }
+
+        data.update(actual)
+
+        return data
+
+
+DEFAULT_EXCLUSIVE = False
+
+
+EXCLUSIVE_BIT = 0b00000001
+
+
+PCT = TypeVar("PCT", bound="PulseColorTrigger")
+
+
+@define()
+class PulseColorTrigger(BasePulseTrigger):
+    exclusive: bool = field(default=DEFAULT_EXCLUSIVE)
+
+    color: Color = field(factory=Color.default)
+
+    def is_exclusive(self) -> bool:
+        return self.exclusive
+
+    @classmethod
+    def from_binary(
+        cls: Type[PCT],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> PCT:
+        exclusive_bit = EXCLUSIVE_BIT
+
+        pulse_color_trigger = super().from_binary(binary, order, version)
+
+        reader = Reader(binary, order)
+
+        value = reader.read_u32()
+
+        exclusive = value & exclusive_bit == exclusive_bit
+
+        value >>= BITS
+
+        color = Color(value)
+
+        pulse_color_trigger.color = color
+        pulse_color_trigger.exclusive = exclusive
+
+        return pulse_color_trigger
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> None:
+        super().to_binary(binary, order, version)
+
+        writer = Writer(binary, order)
+
+        value = 0
 
         if self.is_exclusive():
             value |= EXCLUSIVE_BIT
@@ -2656,166 +3322,536 @@ class PulseTrigger(HasTargetColor, HasTargetGroup, HasColor, Trigger):  # type: 
 
         writer.write_u32(value)
 
-        if mode.is_hsv():
-            writer.write_u16(self.color_id)
-            self.hsv.to_binary(binary, order, version)
-
-        if target_type.is_color_channel():
-            writer.write_u16(self.target_color_id)
-
-        else:
-            writer.write_u16(self.target_group_id)
-
     @classmethod
-    def from_robtop_mapping(cls: Type[PLT], mapping: Mapping[int, str]) -> PLT:
-        pulse_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[PCT], data: Mapping[int, str]) -> PCT:
+        pulse_color_trigger = super().from_robtop_data(data)
 
-        fade_in = parse_get_or(float, DEFAULT_FADE_IN, mapping.get(FADE_IN))
-        hold = parse_get_or(float, DEFAULT_HOLD, mapping.get(HOLD))
-        fade_out = parse_get_or(float, DEFAULT_FADE_OUT, mapping.get(FADE_OUT))
+        red = parse_get_or(int, DEFAULT_RED, data.get(RED))
+        green = parse_get_or(int, DEFAULT_GREEN, data.get(GREEN))
+        blue = parse_get_or(int, DEFAULT_BLUE, data.get(BLUE))
 
-        exclusive = parse_get_or(int_bool, DEFAULT_EXCLUSIVE, mapping.get(EXCLUSIVE))
+        color = Color.from_rgb(red, green, blue)
 
-        target_type = parse_get_or(
-            partial_parse_enum(int, PulseTargetType),
-            PulseTargetType.DEFAULT,
-            mapping.get(PULSE_TARGET_TYPE),
-        )
+        exclusive = parse_get_or(int_bool, DEFAULT_EXCLUSIVE, data.get(EXCLUSIVE))
 
-        if target_type.is_color_channel():
-            target_color_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))  # why
-            target_group_id = DEFAULT_ID
+        pulse_color_trigger.color = color
+        pulse_color_trigger.exclusive = exclusive
 
-        else:
-            target_color_id = DEFAULT_ID
-            target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
+        return pulse_color_trigger
 
-        mode = parse_get_or(
-            partial_parse_enum(int, PulseMode), PulseMode.DEFAULT, mapping.get(PULSE_MODE)
-        )
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        if mode.is_color():
-            red, green, blue = (
-                parse_get_or(int, DEFAULT_RED, mapping.get(RED)),
-                parse_get_or(int, DEFAULT_GREEN, mapping.get(GREEN)),
-                parse_get_or(int, DEFAULT_BLUE, mapping.get(BLUE)),
-            )
+        color = self.color
 
-            color = Color.from_rgb(red, green, blue)
+        actual = {
+            RED: str(color.red),
+            GREEN: str(color.green),
+            BLUE: str(color.blue),
+            PULSE_MODE: str(PulseMode.COLOR.value),
+        }
 
-            color_id = DEFAULT_ID
-            hsv = HSV()
-
-        else:
-            color = Color.default()
-
-            color_id = parse_get_or(int, DEFAULT_ID, mapping.get(COPIED_COLOR_ID))
-            hsv = parse_get_or(HSV.from_robtop, HSV(), mapping.get(COPIED_COLOR_HSV))
-
-        main_only = parse_get_or(int_bool, DEFAULT_MAIN_ONLY, mapping.get(MAIN_ONLY))
-        detail_only = parse_get_or(int_bool, DEFAULT_DETAIL_ONLY, mapping.get(DETAIL_ONLY))
-
-        if main_only ^ detail_only:
-            if main_only:
-                type = PulseType.MAIN
-
-            if detail_only:
-                type = PulseType.DETAIL
-
-        else:
-            type = PulseType.BOTH
-
-        pulse_trigger.fade_in = fade_in
-        pulse_trigger.hold = hold
-        pulse_trigger.fade_out = fade_out
-
-        pulse_trigger.target_color_id = target_color_id
-        pulse_trigger.target_group_id = target_group_id
-
-        pulse_trigger.exclusive = exclusive
-
-        pulse_trigger.target_type = target_type
-        pulse_trigger.mode = mode
-        pulse_trigger.type = type
-
-        pulse_trigger.color = color
-        pulse_trigger.color_id = color_id
-        pulse_trigger.hsv = hsv
-
-        return pulse_trigger
-
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
-
-        fade_in = self.fade_in
-
-        if fade_in:
-            mapping[FADE_IN] = float_str(fade_in)
-
-        hold = self.hold
-
-        if hold:
-            mapping[HOLD] = float_str(hold)
-
-        fade_out = self.fade_out
-
-        if fade_out:
-            mapping[FADE_OUT] = float_str(fade_out)
+        data.update(actual)
 
         exclusive = self.is_exclusive()
 
         if exclusive:
-            mapping[EXCLUSIVE] = str(int(exclusive))
+            data[EXCLUSIVE] = bool_str(exclusive)
 
-        target_type = self.target_type
+        return data
 
-        if target_type.is_color_channel():
-            mapping[TARGET_GROUP_ID] = str(self.target_color_id)  # why
 
-        else:
-            mapping[TARGET_GROUP_ID] = str(self.target_group_id)
+PHT = TypeVar("PHT", bound="PulseHSVTrigger")
 
-        mapping[PULSE_TARGET_TYPE] = str(target_type.value)
 
-        mode = self.mode
+@define()
+class PulseHSVTrigger(BasePulseTrigger):
+    exclusive: bool = field(default=DEFAULT_EXCLUSIVE)
 
-        if mode.is_color():
-            red, green, blue = self.color.to_rgb()
+    copied_color_id: int = field(default=DEFAULT_ID)
+    copied_color_hsv: HSV = field(factory=HSV)
 
-            mapping[RED] = str(red)
-            mapping[GREEN] = str(green)
-            mapping[BLUE] = str(blue)
+    def is_exclusive(self) -> bool:
+        return self.exclusive
 
-        else:
-            mapping[COPIED_COLOR_ID] = str(self.color_id)
-            mapping[COPIED_COLOR_HSV] = self.hsv.to_robtop()
+    @classmethod
+    def from_binary(
+        cls: Type[PHT],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> PHT:
+        exclusive_bit = EXCLUSIVE_BIT
 
-        mapping[PULSE_MODE] = str(mode.value)
+        pulse_hsv_trigger = super().from_binary(binary, order, version)
 
-        type = self.type
+        reader = Reader(binary, order)
 
-        main_only = type.is_main_only()
-        detail_only = type.is_detail_only()
+        copied_color_id = reader.read_u16()
+        copied_color_hsv = HSV.from_binary(binary, order, version)
+
+        value = reader.read_u8()
+
+        exclusive = value & exclusive_bit == exclusive_bit
+
+        pulse_hsv_trigger.copied_color_id = copied_color_id
+        pulse_hsv_trigger.copied_color_hsv = copied_color_hsv
+
+        pulse_hsv_trigger.exclusive = exclusive
+
+        return pulse_hsv_trigger
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> None:
+        super().to_binary(binary, order, version)
+
+        writer = Writer(binary, order)
+
+        writer.write_u16(self.copied_color_id)
+        self.copied_color_hsv.to_binary(binary, order, version)
+
+        value = 0
+
+        if self.is_exclusive():
+            value |= EXCLUSIVE_BIT
+
+        writer.write_u8(value)
+
+    @classmethod
+    def from_robtop_data(cls: Type[PHT], data: Mapping[int, str]) -> PHT:
+        pulse_hsv_trigger = super().from_robtop_data(data)
+
+        copied_color_id = parse_get_or(int, DEFAULT_ID, data.get(COPIED_COLOR_ID))
+        copied_color_hsv = parse_get_or_else(HSV.from_robtop, HSV, data.get(COPIED_COLOR_HSV))
+
+        exclusive = parse_get_or(int_bool, DEFAULT_EXCLUSIVE, data.get(EXCLUSIVE))
+
+        pulse_hsv_trigger.copied_color_id = copied_color_id
+        pulse_hsv_trigger.copied_color_hsv = copied_color_hsv
+
+        pulse_hsv_trigger.exclusive = exclusive
+
+        return pulse_hsv_trigger
+
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
+
+        actual = {
+            COPIED_COLOR_ID: str(self.copied_color_id),
+            COPIED_COLOR_HSV: self.copied_color_hsv.to_robtop(),
+            PULSE_MODE: str(PulseMode.HSV.value),
+        }
+
+        data.update(actual)
+
+        exclusive = self.is_exclusive()
+
+        if exclusive:
+            data[EXCLUSIVE] = bool_str(exclusive)
+
+        return data
+
+
+PCCT = TypeVar("PCCT", bound="PulseColorChannelTrigger")
+
+
+@define()
+class PulseColorChannelTrigger(PulseColorTrigger):
+    target_color_id: int = DEFAULT_ID
+
+    @classmethod
+    def from_binary(
+        cls: Type[PCCT],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> PCCT:
+        pulse_color_channel_trigger = super().from_binary(binary, order, version)
+
+        reader = Reader(binary, order)
+
+        target_color_id = reader.read_u16()
+
+        pulse_color_channel_trigger.target_color_id = target_color_id
+
+        return pulse_color_channel_trigger
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> None:
+        super().to_binary(binary, order, version)
+
+        writer = Writer(binary, order)
+
+        writer.write_u16(self.target_color_id)
+
+    @classmethod
+    def from_robtop_data(cls: Type[PCCT], data: Mapping[int, str]) -> PCCT:
+        pulse_color_channel_trigger = super().from_robtop_data(data)
+
+        target_color_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))  # XXX: why?
+
+        pulse_color_channel_trigger.target_color_id = target_color_id
+
+        return pulse_color_channel_trigger
+
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
+
+        data[TARGET_GROUP_ID] = str(self.target_color_id)  # XXX: why?
+        data[PULSE_TARGET_TYPE] = str(PulseTargetType.COLOR_CHANNEL.value)
+
+        return data
+
+
+PHCT = TypeVar("PHCT", bound="PulseHSVChannelTrigger")
+
+
+@define()
+class PulseHSVChannelTrigger(PulseHSVTrigger):
+    target_color_id: int = DEFAULT_ID
+
+    @classmethod
+    def from_binary(
+        cls: Type[PHCT],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> PHCT:
+        pulse_hsv_channel_trigger = super().from_binary(binary, order, version)
+
+        reader = Reader(binary, order)
+
+        target_color_id = reader.read_u16()
+
+        pulse_hsv_channel_trigger.target_color_id = target_color_id
+
+        return pulse_hsv_channel_trigger
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> None:
+        super().to_binary(binary, order, version)
+
+        writer = Writer(binary, order)
+
+        writer.write_u16(self.target_color_id)
+
+    @classmethod
+    def from_robtop_data(cls: Type[PHCT], data: Mapping[int, str]) -> PHCT:
+        pulse_hsv_channel_trigger = super().from_robtop_data(data)
+
+        target_color_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))  # XXX: why?
+
+        pulse_hsv_channel_trigger.target_color_id = target_color_id
+
+        return pulse_hsv_channel_trigger
+
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
+
+        data[TARGET_GROUP_ID] = str(self.target_color_id)  # XXX: why?
+        data[PULSE_TARGET_TYPE] = str(PulseTargetType.COLOR_CHANNEL.value)
+
+        return data
+
+
+DEFAULT_MAIN_ONLY = False
+DEFAULT_DETAIL_ONLY = False
+
+
+def compute_pulse_type(main_only: bool, detail_only: bool) -> PulseType:
+    if main_only ^ detail_only:
+        if main_only:
+            return PulseType.MAIN
+
+        return PulseType.DETAIL
+
+    return PulseType.BOTH
+
+
+PCGT = TypeVar("PCGT", bound="PulseColorGroupTrigger")
+
+
+@define()
+class PulseColorGroupTrigger(PulseColorTrigger):
+    target_group_id: int = DEFAULT_ID
+    pulse_type: PulseType = PulseType.DEFAULT
+
+    @classmethod
+    def from_binary(
+        cls: Type[PCGT],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> PCGT:
+        pulse_color_group_trigger = super().from_binary(binary, order, version)
+
+        reader = Reader(binary, order)
+
+        target_group_id = reader.read_u16()
+
+        pulse_type_value = reader.read_u8()
+
+        pulse_type = PulseType(pulse_type_value)
+
+        pulse_color_group_trigger.target_group_id = target_group_id
+
+        pulse_color_group_trigger.pulse_type = pulse_type
+
+        return pulse_color_group_trigger
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> None:
+        super().to_binary(binary, order, version)
+
+        writer = Writer(binary, order)
+
+        writer.write_u16(self.target_group_id)
+
+        writer.write_u8(self.pulse_type.value)
+
+    @classmethod
+    def from_robtop_data(cls: Type[PCGT], data: Mapping[int, str]) -> PCGT:
+        pulse_color_group_trigger = super().from_robtop_data(data)
+
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
+
+        main_only = parse_get_or(int_bool, DEFAULT_MAIN_ONLY, data.get(MAIN_ONLY))
+        detail_only = parse_get_or(int_bool, DEFAULT_DETAIL_ONLY, data.get(DETAIL_ONLY))
+
+        pulse_type = compute_pulse_type(main_only, detail_only)
+
+        pulse_color_group_trigger.target_group_id = target_group_id
+
+        pulse_color_group_trigger.pulse_type = pulse_type
+
+        return pulse_color_group_trigger
+
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
+
+        data[TARGET_GROUP_ID] = str(self.target_group_id)
+        data[PULSE_TARGET_TYPE] = str(PulseTargetType.GROUP.value)
+
+        main_only = self.pulse_type.is_main_only()
+        detail_only = self.pulse_type.is_detail_only()
 
         if main_only:
-            mapping[MAIN_ONLY] = str(int(main_only))
+            data[MAIN_ONLY] = bool_str(main_only)
 
         if detail_only:
-            mapping[DETAIL_ONLY] = str(int(detail_only))
+            data[DETAIL_ONLY] = bool_str(detail_only)
 
-        return mapping
+        return data
 
 
-X_OFFSET = 28
-Y_OFFSET = 29
-LOCKED_TO_PLAYER_X = 58
-LOCKED_TO_PLAYER_Y = 59
-USE_TARGET = 100
-TARGET_TYPE = 101
+PHGT = TypeVar("PHGT", bound="PulseHSVGroupTrigger")
 
-TARGET_TYPE_MASK = 0b00000011
-LOCKED_TO_PLAYER_X_BIT = 0b00000100
-LOCKED_TO_PLAYER_Y_BIT = 0b00001000
+
+@define()
+class PulseHSVGroupTrigger(PulseHSVTrigger):
+    target_group_id: int = DEFAULT_ID
+
+    pulse_type: PulseType = PulseType.DEFAULT
+
+    @classmethod
+    def from_binary(
+        cls: Type[PHGT],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> PHGT:
+        pulse_hsv_group_trigger = super().from_binary(binary, order, version)
+
+        reader = Reader(binary, order)
+
+        target_group_id = reader.read_u16()
+
+        pulse_type_value = reader.read_u8()
+
+        pulse_type = PulseType(pulse_type_value)
+
+        pulse_hsv_group_trigger.target_group_id = target_group_id
+
+        pulse_hsv_group_trigger.pulse_type = pulse_type
+
+        return pulse_hsv_group_trigger
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> None:
+        super().to_binary(binary, order, version)
+
+        writer = Writer(binary, order)
+
+        writer.write_u16(self.target_group_id)
+
+        writer.write_u8(self.pulse_type.value)
+
+    @classmethod
+    def from_robtop_data(cls: Type[PHGT], data: Mapping[int, str]) -> PHGT:
+        pulse_hsv_group_trigger = super().from_robtop_data(data)
+
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
+
+        main_only = parse_get_or(int_bool, DEFAULT_MAIN_ONLY, data.get(MAIN_ONLY))
+        detail_only = parse_get_or(int_bool, DEFAULT_DETAIL_ONLY, data.get(DETAIL_ONLY))
+
+        pulse_type = compute_pulse_type(main_only, detail_only)
+
+        pulse_hsv_group_trigger.target_group_id = target_group_id
+
+        pulse_hsv_group_trigger.pulse_type = pulse_type
+
+        return pulse_hsv_group_trigger
+
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
+
+        data[TARGET_GROUP_ID] = str(self.target_group_id)
+        data[PULSE_TARGET_TYPE] = str(PulseTargetType.GROUP.value)
+
+        main_only = self.pulse_type.is_main_only()
+        detail_only = self.pulse_type.is_detail_only()
+
+        if main_only:
+            data[MAIN_ONLY] = bool_str(main_only)
+
+        if detail_only:
+            data[DETAIL_ONLY] = bool_str(detail_only)
+
+        return data
+
+
+PulseTrigger = Union[
+    PulseColorChannelTrigger,
+    PulseHSVChannelTrigger,
+    PulseColorGroupTrigger,
+    PulseHSVGroupTrigger,
+]
+
+
+DEFAULT_EASING_RATE = 2.0
+
+
+BMT = TypeVar("BMT", bound="BaseMoveTrigger")
+
+
+@define()
+class BaseMoveTrigger(Trigger):
+    target_group_id: int = DEFAULT_ID
+
+    easing: Easing = Easing.DEFAULT
+    easing_rate: float = DEFAULT_EASING_RATE
+
+    duration: float = DEFAULT_DURATION
+
+    @classmethod
+    def from_binary(
+        cls: Type[BMT],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> BMT:
+        rounding = DEFAULT_ROUNDING
+
+        base_move_trigger = super().from_binary(binary, order, version)
+
+        reader = Reader(binary, order)
+
+        duration = round(reader.read_f32(), rounding)
+
+        easing_value = reader.read_u8()
+
+        easing = Easing(easing_value)
+
+        easing_rate = round(reader.read_f32(), rounding)
+
+        target_group_id = reader.read_u16()
+
+        base_move_trigger.duration = duration
+
+        base_move_trigger.easing = easing
+        base_move_trigger.easing_rate = easing_rate
+
+        base_move_trigger.target_group_id = target_group_id
+
+        return base_move_trigger
+
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> None:
+        super().to_binary(binary, order, version)
+
+        writer = Writer(binary, order)
+
+        writer.write_f32(self.duration)
+
+        writer.write_u8(self.easing.value)
+        writer.write_f32(self.easing_rate)
+
+        writer.write_u16(self.target_group_id)
+
+    @classmethod
+    def from_robtop_data(cls: Type[BMT], data: Mapping[int, str]) -> BMT:
+        base_move_trigger = super().from_robtop_data(data)
+
+        duration = parse_get_or(float, DEFAULT_DURATION, data.get(DURATION))
+
+        easing = parse_get_or(partial_parse_enum(int, Easing), Easing.DEFAULT, data.get(EASING))
+        easing_rate = parse_get_or(float, DEFAULT_EASING_RATE, data.get(EASING_RATE))
+
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
+
+        base_move_trigger.duration = duration
+
+        base_move_trigger.easing = easing
+        base_move_trigger.easing_rate = easing_rate
+
+        base_move_trigger.target_group_id = target_group_id
+
+        return base_move_trigger
+
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
+
+        actual = {
+            DURATION: float_str(self.duration),
+            EASING: str(self.easing.value),
+            EASING_RATE: float_str(self.easing_rate),
+            TARGET_GROUP_ID: str(self.target_group_id),
+        }
+
+        data.update(actual)
+
+        return data
+
+    def is_normal(self) -> bool:
+        return False
+
+    def is_target(self) -> bool:
+        return False
 
 
 DEFAULT_X_OFFSET = 0.0
@@ -2825,251 +3861,219 @@ DEFAULT_LOCKED_TO_PLAYER_X = False
 DEFAULT_LOCKED_TO_PLAYER_Y = False
 
 
-MT = TypeVar("MT", bound="MoveTrigger")
+NMT = TypeVar("NMT", bound="NormalMoveTrigger")
 
 
 @define()
-class MoveTrigger(  # type: ignore
-    HasAdditionalGroup, HasTargetGroup, HasEasing, HasDuration, Trigger
-):
+class NormalMoveTrigger(BaseMoveTrigger):
     x_offset: float = DEFAULT_X_OFFSET
     y_offset: float = DEFAULT_Y_OFFSET
 
-    locked_to_player_x: bool = DEFAULT_LOCKED_TO_PLAYER_X
-    locked_to_player_y: bool = DEFAULT_LOCKED_TO_PLAYER_Y
-
-    target_type: TargetType = TargetType.DEFAULT
+    locked_to_player: LockedType = LockedType.DEFAULT
 
     @classmethod
     def from_binary(
-        cls: Type[MT],
+        cls: Type[NMT],
         binary: BinaryReader,
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
-    ) -> MT:
-        locked_to_player_x_bit = LOCKED_TO_PLAYER_X_BIT
-        locked_to_player_y_bit = LOCKED_TO_PLAYER_Y_BIT
+    ) -> NMT:
+        rounding = DEFAULT_ROUNDING
 
-        move_trigger = super().from_binary(binary, order, version)
+        normal_move_trigger = super().from_binary(binary, order, version)
 
         reader = Reader(binary, order)
 
-        duration = reader.read_f32()
+        x_offset = round(reader.read_f32(), rounding)
+        y_offset = round(reader.read_f32(), rounding)
 
-        easing_value = reader.read_u8()
+        locked_to_player_value = reader.read_u8()
 
-        easing = Easing(easing_value)
+        locked_to_player = LockedType(locked_to_player_value)
 
-        easing_rate = reader.read_f32()
+        normal_move_trigger.x_offset = x_offset
+        normal_move_trigger.y_offset = y_offset
 
-        target_group_id = reader.read_u16()
+        normal_move_trigger.locked_to_player = locked_to_player
 
-        value = reader.read_u8()
-
-        target_type_value = value & TARGET_TYPE_MASK
-        target_type = TargetType(target_type_value)
-
-        locked_to_player_x = value & locked_to_player_x_bit == locked_to_player_x_bit
-        locked_to_player_y = value & locked_to_player_y_bit == locked_to_player_y_bit
-
-        if target_type.is_none():
-            x_offset = reader.read_f32()
-            y_offset = reader.read_f32()
-
-            additional_group_id = DEFAULT_ID
-
-        else:
-            x_offset = DEFAULT_X_OFFSET
-            y_offset = DEFAULT_Y_OFFSET
-
-            additional_group_id = reader.read_u16()
-
-        move_trigger.duration = duration
-
-        move_trigger.easing = easing
-        move_trigger.easing_rate = easing_rate
-
-        move_trigger.target_group_id = target_group_id
-
-        move_trigger.x_offset = x_offset
-        move_trigger.y_offset = y_offset
-
-        move_trigger.target_type = target_type
-
-        move_trigger.locked_to_player_x = locked_to_player_x
-        move_trigger.locked_to_player_y = locked_to_player_y
-
-        move_trigger.additional_group_id = additional_group_id
-
-        return move_trigger
+        return normal_move_trigger
 
     def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
     ) -> None:
         super().to_binary(binary, order, version)
 
         writer = Writer(binary, order)
 
-        writer.write_f32(self.duration)
+        writer.write_f32(self.x_offset)
+        writer.write_f32(self.y_offset)
 
-        writer.write_u8(self.easing.value)
+        writer.write_u8(self.locked_to_player.value)
 
-        writer.write_f32(self.easing_rate)
+    @classmethod
+    def from_robtop_data(cls: Type[NMT], data: Mapping[int, str]) -> NMT:
+        normal_move_trigger = super().from_robtop_data(data)
 
-        writer.write_u16(self.target_group_id)
+        x_offset = parse_get_or(float, DEFAULT_X_OFFSET, data.get(X_OFFSET))
+        y_offset = parse_get_or(float, DEFAULT_Y_OFFSET, data.get(Y_OFFSET))
 
-        target_type = self.target_type
+        locked_to_player_x = parse_get_or(
+            bool, DEFAULT_LOCKED_TO_PLAYER_X, data.get(LOCKED_TO_PLAYER_X)
+        )
 
-        value = target_type.value
+        locked_to_player_y = parse_get_or(
+            bool, DEFAULT_LOCKED_TO_PLAYER_Y, data.get(LOCKED_TO_PLAYER_Y)
+        )
 
-        if self.is_locked_to_player_x():
-            value |= LOCKED_TO_PLAYER_X_BIT
+        locked_to_player = LockedType.NONE
 
-        if self.is_locked_to_player_y():
-            value |= LOCKED_TO_PLAYER_Y_BIT
+        if locked_to_player_x:
+            locked_to_player |= LockedType.X
 
-        writer.write_u8(value)
+        if locked_to_player_y:
+            locked_to_player |= LockedType.Y
 
-        if target_type.is_none():
-            writer.write_f32(self.x_offset)
-            writer.write_f32(self.y_offset)
+        normal_move_trigger.x_offset = x_offset
+        normal_move_trigger.y_offset = y_offset
 
-        else:
-            writer.write_u16(self.additional_group_id)
+        normal_move_trigger.locked_to_player = locked_to_player
 
-    def is_locked_to_player_x(self) -> bool:
-        return self.locked_to_player_x
+        return normal_move_trigger
 
-    def is_locked_to_player_y(self) -> bool:
-        return self.locked_to_player_y
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-    def lock_to_player_x(self: MT) -> MT:
-        self.locked_to_player_x = True
+        data[X_OFFSET] = float_str(self.x_offset)
+        data[Y_OFFSET] = float_str(self.y_offset)
 
-        return self
+        locked_to_player = self.locked_to_player
 
-    def lock_to_player_y(self: MT) -> MT:
-        self.locked_to_player_y = True
+        locked_to_player_x = locked_to_player.x()
 
-        return self
+        if locked_to_player_x:
+            data[LOCKED_TO_PLAYER_X] = bool_str(locked_to_player_x)
 
-    def unlock_from_player_x(self: MT) -> MT:
-        self.locked_to_player_x = False
+        locked_to_player_y = locked_to_player.y()
 
-        return self
+        if locked_to_player_y:
+            data[LOCKED_TO_PLAYER_Y] = bool_str(locked_to_player_y)
 
-    def unlock_from_player_y(self: MT) -> MT:
-        self.locked_to_player_y = False
+        return data
 
-        return self
-
-    def move_offset(self: MT, x_offset: float = 0.0, y_offset: float = 0.0) -> MT:
+    def move_offset(
+        self: NMT, x_offset: float = DEFAULT_X_OFFSET, y_offset: float = DEFAULT_Y_OFFSET
+    ) -> NMT:
         self.x_offset += x_offset
         self.y_offset += y_offset
 
         return self
 
+
+USE_TARGET_TRUE = True
+
+
+TMT = TypeVar("TMT", bound="TargetMoveTrigger")
+
+
+@define()
+class TargetMoveTrigger(BaseMoveTrigger):
+    additional_group_id: int = DEFAULT_ID
+
+    target_type: TargetType = TargetType.DEFAULT
+
     @classmethod
-    def from_robtop_mapping(cls: Type[MT], mapping: Mapping[int, str]) -> MT:
-        move_trigger = super().from_robtop_mapping(mapping)
+    def from_binary(
+        cls: Type[TMT],
+        binary: BinaryReader,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> TMT:
+        target_move_trigger = super().from_binary(binary, order, version)
 
-        duration = parse_get_or(float, DEFAULT_DURATION, mapping.get(DURATION))
+        reader = Reader(binary, order)
 
-        easing = parse_get_or(partial_parse_enum(int, Easing), Easing.DEFAULT, mapping.get(EASING))
-        easing_rate = parse_get_or(float, DEFAULT_EASING_RATE, mapping.get(EASING_RATE))
+        additional_group_id = reader.read_u16()
 
-        target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
+        target_type_value = reader.read_u8()
 
-        target_type_option = mapping.get(TARGET_TYPE)
+        target_type = TargetType(target_type_value)
 
-        if target_type_option is None:
-            target_type = TargetType.NONE
+        target_move_trigger.additional_group_id = additional_group_id
 
-        else:
-            target_type = SimpleTargetType(int(target_type_option)).into_target_type()
+        target_move_trigger.target_type = target_type
 
-        if target_type.is_none():
-            locked_to_player_x = parse_get_or(
-                int_bool, DEFAULT_LOCKED_TO_PLAYER_X, mapping.get(LOCKED_TO_PLAYER_X)
-            )
-            locked_to_player_y = parse_get_or(
-                int_bool, DEFAULT_LOCKED_TO_PLAYER_Y, mapping.get(LOCKED_TO_PLAYER_Y)
-            )
+        return target_move_trigger
 
-            x_offset = parse_get_or(float, DEFAULT_X_OFFSET, mapping.get(X_OFFSET))
-            y_offset = parse_get_or(float, DEFAULT_Y_OFFSET, mapping.get(Y_OFFSET))
+    def to_binary(
+        self,
+        binary: BinaryWriter,
+        order: ByteOrder = ByteOrder.DEFAULT,
+        version: int = VERSION,
+    ) -> None:
+        super().to_binary(binary, order, version)
 
-            additional_group_id = DEFAULT_ID
+        writer = Writer(binary, order)
 
-        else:
-            locked_to_player_x = DEFAULT_LOCKED_TO_PLAYER_X
-            locked_to_player_y = DEFAULT_LOCKED_TO_PLAYER_Y
+        writer.write_u16(self.additional_group_id)
 
-            x_offset = DEFAULT_X_OFFSET
-            y_offset = DEFAULT_Y_OFFSET
+        writer.write_u8(self.target_type.value)
 
-            additional_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(ADDITIONAL_GROUP_ID))
+    @classmethod
+    def from_robtop_data(cls: Type[TMT], data: Mapping[int, str]) -> TMT:
+        target_move_trigger = super().from_robtop_data(data)
 
-        move_trigger.duration = duration
+        additional_group_id = parse_get_or(int, DEFAULT_ID, data.get(ADDITIONAL_GROUP_ID))
 
-        move_trigger.easing = easing
-        move_trigger.easing_rate = easing_rate
+        simple_target_type = parse_get_or(
+            partial_parse_enum(int, SimpleTargetType),
+            SimpleTargetType.DEFAULT,
+            data.get(TARGET_TYPE),
+        )
 
-        move_trigger.target_group_id = target_group_id
+        target_type = simple_target_type.into_target_type()
 
-        move_trigger.target_type = target_type
+        target_move_trigger.additional_group_id = additional_group_id
 
-        move_trigger.locked_to_player_x = locked_to_player_x
-        move_trigger.locked_to_player_y = locked_to_player_y
+        target_move_trigger.target_type = target_type
 
-        move_trigger.x_offset = x_offset
-        move_trigger.y_offset = y_offset
+        return target_move_trigger
 
-        move_trigger.additional_group_id = additional_group_id
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        return move_trigger
+        data[ADDITIONAL_GROUP_ID] = str(self.additional_group_id)
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+        simple_target_type = self.target_type.into_simple_target_type()
 
-        mapping[DURATION] = float_str(self.duration)
+        data[TARGET_TYPE] = str(simple_target_type.value)
 
-        mapping[EASING] = str(self.easing.value)
+        data[USE_TARGET] = bool_str(USE_TARGET_TRUE)
 
-        mapping[EASING_RATE] = float_str(self.easing_rate)
-
-        mapping[TARGET_GROUP_ID] = str(self.target_group_id)
-
-        target_type = self.target_type
-
-        if target_type.is_none():
-            mapping[LOCKED_TO_PLAYER_X] = str(int(self.is_locked_to_player_x()))
-            mapping[LOCKED_TO_PLAYER_Y] = str(int(self.is_locked_to_player_y()))
-
-            mapping[X_OFFSET] = float_str(self.x_offset)
-            mapping[Y_OFFSET] = float_str(self.y_offset)
-
-        else:
-            mapping[TARGET_TYPE] = str(target_type.into_simple_target_type().value)
-
-            mapping[ADDITIONAL_GROUP_ID] = str(self.additional_group_id)
-
-        return mapping
+        return data
 
 
-EDITOR_DISABLE = 102
+MoveTrigger = Union[NormalMoveTrigger, TargetMoveTrigger]
+
+
+DEFAULT_DELAY = 0.0
+DEFAULT_EDITOR_DISABLE = False
 
 
 EDITOR_DISABLE_BIT = 0b00000001
-
-DEFAULT_EDITOR_DISABLE = False
 
 
 SPT = TypeVar("SPT", bound="SpawnTrigger")
 
 
 @define()
-class SpawnTrigger(HasDelay, HasTargetGroup, Trigger):  # type: ignore
+class SpawnTrigger(Trigger):
+    target_group_id: int = DEFAULT_ID
+
+    delay: float = DEFAULT_DELAY
+
     editor_disable: bool = DEFAULT_EDITOR_DISABLE
 
     @classmethod
@@ -3079,6 +4083,8 @@ class SpawnTrigger(HasDelay, HasTargetGroup, Trigger):  # type: ignore
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> SPT:
+        rounding = DEFAULT_ROUNDING
+
         editor_disable_bit = EDITOR_DISABLE_BIT
 
         spawn_trigger = super().from_binary(binary, order, version)
@@ -3087,7 +4093,7 @@ class SpawnTrigger(HasDelay, HasTargetGroup, Trigger):  # type: ignore
 
         target_group_id = reader.read_u16()
 
-        delay = reader.read_f32()
+        delay = round(reader.read_f32(), rounding)
 
         value = reader.read_u8()
 
@@ -3123,14 +4129,14 @@ class SpawnTrigger(HasDelay, HasTargetGroup, Trigger):  # type: ignore
         return self.editor_disable
 
     @classmethod
-    def from_robtop_mapping(cls: Type[SPT], mapping: Mapping[int, str]) -> SPT:
-        spawn_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[SPT], data: Mapping[int, str]) -> SPT:
+        spawn_trigger = super().from_robtop_data(data)
 
-        target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
 
-        delay = parse_get_or(float, DEFAULT_DELAY, mapping.get(SPAWN_DELAY))
+        delay = parse_get_or(float, DEFAULT_DELAY, data.get(SPAWN_DELAY))
 
-        editor_disable = parse_get_or(int_bool, DEFAULT_EDITOR_DISABLE, mapping.get(EDITOR_DISABLE))
+        editor_disable = parse_get_or(int_bool, DEFAULT_EDITOR_DISABLE, data.get(EDITOR_DISABLE))
 
         spawn_trigger.target_group_id = target_group_id
 
@@ -3140,26 +4146,28 @@ class SpawnTrigger(HasDelay, HasTargetGroup, Trigger):  # type: ignore
 
         return spawn_trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[TARGET_GROUP_ID] = str(self.target_group_id)
+        data[TARGET_GROUP_ID] = str(self.target_group_id)
 
-        mapping[SPAWN_DELAY] = float_str(self.delay)
+        data[SPAWN_DELAY] = float_str(self.delay)
 
         editor_disable = self.is_editor_disable()
 
         if editor_disable:
-            mapping[EDITOR_DISABLE] = str(int(editor_disable))
+            data[EDITOR_DISABLE] = bool_str(editor_disable)
 
-        return mapping
+        return data
 
 
 ST = TypeVar("ST", bound="StopTrigger")
 
 
 @define()
-class StopTrigger(HasTargetGroup, Trigger):  # type: ignore
+class StopTrigger(Trigger):
+    target_group_id: int = DEFAULT_ID
+
     @classmethod
     def from_binary(
         cls: Type[ST],
@@ -3187,21 +4195,21 @@ class StopTrigger(HasTargetGroup, Trigger):  # type: ignore
         writer.write_u16(self.target_group_id)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[ST], mapping: Mapping[int, str]) -> ST:
-        stop_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[ST], data: Mapping[int, str]) -> ST:
+        stop_trigger = super().from_robtop_data(data)
 
-        target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
 
         stop_trigger.target_group_id = target_group_id
 
         return stop_trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[TARGET_GROUP_ID] = str(self.target_group_id)
+        data[TARGET_GROUP_ID] = str(self.target_group_id)
 
-        return mapping
+        return data
 
 
 ACTIVATE_GROUP_BIT = 0b00000001
@@ -3214,7 +4222,14 @@ TT = TypeVar("TT", bound="ToggleTrigger")
 
 
 @define()
-class ToggleTrigger(HasActivateGroup, HasTargetGroup, Trigger):  # type: ignore
+class ToggleTrigger(Trigger):
+    target_group_id: int = DEFAULT_ID
+
+    activate_group: bool = DEFAULT_ACTIVATE_GROUP
+
+    def is_activate_group(self) -> bool:
+        return self.activate_group
+
     @classmethod
     def from_binary(
         cls: Type[TT],
@@ -3262,12 +4277,12 @@ class ToggleTrigger(HasActivateGroup, HasTargetGroup, Trigger):  # type: ignore
         return self
 
     @classmethod
-    def from_robtop_mapping(cls: Type[TT], mapping: Mapping[int, str]) -> TT:
-        toggle_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[TT], data: Mapping[int, str]) -> TT:
+        toggle_trigger = super().from_robtop_data(data)
 
-        target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
 
-        activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, mapping.get(ACTIVATE_GROUP))
+        activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, data.get(ACTIVATE_GROUP))
 
         toggle_trigger.target_group_id = target_group_id
 
@@ -3275,22 +4290,17 @@ class ToggleTrigger(HasActivateGroup, HasTargetGroup, Trigger):  # type: ignore
 
         return toggle_trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[TARGET_GROUP_ID] = str(self.target_group_id)
+        data[TARGET_GROUP_ID] = str(self.target_group_id)
 
         activate_group = self.is_activate_group()
 
         if activate_group:
-            mapping[ACTIVATE_GROUP] = str(int(activate_group))
+            data[ACTIVATE_GROUP] = bool_str(activate_group)
 
-        return mapping
-
-
-DEGREES = 68
-ROTATIONS = 69
-ROTATION_LOCKED = 70
+        return data
 
 
 FULL_ROTATION = 360.0
@@ -3310,9 +4320,15 @@ RT = TypeVar("RT", bound="RotateTrigger")
 
 
 @define()
-class RotateTrigger(  # type: ignore
-    HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, Trigger
-):
+class RotateTrigger(Trigger):
+    target_group_id: int = DEFAULT_ID
+    additional_group_id: int = DEFAULT_ID
+
+    duration: float = DEFAULT_DURATION
+
+    easing: Easing = Easing.DEFAULT
+    easing_rate: float = DEFAULT_EASING_RATE
+
     target_rotation: float = DEFAULT_TARGET_ROTATION
     rotation_locked: bool = DEFAULT_ROTATION_LOCKED
 
@@ -3323,13 +4339,15 @@ class RotateTrigger(  # type: ignore
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> RT:
+        rounding = DEFAULT_ROUNDING
+
         rotation_locked_bit = ROTATION_LOCKED_BIT
 
         rotate_trigger = super().from_binary(binary, order, version)
 
         reader = Reader(binary, order)
 
-        duration = reader.read_f32()
+        duration = round(reader.read_f32(), rounding)
 
         target_group_id = reader.read_u16()
         additional_group_id = reader.read_u16()
@@ -3338,9 +4356,9 @@ class RotateTrigger(  # type: ignore
 
         easing = Easing(easing_value)
 
-        easing_rate = reader.read_f32()
+        easing_rate = round(reader.read_f32(), rounding)
 
-        target_rotation = reader.read_f32()
+        target_rotation = round(reader.read_f32(), rounding)
 
         value = reader.read_u8()
 
@@ -3403,26 +4421,24 @@ class RotateTrigger(  # type: ignore
         return self
 
     @classmethod
-    def from_robtop_mapping(cls: Type[RT], mapping: Mapping[int, str]) -> RT:
-        rotate_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[RT], data: Mapping[int, str]) -> RT:
+        rotate_trigger = super().from_robtop_data(data)
 
-        duration = parse_get_or(float, DEFAULT_DURATION, mapping.get(DURATION))
+        duration = parse_get_or(float, DEFAULT_DURATION, data.get(DURATION))
 
-        target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
-        additional_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(ADDITIONAL_GROUP_ID))
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
+        additional_group_id = parse_get_or(int, DEFAULT_ID, data.get(ADDITIONAL_GROUP_ID))
 
-        easing = parse_get_or(partial_parse_enum(int, Easing), Easing.DEFAULT, mapping.get(EASING))
-        easing_rate = parse_get_or(float, DEFAULT_EASING_RATE, mapping.get(EASING_RATE))
+        easing = parse_get_or(partial_parse_enum(int, Easing), Easing.DEFAULT, data.get(EASING))
+        easing_rate = parse_get_or(float, DEFAULT_EASING_RATE, data.get(EASING_RATE))
 
-        rotations = parse_get_or(float, DEFAULT_ROTATIONS, mapping.get(ROTATIONS))
+        rotations = parse_get_or(float, DEFAULT_ROTATIONS, data.get(ROTATIONS))
 
-        degrees = parse_get_or(float, DEFAULT_DEGREES, mapping.get(DEGREES))
+        degrees = parse_get_or(float, DEFAULT_DEGREES, data.get(DEGREES))
 
         target_rotation = rotations * FULL_ROTATION + degrees
 
-        rotation_locked = parse_get_or(
-            int_bool, DEFAULT_ROTATION_LOCKED, mapping.get(ROTATION_LOCKED)
-        )
+        rotation_locked = parse_get_or(int_bool, DEFAULT_ROTATION_LOCKED, data.get(ROTATION_LOCKED))
 
         rotate_trigger.duration = duration
 
@@ -3438,32 +4454,28 @@ class RotateTrigger(  # type: ignore
 
         return rotate_trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[DURATION] = float_str(self.duration)
+        data[DURATION] = float_str(self.duration)
 
-        mapping[TARGET_GROUP_ID] = str(self.target_group_id)
-        mapping[ADDITIONAL_GROUP_ID] = str(self.additional_group_id)
+        data[TARGET_GROUP_ID] = str(self.target_group_id)
+        data[ADDITIONAL_GROUP_ID] = str(self.additional_group_id)
 
-        mapping[EASING] = str(self.easing.value)
-        mapping[EASING_RATE] = float_str(self.easing_rate)
+        data[EASING] = str(self.easing.value)
+        data[EASING_RATE] = float_str(self.easing_rate)
 
         rotations, degrees = divmod(self.target_rotation, FULL_ROTATION)
 
-        mapping[ROTATIONS] = str(rotations)
-        mapping[DEGREES] = str(degrees)
+        data[ROTATIONS] = str(rotations)
+        data[DEGREES] = str(degrees)
 
         rotation_locked = self.is_rotation_locked()
 
         if rotation_locked:
-            mapping[ROTATION_LOCKED] = str(int(rotation_locked))
+            data[ROTATION_LOCKED] = bool_str(rotation_locked)
 
-        return mapping
-
-
-X_MODIFIER = 72
-Y_MODIFIER = 73
+        return data
 
 
 DEFAULT_X_MODIFIER = 1.0
@@ -3474,9 +4486,15 @@ FT = TypeVar("FT", bound="FollowTrigger")
 
 
 @define()
-class FollowTrigger(  # type: ignore
-    HasEasing, HasAdditionalGroup, HasTargetGroup, HasDuration, Trigger
-):
+class FollowTrigger(Trigger):
+    target_group_id: int = DEFAULT_ID
+    additional_group_id: int = DEFAULT_ID
+
+    duration: float = DEFAULT_DURATION
+
+    easing: Easing = Easing.DEFAULT
+    easing_rate: float = DEFAULT_EASING_RATE
+
     x_modifier: float = DEFAULT_X_MODIFIER
     y_modifier: float = DEFAULT_Y_MODIFIER
 
@@ -3487,11 +4505,13 @@ class FollowTrigger(  # type: ignore
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> FT:
+        rounding = DEFAULT_ROUNDING
+
         follow_trigger = super().from_binary(binary, order, version)
 
         reader = Reader(binary, order)
 
-        duration = reader.read_f32()
+        duration = round(reader.read_f32(), rounding)
 
         target_group_id = reader.read_u16()
         additional_group_id = reader.read_u16()
@@ -3500,10 +4520,10 @@ class FollowTrigger(  # type: ignore
 
         easing = Easing(easing_value)
 
-        easing_rate = reader.read_f32()
+        easing_rate = round(reader.read_f32(), rounding)
 
-        x_modifier = reader.read_f32()
-        y_modifier = reader.read_f32()
+        x_modifier = round(reader.read_f32(), rounding)
+        y_modifier = round(reader.read_f32(), rounding)
 
         follow_trigger.duration = duration
 
@@ -3537,19 +4557,19 @@ class FollowTrigger(  # type: ignore
         writer.write_f32(self.y_modifier)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[FT], mapping: Mapping[int, str]) -> FT:
-        follow_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[FT], data: Mapping[int, str]) -> FT:
+        follow_trigger = super().from_robtop_data(data)
 
-        duration = parse_get_or(float, DEFAULT_DURATION, mapping.get(DURATION))
+        duration = parse_get_or(float, DEFAULT_DURATION, data.get(DURATION))
 
-        target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
-        additional_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(ADDITIONAL_GROUP_ID))
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
+        additional_group_id = parse_get_or(int, DEFAULT_ID, data.get(ADDITIONAL_GROUP_ID))
 
-        easing = parse_get_or(partial_parse_enum(int, Easing), Easing.DEFAULT, mapping.get(EASING))
-        easing_rate = parse_get_or(float, DEFAULT_EASING_RATE, mapping.get(EASING_RATE))
+        easing = parse_get_or(partial_parse_enum(int, Easing), Easing.DEFAULT, data.get(EASING))
+        easing_rate = parse_get_or(float, DEFAULT_EASING_RATE, data.get(EASING_RATE))
 
-        x_modifier = parse_get_or(float, DEFAULT_X_MODIFIER, mapping.get(X_MODIFIER))
-        y_modifier = parse_get_or(float, DEFAULT_Y_MODIFIER, mapping.get(Y_MODIFIER))
+        x_modifier = parse_get_or(float, DEFAULT_X_MODIFIER, data.get(X_MODIFIER))
+        y_modifier = parse_get_or(float, DEFAULT_Y_MODIFIER, data.get(Y_MODIFIER))
 
         follow_trigger.duration = duration
 
@@ -3564,25 +4584,21 @@ class FollowTrigger(  # type: ignore
 
         return follow_trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[DURATION] = float_str(self.duration)
+        data[DURATION] = float_str(self.duration)
 
-        mapping[TARGET_GROUP_ID] = str(self.target_group_id)
-        mapping[ADDITIONAL_GROUP_ID] = str(self.additional_group_id)
+        data[TARGET_GROUP_ID] = str(self.target_group_id)
+        data[ADDITIONAL_GROUP_ID] = str(self.additional_group_id)
 
-        mapping[EASING] = str(self.easing.value)
-        mapping[EASING_RATE] = float_str(self.easing_rate)
+        data[EASING] = str(self.easing.value)
+        data[EASING_RATE] = float_str(self.easing_rate)
 
-        mapping[X_MODIFIER] = float_str(self.x_modifier)
-        mapping[Y_MODIFIER] = float_str(self.y_modifier)
+        data[X_MODIFIER] = float_str(self.x_modifier)
+        data[Y_MODIFIER] = float_str(self.y_modifier)
 
-        return mapping
-
-
-STRENGTH = 75
-INTERVAL = 84
+        return data
 
 
 DEFAULT_STRENGTH = 0.0
@@ -3593,7 +4609,8 @@ SHT = TypeVar("SHT", bound="ShakeTrigger")
 
 
 @define()
-class ShakeTrigger(HasDuration, Trigger):  # type: ignore
+class ShakeTrigger(Trigger):
+    duration: float = DEFAULT_DURATION
     strength: float = DEFAULT_STRENGTH
     interval: float = DEFAULT_INTERVAL
 
@@ -3604,13 +4621,15 @@ class ShakeTrigger(HasDuration, Trigger):  # type: ignore
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> SHT:
+        rounding = DEFAULT_ROUNDING
+
         shake_trigger = super().from_binary(binary, order, version)
 
         reader = Reader(binary, order)
 
-        duration = reader.read_f32()
-        strength = reader.read_f32()
-        interval = reader.read_f32()
+        duration = round(reader.read_f32(), rounding)
+        strength = round(reader.read_f32(), rounding)
+        interval = round(reader.read_f32(), rounding)
 
         shake_trigger.duration = duration
         shake_trigger.strength = strength
@@ -3630,12 +4649,12 @@ class ShakeTrigger(HasDuration, Trigger):  # type: ignore
         writer.write_f32(self.interval)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[SHT], mapping: Mapping[int, str]) -> SHT:
-        shake_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[SHT], data: Mapping[int, str]) -> SHT:
+        shake_trigger = super().from_robtop_data(data)
 
-        duration = parse_get_or(float, DEFAULT_DURATION, mapping.get(DURATION))
-        strength = parse_get_or(float, DEFAULT_STRENGTH, mapping.get(STRENGTH))
-        interval = parse_get_or(float, DEFAULT_INTERVAL, mapping.get(INTERVAL))
+        duration = parse_get_or(float, DEFAULT_DURATION, data.get(DURATION))
+        strength = parse_get_or(float, DEFAULT_STRENGTH, data.get(STRENGTH))
+        interval = parse_get_or(float, DEFAULT_INTERVAL, data.get(INTERVAL))
 
         shake_trigger.duration = duration
         shake_trigger.strength = strength
@@ -3643,24 +4662,23 @@ class ShakeTrigger(HasDuration, Trigger):  # type: ignore
 
         return shake_trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[DURATION] = float_str(self.duration)
-        mapping[STRENGTH] = float_str(self.strength)
-        mapping[INTERVAL] = float_str(self.interval)
+        data[DURATION] = float_str(self.duration)
+        data[STRENGTH] = float_str(self.strength)
+        data[INTERVAL] = float_str(self.interval)
 
-        return mapping
-
-
-ANIMATION_ID = 76
+        return data
 
 
 AT = TypeVar("AT", bound="AnimateTrigger")
 
 
 @define()
-class AnimateTrigger(HasTargetGroup, Trigger):  # type: ignore
+class AnimateTrigger(Trigger):
+    target_group_id: int = DEFAULT_ID
+
     animation_id: int = DEFAULT_ID
 
     @classmethod
@@ -3696,12 +4714,12 @@ class AnimateTrigger(HasTargetGroup, Trigger):  # type: ignore
         writer.write_u8(self.animation_id)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[AT], mapping: Mapping[int, str]) -> AT:
-        animate_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[AT], data: Mapping[int, str]) -> AT:
+        animate_trigger = super().from_robtop_data(data)
 
-        target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
 
-        animation_id = parse_get_or(int, DEFAULT_ID, mapping.get(ANIMATION_ID))
+        animation_id = parse_get_or(int, DEFAULT_ID, data.get(ANIMATION_ID))
 
         animate_trigger.target_group_id = target_group_id
 
@@ -3709,19 +4727,15 @@ class AnimateTrigger(HasTargetGroup, Trigger):  # type: ignore
 
         return animate_trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[TARGET_GROUP_ID] = str(self.target_group_id)
+        data[TARGET_GROUP_ID] = str(self.target_group_id)
 
-        mapping[ANIMATION_ID] = str(self.animation_id)
+        data[ANIMATION_ID] = str(self.animation_id)
 
-        return mapping
+        return data
 
-
-HOLD_MODE = 81
-TOGGLE_TYPE = 82
-DUAL_MODE = 89
 
 TOGGLE_TYPE_MASK = 0b00000011
 HOLD_MODE_BIT = 0b00000100
@@ -3735,7 +4749,9 @@ THT = TypeVar("THT", bound="TouchTrigger")
 
 
 @define()
-class TouchTrigger(HasTargetGroup, Trigger):  # type: ignore
+class TouchTrigger(Trigger):
+    target_group_id: int = DEFAULT_ID
+
     hold_mode: bool = DEFAULT_HOLD_MODE
     dual_mode: bool = DEFAULT_DUAL_MODE
     toggle_type: ToggleType = ToggleType.DEFAULT
@@ -3800,16 +4816,16 @@ class TouchTrigger(HasTargetGroup, Trigger):  # type: ignore
         return self.dual_mode
 
     @classmethod
-    def from_robtop_mapping(cls: Type[THT], mapping: Mapping[int, str]) -> THT:
-        touch_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[THT], data: Mapping[int, str]) -> THT:
+        touch_trigger = super().from_robtop_data(data)
 
-        target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
 
-        hold_mode = parse_get_or(int_bool, DEFAULT_HOLD_MODE, mapping.get(HOLD_MODE))
-        dual_mode = parse_get_or(int_bool, DEFAULT_DUAL_MODE, mapping.get(DUAL_MODE))
+        hold_mode = parse_get_or(int_bool, DEFAULT_HOLD_MODE, data.get(HOLD_MODE))
+        dual_mode = parse_get_or(int_bool, DEFAULT_DUAL_MODE, data.get(DUAL_MODE))
 
         toggle_type = parse_get_or(
-            partial_parse_enum(int, ToggleType), ToggleType.DEFAULT, mapping.get(TOGGLE_TYPE)
+            partial_parse_enum(int, ToggleType), ToggleType.DEFAULT, data.get(TOGGLE_TYPE)
         )
 
         touch_trigger.target_group_id = target_group_id
@@ -3821,31 +4837,47 @@ class TouchTrigger(HasTargetGroup, Trigger):  # type: ignore
 
         return touch_trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[TARGET_GROUP_ID] = str(self.target_group_id)
+        data[TARGET_GROUP_ID] = str(self.target_group_id)
 
         hold_mode = self.is_hold_mode()
 
         if hold_mode:
-            mapping[HOLD_MODE] = str(int(hold_mode))
+            data[HOLD_MODE] = bool_str(hold_mode)
 
         dual_mode = self.is_dual_mode()
 
         if dual_mode:
-            mapping[DUAL_MODE] = str(int(dual_mode))
+            data[DUAL_MODE] = bool_str(dual_mode)
 
-        mapping[TOGGLE_TYPE] = str(self.toggle_type.value)
+        data[TOGGLE_TYPE] = str(self.toggle_type.value)
 
-        return mapping
+        return data
+
+
+DEFAULT_COUNT = 0
 
 
 CT = TypeVar("CT", bound="CountTrigger")
 
 
 @define()
-class CountTrigger(HasMultiActivate, HasActivateGroup, HasCount, HasItem, Trigger):  # type: ignore
+class CountTrigger(Trigger):
+    item_id: int = DEFAULT_ID
+
+    count: int = DEFAULT_COUNT
+
+    activate_group: bool = DEFAULT_ACTIVATE_GROUP
+    multi_activate: bool = DEFAULT_MULTI_ACTIVATE
+
+    def is_activate_group(self) -> bool:
+        return self.activate_group
+
+    def is_multi_activate(self) -> bool:
+        return self.multi_activate
+
     @classmethod
     def from_binary(
         cls: Type[CT],
@@ -3900,16 +4932,21 @@ class CountTrigger(HasMultiActivate, HasActivateGroup, HasCount, HasItem, Trigge
         writer.write_u8(value)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[CT], mapping: Mapping[int, str]) -> CT:
-        count_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[CT], data: Mapping[int, str]) -> CT:
+        count_trigger = super().from_robtop_data(data)
 
-        item_id = parse_get_or(int, DEFAULT_ID, mapping.get(ITEM_ID))
+        item_id = parse_get_or(int, DEFAULT_ID, data.get(ITEM_ID))
 
-        count = parse_get_or(int, DEFAULT_COUNT, mapping.get(COUNT))
+        count = parse_get_or(int, DEFAULT_COUNT, data.get(COUNT))
 
-        activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, mapping.get(ACTIVATE_GROUP))
+        subtract_count = parse_get_or(int_bool, DEFAULT_SUBTRACT_COUNT, data.get(SUBTRACT_COUNT))
+
+        if subtract_count:
+            count = -count
+
+        activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, data.get(ACTIVATE_GROUP))
         multi_activate = parse_get_or(
-            int_bool, DEFAULT_MULTI_ACTIVATE, mapping.get(TRIGGER_MULTI_ACTIVATE)
+            int_bool, DEFAULT_MULTI_ACTIVATE, data.get(TRIGGER_MULTI_ACTIVATE)
         )
 
         count_trigger.item_id = item_id
@@ -3921,33 +4958,33 @@ class CountTrigger(HasMultiActivate, HasActivateGroup, HasCount, HasItem, Trigge
 
         return count_trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[ITEM_ID] = str(self.item_id)
+        data[ITEM_ID] = str(self.item_id)
 
         count = self.count
 
-        if count < 0:
-            mapping[SUBTRACT_COUNT] = str(-count)
+        subtract_count = count < 0
 
-        else:
-            mapping[COUNT] = str(count)
+        if subtract_count:
+            data[SUBTRACT_COUNT] = bool_str(subtract_count)
+
+            count = -count
+
+        data[COUNT] = str(count)
 
         activate_group = self.is_activate_group()
 
         if activate_group:
-            mapping[ACTIVATE_GROUP] = str(int(activate_group))
+            data[ACTIVATE_GROUP] = bool_str(activate_group)
 
         multi_activate = self.is_multi_activate()
 
         if multi_activate:
-            mapping[TRIGGER_MULTI_ACTIVATE] = str(int(multi_activate))
+            data[TRIGGER_MULTI_ACTIVATE] = bool_str(multi_activate)
 
-        return mapping
-
-
-COMPARISON = 88
+        return data
 
 
 ICT = TypeVar("ICT", bound="InstantCountTrigger")
@@ -3957,8 +4994,16 @@ COMPARISON_SHIFT = ACTIVATE_GROUP_BIT.bit_length()
 
 
 @define()
-class InstantCountTrigger(HasActivateGroup, HasCount, HasItem, Trigger):  # type: ignore
+class InstantCountTrigger(Trigger):
+    item_id: int = DEFAULT_ID
+    count: int = DEFAULT_COUNT
+
+    activate_group: bool = DEFAULT_ACTIVATE_GROUP
+
     comparison: InstantCountComparison = InstantCountComparison.DEFAULT
+
+    def is_activate_group(self) -> bool:
+        return self.activate_group
 
     @classmethod
     def from_binary(
@@ -4016,19 +5061,19 @@ class InstantCountTrigger(HasActivateGroup, HasCount, HasItem, Trigger):  # type
         writer.write_u8(value)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[ICT], mapping: Mapping[int, str]) -> ICT:
-        instant_count_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[ICT], data: Mapping[int, str]) -> ICT:
+        instant_count_trigger = super().from_robtop_data(data)
 
-        item_id = parse_get_or(int, DEFAULT_ID, mapping.get(ITEM_ID))
+        item_id = parse_get_or(int, DEFAULT_ID, data.get(ITEM_ID))
 
-        count = parse_get_or(int, DEFAULT_COUNT, mapping.get(COUNT))
+        count = parse_get_or(int, DEFAULT_COUNT, data.get(COUNT))
 
-        activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, mapping.get(ACTIVATE_GROUP))
+        activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, data.get(ACTIVATE_GROUP))
 
         comparison = parse_get_or(
             partial_parse_enum(int, InstantCountComparison),
             InstantCountComparison.DEFAULT,
-            mapping.get(COMPARISON),
+            data.get(COMPARISON),
         )
 
         instant_count_trigger.item_id = item_id
@@ -4041,28 +5086,31 @@ class InstantCountTrigger(HasActivateGroup, HasCount, HasItem, Trigger):  # type
 
         return instant_count_trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[ITEM_ID] = str(self.item_id)
+        data[ITEM_ID] = str(self.item_id)
 
-        mapping[COUNT] = str(self.count)
+        data[COUNT] = str(self.count)
 
         activate_group = self.is_activate_group()
 
         if activate_group:
-            mapping[ACTIVATE_GROUP] = str(int(activate_group))
+            data[ACTIVATE_GROUP] = bool_str(activate_group)
 
-        mapping[COMPARISON] = str(self.comparison.value)
+        data[COMPARISON] = str(self.comparison.value)
 
-        return mapping
+        return data
 
 
 PT = TypeVar("PT", bound="PickupTrigger")
 
 
 @define()
-class PickupTrigger(HasCount, HasItem, Trigger):  # type: ignore
+class PickupTrigger(Trigger):
+    item_id: int = DEFAULT_ID
+    count: int = DEFAULT_COUNT
+
     @classmethod
     def from_binary(
         cls: Type[PT],
@@ -4096,12 +5144,12 @@ class PickupTrigger(HasCount, HasItem, Trigger):  # type: ignore
         writer.write_i32(self.count)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[PT], mapping: Mapping[int, str]) -> PT:
-        pickup_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[PT], data: Mapping[int, str]) -> PT:
+        pickup_trigger = super().from_robtop_data(data)
 
-        item_id = parse_get_or(int, DEFAULT_ID, mapping.get(ITEM_ID))
+        item_id = parse_get_or(int, DEFAULT_ID, data.get(ITEM_ID))
 
-        count = parse_get_or(int, DEFAULT_COUNT, mapping.get(COUNT))
+        count = parse_get_or(int, DEFAULT_COUNT, data.get(COUNT))
 
         pickup_trigger.item_id = item_id
 
@@ -4109,19 +5157,15 @@ class PickupTrigger(HasCount, HasItem, Trigger):  # type: ignore
 
         return pickup_trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[ITEM_ID] = str(self.item_id)
+        data[ITEM_ID] = str(self.item_id)
 
-        mapping[COUNT] = str(self.count)
+        data[COUNT] = str(self.count)
 
-        return mapping
+        return data
 
-
-OFFSET = 92
-MAX_SPEED = 105
-SPEED = 90
 
 DEFAULT_SPEED = 1.0
 DEFAULT_MAX_SPEED = 0.0
@@ -4132,7 +5176,12 @@ FPYT = TypeVar("FPYT", bound="FollowPlayerYTrigger")
 
 
 @define()
-class FollowPlayerYTrigger(HasDelay, HasTargetGroup, Trigger):  # type: ignore
+class FollowPlayerYTrigger(Trigger):
+    target_group_id: int = DEFAULT_ID
+
+    duration: float = DEFAULT_DURATION
+    delay: float = DEFAULT_DELAY
+
     speed: float = DEFAULT_SPEED
     max_speed: float = DEFAULT_MAX_SPEED
     offset: float = DEFAULT_OFFSET
@@ -4144,19 +5193,25 @@ class FollowPlayerYTrigger(HasDelay, HasTargetGroup, Trigger):  # type: ignore
         order: ByteOrder = ByteOrder.DEFAULT,
         version: int = VERSION,
     ) -> FPYT:
+        rounding = DEFAULT_ROUNDING
+
         follow_player_y_trigger = super().from_binary(binary, order, version)
 
         reader = Reader(binary, order)
 
         target_group_id = reader.read_u16()
 
-        delay = reader.read_f32()
+        duration = round(reader.read_f32(), rounding)
 
-        speed = reader.read_f32()
-        max_speed = reader.read_f32()
-        offset = reader.read_f32()
+        delay = round(reader.read_f32(), rounding)
+
+        speed = round(reader.read_f32(), rounding)
+        max_speed = round(reader.read_f32(), rounding)
+        offset = round(reader.read_f32(), rounding)
 
         follow_player_y_trigger.target_group_id = target_group_id
+
+        follow_player_y_trigger.duration = duration
 
         follow_player_y_trigger.delay = delay
 
@@ -4175,6 +5230,8 @@ class FollowPlayerYTrigger(HasDelay, HasTargetGroup, Trigger):  # type: ignore
 
         writer.write_u16(self.target_group_id)
 
+        writer.write_f32(self.duration)
+
         writer.write_f32(self.delay)
 
         writer.write_f32(self.speed)
@@ -4182,18 +5239,22 @@ class FollowPlayerYTrigger(HasDelay, HasTargetGroup, Trigger):  # type: ignore
         writer.write_f32(self.offset)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[FPYT], mapping: Mapping[int, str]) -> FPYT:
-        follow_player_y_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[FPYT], data: Mapping[int, str]) -> FPYT:
+        follow_player_y_trigger = super().from_robtop_data(data)
 
-        target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
 
-        delay = parse_get_or(float, DEFAULT_DELAY, mapping.get(FOLLOW_DELAY))
+        duration = parse_get_or(float, DEFAULT_DURATION, data.get(DURATION))
 
-        speed = parse_get_or(float, DEFAULT_SPEED, mapping.get(SPEED))
-        max_speed = parse_get_or(float, DEFAULT_MAX_SPEED, mapping.get(MAX_SPEED))
-        offset = parse_get_or(float, DEFAULT_OFFSET, mapping.get(OFFSET))
+        delay = parse_get_or(float, DEFAULT_DELAY, data.get(FOLLOW_DELAY))
+
+        speed = parse_get_or(float, DEFAULT_SPEED, data.get(SPEED))
+        max_speed = parse_get_or(float, DEFAULT_MAX_SPEED, data.get(MAX_SPEED))
+        offset = parse_get_or(float, DEFAULT_OFFSET, data.get(OFFSET))
 
         follow_player_y_trigger.target_group_id = target_group_id
+
+        follow_player_y_trigger.duration = duration
 
         follow_player_y_trigger.delay = delay
 
@@ -4203,25 +5264,34 @@ class FollowPlayerYTrigger(HasDelay, HasTargetGroup, Trigger):  # type: ignore
 
         return follow_player_y_trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[TARGET_GROUP_ID] = str(self.target_group_id)
+        data[TARGET_GROUP_ID] = str(self.target_group_id)
 
-        mapping[FOLLOW_DELAY] = float_str(self.delay)
+        data[DURATION] = float_str(self.duration)
 
-        mapping[SPEED] = float_str(self.speed)
-        mapping[MAX_SPEED] = float_str(self.max_speed)
-        mapping[OFFSET] = float_str(self.offset)
+        data[FOLLOW_DELAY] = float_str(self.delay)
 
-        return mapping
+        data[SPEED] = float_str(self.speed)
+        data[MAX_SPEED] = float_str(self.max_speed)
+        data[OFFSET] = float_str(self.offset)
+
+        return data
 
 
 ODT = TypeVar("ODT", bound="OnDeathTrigger")
 
 
 @define()
-class OnDeathTrigger(HasActivateGroup, HasTargetGroup, Trigger):  # type: ignore
+class OnDeathTrigger(Trigger):
+    target_group_id: int = DEFAULT_ID
+
+    activate_group: bool = DEFAULT_ACTIVATE_GROUP
+
+    def is_activate_group(self) -> bool:
+        return self.activate_group
+
     @classmethod
     def from_binary(
         cls: Type[ODT],
@@ -4264,12 +5334,12 @@ class OnDeathTrigger(HasActivateGroup, HasTargetGroup, Trigger):  # type: ignore
         writer.write_u8(value)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[ODT], mapping: Mapping[int, str]) -> ODT:
-        on_death_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[ODT], data: Mapping[int, str]) -> ODT:
+        on_death_trigger = super().from_robtop_data(data)
 
-        target_group_id = parse_get_or(int, DEFAULT_ID, mapping.get(TARGET_GROUP_ID))
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
 
-        activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, mapping.get(ACTIVATE_GROUP))
+        activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, data.get(ACTIVATE_GROUP))
 
         on_death_trigger.target_group_id = target_group_id
 
@@ -4277,25 +5347,21 @@ class OnDeathTrigger(HasActivateGroup, HasTargetGroup, Trigger):  # type: ignore
 
         return on_death_trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[TARGET_GROUP_ID] = str(self.target_group_id)
+        data[TARGET_GROUP_ID] = str(self.target_group_id)
 
         activate_group = self.is_activate_group()
 
         if activate_group:
-            mapping[ACTIVATE_GROUP] = str(int(activate_group))
+            data[ACTIVATE_GROUP] = bool_str(activate_group)
 
-        return mapping
-
-
-BLOCK_A_ID = 80
-BLOCK_B_ID = 95
-TRIGGER_ON_EXIT = 93
+        return data
 
 
 TRIGGER_ON_EXIT_BIT = 0b10000000_00000000
+COLLISION_ACTIVATE_GROUP_BIT = 0b10000000_00000000
 
 
 DEFAULT_TRIGGER_ON_EXIT = False
@@ -4305,11 +5371,21 @@ CBT = TypeVar("CBT", bound="CollisionTrigger")
 
 
 @define()
-class CollisionTrigger(HasActivateGroup, HasTargetGroup, Trigger):  # type: ignore
+class CollisionTrigger(Trigger):
+    target_group_id: int = DEFAULT_ID
+
+    activate_group: bool = DEFAULT_ACTIVATE_GROUP
+
     block_a_id: int = DEFAULT_ID
     block_b_id: int = DEFAULT_ID
 
     trigger_on_exit: bool = DEFAULT_TRIGGER_ON_EXIT
+
+    def is_activate_group(self) -> bool:
+        return self.activate_group
+
+    def is_trigger_on_exit(self) -> bool:
+        return self.trigger_on_exit
 
     @classmethod
     def from_binary(
@@ -4319,6 +5395,7 @@ class CollisionTrigger(HasActivateGroup, HasTargetGroup, Trigger):  # type: igno
         version: int = VERSION,
     ) -> CBT:
         block_id_mask = BLOCK_ID_MASK
+        activate_group_bit = COLLISION_ACTIVATE_GROUP_BIT
         trigger_on_exit_bit = TRIGGER_ON_EXIT_BIT
 
         collision_trigger = super().from_binary(binary, order, version)
@@ -4329,114 +5406,156 @@ class CollisionTrigger(HasActivateGroup, HasTargetGroup, Trigger):  # type: igno
 
         block_a_id = value & block_id_mask
 
+        activate_group = value & activate_group_bit == activate_group_bit
+
         value = reader.read_u16()
 
         block_b_id = value & block_id_mask
 
         trigger_on_exit = value & trigger_on_exit_bit == trigger_on_exit_bit
 
+        target_group_id = reader.read_u16()
+
         collision_trigger.block_a_id = block_a_id
         collision_trigger.block_b_id = block_b_id
+        collision_trigger.activate_group = activate_group
         collision_trigger.trigger_on_exit = trigger_on_exit
+        collision_trigger.target_group_id = target_group_id
 
         return collision_trigger
 
     def to_binary(
         self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
     ) -> None:
-        block_id_mask = BLOCK_ID_MASK
-
         super().to_binary(binary, order, version)
 
         writer = Writer(binary, order)
 
-        writer.write_u16(self.block_a_id & block_id_mask)
+        value = self.block_a_id
 
-        value = self.block_b_id & block_id_mask
+        if self.is_activate_group():
+            value |= COLLISION_ACTIVATE_GROUP_BIT
+
+        writer.write_u16(value)
+
+        value = self.block_b_id
 
         if self.is_trigger_on_exit():
             value |= TRIGGER_ON_EXIT_BIT
 
         writer.write_u16(value)
 
-    def is_trigger_on_exit(self) -> bool:
-        return self.trigger_on_exit
+        writer.write_u16(self.target_group_id)
 
     @classmethod
-    def from_robtop_mapping(cls: Type[CBT], mapping: Mapping[int, str]) -> CBT:
-        collision_trigger = super().from_robtop_mapping(mapping)
+    def from_robtop_data(cls: Type[CBT], data: Mapping[int, str]) -> CBT:
+        collision_trigger = super().from_robtop_data(data)
 
-        block_a_id = parse_get_or(int, DEFAULT_ID, mapping.get(BLOCK_A_ID))
-        block_b_id = parse_get_or(int, DEFAULT_ID, mapping.get(BLOCK_B_ID))
+        block_a_id = parse_get_or(int, DEFAULT_ID, data.get(BLOCK_A_ID))
+        block_b_id = parse_get_or(int, DEFAULT_ID, data.get(BLOCK_B_ID))
 
-        trigger_on_exit = parse_get_or(
-            int_bool, DEFAULT_TRIGGER_ON_EXIT, mapping.get(TRIGGER_ON_EXIT)
-        )
+        activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, data.get(ACTIVATE_GROUP))
+
+        trigger_on_exit = parse_get_or(int_bool, DEFAULT_TRIGGER_ON_EXIT, data.get(TRIGGER_ON_EXIT))
+
+        target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
 
         collision_trigger.block_a_id = block_a_id
         collision_trigger.block_b_id = block_b_id
 
+        collision_trigger.activate_group = activate_group
+
         collision_trigger.trigger_on_exit = trigger_on_exit
+
+        collision_trigger.target_group_id = target_group_id
 
         return collision_trigger
 
-    def to_robtop_mapping(self) -> Dict[int, str]:
-        mapping = super().to_robtop_mapping()
+    def to_robtop_data(self) -> Dict[int, str]:
+        data = super().to_robtop_data()
 
-        mapping[BLOCK_A_ID] = str(self.block_a_id)
-        mapping[BLOCK_B_ID] = str(self.block_b_id)
+        data[BLOCK_A_ID] = str(self.block_a_id)
+        data[BLOCK_B_ID] = str(self.block_b_id)
+
+        activate_group = self.is_activate_group()
+
+        if activate_group:
+            data[ACTIVATE_GROUP] = bool_str(activate_group)
 
         trigger_on_exit = self.is_trigger_on_exit()
 
         if trigger_on_exit:
-            mapping[TRIGGER_ON_EXIT] = str(int(trigger_on_exit))
+            data[TRIGGER_ON_EXIT] = bool_str(trigger_on_exit)
 
-        return mapping
+        data[TARGET_GROUP_ID] = str(self.target_group_id)
+
+        return data
 
 
 def is_trigger(object: Object) -> TypeGuard[Trigger]:
     return object.is_trigger()
 
 
+@runtime_checkable
+class HasTargetGroup(Protocol):
+    target_group_id: int
+
+
+@runtime_checkable
+class HasAdditionalGroup(Protocol):
+    additional_group_id: int
+
+
+TARGET_GROUP_ID_NAME = "target_group_id"
+ADDITIONAL_GROUP_ID_NAME = "additional_group_id"
+
+
 def has_target_group(object: Object) -> TypeGuard[HasTargetGroup]:
-    return object.has_target_group()
+    return has_attribute(object, TARGET_GROUP_ID_NAME)
 
 
 def has_additional_group(object: Object) -> TypeGuard[HasAdditionalGroup]:
-    return object.has_additional_group()
+    return has_attribute(object, ADDITIONAL_GROUP_ID_NAME)
 
 
 class ObjectType(Enum):
-    OBJECT = 1
-    START_POSITION = 2
-    PULSATING_OBJECT = 3
-    ROTATING_OBJECT = 4
-    ORB = 5
-    TRIGGER_ORB = 6
-    SECRET_COIN = 7
-    TEXT = 8
-    TELEPORT = 9
-    ITEM_COUNTER = 10
-    PICKUP_ITEM = 11
+    OBJECT = 0
+    START_POSITION = 1
+    PULSATING_OBJECT = 2
+    ROTATING_OBJECT = 3
+    ORB = 4
+    TRIGGER_ORB = 5
+    SECRET_COIN = 6
+    TEXT = 7
+    TELEPORT = 8
+    ITEM_COUNTER = 9
+    PICKUP_ITEM = 10
+    TOGGLE_ITEM = 11
     COLLISION_BLOCK = 12
-    COLOR_TRIGGER = 13
-    PULSE_TRIGGER = 14
-    ALPHA_TRIGGER = 15
-    MOVE_TRIGGER = 16
-    SPAWN_TRIGGER = 17
-    STOP_TRIGGER = 18
-    TOGGLE_TRIGGER = 19
-    ROTATE_TRIGGER = 20
-    FOLLOW_TRIGGER = 21
-    SHAKE_TRIGGER = 22
-    ANIMATE_TRIGGER = 23
-    TOUCH_TRIGGER = 24
-    COUNT_TRIGGER = 25
-    INSTANT_COUNT_TRIGGER = 26
-    PICKUP_TRIGGER = 27
-    FOLLOW_PLAYER_Y_TRIGGER = 28
-    ON_DEATH_TRIGGER = 29
-    COLLISION_TRIGGER = 30
+    PLAYER_COLOR_TRIGGER = 13
+    NORMAL_COLOR_TRIGGER = 14
+    COPIED_COLOR_TRIGGER = 15
+    PULSE_COLOR_CHANNEL_TRIGGER = 16
+    PULSE_HSV_CHANNEL_TRIGGER = 17
+    PULSE_COLOR_GROUP_TRIGGER = 18
+    PULSE_HSV_GROUP_TRIGGER = 19
+    ALPHA_TRIGGER = 20
+    NORMAL_MOVE_TRIGGER = 21
+    TARGET_MOVE_TRIGGER = 22
+    SPAWN_TRIGGER = 23
+    STOP_TRIGGER = 24
+    TOGGLE_TRIGGER = 25
+    ROTATE_TRIGGER = 26
+    FOLLOW_TRIGGER = 27
+    SHAKE_TRIGGER = 28
+    ANIMATE_TRIGGER = 29
+    TOUCH_TRIGGER = 30
+    COUNT_TRIGGER = 31
+    INSTANT_COUNT_TRIGGER = 32
+    PICKUP_TRIGGER = 33
+    FOLLOW_PLAYER_Y_TRIGGER = 34
+    ON_DEATH_TRIGGER = 35
+    COLLISION_TRIGGER = 36
 
 
 OBJECT_TYPE_TO_TYPE: Dict[ObjectType, Type[Object]] = {
@@ -4451,11 +5570,18 @@ OBJECT_TYPE_TO_TYPE: Dict[ObjectType, Type[Object]] = {
     ObjectType.TELEPORT: Teleport,
     ObjectType.ITEM_COUNTER: ItemCounter,
     ObjectType.PICKUP_ITEM: PickupItem,
+    ObjectType.TOGGLE_ITEM: ToggleItem,
     ObjectType.COLLISION_BLOCK: CollisionBlock,
-    ObjectType.COLOR_TRIGGER: ColorTrigger,
-    ObjectType.PULSE_TRIGGER: PulseTrigger,
+    ObjectType.PLAYER_COLOR_TRIGGER: PlayerColorTrigger,
+    ObjectType.NORMAL_COLOR_TRIGGER: NormalColorTrigger,
+    ObjectType.COPIED_COLOR_TRIGGER: CopiedColorTrigger,
+    ObjectType.PULSE_COLOR_CHANNEL_TRIGGER: PulseColorChannelTrigger,
+    ObjectType.PULSE_HSV_CHANNEL_TRIGGER: PulseHSVChannelTrigger,
+    ObjectType.PULSE_COLOR_GROUP_TRIGGER: PulseColorGroupTrigger,
+    ObjectType.PULSE_HSV_GROUP_TRIGGER: PulseHSVGroupTrigger,
     ObjectType.ALPHA_TRIGGER: AlphaTrigger,
-    ObjectType.MOVE_TRIGGER: MoveTrigger,
+    ObjectType.NORMAL_MOVE_TRIGGER: NormalMoveTrigger,
+    ObjectType.TARGET_MOVE_TRIGGER: TargetMoveTrigger,
     ObjectType.SPAWN_TRIGGER: SpawnTrigger,
     ObjectType.STOP_TRIGGER: StopTrigger,
     ObjectType.TOGGLE_TRIGGER: ToggleTrigger,
@@ -4498,7 +5624,10 @@ def object_to_binary(
     order: ByteOrder = ByteOrder.DEFAULT,
     version: int = VERSION,
 ) -> None:
-    object_type = TYPE_TO_OBJECT_TYPE[type(object)]
+    object_type = TYPE_TO_OBJECT_TYPE.get(type(object))
+
+    if object_type is None:
+        raise TypeError  # TODO: message?
 
     writer = Writer(binary, order)
 
@@ -4521,47 +5650,84 @@ def object_to_bytes(
 
 OBJECT_ID_NOT_PRESENT = "object ID is not present"
 
+# miscellaneaous IDs
+
+START_POSITION_ID = MiscType.START_POSITION.id
+TEXT_ID = MiscType.TEXT.id
+ITEM_COUNTER_ID = MiscType.ITEM_COUNTER.id
+COLLISION_BLOCK_ID = MiscType.COLLISION_BLOCK.id
+
+# coin IDs
+
+SECRET_COIN_ID = CoinType.SECRET.id
+
+# portal IDs
+
+TELEPORT_ID = PortalType.BLUE_TELEPORT.id
+
+# orb IDs
+
+TRIGGER_ORB_ID = OrbType.TRIGGER.id
+
+# trigger IDs
+
+BACKGROUND_TRIGGER_ID = TriggerType.BACKGROUND.id
+GROUND_TRIGGER_ID = TriggerType.GROUND.id
+LINE_TRIGGER_ID = TriggerType.LINE.id
+OBJECT_TRIGGER_ID = TriggerType.OBJECT.id
+COLOR_1_TRIGGER_ID = TriggerType.COLOR_1.id
+COLOR_2_TRIGGER_ID = TriggerType.COLOR_2.id
+COLOR_3_TRIGGER_ID = TriggerType.COLOR_3.id
+COLOR_4_TRIGGER_ID = TriggerType.COLOR_4.id
+LINE_3D_TRIGGER_ID = TriggerType.LINE_3D.id
+COLOR_TRIGGER_ID = TriggerType.COLOR.id
+SECONDARY_GROUND_TRIGGER_ID = TriggerType.SECONDARY_GROUND.id
+MOVE_TRIGGER_ID = TriggerType.MOVE.id
+PULSE_TRIGGER_ID = TriggerType.PULSE.id
+ALPHA_TRIGGER_ID = TriggerType.ALPHA.id
+TOGGLE_TRIGGER_ID = TriggerType.TOGGLE.id
+SPAWN_TRIGGER_ID = TriggerType.SPAWN.id
+ROTATE_TRIGGER_ID = TriggerType.ROTATE.id
+FOLLOW_TRIGGER_ID = TriggerType.FOLLOW.id
+SHAKE_TRIGGER_ID = TriggerType.SHAKE.id
+ANIMATE_TRIGGER_ID = TriggerType.ANIMATE.id
+TOUCH_TRIGGER_ID = TriggerType.TOUCH.id
+COUNT_TRIGGER_ID = TriggerType.COUNT.id
+STOP_TRIGGER_ID = TriggerType.STOP.id
+INSTANT_COUNT_TRIGGER_ID = TriggerType.INSTANT_COUNT.id
+ON_DEATH_TRIGGER_ID = TriggerType.ON_DEATH.id
+FOLLOW_PLAYER_Y_TRIGGER_ID = TriggerType.FOLLOW_PLAYER_Y.id
+COLLISION_TRIGGER_ID = TriggerType.COLLISION.id
+PICKUP_TRIGGER_ID = TriggerType.PICKUP.id
+
 
 OBJECT_ID_TO_TYPE: Dict[int, Type[Object]] = {
-    MiscType.START_POSITION.id: StartPosition,
-    MiscType.TEXT.id: Text,
-    CoinType.SECRET.id: SecretCoin,
-    PortalType.BLUE_TELEPORT.id: Teleport,
-    OrbType.TRIGGER.id: TriggerOrb,
-    MiscType.ITEM_COUNTER.id: ItemCounter,
-    MiscType.COLLISION_BLOCK.id: CollisionBlock,
-    TriggerType.BACKGROUND.id: BackgroundColorTrigger,
-    TriggerType.GROUND.id: GroundColorTrigger,
-    TriggerType.LINE.id: LineColorTrigger,
-    TriggerType.OBJECT.id: ObjectColorTrigger,
-    TriggerType.COLOR_1.id: Color1Trigger,
-    TriggerType.COLOR_2.id: Color2Trigger,
-    TriggerType.COLOR_3.id: Color3Trigger,
-    TriggerType.COLOR_4.id: Color4Trigger,
-    TriggerType.LINE_3D.id: Line3DColorTrigger,
-    TriggerType.SECONDARY_GROUND.id: Ground2ColorTrigger,
-    TriggerType.COLOR.id: ColorTrigger,
-    TriggerType.ALPHA.id: AlphaTrigger,
-    TriggerType.PULSE.id: PulseTrigger,
-    TriggerType.MOVE.id: MoveTrigger,
-    TriggerType.SPAWN.id: SpawnTrigger,
-    TriggerType.STOP.id: StopTrigger,
-    TriggerType.TOGGLE.id: ToggleTrigger,
-    TriggerType.ROTATE.id: RotateTrigger,
-    TriggerType.FOLLOW.id: FollowTrigger,
-    TriggerType.SHAKE.id: ShakeTrigger,
-    TriggerType.ANIMATE.id: AnimateTrigger,
-    TriggerType.TOUCH.id: TouchTrigger,
-    TriggerType.COUNT.id: CountTrigger,
-    TriggerType.INSTANT_COUNT.id: InstantCountTrigger,
-    TriggerType.PICKUP.id: PickupTrigger,
-    TriggerType.FOLLOW_PLAYER_Y.id: FollowPlayerYTrigger,
-    TriggerType.ON_DEATH.id: OnDeathTrigger,
-    TriggerType.COLLISION.id: CollisionTrigger,
+    # NOTE: (compatibility) color, pulse and move triggers and items are detected separately
+    START_POSITION_ID: StartPosition,
+    TEXT_ID: Text,
+    SECRET_COIN_ID: SecretCoin,
+    TELEPORT_ID: Teleport,
+    TRIGGER_ORB_ID: TriggerOrb,
+    ITEM_COUNTER_ID: ItemCounter,
+    COLLISION_BLOCK_ID: CollisionBlock,
+    ALPHA_TRIGGER_ID: AlphaTrigger,
+    SPAWN_TRIGGER_ID: SpawnTrigger,
+    STOP_TRIGGER_ID: StopTrigger,
+    TOGGLE_TRIGGER_ID: ToggleTrigger,
+    ROTATE_TRIGGER_ID: RotateTrigger,
+    FOLLOW_TRIGGER_ID: FollowTrigger,
+    SHAKE_TRIGGER_ID: ShakeTrigger,
+    ANIMATE_TRIGGER_ID: AnimateTrigger,
+    TOUCH_TRIGGER_ID: TouchTrigger,
+    COUNT_TRIGGER_ID: CountTrigger,
+    INSTANT_COUNT_TRIGGER_ID: InstantCountTrigger,
+    PICKUP_TRIGGER_ID: PickupTrigger,
+    FOLLOW_PLAYER_Y_TRIGGER_ID: FollowPlayerYTrigger,
+    ON_DEATH_TRIGGER_ID: OnDeathTrigger,
+    COLLISION_TRIGGER_ID: CollisionTrigger,
 }
 
 OBJECT_ID_TO_TYPE.update({orb.id: Orb for orb in OrbType if not orb.is_trigger()})
-OBJECT_ID_TO_TYPE.update({pickup_item.id: PickupItem for pickup_item in PickupItemType})
 OBJECT_ID_TO_TYPE.update(
     {rotating_object.id: RotatingObject for rotating_object in RotatingObjectType}
 )
@@ -4569,29 +5735,160 @@ OBJECT_ID_TO_TYPE.update(
     {pulsating_object.id: PulsatingObject for pulsating_object in PulsatingObjectType}
 )
 
+PULSE_TRIGGER_MAPPING: Dict[Tuple[PulseMode, PulseTargetType], Type[PulseTrigger]] = {
+    (PulseMode.COLOR, PulseTargetType.COLOR_CHANNEL): PulseColorChannelTrigger,
+    (PulseMode.HSV, PulseTargetType.COLOR_CHANNEL): PulseHSVChannelTrigger,
+    (PulseMode.COLOR, PulseTargetType.GROUP): PulseColorGroupTrigger,
+    (PulseMode.HSV, PulseTargetType.GROUP): PulseHSVGroupTrigger,
+}
+
+PLAYER_COLOR_TRIGGER_MAPPING = {
+    BACKGROUND_TRIGGER_ID: PlayerBackgroundTrigger,
+    GROUND_TRIGGER_ID: PlayerGroundTrigger,
+    LINE_TRIGGER_ID: PlayerLineTrigger,
+    OBJECT_TRIGGER_ID: PlayerObjectTrigger,
+    COLOR_1_TRIGGER_ID: PlayerColor1Trigger,
+    COLOR_2_TRIGGER_ID: PlayerColor2Trigger,
+    COLOR_3_TRIGGER_ID: PlayerColor3Trigger,
+    COLOR_4_TRIGGER_ID: PlayerColor4Trigger,
+    LINE_3D_TRIGGER_ID: PlayerLine3DTrigger,
+    SECONDARY_GROUND_TRIGGER_ID: PlayerSecondaryGroundTrigger,
+    COLOR_TRIGGER_ID: PlayerColorTrigger,
+}
+
+NORMAL_COLOR_TRIGGER_MAPPING = {
+    BACKGROUND_TRIGGER_ID: NormalBackgroundTrigger,
+    GROUND_TRIGGER_ID: NormalGroundTrigger,
+    LINE_TRIGGER_ID: NormalLineTrigger,
+    OBJECT_TRIGGER_ID: NormalObjectTrigger,
+    COLOR_1_TRIGGER_ID: NormalColor1Trigger,
+    COLOR_2_TRIGGER_ID: NormalColor2Trigger,
+    COLOR_3_TRIGGER_ID: NormalColor3Trigger,
+    COLOR_4_TRIGGER_ID: NormalColor4Trigger,
+    LINE_3D_TRIGGER_ID: NormalLine3DTrigger,
+    SECONDARY_GROUND_TRIGGER_ID: NormalSecondaryGroundTrigger,
+    COLOR_TRIGGER_ID: NormalColorTrigger,
+}
+
+COPIED_COLOR_TRIGGER_MAPPING = {
+    BACKGROUND_TRIGGER_ID: CopiedBackgroundTrigger,
+    GROUND_TRIGGER_ID: CopiedGroundTrigger,
+    LINE_TRIGGER_ID: CopiedLineTrigger,
+    OBJECT_TRIGGER_ID: CopiedObjectTrigger,
+    COLOR_1_TRIGGER_ID: CopiedColor1Trigger,
+    COLOR_2_TRIGGER_ID: CopiedColor2Trigger,
+    COLOR_3_TRIGGER_ID: CopiedColor3Trigger,
+    COLOR_4_TRIGGER_ID: CopiedColor4Trigger,
+    LINE_3D_TRIGGER_ID: CopiedLine3DTrigger,
+    SECONDARY_GROUND_TRIGGER_ID: CopiedSecondaryGroundTrigger,
+    COLOR_TRIGGER_ID: CopiedColorTrigger,
+}
+
+ITEM_IDS = {item.id for item in ItemType}
+
+COLOR_TRIGGER_IDS = {
+    BACKGROUND_TRIGGER_ID,
+    GROUND_TRIGGER_ID,
+    LINE_TRIGGER_ID,
+    OBJECT_TRIGGER_ID,
+    COLOR_1_TRIGGER_ID,
+    COLOR_2_TRIGGER_ID,
+    COLOR_3_TRIGGER_ID,
+    COLOR_4_TRIGGER_ID,
+    LINE_3D_TRIGGER_ID,
+    SECONDARY_GROUND_TRIGGER_ID,
+    COLOR_TRIGGER_ID,
+}
+
+PLAYER_COLOR_1_STRING = str(PLAYER_COLOR_1)
+PLAYER_COLOR_2_STRING = str(PLAYER_COLOR_2)
+
+PULSE_MODE_STRING = str(PULSE_MODE)
+
+COPIED_COLOR_ID_STRING = str(COPIED_COLOR_ID)
+
+PULSE_TARGET_TYPE_STRING = str(PULSE_TARGET_TYPE)
+
+ITEM_MODE_STRING = str(ITEM_MODE)
+
+USE_TARGET_STRING = str(USE_TARGET)
+
+
+DEFAULT_USE_TARGET = False
+
 
 def object_from_robtop(string: str) -> Object:
-    mapping = split_any_object(string)
+    data = split_any_object(string)
 
-    object_id_string = mapping.get(ID_STRING)
+    object_id = parse_get_or(int, DEFAULT_ID, data.get(ID_STRING))
 
-    if object_id_string is None:
+    if not object_id:
         raise ValueError(OBJECT_ID_NOT_PRESENT)
 
-    object_id = int(object_id_string)
+    object_type: Type[Object]
 
-    object_type = OBJECT_ID_TO_TYPE.get(object_id, Object)
+    if object_id in COLOR_TRIGGER_IDS:
+        player_color_1 = parse_get_or(
+            int_bool, DEFAULT_PLAYER_COLOR_1, data.get(PLAYER_COLOR_1_STRING)
+        )
+        player_color_2 = parse_get_or(
+            int_bool, DEFAULT_PLAYER_COLOR_2, data.get(PLAYER_COLOR_2_STRING)
+        )
+
+        player_color = compute_player_color(player_color_1, player_color_2)
+
+        if player_color.is_used():
+            object_type = PLAYER_COLOR_TRIGGER_MAPPING[object_id]  # type: ignore
+
+        else:
+            copied_color_id = parse_get_or(int, DEFAULT_ID, data.get(COPIED_COLOR_ID_STRING))
+
+            if copied_color_id:
+                object_type = COPIED_COLOR_TRIGGER_MAPPING[object_id]  # type: ignore
+
+            else:
+                object_type = NORMAL_COLOR_TRIGGER_MAPPING[object_id]  # type: ignore
+
+    elif object_id == MOVE_TRIGGER_ID:
+        use_target = parse_get_or(int_bool, DEFAULT_USE_TARGET, data.get(USE_TARGET_STRING))
+
+        if use_target:
+            object_type = TargetMoveTrigger
+
+        else:
+            object_type = NormalMoveTrigger
+
+    elif object_id == PULSE_TRIGGER_ID:
+        pulse_mode = parse_get_or(
+            partial_parse_enum(int, PulseMode), PulseMode.DEFAULT, data.get(PULSE_MODE_STRING)
+        )
+
+        pulse_target_type = parse_get_or(
+            partial_parse_enum(int, PulseTargetType),
+            PulseTargetType.DEFAULT,
+            data.get(PULSE_TARGET_TYPE_STRING),
+        )
+
+        object_type = PULSE_TRIGGER_MAPPING[pulse_mode, pulse_target_type]
+
+    elif object_id in ITEM_IDS:
+        item_mode = parse_get_or(
+            partial_parse_enum(int, ItemMode), ItemMode.DEFAULT, data.get(ITEM_MODE_STRING)
+        )
+
+        if item_mode.is_pickup():
+            object_type = PickupItem
+
+        else:
+            object_type = ToggleItem
+
+    else:
+        object_type = OBJECT_ID_TO_TYPE.get(object_id, Object)
 
     object = object_type.from_robtop(string)
-
-    if is_compatibility(object):
-        return object.migrate()
 
     return object
 
 
 def object_to_robtop(object: Object) -> str:
     return object.to_robtop()
-
-
-# TODO: compatibility?

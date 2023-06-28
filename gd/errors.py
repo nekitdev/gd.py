@@ -84,7 +84,7 @@ SONG_RESTRICTED = "song with ID {} is not allowed for use"
 class SongRestricted(ClientError):
     song_id: int
 
-    def __attrs_post_init__(self, song_id: int) -> None:
+    def __init__(self, song_id: int) -> None:
         super().__init__(SONG_RESTRICTED.format(tick(song_id)))
 
         self.__attrs_init__(song_id)  # type: ignore

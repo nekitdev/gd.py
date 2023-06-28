@@ -8,7 +8,7 @@ from gd.artist import Artist, ArtistData
 from gd.server.constants import CACHE, SONGS
 from gd.server.core import client, v1
 from gd.server.dependencies import pages_dependency
-from gd.songs import Song, SongData
+from gd.song import Song, SongData
 
 __all__ = (
     "get_newgrounds_artist_songs",

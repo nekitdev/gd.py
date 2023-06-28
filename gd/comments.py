@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Optional, Type, TypeVar, Union
 
 from attrs import define, field
 from pendulum import DateTime
@@ -30,54 +30,18 @@ from gd.users import User
 if TYPE_CHECKING:
     from gd.client import Client
 
-__all__ = ("Comment", "LevelComment", "UserComment")
-
-C = TypeVar("C", bound="Comment")
+__all__ = ("LevelComment", "UserComment")
 
 COMMENT = "{}: {}"
 comment = COMMENT.format
-
-
-@register_unstructure_hook_omit_client
-@define()
-class Comment(Entity):
-    author: User = field(eq=False)
-    rating: int = field(eq=False)
-    content: str = field(eq=False)
-
-    created_at: DateTime = field(eq=False)
-
-    def __hash__(self) -> int:
-        return hash(type(self)) ^ self.id
-
-    def __str__(self) -> str:
-        return comment(self.author, self.content)
-
-    def is_disliked(self) -> bool:
-        return self.rating < 0
-
-    def attach_client_unchecked(self: C, client: Optional[Client]) -> C:
-        self.author.attach_client_unchecked(client)
-
-        return super().attach_client_unchecked(client)
-
-    def attach_client(self: C, client: Client) -> C:
-        self.author.attach_client(client)
-
-        return super().attach_client(client)
-
-    def detach_client(self: C) -> C:
-        self.author.detach_client()
-
-        return super().detach_client()
-
 
 UC = TypeVar("UC", bound="UserComment")
 
 
 @register_unstructure_hook_omit_client
 @define()
-class UserComment(Comment):
+class UserComment(Entity):
+    author: User = field(eq=False)
     rating: int = field(default=DEFAULT_RATING, eq=False)
     content: str = field(default=EMPTY, eq=False)
 
@@ -85,6 +49,9 @@ class UserComment(Comment):
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
+
+    def __str__(self) -> str:
+        return comment(self.author, self.content)
 
     async def like(self) -> None:
         await self.client.like_user_comment(self)
@@ -94,6 +61,9 @@ class UserComment(Comment):
 
     async def delete(self) -> None:
         await self.client.delete_user_comment(self)
+
+    def is_disliked(self) -> bool:
+        return self.rating < 0
 
     @classmethod
     def default(
@@ -169,7 +139,24 @@ class UserComment(Comment):
 
         writer.write(data)
 
-        writer.write_f64(self.created_at.timestamp())  # type: ignore
+        timestamp = self.created_at.timestamp()  # type: ignore
+
+        writer.write_f64(timestamp)
+
+    def attach_client_unchecked(self: UC, client: Optional[Client]) -> UC:
+        self.author.attach_client_unchecked(client)
+
+        return super().attach_client_unchecked(client)
+
+    def attach_client(self: UC, client: Client) -> UC:
+        self.author.attach_client(client)
+
+        return super().attach_client(client)
+
+    def detach_client(self: UC) -> UC:
+        self.author.detach_client()
+
+        return super().detach_client()
 
 
 LC = TypeVar("LC", bound="LevelComment")
@@ -177,7 +164,8 @@ LC = TypeVar("LC", bound="LevelComment")
 
 @register_unstructure_hook_omit_client
 @define()
-class LevelComment(Comment):
+class LevelComment(Entity):
+    author: User = field(eq=False)
     level: Level = field(eq=False)
 
     record: int = field(default=DEFAULT_RECORD, eq=False)
@@ -191,6 +179,12 @@ class LevelComment(Comment):
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
+
+    def __str__(self) -> str:
+        return comment(self.author, self.content)
+
+    def is_disliked(self) -> bool:
+        return self.rating < 0
 
     @classmethod
     def default(
@@ -250,6 +244,16 @@ class LevelComment(Comment):
 
         author = User.from_binary(binary, order, version, encoding, errors)
 
+        level = Level.from_binary(binary, order, version, encoding, errors)
+
+        value = reader.read_u32()
+
+        record = value & BYTE
+
+        value >>= BITS
+
+        color = Color(value)
+
         rating = reader.read_i32()
 
         content_length = reader.read_u8()
@@ -261,14 +265,6 @@ class LevelComment(Comment):
         created_at = utc_from_timestamp(timestamp)
 
         level = Level.from_binary(binary, order, version, encoding, errors)
-
-        value = reader.read_u32()
-
-        record = value & BYTE
-
-        value >>= BITS
-
-        color = Color(value)
 
         return cls(
             id=id,
@@ -291,6 +287,8 @@ class LevelComment(Comment):
     ) -> None:
         super().to_binary(binary, order, version)
 
+        self.author.to_binary(binary, order, version, encoding, errors)
+
         self.level.to_binary(binary, order, version, encoding, errors)
 
         writer = Writer(binary, order)
@@ -299,17 +297,35 @@ class LevelComment(Comment):
 
         writer.write_u32(value)
 
+        writer.write_i32(self.rating)
+
+        data = self.content.encode(encoding, errors)
+
+        writer.write_u8(len(data))
+
+        writer.write(data)
+
+        timestamp = self.created_at.timestamp()  # type: ignore
+
+        writer.write_f64(timestamp)
+
     def attach_client_unchecked(self: LC, client: Optional[Client]) -> LC:
+        self.author.attach_client_unchecked(client)
         self.level.attach_client_unchecked(client)
 
         return super().attach_client_unchecked(client)
 
     def attach_client(self: LC, client: Client) -> LC:
+        self.author.attach_client(client)
         self.level.attach_client(client)
 
         return super().attach_client(client)
 
     def detach_client(self: LC) -> LC:
+        self.author.detach_client()
         self.level.detach_client()
 
         return super().detach_client()
+
+
+Comment = Union[UserComment, LevelComment]

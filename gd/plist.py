@@ -170,10 +170,13 @@ class PropertyList:
             element = create_element(DICT)
 
             for sub_key, sub_item in item.items():
-                sub_element = create_sub_element(element, KEY)
-                sub_element.text = sub_key
+                key_element = create_sub_element(element, KEY)
+                key_element.text = sub_key
 
-                self.dump_item_long(sub_item, element)
+                sub_element = self.dump_item_long(sub_item, element)
+
+                if sub_element is None:
+                    element.remove(key_element)
 
         elif is_instance(item, List):
             element = create_element(ARRAY)
@@ -225,10 +228,13 @@ class PropertyList:
             element = create_element(DICT if first_shot else DICT_SHORT)
 
             for sub_key, sub_item in item.items():
-                sub_element = create_sub_element(element, KEY_SHORT)
-                sub_element.text = sub_key
+                key_element = create_sub_element(element, KEY_SHORT)
+                key_element.text = sub_key
 
-                self.dump_item_short(sub_item, element, first_shot=NOT_FIRST_SHOT)
+                sub_element = self.dump_item_short(sub_item, element, first_shot=NOT_FIRST_SHOT)
+
+                if sub_element is None:
+                    element.remove(key_element)
 
         elif is_instance(item, List):
             element = create_element(ARRAY_SHORT)

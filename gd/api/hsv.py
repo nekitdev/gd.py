@@ -1,6 +1,7 @@
 from typing import Type, TypeVar
 
 from attrs import define, field
+from typing_aliases import Unary
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_constants import BITS, BYTE
@@ -11,10 +12,6 @@ from gd.models_utils import bool_str, concat_hsv, float_str, int_bool, round_flo
 from gd.robtop import RobTop
 
 __all__ = ("HSV",)
-
-H_INITIAL = 0
-S_INITIAL = 1.0
-V_INITIAL = 1.0
 
 S_MIN = 0.0
 V_MIN = 0.0
@@ -28,26 +25,43 @@ V_MIN_CHECKED = -1.0
 S_MAX_CHECKED = 1.0
 V_MAX_CHECKED = 1.0
 
-
-def clamp(value: float, min_value: float, max_value: float) -> float:
-    return max(min_value, min(value, max_value))
-
-
-def clamp_s(value: float) -> float:
-    return clamp(value, S_MIN, S_MAX)
+H_BOUND = 180
+H_NORMAL_BOUND = 360
 
 
-def clamp_v(value: float) -> float:
-    return clamp(value, V_MIN, V_MAX)
+def rotate_h(h: int, bound: int = H_BOUND, normal_bound: int = H_NORMAL_BOUND) -> int:
+    if abs(h) > bound:
+        return (h + bound) % normal_bound - bound
+
+    return h
 
 
-def clamp_s_checked(value: float) -> float:
-    return clamp(value, S_MIN_CHECKED, S_MAX_CHECKED)
+Clamp = Unary[float, float]
 
 
-def clamp_v_checked(value: float) -> float:
-    return clamp(value, V_MIN_CHECKED, V_MAX_CHECKED)
+def create_clamp(min_value: float, max_value: float, out_of_bounds: str) -> Clamp:
+    def clamp(value: float) -> float:
+        if value < min_value:
+            return min_value
 
+        if value > max_value:
+            return max_value
+
+        return value
+
+    return clamp
+
+
+clamp_s = create_clamp(S_MIN, S_MAX, "s")
+clamp_v = create_clamp(V_MIN, V_MAX, "v")
+
+clamp_s_checked = create_clamp(S_MIN_CHECKED, S_MAX_CHECKED, "s_checked")
+clamp_v_checked = create_clamp(V_MIN_CHECKED, V_MAX_CHECKED, "v_checked")
+
+
+H_INITIAL = 0
+S_INITIAL = 1.0
+V_INITIAL = 1.0
 
 S_CHECKED = False
 V_CHECKED = False
@@ -56,9 +70,12 @@ V_BIT = 0b00000100_00000000
 S_BIT = 0b00000010_00000000
 H_MASK = 0b00000001_11111111
 
+H_ADD_DOUBLE = 360
 H_ADD = 180
 S_MULTIPLY = 100
 V_MULTIPLY = 100
+
+ROUNDING = 2
 
 T = TypeVar("T", bound="HSV")
 
@@ -88,10 +105,7 @@ class HSV(Binary, RobTop):
         s = float(s_string)
         v = float(v_string)
 
-        h_add = H_ADD
-
-        if abs(h) > h_add:
-            h %= h_add
+        h = rotate_h(h)
 
         s_checked = int_bool(s_checked_string)
         v_checked = int_bool(v_checked_string)
@@ -126,6 +140,8 @@ class HSV(Binary, RobTop):
 
     @classmethod
     def from_value(cls: Type[T], value: int) -> T:
+        rounding = ROUNDING
+
         bits = BITS
         byte = BYTE
 
@@ -151,13 +167,13 @@ class HSV(Binary, RobTop):
         if v_checked:
             v -= V_INITIAL
 
-        return cls(h, s, v, s_checked, v_checked)
+        return cls(h, round(s, rounding), round(v, rounding), s_checked, v_checked)
 
     def to_value(self) -> int:
         value = self.h + H_ADD
 
-        s = int(self.s * S_MULTIPLY)
-        v = int(self.v * V_MULTIPLY)
+        s = round(self.s * S_MULTIPLY)
+        v = round(self.v * V_MULTIPLY)
 
         if self.s_checked:
             value |= S_BIT

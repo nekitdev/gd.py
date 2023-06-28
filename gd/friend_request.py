@@ -101,7 +101,15 @@ class FriendRequest(Entity):
 
         writer.write_u8(value)
 
-        writer.write_f64(self.created_at.timestamp())  # type: ignore
+        timestamp = self.created_at.timestamp()  # type: ignore
+
+        writer.write_f64(timestamp)
+
+        data = self.content.encode(encoding, errors)
+
+        writer.write_u8(len(data))
+
+        writer.write(data)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id

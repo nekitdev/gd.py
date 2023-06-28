@@ -16,6 +16,7 @@ from gd.api.objects import (
     has_target_group,
     is_start_position,
     is_trigger,
+    migrate_objects,
     object_from_binary,
     object_from_robtop,
     object_to_binary,
@@ -294,7 +295,7 @@ class Editor(RobTop, Binary, Sequence[Object]):
         else:
             header = Header.from_robtop(header_option)
 
-        objects = iterator.map(object_from_robtop).list()
+        objects = iterator.map(object_from_robtop).collect_iter(migrate_objects).list()
 
         return cls(header, objects)
 

@@ -1,7 +1,7 @@
 import sys
 from builtins import hasattr as has_attribute
-from struct import calcsize as size
 from platform import system
+from struct import calcsize as size
 from typing import Type, TypeVar
 
 from attrs import evolve, frozen

@@ -125,6 +125,8 @@ HEADER = b"GD"
 HEADER_SIZE = len(HEADER)
 BYTE_ORDER_SIZE = 1
 
+BYTE_ORDER_TOO_LONG = f"byte order is too long; expected {BYTE_ORDER_SIZE}, got {{}}"
+
 NATIVE_NOT_ALLOWED = "`native` byte order is not allowed"
 
 
@@ -176,7 +178,14 @@ class BinaryInfo(Binary):
 
         writer.write_u8(self.version)
 
-        writer.write(self.order.value.encode(encoding, errors))
+        data = self.order.value.encode(encoding, errors)
+
+        size = len(data)
+
+        if size != BYTE_ORDER_SIZE:
+            raise ValueError(BYTE_ORDER_TOO_LONG.format(size))
+
+        writer.write(data)
 
 
 def dump(binary: BinaryWriter, item: ToBinary, info: Optional[BinaryInfo] = None) -> None:

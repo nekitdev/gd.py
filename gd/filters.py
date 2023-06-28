@@ -308,7 +308,7 @@ class Filters(Binary):
     def with_song(
         cls: Type[F],
         song_id: int,
-        custom_song: bool,
+        custom: bool,
         strategy: SearchStrategy = SearchStrategy.DEFAULT,
         difficulties: Iterable[Difficulty] = DEFAULT_ITERABLE,
         lengths: Iterable[LevelLength] = DEFAULT_ITERABLE,
@@ -330,7 +330,7 @@ class Filters(Binary):
             rate_filter=rate_filter,
             require_two_player=require_two_player,
             song_id=song_id,
-            custom_song=custom_song,
+            custom_song=custom,
             require_original=require_original,
             followed=followed,
         )

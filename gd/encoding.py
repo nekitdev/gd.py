@@ -379,7 +379,7 @@ def generate_leaderboard_seed(
     check: bool = DEFAULT_CHECK,
 ) -> int:
     return (
-        CHECK_MULTIPLY * (check + 1)
+        CHECK_MULTIPLY * check
         + (clicks + CLICKS_ADD) * (record + RECORD_ADD)
         + pow(seconds + SECONDS_ADD, 2)
         - TOTAL_SUBTRACT

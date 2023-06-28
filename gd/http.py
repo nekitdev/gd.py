@@ -36,9 +36,9 @@ from typing_aliases import (
     IntoParameters,
     IntoPath,
     Namespace,
+    NormalError,
     Parameters,
 )
-from typing_aliases import NormalError
 from typing_aliases import Payload as JSON
 from typing_aliases import is_bytes, is_string
 from typing_extensions import Literal

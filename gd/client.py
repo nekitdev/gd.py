@@ -107,7 +107,7 @@ from gd.password import Password
 from gd.rewards import Chest, Quest
 from gd.run_iterables import run_iterables
 from gd.session import Session
-from gd.songs import Song
+from gd.song import Song
 from gd.typing import IntString, MaybeIterable, URLString
 from gd.users import User
 

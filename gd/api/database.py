@@ -23,12 +23,14 @@ from gd.api.levels import (
 from gd.api.like import Like
 from gd.api.objects import (
     Object,
+    migrate_objects,
     object_from_binary,
     object_from_robtop,
     object_to_binary,
     object_to_robtop,
 )
 from gd.api.rewards import Quest, RewardItem
+from gd.api.songs import SongAPI
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import (
@@ -49,8 +51,10 @@ from gd.constants import (
     DEFAULT_LIKED,
     DEFAULT_MAP_PACKS,
     DEFAULT_ORBS,
+    DEFAULT_PRIORITY,
     DEFAULT_RATED,
     DEFAULT_RESOLUTION,
+    DEFAULT_ROUNDING,
     DEFAULT_SECRET_COINS,
     DEFAULT_SHARDS,
     DEFAULT_STARS,
@@ -78,7 +82,6 @@ from gd.models_utils import (
     split_objects,
 )
 from gd.plist import PARSER
-from gd.songs import Song
 from gd.string_utils import password_repr, snake_to_camel, snake_to_camel_with_abbreviations
 from gd.versions import CURRENT_BINARY_VERSION, RobTopVersion
 
@@ -3674,7 +3677,7 @@ class Storage(Binary):
         return cls()
 
     def to_robtop_data(self) -> StringDict[Any]:
-        ...
+        ...  # TODO
 
         return {}
 
@@ -3693,7 +3696,6 @@ QUALITY_MASK = 0b00001100
 QUALITY_SHIFT = GLOW_BIT.bit_length()
 
 DEFAULT_VOLUME = 1.0
-DEFAULT_SFX_VOLUME = 1.0
 
 DEFAULT_SECRET_VALUE = 0
 DEFAULT_MODERATOR = False
@@ -3797,6 +3799,9 @@ WEEKLY_ID = "GLM_17"
 SAVED_FOLDERS = "GLM_18"
 CREATED_FOLDERS = "GLM_19"
 
+SONGS = "MDLM_001"
+PRIORITY = "MDLM_002"
+
 CREATED_LEVELS = "LLM_01"
 BINARY_VERSION_LEVELS = "LLM_02"
 
@@ -3820,7 +3825,7 @@ D = TypeVar("D", bound="Database")
 @define()
 class Database(Binary):
     volume: float = field(default=DEFAULT_VOLUME)
-    sfx_volume: float = field(default=DEFAULT_SFX_VOLUME)
+    sfx_volume: float = field(default=DEFAULT_VOLUME)
 
     uuid: UUID = field(factory=generate_uuid)
 
@@ -3898,10 +3903,10 @@ class Database(Binary):
     saved_folders: OrderedSet[Folder] = field(factory=ordered_set)
     created_folders: OrderedSet[Folder] = field(factory=ordered_set)
 
+    songs: OrderedSet[SongAPI] = field(factory=ordered_set)
+    priority: int = field(default=DEFAULT_PRIORITY)
+
     created_levels: OrderedSet[CreatedLevelAPI] = field(factory=ordered_set)
-
-    songs: OrderedSet[Song] = field(factory=ordered_set)
-
     binary_version: RobTopVersion = field(default=CURRENT_BINARY_VERSION)
 
     # keybindings: Keybindings = field(factory=Keybindings)
@@ -3917,6 +3922,11 @@ class Database(Binary):
 
         else:
             raise ValueError(EXPECTED_STRING_DICT)
+
+        import json
+
+        with open("main.json", "w") as file:
+            json.dump(main_data, file, indent=2)
 
         volume = main_data.get(VOLUME, DEFAULT_VOLUME)
         sfx_volume = main_data.get(SFX_VOLUME, DEFAULT_VOLUME)
@@ -3971,6 +3981,35 @@ class Database(Binary):
 
         secret_value = main_data.get(SECRET_VALUE, DEFAULT_SECRET_VALUE)
 
+        show_song_markers = main_data.get(SHOW_SONG_MARKERS, DEFAULT_SHOW_SONG_MARKERS)
+
+        show_progress_bar = main_data.get(SHOW_PROGRESS_BAR, DEFAULT_SHOW_PROGRESS_BAR)
+
+        clicked_icons = main_data.get(CLICKED_ICONS, DEFAULT_CLICKED_ICONS)
+        clicked_editor = main_data.get(CLICKED_EDITOR, DEFAULT_CLICKED_EDITOR)
+        clicked_practice = main_data.get(CLICKED_PRACTICE, DEFAULT_CLICKED_PRACTICE)
+
+        shown_editor_guide = main_data.get(SHOWN_EDITOR_GUIDE, DEFAULT_SHOWN_EDITOR_GUIDE)
+        shown_low_detail = main_data.get(SHOWN_LOW_DETAIL, DEFAULT_SHOWN_LOW_DETAIL)
+
+        rated_game = main_data.get(RATED_GAME, DEFAULT_RATED_GAME)
+
+        bootups = main_data.get(BOOTUPS, DEFAULT_BOOTUPS)
+
+        resolution = main_data.get(RESOLUTION, DEFAULT_RESOLUTION)
+
+        quality_value = main_data.get(QUALITY)
+
+        if quality_value is None:
+            quality = Quality.DEFAULT
+
+        else:
+            quality = Quality(quality_value)
+
+        achievements_data = main_data.get(ACHIEVEMENTS, {})
+
+        achievements = {name: int(progress) for name, progress in achievements_data.items()}
+
         values_data = main_data.get(VALUES, {})
 
         values = Values.from_robtop_data(values_data)
@@ -3982,7 +4021,13 @@ class Database(Binary):
         custom_objects_data = main_data.get(CUSTOM_OBJECTS, {})
 
         def objects_from_robtop(iterable: Iterable[str]) -> List[Object]:
-            return iter(iterable).filter(None).map(object_from_robtop).list()
+            return (
+                iter(iterable)
+                .filter(None)
+                .map(object_from_robtop)
+                .collect_iter(migrate_objects)
+                .list()
+            )
 
         custom_objects = (
             iter(custom_objects_data.values()).map(split_objects).map(objects_from_robtop).list()
@@ -4064,6 +4109,12 @@ class Database(Binary):
             iter(created_folders_data.items()).map(unpack_binary(create_folder)).ordered_set()
         )
 
+        songs_data = main_data.get(SONGS, {})
+
+        songs = iter(songs_data.values()).map(SongAPI.from_robtop_data).ordered_set()
+
+        priority = main_data.get(PRIORITY, DEFAULT_PRIORITY)
+
         levels_payload = parser.load(levels)
 
         if is_instance(levels_payload, Dict):
@@ -4089,15 +4140,14 @@ class Database(Binary):
         )
 
         return cls(
-            # main
             volume=volume,
             sfx_volume=sfx_volume,
             uuid=uuid,
             player_name=player_name,
-            id=id,
             name=name,
-            password=password,
+            id=id,
             account_id=account_id,
+            password=password,
             session_id=session_id,
             cube_id=cube_id,
             ship_id=ship_id,
@@ -4115,10 +4165,21 @@ class Database(Binary):
             glow=glow,
             secret_value=secret_value,
             moderator=moderator,
+            show_song_markers=show_song_markers,
+            show_progress_bar=show_progress_bar,
+            clicked_icons=clicked_icons,
+            clicked_editor=clicked_editor,
+            clicked_practice=clicked_practice,
+            shown_editor_guide=shown_editor_guide,
+            shown_low_detail=shown_low_detail,
+            rated_game=rated_game,
+            bootups=bootups,
+            resolution=resolution,
+            quality=quality,
+            achievements=achievements,
             values=values,
             unlock_values=unlock_values,
             custom_objects=custom_objects,
-            # ...
             storage=storage,
             completed=completed,
             statistics=statistics,
@@ -4126,7 +4187,7 @@ class Database(Binary):
             saved_levels=saved_levels,
             followed=followed,
             last_played=last_played,
-            # ...
+            # filters=filters,  # TODO
             timely_levels=timely_levels,
             daily_id=daily_id,
             weekly_id=weekly_id,
@@ -4137,10 +4198,11 @@ class Database(Binary):
             gauntlet_levels=gauntlet_levels,
             saved_folders=saved_folders,
             created_folders=created_folders,
-            # ...
-            # levels
+            songs=songs,
+            priority=priority,
             created_levels=created_levels,
             binary_version=binary_version,
+            # keybindings=keybindings,
         )
 
     def dump_main(self) -> bytes:
@@ -4167,7 +4229,20 @@ class Database(Binary):
             TRAIL_ID: self.trail_id,
             EXPLOSION_ID: self.explosion_id,
             ICON_TYPE: self.icon_type.value,
+            GLOW: self.has_glow(),
+            MODERATOR: self.is_moderator(),
             SECRET_VALUE: self.secret_value,
+            SHOW_SONG_MARKERS: self.is_show_song_markers(),
+            SHOW_PROGRESS_BAR: self.is_show_progress_bar(),
+            CLICKED_ICONS: self.has_clicked_icons(),
+            CLICKED_EDITOR: self.has_clicked_editor(),
+            CLICKED_PRACTICE: self.has_clicked_practice(),
+            SHOWN_EDITOR_GUIDE: self.has_shown_editor_guide(),
+            SHOWN_LOW_DETAIL: self.has_shown_low_detail(),
+            RATED_GAME: self.has_rated_game(),
+            BOOTUPS: self.bootups,
+            RESOLUTION: self.resolution,
+            QUALITY: self.quality.value,
             DAILY_ID: self.daily_id,
             WEEKLY_ID: self.weekly_id,
             NAME: self.name,
@@ -4176,15 +4251,9 @@ class Database(Binary):
             SESSION_ID: self.session_id,
         }
 
-        glow = self.has_glow()
+        achievements_data = {name: str(progress) for name, progress in self.achievements.items()}
 
-        if glow:
-            main_data[GLOW] = glow
-
-        moderator = self.is_moderator()
-
-        if moderator:
-            main_data[MODERATOR] = moderator
+        main_data[ACHIEVEMENTS] = achievements_data
 
         values_data = self.values.to_robtop_data()
 
@@ -4272,9 +4341,13 @@ class Database(Binary):
 
         main_data[CREATED_FOLDERS] = created_folders_data
 
-        # keybindings_data = self.keybindings.to_robtop_data()
+        songs_data = {str(song.id): song.to_robtop_data() for song in self.songs}
 
-        # main_data[KEYBINDINGS] = keybindings_data
+        main_data[SONGS] = songs_data
+
+        main_data[PRIORITY] = self.priority
+
+        # keybindings_data = self.keybindings.to_robtop_data()
 
         return parser.dump(main_data)
 
@@ -4322,6 +4395,8 @@ class Database(Binary):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> D:
+        rounding = DEFAULT_ROUNDING
+
         show_song_markers_bit = SHOW_SONG_MARKERS_BIT
         show_progress_bar_bit = SHOW_PROGRESS_BAR_BIT
         clicked_icons_bit = CLICKED_ICONS_BIT
@@ -4333,12 +4408,10 @@ class Database(Binary):
         moderator_bit = MODERATOR_BIT
         glow_bit = GLOW_BIT
 
-        breakpoint()
-
         reader = Reader(binary, order)
 
-        volume = reader.read_f32()
-        sfx_volume = reader.read_f32()
+        volume = round(reader.read_f32(), rounding)
+        sfx_volume = round(reader.read_f32(), rounding)
 
         data = reader.read(UUID_SIZE)
 
@@ -4445,24 +4518,24 @@ class Database(Binary):
 
         statistics = Statistics.from_binary(binary, order, version)
 
-        official_level_api_from_binary = partial(
+        official_level_from_binary = partial(
             OfficialLevelAPI.from_binary, binary, order, version, encoding, errors
         )
 
         official_levels_length = reader.read_u8()
 
         official_levels = iter.repeat_exactly_with(
-            official_level_api_from_binary, official_levels_length
+            official_level_from_binary, official_levels_length
         ).ordered_set()
 
-        saved_level_api_from_binary = partial(
+        saved_level_from_binary = partial(
             SavedLevelAPI.from_binary, binary, order, version, encoding, errors
         )
 
         saved_levels_length = reader.read_u32()
 
         saved_levels = iter.repeat_exactly_with(
-            saved_level_api_from_binary, saved_levels_length
+            saved_level_from_binary, saved_levels_length
         ).ordered_set()
 
         followed_length = reader.read_u32()
@@ -4475,14 +4548,14 @@ class Database(Binary):
 
         filters = Filters.from_binary(binary, order, version)
 
-        timely_level_api_from_binary = partial(
+        timely_level_from_binary = partial(
             TimelyLevelAPI.from_binary, binary, order, version, encoding, errors
         )
 
         timely_levels_length = reader.read_u32()
 
         timely_levels = iter.repeat_exactly_with(
-            timely_level_api_from_binary, timely_levels_length
+            timely_level_from_binary, timely_levels_length
         ).ordered_set()
 
         daily_id = reader.read_u32()
@@ -4506,14 +4579,14 @@ class Database(Binary):
 
         demon_rated = iter.repeat_exactly_with(reader.read_u32, demon_rated_length).ordered_set()
 
-        gauntlet_level_api_from_binary = partial(
+        gauntlet_level_from_binary = partial(
             GauntletLevelAPI.from_binary, binary, order, version, encoding, errors
         )
 
         gauntlet_levels_length = reader.read_u16()
 
         gauntlet_levels = iter.repeat_exactly_with(
-            gauntlet_level_api_from_binary, gauntlet_levels_length
+            gauntlet_level_from_binary, gauntlet_levels_length
         ).ordered_set()
 
         folder_from_binary = partial(Folder.from_binary, binary, order, version, encoding, errors)
@@ -4530,21 +4603,21 @@ class Database(Binary):
             folder_from_binary, created_folders_length
         ).ordered_set()
 
-        created_level_api_from_binary = partial(
+        song_from_binary = partial(SongAPI.from_binary, binary, order, version, encoding, errors)
+
+        songs_length = reader.read_u32()
+
+        songs = iter.repeat_exactly_with(song_from_binary, songs_length).ordered_set()
+
+        created_level_from_binary = partial(
             CreatedLevelAPI.from_binary, binary, order, version, encoding, errors
         )
 
         created_levels_length = reader.read_u32()
 
         created_levels = iter.repeat_exactly_with(
-            created_level_api_from_binary, created_levels_length
+            created_level_from_binary, created_levels_length
         ).ordered_set()
-
-        song_from_binary = partial(Song.from_binary, binary, order, version, encoding, errors)
-
-        songs_length = reader.read_u32()
-
-        songs = iter.repeat_exactly_with(song_from_binary, songs_length).ordered_set()
 
         binary_version = RobTopVersion.from_binary(binary, order, version)
 
@@ -4609,8 +4682,8 @@ class Database(Binary):
             gauntlet_levels=gauntlet_levels,
             saved_folders=saved_folders,
             created_folders=created_folders,
-            created_levels=created_levels,
             songs=songs,
+            created_levels=created_levels,
             binary_version=binary_version,
             # keybindings=keybindings,
         )
@@ -4837,19 +4910,19 @@ class Database(Binary):
         for created_folder in created_folders:
             created_folder.to_binary(binary, order, version, encoding, errors)
 
-        created_levels = self.created_levels
-
-        writer.write_u32(len(created_levels))
-
-        for created_level in created_levels:
-            created_level.to_binary(binary, order, version, encoding, errors)
-
         songs = self.songs
 
         writer.write_u32(len(songs))
 
         for song in songs:
             song.to_binary(binary, order, version, encoding, errors)
+
+        created_levels = self.created_levels
+
+        writer.write_u32(len(created_levels))
+
+        for created_level in created_levels:
+            created_level.to_binary(binary, order, version, encoding, errors)
 
         self.binary_version.to_binary(binary, order, version)
 

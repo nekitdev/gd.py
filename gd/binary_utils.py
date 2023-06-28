@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from struct import pack, unpack
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from attrs import Attribute, field, frozen
 from iters.utils import unpack_unary_tuple
@@ -182,6 +182,9 @@ class Reader(Generic[R]):
 
     def read(self, size: int) -> bytes:
         return self.reader.read(size)
+
+
+AnyReader = Reader[Any]
 
 
 @frozen()
