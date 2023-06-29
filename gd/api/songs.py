@@ -4,7 +4,7 @@ from attrs import define
 from typing_aliases import StringDict, StringMapping
 from yarl import URL
 
-from gd.binary import VERSION, BinaryReader, BinaryWriter
+from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.constants import (
     DEFAULT_CUSTOM,
@@ -39,7 +39,7 @@ R = TypeVar("R", bound="SongReferenceAPI")
 
 
 @define()
-class SongReferenceAPI:
+class SongReferenceAPI(Binary):
     id: int
     custom: bool
 
@@ -101,7 +101,7 @@ A = TypeVar("A", bound="ArtistAPI")
 
 
 @define()
-class ArtistAPI:
+class ArtistAPI(Binary):
     id: int
     name: str
 
@@ -154,7 +154,7 @@ S = TypeVar("S", bound="SongAPI")
 
 
 @define()
-class SongAPI:
+class SongAPI(Binary):
     id: int
     name: str
     artist: ArtistAPI

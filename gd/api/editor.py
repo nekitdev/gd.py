@@ -114,7 +114,7 @@ E = TypeVar("E", bound="Editor")
 
 
 @define()
-class Editor(RobTop, Binary, Sequence[Object]):
+class Editor(Sequence[Object], RobTop, Binary):
     """Represents editors.
 
     Binary:

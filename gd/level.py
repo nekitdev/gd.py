@@ -111,7 +111,7 @@ class LevelData(EntityData):
 
 
 @register_unstructure_hook_omit_client
-@define(hash=True)
+@define()
 class Level(Entity):
     name: str = field(eq=False)
     creator: User = field(eq=False)

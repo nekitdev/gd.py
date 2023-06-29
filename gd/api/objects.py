@@ -268,7 +268,7 @@ class ObjectFlag(Flag):
 G = TypeVar("G", bound="Groups")
 
 
-class Groups(OrderedSet[int], RobTop):
+class Groups(OrderedSet[int], Binary, RobTop):
     @classmethod
     def from_robtop(cls: Type[G], string: str) -> G:
         return iter(split_groups(string)).map(int).collect(cls)
