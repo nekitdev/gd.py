@@ -62,11 +62,16 @@ class Guidelines(Dict[float, GuidelineColor], RobTop, Binary):
 
         length = reader.read_u32()
 
+        read_f32 = reader.read_f32
+
+        def read_f32_rounded(rounding: int = rounding) -> int:
+            return round(read_f32(), rounding)
+
         color = GuidelineColor
 
         return cls(
             {
-                round(reader.read_f32(), rounding): color(round(reader.read_f32(), rounding))
+                read_f32_rounded(): color(read_f32_rounded())
                 for _ in range(length)
             }
         )

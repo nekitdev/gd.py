@@ -299,8 +299,7 @@ class Groups(OrderedSet[int], RobTop):
 
         writer.write_u16(len(self))
 
-        for group in self:
-            writer.write_u16(group)
+        iter(self).for_each(writer.write_u16)
 
     @staticmethod
     def can_be_in(string: str) -> bool:

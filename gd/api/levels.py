@@ -733,6 +733,8 @@ class CustomLevelAPI(BaseLevelAPI):
         encoding: str = DEFAULT_ENCODING,
         errors: str = DEFAULT_ERRORS,
     ) -> None:
+        super().to_binary(binary, order, version, encoding, errors)
+
         writer = Writer(binary, order)
 
         data = self.description.encode(encoding, errors)

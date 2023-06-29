@@ -9,7 +9,7 @@ from iters.iters import iter
 from pendulum import DateTime
 from typing_extensions import TypedDict as Data
 
-from gd.binary import VERSION, BinaryReader, BinaryWriter
+from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
 from gd.color import Color
 from gd.constants import (
@@ -121,7 +121,7 @@ class UserStatisticsData(Data):
 
 
 @define()
-class UserStatistics:
+class UserStatistics(Binary):
     stars: int = DEFAULT_STARS
     demons: int = DEFAULT_DEMONS
     diamonds: int = DEFAULT_DIAMONDS
@@ -198,7 +198,7 @@ class UserCosmeticsData:
 
 
 @define()
-class UserCosmetics:
+class UserCosmetics(Binary):
     color_1_id: int = DEFAULT_COLOR_1_ID
     color_2_id: int = DEFAULT_COLOR_2_ID
     icon_type: IconType = IconType.DEFAULT
@@ -369,7 +369,7 @@ class UserStatesData(Data):
 
 
 @define()
-class UserStates:
+class UserStates(Binary):
     message_state: MessageState = MessageState.DEFAULT
     friend_request_state: FriendRequestState = FriendRequestState.DEFAULT
     comment_state: CommentState = CommentState.DEFAULT
@@ -434,7 +434,7 @@ class UserSocialsData(Data):
 
 
 @define()
-class UserSocials:
+class UserSocials(Binary):
     youtube: Optional[str] = None
     twitter: Optional[str] = None
     twitch: Optional[str] = None
@@ -564,7 +564,7 @@ class UserLeaderboardData(Data):
 
 
 @define()
-class UserLeaderboard:
+class UserLeaderboard(Binary):
     record: int = field(default=DEFAULT_RECORD)
     coins: int = field(default=DEFAULT_COINS)
 
@@ -796,7 +796,7 @@ class User(Entity):
 
         place = self.place
 
-        if place:
+        if place is not None:
             user_flag |= UserFlag.PLACE
 
         leaderboard = self.leaderboard

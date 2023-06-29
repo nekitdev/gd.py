@@ -45,6 +45,10 @@ def level_difficulty_value(difficulty: Difficulty) -> int:
     return difficulty.into_level_difficulty().value
 
 
+def difficulty_value(difficulty: Difficulty) -> int:
+    return difficulty.value
+
+
 def length_value(length: LevelLength) -> int:
     return length.value
 
@@ -179,22 +183,19 @@ class Filters(Binary):
 
         writer.write_u8(len(difficulties))
 
-        for difficulty in difficulties:
-            writer.write_u8(difficulty.value)
+        iter(difficulties).map(difficulty_value).for_each(writer.write_u8)
 
         lengths = self.lengths
 
         writer.write_u8(len(lengths))
 
-        for length in lengths:
-            writer.write_u8(length.value)
+        iter(lengths).map(length_value).for_each(writer.write_u8)
 
         completed_levels = self.completed_levels
 
         writer.write_u32(len(completed_levels))
 
-        for level_id in completed_levels:
-            writer.write_u32(level_id)
+        iter(completed_levels).for_each(writer.write_u32)
 
         value = 0
 
@@ -240,8 +241,7 @@ class Filters(Binary):
 
         writer.write_u32(len(followed))
 
-        for account_id in followed:
-            writer.write_u32(account_id)
+        iter(followed).for_each(writer.write_u32)
 
     @classmethod
     def create(
