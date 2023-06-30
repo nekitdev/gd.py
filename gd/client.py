@@ -27,7 +27,7 @@ from typing_aliases import AnyCallable, AnyError, DynamicTuple, Predicate
 from typing_extensions import ParamSpec
 from yarl import URL
 
-from gd.api.database import Database
+from gd.api.database.database import Database
 from gd.api.recording import Recording
 from gd.artist import Artist
 from gd.capacity import Capacity

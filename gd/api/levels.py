@@ -71,6 +71,7 @@ from gd.enums import (
     RateType,
     TimelyType,
 )
+from gd.models_constants import OBJECTS_SEPARATOR
 from gd.password import Password
 from gd.progress import Progress
 from gd.users import User
@@ -835,6 +836,9 @@ class CustomLevelAPI(BaseLevelAPI):
         description = decode_base64_string_url_safe(data.get(DESCRIPTION, EMPTY))
 
         unprocessed_data = data.get(DATA, EMPTY)
+
+        if OBJECTS_SEPARATOR in unprocessed_data:
+            unprocessed_data = zip_level_string(unprocessed_data)
 
         length_value = data.get(LENGTH, DEFAULT_LENGTH_VALUE)
 

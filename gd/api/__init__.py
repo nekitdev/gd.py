@@ -5,7 +5,7 @@ from gd.api.color_channels import (
     NormalColorChannel,
     PlayerColorChannel,
 )
-from gd.api.database import Database
+from gd.api.database.database import Database
 from gd.api.editor import Editor
 from gd.api.folder import Folder
 from gd.api.guidelines import Guidelines

@@ -11,7 +11,6 @@ from gd.binary_utils import Reader, Writer
 from gd.constants import (
     DEFAULT_AMOUNT,
     DEFAULT_COMPLETED,
-    DEFAULT_COUNT,
     DEFAULT_DIAMONDS,
     DEFAULT_ENCODING,
     DEFAULT_ERRORS,
@@ -26,6 +25,7 @@ from gd.string_utils import snake_to_camel
 
 __all__ = ("Reward", "RewardItem", "Quest")
 
+DEFAULT_COUNT = 0
 
 ORDER_MASK = 0b00000011
 ID_MASK = 0b00001100
@@ -35,21 +35,20 @@ ID_SHIFT = ORDER_MASK.bit_length()
 
 INTERNAL_TYPE = "kCEK"
 
-QUEST_ORDER = "1"
+QUEST_ID = "1"
 QUEST_AMOUNT = "2"
 QUEST_TARGET_AMOUNT = "3"
 QUEST_DIAMONDS = "4"
 QUEST_COUNT = "5"
 QUEST_COMPLETED = "6"
 QUEST_NAME = "7"
-QUEST_ID = "8"
+QUEST_ORDER = "8"
 
 Q = TypeVar("Q", bound="Quest")
 
 
 @define()
 class Quest(Binary):
-    quest_order: int = DEFAULT_QUEST_ORDER
     id: int = DEFAULT_ID
     amount: int = DEFAULT_AMOUNT
     target_amount: int = DEFAULT_AMOUNT
@@ -57,6 +56,10 @@ class Quest(Binary):
     count: int = DEFAULT_COUNT
     completed: bool = DEFAULT_COMPLETED
     name: str = EMPTY
+    quest_order: int = DEFAULT_QUEST_ORDER
+
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ self.id
 
     @classmethod
     def from_binary(
@@ -158,14 +161,14 @@ class Quest(Binary):
     def to_robtop_data(self) -> StringDict[Any]:
         data = {
             INTERNAL_TYPE: InternalType.QUEST.value,
-            QUEST_ORDER: self.quest_order,
+            QUEST_ID: self.id,
             QUEST_AMOUNT: self.amount,
             QUEST_TARGET_AMOUNT: self.target_amount,
             QUEST_DIAMONDS: self.diamonds,
             QUEST_COUNT: self.count,
             QUEST_COMPLETED: self.is_completed(),
             QUEST_NAME: self.name,
-            QUEST_ID: self.id,
+            QUEST_ORDER: self.quest_order,
         }
 
         return data

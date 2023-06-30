@@ -784,6 +784,23 @@ class RewardType(Enum):
     DEFAULT = GET_INFO
 
 
+class ChestType(Enum):
+    """Represents chest types."""
+
+    UNKNOWN = 0
+
+    SMALL = 1
+    LARGE = 2
+
+    DEFAULT = UNKNOWN
+
+    def is_small(self) -> bool:
+        return self is type(self).SMALL
+
+    def is_large(self) -> bool:
+        return self is type(self).LARGE
+
+
 class ShardType(Enum):
     """Represents shard types."""
 

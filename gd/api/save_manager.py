@@ -221,7 +221,7 @@ class SaveManager(Generic[D]):
         return encode(data, apply_xor=apply_xor)
 
 
-from gd.api.database import Database
+from gd.api.database.database import Database
 
 save = SaveManager(Database)
 create_database = save.create_database

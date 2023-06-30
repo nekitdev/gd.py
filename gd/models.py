@@ -116,6 +116,7 @@ from gd.models_constants import (
     MAP_PACKS_RESPONSE_SEPARATOR,
     MESSAGE_SEPARATOR,
     MESSAGES_RESPONSE_SEPARATOR,
+    OBJECTS_SEPARATOR,
     PAGE_SEPARATOR,
     PROFILE_SEPARATOR,
     QUEST_SEPARATOR,
@@ -1436,7 +1437,10 @@ class LevelModel(Model):
 
         description = decode_base64_string_url_safe(mapping.get(LEVEL_DESCRIPTION, EMPTY))
 
-        unprocessed_data = mapping.get(LEVEL_UNPROCESSED_DATA, EMPTY).strip()
+        unprocessed_data = mapping.get(LEVEL_UNPROCESSED_DATA, EMPTY)
+
+        if OBJECTS_SEPARATOR in unprocessed_data:
+            unprocessed_data = zip_level_string(unprocessed_data)
 
         version = parse_get_or(int, DEFAULT_VERSION, mapping.get(LEVEL_VERSION))
 

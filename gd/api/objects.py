@@ -13,15 +13,15 @@ from typing_extensions import Literal, Never, Protocol, TypeGuard, runtime_check
 
 from gd.api.color_channels import (
     BACKGROUND_COLOR_ID,
-    GROUND_COLOR_ID,
-    LINE_COLOR_ID,
-    LINE_3D_COLOR_ID,
-    OBJECT_COLOR_ID,
-    SECONDARY_GROUND_COLOR_ID,
     COLOR_1_ID,
     COLOR_2_ID,
     COLOR_3_ID,
     COLOR_4_ID,
+    GROUND_COLOR_ID,
+    LINE_3D_COLOR_ID,
+    LINE_COLOR_ID,
+    OBJECT_COLOR_ID,
+    SECONDARY_GROUND_COLOR_ID,
 )
 from gd.api.hsv import HSV
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
@@ -2563,6 +2563,7 @@ ColorTrigger = Union[PlayerColorTrigger, NormalColorTrigger, CopiedColorTrigger]
 
 
 # compatibility
+
 
 @runtime_checkable
 class Compatibility(Protocol):

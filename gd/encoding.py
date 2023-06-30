@@ -2,7 +2,7 @@ from base64 import b64decode as standard_decode_base64
 from base64 import b64encode as standard_encode_base64
 from base64 import urlsafe_b64decode as standard_decode_base64_url_safe
 from base64 import urlsafe_b64encode as standard_encode_base64_url_safe
-from gzip import decompress
+from gzip import decompress as standard_decompress
 from hashlib import sha1 as standard_sha1
 from random import choices
 from random import randrange as random_range
@@ -10,6 +10,8 @@ from string import ascii_letters, digits
 from typing import AnyStr, Iterable, Sequence, TypeVar
 from zlib import MAX_WBITS
 from zlib import compressobj as create_compressor
+from zlib import decompressobj as create_decompressor
+from zlib import error as ZLibError
 
 from xor_cipher import cyclic_xor, cyclic_xor_string, xor, xor_string
 
@@ -78,6 +80,7 @@ __all__ = (
 # zlib headers
 
 Z_GZIP_HEADER = 0x10
+Z_AUTO_HEADER = 0x20
 
 # AES
 
@@ -390,6 +393,30 @@ def compress(data: bytes) -> bytes:
     compressor = create_compressor(wbits=MAX_WBITS | Z_GZIP_HEADER)
 
     return compressor.compress(data) + compressor.flush()
+
+
+def decompress(data: bytes) -> bytes:
+    try:
+        return standard_decompress(data)
+
+    except (OSError, ZLibError):
+        pass
+
+    # fallback and do some other attempts
+    for wbits in (
+        MAX_WBITS | Z_AUTO_HEADER,
+        MAX_WBITS | Z_GZIP_HEADER,
+        MAX_WBITS,
+    ):
+        try:
+            decompressor = create_decompressor(wbits=wbits)
+
+            return decompressor.decompress(data) + decompressor.flush()
+
+        except ZLibError:
+            pass
+
+    raise RuntimeError("Failed to decompress data.")
 
 
 LEGACY = "cp1252"

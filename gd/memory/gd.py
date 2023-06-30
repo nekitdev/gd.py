@@ -38,6 +38,7 @@ from gd.memory.fields import Field
 from gd.memory.pointers import MutPointerData
 from gd.memory.special import Void
 from gd.memory.strings import StringData
+from gd.models_constants import OBJECTS_SEPARATOR
 
 __all__ = (
     "GameManager",
@@ -63,7 +64,7 @@ class GameLevel(CCNode):
     name = Field(StringData())
     unprocessed_description = Field(StringData())
 
-    unprocessed_data = Field(StringData())
+    maybe_unprocessed_data = Field(StringData())
 
     creator_name = Field(StringData())
 
@@ -302,6 +303,21 @@ class GameLevel(CCNode):
 
     def is_event(self) -> bool:
         return self.is_timely(TimelyType.EVENT)
+
+    @property
+    def unprocessed_data(self) -> str:
+        unprocessed_data = self.maybe_unprocessed_data
+
+        if OBJECTS_SEPARATOR in unprocessed_data:
+            unprocessed_data = zip_level_string(unprocessed_data)
+
+            self.maybe_unprocessed_data = unprocessed_data
+
+        return unprocessed_data
+
+    @unprocessed_data.setter
+    def unprocessed_data(self, unprocessed_data: str) -> None:
+        self.maybe_unprocessed_data = unprocessed_data
 
     @property
     def processed_data(self) -> str:

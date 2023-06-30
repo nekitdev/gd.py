@@ -50,11 +50,33 @@ dict_from_keys = dict.fromkeys
 
 remove_braces = create_translation(dict_from_keys(BRACES, EMPTY))
 
+starts_with = str.startswith
+ends_with = str.endswith
+
 is_digit = str.isdigit
 is_upper = str.isupper
 is_lower = str.islower
 
 case_fold = str.casefold
+
+
+try:
+    remove_prefix = str.removeprefix  # type: ignore
+    remove_suffix = str.removesuffix  # type: ignore
+
+except AttributeError:
+
+    def remove_prefix(self: str, prefix: str) -> str:
+        if starts_with(self, prefix):
+            return self[len(prefix) :]
+
+        return self
+
+    def remove_suffix(self: str, suffix: str) -> str:
+        if ends_with(self, suffix):
+            return self[: -len(suffix)]
+
+        return self
 
 
 def zero_pad(align: int, value: int) -> str:

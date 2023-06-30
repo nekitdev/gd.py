@@ -7,7 +7,7 @@ from iters.utils import unary_tuple
 from pendulum import Duration
 from yarl import URL
 
-from gd.api.database import Database
+from gd.api.database.database import Database
 from gd.api.recording import Recording
 from gd.api.save_manager import save
 from gd.capacity import Capacity
