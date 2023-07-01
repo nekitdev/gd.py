@@ -20,6 +20,8 @@ PYTHON_DLL = ".pyd"
 
 EXTENSIONS = frozenset((SHARED_OBJECT, PYTHON_DLL))
 
+POETRY = "poetry"
+RUN = "run"
 MATURIN = "maturin"
 BUILD = "build"
 INTERPRETER = "-i"
@@ -39,6 +41,8 @@ FAILED_TO_FIND_EXTENSIONS = "failed to find extensions"
 
 def build_command(output_path: Path) -> Sequence[str]:
     return (
+        POETRY,
+        RUN,
         MATURIN,
         BUILD,
         RELEASE,
