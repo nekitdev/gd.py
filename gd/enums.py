@@ -38,6 +38,7 @@ __all__ = (
     "GauntletID",
     "SearchStrategy",
     "RewardType",
+    "ChestType",
     "ShardType",
     "RewardItemType",
     "QuestType",

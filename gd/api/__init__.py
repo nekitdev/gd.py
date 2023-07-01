@@ -5,7 +5,7 @@ from gd.api.color_channels import (
     NormalColorChannel,
     PlayerColorChannel,
 )
-from gd.api.database.database import Database
+from gd.api.database import Database
 from gd.api.editor import Editor
 from gd.api.folder import Folder
 from gd.api.guidelines import Guidelines
@@ -20,6 +20,7 @@ from gd.api.levels import (
     SavedLevelAPI,
     TimelyLevelAPI,
 )
+from gd.api.like import Like
 from gd.api.objects import (
     AlphaTrigger,
     AnimateTrigger,
@@ -68,14 +69,21 @@ from gd.api.objects import (
     object_to_bytes,
 )
 from gd.api.recording import Recording, RecordingItem
+from gd.api.rewards import Quest, Reward, RewardItem
 from gd.api.save_manager import SaveManager, create_database, save
 from gd.api.songs import ArtistAPI, SongAPI, SongReferenceAPI
 
 __all__ = (
     # database
     "Database",
+    # like
+    "Like",
     # folder
     "Folder",
+    # rewards
+    "Quest",
+    "Reward",
+    "RewardItem",
     # level API
     "BaseLevelAPI",
     "CreatedLevelAPI",

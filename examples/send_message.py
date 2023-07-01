@@ -36,7 +36,7 @@ PASSWORD = "password: "
 
 LOGIN_FAILED = "login failed..."
 
-NO_FRIENDS = "oh, it seems like you have no friends... :("
+NO_FRIENDS = "oh, it seems you have no friends... :("
 
 CONFIRM = "do you want to send a message to `{target.name}`? (Y/n)"
 

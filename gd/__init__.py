@@ -8,17 +8,23 @@ __author__ = "nekitdev"
 __license__ = "MIT"
 __version__ = "1.0.0"
 
-from gd import api, binary, encoding, events, image, memory, named_dicts, tasks
+from gd import (
+    api, binary, encoding, events, image, memory, models, named_dicts, robtop, server, tasks
+)
 from gd.artist import Artist
 from gd.binary import BinaryInfo
+from gd.binary_utils import Reader, Writer
+from gd.capacity import Capacity
 from gd.client import Client
 from gd.color import Color
 from gd.comments import LevelComment, UserComment
+from gd.converter import CONVERTER
 from gd.credentials import Credentials
 from gd.entity import Entity
 from gd.enums import (
     AccountURLType,
     ByteOrder,
+    ChestType,
     CoinType,
     CollectedCoins,
     CommentState,
@@ -95,6 +101,19 @@ from gd.enums import (
     TouchToggleMode,
     TriggerType,
 )
+from gd.errors import (
+    GDError,
+    HTTPError,
+    HTTPErrorWithOrigin,
+    HTTPStatusError,
+    ClientError,
+    MissingAccess,
+    SongRestricted,
+    CommentBanned,
+    LoginFailed,
+    LoginRequired,
+    NothingFound,
+)
 from gd.filters import Filters
 from gd.friend_request import FriendRequest
 from gd.http import HTTPClient
@@ -103,6 +122,7 @@ from gd.level_packs import Gauntlet, MapPack
 from gd.message import Message
 from gd.password import Password
 from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM, SYSTEM_PLATFORM_CONFIG
+from gd.progress import Progress
 from gd.rewards import Chest, Quest
 from gd.session import Session
 from gd.song import Song
@@ -126,9 +146,17 @@ __all__ = (
     "image",
     "named_dicts",
     "memory",
+    "models",
+    "robtop",
+    "server",
     "tasks",
     # binary info
     "BinaryInfo",
+    # reader & writer
+    "Reader",
+    "Writer",
+    # converter
+    "CONVERTER",
     # colors
     "Color",
     # client
@@ -174,6 +202,10 @@ __all__ = (
     # versions
     "RobTopVersion",
     "GameVersion",
+    # capacity
+    "Capacity",
+    # progress
+    "Progress",
     # enums
     "SimpleKey",
     "Key",
@@ -207,6 +239,7 @@ __all__ = (
     "GauntletID",
     "SearchStrategy",
     "RewardType",
+    "ChestType",
     "ShardType",
     "RewardItemType",
     "QuestType",
@@ -254,4 +287,16 @@ __all__ = (
     "CollectedCoins",
     "Quality",
     "Permissions",
+    # errors
+    "GDError",
+    "HTTPError",
+    "HTTPErrorWithOrigin",
+    "HTTPStatusError",
+    "ClientError",
+    "MissingAccess",
+    "SongRestricted",
+    "CommentBanned",
+    "LoginFailed",
+    "LoginRequired",
+    "NothingFound",
 )

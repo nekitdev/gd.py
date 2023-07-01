@@ -2,10 +2,10 @@ from typing import Iterable
 
 import click
 from entrypoint import entrypoint
-from iters.iters import iter
 
 from gd.api.color_channels import ColorChannels, NormalColorChannel
 from gd.api.header import Header
+from gd.color import Color
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.encoding import compress
 
@@ -13,6 +13,8 @@ from gd.encoding import compress
 def color_id_range(count: int) -> Iterable[int]:
     return range(1, count + 1)
 
+
+DEFAULT_COLOR = Color.default()
 
 COUNT = 1000
 ROUNDING = 2
@@ -30,7 +32,7 @@ def main(count: int, rounding: int) -> None:
 
     header = Header(
         color_channels=ColorChannels.from_color_channel_iterable(
-            iter(color_id_range(count)).map(NormalColorChannel).unwrap()
+            NormalColorChannel(color_id, DEFAULT_COLOR) for color_id in color_id_range(count)
         )
     )
 
