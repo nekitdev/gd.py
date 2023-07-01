@@ -180,7 +180,7 @@ class UserStatistics(Binary):
         writer.write_u32(self.rank)
 
 
-class UserCosmeticsData:
+class UserCosmeticsData(Data):
     color_1_id: int
     color_2_id: int
     icon_type: int
