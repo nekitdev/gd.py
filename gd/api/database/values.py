@@ -3,7 +3,6 @@ from typing import Type, TypeVar
 from attrs import define, field
 from iters.iters import iter
 from iters.ordered_set import OrderedSet, ordered_set
-from iters.utils import unary_tuple
 from typing_aliases import StringDict, StringMapping
 
 from gd.api.database.common import ONE, prefix
@@ -13,7 +12,7 @@ from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder
 from gd.string_utils import starts_with
 
-__all__ = unary_tuple("Values")
+__all__ = ("Values",)
 
 CUBES = "i"
 SHIPS = "ship"

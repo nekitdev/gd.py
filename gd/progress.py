@@ -2,7 +2,6 @@ from collections import UserList as ListType
 from typing import List, Type, TypeVar
 
 from iters.iters import iter
-from iters.utils import unary_tuple
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
@@ -11,7 +10,7 @@ from gd.models_constants import PROGRESS_SEPARATOR
 from gd.models_utils import concat_progress, split_progress
 from gd.robtop import RobTop
 
-__all__ = unary_tuple("Progress")
+__all__ = ("Progress",)
 
 P = TypeVar("P", bound="Progress")
 

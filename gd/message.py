@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, ClassVar, Optional, Type, TypeVar
 
 from attrs import define, field
-from iters.utils import unary_tuple
 
 from gd.binary import VERSION, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
@@ -17,7 +16,7 @@ from gd.users import User
 if TYPE_CHECKING:
     from gd.client import Client
 
-__all__ = unary_tuple("Message")
+__all__ = ("Message",)
 
 M = TypeVar("M", bound="Message")
 

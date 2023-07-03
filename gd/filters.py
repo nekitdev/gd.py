@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Iterable, Optional, Type, TypeVar
 from attrs import define, field
 from iters.iters import iter
 from iters.ordered_set import OrderedSet, ordered_set
-from iters.utils import unary_tuple
 from typing_extensions import TypedDict
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
@@ -14,7 +13,7 @@ from gd.enums import ByteOrder, Difficulty, LevelLength, RateFilter, SearchStrat
 from gd.string_constants import DASH
 from gd.string_utils import concat_comma, wrap
 
-__all__ = unary_tuple("Filters")
+__all__ = ("Filters",)
 
 if TYPE_CHECKING:
     from gd.client import Client

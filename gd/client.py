@@ -21,7 +21,6 @@ from typing import (
 from attrs import define, field, frozen
 from funcs.functions import awaiting
 from iters.async_iters import wrap_async_iter
-from iters.utils import unary_tuple
 from pendulum import Duration
 from typing_aliases import AnyCallable, AnyError, DynamicTuple, Predicate
 from typing_extensions import ParamSpec
@@ -111,7 +110,7 @@ from gd.song import Song
 from gd.typing import IntString, MaybeIterable, URLString
 from gd.users import User
 
-__all__ = unary_tuple("Client")
+__all__ = ("Client",)
 
 P = ParamSpec("P")
 T = TypeVar("T")

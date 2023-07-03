@@ -1,7 +1,6 @@
 from typing import Type, TypeVar
 
 from attrs import define
-from iters.utils import unary_tuple
 from typing_aliases import StringDict, StringMapping
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
@@ -9,7 +8,7 @@ from gd.binary_utils import Reader, Writer
 from gd.enums import ByteOrder
 from gd.models_utils import bool_str, int_bool, parse_get_or
 
-__all__ = unary_tuple("UnlockValues")
+__all__ = ("UnlockValues",)
 
 THE_CHALLENGE_UNLOCKED = "ugv_1"
 GUBFLUB_HINT_1 = "ugv_2"

@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Type, TypeVar
 
 from attrs import define, field
-from iters.utils import unary_tuple
 from pendulum import DateTime
 
 from gd.binary import VERSION, BinaryReader, BinaryWriter
@@ -18,7 +17,7 @@ from gd.users import User, UserCosmetics
 if TYPE_CHECKING:
     from gd.client import Client
 
-__all__ = unary_tuple("FriendRequest")
+__all__ = ("FriendRequest",)
 
 FR = TypeVar("FR", bound="FriendRequest")
 

@@ -381,7 +381,9 @@ class Storage(Binary):
 
         quest_from_binary = partial(Quest.from_binary, binary, order, version)
 
-        active_quests = iter.repeat_exactly_with(quest_from_binary, active_quests_length).ordered_set()
+        active_quests = iter.repeat_exactly_with(
+            quest_from_binary, active_quests_length
+        ).ordered_set()
 
         quest_diamonds_length = read_u32()
 
@@ -393,7 +395,9 @@ class Storage(Binary):
 
         upcoming_quests_length = read_u8()
 
-        upcoming_quests = iter.repeat_exactly_with(quest_from_binary, upcoming_quests_length).ordered_set()
+        upcoming_quests = iter.repeat_exactly_with(
+            quest_from_binary, upcoming_quests_length
+        ).ordered_set()
 
         daily_records_length = read_u16()
 

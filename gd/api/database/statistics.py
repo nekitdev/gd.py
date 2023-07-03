@@ -2,7 +2,6 @@ from typing import Dict, Type, TypeVar
 
 from attrs import define, field
 from iters.iters import iter
-from iters.utils import unary_tuple
 from typing_aliases import StringDict, StringMapping
 
 from gd.api.database.common import NONE, ONE, VALUE_TO_COLLECTED_COINS
@@ -27,7 +26,7 @@ from gd.constants import (
 from gd.enums import ByteOrder, CollectedCoins
 from gd.models_utils import concat_name, parse_get_or, split_name
 
-__all__ = unary_tuple("Statistics")
+__all__ = ("Statistics",)
 
 JUMPS = "1"
 ATTEMPTS = "2"

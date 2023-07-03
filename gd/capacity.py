@@ -2,7 +2,6 @@ from collections import UserList as ListType
 from typing import List, Type, TypeVar
 
 from iters.iters import iter
-from iters.utils import unary_tuple
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
 from gd.binary_utils import Reader, Writer
@@ -11,7 +10,7 @@ from gd.models_constants import CAPACITY_SEPARATOR
 from gd.models_utils import concat_capacity, split_capacity
 from gd.robtop import RobTop
 
-__all__ = unary_tuple("Capacity")
+__all__ = ("Capacity",)
 
 C = TypeVar("C", bound="Capacity")
 

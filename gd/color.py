@@ -6,7 +6,6 @@ from attrs import frozen
 from colors import Color as ColorCore
 from funcs.composition import compose_once
 from iters.iters import iter, wrap_iter
-from iters.utils import unary_tuple
 
 from gd.constants import DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID
 from gd.converter import CONVERTER
@@ -15,7 +14,7 @@ from gd.models_utils import concat_color, split_color
 from gd.robtop import RobTop
 from gd.string_utils import tick
 
-__all__ = unary_tuple("Color")
+__all__ = ("Color",)
 
 C = TypeVar("C", bound="Color")
 

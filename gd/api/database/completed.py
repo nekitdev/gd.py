@@ -3,7 +3,6 @@ from typing import Type, TypeVar
 from attrs import define, field
 from iters.iters import iter
 from iters.ordered_set import OrderedSet, ordered_set
-from iters.utils import unary_tuple
 from typing_aliases import StringDict, StringMapping
 
 from gd.api.database.common import (
@@ -26,7 +25,7 @@ from gd.binary_utils import Reader, Writer
 from gd.constants import WEEKLY_ID_ADD
 from gd.enums import ByteOrder
 
-__all__ = unary_tuple("Completed")
+__all__ = ("Completed",)
 
 
 @define()
@@ -344,7 +343,9 @@ class Completed(Binary):
         timely_levels = timely.levels
         timely_levels_prefix = TIMELY_PREFIX
 
-        timely_levels_data = {timely_levels_prefix + str(level_id): one for level_id in timely_levels}
+        timely_levels_data = {
+            timely_levels_prefix + str(level_id): one for level_id in timely_levels
+        }
 
         data.update(timely_levels_data)
 
@@ -400,17 +401,14 @@ class Completed(Binary):
 
         daily_stars = stars.daily
 
-        daily_stars_data = {
-            timely_stars_prefix + str(daily_id): one for daily_id in daily_stars
-        }
+        daily_stars_data = {timely_stars_prefix + str(daily_id): one for daily_id in daily_stars}
 
         data.update(daily_stars_data)
 
         weekly_stars = stars.weekly
 
         weekly_stars_data = {
-            timely_stars_prefix + str(weekly_id + weekly_id_add): one
-            for weekly_id in weekly_stars
+            timely_stars_prefix + str(weekly_id + weekly_id_add): one for weekly_id in weekly_stars
         }
 
         data.update(weekly_stars_data)

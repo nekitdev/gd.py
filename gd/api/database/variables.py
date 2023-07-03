@@ -1,7 +1,6 @@
 from typing import Type, TypeVar
 
 from attrs import define
-from iters.utils import unary_tuple
 from typing_aliases import StringDict, StringMapping
 
 from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
@@ -10,7 +9,7 @@ from gd.constants import DEFAULT_ID
 from gd.enums import ByteOrder, CommentStrategy, Filter, LevelLeaderboardStrategy
 from gd.models_utils import bool_str, int_bool, parse_get_or, partial_parse_enum
 
-__all__ = unary_tuple("Variables")
+__all__ = ("Variables",)
 
 FOLLOW_PLAYER = "gv_0001"
 PLAY_MUSIC = "gv_0002"

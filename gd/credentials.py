@@ -1,11 +1,10 @@
 from attrs import field, frozen
 from iters.iters import iter
-from iters.utils import unary_tuple
 
 from gd.constants import DEFAULT_ID, EMPTY
 from gd.string_utils import password_repr
 
-__all__ = unary_tuple("Credentials")
+__all__ = ("Credentials",)
 
 
 @frozen()

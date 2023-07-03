@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, AsyncIterator, Iterable, Optional, Type, TypeV
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
-from iters.utils import unary_tuple
 from pendulum import DateTime, Duration, duration
 
 from gd.api.editor import Editor
@@ -63,7 +62,7 @@ if TYPE_CHECKING:
     from gd.client import Client
     from gd.comments import LevelComment
 
-__all__ = unary_tuple("Level")
+__all__ = ("Level",)
 
 L = TypeVar("L", bound="Level")
 

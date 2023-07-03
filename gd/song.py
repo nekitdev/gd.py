@@ -4,7 +4,6 @@ from enum import Flag
 from typing import BinaryIO, Optional, Type, TypeVar
 
 from attrs import define, field
-from iters.utils import unary_tuple
 from typing_aliases import IntoPath
 from yarl import URL
 
@@ -30,7 +29,7 @@ from gd.http import NEWGROUNDS_SONG
 from gd.models import SongModel
 from gd.official_songs import ID_TO_OFFICIAL_SONG, NAME_TO_OFFICIAL_SONG, OfficialSong
 
-__all__ = unary_tuple("Song")
+__all__ = ("Song",)
 
 
 class SongFlag(Flag):

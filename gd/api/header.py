@@ -1,7 +1,6 @@
 from typing import Type, TypeVar
 
 from attrs import define, field
-from iters.utils import unary_tuple
 
 from gd.api.color_channels import (
     BACKGROUND_COLOR_ID,
@@ -39,7 +38,7 @@ from gd.models_utils import (
 )
 from gd.robtop import RobTop
 
-__all__ = unary_tuple("Header")
+__all__ = ("Header",)
 
 DEFAULT_MINI_MODE = False
 

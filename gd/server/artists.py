@@ -1,13 +1,12 @@
 from typing import Iterable, List
 
 from fastapi import Depends
-from iters.utils import unary_tuple
 
 from gd.artist import Artist, ArtistData
 from gd.server.core import client, v1
 from gd.server.dependencies import pages_dependency
 
-__all__ = unary_tuple("get_artists")
+__all__ = ("get_artists",)
 
 
 def artist_into_data(artist: Artist) -> ArtistData:

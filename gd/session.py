@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import List, Optional, Sequence, TypeVar
 
 from attrs import field, frozen
-from iters.utils import unary_tuple
 from pendulum import Duration
 from yarl import URL
 
@@ -79,7 +78,7 @@ from gd.newgrounds import (
 from gd.password import Password
 from gd.typing import IntString, MaybeIterable, URLString
 
-__all__ = unary_tuple("Session")
+__all__ = ("Session",)
 
 FIRST = 0
 
