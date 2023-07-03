@@ -88,4 +88,4 @@ def parse_pages(string: str) -> Iterable[int]:
 
     inclusive = match.group(INCLUSIVE) is not None
 
-    return range(start, stop)
+    return range(start, stop + inclusive)

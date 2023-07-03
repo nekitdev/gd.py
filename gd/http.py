@@ -48,7 +48,6 @@ from gd.api.recording import Recording
 from gd.asyncio import run_blocking, shutdown_loop
 from gd.capacity import Capacity
 from gd.constants import (
-    COMPLETED,
     DEFAULT_ATTEMPTS,
     DEFAULT_CHECK,
     DEFAULT_CHEST_COUNT,
