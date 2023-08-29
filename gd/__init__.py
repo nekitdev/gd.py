@@ -6,7 +6,7 @@ __url__ = "https://github.com/nekitdev/gd.py"
 __title__ = "gd"
 __author__ = "nekitdev"
 __license__ = "MIT"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 from gd import (
     api,

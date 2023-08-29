@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gd.py"
-version = "1.0.0"
+version = "1.0.1"
 description = "An API wrapper for Geometry Dash written in Python."
 authors = ["nekitdev"]
 license = "MIT"
@@ -220,7 +220,7 @@ warn_unused_ignores = false  # compatibility
 
 [tool.changelogging]
 name = "gd.py"
-version = "1.0.0"
+version = "1.0.1"
 url = "https://github.com/nekitdev/gd.py"
 directory = "changes"
 output = "CHANGELOG.md"
