@@ -64,7 +64,7 @@ class HTTPStatusError(HTTPError):
     status: int
 
     def __init__(self, status: int) -> None:
-        super().__init__(HTTP_STATUS.format(self.status))
+        super().__init__(HTTP_STATUS.format(status))
 
         self.__attrs_init__(status)  # type: ignore
 
