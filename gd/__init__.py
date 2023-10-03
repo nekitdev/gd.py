@@ -19,7 +19,7 @@ from gd import (
     named_dicts,
     robtop,
     server,
-    tasks,
+    tasks
 )
 from gd.artist import Artist
 from gd.binary import BinaryInfo
