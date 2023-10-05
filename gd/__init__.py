@@ -18,7 +18,6 @@ from gd import (
     models,
     named_dicts,
     robtop,
-    server,
     tasks,
 )
 from gd.artist import Artist
@@ -158,7 +157,6 @@ __all__ = (
     "memory",
     "models",
     "robtop",
-    "server",
     "tasks",
     # binary info
     "BinaryInfo",
