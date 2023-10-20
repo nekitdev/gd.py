@@ -28,21 +28,6 @@ Issues = "https://github.com/nekitdev/gd.py/issues"
 [[tool.poetry.packages]]
 include = "gd"
 
-[[tool.poetry.include]]
-path = "_gd"
-
-[[tool.poetry.include]]
-path = "_gd/*.pyd"
-format = "wheel"
-
-[[tool.poetry.include]]
-path = "_gd/*.so"
-format = "wheel"
-
-[tool.poetry.build]
-generate-setup-file = false
-script = "build.py"
-
 [tool.poetry.scripts]
 gd = "gd.main:gd"
 

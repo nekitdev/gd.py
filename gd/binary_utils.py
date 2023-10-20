@@ -229,10 +229,3 @@ class Writer(Generic[W]):
 
     def write(self, data: bytes) -> None:
         self.writer.write(data)
-
-
-try:
-    from _gd import Reader, Writer  # noqa
-
-except ImportError:
-    pass
