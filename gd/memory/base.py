@@ -40,13 +40,13 @@ class Struct(Base):
     VIRTUAL: ClassVar[bool] = DEFAULT_VIRTUAL
 
     @classmethod
-    @cache
+    @cache  # type: ignore
     def reconstruct(cls: TS, config: PlatformConfig) -> TS:
         return struct(cls.PACKED, cls.VIRTUAL, config)(cls)
 
     @classmethod
     def reconstruct_for(cls: TS, state: AbstractState) -> TS:
-        return cls.reconstruct(state.config)
+        return cls.reconstruct(state.config)  # type: ignore
 
 
 TU = TypeVar("TU", bound="Type[Union]")
@@ -57,13 +57,13 @@ class Union(Base):
     """Represents `union` types."""
 
     @classmethod
-    @cache
+    @cache  # type: ignore
     def reconstruct(cls: TU, config: PlatformConfig) -> TU:
         return union(config)(cls)
 
     @classmethod
     def reconstruct_for(cls: TU, state: AbstractState) -> TU:
-        return cls.reconstruct(state.config)
+        return cls.reconstruct(state.config)  # type: ignore
 
 
 S = TypeVar("S", bound=Struct)

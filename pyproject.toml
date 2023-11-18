@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gd.py"
-version = "1.0.1"
+version = "1.0.2"
 description = "An API wrapper for Geometry Dash written in Python."
 authors = ["nekitdev"]
 license = "MIT"
@@ -32,15 +32,15 @@ include = "gd"
 gd = "gd.main:gd"
 
 [tool.poetry.dependencies]
-python = ">= 3.7"
+python = ">= 3.8"
 
-aiohttp = ">= 3.8.4"
-click = ">= 8.1.3"
-tqdm = ">= 4.65.0"
+aiohttp = ">= 3.9.0"
+click = ">= 8.1.7"
+tqdm = ">= 4.66.1"
 yarl = ">= 1.9.2"
 
 attrs = ">= 23.1.0"
-cattrs = "22.2.0"  # ">= 23.1.3"
+cattrs = ">= 23.2.1"
 
 pendulum = ">= 2.1.2"
 
@@ -55,24 +55,26 @@ colors-core = ">= 1.0.1"
 async-extensions = ">= 1.4.1"
 iters = ">= 0.13.1"
 
+funcs = ">= 0.8.0"
+
 [tool.poetry.dependencies.lxml]
-version = ">= 4.9.2"
+version = ">= 4.9.3"
 optional = true
 
 [tool.poetry.dependencies.pillow]
-version = ">= 9.5.0"
+version = ">= 10.1.0"
 optional = true
 
 [tool.poetry.dependencies.pycryptodome]
-version = ">= 3.18.0"
+version = ">= 3.19.0"
 optional = true
 
 [tool.poetry.dependencies.fastapi]
-version = ">= 0.95.2"
+version = ">= 0.104.1"
 optional = true
 
 [tool.poetry.dependencies.uvicorn]
-version = ">= 0.22.0"
+version = ">= 0.24.0"
 optional = true
 extras = ["standard"]
 
@@ -86,45 +88,44 @@ server = ["fastapi", "uvicorn"]
 optional = true
 
 [tool.poetry.group.format.dependencies]
-black = "23.3.0"
+black = "23.11.0"
 flake8-pyproject = "1.2.3"
 
 [tool.poetry.group.format.dependencies.flake8]
-version = "6.0.0"
+version = "6.1.0"
 python = ">= 3.8.1"
 
 [tool.poetry.group.format.dependencies.isort]
 version = "5.12.0"
-python = ">= 3.8"
 
 [tool.poetry.group.check]
 optional = true
 
 [tool.poetry.group.check.dependencies]
-mypy = "1.3.0"
+mypy = "1.7.0"
 
-types-pillow = "9.5.0.4"
-types-tqdm = "4.65.0.1"
+types-pillow = "10.1.0.2"
+types-tqdm = "4.66.0.1"
 lxml-stubs = "0.4.0"
 
 [tool.poetry.group.test]
 optional = true
 
 [tool.poetry.group.test.dependencies]
-pytest = "7.3.1"
+pytest = "7.4.3"
 pytest-cov = "4.1.0"
 pytest-benchmark = "4.0.0"
-pytest-asyncio = "0.21.0"
+pytest-asyncio = "0.21.1"
 
 [tool.poetry.group.docs]
 optional = true
 
 [tool.poetry.group.docs.dependencies]
-mkdocs = "1.4.3"
-mkdocs-material = "9.1.15"
+mkdocs = "1.5.3"
+mkdocs-material = "9.4.9"
 
 [tool.poetry.group.docs.dependencies.mkdocstrings]
-version = "0.22.0"
+version = "0.24.0"
 extras = ["python"]
 
 [tool.poetry.group.dev]
@@ -137,7 +138,7 @@ changelogging = "1.3.0"
 optional = true
 
 [tool.poetry.group.build.dependencies]
-maturin = "1.1.0"
+maturin = "1.3.2"
 
 [tool.flake8]
 max_line_length = 100
@@ -205,7 +206,7 @@ warn_unused_ignores = false  # compatibility
 
 [tool.changelogging]
 name = "gd.py"
-version = "1.0.1"
+version = "1.0.2"
 url = "https://github.com/nekitdev/gd.py"
 directory = "changes"
 output = "CHANGELOG.md"
@@ -222,5 +223,5 @@ wrap_size = 100
 display = ["feature", "change", "fix", "security", "deprecation", "removal", "internal"]
 
 [build-system]
-requires = ["poetry-core >= 1.6.1", "maturin >= 1.1.0", "entrypoint >= 1.4.0"]
+requires = ["poetry-core >= 1.8.1", "maturin >= 1.3.2", "entrypoint >= 1.4.0"]
 build-backend = "poetry.core.masonry.api"

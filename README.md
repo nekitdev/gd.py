@@ -44,7 +44,7 @@ Or by directly specifying it in the configuration like so:
 
 ```toml
 [tool.poetry.dependencies]
-"gd.py" = "^1.0.1"
+"gd.py" = "^1.0.2"
 ```
 
 Alternatively, you can add it directly from the source:
