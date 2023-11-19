@@ -21,7 +21,7 @@ UFOS = "bird"
 WAVES = "dart"
 ROBOTS = "robot"
 SPIDERS = "spider"
-# SWING_COPTERS = "swing_copter"
+# SWINGS = "swing"
 EXPLOSIONS = "death"
 STREAKS = "special"
 COLORS_1 = "c0"
@@ -34,7 +34,7 @@ UFOS_PREFIX = prefix(UFOS)
 WAVES_PREFIX = prefix(WAVES)
 ROBOTS_PREFIX = prefix(ROBOTS)
 SPIDERS_PREFIX = prefix(SPIDERS)
-# SWING_COPTERS_PREFIX = prefix(SWING_COPTERS)
+# SWINGS_PREFIX = prefix(SWINGS)
 EXPLOSIONS_PREFIX = prefix(EXPLOSIONS)
 STREAKS_PREFIX = prefix(STREAKS)
 COLORS_1_PREFIX = prefix(COLORS_1)
@@ -55,7 +55,7 @@ class Values(Binary):
     waves: OrderedSet[int] = field(factory=ordered_set)
     robots: OrderedSet[int] = field(factory=ordered_set)
     spiders: OrderedSet[int] = field(factory=ordered_set)
-    # swing_copters: OrderedSet[int] = field(factory=ordered_set)
+    # swings: OrderedSet[int] = field(factory=ordered_set)
     explosions: OrderedSet[int] = field(factory=ordered_set)
     streaks: OrderedSet[int] = field(factory=ordered_set)
     colors_1: OrderedSet[int] = field(factory=ordered_set)
@@ -110,11 +110,11 @@ class Values(Binary):
 
         iter(spiders).for_each(writer.write_u8)
 
-        # swing_copters = self.swing_copters
+        # swings = self.swings
 
-        # writer.write_u8(len(swing_copters))
+        # writer.write_u8(len(swings))
 
-        # iter(swing_copters).for_each(writer.write_u8)
+        # iter(swings).for_each(writer.write_u8)
 
         explosions = self.explosions
 
@@ -179,10 +179,10 @@ class Values(Binary):
 
         spiders = iter.repeat_exactly_with(reader.read_u8, spiders_length).ordered_set()
 
-        # swing_copters_length = reader.read_u8()
+        # swings_length = reader.read_u8()
 
-        # swing_copters = (
-        #     iter.repeat_exactly_with(reader.read_u8, swing_copters_length).ordered_set()
+        # swings = (
+        #     iter.repeat_exactly_with(reader.read_u8, swings_length).ordered_set()
         # )
 
         explosions_length = reader.read_u8()
@@ -210,7 +210,7 @@ class Values(Binary):
             waves=waves,
             robots=robots,
             spiders=spiders,
-            # swing_copters=swing_copters,
+            # swings=swings,
             explosions=explosions,
             streaks=streaks,
             colors_1=colors_1,
@@ -227,7 +227,7 @@ class Values(Binary):
             WAVES_PREFIX: self.waves,
             ROBOTS_PREFIX: self.robots,
             SPIDERS_PREFIX: self.spiders,
-            # SWING_COPTERS_PREFIX: self.swing_copters,
+            # SWINGS_PREFIX: self.swings,
             EXPLOSIONS_PREFIX: self.explosions,
             STREAKS_PREFIX: self.streaks,
             COLORS_1_PREFIX: self.colors_1,

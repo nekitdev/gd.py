@@ -1085,7 +1085,7 @@ class HTTPClient:
         wave_id: int,
         robot_id: int,
         spider_id: int,
-        # swing_copter_id: int,
+        # swing_id: int,
         explosion_id: int,
         special: int = DEFAULT_SPECIAL,
         *,

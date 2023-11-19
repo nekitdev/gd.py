@@ -162,7 +162,7 @@ class IconType(Enum):
     WAVE = 4
     ROBOT = 5
     SPIDER = 6
-    # SWING_COPTER = 7
+    # SWING = 7
 
     DEFAULT = CUBE
 
@@ -190,8 +190,8 @@ class IconType(Enum):
     def is_spider(self) -> bool:
         return self is type(self).SPIDER
 
-    # def is_swing_copter(self) -> bool:
-    #     return self is type(self).SWING_COPTER
+    # def is_swing(self) -> bool:
+    #     return self is type(self).SWING
 
 
 class MessageState(Enum):
@@ -1114,7 +1114,7 @@ class GameMode(Enum):
     WAVE = 4
     ROBOT = 5
     SPIDER = 6
-    # SWING_COPTER = 7
+    # SWING = 7
 
     DEFAULT = CUBE
 

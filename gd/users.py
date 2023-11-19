@@ -192,7 +192,7 @@ class UserCosmeticsData(Data):
     wave_id: int
     robot_id: int
     spider_id: int
-    swing_copter_id: int
+    swing_id: int
     explosion_id: int
     glow: bool
 
@@ -210,7 +210,7 @@ class UserCosmetics(Binary):
     wave_id: int = DEFAULT_ICON_ID
     robot_id: int = DEFAULT_ICON_ID
     spider_id: int = DEFAULT_ICON_ID
-    # swing_copter_id: int = DEFAULT_ICON_ID
+    # swing_id: int = DEFAULT_ICON_ID
     explosion_id: int = DEFAULT_ICON_ID
     glow: bool = DEFAULT_GLOW
 
@@ -251,7 +251,7 @@ class UserCosmetics(Binary):
         wave_id = reader.read_u8()
         robot_id = reader.read_u8()
         spider_id = reader.read_u8()
-        # swing_copter_id = reader.read_u8()
+        # swing_id = reader.read_u8()
 
         explosion_id = reader.read_u8()
 
@@ -267,7 +267,7 @@ class UserCosmetics(Binary):
             wave_id=wave_id,
             robot_id=robot_id,
             spider_id=spider_id,
-            # swing_copter_id=swing_copter_id,
+            # swing_id=swing_id,
             explosion_id=explosion_id,
             glow=glow,
         )
@@ -297,7 +297,7 @@ class UserCosmetics(Binary):
         writer.write_u8(self.wave_id)
         writer.write_u8(self.robot_id)
         writer.write_u8(self.spider_id)
-        # writer.write_u8(self.swing_copter_id)
+        # writer.write_u8(self.swing_id)
 
         writer.write_u8(self.explosion_id)
 
@@ -322,7 +322,7 @@ class UserCosmetics(Binary):
             IconType.WAVE: self.wave_id,
             IconType.ROBOT: self.robot_id,
             IconType.SPIDER: self.spider_id,
-            # IconType.SWING_COPTER: self.swing_copter_id,
+            # IconType.SWING: self.swing_id,
         }
 
     def get_icon(self, type: Optional[IconType] = None) -> Icon:
@@ -900,7 +900,7 @@ class User(Entity):
                 wave_id=model.wave_id,
                 robot_id=model.robot_id,
                 spider_id=model.spider_id,
-                # swing_copter_id=model.swing_copter_id,
+                # swing_id=model.swing_id,
                 explosion_id=model.explosion_id,
                 glow=model.glow,
             ),
@@ -949,7 +949,7 @@ class User(Entity):
                 wave_id=profile_model.wave_id,
                 robot_id=profile_model.robot_id,
                 spider_id=profile_model.spider_id,
-                # swing_copter_id=profile_model.swing_copter_id,
+                # swing_id=profile_model.swing_id,
                 explosion_id=profile_model.explosion_id,
                 glow=profile_model.glow,
             ),

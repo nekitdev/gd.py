@@ -220,7 +220,7 @@ class Database(Binary):
     wave_id: int = field(default=DEFAULT_ICON_ID)
     robot_id: int = field(default=DEFAULT_ICON_ID)
     spider_id: int = field(default=DEFAULT_ICON_ID)
-    # swing_copter_id: int = field(default=DEFAULT_ICON_ID)
+    # swing_id: int = field(default=DEFAULT_ICON_ID)
     color_1_id: int = field(default=DEFAULT_COLOR_1_ID)
     color_2_id: int = field(default=DEFAULT_COLOR_2_ID)
     trail_id: int = field(default=DEFAULT_ICON_ID)
@@ -321,7 +321,7 @@ class Database(Binary):
         wave_id = main_data.get(WAVE_ID, DEFAULT_ICON_ID)
         robot_id = main_data.get(ROBOT_ID, DEFAULT_ICON_ID)
         spider_id = main_data.get(SPIDER_ID, DEFAULT_ICON_ID)
-        # swing_copter_id = main_data.get(SWING_COPTER_ID, DEFAULT_ICON_ID)
+        # swing_id = main_data.get(SWING_ID, DEFAULT_ICON_ID)
 
         color_1_id = main_data.get(COLOR_1_ID, DEFAULT_COLOR_1_ID)
         color_2_id = main_data.get(COLOR_2_ID, DEFAULT_COLOR_2_ID)
@@ -527,7 +527,7 @@ class Database(Binary):
             wave_id=wave_id,
             robot_id=robot_id,
             spider_id=spider_id,
-            # swing_copter_id=swing_copter_id,
+            # swing_id=swing_id,
             color_1_id=color_1_id,
             color_2_id=color_2_id,
             trail_id=trail_id,
@@ -594,7 +594,7 @@ class Database(Binary):
             WAVE_ID: self.wave_id,
             ROBOT_ID: self.robot_id,
             SPIDER_ID: self.spider_id,
-            # SWING_COPTER_ID: self.swing_copter_id,
+            # SWING_ID: self.swing_id,
             COLOR_1_ID: self.color_1_id,
             COLOR_2_ID: self.color_2_id,
             TRAIL_ID: self.trail_id,
@@ -816,7 +816,7 @@ class Database(Binary):
         wave_id = reader.read_u8()
         robot_id = reader.read_u8()
         spider_id = reader.read_u8()
-        # swing_copter_id = reader.read_u8()
+        # swing_id = reader.read_u8()
         color_1_id = reader.read_u8()
         color_2_id = reader.read_u8()
         trail_id = reader.read_u8()
@@ -1011,7 +1011,7 @@ class Database(Binary):
             wave_id=wave_id,
             robot_id=robot_id,
             spider_id=spider_id,
-            # swing_copter_id=swing_copter_id,
+            # swing_id=swing_id,
             color_1_id=color_1_id,
             color_2_id=color_2_id,
             trail_id=trail_id,
@@ -1108,7 +1108,7 @@ class Database(Binary):
         writer.write_u8(self.wave_id)
         writer.write_u8(self.robot_id)
         writer.write_u8(self.spider_id)
-        # writer.write_u8(self.swing_copter_id)
+        # writer.write_u8(self.swing_id)
         writer.write_u8(self.color_1_id)
         writer.write_u8(self.color_2_id)
         writer.write_u8(self.trail_id)
