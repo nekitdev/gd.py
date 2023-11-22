@@ -75,6 +75,7 @@ from gd.encoding import (
     ATTEMPTS_ADD,
     CLICKS_ADD,
     COINS_ADD,
+    LEGACY,
     SECONDS_ADD,
     UTF_8,
     encode_base64_string_url_safe,
@@ -802,6 +803,7 @@ class HTTPClient:
         error: Optional[AnyError] = None
 
         utf_8 = UTF_8
+        legacy = LEGACY
 
         while attempts:
             try:
@@ -822,7 +824,10 @@ class HTTPClient:
                         response_data = await response.read()
 
                     elif type is ResponseType.TEXT:
-                        response_data = await response.text(encoding=utf_8)
+                        try:
+                            response_data = await response.text(encoding=utf_8)
+                        except UnicodeDecodeError:
+                            response_data = await response.text(encoding=legacy)
 
                     elif type is ResponseType.JSON:
                         response_data = await response.json(content_type=None)
