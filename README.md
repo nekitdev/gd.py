@@ -14,7 +14,7 @@
 
 ## Installing
 
-**Python 3.7 or above is required.**
+**Python 3.8 or above is required.**
 
 ### pip
 

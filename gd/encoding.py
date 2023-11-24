@@ -74,7 +74,6 @@ __all__ = (
     "generate_leaderboard_seed",
     "compress",
     "decompress",
-    "fix_song_encoding",
 )
 
 # zlib headers
@@ -381,10 +380,12 @@ def generate_leaderboard_seed(
     seconds: int = DEFAULT_SECONDS,
     check: bool = DEFAULT_CHECK,
 ) -> int:
+    seconds_added = seconds + SECONDS_ADD
+
     return (
         CHECK_MULTIPLY * check
         + (clicks + CLICKS_ADD) * (record + RECORD_ADD)
-        + pow(seconds + SECONDS_ADD, 2)
+        + seconds_added * seconds_added
         - TOTAL_SUBTRACT
     )
 
@@ -417,15 +418,3 @@ def decompress(data: bytes) -> bytes:
             pass
 
     raise RuntimeError("Failed to decompress data.")
-
-
-LEGACY = "cp1252"
-UTF_8 = "utf-8"
-
-
-def fix_song_encoding(string: str, errors: str = DEFAULT_ERRORS) -> str:
-    try:
-        return string.encode(LEGACY, errors).decode(UTF_8, errors)
-
-    except (UnicodeEncodeError, UnicodeDecodeError):
-        return string

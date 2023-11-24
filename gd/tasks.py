@@ -75,12 +75,6 @@ class ExponentialBackoff:
 
     Provides a convenient interface to implement an exponential backoff
     for reconnecting or retrying transmissions in a distributed network.
-
-    Once instantiated, the delay method will return the next interval to
-    wait for when retrying a connection or transmission. The maximum
-    delay increases exponentially with each retry up to a maximum of
-    $m \\cdot b^l$ (where $m$ is `multiply`, $b$ is `base` and $l$ is `limit`),
-    and is reset if no more attempts are needed in a period of $m \\cdot b^{l + 1}$ seconds.
     """
 
     multiply: float = field(default=DEFAULT_MULTIPLY)
@@ -102,16 +96,7 @@ class ExponentialBackoff:
         return self.multiply * pow(self.base, self.limit + 1)
 
     def delay(self) -> float:
-        """Computes the next delay.
-
-        Returns the next delay to wait according to the exponential
-        backoff algorithm. This is a value between $0$ and $m \\cdot b^e$
-        where $e$ (`exponent`) starts off at $0$ and is incremented at every
-        invocation of this method up to a maximum of $l$ (`limit`).
-
-        If a period of more than $m \\cdot b^{l + 1}$ has passed since the last
-        retry, the `exponent` ($e$) is reset to $0$.
-        """
+        """Computes the next delay."""
         called = self._clock()
 
         interval = called - self._last_called
