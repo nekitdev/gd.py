@@ -47,7 +47,7 @@ class Entity(Binary):
 
     @id.validator
     def check_id(self, attribute: Attribute[int], id: int) -> None:
-        if id < 0:
+        if id < -1:
             raise ValueError  # TODO: message?
 
     @property
