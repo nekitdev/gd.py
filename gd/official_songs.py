@@ -21,6 +21,7 @@ class OfficialSong:
 
 
 OFFICIAL_SONGS = (
+    OfficialSong(id=-1, name="Practice: Stay Inside Me", artist_name="OcularNebula"),
     OfficialSong(id=0, name="Stereo Madness", artist_name="ForeverBound"),
     OfficialSong(id=1, name="Back On Track", artist_name="DJVI"),
     OfficialSong(id=2, name="Polargeist", artist_name="Step"),

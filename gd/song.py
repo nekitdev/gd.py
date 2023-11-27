@@ -239,7 +239,7 @@ class Song(Entity):
                 official_song = OfficialSong.default(id=id)
 
         return cls(
-            id=official_song.id,
+            id=official_song.id if official_song.id != -1 else 0,  # get rid of the negative id of the practice song
             custom=False,
             name=official_song.name,
             artist=Artist.name_only(official_song.artist_name),
