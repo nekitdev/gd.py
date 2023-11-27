@@ -54,6 +54,7 @@ from gd.constants import (
     DEFAULT_CLICKS,
     DEFAULT_COINS,
     DEFAULT_COUNT,
+    DEFAULT_ERRORS,
     DEFAULT_ID,
     DEFAULT_LOW_DETAIL,
     DEFAULT_OBJECT_COUNT,
@@ -822,7 +823,7 @@ class HTTPClient:
                         response_data = await response.read()
 
                     elif type is ResponseType.TEXT:
-                        response_data = await response.text(encoding=utf_8)
+                        response_data = await response.text(encoding=utf_8, errors=DEFAULT_ERRORS)
 
                     elif type is ResponseType.JSON:
                         response_data = await response.json(content_type=None)
