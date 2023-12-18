@@ -61,48 +61,56 @@ git = "https://github.com/nekitdev/gd.py.git"
 ```python
 # file.py
 
-import asyncio
+from entrypoint import entrypoint
 
 import gd
 
 SONG_ID = 1081309
-SONG = "{} by {} (ID: {}, size: {} MB)"
+
+SONG_INFO = "`{song.name}` by `{song.artist.name}` (ID: `{song.id}`, size: `{song.size} MB`)"
+song_info = SONG_INFO.format
 
 
-async def main() -> None:
-    client = gd.Client()
-
+async def async_main() -> None:
     song = await client.get_song(SONG_ID)
 
-    print(SONG.format(song.name, song.artist.name, song.id, song.size))
+    print(song_info(song=song))
 
 
-asyncio.run(main())
+@entrypoint(__name__)
+def main() -> None:
+    client.run(async_main())
 ```
 
 ```console
 $ python file.py
-PANDA EYES - BROKEN by PandaEyesOfficial (ID: 1081309, size: 9.71 MB)
+`PANDA EYES - BROKEN` by `PandaEyesOfficial` (ID: `1081309`, size: `9.71 MB`)
 ```
 
 ### Listening
 
 ```python
+from entrypoint import entrypoint
+
 import gd
 
 client = gd.Client()
 
-DAILY = "new daily! {daily.name} by {daily.creator.name} (ID: {daily.id})"
+DAILY_INFO = "new daily! `{daily.name}` by `{daily.creator.name}` (ID: `{daily.id}`)"
+daily_info = DAILY_INFO.format
 
 
 @client.event
 async def on_daily(daily: gd.Level) -> None:
-    print(DAILY.format(daily=daily))
+    print(daily_info(daily=daily))
 
 
 client.listen_for_daily()
 
-client.create_controller().run()
+
+@entrypoint(__name__)
+def main() -> None:
+    client.create_controller().run()
 ```
 
 ## Documentation

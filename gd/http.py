@@ -76,7 +76,6 @@ from gd.encoding import (
     CLICKS_ADD,
     COINS_ADD,
     SECONDS_ADD,
-    UTF_8,
     encode_base64_string_url_safe,
     encode_robtop_string,
     generate_check,
@@ -801,8 +800,6 @@ class HTTPClient:
         lock = Lock()
         error: Optional[AnyError] = None
 
-        utf_8 = UTF_8
-
         while attempts:
             try:
                 async with lock, self._session.request(  # type: ignore
@@ -822,7 +819,7 @@ class HTTPClient:
                         response_data = await response.read()
 
                     elif type is ResponseType.TEXT:
-                        response_data = await response.text(encoding=utf_8)
+                        response_data = await response.text()
 
                     elif type is ResponseType.JSON:
                         response_data = await response.json(content_type=None)

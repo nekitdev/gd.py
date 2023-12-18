@@ -1,6 +1,4 @@
-"""An example of downloading a song.
-Author: nekitdev.
-"""
+"""Downloading songs."""
 
 from entrypoint import entrypoint
 
@@ -10,14 +8,21 @@ client = gd.Client()  # initialize the client
 
 PROMPT = "song ID ([Ctrl + C] to exit): "
 
-EXPECTED = "expected an integer value, not `{}`"
-CAN_NOT_FIND = "can not find a song with ID {}"
+EXPECTED = "expected an integer value, not `{query}`"
+expected = EXPECTED.format
 
-NAME = "newgrounds_{}.mp3"
+NOT_FOUND = "song with ID `{song_id}` not found"
+not_found = NOT_FOUND.format
+
+SONG_NAME = "newgrounds_{song.id}.mp3"
+song_name = SONG_NAME.format
 
 WITH_BAR = True
 
-DOWNLOADED = "downloaded `{}` by `{}` -> `{}`"
+DOWNLOADED = "downloaded `{song.name}` by `{song.artist.name}` -> `{name}`"
+downloaded = DOWNLOADED.format
+
+EXITING = "exiting..."
 
 
 async def async_main() -> None:
@@ -28,22 +33,22 @@ async def async_main() -> None:
             song_id = int(query)
 
         except ValueError:
-            print(EXPECTED.format(query))
+            print(expected(query=query))
 
         else:
             try:
                 # fetch a song
-                song = await client.get_newgrounds_song(int(query))
+                song = await client.get_newgrounds_song(song_id)
 
             except gd.GDError:
-                print(CAN_NOT_FIND.format(song_id))
+                print(not_found(song_id=song_id))
 
             else:
-                name = NAME.format(song.id)
+                name = song_name(song=song)
 
                 await song.download_to(name, with_bar=WITH_BAR)
 
-                print(DOWNLOADED.format(song.name, song.artist.name, name))
+                print(downloaded(song=song, name=name))
 
 
 @entrypoint(__name__)
@@ -52,4 +57,5 @@ def main() -> None:
         client.run(async_main())
 
     except KeyboardInterrupt:
-        return
+        print(EXITING)
+

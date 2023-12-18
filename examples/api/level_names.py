@@ -1,20 +1,19 @@
-"""An example that shows fetching created level names.
-Author: nekitdev
-"""
+"""Fetching creates level names."""
 
 from entrypoint import entrypoint
 
 import gd
 
 LOADING = "Loading the database..."
-LEVEL = "{index:<{align}} | {level.name}"
+LINE = "{index:<{align}} | {level.name}"
+line = LINE.format
 
 
 @entrypoint(__name__)
 def main() -> None:
     print(LOADING)
 
-    database = gd.api.save.load()  # load local database (save)
+    database = gd.api.save.load()  # load database (save)
 
     levels = database.created_levels  # get created levels
 
@@ -24,4 +23,4 @@ def main() -> None:
     for index, level in enumerate(levels):  # for each level, print level ID and name, formatted
         # 0 | Level
         # 1 | Another Level
-        print(LEVEL.format(index=index, align=align, level=level))
+        print(line(index=index, align=align, level=level))

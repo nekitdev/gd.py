@@ -1,6 +1,4 @@
-"""An example that shows user searching.
-Author: nekitdev
-"""
+"""Searching for users."""
 
 from entrypoint import entrypoint
 
@@ -11,8 +9,13 @@ client = gd.Client()  # initialize the client
 PROMPT = "name: "
 
 UNREGISTERED = "it seems `{user.name}` is not registered..."
-REGISTERED = "`{user.name}` is registered (account ID: {user.account_id}, ID: {user.id})"
-CAN_NOT_FIND = "can not find `{name}`"
+unregistered = UNREGISTERED.format
+
+REGISTERED = "`{user.name}` is registered (account ID: `{user.account_id}`, ID: `{user.id}`)"
+registered = REGISTERED.format
+
+NOT_FOUND = "user `{name}` not found"
+not_found = NOT_FOUND.format
 
 
 async def async_main() -> None:
@@ -21,13 +24,13 @@ async def async_main() -> None:
     try:
         user = await client.search_user(name, simple=True)
 
+    except gd.MissingAccess:
+        print(not_found(name=name))
+
+    else:
         print(
-            REGISTERED.format(user=user) if user.is_registered() else UNREGISTERED.format(user=user)
+            registered(user=user) if user.is_registered() else unregistered(user=user)
         )
-
-    except gd.MissingAccess:  # can not find
-        print(CAN_NOT_FIND.format(name=name))
-
 
 @entrypoint(__name__)
 def main() -> None:

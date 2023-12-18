@@ -9,16 +9,7 @@ __license__ = "MIT"
 __version__ = "1.0.2"
 
 from gd import (
-    api,
-    binary,
-    encoding,
-    events,
-    image,
-    memory,
-    models,
-    named_dicts,
-    robtop,
-    tasks,
+    api, binary, encoding, events, image, memory, models, named_dicts, robtop, schema, tasks
 )
 from gd.artist import Artist
 from gd.binary import BinaryInfo
@@ -157,6 +148,7 @@ __all__ = (
     "memory",
     "models",
     "robtop",
+    "schema",
     "tasks",
     # binary info
     "BinaryInfo",
