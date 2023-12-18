@@ -28,6 +28,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Update submodules
+        run: git submodule update --init --remote
+
       - name: Update PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 

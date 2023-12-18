@@ -18,6 +18,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Update submodules
+        run: git submodule update --init --remote
+
       - name: Update PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 

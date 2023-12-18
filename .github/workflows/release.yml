@@ -29,6 +29,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Update submodules
+        run: git submodule update --init --remote
+
       - name: Update PATH
         if: ${{ matrix.os != 'windows' }}
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH

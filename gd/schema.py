@@ -13,7 +13,7 @@ remove_import_hook()
 ROOT = Path(__file__).parent
 
 SCHEMA_NAME = "schema"
-SCHEMA = (ROOT / SCHEMA_NAME).resolve()
+SCHEMA = ROOT / SCHEMA_NAME
 SCHEMA_SUFFIX = ".capnp"
 
 
