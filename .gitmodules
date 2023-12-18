@@ -1,3 +1,3 @@
-[submodule "gd.schema"]
-	path = gd.schema
-	url = https://github.com/gd-programming/gd.schema.git
+[submodule "schema"]
+	path = gd/submodules/schema
+	url = https://github.com/gd-programming/gd.schema

@@ -22,11 +22,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Clone submodules
-        run: |
-          git submodule init
-          git submodule update
-
       - name: Update PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
