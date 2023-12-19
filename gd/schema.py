@@ -1,6 +1,5 @@
 from pathlib import Path
 from types import ModuleType as Module
-from typing import Any
 
 from capnp import load, remove_import_hook  # type: ignore
 
@@ -43,7 +42,6 @@ mapPack = load_module("mapPack")
 level = load_module("level")
 message = load_module("message")
 password = load_module("password")
-progress = load_module("progress")
 song = load_module("song")
 user = load_module("user")
 
@@ -54,7 +52,7 @@ folder = load_module("api.folder")
 guidelines = load_module("api.guidelines")
 header = load_module("api.header")
 hsv = load_module("api.hsv")
-# levelApi = load_module("api.level")
+levelApi = load_module("api.level")
 like = load_module("api.like")
 object = load_module("api.object")
 recording = load_module("api.recording")
