@@ -41,7 +41,7 @@ jobs:
         run: echo "$APPDATA/Python/Scripts" >> $GITHUB_PATH
 
       - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org/ | python -
+        run: pipx install poetry
 
       - name: Configure Poetry
         run: poetry config virtualenvs.in-project true
