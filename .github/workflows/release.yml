@@ -24,6 +24,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install Poetry
+        run: pipx install poetry
+
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -39,9 +42,6 @@ jobs:
       - name: Update PATH for Windows
         if: ${{ matrix.os == 'windows' }}
         run: echo "$APPDATA/Python/Scripts" >> $GITHUB_PATH
-
-      - name: Install Poetry
-        run: pipx install poetry
 
       - name: Configure Poetry
         run: poetry config virtualenvs.in-project true

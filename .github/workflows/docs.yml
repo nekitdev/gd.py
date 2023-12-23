@@ -13,6 +13,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install Poetry
+        run: pipx install poetry
+
       - name: Setup Python 3.12
         uses: actions/setup-python@v5
         with:
@@ -23,9 +26,6 @@ jobs:
 
       - name: Update PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Install Poetry
-        run: pipx install poetry
 
       - name: Configure Poetry
         run: poetry config virtualenvs.in-project true
