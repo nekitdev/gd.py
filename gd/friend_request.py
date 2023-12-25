@@ -5,12 +5,10 @@ from typing import TYPE_CHECKING, Optional, Type, TypeVar
 from attrs import define, field
 from pendulum import DateTime
 
-from gd.binary import VERSION, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
-from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, DEFAULT_READ, EMPTY
-from gd.date_time import utc_from_timestamp, utc_now
+from gd.constants import DEFAULT_ID, DEFAULT_READ, EMPTY
+from gd.date_time import utc_now
 from gd.entity import Entity
-from gd.enums import ByteOrder, FriendRequestType
+from gd.enums import FriendRequestType
 from gd.models import FriendRequestModel
 from gd.users import User, UserCosmetics
 
@@ -27,9 +25,6 @@ friend_request = FRIEND_REQUEST.format
 INCOMING = "<-"
 OUTGOING = "->"
 
-READ_BIT = 0b00000010
-TYPE_MASK = 0b00000001
-
 
 @define()
 class FriendRequest(Entity):
@@ -41,74 +36,6 @@ class FriendRequest(Entity):
     content: str = field(default=EMPTY, eq=False)
 
     was_read: bool = field(default=DEFAULT_READ, eq=False)
-
-    @classmethod
-    def from_binary(
-        cls: Type[FR],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> FR:
-        read_bit = READ_BIT
-
-        reader = Reader(binary, order)
-
-        id = reader.read_u32()
-
-        user = User.from_binary(binary, order, version, encoding, errors)
-
-        value = reader.read_u8()
-
-        type_value = value & TYPE_MASK
-
-        type = FriendRequestType(type_value)
-
-        was_read = value & read_bit == read_bit
-
-        timestamp = reader.read_f64()
-
-        created_at = utc_from_timestamp(timestamp)
-
-        content_length = reader.read_u8()
-
-        content = reader.read(content_length).decode(encoding, errors)
-
-        return cls(
-            id=id, user=user, type=type, created_at=created_at, content=content, was_read=was_read
-        )
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        self.user.to_binary(binary, order, version, encoding, errors)
-
-        value = self.type.value
-
-        if self.is_read():
-            value |= READ_BIT
-
-        writer.write_u8(value)
-
-        timestamp = self.created_at.timestamp()  # type: ignore
-
-        writer.write_f64(timestamp)
-
-        data = self.content.encode(encoding, errors)
-
-        writer.write_u8(len(data))
-
-        writer.write(data)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id

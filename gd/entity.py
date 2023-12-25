@@ -2,15 +2,13 @@ from __future__ import annotations
 
 from builtins import getattr as get_attribute
 from builtins import setattr as set_attribute
-from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 from attrs import Attribute, define, field, fields
 from iters.iters import iter
+from typing_extensions import Self
 
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
 from gd.converter import CONVERTER, register_unstructure_hook_omit_client
-from gd.enums import ByteOrder
 from gd.errors import ClientError
 from gd.typing import Data
 
@@ -37,7 +35,7 @@ def attribute_name(attribute: Attribute[Any]) -> str:
 
 @register_unstructure_hook_omit_client
 @define()
-class Entity(Binary):
+class Entity:
     id: int = field()
 
     client_unchecked: Optional[Client] = field(default=None, init=False, repr=False, eq=False)
@@ -67,50 +65,30 @@ class Entity(Binary):
     def client(self) -> None:
         self.client_unchecked = None
 
-    def attach_client_unchecked(self: E, client: Optional[Client]) -> E:
+    def attach_client_unchecked(self, client: Optional[Client]) -> Self:
         self.client_unchecked = client
 
         return self
 
-    def attach_client(self: E, client: Client) -> E:
+    def attach_client(self, client: Client) -> Self:
         self.client = client
 
         return self
 
-    def detach_client(self: E) -> E:
+    def detach_client(self) -> Self:
         del self.client
 
         return self
 
-    def update_from(self: E, entity: Entity) -> E:
+    def update_from(self, entity: Entity) -> Self:
         for name in iter(fields(type(entity))).map(attribute_name).unwrap():
             set_attribute(self, name, get_attribute(entity, name))
 
         return self
 
     @classmethod
-    def from_data(cls: Type[E], data: EntityData) -> E:
+    def from_data(cls, data: EntityData) -> Self:
         return CONVERTER.structure(data, cls)
 
     def into_data(self) -> EntityData:
         return CONVERTER.unstructure(self)  # type: ignore
-
-    @classmethod
-    def from_binary(
-        cls: Type[E],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> E:
-        reader = Reader(binary, order)
-
-        id = reader.read_u32()
-
-        return cls(id=id)
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u32(self.id)

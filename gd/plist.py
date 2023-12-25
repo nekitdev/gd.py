@@ -14,13 +14,13 @@ from attrs import define, field
 from funcs.unpacking import unpack_binary
 from iters.iters import iter
 from named import get_type_name
-from typing_aliases import Attributes, StringDict, Unary, is_instance
+from typing_aliases import Attributes, StrictPayload, StringDict, Unary, is_instance
 from typing_extensions import Literal
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.models_utils import float_str
 from gd.string_utils import tick
-from gd.typing import AnyString, StrictPayload
+from gd.typing import AnyString
 
 __all__ = ("PARSER", "PropertyList")
 

@@ -59,7 +59,7 @@ from gd.constants import (
 )
 from gd.credentials import Credentials
 from gd.decorators import check_client_login, check_login
-from gd.encoding import Key, encode_robtop_string
+from gd.encoding import Key, encode_robtop_string, sha1_string_with_salt
 from gd.enums import (
     AccountURLType,
     CommentState,
@@ -76,6 +76,7 @@ from gd.enums import (
     MessageType,
     RelationshipType,
     RewardType,
+    Salt,
     TimelyType,
 )
 from gd.errors import ClientError, InternalError, NothingFound
@@ -106,9 +107,9 @@ from gd.password import Password
 from gd.rewards import Chest, Quest
 from gd.run_iterables import run_iterables
 from gd.session import Session
-from gd.song import Song
-from gd.typing import IntString, MaybeIterable, URLString
-from gd.users import User
+from gd.songs import Song
+from gd.typing import IntString, URLString
+from gd.users import User, UserReference
 
 __all__ = ("Client",)
 
@@ -249,10 +250,16 @@ class Client:
         return encode_robtop_string(self.password, Key.USER_PASSWORD)
 
     @property
+    def hashed_password(self) -> str:
+        return sha1_string_with_salt(self.password, Salt.PASSWORD)
+
+    @property
     @check_login
-    def user(self) -> User:
+    def user(self) -> UserReference:
         """The user representing the client."""
-        return User(id=self.id, name=self.name, account_id=self.account_id).attach_client(self)
+        return UserReference(id=self.id, name=self.name, account_id=self.account_id).attach_client(
+            self
+        )
 
     async def ping(self) -> Duration:
         """Pings the Geometry Dash server.
@@ -422,7 +429,7 @@ class Client:
             special=special,
             account_id=self.account_id,
             name=self.name,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
@@ -432,7 +439,7 @@ class Client:
         friend_request_state: Optional[FriendRequestState] = None,
         comment_state: Optional[CommentState] = None,
         youtube: Optional[str] = None,
-        twitter: Optional[str] = None,
+        x: Optional[str] = None,
         twitch: Optional[str] = None,
         # discord: Optional[str] = None,
         *,
@@ -458,7 +465,7 @@ class Client:
             friend_request_state=switch_none(friend_request_state, states.friend_request_state),
             comment_state=switch_none(comment_state, states.comment_state),
             youtube=switch_none(youtube, socials.youtube),
-            twitter=switch_none(twitter, socials.twitter),
+            x=switch_none(x, socials.x),
             twitch=switch_none(twitch, socials.twitch),
             # discord=switch_none(discord, socials.discord),
             account_id=self.account_id,

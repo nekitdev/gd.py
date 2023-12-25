@@ -6,14 +6,22 @@ __url__ = "https://github.com/nekitdev/gd.py"
 __title__ = "gd"
 __author__ = "nekitdev"
 __license__ = "MIT"
-__version__ = "1.0.2"
+__version__ = "2.0.0-dev.0"
 
 from gd import (
-    api, binary, encoding, events, image, memory, models, named_dicts, robtop, schema, tasks
+    api,
+    binary,
+    encoding,
+    events,
+    image,
+    memory,
+    models,
+    named_dicts,
+    robtop,
+    schema,
+    tasks,
 )
 from gd.artist import Artist
-from gd.binary import BinaryInfo
-from gd.binary_utils import Reader, Writer
 from gd.capacity import Capacity
 from gd.client import Client
 from gd.color import Color
@@ -125,7 +133,7 @@ from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM, SYSTEM_PLATFORM_CONFIG
 from gd.progress import Progress
 from gd.rewards import Chest, Quest
 from gd.session import Session
-from gd.song import Song
+from gd.songs import Song
 from gd.users import User, UserCosmetics, UserLeaderboard, UserSocials, UserStates, UserStatistics
 from gd.version import python_version_info, version_info
 from gd.versions import GameVersion, RobTopVersion
@@ -150,11 +158,6 @@ __all__ = (
     "robtop",
     "schema",
     "tasks",
-    # binary info
-    "BinaryInfo",
-    # reader & writer
-    "Reader",
-    "Writer",
     # converter
     "CONVERTER",
     # colors

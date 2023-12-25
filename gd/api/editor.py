@@ -2,7 +2,6 @@ from operator import attrgetter as get_attribute_factory
 from typing import Iterable, Iterator, List, Sequence, Set, Type, TypeVar, Union, overload
 
 from attrs import define, field
-from funcs.application import partial
 from iters.iters import iter, wrap_iter
 from typing_aliases import is_slice
 
@@ -17,14 +16,10 @@ from gd.api.objects import (
     is_start_position,
     is_trigger,
     migrate_objects,
-    object_from_binary,
     object_from_robtop,
-    object_to_binary,
     object_to_robtop,
 )
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
-from gd.enums import ByteOrder, Speed, SpeedChangeType, SpeedMagic
+from gd.enums import Speed, SpeedChangeType, SpeedMagic
 from gd.models_constants import OBJECTS_SEPARATOR
 from gd.models_utils import concat_objects, split_objects
 from gd.robtop import RobTop
@@ -114,7 +109,7 @@ E = TypeVar("E", bound="Editor")
 
 
 @define()
-class Editor(Sequence[Object], RobTop, Binary):
+class Editor(Sequence[Object], RobTop):
     """Represents editors.
 
     Binary:
@@ -251,39 +246,6 @@ class Editor(Sequence[Object], RobTop, Binary):
         return time_length(self.x_length, self.start_speed, self.speed_changes)
 
     @classmethod
-    def from_binary(
-        cls: Type[E],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> E:
-        header = Header.from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        iterable_length = reader.read_u32()
-
-        object_from_binary_function = partial(object_from_binary, binary, order, version)
-
-        iterable = iter.repeat_exactly_with(object_from_binary_function, iterable_length).unwrap()
-
-        return cls.from_object_iterable(iterable, header)
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        self.header.to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        objects = self.objects
-
-        writer.write_u32(len(objects))
-
-        for object in objects:
-            object_to_binary(object, binary, order, version)
-
-    @classmethod
     def from_robtop(cls: Type[E], string: str) -> E:
         iterator = iter(split_objects(string)).filter(None)
 
@@ -307,9 +269,6 @@ class Editor(Sequence[Object], RobTop, Binary):
             .collect(concat_objects)
         )
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return OBJECTS_SEPARATOR in string
-
-
-DEFAULT_DATA = Editor().to_bytes()

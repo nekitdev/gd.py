@@ -5,13 +5,9 @@ from collections import UserList as ListType
 from typing import Iterable, Iterator, List, Match, Type, TypeVar
 
 from attrs import define
-from funcs.application import partial
 from iters.iters import iter, wrap_iter
 
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
-from gd.constants import DEFAULT_ROUNDING, EMPTY
-from gd.enums import ByteOrder
+from gd.constants import EMPTY
 from gd.errors import InternalError
 from gd.models_constants import RECORDING_ITEM_SEPARATOR
 from gd.models_utils import concat_recording_item, float_str, int_bool
@@ -50,13 +46,9 @@ recording_item_find_iter = RECORDING_ITEM.finditer
 
 RI = TypeVar("RI", bound="RecordingItem")
 
-PREVIOUS_BIT = 0b00000001
-NEXT_BIT = 0b00000010
-SECONDARY_BIT = 0b00000100
-
 
 @define()
-class RecordingItem(Binary, RobTop):
+class RecordingItem(RobTop):
     timestamp: float = DEFAULT_TIMESTAMP
     previous: bool = DEFAULT_PREVIOUS
     next: bool = DEFAULT_NEXT
@@ -113,54 +105,9 @@ class RecordingItem(Binary, RobTop):
     def to_robtop(self) -> str:
         return concat_recording_item(self.to_robtop_iterator())
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
-        return RECORDING_ITEM_SEPARATOR in string
-
     @classmethod
-    def from_binary(
-        cls: Type[RI],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> RI:
-        rounding = DEFAULT_ROUNDING
-
-        previous_bit = PREVIOUS_BIT
-        next_bit = NEXT_BIT
-        secondary_bit = SECONDARY_BIT
-
-        reader = Reader(binary, order)
-
-        timestamp = round(reader.read_f32(), rounding)
-
-        value = reader.read_u8()
-
-        previous = value & previous_bit == previous_bit
-        next = value & next_bit == next_bit
-        secondary = value & secondary_bit == secondary_bit
-
-        return cls(timestamp=timestamp, previous=previous, next=next, secondary=secondary)
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_f32(self.timestamp)
-
-        value = 0
-
-        if self.is_previous():
-            value |= PREVIOUS_BIT
-
-        if self.is_next():
-            value |= NEXT_BIT
-
-        if self.is_secondary():
-            value |= SECONDARY_BIT
-
-        writer.write_u8(value)
+    def can_be_in(cls, string: str) -> bool:
+        return RECORDING_ITEM_SEPARATOR in string
 
     def is_previous(self) -> bool:
         return self.previous
@@ -179,7 +126,7 @@ def recording_item_to_robtop(item: RecordingItem) -> str:
 R = TypeVar("R", bound="Recording")
 
 
-class Recording(ListType, List[RecordingItem], Binary, RobTop):  # type: ignore
+class Recording(ListType, List[RecordingItem], RobTop):  # type: ignore
     @staticmethod
     @wrap_iter
     def iter_robtop(string: str) -> Iterator[RecordingItem]:
@@ -196,31 +143,6 @@ class Recording(ListType, List[RecordingItem], Binary, RobTop):  # type: ignore
     def to_robtop(self) -> str:
         return self.collect_robtop(self)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
-        return RECORDING_ITEM_SEPARATOR in string
-
     @classmethod
-    def from_binary(
-        cls: Type[R],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> R:
-        reader = Reader(binary, order)
-
-        length = reader.read_u32()
-
-        recording_item_from_binary = partial(RecordingItem.from_binary, binary, order, version)
-
-        return cls(iter.repeat_exactly_with(recording_item_from_binary, length).unwrap())
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u32(len(self))
-
-        for item in self:
-            item.to_binary(binary, order, version)
+    def can_be_in(cls, string: str) -> bool:
+        return RECORDING_ITEM_SEPARATOR in string

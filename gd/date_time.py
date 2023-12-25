@@ -20,14 +20,27 @@ __all__ = (
     "date_time_to_human",
     # parse duration
     "parse_duration",
+    # timestamp milliseconds
+    "timestamp_milliseconds",
     # UTC functions
     "utc_from_timestamp",
+    "utc_from_timestamp_milliseconds",
     "utc_now",
 )
+
+SECONDS_TO_MILLISECONDS = 1000
 
 
 def utc_from_timestamp(timestamp: float) -> DateTime:
     return from_timestamp(timestamp, UTC)
+
+
+def utc_from_timestamp_milliseconds(timestamp: int) -> DateTime:
+    return utc_from_timestamp(timestamp / SECONDS_TO_MILLISECONDS)
+
+
+def timestamp_milliseconds(date_time: DateTime) -> int:
+    return int(date_time.timestamp() * SECONDS_TO_MILLISECONDS)  # type: ignore
 
 
 def utc_now() -> DateTime:

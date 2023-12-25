@@ -34,9 +34,6 @@ ICON_TYPE_TO_NAME = {
 EXTRA = "extra"
 GLOW = "glow"
 
-DEFAULT_EXTRA_COLOR = Color.white()
-GLOW_COLOR_FALLBACK = Color.white()
-
 DEFAULT_FRAME = 1
 
 FULL_VALUE = 0xFF
@@ -72,10 +69,9 @@ class Icon:
     id: int = field(default=DEFAULT_ICON_ID)
     color_1: Color = field(factory=Color.default_color_1)
     color_2: Color = field(factory=Color.default_color_2)
+    color_3: Color = field(factory=Color.default_color_3)
     glow: bool = field(default=DEFAULT_GLOW)
     idle: Optional[Animation] = field(default=None, repr=False)
-    glow_color_unchecked: Optional[Color] = field(default=None, init=False, repr=False)
-    extra_color_unchecked: Optional[Color] = field(default=None, init=False, repr=False)
 
     @property
     def name(self) -> str:
@@ -89,47 +85,6 @@ class Icon:
 
     def is_simple(self) -> bool:
         return not self.is_complex()
-
-    @property
-    def glow_color(self) -> Color:
-        glow_color = self.glow_color_unchecked
-
-        if glow_color is None:
-            color_2 = self.color_2
-
-            if not color_2.is_black():
-                return color_2
-
-            color_1 = self.color_1
-
-            if not color_1.is_black():
-                return color_1
-
-            return GLOW_COLOR_FALLBACK
-
-        return glow_color
-
-    @glow_color.setter
-    def glow_color(self, color: Color) -> None:
-        self.glow_color_unchecked = color
-
-    @glow_color.deleter
-    def glow_color(self) -> None:
-        self.glow_color_unchecked = None
-
-    @property
-    def extra_color(self) -> Color:
-        extra_color = self.extra_color_unchecked
-
-        return DEFAULT_EXTRA_COLOR if extra_color is None else extra_color
-
-    @extra_color.setter
-    def extra_color(self, color: Color) -> None:
-        self.extra_color_unchecked = color
-
-    @extra_color.deleter
-    def extra_color(self) -> None:
-        self.extra_color_unchecked = None
 
     def generate_name(
         self,

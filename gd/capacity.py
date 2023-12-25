@@ -1,50 +1,40 @@
-from collections import UserList as ListType
-from typing import List, Type, TypeVar
+from typing import List
 
+from attrs import define, field
 from iters.iters import iter
+from typing_extensions import Self
 
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
-from gd.enums import ByteOrder
 from gd.models_constants import CAPACITY_SEPARATOR
 from gd.models_utils import concat_capacity, split_capacity
 from gd.robtop import RobTop
+from gd.simple import Simple
 
-__all__ = ("Capacity",)
+__all__ = ("Capacity", "CapacityItem", "CapacityItems")
 
-C = TypeVar("C", bound="Capacity")
+CapacityItem = int
+CapacityItems = List[CapacityItem]
 
 
-class Capacity(ListType, List[int], Binary, RobTop):  # type: ignore
-    @classmethod
-    def from_binary(
-        cls: Type[C],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> C:
-        reader = Reader(binary, order)
-
-        length = reader.read_u16()
-
-        return iter.repeat_exactly_with(reader.read_u16, length).collect(cls)
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u16(len(self))
-
-        iter(self).for_each(writer.write_u16)
+@define()
+class Capacity(RobTop, Simple[CapacityItems]):
+    items: CapacityItems = field(factory=list)
 
     @classmethod
-    def from_robtop(cls: Type[C], string: str) -> C:
-        return iter(split_capacity(string)).filter(None).map(int).collect(cls)
+    def from_value(cls, value: CapacityItems) -> Self:
+        return cls(value)
+
+    def to_value(self) -> CapacityItems:
+        return self.items
+
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
+        return CAPACITY_SEPARATOR in string
+
+    @classmethod
+    def from_robtop(cls, string: str) -> Self:
+        value = iter(split_capacity(string)).filter(None).map(int).list()
+
+        return cls.from_value(value)
 
     def to_robtop(self) -> str:
-        return iter(self).map(str).collect(concat_capacity)
-
-    @staticmethod
-    def can_be_in(string: str) -> bool:
-        return CAPACITY_SEPARATOR in string
+        return iter(self.to_value()).map(str).collect(concat_capacity)

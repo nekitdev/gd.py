@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import AsyncIterator, Type, TypeVar
+from typing import AsyncIterator, TypeVar
 
 from async_extensions.collect import collect_iterable_results
 from iters.async_utils import async_iter, async_list

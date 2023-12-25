@@ -4,12 +4,10 @@ from typing import TYPE_CHECKING, ClassVar, Optional, Type, TypeVar
 
 from attrs import define, field
 
-from gd.binary import VERSION, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
-from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_READ, EMPTY
-from gd.date_time import DateTime, utc_from_timestamp, utc_now
+from gd.constants import DEFAULT_READ, EMPTY
+from gd.date_time import DateTime, utc_now
 from gd.entity import Entity
-from gd.enums import ByteOrder, MessageType
+from gd.enums import MessageType
 from gd.models import MessageModel
 from gd.users import User
 
@@ -19,10 +17,6 @@ if TYPE_CHECKING:
 __all__ = ("Message",)
 
 M = TypeVar("M", bound="Message")
-
-CONTENT_BIT = 0b00000100
-READ_BIT = 0b00000010
-TYPE_MASK = 0b00000001
 
 NO_SUBJECT = "(no subject)"
 
@@ -40,99 +34,6 @@ class Message(Entity):
     content: Optional[str] = field(default=None, eq=False)
 
     was_read: bool = field(default=DEFAULT_READ, eq=False)
-
-    @classmethod
-    def from_binary(
-        cls: Type[M],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> M:
-        read_bit = READ_BIT
-        content_bit = CONTENT_BIT
-
-        reader = Reader(binary, order)
-
-        id = reader.read_u32()
-
-        user = User.from_binary(binary, order, version, encoding, errors)
-
-        value = reader.read_u8()
-
-        type_value = value & TYPE_MASK
-
-        type = MessageType(type_value)
-
-        was_read = value & read_bit == read_bit
-
-        has_content = value & content_bit == content_bit
-
-        subject_length = reader.read_u8()
-
-        subject = reader.read(subject_length).decode(encoding, errors)
-
-        if has_content:
-            content_length = reader.read_u8()
-
-            content = reader.read(content_length).decode(encoding, errors)
-
-        else:
-            content = None
-
-        timestamp = reader.read_f64()
-
-        created_at = utc_from_timestamp(timestamp)
-
-        return cls(
-            id=id,
-            user=user,
-            type=type,
-            created_at=created_at,
-            subject=subject,
-            content=content,
-            was_read=was_read,
-        )
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        content = self.content
-
-        value = self.type.value
-
-        if self.is_read():
-            value |= READ_BIT
-
-        if content is not None:
-            value |= CONTENT_BIT
-
-        writer.write_u8(value)
-
-        data = self.subject.encode(encoding, errors)
-
-        writer.write_u8(len(data))
-        writer.write(data)
-
-        if content is not None:
-            data = content.encode(encoding, errors)
-
-            writer.write_u8(len(data))
-            writer.write(data)
-
-        timestamp = self.created_at.timestamp()  # type: ignore
-
-        writer.write_f64(timestamp)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id

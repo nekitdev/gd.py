@@ -1,8 +1,8 @@
 from abc import abstractmethod as required
-from typing import Any, Type, TypeVar
+from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from typing_aliases import is_instance
-from typing_extensions import Protocol, TypeGuard, runtime_checkable
+from typing_extensions import Self, TypeGuard
 
 __all__ = ("RobTop", "FromRobTop", "ToRobTop", "is_from_robtop", "is_to_robtop")
 
@@ -13,11 +13,11 @@ T = TypeVar("T", bound="FromRobTop")
 class FromRobTop(Protocol):
     @classmethod
     @required
-    def from_robtop(cls: Type[T], string: str) -> T:
+    def from_robtop(cls, string: str) -> Self:
         ...
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return False
 
 

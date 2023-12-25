@@ -28,9 +28,8 @@ async def async_main() -> None:
         print(not_found(name=name))
 
     else:
-        print(
-            registered(user=user) if user.is_registered() else unregistered(user=user)
-        )
+        print(registered(user=user) if user.is_registered() else unregistered(user=user))
+
 
 @entrypoint(__name__)
 def main() -> None:

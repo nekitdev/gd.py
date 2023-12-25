@@ -8,15 +8,11 @@ from pendulum import DateTime, Duration, duration
 
 from gd.api.editor import Editor
 from gd.api.recording import Recording
-from gd.binary import VERSION, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
 from gd.capacity import Capacity
 from gd.constants import (
     COMMENT_PAGE_SIZE,
     DEFAULT_COINS,
     DEFAULT_DOWNLOADS,
-    DEFAULT_ENCODING,
-    DEFAULT_ERRORS,
     DEFAULT_GET_DATA,
     DEFAULT_ID,
     DEFAULT_LOW_DETAIL,
@@ -25,7 +21,6 @@ from gd.constants import (
     DEFAULT_PAGES,
     DEFAULT_RATING,
     DEFAULT_RECORD,
-    DEFAULT_ROUNDING,
     DEFAULT_SCORE,
     DEFAULT_STARS,
     DEFAULT_TWO_PLAYER,
@@ -36,11 +31,10 @@ from gd.constants import (
     UNKNOWN,
 )
 from gd.converter import CONVERTER, register_unstructure_hook_omit_client
-from gd.date_time import utc_from_timestamp, utc_now
-from gd.encoding import compress, decompress, unzip_level_string, zip_level_string
+from gd.date_time import utc_now
+from gd.encoding import decompress, unzip_level_string, zip_level_string
 from gd.entity import Entity, EntityData
 from gd.enums import (
-    ByteOrder,
     CommentStrategy,
     DemonDifficulty,
     Difficulty,
@@ -52,10 +46,9 @@ from gd.enums import (
 )
 from gd.errors import MissingAccess
 from gd.models import LevelModel, TimelyInfoModel
-from gd.official_levels import ID_TO_OFFICIAL_LEVEL, NAME_TO_OFFICIAL_LEVEL
 from gd.password import Password, PasswordData
-from gd.song import Song, SongData
-from gd.users import User, UserData
+from gd.songs import SongReference, SongReferenceData
+from gd.users import User, UserReference, UserReferenceData
 from gd.versions import CURRENT_GAME_VERSION, GameVersion, RobTopVersionData
 
 if TYPE_CHECKING:
@@ -66,11 +59,6 @@ __all__ = ("Level",)
 
 L = TypeVar("L", bound="Level")
 
-RATE_TYPE_MASK = 0b00011111
-TWO_PLAYER_BIT = 0b00100000
-VERIFIED_COINS_BIT = 0b01000000
-LOW_DETAIL_BIT = 0b10000000
-
 EXPECTED_QUERY = "expected either `id` or `name` query"
 CAN_NOT_FIND_LEVEL = "can not find an official level by given query"
 
@@ -80,8 +68,8 @@ OFFICIAL_LEVEL_DESCRIPTION = "Official level: {}"
 
 class LevelData(EntityData):
     name: str
-    creator: UserData
-    song: SongData
+    creator: UserReferenceData
+    song: SongReferenceData
     description: str
     unprocessed_data: str
     version: int
@@ -94,7 +82,7 @@ class LevelData(EntityData):
     requested_stars: int
     score: int
     rate_type: int
-    password_data: PasswordData
+    password: PasswordData
     original_id: int
     two_player: bool
     coins: int
@@ -113,8 +101,8 @@ class LevelData(EntityData):
 @define()
 class Level(Entity):
     name: str = field(eq=False)
-    creator: User = field(eq=False)
-    song: Song = field(eq=False)
+    creator: UserReference = field(eq=False)
+    song: SongReference = field(eq=False)
     description: str = field(default=EMPTY, eq=False)
     unprocessed_data: str = field(default=EMPTY, eq=False, repr=False)
     version: int = field(default=DEFAULT_VERSION, eq=False)
@@ -127,7 +115,7 @@ class Level(Entity):
     requested_stars: int = field(default=DEFAULT_STARS, eq=False)
     score: int = field(default=DEFAULT_SCORE, eq=False)
     rate_type: RateType = field(default=RateType.DEFAULT, eq=False)
-    password_data: Password = field(factory=Password, eq=False)
+    password: Password = field(factory=Password, eq=False)
     original_id: int = field(default=DEFAULT_ID, eq=False)
     two_player: bool = field(default=DEFAULT_TWO_PLAYER, eq=False)
     capacity: Capacity = field(factory=Capacity, eq=False)
@@ -171,228 +159,8 @@ class Level(Entity):
     def into_data(self) -> LevelData:
         return CONVERTER.unstructure(self)  # type: ignore
 
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        writer = Writer(binary, order)
-
-        super().to_binary(binary, order, version)
-
-        data = self.name.encode(encoding, errors)
-
-        writer.write_u8(len(data))
-
-        writer.write(data)
-
-        self.creator.to_binary(binary, order, version, encoding, errors)
-        self.song.to_binary(binary, order, version, encoding, errors)
-
-        created_timestamp = self.created_at.timestamp()  # type: ignore
-        updated_timestamp = self.updated_at.timestamp()  # type: ignore
-
-        writer.write_f64(created_timestamp)
-        writer.write_f64(updated_timestamp)
-
-        data = self.description.encode(encoding, errors)
-
-        writer.write_u8(len(data))
-
-        writer.write(data)
-
-        data = compress(self.data)
-
-        writer.write_u32(len(data))
-
-        writer.write(data)
-
-        writer.write_u8(self.version)
-
-        writer.write_u32(self.downloads)
-
-        self.game_version.to_binary(binary, order, version)
-
-        writer.write_i32(self.rating)
-
-        writer.write_u8(self.length.value)
-
-        writer.write_u8(self.difficulty.value)
-
-        value = self.rate_type.value
-
-        if self.is_two_player():
-            value |= TWO_PLAYER_BIT
-
-        if self.has_verified_coins():
-            value |= VERIFIED_COINS_BIT
-
-        if self.has_low_detail():
-            value |= LOW_DETAIL_BIT
-
-        writer.write_u8(value)
-
-        writer.write_u8(self.stars)
-
-        writer.write_u8(self.requested_stars)
-
-        writer.write_u32(self.score)
-
-        self.password_data.to_binary(binary, order, version)
-
-        writer.write_u32(self.original_id)
-
-        writer.write_u8(self.coins)
-
-        self.capacity.to_binary(binary, order, version)
-
-        writer.write_u32(self.object_count)
-
-        editor_seconds = self.editor_time.total_seconds()  # type: ignore
-        copies_seconds = self.copies_time.total_seconds()  # type: ignore
-
-        writer.write_f32(editor_seconds)
-        writer.write_f32(copies_seconds)
-
-        writer.write_u8(self.timely_type.value)
-        writer.write_u16(self.timely_id)
-
     @classmethod
-    def from_binary(
-        cls: Type[L],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> L:
-        rounding = DEFAULT_ROUNDING
-
-        two_player_bit = TWO_PLAYER_BIT
-        verified_coins_bit = VERIFIED_COINS_BIT
-        low_detail_bit = LOW_DETAIL_BIT
-        rate_type_mask = RATE_TYPE_MASK
-
-        reader = Reader(binary, order)
-
-        id = reader.read_u32()
-
-        name_length = reader.read_u8()
-
-        name = reader.read(name_length).decode(encoding, errors)
-
-        creator = User.from_binary(binary, order, version, encoding, errors)
-        song = Song.from_binary(binary, order, version, encoding, errors)
-
-        uploaded_timestamp = reader.read_f64()
-        updated_timestamp = reader.read_f64()
-
-        created_at = utc_from_timestamp(uploaded_timestamp)
-        updated_at = utc_from_timestamp(updated_timestamp)
-
-        description_length = reader.read_u8()
-
-        description = reader.read(description_length).decode(encoding, errors)
-
-        data_length = reader.read_u32()
-
-        data = decompress(reader.read(data_length))
-
-        version = reader.read_u8()
-
-        downloads = reader.read_u32()
-
-        game_version = GameVersion.from_binary(binary, order, version)
-
-        rating = reader.read_i32()
-
-        length_value = reader.read_u8()
-
-        length = LevelLength(length_value)
-
-        difficulty_value = reader.read_u8()
-
-        difficulty = Difficulty(difficulty_value)
-
-        value = reader.read_u8()
-
-        two_player = value & two_player_bit == two_player_bit
-        verified_coins = value & verified_coins_bit == verified_coins_bit
-        low_detail = value & low_detail_bit == low_detail_bit
-
-        rate_type_value = value & rate_type_mask
-
-        rate_type = RateType(rate_type_value)
-
-        stars = reader.read_u8()
-
-        requested_stars = reader.read_u8()
-
-        score = reader.read_u32()
-
-        password_data = Password.from_binary(binary, order, version)
-
-        original_id = reader.read_u32()
-
-        coins = reader.read_u8()
-
-        capacity = Capacity.from_binary(binary, order, version)
-
-        object_count = reader.read_u32()
-
-        editor_seconds = round(reader.read_f32(), rounding)
-        copies_seconds = round(reader.read_f32(), rounding)
-
-        editor_time = duration(seconds=editor_seconds)
-        copies_time = duration(seconds=copies_seconds)
-
-        timely_type_value = reader.read_u8()
-
-        timely_type = TimelyType(timely_type_value)
-
-        timely_id = reader.read_u16()
-
-        level = cls(
-            id=id,
-            name=name,
-            creator=creator,
-            song=song,
-            created_at=created_at,
-            updated_at=updated_at,
-            description=description,
-            version=version,
-            downloads=downloads,
-            game_version=game_version,
-            rating=rating,
-            length=length,
-            difficulty=difficulty,
-            stars=stars,
-            requested_stars=requested_stars,
-            score=score,
-            rate_type=rate_type,
-            password_data=password_data,
-            original_id=original_id,
-            two_player=two_player,
-            capacity=capacity,
-            coins=coins,
-            verified_coins=verified_coins,
-            low_detail=low_detail,
-            object_count=object_count,
-            editor_time=editor_time,
-            copies_time=copies_time,
-            timely_type=timely_type,
-            timely_id=timely_id,
-        )
-
-        level.data = data
-
-        return level
-
-    @classmethod
-    def from_model(cls: Type[L], model: LevelModel, creator: User, song: Song) -> L:
+    def from_model(cls: Type[L], model: LevelModel) -> L:
         rate_type = RateType.NOT_RATED
 
         stars = model.stars
@@ -427,7 +195,7 @@ class Level(Entity):
             stars=model.stars,
             score=model.score,
             rate_type=rate_type,
-            password_data=model.password_data,
+            password=model.password,
             created_at=model.created_at,
             updated_at=model.updated_at,
             original_id=model.original_id,
@@ -517,13 +285,6 @@ class Level(Entity):
             level.data = data
 
         return level
-
-    @property
-    def password(self) -> Optional[int]:
-        return self.password_data.password
-
-    def is_copyable(self) -> bool:
-        return self.password_data.is_copyable()
 
     def is_timely(self, timely_type: Optional[TimelyType] = None) -> bool:
         if timely_type is None:
@@ -619,7 +380,7 @@ class Level(Entity):
             stars=switch_none(stars, self.stars),
             low_detail=switch_none(low_detail, self.has_low_detail()),
             capacity=switch_none(capacity, self.capacity),
-            password=switch_none(password, self.password_data),
+            password=switch_none(password, self.password),
             recording=recording,
             editor_time=switch_none(editor_time, self.editor_time),
             copies_time=switch_none(copies_time, self.copies_time),

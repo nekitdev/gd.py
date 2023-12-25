@@ -4,14 +4,15 @@ from typing import ClassVar, Dict, Iterator, List, Optional, Type, TypeVar
 
 from attrs import frozen
 from colors import Color as ColorCore
-from funcs.composition import compose_once
 from iters.iters import iter, wrap_iter
+from typing_extensions import Self
 
-from gd.constants import DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID
+from gd.constants import DEFAULT_COLOR_1_ID, DEFAULT_COLOR_2_ID, DEFAULT_COLOR_3_ID
 from gd.converter import CONVERTER
 from gd.models_constants import COLOR_SEPARATOR
 from gd.models_utils import concat_color, split_color
 from gd.robtop import RobTop
+from gd.simple import Simple
 from gd.string_utils import tick
 
 __all__ = ("Color",)
@@ -22,7 +23,7 @@ ID_NOT_PRESENT = "color with ID {} is not present"
 
 
 @frozen(order=True)
-class Color(RobTop, ColorCore):
+class Color(RobTop, ColorCore, Simple[int]):
     ID_TO_VALUE: ClassVar[Dict[int, int]] = {
         0: 0x7DFF00,
         1: 0x00FF00,
@@ -70,45 +71,49 @@ class Color(RobTop, ColorCore):
 
     VALUE_TO_ID: ClassVar[Dict[int, int]] = {value: id for id, value in ID_TO_VALUE.items()}
 
+    @classmethod
+    def from_value(cls, value: int) -> Self:
+        return cls(value)
+
+    def to_value(self) -> int:
+        return self.value
+
     @property
     def id(self) -> Optional[int]:
         """The in-game ID of the color (if present)."""
         return self.VALUE_TO_ID.get(self.value)
 
     @classmethod
-    def from_data(cls: Type[C], data: int) -> C:
-        return cls(data)
-
-    def into_data(self) -> int:
-        return self.value
-
-    @classmethod
-    def default(cls: Type[C]) -> C:
+    def default(cls) -> Self:
         return cls.white()
 
     @classmethod
-    def default_color_1(cls: Type[C]) -> C:
+    def default_color_1(cls) -> Self:
         return cls.with_id(DEFAULT_COLOR_1_ID)
 
     @classmethod
-    def default_color_2(cls: Type[C]) -> C:
+    def default_color_2(cls) -> Self:
         return cls.with_id(DEFAULT_COLOR_2_ID)
 
     @classmethod
-    def from_robtop(cls: Type[C], string: str) -> C:
-        r, g, b = iter(split_color(string)).map(compose_once(round, float)).tuple()  # type: ignore
+    def default_color_3(cls) -> Self:
+        return cls.with_id(DEFAULT_COLOR_3_ID)
+
+    @classmethod
+    def from_robtop(cls, string: str) -> Self:
+        r, g, b = iter(split_color(string)).map(float).map(round).tuple()
 
         return cls.from_rgb(r, g, b)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return COLOR_SEPARATOR in string
 
     def to_robtop(self) -> str:
         return iter.of(self.red, self.green, self.blue).map(str).collect(concat_color)
 
     @classmethod
-    def with_id(cls: Type[C], id: int, default: Optional[C] = None) -> C:
+    def with_id(cls, id: int, default: Optional[Self] = None) -> Self:
         """Creates a [`Color`][gd.color.Color] with an in-game ID of `id`.
 
         Arguments:
@@ -129,20 +134,20 @@ class Color(RobTop, ColorCore):
 
             return default
 
-        return cls(value)
+        return cls.from_value(value)
 
     @classmethod
     @wrap_iter
-    def iter_colors(cls: Type[C]) -> Iterator[C]:
+    def iter_colors(cls) -> Iterator[Self]:
         """Returns an iterator over all in-game colors.
 
         Returns:
             An iterator over in-game colors.
         """
-        return iter(cls.VALUE_TO_ID).map(cls).unwrap()
+        return iter(cls.VALUE_TO_ID).map(cls.from_value).unwrap()
 
     @classmethod
-    def list_colors(cls: Type[C]) -> List[C]:
+    def list_colors(cls) -> List[Self]:
         """Same as [`iter_colors`][gd.color.Color.iter_colors], but returns a list.
 
         Returns:
@@ -152,11 +157,11 @@ class Color(RobTop, ColorCore):
 
 
 def dump_color(color: Color) -> int:
-    return color.value
+    return color.to_value()
 
 
 def load_color(value: int, color_type: Type[C]) -> C:
-    return color_type(value)
+    return color_type.from_value(value)
 
 
 CONVERTER.register_structure_hook(Color, load_color)

@@ -6,3 +6,4 @@ import gd
 __all__ = ("version_info", "python_version_info")
 
 version_info = get_version(gd)  # type: ignore
+"""The library version represented as a [`Version`][versions.version.Version]."""

@@ -19,7 +19,7 @@ def dump_url(url: URL) -> str:
     return url.human_repr()
 
 
-def parse_url_ignore_type(string: str, type: Type[URL]) -> URL:
+def parse_url_ignore_type(string: str, type: Type[URL]) -> URL:  # since URLs can not be derived
     return URL(string)
 
 

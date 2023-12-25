@@ -1,12 +1,11 @@
-from typing import Dict, Type, TypeVar
+from typing import Dict
 
 from attrs import define, field
 from iters.iters import iter
 from typing_aliases import StringDict, StringMapping
+from typing_extensions import Self
 
 from gd.api.database.common import NONE, ONE, VALUE_TO_COLLECTED_COINS
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
 from gd.constants import (
     DEFAULT_ATTEMPTS,
     DEFAULT_DEMONS,
@@ -23,7 +22,7 @@ from gd.constants import (
     DEFAULT_STARS,
     DEFAULT_USER_COINS,
 )
-from gd.enums import ByteOrder, CollectedCoins
+from gd.enums import CollectedCoins
 from gd.models_utils import concat_name, parse_get_or, split_name
 
 __all__ = ("Statistics",)
@@ -57,11 +56,9 @@ DEFAULT_CHAMBER_COIN = False
 
 UNIQUE = "unique"
 
-S = TypeVar("S", bound="Statistics")
-
 
 @define()
-class Statistics(Binary):
+class Statistics:
     jumps: int = field(default=DEFAULT_JUMPS)
     attempts: int = field(default=DEFAULT_ATTEMPTS)
     official_levels: int = field(default=DEFAULT_LEVELS)
@@ -92,7 +89,7 @@ class Statistics(Binary):
     official_coins: Dict[int, CollectedCoins] = field(factory=dict)
 
     @classmethod
-    def from_robtop_data(cls: Type[S], data: StringMapping[str]) -> S:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[str]) -> Self:
         jumps = parse_get_or(int, DEFAULT_JUMPS, data.get(JUMPS))
         attempts = parse_get_or(int, DEFAULT_ATTEMPTS, data.get(ATTEMPTS))
 
@@ -217,111 +214,3 @@ class Statistics(Binary):
                     data[name] = one
 
         return data
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u32(self.jumps)
-        writer.write_u32(self.attempts)
-        writer.write_u8(self.official_levels)
-        writer.write_u32(self.normal_levels)
-        writer.write_u16(self.demons)
-        writer.write_u32(self.stars)
-        writer.write_u16(self.map_packs)
-        writer.write_u16(self.secret_coins)
-        writer.write_u32(self.destroyed)
-        writer.write_u32(self.liked)
-        writer.write_u32(self.rated)
-        writer.write_u32(self.user_coins)
-        writer.write_u32(self.diamonds)
-        writer.write_u32(self.orbs)
-        writer.write_u32(self.timely_levels)
-        writer.write_u16(self.fire_shards)
-        writer.write_u16(self.ice_shards)
-        writer.write_u16(self.poison_shards)
-        writer.write_u16(self.shadow_shards)
-        writer.write_u16(self.lava_shards)
-        writer.write_u16(self.bonus_shards)
-        writer.write_u32(self.total_orbs)
-
-        write_u8 = writer.write_u8
-        write_u16 = writer.write_u16
-
-        official_coins = self.official_coins
-
-        write_u16(len(official_coins))
-
-        for level_id, collected_coins in official_coins.items():
-            write_u16(level_id)
-            write_u8(collected_coins.value)
-
-    @classmethod
-    def from_binary(
-        cls: Type[S],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> S:
-        reader = Reader(binary, order)
-
-        jumps = reader.read_u32()
-        attempts = reader.read_u32()
-        official_levels = reader.read_u8()
-        normal_levels = reader.read_u32()
-        demons = reader.read_u16()
-        stars = reader.read_u32()
-        map_packs = reader.read_u16()
-        secret_coins = reader.read_u16()
-        destroyed = reader.read_u32()
-        liked = reader.read_u32()
-        rated = reader.read_u32()
-        user_coins = reader.read_u32()
-        diamonds = reader.read_u32()
-        orbs = reader.read_u32()
-        timely_levels = reader.read_u32()
-        fire_shards = reader.read_u16()
-        ice_shards = reader.read_u16()
-        poison_shards = reader.read_u16()
-        shadow_shards = reader.read_u16()
-        lava_shards = reader.read_u16()
-        bonus_shards = reader.read_u16()
-        total_orbs = reader.read_u32()
-
-        collected_coins = CollectedCoins
-
-        official_coins_length = reader.read_u16()
-
-        read_u8 = reader.read_u8
-        read_u16 = reader.read_u16
-
-        official_coins = {
-            read_u16(): collected_coins(read_u8()) for _ in range(official_coins_length)
-        }
-
-        return cls(
-            jumps=jumps,
-            attempts=attempts,
-            official_levels=official_levels,
-            normal_levels=normal_levels,
-            demons=demons,
-            stars=stars,
-            map_packs=map_packs,
-            secret_coins=secret_coins,
-            destroyed=destroyed,
-            liked=liked,
-            rated=rated,
-            user_coins=user_coins,
-            diamonds=diamonds,
-            orbs=orbs,
-            timely_levels=timely_levels,
-            fire_shards=fire_shards,
-            ice_shards=ice_shards,
-            poison_shards=poison_shards,
-            shadow_shards=shadow_shards,
-            lava_shards=lava_shards,
-            bonus_shards=bonus_shards,
-            total_orbs=total_orbs,
-            official_coins=official_coins,
-        )

@@ -126,8 +126,8 @@ from gd.models_utils import bool_str
 from gd.password import Password
 from gd.progress import Progress
 from gd.string_utils import concat_comma, password_str, snake_to_camel_with_abbreviations, tick
-from gd.timer import now
-from gd.typing import AnyString, IntString, MaybeIterable, URLString, is_iterable
+from gd.time import Timer
+from gd.typing import AnyString, IntString, URLString
 from gd.version import python_version_info, version_info
 from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, RobTopVersion
 
@@ -135,8 +135,8 @@ __all__ = ("Route", "HTTPClient")
 
 DATABASE = "database"
 
-BASE = "http://www.boomlings.com/database"
-GD_BASE = "http://geometrydash.com/database"
+BASE = "https://www.boomlings.com/database"
+GD_BASE = "https://geometrydash.com/database"
 
 NEWGROUNDS_SONG = "https://newgrounds.com/audio/listen/{}"
 NEWGROUNDS_SONG_PAGE = "https://{}.newgrounds.com/audio/page/{}"
@@ -501,9 +501,15 @@ MESSAGES = "messages"
 FRIEND_REQUESTS = "friend_requests"
 LEVEL_COMMENTS = "level_comments"
 
+GD = "GD"
+ONE = str(1)
+
+NO_SESSION = "`session` is not attached to the HTTP client"
+
 
 @define()
 class HTTPClient:
+    COOKIES: ClassVar[Mapping[str, str]] = {GD: ONE}
     SKIP_HEADERS: ClassVar[DynamicTuple[str]] = (ACCEPT_ENCODING, USER_AGENT)
 
     USER_AGENT: ClassVar[str] = DEFAULT_USER_AGENT.format(python_version_info, version_info)
@@ -518,13 +524,22 @@ class HTTPClient:
     forwarded_for: Optional[str] = field(default=None, repr=False)
     send_user_agent: bool = field(default=DEFAULT_SEND_USER_AGENT, repr=False)
 
-    _session: Optional[ClientSession] = field(default=None, repr=False, init=False)
+    session_unchecked: Optional[ClientSession] = field(default=None, repr=False, init=False)
 
     def __attrs_post_init__(self) -> None:
         add_client(self)
 
     def __hash__(self) -> int:
         return id(self)
+
+    @property
+    def session(self) -> ClientSession:
+        session = self.session_unchecked
+
+        if session is None:
+            raise ClientError
+
+        return session
 
     def change(self: C, **attributes: Any) -> HTTPClientContextManager[C]:
         return HTTPClientContextManager(self, attributes)
@@ -533,7 +548,7 @@ class HTTPClient:
         return ClientTimeout(total=self.timeout)
 
     async def close(self) -> None:
-        session = self._session
+        session = self.session_unchecked
 
         if session is not None:
             await session.close()
@@ -881,7 +896,7 @@ class HTTPClient:
         return int(self.gd_world)
 
     async def ping(self, url: URLString) -> Duration:
-        timer = now()
+        timer = Timer()
 
         try:
             await self.request(GET, url, read=False)
@@ -1022,7 +1037,7 @@ class HTTPClient:
         friend_request_state: FriendRequestState,
         comment_state: CommentState,
         youtube: Optional[str],
-        twitter: Optional[str],
+        x: Optional[str],
         twitch: Optional[str],
         # discord: Optional[str],
         *,
@@ -1034,8 +1049,8 @@ class HTTPClient:
         if youtube is None:
             youtube = EMPTY
 
-        if twitter is None:
-            twitter = EMPTY
+        if x is None:
+            x = EMPTY
 
         if twitch is None:
             twitch = EMPTY
@@ -1053,7 +1068,7 @@ class HTTPClient:
             fr_s=friend_request_state.value,
             c_s=comment_state.value,
             yt=youtube,
-            twitter=twitter,
+            twitter=x,
             twitch=twitch,
             # discord=discord,
             to_camel=True,
@@ -1088,7 +1103,7 @@ class HTTPClient:
         *,
         account_id: int,
         name: str,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {
             -1: MissingAccess(FAILED_TO_UPDATE_PROFILE.format(account_id)),
@@ -1144,7 +1159,7 @@ class HTTPClient:
             color2=color_2_id,
             user_name=name,
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             seed=random_string,
             seed2=check,
             secret=Secret.MAIN.value,
