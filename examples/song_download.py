@@ -58,4 +58,3 @@ def main() -> None:
 
     except KeyboardInterrupt:
         print(EXITING)
-

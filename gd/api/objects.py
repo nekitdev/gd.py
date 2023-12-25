@@ -1,7 +1,6 @@
 from abc import abstractmethod as required
 from builtins import hasattr as has_attribute
 from enum import Enum, Flag
-from io import BytesIO
 from typing import Dict, Iterable, Iterator, Mapping, Optional, Tuple, Type, TypeVar, Union
 
 from attrs import define, field
@@ -24,14 +23,10 @@ from gd.api.color_channels import (
     SECONDARY_GROUND_COLOR_ID,
 )
 from gd.api.hsv import HSV
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_constants import BITS, BYTE, HALF_BITS, HALF_BYTE
-from gd.binary_utils import Reader, Writer
 from gd.color import Color
-from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, DEFAULT_ID, DEFAULT_ROUNDING, EMPTY
+from gd.constants import BYTE, DEFAULT_ID, EMPTY
 from gd.encoding import decode_base64_string_url_safe, encode_base64_string_url_safe
 from gd.enums import (
-    ByteOrder,
     CoinType,
     Easing,
     GameMode,
@@ -123,11 +118,6 @@ __all__ = (
     "is_trigger",
     "has_target_group",
     "has_additional_group",
-    # conversion
-    "object_from_binary",
-    "object_to_binary",
-    "object_from_bytes",
-    "object_to_bytes",
     # migration
     "migrate_objects",
 )
@@ -268,7 +258,7 @@ class ObjectFlag(Flag):
 G = TypeVar("G", bound="Groups")
 
 
-class Groups(OrderedSet[int], Binary, RobTop):
+class Groups(OrderedSet[int], RobTop):
     @classmethod
     def from_robtop(cls: Type[G], string: str) -> G:
         return iter(split_groups(string)).map(int).collect(cls)
@@ -277,32 +267,7 @@ class Groups(OrderedSet[int], Binary, RobTop):
         return iter(self).map(str).collect(concat_groups)
 
     @classmethod
-    def from_binary(
-        cls: Type[G],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> G:
-        reader = Reader(binary, order)
-
-        length = reader.read_u16()
-
-        return iter.repeat_exactly_with(reader.read_u16, length).collect(cls)
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u16(len(self))
-
-        iter(self).for_each(writer.write_u16)
-
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    def can_be_in(cls, string: str) -> bool:
         return GROUPS_SEPARATOR in string
 
 
@@ -336,18 +301,6 @@ DEFAULT_SPECIAL_CHECKED = False
 DEFAULT_UNKNOWN = False
 
 
-H_FLIPPED_BIT = 0b00000001
-V_FLIPPED_BIT = 0b00000010
-DO_NOT_FADE_BIT = 0b00000100
-DO_NOT_ENTER_BIT = 0b00001000
-GROUP_PARENT_BIT = 0b00010000
-HIGH_DETAIL_BIT = 0b00100000
-DISABLE_GLOW_BIT = 0b01000000
-SPECIAL_CHECKED_BIT = 0b10000000
-
-UNKNOWN_BIT = 0b00000001
-
-
 OBJECT_STRING = "{object_type} (ID: {object.id}) at ({object.x}, {object.y})"
 object_string = OBJECT_STRING.format
 
@@ -355,7 +308,7 @@ O = TypeVar("O", bound="Object")
 
 
 @define()
-class Object(Binary, RobTop):
+class Object(RobTop):
     id: int = field()
     x: float = field(default=DEFAULT_X)
     y: float = field(default=DEFAULT_Y)
@@ -395,246 +348,6 @@ class Object(Binary, RobTop):
     link_id: int = field(default=DEFAULT_ID)
 
     unknown: bool = field(default=DEFAULT_UNKNOWN)
-
-    @classmethod
-    def from_binary(
-        cls: Type[O],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> O:
-        rounding = DEFAULT_ROUNDING
-
-        h_flipped_bit = H_FLIPPED_BIT
-        v_flipped_bit = V_FLIPPED_BIT
-        do_not_fade_bit = DO_NOT_FADE_BIT
-        do_not_enter_bit = DO_NOT_ENTER_BIT
-        group_parent_bit = GROUP_PARENT_BIT
-        high_detail_bit = HIGH_DETAIL_BIT
-        disable_glow_bit = DISABLE_GLOW_BIT
-        special_checked_bit = SPECIAL_CHECKED_BIT
-
-        unknown_bit = UNKNOWN_BIT
-
-        reader = Reader(binary, order)
-
-        flag_value = reader.read_u8()
-
-        flag = ObjectFlag(flag_value)
-
-        id = reader.read_u16()
-
-        x = round(reader.read_f32(), rounding)
-        y = round(reader.read_f32(), rounding)
-
-        value = reader.read_u8()
-
-        h_flipped = value & h_flipped_bit == h_flipped_bit
-        v_flipped = value & v_flipped_bit == v_flipped_bit
-        do_not_fade = value & do_not_fade_bit == do_not_fade_bit
-        do_not_enter = value & do_not_enter_bit == do_not_enter_bit
-        group_parent = value & group_parent_bit == group_parent_bit
-        high_detail = value & high_detail_bit == high_detail_bit
-        disable_glow = value & disable_glow_bit == disable_glow_bit
-        special_checked = value & special_checked_bit == special_checked_bit
-
-        if flag.has_rotation_and_scale():
-            rotation = round(reader.read_f32(), rounding)
-            scale = round(reader.read_f32(), rounding)
-
-        else:
-            rotation = DEFAULT_ROTATION
-            scale = DEFAULT_SCALE
-
-        if flag.has_z():
-            z_layer = reader.read_i8()
-            z_order = reader.read_i16()
-
-        else:
-            z_layer = DEFAULT_Z_LAYER
-            z_order = DEFAULT_Z_ORDER
-
-        if flag.has_editor_layer():
-            base_editor_layer = reader.read_u16()
-            additional_editor_layer = reader.read_u16()
-
-        else:
-            base_editor_layer = DEFAULT_BASE_EDITOR_LAYER
-            additional_editor_layer = DEFAULT_ADDITIONAL_EDITOR_LAYER
-
-        if flag.has_colors():
-            base_color_id = reader.read_u16()
-            detail_color_id = reader.read_u16()
-
-            base_color_hsv = HSV.from_binary(binary, order, version)
-            detail_color_hsv = HSV.from_binary(binary, order, version)
-
-        else:
-            base_color_id = DEFAULT_ID
-            detail_color_id = DEFAULT_ID
-
-            base_color_hsv = HSV()
-            detail_color_hsv = HSV()
-
-        if flag.has_groups():
-            groups = Groups.from_binary(binary, order, version)
-
-        else:
-            groups = Groups()
-
-        if flag.has_link():
-            link_id = reader.read_u16()
-
-        else:
-            link_id = DEFAULT_ID
-
-        value = reader.read_u8()
-
-        unknown = value & unknown_bit == unknown_bit
-
-        return cls(
-            id=id,
-            x=x,
-            y=y,
-            rotation=rotation,
-            scale=scale,
-            h_flipped=h_flipped,
-            v_flipped=v_flipped,
-            do_not_fade=do_not_fade,
-            do_not_enter=do_not_enter,
-            z_layer=z_layer,
-            z_order=z_order,
-            base_editor_layer=base_editor_layer,
-            additional_editor_layer=additional_editor_layer,
-            base_color_id=base_color_id,
-            detail_color_id=detail_color_id,
-            base_color_hsv=base_color_hsv,
-            detail_color_hsv=detail_color_hsv,
-            groups=groups,
-            group_parent=group_parent,
-            high_detail=high_detail,
-            disable_glow=disable_glow,
-            special_checked=special_checked,
-            link_id=link_id,
-            unknown=unknown,
-        )
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        flag = ObjectFlag.SIMPLE
-
-        rotation = self.rotation
-        scale = self.scale
-
-        if rotation or scale != DEFAULT_SCALE:
-            flag |= ObjectFlag.HAS_ROTATION_AND_SCALE
-
-        z_layer = self.z_layer
-        z_order = self.z_order
-
-        if z_layer or z_order:
-            flag |= ObjectFlag.HAS_Z
-
-        base_editor_layer = self.base_editor_layer
-        additional_editor_layer = self.additional_editor_layer
-
-        if base_editor_layer or additional_editor_layer:
-            flag |= ObjectFlag.HAS_EDITOR_LAYER
-
-        base_color_id = self.base_color_id
-        detail_color_id = self.detail_color_id
-
-        base_color_hsv = self.base_color_hsv
-        detail_color_hsv = self.detail_color_hsv
-
-        if (
-            base_color_id
-            or detail_color_id
-            or not base_color_hsv.is_default()
-            or not detail_color_hsv.is_default()
-        ):
-            flag |= ObjectFlag.HAS_COLORS
-
-        groups = self.groups
-
-        if groups:
-            flag |= ObjectFlag.HAS_GROUPS
-
-        link_id = self.link_id
-
-        if link_id:
-            flag |= ObjectFlag.HAS_LINK
-
-        writer.write_u8(flag.value)
-
-        writer.write_u16(self.id)
-
-        writer.write_f32(self.x)
-        writer.write_f32(self.y)
-
-        value = 0
-
-        if self.is_h_flipped():
-            value |= H_FLIPPED_BIT
-
-        if self.is_v_flipped():
-            value |= V_FLIPPED_BIT
-
-        if self.has_do_not_fade():
-            value |= DO_NOT_FADE_BIT
-
-        if self.has_do_not_enter():
-            value |= DO_NOT_ENTER_BIT
-
-        if self.is_group_parent():
-            value |= GROUP_PARENT_BIT
-
-        if self.is_high_detail():
-            value |= HIGH_DETAIL_BIT
-
-        if self.has_disable_glow():
-            value |= DISABLE_GLOW_BIT
-
-        if self.is_special_checked():
-            value |= SPECIAL_CHECKED_BIT
-
-        writer.write_u8(value)
-
-        if flag.has_rotation_and_scale():
-            writer.write_f32(self.rotation)
-            writer.write_f32(self.scale)
-
-        if flag.has_z():
-            writer.write_i8(self.z_layer)
-
-            writer.write_i16(self.z_order)
-
-        if flag.has_editor_layer():
-            writer.write_u16(base_editor_layer)
-            writer.write_u16(additional_editor_layer)
-
-        if flag.has_colors():
-            writer.write_u16(base_color_id)
-            writer.write_u16(detail_color_id)
-
-            base_color_hsv.to_binary(binary, order, version)
-            detail_color_hsv.to_binary(binary, order, version)
-
-        if flag.has_groups():
-            self.groups.to_binary(binary, order, version)
-
-        if flag.has_link():
-            writer.write_u16(link_id)
-
-        value = 0
-
-        if self.is_unknown():
-            value |= UNKNOWN_BIT
-
-        writer.write_u8(value)
 
     @classmethod
     def from_robtop(cls: Type[O], string: str) -> O:
@@ -853,8 +566,8 @@ class Object(Binary, RobTop):
 
         return data
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return OBJECT_SEPARATOR in string
 
     def is_h_flipped(self) -> bool:
@@ -980,11 +693,6 @@ DEFAULT_START_POSITION_DUAL_MODE = False
 DEFAULT_START_POSITION_FLIP_GRAVITY = False
 
 
-START_POSITION_MINI_MODE_BIT = 0b00000001
-START_POSITION_DUAL_MODE_BIT = 0b00000010
-START_POSITION_FLIP_GRAVITY_BIT = 0b00000100
-
-
 SP = TypeVar("SP", bound="StartPosition")
 
 SPECIAL_HANDLING = (
@@ -999,70 +707,6 @@ class StartPosition(Object):
     speed: Speed = field(default=Speed.DEFAULT)
     dual_mode: bool = field(default=DEFAULT_START_POSITION_DUAL_MODE)
     flip_gravity: bool = field(default=DEFAULT_START_POSITION_FLIP_GRAVITY)
-
-    @classmethod
-    def from_binary(
-        cls: Type[SP],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> SP:
-        start_position = super().from_binary(binary, order, version)
-
-        start_position_mini_mode_bit = START_POSITION_MINI_MODE_BIT
-        start_position_dual_mode_bit = START_POSITION_DUAL_MODE_BIT
-        start_position_flip_gravity_bit = START_POSITION_FLIP_GRAVITY_BIT
-
-        reader = Reader(binary, order)
-
-        value = reader.read_u8()
-
-        speed = Speed(value & HALF_BYTE)
-
-        value >>= HALF_BITS
-
-        game_mode = GameMode(value)
-
-        value = reader.read_u8()
-
-        mini_mode = value & start_position_mini_mode_bit == start_position_mini_mode_bit
-        dual_mode = value & start_position_dual_mode_bit == start_position_dual_mode_bit
-        flip_gravity = value & start_position_flip_gravity_bit == start_position_flip_gravity_bit
-
-        start_position.game_mode = game_mode
-        start_position.mini_mode = mini_mode
-        start_position.speed = speed
-        start_position.dual_mode = dual_mode
-        start_position.flip_gravity = flip_gravity
-
-        return start_position
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        value = (self.game_mode.value << HALF_BITS) | self.speed.value
-
-        writer.write_u8(value)
-
-        value = 0
-
-        if self.is_mini_mode():
-            value |= START_POSITION_MINI_MODE_BIT
-
-        if self.is_dual_mode():
-            value |= START_POSITION_DUAL_MODE_BIT
-
-        if self.is_flip_gravity():
-            value |= START_POSITION_FLIP_GRAVITY_BIT
-
-        writer.write_u8(value)
 
     @classmethod
     def from_robtop(cls: Type[SP], string: str) -> SP:
@@ -1158,32 +802,6 @@ class SecretCoin(Object):
     coin_id: int = DEFAULT_ID
 
     @classmethod
-    def from_binary(
-        cls: Type[SC],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> SC:
-        coin = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        coin_id = reader.read_u8()
-
-        coin.coin_id = coin_id
-
-        return coin
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u8(self.coin_id)
-
-    @classmethod
     def from_robtop_data(cls: Type[SC], data: Mapping[int, str]) -> SC:
         coin = super().from_robtop_data(data)
 
@@ -1201,9 +819,6 @@ class SecretCoin(Object):
         return data
 
 
-DISABLE_ROTATION_BIT = 0b00000001
-
-
 DEFAULT_ROTATION_SPEED = 0.0
 DEFAULT_DISABLE_ROTATION = False
 
@@ -1215,51 +830,6 @@ RO = TypeVar("RO", bound="RotatingObject")
 class RotatingObject(Object):
     rotation_speed: float = DEFAULT_ROTATION_SPEED
     disable_rotation: bool = DEFAULT_DISABLE_ROTATION
-
-    @classmethod
-    def from_binary(
-        cls: Type[RO],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> RO:
-        rounding = DEFAULT_ROUNDING
-
-        rotating_object = super().from_binary(binary, order, version)
-
-        disable_rotation_bit = DISABLE_ROTATION_BIT
-
-        reader = Reader(binary, order)
-
-        rotation_speed = round(reader.read_f32(), rounding)
-
-        value = reader.read_u8()
-
-        disable_rotation = value & disable_rotation_bit == disable_rotation_bit
-
-        rotating_object.rotation_speed = rotation_speed
-        rotating_object.disable_rotation = disable_rotation
-
-        return rotating_object
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_f32(self.rotation_speed)
-
-        value = 0
-
-        if self.is_disable_rotation():
-            value |= DISABLE_ROTATION_BIT
-
-        writer.write_u8(value)
 
     def is_disable_rotation(self) -> bool:
         return self.disable_rotation
@@ -1303,45 +873,6 @@ class Text(Object):
     content: str = EMPTY
 
     @classmethod
-    def from_binary(
-        cls: Type[S],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> S:
-        text = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        length = reader.read_u16()
-
-        content = reader.read(length).decode(encoding, errors)
-
-        text.content = content
-
-        return text
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        data = self.content.encode(encoding, errors)
-
-        writer.write_u16(len(data))
-
-        writer.write(data)
-
-    @classmethod
     def from_robtop_data(cls: Type[S], data: Mapping[int, str]) -> S:
         text = super().from_robtop_data(data)
 
@@ -1361,9 +892,6 @@ class Text(Object):
         return data
 
 
-SMOOTH_BIT = 0b00000001
-
-
 DEFAULT_SMOOTH = False
 DEFAULT_PORTAL_OFFSET = 100.0
 
@@ -1375,48 +903,6 @@ P = TypeVar("P", bound="Teleport")
 class Teleport(Object):
     portal_offset: float = DEFAULT_PORTAL_OFFSET
     smooth: bool = DEFAULT_SMOOTH
-
-    @classmethod
-    def from_binary(
-        cls: Type[P],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> P:
-        rounding = DEFAULT_ROUNDING
-
-        smooth_bit = SMOOTH_BIT
-
-        teleport = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        portal_offset = round(reader.read_f32(), rounding)
-
-        value = reader.read_u8()
-
-        smooth = value & smooth_bit == smooth_bit
-
-        teleport.portal_offset = portal_offset
-        teleport.smooth = smooth
-
-        return teleport
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_f32(self.portal_offset)
-
-        value = 0
-
-        if self.is_smooth():
-            value |= SMOOTH_BIT
-
-        writer.write_u8(value)
 
     @classmethod
     def from_robtop_data(cls: Type[P], data: Mapping[int, str]) -> P:
@@ -1450,8 +936,6 @@ class Teleport(Object):
 DEFAULT_RANDOMIZE_START = False
 DEFAULT_ANIMATION_SPEED = 1.0
 
-RANDOMIZE_START_BIT = 0b00000001
-
 
 PO = TypeVar("PO", bound="PulsatingObject")
 
@@ -1460,49 +944,6 @@ PO = TypeVar("PO", bound="PulsatingObject")
 class PulsatingObject(Object):
     randomize_start: bool = DEFAULT_RANDOMIZE_START
     animation_speed: float = DEFAULT_ANIMATION_SPEED
-
-    @classmethod
-    def from_binary(
-        cls: Type[PO],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> PO:
-        rounding = DEFAULT_ROUNDING
-
-        randomize_start_bit = RANDOMIZE_START_BIT
-
-        pulsating_object = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        animation_speed = round(reader.read_f32(), rounding)
-
-        value = reader.read_u8()
-
-        randomize_start = value & randomize_start_bit == randomize_start_bit
-
-        pulsating_object.randomize_start = randomize_start
-
-        pulsating_object.animation_speed = animation_speed
-
-        return pulsating_object
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_f32(self.animation_speed)
-
-        value = 0
-
-        if self.is_randomize_start():
-            value |= RANDOMIZE_START_BIT
-
-        writer.write_u8(value)
 
     @classmethod
     def from_robtop_data(cls: Type[PO], data: Mapping[int, str]) -> PO:
@@ -1533,10 +974,6 @@ class PulsatingObject(Object):
         return self.randomize_start
 
 
-DYNAMIC_BIT = 0b10000000_00000000
-BLOCK_ID_MASK = 0b01111111_11111111
-
-
 DEFAULT_DYNAMIC = False
 
 
@@ -1547,43 +984,6 @@ CB = TypeVar("CB", bound="CollisionBlock")
 class CollisionBlock(Object):
     block_id: int = DEFAULT_ID
     dynamic: bool = DEFAULT_DYNAMIC
-
-    @classmethod
-    def from_binary(
-        cls: Type[CB],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> CB:
-        dynamic_bit = DYNAMIC_BIT
-
-        collision_block = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        value = reader.read_u16()
-
-        block_id = value & BLOCK_ID_MASK
-        dynamic = value & dynamic_bit == dynamic_bit
-
-        collision_block.block_id = block_id
-        collision_block.dynamic = dynamic
-
-        return collision_block
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        value = self.block_id & BLOCK_ID_MASK
-
-        if self.is_dynamic():
-            value |= DYNAMIC_BIT
-
-        writer.write_u16(value)
 
     @classmethod
     def from_robtop_data(cls: Type[CB], data: Mapping[int, str]) -> CB:
@@ -1614,9 +1014,6 @@ class CollisionBlock(Object):
         return self.dynamic
 
 
-MULTI_ACTIVATE_BIT = 0b00000010
-
-
 DEFAULT_MULTI_ACTIVATE = False
 
 
@@ -1629,41 +1026,6 @@ class Orb(Object):
 
     def is_multi_activate(self) -> bool:
         return self.multi_activate
-
-    @classmethod
-    def from_binary(
-        cls: Type[OP],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> OP:
-        orb = super().from_binary(binary, order, version)
-
-        multi_activate_bit = MULTI_ACTIVATE_BIT
-
-        reader = Reader(binary, order)
-
-        value = reader.read_u8()
-
-        multi_activate = value & multi_activate_bit == multi_activate_bit
-
-        orb.multi_activate = multi_activate
-
-        return orb
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        value = 0
-
-        if self.is_multi_activate():
-            value |= MULTI_ACTIVATE_BIT
-
-        writer.write_u8(value)
 
     @classmethod
     def from_robtop_data(cls: Type[OP], data: Mapping[int, str]) -> OP:
@@ -1704,53 +1066,6 @@ class TriggerOrb(Orb):
         return self.activate_group
 
     @classmethod
-    def from_binary(
-        cls: Type[TO],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> TO:
-        activate_group_bit = ACTIVATE_GROUP_BIT
-        multi_activate_bit = MULTI_ACTIVATE_BIT
-
-        trigger_orb = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        value = reader.read_u8()
-
-        activate_group = value & activate_group_bit == activate_group_bit
-        multi_activate = value & multi_activate_bit == multi_activate_bit
-
-        target_group_id = reader.read_u16()
-
-        trigger_orb.activate_group = activate_group
-        trigger_orb.multi_activate = multi_activate
-
-        trigger_orb.target_group_id = target_group_id
-
-        return trigger_orb
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        value = 0
-
-        if self.is_activate_group():
-            value |= ACTIVATE_GROUP_BIT
-
-        if self.is_multi_activate():
-            value |= MULTI_ACTIVATE_BIT
-
-        writer.write_u8(value)
-
-        writer.write_u16(self.target_group_id)
-
-    @classmethod
     def from_robtop_data(cls: Type[TO], data: Mapping[int, str]) -> TO:
         trigger_orb = super().from_robtop_data(data)
 
@@ -1783,32 +1098,6 @@ IC = TypeVar("IC", bound="ItemCounter")
 @define()
 class ItemCounter(Object):
     item_id: int = DEFAULT_ID
-
-    @classmethod
-    def from_binary(
-        cls: Type[IC],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> IC:
-        item_counter = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        item_id = reader.read_u16()
-
-        item_counter.item_id = item_id
-
-        return item_counter
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.item_id)
 
     @classmethod
     def from_robtop_data(cls: Type[IC], data: Mapping[int, str]) -> IC:
@@ -1844,47 +1133,6 @@ class ToggleItem(Object):
         return self.activate_group
 
     @classmethod
-    def from_binary(
-        cls: Type[TI],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> TI:
-        activate_group_bit = ACTIVATE_GROUP_BIT
-
-        toggle_item = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        value = reader.read_u8()
-
-        activate_group = value & activate_group_bit == activate_group_bit
-
-        target_group_id = reader.read_u16()
-
-        toggle_item.activate_group = activate_group
-
-        toggle_item.target_group_id = target_group_id
-
-        return toggle_item
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        value = 0
-
-        if self.is_activate_group():
-            value |= ACTIVATE_GROUP_BIT
-
-        writer.write_u8(value)
-
-        writer.write_u16(self.target_group_id)
-
-    @classmethod
     def from_robtop_data(cls: Type[TI], data: Mapping[int, str]) -> TI:
         toggle_item = super().from_robtop_data(data)
 
@@ -1904,8 +1152,6 @@ class ToggleItem(Object):
         return data
 
 
-SUBTRACT_COUNT_BIT = 0b00000001
-
 DEFAULT_SUBTRACT_COUNT = False
 
 
@@ -1920,47 +1166,6 @@ class PickupItem(Object):
 
     def is_subtract_count(self) -> bool:
         return self.subtract_count
-
-    @classmethod
-    def from_binary(
-        cls: Type[PI],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> PI:
-        subtract_count_bit = SUBTRACT_COUNT_BIT
-
-        pickup_item = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        value = reader.read_u8()
-
-        subtract_count = value & subtract_count_bit == subtract_count_bit
-
-        item_id = reader.read_u16()
-
-        pickup_item.subtract_count = subtract_count
-
-        pickup_item.item_id = item_id
-
-        return pickup_item
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        value = 0
-
-        if self.is_subtract_count():
-            value |= SUBTRACT_COUNT_BIT
-
-        writer.write_u8(value)
-
-        writer.write_u16(self.item_id)
 
     @classmethod
     def from_robtop_data(cls: Type[PI], data: Mapping[int, str]) -> PI:
@@ -1994,11 +1199,6 @@ class PickupItem(Object):
 Item = Union[PickupItem, ToggleItem]
 
 
-TOUCH_TRIGGERED_BIT = 0b00000001
-SPAWN_TRIGGERED_BIT = 0b00000010
-MULTI_TRIGGER_BIT = 0b00000100
-
-
 DEFAULT_TOUCH_TRIGGERED = False
 DEFAULT_SPAWN_TRIGGERED = False
 DEFAULT_MULTI_TRIGGER = False
@@ -2012,53 +1212,6 @@ class Trigger(Object):
     touch_triggered: bool = DEFAULT_TOUCH_TRIGGERED
     spawn_triggered: bool = DEFAULT_SPAWN_TRIGGERED
     multi_trigger: bool = DEFAULT_MULTI_TRIGGER
-
-    @classmethod
-    def from_binary(
-        cls: Type[T],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> T:
-        touch_triggered_bit = TOUCH_TRIGGERED_BIT
-        spawn_triggered_bit = SPAWN_TRIGGERED_BIT
-        multi_trigger_bit = MULTI_TRIGGER_BIT
-
-        trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        value = reader.read_u8()
-
-        touch_triggered = value & touch_triggered_bit == touch_triggered_bit
-        spawn_triggered = value & spawn_triggered_bit == spawn_triggered_bit
-        multi_trigger = value & multi_trigger_bit == multi_trigger_bit
-
-        trigger.touch_triggered = touch_triggered
-        trigger.spawn_triggered = spawn_triggered
-        trigger.multi_trigger = multi_trigger
-
-        return trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        value = 0
-
-        if self.is_touch_triggered():
-            value |= TOUCH_TRIGGERED_BIT
-
-        if self.is_spawn_triggered():
-            value |= SPAWN_TRIGGERED_BIT
-
-        if self.is_multi_trigger():
-            value |= MULTI_TRIGGER_BIT
-
-        writer.write_u8(value)
 
     def is_trigger(self) -> Literal[True]:
         return True
@@ -2120,40 +1273,6 @@ class BaseColorTrigger(Trigger):
     duration: float = DEFAULT_DURATION
 
     @classmethod
-    def from_binary(
-        cls: Type[BCT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> BCT:
-        rounding = DEFAULT_ROUNDING
-
-        base_color_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        target_color_id = reader.read_u16()
-
-        duration = round(reader.read_f32(), rounding)
-
-        base_color_trigger.target_color_id = target_color_id
-
-        base_color_trigger.duration = duration
-
-        return base_color_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.target_color_id)
-
-        writer.write_f32(self.duration)
-
-    @classmethod
     def from_robtop_data(cls: Type[BCT], data: Mapping[int, str]) -> BCT:
         base_color_trigger = super().from_robtop_data(data)
 
@@ -2175,11 +1294,6 @@ class BaseColorTrigger(Trigger):
         data[DURATION] = float_str(self.duration)
 
         return data
-
-
-BLENDING_BIT = 0b00000001
-PLAYER_COLOR_MASK = 0b00000110
-PLAYER_COLOR_SHIFT = BLENDING_BIT.bit_length()
 
 
 DEFAULT_PLAYER_COLOR_1 = False
@@ -2215,57 +1329,6 @@ class PlayerColorTrigger(BaseColorTrigger):
 
     def is_blending(self) -> bool:
         return self.blending
-
-    @classmethod
-    def from_binary(
-        cls: Type[PLCT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> PLCT:
-        rounding = DEFAULT_ROUNDING
-
-        blending_bit = BLENDING_BIT
-
-        player_color_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        value = reader.read_u8()
-
-        blending = value & blending_bit == blending_bit
-
-        player_color_value = (value & PLAYER_COLOR_MASK) >> PLAYER_COLOR_SHIFT
-
-        player_color = PlayerColor(player_color_value)
-
-        opacity = round(reader.read_f32(), rounding)
-
-        player_color_trigger.blending = blending
-
-        player_color_trigger.player_color = player_color
-
-        player_color_trigger.opacity = opacity
-
-        return player_color_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        value = 0
-
-        if self.is_blending():
-            value |= BLENDING_BIT
-
-        value |= self.player_color.value << PLAYER_COLOR_SHIFT
-
-        writer.write_u8(value)
-
-        writer.write_f32(self.opacity)
 
     @classmethod
     def from_robtop_data(cls: Type[PLCT], data: Mapping[int, str]) -> PLCT:
@@ -2330,55 +1393,6 @@ class NormalColorTrigger(BaseColorTrigger):
         return self.blending
 
     @classmethod
-    def from_binary(
-        cls: Type[NCT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> NCT:
-        rounding = DEFAULT_ROUNDING
-
-        blending_bit = BLENDING_BIT
-
-        normal_color_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        value = reader.read_u32()
-
-        blending = value & blending_bit == blending_bit
-
-        value >>= BITS
-
-        color = Color(value)
-
-        opacity = round(reader.read_f32(), rounding)
-
-        normal_color_trigger.blending = blending
-        normal_color_trigger.color = color
-        normal_color_trigger.opacity = opacity
-
-        return normal_color_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        value = 0
-
-        if self.is_blending():
-            value |= BLENDING_BIT
-
-        value |= self.color.value << BITS
-
-        writer.write_u32(value)
-
-        writer.write_f32(self.opacity)
-
-    @classmethod
     def from_robtop_data(cls: Type[NCT], data: Mapping[int, str]) -> NCT:
         normal_color_trigger = super().from_robtop_data(data)
 
@@ -2422,8 +1436,6 @@ class NormalColorTrigger(BaseColorTrigger):
         return data
 
 
-COPY_OPACITY_BIT = 0b00000010
-
 DEFAULT_COPY_OPACITY = False
 
 
@@ -2444,70 +1456,6 @@ class CopiedColorTrigger(BaseColorTrigger):
 
     def is_copy_opacity(self) -> bool:
         return self.opacity is None
-
-    @classmethod
-    def from_binary(
-        cls: Type[CCT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> CCT:
-        rounding = DEFAULT_ROUNDING
-
-        blending_bit = BLENDING_BIT
-        copy_opacity_bit = COPY_OPACITY_BIT
-
-        copied_color_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        value = reader.read_u8()
-
-        blending = value & blending_bit == blending_bit
-        copy_opacity = value & copy_opacity_bit == copy_opacity_bit
-
-        if copy_opacity:
-            opacity = None
-
-        else:
-            opacity = round(reader.read_f32(), rounding)
-
-        copied_color_id = reader.read_u16()
-        copied_color_hsv = HSV.from_binary(binary, order, version)
-
-        copied_color_trigger.blending = blending
-        copied_color_trigger.opacity = opacity
-
-        copied_color_trigger.copied_color_id = copied_color_id
-        copied_color_trigger.copied_color_hsv = copied_color_hsv
-
-        return copied_color_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        value = 0
-
-        if self.is_blending():
-            value |= BLENDING_BIT
-
-        if self.is_copy_opacity():
-            value |= COPY_OPACITY_BIT
-
-        writer.write_u8(value)
-
-        opacity = self.opacity
-
-        if opacity is not None:
-            writer.write_f32(opacity)
-
-        writer.write_u16(self.copied_color_id)
-
-        self.copied_color_hsv.to_binary(binary, order, version)
 
     @classmethod
     def from_robtop_data(cls: Type[CCT], data: Mapping[int, str]) -> CCT:
@@ -2615,23 +1563,6 @@ class BaseCompatibilityColorTrigger(Compatibility, Trigger):
         return base_compatibility_color_trigger
 
     def to_robtop_data(self) -> Never:
-        raise NotImplementedError(MIGRATE)
-
-    @classmethod
-    def from_binary(
-        cls: Type[BCMCT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> Never:
-        raise NotImplementedError(MIGRATE)
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> Never:
         raise NotImplementedError(MIGRATE)
 
 
@@ -3117,42 +2048,6 @@ class AlphaTrigger(Trigger):
     opacity: float = DEFAULT_OPACITY
 
     @classmethod
-    def from_binary(
-        cls: Type[ALT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> ALT:
-        rounding = DEFAULT_ROUNDING
-
-        alpha_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        duration = round(reader.read_f32(), rounding)
-
-        target_group_id = reader.read_u16()
-
-        opacity = round(reader.read_f32(), rounding)
-
-        alpha_trigger.duration = duration
-        alpha_trigger.target_group_id = target_group_id
-        alpha_trigger.opacity = opacity
-
-        return alpha_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_f32(self.duration)
-        writer.write_u16(self.target_group_id)
-        writer.write_f32(self.opacity)
-
-    @classmethod
     def from_robtop_data(cls: Type[ALT], data: Mapping[int, str]) -> ALT:
         alpha_trigger = super().from_robtop_data(data)
 
@@ -3195,43 +2090,6 @@ class BasePulseTrigger(Trigger):
     fade_out: float = DEFAULT_FADE_OUT
 
     @classmethod
-    def from_binary(
-        cls: Type[BPT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> BPT:
-        rounding = DEFAULT_ROUNDING
-
-        pulse_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        fade_in = round(reader.read_f32(), rounding)
-        hold = round(reader.read_f32(), rounding)
-        fade_out = round(reader.read_f32(), rounding)
-
-        pulse_trigger.fade_in = fade_in
-        pulse_trigger.hold = hold
-        pulse_trigger.fade_out = fade_out
-
-        return pulse_trigger
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_f32(self.fade_in)
-        writer.write_f32(self.hold)
-        writer.write_f32(self.fade_out)
-
-    @classmethod
     def from_robtop_data(cls: Type[BPT], data: Mapping[int, str]) -> BPT:
         base_pulse_trigger = super().from_robtop_data(data)
 
@@ -3262,9 +2120,6 @@ class BasePulseTrigger(Trigger):
 DEFAULT_EXCLUSIVE = False
 
 
-EXCLUSIVE_BIT = 0b00000001
-
-
 PCT = TypeVar("PCT", bound="PulseColorTrigger")
 
 
@@ -3276,51 +2131,6 @@ class PulseColorTrigger(BasePulseTrigger):
 
     def is_exclusive(self) -> bool:
         return self.exclusive
-
-    @classmethod
-    def from_binary(
-        cls: Type[PCT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> PCT:
-        exclusive_bit = EXCLUSIVE_BIT
-
-        pulse_color_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        value = reader.read_u32()
-
-        exclusive = value & exclusive_bit == exclusive_bit
-
-        value >>= BITS
-
-        color = Color(value)
-
-        pulse_color_trigger.color = color
-        pulse_color_trigger.exclusive = exclusive
-
-        return pulse_color_trigger
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        value = 0
-
-        if self.is_exclusive():
-            value |= EXCLUSIVE_BIT
-
-        value |= self.color.value << BITS
-
-        writer.write_u32(value)
 
     @classmethod
     def from_robtop_data(cls: Type[PCT], data: Mapping[int, str]) -> PCT:
@@ -3375,53 +2185,6 @@ class PulseHSVTrigger(BasePulseTrigger):
         return self.exclusive
 
     @classmethod
-    def from_binary(
-        cls: Type[PHT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> PHT:
-        exclusive_bit = EXCLUSIVE_BIT
-
-        pulse_hsv_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        copied_color_id = reader.read_u16()
-        copied_color_hsv = HSV.from_binary(binary, order, version)
-
-        value = reader.read_u8()
-
-        exclusive = value & exclusive_bit == exclusive_bit
-
-        pulse_hsv_trigger.copied_color_id = copied_color_id
-        pulse_hsv_trigger.copied_color_hsv = copied_color_hsv
-
-        pulse_hsv_trigger.exclusive = exclusive
-
-        return pulse_hsv_trigger
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.copied_color_id)
-        self.copied_color_hsv.to_binary(binary, order, version)
-
-        value = 0
-
-        if self.is_exclusive():
-            value |= EXCLUSIVE_BIT
-
-        writer.write_u8(value)
-
-    @classmethod
     def from_robtop_data(cls: Type[PHT], data: Mapping[int, str]) -> PHT:
         pulse_hsv_trigger = super().from_robtop_data(data)
 
@@ -3464,35 +2227,6 @@ class PulseColorChannelTrigger(PulseColorTrigger):
     target_color_id: int = DEFAULT_ID
 
     @classmethod
-    def from_binary(
-        cls: Type[PCCT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> PCCT:
-        pulse_color_channel_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        target_color_id = reader.read_u16()
-
-        pulse_color_channel_trigger.target_color_id = target_color_id
-
-        return pulse_color_channel_trigger
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.target_color_id)
-
-    @classmethod
     def from_robtop_data(cls: Type[PCCT], data: Mapping[int, str]) -> PCCT:
         pulse_color_channel_trigger = super().from_robtop_data(data)
 
@@ -3517,35 +2251,6 @@ PHCT = TypeVar("PHCT", bound="PulseHSVChannelTrigger")
 @define()
 class PulseHSVChannelTrigger(PulseHSVTrigger):
     target_color_id: int = DEFAULT_ID
-
-    @classmethod
-    def from_binary(
-        cls: Type[PHCT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> PHCT:
-        pulse_hsv_channel_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        target_color_id = reader.read_u16()
-
-        pulse_hsv_channel_trigger.target_color_id = target_color_id
-
-        return pulse_hsv_channel_trigger
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.target_color_id)
 
     @classmethod
     def from_robtop_data(cls: Type[PHCT], data: Mapping[int, str]) -> PHCT:
@@ -3587,43 +2292,6 @@ PCGT = TypeVar("PCGT", bound="PulseColorGroupTrigger")
 class PulseColorGroupTrigger(PulseColorTrigger):
     target_group_id: int = DEFAULT_ID
     pulse_type: PulseType = PulseType.DEFAULT
-
-    @classmethod
-    def from_binary(
-        cls: Type[PCGT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> PCGT:
-        pulse_color_group_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        target_group_id = reader.read_u16()
-
-        pulse_type_value = reader.read_u8()
-
-        pulse_type = PulseType(pulse_type_value)
-
-        pulse_color_group_trigger.target_group_id = target_group_id
-
-        pulse_color_group_trigger.pulse_type = pulse_type
-
-        return pulse_color_group_trigger
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.target_group_id)
-
-        writer.write_u8(self.pulse_type.value)
 
     @classmethod
     def from_robtop_data(cls: Type[PCGT], data: Mapping[int, str]) -> PCGT:
@@ -3668,43 +2336,6 @@ class PulseHSVGroupTrigger(PulseHSVTrigger):
     target_group_id: int = DEFAULT_ID
 
     pulse_type: PulseType = PulseType.DEFAULT
-
-    @classmethod
-    def from_binary(
-        cls: Type[PHGT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> PHGT:
-        pulse_hsv_group_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        target_group_id = reader.read_u16()
-
-        pulse_type_value = reader.read_u8()
-
-        pulse_type = PulseType(pulse_type_value)
-
-        pulse_hsv_group_trigger.target_group_id = target_group_id
-
-        pulse_hsv_group_trigger.pulse_type = pulse_type
-
-        return pulse_hsv_group_trigger
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.target_group_id)
-
-        writer.write_u8(self.pulse_type.value)
 
     @classmethod
     def from_robtop_data(cls: Type[PHGT], data: Mapping[int, str]) -> PHGT:
@@ -3765,55 +2396,6 @@ class BaseMoveTrigger(Trigger):
     duration: float = DEFAULT_DURATION
 
     @classmethod
-    def from_binary(
-        cls: Type[BMT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> BMT:
-        rounding = DEFAULT_ROUNDING
-
-        base_move_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        duration = round(reader.read_f32(), rounding)
-
-        easing_value = reader.read_u8()
-
-        easing = Easing(easing_value)
-
-        easing_rate = round(reader.read_f32(), rounding)
-
-        target_group_id = reader.read_u16()
-
-        base_move_trigger.duration = duration
-
-        base_move_trigger.easing = easing
-        base_move_trigger.easing_rate = easing_rate
-
-        base_move_trigger.target_group_id = target_group_id
-
-        return base_move_trigger
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_f32(self.duration)
-
-        writer.write_u8(self.easing.value)
-        writer.write_f32(self.easing_rate)
-
-        writer.write_u16(self.target_group_id)
-
-    @classmethod
     def from_robtop_data(cls: Type[BMT], data: Mapping[int, str]) -> BMT:
         base_move_trigger = super().from_robtop_data(data)
 
@@ -3870,48 +2452,6 @@ class NormalMoveTrigger(BaseMoveTrigger):
     y_offset: float = DEFAULT_Y_OFFSET
 
     locked_to_player: LockedType = LockedType.DEFAULT
-
-    @classmethod
-    def from_binary(
-        cls: Type[NMT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> NMT:
-        rounding = DEFAULT_ROUNDING
-
-        normal_move_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        x_offset = round(reader.read_f32(), rounding)
-        y_offset = round(reader.read_f32(), rounding)
-
-        locked_to_player_value = reader.read_u8()
-
-        locked_to_player = LockedType(locked_to_player_value)
-
-        normal_move_trigger.x_offset = x_offset
-        normal_move_trigger.y_offset = y_offset
-
-        normal_move_trigger.locked_to_player = locked_to_player
-
-        return normal_move_trigger
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_f32(self.x_offset)
-        writer.write_f32(self.y_offset)
-
-        writer.write_u8(self.locked_to_player.value)
 
     @classmethod
     def from_robtop_data(cls: Type[NMT], data: Mapping[int, str]) -> NMT:
@@ -3985,43 +2525,6 @@ class TargetMoveTrigger(BaseMoveTrigger):
     target_type: TargetType = TargetType.DEFAULT
 
     @classmethod
-    def from_binary(
-        cls: Type[TMT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> TMT:
-        target_move_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        additional_group_id = reader.read_u16()
-
-        target_type_value = reader.read_u8()
-
-        target_type = TargetType(target_type_value)
-
-        target_move_trigger.additional_group_id = additional_group_id
-
-        target_move_trigger.target_type = target_type
-
-        return target_move_trigger
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.additional_group_id)
-
-        writer.write_u8(self.target_type.value)
-
-    @classmethod
     def from_robtop_data(cls: Type[TMT], data: Mapping[int, str]) -> TMT:
         target_move_trigger = super().from_robtop_data(data)
 
@@ -4062,9 +2565,6 @@ DEFAULT_DELAY = 0.0
 DEFAULT_EDITOR_DISABLE = False
 
 
-EDITOR_DISABLE_BIT = 0b00000001
-
-
 SPT = TypeVar("SPT", bound="SpawnTrigger")
 
 
@@ -4075,55 +2575,6 @@ class SpawnTrigger(Trigger):
     delay: float = DEFAULT_DELAY
 
     editor_disable: bool = DEFAULT_EDITOR_DISABLE
-
-    @classmethod
-    def from_binary(
-        cls: Type[SPT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> SPT:
-        rounding = DEFAULT_ROUNDING
-
-        editor_disable_bit = EDITOR_DISABLE_BIT
-
-        spawn_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        target_group_id = reader.read_u16()
-
-        delay = round(reader.read_f32(), rounding)
-
-        value = reader.read_u8()
-
-        editor_disable = value & editor_disable_bit == editor_disable_bit
-
-        spawn_trigger.target_group_id = target_group_id
-
-        spawn_trigger.delay = delay
-
-        spawn_trigger.editor_disable = editor_disable
-
-        return spawn_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.target_group_id)
-
-        writer.write_f32(self.delay)
-
-        value = 0
-
-        if self.is_editor_disable():
-            value |= EDITOR_DISABLE_BIT
-
-        writer.write_u8(value)
 
     def is_editor_disable(self) -> bool:
         return self.editor_disable
@@ -4169,32 +2620,6 @@ class StopTrigger(Trigger):
     target_group_id: int = DEFAULT_ID
 
     @classmethod
-    def from_binary(
-        cls: Type[ST],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> ST:
-        stop_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        target_group_id = reader.read_u16()
-
-        stop_trigger.target_group_id = target_group_id
-
-        return stop_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.target_group_id)
-
-    @classmethod
     def from_robtop_data(cls: Type[ST], data: Mapping[int, str]) -> ST:
         stop_trigger = super().from_robtop_data(data)
 
@@ -4212,9 +2637,6 @@ class StopTrigger(Trigger):
         return data
 
 
-ACTIVATE_GROUP_BIT = 0b00000001
-
-
 DEFAULT_TOGGLED = False
 
 
@@ -4229,47 +2651,6 @@ class ToggleTrigger(Trigger):
 
     def is_activate_group(self) -> bool:
         return self.activate_group
-
-    @classmethod
-    def from_binary(
-        cls: Type[TT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> TT:
-        activate_group_bit = ACTIVATE_GROUP_BIT
-
-        toggle_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        target_group_id = reader.read_u16()
-
-        value = reader.read_u8()
-
-        activate_group = value & activate_group_bit == activate_group_bit
-
-        toggle_trigger.target_group_id = target_group_id
-
-        toggle_trigger.activate_group = activate_group
-
-        return toggle_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.target_group_id)
-
-        value = 0
-
-        if self.is_activate_group():
-            value |= ACTIVATE_GROUP_BIT
-
-        writer.write_u8(value)
 
     def toggle(self: TT) -> TT:
         self.activate_group = not self.activate_group
@@ -4305,8 +2686,6 @@ class ToggleTrigger(Trigger):
 
 FULL_ROTATION = 360.0
 
-ROTATION_LOCKED_BIT = 0b00000001
-
 
 DEFAULT_ROTATIONS = 0.0
 DEFAULT_DEGREES = 0.0
@@ -4331,76 +2710,6 @@ class RotateTrigger(Trigger):
 
     target_rotation: float = DEFAULT_TARGET_ROTATION
     rotation_locked: bool = DEFAULT_ROTATION_LOCKED
-
-    @classmethod
-    def from_binary(
-        cls: Type[RT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> RT:
-        rounding = DEFAULT_ROUNDING
-
-        rotation_locked_bit = ROTATION_LOCKED_BIT
-
-        rotate_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        duration = round(reader.read_f32(), rounding)
-
-        target_group_id = reader.read_u16()
-        additional_group_id = reader.read_u16()
-
-        easing_value = reader.read_u8()
-
-        easing = Easing(easing_value)
-
-        easing_rate = round(reader.read_f32(), rounding)
-
-        target_rotation = round(reader.read_f32(), rounding)
-
-        value = reader.read_u8()
-
-        rotation_locked = value & rotation_locked_bit == rotation_locked_bit
-
-        rotate_trigger.duration = duration
-
-        rotate_trigger.target_group_id = target_group_id
-        rotate_trigger.additional_group_id = additional_group_id
-
-        rotate_trigger.easing = easing
-        rotate_trigger.easing_rate = easing_rate
-
-        rotate_trigger.target_rotation = target_rotation
-
-        rotate_trigger.rotation_locked = rotation_locked
-
-        return rotate_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_f32(self.duration)
-
-        writer.write_u16(self.target_group_id)
-        writer.write_u16(self.additional_group_id)
-
-        writer.write_u8(self.easing.value)
-        writer.write_f32(self.easing_rate)
-
-        writer.write_f32(self.target_rotation)
-
-        value = 0
-
-        if self.is_rotation_locked():
-            value |= ROTATION_LOCKED_BIT
-
-        writer.write_u8(value)
 
     def target_rotate(self: RT, angle: float) -> RT:
         self.target_rotation += angle
@@ -4499,64 +2808,6 @@ class FollowTrigger(Trigger):
     y_modifier: float = DEFAULT_Y_MODIFIER
 
     @classmethod
-    def from_binary(
-        cls: Type[FT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> FT:
-        rounding = DEFAULT_ROUNDING
-
-        follow_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        duration = round(reader.read_f32(), rounding)
-
-        target_group_id = reader.read_u16()
-        additional_group_id = reader.read_u16()
-
-        easing_value = reader.read_u8()
-
-        easing = Easing(easing_value)
-
-        easing_rate = round(reader.read_f32(), rounding)
-
-        x_modifier = round(reader.read_f32(), rounding)
-        y_modifier = round(reader.read_f32(), rounding)
-
-        follow_trigger.duration = duration
-
-        follow_trigger.target_group_id = target_group_id
-        follow_trigger.additional_group_id = additional_group_id
-
-        follow_trigger.easing = easing
-        follow_trigger.easing_rate = easing_rate
-
-        follow_trigger.x_modifier = x_modifier
-        follow_trigger.y_modifier = y_modifier
-
-        return follow_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_f32(self.duration)
-
-        writer.write_u16(self.target_group_id)
-        writer.write_u16(self.additional_group_id)
-
-        writer.write_u8(self.easing.value)
-        writer.write_f32(self.easing_rate)
-
-        writer.write_f32(self.x_modifier)
-        writer.write_f32(self.y_modifier)
-
-    @classmethod
     def from_robtop_data(cls: Type[FT], data: Mapping[int, str]) -> FT:
         follow_trigger = super().from_robtop_data(data)
 
@@ -4615,40 +2866,6 @@ class ShakeTrigger(Trigger):
     interval: float = DEFAULT_INTERVAL
 
     @classmethod
-    def from_binary(
-        cls: Type[SHT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> SHT:
-        rounding = DEFAULT_ROUNDING
-
-        shake_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        duration = round(reader.read_f32(), rounding)
-        strength = round(reader.read_f32(), rounding)
-        interval = round(reader.read_f32(), rounding)
-
-        shake_trigger.duration = duration
-        shake_trigger.strength = strength
-        shake_trigger.interval = interval
-
-        return shake_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_f32(self.duration)
-        writer.write_f32(self.strength)
-        writer.write_f32(self.interval)
-
-    @classmethod
     def from_robtop_data(cls: Type[SHT], data: Mapping[int, str]) -> SHT:
         shake_trigger = super().from_robtop_data(data)
 
@@ -4682,38 +2899,6 @@ class AnimateTrigger(Trigger):
     animation_id: int = DEFAULT_ID
 
     @classmethod
-    def from_binary(
-        cls: Type[AT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> AT:
-        animate_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        target_group_id = reader.read_u16()
-
-        animation_id = reader.read_u8()
-
-        animate_trigger.target_group_id = target_group_id
-
-        animate_trigger.animation_id = animation_id
-
-        return animate_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.target_group_id)
-
-        writer.write_u8(self.animation_id)
-
-    @classmethod
     def from_robtop_data(cls: Type[AT], data: Mapping[int, str]) -> AT:
         animate_trigger = super().from_robtop_data(data)
 
@@ -4737,11 +2922,6 @@ class AnimateTrigger(Trigger):
         return data
 
 
-TOGGLE_TYPE_MASK = 0b00000011
-HOLD_MODE_BIT = 0b00000100
-DUAL_MODE_BIT = 0b00001000
-
-
 DEFAULT_HOLD_MODE = False
 DEFAULT_DUAL_MODE = False
 
@@ -4755,59 +2935,6 @@ class TouchTrigger(Trigger):
     hold_mode: bool = DEFAULT_HOLD_MODE
     dual_mode: bool = DEFAULT_DUAL_MODE
     toggle_type: ToggleType = ToggleType.DEFAULT
-
-    @classmethod
-    def from_binary(
-        cls: Type[THT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> THT:
-        hold_mode_bit = HOLD_MODE_BIT
-        dual_mode_bit = DUAL_MODE_BIT
-
-        touch_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        target_group_id = reader.read_u16()
-
-        value = reader.read_u8()
-
-        toggle_type_value = value & TOGGLE_TYPE_MASK
-
-        toggle_type = ToggleType(toggle_type_value)
-
-        hold_mode = value & hold_mode_bit == hold_mode_bit
-        dual_mode = value & dual_mode_bit == dual_mode_bit
-
-        touch_trigger.target_group_id = target_group_id
-
-        touch_trigger.hold_mode = hold_mode
-        touch_trigger.dual_mode = dual_mode
-
-        touch_trigger.toggle_type = toggle_type
-
-        return touch_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.target_group_id)
-
-        value = self.toggle_type.value
-
-        if self.is_hold_mode():
-            value |= HOLD_MODE_BIT
-
-        if self.is_dual_mode():
-            value |= DUAL_MODE_BIT
-
-        writer.write_u8(value)
 
     def is_hold_mode(self) -> bool:
         return self.hold_mode
@@ -4879,59 +3006,6 @@ class CountTrigger(Trigger):
         return self.multi_activate
 
     @classmethod
-    def from_binary(
-        cls: Type[CT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> CT:
-        activate_group_bit = ACTIVATE_GROUP_BIT
-        multi_activate_bit = MULTI_ACTIVATE_BIT
-
-        count_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        item_id = reader.read_u16()
-
-        count = reader.read_i32()
-
-        value = reader.read_u8()
-
-        activate_group = value & activate_group_bit == activate_group_bit
-        multi_activate = value & multi_activate_bit == multi_activate_bit
-
-        count_trigger.item_id = item_id
-
-        count_trigger.count = count
-
-        count_trigger.activate_group = activate_group
-        count_trigger.multi_activate = multi_activate
-
-        return count_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.item_id)
-
-        writer.write_i32(self.count)
-
-        value = 0
-
-        if self.is_activate_group():
-            value |= ACTIVATE_GROUP_BIT
-
-        if self.is_multi_activate():
-            value |= MULTI_ACTIVATE_BIT
-
-        writer.write_u8(value)
-
-    @classmethod
     def from_robtop_data(cls: Type[CT], data: Mapping[int, str]) -> CT:
         count_trigger = super().from_robtop_data(data)
 
@@ -4989,9 +3063,6 @@ class CountTrigger(Trigger):
 
 ICT = TypeVar("ICT", bound="InstantCountTrigger")
 
-COMPARISON_MASK = 0b00000110
-COMPARISON_SHIFT = ACTIVATE_GROUP_BIT.bit_length()
-
 
 @define()
 class InstantCountTrigger(Trigger):
@@ -5004,61 +3075,6 @@ class InstantCountTrigger(Trigger):
 
     def is_activate_group(self) -> bool:
         return self.activate_group
-
-    @classmethod
-    def from_binary(
-        cls: Type[ICT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> ICT:
-        activate_group_bit = ACTIVATE_GROUP_BIT
-
-        instant_count_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        item_id = reader.read_u16()
-
-        count = reader.read_i32()
-
-        value = reader.read_u8()
-
-        activate_group = value & activate_group_bit == activate_group_bit
-
-        comparison_value = (value & COMPARISON_MASK) >> COMPARISON_SHIFT
-
-        comparison = InstantCountComparison(comparison_value)
-
-        instant_count_trigger.item_id = item_id
-
-        instant_count_trigger.count = count
-
-        instant_count_trigger.activate_group = activate_group
-
-        instant_count_trigger.comparison = comparison
-
-        return instant_count_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.item_id)
-
-        writer.write_i32(self.count)
-
-        value = 0
-
-        if self.is_activate_group():
-            value |= ACTIVATE_GROUP_BIT
-
-        value |= self.comparison.value << COMPARISON_SHIFT
-
-        writer.write_u8(value)
 
     @classmethod
     def from_robtop_data(cls: Type[ICT], data: Mapping[int, str]) -> ICT:
@@ -5112,38 +3128,6 @@ class PickupTrigger(Trigger):
     count: int = DEFAULT_COUNT
 
     @classmethod
-    def from_binary(
-        cls: Type[PT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> PT:
-        pickup_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        item_id = reader.read_u16()
-
-        count = reader.read_i32()
-
-        pickup_trigger.item_id = item_id
-
-        pickup_trigger.count = count
-
-        return pickup_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.item_id)
-
-        writer.write_i32(self.count)
-
-    @classmethod
     def from_robtop_data(cls: Type[PT], data: Mapping[int, str]) -> PT:
         pickup_trigger = super().from_robtop_data(data)
 
@@ -5185,58 +3169,6 @@ class FollowPlayerYTrigger(Trigger):
     speed: float = DEFAULT_SPEED
     max_speed: float = DEFAULT_MAX_SPEED
     offset: float = DEFAULT_OFFSET
-
-    @classmethod
-    def from_binary(
-        cls: Type[FPYT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> FPYT:
-        rounding = DEFAULT_ROUNDING
-
-        follow_player_y_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        target_group_id = reader.read_u16()
-
-        duration = round(reader.read_f32(), rounding)
-
-        delay = round(reader.read_f32(), rounding)
-
-        speed = round(reader.read_f32(), rounding)
-        max_speed = round(reader.read_f32(), rounding)
-        offset = round(reader.read_f32(), rounding)
-
-        follow_player_y_trigger.target_group_id = target_group_id
-
-        follow_player_y_trigger.duration = duration
-
-        follow_player_y_trigger.delay = delay
-
-        follow_player_y_trigger.speed = speed
-        follow_player_y_trigger.max_speed = max_speed
-        follow_player_y_trigger.offset = offset
-
-        return follow_player_y_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.target_group_id)
-
-        writer.write_f32(self.duration)
-
-        writer.write_f32(self.delay)
-
-        writer.write_f32(self.speed)
-        writer.write_f32(self.max_speed)
-        writer.write_f32(self.offset)
 
     @classmethod
     def from_robtop_data(cls: Type[FPYT], data: Mapping[int, str]) -> FPYT:
@@ -5293,47 +3225,6 @@ class OnDeathTrigger(Trigger):
         return self.activate_group
 
     @classmethod
-    def from_binary(
-        cls: Type[ODT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> ODT:
-        activate_group_bit = ACTIVATE_GROUP_BIT
-
-        on_death_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        target_group_id = reader.read_u16()
-
-        value = reader.read_u8()
-
-        activate_group = value & activate_group_bit == activate_group_bit
-
-        on_death_trigger.target_group_id = target_group_id
-
-        on_death_trigger.activate_group = activate_group
-
-        return on_death_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.target_group_id)
-
-        value = 0
-
-        if self.is_activate_group():
-            value |= ACTIVATE_GROUP_BIT
-
-        writer.write_u8(value)
-
-    @classmethod
     def from_robtop_data(cls: Type[ODT], data: Mapping[int, str]) -> ODT:
         on_death_trigger = super().from_robtop_data(data)
 
@@ -5360,10 +3251,6 @@ class OnDeathTrigger(Trigger):
         return data
 
 
-TRIGGER_ON_EXIT_BIT = 0b10000000_00000000
-COLLISION_ACTIVATE_GROUP_BIT = 0b10000000_00000000
-
-
 DEFAULT_TRIGGER_ON_EXIT = False
 
 
@@ -5386,66 +3273,6 @@ class CollisionTrigger(Trigger):
 
     def is_trigger_on_exit(self) -> bool:
         return self.trigger_on_exit
-
-    @classmethod
-    def from_binary(
-        cls: Type[CBT],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> CBT:
-        block_id_mask = BLOCK_ID_MASK
-        activate_group_bit = COLLISION_ACTIVATE_GROUP_BIT
-        trigger_on_exit_bit = TRIGGER_ON_EXIT_BIT
-
-        collision_trigger = super().from_binary(binary, order, version)
-
-        reader = Reader(binary, order)
-
-        value = reader.read_u16()
-
-        block_a_id = value & block_id_mask
-
-        activate_group = value & activate_group_bit == activate_group_bit
-
-        value = reader.read_u16()
-
-        block_b_id = value & block_id_mask
-
-        trigger_on_exit = value & trigger_on_exit_bit == trigger_on_exit_bit
-
-        target_group_id = reader.read_u16()
-
-        collision_trigger.block_a_id = block_a_id
-        collision_trigger.block_b_id = block_b_id
-        collision_trigger.activate_group = activate_group
-        collision_trigger.trigger_on_exit = trigger_on_exit
-        collision_trigger.target_group_id = target_group_id
-
-        return collision_trigger
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        value = self.block_a_id
-
-        if self.is_activate_group():
-            value |= COLLISION_ACTIVATE_GROUP_BIT
-
-        writer.write_u16(value)
-
-        value = self.block_b_id
-
-        if self.is_trigger_on_exit():
-            value |= TRIGGER_ON_EXIT_BIT
-
-        writer.write_u16(value)
-
-        writer.write_u16(self.target_group_id)
 
     @classmethod
     def from_robtop_data(cls: Type[CBT], data: Mapping[int, str]) -> CBT:
@@ -5599,53 +3426,6 @@ OBJECT_TYPE_TO_TYPE: Dict[ObjectType, Type[Object]] = {
 }
 
 TYPE_TO_OBJECT_TYPE = {type: object_type for object_type, type in OBJECT_TYPE_TO_TYPE.items()}
-
-
-def object_from_binary(
-    binary: BinaryReader, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-) -> Object:
-    reader = Reader(binary, order)
-
-    object_type_value = reader.read_u8()
-    object_type = ObjectType(object_type_value)
-
-    return OBJECT_TYPE_TO_TYPE[object_type].from_binary(binary, order, version)
-
-
-def object_from_bytes(
-    data: bytes, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-) -> Object:
-    return object_from_binary(BytesIO(data), order, version)
-
-
-def object_to_binary(
-    object: Object,
-    binary: BinaryWriter,
-    order: ByteOrder = ByteOrder.DEFAULT,
-    version: int = VERSION,
-) -> None:
-    object_type = TYPE_TO_OBJECT_TYPE.get(type(object))
-
-    if object_type is None:
-        raise TypeError  # TODO: message?
-
-    writer = Writer(binary, order)
-
-    writer.write_u8(object_type.value)
-
-    object.to_binary(binary, order, version)
-
-
-def object_to_bytes(
-    object: Object, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-) -> bytes:
-    binary = BytesIO()
-
-    object_to_binary(object, binary, order, version)
-
-    binary.seek(0)
-
-    return binary.read()
 
 
 OBJECT_ID_NOT_PRESENT = "object ID is not present"

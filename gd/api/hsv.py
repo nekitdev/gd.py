@@ -1,12 +1,9 @@
 from typing import Type, TypeVar
 
 from attrs import define, field
+from iters.iters import iter
 from typing_aliases import Unary
 
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_constants import BITS, BYTE
-from gd.binary_utils import Reader, Writer
-from gd.enums import ByteOrder
 from gd.models_constants import HSV_SEPARATOR
 from gd.models_utils import bool_str, concat_hsv, float_str, int_bool, round_float, split_hsv
 from gd.robtop import RobTop
@@ -39,7 +36,7 @@ def rotate_h(h: int, bound: int = H_BOUND, normal_bound: int = H_NORMAL_BOUND) -
 Clamp = Unary[float, float]
 
 
-def create_clamp(min_value: float, max_value: float, out_of_bounds: str) -> Clamp:
+def create_clamp(min_value: float, max_value: float) -> Clamp:
     def clamp(value: float) -> float:
         if value < min_value:
             return min_value
@@ -52,11 +49,11 @@ def create_clamp(min_value: float, max_value: float, out_of_bounds: str) -> Clam
     return clamp
 
 
-clamp_s = create_clamp(S_MIN, S_MAX, "s")
-clamp_v = create_clamp(V_MIN, V_MAX, "v")
+clamp_s = create_clamp(S_MIN, S_MAX)
+clamp_v = create_clamp(V_MIN, V_MAX)
 
-clamp_s_checked = create_clamp(S_MIN_CHECKED, S_MAX_CHECKED, "s_checked")
-clamp_v_checked = create_clamp(V_MIN_CHECKED, V_MAX_CHECKED, "v_checked")
+clamp_s_checked = create_clamp(S_MIN_CHECKED, S_MAX_CHECKED)
+clamp_v_checked = create_clamp(V_MIN_CHECKED, V_MAX_CHECKED)
 
 
 H_INITIAL = 0
@@ -66,22 +63,12 @@ V_INITIAL = 1.0
 S_CHECKED = False
 V_CHECKED = False
 
-V_BIT = 0b00000100_00000000
-S_BIT = 0b00000010_00000000
-H_MASK = 0b00000001_11111111
-
-H_ADD_DOUBLE = 360
-H_ADD = 180
-S_MULTIPLY = 100
-V_MULTIPLY = 100
-
-ROUNDING = 2
 
 T = TypeVar("T", bound="HSV")
 
 
 @define()
-class HSV(Binary, RobTop):
+class HSV(RobTop):
     h: int = field(default=H_INITIAL)
     s: float = field(default=S_INITIAL)
     v: float = field(default=V_INITIAL)
@@ -122,88 +109,14 @@ class HSV(Binary, RobTop):
         return cls(h, s, v, s_checked, v_checked)
 
     def to_robtop(self) -> str:
-        values = (
+        return iter.of(
             str(self.h),
             float_str(self.s),
             float_str(self.v),
             bool_str(self.s_checked),
             bool_str(self.v_checked),
-        )
+        ).collect(concat_hsv)
 
-        return concat_hsv(values)
-
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return HSV_SEPARATOR in string
-
-    # 00000VSH HHHHHHHH SSSSSSSS VVVVVVVV
-
-    @classmethod
-    def from_value(cls: Type[T], value: int) -> T:
-        rounding = ROUNDING
-
-        bits = BITS
-        byte = BYTE
-
-        v = (value & byte) / V_MULTIPLY
-
-        value >>= bits
-
-        s = (value & byte) / S_MULTIPLY
-
-        value >>= bits
-
-        h = (value & H_MASK) - H_ADD
-
-        s_bit = S_BIT
-        v_bit = V_BIT
-
-        s_checked = value & s_bit == s_bit
-        v_checked = value & v_bit == v_bit
-
-        if s_checked:
-            s -= S_INITIAL
-
-        if v_checked:
-            v -= V_INITIAL
-
-        return cls(h, round(s, rounding), round(v, rounding), s_checked, v_checked)
-
-    def to_value(self) -> int:
-        value = self.h + H_ADD
-
-        s = round(self.s * S_MULTIPLY)
-        v = round(self.v * V_MULTIPLY)
-
-        if self.s_checked:
-            value |= S_BIT
-            s += S_MULTIPLY
-
-        if self.v_checked:
-            value |= V_BIT
-            v += V_MULTIPLY
-
-        bits = BITS
-
-        value = (value << bits) | s
-        value = (value << bits) | v
-
-        return value
-
-    @classmethod
-    def from_binary(
-        cls: Type[T],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> T:
-        reader = Reader(binary, order)
-
-        return cls.from_value(reader.read_u32())
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u32(self.to_value())

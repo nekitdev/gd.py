@@ -6,9 +6,6 @@ from typing_aliases import StringDict, StringMapping
 
 from gd.api.editor import Editor
 from gd.api.recording import Recording
-from gd.api.songs import SongReferenceAPI
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
 from gd.capacity import Capacity
 from gd.constants import (
     DEFAULT_ATTEMPTS,
@@ -21,8 +18,6 @@ from gd.constants import (
     DEFAULT_DEMON,
     DEFAULT_DENOMINATOR,
     DEFAULT_DOWNLOADS,
-    DEFAULT_ENCODING,
-    DEFAULT_ERRORS,
     DEFAULT_FAVORITE,
     DEFAULT_HIDDEN,
     DEFAULT_HIGH_OBJECT_COUNT,
@@ -38,7 +33,6 @@ from gd.constants import (
     DEFAULT_RATING,
     DEFAULT_RECORD,
     DEFAULT_REVISION,
-    DEFAULT_ROUNDING,
     DEFAULT_SCORE,
     DEFAULT_STARS,
     DEFAULT_TWO_PLAYER,
@@ -53,16 +47,13 @@ from gd.constants import (
 from gd.decorators import cache_by
 from gd.difficulty_parameters import DEFAULT_DEMON_DIFFICULTY_VALUE, DifficultyParameters
 from gd.encoding import (
-    compress,
     decode_base64_string_url_safe,
-    decompress,
     encode_base64_string_url_safe,
     generate_leaderboard_seed,
     unzip_level_string,
     zip_level_string,
 )
 from gd.enums import (
-    ByteOrder,
     CollectedCoins,
     Difficulty,
     InternalType,
@@ -74,7 +65,8 @@ from gd.enums import (
 from gd.models_constants import OBJECTS_SEPARATOR
 from gd.password import Password
 from gd.progress import Progress
-from gd.users import User
+from gd.songs import SongReference
+from gd.users import User, UserReference
 from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, RobTopVersion
 
 INTERNAL_TYPE = "kCEK"
@@ -147,21 +139,19 @@ LEADERBOARD_SEED = "k87"
 
 DEFAULT_EPIC = False
 
-CHECK_BIT = 0b00000001
-
 UNPROCESSED_DATA = "unprocessed_data"
 
 B = TypeVar("B", bound="BaseLevelAPI")
 
 
 @define()
-class BaseLevelAPI(Binary):
+class BaseLevelAPI:
     TYPE: ClassVar[LevelType] = LevelType.DEFAULT
 
     id: int = field()
     name: str = field()
-    song_reference: SongReferenceAPI = field()
-    creator: User = field()
+    song_reference: SongReference = field()
+    creator: UserReference = field()
     version: int = field(default=DEFAULT_VERSION)
     attempts: int = field(default=DEFAULT_ATTEMPTS)
     normal_record: int = field(default=DEFAULT_RECORD)
@@ -194,8 +184,8 @@ class BaseLevelAPI(Binary):
         return cls(
             id=id,
             name=EMPTY,
-            song_reference=SongReferenceAPI.default(song_id, song_custom),
-            creator=User.default(creator_id, creator_account_id),
+            song_reference=SongReference.default(song_id, song_custom),
+            creator=UserReference.default(creator_id, creator_account_id),
         )
 
     def compute_leaderboard_seed(self) -> int:
@@ -226,12 +216,12 @@ class BaseLevelAPI(Binary):
         official_song_id = data.get(OFFICIAL_SONG_ID, DEFAULT_ID)
 
         if official_song_id:
-            song_reference = SongReferenceAPI(official_song_id, custom=False)
+            song_reference = SongReference(official_song_id, custom=False)
 
         else:
             song_id = data.get(SONG_ID, DEFAULT_ID)
 
-            song_reference = SongReferenceAPI(song_id, custom=True)
+            song_reference = SongReference(song_id, custom=True)
 
         creator_id = data.get(CREATOR_ID, DEFAULT_ID)
         creator_name = data.get(CREATOR_NAME, EMPTY)
@@ -354,144 +344,6 @@ class BaseLevelAPI(Binary):
 
         return data
 
-    @classmethod
-    def from_binary(
-        cls: Type[B],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> B:
-        rounding = DEFAULT_ROUNDING
-
-        check_bit = CHECK_BIT
-
-        reader = Reader(binary, order)
-
-        id = reader.read_u32()
-
-        name_length = reader.read_u8()
-
-        name = reader.read(name_length).decode(encoding, errors)
-
-        song_reference = SongReferenceAPI.from_binary(binary, order, version)
-
-        creator = User.from_binary(binary, order, version, encoding, errors)
-
-        level_version = reader.read_u8()
-
-        attempts = reader.read_u32()
-
-        normal_record = reader.read_u8()
-        practice_record = reader.read_u8()
-
-        stars = reader.read_u8()
-
-        jumps = reader.read_u32()
-
-        binary_version = RobTopVersion.from_binary(binary, order, version)
-
-        coins = reader.read_u8()
-
-        capacity = Capacity.from_binary(binary, order, version)
-
-        orb_percentage = reader.read_u8()
-
-        best_clicks = reader.read_u16()
-
-        best_seconds = round(reader.read_f32(), rounding)
-
-        best_time = duration(seconds=best_seconds)
-
-        progress = Progress.from_binary(binary, order, version)
-
-        value = reader.read_u8()
-
-        check = value & check_bit == check_bit
-
-        leaderboard_record = reader.read_u8()
-
-        return cls(
-            id=id,
-            name=name,
-            song_reference=song_reference,
-            creator=creator,
-            version=level_version,
-            attempts=attempts,
-            normal_record=normal_record,
-            practice_record=practice_record,
-            stars=stars,
-            jumps=jumps,
-            binary_version=binary_version,
-            coins=coins,
-            capacity=capacity,
-            orb_percentage=orb_percentage,
-            best_clicks=best_clicks,
-            best_time=best_time,
-            progress=progress,
-            check=check,
-            leaderboard_record=leaderboard_record,
-        )
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u32(self.id)
-
-        data = self.name.encode(encoding, errors)
-
-        writer.write_u8(len(data))
-
-        writer.write(data)
-
-        self.song_reference.to_binary(binary, order, version)
-
-        self.creator.to_binary(binary, order, version, encoding, errors)
-
-        writer.write_u8(self.version)
-
-        writer.write_u32(self.attempts)
-
-        writer.write_u8(self.normal_record)
-        writer.write_u8(self.practice_record)
-
-        writer.write_u8(self.stars)
-
-        writer.write_u32(self.jumps)
-
-        self.binary_version.to_binary(binary, order, version)
-
-        writer.write_u8(self.coins)
-
-        self.capacity.to_binary(binary, order, version)
-
-        writer.write_u8(self.orb_percentage)
-
-        writer.write_u16(self.best_clicks)
-
-        best_seconds = self.best_time.total_seconds()  # type: ignore
-
-        writer.write_f32(best_seconds)
-
-        self.progress.to_binary(binary, order, version)
-
-        value = 0
-
-        if self.is_check():
-            value |= CHECK_BIT
-
-        writer.write_u8(value)
-
-        writer.write_u8(self.leaderboard_record)
-
 
 O = TypeVar("O", bound="OfficialLevelAPI")
 
@@ -564,51 +416,6 @@ class OfficialLevelAPI(BaseLevelAPI):
 
         return data
 
-    @classmethod
-    def from_binary(
-        cls: Type[O],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> O:
-        reader = Reader(binary, order)
-
-        level = super().from_binary(binary, order, version, encoding, errors)
-
-        difficulty_value = reader.read_u8()
-
-        difficulty = Difficulty(difficulty_value)
-
-        required_coins = reader.read_u8()
-
-        level.difficulty = difficulty
-        level.required_coins = required_coins
-
-        return level
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        writer = Writer(binary, order)
-
-        super().to_binary(binary, order, version, encoding, errors)
-
-        writer.write_u8(self.difficulty.value)
-
-        writer.write_u8(self.required_coins)
-
-
-TWO_PLAYER_BIT = 0b00000001
-HIGH_OBJECT_COUNT_BIT = 0b00000010
-LOW_DETAIL_BIT = 0b00000100
-LOW_DETAIL_TOGGLED_BIT = 0b00001000
 
 DEFAULT_LENGTH_VALUE = LevelLength.DEFAULT.value
 
@@ -621,7 +428,7 @@ class CustomLevelAPI(BaseLevelAPI):
     description: str = field(default=EMPTY)
     unprocessed_data: str = field(default=EMPTY, repr=False)
     length: LevelLength = field(default=LevelLength.DEFAULT)
-    password_data: Password = field(factory=Password)
+    password: Password = field(factory=Password)
     original_id: int = field(default=DEFAULT_ID)
     two_player: bool = field(default=DEFAULT_TWO_PLAYER)
     object_count: int = field(default=DEFAULT_OBJECT_COUNT)
@@ -636,155 +443,6 @@ class CustomLevelAPI(BaseLevelAPI):
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
-
-    @classmethod
-    def from_binary(
-        cls: Type[C],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> C:
-        rounding = DEFAULT_ROUNDING
-
-        two_player_bit = TWO_PLAYER_BIT
-        high_object_count_bit = HIGH_OBJECT_COUNT_BIT
-        low_detail_bit = LOW_DETAIL_BIT
-        low_detail_toggled_bit = LOW_DETAIL_TOGGLED_BIT
-
-        level = super().from_binary(binary, order, version, encoding, errors)
-
-        reader = Reader(binary, order)
-
-        description_length = reader.read_u8()
-
-        description = reader.read(description_length).decode(encoding, errors)
-
-        data_length = reader.read_u32()
-
-        data = decompress(reader.read(data_length))
-
-        length_value = reader.read_u8()
-
-        length = LevelLength(length_value)
-
-        password_data = Password.from_binary(binary, order, version)
-
-        original_id = reader.read_u32()
-
-        value = reader.read_u8()
-
-        two_player = value & two_player_bit == two_player_bit
-
-        high_object_count = value & high_object_count_bit == high_object_count_bit
-
-        low_detail = value & low_detail_bit == low_detail_bit
-        low_detail_toggled = value & low_detail_toggled_bit == low_detail_toggled_bit
-
-        object_count = reader.read_u32()
-
-        requested_stars = reader.read_u8()
-
-        editor_seconds = round(reader.read_f32(), rounding)
-        copies_seconds = round(reader.read_f32(), rounding)
-
-        editor_time = duration(seconds=editor_seconds)
-        copies_time = duration(seconds=copies_seconds)
-
-        level_order = reader.read_u32()
-
-        folder_id = reader.read_u8()
-
-        level.description = description
-
-        level.data = data
-
-        level.length = length
-
-        level.password_data = password_data
-
-        level.original_id = original_id
-
-        level.two_player = two_player
-
-        level.object_count = object_count
-
-        level.high_object_count = high_object_count
-
-        level.requested_stars = requested_stars
-
-        level.low_detail = low_detail
-        level.low_detail_toggled = low_detail_toggled
-
-        level.editor_time = editor_time
-        level.copies_time = copies_time
-
-        level.level_order = level_order
-
-        level.folder_id = folder_id
-
-        return level
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        super().to_binary(binary, order, version, encoding, errors)
-
-        writer = Writer(binary, order)
-
-        data = self.description.encode(encoding, errors)
-
-        writer.write_u8(len(data))
-
-        writer.write(data)
-
-        data = compress(self.data)
-
-        writer.write_u32(len(data))
-
-        writer.write(data)
-
-        writer.write_u8(self.length.value)
-
-        self.password_data.to_binary(binary, order, version)
-
-        writer.write_u32(self.original_id)
-
-        value = 0
-
-        if self.is_two_player():
-            value |= TWO_PLAYER_BIT
-
-        if self.has_high_object_count():
-            value |= HIGH_OBJECT_COUNT_BIT
-
-        if self.has_low_detail():
-            value |= LOW_DETAIL_BIT
-
-        if self.has_low_detail_toggled():
-            value |= LOW_DETAIL_TOGGLED_BIT
-
-        writer.write_u8(value)
-
-        writer.write_u32(self.object_count)
-
-        writer.write_u8(self.requested_stars)
-
-        editor_seconds = self.editor_time.total_seconds()  # type: ignore
-        copies_seconds = self.copies_time.total_seconds()  # type: ignore
-
-        writer.write_f32(editor_seconds)
-        writer.write_f32(copies_seconds)
-
-        writer.write_u32(self.level_order)
-
-        writer.write_u8(self.folder_id)
 
     @property
     @cache_by(UNPROCESSED_DATA)
@@ -806,13 +464,6 @@ class CustomLevelAPI(BaseLevelAPI):
 
     def open_editor(self) -> Editor:
         return Editor.from_robtop(self.processed_data)
-
-    @property
-    def password(self) -> Optional[int]:
-        return self.password_data.password
-
-    def is_copyable(self) -> bool:
-        return self.password_data.is_copyable()
 
     def is_original(self) -> bool:
         return not self.original_id
@@ -846,7 +497,7 @@ class CustomLevelAPI(BaseLevelAPI):
 
         password_value = data.get(PASSWORD, DEFAULT_PASSWORD)
 
-        password_data = Password.from_robtop_value(password_value)
+        password = Password.from_robtop_value(password_value)
 
         original_id = data.get(ORIGINAL_ID, DEFAULT_ID)
 
@@ -887,7 +538,7 @@ class CustomLevelAPI(BaseLevelAPI):
 
         level.length = length
 
-        level.password_data = password_data
+        level.password = password
 
         level.original_id = original_id
 
@@ -918,7 +569,7 @@ class CustomLevelAPI(BaseLevelAPI):
             DESCRIPTION: encode_base64_string_url_safe(self.description),
             DATA: self.unprocessed_data,
             LENGTH: self.length.value,
-            PASSWORD: self.password_data.to_robtop_value(),
+            PASSWORD: self.password.to_robtop_value(),
             ORIGINAL_ID: self.original_id,
             TWO_PLAYER: self.is_two_player(),
             OBJECT_COUNT: self.object_count,
@@ -936,12 +587,6 @@ class CustomLevelAPI(BaseLevelAPI):
 
         return data
 
-
-VERIFIED_BIT = 0b00000001
-UPLOADED_BIT = 0b00000010
-UNLISTED_BIT = 0b00000100
-COLLECTED_COINS_MASK = 0b00111000
-COLLECTED_COINS_SHIFT = UNLISTED_BIT.bit_length()
 
 CR = TypeVar("CR", bound="CreatedLevelAPI")
 
@@ -1032,86 +677,6 @@ class CreatedLevelAPI(CustomLevelAPI):
         data.update(actual)
 
         return data
-
-    @classmethod
-    def from_binary(
-        cls: Type[CR],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> CR:
-        verified_bit = VERIFIED_BIT
-        uploaded_bit = UPLOADED_BIT
-        unlisted_bit = UNLISTED_BIT
-
-        level = super().from_binary(binary, order, version, encoding, errors)
-
-        reader = Reader(binary, order)
-
-        revision = reader.read_u8()
-
-        value = reader.read_u8()
-
-        verified = value & verified_bit == verified_bit
-        uploaded = value & uploaded_bit == uploaded_bit
-        unlisted = value & unlisted_bit == unlisted_bit
-
-        collected_coins_value = (value & COLLECTED_COINS_MASK) >> COLLECTED_COINS_SHIFT
-
-        collected_coins = CollectedCoins(collected_coins_value)
-
-        recording = Recording.from_binary(binary, order, version)
-
-        level.revision = revision
-
-        level.verified = verified
-        level.uploaded = uploaded
-
-        level.recording = recording
-
-        level.collected_coins = collected_coins
-
-        level.unlisted = unlisted
-
-        return level
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        super().to_binary(binary, order, version, encoding, errors)
-
-        writer = Writer(binary, order)
-
-        writer.write_u8(self.revision)
-
-        value = 0
-
-        if self.is_verified():
-            value |= VERIFIED_BIT
-
-        if self.is_uploaded():
-            value |= UPLOADED_BIT
-
-        if self.is_unlisted():
-            value |= UNLISTED_BIT
-
-        value |= self.collected_coins.value << COLLECTED_COINS_SHIFT
-
-        writer.write_u8(value)
-
-        self.recording.to_binary(binary, order, version)
-
-
-HIDDEN_BIT = 0b00000001
-VERIFIED_COINS_BIT = 0b00000010
-FAVORITE_BIT = 0b00000100
 
 
 S = TypeVar("S", bound="SavedLevelAPI")
@@ -1244,107 +809,6 @@ class SavedLevelAPI(CustomLevelAPI):
 
         return data
 
-    @classmethod
-    def from_binary(
-        cls: Type[S],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> S:
-        hidden_bit = HIDDEN_BIT
-        verified_coins_bit = VERIFIED_COINS_BIT
-        favorite_bit = FAVORITE_BIT
-
-        level = super().from_binary(binary, order, version, encoding, errors)
-
-        reader = Reader(binary, order)
-
-        difficulty_value = reader.read_u8()
-
-        difficulty = Difficulty(difficulty_value)
-
-        downloads = reader.read_u32()
-
-        game_version = GameVersion.from_binary(binary, order, version)
-
-        rating = reader.read_i32()
-
-        stars = reader.read_u8()
-
-        score = reader.read_u32()
-
-        rate_type_value = reader.read_u8()
-
-        rate_type = RateType(rate_type_value)
-
-        value = reader.read_u8()
-
-        hidden = value & hidden_bit == hidden_bit
-        verified_coins = value & verified_coins_bit == verified_coins_bit
-        favorite = value & favorite_bit == favorite_bit
-
-        level.difficulty = difficulty
-
-        level.downloads = downloads
-
-        level.game_version = game_version
-
-        level.rating = rating
-
-        level.stars = stars
-        level.score = score
-
-        level.rate_type = rate_type
-
-        level.hidden = hidden
-
-        level.verified_coins = verified_coins
-
-        level.favorite = favorite
-
-        return level
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        super().to_binary(binary, order, version, encoding, errors)
-
-        writer = Writer(binary, order)
-
-        writer.write_u8(self.difficulty.value)
-
-        writer.write_u32(self.downloads)
-
-        self.game_version.to_binary(binary, order, version)
-
-        writer.write_i32(self.rating)
-
-        writer.write_u8(self.stars)
-
-        writer.write_u32(self.score)
-
-        writer.write_u8(self.rate_type.value)
-
-        value = 0
-
-        if self.is_hidden():
-            value |= HIDDEN_BIT
-
-        if self.has_verified_coins():
-            value |= VERIFIED_COINS_BIT
-
-        if self.is_favorite():
-            value |= FAVORITE_BIT
-
-        writer.write_u8(value)
-
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
 
@@ -1414,46 +878,6 @@ class TimelyLevelAPI(SavedLevelAPI):
         data[TIMELY_ID] = timely_id
 
         return data
-
-    @classmethod
-    def from_binary(
-        cls: Type[T],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> T:
-        level = super().from_binary(binary, order, version, encoding, errors)
-
-        reader = Reader(binary, order)
-
-        timely_id = reader.read_u16()
-
-        timely_type_value = reader.read_u8()
-
-        timely_type = TimelyType(timely_type_value)
-
-        level.timely_id = timely_id
-        level.timely_type = timely_type
-
-        return level
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        super().to_binary(binary, order, version, encoding, errors)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.timely_id)
-
-        writer.write_u8(self.timely_type.value)
 
     def is_timely(self, timely_type: Optional[TimelyType] = None) -> bool:
         if timely_type is None:

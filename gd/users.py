@@ -1,50 +1,45 @@
 from __future__ import annotations
 
-from enum import Flag
-from typing import TYPE_CHECKING, AsyncIterator, Dict, Iterable, Optional, Type, TypeVar
+from io import BufferedReader, BufferedWriter
+from typing import TYPE_CHECKING, AsyncIterator, Dict, Iterable, Optional
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
 from iters.iters import iter
 from pendulum import DateTime
-from typing_extensions import TypedDict as Data
+from typing_extensions import Self
 
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
+from gd.binary import Binary
 from gd.color import Color
 from gd.constants import (
     DEFAULT_BANNED,
     DEFAULT_COINS,
     DEFAULT_COLOR_1_ID,
     DEFAULT_COLOR_2_ID,
+    DEFAULT_COLOR_3_ID,
     DEFAULT_CREATOR_POINTS,
     DEFAULT_DEMONS,
     DEFAULT_DIAMONDS,
-    DEFAULT_ENCODING,
-    DEFAULT_ERRORS,
     DEFAULT_FRIEND_STATE,
     DEFAULT_GLOW,
     DEFAULT_ICON_ID,
     DEFAULT_ID,
+    DEFAULT_MOONS,
     DEFAULT_PAGE,
     DEFAULT_PAGES,
     DEFAULT_RANK,
-    DEFAULT_RECORD,
     DEFAULT_SECRET_COINS,
     DEFAULT_SIMPLE,
     DEFAULT_STARS,
     DEFAULT_USER_COINS,
     EMPTY,
-    ROBTOP_ACCOUNT_ID,
-    ROBTOP_ID,
-    ROBTOP_NAME,
     UNKNOWN,
 )
 from gd.converter import CONVERTER, register_unstructure_hook_omit_client
-from gd.date_time import utc_from_timestamp, utc_now
+from gd.date_time import timestamp_milliseconds, utc_from_timestamp_milliseconds, utc_now
+from gd.either_record import EitherRecord, EitherRecordData
 from gd.entity import Entity, EntityData
 from gd.enums import (
-    ByteOrder,
     CommentState,
     CommentStrategy,
     FriendRequestState,
@@ -58,7 +53,6 @@ from gd.filters import Filters
 from gd.image.factory import FACTORY, connect_images
 from gd.image.icon import Icon
 from gd.models import (
-    CreatorModel,
     LeaderboardUserModel,
     LevelCommentUserModel,
     LevelLeaderboardUserModel,
@@ -66,6 +60,17 @@ from gd.models import (
     RelationshipUserModel,
     SearchUserModel,
 )
+from gd.schema import (
+    UserSchema,
+    UserCosmeticsSchema,
+    UserLeaderboardSchema,
+    UserReferenceSchema,
+    UserSocialsSchema,
+    UserStatisticsSchema,
+    UserStatesSchema,
+)
+from gd.schema_constants import NONE
+from gd.typing import Data
 
 if TYPE_CHECKING:
     from PIL.Image import Image
@@ -74,6 +79,22 @@ if TYPE_CHECKING:
     from gd.friend_request import FriendRequest
     from gd.level import Level
     from gd.message import Message
+    from gd.schema import (
+        UserBuilder,
+        UserCosmeticsBuilder,
+        UserCosmeticsReader,
+        UserLeaderboardBuilder,
+        UserLeaderboardReader,
+        UserReader,
+        UserReferenceBuilder,
+        UserReferenceReader,
+        UserSocialsBuilder,
+        UserSocialsReader,
+        UserStatisticsBuilder,
+        UserStatisticsReader,
+        UserStatesBuilder,
+        UserStatesReader,
+    )
 
 __all__ = (
     "User",
@@ -81,37 +102,72 @@ __all__ = (
     "UserCosmetics",
     "UserStates",
     "UserSocials",
-    "UserLeaderboard",
 )
 
-U = TypeVar("U", bound="User")
 
-UStatistics = TypeVar("UStatistics", bound="UserStatistics")
-UCosmetics = TypeVar("UCosmetics", bound="UserCosmetics")
-UStates = TypeVar("UStates", bound="UserStates")
-USocials = TypeVar("USocials", bound="UserSocials")
-ULeaderboard = TypeVar("ULeaderboard", bound="UserLeaderboard")
+class UserReferenceData(EntityData):
+    name: str
+    account_id: int
 
-MESSAGE_STATE_MASK = 0b00000011
-FRIEND_REQUEST_STATE_MASK = 0b00000100
-COMMENT_STATE_MASK = 0b00011000
-FRIEND_STATE_MASK = 0b11100000
 
-FRIEND_REQUEST_STATE_SHIFT = MESSAGE_STATE_MASK.bit_length()
-COMMENT_STATE_SHIFT = FRIEND_REQUEST_STATE_MASK.bit_length()
-FRIEND_STATE_SHIFT = COMMENT_STATE_MASK.bit_length()
+@define()
+class UserReference(Entity, Binary):
+    name: str = field(eq=False)
+    account_id: int = field(eq=False)
 
-BANNED_BIT = 0b00000001
+    @classmethod
+    def default(cls, id: int = DEFAULT_ID, account_id: int = DEFAULT_ID, name: str = EMPTY) -> Self:
+        return cls(id=id, account_id=account_id, name=name)
 
-USER_FLAG_SHIFT = BANNED_BIT.bit_length()
+    def is_registered(self) -> bool:
+        return self.account_id > 0 and self.id > 0
 
-GLOW_BIT = 0b00000001
+    @classmethod
+    def from_binary(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(UserReferenceSchema.read(binary))
 
-ICON_TYPE_SHIFT = GLOW_BIT.bit_length()
+    @classmethod
+    def from_binary_packed(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(UserReferenceSchema.read_packed(binary))
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> Self:
+        with UserReferenceSchema.from_bytes(data) as reader:
+            return cls.from_reader(reader)
+
+    @classmethod
+    def from_bytes_packed(cls, data: bytes) -> Self:
+        return cls.from_reader(UserReferenceSchema.from_bytes_packed(data))
+
+    def to_binary(self, binary: BufferedWriter) -> None:
+        self.to_builder().write(binary)
+
+    def to_binary_packed(self, binary: BufferedWriter) -> None:
+        self.to_builder().write_packed(binary)
+
+    def to_bytes(self) -> bytes:
+        return self.to_builder().to_bytes()
+
+    def to_bytes_packed(self) -> bytes:
+        return self.to_builder().to_bytes_packed()
+
+    @classmethod
+    def from_reader(cls, reader: UserReferenceReader) -> Self:
+        return cls(id=reader.id, name=reader.name, account_id=reader.accountId)
+
+    def to_builder(self) -> UserReferenceBuilder:
+        builder = UserReferenceSchema.new_message()
+
+        builder.id = self.id
+        builder.name = self.name
+        builder.accountId = self.account_id
+
+        return builder
 
 
 class UserStatisticsData(Data):
     stars: int
+    moons: int
     demons: int
     diamonds: int
     user_coins: int
@@ -123,6 +179,7 @@ class UserStatisticsData(Data):
 @define()
 class UserStatistics(Binary):
     stars: int = DEFAULT_STARS
+    moons: int = DEFAULT_MOONS
     demons: int = DEFAULT_DEMONS
     diamonds: int = DEFAULT_DIAMONDS
     user_coins: int = DEFAULT_USER_COINS
@@ -131,58 +188,74 @@ class UserStatistics(Binary):
     rank: int = DEFAULT_RANK
 
     @classmethod
-    def from_data(cls: Type[UStatistics], data: UserStatisticsData) -> UStatistics:
+    def from_data(cls, data: UserStatisticsData) -> Self:
         return CONVERTER.structure(data, cls)
 
     def into_data(self) -> UserStatisticsData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
-    def from_binary(
-        cls: Type[UStatistics],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> UStatistics:
-        reader = Reader(binary, order)
+    def from_binary(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(UserStatisticsSchema.read(binary))
 
-        stars = reader.read_u32()
-        demons = reader.read_u16()
-        diamonds = reader.read_u32()
-        user_coins = reader.read_u32()
-        secret_coins = reader.read_u16()
-        creator_points = reader.read_u16()
+    @classmethod
+    def from_binary_packed(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(UserStatisticsSchema.read_packed(binary))
 
-        rank = reader.read_u32()
+    @classmethod
+    def from_bytes(cls, data: bytes) -> Self:
+        with UserStatisticsSchema.from_bytes(data) as reader:
+            return cls.from_reader(reader)
 
+    @classmethod
+    def from_bytes_packed(cls, data: bytes) -> Self:
+        return cls.from_reader(UserStatisticsSchema.from_bytes_packed(data))
+
+    def to_binary(self, binary: BufferedWriter) -> None:
+        self.to_builder().write(binary)
+
+    def to_binary_packed(self, binary: BufferedWriter) -> None:
+        self.to_builder().write_packed(binary)
+
+    def to_bytes(self) -> bytes:
+        return self.to_builder().to_bytes()
+
+    def to_bytes_packed(self) -> bytes:
+        return self.to_builder().to_bytes_packed()
+
+    @classmethod
+    def from_reader(cls, reader: UserStatisticsReader) -> Self:
         return cls(
-            stars=stars,
-            demons=demons,
-            diamonds=diamonds,
-            user_coins=user_coins,
-            secret_coins=secret_coins,
-            creator_points=creator_points,
-            rank=rank,
+            stars=reader.stars,
+            moons=reader.moons,
+            demons=reader.demons,
+            diamonds=reader.diamonds,
+            user_coins=reader.userCoins,
+            secret_coins=reader.secretCoins,
+            creator_points=reader.creatorPoints,
+            rank=reader.rank,
         )
 
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
+    def to_builder(self) -> UserStatisticsBuilder:
+        builder = UserStatisticsSchema.new_message()
 
-        writer.write_u32(self.stars)
-        writer.write_u16(self.demons)
-        writer.write_u32(self.diamonds)
-        writer.write_u32(self.user_coins)
-        writer.write_u16(self.secret_coins)
-        writer.write_u16(self.creator_points)
+        builder.stars = self.stars
+        builder.moons = self.moons
+        builder.demons = self.demons
+        builder.diamonds = self.diamonds
+        builder.userCoins = self.user_coins
+        builder.secretCoins = self.secret_coins
+        builder.creatorPoints = self.creator_points
+        builder.rank = self.rank
 
-        writer.write_u32(self.rank)
+        return builder
 
 
 class UserCosmeticsData(Data):
     color_1_id: int
     color_2_id: int
+    color_3_id: int
+    glow: bool
     icon_type: int
     icon_id: int
     cube_id: int
@@ -193,14 +266,17 @@ class UserCosmeticsData(Data):
     robot_id: int
     spider_id: int
     swing_id: int
+    jetpack_id: int
     explosion_id: int
-    glow: bool
+    streak_id: int
 
 
 @define()
 class UserCosmetics(Binary):
     color_1_id: int = DEFAULT_COLOR_1_ID
     color_2_id: int = DEFAULT_COLOR_2_ID
+    color_3_id: int = DEFAULT_COLOR_3_ID
+    glow: bool = DEFAULT_GLOW
     icon_type: IconType = IconType.DEFAULT
     icon_id: int = DEFAULT_ICON_ID
     cube_id: int = DEFAULT_ICON_ID
@@ -210,96 +286,91 @@ class UserCosmetics(Binary):
     wave_id: int = DEFAULT_ICON_ID
     robot_id: int = DEFAULT_ICON_ID
     spider_id: int = DEFAULT_ICON_ID
-    # swing_id: int = DEFAULT_ICON_ID
+    swing_id: int = DEFAULT_ICON_ID
+    jetpack_id: int = DEFAULT_ICON_ID
     explosion_id: int = DEFAULT_ICON_ID
-    glow: bool = DEFAULT_GLOW
+    streak_id: int = DEFAULT_ICON_ID
 
     @classmethod
-    def from_data(cls: Type[UCosmetics], data: UserCosmeticsData) -> UCosmetics:
+    def from_data(cls, data: UserCosmeticsData) -> Self:
         return CONVERTER.structure(data, cls)
 
     def into_data(self) -> UserCosmeticsData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
-    def from_binary(
-        cls: Type[UCosmetics],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> UCosmetics:
-        glow_bit = GLOW_BIT
+    def from_binary(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(UserCosmeticsSchema.read(binary))
 
-        reader = Reader(binary, order)
+    @classmethod
+    def from_binary_packed(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(UserCosmeticsSchema.read_packed(binary))
 
-        color_1_id = reader.read_u8()
-        color_2_id = reader.read_u8()
+    @classmethod
+    def from_bytes(cls, data: bytes) -> Self:
+        with UserCosmeticsSchema.from_bytes(data) as reader:
+            return cls.from_reader(reader)
 
-        value = reader.read_u8()
+    @classmethod
+    def from_bytes_packed(cls, data: bytes) -> Self:
+        return cls.from_reader(UserCosmeticsSchema.from_bytes_packed(data))
 
-        glow = value & glow_bit == glow_bit
+    def to_binary(self, binary: BufferedWriter) -> None:
+        self.to_builder().write(binary)
 
-        value >>= ICON_TYPE_SHIFT
+    def to_binary_packed(self, binary: BufferedWriter) -> None:
+        self.to_builder().write_packed(binary)
 
-        icon_type = IconType(value)
+    def to_bytes(self) -> bytes:
+        return self.to_builder().to_bytes()
 
-        icon_id = reader.read_u16()
-        cube_id = reader.read_u16()
-        ship_id = reader.read_u8()
-        ball_id = reader.read_u8()
-        ufo_id = reader.read_u8()
-        wave_id = reader.read_u8()
-        robot_id = reader.read_u8()
-        spider_id = reader.read_u8()
-        # swing_id = reader.read_u8()
+    def to_bytes_packed(self) -> bytes:
+        return self.to_builder().to_bytes_packed()
 
-        explosion_id = reader.read_u8()
-
+    @classmethod
+    def from_reader(cls, reader: UserCosmeticsReader) -> Self:
         return cls(
-            color_1_id=color_1_id,
-            color_2_id=color_2_id,
-            icon_type=icon_type,
-            icon_id=icon_id,
-            cube_id=cube_id,
-            ship_id=ship_id,
-            ball_id=ball_id,
-            ufo_id=ufo_id,
-            wave_id=wave_id,
-            robot_id=robot_id,
-            spider_id=spider_id,
-            # swing_id=swing_id,
-            explosion_id=explosion_id,
-            glow=glow,
+            color_1_id=reader.color1Id,
+            color_2_id=reader.color2Id,
+            color_3_id=reader.color3Id,
+            glow=reader.glow,
+            icon_type=IconType(reader.iconType),
+            icon_id=reader.iconId,
+            cube_id=reader.cubeId,
+            ship_id=reader.shipId,
+            ball_id=reader.ballId,
+            ufo_id=reader.ufoId,
+            wave_id=reader.waveId,
+            robot_id=reader.robotId,
+            spider_id=reader.spiderId,
+            swing_id=reader.swingId,
+            jetpack_id=reader.jetpackId,
+            explosion_id=reader.explosionId,
+            streak_id=reader.streakId,
         )
 
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
+    def to_builder(self) -> UserCosmeticsBuilder:
+        builder = UserCosmeticsSchema.new_message()
 
-        writer.write_u8(self.color_1_id)
-        writer.write_u8(self.color_2_id)
+        builder.color1Id = self.color_1_id
+        builder.color2Id = self.color_2_id
+        builder.color3Id = self.color_3_id
+        builder.glow = self.has_glow()
+        builder.iconType = self.icon_type.value
+        builder.iconId = self.icon_id
+        builder.cubeId = self.cube_id
+        builder.shipId = self.ship_id
+        builder.ballId = self.ball_id
+        builder.ufoId = self.ufo_id
+        builder.waveId = self.wave_id
+        builder.robotId = self.robot_id
+        builder.spiderId = self.spider_id
+        builder.swingId = self.swing_id
+        builder.jetpackId = self.jetpack_id
+        builder.explosionId = self.explosion_id
+        builder.streakId = self.streak_id
 
-        value = 0
-
-        if self.has_glow():
-            value |= GLOW_BIT
-
-        value |= self.icon_type.value << ICON_TYPE_SHIFT
-
-        writer.write_u8(value)
-
-        writer.write_u16(self.icon_id)
-        writer.write_u16(self.cube_id)
-        writer.write_u8(self.ship_id)
-        writer.write_u8(self.ball_id)
-        writer.write_u8(self.ufo_id)
-        writer.write_u8(self.wave_id)
-        writer.write_u8(self.robot_id)
-        writer.write_u8(self.spider_id)
-        # writer.write_u8(self.swing_id)
-
-        writer.write_u8(self.explosion_id)
+        return builder
 
     @property
     def color_1(self) -> Color:
@@ -308,6 +379,10 @@ class UserCosmetics(Binary):
     @property
     def color_2(self) -> Color:
         return Color.with_id(self.color_2_id, Color.default_color_2())
+
+    @property
+    def color_3(self) -> Color:
+        return Color.with_id(self.color_3_id, Color.default_color_3())
 
     def has_glow(self) -> bool:
         return self.glow
@@ -322,14 +397,19 @@ class UserCosmetics(Binary):
             IconType.WAVE: self.wave_id,
             IconType.ROBOT: self.robot_id,
             IconType.SPIDER: self.spider_id,
-            # IconType.SWING: self.swing_id,
+            IconType.SWING: self.swing_id,
+            IconType.JETPACK: self.jetpack_id,
         }
 
     def get_icon(self, type: Optional[IconType] = None) -> Icon:
         if type is None:
-            return Icon(self.icon_type, self.icon_id, self.color_1, self.color_2, self.glow)
+            return Icon(
+                self.icon_type, self.icon_id, self.color_1, self.color_2, self.color_3, self.glow
+            )
 
-        return Icon(type, self.icon_id_by_type[type], self.color_1, self.color_2, self.glow)
+        return Icon(
+            type, self.icon_id_by_type[type], self.color_1, self.color_2, self.color_3, self.glow
+        )
 
     def generate(self, type: Optional[IconType] = None) -> Image:
         return FACTORY.generate(self.get_icon(type))
@@ -376,241 +456,248 @@ class UserStates(Binary):
     friend_state: FriendState = FriendState.DEFAULT
 
     @classmethod
-    def from_data(cls: Type[UStates], data: UserStatesData) -> UStates:
+    def from_data(cls, data: UserStatesData) -> Self:
         return CONVERTER.structure(data, cls)
 
     def into_data(self) -> UserStatesData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
-    def from_binary(
-        cls: Type[UStates],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> UStates:
-        reader = Reader(binary, order)
+    def from_binary(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(UserStatesSchema.read(binary))
 
-        value = reader.read_u8()
+    @classmethod
+    def from_binary_packed(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(UserStatesSchema.read_packed(binary))
 
-        message_state_value = value & MESSAGE_STATE_MASK
-        friend_request_state_value = (
-            value & FRIEND_REQUEST_STATE_MASK
-        ) >> FRIEND_REQUEST_STATE_SHIFT
-        comment_state_value = (value & COMMENT_STATE_MASK) >> COMMENT_STATE_SHIFT
-        friend_state_value = (value & FRIEND_STATE_MASK) >> FRIEND_STATE_SHIFT
+    @classmethod
+    def from_bytes(cls, data: bytes) -> Self:
+        with UserStatesSchema.from_bytes(data) as reader:
+            return cls.from_reader(reader)
 
-        message_state = MessageState(message_state_value)
-        friend_request_state = FriendRequestState(friend_request_state_value)
-        comment_state = CommentState(comment_state_value)
-        friend_state = FriendState(friend_state_value)
+    @classmethod
+    def from_bytes_packed(cls, data: bytes) -> Self:
+        return cls.from_reader(UserStatesSchema.from_bytes_packed(data))
 
+    def to_binary(self, binary: BufferedWriter) -> None:
+        self.to_builder().write(binary)
+
+    def to_binary_packed(self, binary: BufferedWriter) -> None:
+        self.to_builder().write_packed(binary)
+
+    def to_bytes(self) -> bytes:
+        return self.to_builder().to_bytes()
+
+    def to_bytes_packed(self) -> bytes:
+        return self.to_builder().to_bytes_packed()
+
+    @classmethod
+    def from_reader(cls, reader: UserStatesReader) -> Self:
         return cls(
-            message_state=message_state,
-            friend_request_state=friend_request_state,
-            comment_state=comment_state,
-            friend_state=friend_state,
+            message_state=MessageState(reader.messageState),
+            friend_request_state=FriendRequestState(reader.friendRequestState),
+            comment_state=CommentState(reader.commentState),
+            friend_state=FriendState(reader.friendState),
         )
 
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
+    def to_builder(self) -> UserStatesBuilder:
+        builder = UserStatesSchema.new_message()
 
-        value = self.message_state.value
+        builder.messageState = self.message_state.value
+        builder.friendRequestState = self.friend_request_state.value
+        builder.commentState = self.comment_state.value
+        builder.friendState = self.friend_state.value
 
-        value |= self.friend_request_state.value << FRIEND_REQUEST_STATE_SHIFT
-        value |= self.comment_state.value << COMMENT_STATE_SHIFT
-        value |= self.friend_state.value << FRIEND_STATE_SHIFT
-
-        writer.write_u8(value)
+        return builder
 
 
 class UserSocialsData(Data):
     youtube: Optional[str]
-    twitter: Optional[str]
+    x: Optional[str]
     twitch: Optional[str]
-    # discord: Optional[str]
+    discord: Optional[str]
 
 
 @define()
 class UserSocials(Binary):
     youtube: Optional[str] = None
-    twitter: Optional[str] = None
+    x: Optional[str] = None
     twitch: Optional[str] = None
-    # discord: Optional[str] = None
+    discord: Optional[str] = None
 
     @classmethod
-    def from_data(cls: Type[USocials], data: UserSocialsData) -> USocials:
+    def from_data(cls, data: UserSocialsData) -> Self:
         return CONVERTER.structure(data, cls)
 
     def into_data(self) -> UserSocialsData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
-    def from_binary(
-        cls: Type[USocials],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> USocials:
-        reader = Reader(binary, order)
+    def from_binary(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(UserSocialsSchema.read(binary))
 
-        youtube_length = reader.read_u8()
+    @classmethod
+    def from_binary_packed(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(UserSocialsSchema.read_packed(binary))
 
-        if youtube_length:
-            youtube = reader.read(youtube_length).decode(encoding, errors)
+    @classmethod
+    def from_bytes(cls, data: bytes) -> Self:
+        with UserSocialsSchema.from_bytes(data) as reader:
+            return cls.from_reader(reader)
 
-        else:
+    @classmethod
+    def from_bytes_packed(cls, data: bytes) -> Self:
+        return cls.from_reader(UserSocialsSchema.from_bytes_packed(data))
+
+    def to_binary(self, binary: BufferedWriter) -> None:
+        self.to_builder().write(binary)
+
+    def to_binary_packed(self, binary: BufferedWriter) -> None:
+        self.to_builder().write_packed(binary)
+
+    def to_bytes(self) -> bytes:
+        return self.to_builder().to_bytes()
+
+    def to_bytes_packed(self) -> bytes:
+        return self.to_builder().to_bytes_packed()
+
+    @classmethod
+    def from_reader(cls, reader: UserSocialsReader) -> Self:
+        youtube_option = reader.youtube
+
+        if youtube_option.which() == NONE:
             youtube = None
 
-        twitter_length = reader.read_u8()
+        else:
+            youtube = youtube_option.some
 
-        if twitter_length:
-            twitter = reader.read(twitter_length).decode(encoding, errors)
+        x_option = reader.x
+
+        if x_option.which() == NONE:
+            x = None
 
         else:
-            twitter = None
+            x = x_option.some
 
-        twitch_length = reader.read_u8()
+        twitch_option = reader.twitch
 
-        if twitch_length:
-            twitch = reader.read(twitch_length).decode(encoding, errors)
-
-        else:
+        if twitch_option.which() == NONE:
             twitch = None
 
-        # discord_length = reader.read_u8()
+        else:
+            twitch = twitch_option.some
 
-        # if discord_length:
-        #     discord = reader.read(discord_length).decode(encoding, errors)
+        discord_option = reader.discord
 
-        # else:
-        #     discord = None
+        if discord_option.which() == NONE:
+            discord = None
 
-        return cls(
-            youtube=youtube,
-            twitter=twitter,
-            twitch=twitch,
-            # discord=discord,
-        )
+        else:
+            discord = discord_option.some
 
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        writer = Writer(binary, order)
+        return cls(youtube=youtube, x=x, twitch=twitch, discord=discord)
+
+    def to_builder(self) -> UserSocialsBuilder:
+        builder = UserSocialsSchema.new_message()
 
         youtube = self.youtube
 
         if youtube is None:
-            writer.write_u8(0)
+            builder.youtube.none = None
 
         else:
-            data = youtube.encode(encoding, errors)
+            builder.youtube.some = youtube
 
-            writer.write_u8(len(data))
+        x = self.x
 
-            writer.write(data)
-
-        twitter = self.twitter
-
-        if twitter is None:
-            writer.write_u8(0)
+        if x is None:
+            builder.x.none = None
 
         else:
-            data = twitter.encode(encoding, errors)
-
-            writer.write_u8(len(data))
-
-            writer.write(data)
+            builder.x.some = x
 
         twitch = self.twitch
 
         if twitch is None:
-            writer.write_u8(0)
+            builder.twitch.none = None
 
         else:
-            data = twitch.encode(encoding, errors)
+            builder.twitch.some = twitch
 
-            writer.write_u8(len(data))
+        discord = self.discord
 
-            writer.write(data)
+        if discord is None:
+            builder.discord.none = None
 
-        # discord = self.discord
+        else:
+            builder.discord.some = discord
 
-        # if discord is None:
-        #     writer.write_u8(0)
-
-        # else:
-        #     data = discord.encode(encoding, errors)
-
-        #     writer.write_u8(len(data))
-
-        #     writer.write(data)
+        return builder
 
 
 class UserLeaderboardData(Data):
-    record: int
+    record: EitherRecordData
     coins: int
-
     recorded_at: str
 
 
-@define()
 class UserLeaderboard(Binary):
-    record: int = field(default=DEFAULT_RECORD)
+    record: EitherRecord = field(factory=EitherRecord)
     coins: int = field(default=DEFAULT_COINS)
-
     recorded_at: DateTime = field(factory=utc_now)
 
     @classmethod
-    def from_data(cls: Type[ULeaderboard], data: UserLeaderboardData) -> ULeaderboard:
+    def from_data(cls, data: UserLeaderboardData) -> Self:
         return CONVERTER.structure(data, cls)
 
     def into_data(self) -> UserLeaderboardData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
-    def from_binary(
-        cls: Type[ULeaderboard],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> ULeaderboard:
-        reader = Reader(binary, order)
+    def from_binary(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(UserLeaderboardSchema.read(binary))
 
-        record = reader.read_u8()
+    @classmethod
+    def from_binary_packed(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(UserLeaderboardSchema.read_packed(binary))
 
-        coins = reader.read_u8()
+    @classmethod
+    def from_bytes(cls, data: bytes) -> Self:
+        with UserLeaderboardSchema.from_bytes(data) as reader:
+            return cls.from_reader(reader)
 
-        timestamp = reader.read_f64()
+    @classmethod
+    def from_bytes_packed(cls, data: bytes) -> Self:
+        return cls.from_reader(UserLeaderboardSchema.from_bytes_packed(data))
 
-        recorded_at = utc_from_timestamp(timestamp)
+    def to_binary(self, binary: BufferedWriter) -> None:
+        self.to_builder().write(binary)
 
-        return cls(record=record, coins=coins, recorded_at=recorded_at)
+    def to_binary_packed(self, binary: BufferedWriter) -> None:
+        self.to_builder().write_packed(binary)
 
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        writer = Writer(binary, order)
+    def to_bytes(self) -> bytes:
+        return self.to_builder().to_bytes()
 
-        writer.write_u8(self.record)
+    def to_bytes_packed(self) -> bytes:
+        return self.to_builder().to_bytes_packed()
 
-        writer.write_u8(self.coins)
+    @classmethod
+    def from_reader(cls, reader: UserLeaderboardReader) -> Self:
+        return cls(
+            record=EitherRecord.from_reader(reader.record),
+            coins=reader.coins,
+            recorded_at=utc_from_timestamp_milliseconds(reader.recordedAt),
+        )
 
-        timestamp = self.recorded_at.timestamp()  # type: ignore
+    def to_builder(self) -> UserLeaderboardBuilder:
+        builder = UserLeaderboardSchema.new_message()
 
-        writer.write_f64(timestamp)
+        builder.record = self.record.to_builder()
+        builder.coins = self.coins
+        builder.recordedAt = timestamp_milliseconds(self.recorded_at)
+
+        return builder
 
 
 class UserData(EntityData):
@@ -626,38 +713,9 @@ class UserData(EntityData):
     leaderboard: Optional[UserLeaderboardData]
 
 
-class UserFlag(Flag):
-    SIMPLE = 0
-
-    STATISTICS = 1 << 0
-    COSMETICS = 1 << 1
-    STATES = 1 << 2
-    SOCIALS = 1 << 3
-    PLACE = 1 << 4
-    LEADERBOARD = 1 << 5
-
-    def has_statistics(self) -> bool:
-        return type(self).STATISTICS in self
-
-    def has_cosmetics(self) -> bool:
-        return type(self).COSMETICS in self
-
-    def has_states(self) -> bool:
-        return type(self).STATES in self
-
-    def has_socials(self) -> bool:
-        return type(self).SOCIALS in self
-
-    def has_place(self) -> bool:
-        return type(self).PLACE in self
-
-    def has_leaderboard(self) -> bool:
-        return type(self).LEADERBOARD in self
-
-
 @register_unstructure_hook_omit_client
 @define()
-class User(Entity):
+class User(Entity, Binary):
     name: str = field(eq=False)
     account_id: int = field(eq=False)
     role_id: int = field(default=DEFAULT_ID, eq=False)
@@ -670,85 +728,97 @@ class User(Entity):
     leaderboard: Optional[UserLeaderboard] = field(default=None, eq=False)
 
     @classmethod
-    def from_data(cls: Type[U], data: UserData) -> U:  # type: ignore
+    def from_data(cls, data: UserData) -> Self:  # type: ignore
         return CONVERTER.structure(data, cls)
 
     def into_data(self) -> UserData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
-    def from_binary(
-        cls: Type[U],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> U:
-        banned_bit = BANNED_BIT
+    def from_binary(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(UserSchema.read(binary))
 
-        reader = Reader(binary, order)
+    @classmethod
+    def from_binary_packed(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(UserSchema.read_packed(binary))
 
-        value = reader.read_u8()
+    @classmethod
+    def from_bytes(cls, data: bytes) -> Self:
+        with UserSchema.from_bytes(data) as reader:
+            return cls.from_reader(reader)
 
-        banned = value & banned_bit == banned_bit
+    @classmethod
+    def from_bytes_packed(cls, data: bytes) -> Self:
+        return cls.from_reader(UserSchema.from_bytes_packed(data))
 
-        value >>= USER_FLAG_SHIFT
+    def to_binary(self, binary: BufferedWriter) -> None:
+        self.to_builder().write(binary)
 
-        user_flag = UserFlag(value)
+    def to_binary_packed(self, binary: BufferedWriter) -> None:
+        self.to_builder().write_packed(binary)
 
-        id = reader.read_u32()
+    def to_bytes(self) -> bytes:
+        return self.to_builder().to_bytes()
 
-        name_length = reader.read_u8()
+    def to_bytes_packed(self) -> bytes:
+        return self.to_builder().to_bytes_packed()
 
-        name = reader.read(name_length).decode(encoding, errors)
+    @classmethod
+    def from_reader(cls, reader: UserReader) -> Self:
+        statistics_option = reader.statistics
 
-        account_id = reader.read_u32()
-
-        role_id = reader.read_u8()
-
-        if user_flag.has_statistics():
-            statistics = UserStatistics.from_binary(binary, order, version)
-
-        else:
+        if statistics_option.which() == NONE:
             statistics = None
 
-        if user_flag.has_cosmetics():
-            cosmetics = UserCosmetics.from_binary(binary, order, version)
-
         else:
+            statistics = UserStatistics.from_reader(statistics_option.some)
+
+        cosmetics_option = reader.cosmetics
+
+        if cosmetics_option.which() == NONE:
             cosmetics = None
 
-        if user_flag.has_states():
-            states = UserStates.from_binary(binary, order, version)
-
         else:
+            cosmetics = UserCosmetics.from_reader(cosmetics_option.some)
+
+        states_option = reader.states
+
+        if states_option.which() == NONE:
             states = None
 
-        if user_flag.has_socials():
-            socials = UserSocials.from_binary(binary, order, version, encoding, errors)
-
         else:
+            states = UserStates.from_reader(states_option.some)
+
+        socials_option = reader.socials
+
+        if socials_option.which() == NONE:
             socials = None
 
-        if user_flag.has_place():
-            place = reader.read_u32()
-
         else:
+            socials = UserSocials.from_reader(socials_option.some)
+
+        place_option = reader.place
+
+        if place_option.which() == NONE:
             place = None
 
-        if user_flag.has_leaderboard():
-            leaderboard = UserLeaderboard.from_binary(binary, order, version)
-
         else:
+            place = place_option.some
+
+        leaderboard_option = reader.leaderboard
+
+        if leaderboard_option.which() == NONE:
             leaderboard = None
 
+        else:
+            leaderboard = UserLeaderboard.from_reader(leaderboard_option.some)
+
         return cls(
-            id=id,
-            name=name,
-            account_id=account_id,
-            role_id=role_id,
-            banned=banned,
+            id=reader.id,
+            name=reader.name,
+            account_id=reader.accountId,
+            role_id=reader.roleId,
+            banned=reader.banned,
             statistics=statistics,
             cosmetics=cosmetics,
             states=states,
@@ -757,101 +827,71 @@ class User(Entity):
             leaderboard=leaderboard,
         )
 
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        writer = Writer(binary, order)
+    def to_builder(self) -> UserBuilder:
+        builder = UserSchema.new_message()
 
-        value = 0
-
-        if self.is_banned():
-            value |= BANNED_BIT
-
-        user_flag = UserFlag.SIMPLE
+        builder.id = self.id
+        builder.name = self.name
+        builder.accountId = self.account_id
+        builder.roleId = self.role_id
+        builder.banned = self.banned
 
         statistics = self.statistics
 
-        if statistics is not None:
-            user_flag |= UserFlag.STATISTICS
+        if statistics is None:
+            builder.statistics.none = None
+
+        else:
+            builder.statistics.some = statistics.to_builder()
 
         cosmetics = self.cosmetics
 
-        if cosmetics is not None:
-            user_flag |= UserFlag.COSMETICS
+        if cosmetics is None:
+            builder.cosmetics.none = None
+
+        else:
+            builder.cosmetics.some = cosmetics.to_builder()
 
         states = self.states
 
-        if states is not None:
-            user_flag |= UserFlag.STATES
+        if states is None:
+            builder.states.none = None
+
+        else:
+            builder.states.some = states.to_builder()
 
         socials = self.socials
 
-        if socials is not None:
-            user_flag |= UserFlag.SOCIALS
+        if socials is None:
+            builder.socials.none = None
+
+        else:
+            builder.socials.some = socials.to_builder()
 
         place = self.place
 
-        if place is not None:
-            user_flag |= UserFlag.PLACE
+        if place is None:
+            builder.place.none = None
+
+        else:
+            builder.place.some = place
 
         leaderboard = self.leaderboard
 
-        if leaderboard is not None:
-            user_flag |= UserFlag.LEADERBOARD
+        if leaderboard is None:
+            builder.leaderboard.none = None
 
-        value |= user_flag.value << USER_FLAG_SHIFT
+        else:
+            builder.leaderboard.some = leaderboard.to_builder()
 
-        writer.write_u8(value)
-
-        writer.write_u32(self.id)
-
-        data = self.name.encode(encoding, errors)
-
-        writer.write_u8(len(data))
-
-        writer.write(data)
-
-        writer.write_u32(self.account_id)
-
-        writer.write_u8(self.role_id)
-
-        if statistics is not None:
-            statistics.to_binary(binary, order, version)
-
-        if cosmetics is not None:
-            cosmetics.to_binary(binary, order, version)
-
-        if states is not None:
-            states.to_binary(binary, order, version)
-
-        if socials is not None:
-            socials.to_binary(binary, order, version, encoding, errors)
-
-        if place is not None:
-            writer.write_u32(place)
-
-        if leaderboard is not None:
-            leaderboard.to_binary(binary, order, version)
+        return builder
 
     @classmethod
-    def default(cls: Type[U], id: int = DEFAULT_ID, account_id: int = DEFAULT_ID) -> U:
+    def default(cls, id: int = DEFAULT_ID, account_id: int = DEFAULT_ID) -> Self:
         return cls(id=id, name=EMPTY, account_id=account_id)
 
     @classmethod
-    def robtop(cls: Type[U]) -> U:
-        return cls(id=ROBTOP_ID, name=ROBTOP_NAME, account_id=ROBTOP_ACCOUNT_ID)
-
-    @classmethod
-    def from_creator_model(cls: Type[U], model: CreatorModel) -> U:
-        return cls(id=model.id, name=model.name, account_id=model.account_id)
-
-    @classmethod
-    def from_search_user_model(cls: Type[U], model: SearchUserModel) -> U:
+    def from_search_user_model(cls, model: SearchUserModel) -> Self:
         return cls(
             name=model.name,
             id=model.id,
@@ -874,7 +914,7 @@ class User(Entity):
         )
 
     @classmethod
-    def from_profile_model(cls: Type[U], model: ProfileModel) -> U:
+    def from_profile_model(cls, model: ProfileModel) -> Self:
         return cls(
             name=model.name,
             id=model.id,
@@ -883,6 +923,7 @@ class User(Entity):
             banned=model.banned,
             statistics=UserStatistics(
                 stars=model.stars,
+                moons=model.moons,
                 demons=model.demons,
                 diamonds=model.diamonds,
                 user_coins=model.user_coins,
@@ -893,6 +934,8 @@ class User(Entity):
             cosmetics=UserCosmetics(
                 color_1_id=model.color_1_id,
                 color_2_id=model.color_2_id,
+                color_3_id=model.color_3_id,
+                glow=model.has_glow(),
                 cube_id=model.cube_id,
                 ship_id=model.ship_id,
                 ball_id=model.ball_id,
@@ -900,9 +943,10 @@ class User(Entity):
                 wave_id=model.wave_id,
                 robot_id=model.robot_id,
                 spider_id=model.spider_id,
-                # swing_id=model.swing_id,
+                swing_id=model.swing_id,
+                jetpack_id=model.jetpack_id,
                 explosion_id=model.explosion_id,
-                glow=model.glow,
+                # streak_id=model.streak_id,
             ),
             states=UserStates(
                 message_state=model.message_state,
@@ -912,7 +956,7 @@ class User(Entity):
             ),
             socials=UserSocials(
                 youtube=model.youtube,
-                twitter=model.twitter,
+                x=model.x,
                 twitch=model.twitch,
                 # discord=model.discord,
             ),
@@ -920,8 +964,8 @@ class User(Entity):
 
     @classmethod
     def from_search_user_and_profile_models(
-        cls: Type[U], search_user_model: SearchUserModel, profile_model: ProfileModel
-    ) -> U:
+        cls, search_user_model: SearchUserModel, profile_model: ProfileModel
+    ) -> Self:
         return cls(
             name=profile_model.name,
             id=profile_model.id,
@@ -968,7 +1012,7 @@ class User(Entity):
         )
 
     @classmethod
-    def from_relationship_user_model(cls: Type[U], model: RelationshipUserModel) -> U:
+    def from_relationship_user_model(cls, model: RelationshipUserModel) -> Self:
         return cls(
             name=model.name,
             id=model.id,
@@ -984,7 +1028,7 @@ class User(Entity):
         )
 
     @classmethod
-    def from_level_comment_user_model(cls: Type[U], model: LevelCommentUserModel, id: int) -> U:
+    def from_level_comment_user_model(cls, model: LevelCommentUserModel, id: int) -> Self:
         return cls(
             id=id,
             name=model.name,
@@ -999,7 +1043,7 @@ class User(Entity):
         )
 
     @classmethod
-    def from_leaderboard_user_model(cls: Type[U], model: LeaderboardUserModel) -> U:
+    def from_leaderboard_user_model(cls, model: LeaderboardUserModel) -> Self:
         return cls(
             name=model.name,
             id=model.id,
@@ -1023,7 +1067,7 @@ class User(Entity):
         )
 
     @classmethod
-    def from_level_leaderboard_user_model(cls: Type[U], model: LevelLeaderboardUserModel) -> U:
+    def from_level_leaderboard_user_model(cls, model: LevelLeaderboardUserModel) -> Self:
         return cls(
             name=model.name,
             id=model.id,
@@ -1051,11 +1095,9 @@ class User(Entity):
         return Role(self.role_id)
 
     def is_banned(self) -> bool:
-        """Indicates whether the user is banned."""
         return self.banned
 
     def is_registered(self) -> bool:
-        """Indicates whether the user is registered."""
         return self.account_id > 0 and self.id > 0
 
     async def get(
@@ -1063,7 +1105,7 @@ class User(Entity):
     ) -> User:
         return await self.client.get_user(self.account_id, simple=simple, friend_state=friend_state)
 
-    async def update(self: U, friend_state: bool = DEFAULT_FRIEND_STATE) -> U:
+    async def update(self, friend_state: bool = DEFAULT_FRIEND_STATE) -> Self:
         return self.update_from(await self.get(friend_state=friend_state))
 
     async def send(

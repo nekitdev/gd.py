@@ -129,7 +129,7 @@ class Session:
         friend_request_state: FriendRequestState,
         comment_state: CommentState,
         youtube: Optional[str],
-        twitter: Optional[str],
+        x: Optional[str],
         twitch: Optional[str],
         *,
         account_id: int,
@@ -140,7 +140,7 @@ class Session:
             friend_request_state=friend_request_state,
             comment_state=comment_state,
             youtube=youtube,
-            twitter=twitter,
+            x=x,
             twitch=twitch,
             account_id=account_id,
             encoded_password=encoded_password,
@@ -171,7 +171,7 @@ class Session:
         *,
         account_id: int,
         name: str,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.update_profile(
             stars=stars,
@@ -196,7 +196,7 @@ class Session:
             special=special,
             account_id=account_id,
             name=name,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def search_user(self, query: IntString) -> SearchUserModel:

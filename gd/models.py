@@ -21,6 +21,7 @@ from gd.constants import (
     DEFAULT_COINS,
     DEFAULT_COLOR_1_ID,
     DEFAULT_COLOR_2_ID,
+    DEFAULT_COLOR_3_ID,
     DEFAULT_CONTENT_PRESENT,
     DEFAULT_CREATOR_POINTS,
     DEFAULT_DEMON,
@@ -35,6 +36,7 @@ from gd.constants import (
     DEFAULT_ID,
     DEFAULT_KEYS,
     DEFAULT_LOW_DETAIL,
+    DEFAULT_MOONS,
     DEFAULT_NEW,
     DEFAULT_NUMERATOR,
     DEFAULT_OBJECT_COUNT,
@@ -301,7 +303,7 @@ SONG_SIZE = 5
 SONG_YOUTUBE_VIDEO_ID = 6
 SONG_YOUTUBE_CHANNEL_ID = 7
 SONG_ARTIST_VERIFIED = 8
-SONG_DOWNLOAD_URL = 10
+SONG_URL = 10
 
 
 S = TypeVar("S", bound="SongModel")
@@ -317,7 +319,7 @@ class SongModel(Model):
     youtube_video_id: str = EMPTY
     youtube_channel_id: str = EMPTY
     artist_verified: bool = DEFAULT_ARTIST_VERIFIED
-    download_url: Optional[URL] = None
+    url: Optional[URL] = None
 
     @classmethod
     def from_robtop(
@@ -342,9 +344,9 @@ class SongModel(Model):
             int_bool, DEFAULT_ARTIST_VERIFIED, mapping.get(SONG_ARTIST_VERIFIED)
         )
 
-        download_url_option = mapping.get(SONG_DOWNLOAD_URL)
+        url_option = mapping.get(SONG_URL)
 
-        download_url = URL(unquote(download_url_option)) if download_url_option else None
+        url = URL(unquote(url_option)) if url_option else None
 
         return cls(
             id=id,
@@ -355,11 +357,11 @@ class SongModel(Model):
             youtube_video_id=youtube_video_id,
             youtube_channel_id=youtube_channel_id,
             artist_verified=artist_verified,
-            download_url=download_url,
+            url=url,
         )
 
     def to_robtop(self) -> str:
-        download_url = self.download_url
+        url = self.url
 
         mapping = {
             SONG_ID: str(self.id),
@@ -370,13 +372,13 @@ class SongModel(Model):
             SONG_YOUTUBE_VIDEO_ID: self.youtube_video_id,
             SONG_YOUTUBE_CHANNEL_ID: self.youtube_channel_id,
             SONG_ARTIST_VERIFIED: bool_str(self.is_artist_verified()),
-            SONG_DOWNLOAD_URL: EMPTY if download_url else quote(str(download_url)),
+            SONG_URL: EMPTY if url is None else quote(str(url)),
         }
 
         return concat_song(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return SONG_SEPARATOR in string
 
     def is_artist_verified(self) -> bool:
@@ -400,8 +402,8 @@ class LoginModel(Model):
     def to_robtop(self) -> str:
         return iter.of(str(self.account_id), str(self.id)).collect(concat_login)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return LOGIN_SEPARATOR in string
 
 
@@ -427,8 +429,8 @@ class CreatorModel(Model):
     def to_robtop(self) -> str:
         return iter.of(str(self.id), self.name, str(self.account_id)).collect(concat_creator)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return CREATOR_SEPARATOR in string
 
 
@@ -470,8 +472,8 @@ class PageModel(Model):
 
         return iter.of(str(total), str(start), str(stop)).collect(concat_page)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return PAGE_SEPARATOR in string
 
 
@@ -599,8 +601,8 @@ class SearchUserModel(Model):
 
         return concat_search_user(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return SEARCH_USER_SEPARATOR in string
 
     def has_glow(self) -> bool:
@@ -634,13 +636,16 @@ PROFILE_NEW_MESSAGES = 38
 PROFILE_NEW_FRIEND_REQUESTS = 39
 PROFILE_NEW_FRIENDS = 40
 PROFILE_SPIDER_ID = 43
-PROFILE_TWITTER = 44
+PROFILE_X = 44
 PROFILE_TWITCH = 45
 PROFILE_DIAMONDS = 46
 PROFILE_EXPLOSION_ID = 48
 PROFILE_ROLE_ID = 49
 PROFILE_COMMENT_STATE = 50
-
+PROFILE_COLOR_3_ID = 51
+PROFILE_MOONS = 52
+PROFILE_SWING_ID = 53
+PROFILE_JETPACK_ID = 54
 
 P = TypeVar("P", bound="ProfileModel")
 
@@ -674,12 +679,16 @@ class ProfileModel(Model):
     new_friend_requests: int = DEFAULT_NEW
     new_friends: int = DEFAULT_NEW
     spider_id: int = DEFAULT_ICON_ID
-    twitter: Optional[str] = None
+    x: Optional[str] = None
     twitch: Optional[str] = None
     diamonds: int = DEFAULT_DIAMONDS
     explosion_id: int = DEFAULT_ICON_ID
     role_id: int = DEFAULT_ID
     comment_state: CommentState = CommentState.DEFAULT
+    color_3_id: int = DEFAULT_COLOR_3_ID
+    moons: int = DEFAULT_MOONS
+    swing_id: int = DEFAULT_ICON_ID
+    jetpack_id: int = DEFAULT_ICON_ID
 
     @classmethod
     def from_robtop(cls: Type[P], string: str) -> P:
@@ -747,7 +756,7 @@ class ProfileModel(Model):
 
         spider_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_SPIDER_ID))
 
-        twitter = mapping.get(PROFILE_TWITTER) or None
+        x = mapping.get(PROFILE_X) or None
 
         twitch = mapping.get(PROFILE_TWITCH) or None
 
@@ -762,6 +771,14 @@ class ProfileModel(Model):
             CommentState.DEFAULT,
             mapping.get(PROFILE_COMMENT_STATE),
         )
+
+        color_3_id = parse_get_or(int, DEFAULT_COLOR_3_ID, mapping.get(PROFILE_COLOR_3_ID))
+
+        moons = parse_get_or(int, DEFAULT_MOONS, mapping.get(PROFILE_MOONS))
+
+        swing_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_SWING_ID))
+
+        jetpack_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_JETPACK_ID))
 
         return cls(
             name=name,
@@ -791,12 +808,16 @@ class ProfileModel(Model):
             new_friend_requests=new_friend_requests,
             new_friends=new_friends,
             spider_id=spider_id,
-            twitter=twitter,
+            x=x,
             twitch=twitch,
             diamonds=diamonds,
             explosion_id=explosion_id,
             role_id=role_id,
             comment_state=comment_state,
+            color_3_id=color_3_id,
+            moons=moons,
+            swing_id=swing_id,
+            jetpack_id=jetpack_id,
         )
 
     def to_robtop(self) -> str:
@@ -828,18 +849,22 @@ class ProfileModel(Model):
             PROFILE_NEW_FRIEND_REQUESTS: str(self.new_friend_requests),
             PROFILE_NEW_FRIENDS: str(self.new_friends),
             PROFILE_SPIDER_ID: str(self.spider_id),
-            PROFILE_TWITTER: self.twitter or EMPTY,
+            PROFILE_X: self.x or EMPTY,
             PROFILE_TWITCH: self.twitch or EMPTY,
             PROFILE_DIAMONDS: str(self.diamonds),
             PROFILE_EXPLOSION_ID: str(self.explosion_id),
             PROFILE_ROLE_ID: str(self.role_id),
             PROFILE_COMMENT_STATE: str(self.comment_state.value),
+            PROFILE_COLOR_3_ID: str(self.color_3_id),
+            PROFILE_MOONS: str(self.moons),
+            PROFILE_SWING_ID: str(self.swing_id),
+            PROFILE_JETPACK_ID: str(self.jetpack_id),
         }
 
         return concat_profile(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return PROFILE_SEPARATOR in string
 
     def has_glow(self) -> bool:
@@ -950,8 +975,8 @@ class RelationshipUserModel(Model):
 
         return concat_relationship_user(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return RELATIONSHIP_USER_SEPARATOR in string
 
     def has_glow(self) -> bool:
@@ -1080,8 +1105,8 @@ class LeaderboardUserModel(Model):
 
         return concat_leaderboard_user(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return LEADERBOARD_USER_SEPARATOR in string
 
     def has_glow(self) -> bool:
@@ -1117,8 +1142,8 @@ class TimelyInfoModel(Model):
             concat_timely_info
         )
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return TIMELY_INFO_SEPARATOR in string
 
 
@@ -1207,8 +1232,8 @@ class MessageModel(Model):
 
         return concat_message(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return MESSAGE_SEPARATOR in string
 
     def is_read(self) -> bool:
@@ -1330,8 +1355,8 @@ class FriendRequestModel(Model):
 
         return concat_friend_request(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return FRIEND_REQUEST_SEPARATOR in string
 
     def has_glow(self) -> bool:
@@ -1369,7 +1394,7 @@ LEVEL_DEMON = 17
 LEVEL_STARS = 18
 LEVEL_SCORE = 19
 LEVEL_AUTO = 25
-LEVEL_PASSWORD_DATA = 27
+LEVEL_PASSWORD = 27
 LEVEL_CREATED_AT = 28
 LEVEL_UPDATED_AT = 29
 LEVEL_ORIGINAL_ID = 30
@@ -1409,7 +1434,7 @@ class LevelModel(Model):
     length: LevelLength = field(default=LevelLength.DEFAULT)
     stars: int = field(default=DEFAULT_STARS)
     score: int = field(default=DEFAULT_SCORE)
-    password_data: Password = field(factory=Password)
+    password: Password = field(factory=Password)
     created_at: DateTime = field(factory=utc_now)
     updated_at: DateTime = field(factory=utc_now)
     original_id: int = field(default=DEFAULT_ID)
@@ -1492,8 +1517,8 @@ class LevelModel(Model):
         if score < 0:
             score = 0
 
-        password_data = parse_get_or_else(
-            Password.from_robtop, Password, mapping.get(LEVEL_PASSWORD_DATA)
+        password = parse_get_or_else(
+            Password.from_robtop, Password, mapping.get(LEVEL_PASSWORD)
         )
 
         created_at = parse_get_or_else(
@@ -1583,7 +1608,7 @@ class LevelModel(Model):
             length=length,
             stars=stars,
             score=score,
-            password_data=password_data,
+            password=password,
             created_at=created_at,
             updated_at=updated_at,
             original_id=original_id,
@@ -1640,7 +1665,7 @@ class LevelModel(Model):
             LEVEL_STARS: str(self.stars),
             LEVEL_SCORE: str(self.score),
             LEVEL_AUTO: auto_string,
-            LEVEL_PASSWORD_DATA: self.password_data.to_robtop(),
+            LEVEL_PASSWORD: self.password.to_robtop(),
             LEVEL_CREATED_AT: date_time_to_human(self.created_at),
             LEVEL_UPDATED_AT: date_time_to_human(self.updated_at),
             LEVEL_ORIGINAL_ID: str(self.original_id),
@@ -1661,8 +1686,8 @@ class LevelModel(Model):
 
         return concat_level(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return LEVEL_SEPARATOR in string
 
     def is_two_player(self) -> bool:
@@ -1787,8 +1812,8 @@ class LevelCommentInnerModel(Model):
 
         return concat_level_comment_inner(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return LEVEL_COMMENT_INNER_SEPARATOR in string
 
     def is_spam(self) -> bool:
@@ -1869,8 +1894,8 @@ class LevelCommentUserModel(Model):
 
         return concat_level_comment_user(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return LEVEL_COMMENT_USER_SEPARATOR in string
 
     def has_glow(self) -> bool:
@@ -1897,8 +1922,8 @@ class LevelCommentModel(Model):
     def to_robtop(self) -> str:
         return iter.of(self.inner.to_robtop(), self.user.to_robtop()).collect(concat_level_comment)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return LEVEL_COMMENT_SEPARATOR in string
 
 
@@ -1947,8 +1972,8 @@ class UserCommentModel(Model):
 
         return concat_user_comment(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return USER_COMMENT_SEPARATOR in string
 
 
@@ -2058,8 +2083,8 @@ class LevelLeaderboardUserModel(Model):
 
         return concat_level_leaderboard_user(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return LEVEL_LEADERBOARD_USER_SEPARATOR in string
 
     def has_glow(self) -> bool:
@@ -2089,8 +2114,8 @@ class ArtistModel(Model):
 
         return concat_artist(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return ARTIST_SEPARATOR in string
 
 
@@ -2117,8 +2142,8 @@ class ChestModel(Model):
             str(self.orbs), str(self.diamonds), str(self.shard_type.value), str(self.keys)
         ).collect(concat_chest)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return CHEST_SEPARATOR in string
 
 
@@ -2154,8 +2179,8 @@ class QuestModel(Model):
             str(self.id), str(self.type.value), str(self.amount), str(self.reward), self.name
         ).collect(concat_quest)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return QUEST_SEPARATOR in string
 
 
@@ -2197,8 +2222,8 @@ class GauntletModel(Model):
 
         return concat_gauntlet(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return GAUNTLET_SEPARATOR in string
 
 
@@ -2280,8 +2305,8 @@ class MapPackModel(Model):
 
         return concat_map_pack(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return MAP_PACK_SEPARATOR in string
 
 
@@ -2375,8 +2400,8 @@ class ChestsInnerModel(Model):
             str(self.reward_type.value),
         ).collect(concat_chests_inner)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return CHESTS_INNER_SEPARATOR in string
 
 
@@ -2446,8 +2471,8 @@ class QuestsInnerModel(Model):
             self.quest_3.to_robtop(),
         ).collect(concat_quests_inner)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return QUESTS_INNER_SEPARATOR in string
 
 
@@ -2471,7 +2496,7 @@ class ChestsResponseModel(Model):
             self.inner.to_robtop(), Key.CHESTS
         )
 
-    @staticmethod
+    @classmethod
     def decode_inner(string: str) -> str:
         return decode_robtop_string(string[CHESTS_SLICE:], Key.CHESTS)
 
@@ -2488,8 +2513,8 @@ class ChestsResponseModel(Model):
     def to_robtop(self) -> str:
         return iter.of(self.encode_inner(), self.hash).collect(concat_chests_response)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return CHESTS_RESPONSE_SEPARATOR in string
 
 
@@ -2513,7 +2538,7 @@ class QuestsResponseModel(Model):
             self.inner.to_robtop(), Key.QUESTS
         )
 
-    @staticmethod
+    @classmethod
     def decode_inner(string: str) -> str:
         return decode_robtop_string(string[QUESTS_SLICE:], Key.QUESTS)
 
@@ -2530,8 +2555,8 @@ class QuestsResponseModel(Model):
     def to_robtop(self) -> str:
         return iter.of(self.encode_inner(), self.hash).collect(concat_quests_response)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return QUESTS_RESPONSE_SEPARATOR in string
 
 
@@ -2582,8 +2607,8 @@ class GauntletsResponseModel(Model):
             self.hash,
         ).collect(concat_gauntlets_response)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return GAUNTLETS_RESPONSE_SEPARATOR in string
 
 
@@ -2640,8 +2665,8 @@ class MapPacksResponseModel(Model):
             self.hash,
         ).collect(concat_map_packs_response)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return MAP_PACKS_RESPONSE_SEPARATOR in string
 
 
@@ -2673,8 +2698,8 @@ class LevelLeaderboardResponseModel(Model):
             .collect(concat_level_leaderboard_response_users)
         )
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return LEVEL_LEADERBOARD_RESPONSE_USERS_SEPARATOR in string
 
 
@@ -2712,8 +2737,8 @@ class LevelCommentsResponseModel(Model):
             self.page.to_robtop(),
         ).collect(concat_level_comments_response)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return LEVEL_COMMENTS_RESPONSE_SEPARATOR in string
 
 
@@ -2751,8 +2776,8 @@ class UserCommentsResponseModel(Model):
             self.page.to_robtop(),
         ).collect(concat_user_comments_response)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return USER_COMMENTS_RESPONSE_SEPARATOR in string
 
 
@@ -2814,8 +2839,8 @@ class LevelResponseModel:
                 self.level.to_robtop(), self.smart_hash, self.hash, creator.to_robtop()
             ).collect(concat_level_response)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return LEVEL_RESPONSE_SEPARATOR in string
 
 
@@ -2888,8 +2913,8 @@ class SearchLevelsResponseModel(Model):
             self.hash,
         ).collect(concat_search_levels_response)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return SEARCH_LEVELS_RESPONSE_SEPARATOR in string
 
 
@@ -2925,8 +2950,8 @@ class SearchUsersResponseModel(Model):
             self.page.to_robtop(),
         ).collect(concat_search_users_response)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return SEARCH_USERS_RESPONSE_SEPARATOR in string
 
 
@@ -2958,8 +2983,8 @@ class RelationshipsResponseModel(Model):
             .collect(concat_relationships_response_users)
         )
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return RELATIONSHIPS_RESPONSE_USERS_SEPARATOR in string
 
 
@@ -2991,8 +3016,8 @@ class LeaderboardResponseModel(Model):
             .collect(concat_leaderboard_response_users)
         )
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return LEADERBOARD_RESPONSE_USERS_SEPARATOR in string
 
 
@@ -3028,8 +3053,8 @@ class MessagesResponseModel(Model):
             self.page.to_robtop(),
         ).collect(concat_messages_response)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return MESSAGES_RESPONSE_SEPARATOR in string
 
 
@@ -3063,8 +3088,8 @@ class ArtistsResponseModel(Model):
             self.page.to_robtop(),
         ).collect(concat_artists_response)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return ARTISTS_RESPONSE_SEPARATOR in string
 
 
@@ -3102,8 +3127,8 @@ class FriendRequestsResponseModel(Model):
             self.page.to_robtop(),
         ).collect(concat_friend_requests_response)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return MESSAGES_RESPONSE_SEPARATOR in string
 
 
@@ -3134,6 +3159,6 @@ class CommentBannedModel(Model):
             self.string, str(int(self.timeout.total_seconds())), self.reason  # type: ignore
         ).collect(concat_comment_banned)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return COMMENT_BANNED_SEPARATOR in string

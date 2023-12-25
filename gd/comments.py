@@ -5,13 +5,9 @@ from typing import TYPE_CHECKING, Optional, Type, TypeVar, Union
 from attrs import define, field
 from pendulum import DateTime
 
-from gd.binary import VERSION, BinaryReader, BinaryWriter
-from gd.binary_constants import BITS, BYTE
-from gd.binary_utils import Reader, Writer
+# from gd.binary import Binary
 from gd.color import Color
 from gd.constants import (
-    DEFAULT_ENCODING,
-    DEFAULT_ERRORS,
     DEFAULT_GET_DATA,
     DEFAULT_ID,
     DEFAULT_RATING,
@@ -20,15 +16,18 @@ from gd.constants import (
     EMPTY,
 )
 from gd.converter import register_unstructure_hook_omit_client
-from gd.date_time import utc_from_timestamp, utc_now
+from gd.date_time import utc_now
 from gd.entity import Entity
-from gd.enums import ByteOrder
 from gd.level import Level
 from gd.models import LevelCommentModel, UserCommentModel
+
+# from gd.schema import CommentSchema
 from gd.users import User
 
 if TYPE_CHECKING:
     from gd.client import Client
+
+    # from gd.schema import CommentBuilder, CommentReader
 
 __all__ = ("LevelComment", "UserComment")
 
@@ -83,65 +82,6 @@ class UserComment(Entity):
             content=model.content,
             created_at=model.created_at,
         )
-
-    @classmethod
-    def from_binary(
-        cls: Type[UC],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> UC:
-        reader = Reader(binary, order)
-
-        id = reader.read_u32()
-
-        author = User.from_binary(binary, order, version, encoding, errors)
-
-        rating = reader.read_i32()
-
-        content_length = reader.read_u8()
-
-        content = reader.read(content_length).decode(encoding, errors)
-
-        timestamp = reader.read_f64()
-
-        created_at = utc_from_timestamp(timestamp)
-
-        return cls(
-            id=id,
-            author=author,
-            content=content,
-            rating=rating,
-            created_at=created_at,
-        )
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        self.author.to_binary(binary, order, version, encoding, errors)
-
-        writer = Writer(binary, order)
-
-        writer.write_i32(self.rating)
-
-        data = self.content.encode(encoding, errors)
-
-        writer.write_u8(len(data))
-
-        writer.write(data)
-
-        timestamp = self.created_at.timestamp()  # type: ignore
-
-        writer.write_f64(timestamp)
 
     def attach_client_unchecked(self: UC, client: Optional[Client]) -> UC:
         self.author.attach_client_unchecked(client)
@@ -228,86 +168,6 @@ class LevelComment(Entity):
         self, get_data: bool = DEFAULT_GET_DATA, use_client: bool = DEFAULT_USE_CLIENT
     ) -> Level:
         return await self.client.get_level(self.level.id, get_data=get_data, use_client=use_client)
-
-    @classmethod
-    def from_binary(
-        cls: Type[LC],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> LC:
-        reader = Reader(binary, order)
-
-        id = reader.read_u32()
-
-        author = User.from_binary(binary, order, version, encoding, errors)
-
-        level = Level.from_binary(binary, order, version, encoding, errors)
-
-        value = reader.read_u32()
-
-        record = value & BYTE
-
-        value >>= BITS
-
-        color = Color(value)
-
-        rating = reader.read_i32()
-
-        content_length = reader.read_u8()
-
-        content = reader.read(content_length).decode(encoding, errors)
-
-        timestamp = reader.read_f64()
-
-        created_at = utc_from_timestamp(timestamp)
-
-        level = Level.from_binary(binary, order, version, encoding, errors)
-
-        return cls(
-            id=id,
-            author=author,
-            content=content,
-            rating=rating,
-            created_at=created_at,
-            level=level,
-            record=record,
-            color=color,
-        )
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        self.author.to_binary(binary, order, version, encoding, errors)
-
-        self.level.to_binary(binary, order, version, encoding, errors)
-
-        writer = Writer(binary, order)
-
-        value = (self.color.value << BITS) | self.record
-
-        writer.write_u32(value)
-
-        writer.write_i32(self.rating)
-
-        data = self.content.encode(encoding, errors)
-
-        writer.write_u8(len(data))
-
-        writer.write(data)
-
-        timestamp = self.created_at.timestamp()  # type: ignore
-
-        writer.write_f64(timestamp)
 
     def attach_client_unchecked(self: LC, client: Optional[Client]) -> LC:
         self.author.attach_client_unchecked(client)

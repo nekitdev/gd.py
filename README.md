@@ -44,7 +44,7 @@ Or by directly specifying it in the configuration like so:
 
 ```toml
 [tool.poetry.dependencies]
-"gd.py" = "^1.0.2"
+"gd.py" = "^2.0.0-dev.0"
 ```
 
 Alternatively, you can add it directly from the source:
@@ -113,6 +113,22 @@ def main() -> None:
     client.create_controller().run()
 ```
 
+## Flow
+
+```text
+┌────────┐    ┌────────┐    ┌───────┐    ┌─────────┐    ┌────────────┐    ┌────────┐
+│        ├───►│        ├───►│       ├───►│         ├───►│            ├───►│        │
+│ Client │    │ Entity │    │ Model │    │ Session │    │ HTTPClient │    │ Server │
+│        │◄───┤        │◄───┤       │◄───┤         │◄───┤            │◄───┤        │
+└────────┘    └───────┬┘    └───────┘    └─────────┘    └────────────┘    └────────┘
+               ▲      │
+               │      │     ┌────────┐    ┌────────┐
+               │      └────►│        ├───►│        │
+               │            │ Schema │    │ Binary │
+               └────────────┤        │◄───┤        │
+                            └────────┘    └────────┘
+```
+
 ## Documentation
 
 You can find the documentation [here][Documentation].
@@ -165,4 +181,3 @@ If you are interested in contributing to `gd.py`, make sure to take a look at th
 [Check Badge]: https://github.com/nekitdev/gd.py/workflows/check/badge.svg
 [Test Badge]: https://github.com/nekitdev/gd.py/workflows/test/badge.svg
 [Coverage Badge]: https://codecov.io/gh/nekitdev/gd.py/branch/main/graph/badge.svg
-

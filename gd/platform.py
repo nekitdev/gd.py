@@ -2,10 +2,10 @@ import sys
 from builtins import hasattr as has_attribute
 from platform import system
 from struct import calcsize as size
-from typing import Type, TypeVar
 
 from attrs import evolve, frozen
 from typing_aliases import Nullary
+from typing_extensions import Self
 
 from gd.binary_constants import BITS
 from gd.enums import Platform
@@ -59,8 +59,6 @@ DEFAULT_BITS = 0
 SEPARATOR = "_x"
 concat_separator = SEPARATOR.join
 
-PC = TypeVar("PC", bound="PlatformConfig")
-
 
 @frozen()
 class PlatformConfig:
@@ -68,28 +66,28 @@ class PlatformConfig:
     bits: int = DEFAULT_BITS
 
     @classmethod
-    def system(cls: Type[PC]) -> PC:
+    def system(cls) -> Self:
         return cls(SYSTEM_PLATFORM, SYSTEM_BITS)
 
     @classmethod
-    def default_with_platform(cls: Type[PC], platform: Platform) -> PC:
+    def default_with_platform(cls, platform: Platform) -> Self:
         return cls(platform)
 
     @classmethod
-    def default_with_platform_factory(cls: Type[PC], platform: Platform) -> Nullary[PC]:
-        def factory() -> PC:
+    def default_with_platform_factory(cls, platform: Platform) -> Nullary[Self]:
+        def factory() -> Self:  # type: ignore
             return cls.default_with_platform(platform)
 
         return factory
 
-    def with_platform(self: PC, platform: Platform) -> PC:
+    def with_platform(self, platform: Platform) -> Self:
         return evolve(self, platform=platform)
 
-    def with_bits(self: PC, bits: int) -> PC:
+    def with_bits(self, bits: int) -> Self:
         return evolve(self, bits=bits)
 
     @classmethod
-    def from_string(cls: Type[PC], string: str) -> PC:
+    def from_string(cls, string: str) -> Self:
         platform_string, separator, bits_string = string.partition(SEPARATOR)
 
         if not separator:

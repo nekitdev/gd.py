@@ -36,6 +36,7 @@ def load_module(name_path: str, separator: str = DOT, suffix: str = SCHEMA_SUFFI
 
 artist = load_module("artist")
 comment = load_module("comment")
+eitherRecord = load_module("eitherRecord")
 friendRequest = load_module("friendRequest")
 gauntlet = load_module("gauntlet")
 mapPack = load_module("mapPack")
@@ -44,6 +45,36 @@ message = load_module("message")
 password = load_module("password")
 song = load_module("song")
 user = load_module("user")
+
+ArtistSchema = artist.Artist
+
+CommentLevelReferenceSchema = comment.CommentLevelReference
+CommentSchema = comment.Comment
+
+EitherRecordSchema = eitherRecord.EitherRecord
+
+FriendRequestSchema = friendRequest.FriendRequest
+
+GauntletSchema = gauntlet.Gauntlet
+
+MapPackSchema = mapPack.MapPack
+
+LevelSchema = level.Level
+
+MessageSchema = message.Message
+
+PasswordSchema = password.Password
+
+SongReferenceSchema = song.SongReference
+SongSchema = song.Song
+
+UserReferenceSchema = user.UserReference
+UserStatisticsSchema = user.UserStatistics
+UserCosmeticsSchema = user.UserCosmetics
+UserStatesSchema = user.UserStates
+UserSocialsSchema = user.UserSocials
+UserLeaderboardSchema = user.UserLeaderboard
+UserSchema = user.User
 
 artistApi = load_module("api.artist")
 colorChannel = load_module("api.colorChannel")

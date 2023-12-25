@@ -4,17 +4,13 @@ from enum import Enum
 from typing import Dict, Iterable, Mapping, Optional, Type, TypeVar, Union
 
 from attrs import define, field
-from funcs.application import partial
 from iters.iters import iter
 from typing_extensions import TypeGuard
 
 from gd.api.hsv import HSV
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_constants import BITS, BYTE
-from gd.binary_utils import Reader, Writer
 from gd.color import Color
-from gd.constants import DEFAULT_ID, DEFAULT_ROUNDING
-from gd.enums import ByteOrder, PlayerColor, SpecialColorID
+from gd.constants import BYTE, DEFAULT_ID
+from gd.enums import PlayerColor, SpecialColorID
 from gd.models_utils import (
     bool_str,
     concat_color_channel,
@@ -56,14 +52,6 @@ DURATION = 14
 TO_OPACITY = 15
 COPY_OPACITY = 17
 UNKNOWN = 18
-
-PLAYER_COLOR_MASK = 0b00000110
-
-BLENDING_BIT = 0b00000001
-
-PLAYER_COLOR_SHIFT = BLENDING_BIT.bit_length()
-
-COPY_OPACITY_BIT = 0b00000010
 
 
 DEFAULT_OPACITY_TOGGLED = True
@@ -126,7 +114,7 @@ BCC = TypeVar("BCC", bound="BaseColorChannel")
 
 
 @define()
-class BaseColorChannel(Binary, RobTop):
+class BaseColorChannel(RobTop):
     """Represents base color channels."""
 
     id: int
@@ -151,26 +139,6 @@ class BaseColorChannel(Binary, RobTop):
         data = {ID: str(self.id)}
 
         return data
-
-    @classmethod
-    def from_binary(
-        cls: Type[BCC],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> BCC:
-        reader = Reader(binary, order)
-
-        id = reader.read_u16()
-
-        return cls(id=id)
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.id)
 
     def is_player(self) -> bool:
         return False
@@ -237,54 +205,6 @@ class PlayerColorChannel(BaseColorChannel):
 
         return data
 
-    @classmethod
-    def from_binary(
-        cls: Type[PCC],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> PCC:
-        rounding = DEFAULT_ROUNDING
-
-        blending_bit = BLENDING_BIT
-
-        reader = Reader(binary, order)
-
-        id = reader.read_u16()
-
-        value = reader.read_u8()
-
-        blending = value & blending_bit == blending_bit
-
-        player_color_value = (value & PLAYER_COLOR_MASK) >> PLAYER_COLOR_SHIFT
-
-        player_color = PlayerColor(player_color_value)
-
-        opacity = round(reader.read_f32(), rounding)
-
-        return cls(id=id, blending=blending, player_color=player_color, opacity=opacity)
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        value = 0
-
-        if self.is_blending():
-            value |= BLENDING_BIT
-
-        value |= self.player_color.value << PLAYER_COLOR_SHIFT
-
-        writer.write_u8(value)
-
-        writer.write_f32(self.opacity)
-
     def is_player(self) -> bool:
         return True
 
@@ -344,54 +264,6 @@ class NormalColorChannel(BaseColorChannel):
             data[BLENDING] = bool_str(blending)
 
         return data
-
-    @classmethod
-    def from_binary(
-        cls: Type[NCC],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> NCC:
-        rounding = DEFAULT_ROUNDING
-
-        blending_bit = BLENDING_BIT
-
-        reader = Reader(binary, order)
-
-        id = reader.read_u16()
-
-        value = reader.read_u32()
-
-        blending = value & blending_bit == blending_bit
-
-        value >>= BITS
-
-        color = Color(value)
-
-        opacity = round(reader.read_f32(), rounding)
-
-        return cls(id=id, color=color, opacity=opacity, blending=blending)
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        value = 0
-
-        if self.is_blending():
-            value |= BLENDING_BIT
-
-        value |= self.color.value << BITS
-
-        writer.write_u32(value)
-
-        writer.write_f32(self.opacity)
 
     def is_normal(self) -> bool:
         return True
@@ -467,68 +339,6 @@ class CopiedColorChannel(BaseColorChannel):
 
         return data
 
-    @classmethod
-    def from_binary(
-        cls: Type[CCC],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> CCC:
-        rounding = DEFAULT_ROUNDING
-
-        blending_bit = BLENDING_BIT
-        copy_opacity_bit = COPY_OPACITY_BIT
-
-        reader = Reader(binary, order)
-
-        id = reader.read_u16()
-
-        copied_id = reader.read_u16()
-
-        value = reader.read_u8()
-
-        blending = value & blending_bit == blending_bit
-        copy_opacity = value & copy_opacity_bit == copy_opacity_bit
-
-        hsv = HSV.from_binary(binary, order, version)
-
-        if copy_opacity:
-            opacity = None
-
-        else:
-            opacity = round(reader.read_f32(), rounding)
-
-        return cls(id=id, copied_id=copied_id, blending=blending, hsv=hsv, opacity=opacity)
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> None:
-        super().to_binary(binary, order, version)
-
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.copied_id)
-
-        value = 0
-
-        if self.is_blending():
-            value |= BLENDING_BIT
-
-        if self.is_copy_opacity():
-            value |= COPY_OPACITY_BIT
-
-        writer.write_u8(value)
-
-        self.hsv.to_binary(binary, order, version)
-
-        opacity = self.opacity
-
-        if opacity is not None:
-            writer.write_f32(opacity)
-
     def is_copied(self) -> bool:
         return True
 
@@ -583,50 +393,10 @@ def color_channel_to_robtop(color_channel: ColorChannel) -> str:
     return color_channel.to_robtop()
 
 
-def color_channel_from_binary(
-    binary: BinaryReader, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-) -> ColorChannel:
-    reader = Reader(binary, order)
-
-    color_channel_type_value = reader.read_u8()
-
-    color_channel_type = ColorChannelType(color_channel_type_value)
-
-    if color_channel_type.is_player():
-        return PlayerColorChannel.from_binary(binary, order, version)
-
-    if color_channel_type.is_normal():
-        return NormalColorChannel.from_binary(binary, order, version)
-
-    return CopiedColorChannel.from_binary(binary, order, version)
-
-
-def color_channel_to_binary(
-    color_channel: ColorChannel,
-    binary: BinaryWriter,
-    order: ByteOrder = ByteOrder.DEFAULT,
-    version: int = VERSION,
-) -> None:
-    writer = Writer(binary, order)
-
-    if is_player_color_channel(color_channel):
-        color_channel_type = ColorChannelType.PLAYER
-
-    elif is_normal_color_channel(color_channel):
-        color_channel_type = ColorChannelType.NORMAL
-
-    else:
-        color_channel_type = ColorChannelType.COPIED
-
-    writer.write_u8(color_channel_type.value)
-
-    color_channel.to_binary(binary, order, version)
-
-
 CCS = TypeVar("CCS", bound="ColorChannels")
 
 
-class ColorChannels(Dict[int, ColorChannel], Binary):
+class ColorChannels(Dict[int, ColorChannel]):
     """Represents collections of color channels.
 
     Binary:
@@ -670,37 +440,6 @@ class ColorChannels(Dict[int, ColorChannel], Binary):
 
     def to_robtop(self) -> str:
         return concat_color_channels(map(color_channel_to_robtop, self.values()))
-
-    @classmethod
-    def from_binary(
-        cls: Type[CCS],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> CCS:
-        reader = Reader(binary, order)
-
-        length = reader.read_u16()
-
-        color_channel_from_binary_function = partial(
-            color_channel_from_binary, binary, order, version
-        )
-
-        color_channels = iter.repeat_exactly_with(
-            color_channel_from_binary_function, length
-        ).unwrap()
-
-        return cls.from_color_channel_iterable(color_channels)
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.length)
-
-        for color_channel in self.values():
-            color_channel_to_binary(color_channel, binary, order, version)
 
 
 PCCC = TypeVar("PCCC", bound="PlayerCompatibilityColorChannel")

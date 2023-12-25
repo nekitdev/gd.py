@@ -1,6 +1,7 @@
 # XXX: this module is bound to fail at some point since it relies on scraping...
 
 import re
+from sys import stderr
 from typing import Any, Iterator, Optional
 
 from iters.iters import iter
@@ -10,7 +11,9 @@ try:
 
 except ImportError:
     print(
-        "failed to import `lxml`; large portion of `newgrounds` functionality is not going to work."
+        "failed to import `lxml`; "
+        "large portion of `newgrounds` functionality is not going to work.",
+        file=stderr,
     )
 
 from typing_aliases import NormalError

@@ -1,3 +1,4 @@
+from gd.api.artist import ArtistAPI
 from gd.api.color_channels import (
     ColorChannel,
     ColorChannels,
@@ -63,15 +64,11 @@ from gd.api.objects import (
     ToggleTrigger,
     TouchTrigger,
     TriggerOrb,
-    object_from_binary,
-    object_from_bytes,
-    object_to_binary,
-    object_to_bytes,
 )
 from gd.api.recording import Recording, RecordingItem
 from gd.api.rewards import Quest, Reward, RewardItem
 from gd.api.save_manager import SaveManager, create_database, save
-from gd.api.songs import ArtistAPI, SongAPI, SongReferenceAPI
+from gd.api.song import SongAPI
 
 __all__ = (
     # database
@@ -148,11 +145,6 @@ __all__ = (
     "ColorTrigger",
     "PulseTrigger",
     "MoveTrigger",
-    # conversions
-    "object_from_binary",
-    "object_to_binary",
-    "object_from_bytes",
-    "object_to_bytes",
     # guidelines
     "Guidelines",
     # recording
@@ -162,8 +154,8 @@ __all__ = (
     "SaveManager",
     "create_database",
     "save",
-    # songs API
-    "SongReferenceAPI",
+    # artist API
     "ArtistAPI",
+    # song API
     "SongAPI",
 )

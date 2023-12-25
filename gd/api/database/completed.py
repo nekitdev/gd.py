@@ -1,7 +1,6 @@
 from typing import Type, TypeVar
 
 from attrs import define, field
-from iters.iters import iter
 from iters.ordered_set import OrderedSet, ordered_set
 from typing_aliases import StringDict, StringMapping
 
@@ -20,10 +19,7 @@ from gd.api.database.common import (
     TIMELY_STAR,
     prefix,
 )
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
 from gd.constants import WEEKLY_ID_ADD
-from gd.enums import ByteOrder
 
 __all__ = ("Completed",)
 
@@ -58,7 +54,7 @@ C = TypeVar("C", bound="Completed")
 
 
 @define()
-class Completed(Binary):
+class Completed:
     """Represents completed levels in the database."""
 
     official: OrderedSet[int] = field(factory=ordered_set)
@@ -67,179 +63,6 @@ class Completed(Binary):
     gauntlet: CompletedPair = field(factory=CompletedPair)
     map_packs: OrderedSet[int] = field(factory=ordered_set)
     stars: Stars = field(factory=Stars)
-
-    @classmethod
-    def from_binary(
-        cls: Type[C],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> C:
-        reader = Reader(binary, order)
-
-        official_length = reader.read_u8()
-
-        official = iter.repeat_exactly_with(reader.read_u16, official_length).ordered_set()
-
-        normal_levels_length = reader.read_u32()
-
-        normal_levels = iter.repeat_exactly_with(
-            reader.read_u32, normal_levels_length
-        ).ordered_set()
-
-        normal_demons_length = reader.read_u16()
-
-        normal_demons = iter.repeat_exactly_with(
-            reader.read_u32, normal_demons_length
-        ).ordered_set()
-
-        normal = CompletedPair(normal_levels, normal_demons)
-
-        timely_levels_length = reader.read_u16()
-
-        timely_levels = iter.repeat_exactly_with(
-            reader.read_u32, timely_levels_length  # literally why would level ID be here
-        ).ordered_set()
-
-        timely_demons_length = reader.read_u16()
-
-        timely_demons = iter.repeat_exactly_with(
-            reader.read_u16, timely_demons_length  # while here we have timely ID
-        ).ordered_set()
-
-        timely = CompletedPair(timely_levels, timely_demons)
-
-        gauntlet_levels_length = reader.read_u16()
-
-        gauntlet_levels = iter.repeat_exactly_with(
-            reader.read_u32, gauntlet_levels_length
-        ).ordered_set()
-
-        gauntlet_demons_length = reader.read_u16()
-
-        gauntlet_demons = iter.repeat_exactly_with(
-            reader.read_u32, gauntlet_demons_length
-        ).ordered_set()
-
-        gauntlet = CompletedPair(gauntlet_levels, gauntlet_demons)
-
-        map_packs_length = reader.read_u16()
-
-        map_packs = iter.repeat_exactly_with(reader.read_u16, map_packs_length).ordered_set()
-
-        normal_stars_length = reader.read_u32()
-
-        normal_stars = iter.repeat_exactly_with(reader.read_u32, normal_stars_length).ordered_set()
-
-        daily_stars_length = reader.read_u16()
-
-        daily_stars = iter.repeat_exactly_with(reader.read_u16, daily_stars_length).ordered_set()
-
-        weekly_stars_length = reader.read_u16()
-
-        weekly_stars = iter.repeat_exactly_with(reader.read_u16, weekly_stars_length).ordered_set()
-
-        gauntlet_stars_length = reader.read_u16()
-
-        gauntlet_stars = iter.repeat_exactly_with(
-            reader.read_u32, gauntlet_stars_length
-        ).ordered_set()
-
-        stars = Stars(normal_stars, daily_stars, weekly_stars, gauntlet_stars)
-
-        return cls(
-            official=official,
-            normal=normal,
-            timely=timely,
-            gauntlet=gauntlet,
-            map_packs=map_packs,
-            stars=stars,
-        )
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        official = self.official
-
-        writer.write_u8(len(official))
-
-        iter(official).for_each(writer.write_u16)
-
-        normal = self.normal
-
-        normal_levels = normal.levels
-
-        writer.write_u32(len(normal_levels))
-
-        iter(normal_levels).for_each(writer.write_u32)
-
-        normal_demons = normal.demons
-
-        writer.write_u16(len(normal_demons))
-
-        iter(normal_demons).for_each(writer.write_u32)
-
-        timely = self.timely
-
-        timely_levels = timely.levels
-
-        writer.write_u16(len(timely_levels))
-
-        iter(timely_levels).for_each(writer.write_u32)
-
-        timely_demons = timely.demons
-
-        writer.write_u16(len(timely_demons))
-
-        iter(timely_demons).for_each(writer.write_u16)
-
-        gauntlet = self.gauntlet
-
-        gauntlet_levels = gauntlet.levels
-
-        writer.write_u16(len(gauntlet_levels))
-
-        iter(gauntlet_levels).for_each(writer.write_u32)
-
-        gauntlet_demons = gauntlet.demons
-
-        writer.write_u16(len(gauntlet_demons))
-
-        iter(gauntlet_demons).for_each(writer.write_u32)
-
-        map_packs = self.map_packs
-
-        writer.write_u16(len(map_packs))
-
-        iter(map_packs).for_each(writer.write_u16)
-
-        stars = self.stars
-
-        normal_stars = stars.normal
-
-        writer.write_u32(len(normal_stars))
-
-        iter(normal_stars).for_each(writer.write_u32)
-
-        daily_stars = stars.daily
-
-        writer.write_u16(len(daily_stars))
-
-        iter(daily_stars).for_each(writer.write_u16)
-
-        weekly_stars = stars.weekly
-
-        writer.write_u16(len(weekly_stars))
-
-        iter(weekly_stars).for_each(writer.write_u16)
-
-        gauntlet_stars = stars.gauntlet
-
-        writer.write_u16(len(gauntlet_stars))
-
-        iter(gauntlet_stars).for_each(writer.write_u32)
 
     @classmethod
     def from_robtop_data(cls: Type[C], data: StringMapping[str]) -> C:  # type: ignore

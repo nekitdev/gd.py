@@ -1,50 +1,40 @@
-from collections import UserList as ListType
-from typing import List, Type, TypeVar
+from typing import List
 
+from attrs import define, field
 from iters.iters import iter
+from typing_extensions import Self
 
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
-from gd.enums import ByteOrder
 from gd.models_constants import PROGRESS_SEPARATOR
 from gd.models_utils import concat_progress, split_progress
 from gd.robtop import RobTop
+from gd.simple import Simple
 
 __all__ = ("Progress",)
 
-P = TypeVar("P", bound="Progress")
+ProgressItem = int
+ProgressItems = List[int]
 
 
-class Progress(ListType, List[int], Binary, RobTop):  # type: ignore
-    @classmethod
-    def from_binary(
-        cls: Type[P],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> P:
-        reader = Reader(binary, order)
-
-        length = reader.read_u8()
-
-        return iter.repeat_exactly_with(reader.read_i8, length).collect(cls)
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u8(len(self))
-
-        iter(self).for_each(writer.write_i8)
+@define()
+class Progress(RobTop, Simple[ProgressItems]):
+    items: ProgressItems = field(factory=list)
 
     @classmethod
-    def from_robtop(cls: Type[P], string: str) -> P:
-        return iter(split_progress(string)).map(int).collect(cls)
+    def from_value(cls, value: ProgressItems) -> Self:
+        return cls(value)
+
+    def to_value(self) -> ProgressItems:
+        return self.items
+
+    @classmethod
+    def from_robtop(cls, string: str) -> Self:
+        value = iter(split_progress(string)).filter(None).map(int).list()
+
+        return cls.from_value(value)
 
     def to_robtop(self) -> str:
-        return iter(self).map(str).collect(concat_progress)
+        return iter(self.items).map(str).collect(concat_progress)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return PROGRESS_SEPARATOR in string

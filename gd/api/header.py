@@ -19,12 +19,9 @@ from gd.api.color_channels import (
     compatibility_color_channel_from_robtop,
 )
 from gd.api.guidelines import Guidelines
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_constants import BYTE, HALF_BITS, HALF_BYTE
-from gd.binary_utils import Reader, Writer
 from gd.color import Color
-from gd.constants import DEFAULT_ID, DEFAULT_ROUNDING
-from gd.enums import ByteOrder, GameMode, PlayerColor, Speed
+from gd.constants import BYTE, DEFAULT_ID
+from gd.enums import GameMode, PlayerColor, Speed
 from gd.models_constants import HEADER_SEPARATOR
 from gd.models_utils import (
     bool_str,
@@ -66,14 +63,6 @@ DEFAULT_BLUE = BYTE
 
 DEFAULT_PLAYER_COLOR_VALUE = PlayerColor.DEFAULT.value
 
-
-MINI_MODE_BIT = 0b00000001
-DUAL_MODE_BIT = 0b00000010
-TWO_PLAYER_BIT = 0b00000100
-FLIP_GRAVITY_BIT = 0b00001000
-SONG_FADE_IN_BIT = 0b00010000
-SONG_FADE_OUT_BIT = 0b00100000
-PLATFORMER_MODE_BIT = 0b01000000
 
 H = TypeVar("H", bound="Header")
 
@@ -134,7 +123,7 @@ COLOR_1_PLAYER_COLOR = "kS20"
 
 
 @define()
-class Header(Binary, RobTop):
+class Header(RobTop):
     game_mode: GameMode = field(default=GameMode.DEFAULT)
     mini_mode: bool = field(default=DEFAULT_MINI_MODE)
     speed: Speed = field(default=Speed.DEFAULT)
@@ -152,125 +141,6 @@ class Header(Binary, RobTop):
     platformer_mode: bool = field(default=DEFAULT_PLATFORMER_MODE)
     color_channels: ColorChannels = field(factory=ColorChannels)
     color_channels_page: int = field(default=DEFAULT_COLOR_CHANNELS_PAGE)
-
-    @classmethod
-    def from_binary(
-        cls: Type[H],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> H:
-        rounding = DEFAULT_ROUNDING
-
-        mini_mode_bit = MINI_MODE_BIT
-        dual_mode_bit = DUAL_MODE_BIT
-        two_player_bit = TWO_PLAYER_BIT
-        flip_gravity_bit = FLIP_GRAVITY_BIT
-        song_fade_in_bit = SONG_FADE_IN_BIT
-        song_fade_out_bit = SONG_FADE_OUT_BIT
-        platformer_mode_bit = PLATFORMER_MODE_BIT
-
-        reader = Reader(binary, order)
-
-        background_id = reader.read_u8()
-        ground_id = reader.read_u8()
-        ground_line_id = reader.read_u8()
-        font_id = reader.read_u8()
-
-        value = reader.read_u8()
-
-        speed = Speed(value & HALF_BYTE)
-
-        value >>= HALF_BITS
-
-        game_mode = GameMode(value)
-
-        value = reader.read_u8()
-
-        mini_mode = value & mini_mode_bit == mini_mode_bit
-        dual_mode = value & dual_mode_bit == dual_mode_bit
-        two_player = value & two_player_bit == two_player_bit
-        flip_gravity = value & flip_gravity_bit == flip_gravity_bit
-        song_fade_in = value & song_fade_in_bit == song_fade_in_bit
-        song_fade_out = value & song_fade_out_bit == song_fade_out_bit
-        platformer_mode = value & platformer_mode_bit == platformer_mode_bit
-
-        song_offset = round(reader.read_f32(), rounding)
-
-        guidelines = Guidelines.from_binary(binary, order, version)
-
-        color_channels = ColorChannels.from_binary(binary, order, version)
-
-        color_channels_page = reader.read_u16()
-
-        return cls(
-            game_mode=game_mode,
-            mini_mode=mini_mode,
-            speed=speed,
-            background_id=background_id,
-            ground_id=ground_id,
-            dual_mode=dual_mode,
-            two_player=two_player,
-            flip_gravity=flip_gravity,
-            song_offset=song_offset,
-            guidelines=guidelines,
-            song_fade_in=song_fade_in,
-            song_fade_out=song_fade_out,
-            ground_line_id=ground_line_id,
-            font_id=font_id,
-            platformer_mode=platformer_mode,
-            color_channels=color_channels,
-            color_channels_page=color_channels_page,
-        )
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u8(self.background_id)
-        writer.write_u8(self.ground_id)
-        writer.write_u8(self.ground_line_id)
-        writer.write_u8(self.font_id)
-
-        value = self.speed.value
-
-        value |= self.game_mode.value << HALF_BITS
-
-        writer.write_u8(value)
-
-        value = 0
-
-        if self.is_mini_mode():
-            value |= MINI_MODE_BIT
-
-        if self.is_dual_mode():
-            value |= DUAL_MODE_BIT
-
-        if self.is_two_player():
-            value |= TWO_PLAYER_BIT
-
-        if self.is_flip_gravity():
-            value |= FLIP_GRAVITY_BIT
-
-        if self.is_song_fade_in():
-            value |= SONG_FADE_IN_BIT
-
-        if self.is_song_fade_out():
-            value |= SONG_FADE_OUT_BIT
-
-        if self.is_platformer_mode():
-            value |= PLATFORMER_MODE_BIT
-
-        writer.write_u8(value)
-
-        writer.write_f32(self.song_offset)
-
-        self.guidelines.to_binary(binary, order, version)
-
-        self.color_channels.to_binary(binary, order, version)
-
-        writer.write_u16(self.color_channels_page)
 
     @classmethod
     def from_robtop(cls: Type[H], string: str) -> H:
@@ -559,8 +429,8 @@ class Header(Binary, RobTop):
 
         return concat_header(mapping)
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return HEADER_SEPARATOR in string
 
     def is_mini_mode(self) -> bool:

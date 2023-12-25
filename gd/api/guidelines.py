@@ -2,10 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, Type, TypeVar
 
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
-from gd.constants import DEFAULT_ROUNDING
-from gd.enums import ByteOrder, GuidelineColor
+from gd.enums import GuidelineColor
 from gd.models_constants import GUIDELINES_SEPARATOR
 from gd.models_utils import concat_guidelines, split_guidelines
 from gd.robtop import RobTop
@@ -15,7 +12,7 @@ __all__ = ("Guidelines",)
 G = TypeVar("G", bound="Guidelines")
 
 
-class Guidelines(Dict[float, GuidelineColor], RobTop, Binary):
+class Guidelines(Dict[float, GuidelineColor], RobTop):
     """Represents guidelines.
 
     Binary:
@@ -50,39 +47,6 @@ class Guidelines(Dict[float, GuidelineColor], RobTop, Binary):
         self[timestamp] = color
 
     @classmethod
-    def from_binary(
-        cls: Type[G],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> G:
-        rounding = DEFAULT_ROUNDING
-
-        reader = Reader(binary, order)
-
-        length = reader.read_u32()
-
-        read_f32 = reader.read_f32
-
-        def read_f32_rounded(rounding: int = rounding) -> float:
-            return round(read_f32(), rounding)
-
-        color = GuidelineColor
-
-        return cls({read_f32_rounded(): color(read_f32_rounded()) for _ in range(length)})
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u32(len(self))
-
-        for timestamp, color in self.items():
-            writer.write_f32(timestamp)
-            writer.write_f32(color.value)
-
-    @classmethod
     def from_robtop(cls: Type[G], string: str) -> G:
         color = GuidelineColor
 
@@ -93,6 +57,6 @@ class Guidelines(Dict[float, GuidelineColor], RobTop, Binary):
     def to_robtop(self) -> str:
         return concat_guidelines({timestamp: color.value for timestamp, color in self.items()})
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return GUIDELINES_SEPARATOR in string

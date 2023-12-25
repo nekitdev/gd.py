@@ -1,37 +1,26 @@
 from typing import Any, List, Type, TypeVar
 
 from attrs import define, field
-from funcs.application import partial
 from iters.iters import iter
 from typing_aliases import StringDict, StringMapping
 from typing_extensions import Literal, TypeGuard
 
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
 from gd.constants import (
     DEFAULT_AMOUNT,
     DEFAULT_COMPLETED,
     DEFAULT_DIAMONDS,
-    DEFAULT_ENCODING,
-    DEFAULT_ERRORS,
     DEFAULT_ID,
     DEFAULT_LOCATION,
     DEFAULT_MAGIC,
     DEFAULT_QUEST_ORDER,
     EMPTY,
 )
-from gd.enums import ByteOrder, InternalType, RewardItemType
+from gd.enums import InternalType, RewardItemType
 from gd.string_utils import snake_to_camel
 
 __all__ = ("Reward", "RewardItem", "Quest")
 
 DEFAULT_COUNT = 0
-
-ORDER_MASK = 0b00000011
-ID_MASK = 0b00001100
-COMPLETED_BIT = 0b10000000
-
-ID_SHIFT = ORDER_MASK.bit_length()
 
 INTERNAL_TYPE = "kCEK"
 
@@ -48,7 +37,7 @@ Q = TypeVar("Q", bound="Quest")
 
 
 @define()
-class Quest(Binary):
+class Quest:
     id: int = DEFAULT_ID
     amount: int = DEFAULT_AMOUNT
     target_amount: int = DEFAULT_AMOUNT
@@ -60,81 +49,6 @@ class Quest(Binary):
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
-
-    @classmethod
-    def from_binary(
-        cls: Type[Q],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> Q:
-        completed_bit = COMPLETED_BIT
-
-        reader = Reader(binary, order)
-
-        value = reader.read_u8()
-
-        quest_order = value & ORDER_MASK
-
-        id = (value & ID_MASK) >> ID_SHIFT
-
-        completed = value & completed_bit == completed_bit
-
-        amount = reader.read_u16()
-        target_amount = reader.read_u16()
-
-        diamonds = reader.read_u8()
-
-        count = reader.read_u16()
-
-        name_length = reader.read_u8()
-
-        name = reader.read(name_length).decode(encoding, errors)
-
-        return cls(
-            quest_order=quest_order,
-            id=id,
-            amount=amount,
-            target_amount=target_amount,
-            diamonds=diamonds,
-            count=count,
-            completed=completed,
-            name=name,
-        )
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        writer = Writer(binary, order)
-
-        value = self.quest_order
-
-        value |= self.id << ID_SHIFT
-
-        if self.is_completed():
-            value |= COMPLETED_BIT
-
-        writer.write_u8(value)
-
-        writer.write_u16(self.amount)
-        writer.write_u16(self.target_amount)
-
-        writer.write_u8(self.diamonds)
-
-        writer.write_u16(self.count)
-
-        data = self.name.encode(encoding, errors)
-
-        writer.write_u8(len(data))
-
-        writer.write(data)
 
     @classmethod
     def from_robtop_data(cls: Type[Q], data: StringMapping[Any]) -> Q:  # type: ignore
@@ -186,45 +100,11 @@ R = TypeVar("R", bound="Reward")
 
 
 @define()
-class Reward(Binary):
+class Reward:
     item_type: RewardItemType = RewardItemType.DEFAULT
     custom_id: int = DEFAULT_ID
     amount: int = DEFAULT_AMOUNT
     magic: int = DEFAULT_MAGIC
-
-    @classmethod
-    def from_binary(
-        cls: Type[R],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> R:
-        reader = Reader(binary, order)
-
-        item_type_value = reader.read_u8()
-
-        item_type = RewardItemType(item_type_value)
-
-        custom_id = reader.read_u16()
-
-        amount = reader.read_u16()
-
-        magic = reader.read_i32()
-
-        return cls(item_type=item_type, custom_id=custom_id, amount=amount, magic=magic)
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u8(self.item_type.value)
-
-        writer.write_u16(self.custom_id)
-
-        writer.write_u16(self.amount)
-
-        writer.write_i32(self.magic)
 
     @classmethod
     def from_robtop_data(cls: Type[R], data: StringMapping[Any]) -> R:  # type: ignore
@@ -274,47 +154,10 @@ RI = TypeVar("RI", bound="RewardItem")
 
 
 @define()
-class RewardItem(Binary):
+class RewardItem:
     id: int = field(default=DEFAULT_ID)
     location: int = field(default=DEFAULT_LOCATION)
     rewards: List[Reward] = field(factory=list)
-
-    @classmethod
-    def from_binary(
-        cls: Type[RI],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> RI:
-        reader = Reader(binary, order)
-
-        id = reader.read_u16()
-
-        location = reader.read_u8()
-
-        rewards_length = reader.read_u8()
-
-        reward_from_binary = partial(Reward.from_binary, binary, order, version)
-
-        rewards = iter.repeat_exactly_with(reward_from_binary, rewards_length).list()
-
-        return cls(id=id, location=location, rewards=rewards)
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u16(self.id)
-
-        writer.write_u8(self.location)
-
-        rewards = self.rewards
-
-        writer.write_u8(len(rewards))
-
-        for reward in rewards:
-            reward.to_binary(binary, order, version)
 
     @classmethod
     def from_robtop_data(cls: Type[RI], data: StringMapping[Any]) -> RI:  # type: ignore

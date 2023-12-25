@@ -126,6 +126,7 @@ class Salt(Enum):
     LEVEL_LEADERBOARD = "yPg6pUrtWn0J"
     QUESTS = "oC36fpYaPtdg"
     CHESTS = "pC26fpYaQCtg"
+    PASSWORD = "mI29fmAnxgTs"
 
     EMPTY = EMPTY
 
@@ -162,7 +163,8 @@ class IconType(Enum):
     WAVE = 4
     ROBOT = 5
     SPIDER = 6
-    # SWING = 7
+    SWING = 7
+    JETPACK = 8
 
     DEFAULT = CUBE
 
@@ -190,8 +192,11 @@ class IconType(Enum):
     def is_spider(self) -> bool:
         return self is type(self).SPIDER
 
-    # def is_swing(self) -> bool:
-    #     return self is type(self).SWING
+    def is_swing(self) -> bool:
+        return self is type(self).SWING
+
+    def is_jetpack(self) -> bool:
+        return self is type(self).JETPACK
 
 
 class MessageState(Enum):
@@ -1618,13 +1623,13 @@ class Filter(Enum):
 
 
 class ByteOrder(Enum):
-    """Represents byte orders (used in binary protocols)."""
+    """Represents byte orders (used in memory library)."""
 
     NATIVE = "="
     LITTLE = "<"
     BIG = ">"
 
-    DEFAULT = LITTLE
+    DEFAULT = NATIVE
 
     def is_native(self) -> bool:
         return self is type(self).NATIVE

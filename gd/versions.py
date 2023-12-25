@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-from typing import Type, TypeVar
-
 from attrs import Attribute, field, frozen
-from typing_extensions import Final
+from typing_extensions import Self
 from typing_extensions import TypedDict as Data
 
-from gd.binary import VERSION, Binary, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
 from gd.converter import CONVERTER
-from gd.enums import ByteOrder
 from gd.robtop import RobTop
-from gd.string_utils import is_digit, tick
+from gd.simple import Simple
+from gd.string_utils import is_digit
 
 __all__ = (
     "CURRENT_GAME_VERSION",
@@ -21,19 +17,17 @@ __all__ = (
     "GameVersion",
 )
 
-BASE: Final = 10
+BASE = 10
 
 DEFAULT_MAJOR = 0
 DEFAULT_MINOR = 0
 
-V = TypeVar("V", bound="RobTopVersion")
+EXPECTED_MAJOR = "expected `major >= 0`"
+EXPECTED_MINOR = "expected `minor >= 0`"
+EXPECTED_BASE = f"expected `minor < {BASE}`"
 
-EXPECTED_MAJOR = "expected major >= 0"
-EXPECTED_MINOR = "expected minor >= 0"
-EXPECTED_BASE = f"expected minor < {BASE}"
-
-STRING = "{}.{}"
-string = STRING.format
+VERSION = "{}.{}"
+version = VERSION.format
 
 
 class RobTopVersionData(Data):
@@ -42,7 +36,7 @@ class RobTopVersionData(Data):
 
 
 @frozen(order=True)
-class RobTopVersion(Binary, RobTop):
+class RobTopVersion(RobTop, Simple[int]):
     major: int = field(default=DEFAULT_MAJOR)
     minor: int = field(default=DEFAULT_MINOR)
 
@@ -50,7 +44,7 @@ class RobTopVersion(Binary, RobTop):
         return self.to_value()
 
     def __str__(self) -> str:
-        return string(self.major, self.minor)
+        return version(self.major, self.minor)
 
     @major.validator
     def check_major(self, attribute: Attribute[int], major: int) -> None:
@@ -66,14 +60,14 @@ class RobTopVersion(Binary, RobTop):
             raise ValueError(EXPECTED_BASE)
 
     @classmethod
-    def from_data(cls: Type[V], data: RobTopVersionData) -> V:
+    def from_data(cls, data: RobTopVersionData) -> Self:
         return CONVERTER.structure(data, cls)
 
     def into_data(self) -> RobTopVersionData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
-    def from_value(cls: Type[V], value: int) -> V:
+    def from_value(cls, value: int) -> Self:
         major, minor = divmod(value, BASE)
 
         return cls(major, minor)
@@ -82,46 +76,25 @@ class RobTopVersion(Binary, RobTop):
         return self.major * BASE + self.minor
 
     @classmethod
-    def from_robtop(cls: Type[V], string: str) -> V:
+    def from_robtop(cls, string: str) -> Self:
         return cls.from_value(int(string))
 
     def to_robtop(self) -> str:
         return str(self.to_value())
 
-    @staticmethod
-    def can_be_in(string: str) -> bool:
+    @classmethod
+    def can_be_in(cls, string: str) -> bool:
         return is_digit(string)
 
-    # assume `u8` is enough
 
-    @classmethod
-    def from_binary(
-        cls: Type[V],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-    ) -> V:
-        reader = Reader(binary, order)
-
-        return cls.from_value(reader.read_u8())
-
-    def to_binary(
-        self, binary: BinaryWriter, order: ByteOrder = ByteOrder.DEFAULT, version: int = VERSION
-    ) -> None:
-        writer = Writer(binary, order)
-
-        writer.write_u8(self.to_value())
-
-
-G = TypeVar("G", bound="GameVersion")
-
-INVALID_GAME_VERSION = "invalid game version: {}"
+INVALID_GAME_VERSION = "invalid game version: `{}`"
+invalid_game_version = INVALID_GAME_VERSION.format
 
 
 @frozen()
 class GameVersion(RobTopVersion):
     @classmethod
-    def from_robtop_value(cls: Type[G], value: int) -> G:  # why, RobTop?
+    def from_robtop_value(cls, value: int) -> Self:  # why...
         if not value:
             return cls()
 
@@ -129,7 +102,7 @@ class GameVersion(RobTopVersion):
             return cls(1, value - 1)
 
         if value < 10:
-            raise ValueError(INVALID_GAME_VERSION.format(tick(str(value))))
+            raise ValueError(INVALID_GAME_VERSION.format(value))
 
         if value == 10:
             return cls(1, 7)
@@ -139,7 +112,7 @@ class GameVersion(RobTopVersion):
 
         return cls.from_value(value)
 
-    def to_robtop_value(self) -> int:  # whyyy
+    def to_robtop_value(self) -> int:  # whyyy...
         major = self.major
         minor = self.minor
 
@@ -156,12 +129,12 @@ class GameVersion(RobTopVersion):
         return self.to_value()
 
     @classmethod
-    def from_robtop(cls: Type[G], string: str) -> G:
+    def from_robtop(cls, string: str) -> Self:
         return cls.from_robtop_value(int(string))
 
     def to_robtop(self) -> str:
         return str(self.to_robtop_value())
 
 
-CURRENT_GAME_VERSION = GameVersion(2, 1)
-CURRENT_BINARY_VERSION = RobTopVersion(3, 5)
+CURRENT_GAME_VERSION = GameVersion(2, 2)
+CURRENT_BINARY_VERSION = RobTopVersion(3, 8)

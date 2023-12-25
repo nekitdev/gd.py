@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-from enum import Flag
+from io import BufferedReader, BufferedWriter
 from typing import TYPE_CHECKING, AsyncIterator, Iterable, Type, TypeVar
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
 from yarl import URL
+from typing_extensions import Self
 
-from gd.binary import VERSION, BinaryReader, BinaryWriter
-from gd.binary_utils import Reader, Writer
+from gd.binary import Binary
 from gd.constants import (
     DEFAULT_ARTIST_VERIFIED,
-    DEFAULT_ENCODING,
-    DEFAULT_ERRORS,
     DEFAULT_ID,
     DEFAULT_PAGE,
     DEFAULT_PAGES,
@@ -21,12 +19,13 @@ from gd.constants import (
 )
 from gd.converter import CONVERTER, register_unstructure_hook_omit_client
 from gd.entity import Entity, EntityData
-from gd.enums import ByteOrder
 from gd.models import ArtistModel
+from gd.schema import ArtistSchema
 from gd.string_utils import case_fold, clear_whitespace
 
 if TYPE_CHECKING:
-    from gd.song import Song
+    from gd.schema import ArtistBuilder, ArtistReader
+    from gd.songs import Song
 
 __all__ = ("Artist", "ArtistData")
 
@@ -36,19 +35,6 @@ ARTIST_URL = "https://{}.newgrounds.com/"
 artist_url = ARTIST_URL.format
 
 
-class ArtistFlag(Flag):
-    SIMPLE = 0
-
-    VERIFIED = 1 << 0
-    ID = 1 << 1
-
-    def is_verified(self) -> bool:
-        return type(self).VERIFIED in self
-
-    def has_id(self) -> bool:
-        return type(self).ID in self
-
-
 class ArtistData(EntityData):
     name: str
     verified: bool
@@ -56,23 +42,7 @@ class ArtistData(EntityData):
 
 @register_unstructure_hook_omit_client
 @define()
-class Artist(Entity):
-    """Represents artists on *Newgrounds*.
-
-    Binary:
-        ```rust
-        const VERIFIED_BIT: u8 = 1 << 0;
-        const HAS_ID_BIT: u8 = 1 << 1;
-
-        struct Artist {
-            value: u8,  // contains `verified` and `has_id`
-            id: Option<u32>,  // if `has_id`
-            name_length: u8,
-            name: [u8; name_length],  // utf-8 string
-        }
-        ```
-    """
-
+class Artist(Entity, Binary):
     name: str = field(eq=False)
     verified: bool = field(default=DEFAULT_ARTIST_VERIFIED, eq=False)
 
@@ -92,8 +62,50 @@ class Artist(Entity):
     def name_only(cls: Type[A], name: str) -> A:
         return cls(id=DEFAULT_ID, name=name)
 
+    @classmethod
+    def from_binary(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(ArtistSchema.read(binary))
+
+    @classmethod
+    def from_binary_packed(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(ArtistSchema.read_packed(binary))
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> Self:
+        with ArtistSchema.from_bytes(data) as reader:
+            return cls.from_reader(reader)
+
+    @classmethod
+    def from_bytes_packed(cls, data: bytes) -> Self:
+        return cls.from_reader(ArtistSchema.from_bytes_packed(data))
+
+    def to_binary(self, binary: BufferedWriter) -> None:
+        self.to_builder().write(binary)
+
+    def to_binary_packed(self, binary: BufferedWriter) -> None:
+        self.to_builder().write_packed(binary)
+
+    def to_bytes(self) -> bytes:
+        return self.to_builder().to_bytes()
+
+    def to_bytes_packed(self) -> bytes:
+        return self.to_builder().to_bytes_packed()
+
+    @classmethod
+    def from_reader(cls, reader: ArtistReader) -> Self:
+        return cls(id=reader.id, name=reader.name, verified=reader.verified)
+
+    def to_builder(self) -> ArtistBuilder:
+        builder = ArtistSchema.new_message()
+
+        builder.id = self.id
+        builder.name = self.name
+        builder.verified = self.verified
+
+        return builder
+
     def __hash__(self) -> int:
-        return hash(type(self)) ^ hash(self.id_name)
+        return hash(type(self)) ^ self.id
 
     def __str__(self) -> str:
         return self.name or UNKNOWN
@@ -108,68 +120,6 @@ class Artist(Entity):
 
     def into_data(self) -> ArtistData:
         return CONVERTER.unstructure(self)  # type: ignore
-
-    @classmethod
-    def from_binary(
-        cls: Type[A],
-        binary: BinaryReader,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> A:
-        reader = Reader(binary, order)
-
-        artist_flag_value = reader.read_u8()
-
-        artist_flag = ArtistFlag(artist_flag_value)
-
-        if artist_flag.has_id():
-            id = reader.read_u32()
-
-        else:
-            id = DEFAULT_ID
-
-        name_length = reader.read_u8()
-
-        data = reader.read(name_length)
-
-        name = data.decode(encoding, errors)
-
-        verified = artist_flag.is_verified()
-
-        return cls(id=id, name=name, verified=verified)
-
-    def to_binary(
-        self,
-        binary: BinaryWriter,
-        order: ByteOrder = ByteOrder.DEFAULT,
-        version: int = VERSION,
-        encoding: str = DEFAULT_ENCODING,
-        errors: str = DEFAULT_ERRORS,
-    ) -> None:
-        writer = Writer(binary, order)
-
-        artist_flag = ArtistFlag.SIMPLE
-
-        if self.is_verified():
-            artist_flag |= ArtistFlag.VERIFIED
-
-        id = self.id
-
-        if id:
-            artist_flag |= ArtistFlag.ID
-
-        writer.write_u8(artist_flag.value)
-
-        if id:
-            writer.write_u32(id)
-
-        data = self.name.encode(encoding, errors)
-
-        writer.write_u8(len(data))
-
-        writer.write(data)
 
     def is_verified(self) -> bool:
         return self.verified
