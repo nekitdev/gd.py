@@ -5,12 +5,7 @@ from typing_aliases import StringDict, StringMapping
 from yarl import URL
 
 from gd.api.artist import ArtistAPI
-from gd.constants import (
-    DEFAULT_ID,
-    DEFAULT_PRIORITY,
-    DEFAULT_SIZE,
-    EMPTY,
-)
+from gd.constants import DEFAULT_ID, DEFAULT_PRIORITY, DEFAULT_SIZE, EMPTY
 from gd.enums import InternalType
 
 __all__ = ("SongAPI",)
