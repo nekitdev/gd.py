@@ -3,8 +3,8 @@ from typing import Any, Optional, Type, TypeVar
 from attrs import define
 from typing_aliases import StringDict, StringMapping
 from yarl import URL
-from gd.api.artist import ArtistAPI
 
+from gd.api.artist import ArtistAPI
 from gd.constants import (
     DEFAULT_ID,
     DEFAULT_PRIORITY,

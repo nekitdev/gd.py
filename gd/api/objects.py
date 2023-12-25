@@ -1,7 +1,17 @@
 from abc import abstractmethod as required
 from builtins import hasattr as has_attribute
 from enum import Enum, Flag
-from typing import Dict, Iterable, Iterator, Mapping, Optional, Tuple, Type, TypeVar, Union
+from typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    Mapping,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from attrs import define, field
 from iters.iters import iter

@@ -7,7 +7,13 @@ from iters.iters import iter
 from iters.ordered_set import OrderedSet, ordered_set
 from typing_extensions import TypedDict
 
-from gd.enums import Difficulty, LevelLength, RateFilter, SearchStrategy, SpecialRateType
+from gd.enums import (
+    Difficulty,
+    LevelLength,
+    RateFilter,
+    SearchStrategy,
+    SpecialRateType,
+)
 from gd.string_constants import DASH
 from gd.string_utils import concat_comma, wrap
 

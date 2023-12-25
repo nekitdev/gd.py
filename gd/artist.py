@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from io import BufferedReader, BufferedWriter
 from typing import TYPE_CHECKING, AsyncIterator, Iterable, Type, TypeVar
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
-from yarl import URL
 from typing_extensions import Self
+from yarl import URL
 
 from gd.binary import Binary
 from gd.constants import (
@@ -19,11 +18,13 @@ from gd.constants import (
 )
 from gd.converter import CONVERTER, register_unstructure_hook_omit_client
 from gd.entity import Entity, EntityData
-from gd.models import ArtistModel
 from gd.schema import ArtistSchema
 from gd.string_utils import case_fold, clear_whitespace
 
 if TYPE_CHECKING:
+    from io import BufferedReader, BufferedWriter
+
+    from gd.models import ArtistModel
     from gd.schema import ArtistBuilder, ArtistReader
     from gd.songs import Song
 

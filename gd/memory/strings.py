@@ -15,10 +15,10 @@ from gd.memory.data import Data, Int, USize
 from gd.memory.fields import Field
 from gd.memory.pointers import MutPointerData
 from gd.memory.utils import next_power_of_two
-from gd.platform import PlatformConfig
 
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
+    from gd.platform import PlatformConfig
 
 __all__ = ("String", "OldString", "StringData")
 

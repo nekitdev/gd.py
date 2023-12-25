@@ -134,7 +134,14 @@ from gd.progress import Progress
 from gd.rewards import Chest, Quest
 from gd.session import Session
 from gd.songs import Song
-from gd.users import User, UserCosmetics, UserLeaderboard, UserSocials, UserStates, UserStatistics
+from gd.users import (
+    User,
+    UserCosmetics,
+    UserLeaderboard,
+    UserSocials,
+    UserStates,
+    UserStatistics,
+)
 from gd.version import python_version_info, version_info
 from gd.versions import GameVersion, RobTopVersion
 

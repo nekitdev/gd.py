@@ -45,7 +45,10 @@ from gd.constants import (
     WEEKLY_ID_ADD,
 )
 from gd.decorators import cache_by
-from gd.difficulty_parameters import DEFAULT_DEMON_DIFFICULTY_VALUE, DifficultyParameters
+from gd.difficulty_parameters import (
+    DEFAULT_DEMON_DIFFICULTY_VALUE,
+    DifficultyParameters,
+)
 from gd.encoding import (
     decode_base64_string_url_safe,
     encode_base64_string_url_safe,
@@ -67,7 +70,12 @@ from gd.password import Password
 from gd.progress import Progress
 from gd.songs import SongReference
 from gd.users import User, UserReference
-from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, RobTopVersion
+from gd.versions import (
+    CURRENT_BINARY_VERSION,
+    CURRENT_GAME_VERSION,
+    GameVersion,
+    RobTopVersion,
+)
 
 INTERNAL_TYPE = "kCEK"
 

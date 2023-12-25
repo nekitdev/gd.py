@@ -7,7 +7,6 @@ from iters.async_iters import wrap_async_iter
 from pendulum import DateTime, Duration, duration
 
 from gd.api.editor import Editor
-from gd.api.recording import Recording
 from gd.capacity import Capacity
 from gd.constants import (
     COMMENT_PAGE_SIZE,
@@ -45,15 +44,16 @@ from gd.enums import (
     TimelyType,
 )
 from gd.errors import MissingAccess
-from gd.models import LevelModel, TimelyInfoModel
 from gd.password import Password, PasswordData
-from gd.songs import SongReference, SongReferenceData
 from gd.users import User, UserReference, UserReferenceData
 from gd.versions import CURRENT_GAME_VERSION, GameVersion, RobTopVersionData
 
 if TYPE_CHECKING:
+    from gd.api.recording import Recording
     from gd.client import Client
     from gd.comments import LevelComment
+    from gd.models import LevelModel, TimelyInfoModel
+    from gd.songs import SongReference, SongReferenceData
 
 __all__ = ("Level",)
 

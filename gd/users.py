@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from io import BufferedReader, BufferedWriter
 from typing import TYPE_CHECKING, AsyncIterator, Dict, Iterable, Optional
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
 from iters.iters import iter
-from pendulum import DateTime
 from typing_extensions import Self
 
 from gd.binary import Binary
@@ -36,7 +34,11 @@ from gd.constants import (
     UNKNOWN,
 )
 from gd.converter import CONVERTER, register_unstructure_hook_omit_client
-from gd.date_time import timestamp_milliseconds, utc_from_timestamp_milliseconds, utc_now
+from gd.date_time import (
+    timestamp_milliseconds,
+    utc_from_timestamp_milliseconds,
+    utc_now,
+)
 from gd.either_record import EitherRecord, EitherRecordData
 from gd.entity import Entity, EntityData
 from gd.enums import (
@@ -52,33 +54,36 @@ from gd.enums import (
 from gd.filters import Filters
 from gd.image.factory import FACTORY, connect_images
 from gd.image.icon import Icon
-from gd.models import (
-    LeaderboardUserModel,
-    LevelCommentUserModel,
-    LevelLeaderboardUserModel,
-    ProfileModel,
-    RelationshipUserModel,
-    SearchUserModel,
-)
 from gd.schema import (
-    UserSchema,
     UserCosmeticsSchema,
     UserLeaderboardSchema,
     UserReferenceSchema,
+    UserSchema,
     UserSocialsSchema,
-    UserStatisticsSchema,
     UserStatesSchema,
+    UserStatisticsSchema,
 )
 from gd.schema_constants import NONE
 from gd.typing import Data
 
 if TYPE_CHECKING:
+    from io import BufferedReader, BufferedWriter
+
+    from pendulum import DateTime
     from PIL.Image import Image
 
     from gd.comments import LevelComment, UserComment
     from gd.friend_request import FriendRequest
     from gd.level import Level
     from gd.message import Message
+    from gd.models import (
+        LeaderboardUserModel,
+        LevelCommentUserModel,
+        LevelLeaderboardUserModel,
+        ProfileModel,
+        RelationshipUserModel,
+        SearchUserModel,
+    )
     from gd.schema import (
         UserBuilder,
         UserCosmeticsBuilder,
@@ -90,10 +95,10 @@ if TYPE_CHECKING:
         UserReferenceReader,
         UserSocialsBuilder,
         UserSocialsReader,
-        UserStatisticsBuilder,
-        UserStatisticsReader,
         UserStatesBuilder,
         UserStatesReader,
+        UserStatisticsBuilder,
+        UserStatisticsReader,
     )
 
 __all__ = (

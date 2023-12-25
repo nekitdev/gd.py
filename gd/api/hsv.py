@@ -5,7 +5,14 @@ from iters.iters import iter
 from typing_aliases import Unary
 
 from gd.models_constants import HSV_SEPARATOR
-from gd.models_utils import bool_str, concat_hsv, float_str, int_bool, round_float, split_hsv
+from gd.models_utils import (
+    bool_str,
+    concat_hsv,
+    float_str,
+    int_bool,
+    round_float,
+    split_hsv,
+)
 from gd.robtop import RobTop
 
 __all__ = ("HSV",)

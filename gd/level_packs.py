@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, AsyncIterator, Optional, Type, TypeVar
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
-from typing_aliases import DynamicTuple
 
 from gd.color import Color
 from gd.constants import (
@@ -17,11 +16,13 @@ from gd.constants import (
 from gd.entity import Entity
 from gd.enums import Difficulty, GauntletID
 from gd.filters import Filters
-from gd.models import GauntletModel, MapPackModel
 
 if TYPE_CHECKING:
+    from typing_aliases import DynamicTuple
+
     from gd.client import Client
     from gd.level import Level
+    from gd.models import GauntletModel, MapPackModel
 
 __all__ = ("LevelPack", "Gauntlet", "MapPack")
 

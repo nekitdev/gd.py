@@ -6,7 +6,13 @@ from ctypes import Union as CTypesUnion
 from typing import Any, Type, TypeVar, get_type_hints
 
 from funcs.decorators import wraps
-from typing_aliases import AnyCallable, AnyType, DecoratorIdentity, DynamicTuple, Namespace
+from typing_aliases import (
+    AnyCallable,
+    AnyType,
+    DecoratorIdentity,
+    DynamicTuple,
+    Namespace,
+)
 from typing_extensions import Never
 
 __all__ = ("Struct", "Union", "external", "unimplemented")

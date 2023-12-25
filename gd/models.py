@@ -64,7 +64,10 @@ from gd.constants import (
 )
 from gd.date_time import date_time_from_human, date_time_to_human, utc_now
 from gd.decorators import cache_by
-from gd.difficulty_parameters import DEFAULT_DEMON_DIFFICULTY_VALUE, DifficultyParameters
+from gd.difficulty_parameters import (
+    DEFAULT_DEMON_DIFFICULTY_VALUE,
+    DifficultyParameters,
+)
 from gd.encoding import (
     decode_base64_string_url_safe,
     decode_robtop_string,

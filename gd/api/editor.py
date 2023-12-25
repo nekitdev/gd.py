@@ -1,5 +1,15 @@
 from operator import attrgetter as get_attribute_factory
-from typing import Iterable, Iterator, List, Sequence, Set, Type, TypeVar, Union, overload
+from typing import (
+    Iterable,
+    Iterator,
+    List,
+    Sequence,
+    Set,
+    Type,
+    TypeVar,
+    Union,
+    overload,
+)
 
 from attrs import define, field
 from iters.iters import iter, wrap_iter

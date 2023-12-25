@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from struct import pack, unpack
+from typing import TYPE_CHECKING
 
 from iters.utils import unpack_unary_tuple
-from typing_aliases import Binary
 
 from gd.binary_constants import BOOL, F32, F64, I8, I16, I32, I64, U8, U16, U32, U64
 from gd.enums import ByteOrder
+
+if TYPE_CHECKING:
+    from typing_aliases import Binary
 
 __all__ = (
     # from bool

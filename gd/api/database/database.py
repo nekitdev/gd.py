@@ -47,7 +47,11 @@ from gd.enums import IconType, Quality
 from gd.filters import Filters
 from gd.models_utils import concat_objects, split_objects
 from gd.plist import PARSER
-from gd.string_utils import password_repr, snake_to_camel, snake_to_camel_with_abbreviations
+from gd.string_utils import (
+    password_repr,
+    snake_to_camel,
+    snake_to_camel_with_abbreviations,
+)
 from gd.versions import CURRENT_BINARY_VERSION, RobTopVersion
 
 DEFAULT_VOLUME = 1.0
