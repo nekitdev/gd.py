@@ -11,7 +11,6 @@ from iters.iters import Iter, iter
 from typing_aliases import NormalError, Nullary, Predicate
 from typing_extensions import Protocol
 
-from gd.comments import LevelComment, UserComment
 from gd.constants import (
     DEFAULT_COUNT,
     DEFAULT_DELAY,
@@ -22,11 +21,7 @@ from gd.constants import (
 )
 from gd.enums import SearchStrategy, TimelyID
 from gd.filters import Filters
-from gd.friend_request import FriendRequest
-from gd.level import Level
-from gd.message import Message
 from gd.tasks import Loop
-from gd.users import User
 
 __all__ = (
     "Listener",
@@ -46,6 +41,11 @@ __all__ = (
 
 if TYPE_CHECKING:
     from gd.client import Client
+    from gd.comments import LevelComment, UserComment
+    from gd.friend_request import FriendRequest
+    from gd.level import Level
+    from gd.message import Message
+    from gd.users import User
 
 
 Q = TypeVar("Q", bound=Hashable)

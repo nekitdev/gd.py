@@ -20,12 +20,12 @@ from typing_aliases import StringDict, is_instance, is_subclass
 from typing_extensions import Never
 
 from gd.memory.constants import DEFAULT_EXCLUDE, DEFAULT_OFFSET
-from gd.memory.data import Data
 from gd.memory.pointers import PointerData
 from gd.memory.special import Void
 
 if TYPE_CHECKING:
     from gd.memory.base import Base
+    from gd.memory.data import Data
 
 __all__ = ("Field", "fetch_fields")
 

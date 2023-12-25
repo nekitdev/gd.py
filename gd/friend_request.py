@@ -3,17 +3,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Type, TypeVar
 
 from attrs import define, field
-from pendulum import DateTime
 
 from gd.constants import DEFAULT_ID, DEFAULT_READ, EMPTY
 from gd.date_time import utc_now
 from gd.entity import Entity
 from gd.enums import FriendRequestType
-from gd.models import FriendRequestModel
 from gd.users import User, UserCosmetics
 
 if TYPE_CHECKING:
+    from pendulum import DateTime
+
     from gd.client import Client
+    from gd.models import FriendRequestModel
 
 __all__ = ("FriendRequest",)
 

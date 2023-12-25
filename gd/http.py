@@ -7,8 +7,8 @@ from builtins import setattr as set_attribute
 from io import BytesIO
 from pathlib import Path
 from random import randrange as get_random_range
-from types import TracebackType as Traceback
 from typing import (
+    TYPE_CHECKING,
     Any,
     BinaryIO,
     ClassVar,
@@ -38,9 +38,10 @@ from typing_aliases import (
     Namespace,
     NormalError,
     Parameters,
+    is_bytes,
+    is_string,
 )
 from typing_aliases import Payload as JSON
-from typing_aliases import is_bytes, is_string
 from typing_extensions import Literal
 from yarl import URL
 
@@ -127,9 +128,13 @@ from gd.password import Password
 from gd.progress import Progress
 from gd.string_utils import concat_comma, password_str, snake_to_camel_with_abbreviations, tick
 from gd.time import Timer
-from gd.typing import AnyString, IntString, URLString
 from gd.version import python_version_info, version_info
 from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, RobTopVersion
+
+if TYPE_CHECKING:
+    from types import TracebackType as Traceback
+
+    from gd.typing import AnyString, IntString, URLString
 
 __all__ = ("Route", "HTTPClient")
 

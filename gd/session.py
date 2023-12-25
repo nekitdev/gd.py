@@ -1,15 +1,10 @@
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, TypeVar
+from typing import TYPE_CHECKING, List, Optional, Sequence, TypeVar
 
 from attrs import field, frozen
-from pendulum import Duration
-from yarl import URL
 
-from gd.api.database.database import Database
-from gd.api.recording import Recording
 from gd.api.save_manager import save
-from gd.capacity import Capacity
 from gd.constants import (
     DEFAULT_CHEST_COUNT,
     DEFAULT_COINS,
@@ -42,7 +37,6 @@ from gd.enums import (
     RewardType,
     TimelyType,
 )
-from gd.filters import Filters
 from gd.http import HTTPClient
 from gd.models import (
     ArtistModel,
@@ -75,8 +69,17 @@ from gd.newgrounds import (
     search_artist_song_models,
     search_song_models,
 )
-from gd.password import Password
-from gd.typing import IntString, MaybeIterable, URLString
+
+if TYPE_CHECKING:
+    from pendulum import Duration
+    from yarl import URL
+
+    from gd.api.database.database import Database
+    from gd.api.recording import Recording
+    from gd.capacity import Capacity
+    from gd.filters import Filters
+    from gd.password import Password
+    from gd.typing import IntString, MaybeIterable, URLString
 
 __all__ = ("Session",)
 

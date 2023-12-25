@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from typing import Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Generic, Optional, TypeVar
 
 from attrs import frozen
 from named import get_type_name
-from pendulum import Duration
 from typing_aliases import AnyError, NormalError
 
 from gd.string_utils import tick
+
+if TYPE_CHECKING:
+    from pendulum import Duration
 
 __all__ = (
     "InternalError",

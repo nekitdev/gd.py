@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from typing import Iterable, Optional, Tuple, Type, TypeVar
+from typing import TYPE_CHECKING, Iterable, Optional, Tuple, Type, TypeVar
 
 from attrs import define
-from typing_aliases import IntoPath
 
 from gd.asyncio import run_blocking
 from gd.constants import DEFAULT_HEIGHT, DEFAULT_WIDTH
 from gd.errors import InternalError
 from gd.image.geometry import Point, Rectangle, Size
-from gd.image.sprite import Sprite
 
 try:
     from PIL.Image import BICUBIC, LANCZOS, Image
@@ -30,9 +28,13 @@ from gd.assets import (
 from gd.color import Color
 from gd.enums import Orientation
 from gd.image.animation import Animation, Animations, AnimationSheet
-from gd.image.icon import Icon
 from gd.image.sheet import Sheet
-from gd.image.sprite import Sprites
+
+if TYPE_CHECKING:
+    from typing_aliases import IntoPath
+
+    from gd.image.icon import Icon
+    from gd.image.sprite import Sprite, Sprites
 
 __all__ = ("FACTORY", "Factory")
 
