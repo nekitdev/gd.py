@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from asyncio import run
 from builtins import setattr as set_attribute
-from types import TracebackType as Traceback
 from typing import (
+    TYPE_CHECKING,
     Any,
     AsyncIterator,
     Awaitable,
@@ -21,15 +21,10 @@ from typing import (
 from attrs import define, field, frozen
 from funcs.functions import awaiting
 from iters.async_iters import wrap_async_iter
-from pendulum import Duration
 from typing_aliases import AnyCallable, AnyError, DynamicTuple, Predicate
 from typing_extensions import ParamSpec
-from yarl import URL
 
-from gd.api.database.database import Database
-from gd.api.recording import Recording
 from gd.artist import Artist
-from gd.capacity import Capacity
 from gd.comments import Comment, LevelComment, UserComment
 from gd.constants import (
     COMMENT_PAGE_SIZE,
@@ -98,18 +93,28 @@ from gd.events.listeners import (
 )
 from gd.filters import Filters
 from gd.friend_request import FriendRequest
-from gd.http import HTTPClient
 from gd.level import Level
 from gd.level_packs import Gauntlet, MapPack
 from gd.message import Message
-from gd.models import LevelModel, SearchLevelsResponseModel
-from gd.password import Password
 from gd.rewards import Chest, Quest
 from gd.run_iterables import run_iterables
 from gd.session import Session
 from gd.songs import Song
-from gd.typing import IntString, URLString
 from gd.users import User, UserReference
+
+if TYPE_CHECKING:
+    from types import TracebackType as Traceback
+
+    from pendulum import Duration
+    from yarl import URL
+
+    from gd.api.database.database import Database
+    from gd.api.recording import Recording
+    from gd.capacity import Capacity
+    from gd.http import HTTPClient
+    from gd.models import LevelModel, SearchLevelsResponseModel
+    from gd.password import Password
+    from gd.typing import IntString, URLString
 
 __all__ = ("Client",)
 

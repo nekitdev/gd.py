@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from io import BufferedReader, BufferedWriter
 from typing import TYPE_CHECKING
 
 from attrs import frozen
@@ -14,6 +13,8 @@ from gd.schema_constants import REGULAR
 from gd.typing import Data
 
 if TYPE_CHECKING:
+    from io import BufferedReader, BufferedWriter
+
     from gd.schema import EitherRecordBuilder, EitherRecordReader
 
 

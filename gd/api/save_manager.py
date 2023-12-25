@@ -2,16 +2,18 @@ from __future__ import annotations
 
 from os import getenv as get_environment
 from pathlib import Path
-from typing import Generic, Optional, Tuple, Type, TypeVar
+from typing import TYPE_CHECKING, Generic, Optional, Tuple, Type, TypeVar
 
 from attrs import define
-from typing_aliases import IntoPath
 
 # from gd.asyncio import run_blocking
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.encoding import decode_save, decode_system_save, encode_save, encode_system_save
 from gd.enums import Platform
 from gd.platform import SYSTEM_PLATFORM
+
+if TYPE_CHECKING:
+    from typing_aliases import IntoPath
 
 __all__ = (
     "MAIN_NAME",

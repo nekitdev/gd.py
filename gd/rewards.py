@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Type, TypeVar
+from typing import TYPE_CHECKING, Type, TypeVar
 
 from attrs import define, field
 from pendulum import DateTime, Duration
@@ -19,8 +19,10 @@ from gd.constants import (
 from gd.date_time import utc_now
 from gd.entity import Entity
 from gd.enums import QuestType, ShardType
-from gd.models import ChestModel, QuestModel
 from gd.string_utils import case_fold, tick
+
+if TYPE_CHECKING:
+    from gd.models import ChestModel, QuestModel
 
 __all__ = ("Chest", "Quest")
 

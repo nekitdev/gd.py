@@ -8,11 +8,11 @@ from gd.constants import DEFAULT_READ, EMPTY
 from gd.date_time import DateTime, utc_now
 from gd.entity import Entity
 from gd.enums import MessageType
-from gd.models import MessageModel
 from gd.users import User
 
 if TYPE_CHECKING:
     from gd.client import Client
+    from gd.models import MessageModel
 
 __all__ = ("Message",)
 

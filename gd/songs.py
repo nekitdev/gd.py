@@ -1,10 +1,8 @@
 from __future__ import annotations
-from io import BufferedReader, BufferedWriter
 
 from typing import TYPE_CHECKING, BinaryIO, Optional
 
 from attrs import define, field
-from typing_aliases import IntoPath
 from typing_extensions import Self
 from yarl import URL
 
@@ -21,11 +19,15 @@ from gd.constants import (
 from gd.converter import CONVERTER, register_unstructure_hook_omit_client
 from gd.entity import Entity, EntityData
 from gd.errors import MissingAccess
-from gd.models import SongModel
 from gd.schema import SongReferenceSchema, SongSchema
 from gd.schema_constants import NONE
 
 if TYPE_CHECKING:
+    from io import BufferedReader, BufferedWriter
+
+    from typing_aliases import IntoPath
+
+    from gd.models import SongModel
     from gd.schema import SongBuilder, SongReader, SongReferenceBuilder, SongReferenceReader
 
 __all__ = ("Song", "SongReference")

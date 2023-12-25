@@ -20,10 +20,10 @@ from gd.binary_constants import (
     U64_SIZE,
 )
 from gd.enums import ByteOrder
-from gd.platform import PlatformConfig
 
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
+    from gd.platform import PlatformConfig
 
 __all__ = (
     "I8",

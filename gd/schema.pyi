@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import ContextManager, Generic, Literal, Optional, TypeVar
 from io import BufferedReader, BufferedWriter
+from typing import ContextManager, Generic, Literal, Optional, TypeVar
 
 T = TypeVar("T")
 

@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Type, TypeVar, Union
 
 from attrs import define, field
-from pendulum import DateTime
 
 # from gd.binary import Binary
 from gd.color import Color
@@ -19,13 +18,15 @@ from gd.converter import register_unstructure_hook_omit_client
 from gd.date_time import utc_now
 from gd.entity import Entity
 from gd.level import Level
-from gd.models import LevelCommentModel, UserCommentModel
 
 # from gd.schema import CommentSchema
 from gd.users import User
 
 if TYPE_CHECKING:
+    from pendulum import DateTime
+
     from gd.client import Client
+    from gd.models import LevelCommentModel, UserCommentModel
 
     # from gd.schema import CommentBuilder, CommentReader
 
