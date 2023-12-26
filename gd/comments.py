@@ -23,6 +23,8 @@ from gd.level import Level
 from gd.users import User
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     from pendulum import DateTime
 
     from gd.client import Client
@@ -34,8 +36,6 @@ __all__ = ("LevelComment", "UserComment")
 
 COMMENT = "{}: {}"
 comment = COMMENT.format
-
-UC = TypeVar("UC", bound="UserComment")
 
 
 @register_unstructure_hook_omit_client
@@ -67,15 +67,15 @@ class UserComment(Entity):
 
     @classmethod
     def default(
-        cls: Type[UC],
+        cls,
         id: int = DEFAULT_ID,
         author_id: int = DEFAULT_ID,
         author_account_id: int = DEFAULT_ID,
-    ) -> UC:
+    ) -> Self:
         return cls(id=id, author=User.default(author_id, author_account_id))
 
     @classmethod
-    def from_model(cls: Type[UC], model: UserCommentModel, author: User) -> UC:
+    def from_model(cls, model: UserCommentModel, author: User) -> Self:
         return cls(
             id=model.id,
             author=author,
@@ -84,23 +84,20 @@ class UserComment(Entity):
             created_at=model.created_at,
         )
 
-    def attach_client_unchecked(self: UC, client: Optional[Client]) -> UC:
+    def attach_client_unchecked(self, client: Optional[Client]) -> Self:
         self.author.attach_client_unchecked(client)
 
         return super().attach_client_unchecked(client)
 
-    def attach_client(self: UC, client: Client) -> UC:
+    def attach_client(self, client: Client) -> Self:
         self.author.attach_client(client)
 
         return super().attach_client(client)
 
-    def detach_client(self: UC) -> UC:
+    def detach_client(self) -> Self:
         self.author.detach_client()
 
         return super().detach_client()
-
-
-LC = TypeVar("LC", bound="LevelComment")
 
 
 @register_unstructure_hook_omit_client
@@ -129,18 +126,18 @@ class LevelComment(Entity):
 
     @classmethod
     def default(
-        cls: Type[LC],
+        cls,
         id: int = DEFAULT_ID,
         author_id: int = DEFAULT_ID,
         author_account_id: int = DEFAULT_ID,
         level_id: int = DEFAULT_ID,
-    ) -> LC:
+    ) -> Self:
         return cls(
             id=id, author=User.default(author_id, author_account_id), level=Level.default(level_id)
         )
 
     @classmethod
-    def from_model(cls: Type[LC], model: LevelCommentModel) -> LC:
+    def from_model(cls, model: LevelCommentModel) -> Self:
         inner = model.inner
 
         level = Level.default(inner.level_id)
@@ -170,19 +167,19 @@ class LevelComment(Entity):
     ) -> Level:
         return await self.client.get_level(self.level.id, get_data=get_data, use_client=use_client)
 
-    def attach_client_unchecked(self: LC, client: Optional[Client]) -> LC:
+    def attach_client_unchecked(self, client: Optional[Client]) -> Self:
         self.author.attach_client_unchecked(client)
         self.level.attach_client_unchecked(client)
 
         return super().attach_client_unchecked(client)
 
-    def attach_client(self: LC, client: Client) -> LC:
+    def attach_client(self, client: Client) -> Self:
         self.author.attach_client(client)
         self.level.attach_client(client)
 
         return super().attach_client(client)
 
-    def detach_client(self: LC) -> LC:
+    def detach_client(self) -> Self:
         self.author.detach_client()
         self.level.detach_client()
 
