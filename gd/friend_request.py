@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Optional
 
 from attrs import define, field
 
@@ -12,13 +12,12 @@ from gd.users import User, UserCosmetics
 
 if TYPE_CHECKING:
     from pendulum import DateTime
+    from typing_extensions import Self
 
     from gd.client import Client
     from gd.models import FriendRequestModel
 
 __all__ = ("FriendRequest",)
-
-FR = TypeVar("FR", bound="FriendRequest")
 
 FRIEND_REQUEST = "{} {}"
 friend_request = FRIEND_REQUEST.format
@@ -50,17 +49,17 @@ class FriendRequest(Entity):
 
     @classmethod
     def default(
-        cls: Type[FR],
+        cls,
         id: int = DEFAULT_ID,
         user_id: int = DEFAULT_ID,
         user_account_id: int = DEFAULT_ID,
-    ) -> FR:
+    ) -> Self:
         return cls(
             id=id, user=User.default(user_id, user_account_id), type=FriendRequestType.DEFAULT
         )
 
     @classmethod
-    def from_model(cls: Type[FR], model: FriendRequestModel, type: FriendRequestType) -> FR:
+    def from_model(cls, model: FriendRequestModel, type: FriendRequestType) -> Self:
         return cls(
             id=model.id,
             user=User(
@@ -102,17 +101,17 @@ class FriendRequest(Entity):
     def is_outgoing(self) -> bool:
         return self.type.is_outgoing()
 
-    def attach_client_unchecked(self: FR, client: Optional[Client]) -> FR:
+    def attach_client_unchecked(self, client: Optional[Client]) -> Self:
         self.user.attach_client_unchecked(client)
 
         return super().attach_client_unchecked(client)
 
-    def attach_client(self: FR, client: Client) -> FR:
+    def attach_client(self, client: Client) -> Self:
         self.user.attach_client(client)
 
         return super().attach_client(client)
 
-    def detach_client(self: FR) -> FR:
+    def detach_client(self) -> Self:
         self.user.detach_client()
 
         return super().detach_client()
