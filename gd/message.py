@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Optional
 
 from attrs import define, field
 
@@ -11,12 +11,12 @@ from gd.enums import MessageType
 from gd.users import User
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     from gd.client import Client
     from gd.models import MessageModel
 
 __all__ = ("Message",)
-
-M = TypeVar("M", bound="Message")
 
 NO_SUBJECT = "(no subject)"
 
@@ -48,7 +48,7 @@ class Message(Entity):
         return self.type.is_outgoing()
 
     @classmethod
-    def from_model(cls: Type[M], model: MessageModel) -> M:
+    def from_model(cls, model: MessageModel) -> Self:
         type = MessageType.OUTGOING if model.is_sent() else MessageType.INCOMING
 
         return cls(
@@ -90,17 +90,17 @@ class Message(Entity):
     async def delete(self) -> None:
         await self.client.delete_message(self)
 
-    def attach_client_unchecked(self: M, client: Optional[Client]) -> M:
+    def attach_client_unchecked(self, client: Optional[Client]) -> Self:
         self.user.attach_client_unchecked(client)
 
         return super().attach_client_unchecked(client)
 
-    def attach_client(self: M, client: Client) -> M:
+    def attach_client(self, client: Client) -> Self:
         self.user.attach_client(client)
 
         return super().attach_client(client)
 
-    def detach_client(self: M) -> M:
+    def detach_client(self) -> Self:
         self.user.detach_client()
 
         return super().detach_client()
