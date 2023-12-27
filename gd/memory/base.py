@@ -4,8 +4,8 @@ from builtins import setattr as set_attribute
 from typing import TYPE_CHECKING, ClassVar, Type, TypeVar, final
 
 from attrs import define, field, frozen
-from funcs.decorators import cache
 from named import get_module, get_name, set_module, set_name
+from typing_extensions import Self
 
 from gd.enums import ByteOrder
 from gd.memory.constants import DEFAULT_ALIGNMENT, DEFAULT_PACKED, DEFAULT_SIZE, DEFAULT_VIRTUAL
@@ -28,9 +28,6 @@ class Base:
     order: ByteOrder = field(default=ByteOrder.NATIVE)
 
 
-TS = TypeVar("TS", bound="Type[Struct]")
-
-
 @define()
 class Struct(Base):
     """Represents `struct` types."""
@@ -39,16 +36,12 @@ class Struct(Base):
     VIRTUAL: ClassVar[bool] = DEFAULT_VIRTUAL
 
     @classmethod
-    @cache  # type: ignore
-    def reconstruct(cls: TS, config: PlatformConfig) -> TS:
+    def reconstruct(cls, config: PlatformConfig) -> Type[Self]:
         return struct(cls.PACKED, cls.VIRTUAL, config)(cls)
 
     @classmethod
-    def reconstruct_for(cls: TS, state: AbstractState) -> TS:
-        return cls.reconstruct(state.config)  # type: ignore
-
-
-TU = TypeVar("TU", bound="Type[Union]")
+    def reconstruct_for(cls, state: AbstractState) -> Type[Self]:
+        return cls.reconstruct(state.config)
 
 
 @define()
@@ -56,13 +49,12 @@ class Union(Base):
     """Represents `union` types."""
 
     @classmethod
-    @cache  # type: ignore
-    def reconstruct(cls: TU, config: PlatformConfig) -> TU:
+    def reconstruct(cls, config: PlatformConfig) -> Type[Self]:
         return union(config)(cls)
 
     @classmethod
-    def reconstruct_for(cls: TU, state: AbstractState) -> TU:
-        return cls.reconstruct(state.config)  # type: ignore
+    def reconstruct_for(cls, state: AbstractState) -> Type[Self]:
+        return cls.reconstruct(state.config)
 
 
 S = TypeVar("S", bound=Struct)
@@ -91,7 +83,7 @@ class StructData(Data[S]):
         return self.compute_type(config).ALIGNMENT
 
     def compute_type(self, config: PlatformConfig) -> Type[S]:
-        return self.struct_type.reconstruct(config)  # type: ignore
+        return self.struct_type.reconstruct(config)
 
 
 U = TypeVar("U", bound=Union)
@@ -120,7 +112,7 @@ class UnionData(Data[U]):
         return self.compute_type(config).ALIGNMENT
 
     def compute_type(self, config: PlatformConfig) -> Type[U]:
-        return self.union_type.reconstruct(config)  # type: ignore
+        return self.union_type.reconstruct(config)
 
 
 @final
@@ -130,7 +122,7 @@ class CreateStruct:
     virtual: bool = DEFAULT_VIRTUAL
     config: PlatformConfig = SYSTEM_PLATFORM_CONFIG
 
-    def __call__(self, struct_type: TS) -> TS:
+    def __call__(self, struct_type: Type[S]) -> Type[S]:
         packed = self.packed
         virtual = self.virtual
         config = self.config
@@ -140,7 +132,7 @@ class CreateStruct:
 
         fields = fetch_fields(struct_type)
 
-        class new_struct_type(struct_type):  # type: ignore
+        class new_struct_type(struct_type):  # type: ignore[valid-type, misc]
             pass
 
         offset = 0
@@ -203,10 +195,10 @@ class CreateStruct:
         for name, field in fields.items():
             set_attribute(new_struct_type, name, field)
 
-        set_name(new_struct_type, get_name(struct_type))  # type: ignore
-        set_module(new_struct_type, get_module(struct_type))  # type: ignore
+        set_name(new_struct_type, get_name(struct_type))  # type: ignore[arg-type]
+        set_module(new_struct_type, get_module(struct_type))
 
-        return new_struct_type  # type: ignore
+        return new_struct_type
 
 
 def struct(
@@ -222,12 +214,12 @@ def struct(
 class CreateUnion:
     config: PlatformConfig = SYSTEM_PLATFORM_CONFIG
 
-    def __call__(self, union_type: TU) -> TU:
+    def __call__(self, union_type: Type[U]) -> Type[U]:
         config = self.config
 
         fields = fetch_fields(union_type)
 
-        class new_union_type(union_type):  # type: ignore
+        class new_union_type(union_type):  # type: ignore[valid-type, misc]
             pass
 
         new_union_type.SIZE = max(
@@ -242,10 +234,10 @@ class CreateUnion:
         for name, field in fields.items():
             set_attribute(new_union_type, name, field)
 
-        set_name(new_union_type, get_name(union_type))  # type: ignore
-        set_module(new_union_type, get_module(union_type))  # type: ignore
+        set_name(new_union_type, get_name(union_type))  # type: ignore[arg-type]
+        set_module(new_union_type, get_module(union_type))
 
-        return new_union_type  # type: ignore
+        return new_union_type
 
 
 def union(config: PlatformConfig = SYSTEM_PLATFORM_CONFIG) -> CreateUnion:
