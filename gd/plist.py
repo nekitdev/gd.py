@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 
 try:
     from lxml import etree as xml
@@ -15,7 +15,6 @@ from funcs.unpacking import unpack_binary
 from iters.iters import iter
 from named import get_type_name
 from typing_aliases import Attributes, StrictPayload, StringDict, Unary, is_instance
-from typing_extensions import Literal
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.models_utils import float_str

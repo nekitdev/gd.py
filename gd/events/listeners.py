@@ -3,13 +3,23 @@ from __future__ import annotations
 from abc import abstractmethod as required
 from asyncio import get_running_loop
 from traceback import print_exception as print_error
-from typing import TYPE_CHECKING, Any, Awaitable, Hashable, Iterable, List, Optional, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Hashable,
+    Iterable,
+    List,
+    Optional,
+    Protocol,
+    TypeVar,
+    runtime_checkable,
+)
 
 from attrs import define, field
 from funcs.functions import awaiting
 from iters.iters import Iter, iter
 from typing_aliases import NormalError, Nullary, Predicate
-from typing_extensions import Protocol
 
 from gd.constants import (
     DEFAULT_COUNT,
@@ -71,6 +81,7 @@ def differ(before: Iterable[Q], after: Iterable[Q]) -> List[Q]:
 LISTENER_ALREADY_RUNNING = "listener is already running"
 
 
+@runtime_checkable
 class ListenerProtocol(Protocol):
     delay: float
     reconnect: bool

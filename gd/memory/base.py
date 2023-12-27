@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from builtins import setattr as set_attribute
-from typing import TYPE_CHECKING, ClassVar, Type, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Type, TypeVar, final
 
 from attrs import define, field, frozen
 from funcs.decorators import cache
 from named import get_module, get_name, set_module, set_name
-from typing_extensions import final
 
 from gd.enums import ByteOrder
 from gd.memory.constants import DEFAULT_ALIGNMENT, DEFAULT_PACKED, DEFAULT_SIZE, DEFAULT_VIRTUAL

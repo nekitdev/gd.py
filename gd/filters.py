@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING, Iterable, Optional, Type, TypeVar
 from attrs import define, field
 from iters.iters import iter
 from iters.ordered_set import OrderedSet, ordered_set
-from typing_extensions import TypedDict
 
 from gd.enums import Difficulty, LevelLength, RateFilter, SearchStrategy, SpecialRateType
 from gd.string_constants import DASH
 from gd.string_utils import concat_comma, wrap
+from gd.typing import Data
 
 __all__ = ("Filters",)
 
@@ -413,7 +413,7 @@ class Filters:
         return filters
 
 
-class RobTopFilters(TypedDict, total=False):
+class RobTopFilters(Data, total=False):
     type: int
     diff: str
     len: str

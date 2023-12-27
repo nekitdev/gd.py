@@ -1,11 +1,10 @@
-from typing import List, Optional, Sequence, Type, TypeVar
+from typing import List, Optional, Protocol, Sequence, Type, TypeVar, runtime_checkable
 from urllib.parse import quote, unquote
 
 from attrs import define, field
 from iters.iters import iter
 from pendulum import DateTime, Duration, duration
 from typing_aliases import DynamicTuple
-from typing_extensions import Protocol
 from yarl import URL
 
 from gd.api.editor import Editor
@@ -291,6 +290,7 @@ def last(sequence: Sequence[T]) -> T:
     return sequence[LAST]
 
 
+@runtime_checkable
 class Model(RobTop, Protocol):
     """Represents various models."""
 

@@ -1,9 +1,9 @@
-from typing import Any, List, Type, TypeVar
+from typing import Any, List, Literal, Type, TypeVar
 
 from attrs import define, field
 from iters.iters import iter
 from typing_aliases import StringDict, StringMapping
-from typing_extensions import Literal, TypeGuard
+from typing_extensions import TypeGuard
 
 from gd.constants import (
     DEFAULT_AMOUNT,
