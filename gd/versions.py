@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from attrs import Attribute, field, frozen
 from typing_extensions import Self
-from typing_extensions import TypedDict as Data
 
 from gd.converter import CONVERTER
 from gd.robtop import RobTop
 from gd.simple import Simple
 from gd.string_utils import is_digit
+from gd.typing import Data
 
 __all__ = (
     "CURRENT_GAME_VERSION",
