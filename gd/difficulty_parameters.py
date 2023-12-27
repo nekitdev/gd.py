@@ -1,17 +1,20 @@
-from typing import Type, TypeVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from attrs import define
 
 from gd.constants import DEFAULT_AUTO, DEFAULT_DEMON, DEFAULT_DENOMINATOR, DEFAULT_NUMERATOR
 from gd.enums import DemonDifficulty, Difficulty, LevelDifficulty
 
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
 __all__ = ("DEFAULT_DEMON_DIFFICULTY_VALUE", "DifficultyParameters")
 
 DEFAULT_DEMON_DIFFICULTY_VALUE = DemonDifficulty.DEFAULT.value
 
 BASE = 10
-
-DP = TypeVar("DP", bound="DifficultyParameters")
 
 
 @define()
@@ -25,7 +28,7 @@ class DifficultyParameters:
     demon: bool = DEFAULT_DEMON
 
     @classmethod
-    def from_difficulty(cls: Type[DP], difficulty: Difficulty) -> DP:
+    def from_difficulty(cls, difficulty: Difficulty) -> Self:
         if difficulty.is_unknown():
             return cls()
 
