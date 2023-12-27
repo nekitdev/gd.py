@@ -1,9 +1,9 @@
-from typing import Sequence, Tuple, Type, TypeVar
+from typing import Literal, Sequence, Tuple, Type, TypeVar
 
 from attrs import define
-from typing_extensions import Literal, TypedDict
 
 from gd.image.geometry import Point, Size
+from gd.typing import Data
 
 __all__ = ("Layer", "Layers", "LayerData")
 
@@ -17,7 +17,7 @@ V_FLIPPED: Literal["v_flipped"] = "v_flipped"
 L = TypeVar("L", bound="Layer")
 
 
-class LayerData(TypedDict):
+class LayerData(Data):
     part: int
     position: Tuple[float, float]
     scale: Tuple[float, float]

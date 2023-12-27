@@ -1,8 +1,8 @@
-from abc import abstractmethod as required
-from typing import TypeVar
+from typing import Protocol, runtime_checkable
 
 from attrs import define, field
-from typing_extensions import Protocol
+from typing_aliases import required
+from typing_extensions import Self
 
 from gd.binary_constants import (
     BOOL_SIZE,
@@ -114,6 +114,7 @@ DEFAULT_LOADED = False
 NULL_POINTER = "the pointer is null"
 
 
+@runtime_checkable
 class StateProtocol(Protocol):
     @required
     def allocate_at(
@@ -213,9 +214,6 @@ class StateProtocol(Protocol):
         self.write_at(address, to_bool(value, order))
 
 
-AS = TypeVar("AS", bound="AbstractState")
-
-
 @define()
 class AbstractState(StateProtocol):
     config: PlatformConfig = field()
@@ -248,7 +246,7 @@ class AbstractState(StateProtocol):
         self.unload()
         self.load()
 
-    def ensure_loaded(self: AS) -> AS:
+    def ensure_loaded(self) -> Self:
         if not self.is_loaded():
             self.load()
 

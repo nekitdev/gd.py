@@ -3,11 +3,11 @@
 import ctypes
 from pathlib import Path
 from types import TracebackType as Traceback
-from typing import Generator, Optional, Type, TypeVar
+from typing import Generator, Optional, Type, TypeVar, final
 
 from attrs import frozen
 from typing_aliases import AnyError
-from typing_extensions import TypeAlias, final
+from typing_extensions import TypeAlias
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.enums import Permissions

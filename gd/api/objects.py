@@ -1,14 +1,27 @@
 from abc import abstractmethod as required
 from builtins import hasattr as has_attribute
 from enum import Enum, Flag
-from typing import Dict, Iterable, Iterator, Mapping, Optional, Tuple, Type, TypeVar, Union
+from typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    Literal,
+    Mapping,
+    Optional,
+    Protocol,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    runtime_checkable,
+)
 
 from attrs import define, field
 from iters.iters import iter
 from iters.ordered_set import OrderedSet
 from named import get_type_name
 from typing_aliases import is_instance
-from typing_extensions import Literal, Never, Protocol, TypeGuard, runtime_checkable
+from typing_extensions import Never, TypeGuard
 
 from gd.api.color_channels import (
     BACKGROUND_COLOR_ID,

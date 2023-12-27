@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, TypeVar, Union, final
 
 from attrs import Attribute, field, frozen
 from funcs.decorators import wraps
 from funcs.getters import attribute_getter
 from typing_aliases import DynamicTuple
-from typing_extensions import Concatenate, ParamSpec, final
+from typing_extensions import Concatenate, ParamSpec
 
 from gd.errors import LoginRequired
 

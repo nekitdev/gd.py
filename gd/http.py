@@ -13,6 +13,7 @@ from typing import (
     BinaryIO,
     ClassVar,
     Generic,
+    Literal,
     Mapping,
     Optional,
     Set,
@@ -42,7 +43,6 @@ from typing_aliases import (
     is_string,
 )
 from typing_aliases import Payload as JSON
-from typing_extensions import Literal
 from yarl import URL
 
 from gd.api.recording import Recording

@@ -17,7 +17,7 @@ from attrs import define, field
 from iters.iters import wrap_iter
 from named import get_name
 from typing_aliases import StringDict, is_instance, is_subclass
-from typing_extensions import Never
+from typing_extensions import Never, Self
 
 from gd.memory.constants import DEFAULT_EXCLUDE, DEFAULT_OFFSET
 from gd.memory.pointers import PointerData
@@ -33,9 +33,6 @@ T = TypeVar("T")
 
 CAN_NOT_DELETE_FIELDS = "can not delete fields"
 
-B = TypeVar("B", bound="Base")
-F = TypeVar("F", bound="AnyField")
-
 
 @define()
 class Field(Generic[T]):
@@ -46,22 +43,24 @@ class Field(Generic[T]):
     def is_excluded(self) -> bool:
         return self.exclude
 
-    def reset(self: F) -> F:
+    def reset(self) -> Self:
         return type(self)(self.data)
 
     @overload
-    def __get__(self: F, instance: None, type: Optional[Type[B]] = ...) -> F:
+    def __get__(self, instance: None, type: Optional[Type[Base]] = ...) -> Self:
         ...
 
     @overload
-    def __get__(self, instance: B, type: Optional[Type[B]]) -> T:
+    def __get__(self, instance: Base, type: Optional[Type[Base]]) -> T:
         ...
 
-    def __get__(self: F, instance: Optional[B], type: Optional[Type[B]] = None) -> Union[F, T]:
+    def __get__(
+        self, instance: Optional[Base], type: Optional[Type[Base]] = None
+    ) -> Union[Self, T]:
         if instance is None:
             return self
 
-        return self.data.read(  # type: ignore
+        return self.data.read(
             instance.state, instance.address + self.offset, instance.order
         )
 

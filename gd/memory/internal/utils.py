@@ -3,11 +3,11 @@ from __future__ import annotations
 from builtins import setattr as set_attribute
 from ctypes import Structure as CTypesStruct
 from ctypes import Union as CTypesUnion
-from typing import Any, Type, TypeVar, get_type_hints
+from typing import Any, get_type_hints
 
 from funcs.decorators import wraps
 from typing_aliases import AnyCallable, AnyType, DecoratorIdentity, DynamicTuple, Namespace
-from typing_extensions import Never
+from typing_extensions import Never, Self
 
 __all__ = ("Struct", "Union", "external", "unimplemented")
 
@@ -22,11 +22,9 @@ FIELDS = "_fields_"
 
 Bases = DynamicTuple[AnyType]
 
-CS = TypeVar("CS", bound="StructType")
-
 
 class StructType(type(CTypesStruct)):  # type: ignore
-    def __new__(cls: Type[CS], name: str, bases: DynamicTuple[AnyType], namespace: Namespace) -> CS:
+    def __new__(cls, name: str, bases: DynamicTuple[AnyType], namespace: Namespace) -> Self:
         self = super().__new__(cls, name, bases, namespace)
 
         fields = get_type_hints(self)
@@ -36,11 +34,8 @@ class StructType(type(CTypesStruct)):  # type: ignore
         return self  # type: ignore
 
 
-CU = TypeVar("CU", bound="UnionType")
-
-
 class UnionType(type(CTypesUnion)):  # type: ignore
-    def __new__(cls: Type[CU], name: str, bases: DynamicTuple[AnyType], namespace: Namespace) -> CU:
+    def __new__(cls, name: str, bases: DynamicTuple[AnyType], namespace: Namespace) -> Self:
         self = super().__new__(cls, name, bases, namespace)
 
         fields = get_type_hints(self)
