@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, Tuple, Type, TypeVar
+from typing import TYPE_CHECKING, Literal, Tuple
 
 from attrs import field, frozen
 from typing_aliases import StringMapping
@@ -9,14 +9,15 @@ from typing_extensions import NotRequired
 from gd.image.geometry import Point, Rectangle, Size
 from gd.typing import Data
 
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
 __all__ = ("Sprite", "Sprites", "SpriteData")
 
 SIZE: Literal["size"] = "size"
 OFFSET: Literal["offset"] = "offset"
 LOCATION: Literal["location"] = "location"
 ROTATED: Literal["rotated"] = "rotated"
-
-S = TypeVar("S", bound="Sprite")
 
 
 class SpriteData(Data):
@@ -59,7 +60,7 @@ class Sprite:
         )
 
     @classmethod
-    def from_data(cls: Type[S], sprite_dict: SpriteData) -> S:
+    def from_data(cls, sprite_dict: SpriteData) -> Self:
         width, height = sprite_dict[SIZE]
         offset_x, offset_y = sprite_dict[OFFSET]
         x, y = sprite_dict[LOCATION]
