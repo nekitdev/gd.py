@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, AsyncIterator, Iterable, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, AsyncIterator, Iterable, Optional, TypeVar
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
@@ -49,6 +49,8 @@ from gd.users import User, UserReference, UserReferenceData
 from gd.versions import CURRENT_GAME_VERSION, GameVersion, RobTopVersionData
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     from gd.api.recording import Recording
     from gd.client import Client
     from gd.comments import LevelComment
@@ -153,14 +155,14 @@ class Level(Entity):
         self.processed_data = Editor.from_bytes(data).to_robtop()
 
     @classmethod
-    def from_data(cls: Type[L], data: LevelData) -> L:  # type: ignore
+    def from_data(cls, data: LevelData) -> Self:  # type: ignore
         return CONVERTER.structure(data, cls)
 
     def into_data(self) -> LevelData:
         return CONVERTER.unstructure(self)  # type: ignore
 
     @classmethod
-    def from_model(cls: Type[L], model: LevelModel) -> L:
+    def from_model(cls, model: LevelModel) -> Self:
         rate_type = RateType.NOT_RATED
 
         stars = model.stars
@@ -211,7 +213,7 @@ class Level(Entity):
             copies_time=model.copies_time,
         )
 
-    def update_with_timely_model(self: L, model: TimelyInfoModel) -> L:
+    def update_with_timely_model(self, model: TimelyInfoModel) -> Self:
         self.timely_id = model.id
         self.timely_type = model.type
 
@@ -219,12 +221,12 @@ class Level(Entity):
 
     @classmethod
     def default(
-        cls: Type[L],
+        cls,
         id: int = DEFAULT_ID,
         creator_id: int = DEFAULT_ID,
         creator_account_id: int = DEFAULT_ID,
         song_id: int = DEFAULT_ID,
-    ) -> L:
+    ) -> Self:
         return cls(
             id=id,
             name=EMPTY,
@@ -234,11 +236,11 @@ class Level(Entity):
 
     @classmethod
     def official(
-        cls: Type[L],
+        cls,
         id: Optional[int] = None,
         name: Optional[str] = None,
         get_data: bool = DEFAULT_GET_DATA,
-    ) -> L:
+    ) -> Self:
         if id is None:
             if name is None:
                 raise ValueError(EXPECTED_QUERY)
@@ -470,19 +472,19 @@ class Level(Entity):
             pages=pages,
         ).unwrap()
 
-    def attach_client_unchecked(self: L, client: Optional[Client]) -> L:
+    def attach_client_unchecked(self, client: Optional[Client]) -> Self:
         self.creator.attach_client_unchecked(client)
         self.song.attach_client_unchecked(client)
 
         return super().attach_client_unchecked(client)
 
-    def attach_client(self: L, client: Client) -> L:
+    def attach_client(self, client: Client) -> Self:
         self.creator.attach_client(client)
         self.song.attach_client(client)
 
         return super().attach_client(client)
 
-    def detach_client(self: L) -> L:
+    def detach_client(self) -> Self:
         self.creator.detach_client()
         self.song.detach_client()
 
