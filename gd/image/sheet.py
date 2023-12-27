@@ -3,7 +3,7 @@ from __future__ import annotations
 import gc
 import json
 from pathlib import Path
-from typing import Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Optional
 
 from attrs import define, field
 from typing_aliases import IntoPath, NormalError, StringMapping
@@ -18,11 +18,12 @@ except ImportError:
 from gd.decorators import cache_by
 from gd.image.sprite import Sprite, SpriteData, Sprites
 
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
 __all__ = ("Sheet", "SheetData")
 
 SheetData = StringMapping[SpriteData]
-
-S = TypeVar("S", bound="Sheet")
 
 NO_IMAGE = "`image` not attached to the sheet"
 NO_DATA = "`data` not attached to the sheet"
@@ -116,5 +117,5 @@ class Sheet:
             self.load()
 
     @classmethod
-    def from_paths(cls: Type[S], image_path: IntoPath, data_path: IntoPath) -> S:
+    def from_paths(cls, image_path: IntoPath, data_path: IntoPath) -> Self:
         return cls(Path(image_path), Path(data_path))
