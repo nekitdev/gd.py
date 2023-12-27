@@ -83,7 +83,7 @@ def check_login(function: Callable[Concatenate[C, P], T]) -> Callable[Concatenat
 NOT_LOGGED_IN = "the client is not logged in"
 
 
-def check_client_login(client: C) -> None:
+def check_client_login(client: Client) -> None:
     """Checks whether the `client` is logged in."""
 
     if not client.is_logged_in():
