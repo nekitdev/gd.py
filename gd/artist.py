@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, AsyncIterator, Iterable, Type, TypeVar
+from typing import TYPE_CHECKING, AsyncIterator, Iterable
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
-from typing_extensions import Self
 from yarl import URL
 
 from gd.binary import Binary
@@ -24,13 +23,13 @@ from gd.string_utils import case_fold, clear_whitespace
 if TYPE_CHECKING:
     from io import BufferedReader, BufferedWriter
 
+    from typing_extensions import Self
+
     from gd.models import ArtistModel
     from gd.schema import ArtistBuilder, ArtistReader
     from gd.songs import Song
 
 __all__ = ("Artist", "ArtistData")
-
-A = TypeVar("A", bound="Artist")
 
 ARTIST_URL = "https://{}.newgrounds.com/"
 artist_url = ARTIST_URL.format
@@ -56,11 +55,11 @@ class Artist(Entity, Binary):
         return clear_whitespace(case_fold(self.name))
 
     @classmethod
-    def default(cls: Type[A], id: int = DEFAULT_ID) -> A:
+    def default(cls, id: int = DEFAULT_ID) -> Self:
         return cls(id=id, name=EMPTY)
 
     @classmethod
-    def name_only(cls: Type[A], name: str) -> A:
+    def name_only(cls, name: str) -> Self:
         return cls(id=DEFAULT_ID, name=name)
 
     @classmethod
@@ -112,11 +111,11 @@ class Artist(Entity, Binary):
         return self.name or UNKNOWN
 
     @classmethod
-    def from_model(cls: Type[A], model: ArtistModel, id: int = DEFAULT_ID) -> A:
+    def from_model(cls, model: ArtistModel, id: int = DEFAULT_ID) -> Self:
         return cls(id=id, name=model.name)
 
     @classmethod
-    def from_data(cls: Type[A], data: ArtistData) -> A:  # type: ignore
+    def from_data(cls, data: ArtistData) -> Self:  # type: ignore[override]
         return CONVERTER.structure(data, cls)
 
     def into_data(self) -> ArtistData:
