@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import json
 from pathlib import Path
-from typing import Optional, Sequence, Type, TypeVar
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from attrs import define, field
 from typing_aliases import IntoPath, NormalError, StringMapping
@@ -8,9 +10,10 @@ from typing_aliases import IntoPath, NormalError, StringMapping
 from gd.decorators import cache_by
 from gd.image.layer import Layer, LayerData, Layers
 
-__all__ = ("Animation", "Animations", "AnimationSheet", "AnimationSheetData", "Frame", "Frames")
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
-AS = TypeVar("AS", bound="AnimationSheet")
+__all__ = ("Animation", "Animations", "AnimationSheet", "AnimationSheetData", "Frame", "Frames")
 
 
 @define()
@@ -116,5 +119,5 @@ class AnimationSheet:
             self.load()
 
     @classmethod
-    def from_path(cls: Type[AS], into_path: IntoPath) -> AS:
+    def from_path(cls, into_path: IntoPath) -> Self:
         return cls(Path(into_path))
