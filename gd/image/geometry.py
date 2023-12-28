@@ -1,17 +1,14 @@
 from __future__ import annotations
 
 from math import atan2, cos, sin, sqrt
-from typing import Tuple, Type, TypeVar
+from typing import TYPE_CHECKING, Tuple
 
 from attrs import Attribute, define, field
 
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
 __all__ = ("Point", "Size", "Rectangle")
-
-P = TypeVar("P", bound="Point")
-
-S = TypeVar("S", bound="Size")
-
-R = TypeVar("R", bound="Rectangle")
 
 
 @define()
@@ -20,15 +17,15 @@ class Point:
     y: float = 0.0
 
     @classmethod
-    def from_scalar(cls: Type[P], scalar: float) -> P:
+    def from_scalar(cls, scalar: float) -> Self:
         return cls(scalar, scalar)
 
     @classmethod
-    def from_length_and_angle(cls: Type[P], length: float, angle: float) -> P:
+    def from_length_and_angle(cls, length: float, angle: float) -> Self:
         return cls(length * cos(angle), length * sin(angle))
 
     @classmethod
-    def create(cls: Type[P], x: float = 0.0, y: float = 0.0) -> P:
+    def create(cls, x: float = 0.0, y: float = 0.0) -> Self:
         return cls(x, y)
 
     @property
@@ -46,7 +43,7 @@ class Point:
     def angle(self) -> float:
         return atan2(self.y, self.x)
 
-    def normalize(self: P) -> P:
+    def normalize(self) -> Self:
         length = self.length
 
         if length:
@@ -54,76 +51,76 @@ class Point:
 
         return self
 
-    def add(self: P, point: Point) -> P:
+    def add(self, point: Point) -> Self:
         return self.create(self.x + point.x, self.y + point.y)
 
-    def add_in_place(self: P, point: Point) -> P:
+    def add_in_place(self, point: Point) -> Self:
         self.x += point.x
         self.y += point.y
 
         return self
 
-    def sub(self: P, point: Point) -> P:
+    def sub(self, point: Point) -> Self:
         return self.create(self.x - point.x, self.y - point.y)
 
-    def sub_in_place(self: P, point: Point) -> P:
+    def sub_in_place(self, point: Point) -> Self:
         self.x -= point.x
         self.y -= point.y
 
         return self
 
-    def mul(self: P, scalar: float) -> P:
+    def mul(self, scalar: float) -> Self:
         return self.create(self.x * scalar, self.y * scalar)
 
-    def mul_in_place(self: P, scalar: float) -> P:
+    def mul_in_place(self, scalar: float) -> Self:
         self.x *= scalar
         self.y *= scalar
 
         return self
 
-    def div(self: P, scalar: float) -> P:
+    def div(self, scalar: float) -> Self:
         return self.create(self.x / scalar, self.y / scalar)
 
-    def div_in_place(self: P, scalar: float) -> P:
+    def div_in_place(self, scalar: float) -> Self:
         self.x /= scalar
         self.y /= scalar
 
         return self
 
-    def flipped(self: P) -> P:
+    def flipped(self) -> Self:
         return self.create(-self.x, -self.y)
 
-    def flip(self: P) -> P:
+    def flip(self) -> Self:
         self.x = -self.x
         self.y = -self.y
 
         return self
 
-    def x_flipped(self: P) -> P:
+    def x_flipped(self) -> Self:
         return self.create(-self.x, self.y)
 
-    def x_flip(self: P) -> P:
+    def x_flip(self) -> Self:
         self.x = -self.x
 
         return self
 
-    def y_flipped(self: P) -> P:
+    def y_flipped(self) -> Self:
         return self.create(self.x, -self.y)
 
-    def y_flip(self: P) -> P:
+    def y_flip(self) -> Self:
         self.y = -self.y
 
         return self
 
-    def swapped(self: P) -> P:
+    def swapped(self) -> Self:
         return self.create(self.y, self.x)
 
-    def swap(self: P) -> P:
+    def swap(self) -> Self:
         self.x, self.y = self.y, self.x
 
         return self
 
-    def clone(self: P) -> P:
+    def clone(self) -> Self:
         return self.create(self.x, self.y)
 
     def into_tuple(self) -> Tuple[float, float]:
@@ -163,58 +160,58 @@ class Size:
             raise ValueError  # TODO: message?
 
     @classmethod
-    def from_scalar(cls: Type[S], scalar: float) -> S:
+    def from_scalar(cls, scalar: float) -> Self:
         return cls(scalar, scalar)
 
     @classmethod
-    def create(cls: Type[S], width: float = 0.0, height: float = 0.0) -> S:
+    def create(cls, width: float = 0.0, height: float = 0.0) -> Self:
         return cls(width, height)
 
-    def mul(self: S, scalar: float) -> S:
+    def mul(self, scalar: float) -> Self:
         return self.create(self.width * scalar, self.height * scalar)
 
-    def mul_in_place(self: S, scalar: float) -> S:
+    def mul_in_place(self, scalar: float) -> Self:
         self.width *= scalar
         self.height *= scalar
 
         return self
 
-    def mul_components(self: S, size: Size) -> S:
+    def mul_components(self, size: Size) -> Self:
         return self.create(self.width * size.width, self.height * size.height)
 
-    def mul_components_in_place(self: S, size: Size) -> S:
+    def mul_components_in_place(self, size: Size) -> Self:
         self.width *= size.width
         self.height *= size.height
 
         return self
 
-    def div(self: S, scalar: float) -> S:
+    def div(self, scalar: float) -> Self:
         return self.create(self.width / scalar, self.height / scalar)
 
-    def div_in_place(self: S, scalar: float) -> S:
+    def div_in_place(self, scalar: float) -> Self:
         self.width /= scalar
         self.height /= scalar
 
         return self
 
-    def div_components(self: S, size: Size) -> S:
+    def div_components(self, size: Size) -> Self:
         return self.create(self.width / size.width, self.height / size.height)
 
-    def div_components_in_place(self: S, size: Size) -> S:
+    def div_components_in_place(self, size: Size) -> Self:
         self.width /= size.width
         self.height /= size.height
 
         return self
 
-    def swapped(self: S) -> S:
+    def swapped(self) -> Self:
         return self.create(self.height, self.width)
 
-    def swap(self: S) -> S:
+    def swap(self) -> Self:
         self.width, self.height = self.height, self.width
 
         return self
 
-    def clone(self: S) -> S:
+    def clone(self) -> Self:
         return self.create(self.width, self.height)
 
     __mul__ = mul
@@ -236,10 +233,10 @@ class Rectangle:
     size: Size = field(factory=Size)
 
     @classmethod
-    def create(cls: Type[R], origin: Point, size: Size) -> R:
+    def create(cls, origin: Point, size: Size) -> Self:
         return cls(origin, size)
 
-    def clone(self: R) -> R:
+    def clone(self) -> Self:
         return self.create(self.origin.clone(), self.size.clone())
 
     @property
