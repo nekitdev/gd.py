@@ -1117,7 +1117,7 @@ class TimelyInfoModel(Model):
         if self.type.is_weekly():
             id += WEEKLY_ID_ADD
 
-        return iter.of(str(id), str(int(self.cooldown.total_seconds()))).collect(  # type: ignore
+        return iter.of(str(id), str(int(self.cooldown.total_seconds()))).collect(
             concat_timely_info
         )
 
@@ -1648,8 +1648,8 @@ class LevelModel(Model):
             LEVEL_SPECIAL_RATE_TYPE: str(self.special_rate_type.value),
             LEVEL_DEMON_DIFFICULTY: str(difficulty_parameters.demon_difficulty_value),
             LEVEL_OBJECT_COUNT: str(self.object_count),
-            LEVEL_EDITOR_TIME: str(int(self.editor_time.total_seconds())),  # type: ignore
-            LEVEL_COPIES_TIME: str(int(self.copies_time.total_seconds())),  # type: ignore
+            LEVEL_EDITOR_TIME: str(int(self.editor_time.total_seconds())),
+            LEVEL_COPIES_TIME: str(int(self.copies_time.total_seconds())),
         }
 
         return concat_level(mapping)
@@ -2328,10 +2328,10 @@ class ChestsInnerModel(Model):
             self.check,
             self.udid,
             str(self.account_id),
-            str(int(self.chest_1_duration.total_seconds())),  # type: ignore
+            str(int(self.chest_1_duration.total_seconds())),
             self.chest_1.to_robtop(),
             str(self.chest_1_count),
-            str(int(self.chest_2_duration.total_seconds())),  # type: ignore
+            str(int(self.chest_2_duration.total_seconds())),
             self.chest_2.to_robtop(),
             str(self.chest_2_count),
             str(self.reward_type.value),
@@ -2399,7 +2399,7 @@ class QuestsInnerModel(Model):
             self.check,
             self.udid,
             str(self.account_id),
-            str(int(self.quest_duration.total_seconds())),  # type: ignore
+            str(int(self.quest_duration.total_seconds())),
             self.quest_1.to_robtop(),
             self.quest_2.to_robtop(),
             self.quest_3.to_robtop(),
@@ -3044,7 +3044,7 @@ class CommentBannedModel(Model):
         return iter.of(
             self.string,
             str(int(self.timeout.total_seconds())),
-            self.reason,  # type: ignore
+            self.reason,
         ).collect(concat_comment_banned)
 
     @classmethod

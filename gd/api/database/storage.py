@@ -638,7 +638,7 @@ class Storage:
         rewards_data.update(gauntlet_rewards_data)
 
         ad_rewards_data = {
-            float_str(rewarded_at.timestamp()): str(orbs)  # type: ignore
+            float_str(rewarded_at.timestamp()): str(orbs)
             for rewarded_at, orbs in self.ad_rewards.items()
         }
 

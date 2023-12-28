@@ -192,7 +192,7 @@ class BaseLevelAPI:
         return generate_leaderboard_seed(
             self.best_clicks,
             self.leaderboard_record,
-            int(self.best_time.total_seconds()),  # type: ignore
+            int(self.best_time.total_seconds()),
         )
 
     @leaderboard_seed.default
@@ -208,7 +208,7 @@ class BaseLevelAPI:
         return self.check
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
         id = data.get(ID, DEFAULT_ID)
 
         name = data.get(NAME, EMPTY)
@@ -326,7 +326,7 @@ class BaseLevelAPI:
             CAPACITY: self.capacity.to_robtop(),
             ORB_PERCENTAGE: self.orb_percentage,
             BEST_CLICKS: self.best_clicks,
-            BEST_SECONDS: int(self.best_time.total_seconds()),  # type: ignore
+            BEST_SECONDS: int(self.best_time.total_seconds()),
             PROGRESS: self.progress.to_robtop(),
             CHECK: self.check,
             LEADERBOARD_RECORD: self.leaderboard_record,
@@ -359,7 +359,7 @@ class OfficialLevelAPI(BaseLevelAPI):
         return self.difficulty.is_demon()
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
         level = super().from_robtop_data(data)
 
         direct_difficulty_option = data.get(DIRECT_DIFFICULTY)
@@ -475,7 +475,7 @@ class CustomLevelAPI(BaseLevelAPI):
         return self.low_detail_toggled
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
         level = super().from_robtop_data(data)
 
         description = decode_base64_string_url_safe(data.get(DESCRIPTION, EMPTY))
@@ -571,8 +571,8 @@ class CustomLevelAPI(BaseLevelAPI):
             REQUESTED_STARS: self.requested_stars,
             LOW_DETAIL: self.has_low_detail(),
             LOW_DETAIL_TOGGLED: self.has_low_detail_toggled(),
-            EDITOR_SECONDS: int(self.editor_time.total_seconds()),  # type: ignore
-            COPIES_SECONDS: int(self.copies_time.total_seconds()),  # type: ignore
+            EDITOR_SECONDS: int(self.editor_time.total_seconds()),
+            COPIES_SECONDS: int(self.copies_time.total_seconds()),
             LEVEL_ORDER: self.level_order,
             FOLDER_ID: self.folder_id,
         }
@@ -606,7 +606,7 @@ class CreatedLevelAPI(CustomLevelAPI):
         return self.unlisted
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
         level = super().from_robtop_data(data)
 
         revision = data.get(REVISION, DEFAULT_REVISION)
@@ -686,7 +686,7 @@ class SavedLevelAPI(CustomLevelAPI):
     favorite: bool = field(default=DEFAULT_FAVORITE)
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
         level = super().from_robtop_data(data)
 
         difficulty_numerator = data.get(DIFFICULTY_NUMERATOR, DEFAULT_NUMERATOR)
@@ -834,7 +834,7 @@ class TimelyLevelAPI(SavedLevelAPI):
         return hash(type(self)) ^ self.id
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
         level = super().from_robtop_data(data)
 
         timely_id = data.get(TIMELY_ID, DEFAULT_ID)
