@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Type, TypeVar
+from typing import TYPE_CHECKING
 
 from attrs import define, field
 from pendulum import DateTime, Duration
@@ -22,13 +22,13 @@ from gd.enums import QuestType, ShardType
 from gd.string_utils import case_fold, tick
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     from gd.models import ChestModel, QuestModel
 
 __all__ = ("Chest", "Quest")
 
 CHEST = "Chest; orbs: {}, diamonds: {}, keys: {}, shard: {}, new in {}"
-
-C = TypeVar("C", bound="Chest")
 
 
 @define()
@@ -52,7 +52,7 @@ class Chest(Entity):
         )
 
     @classmethod
-    def from_model(cls: Type[C], model: ChestModel, id: int, count: int, duration: Duration) -> C:
+    def from_model(cls, model: ChestModel, id: int, count: int, duration: Duration) -> Self:
         return cls(
             id=id,
             orbs=model.orbs,
@@ -70,9 +70,6 @@ class Chest(Entity):
 
 QUEST_UNKNOWN = "Quest {}; reward: {}, new in {}"
 QUEST = "Quest {}; collect: {} {}, reward: {}, new in {}"
-
-
-Q = TypeVar("Q", bound="Quest")
 
 
 @define()
@@ -102,7 +99,7 @@ class Quest(Entity):
         )
 
     @classmethod
-    def from_model(cls: Type[Q], model: QuestModel, duration: Duration) -> Q:
+    def from_model(cls, model: QuestModel, duration: Duration) -> Self:
         return cls(
             id=model.id,
             name=model.name,
