@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from abc import abstractmethod as required
 from builtins import hasattr as has_attribute
 from enum import Enum, Flag
 from typing import (
+    TYPE_CHECKING,
     Dict,
     Iterable,
     Iterator,
@@ -11,7 +14,6 @@ from typing import (
     Protocol,
     Tuple,
     Type,
-    TypeVar,
     Union,
     runtime_checkable,
 )
@@ -80,6 +82,9 @@ from gd.models_utils import (
     split_object,
 )
 from gd.robtop import RobTop
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 __all__ = (
     # groups
@@ -268,12 +273,9 @@ class ObjectFlag(Flag):
         return type(self).HAS_Z in self
 
 
-G = TypeVar("G", bound="Groups")
-
-
 class Groups(OrderedSet[int], RobTop):
     @classmethod
-    def from_robtop(cls: Type[G], string: str) -> G:
+    def from_robtop(cls, string: str) -> Self:
         return iter(split_groups(string)).map(int).collect(cls)
 
     def to_robtop(self) -> str:
@@ -316,8 +318,6 @@ DEFAULT_UNKNOWN = False
 
 OBJECT_STRING = "{object_type} (ID: {object.id}) at ({object.x}, {object.y})"
 object_string = OBJECT_STRING.format
-
-O = TypeVar("O", bound="Object")
 
 
 @define()
@@ -363,11 +363,11 @@ class Object(RobTop):
     unknown: bool = field(default=DEFAULT_UNKNOWN)
 
     @classmethod
-    def from_robtop(cls: Type[O], string: str) -> O:
+    def from_robtop(cls, string: str) -> Self:
         return cls.from_robtop_data(split_object(string))
 
     @classmethod
-    def from_robtop_data(cls: Type[O], data: Mapping[int, str]) -> O:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         id_option = data.get(ID)
 
         if id_option is None:
@@ -610,58 +610,58 @@ class Object(RobTop):
     def is_unknown(self) -> bool:
         return self.unknown
 
-    def add_groups(self: O, *groups: int) -> O:
+    def add_groups(self, *groups: int) -> Self:
         self.groups.update(groups)
 
         return self
 
-    def add_groups_from_iterable(self: O, iterable: Iterable[int]) -> O:
+    def add_groups_from_iterable(self, iterable: Iterable[int]) -> Self:
         self.groups.update(iterable)
 
         return self
 
-    def remove_groups(self: O, *groups: int) -> O:
+    def remove_groups(self, *groups: int) -> Self:
         self.groups.difference_update(groups)
 
         return self
 
-    def remove_groups_from_iterable(self: O, iterable: Iterable[int]) -> O:
+    def remove_groups_from_iterable(self, iterable: Iterable[int]) -> Self:
         self.groups.difference_update(iterable)
 
         return self
 
-    def move(self: O, x: float = 0.0, y: float = 0.0) -> O:
+    def move(self, x: float = 0.0, y: float = 0.0) -> Self:
         self.x += x
         self.y += y
 
         return self
 
-    def h_flip(self: O) -> O:
+    def h_flip(self) -> Self:
         self.h_flipped = not self.h_flipped
 
         return self
 
-    def v_flip(self: O) -> O:
+    def v_flip(self) -> Self:
         self.v_flipped = not self.v_flipped
 
         return self
 
-    def rotate(self: O, angle: float) -> O:
+    def rotate(self, angle: float) -> Self:
         self.rotation += angle
 
         return self
 
-    def scale_by(self: O, scale: float) -> O:
+    def scale_by(self, scale: float) -> Self:
         self.scale *= scale
 
         return self
 
-    def scale_to(self: O, scale: float) -> O:
+    def scale_to(self, scale: float) -> Self:
         self.scale = scale
 
         return self
 
-    def scale_to_default(self: O) -> O:
+    def scale_to_default(self) -> Self:
         return self.scale_to(DEFAULT_SCALE)
 
     def is_trigger(self) -> bool:
@@ -706,8 +706,6 @@ DEFAULT_START_POSITION_DUAL_MODE = False
 DEFAULT_START_POSITION_FLIP_GRAVITY = False
 
 
-SP = TypeVar("SP", bound="StartPosition")
-
 SPECIAL_HANDLING = (
     "special handling is required for start positions; consider using `from_robtop` and `to_robtop`"
 )
@@ -722,7 +720,7 @@ class StartPosition(Object):
     flip_gravity: bool = field(default=DEFAULT_START_POSITION_FLIP_GRAVITY)
 
     @classmethod
-    def from_robtop(cls: Type[SP], string: str) -> SP:
+    def from_robtop(cls, string: str) -> Self:
         data = split_any_object(string)
 
         id_option = data.get(ID_STRING)
@@ -807,15 +805,12 @@ def is_start_position(object: Object) -> TypeGuard[StartPosition]:
     return object.is_start_position()
 
 
-SC = TypeVar("SC", bound="SecretCoin")
-
-
 @define()
 class SecretCoin(Object):
     coin_id: int = DEFAULT_ID
 
     @classmethod
-    def from_robtop_data(cls: Type[SC], data: Mapping[int, str]) -> SC:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         coin = super().from_robtop_data(data)
 
         coin_id = parse_get_or(int, DEFAULT_ID, data.get(COIN_ID))
@@ -836,9 +831,6 @@ DEFAULT_ROTATION_SPEED = 0.0
 DEFAULT_DISABLE_ROTATION = False
 
 
-RO = TypeVar("RO", bound="RotatingObject")
-
-
 @define()
 class RotatingObject(Object):
     rotation_speed: float = DEFAULT_ROTATION_SPEED
@@ -848,7 +840,7 @@ class RotatingObject(Object):
         return self.disable_rotation
 
     @classmethod
-    def from_robtop_data(cls: Type[RO], data: Mapping[int, str]) -> RO:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         rotating_object = super().from_robtop_data(data)
 
         rotation_speed = parse_get_or(float, DEFAULT_ROTATION_SPEED, data.get(ROTATION_SPEED))
@@ -878,15 +870,12 @@ class RotatingObject(Object):
         return data
 
 
-S = TypeVar("S", bound="Text")
-
-
 @define()
 class Text(Object):
     content: str = EMPTY
 
     @classmethod
-    def from_robtop_data(cls: Type[S], data: Mapping[int, str]) -> S:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         text = super().from_robtop_data(data)
 
         content = parse_get_or(
@@ -909,16 +898,13 @@ DEFAULT_SMOOTH = False
 DEFAULT_PORTAL_OFFSET = 100.0
 
 
-P = TypeVar("P", bound="Teleport")
-
-
 @define()
 class Teleport(Object):
     portal_offset: float = DEFAULT_PORTAL_OFFSET
     smooth: bool = DEFAULT_SMOOTH
 
     @classmethod
-    def from_robtop_data(cls: Type[P], data: Mapping[int, str]) -> P:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         teleport = super().from_robtop_data(data)
 
         portal_offset = parse_get_or(float, DEFAULT_PORTAL_OFFSET, data.get(PORTAL_OFFSET))
@@ -950,16 +936,13 @@ DEFAULT_RANDOMIZE_START = False
 DEFAULT_ANIMATION_SPEED = 1.0
 
 
-PO = TypeVar("PO", bound="PulsatingObject")
-
-
 @define()
 class PulsatingObject(Object):
     randomize_start: bool = DEFAULT_RANDOMIZE_START
     animation_speed: float = DEFAULT_ANIMATION_SPEED
 
     @classmethod
-    def from_robtop_data(cls: Type[PO], data: Mapping[int, str]) -> PO:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         pulsating_object = super().from_robtop_data(data)
 
         randomize_start = parse_get_or(int_bool, DEFAULT_RANDOMIZE_START, data.get(RANDOMIZE_START))
@@ -990,16 +973,13 @@ class PulsatingObject(Object):
 DEFAULT_DYNAMIC = False
 
 
-CB = TypeVar("CB", bound="CollisionBlock")
-
-
 @define()
 class CollisionBlock(Object):
     block_id: int = DEFAULT_ID
     dynamic: bool = DEFAULT_DYNAMIC
 
     @classmethod
-    def from_robtop_data(cls: Type[CB], data: Mapping[int, str]) -> CB:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         collision_block = super().from_robtop_data(data)
 
         block_id = parse_get_or(int, DEFAULT_ID, data.get(BLOCK_ID))
@@ -1030,9 +1010,6 @@ class CollisionBlock(Object):
 DEFAULT_MULTI_ACTIVATE = False
 
 
-OP = TypeVar("OP", bound="Orb")
-
-
 @define()
 class Orb(Object):
     multi_activate: bool = DEFAULT_MULTI_ACTIVATE
@@ -1041,7 +1018,7 @@ class Orb(Object):
         return self.multi_activate
 
     @classmethod
-    def from_robtop_data(cls: Type[OP], data: Mapping[int, str]) -> OP:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         orb = super().from_robtop_data(data)
 
         multi_activate = parse_get_or(
@@ -1066,9 +1043,6 @@ class Orb(Object):
 DEFAULT_ACTIVATE_GROUP = False
 
 
-TO = TypeVar("TO", bound="TriggerOrb")
-
-
 @define()
 class TriggerOrb(Orb):
     target_group_id: int = DEFAULT_ID
@@ -1079,7 +1053,7 @@ class TriggerOrb(Orb):
         return self.activate_group
 
     @classmethod
-    def from_robtop_data(cls: Type[TO], data: Mapping[int, str]) -> TO:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         trigger_orb = super().from_robtop_data(data)
 
         activate_group = parse_get_or(int_bool, DEFAULT_ACTIVATE_GROUP, data.get(ACTIVATE_GROUP))
@@ -1105,15 +1079,12 @@ class TriggerOrb(Orb):
         return data
 
 
-IC = TypeVar("IC", bound="ItemCounter")
-
-
 @define()
 class ItemCounter(Object):
     item_id: int = DEFAULT_ID
 
     @classmethod
-    def from_robtop_data(cls: Type[IC], data: Mapping[int, str]) -> IC:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         item_counter = super().from_robtop_data(data)
 
         item_id = parse_get_or(int, DEFAULT_ID, data.get(ITEM_ID))
@@ -1133,9 +1104,6 @@ class ItemCounter(Object):
         return data
 
 
-TI = TypeVar("TI", bound="ToggleItem")
-
-
 @define()
 class ToggleItem(Object):
     target_group_id: int = DEFAULT_ID
@@ -1146,7 +1114,7 @@ class ToggleItem(Object):
         return self.activate_group
 
     @classmethod
-    def from_robtop_data(cls: Type[TI], data: Mapping[int, str]) -> TI:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         toggle_item = super().from_robtop_data(data)
 
         target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
@@ -1168,9 +1136,6 @@ class ToggleItem(Object):
 DEFAULT_SUBTRACT_COUNT = False
 
 
-PI = TypeVar("PI", bound="PickupItem")
-
-
 @define()
 class PickupItem(Object):
     item_id: int = DEFAULT_ID
@@ -1181,7 +1146,7 @@ class PickupItem(Object):
         return self.subtract_count
 
     @classmethod
-    def from_robtop_data(cls: Type[PI], data: Mapping[int, str]) -> PI:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         pickup_item = super().from_robtop_data(data)
 
         item_id = parse_get_or(int, DEFAULT_ID, data.get(ITEM_ID))
@@ -1217,9 +1182,6 @@ DEFAULT_SPAWN_TRIGGERED = False
 DEFAULT_MULTI_TRIGGER = False
 
 
-T = TypeVar("T", bound="Trigger")
-
-
 @define()
 class Trigger(Object):
     touch_triggered: bool = DEFAULT_TOUCH_TRIGGERED
@@ -1239,7 +1201,7 @@ class Trigger(Object):
         return self.multi_trigger
 
     @classmethod
-    def from_robtop_data(cls: Type[T], data: Mapping[int, str]) -> T:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         trigger = super().from_robtop_data(data)
 
         touch_triggered = parse_get_or(int_bool, DEFAULT_TOUCH_TRIGGERED, data.get(TOUCH_TRIGGERED))
@@ -1276,9 +1238,6 @@ class Trigger(Object):
 DEFAULT_DURATION = 0.0
 
 
-BCT = TypeVar("BCT", bound="BaseColorTrigger")
-
-
 @define()
 class BaseColorTrigger(Trigger):
     target_color_id: int = DEFAULT_ID
@@ -1286,7 +1245,7 @@ class BaseColorTrigger(Trigger):
     duration: float = DEFAULT_DURATION
 
     @classmethod
-    def from_robtop_data(cls: Type[BCT], data: Mapping[int, str]) -> BCT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         base_color_trigger = super().from_robtop_data(data)
 
         target_color_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_COLOR_ID))
@@ -1330,9 +1289,6 @@ DEFAULT_BLENDING = False
 DEFAULT_OPACITY = 1.0
 
 
-PLCT = TypeVar("PLCT", bound="PlayerColorTrigger")
-
-
 @define()
 class PlayerColorTrigger(BaseColorTrigger):
     blending: bool = DEFAULT_BLENDING
@@ -1344,7 +1300,7 @@ class PlayerColorTrigger(BaseColorTrigger):
         return self.blending
 
     @classmethod
-    def from_robtop_data(cls: Type[PLCT], data: Mapping[int, str]) -> PLCT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         player_color_trigger = super().from_robtop_data(data)
 
         blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
@@ -1393,9 +1349,6 @@ DEFAULT_GREEN = BYTE
 DEFAULT_BLUE = BYTE
 
 
-NCT = TypeVar("NCT", bound="NormalColorTrigger")
-
-
 @define()
 class NormalColorTrigger(BaseColorTrigger):
     blending: bool = field(default=DEFAULT_BLENDING)
@@ -1406,7 +1359,7 @@ class NormalColorTrigger(BaseColorTrigger):
         return self.blending
 
     @classmethod
-    def from_robtop_data(cls: Type[NCT], data: Mapping[int, str]) -> NCT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         normal_color_trigger = super().from_robtop_data(data)
 
         blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
@@ -1452,9 +1405,6 @@ class NormalColorTrigger(BaseColorTrigger):
 DEFAULT_COPY_OPACITY = False
 
 
-CCT = TypeVar("CCT", bound="CopiedColorTrigger")
-
-
 @define()
 class CopiedColorTrigger(BaseColorTrigger):
     blending: bool = field(default=DEFAULT_BLENDING)
@@ -1471,7 +1421,7 @@ class CopiedColorTrigger(BaseColorTrigger):
         return self.opacity is None
 
     @classmethod
-    def from_robtop_data(cls: Type[CCT], data: Mapping[int, str]) -> CCT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         copied_color_trigger = super().from_robtop_data(data)
 
         blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
@@ -1559,14 +1509,11 @@ MIGRATE = (
 )
 
 
-BCMCT = TypeVar("BCMCT", bound="BaseCompatibilityColorTrigger")
-
-
 class BaseCompatibilityColorTrigger(Compatibility, Trigger):
     duration: float = DEFAULT_DURATION
 
     @classmethod
-    def from_robtop_data(cls: Type[BCMCT], data: Mapping[int, str]) -> BCMCT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         base_compatibility_color_trigger = super().from_robtop_data(data)
 
         duration = parse_get_or(float, DEFAULT_DURATION, data.get(DURATION))
@@ -1577,9 +1524,6 @@ class BaseCompatibilityColorTrigger(Compatibility, Trigger):
 
     def to_robtop_data(self) -> Never:
         raise NotImplementedError(MIGRATE)
-
-
-PCMCT = TypeVar("PCMCT", bound="PlayerCompatibilityColorTrigger")
 
 
 @define()
@@ -1593,7 +1537,7 @@ class PlayerCompatibilityColorTrigger(BaseCompatibilityColorTrigger):
         return self.blending
 
     @classmethod
-    def from_robtop_data(cls: Type[PCMCT], data: Mapping[int, str]) -> PCMCT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         player_compatibility_color_trigger = super().from_robtop_data(data)
 
         blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
@@ -1647,9 +1591,6 @@ class PlayerCompatibilityColorTrigger(BaseCompatibilityColorTrigger):
         )
 
 
-NCMCT = TypeVar("NCMCT", bound="NormalCompatibilityColorTrigger")
-
-
 @define()
 class NormalCompatibilityColorTrigger(BaseCompatibilityColorTrigger):
     blending: bool = field(default=DEFAULT_BLENDING)
@@ -1660,7 +1601,7 @@ class NormalCompatibilityColorTrigger(BaseCompatibilityColorTrigger):
         return self.blending
 
     @classmethod
-    def from_robtop_data(cls: Type[NCMCT], data: Mapping[int, str]) -> NCMCT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         normal_compatibility_color_trigger = super().from_robtop_data(data)
 
         blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
@@ -1715,9 +1656,6 @@ class NormalCompatibilityColorTrigger(BaseCompatibilityColorTrigger):
         )
 
 
-CCMCT = TypeVar("CCMCT", bound="CopiedCompatibilityColorTrigger")
-
-
 @define()
 class CopiedCompatibilityColorTrigger(BaseCompatibilityColorTrigger):
     blending: bool = field(default=DEFAULT_BLENDING)
@@ -1734,7 +1672,7 @@ class CopiedCompatibilityColorTrigger(BaseCompatibilityColorTrigger):
         return self.opacity is None
 
     @classmethod
-    def from_robtop_data(cls: Type[CCMCT], data: Mapping[int, str]) -> CCMCT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         copied_compatibility_color_trigger = super().from_robtop_data(data)
 
         blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
@@ -1808,9 +1746,6 @@ CompatibilityColorTrigger = Union[
 DEFAULT_TINT_GROUND = False
 
 
-PBGT = TypeVar("PBGT", bound="PlayerBackgroundTrigger")
-
-
 @define()
 class PlayerBackgroundTrigger(PlayerCompatibilityColorTrigger):
     tint_ground: bool = DEFAULT_TINT_GROUND
@@ -1819,7 +1754,7 @@ class PlayerBackgroundTrigger(PlayerCompatibilityColorTrigger):
         return self.tint_ground
 
     @classmethod
-    def from_robtop_data(cls: Type[PBGT], data: Mapping[int, str]) -> PBGT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         player_background_color_trigger = super().from_robtop_data(data)
 
         tint_ground = parse_get_or(int_bool, DEFAULT_TINT_GROUND, data.get(TINT_GROUND))
@@ -1835,9 +1770,6 @@ class PlayerBackgroundTrigger(PlayerCompatibilityColorTrigger):
         return self.generate_migration(GROUND_COLOR_ID) if self.is_tint_ground() else None
 
 
-NBGT = TypeVar("NBGT", bound="NormalBackgroundTrigger")
-
-
 @define()
 class NormalBackgroundTrigger(NormalCompatibilityColorTrigger):
     tint_ground: bool = DEFAULT_TINT_GROUND
@@ -1846,7 +1778,7 @@ class NormalBackgroundTrigger(NormalCompatibilityColorTrigger):
         return self.tint_ground
 
     @classmethod
-    def from_robtop_data(cls: Type[NBGT], data: Mapping[int, str]) -> NBGT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         normal_background_color_trigger = super().from_robtop_data(data)
 
         tint_ground = parse_get_or(int_bool, DEFAULT_TINT_GROUND, data.get(TINT_GROUND))
@@ -1862,9 +1794,6 @@ class NormalBackgroundTrigger(NormalCompatibilityColorTrigger):
         return self.generate_migration(GROUND_COLOR_ID) if self.is_tint_ground() else None
 
 
-CBGT = TypeVar("CBGT", bound="CopiedBackgroundTrigger")
-
-
 @define()
 class CopiedBackgroundTrigger(CopiedCompatibilityColorTrigger):
     tint_ground: bool = DEFAULT_TINT_GROUND
@@ -1873,7 +1802,7 @@ class CopiedBackgroundTrigger(CopiedCompatibilityColorTrigger):
         return self.tint_ground
 
     @classmethod
-    def from_robtop_data(cls: Type[CBGT], data: Mapping[int, str]) -> CBGT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         copied_background_color_trigger = super().from_robtop_data(data)
 
         tint_ground = parse_get_or(int_bool, DEFAULT_TINT_GROUND, data.get(TINT_GROUND))
@@ -2051,9 +1980,6 @@ class CopiedColor4Trigger(CopiedCompatibilityColorTrigger):
         return self.generate_migration(COLOR_4_ID)
 
 
-ALT = TypeVar("ALT", bound="AlphaTrigger")
-
-
 @define()
 class AlphaTrigger(Trigger):
     target_group_id: int = DEFAULT_ID
@@ -2061,7 +1987,7 @@ class AlphaTrigger(Trigger):
     opacity: float = DEFAULT_OPACITY
 
     @classmethod
-    def from_robtop_data(cls: Type[ALT], data: Mapping[int, str]) -> ALT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         alpha_trigger = super().from_robtop_data(data)
 
         duration = parse_get_or(float, DEFAULT_DURATION, data.get(DURATION))
@@ -2093,9 +2019,6 @@ DEFAULT_HOLD = 0.0
 DEFAULT_FADE_OUT = 0.0
 
 
-BPT = TypeVar("BPT", bound="BasePulseTrigger")
-
-
 @define()
 class BasePulseTrigger(Trigger):
     fade_in: float = DEFAULT_FADE_IN
@@ -2103,7 +2026,7 @@ class BasePulseTrigger(Trigger):
     fade_out: float = DEFAULT_FADE_OUT
 
     @classmethod
-    def from_robtop_data(cls: Type[BPT], data: Mapping[int, str]) -> BPT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         base_pulse_trigger = super().from_robtop_data(data)
 
         fade_in = parse_get_or(float, DEFAULT_FADE_IN, data.get(FADE_IN))
@@ -2133,9 +2056,6 @@ class BasePulseTrigger(Trigger):
 DEFAULT_EXCLUSIVE = False
 
 
-PCT = TypeVar("PCT", bound="PulseColorTrigger")
-
-
 @define()
 class PulseColorTrigger(BasePulseTrigger):
     exclusive: bool = field(default=DEFAULT_EXCLUSIVE)
@@ -2146,7 +2066,7 @@ class PulseColorTrigger(BasePulseTrigger):
         return self.exclusive
 
     @classmethod
-    def from_robtop_data(cls: Type[PCT], data: Mapping[int, str]) -> PCT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         pulse_color_trigger = super().from_robtop_data(data)
 
         red = parse_get_or(int, DEFAULT_RED, data.get(RED))
@@ -2184,9 +2104,6 @@ class PulseColorTrigger(BasePulseTrigger):
         return data
 
 
-PHT = TypeVar("PHT", bound="PulseHSVTrigger")
-
-
 @define()
 class PulseHSVTrigger(BasePulseTrigger):
     exclusive: bool = field(default=DEFAULT_EXCLUSIVE)
@@ -2198,7 +2115,7 @@ class PulseHSVTrigger(BasePulseTrigger):
         return self.exclusive
 
     @classmethod
-    def from_robtop_data(cls: Type[PHT], data: Mapping[int, str]) -> PHT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         pulse_hsv_trigger = super().from_robtop_data(data)
 
         copied_color_id = parse_get_or(int, DEFAULT_ID, data.get(COPIED_COLOR_ID))
@@ -2232,15 +2149,12 @@ class PulseHSVTrigger(BasePulseTrigger):
         return data
 
 
-PCCT = TypeVar("PCCT", bound="PulseColorChannelTrigger")
-
-
 @define()
 class PulseColorChannelTrigger(PulseColorTrigger):
     target_color_id: int = DEFAULT_ID
 
     @classmethod
-    def from_robtop_data(cls: Type[PCCT], data: Mapping[int, str]) -> PCCT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         pulse_color_channel_trigger = super().from_robtop_data(data)
 
         target_color_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))  # XXX: why?
@@ -2258,15 +2172,12 @@ class PulseColorChannelTrigger(PulseColorTrigger):
         return data
 
 
-PHCT = TypeVar("PHCT", bound="PulseHSVChannelTrigger")
-
-
 @define()
 class PulseHSVChannelTrigger(PulseHSVTrigger):
     target_color_id: int = DEFAULT_ID
 
     @classmethod
-    def from_robtop_data(cls: Type[PHCT], data: Mapping[int, str]) -> PHCT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         pulse_hsv_channel_trigger = super().from_robtop_data(data)
 
         target_color_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))  # XXX: why?
@@ -2298,16 +2209,13 @@ def compute_pulse_type(main_only: bool, detail_only: bool) -> PulseType:
     return PulseType.BOTH
 
 
-PCGT = TypeVar("PCGT", bound="PulseColorGroupTrigger")
-
-
 @define()
 class PulseColorGroupTrigger(PulseColorTrigger):
     target_group_id: int = DEFAULT_ID
     pulse_type: PulseType = PulseType.DEFAULT
 
     @classmethod
-    def from_robtop_data(cls: Type[PCGT], data: Mapping[int, str]) -> PCGT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         pulse_color_group_trigger = super().from_robtop_data(data)
 
         target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
@@ -2341,9 +2249,6 @@ class PulseColorGroupTrigger(PulseColorTrigger):
         return data
 
 
-PHGT = TypeVar("PHGT", bound="PulseHSVGroupTrigger")
-
-
 @define()
 class PulseHSVGroupTrigger(PulseHSVTrigger):
     target_group_id: int = DEFAULT_ID
@@ -2351,7 +2256,7 @@ class PulseHSVGroupTrigger(PulseHSVTrigger):
     pulse_type: PulseType = PulseType.DEFAULT
 
     @classmethod
-    def from_robtop_data(cls: Type[PHGT], data: Mapping[int, str]) -> PHGT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         pulse_hsv_group_trigger = super().from_robtop_data(data)
 
         target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
@@ -2396,9 +2301,6 @@ PulseTrigger = Union[
 DEFAULT_EASING_RATE = 2.0
 
 
-BMT = TypeVar("BMT", bound="BaseMoveTrigger")
-
-
 @define()
 class BaseMoveTrigger(Trigger):
     target_group_id: int = DEFAULT_ID
@@ -2409,7 +2311,7 @@ class BaseMoveTrigger(Trigger):
     duration: float = DEFAULT_DURATION
 
     @classmethod
-    def from_robtop_data(cls: Type[BMT], data: Mapping[int, str]) -> BMT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         base_move_trigger = super().from_robtop_data(data)
 
         duration = parse_get_or(float, DEFAULT_DURATION, data.get(DURATION))
@@ -2456,9 +2358,6 @@ DEFAULT_LOCKED_TO_PLAYER_X = False
 DEFAULT_LOCKED_TO_PLAYER_Y = False
 
 
-NMT = TypeVar("NMT", bound="NormalMoveTrigger")
-
-
 @define()
 class NormalMoveTrigger(BaseMoveTrigger):
     x_offset: float = DEFAULT_X_OFFSET
@@ -2467,7 +2366,7 @@ class NormalMoveTrigger(BaseMoveTrigger):
     locked_to_player: LockedType = LockedType.DEFAULT
 
     @classmethod
-    def from_robtop_data(cls: Type[NMT], data: Mapping[int, str]) -> NMT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         normal_move_trigger = super().from_robtop_data(data)
 
         x_offset = parse_get_or(float, DEFAULT_X_OFFSET, data.get(X_OFFSET))
@@ -2517,8 +2416,8 @@ class NormalMoveTrigger(BaseMoveTrigger):
         return data
 
     def move_offset(
-        self: NMT, x_offset: float = DEFAULT_X_OFFSET, y_offset: float = DEFAULT_Y_OFFSET
-    ) -> NMT:
+        self, x_offset: float = DEFAULT_X_OFFSET, y_offset: float = DEFAULT_Y_OFFSET
+    ) -> Self:
         self.x_offset += x_offset
         self.y_offset += y_offset
 
@@ -2528,9 +2427,6 @@ class NormalMoveTrigger(BaseMoveTrigger):
 USE_TARGET_TRUE = True
 
 
-TMT = TypeVar("TMT", bound="TargetMoveTrigger")
-
-
 @define()
 class TargetMoveTrigger(BaseMoveTrigger):
     additional_group_id: int = DEFAULT_ID
@@ -2538,7 +2434,7 @@ class TargetMoveTrigger(BaseMoveTrigger):
     target_type: TargetType = TargetType.DEFAULT
 
     @classmethod
-    def from_robtop_data(cls: Type[TMT], data: Mapping[int, str]) -> TMT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         target_move_trigger = super().from_robtop_data(data)
 
         additional_group_id = parse_get_or(int, DEFAULT_ID, data.get(ADDITIONAL_GROUP_ID))
@@ -2578,9 +2474,6 @@ DEFAULT_DELAY = 0.0
 DEFAULT_EDITOR_DISABLE = False
 
 
-SPT = TypeVar("SPT", bound="SpawnTrigger")
-
-
 @define()
 class SpawnTrigger(Trigger):
     target_group_id: int = DEFAULT_ID
@@ -2593,7 +2486,7 @@ class SpawnTrigger(Trigger):
         return self.editor_disable
 
     @classmethod
-    def from_robtop_data(cls: Type[SPT], data: Mapping[int, str]) -> SPT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         spawn_trigger = super().from_robtop_data(data)
 
         target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
@@ -2625,15 +2518,12 @@ class SpawnTrigger(Trigger):
         return data
 
 
-ST = TypeVar("ST", bound="StopTrigger")
-
-
 @define()
 class StopTrigger(Trigger):
     target_group_id: int = DEFAULT_ID
 
     @classmethod
-    def from_robtop_data(cls: Type[ST], data: Mapping[int, str]) -> ST:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         stop_trigger = super().from_robtop_data(data)
 
         target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
@@ -2653,9 +2543,6 @@ class StopTrigger(Trigger):
 DEFAULT_TOGGLED = False
 
 
-TT = TypeVar("TT", bound="ToggleTrigger")
-
-
 @define()
 class ToggleTrigger(Trigger):
     target_group_id: int = DEFAULT_ID
@@ -2665,13 +2552,13 @@ class ToggleTrigger(Trigger):
     def is_activate_group(self) -> bool:
         return self.activate_group
 
-    def toggle(self: TT) -> TT:
+    def toggle(self) -> Self:
         self.activate_group = not self.activate_group
 
         return self
 
     @classmethod
-    def from_robtop_data(cls: Type[TT], data: Mapping[int, str]) -> TT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         toggle_trigger = super().from_robtop_data(data)
 
         target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
@@ -2708,9 +2595,6 @@ DEFAULT_TARGET_ROTATION = 0.0
 DEFAULT_ROTATION_LOCKED = False
 
 
-RT = TypeVar("RT", bound="RotateTrigger")
-
-
 @define()
 class RotateTrigger(Trigger):
     target_group_id: int = DEFAULT_ID
@@ -2724,7 +2608,7 @@ class RotateTrigger(Trigger):
     target_rotation: float = DEFAULT_TARGET_ROTATION
     rotation_locked: bool = DEFAULT_ROTATION_LOCKED
 
-    def target_rotate(self: RT, angle: float) -> RT:
+    def target_rotate(self, angle: float) -> Self:
         self.target_rotation += angle
 
         return self
@@ -2732,18 +2616,18 @@ class RotateTrigger(Trigger):
     def is_rotation_locked(self) -> bool:
         return self.rotation_locked
 
-    def lock_rotation(self: RT) -> RT:
+    def lock_rotation(self) -> Self:
         self.rotation_locked = True
 
         return self
 
-    def unlock_rotation(self: RT) -> RT:
+    def unlock_rotation(self) -> Self:
         self.rotation_locked = False
 
         return self
 
     @classmethod
-    def from_robtop_data(cls: Type[RT], data: Mapping[int, str]) -> RT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         rotate_trigger = super().from_robtop_data(data)
 
         duration = parse_get_or(float, DEFAULT_DURATION, data.get(DURATION))
@@ -2804,9 +2688,6 @@ DEFAULT_X_MODIFIER = 1.0
 DEFAULT_Y_MODIFIER = 1.0
 
 
-FT = TypeVar("FT", bound="FollowTrigger")
-
-
 @define()
 class FollowTrigger(Trigger):
     target_group_id: int = DEFAULT_ID
@@ -2821,7 +2702,7 @@ class FollowTrigger(Trigger):
     y_modifier: float = DEFAULT_Y_MODIFIER
 
     @classmethod
-    def from_robtop_data(cls: Type[FT], data: Mapping[int, str]) -> FT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         follow_trigger = super().from_robtop_data(data)
 
         duration = parse_get_or(float, DEFAULT_DURATION, data.get(DURATION))
@@ -2869,9 +2750,6 @@ DEFAULT_STRENGTH = 0.0
 DEFAULT_INTERVAL = 0.0
 
 
-SHT = TypeVar("SHT", bound="ShakeTrigger")
-
-
 @define()
 class ShakeTrigger(Trigger):
     duration: float = DEFAULT_DURATION
@@ -2879,7 +2757,7 @@ class ShakeTrigger(Trigger):
     interval: float = DEFAULT_INTERVAL
 
     @classmethod
-    def from_robtop_data(cls: Type[SHT], data: Mapping[int, str]) -> SHT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         shake_trigger = super().from_robtop_data(data)
 
         duration = parse_get_or(float, DEFAULT_DURATION, data.get(DURATION))
@@ -2902,9 +2780,6 @@ class ShakeTrigger(Trigger):
         return data
 
 
-AT = TypeVar("AT", bound="AnimateTrigger")
-
-
 @define()
 class AnimateTrigger(Trigger):
     target_group_id: int = DEFAULT_ID
@@ -2912,7 +2787,7 @@ class AnimateTrigger(Trigger):
     animation_id: int = DEFAULT_ID
 
     @classmethod
-    def from_robtop_data(cls: Type[AT], data: Mapping[int, str]) -> AT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         animate_trigger = super().from_robtop_data(data)
 
         target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
@@ -2938,8 +2813,6 @@ class AnimateTrigger(Trigger):
 DEFAULT_HOLD_MODE = False
 DEFAULT_DUAL_MODE = False
 
-THT = TypeVar("THT", bound="TouchTrigger")
-
 
 @define()
 class TouchTrigger(Trigger):
@@ -2956,7 +2829,7 @@ class TouchTrigger(Trigger):
         return self.dual_mode
 
     @classmethod
-    def from_robtop_data(cls: Type[THT], data: Mapping[int, str]) -> THT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         touch_trigger = super().from_robtop_data(data)
 
         target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
@@ -3000,9 +2873,6 @@ class TouchTrigger(Trigger):
 DEFAULT_COUNT = 0
 
 
-CT = TypeVar("CT", bound="CountTrigger")
-
-
 @define()
 class CountTrigger(Trigger):
     item_id: int = DEFAULT_ID
@@ -3019,7 +2889,7 @@ class CountTrigger(Trigger):
         return self.multi_activate
 
     @classmethod
-    def from_robtop_data(cls: Type[CT], data: Mapping[int, str]) -> CT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         count_trigger = super().from_robtop_data(data)
 
         item_id = parse_get_or(int, DEFAULT_ID, data.get(ITEM_ID))
@@ -3074,9 +2944,6 @@ class CountTrigger(Trigger):
         return data
 
 
-ICT = TypeVar("ICT", bound="InstantCountTrigger")
-
-
 @define()
 class InstantCountTrigger(Trigger):
     item_id: int = DEFAULT_ID
@@ -3090,7 +2957,7 @@ class InstantCountTrigger(Trigger):
         return self.activate_group
 
     @classmethod
-    def from_robtop_data(cls: Type[ICT], data: Mapping[int, str]) -> ICT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         instant_count_trigger = super().from_robtop_data(data)
 
         item_id = parse_get_or(int, DEFAULT_ID, data.get(ITEM_ID))
@@ -3132,16 +2999,13 @@ class InstantCountTrigger(Trigger):
         return data
 
 
-PT = TypeVar("PT", bound="PickupTrigger")
-
-
 @define()
 class PickupTrigger(Trigger):
     item_id: int = DEFAULT_ID
     count: int = DEFAULT_COUNT
 
     @classmethod
-    def from_robtop_data(cls: Type[PT], data: Mapping[int, str]) -> PT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         pickup_trigger = super().from_robtop_data(data)
 
         item_id = parse_get_or(int, DEFAULT_ID, data.get(ITEM_ID))
@@ -3169,9 +3033,6 @@ DEFAULT_MAX_SPEED = 0.0
 DEFAULT_OFFSET = 0.0
 
 
-FPYT = TypeVar("FPYT", bound="FollowPlayerYTrigger")
-
-
 @define()
 class FollowPlayerYTrigger(Trigger):
     target_group_id: int = DEFAULT_ID
@@ -3184,7 +3045,7 @@ class FollowPlayerYTrigger(Trigger):
     offset: float = DEFAULT_OFFSET
 
     @classmethod
-    def from_robtop_data(cls: Type[FPYT], data: Mapping[int, str]) -> FPYT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         follow_player_y_trigger = super().from_robtop_data(data)
 
         target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
@@ -3225,9 +3086,6 @@ class FollowPlayerYTrigger(Trigger):
         return data
 
 
-ODT = TypeVar("ODT", bound="OnDeathTrigger")
-
-
 @define()
 class OnDeathTrigger(Trigger):
     target_group_id: int = DEFAULT_ID
@@ -3238,7 +3096,7 @@ class OnDeathTrigger(Trigger):
         return self.activate_group
 
     @classmethod
-    def from_robtop_data(cls: Type[ODT], data: Mapping[int, str]) -> ODT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         on_death_trigger = super().from_robtop_data(data)
 
         target_group_id = parse_get_or(int, DEFAULT_ID, data.get(TARGET_GROUP_ID))
@@ -3267,9 +3125,6 @@ class OnDeathTrigger(Trigger):
 DEFAULT_TRIGGER_ON_EXIT = False
 
 
-CBT = TypeVar("CBT", bound="CollisionTrigger")
-
-
 @define()
 class CollisionTrigger(Trigger):
     target_group_id: int = DEFAULT_ID
@@ -3288,7 +3143,7 @@ class CollisionTrigger(Trigger):
         return self.trigger_on_exit
 
     @classmethod
-    def from_robtop_data(cls: Type[CBT], data: Mapping[int, str]) -> CBT:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         collision_trigger = super().from_robtop_data(data)
 
         block_a_id = parse_get_or(int, DEFAULT_ID, data.get(BLOCK_A_ID))
