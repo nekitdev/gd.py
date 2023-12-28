@@ -1,15 +1,17 @@
 from __future__ import annotations
 
-from typing import Dict, Type, TypeVar
+from typing import TYPE_CHECKING, Dict
 
 from gd.enums import GuidelineColor
 from gd.models_constants import GUIDELINES_SEPARATOR
 from gd.models_utils import concat_guidelines, split_guidelines
 from gd.robtop import RobTop
 
-__all__ = ("Guidelines",)
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
-G = TypeVar("G", bound="Guidelines")
+
+__all__ = ("Guidelines",)
 
 
 class Guidelines(Dict[float, GuidelineColor], RobTop):
@@ -47,7 +49,7 @@ class Guidelines(Dict[float, GuidelineColor], RobTop):
         self[timestamp] = color
 
     @classmethod
-    def from_robtop(cls: Type[G], string: str) -> G:
+    def from_robtop(cls, string: str) -> Self:
         color = GuidelineColor
 
         return cls(
