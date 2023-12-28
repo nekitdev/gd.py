@@ -10,7 +10,6 @@ from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.enums import Permissions
 from gd.memory.internal import unimplemented
 from gd.memory.internal.utils import Struct, external
-from gd.string_utils import tick
 
 __all__ = (
     "open",
@@ -312,7 +311,8 @@ def close(handle: int) -> None:
     pass  # do nothing, as no shutdown is required
 
 
-CAN_NOT_FIND_PROCESS = "can not find process {}"
+CAN_NOT_FIND_PROCESS = "can not find process `{}`"
+can_not_find_process = CAN_NOT_FIND_PROCESS.format
 
 
 def get_process_id_from_name(
@@ -337,7 +337,7 @@ def get_process_id_from_name(
                 return process_id
 
     else:
-        raise LookupError(CAN_NOT_FIND_PROCESS.format(tick(name)))
+        raise LookupError(can_not_find_process(name))
 
 
 def get_process_bits(process_id: int) -> int:

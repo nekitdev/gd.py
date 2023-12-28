@@ -1117,9 +1117,7 @@ class TimelyInfoModel(Model):
         if self.type.is_weekly():
             id += WEEKLY_ID_ADD
 
-        return iter.of(str(id), str(int(self.cooldown.total_seconds()))).collect(
-            concat_timely_info
-        )
+        return iter.of(str(id), str(int(self.cooldown.total_seconds()))).collect(concat_timely_info)
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
@@ -1152,9 +1150,7 @@ class MessageModel(Model):
     content_present: bool = field(default=DEFAULT_CONTENT_PRESENT)
 
     @classmethod
-    def from_robtop(
-        cls, string: str, content_present: bool = DEFAULT_CONTENT_PRESENT
-    ) -> Self:
+    def from_robtop(cls, string: str, content_present: bool = DEFAULT_CONTENT_PRESENT) -> Self:
         mapping = split_message(string)
 
         id = parse_get_or(int, DEFAULT_ID, mapping.get(MESSAGE_ID))

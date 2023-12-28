@@ -6,8 +6,6 @@ from attrs import frozen
 from named import get_type_name
 from typing_aliases import AnyError, NormalError
 
-from gd.string_utils import tick
-
 if TYPE_CHECKING:
     from pendulum import Duration
 
@@ -79,7 +77,8 @@ class MissingAccess(ClientError):
     pass
 
 
-SONG_RESTRICTED = "song with ID {} is not allowed for use"
+SONG_RESTRICTED = "song with ID `{}` is not allowed for use"
+song_restricted = SONG_RESTRICTED.format
 
 
 @frozen()
@@ -87,12 +86,13 @@ class SongRestricted(ClientError):
     song_id: int
 
     def __init__(self, song_id: int) -> None:
-        super().__init__(SONG_RESTRICTED.format(tick(song_id)))
+        super().__init__(song_restricted(song_id))
 
         self.__attrs_init__(song_id)  # type: ignore
 
 
-LOGIN_FAILED = "login failed with name {} and password {}"
+LOGIN_FAILED = "login failed with name `{}` and password `{}`"
+login_failed = LOGIN_FAILED.format
 
 
 @frozen()
@@ -101,7 +101,7 @@ class LoginFailed(ClientError):
     password: str
 
     def __init__(self, name: str, password: str) -> None:
-        super().__init__(LOGIN_FAILED.format(tick(name), tick(password)))
+        super().__init__(login_failed(name, password))
 
         self.__attrs_init__(name, password)  # type: ignore
 
@@ -135,7 +135,8 @@ class LoginRequired(ClientError):
     pass
 
 
-NOTHING_FOUND = "{} not found"
+NOTHING_FOUND = "`{}` not found"
+nothing_found = NOTHING_FOUND.format
 
 
 @frozen()
@@ -143,6 +144,6 @@ class NothingFound(ClientError):
     name: str
 
     def __init__(self, name: str) -> None:
-        super().__init__(NOTHING_FOUND.format(tick(name)))
+        super().__init__(nothing_found(name))
 
         self.__attrs_init__(name)  # type: ignore

@@ -458,8 +458,9 @@ class Storage:
         weekly_rewards_data = data.get(WEEKLY_REWARDS, {})
 
         weekly_rewards = {
-            int(remove_prefix(name, weekly))
-            % weekly_id_add: reward_item_type.from_robtop_data(reward_item_data)
+            int(remove_prefix(name, weekly)) % weekly_id_add: reward_item_type.from_robtop_data(
+                reward_item_data
+            )
             for name, reward_item_data in weekly_rewards_data.items()
         }
 

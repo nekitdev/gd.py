@@ -69,6 +69,7 @@ from gd.newgrounds import (
     search_artist_song_models,
     search_song_models,
 )
+from gd.queries import EMPTY_QUERY
 
 if TYPE_CHECKING:
     from pendulum import Duration
@@ -79,7 +80,8 @@ if TYPE_CHECKING:
     from gd.capacity import Capacity
     from gd.filters import Filters
     from gd.password import Password
-    from gd.typing import IntString, MaybeIterable, URLString
+    from gd.queries import Query
+    from gd.typing import URLString
 
 __all__ = ("Session",)
 
@@ -99,13 +101,15 @@ class Session:
     async def ping(self, url: URLString) -> Duration:
         return await self.http.ping(url)
 
-    async def login(self, name: str, password: str) -> LoginModel:
-        response = await self.http.login(name, password)
+    async def login(self, name: str, hashed_password: str) -> LoginModel:
+        response = await self.http.login(name, hashed_password)
 
         return LoginModel.from_robtop(response)
 
-    async def load(self, account_id: int, name: str, password: str) -> Database:
-        response = await self.http.load(account_id=account_id, name=name, password=password)
+    async def load(self, account_id: int, name: str, hashed_password: str) -> Database:
+        response = await self.http.load(
+            account_id=account_id, name=name, hashed_password=hashed_password
+        )
 
         main_string, levels_string, *_ = split_save(response)
 
@@ -113,18 +117,20 @@ class Session:
             main_string, levels_string, apply_xor=False, follow_system=False
         )
 
-    async def save(self, database: Database, account_id: int, name: str, password: str) -> None:
+    async def save(self, database: Database, account_id: int, name: str, hashed_password: str) -> None:
         parts = save.dump_string_parts(database, apply_xor=False, follow_system=False)
 
         data = concat_save(parts)
 
-        await self.http.save(data=data, account_id=account_id, name=name, password=password)
+        await self.http.save(
+            data=data, account_id=account_id, name=name, hashed_password=hashed_password
+        )
 
     async def get_account_url(self, account_id: int, type: AccountURLType) -> URL:
         return await self.http.get_account_url(account_id=account_id, type=type)
 
-    async def get_role_id(self, account_id: int, encoded_password: str) -> int:
-        return await self.http.get_role_id(account_id=account_id, encoded_password=encoded_password)
+    async def get_role_id(self, account_id: int, hashed_password: str) -> int:
+        return await self.http.get_role_id(account_id=account_id, hashed_password=hashed_password)
 
     async def update_settings(
         self,
@@ -136,7 +142,7 @@ class Session:
         twitch: Optional[str],
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.update_settings(
             message_state=message_state,
@@ -146,7 +152,7 @@ class Session:
             x=x,
             twitch=twitch,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def update_profile(
@@ -160,6 +166,7 @@ class Session:
         icon_id: int,
         color_1_id: int,
         color_2_id: int,
+        color_3_id: int,
         glow: bool,
         cube_id: int,
         ship_id: int,
@@ -168,8 +175,10 @@ class Session:
         wave_id: int,
         robot_id: int,
         spider_id: int,
-        # swing_id: int,
+        swing_id: int,
+        jetpack_id: int,
         explosion_id: int,
+        streak_id: int,
         special: int = DEFAULT_SPECIAL,
         *,
         account_id: int,
@@ -186,6 +195,7 @@ class Session:
             icon_id=icon_id,
             color_1_id=color_1_id,
             color_2_id=color_2_id,
+            color_3_id=color_3_id,
             glow=glow,
             cube_id=cube_id,
             ship_id=ship_id,
@@ -194,21 +204,23 @@ class Session:
             wave_id=wave_id,
             robot_id=robot_id,
             spider_id=spider_id,
-            # swing_id=swing_id,
+            swing_id=swing_id,
+            jetpack_id=jetpack_id,
             explosion_id=explosion_id,
+            streak_id=streak_id,
             special=special,
             account_id=account_id,
             name=name,
             hashed_password=hashed_password,
         )
 
-    async def search_user(self, query: IntString) -> SearchUserModel:
+    async def search_user(self, query: Query) -> SearchUserModel:
         response_model = await self.search_users_on_page(query)
 
         return first(response_model.users)
 
     async def search_users_on_page(
-        self, query: IntString, page: int = DEFAULT_PAGE
+        self, query: Query, page: int = DEFAULT_PAGE
     ) -> SearchUsersResponseModel:
         response = await self.http.search_users_on_page(query=query, page=page)
 
@@ -219,21 +231,21 @@ class Session:
         account_id: int,
         *,
         client_account_id: Optional[int] = None,
-        encoded_password: Optional[str] = None,
+        hashed_password: Optional[str] = None,
     ) -> ProfileModel:
         response = await self.http.get_user_profile(
             account_id=account_id,
             client_account_id=client_account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
         return ProfileModel.from_robtop(response)
 
     async def get_relationships(
-        self, type: RelationshipType, *, account_id: int, encoded_password: str
+        self, type: RelationshipType, *, account_id: int, hashed_password: str
     ) -> RelationshipsResponseModel:
         response = await self.http.get_relationships(
-            type=type, account_id=account_id, encoded_password=encoded_password
+            type=type, account_id=account_id, hashed_password=hashed_password
         )
 
         return RelationshipsResponseModel.from_robtop(response)
@@ -244,17 +256,17 @@ class Session:
         count: int,
         *,
         account_id: Optional[int] = None,
-        encoded_password: Optional[str] = None,
+        hashed_password: Optional[str] = None,
     ) -> LeaderboardResponseModel:
         response = await self.http.get_leaderboard(
-            strategy=strategy, count=count, account_id=account_id, encoded_password=encoded_password
+            strategy=strategy, count=count, account_id=account_id, hashed_password=hashed_password
         )
 
         return LeaderboardResponseModel.from_robtop(response)
 
     async def search_levels_on_page(
         self,
-        query: Optional[MaybeIterable[IntString]] = None,
+        query: Query = EMPTY_QUERY,
         page: int = DEFAULT_PAGE,
         filters: Optional[Filters] = None,
         user_id: Optional[int] = None,
@@ -262,7 +274,7 @@ class Session:
         *,
         client_account_id: Optional[int] = None,
         client_user_id: Optional[int] = None,
-        encoded_password: Optional[str] = None,
+        hashed_password: Optional[str] = None,
     ) -> SearchLevelsResponseModel:
         response = await self.http.search_levels_on_page(
             query=query,
@@ -272,7 +284,7 @@ class Session:
             gauntlet=gauntlet,
             client_account_id=client_account_id,
             client_user_id=client_user_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
         return SearchLevelsResponseModel.from_robtop(response)
@@ -287,10 +299,10 @@ class Session:
         level_id: int,
         *,
         account_id: Optional[int] = None,
-        encoded_password: Optional[str] = None,
+        hashed_password: Optional[str] = None,
     ) -> LevelResponseModel:
         response = await self.http.get_level(
-            level_id=level_id, account_id=account_id, encoded_password=encoded_password
+            level_id=level_id, account_id=account_id, hashed_password=hashed_password
         )
 
         return LevelResponseModel.from_robtop(response)
@@ -298,19 +310,19 @@ class Session:
     async def report_level(self, level_id: int) -> None:
         await self.http.report_level(level_id=level_id)
 
-    async def delete_level(self, level_id: int, *, account_id: int, encoded_password: str) -> None:
+    async def delete_level(self, level_id: int, *, account_id: int, hashed_password: str) -> None:
         await self.http.delete_level(
-            level_id=level_id, account_id=account_id, encoded_password=encoded_password
+            level_id=level_id, account_id=account_id, hashed_password=hashed_password
         )
 
     async def update_level_description(
-        self, level_id: int, description: Optional[str], *, account_id: int, encoded_password: str
+        self, level_id: int, description: Optional[str], *, account_id: int, hashed_password: str
     ) -> None:
         await self.http.update_level_description(
             level_id=level_id,
             description=description,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def upload_level(
@@ -338,7 +350,7 @@ class Session:
         *,
         account_id: int,
         account_name: str,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         return await self.http.upload_level(
             name=name,
@@ -363,17 +375,17 @@ class Session:
             data=data,
             account_id=account_id,
             account_name=account_name,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def rate_level(
-        self, level_id: int, stars: int, *, account_id: int, encoded_password: str
+        self, level_id: int, stars: int, *, account_id: int, hashed_password: str
     ) -> None:
         await self.http.rate_level(
             level_id=level_id,
             stars=stars,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def rate_demon(
@@ -382,13 +394,13 @@ class Session:
         rating: DemonDifficulty,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.rate_demon(
             level_id=level_id,
             rating=rating,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def suggest_demon(
@@ -397,24 +409,24 @@ class Session:
         rating: DemonDifficulty,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.suggest_demon(
             level_id=level_id,
             rating=rating,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def suggest_level(
-        self, level_id: int, stars: int, feature: bool, *, account_id: int, encoded_password: str
+        self, level_id: int, stars: int, feature: bool, *, account_id: int, hashed_password: str
     ) -> None:
         await self.http.suggest_level(
             level_id=level_id,
             stars=stars,
             feature=feature,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def get_level_leaderboard(
@@ -423,13 +435,13 @@ class Session:
         strategy: LevelLeaderboardStrategy,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> LevelLeaderboardResponseModel:
         response = await self.http.get_level_leaderboard(
             level_id=level_id,
             strategy=strategy,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
         return LevelLeaderboardResponseModel.from_robtop(response)
@@ -439,12 +451,12 @@ class Session:
         account_id: int,
         *,
         client_account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.block_user(
             account_id=account_id,
             client_account_id=client_account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def unblock_user(
@@ -452,21 +464,21 @@ class Session:
         account_id: int,
         *,
         client_account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.unblock_user(
             account_id=account_id,
             client_account_id=client_account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def unfriend_user(
-        self, account_id: int, *, client_account_id: int, encoded_password: str
+        self, account_id: int, *, client_account_id: int, hashed_password: str
     ) -> None:
         await self.http.unfriend_user(
             account_id=account_id,
             client_account_id=client_account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def send_message(
@@ -476,14 +488,14 @@ class Session:
         content: Optional[str] = None,
         *,
         client_account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.send_message(
             account_id=account_id,
             subject=subject,
             content=content,
             client_account_id=client_account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def get_message(
@@ -492,13 +504,13 @@ class Session:
         type: MessageType,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> MessageModel:
         response = await self.http.get_message(
             message_id=message_id,
             type=type,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
         return MessageModel.from_robtop(response, content_present=True)
@@ -509,20 +521,20 @@ class Session:
         type: MessageType,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.delete_message(
             message_id=message_id,
             type=type,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def get_messages_on_page(
-        self, type: MessageType, page: int, *, account_id: int, encoded_password: str
+        self, type: MessageType, page: int, *, account_id: int, hashed_password: str
     ) -> MessagesResponseModel:
         response = await self.http.get_messages_on_page(
-            type=type, page=page, account_id=account_id, encoded_password=encoded_password
+            type=type, page=page, account_id=account_id, hashed_password=hashed_password
         )
 
         return MessagesResponseModel.from_robtop(response)
@@ -533,13 +545,13 @@ class Session:
         message: Optional[str] = None,
         *,
         client_account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.send_friend_request(
             account_id=account_id,
             message=message,
             client_account_id=client_account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def delete_friend_request(
@@ -548,13 +560,13 @@ class Session:
         type: FriendRequestType,
         *,
         client_account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.delete_friend_request(
             account_id=account_id,
             type=type,
             client_account_id=client_account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def accept_friend_request(
@@ -564,23 +576,23 @@ class Session:
         type: FriendRequestType,
         *,
         client_account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.accept_friend_request(
             account_id=account_id,
             request_id=request_id,
             type=type,
             client_account_id=client_account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def read_friend_request(
-        self, request_id: int, *, account_id: int, encoded_password: str
+        self, request_id: int, *, account_id: int, hashed_password: str
     ) -> None:
         await self.http.read_friend_request(
             request_id=request_id,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def get_friend_requests_on_page(
@@ -589,10 +601,10 @@ class Session:
         page: int,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> FriendRequestsResponseModel:
         response = await self.http.get_friend_requests_on_page(
-            type=type, page=page, account_id=account_id, encoded_password=encoded_password
+            type=type, page=page, account_id=account_id, hashed_password=hashed_password
         )
 
         return FriendRequestsResponseModel.from_robtop(response)
@@ -603,13 +615,13 @@ class Session:
         dislike: bool,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.like_level(
             level_id=level_id,
             dislike=dislike,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def like_user_comment(
@@ -618,13 +630,13 @@ class Session:
         dislike: bool,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.like_user_comment(
             comment_id=comment_id,
             dislike=dislike,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def like_level_comment(
@@ -634,14 +646,14 @@ class Session:
         dislike: bool,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.like_level_comment(
             comment_id=comment_id,
             level_id=level_id,
             dislike=dislike,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def post_user_comment(
@@ -650,13 +662,13 @@ class Session:
         *,
         account_id: int,
         account_name: str,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         return await self.http.post_user_comment(
             content=content,
             account_id=account_id,
             account_name=account_name,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def post_level_comment(
@@ -667,7 +679,7 @@ class Session:
         *,
         account_id: int,
         account_name: str,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         return await self.http.post_level_comment(
             level_id=level_id,
@@ -675,7 +687,7 @@ class Session:
             record=record,
             account_id=account_id,
             account_name=account_name,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def delete_user_comment(
@@ -683,12 +695,12 @@ class Session:
         comment_id: int,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.delete_user_comment(
             comment_id=comment_id,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def delete_level_comment(
@@ -697,13 +709,13 @@ class Session:
         level_id: int,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> None:
         await self.http.delete_level_comment(
             comment_id=comment_id,
             level_id=level_id,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def get_user_comments_on_page(
@@ -757,9 +769,9 @@ class Session:
 
         return MapPacksResponseModel.from_robtop(response)
 
-    async def get_quests(self, *, account_id: int, encoded_password: str) -> QuestsResponseModel:
+    async def get_quests(self, *, account_id: int, hashed_password: str) -> QuestsResponseModel:
         response = await self.http.get_quests(
-            account_id=account_id, encoded_password=encoded_password
+            account_id=account_id, hashed_password=hashed_password
         )
         return QuestsResponseModel.from_robtop(response)
 
@@ -770,14 +782,14 @@ class Session:
         chest_2_count: int = DEFAULT_CHEST_COUNT,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> ChestsResponseModel:
         response = await self.http.get_chests(
             reward_type=reward_type,
             chest_1_count=chest_1_count,
             chest_2_count=chest_2_count,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
         return ChestsResponseModel.from_robtop(response)
 

@@ -26,7 +26,6 @@ from uuid import uuid4 as generate_uuid
 
 from aiohttp import BasicAuth, ClientError, ClientSession, ClientTimeout
 from attrs import define, evolve, field, frozen
-from iters.iters import iter
 from iters.utils import unary_tuple
 from pendulum import Duration, duration
 from tqdm import tqdm as progress
@@ -126,7 +125,8 @@ from gd.models_constants import OBJECT_SEPARATOR
 from gd.models_utils import bool_str
 from gd.password import Password
 from gd.progress import Progress
-from gd.string_utils import concat_comma, password_str, snake_to_camel_with_abbreviations, tick
+from gd.queries import EMPTY_QUERY
+from gd.string_utils import case_fold, password_str, snake_to_camel_with_abbreviations
 from gd.time import Timer
 from gd.version import python_version_info, version_info
 from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, RobTopVersion
@@ -136,7 +136,8 @@ if TYPE_CHECKING:
 
     from typing_extensions import Self
 
-    from gd.typing import AnyString, IntString, URLString
+    from gd.queries import Query
+    from gd.typing import AnyString, URLString
 
 __all__ = ("Route", "HTTPClient")
 
@@ -145,9 +146,9 @@ DATABASE = "database"
 BASE = "https://www.boomlings.com/database"
 GD_BASE = "https://geometrydash.com/database"
 
-NEWGROUNDS_SONG = "https://newgrounds.com/audio/listen/{}"
-NEWGROUNDS_SONG_PAGE = "https://{}.newgrounds.com/audio/page/{}"
-NEWGROUNDS_SEARCH = "https://newgrounds.com/search/conduct/{}"
+NEWGROUNDS_SONG = "https://newgrounds.com/audio/listen/`{}`"
+NEWGROUNDS_SONG_PAGE = "https://`{}`.newgrounds.com/audio/page/`{}`"
+NEWGROUNDS_SEARCH = "https://newgrounds.com/search/conduct/`{}`"
 
 ACCEPT_ENCODING = "Accept-Encoding"
 USER_AGENT = "User-Agent"
@@ -238,11 +239,12 @@ NO_TOTAL = 0
 ResponseData = Union[bytes, str, JSON]
 
 
-UNEXPECTED_ERROR_CODE = "got an unexpected error code: {}"
+GOT_UNEXPECTED_ERROR_CODE = "got an unexpected error code: `{}`"
+got_unexpected_error_code = GOT_UNEXPECTED_ERROR_CODE.format
 
 
 def unexpected_error_code(error_code: int) -> MissingAccess:
-    return MissingAccess(UNEXPECTED_ERROR_CODE.format(tick(error_code)))
+    return MissingAccess(got_unexpected_error_code(error_code))
 
 
 DEFAULT_TO_CAMEL = False
@@ -289,7 +291,8 @@ class Payload(Namespace):
         return type(self)(self)
 
 
-ROUTE = "{} {}"
+ROUTE = "`{}` `{}`"
+
 
 @frozen()
 class Route:
@@ -302,7 +305,7 @@ class Route:
         return self.route.format_map(self.parameters)
 
     def __str__(self) -> str:
-        return ROUTE.format(self.method, tick(self.actual_route))
+        return ROUTE.format(self.method, self.actual_route)
 
     def with_parameters(self, parameters: Parameters) -> Self:
         return evolve(self, parameters=parameters)
@@ -361,7 +364,7 @@ def int_or(string: str, default: int) -> int:
         return default
 
 
-DEFAULT_USER_AGENT = "python/{} gd.py/{}"
+DEFAULT_USER_AGENT = "python/`{}` gd.py/`{}`"
 
 DEFAULT_TIMEOUT = 150.0
 
@@ -394,98 +397,98 @@ C = TypeVar("C", bound="HTTPClient")
 NAME_TOO_SHORT = "`name` is too short"
 PASSWORD_TOO_SHORT = "`password` is too short"
 LINKED_TO_DIFFERENT = "already linked to a different account"
-INCORRECT_CREDENTIALS = "incorrect credentials: {}, password {}"
-ACCOUNT_DISABLED = "account {} is disabled"
+INCORRECT_CREDENTIALS = "incorrect credentials: name `{}`, password `{}`"
+ACCOUNT_DISABLED = "account `{}` is disabled"
 LINKED_TO_DIFFERENT_STEAM = "already linked to a different steam account"
 
 DATA_TOO_LARGE = "data is too large"
 SOMETHING_WENT_WRONG = "something went wrong on the servers' side"
 
-FAILED_TO_FIND_URL = "failed to find {} URL for user with ID {}"
+FAILED_TO_FIND_URL = "failed to find `{}` URL for user with ID `{}`"
 
 NO_ROLE_FOUND = "no role found"
 
 FAILED_TO_UPDATE_SETTINGS = "failed to update settings"
-FAILED_TO_UPDATE_PROFILE = "failed to update profile (ID: {})"
+FAILED_TO_UPDATE_PROFILE = "failed to update profile (ID: `{}`)"
 
-CAN_NOT_FIND_USERS = "can not find users by query {}"
+CAN_NOT_FIND_USERS = "can not find users by query `{}`"
 
-CAN_NOT_FIND_USER = "can not find user with ID: {}"
-CAN_NOT_FIND_TYPE_USERS = "can not find {} users"
+CAN_NOT_FIND_USER = "can not find user with ID: `{}`"
+CAN_NOT_FIND_TYPE_USERS = "can not find `{}` users"
 
-FAILED_TO_FIND_LEADERBOARD = "failed to find {} leaderboard"
+FAILED_TO_FIND_LEADERBOARD = "failed to find `{}` leaderboard"
 
-STRATEGY_LEADERBOARD_REQUIRES_LOGIN = "{} strategy requires logged in client"
+STRATEGY_LEADERBOARD_REQUIRES_LOGIN = "`{}` strategy requires logged in client"
 
 BY_USER_STRATEGY_REQUIRES_LOGIN = "`by_user` strategy requires logged in client"
 FRIENDS_STRATEGY_REQUIRES_LOGIN = "`friends` strategy requires logged in client"
 
-CAN_NOT_GET_LEVEL = "can not get level with ID: {}"
+CAN_NOT_GET_LEVEL = "can not get level with ID: `{}`"
 
-FAILED_TO_REPORT_LEVEL = "failed to report level with ID: {}"
-FAILED_TO_DELETE_LEVEL = "failed to delete level with ID: {}"
+FAILED_TO_REPORT_LEVEL = "failed to report level with ID: `{}`"
+FAILED_TO_DELETE_LEVEL = "failed to delete level with ID: `{}`"
 
-CAN_NOT_UPDATE_LEVEL_DESCRIPTION = "can not update level description (ID: {})"
+CAN_NOT_UPDATE_LEVEL_DESCRIPTION = "can not update level description (ID: `{}`)"
 
 EXPECTED_TIMELY = "expected timely type"
-CAN_NOT_FIND_TIMELY = "can not find {} level"
+CAN_NOT_FIND_TIMELY = "can not find `{}` level"
 
 FAILED_TO_UPLOAD_LEVEL = "failed to upload a level"
 
-FAILED_TO_RATE_LEVEL = "failed to rate the level (ID: {})"
+FAILED_TO_RATE_LEVEL = "failed to rate the level (ID: `{}`)"
 
-FAILED_TO_RATE_DEMON = "failed to demon-rate the level (ID: {})"
-RATE_DEMON_MISSING_PERMISSIONS = "missing permissions to demon-rate the level (ID: {})"
+FAILED_TO_RATE_DEMON = "failed to demon-rate the level (ID: `{}`)"
+RATE_DEMON_MISSING_PERMISSIONS = "missing permissions to demon-rate the level (ID: `{}`)"
 
-FAILED_TO_SUGGEST_LEVEL = "failed to suggest the level (ID: {})"
-SUGGEST_LEVEL_MISSING_PERMISSIONS = "missing permissions to suggest the level (ID: {})"
+FAILED_TO_SUGGEST_LEVEL = "failed to suggest the level (ID: `{}`)"
+SUGGEST_LEVEL_MISSING_PERMISSIONS = "missing permissions to suggest the level (ID: `{}`)"
 
-FAILED_TO_GET_LEADERBOARD = "failed to get the level leaderboard (ID: {})"
+FAILED_TO_GET_LEADERBOARD = "failed to get the level leaderboard (ID: `{}`)"
 
-FAILED_TO_BLOCK_USER = "failed to block the user (ID: {})"
-FAILED_TO_UNBLOCK_USER = "failed to unblock the user (ID: {})"
+FAILED_TO_BLOCK_USER = "failed to block the user (ID: `{}`)"
+FAILED_TO_UNBLOCK_USER = "failed to unblock the user (ID: `{}`)"
 
-FAILED_TO_UNFRIEND_USER = "failed to unfriend the user (ID: {})"
+FAILED_TO_UNFRIEND_USER = "failed to unfriend the user (ID: `{}`)"
 
-FAILED_TO_SEND_MESSAGE = "failed to send a message to the user (ID: {})"
+FAILED_TO_SEND_MESSAGE = "failed to send a message to the user (ID: `{}`)"
 
-FAILED_TO_GET_MESSAGE = "failed to get the message (ID: {})"
+FAILED_TO_GET_MESSAGE = "failed to get the message (ID: `{}`)"
 
-FAILED_TO_DELETE_MESSAGE = "failed to delete the message (ID: {})"
+FAILED_TO_DELETE_MESSAGE = "failed to delete the message (ID: `{}`)"
 
-FAILED_TO_GET_MESSAGES = "failed to get messages on page {}"
+FAILED_TO_GET_MESSAGES = "failed to get messages on page `{}`"
 
-FAILED_TO_SEND_FRIEND_REQUEST = "failed to send the friend request (ID: {})"
+FAILED_TO_SEND_FRIEND_REQUEST = "failed to send the friend request (ID: `{}`)"
 
-FAILED_TO_DELETE_FRIEND_REQUEST = "failed to delete the friend request (ID: {})"
+FAILED_TO_DELETE_FRIEND_REQUEST = "failed to delete the friend request (ID: `{}`)"
 
-FAILED_TO_ACCEPT_FRIEND_REQUEST = "failed to accept the friend request (ID: {})"
+FAILED_TO_ACCEPT_FRIEND_REQUEST = "failed to accept the friend request (ID: `{}`)"
 
-FAILED_TO_READ_FRIEND_REQUEST = "failed to read the friend request (ID: {})"
+FAILED_TO_READ_FRIEND_REQUEST = "failed to read the friend request (ID: `{}`)"
 
-FAILED_TO_GET_FRIEND_REQUESTS = "failed to get friend requests on page {}"
+FAILED_TO_GET_FRIEND_REQUESTS = "failed to get friend requests on page `{}`"
 
-FAILED_TO_LIKE_LEVEL = "failed to like the level (ID: {})"
-FAILED_TO_LIKE_USER_COMMENT = "failed to like the user comment (ID: {})"
-FAILED_TO_LIKE_LEVEL_COMMENT = "failed to like the level comment (ID: {})"
+FAILED_TO_LIKE_LEVEL = "failed to like the level (ID: `{}`)"
+FAILED_TO_LIKE_USER_COMMENT = "failed to like the user comment (ID: `{}`)"
+FAILED_TO_LIKE_LEVEL_COMMENT = "failed to like the level comment (ID: `{}`)"
 
 FAILED_TO_POST_USER_COMMENT = "failed to post the user comment"
 
 FAILED_TO_POST_LEVEL_COMMENT = "failed to post the level comment"
 
-FAILED_TO_DELETE_USER_COMMENT = "failed to delete the user comment (ID: {})"
+FAILED_TO_DELETE_USER_COMMENT = "failed to delete the user comment (ID: `{}`)"
 
-FAILED_TO_DELETE_LEVEL_COMMENT = "failed to delete the level comment (ID: {})"
+FAILED_TO_DELETE_LEVEL_COMMENT = "failed to delete the level comment (ID: `{}`)"
 
-FAILED_TO_GET_USER_COMMENTS = "failed to get user comments (ID: {})"
+FAILED_TO_GET_USER_COMMENTS = "failed to get user comments (ID: `{}`)"
 
-FAILED_TO_GET_USER_LEVEL_COMMENTS = "failed to get user level comments (ID: {})"
+FAILED_TO_GET_USER_LEVEL_COMMENTS = "failed to get user level comments (ID: `{}`)"
 
-FAILED_TO_GET_LEVEL_COMMENTS = "failed to get level comments (ID: {})"
+FAILED_TO_GET_LEVEL_COMMENTS = "failed to get level comments (ID: `{}`)"
 
 FAILED_TO_GET_GAUNTLETS = "failed to get gauntlets"
 
-FAILED_TO_GET_MAP_PACKS = "failed to get map packs on page {}"
+FAILED_TO_GET_MAP_PACKS = "failed to get map packs on page `{}`"
 
 FAILED_TO_GET_QUESTS = "failed to get quests"
 
@@ -493,7 +496,7 @@ FAILED_TO_GET_CHESTS = "failed to get chests"
 
 FAILED_TO_GET_ARTISTS = "failed to get artists"
 
-FAILED_TO_GET_SONG = "failed to get the song (ID: {})"
+FAILED_TO_GET_SONG = "failed to get the song (ID: `{}`)"
 
 AUDIO = "audio"
 USERS = "users"
@@ -907,16 +910,14 @@ class HTTPClient:
 
         return timer.elapsed()
 
-    async def login(self, name: str, password: str) -> str:
+    async def login(self, name: str, hashed_password: str) -> str:
         error_codes = {
-            -1: LoginFailed(name, password_str(password)),
+            -1: LoginFailed(name, password_str(hashed_password)),
             -8: MissingAccess(NAME_TOO_SHORT),
             -9: MissingAccess(PASSWORD_TOO_SHORT),
             -10: MissingAccess(LINKED_TO_DIFFERENT),
-            -11: MissingAccess(
-                INCORRECT_CREDENTIALS.format(tick(name), tick(password_str(password)))
-            ),
-            -12: MissingAccess(ACCOUNT_DISABLED.format(tick(name))),
+            -11: MissingAccess(INCORRECT_CREDENTIALS.format(name, password_str(hashed_password))),
+            -12: MissingAccess(ACCOUNT_DISABLED.format(name)),
             -13: MissingAccess(LINKED_TO_DIFFERENT_STEAM),
         }
 
@@ -927,7 +928,7 @@ class HTTPClient:
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             user_name=name,
-            password=password,
+            gjp2=hashed_password,
             udid=self.generate_udid(),
             secret=Secret.USER.value,
             to_camel=True,
@@ -937,10 +938,10 @@ class HTTPClient:
 
         return response
 
-    async def load(self, *, account_id: int, name: str, password: str) -> str:
+    async def load(self, *, account_id: int, name: str, hashed_password: str) -> str:
         error_codes = {
             -11: MissingAccess(
-                INCORRECT_CREDENTIALS.format(tick(name), tick(password_str(password)))
+                INCORRECT_CREDENTIALS.format(name, password_str(hashed_password))
             )
         }
 
@@ -951,7 +952,7 @@ class HTTPClient:
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             user_name=name,
-            password=password,
+            gjp2=hashed_password,
             secret=Secret.USER.value,
             to_camel=True,
         )
@@ -962,9 +963,9 @@ class HTTPClient:
 
         return response
 
-    async def save(self, data: str, *, account_id: int, name: str, password: str) -> int:
+    async def save(self, data: str, *, account_id: int, name: str, hashed_password: str) -> int:
         incorrect_credentials = MissingAccess(
-            INCORRECT_CREDENTIALS.format(tick(name), tick(password_str(password)))
+            INCORRECT_CREDENTIALS.format(name, password_str(hashed_password))
         )
 
         error_codes = {
@@ -982,7 +983,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             save_data=data,
             user_name=name,
-            password=password,
+            gjp2=hashed_password,
             secret=Secret.USER.value,
             to_camel=True,
         )
@@ -995,7 +996,7 @@ class HTTPClient:
 
     async def get_account_url(self, account_id: int, type: AccountURLType) -> URL:
         error_codes = {
-            -1: MissingAccess(FAILED_TO_FIND_URL.format(tick(type.name), tick(account_id)))
+            -1: MissingAccess(FAILED_TO_FIND_URL.format(type.name, account_id))
         }
 
         route = Route(POST, GET_ACCOUNT_URL)
@@ -1013,7 +1014,7 @@ class HTTPClient:
 
         return url
 
-    async def get_role_id(self, account_id: int, encoded_password: str) -> int:
+    async def get_role_id(self, account_id: int, hashed_password: str) -> int:
         error_codes = {-1: MissingAccess(NO_ROLE_FOUND)}
 
         route = Route(POST, GET_ROLE_ID)
@@ -1023,7 +1024,7 @@ class HTTPClient:
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -1043,7 +1044,7 @@ class HTTPClient:
         # discord: Optional[str],
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_UPDATE_SETTINGS)}
 
@@ -1063,7 +1064,7 @@ class HTTPClient:
 
         payload = Payload(
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.USER.value,
             m_s=message_state.value,
             fr_s=friend_request_state.value,
@@ -1090,6 +1091,7 @@ class HTTPClient:
         icon_id: int,
         color_1_id: int,
         color_2_id: int,
+        color_3_id: int,
         glow: bool,
         cube_id: int,
         ship_id: int,
@@ -1098,8 +1100,10 @@ class HTTPClient:
         wave_id: int,
         robot_id: int,
         spider_id: int,
-        # swing_id: int,
+        swing_id: int,
+        jetpack_id: int,
         explosion_id: int,
+        streak_id: int,
         special: int = DEFAULT_SPECIAL,
         *,
         account_id: int,
@@ -1154,10 +1158,13 @@ class HTTPClient:
             acc_dart=wave_id,
             acc_robot=robot_id,
             acc_spider=spider_id,
+            acc_swing=swing_id,
+            acc_jetpack=jetpack_id,
             acc_explosion=explosion_id,
             acc_glow=int(glow),
             color1=color_1_id,
             color2=color_2_id,
+            color3=color_3_id,
             user_name=name,
             account_id=account_id,
             gjp2=hashed_password,
@@ -1171,8 +1178,8 @@ class HTTPClient:
 
         return int_or(response, 0)
 
-    async def search_users_on_page(self, query: IntString, page: int = DEFAULT_PAGE) -> str:
-        error_codes = {-1: MissingAccess(CAN_NOT_FIND_USERS.format(tick(query)))}
+    async def search_users_on_page(self, query: Query, page: int = DEFAULT_PAGE) -> str:
+        error_codes = {-1: MissingAccess(CAN_NOT_FIND_USERS.format(query))}
 
         route = Route(POST, GET_USERS)
 
@@ -1180,7 +1187,7 @@ class HTTPClient:
             game_version=self.get_game_version(),
             binary_version=self.get_binary_version(),
             gdw=self.get_gd_world(),
-            str=query,
+            str=query.to_robtop(),
             total=NO_TOTAL,
             page=page,
             secret=Secret.MAIN.value,
@@ -1196,7 +1203,7 @@ class HTTPClient:
         account_id: int,
         *,
         client_account_id: Optional[int] = None,
-        encoded_password: Optional[str] = None,
+        hashed_password: Optional[str] = None,
     ) -> str:
         error_codes = {-1: MissingAccess(CAN_NOT_FIND_USER.format(account_id))}
 
@@ -1211,15 +1218,15 @@ class HTTPClient:
             to_camel=True,
         )
 
-        if client_account_id is not None and encoded_password is not None:
-            payload.update(account_id=client_account_id, gjp=encoded_password, to_camel=True)
+        if client_account_id is not None and hashed_password is not None:
+            payload.update(account_id=client_account_id, gjp2=hashed_password, to_camel=True)
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
     async def get_relationships(
-        self, type: RelationshipType, *, account_id: int, encoded_password: str
+        self, type: RelationshipType, *, account_id: int, hashed_password: str
     ) -> str:
         error_codes = {
             -1: MissingAccess(CAN_NOT_FIND_USERS),
@@ -1234,7 +1241,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             type=type.value,
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -1249,10 +1256,10 @@ class HTTPClient:
         count: int = DEFAULT_COUNT,
         *,
         account_id: Optional[int] = None,
-        encoded_password: Optional[str] = None,
+        hashed_password: Optional[str] = None,
     ) -> str:
         error_codes = {
-            -1: MissingAccess(FAILED_TO_FIND_LEADERBOARD.format(tick(strategy.name.casefold())))
+            -1: MissingAccess(FAILED_TO_FIND_LEADERBOARD.format(case_fold(strategy.name)))
         }
 
         route = Route(POST, GET_LEADERBOARD)
@@ -1268,12 +1275,12 @@ class HTTPClient:
         )
 
         if strategy.requires_login():
-            if account_id is None or encoded_password is None:
+            if account_id is None or hashed_password is None:
                 raise LoginRequired(
-                    STRATEGY_LEADERBOARD_REQUIRES_LOGIN.format(tick(strategy.name.casefold()))
+                    STRATEGY_LEADERBOARD_REQUIRES_LOGIN.format(case_fold(strategy.name))
                 )
 
-            payload.update(account_id=account_id, gjp=encoded_password, to_camel=True)
+            payload.update(account_id=account_id, gjp2=hashed_password, to_camel=True)
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)
 
@@ -1281,7 +1288,7 @@ class HTTPClient:
 
     async def search_levels_on_page(
         self,
-        query: Optional[MaybeIterable[IntString]] = None,
+        query: Query = EMPTY_QUERY,
         page: int = DEFAULT_PAGE,
         filters: Optional[Filters] = None,
         user_id: Optional[int] = None,
@@ -1289,18 +1296,12 @@ class HTTPClient:
         *,
         client_account_id: Optional[int] = None,
         client_user_id: Optional[int] = None,
-        encoded_password: Optional[str] = None,
+        hashed_password: Optional[str] = None,
     ) -> str:
         error_codes = {-1: NothingFound(LEVELS)}
 
         if filters is None:
             filters = Filters()
-
-        if query is None:
-            query = EMPTY
-
-        if not is_string(query) and is_iterable(query):  # type: ignore
-            query = iter(query).map(str).collect(concat_comma)
 
         route = Route(POST, GET_LEVELS)
 
@@ -1319,7 +1320,11 @@ class HTTPClient:
             total = 0
 
             payload.update(
-                filters.to_robtop_filters(), str=query, page=page, total=total, to_camel=True
+                filters.to_robtop_filters(),
+                str=query.to_robtop(),
+                page=page,
+                total=total,
+                to_camel=True,
             )
 
             if filters.strategy.is_by_user():
@@ -1327,14 +1332,14 @@ class HTTPClient:
                     if (
                         client_account_id is None
                         or client_user_id is None
-                        or encoded_password is None
+                        or hashed_password is None
                     ):
                         raise LoginRequired(BY_USER_STRATEGY_REQUIRES_LOGIN)
 
                     payload.update(
                         account_id=client_account_id,
                         str=client_user_id,
-                        gjp=encoded_password,
+                        gjp2=hashed_password,
                         local=int(True),
                     )
 
@@ -1342,17 +1347,17 @@ class HTTPClient:
                     payload.update(str=user_id)
 
             elif filters.strategy.is_friends():
-                if client_account_id is None or encoded_password is None:
+                if client_account_id is None or hashed_password is None:
                     raise MissingAccess(FRIENDS_STRATEGY_REQUIRES_LOGIN)
 
-                payload.update(account_id=client_account_id, gjp=encoded_password)
+                payload.update(account_id=client_account_id, gjp2=hashed_password)
 
         response = await self.request_route(route, data=payload, error_codes=error_codes)
 
         return response
 
     async def get_timely_info(self, type: TimelyType) -> str:
-        error_codes = {-1: MissingAccess(CAN_NOT_FIND_TIMELY.format(tick(type.name.casefold())))}
+        error_codes = {-1: MissingAccess(CAN_NOT_FIND_TIMELY.format(case_fold(type.name)))}
 
         if type.is_not_timely():
             raise MissingAccess(EXPECTED_TIMELY)
@@ -1377,7 +1382,7 @@ class HTTPClient:
         level_id: int,
         *,
         account_id: Optional[int] = None,
-        encoded_password: Optional[str] = None,
+        hashed_password: Optional[str] = None,
     ) -> str:
         error_codes = {-1: MissingAccess(CAN_NOT_GET_LEVEL.format(level_id))}
 
@@ -1392,7 +1397,7 @@ class HTTPClient:
             to_camel=True,
         )
 
-        if account_id is not None and encoded_password is not None:
+        if account_id is not None and hashed_password is not None:
             increment = 1
 
             random_string = generate_random_string()
@@ -1413,7 +1418,7 @@ class HTTPClient:
 
             payload.update(
                 account_id=account_id,
-                gjp=encoded_password,
+                gjp2=hashed_password,
                 udid=udid,
                 uuid=uuid,
                 rs=random_string,
@@ -1436,7 +1441,7 @@ class HTTPClient:
 
         return int_or(response, 0)
 
-    async def delete_level(self, level_id: int, *, account_id: int, encoded_password: str) -> int:
+    async def delete_level(self, level_id: int, *, account_id: int, hashed_password: str) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_DELETE_LEVEL.format(level_id))}
 
         route = Route(POST, DELETE_LEVEL)
@@ -1447,7 +1452,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             level_id=level_id,
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.LEVEL.value,
             to_camel=True,
         )
@@ -1457,7 +1462,7 @@ class HTTPClient:
         return int_or(response, 0)
 
     async def update_level_description(
-        self, level_id: int, description: Optional[str], *, account_id: int, encoded_password: str
+        self, level_id: int, description: Optional[str], *, account_id: int, hashed_password: str
     ) -> int:
         error_codes = {-1: MissingAccess(CAN_NOT_UPDATE_LEVEL_DESCRIPTION.format(level_id))}
 
@@ -1472,7 +1477,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             level_id=level_id,
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             level_desc=encode_base64_string_url_safe(description),
             secret=Secret.MAIN.value,
             to_camel=True,
@@ -1507,7 +1512,7 @@ class HTTPClient:
         *,
         account_id: int,
         account_name: str,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         if editor_time is None:
             editor_time = duration()
@@ -1577,7 +1582,7 @@ class HTTPClient:
             wt2=int(copies_time.total_seconds()),
             account_id=account_id,
             user_name=account_name,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -1587,7 +1592,7 @@ class HTTPClient:
         return int_or(response, 0)
 
     async def rate_level(
-        self, level_id: int, stars: int, *, account_id: int, encoded_password: str
+        self, level_id: int, stars: int, *, account_id: int, hashed_password: str
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_RATE_LEVEL.format(level_id))}
 
@@ -1613,7 +1618,7 @@ class HTTPClient:
             rs=random_string,
             chk=check,
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -1629,7 +1634,7 @@ class HTTPClient:
         as_mod: bool,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {
             -1: MissingAccess(FAILED_TO_RATE_DEMON.format(level_id)),
@@ -1646,7 +1651,7 @@ class HTTPClient:
             rating=rating.value,
             mode=int(as_mod),
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MOD.value,
             to_camel=True,
         )
@@ -1661,14 +1666,14 @@ class HTTPClient:
         rating: DemonDifficulty,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         return await self.apply_demon(
             level_id=level_id,
             rating=rating,
             as_mod=False,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def suggest_demon(
@@ -1677,14 +1682,14 @@ class HTTPClient:
         rating: DemonDifficulty,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         return await self.apply_demon(
             level_id=level_id,
             rating=rating,
             as_mod=True,
             account_id=account_id,
-            encoded_password=encoded_password,
+            hashed_password=hashed_password,
         )
 
     async def suggest_level(
@@ -1694,7 +1699,7 @@ class HTTPClient:
         feature: bool,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {
             -1: MissingAccess(FAILED_TO_SUGGEST_LEVEL.format(level_id)),
@@ -1711,7 +1716,7 @@ class HTTPClient:
             stars=stars,
             feature=int(feature),
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MOD.value,
             to_camel=True,
         )
@@ -1736,7 +1741,7 @@ class HTTPClient:
         send: bool = DEFAULT_SEND,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> str:
         error_codes = {-1: MissingAccess(FAILED_TO_GET_LEADERBOARD.format(level_id))}
 
@@ -1748,7 +1753,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             level_id=level_id,
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             type=strategy.value,
             secret=Secret.MAIN.value,
             to_camel=True,
@@ -1810,7 +1815,7 @@ class HTTPClient:
         account_id: int,
         *,
         client_account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_BLOCK_USER.format(account_id))}
 
@@ -1822,7 +1827,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             target_account_id=account_id,
             account_id=client_account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -1836,7 +1841,7 @@ class HTTPClient:
         account_id: int,
         *,
         client_account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_UNBLOCK_USER.format(account_id))}
 
@@ -1848,7 +1853,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             target_account_id=account_id,
             account_id=client_account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -1858,7 +1863,7 @@ class HTTPClient:
         return int_or(response, 0)
 
     async def unfriend_user(
-        self, account_id: int, *, client_account_id: int, encoded_password: str
+        self, account_id: int, *, client_account_id: int, hashed_password: str
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_UNFRIEND_USER.format(account_id))}
 
@@ -1870,7 +1875,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             target_account_id=account_id,
             account_id=client_account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -1886,7 +1891,7 @@ class HTTPClient:
         content: Optional[str] = None,
         *,
         client_account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_SEND_MESSAGE.format(account_id))}
 
@@ -1906,7 +1911,7 @@ class HTTPClient:
             body=encode_robtop_string(content, Key.MESSAGE),
             to_account_id=account_id,
             account_id=client_account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -1921,7 +1926,7 @@ class HTTPClient:
         type: MessageType,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> str:
         error_codes = {-1: MissingAccess(FAILED_TO_GET_MESSAGE.format(message_id))}
 
@@ -1933,7 +1938,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             account_id=account_id,
             message_id=message_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -1951,7 +1956,7 @@ class HTTPClient:
         type: MessageType,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_DELETE_MESSAGE.format(message_id))}
 
@@ -1963,7 +1968,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             account_id=account_id,
             message_id=message_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -1976,7 +1981,7 @@ class HTTPClient:
         return int_or(response, 0)
 
     async def get_messages_on_page(
-        self, type: MessageType, page: int, *, account_id: int, encoded_password: str
+        self, type: MessageType, page: int, *, account_id: int, hashed_password: str
     ) -> str:
         error_codes = {
             -1: MissingAccess(FAILED_TO_GET_MESSAGES.format(page)),
@@ -1992,7 +1997,7 @@ class HTTPClient:
             page=page,
             total=NO_TOTAL,
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -2010,7 +2015,7 @@ class HTTPClient:
         message: Optional[str] = None,
         *,
         client_account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_SEND_FRIEND_REQUEST.format(account_id))}
 
@@ -2026,7 +2031,7 @@ class HTTPClient:
             comment=encode_base64_string_url_safe(message),
             to_account_id=account_id,
             account_id=client_account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -2044,7 +2049,7 @@ class HTTPClient:
         type: FriendRequestType,
         *,
         client_account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_DELETE_FRIEND_REQUEST.format(account_id))}
 
@@ -2056,7 +2061,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             target_account_id=account_id,
             account_id=client_account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -2075,7 +2080,7 @@ class HTTPClient:
         type: FriendRequestType,
         *,
         client_account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_ACCEPT_FRIEND_REQUEST.format(account_id))}
 
@@ -2088,7 +2093,7 @@ class HTTPClient:
             target_account_id=account_id,
             request_id=request_id,
             account_id=client_account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -2101,7 +2106,7 @@ class HTTPClient:
         return int_or(response, 0)
 
     async def read_friend_request(
-        self, request_id: int, *, account_id: int, encoded_password: str
+        self, request_id: int, *, account_id: int, hashed_password: str
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_READ_FRIEND_REQUEST.format(request_id))}
 
@@ -2113,7 +2118,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             request_id=request_id,
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -2128,7 +2133,7 @@ class HTTPClient:
         page: int,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> str:
         error_codes = {
             -1: MissingAccess(FAILED_TO_GET_FRIEND_REQUESTS.format(page)),
@@ -2146,7 +2151,7 @@ class HTTPClient:
             page=page,
             total=total,
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -2164,7 +2169,7 @@ class HTTPClient:
         dislike: bool = False,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_LIKE_LEVEL.format(level_id))}
 
@@ -2202,7 +2207,7 @@ class HTTPClient:
             special=special_id,
             like=int(like),
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             udid=udid,
             uuid=uuid,
             rs=random_string,
@@ -2221,7 +2226,7 @@ class HTTPClient:
         dislike: bool = False,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_LIKE_USER_COMMENT.format(comment_id))}
 
@@ -2259,7 +2264,7 @@ class HTTPClient:
             special=special_id,
             like=int(like),
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             udid=udid,
             uuid=uuid,
             rs=random_string,
@@ -2279,7 +2284,7 @@ class HTTPClient:
         dislike: bool = False,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_LIKE_LEVEL_COMMENT.format(comment_id))}
 
@@ -2317,7 +2322,7 @@ class HTTPClient:
             special=special_id,
             like=int(like),
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             udid=udid,
             uuid=uuid,
             rs=random_string,
@@ -2336,7 +2341,7 @@ class HTTPClient:
         *,
         account_id: int,
         account_name: str,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {
             -1: MissingAccess(FAILED_TO_POST_USER_COMMENT),
@@ -2367,7 +2372,7 @@ class HTTPClient:
             c_type=type.value,
             account_id=account_id,
             user_name=account_name,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             chk=check,
             secret=Secret.MAIN.value,
             to_camel=True,
@@ -2390,7 +2395,7 @@ class HTTPClient:
         *,
         account_id: int,
         account_name: str,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {
             -1: MissingAccess(FAILED_TO_POST_LEVEL_COMMENT.format(level_id)),
@@ -2420,7 +2425,7 @@ class HTTPClient:
             percent=record,
             account_id=account_id,
             user_name=account_name,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             chk=check,
             secret=Secret.MAIN.value,
             to_camel=True,
@@ -2440,7 +2445,7 @@ class HTTPClient:
         comment_id: int,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_DELETE_USER_COMMENT.format(comment_id))}
 
@@ -2458,7 +2463,7 @@ class HTTPClient:
             c_type=type.value,
             level_id=level_id,
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -2473,7 +2478,7 @@ class HTTPClient:
         level_id: int,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(FAILED_TO_DELETE_LEVEL_COMMENT.format(comment_id))}
 
@@ -2489,7 +2494,7 @@ class HTTPClient:
             c_type=type.value,
             level_id=level_id,
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             secret=Secret.MAIN.value,
             to_camel=True,
         )
@@ -2624,7 +2629,7 @@ class HTTPClient:
         chest_2_count: int = DEFAULT_CHEST_COUNT,
         *,
         account_id: int,
-        encoded_password: str,
+        hashed_password: str,
     ) -> str:
         error_codes = {-1: MissingAccess(FAILED_TO_GET_CHESTS)}
 
@@ -2638,7 +2643,7 @@ class HTTPClient:
             gdw=self.get_gd_world(),
             reward_type=reward_type.value,
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             uuid=self.generate_uuid(),
             udid=self.generate_udid(),
             chk=check,
@@ -2652,7 +2657,7 @@ class HTTPClient:
 
         return response
 
-    async def get_quests(self, *, account_id: int, encoded_password: str) -> str:
+    async def get_quests(self, *, account_id: int, hashed_password: str) -> str:
         error_codes = {-1: MissingAccess(FAILED_TO_GET_QUESTS)}
 
         check = generate_random_string_and_encode_value(Key.QUESTS)
@@ -2666,7 +2671,7 @@ class HTTPClient:
             binary_version=self.get_binary_version(),
             gdw=world,
             account_id=account_id,
-            gjp=encoded_password,
+            gjp2=hashed_password,
             uuid=self.generate_uuid(),
             udid=self.generate_udid(),
             chk=check,

@@ -1,4 +1,3 @@
-from typing import TYPE_CHECKING
 
 from attrs import define, field
 from iters.ordered_set import OrderedSet, ordered_set
@@ -21,8 +20,6 @@ from gd.api.database.common import (
 )
 from gd.constants import WEEKLY_ID_ADD
 from typing_extensions import Self
-
-
 
 __all__ = ("Completed",)
 

@@ -3,6 +3,7 @@
 from entrypoint import entrypoint
 
 import gd
+from gd.queries import query
 
 client = gd.Client()  # initialize the client
 
@@ -22,7 +23,7 @@ async def async_main() -> None:
     name = input(PROMPT)
 
     try:
-        user = await client.search_user(name, simple=True)
+        user = await client.search_user(query(name), simple=True)
 
     except gd.MissingAccess:
         print(not_found(name=name))

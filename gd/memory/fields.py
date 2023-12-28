@@ -60,9 +60,7 @@ class Field(Generic[T]):
         if instance is None:
             return self
 
-        return self.data.read(
-            instance.state, instance.address + self.offset, instance.order
-        )
+        return self.data.read(instance.state, instance.address + self.offset, instance.order)
 
     def __set__(self, instance: Base, value: T) -> None:
         self.data.write(instance.state, instance.address + self.offset, value, instance.order)

@@ -14,7 +14,6 @@ from gd.enums import Permissions
 from gd.memory.internal import unimplemented
 from gd.memory.internal.utils import Struct, external
 from gd.platform import SYSTEM_BITS
-from gd.string_utils import tick
 
 __all__ = (
     "open",
@@ -374,7 +373,8 @@ def get_process_bits_from_handle(handle: int) -> int:
     return 32
 
 
-CAN_NOT_FIND_MODULE = "can not find module {}"
+CAN_NOT_FIND_MODULE = "can not find module `{}`"
+can_not_find_module = CAN_NOT_FIND_MODULE.format
 
 
 def get_base_address(process_id: int, module_name: str) -> int:
@@ -387,7 +387,7 @@ def get_base_address(process_id: int, module_name: str) -> int:
             break
 
     else:
-        raise LookupError(CAN_NOT_FIND_MODULE.format(tick(module_name)))
+        raise LookupError(can_not_find_module(module_name))
 
     return module.base_address
 
@@ -395,7 +395,8 @@ def get_base_address(process_id: int, module_name: str) -> int:
 get_base_address_from_handle = unimplemented
 
 
-CAN_NOT_FIND_PROCESS = "can not find process {}"
+CAN_NOT_FIND_PROCESS = "can not find process `{}`"
+can_not_find_process = CAN_NOT_FIND_PROCESS.format
 
 
 def get_process_id_from_name(name: str) -> int:
@@ -408,7 +409,7 @@ def get_process_id_from_name(name: str) -> int:
             break
 
     else:
-        raise LookupError(CAN_NOT_FIND_PROCESS.format(tick(name)))
+        raise LookupError(can_not_find_process(name))
 
     return process.process_id
 

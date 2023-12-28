@@ -50,6 +50,7 @@ from gd.enums import (
 from gd.filters import Filters
 from gd.image.factory import FACTORY, connect_images
 from gd.image.icon import Icon
+from gd.models import CreatorModel
 from gd.schema import (
     UserCosmeticsSchema,
     UserLeaderboardSchema,
@@ -70,7 +71,7 @@ if TYPE_CHECKING:
 
     from gd.comments import LevelComment, UserComment
     from gd.friend_request import FriendRequest
-    from gd.level import Level
+    from gd.levels import Level
     from gd.message import Message
     from gd.models import (
         LeaderboardUserModel,
@@ -124,6 +125,10 @@ class UserReference(Entity, Binary):
         return self.account_id > 0 and self.id > 0
 
     @classmethod
+    def from_creator_model(cls, model: CreatorModel) -> Self:
+        return cls(id=model.id, name=model.name, account_id=model.account_id)
+
+    @classmethod
     def from_binary(cls, binary: BufferedReader) -> Self:
         return cls.from_reader(UserReferenceSchema.read(binary))
 
@@ -164,6 +169,69 @@ class UserReference(Entity, Binary):
         builder.accountId = self.account_id
 
         return builder
+
+    async def get(
+        self, simple: bool = DEFAULT_SIMPLE, friend_state: bool = DEFAULT_FRIEND_STATE
+    ) -> User:
+        return await self.client.get_user(self.account_id, simple=simple, friend_state=friend_state)
+
+    async def update(self, friend_state: bool = DEFAULT_FRIEND_STATE) -> Self:
+        return self.update_from(await self.get(friend_state=friend_state))
+
+    async def send(
+        self, subject: Optional[str] = None, content: Optional[str] = None
+    ) -> Optional[Message]:
+        return await self.client.send_message(self, subject, content)
+
+    async def block(self) -> None:
+        await self.client.block_user(self)
+
+    async def unblock(self) -> None:
+        await self.client.unblock_user(self)
+
+    async def unfriend(self) -> None:
+        await self.client.unfriend_user(self)
+
+    async def send_friend_request(self, message: Optional[str] = None) -> Optional[FriendRequest]:
+        return await self.client.send_friend_request(self, message)
+
+    @wrap_async_iter
+    def get_levels_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Level]:
+        return self.client.search_levels_on_page(
+            page=page, filters=Filters.by_user(), user=self
+        ).unwrap()
+
+    @wrap_async_iter
+    def get_levels(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Level]:
+        return self.client.search_levels(pages=pages, filters=Filters.by_user(), user=self).unwrap()
+
+    @wrap_async_iter
+    def get_comments_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[UserComment]:
+        return self.client.get_user_comments_on_page(user=self, page=page).unwrap()
+
+    @wrap_async_iter
+    def get_level_comments_on_page(
+        self,
+        strategy: CommentStrategy = CommentStrategy.DEFAULT,
+        page: int = DEFAULT_PAGE,
+    ) -> AsyncIterator[LevelComment]:
+        return self.client.get_user_level_comments_on_page(
+            user=self, page=page, strategy=strategy
+        ).unwrap()
+
+    @wrap_async_iter
+    def get_comments(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[UserComment]:
+        return self.client.get_user_comments(user=self, pages=pages).unwrap()
+
+    @wrap_async_iter
+    def get_level_comments(
+        self,
+        strategy: CommentStrategy = CommentStrategy.DEFAULT,
+        pages: Iterable[int] = DEFAULT_PAGES,
+    ) -> AsyncIterator[LevelComment]:
+        return self.client.get_user_level_comments(
+            user=self, pages=pages, strategy=strategy
+        ).unwrap()
 
 
 class UserStatisticsData(Data):
@@ -716,9 +784,7 @@ class UserData(EntityData):
 
 @register_unstructure_hook_omit_client
 @define()
-class User(Entity, Binary):
-    name: str = field(eq=False)
-    account_id: int = field(eq=False)
+class User(UserReference, Binary):
     role_id: int = field(default=DEFAULT_ID, eq=False)
     banned: bool = field(default=DEFAULT_BANNED, eq=False)
     statistics: Optional[UserStatistics] = field(default=None, eq=False)
@@ -1100,66 +1166,3 @@ class User(Entity, Binary):
 
     def is_registered(self) -> bool:
         return self.account_id > 0 and self.id > 0
-
-    async def get(
-        self, simple: bool = DEFAULT_SIMPLE, friend_state: bool = DEFAULT_FRIEND_STATE
-    ) -> User:
-        return await self.client.get_user(self.account_id, simple=simple, friend_state=friend_state)
-
-    async def update(self, friend_state: bool = DEFAULT_FRIEND_STATE) -> Self:
-        return self.update_from(await self.get(friend_state=friend_state))
-
-    async def send(
-        self, subject: Optional[str] = None, content: Optional[str] = None
-    ) -> Optional[Message]:
-        return await self.client.send_message(self, subject, content)
-
-    async def block(self) -> None:
-        await self.client.block_user(self)
-
-    async def unblock(self) -> None:
-        await self.client.unblock_user(self)
-
-    async def unfriend(self) -> None:
-        await self.client.unfriend_user(self)
-
-    async def send_friend_request(self, message: Optional[str] = None) -> Optional[FriendRequest]:
-        return await self.client.send_friend_request(self, message)
-
-    @wrap_async_iter
-    def get_levels_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[Level]:
-        return self.client.search_levels_on_page(
-            page=page, filters=Filters.by_user(), user=self
-        ).unwrap()
-
-    @wrap_async_iter
-    def get_levels(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[Level]:
-        return self.client.search_levels(pages=pages, filters=Filters.by_user(), user=self).unwrap()
-
-    @wrap_async_iter
-    def get_comments_on_page(self, page: int = DEFAULT_PAGE) -> AsyncIterator[UserComment]:
-        return self.client.get_user_comments_on_page(user=self, page=page).unwrap()
-
-    @wrap_async_iter
-    def get_level_comments_on_page(
-        self,
-        strategy: CommentStrategy = CommentStrategy.DEFAULT,
-        page: int = DEFAULT_PAGE,
-    ) -> AsyncIterator[LevelComment]:
-        return self.client.get_user_level_comments_on_page(
-            user=self, page=page, strategy=strategy
-        ).unwrap()
-
-    @wrap_async_iter
-    def get_comments(self, pages: Iterable[int] = DEFAULT_PAGES) -> AsyncIterator[UserComment]:
-        return self.client.get_user_comments(user=self, pages=pages).unwrap()
-
-    @wrap_async_iter
-    def get_level_comments(
-        self,
-        strategy: CommentStrategy = CommentStrategy.DEFAULT,
-        pages: Iterable[int] = DEFAULT_PAGES,
-    ) -> AsyncIterator[LevelComment]:
-        return self.client.get_user_level_comments(
-            user=self, pages=pages, strategy=strategy
-        ).unwrap()

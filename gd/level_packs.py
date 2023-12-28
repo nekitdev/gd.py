@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from gd.client import Client
-    from gd.level import Level
+    from gd.levels import Level
     from gd.models import GauntletModel, MapPackModel
 
 __all__ = ("LevelPack", "Gauntlet", "MapPack")
