@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from collections import UserList as ListType
-from typing import Iterable, Iterator, List, Match, Type, TypeVar
+from typing import TYPE_CHECKING, Iterable, Iterator, List, Match
 
 from attrs import define
 from iters.iters import iter, wrap_iter
@@ -14,6 +14,9 @@ from gd.models_utils import concat_recording_item, float_str, int_bool
 from gd.robtop import RobTop
 from gd.string_constants import DOT
 from gd.string_utils import concat_empty
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 __all__ = ("RecordingItem", "Recording")
 
@@ -44,8 +47,6 @@ RECORDING_ITEM = re.compile(RECORDING_ITEM_PATTERN, re.VERBOSE)
 
 recording_item_find_iter = RECORDING_ITEM.finditer
 
-RI = TypeVar("RI", bound="RecordingItem")
-
 
 @define()
 class RecordingItem(RobTop):
@@ -71,7 +72,7 @@ class RecordingItem(RobTop):
             yield empty
 
     @classmethod
-    def from_robtop_match(cls: Type[RI], match: Match[str]) -> RI:
+    def from_robtop_match(cls, match: Match[str]) -> Self:
         previous_group = match.group(PREVIOUS)
 
         previous = False if previous_group is None else int_bool(previous_group)
@@ -94,7 +95,7 @@ class RecordingItem(RobTop):
         return cls(timestamp, previous, next, secondary)
 
     @classmethod
-    def from_robtop(cls: Type[RI], string: str) -> RI:
+    def from_robtop(cls, string: str) -> Self:
         match = RECORDING_ITEM.fullmatch(string)
 
         if match is None:
@@ -123,9 +124,6 @@ def recording_item_to_robtop(item: RecordingItem) -> str:
     return item.to_robtop()
 
 
-R = TypeVar("R", bound="Recording")
-
-
 class Recording(ListType, List[RecordingItem], RobTop):  # type: ignore
     @staticmethod
     @wrap_iter
@@ -137,7 +135,7 @@ class Recording(ListType, List[RecordingItem], RobTop):  # type: ignore
         return iter(recording).map(recording_item_to_robtop).collect(concat_empty)
 
     @classmethod
-    def from_robtop(cls: Type[R], string: str) -> R:
+    def from_robtop(cls, string: str) -> Self:
         return cls.iter_robtop(string).collect(cls)
 
     def to_robtop(self) -> str:
