@@ -1153,8 +1153,8 @@ class MessageModel(Model):
 
     @classmethod
     def from_robtop(
-        cls: Type[M], string: str, content_present: bool = DEFAULT_CONTENT_PRESENT
-    ) -> M:
+        cls, string: str, content_present: bool = DEFAULT_CONTENT_PRESENT
+    ) -> Self:
         mapping = split_message(string)
 
         id = parse_get_or(int, DEFAULT_ID, mapping.get(MESSAGE_ID))
