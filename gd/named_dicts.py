@@ -1,18 +1,21 @@
-from typing import Any, TypeVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from typing_aliases import StringDict
 
 from gd.string_utils import snake_to_camel
 
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
 __all__ = ("NamedDict", "CamelDict")
 
 T = TypeVar("T")
 
-D = TypeVar("D", bound="AnyNamedDict")
-
 
 class NamedDict(StringDict[T]):
-    def copy(self: D) -> D:
+    def copy(self) -> Self:
         return type(self)(self)
 
     def __getattr__(self, name: str) -> T:
