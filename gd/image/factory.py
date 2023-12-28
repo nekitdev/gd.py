@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Optional, Tuple, Type, TypeVar
+from typing import TYPE_CHECKING, Iterable, Optional, Tuple
 
 from attrs import define
 
@@ -32,13 +32,12 @@ from gd.image.sheet import Sheet
 
 if TYPE_CHECKING:
     from typing_aliases import IntoPath
+    from typing_extensions import Self
 
     from gd.image.icon import Icon
     from gd.image.sprite import Sprite, Sprites
 
 __all__ = ("FACTORY", "Factory")
-
-F = TypeVar("F", bound="Factory")
 
 IDLE = "idle"
 
@@ -111,19 +110,19 @@ class Factory:
     spider_animation_sheet: AnimationSheet
 
     @classmethod
-    def default(cls: Type[F]) -> F:
+    def default(cls) -> Self:
         return cls.from_paths()
 
     @classmethod
     def from_paths(
-        cls: Type[F],
+        cls,
         icon_image_path: IntoPath = ICON_IMAGE_PATH,
         icon_data_path: IntoPath = ICON_DATA_PATH,
         glow_image_path: IntoPath = GLOW_IMAGE_PATH,
         glow_data_path: IntoPath = GLOW_DATA_PATH,
         robot_animation_sheet_path: IntoPath = ROBOT_ANIMATION_SHEET_PATH,
         spider_animation_sheet_path: IntoPath = SPIDER_ANIMATION_SHEET_PATH,
-    ) -> F:
+    ) -> Self:
         return cls(
             Sheet.from_paths(icon_image_path, icon_data_path),
             Sheet.from_paths(glow_image_path, glow_data_path),
