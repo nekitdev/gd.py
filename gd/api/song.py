@@ -1,17 +1,18 @@
-from typing import Any, Optional, Type, TypeVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional
 
 from attrs import define
-from typing_aliases import StringDict, StringMapping
 from yarl import URL
 
 from gd.api.artist import ArtistAPI
-from gd.constants import (
-    DEFAULT_ID,
-    DEFAULT_PRIORITY,
-    DEFAULT_SIZE,
-    EMPTY,
-)
+from gd.constants import DEFAULT_ID, DEFAULT_PRIORITY, DEFAULT_SIZE, EMPTY
 from gd.enums import InternalType
+
+if TYPE_CHECKING:
+    from typing_aliases import StringDict, StringMapping
+    from typing_extensions import Self
+
 
 __all__ = ("SongAPI",)
 
@@ -27,9 +28,6 @@ PRIORITY = "9"
 DOWNLOAD_URL = "10"
 
 
-S = TypeVar("S", bound="SongAPI")
-
-
 @define()
 class SongAPI:
     id: int
@@ -43,11 +41,11 @@ class SongAPI:
         return hash(type(self)) ^ self.id
 
     @classmethod
-    def default(cls: Type[S], id: int = DEFAULT_ID, artist_id: int = DEFAULT_ID) -> S:
+    def default(cls, id: int = DEFAULT_ID, artist_id: int = DEFAULT_ID) -> Self:
         return cls(id=id, name=EMPTY, artist=ArtistAPI.default(artist_id))
 
     @classmethod
-    def from_robtop_data(cls: Type[S], data: StringMapping[Any]) -> S:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
         id = data.get(ID, DEFAULT_ID)
         name = data.get(NAME, EMPTY)
         artist_id = data.get(ARTIST_ID, DEFAULT_ID)

@@ -1,10 +1,11 @@
-from typing import List, Optional, Protocol, Sequence, Type, TypeVar, runtime_checkable
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Optional, Protocol, Sequence, TypeVar, runtime_checkable
 from urllib.parse import quote, unquote
 
 from attrs import define, field
 from iters.iters import iter
 from pendulum import DateTime, Duration, duration
-from typing_aliases import DynamicTuple
 from yarl import URL
 
 from gd.api.editor import Editor
@@ -250,6 +251,10 @@ from gd.robtop import RobTop
 from gd.string_utils import concat_empty
 from gd.versions import CURRENT_GAME_VERSION, GameVersion
 
+if TYPE_CHECKING:
+    from typing_aliases import DynamicTuple
+    from typing_extensions import Self
+
 __all__ = (
     "Model",
     "ArtistModel",
@@ -306,9 +311,6 @@ SONG_ARTIST_VERIFIED = 8
 SONG_URL = 10
 
 
-S = TypeVar("S", bound="SongModel")
-
-
 @define()
 class SongModel(Model):
     id: int = DEFAULT_ID
@@ -323,8 +325,8 @@ class SongModel(Model):
 
     @classmethod
     def from_robtop(
-        cls: Type[S], string: str, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
-    ) -> S:
+        cls, string: str, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
+    ) -> Self:
         mapping = split_song(string)
 
         id = parse_get_or(int, DEFAULT_ID, mapping.get(SONG_ID))
@@ -385,16 +387,13 @@ class SongModel(Model):
         return self.artist_verified
 
 
-LG = TypeVar("LG", bound="LoginModel")
-
-
 @define()
 class LoginModel(Model):
     account_id: int = DEFAULT_ID
     id: int = DEFAULT_ID
 
     @classmethod
-    def from_robtop(cls: Type[LG], string: str) -> LG:
+    def from_robtop(cls, string: str) -> Self:
         account_id, id = iter(split_login(string)).map(int).tuple()
 
         return cls(account_id=account_id, id=id)
@@ -407,9 +406,6 @@ class LoginModel(Model):
         return LOGIN_SEPARATOR in string
 
 
-CRT = TypeVar("CRT", bound="CreatorModel")
-
-
 @define()
 class CreatorModel(Model):
     id: int = DEFAULT_ID
@@ -417,7 +413,7 @@ class CreatorModel(Model):
     account_id: int = DEFAULT_ID
 
     @classmethod
-    def from_robtop(cls: Type[CRT], string: str) -> CRT:
+    def from_robtop(cls, string: str) -> Self:
         id_string, name, account_id_string = split_creator(string)
 
         id = int(id_string)
@@ -438,9 +434,6 @@ DEFAULT_START = 0
 DEFAULT_STOP = 0
 
 
-B = TypeVar("B", bound="PageModel")
-
-
 @define()
 class PageModel(Model):
     total: Optional[int] = None
@@ -448,7 +441,7 @@ class PageModel(Model):
     stop: int = DEFAULT_STOP
 
     @classmethod
-    def from_robtop(cls: Type[B], string: str) -> B:
+    def from_robtop(cls, string: str) -> Self:
         total_string, start_string, stop_string = split_page(string)
 
         if not total_string:
@@ -493,9 +486,6 @@ SEARCH_USER_ACCOUNT_ID = 16
 SEARCH_USER_USER_COINS = 17
 
 
-SU = TypeVar("SU", bound="SearchUserModel")
-
-
 @define()
 class SearchUserModel(Model):
     name: str = EMPTY
@@ -514,7 +504,7 @@ class SearchUserModel(Model):
     user_coins: int = DEFAULT_USER_COINS
 
     @classmethod
-    def from_robtop(cls: Type[SU], string: str) -> SU:
+    def from_robtop(cls, string: str) -> Self:
         mapping = split_search_user(string)
 
         name = mapping.get(SEARCH_USER_NAME, EMPTY)
@@ -647,8 +637,6 @@ PROFILE_MOONS = 52
 PROFILE_SWING_ID = 53
 PROFILE_JETPACK_ID = 54
 
-P = TypeVar("P", bound="ProfileModel")
-
 
 @define()
 class ProfileModel(Model):
@@ -691,7 +679,7 @@ class ProfileModel(Model):
     jetpack_id: int = DEFAULT_ICON_ID
 
     @classmethod
-    def from_robtop(cls: Type[P], string: str) -> P:
+    def from_robtop(cls, string: str) -> Self:
         mapping = split_profile(string)
 
         name = mapping.get(PROFILE_NAME, EMPTY)
@@ -896,9 +884,6 @@ RELATIONSHIP_USER_ACCOUNT_ID = 16
 RELATIONSHIP_USER_MESSAGE_STATE = 18
 
 
-RU = TypeVar("RU", bound="RelationshipUserModel")
-
-
 @define()
 class RelationshipUserModel(Model):
     name: str = EMPTY
@@ -912,7 +897,7 @@ class RelationshipUserModel(Model):
     message_state: MessageState = MessageState.DEFAULT
 
     @classmethod
-    def from_robtop(cls: Type[RU], string: str) -> RU:
+    def from_robtop(cls, string: str) -> Self:
         mapping = split_relationship_user(string)
 
         name = mapping.get(RELATIONSHIP_USER_NAME, EMPTY)
@@ -1000,9 +985,6 @@ LEADERBOARD_USER_USER_COINS = 17
 LEADERBOARD_USER_DIAMONDS = 46
 
 
-LU = TypeVar("LU", bound="LeaderboardUserModel")
-
-
 @define()
 class LeaderboardUserModel(Model):
     name: str = EMPTY
@@ -1022,7 +1004,7 @@ class LeaderboardUserModel(Model):
     diamonds: int = DEFAULT_DIAMONDS
 
     @classmethod
-    def from_robtop(cls: Type[LU], string: str) -> LU:
+    def from_robtop(cls, string: str) -> Self:
         mapping = split_leaderboard_user(string)
 
         name = mapping.get(LEADERBOARD_USER_NAME, EMPTY)
@@ -1113,9 +1095,6 @@ class LeaderboardUserModel(Model):
         return self.glow
 
 
-TI = TypeVar("TI", bound="TimelyInfoModel")
-
-
 @define()
 class TimelyInfoModel(Model):
     id: int = field(default=DEFAULT_ID)
@@ -1123,7 +1102,7 @@ class TimelyInfoModel(Model):
     cooldown: Duration = field(factory=duration)
 
     @classmethod
-    def from_robtop(cls: Type[TI], string: str, type: TimelyType = TimelyType.DEFAULT) -> TI:
+    def from_robtop(cls, string: str, type: TimelyType = TimelyType.DEFAULT) -> Self:
         id, cooldown_seconds = iter(split_timely_info(string)).map(int).tuple()
 
         id %= WEEKLY_ID_ADD
@@ -1158,9 +1137,6 @@ MESSAGE_READ = 8
 MESSAGE_SENT = 9
 
 
-M = TypeVar("M", bound="MessageModel")
-
-
 @define()
 class MessageModel(Model):
     id: int = field(default=DEFAULT_ID)
@@ -1177,8 +1153,8 @@ class MessageModel(Model):
 
     @classmethod
     def from_robtop(
-        cls: Type[M], string: str, content_present: bool = DEFAULT_CONTENT_PRESENT
-    ) -> M:
+        cls, string: str, content_present: bool = DEFAULT_CONTENT_PRESENT
+    ) -> Self:
         mapping = split_message(string)
 
         id = parse_get_or(int, DEFAULT_ID, mapping.get(MESSAGE_ID))
@@ -1260,9 +1236,6 @@ FRIEND_REQUEST_CREATED_AT = 37
 FRIEND_REQUEST_UNREAD = 41
 
 
-FR = TypeVar("FR", bound="FriendRequestModel")
-
-
 @define()
 class FriendRequestModel(Model):
     name: str = field(default=EMPTY)
@@ -1279,7 +1252,7 @@ class FriendRequestModel(Model):
     unread: bool = field(default=DEFAULT_UNREAD)
 
     @classmethod
-    def from_robtop(cls: Type[FR], string: str) -> FR:
+    def from_robtop(cls, string: str) -> Self:
         mapping = split_friend_request(string)
 
         name = mapping.get(FRIEND_REQUEST_NAME, EMPTY)
@@ -1415,9 +1388,6 @@ LEVEL_COPIES_TIME = 47
 UNPROCESSED_DATA = "unprocessed_data"
 
 
-L = TypeVar("L", bound="LevelModel")
-
-
 @define()
 class LevelModel(Model):
     id: int = field(default=DEFAULT_ID)
@@ -1453,7 +1423,7 @@ class LevelModel(Model):
     copies_time: Duration = field(factory=duration)
 
     @classmethod
-    def from_robtop(cls: Type[L], string: str) -> L:
+    def from_robtop(cls, string: str) -> Self:
         mapping = split_level(string)
 
         id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_ID))
@@ -1517,9 +1487,7 @@ class LevelModel(Model):
         if score < 0:
             score = 0
 
-        password = parse_get_or_else(
-            Password.from_robtop, Password, mapping.get(LEVEL_PASSWORD)
-        )
+        password = parse_get_or_else(Password.from_robtop, Password, mapping.get(LEVEL_PASSWORD))
 
         created_at = parse_get_or_else(
             date_time_from_human,
@@ -1736,9 +1704,6 @@ LEVEL_COMMENT_INNER_ROLE_ID = 11
 LEVEL_COMMENT_INNER_COLOR = 12
 
 
-LCI = TypeVar("LCI", bound="LevelCommentInnerModel")
-
-
 @define()
 class LevelCommentInnerModel(Model):
     level_id: int = field(default=DEFAULT_ID)
@@ -1753,7 +1718,7 @@ class LevelCommentInnerModel(Model):
     color: Color = field(factory=Color.default)
 
     @classmethod
-    def from_robtop(cls: Type[LCI], string: str) -> LCI:
+    def from_robtop(cls, string: str) -> Self:
         mapping = split_level_comment_inner(string)
 
         level_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_COMMENT_INNER_LEVEL_ID))
@@ -1829,9 +1794,6 @@ LEVEL_COMMENT_USER_GLOW = 15
 LEVEL_COMMENT_USER_ACCOUNT_ID = 16
 
 
-LCU = TypeVar("LCU", bound="LevelCommentUserModel")
-
-
 @define()
 class LevelCommentUserModel(Model):
     name: str = EMPTY
@@ -1843,7 +1805,7 @@ class LevelCommentUserModel(Model):
     account_id: int = DEFAULT_ID
 
     @classmethod
-    def from_robtop(cls: Type[LCU], string: str) -> LCU:
+    def from_robtop(cls, string: str) -> Self:
         mapping = split_level_comment_user(string)
 
         name = mapping.get(LEVEL_COMMENT_USER_NAME, EMPTY)
@@ -1902,16 +1864,13 @@ class LevelCommentUserModel(Model):
         return self.glow
 
 
-LC = TypeVar("LC", bound="LevelCommentModel")
-
-
 @define()
 class LevelCommentModel(Model):
     inner: LevelCommentInnerModel = field(factory=LevelCommentInnerModel)
     user: LevelCommentUserModel = field(factory=LevelCommentUserModel)
 
     @classmethod
-    def from_robtop(cls: Type[LC], string: str) -> LC:
+    def from_robtop(cls, string: str) -> Self:
         inner_string, user_string = split_level_comment(string)
 
         inner = LevelCommentInnerModel.from_robtop(inner_string)
@@ -1933,9 +1892,6 @@ USER_COMMENT_ID = 6
 USER_COMMENT_CREATED_AT = 9
 
 
-UC = TypeVar("UC", bound="UserCommentModel")
-
-
 @define()
 class UserCommentModel(Model):
     content: str = field(default=EMPTY)
@@ -1944,7 +1900,7 @@ class UserCommentModel(Model):
     created_at: DateTime = field(factory=utc_now)
 
     @classmethod
-    def from_robtop(cls: Type[UC], string: str) -> UC:
+    def from_robtop(cls, string: str) -> Self:
         mapping = split_user_comment(string)
 
         content = decode_base64_string_url_safe(mapping.get(USER_COMMENT_CONTENT, EMPTY))
@@ -1991,9 +1947,6 @@ LEVEL_LEADERBOARD_USER_ACCOUNT_ID = 16
 LEVEL_LEADERBOARD_USER_RECORDED_AT = 42
 
 
-LLU = TypeVar("LLU", bound="LevelLeaderboardUserModel")
-
-
 @define()
 class LevelLeaderboardUserModel(Model):
     name: str = field(default=EMPTY)
@@ -2010,7 +1963,7 @@ class LevelLeaderboardUserModel(Model):
     recorded_at: DateTime = field(factory=utc_now)
 
     @classmethod
-    def from_robtop(cls: Type[LLU], string: str) -> LLU:
+    def from_robtop(cls, string: str) -> Self:
         mapping = split_level_leaderboard_user(string)
 
         name = mapping.get(LEVEL_LEADERBOARD_USER_NAME, EMPTY)
@@ -2094,15 +2047,12 @@ class LevelLeaderboardUserModel(Model):
 ARTIST_NAME = 4
 
 
-A = TypeVar("A", bound="ArtistModel")
-
-
 @define()
 class ArtistModel(Model):
     name: str = EMPTY
 
     @classmethod
-    def from_robtop(cls: Type[A], string: str) -> A:
+    def from_robtop(cls, string: str) -> Self:
         mapping = split_artist(string)
 
         name = mapping.get(ARTIST_NAME, EMPTY)
@@ -2119,9 +2069,6 @@ class ArtistModel(Model):
         return ARTIST_SEPARATOR in string
 
 
-C = TypeVar("C", bound="ChestModel")
-
-
 @define()
 class ChestModel(Model):
     orbs: int = DEFAULT_ORBS
@@ -2130,7 +2077,7 @@ class ChestModel(Model):
     keys: int = DEFAULT_KEYS
 
     @classmethod
-    def from_robtop(cls: Type[C], string: str) -> C:
+    def from_robtop(cls, string: str) -> Self:
         orbs, diamonds, shard_type_value, keys = iter(split_chest(string)).map(int).tuple()
 
         shard_type = ShardType(shard_type_value)
@@ -2147,9 +2094,6 @@ class ChestModel(Model):
         return CHEST_SEPARATOR in string
 
 
-Q = TypeVar("Q", bound="QuestModel")
-
-
 @define()
 class QuestModel(Model):
     id: int = DEFAULT_ID
@@ -2159,7 +2103,7 @@ class QuestModel(Model):
     name: str = EMPTY
 
     @classmethod
-    def from_robtop(cls: Type[Q], string: str) -> Q:
+    def from_robtop(cls, string: str) -> Self:
         id_string, type_string, amount_string, reward_string, name = split_quest(string)
 
         id = int(id_string)
@@ -2188,16 +2132,13 @@ GAUNTLET_ID = 1
 GAUNTLET_LEVEL_IDS = 3
 
 
-G = TypeVar("G", bound="GauntletModel")
-
-
 @define()
 class GauntletModel(Model):
     id: int = DEFAULT_ID
     level_ids: DynamicTuple[int] = ()
 
     @classmethod
-    def from_robtop(cls: Type[G], string: str) -> G:
+    def from_robtop(cls, string: str) -> Self:
         mapping = split_gauntlet(string)
 
         id = parse_get_or(int, DEFAULT_ID, mapping.get(GAUNTLET_ID))
@@ -2236,7 +2177,6 @@ MAP_PACK_DIFFICULTY = 6
 MAP_PACK_COLOR = 7
 MAP_PACK_OTHER_COLOR = 8
 
-MP = TypeVar("MP", bound="MapPackModel")
 
 DEFAULT_DIFFICULTY_VALUE = Difficulty.DEFAULT.value
 
@@ -2252,7 +2192,7 @@ class MapPackModel(Model):
     color: Color = field(factory=Color.default)
 
     @classmethod
-    def from_robtop(cls: Type[MP], string: str) -> MP:
+    def from_robtop(cls, string: str) -> Self:
         mapping = split_map_pack(string)
 
         id = parse_get_or(int, DEFAULT_ID, mapping.get(MAP_PACK_ID))
@@ -2310,9 +2250,6 @@ class MapPackModel(Model):
         return MAP_PACK_SEPARATOR in string
 
 
-CI = TypeVar("CI", bound="ChestsInnerModel")
-
-
 @define()
 class ChestsInnerModel(Model):
     random_string: str = field(default=EMPTY)
@@ -2329,7 +2266,7 @@ class ChestsInnerModel(Model):
     reward_type: RewardType = field(default=RewardType.DEFAULT)
 
     @classmethod
-    def from_robtop(cls: Type[CI], string: str) -> CI:
+    def from_robtop(cls, string: str) -> Self:
         (
             random_string,
             user_id_string,
@@ -2405,9 +2342,6 @@ class ChestsInnerModel(Model):
         return CHESTS_INNER_SEPARATOR in string
 
 
-QI = TypeVar("QI", bound="QuestsInnerModel")
-
-
 @define()
 class QuestsInnerModel(Model):
     random_string: str = field(default=EMPTY)
@@ -2421,7 +2355,7 @@ class QuestsInnerModel(Model):
     quest_3: QuestModel = field(factory=QuestModel)
 
     @classmethod
-    def from_robtop(cls: Type[QI], string: str) -> QI:
+    def from_robtop(cls, string: str) -> Self:
         (
             random_string,
             user_id_string,
@@ -2476,9 +2410,6 @@ class QuestsInnerModel(Model):
         return QUESTS_INNER_SEPARATOR in string
 
 
-CR = TypeVar("CR", bound="ChestsResponseModel")
-
-
 @define()
 class ChestsResponseModel(Model):
     inner: ChestsInnerModel = field(factory=ChestsInnerModel)
@@ -2501,7 +2432,7 @@ class ChestsResponseModel(Model):
         return decode_robtop_string(string[CHESTS_SLICE:], Key.CHESTS)
 
     @classmethod
-    def from_robtop(cls: Type[CR], string: str) -> CR:
+    def from_robtop(cls, string: str) -> Self:
         string, hash = split_chests_response(string)
 
         inner_string = cls.decode_inner(string)
@@ -2516,9 +2447,6 @@ class ChestsResponseModel(Model):
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return CHESTS_RESPONSE_SEPARATOR in string
-
-
-QR = TypeVar("QR", bound="QuestsResponseModel")
 
 
 @define()
@@ -2543,7 +2471,7 @@ class QuestsResponseModel(Model):
         return decode_robtop_string(string[QUESTS_SLICE:], Key.QUESTS)
 
     @classmethod
-    def from_robtop(cls: Type[QR], string: str) -> QR:
+    def from_robtop(cls, string: str) -> Self:
         inner_string, hash = split_quests_response(string)
 
         inner_string = cls.decode_inner(inner_string)
@@ -2570,9 +2498,6 @@ def gauntlet_hash_part(gauntlet: GauntletModel) -> str:
     ).collect(concat_empty)
 
 
-GR = TypeVar("GR", bound="GauntletsResponseModel")
-
-
 @define()
 class GauntletsResponseModel(Model):
     gauntlets: List[GauntletModel] = field(factory=list)
@@ -2588,7 +2513,7 @@ class GauntletsResponseModel(Model):
         )
 
     @classmethod
-    def from_robtop(cls: Type[GR], string: str) -> GR:
+    def from_robtop(cls, string: str) -> Self:
         gauntlets_string, hash = split_gauntlets_response(string)
 
         gauntlets = (
@@ -2624,9 +2549,6 @@ def map_packs_hash_part(map_pack: MapPackModel) -> str:
     )
 
 
-MPR = TypeVar("MPR", bound="MapPacksResponseModel")
-
-
 @define()
 class MapPacksResponseModel(Model):
     map_packs: List[MapPackModel] = field(factory=list)
@@ -2643,7 +2565,7 @@ class MapPacksResponseModel(Model):
         )
 
     @classmethod
-    def from_robtop(cls: Type[MPR], string: str) -> MPR:
+    def from_robtop(cls, string: str) -> Self:
         map_packs_string, page_string, hash = split_map_packs_response(string)
 
         map_packs = (
@@ -2674,15 +2596,12 @@ def level_leaderboard_user_to_robtop(level_leaderboard_user: LevelLeaderboardUse
     return level_leaderboard_user.to_robtop()
 
 
-LLR = TypeVar("LLR", bound="LevelLeaderboardResponseModel")
-
-
 @define()
 class LevelLeaderboardResponseModel(Model):
     users: List[LevelLeaderboardUserModel] = field(factory=list)
 
     @classmethod
-    def from_robtop(cls: Type[LLR], string: str) -> LLR:
+    def from_robtop(cls, string: str) -> Self:
         users = (
             iter(split_level_leaderboard_response_users(string))
             .map(LevelLeaderboardUserModel.from_robtop)
@@ -2707,16 +2626,13 @@ def level_comment_to_robtop(level_comment: LevelCommentModel) -> str:
     return level_comment.to_robtop()
 
 
-LCR = TypeVar("LCR", bound="LevelCommentsResponseModel")
-
-
 @define()
 class LevelCommentsResponseModel(Model):
     comments: List[LevelCommentModel] = field(factory=list)
     page: PageModel = field(factory=PageModel)
 
     @classmethod
-    def from_robtop(cls: Type[LCR], string: str) -> LCR:
+    def from_robtop(cls, string: str) -> Self:
         comments_string, page_string = split_level_comments_response(string)
 
         comments = (
@@ -2746,16 +2662,13 @@ def user_comment_to_robtop(user_comment: UserCommentModel) -> str:
     return user_comment.to_robtop()
 
 
-UCR = TypeVar("UCR", bound="UserCommentsResponseModel")
-
-
 @define()
 class UserCommentsResponseModel(Model):
     comments: List[UserCommentModel] = field(factory=list)
     page: PageModel = field(factory=PageModel)
 
     @classmethod
-    def from_robtop(cls: Type[UCR], string: str) -> UCR:
+    def from_robtop(cls, string: str) -> Self:
         comments_string, page_string = split_user_comments_response(string)
 
         comments = (
@@ -2784,9 +2697,6 @@ class UserCommentsResponseModel(Model):
 SMART_HASH_COUNT = 40
 
 
-LR = TypeVar("LR", bound="LevelResponseModel")
-
-
 @define()
 class LevelResponseModel:
     level: LevelModel = field(factory=LevelModel)
@@ -2811,7 +2721,7 @@ class LevelResponseModel:
         return sha1_string_with_salt(self.level.to_robtop(), Salt.LEVEL)
 
     @classmethod
-    def from_robtop(cls: Type[LR], string: str) -> LR:
+    def from_robtop(cls, string: str) -> Self:
         try:
             level_string, smart_hash, hash = split_level_response(string)
 
@@ -2852,9 +2762,6 @@ def search_levels_hash_part(level: LevelModel) -> str:
     )
 
 
-SLR = TypeVar("SLR", bound="SearchLevelsResponseModel")
-
-
 @define()
 class SearchLevelsResponseModel(Model):
     levels: List[LevelModel] = field(factory=list)
@@ -2873,7 +2780,7 @@ class SearchLevelsResponseModel(Model):
         )
 
     @classmethod
-    def from_robtop(cls: Type[SLR], string: str) -> SLR:
+    def from_robtop(cls, string: str) -> Self:
         (
             levels_string,
             creators_string,
@@ -2922,16 +2829,13 @@ def search_user_to_robtop(search_user: SearchUserModel) -> str:
     return search_user.to_robtop()
 
 
-SUR = TypeVar("SUR", bound="SearchUsersResponseModel")
-
-
 @define()
 class SearchUsersResponseModel(Model):
     users: List[SearchUserModel] = field(factory=list)
     page: PageModel = field(factory=PageModel)
 
     @classmethod
-    def from_robtop(cls: Type[SUR], string: str) -> SUR:
+    def from_robtop(cls, string: str) -> Self:
         users_string, page_string = split_search_users_response(string)
 
         users = (
@@ -2959,15 +2863,12 @@ def relationship_user_to_robtop(relationship_user: RelationshipUserModel) -> str
     return relationship_user.to_robtop()
 
 
-RR = TypeVar("RR", bound="RelationshipsResponseModel")
-
-
 @define()
 class RelationshipsResponseModel(Model):
     users: List[RelationshipUserModel] = field(factory=list)
 
     @classmethod
-    def from_robtop(cls: Type[RR], string: str) -> RR:
+    def from_robtop(cls, string: str) -> Self:
         users = (
             iter(split_relationships_response_users(string))
             .map(RelationshipUserModel.from_robtop)
@@ -2992,15 +2893,12 @@ def leaderboard_user_to_robtop(leaderboard_user: LeaderboardUserModel) -> str:
     return leaderboard_user.to_robtop()
 
 
-LBR = TypeVar("LBR", bound="LeaderboardResponseModel")
-
-
 @define()
 class LeaderboardResponseModel(Model):
     users: List[LeaderboardUserModel] = field(factory=list)
 
     @classmethod
-    def from_robtop(cls: Type[LBR], string: str) -> LBR:
+    def from_robtop(cls, string: str) -> Self:
         users = (
             iter(split_leaderboard_response_users(string))
             .map(LeaderboardUserModel.from_robtop)
@@ -3025,16 +2923,13 @@ def message_to_robtop(message: MessageModel) -> str:
     return message.to_robtop()
 
 
-MR = TypeVar("MR", bound="MessagesResponseModel")
-
-
 @define()
 class MessagesResponseModel(Model):
     messages: List[MessageModel] = field(factory=list)
     page: PageModel = field(factory=PageModel)
 
     @classmethod
-    def from_robtop(cls: Type[MR], string: str) -> MR:
+    def from_robtop(cls, string: str) -> Self:
         messages_string, page_string = split_messages_response(string)
 
         messages = (
@@ -3062,16 +2957,13 @@ def artist_to_robtop(artist: ArtistModel) -> str:
     return artist.to_robtop()
 
 
-AR = TypeVar("AR", bound="ArtistsResponseModel")
-
-
 @define()
 class ArtistsResponseModel(Model):
     artists: List[ArtistModel] = field(factory=list)
     page: PageModel = field(factory=PageModel)
 
     @classmethod
-    def from_robtop(cls: Type[AR], string: str) -> AR:
+    def from_robtop(cls, string: str) -> Self:
         artists_string, page_string = split_artists_response(string)
 
         artists = (
@@ -3097,16 +2989,13 @@ def friend_request_to_robtop(friend_request: FriendRequestModel) -> str:
     return friend_request.to_robtop()
 
 
-FRR = TypeVar("FRR", bound="FriendRequestsResponseModel")
-
-
 @define()
 class FriendRequestsResponseModel(Model):
     friend_requests: List[FriendRequestModel] = field(factory=list)
     page: PageModel = field(factory=PageModel)
 
     @classmethod
-    def from_robtop(cls: Type[FRR], string: str) -> FRR:
+    def from_robtop(cls, string: str) -> Self:
         friend_requests_string, page_string = split_friend_requests_response(string)
 
         friend_requests = (
@@ -3135,9 +3024,6 @@ class FriendRequestsResponseModel(Model):
 TEMPORARY = "temp"
 
 
-CB = TypeVar("CB", bound="CommentBannedModel")
-
-
 @define()
 class CommentBannedModel(Model):
     string: str = field(default=TEMPORARY)
@@ -3145,7 +3031,7 @@ class CommentBannedModel(Model):
     reason: str = field(default=EMPTY)
 
     @classmethod
-    def from_robtop(cls: Type[CB], string: str) -> CB:
+    def from_robtop(cls, string: str) -> Self:
         string, timeout_string, reason = split_comment_banned(string)
 
         timeout_seconds = int(timeout_string)
@@ -3156,7 +3042,9 @@ class CommentBannedModel(Model):
 
     def to_robtop(self) -> str:
         return iter.of(
-            self.string, str(int(self.timeout.total_seconds())), self.reason  # type: ignore
+            self.string,
+            str(int(self.timeout.total_seconds())),
+            self.reason,  # type: ignore
         ).collect(concat_comment_banned)
 
     @classmethod

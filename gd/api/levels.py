@@ -1,4 +1,4 @@
-from typing import Any, ClassVar, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from attrs import define, field
 from pendulum import Duration, duration
@@ -68,6 +68,8 @@ from gd.progress import Progress
 from gd.songs import SongReference
 from gd.users import User, UserReference
 from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, RobTopVersion
+from typing_extensions import Self
+
 
 INTERNAL_TYPE = "kCEK"
 
@@ -141,8 +143,6 @@ DEFAULT_EPIC = False
 
 UNPROCESSED_DATA = "unprocessed_data"
 
-B = TypeVar("B", bound="BaseLevelAPI")
-
 
 @define()
 class BaseLevelAPI:
@@ -174,13 +174,13 @@ class BaseLevelAPI:
 
     @classmethod
     def default(
-        cls: Type[B],
+        cls,
         id: int = DEFAULT_ID,
         song_id: int = DEFAULT_ID,
         song_custom: bool = DEFAULT_CUSTOM,
         creator_id: int = DEFAULT_ID,
         creator_account_id: int = DEFAULT_ID,
-    ) -> B:
+    ) -> Self:
         return cls(
             id=id,
             name=EMPTY,
@@ -199,7 +199,7 @@ class BaseLevelAPI:
     def default_leaderboard_seed(self) -> int:
         return self.compute_leaderboard_seed()
 
-    def refresh_leaderboard_seed(self: B) -> B:
+    def refresh_leaderboard_seed(self) -> Self:
         self.leaderboard_seed = self.compute_leaderboard_seed()
 
         return self
@@ -208,7 +208,7 @@ class BaseLevelAPI:
         return self.check
 
     @classmethod
-    def from_robtop_data(cls: Type[B], data: StringMapping[Any]) -> B:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
         id = data.get(ID, DEFAULT_ID)
 
         name = data.get(NAME, EMPTY)
@@ -345,9 +345,6 @@ class BaseLevelAPI:
         return data
 
 
-O = TypeVar("O", bound="OfficialLevelAPI")
-
-
 @define()
 class OfficialLevelAPI(BaseLevelAPI):
     TYPE: ClassVar[LevelType] = LevelType.OFFICIAL
@@ -362,7 +359,7 @@ class OfficialLevelAPI(BaseLevelAPI):
         return self.difficulty.is_demon()
 
     @classmethod
-    def from_robtop_data(cls: Type[O], data: StringMapping[Any]) -> O:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
         level = super().from_robtop_data(data)
 
         direct_difficulty_option = data.get(DIRECT_DIFFICULTY)
@@ -418,9 +415,6 @@ class OfficialLevelAPI(BaseLevelAPI):
 
 
 DEFAULT_LENGTH_VALUE = LevelLength.DEFAULT.value
-
-
-C = TypeVar("C", bound="CustomLevelAPI")
 
 
 @define()
@@ -481,7 +475,7 @@ class CustomLevelAPI(BaseLevelAPI):
         return self.low_detail_toggled
 
     @classmethod
-    def from_robtop_data(cls: Type[C], data: StringMapping[Any]) -> C:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
         level = super().from_robtop_data(data)
 
         description = decode_base64_string_url_safe(data.get(DESCRIPTION, EMPTY))
@@ -588,9 +582,6 @@ class CustomLevelAPI(BaseLevelAPI):
         return data
 
 
-CR = TypeVar("CR", bound="CreatedLevelAPI")
-
-
 @define()
 class CreatedLevelAPI(CustomLevelAPI):
     TYPE: ClassVar[LevelType] = LevelType.CREATED
@@ -615,7 +606,7 @@ class CreatedLevelAPI(CustomLevelAPI):
         return self.unlisted
 
     @classmethod
-    def from_robtop_data(cls: Type[CR], data: StringMapping[Any]) -> CR:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
         level = super().from_robtop_data(data)
 
         revision = data.get(REVISION, DEFAULT_REVISION)
@@ -679,9 +670,6 @@ class CreatedLevelAPI(CustomLevelAPI):
         return data
 
 
-S = TypeVar("S", bound="SavedLevelAPI")
-
-
 @define()
 class SavedLevelAPI(CustomLevelAPI):
     TYPE: ClassVar[LevelType] = LevelType.SAVED
@@ -698,7 +686,7 @@ class SavedLevelAPI(CustomLevelAPI):
     favorite: bool = field(default=DEFAULT_FAVORITE)
 
     @classmethod
-    def from_robtop_data(cls: Type[S], data: StringMapping[Any]) -> S:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
         level = super().from_robtop_data(data)
 
         difficulty_numerator = data.get(DIFFICULTY_NUMERATOR, DEFAULT_NUMERATOR)
@@ -837,9 +825,6 @@ class SavedLevelAPI(CustomLevelAPI):
         return self.favorite
 
 
-T = TypeVar("T", bound="TimelyLevelAPI")
-
-
 @define()
 class TimelyLevelAPI(SavedLevelAPI):
     timely_id: int = field(default=DEFAULT_ID)
@@ -849,7 +834,7 @@ class TimelyLevelAPI(SavedLevelAPI):
         return hash(type(self)) ^ self.id
 
     @classmethod
-    def from_robtop_data(cls: Type[T], data: StringMapping[Any]) -> T:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
         level = super().from_robtop_data(data)
 
         timely_id = data.get(TIMELY_ID, DEFAULT_ID)

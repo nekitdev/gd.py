@@ -106,6 +106,7 @@ if TYPE_CHECKING:
     from types import TracebackType as Traceback
 
     from pendulum import Duration
+    from typing_extensions import Self
     from yarl import URL
 
     from gd.api.database.database import Database
@@ -178,11 +179,11 @@ class Client:
     _controller: Optional[Controller] = field(default=None, repr=False, init=False)
 
     def apply_items(
-        self: C,
+        self,
         credentials: Optional[Credentials] = None,
         database: Optional[Database] = None,
         credentials_type: Type[Credentials] = Credentials,
-    ) -> C:
+    ) -> Self:
         if credentials is None:
             self.credentials = credentials_type()
 
@@ -210,7 +211,7 @@ class Client:
     def database(self) -> None:
         self.database_unchecked = None
 
-    def reset_items(self: C) -> C:
+    def reset_items(self) -> Self:
         return self.apply_items()
 
     def is_logged_in(self) -> bool:
@@ -286,7 +287,7 @@ class Client:
         """Performs the logout."""
         self.reset_items()
 
-    def login(self: C, name: str, password: str) -> LoginContextManager[C]:
+    def login(self, name: str, password: str) -> LoginContextManager[Self]:
         """Performs the login.
 
         This function returns a context manager that can be used for temporarily logging in:
@@ -308,7 +309,7 @@ class Client:
 
         self.apply_items(Credentials(model.account_id, model.id, name, password))
 
-    def unsafe_login(self: C, name: str, password: str) -> UnsafeLoginContextManager[C]:
+    def unsafe_login(self, name: str, password: str) -> UnsafeLoginContextManager[Self]:
         """Performs the *unsafe* login.
 
         *Unsafe* means that the credentials are not confirmed.

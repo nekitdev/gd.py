@@ -1,9 +1,14 @@
-from typing import Literal, Sequence, Tuple, Type, TypeVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Literal, Sequence, Tuple
 
 from attrs import define
 
 from gd.image.geometry import Point, Size
 from gd.typing import Data
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 __all__ = ("Layer", "Layers", "LayerData")
 
@@ -13,8 +18,6 @@ SCALE: Literal["scale"] = "scale"
 ROTATION: Literal["rotation"] = "rotation"
 H_FLIPPED: Literal["h_flipped"] = "h_flipped"
 V_FLIPPED: Literal["v_flipped"] = "v_flipped"
-
-L = TypeVar("L", bound="Layer")
 
 
 class LayerData(Data):
@@ -52,7 +55,7 @@ class Layer:
         )
 
     @classmethod
-    def from_data(cls: Type[L], layer_data: LayerData) -> L:
+    def from_data(cls, layer_data: LayerData) -> Self:
         part = layer_data[PART]
         x, y = layer_data[POSITION]
         width, height = layer_data[SCALE]

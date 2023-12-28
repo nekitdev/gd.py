@@ -1,4 +1,4 @@
-from typing import Type, TypeVar
+from typing import TYPE_CHECKING
 
 from attrs import define, field
 from iters.iters import iter
@@ -7,6 +7,8 @@ from typing_aliases import Unary
 from gd.models_constants import HSV_SEPARATOR
 from gd.models_utils import bool_str, concat_hsv, float_str, int_bool, round_float, split_hsv
 from gd.robtop import RobTop
+from typing_extensions import Self
+
 
 __all__ = ("HSV",)
 
@@ -64,9 +66,6 @@ S_CHECKED = False
 V_CHECKED = False
 
 
-T = TypeVar("T", bound="HSV")
-
-
 @define()
 class HSV(RobTop):
     h: int = field(default=H_INITIAL)
@@ -85,7 +84,7 @@ class HSV(RobTop):
         )
 
     @classmethod
-    def from_robtop(cls: Type[T], string: str) -> T:
+    def from_robtop(cls, string: str) -> Self:
         h_string, s_string, v_string, s_checked_string, v_checked_string = split_hsv(string)
 
         h = round_float(h_string)

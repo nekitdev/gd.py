@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Dict, Iterable, Mapping, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Dict, Iterable, Mapping, Optional, TypeVar, Union
 
 from attrs import define, field
 from iters.iters import iter
@@ -23,6 +23,9 @@ from gd.models_utils import (
     split_color_channels,
 )
 from gd.robtop import FromRobTop, RobTop
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 __all__ = (
     # cases (variants)
@@ -110,8 +113,6 @@ class ColorChannelType(Enum):
 
 COLOR_CHANNEL_ID_NOT_PRESENT = "color channel ID is not present"
 
-BCC = TypeVar("BCC", bound="BaseColorChannel")
-
 
 @define()
 class BaseColorChannel(RobTop):
@@ -120,11 +121,11 @@ class BaseColorChannel(RobTop):
     id: int
 
     @classmethod
-    def from_robtop(cls: Type[BCC], string: str) -> BCC:
+    def from_robtop(cls, string: str) -> Self:
         return cls.from_robtop_data(split_color_channel(string))
 
     @classmethod
-    def from_robtop_data(cls: Type[BCC], data: Mapping[int, str]) -> BCC:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         id = parse_get_or(int, DEFAULT_ID, data.get(ID))
 
         if not id:
@@ -150,9 +151,6 @@ class BaseColorChannel(RobTop):
         return False
 
 
-PCC = TypeVar("PCC", bound="PlayerColorChannel")
-
-
 @define()
 class PlayerColorChannel(BaseColorChannel):
     """Represents player color channels."""
@@ -166,7 +164,7 @@ class PlayerColorChannel(BaseColorChannel):
         return self.blending
 
     @classmethod
-    def from_robtop_data(cls: Type[PCC], data: Mapping[int, str]) -> PCC:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         id = parse_get_or(int, DEFAULT_ID, data.get(ID))
 
         if not id:
@@ -209,9 +207,6 @@ class PlayerColorChannel(BaseColorChannel):
         return True
 
 
-NCC = TypeVar("NCC", bound="NormalColorChannel")
-
-
 @define()
 class NormalColorChannel(BaseColorChannel):
     """Represents normal color channels."""
@@ -225,7 +220,7 @@ class NormalColorChannel(BaseColorChannel):
         return self.blending
 
     @classmethod
-    def from_robtop_data(cls: Type[NCC], data: Mapping[int, str]) -> NCC:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         id = parse_get_or(int, DEFAULT_ID, data.get(ID))
 
         if not id:
@@ -271,8 +266,6 @@ class NormalColorChannel(BaseColorChannel):
 
 COLOR_CHANNEL_COPIED_ID_NOT_PRESENT = "color channel copied ID is not present"
 
-CCC = TypeVar("CCC", bound="CopiedColorChannel")
-
 
 @define()
 class CopiedColorChannel(BaseColorChannel):
@@ -290,7 +283,7 @@ class CopiedColorChannel(BaseColorChannel):
         return self.blending
 
     @classmethod
-    def from_robtop_data(cls: Type[CCC], data: Mapping[int, str]) -> CCC:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         id = parse_get_or(int, DEFAULT_ID, data.get(ID))
 
         if not id:
@@ -345,7 +338,7 @@ class CopiedColorChannel(BaseColorChannel):
     def is_copy_opacity(self) -> bool:
         return self.opacity is None
 
-    def copy_opacity(self: CCC) -> CCC:
+    def copy_opacity(self) -> Self:
         self.opacity = None
 
         return self
@@ -393,9 +386,6 @@ def color_channel_to_robtop(color_channel: ColorChannel) -> str:
     return color_channel.to_robtop()
 
 
-CCS = TypeVar("CCS", bound="ColorChannels")
-
-
 class ColorChannels(Dict[int, ColorChannel]):
     """Represents collections of color channels.
 
@@ -414,15 +404,15 @@ class ColorChannels(Dict[int, ColorChannel]):
         ```
     """
 
-    def copy(self: CCS) -> CCS:
+    def copy(self) -> Self:
         return type(self)(self)
 
     @classmethod
-    def from_color_channel_iterable(cls: Type[CCS], color_channels: Iterable[ColorChannel]) -> CCS:
+    def from_color_channel_iterable(cls, color_channels: Iterable[ColorChannel]) -> Self:
         return cls({color_channel.id: color_channel for color_channel in color_channels})
 
     @classmethod
-    def from_color_channels(cls: Type[CCS], *color_channels: ColorChannel) -> CCS:
+    def from_color_channels(cls, *color_channels: ColorChannel) -> Self:
         return cls.from_color_channel_iterable(color_channels)
 
     @property
@@ -433,7 +423,7 @@ class ColorChannels(Dict[int, ColorChannel]):
         self[color_channel.id] = color_channel
 
     @classmethod
-    def from_robtop(cls: Type[CCS], string: str) -> CCS:
+    def from_robtop(cls, string: str) -> Self:
         return cls.from_color_channel_iterable(
             iter(split_color_channels(string)).filter(None).map(color_channel_from_robtop).unwrap()
         )
@@ -454,11 +444,11 @@ class PlayerCompatibilityColorChannel(FromRobTop):
         return self.blending
 
     @classmethod
-    def from_robtop(cls: Type[PCCC], string: str) -> PCCC:
+    def from_robtop(cls, string: str) -> Self:
         return cls.from_robtop_data(split_color_channel(string))
 
     @classmethod
-    def from_robtop_data(cls: Type[PCCC], data: Mapping[int, str]) -> PCCC:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         default_player_color_value = DEFAULT_PLAYER_COLOR_VALUE
 
         player_color_value = max(
@@ -478,9 +468,6 @@ class PlayerCompatibilityColorChannel(FromRobTop):
         )
 
 
-NCCC = TypeVar("NCCC", bound="NormalCompatibilityColorChannel")
-
-
 @define()
 class NormalCompatibilityColorChannel(FromRobTop):
     color: Color
@@ -491,11 +478,11 @@ class NormalCompatibilityColorChannel(FromRobTop):
         return self.blending
 
     @classmethod
-    def from_robtop(cls: Type[NCCC], string: str) -> NCCC:
+    def from_robtop(cls, string: str) -> Self:
         return cls.from_robtop_data(split_color_channel(string))
 
     @classmethod
-    def from_robtop_data(cls: Type[NCCC], data: Mapping[int, str]) -> NCCC:
+    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
         red = parse_get_or(int, DEFAULT_RED, data.get(RED))
         green = parse_get_or(int, DEFAULT_GREEN, data.get(GREEN))
         blue = parse_get_or(int, DEFAULT_BLUE, data.get(BLUE))

@@ -134,6 +134,8 @@ from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersio
 if TYPE_CHECKING:
     from types import TracebackType as Traceback
 
+    from typing_extensions import Self
+
     from gd.typing import AnyString, IntString, URLString
 
 __all__ = ("Route", "HTTPClient")
@@ -246,9 +248,6 @@ def unexpected_error_code(error_code: int) -> MissingAccess:
 DEFAULT_TO_CAMEL = False
 
 
-P = TypeVar("P", bound="Payload")
-
-
 class Payload(Namespace):
     def __init__(
         self,
@@ -286,14 +285,11 @@ class Payload(Namespace):
 
         super().update(payload)
 
-    def copy(self: P) -> P:
+    def copy(self) -> Self:
         return type(self)(self)
 
 
 ROUTE = "{} {}"
-
-R = TypeVar("R", bound="Route")
-
 
 @frozen()
 class Route:
@@ -308,7 +304,7 @@ class Route:
     def __str__(self) -> str:
         return ROUTE.format(self.method, tick(self.actual_route))
 
-    def with_parameters(self: R, parameters: Parameters) -> R:
+    def with_parameters(self, parameters: Parameters) -> Self:
         return evolve(self, parameters=parameters)
 
 
@@ -546,7 +542,7 @@ class HTTPClient:
 
         return session
 
-    def change(self: C, **attributes: Any) -> HTTPClientContextManager[C]:
+    def change(self, **attributes: Any) -> HTTPClientContextManager[Self]:
         return HTTPClientContextManager(self, attributes)
 
     def create_timeout(self) -> ClientTimeout:

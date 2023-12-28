@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Iterable, Optional
 
 from attrs import define, field
 from iters.iters import iter
@@ -14,10 +14,9 @@ from gd.typing import Data
 __all__ = ("Filters",)
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     from gd.client import Client
-
-
-F = TypeVar("F", bound="Filters")
 
 DEFAULT_ITERABLE = ()
 DEFAULT_COMPLETED = None
@@ -45,13 +44,16 @@ def length_value(length: LevelLength) -> int:
 class Filters:
     strategy: SearchStrategy = field(default=SearchStrategy.DEFAULT)
     difficulties: OrderedSet[Difficulty] = field(
-        factory=ordered_set, converter=ordered_set  # type: ignore
+        factory=ordered_set,
+        converter=ordered_set,  # type: ignore
     )
     lengths: OrderedSet[LevelLength] = field(
-        factory=ordered_set, converter=ordered_set  # type: ignore
+        factory=ordered_set,
+        converter=ordered_set,  # type: ignore
     )
     completed_levels: OrderedSet[int] = field(
-        factory=ordered_set, converter=ordered_set  # type: ignore
+        factory=ordered_set,
+        converter=ordered_set,  # type: ignore
     )
     completed: Optional[bool] = field(default=DEFAULT_COMPLETED)
     require_coins: bool = field(default=DEFAULT_REQUIRE_COINS)
@@ -64,7 +66,7 @@ class Filters:
 
     @classmethod
     def create(
-        cls: Type[F],
+        cls,
         strategy: SearchStrategy = SearchStrategy.DEFAULT,
         difficulties: Iterable[Difficulty] = DEFAULT_ITERABLE,
         lengths: Iterable[LevelLength] = DEFAULT_ITERABLE,
@@ -77,7 +79,7 @@ class Filters:
         custom_song: bool = DEFAULT_CUSTOM_SONG,
         require_original: bool = DEFAULT_REQUIRE_ORIGINAL,
         followed: Iterable[int] = DEFAULT_ITERABLE,
-    ) -> F:
+    ) -> Self:
         return cls(
             strategy=strategy,
             difficulties=difficulties,
@@ -95,7 +97,7 @@ class Filters:
 
     @classmethod
     def by_user(
-        cls: Type[F],
+        cls,
         difficulties: Iterable[Difficulty] = DEFAULT_ITERABLE,
         lengths: Iterable[LevelLength] = DEFAULT_ITERABLE,
         completed_levels: Iterable[int] = DEFAULT_ITERABLE,
@@ -107,7 +109,7 @@ class Filters:
         custom_song: bool = DEFAULT_CUSTOM_SONG,
         require_original: bool = DEFAULT_REQUIRE_ORIGINAL,
         followed: Iterable[int] = DEFAULT_ITERABLE,
-    ) -> F:
+    ) -> Self:
         return cls.create(
             strategy=SearchStrategy.BY_USER,
             difficulties=difficulties,
@@ -125,7 +127,7 @@ class Filters:
 
     @classmethod
     def with_song(
-        cls: Type[F],
+        cls,
         song_id: int,
         custom: bool,
         strategy: SearchStrategy = SearchStrategy.DEFAULT,
@@ -138,7 +140,7 @@ class Filters:
         require_two_player: bool = DEFAULT_REQUIRE_TWO_PLAYER,
         require_original: bool = DEFAULT_REQUIRE_ORIGINAL,
         followed: Iterable[int] = DEFAULT_ITERABLE,
-    ) -> F:
+    ) -> Self:
         return cls.create(
             strategy=strategy,
             difficulties=difficulties,
@@ -156,7 +158,7 @@ class Filters:
 
     @classmethod
     def search_many(
-        cls: Type[F],
+        cls,
         difficulties: Iterable[Difficulty] = DEFAULT_ITERABLE,
         lengths: Iterable[LevelLength] = DEFAULT_ITERABLE,
         completed_levels: Iterable[int] = DEFAULT_ITERABLE,
@@ -168,7 +170,7 @@ class Filters:
         custom_song: bool = DEFAULT_CUSTOM_SONG,
         require_original: bool = DEFAULT_REQUIRE_ORIGINAL,
         followed: Iterable[int] = DEFAULT_ITERABLE,
-    ) -> F:
+    ) -> Self:
         return cls.create(
             strategy=SearchStrategy.SEARCH_MANY,
             difficulties=difficulties,
@@ -186,7 +188,7 @@ class Filters:
 
     @classmethod
     def with_followed(
-        cls: Type[F],
+        cls,
         followed: Iterable[int],
         difficulties: Iterable[Difficulty] = DEFAULT_ITERABLE,
         lengths: Iterable[LevelLength] = DEFAULT_ITERABLE,
@@ -198,7 +200,7 @@ class Filters:
         song_id: Optional[int] = DEFAULT_SONG_ID,
         custom_song: bool = DEFAULT_CUSTOM_SONG,
         require_original: bool = DEFAULT_REQUIRE_ORIGINAL,
-    ) -> F:
+    ) -> Self:
         return cls.create(
             strategy=SearchStrategy.FOLLOWED,
             difficulties=difficulties,
@@ -216,7 +218,7 @@ class Filters:
 
     @classmethod
     def with_completed_levels(
-        cls: Type[F],
+        cls,
         completed_levels: Iterable[int],
         strategy: SearchStrategy = SearchStrategy.DEFAULT,
         difficulties: Iterable[Difficulty] = DEFAULT_ITERABLE,
@@ -229,7 +231,7 @@ class Filters:
         custom_song: bool = DEFAULT_CUSTOM_SONG,
         require_original: bool = DEFAULT_REQUIRE_ORIGINAL,
         followed: Iterable[int] = DEFAULT_ITERABLE,
-    ) -> F:
+    ) -> Self:
         return cls.create(
             strategy=strategy,
             difficulties=difficulties,
@@ -247,7 +249,7 @@ class Filters:
 
     @classmethod
     def by_friends(
-        cls: Type[F],
+        cls,
         difficulties: Iterable[Difficulty] = DEFAULT_ITERABLE,
         lengths: Iterable[LevelLength] = DEFAULT_ITERABLE,
         completed_levels: Iterable[int] = DEFAULT_ITERABLE,
@@ -259,7 +261,7 @@ class Filters:
         custom_song: bool = DEFAULT_CUSTOM_SONG,
         require_original: bool = DEFAULT_REQUIRE_ORIGINAL,
         followed: Iterable[int] = DEFAULT_ITERABLE,
-    ) -> F:
+    ) -> Self:
         return cls.create(
             strategy=SearchStrategy.FRIENDS,
             difficulties=difficulties,
@@ -277,7 +279,7 @@ class Filters:
 
     @classmethod
     def client_followed(
-        cls: Type[F],
+        cls,
         client: Client,
         difficulties: Iterable[Difficulty] = DEFAULT_ITERABLE,
         lengths: Iterable[LevelLength] = DEFAULT_ITERABLE,
@@ -289,7 +291,7 @@ class Filters:
         song_id: Optional[int] = DEFAULT_SONG_ID,
         custom_song: bool = DEFAULT_CUSTOM_SONG,
         require_original: bool = DEFAULT_REQUIRE_ORIGINAL,
-    ) -> F:
+    ) -> Self:
         return cls.with_followed(
             client.database.followed,
             difficulties=difficulties,
@@ -306,7 +308,7 @@ class Filters:
 
     # @classmethod
     # def client_completed_levels(
-    #     cls: Type[F],
+    #     cls,
     #     client: Client,
     #     strategy: SearchStrategy = SearchStrategy.DEFAULT,
     #     difficulties: Iterable[Difficulty] = DEFAULT_ITERABLE,
@@ -319,7 +321,7 @@ class Filters:
     #     custom_song: bool = DEFAULT_CUSTOM_SONG,
     #     require_original: bool = DEFAULT_REQUIRE_ORIGINAL,
     #     followed: Iterable[int] = DEFAULT_ITERABLE,
-    # ) -> F:
+    # ) -> Self:
     #     return cls.with_completed_levels(
     #         ...,
     #         strategy=strategy,

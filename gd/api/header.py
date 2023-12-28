@@ -1,4 +1,6 @@
-from typing import Type, TypeVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from attrs import define, field
 
@@ -35,6 +37,10 @@ from gd.models_utils import (
 )
 from gd.robtop import RobTop
 
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
+
 __all__ = ("Header",)
 
 DEFAULT_MINI_MODE = False
@@ -62,9 +68,6 @@ DEFAULT_GREEN = BYTE
 DEFAULT_BLUE = BYTE
 
 DEFAULT_PLAYER_COLOR_VALUE = PlayerColor.DEFAULT.value
-
-
-H = TypeVar("H", bound="Header")
 
 
 GAME_MODE = "kA2"
@@ -143,7 +146,7 @@ class Header(RobTop):
     color_channels_page: int = field(default=DEFAULT_COLOR_CHANNELS_PAGE)
 
     @classmethod
-    def from_robtop(cls: Type[H], string: str) -> H:
+    def from_robtop(cls, string: str) -> Self:
         default_player_color_value = DEFAULT_PLAYER_COLOR_VALUE
 
         mapping = split_header(string)

@@ -1,32 +1,25 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, AsyncIterator, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, AsyncIterator, Optional
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
 
 from gd.color import Color
-from gd.constants import (
-    DEFAULT_COINS,
-    DEFAULT_ID,
-    DEFAULT_STARS,
-    EMPTY,
-    UNKNOWN,
-)
+from gd.constants import DEFAULT_COINS, DEFAULT_ID, DEFAULT_STARS, EMPTY, UNKNOWN
 from gd.entity import Entity
 from gd.enums import Difficulty, GauntletID
 from gd.filters import Filters
 
 if TYPE_CHECKING:
     from typing_aliases import DynamicTuple
+    from typing_extensions import Self
 
     from gd.client import Client
     from gd.level import Level
     from gd.models import GauntletModel, MapPackModel
 
 __all__ = ("LevelPack", "Gauntlet", "MapPack")
-
-LP = TypeVar("LP", bound="LevelPack")
 
 
 @define()
@@ -36,7 +29,7 @@ class LevelPack(Entity):
     levels: DynamicTuple[Level] = field(default=(), eq=False, init=False)
 
     @classmethod
-    def default(cls: Type[LP], id: int = DEFAULT_ID) -> LP:
+    def default(cls, id: int = DEFAULT_ID) -> Self:
         return cls(id=id, name=EMPTY)
 
     def __hash__(self) -> int:
@@ -56,26 +49,23 @@ class LevelPack(Entity):
         for level in levels:
             yield level
 
-    def attach_client_unchecked(self: LP, client: Optional[Client]) -> LP:
+    def attach_client_unchecked(self, client: Optional[Client]) -> Self:
         for level in self.levels:
             level.attach_client_unchecked(client)
 
         return super().attach_client_unchecked(client)
 
-    def attach_client(self: LP, client: Client) -> LP:
+    def attach_client(self, client: Client) -> Self:
         for level in self.levels:
             level.attach_client(client)
 
         return super().attach_client(client)
 
-    def detach_client(self: LP) -> LP:
+    def detach_client(self) -> Self:
         for level in self.levels:
             level.detach_client()
 
         return super().detach_client()
-
-
-G = TypeVar("G", bound="Gauntlet")
 
 
 @define()
@@ -84,13 +74,10 @@ class Gauntlet(LevelPack):
         return hash(type(self)) ^ self.id
 
     @classmethod
-    def from_model(cls: Type[G], model: GauntletModel) -> G:
+    def from_model(cls, model: GauntletModel) -> Self:
         id = model.id
 
         return cls(id=id, name=GauntletID(id).name.title(), level_ids=model.level_ids)
-
-
-MP = TypeVar("MP", bound="MapPack")
 
 
 @define()
@@ -108,7 +95,7 @@ class MapPack(LevelPack):
         return self.color.paint(self.name)
 
     @classmethod
-    def from_model(cls: Type[MP], model: MapPackModel) -> MP:
+    def from_model(cls, model: MapPackModel) -> Self:
         return cls(
             id=model.id,
             name=model.name,

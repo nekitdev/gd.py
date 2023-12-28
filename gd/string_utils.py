@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from re import compile
 from typing import Iterable, Match
 

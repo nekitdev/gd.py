@@ -1,8 +1,9 @@
-from typing import Any, List, Literal, Type, TypeVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, List, Literal
 
 from attrs import define, field
 from iters.iters import iter
-from typing_aliases import StringDict, StringMapping
 from typing_extensions import TypeGuard
 
 from gd.constants import (
@@ -18,6 +19,10 @@ from gd.constants import (
 from gd.enums import InternalType, RewardItemType
 from gd.string_utils import snake_to_camel
 
+if TYPE_CHECKING:
+    from typing_aliases import StringDict, StringMapping
+    from typing_extensions import Self
+
 __all__ = ("Reward", "RewardItem", "Quest")
 
 DEFAULT_COUNT = 0
@@ -32,8 +37,6 @@ QUEST_COUNT = "5"
 QUEST_COMPLETED = "6"
 QUEST_NAME = "7"
 QUEST_ORDER = "8"
-
-Q = TypeVar("Q", bound="Quest")
 
 
 @define()
@@ -51,7 +54,7 @@ class Quest:
         return hash(type(self)) ^ self.id
 
     @classmethod
-    def from_robtop_data(cls: Type[Q], data: StringMapping[Any]) -> Q:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
         quest_order = data.get(QUEST_ORDER, DEFAULT_QUEST_ORDER)
         id = data.get(QUEST_ID, DEFAULT_ID)
         amount = data.get(QUEST_AMOUNT, DEFAULT_AMOUNT)
@@ -96,8 +99,6 @@ REWARD_CUSTOM_ID = "2"
 REWARD_AMOUNT = "3"
 REWARD_MAGIC = "4"
 
-R = TypeVar("R", bound="Reward")
-
 
 @define()
 class Reward:
@@ -107,7 +108,7 @@ class Reward:
     magic: int = DEFAULT_MAGIC
 
     @classmethod
-    def from_robtop_data(cls: Type[R], data: StringMapping[Any]) -> R:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
         item_type_option = data.get(REWARD_ITEM_TYPE)
 
         if item_type_option is None:
@@ -150,8 +151,6 @@ REWARD_ITEM_ID = "1"
 REWARD_ITEM_LOCATION = "2"
 REWARD_ITEM_REWARDS = "3"
 
-RI = TypeVar("RI", bound="RewardItem")
-
 
 @define()
 class RewardItem:
@@ -160,7 +159,7 @@ class RewardItem:
     rewards: List[Reward] = field(factory=list)
 
     @classmethod
-    def from_robtop_data(cls: Type[RI], data: StringMapping[Any]) -> RI:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
         id = data.get(REWARD_ITEM_ID, DEFAULT_ID)
         location = data.get(REWARD_ITEM_LOCATION, DEFAULT_LOCATION)
 

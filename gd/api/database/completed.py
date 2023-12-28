@@ -1,4 +1,4 @@
-from typing import Type, TypeVar
+from typing import TYPE_CHECKING
 
 from attrs import define, field
 from iters.ordered_set import OrderedSet, ordered_set
@@ -20,6 +20,9 @@ from gd.api.database.common import (
     prefix,
 )
 from gd.constants import WEEKLY_ID_ADD
+from typing_extensions import Self
+
+
 
 __all__ = ("Completed",)
 
@@ -50,8 +53,6 @@ GAUNTLET_DEMON_PREFIX = prefix(GAUNTLET_DEMON)
 GAUNTLET_STAR_PREFIX = prefix(GAUNTLET_STAR)
 MAP_PACK_PREFIX = prefix(MAP_PACK)
 
-C = TypeVar("C", bound="Completed")
-
 
 @define()
 class Completed:
@@ -65,7 +66,7 @@ class Completed:
     stars: Stars = field(factory=Stars)
 
     @classmethod
-    def from_robtop_data(cls: Type[C], data: StringMapping[str]) -> C:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[str]) -> Self:
         self = cls()
 
         normal = self.normal
