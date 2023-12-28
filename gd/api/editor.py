@@ -7,7 +7,6 @@ from attrs import define, field
 from iters.iters import iter, wrap_iter
 from typing_aliases import is_slice
 
-from gd.api.color_channels import ColorChannels
 from gd.api.header import Header
 from gd.api.objects import (
     Object,
@@ -27,6 +26,7 @@ from gd.models_utils import concat_objects, split_objects
 from gd.robtop import RobTop
 
 if TYPE_CHECKING:
+    from gd.api.color_channels import ColorChannels
     from typing_extensions import Self
 
 

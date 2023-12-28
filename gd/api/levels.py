@@ -68,9 +68,8 @@ from gd.progress import Progress
 from gd.songs import SongReference
 from gd.users import User, UserReference
 from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, RobTopVersion
+from typing_extensions import Self
 
-if TYPE_CHECKING:
-    from typing_extensions import Self
 
 INTERNAL_TYPE = "kCEK"
 

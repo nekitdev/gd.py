@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, List, Literal
 
 from attrs import define, field
 from iters.iters import iter
-from typing_aliases import StringDict, StringMapping
 from typing_extensions import TypeGuard
 
 from gd.constants import (
@@ -21,6 +20,7 @@ from gd.enums import InternalType, RewardItemType
 from gd.string_utils import snake_to_camel
 
 if TYPE_CHECKING:
+    from typing_aliases import StringDict, StringMapping
     from typing_extensions import Self
 
 __all__ = ("Reward", "RewardItem", "Quest")

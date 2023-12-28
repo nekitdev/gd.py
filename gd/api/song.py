@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Optional
 
 from attrs import define
-from typing_aliases import StringDict, StringMapping
 from yarl import URL
 
 from gd.api.artist import ArtistAPI
@@ -11,6 +10,7 @@ from gd.constants import DEFAULT_ID, DEFAULT_PRIORITY, DEFAULT_SIZE, EMPTY
 from gd.enums import InternalType
 
 if TYPE_CHECKING:
+    from typing_aliases import StringDict, StringMapping
     from typing_extensions import Self
 
 
