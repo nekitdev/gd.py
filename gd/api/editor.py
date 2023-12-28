@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from operator import attrgetter as get_attribute_factory
-from typing import Iterable, Iterator, List, Sequence, Set, Type, TypeVar, Union, overload
+from typing import TYPE_CHECKING, Iterable, Iterator, List, Sequence, Set, Union, overload
 
 from attrs import define, field
 from iters.iters import iter, wrap_iter
@@ -23,6 +25,10 @@ from gd.enums import Speed, SpeedChangeType, SpeedMagic
 from gd.models_constants import OBJECTS_SEPARATOR
 from gd.models_utils import concat_objects, split_objects
 from gd.robtop import RobTop
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
 
 __all__ = ("Editor", "time_length")
 
@@ -105,8 +111,6 @@ X = "x"
 
 get_x = get_attribute_factory(X)
 
-E = TypeVar("E", bound="Editor")
-
 
 @define()
 class Editor(Sequence[Object], RobTop):
@@ -128,11 +132,11 @@ class Editor(Sequence[Object], RobTop):
     """The objects of the editor."""
 
     @classmethod
-    def from_objects(cls: Type[E], *objects: Object, header: Header) -> E:
+    def from_objects(cls, *objects: Object, header: Header) -> Self:
         return cls(header, list(objects))
 
     @classmethod
-    def from_object_iterable(cls: Type[E], objects: Iterable[Object], header: Header) -> E:
+    def from_object_iterable(cls, objects: Iterable[Object], header: Header) -> Self:
         return cls(header, list(objects))
 
     def __len__(self) -> int:
@@ -143,10 +147,10 @@ class Editor(Sequence[Object], RobTop):
         ...
 
     @overload
-    def __getitem__(self: E, index: slice) -> E:
+    def __getitem__(self, index: slice) -> Self:
         ...
 
-    def __getitem__(self: E, index: Union[int, slice]) -> Union[Object, E]:
+    def __getitem__(self, index: Union[int, slice]) -> Union[Object, Self]:
         if is_slice(index):
             return self.from_object_iterable(self.objects[index], self.header)
 
@@ -156,12 +160,12 @@ class Editor(Sequence[Object], RobTop):
     def color_channels(self) -> ColorChannels:
         return self.header.color_channels
 
-    def set_header(self: E, header: Header) -> E:
+    def set_header(self, header: Header) -> Self:
         self.header = header
 
         return self
 
-    def set_color_channels(self: E, color_channels: ColorChannels) -> E:
+    def set_color_channels(self, color_channels: ColorChannels) -> Self:
         self.header.color_channels = color_channels
 
         return self
@@ -246,7 +250,7 @@ class Editor(Sequence[Object], RobTop):
         return time_length(self.x_length, self.start_speed, self.speed_changes)
 
     @classmethod
-    def from_robtop(cls: Type[E], string: str) -> E:
+    def from_robtop(cls, string: str) -> Self:
         iterator = iter(split_objects(string)).filter(None)
 
         header_option = iterator.next().extract()
