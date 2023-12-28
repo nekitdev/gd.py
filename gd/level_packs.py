@@ -6,13 +6,7 @@ from attrs import define, field
 from iters.async_iters import wrap_async_iter
 
 from gd.color import Color
-from gd.constants import (
-    DEFAULT_COINS,
-    DEFAULT_ID,
-    DEFAULT_STARS,
-    EMPTY,
-    UNKNOWN,
-)
+from gd.constants import DEFAULT_COINS, DEFAULT_ID, DEFAULT_STARS, EMPTY, UNKNOWN
 from gd.entity import Entity
 from gd.enums import Difficulty, GauntletID
 from gd.filters import Filters

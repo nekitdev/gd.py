@@ -104,9 +104,9 @@ from gd.users import User, UserReference
 
 if TYPE_CHECKING:
     from types import TracebackType as Traceback
-    from typing_extensions import Self
 
     from pendulum import Duration
+    from typing_extensions import Self
     from yarl import URL
 
     from gd.api.database.database import Database
