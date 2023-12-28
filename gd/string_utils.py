@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from re import compile
 from typing import Iterable, Match
 
@@ -5,6 +7,7 @@ from iters.utils import unary_tuple
 
 from gd.constants import BACKSLASH, EMPTY, SPACE
 from gd.string_constants import BRACES, COMMA, MAPS, PIPE, STAR, TICK, UNDER, WRAP, ZERO_PAD
+
 
 __all__ = (
     # concatenation
