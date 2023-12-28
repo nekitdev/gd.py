@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Tuple, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Tuple
 from uuid import UUID
 from uuid import uuid4 as generate_uuid
 
@@ -49,6 +49,10 @@ from gd.models_utils import concat_objects, split_objects
 from gd.plist import PARSER
 from gd.string_utils import password_repr, snake_to_camel, snake_to_camel_with_abbreviations
 from gd.versions import CURRENT_BINARY_VERSION, RobTopVersion
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
 
 DEFAULT_VOLUME = 1.0
 
@@ -174,9 +178,6 @@ key = KEY.format
 EXPECTED_STRING_DICT = "expected string dict"
 
 
-D = TypeVar("D", bound="Database")
-
-
 @define()
 class Database:
     volume: float = field(default=DEFAULT_VOLUME)
@@ -267,7 +268,7 @@ class Database:
     # keybindings: Keybindings = field(factory=Keybindings)
 
     @classmethod
-    def load_parts(cls: Type[D], main: bytes, levels: bytes) -> D:
+    def load_parts(cls, main: bytes, levels: bytes) -> Self:
         parser = PARSER
 
         main_payload = parser.load(main)
@@ -726,11 +727,11 @@ class Database:
         return (self.dump_main(), self.dump_levels())
 
     @classmethod
-    def create_save_manager(cls: Type[D]) -> SaveManager[D]:
+    def create_save_manager(cls) -> SaveManager[Self]:
         return SaveManager(cls)
 
     @classmethod
-    def load(cls: Type[D]) -> D:
+    def load(cls) -> Self:
         return cls.create_save_manager().load()
 
     def dump(self) -> None:
