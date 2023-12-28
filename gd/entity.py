@@ -7,8 +7,10 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar
 from attrs import Attribute, define, field, fields
 from iters.iters import iter
 from typing_extensions import Self
+from gd.constants import DEFAULT_ID
 
 from gd.converter import CONVERTER, register_unstructure_hook_omit_client
+from gd.defaults import Default
 from gd.errors import ClientError
 from gd.typing import Data
 
@@ -35,13 +37,17 @@ def attribute_name(attribute: Attribute[Any]) -> str:
 
 @register_unstructure_hook_omit_client
 @define()
-class Entity:
+class Entity(Default):
     id: int = field()
 
     client_unchecked: Optional[Client] = field(default=None, init=False, repr=False, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
+
+    @classmethod
+    def default(cls, id: int = DEFAULT_ID) -> Self:
+        return cls(id=id)
 
     @id.validator
     def check_id(self, attribute: Attribute[int], id: int) -> None:

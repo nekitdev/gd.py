@@ -13,13 +13,13 @@ from gd.models_constants import COLOR_SEPARATOR
 from gd.models_utils import concat_color, split_color
 from gd.robtop import RobTop
 from gd.simple import Simple
-from gd.string_utils import tick
 
 __all__ = ("Color",)
 
 C = TypeVar("C", bound="Color")
 
-ID_NOT_PRESENT = "color with ID {} is not present"
+ID_NOT_PRESENT = "color with ID `{}` is not present"
+id_not_present = ID_NOT_PRESENT.format
 
 
 @frozen(order=True)
@@ -130,7 +130,7 @@ class Color(RobTop, ColorCore, Simple[int]):
 
         if value is None:
             if default is None:
-                raise ValueError(ID_NOT_PRESENT.format(tick(id)))
+                raise ValueError(id_not_present(id))
 
             return default
 

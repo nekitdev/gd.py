@@ -141,7 +141,9 @@ class Factory:
         _red, _green, _blue, alpha = image.split()
 
         colored = colorize(
-            grayscale(image), black=black.to_rgb(), white=color.to_rgb()  # type: ignore
+            grayscale(image),
+            black=black.to_rgb(),
+            white=color.to_rgb(),  # type: ignore
         )
 
         colored.putalpha(alpha)

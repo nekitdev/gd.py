@@ -1,4 +1,3 @@
-from typing import TYPE_CHECKING
 
 from attrs import frozen
 from iters.iters import iter
@@ -9,7 +8,6 @@ from gd.models_constants import LIKE_SEPARATOR
 from gd.models_utils import concat_like, split_like
 from gd.robtop import RobTop
 from typing_extensions import Self
-
 
 
 __all__ = ("Like",)

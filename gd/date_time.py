@@ -10,7 +10,7 @@ from gd.errors import InternalError
 from gd.models_constants import TIME_SEPARATOR
 from gd.models_utils import concat_time
 from gd.string_constants import COLON, COMMA, DOT
-from gd.string_utils import clear_whitespace, concat_pipe, tick
+from gd.string_utils import clear_whitespace, concat_pipe
 
 __all__ = (
     # human converters
@@ -155,7 +155,8 @@ DURATION_PATTERN = rf"""
 
 DURATION = re.compile(DURATION_PATTERN, re.VERBOSE)
 
-DOES_NOT_MATCH_DURATION = "{} does not match duration pattern"
+DOES_NOT_MATCH_DURATION = "`{}` does not match duration pattern"
+does_not_match_duration = DOES_NOT_MATCH_DURATION.format
 
 
 def parse_duration(string: str) -> Duration:
@@ -164,7 +165,7 @@ def parse_duration(string: str) -> Duration:
     match = DURATION.fullmatch(string)
 
     if match is None:
-        raise ValueError(DOES_NOT_MATCH_DURATION.format(tick(string)))
+        raise ValueError(does_not_match_duration(string))
 
     days_option = match.group(DAYS)
 
@@ -216,7 +217,8 @@ def dump_duration(duration: Duration) -> str:
     return str(duration.as_timedelta())
 
 
-NOT_DATE_TIME = "{} does not represent date/time"
+NOT_DATE_TIME = "`{}` does not represent date/time"
+not_date_time = NOT_DATE_TIME.format
 
 
 def parse_date_time(string: str) -> DateTime:
@@ -225,15 +227,18 @@ def parse_date_time(string: str) -> DateTime:
     if is_instance(result, DateTime):
         return result
 
-    raise ValueError(NOT_DATE_TIME.format(tick(string)))
+    raise ValueError(not_date_time(string))
 
 
 def dump_date_time(date_time: DateTime) -> str:
     return str(date_time)
 
 
-DOES_NOT_MATCH_HUMAN_TIME = "{} does not match human time pattern"
-DOES_NOT_MATCH_HUMAN_TIME_COMPLEX = "{} does not match complex human time pattern"
+DOES_NOT_MATCH_HUMAN_TIME = "`{}` does not match human time pattern"
+does_not_match_human_time = DOES_NOT_MATCH_HUMAN_TIME.format
+
+DOES_NOT_MATCH_HUMAN_TIME_COMPLEX = "`{}` does not match complex human time pattern"
+does_not_match_human_time_complex = DOES_NOT_MATCH_HUMAN_TIME_COMPLEX.format
 
 ATTEMPT_TO_CONVERT_BOTH_PAST_AND_FUTURE = "attempt to convert time that is both past and future"
 
@@ -248,7 +253,7 @@ def duration_from_human(string: str, simple: bool = DEFAULT_SIMPLE) -> Duration:
         match = HUMAN_TIME.fullmatch(cleared)
 
         if match is None:
-            raise ValueError(DOES_NOT_MATCH_HUMAN_TIME.format(tick(string)))
+            raise ValueError(does_not_match_human_time(string))
 
         matches = [match]
 
@@ -256,7 +261,7 @@ def duration_from_human(string: str, simple: bool = DEFAULT_SIMPLE) -> Duration:
         match = HUMAN_TIME_COMPLEX.fullmatch(cleared)
 
         if match is None:
-            raise ValueError(DOES_NOT_MATCH_HUMAN_TIME_COMPLEX.format(tick(string)))
+            raise ValueError(does_not_match_human_time_complex(string))
 
         matches = list(HUMAN_DURATION.finditer(cleared))
 

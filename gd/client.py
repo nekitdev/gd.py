@@ -15,7 +15,6 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
-    Union,
 )
 
 from attrs import define, field, frozen
@@ -25,7 +24,8 @@ from typing_aliases import AnyCallable, AnyError, DynamicTuple, Predicate
 from typing_extensions import ParamSpec
 
 from gd.artist import Artist
-from gd.comments import Comment, LevelComment, UserComment
+from gd.cache import Cache
+from gd.comments import Comment, LevelComment, LevelCommentReference, UserComment, UserCommentReference
 from gd.constants import (
     COMMENT_PAGE_SIZE,
     DEFAULT_CHEST_COUNT,
@@ -54,7 +54,6 @@ from gd.constants import (
 )
 from gd.credentials import Credentials
 from gd.decorators import check_client_login, check_login
-from gd.encoding import Key, encode_robtop_string, sha1_string_with_salt
 from gd.enums import (
     AccountURLType,
     CommentState,
@@ -71,7 +70,6 @@ from gd.enums import (
     MessageType,
     RelationshipType,
     RewardType,
-    Salt,
     TimelyType,
 )
 from gd.errors import ClientError, InternalError, NothingFound
@@ -92,14 +90,15 @@ from gd.events.listeners import (
     WeeklyListener,
 )
 from gd.filters import Filters
-from gd.friend_request import FriendRequest
-from gd.level import Level
+from gd.friend_request import FriendRequest, FriendRequestReference
+from gd.levels import Level, LevelReference
 from gd.level_packs import Gauntlet, MapPack
-from gd.message import Message
+from gd.message import Message, MessageReference
+from gd.queries import EMPTY_QUERY, query
 from gd.rewards import Chest, Quest
 from gd.run_iterables import run_iterables
 from gd.session import Session
-from gd.songs import Song
+from gd.songs import Song, SongReference
 from gd.users import User, UserReference
 
 if TYPE_CHECKING:
@@ -115,7 +114,8 @@ if TYPE_CHECKING:
     from gd.http import HTTPClient
     from gd.models import LevelModel, SearchLevelsResponseModel
     from gd.password import Password
-    from gd.typing import IntString, URLString
+    from gd.queries import Query
+    from gd.typing import URLString
 
 __all__ = ("Client",)
 
@@ -168,6 +168,9 @@ class Client:
 
     credentials: Credentials = field(factory=Credentials)
     """The credentials of the client."""
+
+    cache: Cache = field(factory=Cache, repr=False)
+    """The cache of the client."""
 
     database_unchecked: Optional[Database] = field(default=None, repr=False)
     """The database of the client."""
@@ -241,23 +244,14 @@ class Client:
         return self.credentials.name
 
     @property
-    def password(self) -> str:
-        """The password of the client."""
-        return self.credentials.password
+    def hashed_password(self) -> str:
+        """The hashed password of the client."""
+        return self.credentials.hashed_password
 
     @property
     def http(self) -> HTTPClient:
         """The [`HTTPClient`][gd.http.HTTPClient] used by the client session."""
         return self.session.http
-
-    @property
-    def encoded_password(self) -> str:
-        """The encoded password of the client."""
-        return encode_robtop_string(self.password, Key.USER_PASSWORD)
-
-    @property
-    def hashed_password(self) -> str:
-        return sha1_string_with_salt(self.password, Salt.PASSWORD)
 
     @property
     @check_login
@@ -287,7 +281,7 @@ class Client:
         """Performs the logout."""
         self.reset_items()
 
-    def login(self, name: str, password: str) -> LoginContextManager[Self]:
+    def login(self, name: str, hashed_password: str) -> LoginContextManager[Self]:
         """Performs the login.
 
         This function returns a context manager that can be used for temporarily logging in:
@@ -302,14 +296,14 @@ class Client:
         Returns:
             The [`LoginContextManager`][gd.client.LoginContextManager] for handling login process.
         """
-        return LoginContextManager(self, name, password)
+        return LoginContextManager(self, name, hashed_password)
 
-    async def try_login(self, name: str, password: str) -> None:
-        model = await self.session.login(name, password)
+    async def try_login(self, name: str, hashed_password: str) -> None:
+        model = await self.session.login(name, hashed_password)
 
-        self.apply_items(Credentials(model.account_id, model.id, name, password))
+        self.apply_items(Credentials(model.account_id, model.id, name, hashed_password))
 
-    def unsafe_login(self, name: str, password: str) -> UnsafeLoginContextManager[Self]:
+    def unsafe_login(self, name: str, hashed_password: str) -> UnsafeLoginContextManager[Self]:
         """Performs the *unsafe* login.
 
         *Unsafe* means that the credentials are not confirmed.
@@ -327,12 +321,12 @@ class Client:
             The [`UnsafeLoginContextManager`][gd.client.UnsafeLoginContextManager]
                 for handling login process.
         """
-        return UnsafeLoginContextManager(self, name, password)
+        return UnsafeLoginContextManager(self, name, hashed_password)
 
-    async def try_unsafe_login(self, name: str, password: str) -> None:
-        user = await self.search_user(name, simple=True)
+    async def try_unsafe_login(self, name: str, hashed_password: str) -> None:
+        user = await self.search_user(query(name), simple=True)
 
-        self.apply_items(Credentials(user.account_id, user.id, name, password))
+        self.apply_items(Credentials(user.account_id, user.id, name, hashed_password))
 
     @check_login
     async def load(self) -> Database:
@@ -346,7 +340,7 @@ class Client:
             The [`Database`][gd.api.database.Database] loaded.
         """
         database = await self.session.load(
-            account_id=self.account_id, name=self.name, password=self.password
+            account_id=self.account_id, name=self.name, hashed_password=self.hashed_password
         )
 
         self.database = database
@@ -365,7 +359,10 @@ class Client:
             database = self.database
 
         await self.session.save(
-            database, account_id=self.account_id, name=self.name, password=self.password
+            database,
+            account_id=self.account_id,
+            name=self.name,
+            hashed_password=self.hashed_password,
         )
 
     async def get_account_url(self, account_id: int, type: AccountURLType) -> URL:
@@ -383,6 +380,7 @@ class Client:
         icon_id: Optional[int] = None,
         color_1_id: Optional[int] = None,
         color_2_id: Optional[int] = None,
+        color_3_id: Optional[int] = None,
         glow: Optional[bool] = None,
         cube_id: Optional[int] = None,
         ship_id: Optional[int] = None,
@@ -391,8 +389,10 @@ class Client:
         wave_id: Optional[int] = None,
         robot_id: Optional[int] = None,
         spider_id: Optional[int] = None,
-        # swing_id: Optional[int] = None,
+        swing_id: Optional[int] = None,
+        jetpack_id: Optional[int] = None,
         explosion_id: Optional[int] = None,
+        streak_id: Optional[int] = None,
         special: int = DEFAULT_SPECIAL,
         *,
         set_as_user: Optional[User] = None,
@@ -422,6 +422,7 @@ class Client:
             icon_id=switch_none(icon_id, cosmetics.icon_id),
             color_1_id=switch_none(color_1_id, cosmetics.color_1_id),
             color_2_id=switch_none(color_2_id, cosmetics.color_2_id),
+            color_3_id=switch_none(color_3_id, cosmetics.color_3_id),
             glow=switch_none(glow, cosmetics.glow),
             cube_id=switch_none(cube_id, cosmetics.cube_id),
             ship_id=switch_none(ship_id, cosmetics.ship_id),
@@ -430,8 +431,10 @@ class Client:
             wave_id=switch_none(wave_id, cosmetics.wave_id),
             robot_id=switch_none(robot_id, cosmetics.robot_id),
             spider_id=switch_none(spider_id, cosmetics.spider_id),
-            # swing_id=switch_none(swing_id, cosmetics.swing_id),
+            swing_id=switch_none(swing_id, cosmetics.swing_id),
+            jetpack_id=switch_none(jetpack_id, cosmetics.jetpack_id),
             explosion_id=switch_none(explosion_id, cosmetics.explosion_id),
+            streak_id=switch_none(streak_id, cosmetics.streak_id),
             special=special,
             account_id=self.account_id,
             name=self.name,
@@ -475,7 +478,7 @@ class Client:
             twitch=switch_none(twitch, socials.twitch),
             # discord=switch_none(discord, socials.discord),
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
@@ -526,7 +529,7 @@ class Client:
             profile_model = await self.session.get_user_profile(  # request profile
                 account_id=account_id,
                 client_account_id=self.account_id,
-                encoded_password=self.encoded_password,
+                hashed_password=self.hashed_password,
             )
 
         else:  # otherwise, simply request normally
@@ -535,7 +538,7 @@ class Client:
         if simple:  # if only the profile is needed, return right away
             return User.from_profile_model(profile_model).attach_client(self)
 
-        search_model = await self.session.search_user(profile_model.id)  # search by ID
+        search_model = await self.session.search_user(query(profile_model.id))  # search by ID
 
         return User.from_search_user_and_profile_models(search_model, profile_model).attach_client(
             self
@@ -543,7 +546,7 @@ class Client:
 
     async def search_user(
         self,
-        query: IntString,
+        query: Query,
         simple: bool = DEFAULT_SIMPLE,
         friend_state: bool = DEFAULT_FRIEND_STATE,
     ) -> User:
@@ -558,7 +561,7 @@ class Client:
             profile_model = await self.session.get_user_profile(  # request profile
                 search_user_model.account_id,
                 client_account_id=self.account_id,
-                encoded_password=self.encoded_password,
+                hashed_password=self.hashed_password,
             )
 
         else:  # otherwise, request normally
@@ -572,7 +575,7 @@ class Client:
 
     @wrap_async_iter
     async def search_users_on_page(
-        self, query: IntString, page: int = DEFAULT_PAGE
+        self, query: Query, page: int = DEFAULT_PAGE
     ) -> AsyncIterator[User]:
         search_users_response_model = await self.session.search_users_on_page(
             query=query, page=page
@@ -584,7 +587,7 @@ class Client:
     @wrap_async_iter
     def search_users(
         self,
-        query: IntString,
+        query: Query,
         pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[User]:
         return run_iterables(
@@ -599,7 +602,7 @@ class Client:
             response_model = await self.session.get_relationships(
                 type=type,
                 account_id=self.account_id,
-                encoded_password=self.encoded_password,
+                hashed_password=self.hashed_password,
             )
 
         except NothingFound:
@@ -628,7 +631,7 @@ class Client:
             strategy=strategy,
             count=count,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
         for model in response_model.users:
@@ -636,25 +639,27 @@ class Client:
 
     def level_models_from_model(
         self, response_model: SearchLevelsResponseModel
-    ) -> Iterator[Tuple[LevelModel, User, Song]]:
-        songs = (Song.from_model(model).attach_client(self) for model in response_model.songs)
-        creators = (
-            User.from_creator_model(model).attach_client(self) for model in response_model.creators
+    ) -> Iterator[Tuple[LevelModel, UserReference, SongReference]]:
+        creators_iterator = (
+            UserReference.from_creator_model(model).attach_client(self) for model in response_model.creators
         )
 
-        id_to_song = {song.id: song for song in songs}
-        id_to_creator = {creator.id: creator for creator in creators}
+        creators = {creator.id: creator for creator in creators_iterator}
 
         for model in response_model.levels:
-            song = id_to_song.get(model.custom_song_id)
+            song_id = model.custom_song_id
+            custom = True
 
-            if song is None:
-                song = Song.official(model.official_song_id).attach_client(self)
+            if not song_id:
+                song_id = model.official_song_id
+                custom = False
 
-            creator = id_to_creator.get(model.creator_id)
+            song = SongReference(id=song_id, custom=custom).attach_client(self)
+
+            creator = creators.get(model.creator_id)
 
             if creator is None:
-                creator = User.default().attach_client(self)
+                creator = UserReference.default().attach_client(self)
 
             yield (model, creator, song)
 
@@ -689,7 +694,7 @@ class Client:
                 response_model = await self.session.get_level(
                     level_id=level_id,
                     account_id=self.account_id,
-                    encoded_password=self.encoded_password,
+                    hashed_password=self.hashed_password,
                 )
 
             else:
@@ -699,7 +704,7 @@ class Client:
 
             level_id = model.id
 
-        level = await self.search_levels_on_page(level_id).next().extract()
+        level = await self.search_levels_on_page(query(level_id)).next().extract()
 
         if level is None:
             raise InternalError  # TODO: message?
@@ -712,10 +717,10 @@ class Client:
     @wrap_async_iter
     async def search_levels_on_page(
         self,
-        query: Optional[MaybeIterable[IntString]] = None,
+        query: Query = EMPTY_QUERY,
         page: int = DEFAULT_PAGE,
         filters: Optional[Filters] = None,
-        user: Optional[User] = None,
+        user: Optional[UserReference] = None,
         gauntlet: Optional[int] = None,
     ) -> AsyncIterator[Level]:
         if user is None:
@@ -733,7 +738,7 @@ class Client:
                 gauntlet=gauntlet,
                 client_account_id=self.account_id,
                 client_user_id=self.id,
-                encoded_password=self.encoded_password,
+                hashed_password=self.hashed_password,
             )
 
         except NothingFound:
@@ -745,7 +750,7 @@ class Client:
     @wrap_async_iter
     def search_levels(
         self,
-        query: Optional[Union[int, str]] = None,
+        query: Query = EMPTY_QUERY,
         pages: Iterable[int] = DEFAULT_PAGES,
         filters: Optional[Filters] = None,
         user: Optional[User] = None,
@@ -771,7 +776,7 @@ class Client:
             level_id=level.id,
             description=description,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     async def upload_level(
@@ -820,7 +825,7 @@ class Client:
             data=data,
             account_id=self.account_id,
             account_name=self.name,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
         if self.load_after_post:
@@ -830,103 +835,103 @@ class Client:
 
         return level
 
-    async def report_level(self, level: Level) -> None:
+    async def report_level(self, level: LevelReference) -> None:
         await self.session.report_level(level.id)
 
     @check_login
-    async def delete_level(self, level: Level) -> None:
+    async def delete_level(self, level: LevelReference) -> None:
         await self.session.delete_level(
-            level_id=level.id, account_id=self.account_id, encoded_password=self.encoded_password
+            level_id=level.id, account_id=self.account_id, hashed_password=self.hashed_password
         )
 
     @check_login
-    async def rate_level(self, level: Level, stars: int) -> None:
+    async def rate_level(self, level: LevelReference, stars: int) -> None:
         await self.session.rate_level(
             level_id=level.id,
             stars=stars,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
-    async def rate_demon(self, level: Level, rating: DemonDifficulty) -> None:
+    async def rate_demon(self, level: LevelReference, rating: DemonDifficulty) -> None:
         await self.session.rate_demon(
             level_id=level.id,
             rating=rating,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
-    async def suggest_demon(self, level: Level, rating: DemonDifficulty) -> None:
+    async def suggest_demon(self, level: LevelReference, rating: DemonDifficulty) -> None:
         await self.session.suggest_demon(
             level_id=level.id,
             rating=rating,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
-    async def suggest_level(self, level: Level, stars: int, feature: bool) -> None:
+    async def suggest_level(self, level: LevelReference, stars: int, feature: bool) -> None:
         return await self.session.suggest_level(
             level_id=level.id,
             stars=stars,
             feature=feature,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @wrap_async_iter
     @check_login
     async def get_level_leaderboard(
         self,
-        level: Level,
+        level: LevelReference,
         strategy: LevelLeaderboardStrategy = LevelLeaderboardStrategy.ALL,
     ) -> AsyncIterator[User]:
         response_model = await self.session.get_level_leaderboard(
             level_id=level.id,
             strategy=strategy,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
         for model in response_model.users:
             yield User.from_level_leaderboard_user_model(model).attach_client(self)
 
     @check_login
-    async def block_user(self, user: User) -> None:
+    async def block_user(self, user: UserReference) -> None:
         await self.session.block_user(
             account_id=user.account_id,
             client_account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
-    async def unblock_user(self, user: User) -> None:
+    async def unblock_user(self, user: UserReference) -> None:
         await self.session.unblock_user(
             account_id=user.account_id,
             client_account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
-    async def unfriend_user(self, user: User) -> None:
+    async def unfriend_user(self, user: UserReference) -> None:
         await self.session.unfriend_user(
             account_id=user.account_id,
             client_account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
     async def send_message(
-        self, user: User, subject: Optional[str] = None, content: Optional[str] = None
+        self, user: UserReference, subject: Optional[str] = None, content: Optional[str] = None
     ) -> Optional[Message]:
         await self.session.send_message(
             account_id=user.account_id,
             subject=subject,
             content=content,
             client_account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
         if self.load_after_post:
@@ -946,23 +951,23 @@ class Client:
         return None
 
     @check_login
-    async def get_message(self, message_id: int, type: MessageType) -> Message:
+    async def get_message(self, message: MessageReference, type: MessageType) -> Message:
         model = await self.session.get_message(
-            message_id=message_id,
+            message_id=message.id,
             type=type,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
         return Message.from_model(model).attach_client(self)
 
     @check_login
-    async def delete_message(self, message: Message) -> None:
+    async def delete_message(self, message: MessageReference) -> None:
         await self.session.delete_message(
             message_id=message.id,
             type=message.type,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @wrap_async_iter
@@ -975,7 +980,7 @@ class Client:
                 type=type,
                 page=page,
                 account_id=self.account_id,
-                encoded_password=self.encoded_password,
+                hashed_password=self.hashed_password,
             )
 
         except NothingFound:
@@ -998,13 +1003,13 @@ class Client:
 
     @check_login
     async def send_friend_request(
-        self, user: User, message: Optional[str] = None
+        self, user: UserReference, message: Optional[str] = None
     ) -> Optional[FriendRequest]:
         await self.session.send_friend_request(
             account_id=user.account_id,
             message=message,
             client_account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
         if self.load_after_post:
@@ -1015,30 +1020,30 @@ class Client:
         return None
 
     @check_login
-    async def delete_friend_request(self, friend_request: FriendRequest) -> None:
+    async def delete_friend_request(self, friend_request: FriendRequestReference) -> None:
         await self.session.delete_friend_request(
             account_id=friend_request.user.account_id,
             type=friend_request.type,
             client_account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
-    async def accept_friend_request(self, friend_request: FriendRequest) -> None:
+    async def accept_friend_request(self, friend_request: FriendRequestReference) -> None:
         await self.session.accept_friend_request(
             account_id=friend_request.user.account_id,
             request_id=friend_request.id,
             type=friend_request.type,
             client_account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
-    async def read_friend_request(self, friend_request: FriendRequest) -> None:
+    async def read_friend_request(self, friend_request: FriendRequestReference) -> None:
         await self.session.read_friend_request(
             request_id=friend_request.id,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @wrap_async_iter
@@ -1053,7 +1058,7 @@ class Client:
                 type=type,
                 page=page,
                 account_id=self.account_id,
-                encoded_password=self.encoded_password,
+                hashed_password=self.hashed_password,
             )
 
         except NothingFound:
@@ -1075,59 +1080,59 @@ class Client:
         )
 
     @check_login
-    async def like_level(self, level: Level) -> None:
+    async def like_level(self, level: LevelReference) -> None:
         await self.session.like_level(
             level.id,
             dislike=False,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
-    async def dislike_level(self, level: Level) -> None:
+    async def dislike_level(self, level: LevelReference) -> None:
         await self.session.like_level(
             level.id,
             dislike=True,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
-    async def like_user_comment(self, comment: UserComment) -> None:
+    async def like_user_comment(self, comment: UserCommentReference) -> None:
         await self.session.like_user_comment(
             comment.id,
             dislike=False,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
-    async def dislike_user_comment(self, comment: UserComment) -> None:
+    async def dislike_user_comment(self, comment: UserCommentReference) -> None:
         await self.session.like_user_comment(
             comment.id,
             dislike=True,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
-    async def like_level_comment(self, comment: LevelComment) -> None:
+    async def like_level_comment(self, comment: LevelCommentReference) -> None:
         await self.session.like_level_comment(
             comment.id,
             comment.level.id,
             dislike=False,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
-    async def dislike_level_comment(self, comment: LevelComment) -> None:
+    async def dislike_level_comment(self, comment: LevelCommentReference) -> None:
         await self.session.like_level_comment(
             comment.id,
             comment.level.id,
             dislike=True,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
@@ -1136,7 +1141,7 @@ class Client:
             content=content,
             account_id=self.account_id,
             account_name=self.name,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
         if self.load_after_post:
@@ -1148,7 +1153,7 @@ class Client:
 
     @check_login
     async def post_level_comment(
-        self, level: Level, content: Optional[str] = None, record: int = DEFAULT_RECORD
+        self, level: LevelReference, content: Optional[str] = None, record: int = DEFAULT_RECORD
     ) -> Optional[LevelComment]:
         comment_id = await self.session.post_level_comment(
             level_id=level.id,
@@ -1156,7 +1161,7 @@ class Client:
             record=record,
             account_id=self.account_id,
             account_name=self.name,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
         if self.load_after_post:
@@ -1167,26 +1172,26 @@ class Client:
         return None
 
     @check_login
-    async def delete_user_comment(self, comment: UserComment) -> None:
+    async def delete_user_comment(self, comment: UserCommentReference) -> None:
         await self.session.delete_user_comment(
             comment_id=comment.id,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
-    async def delete_level_comment(self, comment: LevelComment) -> None:
+    async def delete_level_comment(self, comment: LevelCommentReference) -> None:
         await self.session.delete_level_comment(
             comment_id=comment.id,
             level_id=comment.level.id,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
 
     @wrap_async_iter
     async def get_user_comments_on_page(
         self,
-        user: User,
+        user: UserReference,
         page: int = DEFAULT_PAGE,
     ) -> AsyncIterator[UserComment]:
         response_model = await self.session.get_user_comments_on_page(
@@ -1200,7 +1205,7 @@ class Client:
     @wrap_async_iter
     def get_user_comments(
         self,
-        user: User,
+        user: UserReference,
         pages: Iterable[int] = DEFAULT_PAGES,
     ) -> AsyncIterator[UserComment]:
         return run_iterables(
@@ -1211,7 +1216,7 @@ class Client:
     @wrap_async_iter
     async def get_user_level_comments_on_page(
         self,
-        user: User,
+        user: UserReference,
         count: int = COMMENT_PAGE_SIZE,
         page: int = DEFAULT_PAGE,
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
@@ -1233,7 +1238,7 @@ class Client:
     @wrap_async_iter
     def get_user_level_comments(
         self,
-        user: User,
+        user: UserReference,
         count: int = COMMENT_PAGE_SIZE,
         pages: Iterable[int] = DEFAULT_PAGES,
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
@@ -1249,7 +1254,7 @@ class Client:
     @wrap_async_iter
     async def get_level_comments_on_page(
         self,
-        level: Level,
+        level: LevelReference,
         count: int = COMMENT_PAGE_SIZE,
         page: int = DEFAULT_PAGE,
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
@@ -1275,7 +1280,7 @@ class Client:
     @wrap_async_iter
     def get_level_comments(
         self,
-        level: Level,
+        level: LevelReference,
         count: int = COMMENT_PAGE_SIZE,
         pages: Iterable[int] = DEFAULT_PAGES,
         strategy: CommentStrategy = CommentStrategy.DEFAULT,
@@ -1315,7 +1320,7 @@ class Client:
     @check_login
     async def get_quests(self) -> AsyncIterator[Quest]:
         response_model = await self.session.get_quests(
-            account_id=self.account_id, encoded_password=self.encoded_password
+            account_id=self.account_id, hashed_password=self.hashed_password
         )
 
         model = response_model.inner
@@ -1336,7 +1341,7 @@ class Client:
             chest_1_count=chest_1_count,
             chest_2_count=chest_2_count,
             account_id=self.account_id,
-            encoded_password=self.encoded_password,
+            hashed_password=self.hashed_password,
         )
         model = response_model.inner
 
@@ -1639,11 +1644,12 @@ class Client:
             ```python
             client = Client()
 
-            DAILY = "new daily! {daily.name} by {daily.creator.name} (ID: {daily.id})
+            DAILY_INFO = "new daily! {daily.name} by {daily.creator.name} (ID: {daily.id})
+            daily_info = DAILY_INFO.format
 
             @client.event
             async def on_daily(daily: Level) -> None:
-                print(DAILY.format(daily=daily))
+                print(daily_info(daily=daily))
             ```
 
         Arguments:
@@ -1888,10 +1894,10 @@ E = TypeVar("E", bound=AnyError)
 class LoginContextManager(Generic[C]):
     client: C
     name: str
-    password: str
+    hashed_password: str
 
     async def login(self) -> None:
-        await self.client.try_login(self.name, self.password)
+        await self.client.try_login(self.name, self.hashed_password)
 
     async def logout(self) -> None:
         await self.client.logout()
@@ -1913,4 +1919,4 @@ class LoginContextManager(Generic[C]):
 @frozen()
 class UnsafeLoginContextManager(LoginContextManager[C]):
     async def login(self) -> None:
-        await self.client.try_unsafe_login(self.name, self.password)
+        await self.client.try_unsafe_login(self.name, self.hashed_password)

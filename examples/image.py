@@ -4,6 +4,7 @@ from entrypoint import entrypoint
 
 import gd
 from gd.asyncio import run_blocking
+from gd.queries import query
 
 client = gd.Client()  # initialize the client
 
@@ -23,7 +24,7 @@ async def async_main() -> None:
     name = input(PROMPT)
 
     try:
-        user = await client.search_user(name)
+        user = await client.search_user(query(name))
 
     except gd.MissingAccess:
         print(not_found(name=name))

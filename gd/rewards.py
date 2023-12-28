@@ -19,7 +19,7 @@ from gd.constants import (
 from gd.date_time import utc_now
 from gd.entity import Entity
 from gd.enums import QuestType, ShardType
-from gd.string_utils import case_fold, tick
+from gd.string_utils import case_fold
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -68,8 +68,8 @@ class Chest(Entity):
         return self.created_at + self.duration
 
 
-QUEST_UNKNOWN = "Quest {}; reward: {}, new in {}"
-QUEST = "Quest {}; collect: {} {}, reward: {}, new in {}"
+QUEST_UNKNOWN = "Quest `{}`; reward: {}, new in {}"
+QUEST = "Quest `{}`; collect: {} {}, reward: {}, new in {}"
 
 
 @define()
@@ -88,10 +88,10 @@ class Quest(Entity):
 
     def __str__(self) -> str:
         if self.type.is_unknown():
-            return QUEST_UNKNOWN.format(tick(self.name or UNKNOWN), self.reward, self.duration)
+            return QUEST_UNKNOWN.format(self.name or UNKNOWN, self.reward, self.duration)
 
         return QUEST.format(
-            tick(self.name or UNKNOWN),
+            self.name or UNKNOWN,
             self.amount,
             case_fold(self.type.name),
             self.reward,

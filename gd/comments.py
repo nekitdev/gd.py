@@ -17,10 +17,10 @@ from gd.constants import (
 from gd.converter import register_unstructure_hook_omit_client
 from gd.date_time import utc_now
 from gd.entity import Entity
-from gd.level import Level
+from gd.levels import Level, LevelReference
 
 # from gd.schema import CommentSchema
-from gd.users import User
+from gd.users import User, UserReference
 
 if TYPE_CHECKING:
     from pendulum import DateTime
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
     # from gd.schema import CommentBuilder, CommentReader
 
-__all__ = ("LevelComment", "UserComment")
+__all__ = ("LevelCommentReference", "UserCommentReference", "LevelComment", "UserComment")
 
 COMMENT = "{}: {}"
 comment = COMMENT.format
@@ -39,8 +39,13 @@ comment = COMMENT.format
 
 @register_unstructure_hook_omit_client
 @define()
-class UserComment(Entity):
-    author: User = field(eq=False)
+class UserCommentReference(Entity):
+    author: UserReference = field(eq=False)
+
+
+@register_unstructure_hook_omit_client
+@define()
+class UserComment(UserCommentReference):
     rating: int = field(default=DEFAULT_RATING, eq=False)
     content: str = field(default=EMPTY, eq=False)
 
@@ -101,10 +106,46 @@ class UserComment(Entity):
 
 @register_unstructure_hook_omit_client
 @define()
-class LevelComment(Entity):
-    author: User = field(eq=False)
-    level: Level = field(eq=False)
+class LevelCommentReference(Entity):
+    author: UserReference = field(eq=False)
+    level: LevelReference = field(eq=False)
 
+    async def like(self) -> None:
+        await self.client.like_level_comment(self)
+
+    async def dislike(self) -> None:
+        await self.client.dislike_level_comment(self)
+
+    async def delete(self) -> None:
+        await self.client.delete_level_comment(self)
+
+    async def get_level(
+        self, get_data: bool = DEFAULT_GET_DATA, use_client: bool = DEFAULT_USE_CLIENT
+    ) -> Level:
+        return await self.client.get_level(self.level.id, get_data=get_data, use_client=use_client)
+
+    def attach_client_unchecked(self, client: Optional[Client]) -> Self:
+        self.author.attach_client_unchecked(client)
+        self.level.attach_client_unchecked(client)
+
+        return super().attach_client_unchecked(client)
+
+    def attach_client(self, client: Client) -> Self:
+        self.author.attach_client(client)
+        self.level.attach_client(client)
+
+        return super().attach_client(client)
+
+    def detach_client(self) -> Self:
+        self.author.detach_client()
+        self.level.detach_client()
+
+        return super().detach_client()
+
+
+@register_unstructure_hook_omit_client
+@define()
+class LevelComment(LevelCommentReference):
     record: int = field(default=DEFAULT_RECORD, eq=False)
 
     color: Color = field(factory=Color.default, eq=False)
@@ -151,38 +192,6 @@ class LevelComment(Entity):
             record=inner.record,
             color=inner.color,
         )
-
-    async def like(self) -> None:
-        await self.client.like_level_comment(self)
-
-    async def dislike(self) -> None:
-        await self.client.dislike_level_comment(self)
-
-    async def delete(self) -> None:
-        await self.client.delete_level_comment(self)
-
-    async def get_level(
-        self, get_data: bool = DEFAULT_GET_DATA, use_client: bool = DEFAULT_USE_CLIENT
-    ) -> Level:
-        return await self.client.get_level(self.level.id, get_data=get_data, use_client=use_client)
-
-    def attach_client_unchecked(self, client: Optional[Client]) -> Self:
-        self.author.attach_client_unchecked(client)
-        self.level.attach_client_unchecked(client)
-
-        return super().attach_client_unchecked(client)
-
-    def attach_client(self, client: Client) -> Self:
-        self.author.attach_client(client)
-        self.level.attach_client(client)
-
-        return super().attach_client(client)
-
-    def detach_client(self) -> Self:
-        self.author.detach_client()
-        self.level.detach_client()
-
-        return super().detach_client()
 
 
 Comment = Union[UserComment, LevelComment]

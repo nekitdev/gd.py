@@ -8,7 +8,7 @@ from gd.constants import DEFAULT_ID, DEFAULT_READ, EMPTY
 from gd.date_time import utc_now
 from gd.entity import Entity
 from gd.enums import FriendRequestType
-from gd.users import User, UserCosmetics
+from gd.users import User, UserCosmetics, UserReference
 
 if TYPE_CHECKING:
     from pendulum import DateTime
@@ -27,10 +27,65 @@ OUTGOING = "->"
 
 
 @define()
-class FriendRequest(Entity):
-    user: User = field(eq=False)
+class FriendRequestReference(Entity):
+    user: UserReference = field(eq=False)
     type: FriendRequestType = field(eq=False)
 
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ self.id
+
+    def __str__(self) -> str:
+        return friend_request(self.direction, self.user)
+
+    @classmethod
+    def default(
+        cls,
+        id: int = DEFAULT_ID,
+        user_id: int = DEFAULT_ID,
+        user_account_id: int = DEFAULT_ID,
+        type: FriendRequestType = FriendRequestType.DEFAULT,
+    ) -> Self:
+        return cls(
+            id=id, user=User.default(user_id, user_account_id), type=FriendRequestType.DEFAULT
+        )
+
+    def is_incoming(self) -> bool:
+        return self.type.is_incoming()
+
+    def is_outgoing(self) -> bool:
+        return self.type.is_outgoing()
+
+    @property
+    def direction(self) -> str:
+        return INCOMING if self.is_incoming() else OUTGOING
+
+    def attach_client_unchecked(self, client: Optional[Client]) -> Self:
+        self.user.attach_client_unchecked(client)
+
+        return super().attach_client_unchecked(client)
+
+    def attach_client(self, client: Client) -> Self:
+        self.user.attach_client(client)
+
+        return super().attach_client(client)
+
+    def detach_client(self) -> Self:
+        self.user.detach_client()
+
+        return super().detach_client()
+
+    async def read(self) -> None:
+        await self.client.read_friend_request(self)
+
+    async def delete(self) -> None:
+        await self.client.delete_friend_request(self)
+
+    async def accept(self) -> None:
+        await self.client.accept_friend_request(self)
+
+
+@define()
+class FriendRequest(FriendRequestReference):
     created_at: DateTime = field(factory=utc_now, eq=False)
 
     content: str = field(default=EMPTY, eq=False)
@@ -39,24 +94,6 @@ class FriendRequest(Entity):
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
-
-    def __str__(self) -> str:
-        return friend_request(self.direction, self.user)
-
-    @property
-    def direction(self) -> str:
-        return INCOMING if self.is_incoming() else OUTGOING
-
-    @classmethod
-    def default(
-        cls,
-        id: int = DEFAULT_ID,
-        user_id: int = DEFAULT_ID,
-        user_account_id: int = DEFAULT_ID,
-    ) -> Self:
-        return cls(
-            id=id, user=User.default(user_id, user_account_id), type=FriendRequestType.DEFAULT
-        )
 
     @classmethod
     def from_model(cls, model: FriendRequestModel, type: FriendRequestType) -> Self:
@@ -80,38 +117,8 @@ class FriendRequest(Entity):
             was_read=model.read,
         )
 
-    async def read(self) -> None:
-        await self.client.read_friend_request(self)
-
-    async def delete(self) -> None:
-        await self.client.delete_friend_request(self)
-
-    async def accept(self) -> None:
-        await self.client.accept_friend_request(self)
-
     def is_read(self) -> bool:
         return self.was_read
 
     def is_unread(self) -> bool:
         return not self.was_read
-
-    def is_incoming(self) -> bool:
-        return self.type.is_incoming()
-
-    def is_outgoing(self) -> bool:
-        return self.type.is_outgoing()
-
-    def attach_client_unchecked(self, client: Optional[Client]) -> Self:
-        self.user.attach_client_unchecked(client)
-
-        return super().attach_client_unchecked(client)
-
-    def attach_client(self, client: Client) -> Self:
-        self.user.attach_client(client)
-
-        return super().attach_client(client)
-
-    def detach_client(self) -> Self:
-        self.user.detach_client()
-
-        return super().detach_client()

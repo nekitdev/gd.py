@@ -18,7 +18,6 @@ from typing_aliases import Attributes, StrictPayload, StringDict, Unary, is_inst
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
 from gd.models_utils import float_str
-from gd.string_utils import tick
 from gd.typing import AnyString
 
 __all__ = ("PARSER", "PropertyList")
@@ -77,8 +76,9 @@ TRUE_SHORT = "t"
 FALSE_SHORT = "f"
 
 EXPECTED = """
-expected primitive (`bool`, `int`, `float`, `str`), primitive `list` or string `dict`, got {}
+expected primitive (`bool`, `int`, `float`, `str`), primitive `list` or string `dict`, got `{}`
 """.strip()
+expected = EXPECTED.format
 
 
 @define()
@@ -184,7 +184,7 @@ class PropertyList:
                 self.dump_item_long(sub_item, element)
 
         else:
-            raise ValueError(EXPECTED.format(tick(get_type_name(item))))
+            raise ValueError(expected(get_type_name(item)))
 
         if root is not None:
             root.append(element)
@@ -242,7 +242,7 @@ class PropertyList:
                 self.dump_item_short(sub_item, element, first_shot=False)
 
         else:
-            raise ValueError(EXPECTED.format(tick(get_type_name(item))))
+            raise ValueError(expected(get_type_name(item)))
 
         if root is not None:
             root.append(element)

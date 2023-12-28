@@ -18,7 +18,7 @@ from gd.image.sprite import SpriteData
 from gd.models_utils import int_bool
 from gd.named_dicts import AnyCamelDict, CamelDict
 from gd.string_constants import COMMA
-from gd.string_utils import remove_braces, tick
+from gd.string_utils import remove_braces
 
 __all__ = (
     "convert_animation_sheet_data",
@@ -89,14 +89,15 @@ convert_sprite_mapping: Dict[int, ConvertSprite] = {
     FORMAT_3: convert_sprite_format_3,
 }
 
-CAN_NOT_CONVERT = "can not convert format {}"
+CAN_NOT_CONVERT = "can not convert format `{}`"
+can_not_convert = CAN_NOT_CONVERT.format
 
 
 def convert_sprite_format(format: int) -> ConvertSprite:
     convert_sprite = convert_sprite_mapping.get(format)
 
     if convert_sprite is None:
-        raise ValueError(CAN_NOT_CONVERT.format(tick(format)))
+        raise ValueError(can_not_convert(format))
 
     return convert_sprite
 

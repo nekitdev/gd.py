@@ -65,6 +65,7 @@ __all__ = (
     "sha1_with_salt",
     "sha1_string",
     "sha1_string_with_salt",
+    "hash_password",
     "generate_check",
     "zip_level",
     "unzip_level",
@@ -259,7 +260,8 @@ def encode_robtop_string(
 
 
 def decode_darwin_save(
-    data: bytes, apply_xor: bool = DEFAULT_APPLY_XOR  # `apply_xor` is here for compatibility
+    data: bytes,
+    apply_xor: bool = DEFAULT_APPLY_XOR,  # `apply_xor` is here for compatibility
 ) -> bytes:
     cipher = CIPHER
 
@@ -315,6 +317,10 @@ def sha1_string_with_salt(
     string: str, salt: Salt, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
 ) -> str:
     return sha1_with_salt(string.encode(encoding, errors), salt)
+
+
+def hash_password(password: str) -> str:
+    return sha1_string_with_salt(password, Salt.PASSWORD)
 
 
 def generate_check(

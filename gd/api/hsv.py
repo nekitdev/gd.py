@@ -1,4 +1,3 @@
-from typing import TYPE_CHECKING
 
 from attrs import define, field
 from iters.iters import iter

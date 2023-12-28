@@ -38,7 +38,8 @@ class RegisterUnstructureHook:
 
     def __call__(self, type: T) -> T:
         CONVERTER.register_unstructure_hook(
-            type, make_dict_unstructure_fn(type, CONVERTER, **self.overrides)  # type: ignore
+            type,
+            make_dict_unstructure_fn(type, CONVERTER, **self.overrides),  # type: ignore
         )
 
         return type

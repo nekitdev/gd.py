@@ -54,6 +54,7 @@ from gd.models_constants import (
     PAGE_SEPARATOR,
     PROFILE_SEPARATOR,
     PROGRESS_SEPARATOR,
+    QUERY_SEPARATOR,
     QUEST_SEPARATOR,
     QUESTS_INNER_SEPARATOR,
     QUESTS_RESPONSE_SEPARATOR,
@@ -452,3 +453,6 @@ concat_gauntlets_response_gauntlets = partial(
 
 split_capacity = partial(split_iterable, CAPACITY_SEPARATOR)
 concat_capacity = partial(concat_iterable, CAPACITY_SEPARATOR)
+
+split_query = partial(split_iterable, QUERY_SEPARATOR)
+concat_query = partial(concat_iterable, QUERY_SEPARATOR)

@@ -28,6 +28,7 @@ from gd.color import Color
 from gd.comments import LevelComment, UserComment
 from gd.converter import CONVERTER
 from gd.credentials import Credentials
+from gd.encoding import hash_password
 from gd.entity import Entity
 from gd.enums import (
     AccountURLType,
@@ -125,12 +126,13 @@ from gd.errors import (
 from gd.filters import Filters
 from gd.friend_request import FriendRequest
 from gd.http import HTTPClient
-from gd.level import Level
+from gd.levels import Level
 from gd.level_packs import Gauntlet, MapPack
 from gd.message import Message
 from gd.password import Password
 from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM, SYSTEM_PLATFORM_CONFIG
 from gd.progress import Progress
+from gd.queries import Query, query
 from gd.rewards import Chest, Quest
 from gd.session import Session
 from gd.songs import Song
@@ -164,6 +166,8 @@ __all__ = (
     "Color",
     # client
     "Client",
+    # hash password
+    "hash_password",
     # session
     "Session",
     # HTTP client
@@ -200,6 +204,9 @@ __all__ = (
     "UserStates",
     "UserSocials",
     "UserLeaderboard",
+    # queries
+    "Query",
+    "query",
     # passwords
     "Password",
     # versions
