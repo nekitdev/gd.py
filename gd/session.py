@@ -117,7 +117,9 @@ class Session:
             main_string, levels_string, apply_xor=False, follow_system=False
         )
 
-    async def save(self, database: Database, account_id: int, name: str, hashed_password: str) -> None:
+    async def save(
+        self, database: Database, account_id: int, name: str, hashed_password: str
+    ) -> None:
         parts = save.dump_string_parts(database, apply_xor=False, follow_system=False)
 
         data = concat_save(parts)

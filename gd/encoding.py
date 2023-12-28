@@ -88,7 +88,7 @@ try:
     from Crypto.Cipher import AES
 
 except ImportError:
-    AES = None
+    AES = None  # type: ignore[assignment]
 
 AES_KEY = b"ipu9TUv54yv]isFMh5@;t.5w34E2Ry@{"
 

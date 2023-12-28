@@ -545,6 +545,17 @@ class HTTPClient:
 
         return session
 
+    @session.setter
+    def session(self, session: ClientSession) -> None:
+        self.session_unchecked = session
+
+    @session.deleter
+    def session(self) -> None:
+        self.session_unchecked = None
+
+    def has_session(self) -> bool:
+        return self.session_unchecked is not None
+
     def change(self, **attributes: Any) -> HTTPClientContextManager[Self]:
         return HTTPClientContextManager(self, attributes)
 
@@ -557,16 +568,16 @@ class HTTPClient:
         if session is not None:
             await session.close()
 
-            self._session = None
+            self.session_unchecked = None
 
     async def create_session(self) -> ClientSession:
         return ClientSession(skip_auto_headers=self.SKIP_HEADERS)
 
-    async def ensure_session(self) -> None:
-        session = self._session
+    async def ensure_session(self) -> ClientSession:
+        session = self.session_unchecked
 
-        if self._session is None:
-            self._session = session = await self.create_session()
+        if session is None:
+            self.session_unchecked = session = await self.create_session()
 
         loop = get_running_loop()
 
@@ -575,7 +586,9 @@ class HTTPClient:
         if optional_loop is not loop:
             await self.close()
 
-            self._session = await self.create_session()
+            self.session_unchecked = session = await self.create_session()
+
+        return session
 
     async def download(
         self,
@@ -586,11 +599,9 @@ class HTTPClient:
         with_bar: bool = DEFAULT_WITH_BAR,
         **request_keywords: Any,
     ) -> None:
-        await self.ensure_session()
+        session = await self.ensure_session()
 
-        session = self._session
-
-        async with session.request(  # type: ignore
+        async with session.request(
             url=url, method=method, **request_keywords
         ) as response:
             if with_bar:
@@ -794,7 +805,7 @@ class HTTPClient:
         headers: Optional[Headers] = None,
         retries: int = DEFUALT_RETRIES,
     ) -> Optional[ResponseData]:
-        await self.ensure_session()
+        session = await self.ensure_session()
 
         if retries < 0:
             attempts = -1
@@ -821,7 +832,7 @@ class HTTPClient:
 
         while attempts:
             try:
-                async with lock, self._session.request(  # type: ignore
+                async with lock, session.request(
                     url=url,
                     method=method,
                     data=data,
@@ -833,6 +844,8 @@ class HTTPClient:
                 ) as response:
                     if not read:
                         return None
+
+                    response_data: ResponseData
 
                     if type is ResponseType.BYTES:
                         response_data = await response.read()
@@ -940,9 +953,7 @@ class HTTPClient:
 
     async def load(self, *, account_id: int, name: str, hashed_password: str) -> str:
         error_codes = {
-            -11: MissingAccess(
-                INCORRECT_CREDENTIALS.format(name, password_str(hashed_password))
-            )
+            -11: MissingAccess(INCORRECT_CREDENTIALS.format(name, password_str(hashed_password)))
         }
 
         route = Route(POST, LOAD)
@@ -995,9 +1006,7 @@ class HTTPClient:
         return int_or(response, 0)
 
     async def get_account_url(self, account_id: int, type: AccountURLType) -> URL:
-        error_codes = {
-            -1: MissingAccess(FAILED_TO_FIND_URL.format(type.name, account_id))
-        }
+        error_codes = {-1: MissingAccess(FAILED_TO_FIND_URL.format(type.name, account_id))}
 
         route = Route(POST, GET_ACCOUNT_URL)
 

@@ -81,7 +81,7 @@ def find_song_model(string: str, id: int) -> SongModel:
     if match is None:
         raise ValueError(CAN_NOT_FIND_SONG_MODEL)
 
-    download_url = URL(match.group(1))
+    url = URL(match.group(1))
 
     match = SIZE.search(string)
 
@@ -117,9 +117,7 @@ def find_song_model(string: str, id: int) -> SongModel:
 
     name = name.strip()
 
-    return SongModel(
-        id=id, name=name, artist_name=artist_name, size=size, download_url=download_url
-    )
+    return SongModel(id=id, name=name, artist_name=artist_name, size=size, url=url)
 
 
 SONG_URL_PATH = r"""

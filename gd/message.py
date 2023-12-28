@@ -3,9 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, ClassVar, Optional
 
 from attrs import define, field
+from pendulum import DateTime
 
 from gd.constants import DEFAULT_READ
-from gd.date_time import DateTime, utc_now
+from gd.date_time import utc_now
 from gd.entity import Entity
 from gd.enums import MessageType
 from gd.errors import ClientError
@@ -33,6 +34,12 @@ class MessageReference(Entity):
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
+
+    def is_incoming(self) -> bool:
+        return self.type.is_incoming()
+
+    def is_outgoing(self) -> bool:
+        return self.type.is_outgoing()
 
     async def delete(self) -> None:
         await self.client.delete_message(self)
@@ -101,12 +108,6 @@ class Message(MessageReference):
 
     def __str__(self) -> str:
         return self.subject
-
-    def is_incoming(self) -> bool:
-        return self.type.is_incoming()
-
-    def is_outgoing(self) -> bool:
-        return self.type.is_outgoing()
 
     @classmethod
     def from_model(cls, model: MessageModel) -> Self:

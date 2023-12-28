@@ -31,6 +31,7 @@ from gd.constants import (
 )
 from gd.enums import SearchStrategy, TimelyID
 from gd.filters import Filters
+from gd.queries import query
 from gd.tasks import Loop
 
 __all__ = (
@@ -376,13 +377,13 @@ class UserBasedListener(Listener):
             id = self.id
 
             if id is not None:
-                user = await client.search_user(id)
+                user = await client.search_user(query(id))
 
             else:
                 name = self.name
 
                 if name is not None:
-                    user = await client.search_user(name)
+                    user = await client.search_user(query(name))
 
                 else:
                     raise ValueError(QUERY_EXPECTED)

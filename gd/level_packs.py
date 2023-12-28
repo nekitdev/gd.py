@@ -10,6 +10,7 @@ from gd.constants import DEFAULT_COINS, DEFAULT_ID, DEFAULT_STARS, EMPTY, UNKNOW
 from gd.entity import Entity
 from gd.enums import Difficulty, GauntletID
 from gd.filters import Filters
+from gd.queries import query_parts
 
 if TYPE_CHECKING:
     from typing_aliases import DynamicTuple
@@ -41,7 +42,7 @@ class LevelPack(Entity):
     @wrap_async_iter
     async def get_levels(self) -> AsyncIterator[Level]:
         levels = await self.client.search_levels_on_page(
-            query=self.level_ids, filters=Filters.search_many()
+            query=query_parts(self.level_ids), filters=Filters.search_many()
         ).tuple()
 
         self.levels = levels

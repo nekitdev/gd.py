@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, AsyncIterator, Dict, Iterable, Optional
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
 from iters.iters import iter
+from pendulum import DateTime
 from typing_extensions import Self
 
 from gd.binary import Binary
@@ -66,7 +67,6 @@ from gd.typing import Data
 if TYPE_CHECKING:
     from io import BufferedReader, BufferedWriter
 
-    from pendulum import DateTime
     from PIL.Image import Image
 
     from gd.comments import LevelComment, UserComment
@@ -705,13 +705,14 @@ class UserSocials(Binary):
 
 
 class UserLeaderboardData(Data):
-    record: EitherRecordData
+    either_record: EitherRecordData
     coins: int
     recorded_at: str
 
 
+@define()
 class UserLeaderboard(Binary):
-    record: EitherRecord = field(factory=EitherRecord)
+    either_record: EitherRecord = field(factory=EitherRecord)
     coins: int = field(default=DEFAULT_COINS)
     recorded_at: DateTime = field(factory=utc_now)
 
@@ -754,7 +755,7 @@ class UserLeaderboard(Binary):
     @classmethod
     def from_reader(cls, reader: UserLeaderboardReader) -> Self:
         return cls(
-            record=EitherRecord.from_reader(reader.record),
+            either_record=EitherRecord.from_reader(reader.record),
             coins=reader.coins,
             recorded_at=utc_from_timestamp_milliseconds(reader.recordedAt),
         )
@@ -762,7 +763,7 @@ class UserLeaderboard(Binary):
     def to_builder(self) -> UserLeaderboardBuilder:
         builder = UserLeaderboardSchema.new_message()
 
-        builder.record = self.record.to_builder()
+        builder.record = self.either_record.to_builder()
         builder.coins = self.coins
         builder.recordedAt = timestamp_milliseconds(self.recorded_at)
 
@@ -831,7 +832,7 @@ class User(UserReference, Binary):
         return self.to_builder().to_bytes_packed()
 
     @classmethod
-    def from_reader(cls, reader: UserReader) -> Self:
+    def from_reader(cls, reader: UserReader) -> Self:  # type: ignore
         statistics_option = reader.statistics
 
         if statistics_option.which() == NONE:
@@ -894,7 +895,7 @@ class User(UserReference, Binary):
             leaderboard=leaderboard,
         )
 
-    def to_builder(self) -> UserBuilder:
+    def to_builder(self) -> UserBuilder:  # type: ignore[override]
         builder = UserSchema.new_message()
 
         builder.id = self.id
@@ -952,10 +953,6 @@ class User(UserReference, Binary):
             builder.leaderboard.some = leaderboard.to_builder()
 
         return builder
-
-    @classmethod
-    def default(cls, id: int = DEFAULT_ID, account_id: int = DEFAULT_ID) -> Self:
-        return cls(id=id, name=EMPTY, account_id=account_id)
 
     @classmethod
     def from_search_user_model(cls, model: SearchUserModel) -> Self:
@@ -1038,9 +1035,10 @@ class User(UserReference, Binary):
             id=profile_model.id,
             account_id=profile_model.account_id,
             role_id=profile_model.role_id,
-            banned=profile_model.banned,
+            banned=profile_model.is_banned(),
             statistics=UserStatistics(
                 stars=profile_model.stars,
+                moons=profile_model.moons,
                 demons=profile_model.demons,
                 diamonds=profile_model.diamonds,
                 user_coins=profile_model.user_coins,
@@ -1051,6 +1049,7 @@ class User(UserReference, Binary):
             cosmetics=UserCosmetics(
                 color_1_id=profile_model.color_1_id,
                 color_2_id=profile_model.color_2_id,
+                color_3_id=profile_model.color_3_id,
                 icon_type=search_user_model.icon_type,
                 icon_id=search_user_model.icon_id,
                 cube_id=profile_model.cube_id,
@@ -1060,7 +1059,8 @@ class User(UserReference, Binary):
                 wave_id=profile_model.wave_id,
                 robot_id=profile_model.robot_id,
                 spider_id=profile_model.spider_id,
-                # swing_id=profile_model.swing_id,
+                swing_id=profile_model.swing_id,
+                jetpack_id=profile_model.jetpack_id,
                 explosion_id=profile_model.explosion_id,
                 glow=profile_model.glow,
             ),
@@ -1072,7 +1072,7 @@ class User(UserReference, Binary):
             ),
             socials=UserSocials(
                 youtube=profile_model.youtube,
-                twitter=profile_model.twitter,
+                x=profile_model.x,
                 twitch=profile_model.twitch,
                 # discord=profile_model.discord,
             ),
@@ -1148,7 +1148,7 @@ class User(UserReference, Binary):
                 glow=model.glow,
             ),
             leaderboard=UserLeaderboard(
-                record=model.record,
+                either_record=model.either_record,
                 coins=model.coins,
                 recorded_at=model.recorded_at,
             ),
