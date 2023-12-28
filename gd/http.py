@@ -1573,8 +1573,8 @@ class HTTPClient:
             level_info=recording_string,
             seed=random_string,
             seed2=seed,
-            wt=int(editor_time.total_seconds()),  # type: ignore
-            wt2=int(copies_time.total_seconds()),  # type: ignore
+            wt=int(editor_time.total_seconds()),
+            wt2=int(copies_time.total_seconds()),
             account_id=account_id,
             user_name=account_name,
             gjp=encoded_password,

@@ -106,7 +106,7 @@ class ListenerProtocol(Protocol):
             await self.on_error(error)
 
     def start(self) -> None:
-        if self._running:  # type: ignore
+        if self._running:
             raise RuntimeError(LISTENER_ALREADY_RUNNING)
 
         loop = Loop(function=self.main, delay=self.delay, reconnect=self.reconnect)

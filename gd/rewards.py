@@ -65,7 +65,7 @@ class Chest(Entity):
 
     @property
     def ready_at(self) -> DateTime:
-        return self.created_at + self.duration  # type: ignore
+        return self.created_at + self.duration
 
 
 QUEST_UNKNOWN = "Quest {}; reward: {}, new in {}"
@@ -111,4 +111,4 @@ class Quest(Entity):
 
     @property
     def new_at(self) -> DateTime:
-        return self.created_at + self.duration  # type: ignore
+        return self.created_at + self.duration

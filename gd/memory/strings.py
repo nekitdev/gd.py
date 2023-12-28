@@ -188,6 +188,6 @@ class StringData(Data[str]):
 
     def compute_type(self, config: PlatformConfig) -> TypingUnion[Type[String], Type[OldString]]:
         if config.platform.is_windows():
-            return String.reconstruct(config)  # type: ignore
+            return String.reconstruct(config)
 
-        return OldString.reconstruct(config)  # type: ignore
+        return OldString.reconstruct(config)

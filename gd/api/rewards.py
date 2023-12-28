@@ -54,7 +54,7 @@ class Quest:
         return hash(type(self)) ^ self.id
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
         quest_order = data.get(QUEST_ORDER, DEFAULT_QUEST_ORDER)
         id = data.get(QUEST_ID, DEFAULT_ID)
         amount = data.get(QUEST_AMOUNT, DEFAULT_AMOUNT)
@@ -108,7 +108,7 @@ class Reward:
     magic: int = DEFAULT_MAGIC
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
         item_type_option = data.get(REWARD_ITEM_TYPE)
 
         if item_type_option is None:
@@ -159,7 +159,7 @@ class RewardItem:
     rewards: List[Reward] = field(factory=list)
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
         id = data.get(REWARD_ITEM_ID, DEFAULT_ID)
         location = data.get(REWARD_ITEM_LOCATION, DEFAULT_LOCATION)
 

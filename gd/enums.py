@@ -263,7 +263,7 @@ class LevelLength(Enum):
     DEFAULT = TINY
 
     @classmethod
-    def _missing_(cls, value: Any) -> Optional[LevelLength]:  # type: ignore
+    def _missing_(cls, value: Any) -> Optional[LevelLength]:
         if value < 0:
             return cls.TINY
 
@@ -695,7 +695,7 @@ class GauntletID(Enum):
     DEATH = 15
 
     @classmethod
-    def _missing_(cls, value: Any) -> GauntletID:  # type: ignore
+    def _missing_(cls, value: Any) -> GauntletID:
         return cls.UNKNOWN
 
 
@@ -1579,7 +1579,7 @@ class GuidelineColor(float, Enum):
     GREEN = 1.0
 
     @classmethod
-    def _missing_(cls, value: Any) -> GuidelineColor:  # type: ignore
+    def _missing_(cls, value: Any) -> GuidelineColor:
         if cls.ORANGE < value < cls.GREEN:
             return cls.ORANGE
 
