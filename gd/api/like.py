@@ -8,9 +8,8 @@ from gd.enums import LikeType
 from gd.models_constants import LIKE_SEPARATOR
 from gd.models_utils import concat_like, split_like
 from gd.robtop import RobTop
+from typing_extensions import Self
 
-if TYPE_CHECKING:
-    from typing_extensions import Self
 
 
 __all__ = ("Like",)

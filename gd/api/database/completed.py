@@ -20,9 +20,8 @@ from gd.api.database.common import (
     prefix,
 )
 from gd.constants import WEEKLY_ID_ADD
+from typing_extensions import Self
 
-if TYPE_CHECKING:
-    from typing_extensions import Self
 
 
 __all__ = ("Completed",)

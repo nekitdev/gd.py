@@ -6,7 +6,6 @@ from urllib.parse import quote, unquote
 from attrs import define, field
 from iters.iters import iter
 from pendulum import DateTime, Duration, duration
-from typing_aliases import DynamicTuple
 from yarl import URL
 
 from gd.api.editor import Editor
@@ -253,6 +252,7 @@ from gd.string_utils import concat_empty
 from gd.versions import CURRENT_GAME_VERSION, GameVersion
 
 if TYPE_CHECKING:
+    from typing_aliases import DynamicTuple
     from typing_extensions import Self
 
 __all__ = (
