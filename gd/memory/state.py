@@ -399,10 +399,10 @@ class SystemState(AbstractState):
         except LookupError:
             process_id = system_get_process_id_from_title(self.title)
 
-            if not process_id:  # type: ignore
+            if not process_id:
                 raise
 
-        self.process_id = process_id  # type: ignore
+        self.process_id = process_id
 
         config = self.config
 
@@ -591,8 +591,8 @@ def get_system_state(
 
 
 if DARWIN:
-    State = DarwinState  # type: ignore
-    get_state = get_darwin_state  # type: ignore
+    State = DarwinState
+    get_state = get_darwin_state
 
 elif WINDOWS:
     State = WindowsState  # type: ignore

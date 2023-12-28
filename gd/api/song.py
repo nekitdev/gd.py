@@ -45,7 +45,7 @@ class SongAPI:
         return cls(id=id, name=EMPTY, artist=ArtistAPI.default(artist_id))
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:  # type: ignore
+    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
         id = data.get(ID, DEFAULT_ID)
         name = data.get(NAME, EMPTY)
         artist_id = data.get(ARTIST_ID, DEFAULT_ID)

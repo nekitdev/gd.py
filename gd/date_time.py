@@ -40,7 +40,7 @@ def utc_from_timestamp_milliseconds(timestamp: int) -> DateTime:
 
 
 def timestamp_milliseconds(date_time: DateTime) -> int:
-    return int(date_time.timestamp() * SECONDS_TO_MILLISECONDS)  # type: ignore
+    return int(date_time.timestamp() * SECONDS_TO_MILLISECONDS)
 
 
 def utc_now() -> DateTime:
@@ -213,7 +213,7 @@ def parse_duration(string: str) -> Duration:
 
 
 def dump_duration(duration: Duration) -> str:
-    return str(duration.as_timedelta())  # type: ignore
+    return str(duration.as_timedelta())
 
 
 NOT_DATE_TIME = "{} does not represent date/time"
@@ -298,7 +298,7 @@ def duration_from_human(string: str, simple: bool = DEFAULT_SIMPLE) -> Duration:
 def duration_to_human(
     duration: Duration, distance_only: bool = DEFAULT_DISTANCE_ONLY, simple: bool = DEFAULT_SIMPLE
 ) -> str:
-    seconds = round(duration.total_seconds())  # type: ignore
+    seconds = round(duration.total_seconds())
 
     return string_duration(seconds, distance_only=distance_only, simple=simple)
 
@@ -358,7 +358,7 @@ def iter_duration(seconds: int) -> Iterator[str]:
 
 
 def date_time_from_human(string: str, simple: bool = DEFAULT_SIMPLE) -> DateTime:
-    return utc_now() + duration_from_human(string, simple=simple)  # type: ignore
+    return utc_now() + duration_from_human(string, simple=simple)
 
 
 def date_time_to_human(

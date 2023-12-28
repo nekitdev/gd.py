@@ -74,7 +74,7 @@ def external(function_pointer: Any) -> DecoratorIdentity[AnyCallable]:
             set_attribute(function_pointer, ARGUMENT_TYPES, argument_types)
 
         @wraps(function)
-        def handle_call(*args: Any) -> Any:  # type: ignore
+        def handle_call(*args: Any) -> Any:
             return function_pointer(*args)
 
         return handle_call

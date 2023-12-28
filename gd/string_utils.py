@@ -63,8 +63,8 @@ case_fold = str.casefold
 
 
 try:
-    remove_prefix = str.removeprefix  # type: ignore
-    remove_suffix = str.removesuffix  # type: ignore
+    remove_prefix = str.removeprefix
+    remove_suffix = str.removesuffix
 
 except AttributeError:
 
