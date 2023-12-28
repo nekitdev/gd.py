@@ -27,7 +27,7 @@ from __future__ import annotations
 from asyncio import CancelledError, Task, TimeoutError, get_event_loop, sleep
 from random import Random
 from time import monotonic as clock
-from typing import Any, Generic, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Generic, Optional, Type, TypeVar, Union
 
 from aiohttp import ClientError
 from attrs import define, field
@@ -47,6 +47,9 @@ from typing_extensions import ParamSpec
 
 from gd.constants import DEFAULT_RECONNECT
 from gd.errors import GDError
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 __all__ = ("ExponentialBackoff", "Loop", "loop")
 
@@ -122,7 +125,6 @@ TASK_ALREADY_LAUNCHED = "task is already launched and has not completed yet"
 DEFAULT_DELAY = 0.0
 
 F = TypeVar("F", bound=LoopFunction[Any])
-L = TypeVar("L", bound="Loop[...]")
 
 
 @define()
@@ -232,7 +234,7 @@ class Loop(Generic[P]):
             self._has_failed = False
             self._stop_next_iteration = False
 
-    def __get__(self: L, instance: Optional[S], type: Optional[Type[S]] = None) -> L:
+    def __get__(self, instance: Optional[S], type: Optional[Type[S]] = None) -> Self:
         if instance is None:
             return self
 
