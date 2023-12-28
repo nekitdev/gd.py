@@ -358,16 +358,7 @@ class Filters:
             if featured:
                 filters.update(RobTopFilters(featured=int(featured)))
 
-            special_rate_type = SpecialRateType.NONE
-
-            if rate_filter.is_epic():
-                special_rate_type = SpecialRateType.EPIC
-
-            if rate_filter.is_godlike():
-                special_rate_type = SpecialRateType.GODLIKE
-
-            if not special_rate_type.is_none():
-                filters.update(RobTopFilters(epic=special_rate_type.value))
+            # TODO: epic, legendary, mythic
 
         filters.update(
             RobTopFilters(

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Union
 
 from attrs import define, field
+from pendulum import DateTime
 
 # from gd.binary import Binary
 from gd.color import Color
@@ -23,7 +24,6 @@ from gd.levels import Level, LevelReference
 from gd.users import User, UserReference
 
 if TYPE_CHECKING:
-    from pendulum import DateTime
     from typing_extensions import Self
 
     from gd.client import Client
@@ -79,7 +79,7 @@ class UserComment(UserCommentReference):
         return cls(id=id, author=User.default(author_id, author_account_id))
 
     @classmethod
-    def from_model(cls, model: UserCommentModel, author: User) -> Self:
+    def from_model(cls, model: UserCommentModel, author: UserReference) -> Self:
         return cls(
             id=model.id,
             author=author,
@@ -141,6 +141,9 @@ class LevelCommentReference(Entity):
         self.level.detach_client()
 
         return super().detach_client()
+
+
+CommentReference = Union[UserCommentReference, LevelCommentReference]
 
 
 @register_unstructure_hook_omit_client

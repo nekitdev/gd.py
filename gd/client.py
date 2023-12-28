@@ -25,7 +25,13 @@ from typing_extensions import ParamSpec
 
 from gd.artist import Artist
 from gd.cache import Cache
-from gd.comments import Comment, LevelComment, LevelCommentReference, UserComment, UserCommentReference
+from gd.comments import (
+    Comment,
+    LevelComment,
+    LevelCommentReference,
+    UserComment,
+    UserCommentReference,
+)
 from gd.constants import (
     COMMENT_PAGE_SIZE,
     DEFAULT_CHEST_COUNT,
@@ -131,14 +137,14 @@ def switch_none(value: Optional[T], default: T) -> T:
     return default if value is None else value
 
 
-def by_subject_and_user(subject: str, user: User) -> Predicate[Message]:
+def by_subject_and_user(subject: Optional[str], user: UserReference) -> Predicate[Message]:
     def predicate(message: Message) -> bool:
         return message.subject == subject and message.user == user
 
     return predicate
 
 
-def by_user(user: User) -> Predicate[FriendRequest]:
+def by_user(user: UserReference) -> Predicate[FriendRequest]:
     def predicate(friend_request: FriendRequest) -> bool:
         return friend_request.user == user
 
@@ -641,7 +647,8 @@ class Client:
         self, response_model: SearchLevelsResponseModel
     ) -> Iterator[Tuple[LevelModel, UserReference, SongReference]]:
         creators_iterator = (
-            UserReference.from_creator_model(model).attach_client(self) for model in response_model.creators
+            UserReference.from_creator_model(model).attach_client(self)
+            for model in response_model.creators
         )
 
         creators = {creator.id: creator for creator in creators_iterator}
@@ -753,7 +760,7 @@ class Client:
         query: Query = EMPTY_QUERY,
         pages: Iterable[int] = DEFAULT_PAGES,
         filters: Optional[Filters] = None,
-        user: Optional[User] = None,
+        user: Optional[UserReference] = None,
         gauntlet: Optional[int] = None,
     ) -> AsyncIterator[Level]:
         return run_iterables(
@@ -771,7 +778,9 @@ class Client:
         )
 
     @check_login
-    async def update_level_description(self, level: Level, description: Optional[str]) -> None:
+    async def update_level_description(
+        self, level: LevelReference, description: Optional[str]
+    ) -> None:
         await self.session.update_level_description(
             level_id=level.id,
             description=description,
@@ -935,14 +944,14 @@ class Client:
         )
 
         if self.load_after_post:
-            if subject is None:
-                subject = EMPTY
-
             messages = self.get_messages_on_page(MessageType.OUTGOING)
             message = await messages.find(by_subject_and_user(subject, user)).extract()
 
             if message is None:
                 return message
+
+            if content is None:
+                content = EMPTY
 
             message.content = content
 

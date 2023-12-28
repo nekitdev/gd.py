@@ -44,6 +44,8 @@ ROBOT_VALUE = 0xB2
 SPIDER_VALUE_COUNT = 2
 SPIDER_VALUE = 0x7F
 
+DEFAULT_EXTRA_COLOR = Color.white()
+
 
 @define()
 class IconLayer:
@@ -77,8 +79,12 @@ class Icon:
     def name(self) -> str:
         return ICON_TYPE_TO_NAME[self.type]
 
+    @property
+    def extra_color(self) -> Color:
+        return DEFAULT_EXTRA_COLOR
+
     def has_glow(self) -> bool:
-        return self.glow or self.color_1.is_black()
+        return self.glow
 
     def is_complex(self) -> bool:
         return self.type.is_robot() or self.type.is_spider()
@@ -118,7 +124,7 @@ class Icon:
             raise ValueError  # TODO: message?
 
         if self.has_glow():
-            yield IconLayer(self.generate_name(glow=True), self.glow_color)
+            yield IconLayer(self.generate_name(glow=True), self.color_3)
 
         if self.type.is_ufo():
             yield IconLayer(self.generate_name(sub_part=3), self.extra_color)
@@ -147,7 +153,7 @@ class Icon:
         if self.has_glow():
             for layer in layers:
                 yield ComplexIconLayer(
-                    self.generate_name(part=layer.part, glow=True), self.glow_color, layer
+                    self.generate_name(part=layer.part, glow=True), self.color_3, layer
                 )
 
         for index, layer in enumerate(layers):

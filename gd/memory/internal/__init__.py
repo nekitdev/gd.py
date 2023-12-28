@@ -207,4 +207,6 @@ __all__ = (
     "system_read",
     "system_terminate",
     "system_write",
+    # unimplemented
+    "unimplemented",
 )

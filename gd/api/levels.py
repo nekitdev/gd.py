@@ -809,8 +809,11 @@ class SavedLevelAPI(CustomLevelAPI):
     def is_epic(self) -> bool:
         return self.rate_type.is_epic()
 
-    def is_godlike(self) -> bool:
-        return self.rate_type.is_godlike()
+    def is_legendary(self) -> bool:
+        return self.rate_type.is_legendary()
+
+    def is_mythic(self) -> bool:
+        return self.rate_type.is_mythic()
 
     def is_demon(self) -> bool:
         return self.difficulty.is_demon()

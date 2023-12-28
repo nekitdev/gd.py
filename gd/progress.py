@@ -12,7 +12,7 @@ from gd.simple import Simple
 __all__ = ("Progress",)
 
 ProgressItem = int
-ProgressItems = List[int]
+ProgressItems = List[ProgressItem]
 
 
 @define()

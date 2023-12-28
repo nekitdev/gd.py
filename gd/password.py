@@ -4,6 +4,7 @@ from typing import ClassVar, Optional
 
 from attrs import Attribute, define, field
 from typing_extensions import Self
+from gd.binary import Binary
 
 from gd.constants import DEFAULT_COPYABLE
 from gd.converter import CONVERTER

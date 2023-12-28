@@ -31,7 +31,7 @@ from gd.constants import (
 )
 from gd.converter import CONVERTER, register_unstructure_hook_omit_client
 from gd.date_time import utc_now
-from gd.encoding import decompress, unzip_level_string, zip_level_string
+from gd.encoding import unzip_level_string, zip_level_string
 from gd.entity import Entity, EntityData
 from gd.enums import (
     CommentStrategy,
@@ -45,6 +45,7 @@ from gd.enums import (
 )
 from gd.errors import MissingAccess
 from gd.password import Password, PasswordData
+from gd.songs import SongReference
 from gd.users import User, UserReference, UserReferenceData
 from gd.versions import CURRENT_GAME_VERSION, GameVersion, RobTopVersionData
 
@@ -55,7 +56,7 @@ if TYPE_CHECKING:
     from gd.client import Client
     from gd.comments import LevelComment
     from gd.models import LevelModel, TimelyInfoModel
-    from gd.songs import SongReference, SongReferenceData
+    from gd.songs import SongReferenceData
 
 __all__ = ("Level",)
 
@@ -75,6 +76,67 @@ class LevelReferenceData(EntityData):
 @define()
 class LevelReference(Entity):
     name: str = field(eq=False)
+
+    async def delete(self) -> None:
+        await self.client.delete_level(self)
+
+    async def update_description(self, content: str) -> None:
+        await self.client.update_level_description(self, content)
+
+    async def rate(self, stars: int) -> None:
+        await self.client.rate_level(self, stars)
+
+    async def rate_demon(self, rating: DemonDifficulty) -> None:
+        await self.client.rate_demon(self, rating=rating)
+
+    async def suggest_demon(self, rating: DemonDifficulty) -> None:
+        await self.client.suggest_demon(self, rating=rating)
+
+    async def suggest(self, stars: int, feature: bool) -> None:
+        await self.client.suggest_level(self, stars=stars, feature=feature)
+
+    async def comment(
+        self, content: Optional[str] = None, record: int = DEFAULT_RECORD
+    ) -> Optional[LevelComment]:
+        return await self.client.post_level_comment(self, content, record)
+
+    async def like(self) -> None:
+        await self.client.like_level(self)
+
+    async def dislike(self) -> None:
+        await self.client.dislike_level(self)
+
+    @wrap_async_iter
+    def get_leaderboard(
+        self,
+        strategy: LevelLeaderboardStrategy = LevelLeaderboardStrategy.DEFAULT,
+    ) -> AsyncIterator[User]:
+        return self.client.get_level_leaderboard(self, strategy=strategy).unwrap()
+
+    @wrap_async_iter
+    def get_comments_on_page(
+        self,
+        strategy: CommentStrategy = CommentStrategy.DEFAULT,
+        page: int = DEFAULT_PAGE,
+        count: int = COMMENT_PAGE_SIZE,
+    ) -> AsyncIterator[LevelComment]:
+        return self.client.get_level_comments_on_page(
+            self, page=page, count=count, strategy=strategy
+        ).unwrap()
+
+    @wrap_async_iter
+    def get_comments(
+        self,
+        strategy: CommentStrategy = CommentStrategy.DEFAULT,
+        count: int = COMMENT_PAGE_SIZE,
+        pages: Iterable[int] = DEFAULT_PAGES,
+    ) -> AsyncIterator[LevelComment]:
+        return self.client.get_level_comments(
+            level=self,
+            strategy=strategy,
+            count=count,
+            pages=pages,
+        ).unwrap()
 
 
 class LevelData(LevelReferenceData):
@@ -185,8 +247,11 @@ class Level(LevelReference):
         if model.is_epic():
             rate_type = RateType.EPIC
 
-        if model.is_godlike():
-            rate_type = RateType.GODLIKE
+        if model.is_legendary():
+            rate_type = RateType.LEGENDARY
+
+        if model.is_mythic():
+            rate_type = RateType.MYTHIC
 
         return cls(
             id=model.id,
@@ -265,8 +330,11 @@ class Level(LevelReference):
     def is_epic(self) -> bool:
         return self.rate_type.is_epic()
 
-    def is_godlike(self) -> bool:
-        return self.rate_type.is_godlike()
+    def is_legendary(self) -> bool:
+        return self.rate_type.is_legendary()
+
+    def is_mythic(self) -> bool:
+        return self.rate_type.is_mythic()
 
     def is_original(self) -> bool:
         return not self.original_id
@@ -346,24 +414,6 @@ class Level(LevelReference):
 
         self.update_from(uploaded)
 
-    async def delete(self) -> None:
-        await self.client.delete_level(self)
-
-    async def update_description(self, content: str) -> None:
-        await self.client.update_level_description(self, content)
-
-    async def rate(self, stars: int) -> None:
-        await self.client.rate_level(self, stars)
-
-    async def rate_demon(self, rating: DemonDifficulty) -> None:
-        await self.client.rate_demon(self, rating=rating)
-
-    async def suggest_demon(self, rating: DemonDifficulty) -> None:
-        await self.client.suggest_demon(self, rating=rating)
-
-    async def suggest(self, stars: int, feature: bool) -> None:
-        await self.client.suggest_level(self, stars=stars, feature=feature)
-
     async def update(
         self, *, get_data: bool = DEFAULT_GET_DATA, use_client: bool = DEFAULT_USE_CLIENT
     ) -> Optional[Level]:
@@ -381,49 +431,6 @@ class Level(LevelReference):
             self.update_from(level)
 
             return self
-
-    async def comment(
-        self, content: Optional[str] = None, record: int = DEFAULT_RECORD
-    ) -> Optional[LevelComment]:
-        return await self.client.post_level_comment(self, content, record)
-
-    async def like(self) -> None:
-        await self.client.like_level(self)
-
-    async def dislike(self) -> None:
-        await self.client.dislike_level(self)
-
-    @wrap_async_iter
-    def get_leaderboard(
-        self,
-        strategy: LevelLeaderboardStrategy = LevelLeaderboardStrategy.DEFAULT,
-    ) -> AsyncIterator[User]:
-        return self.client.get_level_leaderboard(self, strategy=strategy).unwrap()
-
-    @wrap_async_iter
-    def get_comments_on_page(
-        self,
-        strategy: CommentStrategy = CommentStrategy.DEFAULT,
-        page: int = DEFAULT_PAGE,
-        count: int = COMMENT_PAGE_SIZE,
-    ) -> AsyncIterator[LevelComment]:
-        return self.client.get_level_comments_on_page(
-            self, page=page, count=count, strategy=strategy
-        ).unwrap()
-
-    @wrap_async_iter
-    def get_comments(
-        self,
-        strategy: CommentStrategy = CommentStrategy.DEFAULT,
-        count: int = COMMENT_PAGE_SIZE,
-        pages: Iterable[int] = DEFAULT_PAGES,
-    ) -> AsyncIterator[LevelComment]:
-        return self.client.get_level_comments(
-            level=self,
-            strategy=strategy,
-            count=count,
-            pages=pages,
-        ).unwrap()
 
     def attach_client_unchecked(self, client: Optional[Client]) -> Self:
         self.creator.attach_client_unchecked(client)

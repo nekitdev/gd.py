@@ -10,7 +10,7 @@ from gd.models_utils import concat_query, split_query
 from gd.robtop import RobTop
 from gd.typing import IntString
 
-__all__ = ("EMPTY_QUERY", "QueryPart", "QueryParts", "Query", "query")
+__all__ = ("EMPTY_QUERY", "QueryPart", "QueryParts", "Query", "query", "query_parts")
 
 QueryPart = IntString
 QueryParts = DynamicTuple[QueryPart]
@@ -44,6 +44,10 @@ class Query(RobTop):
 
 
 def query(*parts: QueryPart) -> Query:
+    return Query(parts)
+
+
+def query_parts(parts: QueryParts) -> Query:
     return Query(parts)
 
 

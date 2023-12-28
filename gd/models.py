@@ -42,6 +42,7 @@ from gd.constants import (
     DEFAULT_OBJECT_COUNT,
     DEFAULT_ORBS,
     DEFAULT_PLACE,
+    DEFAULT_PLATFORMER,
     DEFAULT_RANK,
     DEFAULT_RATING,
     DEFAULT_READ,
@@ -65,6 +66,7 @@ from gd.constants import (
 from gd.date_time import date_time_from_human, date_time_to_human, utc_now
 from gd.decorators import cache_by
 from gd.difficulty_parameters import DEFAULT_DEMON_DIFFICULTY_VALUE, DifficultyParameters
+from gd.either_record import EitherRecord
 from gd.encoding import (
     decode_base64_string_url_safe,
     decode_robtop_string,
@@ -484,6 +486,7 @@ SEARCH_USER_ICON_TYPE = 14
 SEARCH_USER_GLOW = 15
 SEARCH_USER_ACCOUNT_ID = 16
 SEARCH_USER_USER_COINS = 17
+SEARCH_USER_DIAMONDS = 46
 
 
 @define()
@@ -502,6 +505,7 @@ class SearchUserModel(Model):
     glow: bool = DEFAULT_GLOW
     account_id: int = DEFAULT_ID
     user_coins: int = DEFAULT_USER_COINS
+    diamonds: int = DEFAULT_DIAMONDS
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
@@ -550,6 +554,8 @@ class SearchUserModel(Model):
 
         user_coins = parse_get_or(int, DEFAULT_USER_COINS, mapping.get(SEARCH_USER_USER_COINS))
 
+        diamonds = parse_get_or(int, DEFAULT_DIAMONDS, mapping.get(SEARCH_USER_DIAMONDS))
+
         return cls(
             name=name,
             id=id,
@@ -565,6 +571,7 @@ class SearchUserModel(Model):
             glow=glow,
             account_id=account_id,
             user_coins=user_coins,
+            diamonds=diamonds,
         )
 
     def to_robtop(self) -> str:
@@ -1663,8 +1670,11 @@ class LevelModel(Model):
     def is_epic(self) -> bool:
         return self.special_rate_type.is_epic()
 
-    def is_godlike(self) -> bool:
-        return self.special_rate_type.is_godlike()
+    def is_legendary(self) -> bool:
+        return self.special_rate_type.is_legendary()
+
+    def is_mythic(self) -> bool:
+        return self.special_rate_type.is_mythic()
 
     def has_verified_coins(self) -> bool:
         return self.verified_coins
@@ -1947,7 +1957,7 @@ LEVEL_LEADERBOARD_USER_RECORDED_AT = 42
 class LevelLeaderboardUserModel(Model):
     name: str = field(default=EMPTY)
     id: int = field(default=DEFAULT_ID)
-    record: int = field(default=DEFAULT_RECORD)
+    either_record: EitherRecord = field(factory=EitherRecord)
     place: int = field(default=DEFAULT_PLACE)
     icon_id: int = field(default=DEFAULT_ICON_ID)
     color_1_id: int = field(default=DEFAULT_COLOR_1_ID)
@@ -1959,14 +1969,17 @@ class LevelLeaderboardUserModel(Model):
     recorded_at: DateTime = field(factory=utc_now)
 
     @classmethod
-    def from_robtop(cls, string: str) -> Self:
+    def from_robtop(cls, string: str, platformer: bool = DEFAULT_PLATFORMER) -> Self:
         mapping = split_level_leaderboard_user(string)
 
         name = mapping.get(LEVEL_LEADERBOARD_USER_NAME, EMPTY)
 
         id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_LEADERBOARD_USER_ID))
 
-        record = parse_get_or(int, DEFAULT_RECORD, mapping.get(LEVEL_LEADERBOARD_USER_RECORD))
+        either_record = EitherRecord(
+            parse_get_or(int, DEFAULT_RECORD, mapping.get(LEVEL_LEADERBOARD_USER_RECORD)),
+            platformer,
+        )
 
         place = parse_get_or(int, DEFAULT_PLACE, mapping.get(LEVEL_LEADERBOARD_USER_PLACE))
 
@@ -1999,7 +2012,7 @@ class LevelLeaderboardUserModel(Model):
         return cls(
             name=name,
             id=id,
-            record=record,
+            either_record=either_record,
             place=place,
             icon_id=icon_id,
             color_1_id=color_1_id,
@@ -2018,7 +2031,7 @@ class LevelLeaderboardUserModel(Model):
         mapping = {
             LEVEL_LEADERBOARD_USER_NAME: self.name,
             LEVEL_LEADERBOARD_USER_ID: str(self.id),
-            LEVEL_LEADERBOARD_USER_RECORD: str(self.record),
+            LEVEL_LEADERBOARD_USER_RECORD: str(self.either_record.record),
             LEVEL_LEADERBOARD_USER_PLACE: str(self.place),
             LEVEL_LEADERBOARD_USER_ICON_ID: str(self.icon_id),
             LEVEL_LEADERBOARD_USER_COLOR_1_ID: str(self.color_1_id),
@@ -2424,7 +2437,7 @@ class ChestsResponseModel(Model):
         )
 
     @classmethod
-    def decode_inner(string: str) -> str:
+    def decode_inner(cls, string: str) -> str:
         return decode_robtop_string(string[CHESTS_SLICE:], Key.CHESTS)
 
     @classmethod
@@ -2463,7 +2476,7 @@ class QuestsResponseModel(Model):
         )
 
     @classmethod
-    def decode_inner(string: str) -> str:
+    def decode_inner(cls, string: str) -> str:
         return decode_robtop_string(string[QUESTS_SLICE:], Key.QUESTS)
 
     @classmethod

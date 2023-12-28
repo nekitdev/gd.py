@@ -8,7 +8,7 @@ from gd.constants import DEFAULT_ID, DEFAULT_READ, EMPTY
 from gd.date_time import utc_now
 from gd.entity import Entity
 from gd.enums import FriendRequestType
-from gd.users import User, UserCosmetics, UserReference
+from gd.users import UserReference
 
 if TYPE_CHECKING:
     from pendulum import DateTime
@@ -46,7 +46,9 @@ class FriendRequestReference(Entity):
         type: FriendRequestType = FriendRequestType.DEFAULT,
     ) -> Self:
         return cls(
-            id=id, user=User.default(user_id, user_account_id), type=FriendRequestType.DEFAULT
+            id=id,
+            user=UserReference.default(user_id, user_account_id),
+            type=FriendRequestType.DEFAULT,
         )
 
     def is_incoming(self) -> bool:
@@ -99,18 +101,7 @@ class FriendRequest(FriendRequestReference):
     def from_model(cls, model: FriendRequestModel, type: FriendRequestType) -> Self:
         return cls(
             id=model.id,
-            user=User(
-                name=model.name,
-                id=model.user_id,
-                account_id=model.account_id,
-                cosmetics=UserCosmetics(
-                    color_1_id=model.color_1_id,
-                    color_2_id=model.color_2_id,
-                    icon_type=model.icon_type,
-                    icon_id=model.icon_id,
-                    glow=model.glow,
-                ),
-            ),
+            user=UserReference(name=model.name, id=model.user_id, account_id=model.account_id),
             type=type,
             created_at=model.created_at,
             content=model.content,

@@ -1,4 +1,3 @@
-
 from attrs import define, field
 from iters.iters import iter
 from typing_aliases import Unary

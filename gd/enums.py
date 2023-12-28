@@ -505,7 +505,8 @@ class RateFilter(Enum):
     RATED = 1
     FEATURED = 2
     EPIC = 3
-    GODLIKE = 4
+    LEGENDARY = 4
+    MYTHIC = 5
 
     def is_not_rated(self) -> bool:
         return self is type(self).NOT_RATED
@@ -519,8 +520,11 @@ class RateFilter(Enum):
     def is_epic(self) -> bool:
         return self is type(self).EPIC
 
-    def is_godlike(self) -> bool:
-        return self is type(self).GODLIKE
+    def is_legendary(self) -> bool:
+        return self is type(self).LEGENDARY
+
+    def is_mythic(self) -> bool:
+        return self is type(self).MYTHIC
 
 
 class SpecialRateType(Enum):
@@ -528,7 +532,8 @@ class SpecialRateType(Enum):
 
     NONE = 0
     EPIC = 1
-    GODLIKE = 2
+    LEGENDARY = 2
+    MYTHIC = 3
 
     DEFAULT = NONE
 
@@ -538,8 +543,11 @@ class SpecialRateType(Enum):
     def is_epic(self) -> bool:
         return self is type(self).EPIC
 
-    def is_godlike(self) -> bool:
-        return self is type(self).GODLIKE
+    def is_legendary(self) -> bool:
+        return self is type(self).LEGENDARY
+
+    def is_mythic(self) -> bool:
+        return self is type(self).MYTHIC
 
     def is_default(self) -> bool:
         return self is type(self).DEFAULT
@@ -554,13 +562,15 @@ class RateType(Flag):
     RATED_ONLY = 1 << 1
     FEATURED_ONLY = 1 << 2
     EPIC_ONLY = 1 << 3
-    GODLIKE_ONLY = 1 << 4
+    LEGENDARY_ONLY = 1 << 4
+    MYTHIC_ONLY = 1 << 5
 
     NOT_RATED = NONE | NOT_RATED_ONLY
     RATED = NOT_RATED | RATED_ONLY
     FEATURED = RATED | FEATURED_ONLY
     EPIC = FEATURED | EPIC_ONLY
-    GODLIKE = EPIC | GODLIKE_ONLY
+    LEGENDARY = EPIC | LEGENDARY_ONLY
+    MYTHIC = LEGENDARY | MYTHIC_ONLY
 
     DEFAULT = NONE
 
@@ -576,8 +586,11 @@ class RateType(Flag):
     def is_epic(self) -> bool:
         return type(self).EPIC_ONLY in self
 
-    def is_godlike(self) -> bool:
-        return type(self).GODLIKE_ONLY in self
+    def is_legendary(self) -> bool:
+        return type(self).LEGENDARY_ONLY in self
+
+    def is_mythic(self) -> bool:
+        return type(self).MYTHIC_ONLY in self
 
 
 class CommentType(Enum):

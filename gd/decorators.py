@@ -58,7 +58,7 @@ class CacheBy:
 
             return result
 
-        return wrap
+        return wrap  # type: ignore[return-value]
 
 
 def cache_by(*names: str) -> CacheBy:
@@ -77,7 +77,7 @@ def check_login(function: Callable[Concatenate[C, P], T]) -> Callable[Concatenat
 
         return function(client, *args, **kwargs)
 
-    return wrap
+    return wrap  # type: ignore[return-value]
 
 
 NOT_LOGGED_IN = "the client is not logged in"

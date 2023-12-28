@@ -142,8 +142,8 @@ class Factory:
 
         colored = colorize(
             grayscale(image),
-            black=black.to_rgb(),
-            white=color.to_rgb(),  # type: ignore
+            black=black.to_rgb(),  # type: ignore[arg-type]
+            white=color.to_rgb(),  # type: ignore[arg-type]
         )
 
         colored.putalpha(alpha)
