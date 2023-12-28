@@ -25,12 +25,7 @@ from gd.api.levels import (
     TimelyLevelAPI,
 )
 from gd.api.like import Like
-from gd.api.objects import (
-    Object,
-    migrate_objects,
-    object_from_robtop,
-    object_to_robtop,
-)
+from gd.api.objects import Object, migrate_objects, object_from_robtop, object_to_robtop
 from gd.api.song import SongAPI
 from gd.constants import (
     DEFAULT_COLOR_1_ID,

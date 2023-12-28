@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from attrs import define, field
 
@@ -23,9 +23,8 @@ from gd.level import Level
 from gd.users import User
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
-
     from pendulum import DateTime
+    from typing_extensions import Self
 
     from gd.client import Client
     from gd.models import LevelCommentModel, UserCommentModel

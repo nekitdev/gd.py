@@ -8,7 +8,6 @@ from iters.utils import unary_tuple
 from gd.constants import BACKSLASH, EMPTY, SPACE
 from gd.string_constants import BRACES, COMMA, MAPS, PIPE, STAR, TICK, UNDER, WRAP, ZERO_PAD
 
-
 __all__ = (
     # concatenation
     "concat_empty",
