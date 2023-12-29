@@ -23,6 +23,7 @@ from gd.constants import (
     DEFAULT_COLOR_2_ID,
     DEFAULT_COLOR_3_ID,
     DEFAULT_CONTENT_PRESENT,
+    DEFAULT_COUNT,
     DEFAULT_CREATOR_POINTS,
     DEFAULT_DEMON,
     DEFAULT_DEMONS,
@@ -67,6 +68,7 @@ from gd.date_time import date_time_from_human, date_time_to_human, utc_now
 from gd.decorators import cache_by
 from gd.difficulty_parameters import DEFAULT_DEMON_DIFFICULTY_VALUE, DifficultyParameters
 from gd.either_record import EitherRecord
+from gd.either_reward import EitherReward
 from gd.encoding import (
     decode_base64_string_url_safe,
     decode_robtop_string,
@@ -1367,7 +1369,7 @@ LEVEL_GAME_VERSION = 13
 LEVEL_RATING = 14
 LEVEL_LENGTH = 15
 LEVEL_DEMON = 17
-LEVEL_STARS = 18
+LEVEL_REWARD = 18
 LEVEL_SCORE = 19
 LEVEL_AUTO = 25
 LEVEL_PASSWORD = 27
@@ -1379,7 +1381,7 @@ LEVEL_CUSTOM_SONG_ID = 35
 LEVEL_CAPACITY = 36
 LEVEL_COINS = 37
 LEVEL_VERIFIED_COINS = 38
-LEVEL_REQUESTED_STARS = 39
+LEVEL_REQUESTED_REWARD = 39
 LEVEL_LOW_DETAIL = 40
 LEVEL_TIMELY_ID = 41
 LEVEL_SPECIAL_RATE_TYPE = 42
@@ -1405,7 +1407,7 @@ class LevelModel(Model):
     game_version: GameVersion = field(default=CURRENT_GAME_VERSION)
     rating: int = field(default=DEFAULT_RATING)
     length: LevelLength = field(default=LevelLength.DEFAULT)
-    stars: int = field(default=DEFAULT_STARS)
+    reward: EitherReward = field(factory=EitherReward)
     score: int = field(default=DEFAULT_SCORE)
     password: Password = field(factory=Password)
     created_at: DateTime = field(factory=utc_now)
@@ -1416,7 +1418,7 @@ class LevelModel(Model):
     capacity: Capacity = field(factory=Capacity)
     coins: int = field(default=DEFAULT_COINS)
     verified_coins: bool = field(default=DEFAULT_VERIFIED_COINS)
-    requested_stars: int = field(default=DEFAULT_STARS)
+    requested_reward: EitherReward = field(factory=EitherReward)
     low_detail: bool = field(default=DEFAULT_LOW_DETAIL)
     timely_id: int = field(default=DEFAULT_ID)
     timely_type: TimelyType = field(default=TimelyType.DEFAULT)
@@ -1483,7 +1485,11 @@ class LevelModel(Model):
             mapping.get(LEVEL_LENGTH),
         )
 
-        stars = parse_get_or(int, DEFAULT_STARS, mapping.get(LEVEL_STARS))
+        platformer = length.is_platformer()
+
+        reward = EitherReward(
+            parse_get_or(int, DEFAULT_COUNT, mapping.get(LEVEL_REWARD)), platformer
+        )
 
         score = parse_get_or(int, DEFAULT_SCORE, mapping.get(LEVEL_SCORE))
 
@@ -1520,7 +1526,10 @@ class LevelModel(Model):
             int_bool, DEFAULT_VERIFIED_COINS, mapping.get(LEVEL_VERIFIED_COINS)
         )
 
-        requested_stars = parse_get_or(int, DEFAULT_STARS, mapping.get(LEVEL_REQUESTED_STARS))
+        requested_reward = EitherReward(
+            parse_get_or(int, DEFAULT_COUNT, mapping.get(LEVEL_REQUESTED_REWARD)),
+            platformer,
+        )
 
         low_detail = parse_get_or(int_bool, DEFAULT_LOW_DETAIL, mapping.get(LEVEL_LOW_DETAIL))
 
@@ -1577,7 +1586,7 @@ class LevelModel(Model):
             game_version=game_version,
             rating=rating,
             length=length,
-            stars=stars,
+            reward=reward,
             score=score,
             password=password,
             created_at=created_at,
@@ -1588,7 +1597,7 @@ class LevelModel(Model):
             capacity=capacity,
             coins=coins,
             verified_coins=verified_coins,
-            requested_stars=requested_stars,
+            requested_reward=requested_reward,
             low_detail=low_detail,
             timely_id=timely_id,
             timely_type=timely_type,
@@ -1633,7 +1642,7 @@ class LevelModel(Model):
             LEVEL_RATING: str(self.rating),
             LEVEL_LENGTH: str(self.length.value),
             LEVEL_DEMON: demon_string,
-            LEVEL_STARS: str(self.stars),
+            LEVEL_REWARD: str(self.reward.count),
             LEVEL_SCORE: str(self.score),
             LEVEL_AUTO: auto_string,
             LEVEL_PASSWORD: self.password.to_robtop(),
@@ -1645,7 +1654,7 @@ class LevelModel(Model):
             LEVEL_CAPACITY: self.capacity.to_robtop(),
             LEVEL_COINS: str(self.coins),
             LEVEL_VERIFIED_COINS: bool_str(self.has_verified_coins()),
-            LEVEL_REQUESTED_STARS: str(self.requested_stars),
+            LEVEL_REQUESTED_REWARD: str(self.requested_reward.count),
             LEVEL_LOW_DETAIL: bool_str(self.has_low_detail()),
             LEVEL_TIMELY_ID: str(timely_id),
             LEVEL_SPECIAL_RATE_TYPE: str(self.special_rate_type.value),
@@ -2766,7 +2775,7 @@ class LevelResponseModel:
 def search_levels_hash_part(level: LevelModel) -> str:
     string = str(level.id)
 
-    return iter.of(first(string), last(string), str(level.stars), str(level.coins)).collect(
+    return iter.of(first(string), last(string), str(level.reward.count), str(level.coins)).collect(
         concat_empty
     )
 

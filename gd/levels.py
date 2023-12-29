@@ -23,7 +23,6 @@ from gd.constants import (
     DEFAULT_RATING,
     DEFAULT_RECORD,
     DEFAULT_SCORE,
-    DEFAULT_STARS,
     DEFAULT_TWO_PLAYER,
     DEFAULT_USE_CLIENT,
     DEFAULT_VERIFIED_COINS,
@@ -32,7 +31,9 @@ from gd.constants import (
     UNKNOWN,
 )
 from gd.converter import CONVERTER, register_unstructure_hook_omit_client
-from gd.encoding import unzip_level_string, zip_level_string
+from gd.date_time import duration_milliseconds, timestamp_milliseconds, utc_from_timestamp_milliseconds
+from gd.either_reward import EitherReward
+from gd.encoding import compress, decompress, unzip_level_string, zip_level_string
 from gd.entity import Entity, EntityData
 from gd.enums import (
     CommentStrategy,
@@ -46,7 +47,8 @@ from gd.enums import (
 )
 from gd.errors import MissingAccess
 from gd.password import Password, PasswordData
-from gd.schema import LevelReferenceSchema
+from gd.schema import LevelReferenceSchema, LevelSchema
+from gd.schema_constants import NONE, SOME
 from gd.songs import SongReference
 from gd.users import User, UserReference, UserReferenceData
 from gd.versions import CURRENT_GAME_VERSION, GameVersion, RobTopVersionData
@@ -58,7 +60,7 @@ if TYPE_CHECKING:
     from gd.client import Client
     from gd.comments import LevelComment
     from gd.models import LevelModel, TimelyInfoModel
-    from gd.schema import LevelReferenceBuilder, LevelReferenceReader
+    from gd.schema import LevelBuilder, LevelReader, LevelReferenceBuilder, LevelReferenceReader
     from gd.songs import SongReferenceData
 
 __all__ = ("Level", "LevelReference")
@@ -247,8 +249,8 @@ class Level(LevelReference):
     rating: int = field(default=DEFAULT_RATING, eq=False)
     length: LevelLength = field(default=LevelLength.DEFAULT, eq=False)
     difficulty: Difficulty = field(default=Difficulty.DEFAULT, eq=False)
-    stars: int = field(default=DEFAULT_STARS, eq=False)
-    requested_stars: int = field(default=DEFAULT_STARS, eq=False)
+    reward: EitherReward = field(factory=EitherReward, eq=False)
+    requested_reward: EitherReward = field(factory=EitherReward, eq=False)
     score: int = field(default=DEFAULT_SCORE, eq=False)
     rate_type: RateType = field(default=RateType.DEFAULT, eq=False)
     password: Optional[Password] = field(default=None, eq=False)
@@ -268,6 +270,9 @@ class Level(LevelReference):
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
+
+    def has_data(self) -> bool:
+        return self.unprocessed_data_unchecked is not None
 
     @property
     def unprocessed_data(self) -> str:
@@ -308,9 +313,9 @@ class Level(LevelReference):
     def from_model(cls, model: LevelModel, creator: UserReference, song: SongReference) -> Self:
         rate_type = RateType.NOT_RATED
 
-        stars = model.stars
+        reward = model.reward.count
 
-        if stars > 0:
+        if reward > 0:
             rate_type = RateType.RATED
 
         score = model.score
@@ -340,7 +345,7 @@ class Level(LevelReference):
             game_version=model.game_version,
             rating=model.rating,
             length=model.length,
-            stars=model.stars,
+            reward=model.reward,
             score=model.score,
             rate_type=rate_type,
             password=model.password,
@@ -350,7 +355,7 @@ class Level(LevelReference):
             two_player=model.is_two_player(),
             coins=model.coins,
             verified_coins=model.has_verified_coins(),
-            requested_stars=model.requested_stars,
+            requested_reward=model.requested_reward,
             low_detail=model.has_low_detail(),
             timely_id=model.timely_id,
             timely_type=model.timely_type,
@@ -446,7 +451,7 @@ class Level(LevelReference):
         privacy: LevelPrivacy = LevelPrivacy.DEFAULT,
         object_count: Optional[int] = None,
         coins: Optional[int] = None,
-        stars: Optional[int] = None,
+        reward: Optional[int] = None,
         low_detail: Optional[bool] = None,
         capacity: Optional[Capacity] = None,
         password: Optional[Password] = None,
@@ -475,7 +480,7 @@ class Level(LevelReference):
             privacy=privacy,
             object_count=switch_none(object_count, self.object_count),
             coins=switch_none(coins, self.coins),
-            stars=switch_none(stars, self.stars),
+            reward=switch_none(reward, self.reward.count),
             low_detail=switch_none(low_detail, self.has_low_detail()),
             capacity=switch_none(capacity, self.capacity),
             password=switch_none(password, self.password),
@@ -524,6 +529,152 @@ class Level(LevelReference):
         self.song.detach_client()
 
         return super().detach_client()
+
+    @classmethod
+    def from_reader(cls, reader: LevelReader) -> Self:  # type: ignore[override]
+        password_option = reader.password
+
+        if password_option.which() == NONE:
+            password = None
+
+        else:
+            password = Password.from_reader(password_option.some)
+
+        capacity_option = reader.capacity
+
+        if capacity_option.which() == NONE:
+            capacity = None
+
+        else:
+            capacity = Capacity.from_value(capacity_option.some)
+
+        created_at_option = reader.createdAt
+
+        if created_at_option.which() == NONE:
+            created_at = None
+
+        else:
+            created_at = utc_from_timestamp_milliseconds(created_at_option.some)
+
+        updated_at_option = reader.updatedAt
+
+        if updated_at_option.which() == NONE:
+            updated_at = None
+
+        else:
+            updated_at = utc_from_timestamp_milliseconds(updated_at_option.some)
+
+        level = cls(
+            id=reader.id,
+            name=reader.name,
+            creator=UserReference.from_reader(reader.creator),
+            song=SongReference.from_reader(reader.song),
+            description=reader.description,
+            version=reader.version,
+            downloads=reader.downloads,
+            game_version=GameVersion.from_value(reader.gameVersion),
+            rating=reader.rating,
+            length=LevelLength(reader.length),
+            difficulty=Difficulty(reader.difficulty),
+            reward=EitherReward.from_reader(reader.reward),
+            requested_reward=EitherReward.from_reader(reader.requestedReward),
+            score=reader.score,
+            rate_type=RateType(reader.rateType),
+            password=password,
+            original_id=reader.originalId,
+            two_player=reader.twoPlayer,
+            capacity=capacity,
+            coins=reader.coins,
+            verified_coins=reader.verifiedCoins,
+            low_detail=reader.lowDetail,
+            object_count=reader.objectCount,
+            created_at=created_at,
+            updated_at=updated_at,
+            editor_time=duration(milliseconds=reader.editorTime),
+            copies_time=duration(milliseconds=reader.copiesTime),
+            timely_type=TimelyType(reader.timelyType),
+            timely_id=reader.timelyId,
+        )
+
+        data_option = reader.data
+
+        if data_option.which() == SOME:
+            level.data = decompress(data_option.some)
+
+        return level
+
+    def to_builder(self) -> LevelBuilder:  # type: ignore[override]
+        builder = LevelSchema.new_message()
+
+        builder.id = self.id
+        builder.name = self.name
+        builder.creator = self.creator.to_builder()
+        builder.song = self.song.to_builder()
+        builder.description = self.description
+
+        if self.has_data():
+            builder.data.some = compress(self.data)
+
+        else:
+            builder.data.none = None
+
+        builder.version = self.version
+        builder.downloads = self.downloads
+        builder.gameVersion = self.game_version.to_value()
+        builder.rating = self.rating
+        builder.length = self.length.value
+        builder.difficulty = self.difficulty.value
+        builder.reward = self.reward.to_builder()
+        builder.requestedReward = self.requested_reward.to_builder()
+        builder.score = self.score
+        builder.rateType = self.rate_type.value
+
+        password = self.password
+
+        if password is None:
+            builder.password.none = None
+
+        else:
+            builder.password.some = password.to_builder()
+
+        builder.originalId = self.original_id
+        builder.twoPlayer = self.is_two_player()
+
+        capacity = self.capacity
+
+        if capacity is None:
+            builder.capacity.none = None
+
+        else:
+            builder.capacity.some = capacity.to_value()
+
+        builder.coins = self.coins
+        builder.verifiedCoins = self.has_verified_coins()
+        builder.lowDetail = self.has_low_detail()
+        builder.objectCount = self.object_count
+
+        created_at = self.created_at
+
+        if created_at is None:
+            builder.createdAt.none = None
+
+        else:
+            builder.createdAt.some = timestamp_milliseconds(created_at)
+
+        updated_at = self.updated_at
+
+        if updated_at is None:
+            builder.updatedAt.none = None
+
+        else:
+            builder.updatedAt.some = timestamp_milliseconds(updated_at)
+
+        builder.editorTime = duration_milliseconds(self.editor_time)
+        builder.copiesTime = duration_milliseconds(self.copies_time)
+        builder.timelyType = self.timely_type.value
+        builder.timelyId = self.timely_id
+
+        return builder
 
     def as_reference(self) -> LevelReference:
         return LevelReference(id=self.id, name=self.name)

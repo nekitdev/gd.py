@@ -269,6 +269,12 @@ class LevelLength(Enum):
 
         return cls.XL
 
+    def is_platformer(self) -> bool:
+        return self is type(self).PLATFORMER
+
+    def is_default(self) -> bool:
+        return self is type(self).DEFAULT
+
 
 class LevelPrivacy(Enum):
     """Represents level privacy settings."""

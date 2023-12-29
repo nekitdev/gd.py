@@ -20,6 +20,8 @@ __all__ = (
     "date_time_to_human",
     # parse duration
     "parse_duration",
+    # duration milliseconds
+    "duration_milliseconds",
     # timestamp milliseconds
     "timestamp_milliseconds",
     # UTC functions
@@ -40,7 +42,11 @@ def utc_from_timestamp_milliseconds(timestamp: int) -> DateTime:
 
 
 def timestamp_milliseconds(date_time: DateTime) -> int:
-    return int(date_time.timestamp() * SECONDS_TO_MILLISECONDS)
+    return round(date_time.timestamp() * SECONDS_TO_MILLISECONDS)
+
+
+def duration_milliseconds(duration: Duration) -> int:
+    return round(duration.total_seconds() * SECONDS_TO_MILLISECONDS)
 
 
 def utc_now() -> DateTime:
