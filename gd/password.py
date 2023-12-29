@@ -1,6 +1,7 @@
 from __future__ import annotations
+from io import BufferedReader, BufferedWriter
 
-from typing import ClassVar, Optional
+from typing import TYPE_CHECKING, ClassVar, Optional
 
 from attrs import Attribute, define, field
 from typing_extensions import Self
@@ -11,7 +12,12 @@ from gd.converter import CONVERTER
 from gd.encoding import decode_robtop_string, encode_robtop_string
 from gd.enums import Key
 from gd.robtop import RobTop
+from gd.schema import PasswordSchema
+from gd.schema_constants import NONE
 from gd.typing import Data
+
+if TYPE_CHECKING:
+    from gd.schema import PasswordBuilder, PasswordReader
 
 __all__ = ("Password", "PasswordData")
 
@@ -31,7 +37,7 @@ class PasswordData(Data):
 
 
 @define()
-class Password(RobTop):
+class Password(Binary, RobTop):
     ADD: ClassVar[int] = 1_000_000
 
     value: Optional[int] = field(default=None)
@@ -112,3 +118,61 @@ class Password(RobTop):
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return True
+
+    @classmethod
+    def from_binary(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(PasswordSchema.read(binary))
+
+    @classmethod
+    def from_binary_packed(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(PasswordSchema.read_packed(binary))
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> Self:
+        with PasswordSchema.from_bytes(data) as reader:
+            return cls.from_reader(reader)
+
+    @classmethod
+    def from_bytes_packed(cls, data: bytes) -> Self:
+        return cls.from_reader(PasswordSchema.from_bytes_packed(data))
+
+    def to_binary(self, binary: BufferedWriter) -> None:
+        self.to_builder().write(binary)
+
+    def to_binary_packed(self, binary: BufferedWriter) -> None:
+        self.to_builder().write_packed(binary)
+
+    def to_bytes(self) -> bytes:
+        return self.to_builder().to_bytes()
+
+    def to_bytes_packed(self) -> bytes:
+        return self.to_builder().to_bytes_packed()
+
+    @classmethod
+    def from_reader(cls, reader: PasswordReader) -> Self:
+        option = reader.value
+
+        if option.which() == NONE:
+            value = None
+
+        else:
+            value = option.some
+
+        copyable = reader.copyable
+
+        return cls(value=value, copyable=copyable)
+
+    def to_builder(self) -> PasswordBuilder:
+        builder = PasswordSchema.new_message()
+
+        value = self.value
+
+        if value is None:
+            builder.value.none = None
+
+        else:
+            builder.value.some = value
+
+        builder.copyable = self.is_copyable()
+
+        return builder

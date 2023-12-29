@@ -150,7 +150,7 @@ class BaseLevelAPI:
 
     id: int = field()
     name: str = field()
-    song_reference: SongReference = field()
+    song: SongReference = field()
     creator: UserReference = field()
     version: int = field(default=DEFAULT_VERSION)
     attempts: int = field(default=DEFAULT_ATTEMPTS)
@@ -176,6 +176,7 @@ class BaseLevelAPI:
     def default(
         cls,
         id: int = DEFAULT_ID,
+        name: str = EMPTY,
         song_id: int = DEFAULT_ID,
         song_custom: bool = DEFAULT_CUSTOM,
         creator_id: int = DEFAULT_ID,
@@ -183,8 +184,8 @@ class BaseLevelAPI:
     ) -> Self:
         return cls(
             id=id,
-            name=EMPTY,
-            song_reference=SongReference.default(song_id, song_custom),
+            name=name,
+            song=SongReference.default(song_id, song_custom),
             creator=UserReference.default(creator_id, creator_account_id),
         )
 
@@ -216,12 +217,12 @@ class BaseLevelAPI:
         official_song_id = data.get(OFFICIAL_SONG_ID, DEFAULT_ID)
 
         if official_song_id:
-            song_reference = SongReference(official_song_id, custom=False)
+            song = SongReference(official_song_id, custom=False)
 
         else:
             song_id = data.get(SONG_ID, DEFAULT_ID)
 
-            song_reference = SongReference(song_id, custom=True)
+            song = SongReference(song_id, custom=True)
 
         creator_id = data.get(CREATOR_ID, DEFAULT_ID)
         creator_name = data.get(CREATOR_NAME, EMPTY)
@@ -285,7 +286,7 @@ class BaseLevelAPI:
         return cls(
             id=id,
             name=name,
-            song_reference=song_reference,
+            song=song,
             creator=creator,
             version=level_version,
             attempts=attempts,
@@ -333,10 +334,10 @@ class BaseLevelAPI:
             LEADERBOARD_SEED: self.leaderboard_seed,
         }
 
-        song_reference = self.song_reference
-        song_id = song_reference.id
+        song = self.song
+        song_id = song.id
 
-        if song_reference.is_custom():
+        if song.is_custom():
             data[SONG_ID] = song_id
 
         else:

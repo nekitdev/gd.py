@@ -16,7 +16,7 @@ from gd.constants import (
     DEFAULT_WITH_BAR,
     UNKNOWN,
 )
-from gd.converter import CONVERTER, register_unstructure_hook_omit_client
+from gd.converter import CONVERTER, dump_url, register_unstructure_hook_omit_client
 from gd.entity import Entity, EntityData
 from gd.errors import MissingAccess
 from gd.schema import SongReferenceSchema, SongSchema
@@ -193,7 +193,7 @@ class Song(Entity, Binary):
             builder.url.none = None
 
         else:
-            builder.url.some = str(url)
+            builder.url.some = dump_url(url)
 
         return builder
 

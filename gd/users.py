@@ -70,9 +70,9 @@ if TYPE_CHECKING:
     from PIL.Image import Image
 
     from gd.comments import LevelComment, UserComment
-    from gd.friend_request import FriendRequest
+    from gd.friend_requests import FriendRequest
     from gd.levels import Level
-    from gd.message import Message
+    from gd.messages import Message
     from gd.models import (
         LeaderboardUserModel,
         LevelCommentUserModel,
@@ -104,6 +104,8 @@ __all__ = (
     "UserCosmetics",
     "UserStates",
     "UserSocials",
+    "UserLeaderboard",
+    "UserReference",
 )
 
 
@@ -175,8 +177,10 @@ class UserReference(Entity, Binary):
     ) -> User:
         return await self.client.get_user(self.account_id, simple=simple, friend_state=friend_state)
 
-    async def update(self, friend_state: bool = DEFAULT_FRIEND_STATE) -> Self:
-        return self.update_from(await self.get(friend_state=friend_state))
+    async def update(self, simple: bool = DEFAULT_SIMPLE, friend_state: bool = DEFAULT_FRIEND_STATE) -> Self:
+        user = await self.get(simple=simple, friend_state=friend_state)
+
+        return self.update_from(user.as_reference())
 
     async def send(
         self, subject: Optional[str] = None, content: Optional[str] = None
@@ -1164,5 +1168,8 @@ class User(UserReference, Binary):
     def is_banned(self) -> bool:
         return self.banned
 
-    def is_registered(self) -> bool:
-        return self.account_id > 0 and self.id > 0
+    async def update(self, simple: bool = DEFAULT_SIMPLE, friend_state: bool = DEFAULT_FRIEND_STATE) -> Self:
+        return self.update_from(await self.get(simple=simple, friend_state=friend_state))
+
+    def as_reference(self) -> UserReference:
+        return UserReference(id=self.id, name=self.name, account_id=self.account_id)

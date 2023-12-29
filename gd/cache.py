@@ -7,10 +7,10 @@ from attrs import define, field
 if TYPE_CHECKING:
     from gd.artist import Artist
     from gd.comments import LevelComment, UserComment
-    from gd.friend_request import FriendRequest
+    from gd.friend_requests import FriendRequest
     from gd.level_packs import Gauntlet, MapPack
     from gd.levels import Level
-    from gd.message import Message
+    from gd.messages import Message
     from gd.songs import Song
     from gd.users import User
 

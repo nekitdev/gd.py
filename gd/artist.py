@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from gd.schema import ArtistBuilder, ArtistReader
     from gd.songs import Song
 
-__all__ = ("Artist", "ArtistData")
+__all__ = ("Artist",)
 
 ARTIST_URL = "https://{}.newgrounds.com/"
 artist_url = ARTIST_URL.format
@@ -119,7 +119,7 @@ class Artist(Entity, Binary):
         return CONVERTER.structure(data, cls)
 
     def into_data(self) -> ArtistData:
-        return CONVERTER.unstructure(self)  # type: ignore
+        return CONVERTER.unstructure(self)  # type: ignore[no-any-return]
 
     def is_verified(self) -> bool:
         return self.verified

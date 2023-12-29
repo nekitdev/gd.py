@@ -7,3 +7,6 @@ SOME: Literal["some"] = "some"
 
 REGULAR: Literal["regular"] = "regular"
 PLATFORMER: Literal["platformer"] = "platformer"
+
+STARS: Literal["stars"] = "stars"
+MOONS: Literal["moons"] = "moons"

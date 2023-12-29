@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from io import BufferedReader, BufferedWriter
-from typing import ContextManager, Generic, Literal, Optional, TypeVar
+from typing import ContextManager, Generic, List, Literal, Optional, TypeVar
 
 T = TypeVar("T")
 
@@ -87,6 +87,321 @@ class EitherRecordBuilder:
     def write(self, writer: BufferedWriter) -> None: ...
     def write_packed(self, writer: BufferedWriter) -> None: ...
 
+class EitherRewardSchema:
+    @classmethod
+    def from_bytes(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> ContextManager[EitherRewardReader]: ...
+    @classmethod
+    def from_bytes_packed(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> EitherRewardReader: ...
+    @classmethod
+    def read(cls, reader: BufferedReader) -> EitherRewardReader: ...
+    @classmethod
+    def read_packed(cls, reader: BufferedReader) -> EitherRewardReader: ...
+    @classmethod
+    def new_message(cls) -> EitherRewardBuilder: ...
+
+class EitherRewardReader:
+    stars: int
+    moons: int
+
+    def which(self) -> Literal["stars", "moons"]: ...
+    def as_builder(self) -> EitherRewardBuilder: ...
+
+class EitherRewardBuilder:
+    stars: int
+    moons: int
+
+    def which(self) -> Literal["stars", "moons"]: ...
+    def copy(self) -> EitherRewardBuilder: ...
+    def to_bytes(self) -> bytes: ...
+    def to_bytes_packed(self) -> bytes: ...
+    def as_reader(self) -> EitherRewardReader: ...
+    def write(self, writer: BufferedWriter) -> None: ...
+    def write_packed(self, writer: BufferedWriter) -> None: ...
+
+class CommentLevelReferenceSchema:
+    @classmethod
+    def from_bytes(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> ContextManager[CommentLevelReferenceReader]: ...
+    @classmethod
+    def from_bytes_packed(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> CommentLevelReferenceReader: ...
+    @classmethod
+    def read(cls, reader: BufferedReader) -> CommentLevelReferenceReader: ...
+    @classmethod
+    def read_packed(cls, reader: BufferedReader) -> CommentLevelReferenceReader: ...
+    @classmethod
+    def new_message(cls) -> CommentLevelReferenceBuilder: ...
+
+class CommentLevelReferenceReader:
+    level: LevelReferenceReader
+    record: OptionReader[int]
+
+    def as_builder(self) -> CommentLevelReferenceBuilder: ...
+
+class CommentLevelReferenceBuilder:
+    level: LevelReferenceBuilder
+    record: OptionBuilder[int]
+
+    def copy(self) -> CommentLevelReferenceBuilder: ...
+    def to_bytes(self) -> bytes: ...
+    def to_bytes_packed(self) -> bytes: ...
+    def as_reader(self) -> CommentLevelReferenceReader: ...
+    def write(self, writer: BufferedWriter) -> None: ...
+    def write_packed(self, writer: BufferedWriter) -> None: ...
+
+class CommentSchema:
+    @classmethod
+    def from_bytes(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> ContextManager[CommentReader]: ...
+    @classmethod
+    def from_bytes_packed(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> CommentReader: ...
+    @classmethod
+    def read(cls, reader: BufferedReader) -> CommentReader: ...
+    @classmethod
+    def read_packed(cls, reader: BufferedReader) -> CommentReader: ...
+    @classmethod
+    def new_message(cls) -> CommentBuilder: ...
+
+class CommentReader:
+    id: int
+    author: UserReferenceReader
+    content: str
+    color: int
+    rating: int
+    createdAt: int
+    reference: OptionReader[CommentLevelReferenceReader]
+
+    def as_builder(self) -> CommentBuilder: ...
+
+class CommentBuilder:
+    id: int
+    author: UserReferenceBuilder
+    content: str
+    color: int
+    rating: int
+    createdAt: int
+    reference: OptionBuilder[CommentLevelReferenceBuilder]
+
+    def copy(self) -> CommentBuilder: ...
+    def to_bytes(self) -> bytes: ...
+    def to_bytes_packed(self) -> bytes: ...
+    def as_reader(self) -> CommentReader: ...
+    def write(self, writer: BufferedWriter) -> None: ...
+    def write_packed(self, writer: BufferedWriter) -> None: ...
+
+class FriendRequestSchema:
+    @classmethod
+    def from_bytes(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> ContextManager[FriendRequestReader]: ...
+    @classmethod
+    def from_bytes_packed(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> FriendRequestReader: ...
+    @classmethod
+    def read(cls, reader: BufferedReader) -> FriendRequestReader: ...
+    @classmethod
+    def read_packed(cls, reader: BufferedReader) -> FriendRequestReader: ...
+    @classmethod
+    def new_message(cls) -> FriendRequestBuilder: ...
+
+class FriendRequestReader:
+    id: int
+    user: UserReferenceReader
+    type: int
+    content: str
+    createdAt: int
+    read: bool
+
+    def as_builder(self) -> FriendRequestBuilder: ...
+
+class FriendRequestBuilder:
+    id: int
+    user: UserReferenceBuilder
+    type: int
+    content: str
+    createdAt: int
+    read: bool
+
+    def copy(self) -> FriendRequestBuilder: ...
+    def to_bytes(self) -> bytes: ...
+    def to_bytes_packed(self) -> bytes: ...
+    def as_reader(self) -> FriendRequestReader: ...
+    def write(self, writer: BufferedWriter) -> None: ...
+    def write_packed(self, writer: BufferedWriter) -> None: ...
+
+class MessageSchema:
+    @classmethod
+    def from_bytes(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> ContextManager[MessageReader]: ...
+    @classmethod
+    def from_bytes_packed(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> MessageReader: ...
+    @classmethod
+    def read(cls, reader: BufferedReader) -> MessageReader: ...
+    @classmethod
+    def read_packed(cls, reader: BufferedReader) -> MessageReader: ...
+    @classmethod
+    def new_message(cls) -> MessageBuilder: ...
+
+class MessageReader:
+    id: int
+    user: UserReferenceReader
+    type: int
+    subject: str
+    content: OptionReader[str]
+    createdAt: int
+    read: bool
+
+    def as_builder(self) -> MessageBuilder: ...
+
+class MessageBuilder:
+    id: int
+    user: UserReferenceBuilder
+    type: int
+    subject: str
+    content: OptionBuilder[str]
+    createdAt: int
+    read: bool
+
+    def copy(self) -> MessageBuilder: ...
+    def to_bytes(self) -> bytes: ...
+    def to_bytes_packed(self) -> bytes: ...
+    def as_reader(self) -> MessageReader: ...
+    def write(self, writer: BufferedWriter) -> None: ...
+    def write_packed(self, writer: BufferedWriter) -> None: ...
+
+class GauntletSchema:
+    @classmethod
+    def from_bytes(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> ContextManager[GauntletReader]: ...
+    @classmethod
+    def from_bytes_packed(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> GauntletReader: ...
+    @classmethod
+    def read(cls, reader: BufferedReader) -> GauntletReader: ...
+    @classmethod
+    def read_packed(cls, reader: BufferedReader) -> GauntletReader: ...
+    @classmethod
+    def new_message(cls) -> GauntletBuilder: ...
+
+class GauntletReader:
+    id: int
+    name: str
+    levelIds: List[int]
+
+    def as_builder(self) -> GauntletBuilder: ...
+
+class GauntletBuilder:
+    id: int
+    name: str
+    levelIds: List[int]
+
+    def copy(self) -> GauntletBuilder: ...
+    def to_bytes(self) -> bytes: ...
+    def to_bytes_packed(self) -> bytes: ...
+    def as_reader(self) -> GauntletReader: ...
+    def write(self, writer: BufferedWriter) -> None: ...
+    def write_packed(self, writer: BufferedWriter) -> None: ...
+
+class MapPackSchema:
+    @classmethod
+    def from_bytes(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> ContextManager[MapPackReader]: ...
+    @classmethod
+    def from_bytes_packed(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> MapPackReader: ...
+    @classmethod
+    def read(cls, reader: BufferedReader) -> MapPackReader: ...
+    @classmethod
+    def read_packed(cls, reader: BufferedReader) -> MapPackReader: ...
+    @classmethod
+    def new_message(cls) -> MapPackBuilder: ...
+
+class MapPackReader:
+    id: int
+    name: str
+    levelIds: List[int]
+    stars: int
+    coins: int
+    difficulty: int
+    color: int
+
+    def as_builder(self) -> MapPackBuilder: ...
+
+class MapPackBuilder:
+    id: int
+    name: str
+    levelIds: List[int]
+    stars: int
+    coins: int
+    difficulty: int
+    color: int
+
+    def copy(self) -> MapPackBuilder: ...
+    def to_bytes(self) -> bytes: ...
+    def to_bytes_packed(self) -> bytes: ...
+    def as_reader(self) -> MapPackReader: ...
+    def write(self, writer: BufferedWriter) -> None: ...
+    def write_packed(self, writer: BufferedWriter) -> None: ...
+
 class ArtistSchema:
     @classmethod
     def from_bytes(
@@ -127,6 +442,180 @@ class ArtistBuilder:
     def as_reader(self) -> ArtistReader: ...
     def write(self, writer: BufferedWriter) -> None: ...
     def write_packed(self, writer: BufferedWriter) -> None: ...
+
+class LevelReferenceSchema:
+    @classmethod
+    def from_bytes(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> ContextManager[LevelReferenceReader]: ...
+    @classmethod
+    def from_bytes_packed(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> LevelReferenceReader: ...
+    @classmethod
+    def read(cls, reader: BufferedReader) -> LevelReferenceReader: ...
+    @classmethod
+    def read_packed(cls, reader: BufferedReader) -> LevelReferenceReader: ...
+    @classmethod
+    def new_message(cls) -> LevelReferenceBuilder: ...
+
+class LevelReferenceReader:
+    id: int
+    name: str
+
+    def as_builder(self) -> LevelReferenceBuilder: ...
+
+class LevelReferenceBuilder:
+    id: int
+    name: str
+
+    def copy(self) -> LevelReferenceBuilder: ...
+    def to_bytes(self) -> bytes: ...
+    def to_bytes_packed(self) -> bytes: ...
+    def as_reader(self) -> LevelReferenceReader: ...
+    def write(self, writer: BufferedWriter) -> None: ...
+    def write_packed(self, writer: BufferedWriter) -> None: ...
+
+class PasswordSchema:
+    @classmethod
+    def from_bytes(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> ContextManager[PasswordReader]: ...
+    @classmethod
+    def from_bytes_packed(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> PasswordReader: ...
+    @classmethod
+    def read(cls, reader: BufferedReader) -> PasswordReader: ...
+    @classmethod
+    def read_packed(cls, reader: BufferedReader) -> PasswordReader: ...
+    @classmethod
+    def new_message(cls) -> PasswordBuilder: ...
+
+class PasswordReader:
+    value: OptionReader[int]
+    copyable: bool
+
+    def as_builder(self) -> PasswordBuilder: ...
+
+class PasswordBuilder:
+    value: OptionBuilder[int]
+    copyable: bool
+
+    def copy(self) -> PasswordBuilder: ...
+    def to_bytes(self) -> bytes: ...
+    def to_bytes_packed(self) -> bytes: ...
+    def as_reader(self) -> PasswordReader: ...
+    def write(self, writer: BufferedWriter) -> None: ...
+    def write_packed(self, writer: BufferedWriter) -> None: ...
+
+class LevelSchema:
+    @classmethod
+    def from_bytes(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> ContextManager[LevelReader]: ...
+    @classmethod
+    def from_bytes_packed(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> LevelReader: ...
+    @classmethod
+    def read(cls, reader: BufferedReader) -> LevelReader: ...
+    @classmethod
+    def read_packed(cls, reader: BufferedReader) -> LevelReader: ...
+    @classmethod
+    def new_message(cls) -> LevelBuilder: ...
+
+class LevelReader:
+    id: int
+    name: str
+    description: str
+    creator: UserReferenceReader
+    song: SongReferenceReader
+    data: OptionReader[bytes]
+    version: int
+    downloads: int
+    gameVersion: int
+    rating: int
+    length: int
+    difficulty: int
+    reward: EitherRewardReader
+    requestedReward: EitherRewardReader
+    score: int
+    rateType: int
+    password: OptionReader[PasswordReader]
+    originalId: int
+    twoPlayer: bool
+    capacity: OptionReader[List[int]]
+    coins: int
+    verifiedCoins: bool
+    lowDetail: bool
+    objectCount: int
+    createdAt: int
+    updatedAt: int
+    editorTime: int
+    copiesTime: int
+    timelyType: int
+    timelyId: int
+
+    def as_builder(self) -> LevelBuilder: ...
+
+class LevelBuilder:
+    id: int
+    name: str
+    description: str
+    creator: UserReferenceBuilder
+    song: SongReferenceBuilder
+    data: OptionBuilder[bytes]
+    version: int
+    downloads: int
+    gameVersion: int
+    rating: int
+    length: int
+    difficulty: int
+    reward: EitherRewardBuilder
+    requestedReward: EitherRewardBuilder
+    score: int
+    rateType: int
+    password: OptionBuilder[PasswordBuilder]
+    originalId: int
+    twoPlayer: bool
+    capacity: OptionBuilder[List[int]]
+    coins: int
+    verifiedCoins: bool
+    lowDetail: bool
+    objectCount: int
+    createdAt: int
+    updatedAt: int
+    editorTime: int
+    copiesTime: int
+    timelyType: int
+    timelyId: int
+
+    def copy(self) -> LevelBuilder: ...
+    def to_bytes(self) -> bytes: ...
+    def to_bytes_packed(self) -> bytes: ...
+    def as_reader(self) -> LevelReader: ...
+    def write(self, writer: BufferedWriter) -> None: ...
+    def write_packed(self, writer: BufferedWriter) -> None: ...
+
 
 class SongReferenceSchema:
     @classmethod
