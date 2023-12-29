@@ -966,7 +966,9 @@ class User(UserReference, Binary):
             account_id=model.account_id,
             statistics=UserStatistics(
                 stars=model.stars,
+                moons=model.moons,
                 demons=model.demons,
+                diamonds=model.diamonds,
                 creator_points=model.creator_points,
                 secret_coins=model.secret_coins,
                 user_coins=model.user_coins,
@@ -977,7 +979,7 @@ class User(UserReference, Binary):
                 color_2_id=model.color_2_id,
                 icon_type=model.icon_type,
                 icon_id=model.icon_id,
-                glow=model.glow,
+                glow=model.has_glow(),
             ),
         )
 
@@ -1066,7 +1068,8 @@ class User(UserReference, Binary):
                 swing_id=profile_model.swing_id,
                 jetpack_id=profile_model.jetpack_id,
                 explosion_id=profile_model.explosion_id,
-                glow=profile_model.glow,
+                # streak_id=profile_model.streak_id,
+                glow=profile_model.has_glow(),
             ),
             states=UserStates(
                 message_state=profile_model.message_state,
@@ -1093,7 +1096,7 @@ class User(UserReference, Binary):
                 color_2_id=model.color_2_id,
                 icon_type=model.icon_type,
                 icon_id=model.icon_id,
-                glow=model.glow,
+                glow=model.has_glow(),
             ),
             states=UserStates(message_state=model.message_state),
         )
@@ -1122,6 +1125,7 @@ class User(UserReference, Binary):
             place=model.place,
             statistics=UserStatistics(
                 stars=model.stars,
+                moons=model.moons,
                 demons=model.demons,
                 diamonds=model.diamonds,
                 user_coins=model.user_coins,
@@ -1133,7 +1137,7 @@ class User(UserReference, Binary):
                 color_2_id=model.color_2_id,
                 icon_type=model.icon_type,
                 icon_id=model.icon_id,
-                glow=model.glow,
+                glow=model.has_glow(),
             ),
         )
 
@@ -1149,7 +1153,7 @@ class User(UserReference, Binary):
                 color_2_id=model.color_2_id,
                 icon_type=model.icon_type,
                 icon_id=model.icon_id,
-                glow=model.glow,
+                glow=model.has_glow(),
             ),
             leaderboard=UserLeaderboard(
                 either_record=model.either_record,

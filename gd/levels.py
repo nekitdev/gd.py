@@ -23,6 +23,7 @@ from gd.constants import (
     DEFAULT_RATING,
     DEFAULT_RECORD,
     DEFAULT_SCORE,
+    DEFAULT_TIME_STEPS,
     DEFAULT_TWO_PLAYER,
     DEFAULT_USE_CLIENT,
     DEFAULT_VERIFIED_COINS,
@@ -267,6 +268,7 @@ class Level(LevelReference):
     copies_time: Duration = field(factory=duration, eq=False)
     timely_type: TimelyType = field(default=TimelyType.DEFAULT, eq=False)
     timely_id: int = field(default=DEFAULT_ID, eq=False)
+    time_steps: int = field(default=DEFAULT_TIME_STEPS, eq=False)
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
@@ -362,6 +364,7 @@ class Level(LevelReference):
             object_count=model.object_count,
             editor_time=model.editor_time,
             copies_time=model.copies_time,
+            time_steps=model.time_steps,
         )
 
     def update_with_timely_model(self, model: TimelyInfoModel) -> Self:
@@ -458,6 +461,7 @@ class Level(LevelReference):
         recording: Optional[Recording] = None,
         editor_time: Optional[Duration] = None,
         copies_time: Optional[Duration] = None,
+        time_steps: Optional[int] = None,
         data: Optional[str] = None,
     ) -> None:
         song = self.song
@@ -487,6 +491,7 @@ class Level(LevelReference):
             recording=recording,
             editor_time=switch_none(editor_time, self.editor_time),
             copies_time=switch_none(copies_time, self.copies_time),
+            time_steps=switch_none(time_steps, self.time_steps),
             data=switch_none(data, self.unprocessed_data),
         )
 
@@ -594,6 +599,7 @@ class Level(LevelReference):
             copies_time=duration(milliseconds=reader.copiesTime),
             timely_type=TimelyType(reader.timelyType),
             timely_id=reader.timelyId,
+            time_steps=reader.timeSteps,
         )
 
         data_option = reader.data
@@ -673,6 +679,7 @@ class Level(LevelReference):
         builder.copiesTime = duration_milliseconds(self.copies_time)
         builder.timelyType = self.timely_type.value
         builder.timelyId = self.timely_id
+        builder.timeSteps = self.time_steps
 
         return builder
 

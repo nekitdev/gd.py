@@ -14,6 +14,8 @@ BITS = BYTE.bit_length()
 UNKNOWN = "unknown"
 UNNAMED = "unnamed"
 
+DEFAULT_TIME_STEPS = 0
+
 DEFAULT_CUSTOM = True
 
 DEFAULT_PLATFORMER = False
