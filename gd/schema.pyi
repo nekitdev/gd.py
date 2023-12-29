@@ -574,6 +574,7 @@ class LevelReader:
     copiesTime: int
     timelyType: int
     timelyId: int
+    timeSteps: int
 
     def as_builder(self) -> LevelBuilder: ...
 
@@ -608,6 +609,7 @@ class LevelBuilder:
     copiesTime: int
     timelyType: int
     timelyId: int
+    timeSteps: int
 
     def copy(self) -> LevelBuilder: ...
     def to_bytes(self) -> bytes: ...

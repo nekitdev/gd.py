@@ -50,6 +50,7 @@ from gd.constants import (
     DEFAULT_RECORD,
     DEFAULT_SIMPLE,
     DEFAULT_SPECIAL,
+    DEFAULT_TIME_STEPS,
     DEFAULT_TWO_PLAYER,
     DEFAULT_UPDATE,
     DEFAULT_USE_CLIENT,
@@ -808,6 +809,7 @@ class Client:
         recording: Optional[Recording] = None,
         editor_time: Optional[Duration] = None,
         copies_time: Optional[Duration] = None,
+        time_steps: int = DEFAULT_TIME_STEPS,
         data: str = EMPTY,
     ) -> Level:
         level_id = await self.session.upload_level(
@@ -830,6 +832,7 @@ class Client:
             recording=recording,
             editor_time=editor_time,
             copies_time=copies_time,
+            time_steps=time_steps,
             data=data,
             account_id=self.account_id,
             account_name=self.name,

@@ -55,6 +55,7 @@ from gd.constants import (
     DEFAULT_SIZE,
     DEFAULT_SPAM,
     DEFAULT_STARS,
+    DEFAULT_TIME_STEPS,
     DEFAULT_TWO_PLAYER,
     DEFAULT_UNREAD,
     DEFAULT_USER_COINS,
@@ -489,7 +490,7 @@ SEARCH_USER_GLOW = 15
 SEARCH_USER_ACCOUNT_ID = 16
 SEARCH_USER_USER_COINS = 17
 SEARCH_USER_DIAMONDS = 46
-
+SEARCH_USER_MOONS = 52
 
 @define()
 class SearchUserModel(Model):
@@ -508,6 +509,7 @@ class SearchUserModel(Model):
     account_id: int = DEFAULT_ID
     user_coins: int = DEFAULT_USER_COINS
     diamonds: int = DEFAULT_DIAMONDS
+    moons: int = DEFAULT_MOONS
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
@@ -558,6 +560,8 @@ class SearchUserModel(Model):
 
         diamonds = parse_get_or(int, DEFAULT_DIAMONDS, mapping.get(SEARCH_USER_DIAMONDS))
 
+        moons = parse_get_or(int, DEFAULT_MOONS, mapping.get(SEARCH_USER_MOONS))
+
         return cls(
             name=name,
             id=id,
@@ -574,6 +578,7 @@ class SearchUserModel(Model):
             account_id=account_id,
             user_coins=user_coins,
             diamonds=diamonds,
+            moons=moons,
         )
 
     def to_robtop(self) -> str:
@@ -596,6 +601,8 @@ class SearchUserModel(Model):
             SEARCH_USER_GLOW: str(glow),
             SEARCH_USER_ACCOUNT_ID: str(self.account_id),
             SEARCH_USER_USER_COINS: str(self.user_coins),
+            SEARCH_USER_DIAMONDS: str(self.diamonds),
+            SEARCH_USER_MOONS: str(self.moons),
         }
 
         return concat_search_user(mapping)
@@ -892,7 +899,6 @@ RELATIONSHIP_USER_GLOW = 15
 RELATIONSHIP_USER_ACCOUNT_ID = 16
 RELATIONSHIP_USER_MESSAGE_STATE = 18
 
-
 @define()
 class RelationshipUserModel(Model):
     name: str = EMPTY
@@ -992,6 +998,7 @@ LEADERBOARD_USER_GLOW = 15
 LEADERBOARD_USER_ACCOUNT_ID = 16
 LEADERBOARD_USER_USER_COINS = 17
 LEADERBOARD_USER_DIAMONDS = 46
+LEADERBOARD_USER_MOONS = 52
 
 
 @define()
@@ -1011,6 +1018,7 @@ class LeaderboardUserModel(Model):
     account_id: int = DEFAULT_ID
     user_coins: int = DEFAULT_USER_COINS
     diamonds: int = DEFAULT_DIAMONDS
+    moons: int = DEFAULT_MOONS
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
@@ -1053,6 +1061,8 @@ class LeaderboardUserModel(Model):
 
         diamonds = parse_get_or(int, DEFAULT_DIAMONDS, mapping.get(LEADERBOARD_USER_DIAMONDS))
 
+        moons = parse_get_or(int, DEFAULT_MOONS, mapping.get(LEADERBOARD_USER_MOONS))
+
         return cls(
             name=name,
             id=id,
@@ -1069,6 +1079,7 @@ class LeaderboardUserModel(Model):
             account_id=account_id,
             user_coins=user_coins,
             diamonds=diamonds,
+            moons=moons,
         )
 
     def to_robtop(self) -> str:
@@ -1092,6 +1103,7 @@ class LeaderboardUserModel(Model):
             LEADERBOARD_USER_ACCOUNT_ID: str(self.account_id),
             LEADERBOARD_USER_USER_COINS: str(self.user_coins),
             LEADERBOARD_USER_DIAMONDS: str(self.diamonds),
+            LEADERBOARD_USER_MOONS: str(self.moons),
         }
 
         return concat_leaderboard_user(mapping)
@@ -1389,6 +1401,7 @@ LEVEL_DEMON_DIFFICULTY = 43
 LEVEL_OBJECT_COUNT = 45
 LEVEL_EDITOR_TIME = 46
 LEVEL_COPIES_TIME = 47
+LEVEL_TIME_STEPS = 57
 
 UNPROCESSED_DATA = "unprocessed_data"
 
@@ -1426,6 +1439,7 @@ class LevelModel(Model):
     object_count: int = field(default=DEFAULT_OBJECT_COUNT)
     editor_time: Duration = field(factory=duration)
     copies_time: Duration = field(factory=duration)
+    time_steps: int = field(default=DEFAULT_TIME_STEPS)
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
@@ -1573,6 +1587,8 @@ class LevelModel(Model):
         else:
             copies_time = duration()
 
+        time_steps = parse_get_or(int, DEFAULT_TIME_STEPS, mapping.get(LEVEL_TIME_STEPS))
+
         return cls(
             id=id,
             name=name,
@@ -1605,6 +1621,7 @@ class LevelModel(Model):
             object_count=object_count,
             editor_time=editor_time,
             copies_time=copies_time,
+            time_steps=time_steps,
         )
 
     def to_robtop(self) -> str:
@@ -1662,6 +1679,7 @@ class LevelModel(Model):
             LEVEL_OBJECT_COUNT: str(self.object_count),
             LEVEL_EDITOR_TIME: str(int(self.editor_time.total_seconds())),
             LEVEL_COPIES_TIME: str(int(self.copies_time.total_seconds())),
+            LEVEL_TIME_STEPS: str(self.time_steps),
         }
 
         return concat_level(mapping)
@@ -1717,7 +1735,6 @@ LEVEL_COMMENT_INNER_CREATED_AT = 9
 LEVEL_COMMENT_INNER_RECORD = 10
 LEVEL_COMMENT_INNER_ROLE_ID = 11
 LEVEL_COMMENT_INNER_COLOR = 12
-
 
 @define()
 class LevelCommentInnerModel(Model):
