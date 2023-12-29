@@ -6,7 +6,7 @@ from attrs import frozen
 from typing_extensions import Self
 
 from gd.binary import Binary
-from gd.constants import DEFAULT_COUNT
+from gd.constants import DEFAULT_COUNT, DEFAULT_PLATFORMER
 from gd.converter import CONVERTER
 from gd.schema import EitherRewardSchema
 from gd.schema_constants import STARS
@@ -20,22 +20,16 @@ if TYPE_CHECKING:
 
 class EitherRewardData(Data):
     count: int
-    moons: bool
-
-
-DEFAULT_MOONS = False
+    platformer: bool
 
 
 @frozen()
 class EitherReward(Binary):
     count: int = DEFAULT_COUNT
-    moons: bool = DEFAULT_MOONS
+    platformer: bool = DEFAULT_PLATFORMER
 
-    def is_stars(self) -> bool:
-        return not self.moons
-
-    def is_moons(self) -> bool:
-        return self.moons
+    def is_platformer(self) -> bool:
+        return self.platformer
 
     @classmethod
     def from_data(cls, data: EitherRewardData) -> Self:
@@ -76,16 +70,16 @@ class EitherReward(Binary):
     @classmethod
     def from_reader(cls, reader: EitherRewardReader) -> Self:
         if reader.which() == STARS:
-            return cls(count=reader.stars, moons=False)
+            return cls(count=reader.stars, platformer=False)
 
-        return cls(count=reader.moons, moons=True)
+        return cls(count=reader.moons, platformer=True)
 
     def to_builder(self) -> EitherRewardBuilder:
         builder = EitherRewardSchema.new_message()
 
         count = self.count
 
-        if self.is_moons():
+        if self.is_platformer():
             builder.moons = count
 
         else:

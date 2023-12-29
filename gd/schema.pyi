@@ -568,8 +568,8 @@ class LevelReader:
     verifiedCoins: bool
     lowDetail: bool
     objectCount: int
-    createdAt: int
-    updatedAt: int
+    createdAt: OptionReader[int]
+    updatedAt: OptionReader[int]
     editorTime: int
     copiesTime: int
     timelyType: int
@@ -602,8 +602,8 @@ class LevelBuilder:
     verifiedCoins: bool
     lowDetail: bool
     objectCount: int
-    createdAt: int
-    updatedAt: int
+    createdAt: OptionBuilder[int]
+    updatedAt: OptionBuilder[int]
     editorTime: int
     copiesTime: int
     timelyType: int
