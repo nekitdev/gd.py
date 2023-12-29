@@ -1,13 +1,16 @@
 from __future__ import annotations
+from io import BufferedReader, BufferedWriter
 
 from typing import TYPE_CHECKING, Optional
 
 from attrs import define, field
+from gd.binary import Binary
 
 from gd.constants import DEFAULT_ID, DEFAULT_READ, EMPTY
-from gd.date_time import utc_now
+from gd.date_time import timestamp_milliseconds, utc_from_timestamp_milliseconds, utc_now
 from gd.entity import Entity
 from gd.enums import FriendRequestType
+from gd.schema import FriendRequestSchema
 from gd.users import UserReference
 
 if TYPE_CHECKING:
@@ -16,8 +19,9 @@ if TYPE_CHECKING:
 
     from gd.client import Client
     from gd.models import FriendRequestModel
+    from gd.schema import FriendRequestBuilder, FriendRequestReader
 
-__all__ = ("FriendRequest",)
+__all__ = ("FriendRequest", "FriendRequestReference")
 
 FRIEND_REQUEST = "{} {}"
 friend_request = FRIEND_REQUEST.format
@@ -86,8 +90,11 @@ class FriendRequestReference(Entity):
         await self.client.accept_friend_request(self)
 
 
+NO_CONTENT = "no content"
+
+
 @define()
-class FriendRequest(FriendRequestReference):
+class FriendRequest(Binary, FriendRequestReference):
     created_at: DateTime = field(factory=utc_now, eq=False)
 
     content: str = field(default=EMPTY, eq=False)
@@ -113,3 +120,58 @@ class FriendRequest(FriendRequestReference):
 
     def is_unread(self) -> bool:
         return not self.was_read
+
+    def as_reference(self) -> FriendRequestReference:
+        return FriendRequestReference(id=self.id, user=self.user, type=self.type)
+
+    @classmethod
+    def from_binary(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(FriendRequestSchema.read(binary))
+
+    @classmethod
+    def from_binary_packed(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(FriendRequestSchema.read_packed(binary))
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> Self:
+        with FriendRequestSchema.from_bytes(data) as reader:
+            return cls.from_reader(reader)
+
+    @classmethod
+    def from_bytes_packed(cls, data: bytes) -> Self:
+        return cls.from_reader(FriendRequestSchema.from_bytes_packed(data))
+
+    def to_binary(self, binary: BufferedWriter) -> None:
+        self.to_builder().write(binary)
+
+    def to_binary_packed(self, binary: BufferedWriter) -> None:
+        self.to_builder().write_packed(binary)
+
+    def to_bytes(self) -> bytes:
+        return self.to_builder().to_bytes()
+
+    def to_bytes_packed(self) -> bytes:
+        return self.to_builder().to_bytes_packed()
+
+    @classmethod
+    def from_reader(cls, reader: FriendRequestReader) -> Self:
+        return cls(
+            id=reader.id,
+            user=UserReference.from_reader(reader.user),
+            type=FriendRequestType(reader.type),
+            created_at=utc_from_timestamp_milliseconds(reader.createdAt),
+            content=reader.content,
+            was_read=reader.read,
+        )
+
+    def to_builder(self) -> FriendRequestBuilder:
+        builder = FriendRequestSchema.new_message()
+
+        builder.id = self.id
+        builder.user = self.user.to_builder()
+        builder.type = self.type.value
+        builder.createdAt = timestamp_milliseconds(self.created_at)
+        builder.content = self.content
+        builder.read = self.is_read()
+
+        return builder

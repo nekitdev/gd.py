@@ -1,4 +1,5 @@
 from __future__ import annotations
+from io import BufferedReader, BufferedWriter
 
 from typing import TYPE_CHECKING, AsyncIterator, Iterable, Optional, TypeVar
 
@@ -7,6 +8,7 @@ from iters.async_iters import wrap_async_iter
 from pendulum import DateTime, Duration, duration
 
 from gd.api.editor import Editor
+from gd.binary import Binary
 from gd.capacity import Capacity
 from gd.constants import (
     COMMENT_PAGE_SIZE,
@@ -30,7 +32,6 @@ from gd.constants import (
     UNKNOWN,
 )
 from gd.converter import CONVERTER, register_unstructure_hook_omit_client
-from gd.date_time import utc_now
 from gd.encoding import unzip_level_string, zip_level_string
 from gd.entity import Entity, EntityData
 from gd.enums import (
@@ -45,6 +46,7 @@ from gd.enums import (
 )
 from gd.errors import MissingAccess
 from gd.password import Password, PasswordData
+from gd.schema import LevelReferenceSchema
 from gd.songs import SongReference
 from gd.users import User, UserReference, UserReferenceData
 from gd.versions import CURRENT_GAME_VERSION, GameVersion, RobTopVersionData
@@ -56,9 +58,10 @@ if TYPE_CHECKING:
     from gd.client import Client
     from gd.comments import LevelComment
     from gd.models import LevelModel, TimelyInfoModel
+    from gd.schema import LevelReferenceBuilder, LevelReferenceReader
     from gd.songs import SongReferenceData
 
-__all__ = ("Level",)
+__all__ = ("Level", "LevelReference")
 
 L = TypeVar("L", bound="Level")
 
@@ -74,8 +77,66 @@ class LevelReferenceData(EntityData):
 
 
 @define()
-class LevelReference(Entity):
+class LevelReference(Binary, Entity):
     name: str = field(eq=False)
+
+    def __hash__(self) -> int:
+        return hash(type(self)) ^ self.id
+
+    def __str__(self) -> str:
+        return self.name or UNKNOWN
+
+    @classmethod
+    def from_data(cls, data: LevelReferenceData) -> Self:  # type: ignore[override]
+        return CONVERTER.structure(data, cls)
+
+    def into_data(self) -> LevelReferenceData:
+        return CONVERTER.unstructure(self)  # type: ignore[no-any-return]
+
+    @classmethod
+    def default(cls, id: int = DEFAULT_ID, name: str = EMPTY) -> Self:
+        return cls(id=id, name=name)
+
+    @classmethod
+    def from_binary(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(LevelReferenceSchema.read(binary))
+
+    @classmethod
+    def from_binary_packed(cls, binary: BufferedReader) -> Self:
+        return cls.from_reader(LevelReferenceSchema.read_packed(binary))
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> Self:
+        with LevelReferenceSchema.from_bytes(data) as reader:
+            return cls.from_reader(reader)
+
+    @classmethod
+    def from_bytes_packed(cls, data: bytes) -> Self:
+        return cls.from_reader(LevelReferenceSchema.from_bytes_packed(data))
+
+    def to_binary(self, binary: BufferedWriter) -> None:
+        self.to_builder().write(binary)
+
+    def to_binary_packed(self, binary: BufferedWriter) -> None:
+        self.to_builder().write_packed(binary)
+
+    def to_bytes(self) -> bytes:
+        return self.to_builder().to_bytes()
+
+    def to_bytes_packed(self) -> bytes:
+        return self.to_builder().to_bytes_packed()
+
+    @classmethod
+    def from_reader(cls, reader: LevelReferenceReader) -> Self:
+        return cls(id=reader.id, name=reader.name)
+
+    def to_builder(self) -> LevelReferenceBuilder:
+        builder = LevelReferenceSchema.new_message()
+
+        builder.id = self.id
+        builder.name = self.name
+
+        return builder
 
     async def delete(self) -> None:
         await self.client.delete_level(self)
@@ -169,13 +230,17 @@ class LevelData(LevelReferenceData):
     timely_id: int
 
 
+NO_DESCRIPTION = "no description"
+NO_DATA = "no data"
+
+
 @register_unstructure_hook_omit_client
 @define()
 class Level(LevelReference):
     creator: UserReference = field(eq=False)
     song: SongReference = field(eq=False)
     description: str = field(default=EMPTY, eq=False)
-    unprocessed_data: str = field(default=EMPTY, eq=False, repr=False)
+    unprocessed_data_unchecked: Optional[str] = field(default=None, eq=False, repr=False)
     version: int = field(default=DEFAULT_VERSION, eq=False)
     downloads: int = field(default=DEFAULT_DOWNLOADS, eq=False)
     game_version: GameVersion = field(default=CURRENT_GAME_VERSION, eq=False)
@@ -186,16 +251,16 @@ class Level(LevelReference):
     requested_stars: int = field(default=DEFAULT_STARS, eq=False)
     score: int = field(default=DEFAULT_SCORE, eq=False)
     rate_type: RateType = field(default=RateType.DEFAULT, eq=False)
-    password: Password = field(factory=Password, eq=False)
+    password: Optional[Password] = field(default=None, eq=False)
     original_id: int = field(default=DEFAULT_ID, eq=False)
     two_player: bool = field(default=DEFAULT_TWO_PLAYER, eq=False)
-    capacity: Capacity = field(factory=Capacity, eq=False)
+    capacity: Optional[Capacity] = field(default=None, eq=False)
     coins: int = field(default=DEFAULT_COINS, eq=False)
     verified_coins: bool = field(default=DEFAULT_VERIFIED_COINS, eq=False)
     low_detail: bool = field(default=DEFAULT_LOW_DETAIL, eq=False)
     object_count: int = field(default=DEFAULT_OBJECT_COUNT, eq=False)
-    created_at: DateTime = field(factory=utc_now, eq=False)
-    updated_at: DateTime = field(factory=utc_now, eq=False)
+    created_at: Optional[DateTime] = field(default=None, eq=False)
+    updated_at: Optional[DateTime] = field(default=None, eq=False)
     editor_time: Duration = field(factory=duration, eq=False)
     copies_time: Duration = field(factory=duration, eq=False)
     timely_type: TimelyType = field(default=TimelyType.DEFAULT, eq=False)
@@ -204,8 +269,17 @@ class Level(LevelReference):
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
 
-    def __str__(self) -> str:
-        return self.name or UNKNOWN
+    @property
+    def unprocessed_data(self) -> str:
+        return self.unprocessed_data_unchecked or EMPTY
+
+    @unprocessed_data.setter
+    def unprocessed_data(self, unprocessed_data: str) -> None:
+        self.unprocessed_data_unchecked = unprocessed_data
+
+    @unprocessed_data.deleter
+    def unprocessed_data(self) -> None:
+        self.unprocessed_data_unchecked = None
 
     @property
     def processed_data(self) -> str:
@@ -259,7 +333,7 @@ class Level(LevelReference):
             creator=creator,
             song=song,
             description=model.description,
-            unprocessed_data=model.unprocessed_data,
+            unprocessed_data_unchecked=model.unprocessed_data or None,
             version=model.version,
             difficulty=model.difficulty,
             downloads=model.downloads,
@@ -295,13 +369,14 @@ class Level(LevelReference):
     def default(
         cls,
         id: int = DEFAULT_ID,
+        name: str = EMPTY,
         creator_id: int = DEFAULT_ID,
         creator_account_id: int = DEFAULT_ID,
         song_id: int = DEFAULT_ID,
     ) -> Self:
         return cls(
             id=id,
-            name=EMPTY,
+            name=name,
             creator=UserReference.default(creator_id, creator_account_id),
             song=SongReference.default(song_id),
         )
@@ -449,6 +524,9 @@ class Level(LevelReference):
         self.song.detach_client()
 
         return super().detach_client()
+
+    def as_reference(self) -> LevelReference:
+        return LevelReference(id=self.id, name=self.name)
 
 
 T = TypeVar("T")

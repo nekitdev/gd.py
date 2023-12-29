@@ -53,9 +53,9 @@ __all__ = (
 if TYPE_CHECKING:
     from gd.client import Client
     from gd.comments import LevelComment, UserComment
-    from gd.friend_request import FriendRequest
+    from gd.friend_requests import FriendRequest
     from gd.levels import Level
-    from gd.message import Message
+    from gd.messages import Message
     from gd.users import User
 
 

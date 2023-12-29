@@ -6,7 +6,7 @@ from attrs import define, field
 from iters.iters import iter
 from iters.ordered_set import OrderedSet, ordered_set
 
-from gd.enums import Difficulty, LevelLength, RateFilter, SearchStrategy, SpecialRateType
+from gd.enums import Difficulty, LevelLength, RateFilter, SearchStrategy
 from gd.string_constants import DASH
 from gd.string_utils import concat_comma, wrap
 from gd.typing import Data

@@ -124,11 +124,11 @@ from gd.errors import (
     SongRestricted,
 )
 from gd.filters import Filters
-from gd.friend_request import FriendRequest
+from gd.friend_requests import FriendRequest
 from gd.http import HTTPClient
 from gd.levels import Level
 from gd.level_packs import Gauntlet, MapPack
-from gd.message import Message
+from gd.messages import Message
 from gd.password import Password
 from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM, SYSTEM_PLATFORM_CONFIG
 from gd.progress import Progress

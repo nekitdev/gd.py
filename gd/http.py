@@ -601,9 +601,7 @@ class HTTPClient:
     ) -> None:
         session = await self.ensure_session()
 
-        async with session.request(
-            url=url, method=method, **request_keywords
-        ) as response:
+        async with session.request(url=url, method=method, **request_keywords) as response:
             if with_bar:
                 bar = progress(total=response.content_length, unit=UNIT, unit_scale=UNIT_SCALE)
 

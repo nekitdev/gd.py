@@ -96,10 +96,10 @@ from gd.events.listeners import (
     WeeklyListener,
 )
 from gd.filters import Filters
-from gd.friend_request import FriendRequest, FriendRequestReference
+from gd.friend_requests import FriendRequest, FriendRequestReference
 from gd.levels import Level, LevelReference
 from gd.level_packs import Gauntlet, MapPack
-from gd.message import Message, MessageReference
+from gd.messages import Message, MessageReference
 from gd.queries import EMPTY_QUERY, query
 from gd.rewards import Chest, Quest
 from gd.run_iterables import run_iterables
@@ -960,10 +960,10 @@ class Client:
         return None
 
     @check_login
-    async def get_message(self, message: MessageReference, type: MessageType) -> Message:
+    async def get_message(self, message: MessageReference) -> Message:
         model = await self.session.get_message(
             message_id=message.id,
-            type=type,
+            type=message.type,
             account_id=self.account_id,
             hashed_password=self.hashed_password,
         )
@@ -1208,8 +1208,10 @@ class Client:
             page=page,
         )
 
+        reference = UserReference(id=user.id, name=user.name, account_id=user.account_id)
+
         for model in response_model.comments:
-            yield UserComment.from_model(model, user).attach_client(self)
+            yield UserComment.from_model(model, reference).attach_client(self)
 
     @wrap_async_iter
     def get_user_comments(
@@ -1280,9 +1282,7 @@ class Client:
             return
 
         for model in response_model.comments:
-            comment = LevelComment.from_model(model).attach_client(self)
-
-            comment.level = level
+            comment = LevelComment.from_model(model, name=level.name).attach_client(self)
 
             yield comment
 
