@@ -32,6 +32,10 @@ coverage.*
 
 .pytest_cache/
 
+# formatting
+
+.ruff_cache/
+
 # IPython
 
 profile_default/

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Optional, Tuple
+from typing import TYPE_CHECKING, Iterable
 
 from attrs import define
 
@@ -17,25 +17,17 @@ try:
 except ImportError:
     pass
 
-from gd.assets import (
-    GLOW_DATA_PATH,
-    GLOW_IMAGE_PATH,
-    ICON_DATA_PATH,
-    ICON_IMAGE_PATH,
-    ROBOT_ANIMATION_SHEET_PATH,
-    SPIDER_ANIMATION_SHEET_PATH,
-)
+from gd.assets import ICONS, ROBOT_ANIMATIONS, SPIDER_ANIMATIONS
 from gd.color import Color
 from gd.enums import Orientation
 from gd.image.animation import Animation, Animations, AnimationSheet
-from gd.image.sheet import Sheet
+from gd.image.sheet import IconSheets
 
 if TYPE_CHECKING:
     from typing_aliases import IntoPath
     from typing_extensions import Self
 
     from gd.image.icon import Icon
-    from gd.image.sprite import Sprite, Sprites
 
 __all__ = ("FACTORY", "Factory")
 
@@ -104,8 +96,7 @@ UFO_OFFSET = 30.0
 
 @define()
 class Factory:
-    icon_sheet: Sheet
-    glow_sheet: Sheet
+    icon_sheets: IconSheets
     robot_animation_sheet: AnimationSheet
     spider_animation_sheet: AnimationSheet
 
@@ -116,16 +107,12 @@ class Factory:
     @classmethod
     def from_paths(
         cls,
-        icon_image_path: IntoPath = ICON_IMAGE_PATH,
-        icon_data_path: IntoPath = ICON_DATA_PATH,
-        glow_image_path: IntoPath = GLOW_IMAGE_PATH,
-        glow_data_path: IntoPath = GLOW_DATA_PATH,
-        robot_animation_sheet_path: IntoPath = ROBOT_ANIMATION_SHEET_PATH,
-        spider_animation_sheet_path: IntoPath = SPIDER_ANIMATION_SHEET_PATH,
+        icons_path: IntoPath = ICONS,
+        robot_animation_sheet_path: IntoPath = ROBOT_ANIMATIONS,
+        spider_animation_sheet_path: IntoPath = SPIDER_ANIMATIONS,
     ) -> Self:
         return cls(
-            Sheet.from_paths(icon_image_path, icon_data_path),
-            Sheet.from_paths(glow_image_path, glow_data_path),
+            IconSheets.from_path(icons_path),
             AnimationSheet.from_path(robot_animation_sheet_path),
             AnimationSheet.from_path(spider_animation_sheet_path),
         )
@@ -159,22 +146,6 @@ class Factory:
         return self.spider_animation_sheet.animations
 
     @property
-    def icon_sprites(self) -> Sprites:
-        return self.icon_sheet.sprites
-
-    @property
-    def glow_sprites(self) -> Sprites:
-        return self.glow_sheet.sprites
-
-    @property
-    def icon_image(self) -> Image:
-        return self.icon_sheet.image
-
-    @property
-    def glow_image(self) -> Image:
-        return self.glow_sheet.image
-
-    @property
     def robot_idle(self) -> Animation:
         return self.robot_animations[IDLE]
 
@@ -183,39 +154,21 @@ class Factory:
         return self.spider_animations[IDLE]
 
     def ensure_loaded(self) -> None:
-        self.icon_sheet.ensure_loaded()
-        self.glow_sheet.ensure_loaded()
+        self.icon_sheets.ensure_loaded()
         self.robot_animation_sheet.ensure_loaded()
         self.spider_animation_sheet.ensure_loaded()
 
     def load(self) -> None:
-        self.icon_sheet.load()
-        self.glow_sheet.load()
+        self.icon_sheets.load()
         self.robot_animation_sheet.load()
         self.spider_animation_sheet.load()
 
     reload = load
 
     def unload(self) -> None:
-        self.icon_sheet.unload()
-        self.glow_sheet.unload()
+        self.icon_sheets.unload()
         self.robot_animation_sheet.unload()
         self.spider_animation_sheet.unload()
-
-    def find_sprite_and_image(self, name: str) -> Optional[Tuple[Sprite, Image]]:
-        self.ensure_loaded()
-
-        sprite = self.icon_sprites.get(name)
-
-        if sprite is None:
-            sprite = self.glow_sprites.get(name)
-
-            if sprite is None:
-                return None
-
-            return (sprite, self.glow_image)
-
-        return (sprite, self.icon_image)
 
     async def generate_async(
         self, icon: Icon, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
@@ -239,68 +192,80 @@ class Factory:
 
         result = new_image(RGBA, (width, height), EMPTY)
 
+        try:
+            sheet = self.icon_sheets.add_reference(icon)
+
+        except FileNotFoundError:
+            return result
+
+        sheet.ensure_loaded()
+
+        image = sheet.image
+
+        sprites = sheet.sprites
+
         center = self.image_rectangle(result).center
 
         if icon.is_complex():
             for complex_icon_layer in icon.iter_complex_layers():
-                search = self.find_sprite_and_image(complex_icon_layer.name)
-
                 layer = complex_icon_layer.layer
 
-                if search:
-                    sprite, image = search
+                sprite = sprites.get(complex_icon_layer.name)
 
-                    part = self.paint(
-                        self.paint(image.crop(sprite.box), complex_icon_layer.white),
-                        complex_icon_layer.color,
-                    )
+                if sprite is None:
+                    continue
 
-                    if sprite.is_rotated():
-                        part = part.rotate(QUARTER, resample=BICUBIC, expand=True)
+                part = self.paint(
+                    self.paint(image.crop(sprite.box), complex_icon_layer.white),
+                    complex_icon_layer.color,
+                )
 
-                    size = sprite.size.mul_components(layer.scale)
+                if sprite.is_rotated():
+                    part = part.rotate(QUARTER, resample=BICUBIC, expand=True)
 
-                    part = part.resize(size.round_tuple(), resample=LANCZOS)
+                size = sprite.size.mul_components(layer.scale)
 
-                    if layer.is_h_flipped():
-                        part = mirror(part)
+                part = part.resize(size.round_tuple(), resample=LANCZOS)
 
-                    if layer.is_v_flipped():
-                        part = flip(part)
+                if layer.is_h_flipped():
+                    part = mirror(part)
 
-                    rotation = -layer.rotation  # NOTE: different rotation directions!
+                if layer.is_v_flipped():
+                    part = flip(part)
 
-                    part = part.rotate(rotation, resample=BICUBIC, expand=True)
+                rotation = -layer.rotation  # NOTE: different rotation directions!
 
-                    position = (
-                        center
-                        - self.image_rectangle(part).center
-                        + sprite.offset.y_flipped()
-                        + layer.position.y_flipped()
-                    )
+                part = part.rotate(rotation, resample=BICUBIC, expand=True)
 
-                    result.alpha_composite(part, position.round_tuple())
+                position = (
+                    center
+                    - self.image_rectangle(part).center
+                    + sprite.offset.y_flipped()
+                    + layer.position.y_flipped()
+                )
+
+                result.alpha_composite(part, position.round_tuple())
 
         else:
             for icon_layer in icon.iter_simple_layers():
-                search = self.find_sprite_and_image(icon_layer.name)
+                sprite = sprites.get(icon_layer.name)
 
-                if search:
-                    sprite, image = search
+                if sprite is None:
+                    continue
 
-                    part = self.paint(image.crop(sprite.box), icon_layer.color)
+                part = self.paint(image.crop(sprite.box), icon_layer.color)
 
-                    if sprite.is_rotated():
-                        part = part.rotate(QUARTER, resample=BICUBIC, expand=True)
+                if sprite.is_rotated():
+                    part = part.rotate(QUARTER, resample=BICUBIC, expand=True)
 
-                    position = (
-                        center - self.image_rectangle(part).center + sprite.offset.y_flipped()
-                    )
+                position = (
+                    center - self.image_rectangle(part).center + sprite.offset.y_flipped()
+                )
 
-                    if icon.type.is_ufo():
-                        position.y += UFO_OFFSET
+                if icon.type.is_ufo():
+                    position.y += UFO_OFFSET
 
-                    result.alpha_composite(part, position.round_tuple())
+                result.alpha_composite(part, position.round_tuple())
 
         return result
 
