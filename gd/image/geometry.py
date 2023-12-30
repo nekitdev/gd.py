@@ -43,6 +43,15 @@ class Point:
     def angle(self) -> float:
         return atan2(self.y, self.x)
 
+    def normalize_in_place(self) -> Self:
+        length = self.length
+
+        if length:
+            self.x /= length
+            self.y /= length
+
+        return self
+
     def normalize(self) -> Self:
         length = self.length
 
