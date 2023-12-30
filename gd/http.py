@@ -54,6 +54,7 @@ from gd.constants import (
     DEFAULT_CLICKS,
     DEFAULT_COINS,
     DEFAULT_COUNT,
+    DEFAULT_ERRORS,
     DEFAULT_ID,
     DEFAULT_LOW_DETAIL,
     DEFAULT_OBJECT_COUNT,
@@ -676,6 +677,7 @@ class HTTPClient:
         headers: Optional[Headers] = ...,
         base: Optional[URLString] = ...,
         retries: int = ...,
+        errors: str = ...,
     ) -> str:
         ...
 
@@ -690,6 +692,7 @@ class HTTPClient:
         headers: Optional[Headers] = ...,
         base: Optional[URLString] = ...,
         retries: int = ...,
+        errors: str = ...,
     ) -> bytes:
         ...
 
@@ -704,6 +707,7 @@ class HTTPClient:
         headers: Optional[Headers] = ...,
         base: Optional[URLString] = ...,
         retries: int = ...,
+        errors: str = ...,
     ) -> JSON:
         ...
 
@@ -717,6 +721,7 @@ class HTTPClient:
         headers: Optional[Headers] = None,
         base: Optional[URLString] = None,
         retries: int = DEFUALT_RETRIES,
+        errors: str = DEFAULT_ERRORS,
     ) -> ResponseData:
         url = URL(self.url if base is None else base)
 
@@ -729,6 +734,7 @@ class HTTPClient:
             error_codes=error_codes,
             headers=headers,
             retries=retries,
+            errors=errors,
         )
 
     @overload
@@ -743,6 +749,7 @@ class HTTPClient:
         error_codes: Optional[ErrorCodes] = ...,
         headers: Optional[Headers] = ...,
         retries: int = ...,
+        errors: str = ...,
     ) -> str:
         ...
 
@@ -758,6 +765,7 @@ class HTTPClient:
         error_codes: Optional[ErrorCodes] = ...,
         headers: Optional[Headers] = ...,
         retries: int = ...,
+        errors: str = ...,
     ) -> bytes:
         ...
 
@@ -773,6 +781,7 @@ class HTTPClient:
         error_codes: Optional[ErrorCodes] = ...,
         headers: Optional[Headers] = ...,
         retries: int = ...,
+        errors: str = ...,
     ) -> JSON:
         ...
 
@@ -788,6 +797,7 @@ class HTTPClient:
         error_codes: Optional[ErrorCodes] = ...,
         headers: Optional[Headers] = ...,
         retries: int = ...,
+        errors: str = ...,
     ) -> None:
         ...
 
@@ -802,6 +812,7 @@ class HTTPClient:
         error_codes: Optional[ErrorCodes] = None,
         headers: Optional[Headers] = None,
         retries: int = DEFUALT_RETRIES,
+        errors: str = DEFAULT_ERRORS,
     ) -> Optional[ResponseData]:
         session = await self.ensure_session()
 
@@ -849,7 +860,7 @@ class HTTPClient:
                         response_data = await response.read()
 
                     elif type is ResponseType.TEXT:
-                        response_data = await response.text()
+                        response_data = await response.text(errors=errors)
 
                     elif type is ResponseType.JSON:
                         response_data = await response.json(content_type=None)
