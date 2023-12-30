@@ -1587,7 +1587,9 @@ class LevelModel(Model):
         else:
             copies_time = duration()
 
-        time_steps = parse_get_or(int, DEFAULT_TIME_STEPS, mapping.get(LEVEL_TIME_STEPS))
+        time_steps = parse_get_or(
+            int, DEFAULT_TIME_STEPS, mapping.get(LEVEL_TIME_STEPS), ignore_errors=True
+        )
 
         return cls(
             id=id,
