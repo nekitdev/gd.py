@@ -8,9 +8,9 @@ from gd.constants import DEFAULT_GLOW, DEFAULT_ICON_ID
 from gd.enums import IconType
 from gd.image.animation import Animation
 from gd.image.layer import Layer
-from gd.string_utils import case_fold, concat_under, zero_pad
+from gd.string_utils import concat_under, zero_pad
 
-__all__ = ("Icon", "generate_name")
+__all__ = ("Icon", "IconReference", "generate_name")
 
 EXTRA = "extra"
 GLOW = "glow"
@@ -47,18 +47,22 @@ class ComplexIconLayer(IconLayer):
 
 
 @define()
-class Icon:
+class IconReference:
     type: IconType = field(default=IconType.DEFAULT)
     id: int = field(default=DEFAULT_ICON_ID)
+
+    @property
+    def name(self) -> str:
+        return generate_name(self.type.case_fold_name, self.id)
+
+
+@define()
+class Icon(IconReference):
     color_1: Color = field(factory=Color.default_color_1)
     color_2: Color = field(factory=Color.default_color_2)
     color_3: Color = field(factory=Color.default_color_3)
     glow: bool = field(default=DEFAULT_GLOW)
     idle: Optional[Animation] = field(default=None, repr=False)
-
-    @property
-    def name(self) -> str:
-        return case_fold(self.type.name)
 
     @property
     def extra_color(self) -> Color:
@@ -81,7 +85,7 @@ class Icon:
         glow: bool = False,
     ) -> str:
         return generate_name(
-            name=self.name,
+            name=self.type.case_fold_name,
             id=self.id,
             part=part,
             sub_part=sub_part,

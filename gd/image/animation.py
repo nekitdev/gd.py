@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Sequence
 
-from attrs import define, field
+from attrs import Attribute, define, field
 from typing_aliases import IntoPath, NormalError, StringMapping
 
 from gd.decorators import cache_by
@@ -49,6 +49,9 @@ AnimationSheetData = StringMapping[AnimationData]
 
 NO_DATA = "`data` not attached to the animation container"
 
+PATH_DOES_NOT_EXIST = "path `{}` does not exist"
+path_does_not_exist = PATH_DOES_NOT_EXIST.format
+
 PATH = "path"
 
 
@@ -59,6 +62,11 @@ class AnimationSheet:
     data_unchecked: Optional[AnimationSheetData] = field(default=None, init=False, repr=False)
 
     loaded: bool = field(default=False, init=False)
+
+    @path.validator
+    def check_path(self, attribute: Attribute[Path], value: Path) -> None:
+        if not value.exists():
+            raise FileNotFoundError(path_does_not_exist(value.as_posix()))
 
     @property
     @cache_by(PATH)

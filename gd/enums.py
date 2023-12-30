@@ -4,6 +4,7 @@ from enum import Enum, Flag
 from typing import Any, Optional
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, EMPTY
+from gd.string_utils import case_fold
 
 __all__ = (
     "SimpleKey",
@@ -197,6 +198,10 @@ class IconType(Enum):
 
     def is_jetpack(self) -> bool:
         return self is type(self).JETPACK
+
+    @property
+    def case_fold_name(self) -> str:
+        return case_fold(self.name)
 
 
 class MessageState(Enum):
