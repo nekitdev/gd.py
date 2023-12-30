@@ -1439,6 +1439,7 @@ class HTTPClient:
                 gjp2=hashed_password,
                 udid=udid,
                 uuid=uuid,
+                inc=increment,
                 rs=random_string,
                 chk=check,
                 to_camel=True,
