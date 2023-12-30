@@ -8,28 +8,9 @@ from gd.constants import DEFAULT_GLOW, DEFAULT_ICON_ID
 from gd.enums import IconType
 from gd.image.animation import Animation
 from gd.image.layer import Layer
-from gd.string_utils import concat_under, zero_pad
+from gd.string_utils import case_fold, concat_under, zero_pad
 
 __all__ = ("Icon", "generate_name")
-
-CUBE = "player"
-SHIP = "ship"
-BALL = "player_ball"
-UFO = "bird"
-WAVE = "dart"
-ROBOT = "robot"
-SPIDER = "spider"
-
-ICON_TYPE_TO_NAME = {
-    IconType.CUBE: CUBE,
-    IconType.SHIP: SHIP,
-    IconType.BALL: BALL,
-    IconType.UFO: UFO,
-    IconType.WAVE: WAVE,
-    IconType.ROBOT: ROBOT,
-    IconType.SPIDER: SPIDER,
-}
-
 
 EXTRA = "extra"
 GLOW = "glow"
@@ -77,7 +58,7 @@ class Icon:
 
     @property
     def name(self) -> str:
-        return ICON_TYPE_TO_NAME[self.type]
+        return case_fold(self.type.name)
 
     @property
     def extra_color(self) -> Color:
