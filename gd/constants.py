@@ -1,3 +1,4 @@
+from os import environ as environment
 from typing import Literal
 
 EMPTY_BYTES = bytes()
@@ -207,7 +208,9 @@ DEFAULT_WIDTH = 250
 DEFAULT_HEIGHT = 250
 
 DEFAULT_ENCODING = "utf-8"
-DEFAULT_ERRORS = "strict"
+STRICT_ERRORS = "strict"
+GD_ENCODING_ERRORS = "GD_ENCODING_ERRORS"
+DEFAULT_ERRORS = environment.get(GD_ENCODING_ERRORS, STRICT_ERRORS)
 
 WEEKLY_ID_ADD = 100_000
 
