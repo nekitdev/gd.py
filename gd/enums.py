@@ -1417,6 +1417,8 @@ class SpecialColorID(Enum):
     BLACK = 1010
     WHITE = 1011
     LIGHTER = 1012
+    MIDDLEGROUND = MG = 1013
+    SECONDARY_MIDDLEGROUND = MIDDLEGROUND_2 = MG2 = 1014
 
     @property
     def id(self) -> int:
