@@ -87,6 +87,45 @@ $ python file.py
 `PANDA EYES - BROKEN` by `PandaEyesOfficial` (ID: `1081309`, size: `9.71 MB`)
 ```
 
+### Login
+
+`gd.py` is now using hashed passwords for safety reasons.
+
+[`gd.hash_password`][gd.encoding.hash_password] is provided for convenience.
+
+Moreover, [`client.login`][gd.client.Client.login] returns an awaitable asynchronous context
+manager, which can be utilized to factor out the blocks that require logging in.
+
+In the snippet below we define the credentials and hash the password.
+
+```python
+import gd
+
+client = gd.Client()
+
+name = "name"
+password = "********"
+
+hashed_password = gd.hash_password(password)
+```
+
+Regular login:
+
+```python
+await client.login(name, hashed_password)
+
+...  # the client is now logged in
+```
+
+Advanced version:
+
+```python
+async with client.login(name, hashed_password):
+    ...  # the client is logged in here
+
+...  # but not outside of the `async with` block!
+```
+
 ### Listening
 
 ```python
@@ -111,22 +150,6 @@ client.listen_for_daily()
 @entrypoint(__name__)
 def main() -> None:
     client.create_controller().run()
-```
-
-## Flow
-
-```text
-┌────────┐    ┌────────┐    ┌───────┐    ┌─────────┐    ┌────────────┐    ┌────────┐
-│        ├───►│        ├───►│       ├───►│         ├───►│            ├───►│        │
-│ Client │    │ Entity │    │ Model │    │ Session │    │ HTTPClient │    │ Server │
-│        │◄───┤        │◄───┤       │◄───┤         │◄───┤            │◄───┤        │
-└────────┘    └───────┬┘    └───────┘    └─────────┘    └────────────┘    └────────┘
-               ▲      │
-               │      │     ┌────────┐    ┌────────┐
-               │      └────►│        ├───►│        │
-               │            │ Schema │    │ Binary │
-               └────────────┤        │◄───┤        │
-                            └────────┘    └────────┘
 ```
 
 ## Documentation
@@ -181,3 +204,6 @@ If you are interested in contributing to `gd.py`, make sure to take a look at th
 [Check Badge]: https://github.com/nekitdev/gd.py/workflows/check/badge.svg
 [Test Badge]: https://github.com/nekitdev/gd.py/workflows/test/badge.svg
 [Coverage Badge]: https://codecov.io/gh/nekitdev/gd.py/branch/main/graph/badge.svg
+
+[gd.client.Client.login]: https://nekitdev.github.io/gd.py/reference/client#gd.client.Client.login
+[gd.encoding.hash_password]: https://nekitdev.github.io/gd.py/reference/encoding#gd.encoding.hash_password

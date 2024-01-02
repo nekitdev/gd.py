@@ -11,8 +11,9 @@ nav:
   - Index: "index.md"
   - Reference:
     - Client: "reference/client.md"
+    - Encoding: "reference/encoding.md"
     - Enums: "reference/enums.md"
-    - Song: "reference/song.md"
+    - Songs: "reference/songs.md"
     - Artist: "reference/artist.md"
     - Tasks: "reference/tasks.md"
     - API:

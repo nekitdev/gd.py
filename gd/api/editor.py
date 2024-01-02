@@ -56,7 +56,7 @@ def time_length(
 ) -> float:
     """Computes the time (in seconds) to travel from `0` to `distance`, respecting speed portals.
 
-    Parameters:
+    Arguments:
         distance: The distance to stop calculating at.
         start_speed: The starting speed (found in the header).
         speed_changes: Speed changes in the level, ordered by `x` position.
@@ -114,17 +114,7 @@ get_x = get_attribute_factory(X)
 
 @define()
 class Editor(Sequence[Object], RobTop):
-    """Represents editors.
-
-    Binary:
-        ```rust
-        struct Editor {
-            header: Header,
-            objects_length: u32,
-            objects: [Object; objects_length],
-        }
-        ```
-    """
+    """Represents editors."""
 
     header: Header = field(factory=Header)
     """The header of the editor."""

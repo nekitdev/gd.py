@@ -320,6 +320,14 @@ def sha1_string_with_salt(
 
 
 def hash_password(password: str) -> str:
+    """Hashes the password for further requests.
+
+    Arguments:
+        password: The password to hash.
+
+    Returns:
+        The hashed password.
+    """
     return sha1_string_with_salt(password, Salt.PASSWORD)
 
 
