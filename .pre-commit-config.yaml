@@ -1,0 +1,17 @@
+repos:
+- repo: "https://github.com/astral-sh/ruff-pre-commit"
+  rev: "v0.1.5"
+  hooks:
+  - id: "ruff"
+    name: "Run the Ruff linter"
+    types_or: ["python", "pyi"]
+    args: ["--fix"]
+  - id: "ruff-format"
+    name: "Run the Ruff formatter"
+    types_or: ["python", "pyi"]
+- repo: "https://github.com/python-poetry/poetry"
+  rev: "1.7.0"
+  hooks:
+  - id: "poetry-check"
+    stages: ["push"]
+    name: "Run Poetry check hook"
