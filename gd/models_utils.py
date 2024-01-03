@@ -1,9 +1,10 @@
-from enum import Enum
-from typing import Iterable, Mapping, Optional, Type, TypeVar
+from typing import Iterable, Mapping, Tuple
+from funcs import unpack_binary
 
 from funcs.application import partial
 from iters.iters import iter
-from typing_aliases import NormalError, Nullary, Pair, Parse
+from typing_aliases import Pair
+from wraps import wrap_option
 
 from gd.models_constants import (
     ARTIST_SEPARATOR,
@@ -24,7 +25,7 @@ from gd.models_constants import (
     GAUNTLET_SEPARATOR,
     GAUNTLETS_RESPONSE_GAUNTLETS_SEPARATOR,
     GAUNTLETS_RESPONSE_SEPARATOR,
-    GROUPS_SEPARATOR,
+    GROUP_IDS_SEPARATOR,
     GUIDELINES_SEPARATOR,
     HEADER_SEPARATOR,
     HSV_SEPARATOR,
@@ -79,7 +80,11 @@ from gd.models_constants import (
 )
 
 
-def round_float(string: str) -> int:
+option_int = wrap_option(int)
+option_float = wrap_option(float)
+
+
+def float_round(string: str) -> int:
     return round(float(string))
 
 
@@ -100,59 +105,6 @@ def int_bool(string: str) -> bool:
     return bool(int(string))
 
 
-E = TypeVar("E", bound=Enum)
-T = TypeVar("T")
-
-
-def parse_enum(parse: Parse[T], enum_type: Type[E], string: str) -> E:
-    return enum_type(parse(string))
-
-
-def partial_parse_enum(parse: Parse[T], enum_type: Type[E]) -> Parse[E]:
-    def actual_parse(string: str) -> E:
-        return parse_enum(parse, enum_type, string)
-
-    return actual_parse
-
-
-DEFAULT_IGNORE_ERRORS = False
-
-
-def parse_get_or(
-    parse: Parse[T], default: T, option: Optional[str], ignore_errors: bool = DEFAULT_IGNORE_ERRORS
-) -> T:
-    if option is None:
-        return default
-
-    try:
-        return parse(option)
-
-    except NormalError:
-        if ignore_errors:
-            return default
-
-        raise
-
-
-def parse_get_or_else(
-    parse: Parse[T],
-    default: Nullary[T],
-    option: Optional[str],
-    ignore_errors: bool = DEFAULT_IGNORE_ERRORS,
-) -> T:
-    if option is None:
-        return default()
-
-    try:
-        return parse(option)
-
-    except NormalError:
-        if ignore_errors:
-            return default()
-
-        raise
-
-
 def split_iterable(separator: str, string: str) -> Iterable[str]:
     if not string:
         return []
@@ -164,24 +116,25 @@ def split_string_mapping(separator: str, string: str) -> Mapping[str, str]:
     if not string:
         return {}
 
-    return {index: value for index, value in iter(string.split(separator)).pairs().unwrap()}
+    return iter(string.split(separator)).pairs().dict()
+
+
+def int_left(left: str, right: str) -> Tuple[int, str]:
+    return (int(left), right)
 
 
 def split_mapping(separator: str, string: str) -> Mapping[int, str]:
     if not string:
         return {}
 
-    return {int(index): value for index, value in iter(string.split(separator)).pairs().unwrap()}
+    return iter(string.split(separator)).pairs().map(unpack_binary(int_left)).dict()
 
 
 def split_float_mapping(separator: str, string: str) -> Mapping[float, float]:
     if not string:
         return {}
 
-    return {
-        float(key): float(value)
-        for key, value in iter(string.split(separator)).filter(None).pairs().unwrap()
-    }
+    return iter(string.split(separator)).map(float).pairs().dict()
 
 
 def string_mapping_to_iterable(mapping: Mapping[str, str]) -> Iterable[str]:
@@ -193,11 +146,11 @@ def str_left(left: int, right: str) -> Pair[str]:
 
 
 def mapping_to_iterable(mapping: Mapping[int, str]) -> Iterable[str]:
-    return iter((str(index), value) for index, value in mapping.items()).flatten().unwrap()
+    return iter(mapping.items()).map(unpack_binary(str_left)).flatten().unwrap()
 
 
 def float_mapping_to_iterable(mapping: Mapping[float, float]) -> Iterable[str]:
-    return iter((str(key), str(value)) for key, value in mapping.items()).flatten().unwrap()
+    return iter(mapping.items()).flatten().map(str).unwrap()
 
 
 def concat_string_mapping(separator: str, mapping: Mapping[str, str]) -> str:
@@ -326,8 +279,8 @@ concat_object = partial(concat_mapping, OBJECT_SEPARATOR)
 split_any_object = partial(split_string_mapping, OBJECT_SEPARATOR)
 concat_any_object = partial(concat_string_mapping, OBJECT_SEPARATOR)
 
-split_groups = partial(split_iterable, GROUPS_SEPARATOR)
-concat_groups = partial(concat_iterable, GROUPS_SEPARATOR)
+split_group_ids = partial(split_iterable, GROUP_IDS_SEPARATOR)
+concat_group_ids = partial(concat_iterable, GROUP_IDS_SEPARATOR)
 
 split_guidelines = partial(split_float_mapping, GUIDELINES_SEPARATOR)
 concat_guidelines = partial(concat_float_mapping, GUIDELINES_SEPARATOR)

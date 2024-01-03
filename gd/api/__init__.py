@@ -32,7 +32,7 @@ from gd.api.objects import (
     CountTrigger,
     FollowPlayerYTrigger,
     FollowTrigger,
-    Groups,
+    GroupIDs,
     InstantCountTrigger,
     Item,
     ItemCounter,
@@ -102,7 +102,7 @@ __all__ = (
     # HSV
     "HSV",
     # groups
-    "Groups",
+    "GroupIDs",
     # objects
     "Object",
     "PulsatingObject",

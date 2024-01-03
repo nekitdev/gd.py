@@ -5,15 +5,15 @@ from typing import TYPE_CHECKING
 from attrs import define, field
 
 from gd.api.color_channels import (
-    BACKGROUND_COLOR_ID,
-    COLOR_1_ID,
-    COLOR_2_ID,
-    COLOR_3_ID,
-    COLOR_4_ID,
-    GROUND_COLOR_ID,
-    LINE_3D_COLOR_ID,
-    LINE_COLOR_ID,
-    OBJECT_COLOR_ID,
+    BACKGROUND_COLOR_CHANNEL_ID,
+    COLOR_1_CHANNEL_ID,
+    COLOR_2_CHANNEL_ID,
+    COLOR_3_CHANNEL_ID,
+    COLOR_4_CHANNEL_ID,
+    GROUND_COLOR_CHANNEL_ID,
+    LINE_3D_COLOR_CHANNEL_ID,
+    LINE_COLOR_CHANNEL_ID,
+    OBJECT_COLOR_CHANNEL_ID,
     ColorChannels,
     CompatibilityColorChannel,
     NormalCompatibilityColorChannel,
@@ -30,12 +30,10 @@ from gd.models_utils import (
     concat_header,
     float_str,
     int_bool,
-    parse_get_or,
-    parse_get_or_else,
-    partial_parse_enum,
     split_header,
 )
 from gd.robtop import RobTop
+from gd.robtop_view import RobTopView, StringRobTopView
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -66,8 +64,6 @@ NOT_START_POSITION = False
 DEFAULT_RED = BYTE
 DEFAULT_GREEN = BYTE
 DEFAULT_BLUE = BYTE
-
-DEFAULT_PLAYER_COLOR_VALUE = PlayerColor.DEFAULT.value
 
 
 GAME_MODE = "kA2"
@@ -103,26 +99,26 @@ LINE_3D_COLOR_CHANNEL = "kS37"
 
 # even more compatibility
 
-BACKGROUND_RED = "kS1"
-BACKGROUND_GREEN = "kS2"
-BACKGROUND_BLUE = "kS3"
-GROUND_RED = "kS4"
-GROUND_GREEN = "kS5"
-GROUND_BLUE = "kS6"
-LINE_RED = "kS7"
-LINE_GREEN = "kS8"
-LINE_BLUE = "kS9"
-OBJECT_RED = "kS10"
-OBJECT_GREEN = "kS11"
-OBJECT_BLUE = "kS12"
-COLOR_1_RED = "kS13"
-COLOR_1_GREEN = "kS14"
-COLOR_1_BLUE = "kS15"
-BACKGROUND_PLAYER_COLOR = "kS16"
-GROUND_PLAYER_COLOR = "kS17"
-LINE_PLAYER_COLOR = "kS18"
-OBJECT_PLAYER_COLOR = "kS19"
-COLOR_1_PLAYER_COLOR = "kS20"
+BACKGROUND_COLOR_CHANNEL_RED = "kS1"
+BACKGROUND_COLOR_CHANNEL_GREEN = "kS2"
+BACKGROUND_COLOR_CHANNEL_BLUE = "kS3"
+GROUND_COLOR_CHANNEL_RED = "kS4"
+GROUND_COLOR_CHANNEL_GREEN = "kS5"
+GROUND_COLOR_CHANNEL_BLUE = "kS6"
+LINE_COLOR_CHANNEL_RED = "kS7"
+LINE_COLOR_CHANNEL_GREEN = "kS8"
+LINE_COLOR_CHANNEL_BLUE = "kS9"
+OBJECT_COLOR_CHANNEL_RED = "kS10"
+OBJECT_COLOR_CHANNEL_GREEN = "kS11"
+OBJECT_COLOR_CHANNEL_BLUE = "kS12"
+COLOR_1_CHANNEL_RED = "kS13"
+COLOR_1_CHANNEL_GREEN = "kS14"
+COLOR_1_CHANNEL_BLUE = "kS15"
+BACKGROUND_COLOR_CHANNEL_PLAYER_COLOR = "kS16"
+GROUND_COLOR_CHANNEL_PLAYER_COLOR = "kS17"
+LINE_COLOR_CHANNEL_PLAYER_COLOR = "kS18"
+OBJECT_COLOR_CHANNEL_PLAYER_COLOR = "kS19"
+COLOR_1_CHANNEL_PLAYER_COLOR = "kS20"
 
 
 @define()
@@ -147,245 +143,303 @@ class Header(RobTop):
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
-        default_player_color_value = DEFAULT_PLAYER_COLOR_VALUE
+        return cls.from_robtop_view(RobTopView(split_header(string)))
 
-        mapping = split_header(string)
+    @classmethod
+    def from_robtop_view(cls, view: StringRobTopView[str]) -> Self:
+        game_mode = view.get_option(GAME_MODE).map(int).map(GameMode).unwrap_or(GameMode.DEFAULT)
 
-        game_mode = parse_get_or(
-            partial_parse_enum(int, GameMode), GameMode.DEFAULT, mapping.get(GAME_MODE)
+        mini_mode = view.get_option(MINI_MODE).map(int_bool).unwrap_or(DEFAULT_MINI_MODE)
+
+        speed = view.get_option(SPEED).map(int).map(Speed).unwrap_or(Speed.DEFAULT)
+
+        background_id = view.get_option(BACKGROUND_ID).map(int).unwrap_or(DEFAULT_ID)
+
+        ground_id = view.get_option(GROUND_ID).map(int).unwrap_or(DEFAULT_ID)
+
+        dual_mode = view.get_option(DUAL_MODE).map(int_bool).unwrap_or(DEFAULT_DUAL_MODE)
+
+        two_player = view.get_option(TWO_PLAYER).map(int_bool).unwrap_or(DEFAULT_TWO_PLAYER)
+
+        flip_gravity = view.get_option(FLIP_GRAVITY).map(int_bool).unwrap_or(DEFAULT_FLIP_GRAVITY)
+
+        song_offset = view.get_option(SONG_OFFSET).map(float).unwrap_or(DEFAULT_SONG_OFFSET)
+
+        guidelines = (
+            view.get_option(GUIDELINES).map(Guidelines.from_robtop).unwrap_or_else(Guidelines)
         )
 
-        mini_mode = parse_get_or(int_bool, DEFAULT_MINI_MODE, mapping.get(MINI_MODE))
+        song_fade_in = view.get_option(SONG_FADE_IN).map(int_bool).unwrap_or(DEFAULT_SONG_FADE_IN)
+        song_fade_out = (
+            view.get_option(SONG_FADE_OUT).map(int_bool).unwrap_or(DEFAULT_SONG_FADE_OUT)
+        )
 
-        speed = parse_get_or(partial_parse_enum(int, Speed), Speed.DEFAULT, mapping.get(SPEED))
+        ground_line_id = view.get_option(GROUND_LINE_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        background_id = parse_get_or(int, DEFAULT_ID, mapping.get(BACKGROUND_ID))
+        font_id = view.get_option(FONT_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        ground_id = parse_get_or(int, DEFAULT_ID, mapping.get(GROUND_ID))
-
-        dual_mode = parse_get_or(int_bool, DEFAULT_DUAL_MODE, mapping.get(DUAL_MODE))
-
-        two_player = parse_get_or(int_bool, DEFAULT_TWO_PLAYER, mapping.get(TWO_PLAYER))
-
-        flip_gravity = parse_get_or(int_bool, DEFAULT_FLIP_GRAVITY, mapping.get(FLIP_GRAVITY))
-
-        song_offset = parse_get_or(float, DEFAULT_SONG_OFFSET, mapping.get(SONG_OFFSET))
-
-        guidelines = parse_get_or_else(Guidelines.from_robtop, Guidelines, mapping.get(GUIDELINES))
-
-        song_fade_in = parse_get_or(int_bool, DEFAULT_SONG_FADE_IN, mapping.get(SONG_FADE_IN))
-        song_fade_out = parse_get_or(int_bool, DEFAULT_SONG_FADE_OUT, mapping.get(SONG_FADE_OUT))
-
-        ground_line_id = parse_get_or(int, DEFAULT_ID, mapping.get(GROUND_LINE_ID))
-
-        font_id = parse_get_or(int, DEFAULT_ID, mapping.get(FONT_ID))
-
-        platformer_mode = parse_get_or(
-            int_bool, DEFAULT_PLATFORMER_MODE, mapping.get(PLATFORMER_MODE)
+        platformer_mode = (
+            view.get_option(PLATFORMER_MODE).map(int_bool).unwrap_or(DEFAULT_PLATFORMER_MODE)
         )
 
         color_channels = ColorChannels()
 
-        # even more compatiblity
+        # even more compatibility
 
-        background_player_color_value = max(
-            parse_get_or(
-                int_bool, default_player_color_value, mapping.get(BACKGROUND_PLAYER_COLOR)
-            ),
-            default_player_color_value,
+        background_color_channel_player_color = (
+            view.get_option(BACKGROUND_COLOR_CHANNEL_PLAYER_COLOR)
+            .map(int)
+            .map(PlayerColor)
+            .unwrap_or(PlayerColor.DEFAULT)
         )
 
-        background_player_color = PlayerColor(background_player_color_value)
-
-        ground_player_color_value = max(
-            parse_get_or(int_bool, default_player_color_value, mapping.get(GROUND_PLAYER_COLOR)),
-            default_player_color_value,
+        ground_color_channel_player_color = (
+            view.get_option(GROUND_COLOR_CHANNEL_PLAYER_COLOR)
+            .map(int)
+            .map(PlayerColor)
+            .unwrap_or(PlayerColor.DEFAULT)
         )
 
-        ground_player_color = PlayerColor(ground_player_color_value)
-
-        line_player_color_value = max(
-            parse_get_or(int_bool, default_player_color_value, mapping.get(LINE_PLAYER_COLOR)),
-            default_player_color_value,
+        line_color_channel_player_color = (
+            view.get_option(LINE_COLOR_CHANNEL_PLAYER_COLOR)
+            .map(int)
+            .map(PlayerColor)
+            .unwrap_or(PlayerColor.DEFAULT)
         )
 
-        line_player_color = PlayerColor(line_player_color_value)
-
-        object_player_color_value = max(
-            parse_get_or(int_bool, default_player_color_value, mapping.get(OBJECT_PLAYER_COLOR)),
-            default_player_color_value,
+        object_color_channel_player_color = (
+            view.get_option(OBJECT_COLOR_CHANNEL_PLAYER_COLOR)
+            .map(int)
+            .map(PlayerColor)
+            .unwrap_or(PlayerColor.DEFAULT)
         )
 
-        object_player_color = PlayerColor(object_player_color_value)
-
-        color_1_player_color_value = max(
-            parse_get_or(int_bool, default_player_color_value, mapping.get(COLOR_1_PLAYER_COLOR)),
-            default_player_color_value,
+        color_1_channel_player_color = (
+            view.get_option(COLOR_1_CHANNEL_PLAYER_COLOR)
+            .map(int)
+            .map(PlayerColor)
+            .unwrap_or(PlayerColor.DEFAULT)
         )
-
-        color_1_player_color = PlayerColor(color_1_player_color_value)
 
         background_color_channel: CompatibilityColorChannel
 
-        if background_player_color.is_used():
-            background_color_channel = PlayerCompatibilityColorChannel(background_player_color)
+        if background_color_channel_player_color.is_used():
+            background_color_channel = PlayerCompatibilityColorChannel(
+                background_color_channel_player_color
+            )
 
         else:
-            background_red = parse_get_or(int, DEFAULT_RED, mapping.get(BACKGROUND_RED))
-            background_green = parse_get_or(int, DEFAULT_GREEN, mapping.get(BACKGROUND_GREEN))
-            background_blue = parse_get_or(int, DEFAULT_BLUE, mapping.get(BACKGROUND_BLUE))
+            background_color_channel_red = (
+                view.get_option(BACKGROUND_COLOR_CHANNEL_RED).map(int).unwrap_or(DEFAULT_RED)
+            )
+            background_color_channel_green = (
+                view.get_option(BACKGROUND_COLOR_CHANNEL_GREEN).map(int).unwrap_or(DEFAULT_GREEN)
+            )
+            background_color_channel_blue = (
+                view.get_option(BACKGROUND_COLOR_CHANNEL_BLUE).map(int).unwrap_or(DEFAULT_BLUE)
+            )
 
-            background_color = Color.from_rgb(background_red, background_green, background_blue)
+            background_color_channel_color = Color.from_rgb(
+                background_color_channel_red,
+                background_color_channel_green,
+                background_color_channel_blue,
+            )
 
-            background_color_channel = NormalCompatibilityColorChannel(background_color)
+            background_color_channel = NormalCompatibilityColorChannel(
+                background_color_channel_color
+            )
 
         ground_color_channel: CompatibilityColorChannel
 
-        if ground_player_color.is_used():
-            ground_color_channel = PlayerCompatibilityColorChannel(ground_player_color)
+        if ground_color_channel_player_color.is_used():
+            ground_color_channel = PlayerCompatibilityColorChannel(
+                ground_color_channel_player_color
+            )
 
         else:
-            ground_red = parse_get_or(int, DEFAULT_RED, mapping.get(GROUND_RED))
-            ground_green = parse_get_or(int, DEFAULT_GREEN, mapping.get(GROUND_GREEN))
-            ground_blue = parse_get_or(int, DEFAULT_BLUE, mapping.get(GROUND_BLUE))
+            ground_color_channel_red = (
+                view.get_option(GROUND_COLOR_CHANNEL_RED).map(int).unwrap_or(DEFAULT_RED)
+            )
+            ground_color_channel_green = (
+                view.get_option(GROUND_COLOR_CHANNEL_GREEN).map(int).unwrap_or(DEFAULT_GREEN)
+            )
+            ground_color_channel_blue = (
+                view.get_option(GROUND_COLOR_CHANNEL_BLUE).map(int).unwrap_or(DEFAULT_BLUE)
+            )
 
-            ground_color = Color.from_rgb(ground_red, ground_green, ground_blue)
+            ground_color_channel_color = Color.from_rgb(
+                ground_color_channel_red,
+                ground_color_channel_green,
+                ground_color_channel_blue,
+            )
 
-            ground_color_channel = NormalCompatibilityColorChannel(ground_color)
+            ground_color_channel = NormalCompatibilityColorChannel(ground_color_channel_color)
 
         line_color_channel: CompatibilityColorChannel
 
-        if line_player_color.is_used():
-            line_color_channel = PlayerCompatibilityColorChannel(line_player_color)
+        if line_color_channel_player_color.is_used():
+            line_color_channel = PlayerCompatibilityColorChannel(line_color_channel_player_color)
 
         else:
-            line_red = parse_get_or(int, DEFAULT_RED, mapping.get(LINE_RED))
-            line_green = parse_get_or(int, DEFAULT_GREEN, mapping.get(LINE_GREEN))
-            line_blue = parse_get_or(int, DEFAULT_BLUE, mapping.get(LINE_BLUE))
+            line_color_channel_red = (
+                view.get_option(LINE_COLOR_CHANNEL_RED).map(int).unwrap_or(DEFAULT_RED)
+            )
+            line_color_channel_green = (
+                view.get_option(LINE_COLOR_CHANNEL_GREEN).map(int).unwrap_or(DEFAULT_GREEN)
+            )
+            line_color_channel_blue = (
+                view.get_option(LINE_COLOR_CHANNEL_BLUE).map(int).unwrap_or(DEFAULT_BLUE)
+            )
 
-            line_color = Color.from_rgb(line_red, line_green, line_blue)
+            line_color_channel_color = Color.from_rgb(
+                line_color_channel_red, line_color_channel_green, line_color_channel_blue
+            )
 
-            line_color_channel = NormalCompatibilityColorChannel(line_color)
+            line_color_channel = NormalCompatibilityColorChannel(line_color_channel_color)
 
         object_color_channel: CompatibilityColorChannel
 
-        if object_player_color.is_used():
-            object_color_channel = PlayerCompatibilityColorChannel(object_player_color)
+        if object_color_channel_player_color.is_used():
+            object_color_channel = PlayerCompatibilityColorChannel(
+                object_color_channel_player_color
+            )
 
         else:
-            object_red = parse_get_or(int, DEFAULT_RED, mapping.get(OBJECT_RED))
-            object_green = parse_get_or(int, DEFAULT_GREEN, mapping.get(OBJECT_GREEN))
-            object_blue = parse_get_or(int, DEFAULT_BLUE, mapping.get(OBJECT_BLUE))
+            object_color_channel_red = (
+                view.get_option(OBJECT_COLOR_CHANNEL_RED).map(int).unwrap_or(DEFAULT_RED)
+            )
+            object_color_channel_green = (
+                view.get_option(OBJECT_COLOR_CHANNEL_GREEN).map(int).unwrap_or(DEFAULT_GREEN)
+            )
+            object_color_channel_blue = (
+                view.get_option(OBJECT_COLOR_CHANNEL_BLUE).map(int).unwrap_or(DEFAULT_BLUE)
+            )
 
-            object_color = Color.from_rgb(object_red, object_green, object_blue)
+            object_color_channel_color = Color.from_rgb(
+                object_color_channel_red,
+                object_color_channel_green,
+                object_color_channel_blue,
+            )
 
-            object_color_channel = NormalCompatibilityColorChannel(object_color)
+            object_color_channel = NormalCompatibilityColorChannel(object_color_channel_color)
 
         color_1_channel: CompatibilityColorChannel
 
-        if color_1_player_color.is_used():
-            color_1_channel = PlayerCompatibilityColorChannel(color_1_player_color)
+        if color_1_channel_player_color.is_used():
+            color_1_channel = PlayerCompatibilityColorChannel(color_1_channel_player_color)
 
         else:
-            color_1_red = parse_get_or(int, DEFAULT_RED, mapping.get(COLOR_1_RED))
-            color_1_green = parse_get_or(int, DEFAULT_GREEN, mapping.get(COLOR_1_GREEN))
-            color_1_blue = parse_get_or(int, DEFAULT_BLUE, mapping.get(COLOR_1_BLUE))
+            color_1_channel_red = (
+                view.get_option(COLOR_1_CHANNEL_RED).map(int).unwrap_or(DEFAULT_RED)
+            )
+            color_1_channel_green = (
+                view.get_option(COLOR_1_CHANNEL_GREEN).map(int).unwrap_or(DEFAULT_GREEN)
+            )
+            color_1_channel_blue = (
+                view.get_option(COLOR_1_CHANNEL_BLUE).map(int).unwrap_or(DEFAULT_BLUE)
+            )
 
-            color_1 = Color.from_rgb(color_1_red, color_1_green, color_1_blue)
+            color_1_channel_color = Color.from_rgb(
+                color_1_channel_red, color_1_channel_green, color_1_channel_blue
+            )
 
-            color_1_channel = NormalCompatibilityColorChannel(color_1)
+            color_1_channel = NormalCompatibilityColorChannel(color_1_channel_color)
 
         initial_color_channels = ColorChannels.from_color_channels(
-            background_color_channel.migrate(BACKGROUND_COLOR_ID),
-            ground_color_channel.migrate(GROUND_COLOR_ID),
-            line_color_channel.migrate(LINE_COLOR_ID),
-            object_color_channel.migrate(OBJECT_COLOR_ID),
-            color_1_channel.migrate(COLOR_1_ID),
+            background_color_channel.migrate(BACKGROUND_COLOR_CHANNEL_ID),
+            ground_color_channel.migrate(GROUND_COLOR_CHANNEL_ID),
+            line_color_channel.migrate(LINE_COLOR_CHANNEL_ID),
+            object_color_channel.migrate(OBJECT_COLOR_CHANNEL_ID),
+            color_1_channel.migrate(COLOR_1_CHANNEL_ID),
         )
 
         color_channels.update(initial_color_channels)
 
         # compatibility
 
-        background_color_channel_string = mapping.get(BACKGROUND_COLOR_CHANNEL)
+        background_color_channel_option = (
+            view.get_option(BACKGROUND_COLOR_CHANNEL)
+            .map(compatibility_color_channel_from_robtop)
+            .extract()
+        )
 
-        if background_color_channel_string is not None:
-            background_color_channel = compatibility_color_channel_from_robtop(
-                background_color_channel_string
-            )
+        if background_color_channel_option is not None:
+            color_channels.add(background_color_channel_option.migrate(BACKGROUND_COLOR_CHANNEL_ID))
 
-            color_channels.add(background_color_channel.migrate(BACKGROUND_COLOR_ID))
+        ground_color_channel_option = (
+            view.get_option(GROUND_COLOR_CHANNEL)
+            .map(compatibility_color_channel_from_robtop)
+            .extract()
+        )
 
-        ground_color_channel_string = mapping.get(GROUND_COLOR_CHANNEL)
+        if ground_color_channel_option is not None:
+            color_channels.add(ground_color_channel_option.migrate(GROUND_COLOR_CHANNEL_ID))
 
-        if ground_color_channel_string is not None:
-            ground_color_channel = compatibility_color_channel_from_robtop(
-                ground_color_channel_string
-            )
+        line_color_channel_option = (
+            view.get_option(LINE_COLOR_CHANNEL)
+            .map(compatibility_color_channel_from_robtop)
+            .extract()
+        )
 
-            color_channels.add(ground_color_channel.migrate(GROUND_COLOR_ID))
+        if line_color_channel_option is not None:
+            color_channels.add(line_color_channel_option.migrate(LINE_COLOR_CHANNEL_ID))
 
-        line_color_channel_string = mapping.get(LINE_COLOR_CHANNEL)
+        object_color_channel_option = (
+            view.get_option(OBJECT_COLOR_CHANNEL)
+            .map(compatibility_color_channel_from_robtop)
+            .extract()
+        )
 
-        if line_color_channel_string is not None:
-            line_color_channel = compatibility_color_channel_from_robtop(line_color_channel_string)
+        if object_color_channel_option is not None:
+            color_channels.add(object_color_channel_option.migrate(OBJECT_COLOR_CHANNEL_ID))
 
-            color_channels.add(line_color_channel.migrate(LINE_COLOR_ID))
+        color_1_channel_option = (
+            view.get_option(COLOR_1_CHANNEL).map(compatibility_color_channel_from_robtop).extract()
+        )
 
-        object_color_channel_string = mapping.get(OBJECT_COLOR_CHANNEL)
+        if color_1_channel_option is not None:
+            color_channels.add(color_1_channel_option.migrate(COLOR_1_CHANNEL_ID))
 
-        if object_color_channel_string is not None:
-            object_color_channel = compatibility_color_channel_from_robtop(
-                object_color_channel_string
-            )
+        color_2_channel_option = (
+            view.get_option(COLOR_2_CHANNEL).map(compatibility_color_channel_from_robtop).extract()
+        )
 
-            color_channels.add(object_color_channel.migrate(OBJECT_COLOR_ID))
+        if color_2_channel_option is not None:
+            color_channels.add(color_2_channel_option.migrate(COLOR_2_CHANNEL_ID))
 
-        color_1_channel_string = mapping.get(COLOR_1_CHANNEL)
+        color_3_channel_option = (
+            view.get_option(COLOR_3_CHANNEL).map(compatibility_color_channel_from_robtop).extract()
+        )
 
-        if color_1_channel_string is not None:
-            color_1_channel = compatibility_color_channel_from_robtop(color_1_channel_string)
+        if color_3_channel_option is not None:
+            color_channels.add(color_3_channel_option.migrate(COLOR_3_CHANNEL_ID))
 
-            color_channels.add(color_1_channel.migrate(COLOR_1_ID))
+        color_4_channel_option = (
+            view.get_option(COLOR_4_CHANNEL).map(compatibility_color_channel_from_robtop).extract()
+        )
 
-        color_2_channel_string = mapping.get(COLOR_2_CHANNEL)
+        if color_4_channel_option is not None:
+            color_channels.add(color_4_channel_option.migrate(COLOR_4_CHANNEL_ID))
 
-        if color_2_channel_string is not None:
-            color_2_channel = compatibility_color_channel_from_robtop(color_2_channel_string)
+        line_3d_color_channel_option = (
+            view.get_option(LINE_3D_COLOR_CHANNEL)
+            .map(compatibility_color_channel_from_robtop)
+            .extract()
+        )
 
-            color_channels.add(color_2_channel.migrate(COLOR_2_ID))
+        if line_3d_color_channel_option is not None:
+            color_channels.add(line_3d_color_channel_option.migrate(LINE_3D_COLOR_CHANNEL_ID))
 
-        color_3_channel_string = mapping.get(COLOR_3_CHANNEL)
-
-        if color_3_channel_string is not None:
-            color_3_channel = compatibility_color_channel_from_robtop(color_3_channel_string)
-
-            color_channels.add(color_3_channel.migrate(COLOR_3_ID))
-
-        color_4_channel_string = mapping.get(COLOR_4_CHANNEL)
-
-        if color_4_channel_string is not None:
-            color_4_channel = compatibility_color_channel_from_robtop(color_4_channel_string)
-
-            color_channels.add(color_4_channel.migrate(COLOR_4_ID))
-
-        line_3d_color_channel_string = mapping.get(LINE_3D_COLOR_CHANNEL)
-
-        if line_3d_color_channel_string is not None:
-            line_3d_color_channel = compatibility_color_channel_from_robtop(
-                line_3d_color_channel_string
-            )
-
-            color_channels.add(line_3d_color_channel.migrate(LINE_3D_COLOR_ID))
-
-        final_color_channels = parse_get_or_else(
-            ColorChannels.from_robtop, ColorChannels, mapping.get(COLOR_CHANNELS)
+        final_color_channels = (
+            view.get_option(COLOR_CHANNELS)
+            .map(ColorChannels.from_robtop)
+            .unwrap_or_else(ColorChannels)
         )
 
         color_channels.update(final_color_channels)
 
-        color_channels_page = parse_get_or(
-            int, DEFAULT_COLOR_CHANNELS_PAGE, mapping.get(COLOR_CHANNELS_PAGE)
+        color_channels_page = (
+            view.get_option(COLOR_CHANNELS_PAGE).map(int).unwrap_or(DEFAULT_COLOR_CHANNELS_PAGE)
         )
 
         return cls(

@@ -1,10 +1,11 @@
 from attrs import define
-from typing_aliases import StringDict, StringMapping
+from typing_aliases import StringDict
 from typing_extensions import Self
 
 from gd.constants import DEFAULT_ID
 from gd.enums import CommentStrategy, Filter, LevelLeaderboardStrategy
-from gd.models_utils import bool_str, int_bool, parse_get_or, partial_parse_enum
+from gd.models_utils import bool_str, int_bool
+from gd.robtop_view import StringRobTopView
 
 __all__ = ("Variables",)
 
@@ -533,206 +534,304 @@ class Variables:
         return self.smooth_fix_in_editor
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[str]) -> Self:
-        follow_player = parse_get_or(int_bool, DEFAULT_FOLLOW_PLAYER, data.get(FOLLOW_PLAYER))
-        play_music = parse_get_or(int_bool, DEFAULT_PLAY_MUSIC, data.get(PLAY_MUSIC))
-        swipe = parse_get_or(int_bool, DEFAULT_SWIPE, data.get(SWIPE))
-        free_move = parse_get_or(int_bool, DEFAULT_FREE_MOVE, data.get(FREE_MOVE))
-        filter = parse_get_or(partial_parse_enum(int, Filter), Filter.DEFAULT, data.get(FILTER))
-        filter_id = parse_get_or(int, DEFAULT_ID, data.get(FILTER_ID))
-        rotate_toggled = parse_get_or(int_bool, DEFAULT_ROTATE_TOGGLED, data.get(ROTATE_TOGGLED))
-        snap_toggled = parse_get_or(int_bool, DEFAULT_SNAP_TOGGLED, data.get(SNAP_TOGGLED))
-        ignore_damage = parse_get_or(int_bool, DEFAULT_IGNORE_DAMAGE, data.get(IGNORE_DAMAGE))
-        flip_two_player_controls = parse_get_or(
-            int_bool, DEFAULT_FLIP_TWO_PLAYER_CONTROLS, data.get(FLIP_TWO_PLAYER_CONTROLS)
+    def from_robtop_view(cls, view: StringRobTopView[str]) -> Self:
+        follow_player = (
+            view.get_option(FOLLOW_PLAYER).map(int_bool).unwrap_or(DEFAULT_FOLLOW_PLAYER)
         )
-        always_limit_controls = parse_get_or(
-            int_bool, DEFAULT_ALWAYS_LIMIT_CONTROLS, data.get(ALWAYS_LIMIT_CONTROLS)
+        play_music = view.get_option(PLAY_MUSIC).map(int_bool).unwrap_or(DEFAULT_PLAY_MUSIC)
+        swipe = view.get_option(SWIPE).map(int_bool).unwrap_or(DEFAULT_SWIPE)
+        free_move = view.get_option(FREE_MOVE).map(int_bool).unwrap_or(DEFAULT_FREE_MOVE)
+        filter = view.get_option(FILTER).map(int).map(Filter).unwrap_or(Filter.DEFAULT)
+        filter_id = view.get_option(FILTER_ID).map(int).unwrap_or(DEFAULT_ID)
+        rotate_toggled = (
+            view.get_option(ROTATE_TOGGLED).map(int_bool).unwrap_or(DEFAULT_ROTATE_TOGGLED)
         )
-        shown_comment_rules = parse_get_or(
-            int_bool, DEFAULT_SHOWN_COMMENT_RULES, data.get(SHOWN_COMMENT_RULES)
+        snap_toggled = view.get_option(SNAP_TOGGLED).map(int_bool).unwrap_or(DEFAULT_SNAP_TOGGLED)
+        ignore_damage = (
+            view.get_option(IGNORE_DAMAGE).map(int_bool).unwrap_or(DEFAULT_IGNORE_DAMAGE)
         )
-        increase_max_history = parse_get_or(
-            int_bool, DEFAULT_INCREASE_MAX_HISTORY, data.get(INCREASE_MAX_HISTORY)
+        flip_two_player_controls = (
+            view.get_option(FLIP_TWO_PLAYER_CONTROLS)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_FLIP_TWO_PLAYER_CONTROLS)
         )
-        disable_explosion_shake = parse_get_or(
-            int_bool, DEFAULT_DISABLE_EXPLOSION_SHAKE, data.get(DISABLE_EXPLOSION_SHAKE)
+        always_limit_controls = (
+            view.get_option(ALWAYS_LIMIT_CONTROLS)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_ALWAYS_LIMIT_CONTROLS)
         )
-        flip_pause_button = parse_get_or(
-            int_bool, DEFAULT_FLIP_PAUSE_BUTTON, data.get(FLIP_PAUSE_BUTTON)
+        shown_comment_rules = (
+            view.get_option(SHOWN_COMMENT_RULES)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_SHOWN_COMMENT_RULES)
         )
-        shown_song_terms = parse_get_or(
-            int_bool, DEFAULT_SHOWN_SONG_TERMS, data.get(SHOWN_SONG_TERMS)
+        increase_max_history = (
+            view.get_option(INCREASE_MAX_HISTORY)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_INCREASE_MAX_HISTORY)
         )
-        no_song_limit = parse_get_or(int_bool, DEFAULT_NO_SONG_LIMIT, data.get(NO_SONG_LIMIT))
-        in_memory_songs = parse_get_or(int_bool, DEFAULT_IN_MEMORY_SONGS, data.get(IN_MEMORY_SONGS))
-        higher_audio_quality = parse_get_or(
-            int_bool, DEFAULT_HIGHER_AUDIO_QUALITY, data.get(HIGHER_AUDIO_QUALITY)
+        disable_explosion_shake = (
+            view.get_option(DISABLE_EXPLOSION_SHAKE)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_DISABLE_EXPLOSION_SHAKE)
         )
-        smooth_fix = parse_get_or(int_bool, DEFAULT_SMOOTH_FIX, data.get(SMOOTH_FIX))
-        show_cursor_in_game = parse_get_or(
-            int_bool, DEFAULT_SHOW_CURSOR_IN_GAME, data.get(SHOW_CURSOR_IN_GAME)
+        flip_pause_button = (
+            view.get_option(FLIP_PAUSE_BUTTON).map(int_bool).unwrap_or(DEFAULT_FLIP_PAUSE_BUTTON)
         )
-        windowed = parse_get_or(int_bool, DEFAULT_WINDOWED, data.get(WINDOWED))
-        auto_retry = parse_get_or(int_bool, DEFAULT_AUTO_RETRY, data.get(AUTO_RETRY))
-        auto_checkpoints = parse_get_or(
-            int_bool, DEFAULT_AUTO_CHECKPOINTS, data.get(AUTO_CHECKPOINTS)
+        shown_song_terms = (
+            view.get_option(SHOWN_SONG_TERMS).map(int_bool).unwrap_or(DEFAULT_SHOWN_SONG_TERMS)
         )
-        disable_analog_stick = parse_get_or(
-            int_bool, DEFAULT_DISABLE_ANALOG_STICK, data.get(DISABLE_ANALOG_STICK)
+        no_song_limit = (
+            view.get_option(NO_SONG_LIMIT).map(int_bool).unwrap_or(DEFAULT_NO_SONG_LIMIT)
         )
-        shown_options = parse_get_or(int_bool, DEFAULT_SHOWN_OPTIONS, data.get(SHOWN_OPTIONS))
-        vsync = parse_get_or(int_bool, DEFAULT_VSYNC, data.get(VSYNC))
-        call_gl_finish = parse_get_or(int_bool, DEFAULT_CALL_GL_FINISH, data.get(CALL_GL_FINISH))
-        force_timer = parse_get_or(int_bool, DEFAULT_FORCE_TIMER, data.get(FORCE_TIMER))
-        change_song_path = parse_get_or(
-            int_bool, DEFAULT_CHANGE_SONG_PATH, data.get(CHANGE_SONG_PATH)
+        in_memory_songs = (
+            view.get_option(IN_MEMORY_SONGS).map(int_bool).unwrap_or(DEFAULT_IN_MEMORY_SONGS)
         )
-        game_center = parse_get_or(int_bool, DEFAULT_GAME_CENTER, data.get(GAME_CENTER))
-        preview_mode = parse_get_or(int_bool, DEFAULT_PREVIEW_MODE, data.get(PREVIEW_MODE))
-        show_ground = parse_get_or(int_bool, DEFAULT_SHOW_GROUND, data.get(SHOW_GROUND))
-        show_grid = parse_get_or(int_bool, DEFAULT_SHOW_GRID, data.get(SHOW_GRID))
-        grid_on_top = parse_get_or(int_bool, DEFAULT_GRID_ON_TOP, data.get(GRID_ON_TOP))
-        show_percentage = parse_get_or(int_bool, DEFAULT_SHOW_PERCENTAGE, data.get(SHOW_PERCENTAGE))
-        show_object_info = parse_get_or(
-            int_bool, DEFAULT_SHOW_OBJECT_INFO, data.get(SHOW_OBJECT_INFO)
+        higher_audio_quality = (
+            view.get_option(HIGHER_AUDIO_QUALITY)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_HIGHER_AUDIO_QUALITY)
         )
-        increase_max_levels = parse_get_or(
-            int_bool, DEFAULT_INCREASE_MAX_LEVELS, data.get(INCREASE_MAX_LEVELS)
+        smooth_fix = view.get_option(SMOOTH_FIX).map(int_bool).unwrap_or(DEFAULT_SMOOTH_FIX)
+        show_cursor_in_game = (
+            view.get_option(SHOW_CURSOR_IN_GAME)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_SHOW_CURSOR_IN_GAME)
         )
-        show_effect_lines = parse_get_or(
-            int_bool, DEFAULT_SHOW_EFFECT_LINES, data.get(SHOW_EFFECT_LINES)
+        windowed = view.get_option(WINDOWED).map(int_bool).unwrap_or(DEFAULT_WINDOWED)
+        auto_retry = view.get_option(AUTO_RETRY).map(int_bool).unwrap_or(DEFAULT_AUTO_RETRY)
+        auto_checkpoints = (
+            view.get_option(AUTO_CHECKPOINTS).map(int_bool).unwrap_or(DEFAULT_AUTO_CHECKPOINTS)
         )
-        show_trigger_boxes = parse_get_or(
-            int_bool, DEFAULT_SHOW_TRIGGER_BOXES, data.get(SHOW_TRIGGER_BOXES)
+        disable_analog_stick = (
+            view.get_option(DISABLE_ANALOG_STICK)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_DISABLE_ANALOG_STICK)
         )
-        debug_draw = parse_get_or(int_bool, DEFAULT_DEBUG_DRAW, data.get(DEBUG_DRAW))
-        hide_ui_on_test = parse_get_or(int_bool, DEFAULT_HIDE_UI_ON_TEST, data.get(HIDE_UI_ON_TEST))
-        shown_profile_info = parse_get_or(
-            int_bool, DEFAULT_SHOWN_PROFILE_INFO, data.get(SHOWN_PROFILE_INFO)
+        shown_options = (
+            view.get_option(SHOWN_OPTIONS).map(int_bool).unwrap_or(DEFAULT_SHOWN_OPTIONS)
         )
-        viewed_self_profile = parse_get_or(
-            int_bool, DEFAULT_VIEWED_SELF_PROFILE, data.get(VIEWED_SELF_PROFILE)
+        vsync = view.get_option(VSYNC).map(int_bool).unwrap_or(DEFAULT_VSYNC)
+        call_gl_finish = (
+            view.get_option(CALL_GL_FINISH).map(int_bool).unwrap_or(DEFAULT_CALL_GL_FINISH)
         )
-        buttons_per_row = parse_get_or(int, DEFAULT_BUTTONS_PER_ROW, data.get(BUTTONS_PER_ROW))
-        button_rows = parse_get_or(int, DEFAULT_BUTTON_ROWS, data.get(BUTTON_ROWS))
-        shown_newgrounds_message = parse_get_or(
-            int_bool, DEFAULT_SHOWN_NEWGROUNDS_MESSAGE, data.get(SHOWN_NEWGROUNDS_MESSAGE)
+        force_timer = view.get_option(FORCE_TIMER).map(int_bool).unwrap_or(DEFAULT_FORCE_TIMER)
+        change_song_path = (
+            view.get_option(CHANGE_SONG_PATH).map(int_bool).unwrap_or(DEFAULT_CHANGE_SONG_PATH)
         )
-        fast_practice_reset = parse_get_or(
-            int_bool, DEFAULT_FAST_PRACTICE_RESET, data.get(FAST_PRACTICE_RESET)
+        game_center = view.get_option(GAME_CENTER).map(int_bool).unwrap_or(DEFAULT_GAME_CENTER)
+        preview_mode = view.get_option(PREVIEW_MODE).map(int_bool).unwrap_or(DEFAULT_PREVIEW_MODE)
+        show_ground = view.get_option(SHOW_GROUND).map(int_bool).unwrap_or(DEFAULT_SHOW_GROUND)
+        show_grid = view.get_option(SHOW_GRID).map(int_bool).unwrap_or(DEFAULT_SHOW_GRID)
+        grid_on_top = view.get_option(GRID_ON_TOP).map(int_bool).unwrap_or(DEFAULT_GRID_ON_TOP)
+        show_percentage = (
+            view.get_option(SHOW_PERCENTAGE).map(int_bool).unwrap_or(DEFAULT_SHOW_PERCENTAGE)
         )
-        free_games = parse_get_or(int_bool, DEFAULT_FREE_GAMES, data.get(FREE_GAMES))
-        check_server_online = parse_get_or(
-            int_bool, DEFAULT_CHECK_SERVER_ONLINE, data.get(CHECK_SERVER_ONLINE)
+        show_object_info = (
+            view.get_option(SHOW_OBJECT_INFO).map(int_bool).unwrap_or(DEFAULT_SHOW_OBJECT_INFO)
         )
-        hold_to_swipe = parse_get_or(int_bool, DEFAULT_HOLD_TO_SWIPE, data.get(HOLD_TO_SWIPE))
-        show_duration_lines = parse_get_or(
-            int_bool, DEFAULT_SHOW_DURATION_LINES, data.get(SHOW_DURATION_LINES)
+        increase_max_levels = (
+            view.get_option(INCREASE_MAX_LEVELS)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_INCREASE_MAX_LEVELS)
         )
-        swipe_cycle = parse_get_or(int_bool, DEFAULT_SWIPE_CYCLE, data.get(SWIPE_CYCLE))
-        default_mini_icon = parse_get_or(
-            int_bool, DEFAULT_DEFAULT_MINI_ICON, data.get(DEFAULT_MINI_ICON)
+        show_effect_lines = (
+            view.get_option(SHOW_EFFECT_LINES).map(int_bool).unwrap_or(DEFAULT_SHOW_EFFECT_LINES)
         )
-        switch_spider_teleport_color = parse_get_or(
-            int_bool, DEFAULT_SWITCH_SPIDER_TELEPORT_COLOR, data.get(SWITCH_SPIDER_TELEPORT_COLOR)
+        show_trigger_boxes = (
+            view.get_option(SHOW_TRIGGER_BOXES).map(int_bool).unwrap_or(DEFAULT_SHOW_TRIGGER_BOXES)
         )
-        switch_dash_fire_color = parse_get_or(
-            int_bool, DEFAULT_SWITCH_DASH_FIRE_COLOR, data.get(SWITCH_DASH_FIRE_COLOR)
+        debug_draw = view.get_option(DEBUG_DRAW).map(int_bool).unwrap_or(DEFAULT_DEBUG_DRAW)
+        hide_ui_on_test = (
+            view.get_option(HIDE_UI_ON_TEST).map(int_bool).unwrap_or(DEFAULT_HIDE_UI_ON_TEST)
         )
-        shown_unverified_coins_message = parse_get_or(
-            int_bool,
-            DEFAULT_SHOWN_UNVERIFIED_COINS_MESSAGE,
-            data.get(SHOWN_UNVERIFIED_COINS_MESSAGE),
+        shown_profile_info = (
+            view.get_option(SHOWN_PROFILE_INFO).map(int_bool).unwrap_or(DEFAULT_SHOWN_PROFILE_INFO)
         )
-        enable_move_optimization = parse_get_or(
-            int_bool, DEFAULT_ENABLE_MOVE_OPTIMIZATION, data.get(ENABLE_MOVE_OPTIMIZATION)
+        viewed_self_profile = (
+            view.get_option(VIEWED_SELF_PROFILE)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_VIEWED_SELF_PROFILE)
         )
-        high_capacity = parse_get_or(int_bool, DEFAULT_HIGH_CAPACITY, data.get(HIGH_CAPACITY))
-        high_start_position_accuracy = parse_get_or(
-            int_bool, DEFAULT_HIGH_START_POSITION_ACCURACY, data.get(HIGH_START_POSITION_ACCURACY)
+        buttons_per_row = (
+            view.get_option(BUTTONS_PER_ROW).map(int).unwrap_or(DEFAULT_BUTTONS_PER_ROW)
         )
-        quick_checkpoints = parse_get_or(
-            int_bool, DEFAULT_QUICK_CHECKPOINTS, data.get(QUICK_CHECKPOINTS)
+        button_rows = view.get_option(BUTTON_ROWS).map(int).unwrap_or(DEFAULT_BUTTON_ROWS)
+        shown_newgrounds_message = (
+            view.get_option(SHOWN_NEWGROUNDS_MESSAGE)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_SHOWN_NEWGROUNDS_MESSAGE)
         )
-        comment_strategy = parse_get_or(
-            partial_parse_enum(int, CommentStrategy),
-            CommentStrategy.DEFAULT,
-            data.get(COMMENT_STRATEGY),
+        fast_practice_reset = (
+            view.get_option(FAST_PRACTICE_RESET)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_FAST_PRACTICE_RESET)
         )
-        shown_unlisted_level_message = parse_get_or(
-            int_bool, DEFAULT_SHOWN_UNLISTED_LEVEL_MESSAGE, data.get(SHOWN_UNLISTED_LEVEL_MESSAGE)
+        free_games = view.get_option(FREE_GAMES).map(int_bool).unwrap_or(DEFAULT_FREE_GAMES)
+        check_server_online = (
+            view.get_option(CHECK_SERVER_ONLINE)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_CHECK_SERVER_ONLINE)
         )
-        disable_gravity_effect = parse_get_or(
-            int_bool, DEFAULT_DISABLE_GRAVITY_EFFECT, data.get(DISABLE_GRAVITY_EFFECT)
+        hold_to_swipe = (
+            view.get_option(HOLD_TO_SWIPE).map(int_bool).unwrap_or(DEFAULT_HOLD_TO_SWIPE)
         )
-        new_completed_filter = parse_get_or(
-            int_bool, DEFAULT_NEW_COMPLETED_FILTER, data.get(NEW_COMPLETED_FILTER)
+        show_duration_lines = (
+            view.get_option(SHOW_DURATION_LINES)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_SHOW_DURATION_LINES)
         )
-        show_restart_button = parse_get_or(
-            int_bool, DEFAULT_SHOW_RESTART_BUTTON, data.get(SHOW_RESTART_BUTTON)
+        swipe_cycle = view.get_option(SWIPE_CYCLE).map(int_bool).unwrap_or(DEFAULT_SWIPE_CYCLE)
+        default_mini_icon = (
+            view.get_option(DEFAULT_MINI_ICON).map(int_bool).unwrap_or(DEFAULT_DEFAULT_MINI_ICON)
         )
-        disable_level_comments = parse_get_or(
-            int_bool, DEFAULT_DISABLE_LEVEL_COMMENTS, data.get(DISABLE_LEVEL_COMMENTS)
+        switch_spider_teleport_color = (
+            view.get_option(SWITCH_SPIDER_TELEPORT_COLOR)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_SWITCH_SPIDER_TELEPORT_COLOR)
         )
-        disable_user_comments = parse_get_or(
-            int_bool, DEFAULT_DISABLE_USER_COMMENTS, data.get(DISABLE_USER_COMMENTS)
+        switch_dash_fire_color = (
+            view.get_option(SWITCH_DASH_FIRE_COLOR)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_SWITCH_DASH_FIRE_COLOR)
         )
-        featured_levels_only = parse_get_or(
-            int_bool, DEFAULT_FEATURED_LEVELS_ONLY, data.get(FEATURED_LEVELS_ONLY)
+        shown_unverified_coins_message = (
+            view.get_option(SHOWN_UNVERIFIED_COINS_MESSAGE)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_SHOWN_UNVERIFIED_COINS_MESSAGE)
         )
-        hide_background = parse_get_or(int_bool, DEFAULT_HIDE_BACKGROUND, data.get(HIDE_BACKGROUND))
-        hide_grid_on_play = parse_get_or(
-            int_bool, DEFAULT_HIDE_GRID_ON_PLAY, data.get(HIDE_GRID_ON_PLAY)
+        enable_move_optimization = (
+            view.get_option(ENABLE_MOVE_OPTIMIZATION)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_ENABLE_MOVE_OPTIMIZATION)
         )
-        disable_shake = parse_get_or(int_bool, DEFAULT_DISABLE_SHAKE, data.get(DISABLE_SHAKE))
-        disable_high_detail_alert = parse_get_or(
-            int_bool, DEFAULT_DISABLE_HIGH_DETAIL_ALERT, data.get(DISABLE_HIGH_DETAIL_ALERT)
+        high_capacity = (
+            view.get_option(HIGH_CAPACITY).map(int_bool).unwrap_or(DEFAULT_HIGH_CAPACITY)
         )
-        disable_song_alert = parse_get_or(
-            int_bool, DEFAULT_DISABLE_SONG_ALERT, data.get(DISABLE_SONG_ALERT)
+        high_start_position_accuracy = (
+            view.get_option(HIGH_START_POSITION_ACCURACY)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_HIGH_START_POSITION_ACCURACY)
         )
-        manual_order = parse_get_or(int_bool, DEFAULT_MANUAL_ORDER, data.get(MANUAL_ORDER))
-        small_comments = parse_get_or(int_bool, DEFAULT_SMALL_COMMENTS, data.get(SMALL_COMMENTS))
-        hide_description = parse_get_or(
-            int_bool, DEFAULT_HIDE_DESCRIPTION, data.get(HIDE_DESCRIPTION)
+        quick_checkpoints = (
+            view.get_option(QUICK_CHECKPOINTS).map(int_bool).unwrap_or(DEFAULT_QUICK_CHECKPOINTS)
         )
-        auto_load_comments = parse_get_or(
-            int_bool, DEFAULT_AUTO_LOAD_COMMENTS, data.get(AUTO_LOAD_COMMENTS)
+        comment_strategy = (
+            view.get_option(COMMENT_STRATEGY)
+            .map(int)
+            .map(CommentStrategy)
+            .unwrap_or(CommentStrategy.DEFAULT)
         )
-        created_levels_folder_id = parse_get_or(
-            int, DEFAULT_CREATED_LEVELS_FOLDER_ID, data.get(CREATED_LEVELS_FOLDER_ID)
+        shown_unlisted_level_message = (
+            view.get_option(SHOWN_UNLISTED_LEVEL_MESSAGE)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_SHOWN_UNLISTED_LEVEL_MESSAGE)
         )
-        saved_levels_folder_id = parse_get_or(
-            int, DEFAULT_SAVED_LEVELS_FOLDER_ID, data.get(SAVED_LEVELS_FOLDER_ID)
+        disable_gravity_effect = (
+            view.get_option(DISABLE_GRAVITY_EFFECT)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_DISABLE_GRAVITY_EFFECT)
         )
-        increase_local_levels_per_page = parse_get_or(
-            int_bool,
-            DEFAULT_INCREASE_LOCAL_LEVELS_PER_PAGE,
-            data.get(INCREASE_LOCAL_LEVELS_PER_PAGE),
+        new_completed_filter = (
+            view.get_option(NEW_COMPLETED_FILTER)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_NEW_COMPLETED_FILTER)
         )
-        more_comments = parse_get_or(int_bool, DEFAULT_MORE_COMMENTS, data.get(MORE_COMMENTS))
-        just_do_not = parse_get_or(int_bool, DEFAULT_JUST_DO_NOT, data.get(JUST_DO_NOT))
-        switch_wave_trail_color = parse_get_or(
-            int_bool, DEFAULT_SWITCH_WAVE_TRAIL_COLOR, data.get(SWITCH_WAVE_TRAIL_COLOR)
+        show_restart_button = (
+            view.get_option(SHOW_RESTART_BUTTON)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_SHOW_RESTART_BUTTON)
         )
-        enable_link_controls = parse_get_or(
-            int_bool, DEFAULT_ENABLE_LINK_CONTROLS, data.get(ENABLE_LINK_CONTROLS)
+        disable_level_comments = (
+            view.get_option(DISABLE_LEVEL_COMMENTS)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_DISABLE_LEVEL_COMMENTS)
         )
-        level_leaderboard_strategy = parse_get_or(
-            partial_parse_enum(int, LevelLeaderboardStrategy),
-            LevelLeaderboardStrategy.DEFAULT,
-            data.get(LEVEL_LEADERBOARD_STRATEGY),
+        disable_user_comments = (
+            view.get_option(DISABLE_USER_COMMENTS)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_DISABLE_USER_COMMENTS)
         )
-        show_record = parse_get_or(int_bool, DEFAULT_SHOW_RECORD, data.get(SHOW_RECORD))
-        practice_death_effect = parse_get_or(
-            int_bool, DEFAULT_PRACTICE_DEATH_EFFECT, data.get(PRACTICE_DEATH_EFFECT)
+        featured_levels_only = (
+            view.get_option(FEATURED_LEVELS_ONLY)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_FEATURED_LEVELS_ONLY)
         )
-        force_smooth_fix = parse_get_or(
-            int_bool, DEFAULT_FORCE_SMOOTH_FIX, data.get(FORCE_SMOOTH_FIX)
+        hide_background = (
+            view.get_option(HIDE_BACKGROUND).map(int_bool).unwrap_or(DEFAULT_HIDE_BACKGROUND)
         )
-        smooth_fix_in_editor = parse_get_or(
-            int_bool, DEFAULT_SMOOTH_FIX_IN_EDITOR, data.get(SMOOTH_FIX_IN_EDITOR)
+        hide_grid_on_play = (
+            view.get_option(HIDE_GRID_ON_PLAY).map(int_bool).unwrap_or(DEFAULT_HIDE_GRID_ON_PLAY)
+        )
+        disable_shake = (
+            view.get_option(DISABLE_SHAKE).map(int_bool).unwrap_or(DEFAULT_DISABLE_SHAKE)
+        )
+        disable_high_detail_alert = (
+            view.get_option(DISABLE_HIGH_DETAIL_ALERT)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_DISABLE_HIGH_DETAIL_ALERT)
+        )
+        disable_song_alert = (
+            view.get_option(DISABLE_SONG_ALERT).map(int_bool).unwrap_or(DEFAULT_DISABLE_SONG_ALERT)
+        )
+        manual_order = view.get_option(MANUAL_ORDER).map(int_bool).unwrap_or(DEFAULT_MANUAL_ORDER)
+        small_comments = (
+            view.get_option(SMALL_COMMENTS).map(int_bool).unwrap_or(DEFAULT_SMALL_COMMENTS)
+        )
+        hide_description = (
+            view.get_option(HIDE_DESCRIPTION).map(int_bool).unwrap_or(DEFAULT_HIDE_DESCRIPTION)
+        )
+        auto_load_comments = (
+            view.get_option(AUTO_LOAD_COMMENTS).map(int_bool).unwrap_or(DEFAULT_AUTO_LOAD_COMMENTS)
+        )
+        created_levels_folder_id = (
+            view.get_option(CREATED_LEVELS_FOLDER_ID)
+            .map(int)
+            .unwrap_or(DEFAULT_CREATED_LEVELS_FOLDER_ID)
+        )
+        saved_levels_folder_id = (
+            view.get_option(SAVED_LEVELS_FOLDER_ID)
+            .map(int)
+            .unwrap_or(DEFAULT_SAVED_LEVELS_FOLDER_ID)
+        )
+        increase_local_levels_per_page = (
+            view.get_option(INCREASE_LOCAL_LEVELS_PER_PAGE)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_INCREASE_LOCAL_LEVELS_PER_PAGE)
+        )
+        more_comments = (
+            view.get_option(MORE_COMMENTS).map(int_bool).unwrap_or(DEFAULT_MORE_COMMENTS)
+        )
+        just_do_not = view.get_option(JUST_DO_NOT).map(int_bool).unwrap_or(DEFAULT_JUST_DO_NOT)
+        switch_wave_trail_color = (
+            view.get_option(SWITCH_WAVE_TRAIL_COLOR)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_SWITCH_WAVE_TRAIL_COLOR)
+        )
+        enable_link_controls = (
+            view.get_option(ENABLE_LINK_CONTROLS)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_ENABLE_LINK_CONTROLS)
+        )
+        level_leaderboard_strategy = (
+            view.get_option(LEVEL_LEADERBOARD_STRATEGY)
+            .map(int)
+            .map(LevelLeaderboardStrategy)
+            .unwrap_or(LevelLeaderboardStrategy.DEFAULT)
+        )
+        show_record = view.get_option(SHOW_RECORD).map(int_bool).unwrap_or(DEFAULT_SHOW_RECORD)
+        practice_death_effect = (
+            view.get_option(PRACTICE_DEATH_EFFECT)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_PRACTICE_DEATH_EFFECT)
+        )
+        force_smooth_fix = (
+            view.get_option(FORCE_SMOOTH_FIX).map(int_bool).unwrap_or(DEFAULT_FORCE_SMOOTH_FIX)
+        )
+        smooth_fix_in_editor = (
+            view.get_option(SMOOTH_FIX_IN_EDITOR)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_SMOOTH_FIX_IN_EDITOR)
         )
 
         return cls(

@@ -17,10 +17,22 @@ nav:
     - Artist: "reference/artist.md"
     - Tasks: "reference/tasks.md"
     - API:
-      - Editor: "reference/api/editor.md"
-      - Color Channels: "reference/api/color_channels.md"
-      - Guidelines: "reference/api/guidelines.md"
-      - Folder: "reference/api/folder.md"
+      - Levels:
+        - Editor: "reference/api/editor.md"
+        - Objects: "reference/api/objects.md"
+        - Header: "reference/api/header.md"
+        - Color Channels: "reference/api/color_channels.md"
+        - HSV: "reference/api/hsv.md"
+        - Guidelines: "reference/api/guidelines.md"
+      - Database:
+        - Save Manager: "reference/api/save_manager.md"
+        - Database: "reference/api/database.md"
+        - Levels: "reference/api/levels.md"
+        - Folder: "reference/api/folder.md"
+        - Artist: "reference/api/artist.md"
+        - Song: "reference/api/song.md"
+        - Rewards: "reference/api/rewards.md"
+        - Like: "reference/api/like.md"
     - Memory:
       - Internal: "reference/memory/internal.md"
   - Changelog: "changelog.md"

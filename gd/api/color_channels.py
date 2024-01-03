@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, Iterable, Mapping, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Dict, Iterable, Optional, Union
 
 from attrs import define, field
 from iters.iters import iter
@@ -9,20 +9,19 @@ from typing_extensions import TypeGuard
 
 from gd.api.hsv import HSV
 from gd.color import Color
-from gd.constants import BYTE, DEFAULT_ID
-from gd.enums import PlayerColor, SpecialColorID
+from gd.constants import BYTE
+from gd.enums import PlayerColor, SpecialColorChannelID
 from gd.models_utils import (
     bool_str,
     concat_color_channel,
     concat_color_channels,
     float_str,
     int_bool,
-    parse_get_or,
-    parse_get_or_else,
     split_color_channel,
     split_color_channels,
 )
 from gd.robtop import FromRobTop, RobTop
+from gd.robtop_view import RobTopView
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -80,20 +79,18 @@ DEFAULT_OPACITY = 1.0
 
 DEFAULT_COPY_OPACITY = False
 
-DEFAULT_PLAYER_COLOR_VALUE = PlayerColor.DEFAULT.value
 
+BACKGROUND_COLOR_CHANNEL_ID = SpecialColorChannelID.BACKGROUND.id
+GROUND_COLOR_CHANNEL_ID = SpecialColorChannelID.GROUND.id
+LINE_COLOR_CHANNEL_ID = SpecialColorChannelID.LINE.id
+LINE_3D_COLOR_CHANNEL_ID = SpecialColorChannelID.LINE_3D.id
+OBJECT_COLOR_CHANNEL_ID = SpecialColorChannelID.OBJECT.id
+SECONDARY_GROUND_COLOR_CHANNEL_ID = SpecialColorChannelID.SECONDARY_GROUND.id
 
-BACKGROUND_COLOR_ID = SpecialColorID.BACKGROUND.id
-GROUND_COLOR_ID = SpecialColorID.GROUND.id
-LINE_COLOR_ID = SpecialColorID.LINE.id
-LINE_3D_COLOR_ID = SpecialColorID.LINE_3D.id
-OBJECT_COLOR_ID = SpecialColorID.OBJECT.id
-SECONDARY_GROUND_COLOR_ID = SpecialColorID.SECONDARY_GROUND.id
-
-COLOR_1_ID = 1
-COLOR_2_ID = 2
-COLOR_3_ID = 3
-COLOR_4_ID = 4
+COLOR_1_CHANNEL_ID = 1
+COLOR_2_CHANNEL_ID = 2
+COLOR_3_CHANNEL_ID = 3
+COLOR_4_CHANNEL_ID = 4
 
 
 class ColorChannelType(Enum):
@@ -114,6 +111,13 @@ class ColorChannelType(Enum):
 COLOR_CHANNEL_ID_NOT_PRESENT = "color channel ID is not present"
 
 
+def check_color_channel_id_present(id: Optional[int]) -> int:
+    if id is None:
+        raise ValueError(COLOR_CHANNEL_ID_NOT_PRESENT)
+
+    return id
+
+
 @define()
 class BaseColorChannel(RobTop):
     """Represents base color channels."""
@@ -122,14 +126,11 @@ class BaseColorChannel(RobTop):
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
-        return cls.from_robtop_data(split_color_channel(string))
+        return cls.from_robtop_view(RobTopView(split_color_channel(string)))
 
     @classmethod
-    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
-        id = parse_get_or(int, DEFAULT_ID, data.get(ID))
-
-        if not id:
-            raise ValueError(COLOR_CHANNEL_ID_NOT_PRESENT)
+    def from_robtop_view(cls, view: RobTopView[int, str]) -> Self:
+        id = check_color_channel_id_present(view.get_option(ID).map(int).extract())
 
         return cls(id=id)
 
@@ -158,43 +159,36 @@ class PlayerColorChannel(BaseColorChannel):
     player_color: PlayerColor
 
     opacity: float = DEFAULT_OPACITY
+
     blending: bool = DEFAULT_BLENDING
 
     def is_blending(self) -> bool:
         return self.blending
 
     @classmethod
-    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
-        id = parse_get_or(int, DEFAULT_ID, data.get(ID))
+    def from_robtop_view(cls, view: RobTopView[int, str]) -> Self:
+        id = check_color_channel_id_present(view.get_option(ID).map(int).extract())
 
-        if not id:
-            raise ValueError(COLOR_CHANNEL_ID_NOT_PRESENT)
-
-        default_player_color_value = DEFAULT_PLAYER_COLOR_VALUE
-
-        player_color_value = max(
-            parse_get_or(int, default_player_color_value, data.get(PLAYER_COLOR)),
-            default_player_color_value,
+        player_color = (
+            view.get_option(PLAYER_COLOR).map(int).map(PlayerColor).unwrap_or(PlayerColor.DEFAULT)
         )
 
-        player_color = PlayerColor(player_color_value)
+        opacity = view.get_option(OPACITY).map(float).unwrap_or(DEFAULT_OPACITY)
 
-        opacity = parse_get_or(float, DEFAULT_OPACITY, data.get(OPACITY))
-
-        blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
+        blending = view.get_option(BLENDING).map(int_bool).unwrap_or(DEFAULT_BLENDING)
 
         return cls(id=id, player_color=player_color, opacity=opacity, blending=blending)
 
     def to_robtop_data(self) -> Dict[int, str]:
         data = super().to_robtop_data()
 
-        actual = {
+        here = {
             PLAYER_COLOR: str(self.player_color.value),
             OPACITY: float_str(self.opacity),
             OPACITY_TOGGLED: bool_str(DEFAULT_OPACITY_TOGGLED),
         }
 
-        data.update(actual)
+        data.update(here)
 
         blending = self.is_blending()
 
@@ -214,27 +208,25 @@ class NormalColorChannel(BaseColorChannel):
     color: Color
 
     opacity: float = DEFAULT_OPACITY
+
     blending: bool = DEFAULT_BLENDING
 
     def is_blending(self) -> bool:
         return self.blending
 
     @classmethod
-    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
-        id = parse_get_or(int, DEFAULT_ID, data.get(ID))
+    def from_robtop_view(cls, view: RobTopView[int, str]) -> Self:
+        id = check_color_channel_id_present(view.get_option(ID).map(int).extract())
 
-        if not id:
-            raise ValueError(COLOR_CHANNEL_ID_NOT_PRESENT)
-
-        red = parse_get_or(int, DEFAULT_RED, data.get(RED))
-        green = parse_get_or(int, DEFAULT_GREEN, data.get(GREEN))
-        blue = parse_get_or(int, DEFAULT_BLUE, data.get(BLUE))
+        red = view.get_option(RED).map(int).unwrap_or(DEFAULT_RED)
+        green = view.get_option(GREEN).map(int).unwrap_or(DEFAULT_GREEN)
+        blue = view.get_option(BLUE).map(int).unwrap_or(DEFAULT_BLUE)
 
         color = Color.from_rgb(red, green, blue)
 
-        opacity = parse_get_or(float, DEFAULT_OPACITY, data.get(OPACITY))
+        opacity = view.get_option(OPACITY).map(float).unwrap_or(DEFAULT_OPACITY)
 
-        blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
+        blending = view.get_option(BLENDING).map(int_bool).unwrap_or(DEFAULT_BLENDING)
 
         return cls(id=id, color=color, opacity=opacity, blending=blending)
 
@@ -243,7 +235,7 @@ class NormalColorChannel(BaseColorChannel):
 
         color = self.color
 
-        actual = {
+        here = {
             RED: str(color.red),
             GREEN: str(color.green),
             BLUE: str(color.blue),
@@ -251,7 +243,7 @@ class NormalColorChannel(BaseColorChannel):
             OPACITY_TOGGLED: bool_str(DEFAULT_OPACITY_TOGGLED),
         }
 
-        data.update(actual)
+        data.update(here)
 
         blending = self.is_blending()
 
@@ -265,6 +257,14 @@ class NormalColorChannel(BaseColorChannel):
 
 
 COLOR_CHANNEL_COPIED_ID_NOT_PRESENT = "color channel copied ID is not present"
+COPIED_OPACITY = "opacity is copied"
+
+
+def check_color_channel_copied_id_present(id: Optional[int]) -> int:
+    if id is None:
+        raise ValueError(COLOR_CHANNEL_COPIED_ID_NOT_PRESENT)
+
+    return id
 
 
 @define()
@@ -283,47 +283,43 @@ class CopiedColorChannel(BaseColorChannel):
         return self.blending
 
     @classmethod
-    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
-        id = parse_get_or(int, DEFAULT_ID, data.get(ID))
+    def from_robtop_view(cls, view: RobTopView[int, str]) -> Self:
+        id = check_color_channel_id_present(view.get_option(ID).map(int).extract())
 
-        if not id:
-            raise ValueError(COLOR_CHANNEL_ID_NOT_PRESENT)
+        copied_id = check_color_channel_copied_id_present(
+            view.get_option(COPIED_ID).map(int).extract()
+        )
 
-        copied_id = parse_get_or(int, DEFAULT_ID, data.get(COPIED_ID))
+        hsv = view.get_option(COLOR_HSV).map(HSV.from_robtop).unwrap_or_else(HSV)
 
-        if not copied_id:
-            raise ValueError(COLOR_CHANNEL_COPIED_ID_NOT_PRESENT)
-
-        hsv = parse_get_or_else(HSV.from_robtop, HSV, data.get(COLOR_HSV))
-
-        copy_opacity = parse_get_or(int_bool, DEFAULT_COPY_OPACITY, data.get(COPY_OPACITY))
+        copy_opacity = view.get_option(COPY_OPACITY).map(int_bool).unwrap_or(DEFAULT_COPY_OPACITY)
 
         if copy_opacity:
             opacity = None
 
         else:
-            opacity = parse_get_or(float, DEFAULT_OPACITY, data.get(OPACITY))
+            opacity = view.get_option(OPACITY).map(float).unwrap_or(DEFAULT_OPACITY)
 
-        blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
+        blending = view.get_option(BLENDING).map(int_bool).unwrap_or(DEFAULT_BLENDING)
 
         return cls(id=id, copied_id=copied_id, hsv=hsv, opacity=opacity, blending=blending)
 
     def to_robtop_data(self) -> Dict[int, str]:
         data = super().to_robtop_data()
 
-        actual = {
+        copy_opacity = self.is_copy_opacity()
+
+        here = {
             COPIED_ID: str(self.copied_id),
             COLOR_HSV: self.hsv.to_robtop(),
-            COPY_OPACITY: bool_str(self.is_copy_opacity()),
+            COPY_OPACITY: bool_str(copy_opacity),
             OPACITY_TOGGLED: bool_str(DEFAULT_OPACITY_TOGGLED),
         }
 
-        data.update(actual)
+        data.update(here)
 
-        opacity = self.opacity
-
-        if opacity is not None:
-            data[OPACITY] = float_str(opacity)
+        if not copy_opacity:
+            data[OPACITY] = float_str(self.opacity_checked)
 
         blending = self.is_blending()
 
@@ -335,6 +331,15 @@ class CopiedColorChannel(BaseColorChannel):
     def is_copied(self) -> bool:
         return True
 
+    @property
+    def opacity_checked(self) -> float:
+        opacity = self.opacity
+
+        if opacity is None:
+            raise ValueError(COPIED_OPACITY)
+
+        return opacity
+
     def is_copy_opacity(self) -> bool:
         return self.opacity is None
 
@@ -345,6 +350,7 @@ class CopiedColorChannel(BaseColorChannel):
 
 
 ColorChannel = Union[PlayerColorChannel, NormalColorChannel, CopiedColorChannel]
+"""Represents color channels."""
 
 
 def is_player_color_channel(color_channel: ColorChannel) -> TypeGuard[PlayerColorChannel]:
@@ -360,26 +366,21 @@ def is_copied_color_channel(color_channel: ColorChannel) -> TypeGuard[CopiedColo
 
 
 def color_channel_from_robtop(string: str) -> ColorChannel:
-    data = split_color_channel(string)
+    view = RobTopView(split_color_channel(string))
 
-    default_player_color_value = DEFAULT_PLAYER_COLOR_VALUE
-
-    player_color_value = max(
-        parse_get_or(int, default_player_color_value, data.get(PLAYER_COLOR)),
-        default_player_color_value,
+    player_color = (
+        view.get_option(PLAYER_COLOR).map(int).map(PlayerColor).unwrap_or(PlayerColor.DEFAULT)
     )
 
-    player_color = PlayerColor(player_color_value)
-
     if player_color.is_used():
-        return PlayerColorChannel.from_robtop_data(data)
+        return PlayerColorChannel.from_robtop_view(view)
 
-    copied_id = parse_get_or(int, DEFAULT_ID, data.get(COPIED_ID))
+    copied_id = view.get_option(COPIED_ID).map(int).extract()
 
-    if copied_id:
-        return CopiedColorChannel.from_robtop_data(data)
+    if copied_id is None:
+        return NormalColorChannel.from_robtop_view(view)
 
-    return NormalColorChannel.from_robtop_data(data)
+    return CopiedColorChannel.from_robtop_view(view)
 
 
 def color_channel_to_robtop(color_channel: ColorChannel) -> str:
@@ -387,22 +388,7 @@ def color_channel_to_robtop(color_channel: ColorChannel) -> str:
 
 
 class ColorChannels(Dict[int, ColorChannel]):
-    """Represents collections of color channels.
-
-    Binary:
-        ```rust
-        enum ColorChannel {
-            Player(PlayerColorChannel),
-            Normal(NormalColorChannel),
-            Copied(CopiedColorChannel),
-        }
-
-        struct ColorChannels {
-            color_channels_length: u16,
-            color_channels: [ColorChannel; color_channels_length],
-        }
-        ```
-    """
+    """Represents collections of color channels."""
 
     def copy(self) -> Self:
         return type(self)(self)
@@ -432,12 +418,10 @@ class ColorChannels(Dict[int, ColorChannel]):
         return concat_color_channels(map(color_channel_to_robtop, self.values()))
 
 
-PCCC = TypeVar("PCCC", bound="PlayerCompatibilityColorChannel")
-
-
 @define()
 class PlayerCompatibilityColorChannel(FromRobTop):
     player_color: PlayerColor
+
     blending: bool = DEFAULT_BLENDING
 
     def is_blending(self) -> bool:
@@ -445,20 +429,15 @@ class PlayerCompatibilityColorChannel(FromRobTop):
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
-        return cls.from_robtop_data(split_color_channel(string))
+        return cls.from_robtop_view(RobTopView(split_color_channel(string)))
 
     @classmethod
-    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
-        default_player_color_value = DEFAULT_PLAYER_COLOR_VALUE
-
-        player_color_value = max(
-            parse_get_or(int, default_player_color_value, data.get(PLAYER_COLOR)),
-            default_player_color_value,
+    def from_robtop_view(cls, view: RobTopView[int, str]) -> Self:
+        player_color = (
+            view.get_option(PLAYER_COLOR).map(int).map(PlayerColor).unwrap_or(PlayerColor.DEFAULT)
         )
 
-        player_color = PlayerColor(player_color_value)
-
-        blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
+        blending = view.get_option(BLENDING).map(int_bool).unwrap_or(DEFAULT_BLENDING)
 
         return cls(player_color=player_color, blending=blending)
 
@@ -479,17 +458,17 @@ class NormalCompatibilityColorChannel(FromRobTop):
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
-        return cls.from_robtop_data(split_color_channel(string))
+        return cls.from_robtop_view(RobTopView(split_color_channel(string)))
 
     @classmethod
-    def from_robtop_data(cls, data: Mapping[int, str]) -> Self:
-        red = parse_get_or(int, DEFAULT_RED, data.get(RED))
-        green = parse_get_or(int, DEFAULT_GREEN, data.get(GREEN))
-        blue = parse_get_or(int, DEFAULT_BLUE, data.get(BLUE))
+    def from_robtop_view(cls, view: RobTopView[int, str]) -> Self:
+        red = view.get_option(RED).map(int).unwrap_or(DEFAULT_RED)
+        green = view.get_option(GREEN).map(int).unwrap_or(DEFAULT_GREEN)
+        blue = view.get_option(BLUE).map(int).unwrap_or(DEFAULT_BLUE)
 
         color = Color.from_rgb(red, green, blue)
 
-        blending = parse_get_or(int_bool, DEFAULT_BLENDING, data.get(BLENDING))
+        blending = view.get_option(BLENDING).map(int_bool).unwrap_or(DEFAULT_BLENDING)
 
         return cls(color=color, blending=blending)
 
@@ -501,18 +480,13 @@ CompatibilityColorChannel = Union[PlayerCompatibilityColorChannel, NormalCompati
 
 
 def compatibility_color_channel_from_robtop(string: str) -> CompatibilityColorChannel:
-    data = split_color_channel(string)
+    view = RobTopView(split_color_channel(string))
 
-    default_player_color_value = DEFAULT_PLAYER_COLOR_VALUE
-
-    player_color_value = max(
-        parse_get_or(int, default_player_color_value, data.get(PLAYER_COLOR)),
-        default_player_color_value,
+    player_color = (
+        view.get_option(PLAYER_COLOR).map(int).map(PlayerColor).unwrap_or(PlayerColor.DEFAULT)
     )
 
-    player_color = PlayerColor(player_color_value)
-
     if player_color.is_used():
-        return PlayerCompatibilityColorChannel.from_robtop_data(data)
+        return PlayerCompatibilityColorChannel.from_robtop_view(view)
 
-    return NormalCompatibilityColorChannel.from_robtop_data(data)
+    return NormalCompatibilityColorChannel.from_robtop_view(view)

@@ -12,6 +12,7 @@ from zlib import MAX_WBITS
 from zlib import compressobj as create_compressor
 from zlib import decompressobj as create_decompressor
 from zlib import error as ZLibError
+from typing_aliases import Unary
 
 from xor_cipher import cyclic_xor, cyclic_xor_string, xor, xor_string
 
@@ -243,8 +244,22 @@ def decode_robtop(data: bytes, key: Key) -> bytes:
     return cyclic_xor(decode_base64(data), key.bytes)
 
 
+def decode_robtop_with(key: Key) -> Unary[bytes, bytes]:
+    def decode(data: bytes) -> bytes:
+        return decode_robtop(data, key)
+
+    return decode
+
+
 def encode_robtop(data: bytes, key: Key) -> bytes:
     return encode_base64(cyclic_xor(data, key.bytes))
+
+
+def encode_robtop_with(key: Key) -> Unary[bytes, bytes]:
+    def encode(data: bytes) -> bytes:
+        return encode_robtop(data, key)
+
+    return encode
 
 
 def decode_robtop_string(
@@ -253,10 +268,28 @@ def decode_robtop_string(
     return decode_robtop(string.encode(encoding, errors), key).decode(encoding, errors)
 
 
+def decode_robtop_string_with(
+    key: Key, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
+) -> Unary[str, str]:
+    def decode(string: str) -> str:
+        return decode_robtop_string(string, key, encoding, errors)
+
+    return decode
+
+
 def encode_robtop_string(
     string: str, key: Key, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
 ) -> str:
     return encode_robtop(string.encode(encoding, errors), key).decode(encoding, errors)
+
+
+def encode_robtop_string_with(
+    key: Key, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
+) -> Unary[str, str]:
+    def encode(string: str) -> str:
+        return encode_robtop_string(string, key, encoding, errors)
+
+    return encode
 
 
 def decode_darwin_save(

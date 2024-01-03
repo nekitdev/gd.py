@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, List, Optional, Protocol, Sequence, TypeVar, r
 from urllib.parse import quote, unquote
 
 from attrs import define, field
+from funcs.primitives import decrement, increment
 from iters.iters import iter
 from pendulum import DateTime, Duration, duration
 from yarl import URL
@@ -65,16 +66,22 @@ from gd.constants import (
     QUESTS_SLICE,
     WEEKLY_ID_ADD,
 )
-from gd.date_time import date_time_from_human, date_time_to_human, utc_now
+from gd.converter import dump_url
+from gd.date_time import (
+    date_time_to_human,
+    duration_from_seconds,
+    option_date_time_from_human,
+    utc_now,
+)
 from gd.decorators import cache_by
-from gd.difficulty_parameters import DEFAULT_DEMON_DIFFICULTY_VALUE, DifficultyParameters
+from gd.difficulty_parameters import DifficultyParameters
 from gd.either_record import EitherRecord
 from gd.either_reward import EitherReward
 from gd.encoding import (
     decode_base64_string_url_safe,
-    decode_robtop_string,
+    decode_robtop_string_with,
     encode_base64_string_url_safe,
-    encode_robtop_string,
+    encode_robtop_string_with,
     generate_level_seed,
     generate_random_string,
     sha1_string_with_salt,
@@ -83,6 +90,7 @@ from gd.encoding import (
 )
 from gd.enums import (
     CommentState,
+    DemonDifficulty,
     Difficulty,
     FriendRequestState,
     FriendState,
@@ -123,7 +131,6 @@ from gd.models_constants import (
     MAP_PACKS_RESPONSE_SEPARATOR,
     MESSAGE_SEPARATOR,
     MESSAGES_RESPONSE_SEPARATOR,
-    OBJECTS_SEPARATOR,
     PAGE_SEPARATOR,
     PROFILE_SEPARATOR,
     QUEST_SEPARATOR,
@@ -195,9 +202,7 @@ from gd.models_utils import (
     concat_user_comments_response_comments,
     float_str,
     int_bool,
-    parse_get_or,
-    parse_get_or_else,
-    partial_parse_enum,
+    option_int,
     split_artist,
     split_artists_response,
     split_artists_response_artists,
@@ -253,6 +258,7 @@ from gd.models_utils import (
 )
 from gd.password import Password
 from gd.robtop import RobTop
+from gd.robtop_view import RobTopView
 from gd.string_utils import concat_empty
 from gd.versions import CURRENT_GAME_VERSION, GameVersion
 
@@ -334,26 +340,26 @@ class SongModel(Model):
     ) -> Self:
         mapping = split_song(string)
 
-        id = parse_get_or(int, DEFAULT_ID, mapping.get(SONG_ID))
+        view = RobTopView(mapping)
 
-        name = mapping.get(SONG_NAME, EMPTY)
+        id = view.get_option(SONG_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        artist_name = mapping.get(SONG_ARTIST_NAME, EMPTY)
+        name = view.get_option(SONG_NAME).unwrap_or(EMPTY)
 
-        artist_id = parse_get_or(int, DEFAULT_ID, mapping.get(SONG_ARTIST_ID))
+        artist_name = view.get_option(SONG_ARTIST_NAME).unwrap_or(EMPTY)
 
-        size = parse_get_or(float, DEFAULT_SIZE, mapping.get(SONG_SIZE))
+        artist_id = view.get_option(SONG_ARTIST_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        youtube_video_id = mapping.get(SONG_YOUTUBE_VIDEO_ID, EMPTY)
-        youtube_channel_id = mapping.get(SONG_YOUTUBE_CHANNEL_ID, EMPTY)
+        size = view.get_option(SONG_SIZE).map(float).unwrap_or(DEFAULT_SIZE)
 
-        artist_verified = parse_get_or(
-            int_bool, DEFAULT_ARTIST_VERIFIED, mapping.get(SONG_ARTIST_VERIFIED)
+        youtube_video_id = view.get_option(SONG_YOUTUBE_VIDEO_ID).unwrap_or(EMPTY)
+        youtube_channel_id = view.get_option(SONG_YOUTUBE_CHANNEL_ID).unwrap_or(EMPTY)
+
+        artist_verified = (
+            view.get_option(SONG_ARTIST_VERIFIED).map(int_bool).unwrap_or(DEFAULT_ARTIST_VERIFIED)
         )
 
-        url_option = mapping.get(SONG_URL)
-
-        url = URL(unquote(url_option)) if url_option else None
+        url = view.get_option(SONG_URL).filter(bool).map(unquote).map(URL).extract()
 
         return cls(
             id=id,
@@ -379,7 +385,7 @@ class SongModel(Model):
             SONG_YOUTUBE_VIDEO_ID: self.youtube_video_id,
             SONG_YOUTUBE_CHANNEL_ID: self.youtube_channel_id,
             SONG_ARTIST_VERIFIED: bool_str(self.is_artist_verified()),
-            SONG_URL: EMPTY if url is None else quote(str(url)),
+            SONG_URL: EMPTY if url is None else quote(dump_url(url)),
         }
 
         return concat_song(mapping)
@@ -447,16 +453,11 @@ class PageModel(Model):
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
-        total_string, start_string, stop_string = split_page(string)
+        total_option, start_option, stop_option = iter(split_page(string)).map(option_int).tuple()
 
-        if not total_string:
-            total = None
-
-        else:
-            total = int(total_string)
-
-        start = int(start_string)
-        stop = int(stop_string)
+        total = total_option.extract()
+        start = start_option.unwrap_or(DEFAULT_START)
+        stop = stop_option.unwrap_or(DEFAULT_STOP)
 
         return cls(total=total, start=start, stop=stop)
 
@@ -492,6 +493,7 @@ SEARCH_USER_USER_COINS = 17
 SEARCH_USER_DIAMONDS = 46
 SEARCH_USER_MOONS = 52
 
+
 @define()
 class SearchUserModel(Model):
     name: str = EMPTY
@@ -515,52 +517,47 @@ class SearchUserModel(Model):
     def from_robtop(cls, string: str) -> Self:
         mapping = split_search_user(string)
 
-        name = mapping.get(SEARCH_USER_NAME, EMPTY)
+        view = RobTopView(mapping)
 
-        id = parse_get_or(int, DEFAULT_ID, mapping.get(SEARCH_USER_ID))
+        name = view.get_option(SEARCH_USER_NAME).unwrap_or(EMPTY)
 
-        stars = parse_get_or(int, DEFAULT_STARS, mapping.get(SEARCH_USER_STARS))
+        id = view.get_option(SEARCH_USER_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        demons = parse_get_or(int, DEFAULT_DEMONS, mapping.get(SEARCH_USER_DEMONS))
+        stars = view.get_option(SEARCH_USER_STARS).map(int).unwrap_or(DEFAULT_STARS)
 
-        rank_option = mapping.get(SEARCH_USER_RANK)
+        demons = view.get_option(SEARCH_USER_DEMONS).map(int).unwrap_or(DEFAULT_DEMONS)
 
-        if rank_option:
-            rank = int(rank_option)
+        rank = view.get_option(SEARCH_USER_RANK).filter(bool).map(int).unwrap_or(DEFAULT_RANK)
 
-        else:
-            rank = DEFAULT_RANK
-
-        creator_points = parse_get_or(
-            int,
-            DEFAULT_CREATOR_POINTS,
-            mapping.get(SEARCH_USER_CREATOR_POINTS),
+        creator_points = (
+            view.get_option(SEARCH_USER_CREATOR_POINTS).map(int).unwrap_or(DEFAULT_CREATOR_POINTS)
         )
 
-        icon_id = parse_get_or(int, DEFAULT_ID, mapping.get(SEARCH_USER_ICON_ID))
+        icon_id = view.get_option(SEARCH_USER_ICON_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        color_1_id = parse_get_or(int, DEFAULT_COLOR_1_ID, mapping.get(SEARCH_USER_COLOR_1_ID))
-        color_2_id = parse_get_or(int, DEFAULT_COLOR_2_ID, mapping.get(SEARCH_USER_COLOR_2_ID))
+        color_1_id = view.get_option(SEARCH_USER_COLOR_1_ID).map(int).unwrap_or(DEFAULT_COLOR_1_ID)
+        color_2_id = view.get_option(SEARCH_USER_COLOR_2_ID).map(int).unwrap_or(DEFAULT_COLOR_2_ID)
 
-        secret_coins = parse_get_or(
-            int, DEFAULT_SECRET_COINS, mapping.get(SEARCH_USER_SECRET_COINS)
+        secret_coins = (
+            view.get_option(SEARCH_USER_SECRET_COINS).map(int).unwrap_or(DEFAULT_SECRET_COINS)
         )
 
-        icon_type = parse_get_or(
-            partial_parse_enum(int, IconType),
-            IconType.DEFAULT,
-            mapping.get(SEARCH_USER_ICON_TYPE),
+        icon_type = (
+            view.get_option(SEARCH_USER_ICON_TYPE)
+            .map(int)
+            .map(IconType)
+            .unwrap_or(IconType.DEFAULT)
         )
 
-        glow = parse_get_or(int_bool, DEFAULT_GLOW, mapping.get(SEARCH_USER_GLOW))
+        glow = view.get_option(SEARCH_USER_GLOW).map(int_bool).unwrap_or(DEFAULT_GLOW)
 
-        account_id = parse_get_or(int, DEFAULT_ID, mapping.get(SEARCH_USER_ACCOUNT_ID))
+        account_id = view.get_option(SEARCH_USER_ACCOUNT_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        user_coins = parse_get_or(int, DEFAULT_USER_COINS, mapping.get(SEARCH_USER_USER_COINS))
+        user_coins = view.get_option(SEARCH_USER_USER_COINS).map(int).unwrap_or(DEFAULT_USER_COINS)
 
-        diamonds = parse_get_or(int, DEFAULT_DIAMONDS, mapping.get(SEARCH_USER_DIAMONDS))
+        diamonds = view.get_option(SEARCH_USER_DIAMONDS).map(int).unwrap_or(DEFAULT_DIAMONDS)
 
-        moons = parse_get_or(int, DEFAULT_MOONS, mapping.get(SEARCH_USER_MOONS))
+        moons = view.get_option(SEARCH_USER_MOONS).map(int).unwrap_or(DEFAULT_MOONS)
 
         return cls(
             name=name,
@@ -698,91 +695,99 @@ class ProfileModel(Model):
     def from_robtop(cls, string: str) -> Self:
         mapping = split_profile(string)
 
-        name = mapping.get(PROFILE_NAME, EMPTY)
+        view = RobTopView(mapping)
 
-        id = parse_get_or(int, DEFAULT_ID, mapping.get(PROFILE_ID))
+        name = view.get_option(PROFILE_NAME).unwrap_or(EMPTY)
 
-        stars = parse_get_or(int, DEFAULT_STARS, mapping.get(PROFILE_STARS))
+        id = view.get_option(PROFILE_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        demons = parse_get_or(int, DEFAULT_DEMONS, mapping.get(PROFILE_DEMONS))
+        stars = view.get_option(PROFILE_STARS).map(int).unwrap_or(DEFAULT_STARS)
 
-        creator_points = parse_get_or(
-            int, DEFAULT_CREATOR_POINTS, mapping.get(PROFILE_CREATOR_POINTS)
+        demons = view.get_option(PROFILE_DEMONS).map(int).unwrap_or(DEFAULT_DEMONS)
+
+        creator_points = (
+            view.get_option(PROFILE_CREATOR_POINTS).map(int).unwrap_or(DEFAULT_CREATOR_POINTS)
         )
 
-        color_1_id = parse_get_or(int, DEFAULT_COLOR_1_ID, mapping.get(PROFILE_COLOR_1_ID))
-        color_2_id = parse_get_or(int, DEFAULT_COLOR_2_ID, mapping.get(PROFILE_COLOR_2_ID))
+        color_1_id = view.get_option(PROFILE_COLOR_1_ID).map(int).unwrap_or(DEFAULT_COLOR_1_ID)
+        color_2_id = view.get_option(PROFILE_COLOR_2_ID).map(int).unwrap_or(DEFAULT_COLOR_2_ID)
 
-        secret_coins = parse_get_or(int, DEFAULT_SECRET_COINS, mapping.get(PROFILE_SECRET_COINS))
-
-        account_id = parse_get_or(int, DEFAULT_ID, mapping.get(PROFILE_ACCOUNT_ID))
-
-        user_coins = parse_get_or(int, DEFAULT_USER_COINS, mapping.get(PROFILE_USER_COINS))
-
-        message_state = parse_get_or(
-            partial_parse_enum(int, MessageState),
-            MessageState.DEFAULT,
-            mapping.get(PROFILE_MESSAGE_STATE),
+        secret_coins = (
+            view.get_option(PROFILE_SECRET_COINS).map(int).unwrap_or(DEFAULT_SECRET_COINS)
         )
 
-        friend_request_state = parse_get_or(
-            partial_parse_enum(int, FriendRequestState),
-            FriendRequestState.DEFAULT,
-            mapping.get(PROFILE_FRIEND_REQUEST_STATE),
+        account_id = view.get_option(PROFILE_ACCOUNT_ID).map(int).unwrap_or(DEFAULT_ID)
+
+        user_coins = view.get_option(PROFILE_USER_COINS).map(int).unwrap_or(DEFAULT_USER_COINS)
+
+        message_state = (
+            view.get_option(PROFILE_MESSAGE_STATE)
+            .map(int)
+            .map(MessageState)
+            .unwrap_or(MessageState.DEFAULT)
         )
 
-        youtube = mapping.get(PROFILE_YOUTUBE) or None
-
-        cube_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_CUBE_ID))
-        ship_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_SHIP_ID))
-        ball_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_BALL_ID))
-        ufo_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_UFO_ID))
-        wave_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_WAVE_ID))
-        robot_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_ROBOT_ID))
-
-        glow = parse_get_or(int_bool, DEFAULT_GLOW, mapping.get(PROFILE_GLOW))
-
-        active = parse_get_or(int_bool, DEFAULT_ACTIVE, mapping.get(PROFILE_ACTIVE))
-
-        rank = parse_get_or(int, DEFAULT_RANK, mapping.get(PROFILE_RANK))
-
-        friend_state = parse_get_or(
-            partial_parse_enum(int, FriendState),
-            FriendState.DEFAULT,
-            mapping.get(PROFILE_FRIEND_STATE),
+        friend_request_state = (
+            view.get_option(PROFILE_FRIEND_REQUEST_STATE)
+            .map(int)
+            .map(FriendRequestState)
+            .unwrap_or(FriendRequestState.DEFAULT)
         )
 
-        new_messages = parse_get_or(int, DEFAULT_NEW, mapping.get(PROFILE_NEW_MESSAGES))
-        new_friend_requests = parse_get_or(
-            int, DEFAULT_NEW, mapping.get(PROFILE_NEW_FRIEND_REQUESTS)
-        )
-        new_friends = parse_get_or(int, DEFAULT_NEW, mapping.get(PROFILE_NEW_FRIENDS))
+        youtube = view.get_option(PROFILE_YOUTUBE).filter(bool).extract()
 
-        spider_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_SPIDER_ID))
+        cube_id = view.get_option(PROFILE_CUBE_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
+        ship_id = view.get_option(PROFILE_SHIP_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
+        ball_id = view.get_option(PROFILE_BALL_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
+        ufo_id = view.get_option(PROFILE_UFO_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
+        wave_id = view.get_option(PROFILE_WAVE_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
+        robot_id = view.get_option(PROFILE_ROBOT_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
 
-        x = mapping.get(PROFILE_X) or None
+        glow = view.get_option(PROFILE_GLOW).map(int_bool).unwrap_or(DEFAULT_GLOW)
 
-        twitch = mapping.get(PROFILE_TWITCH) or None
+        active = view.get_option(PROFILE_ACTIVE).map(int_bool).unwrap_or(DEFAULT_ACTIVE)
 
-        diamonds = parse_get_or(int, DEFAULT_DIAMONDS, mapping.get(PROFILE_DIAMONDS))
+        rank = view.get_option(PROFILE_RANK).map(int).unwrap_or(DEFAULT_RANK)
 
-        explosion_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_EXPLOSION_ID))
-
-        role_id = parse_get_or(int, DEFAULT_ID, mapping.get(PROFILE_ROLE_ID))
-
-        comment_state = parse_get_or(
-            partial_parse_enum(int, CommentState),
-            CommentState.DEFAULT,
-            mapping.get(PROFILE_COMMENT_STATE),
+        friend_state = (
+            view.get_option(PROFILE_FRIEND_STATE)
+            .map(int)
+            .map(FriendState)
+            .unwrap_or(FriendState.DEFAULT)
         )
 
-        color_3_id = parse_get_or(int, DEFAULT_COLOR_3_ID, mapping.get(PROFILE_COLOR_3_ID))
+        new_messages = view.get_option(PROFILE_NEW_MESSAGES).map(int).unwrap_or(DEFAULT_NEW)
+        new_friend_requests = (
+            view.get_option(PROFILE_NEW_FRIEND_REQUESTS).map(int).unwrap_or(DEFAULT_NEW)
+        )
+        new_friends = view.get_option(PROFILE_NEW_FRIENDS).map(int).unwrap_or(DEFAULT_NEW)
 
-        moons = parse_get_or(int, DEFAULT_MOONS, mapping.get(PROFILE_MOONS))
+        spider_id = view.get_option(PROFILE_SPIDER_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
 
-        swing_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_SWING_ID))
+        x = view.get_option(PROFILE_X).filter(bool).extract()
 
-        jetpack_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(PROFILE_JETPACK_ID))
+        twitch = view.get_option(PROFILE_TWITCH).filter(bool).extract()
+
+        diamonds = view.get_option(PROFILE_DIAMONDS).map(int).unwrap_or(DEFAULT_DIAMONDS)
+
+        explosion_id = view.get_option(PROFILE_EXPLOSION_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
+
+        role_id = view.get_option(PROFILE_ROLE_ID).map(int).unwrap_or(DEFAULT_ID)
+
+        comment_state = (
+            view.get_option(PROFILE_COMMENT_STATE)
+            .map(int)
+            .map(CommentState)
+            .unwrap_or(CommentState.DEFAULT)
+        )
+
+        color_3_id = view.get_option(PROFILE_COLOR_3_ID).map(int).unwrap_or(DEFAULT_COLOR_3_ID)
+
+        moons = view.get_option(PROFILE_MOONS).map(int).unwrap_or(DEFAULT_MOONS)
+
+        swing_id = view.get_option(PROFILE_SWING_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
+
+        jetpack_id = view.get_option(PROFILE_JETPACK_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
 
         return cls(
             name=name,
@@ -899,6 +904,7 @@ RELATIONSHIP_USER_GLOW = 15
 RELATIONSHIP_USER_ACCOUNT_ID = 16
 RELATIONSHIP_USER_MESSAGE_STATE = 18
 
+
 @define()
 class RelationshipUserModel(Model):
     name: str = EMPTY
@@ -915,33 +921,37 @@ class RelationshipUserModel(Model):
     def from_robtop(cls, string: str) -> Self:
         mapping = split_relationship_user(string)
 
-        name = mapping.get(RELATIONSHIP_USER_NAME, EMPTY)
+        view = RobTopView(mapping)
 
-        id = parse_get_or(int, DEFAULT_ID, mapping.get(RELATIONSHIP_USER_ID))
+        name = view.get_option(RELATIONSHIP_USER_NAME).unwrap_or(EMPTY)
 
-        icon_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(RELATIONSHIP_USER_ICON_ID))
+        id = view.get_option(RELATIONSHIP_USER_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        color_1_id = parse_get_or(
-            int, DEFAULT_COLOR_1_ID, mapping.get(RELATIONSHIP_USER_COLOR_1_ID)
+        icon_id = view.get_option(RELATIONSHIP_USER_ICON_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
+
+        color_1_id = (
+            view.get_option(RELATIONSHIP_USER_COLOR_1_ID).map(int).unwrap_or(DEFAULT_COLOR_1_ID)
         )
-        color_2_id = parse_get_or(
-            int, DEFAULT_COLOR_2_ID, mapping.get(RELATIONSHIP_USER_COLOR_2_ID)
-        )
-
-        icon_type = parse_get_or(
-            partial_parse_enum(int, IconType),
-            IconType.DEFAULT,
-            mapping.get(RELATIONSHIP_USER_ICON_TYPE),
+        color_2_id = (
+            view.get_option(RELATIONSHIP_USER_COLOR_2_ID).map(int).unwrap_or(DEFAULT_COLOR_2_ID)
         )
 
-        glow = parse_get_or(int_bool, DEFAULT_GLOW, mapping.get(RELATIONSHIP_USER_GLOW))
+        icon_type = (
+            view.get_option(RELATIONSHIP_USER_ICON_TYPE)
+            .map(int)
+            .map(IconType)
+            .unwrap_or(IconType.DEFAULT)
+        )
 
-        account_id = parse_get_or(int, DEFAULT_ID, mapping.get(RELATIONSHIP_USER_ACCOUNT_ID))
+        glow = view.get_option(RELATIONSHIP_USER_GLOW).map(int_bool).unwrap_or(DEFAULT_GLOW)
 
-        message_state = parse_get_or(
-            partial_parse_enum(int, MessageState),
-            MessageState.DEFAULT,
-            mapping.get(RELATIONSHIP_USER_MESSAGE_STATE),
+        account_id = view.get_option(RELATIONSHIP_USER_ACCOUNT_ID).map(int).unwrap_or(DEFAULT_ID)
+
+        message_state = (
+            view.get_option(RELATIONSHIP_USER_MESSAGE_STATE)
+            .map(int)
+            .map(MessageState)
+            .unwrap_or(MessageState.DEFAULT)
         )
 
         return cls(
@@ -1024,44 +1034,55 @@ class LeaderboardUserModel(Model):
     def from_robtop(cls, string: str) -> Self:
         mapping = split_leaderboard_user(string)
 
-        name = mapping.get(LEADERBOARD_USER_NAME, EMPTY)
+        view = RobTopView(mapping)
 
-        id = parse_get_or(int, DEFAULT_ID, mapping.get(LEADERBOARD_USER_ID))
+        name = view.get_option(LEADERBOARD_USER_NAME).unwrap_or(EMPTY)
 
-        stars = parse_get_or(int, DEFAULT_STARS, mapping.get(LEADERBOARD_USER_STARS))
+        id = view.get_option(LEADERBOARD_USER_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        demons = parse_get_or(int, DEFAULT_DEMONS, mapping.get(LEADERBOARD_USER_DEMONS))
+        stars = view.get_option(LEADERBOARD_USER_STARS).map(int).unwrap_or(DEFAULT_STARS)
 
-        place = parse_get_or(int, DEFAULT_PLACE, mapping.get(LEADERBOARD_USER_PLACE))
+        demons = view.get_option(LEADERBOARD_USER_DEMONS).map(int).unwrap_or(DEFAULT_DEMONS)
 
-        creator_points = parse_get_or(
-            int, DEFAULT_CREATOR_POINTS, mapping.get(LEADERBOARD_USER_CREATOR_POINTS)
+        place = view.get_option(LEADERBOARD_USER_PLACE).map(int).unwrap_or(DEFAULT_PLACE)
+
+        creator_points = (
+            view.get_option(LEADERBOARD_USER_CREATOR_POINTS)
+            .map(int)
+            .unwrap_or(DEFAULT_CREATOR_POINTS)
         )
 
-        icon_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(LEADERBOARD_USER_ICON_ID))
+        icon_id = view.get_option(LEADERBOARD_USER_ICON_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
 
-        color_1_id = parse_get_or(int, DEFAULT_COLOR_1_ID, mapping.get(LEADERBOARD_USER_COLOR_1_ID))
-        color_2_id = parse_get_or(int, DEFAULT_COLOR_2_ID, mapping.get(LEADERBOARD_USER_COLOR_2_ID))
-
-        secret_coins = parse_get_or(
-            int, DEFAULT_SECRET_COINS, mapping.get(LEADERBOARD_USER_SECRET_COINS)
+        color_1_id = (
+            view.get_option(LEADERBOARD_USER_COLOR_1_ID).map(int).unwrap_or(DEFAULT_COLOR_1_ID)
+        )
+        color_2_id = (
+            view.get_option(LEADERBOARD_USER_COLOR_2_ID).map(int).unwrap_or(DEFAULT_COLOR_2_ID)
         )
 
-        icon_type = parse_get_or(
-            partial_parse_enum(int, IconType),
-            IconType.DEFAULT,
-            mapping.get(LEADERBOARD_USER_ICON_TYPE),
+        secret_coins = (
+            view.get_option(LEADERBOARD_USER_SECRET_COINS).map(int).unwrap_or(DEFAULT_SECRET_COINS)
         )
 
-        glow = parse_get_or(int_bool, DEFAULT_GLOW, mapping.get(LEADERBOARD_USER_GLOW))
+        icon_type = (
+            view.get_option(LEADERBOARD_USER_ICON_TYPE)
+            .map(int)
+            .map(IconType)
+            .unwrap_or(IconType.DEFAULT)
+        )
 
-        account_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEADERBOARD_USER_ACCOUNT_ID))
+        glow = view.get_option(LEADERBOARD_USER_GLOW).map(int_bool).unwrap_or(DEFAULT_GLOW)
 
-        user_coins = parse_get_or(int, DEFAULT_USER_COINS, mapping.get(LEADERBOARD_USER_USER_COINS))
+        account_id = view.get_option(LEADERBOARD_USER_ACCOUNT_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        diamonds = parse_get_or(int, DEFAULT_DIAMONDS, mapping.get(LEADERBOARD_USER_DIAMONDS))
+        user_coins = (
+            view.get_option(LEADERBOARD_USER_USER_COINS).map(int).unwrap_or(DEFAULT_USER_COINS)
+        )
 
-        moons = parse_get_or(int, DEFAULT_MOONS, mapping.get(LEADERBOARD_USER_MOONS))
+        diamonds = view.get_option(LEADERBOARD_USER_DIAMONDS).map(int).unwrap_or(DEFAULT_DIAMONDS)
+
+        moons = view.get_option(LEADERBOARD_USER_MOONS).map(int).unwrap_or(DEFAULT_MOONS)
 
         return cls(
             name=name,
@@ -1124,11 +1145,12 @@ class TimelyInfoModel(Model):
 
     @classmethod
     def from_robtop(cls, string: str, type: TimelyType = TimelyType.DEFAULT) -> Self:
-        id, cooldown_seconds = iter(split_timely_info(string)).map(int).tuple()
+        id_string, cooldown_string = split_timely_info(string)
+
+        id = int(id_string)
+        cooldown = duration_from_seconds(float(cooldown_string))
 
         id %= WEEKLY_ID_ADD
-
-        cooldown = duration(seconds=cooldown_seconds)
 
         return cls(id=id, type=type, cooldown=cooldown)
 
@@ -1138,7 +1160,9 @@ class TimelyInfoModel(Model):
         if self.type.is_weekly():
             id += WEEKLY_ID_ADD
 
-        return iter.of(str(id), str(int(self.cooldown.total_seconds()))).collect(concat_timely_info)
+        return iter.of(str(id), float_str(self.cooldown.total_seconds())).collect(
+            concat_timely_info
+        )
 
     @classmethod
     def can_be_in(cls, string: str) -> bool:
@@ -1154,6 +1178,9 @@ MESSAGE_NAME = 6
 MESSAGE_CREATED_AT = 7
 MESSAGE_READ = 8
 MESSAGE_SENT = 9
+
+decode_message_content = decode_robtop_string_with(Key.MESSAGE)
+encode_message_content = encode_robtop_string_with(Key.MESSAGE)
 
 
 @define()
@@ -1174,28 +1201,31 @@ class MessageModel(Model):
     def from_robtop(cls, string: str, content_present: bool = DEFAULT_CONTENT_PRESENT) -> Self:
         mapping = split_message(string)
 
-        id = parse_get_or(int, DEFAULT_ID, mapping.get(MESSAGE_ID))
+        view = RobTopView(mapping)
 
-        account_id = parse_get_or(int, DEFAULT_ID, mapping.get(MESSAGE_ACCOUNT_ID))
-        user_id = parse_get_or(
-            int,
-            DEFAULT_ID,
-            mapping.get(MESSAGE_USER_ID),
+        id = view.get_option(MESSAGE_ID).map(int).unwrap_or(DEFAULT_ID)
+
+        account_id = view.get_option(MESSAGE_ACCOUNT_ID).map(int).unwrap_or(DEFAULT_ID)
+        user_id = view.get_option(MESSAGE_USER_ID).map(int).unwrap_or(DEFAULT_ID)
+
+        subject = (
+            view.get_option(MESSAGE_SUBJECT).map(decode_base64_string_url_safe).unwrap_or(EMPTY)
         )
 
-        subject = decode_base64_string_url_safe(mapping.get(MESSAGE_SUBJECT, EMPTY))
+        content = view.get_option(MESSAGE_CONTENT).map(decode_message_content).unwrap_or(EMPTY)
 
-        content = decode_robtop_string(mapping.get(MESSAGE_CONTENT, EMPTY), Key.MESSAGE)
+        name = view.get_option(MESSAGE_NAME).unwrap_or(EMPTY)
 
-        name = mapping.get(MESSAGE_NAME, EMPTY)
-
-        created_at = parse_get_or_else(
-            date_time_from_human, utc_now, mapping.get(MESSAGE_CREATED_AT), ignore_errors=True
+        created_at = (
+            view.get_option(MESSAGE_CREATED_AT)
+            .map(option_date_time_from_human)
+            .flatten()
+            .unwrap_or_else(utc_now)
         )
 
-        read = parse_get_or(int_bool, DEFAULT_READ, mapping.get(MESSAGE_READ))
+        read = view.get_option(MESSAGE_READ).map(int_bool).unwrap_or(DEFAULT_READ)
 
-        sent = parse_get_or(int_bool, DEFAULT_SENT, mapping.get(MESSAGE_SENT))
+        sent = view.get_option(MESSAGE_SENT).map(int_bool).unwrap_or(DEFAULT_SENT)
 
         return cls(
             id=id,
@@ -1216,7 +1246,7 @@ class MessageModel(Model):
             MESSAGE_ACCOUNT_ID: str(self.account_id),
             MESSAGE_USER_ID: str(self.user_id),
             MESSAGE_SUBJECT: encode_base64_string_url_safe(self.subject),
-            MESSAGE_CONTENT: encode_robtop_string(self.content, Key.MESSAGE),
+            MESSAGE_CONTENT: encode_message_content(self.content),
             MESSAGE_NAME: self.name,
             MESSAGE_CREATED_AT: date_time_to_human(self.created_at),
             MESSAGE_READ: bool_str(self.is_read()),
@@ -1272,37 +1302,48 @@ class FriendRequestModel(Model):
     def from_robtop(cls, string: str) -> Self:
         mapping = split_friend_request(string)
 
-        name = mapping.get(FRIEND_REQUEST_NAME, EMPTY)
+        view = RobTopView(mapping)
 
-        user_id = parse_get_or(int, DEFAULT_ID, mapping.get(FRIEND_REQUEST_USER_ID))
+        name = view.get_option(FRIEND_REQUEST_NAME).unwrap_or(EMPTY)
 
-        icon_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(FRIEND_REQUEST_ICON_ID))
+        user_id = view.get_option(FRIEND_REQUEST_USER_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        color_1_id = parse_get_or(int, DEFAULT_COLOR_1_ID, mapping.get(FRIEND_REQUEST_COLOR_1_ID))
-        color_2_id = parse_get_or(int, DEFAULT_COLOR_2_ID, mapping.get(FRIEND_REQUEST_COLOR_2_ID))
+        icon_id = view.get_option(FRIEND_REQUEST_ICON_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
 
-        icon_type = parse_get_or(
-            partial_parse_enum(int, IconType),
-            IconType.DEFAULT,
-            mapping.get(FRIEND_REQUEST_ICON_TYPE),
+        color_1_id = (
+            view.get_option(FRIEND_REQUEST_COLOR_1_ID).map(int).unwrap_or(DEFAULT_COLOR_1_ID)
+        )
+        color_2_id = (
+            view.get_option(FRIEND_REQUEST_COLOR_2_ID).map(int).unwrap_or(DEFAULT_COLOR_2_ID)
         )
 
-        glow = parse_get_or(int_bool, DEFAULT_GLOW, mapping.get(FRIEND_REQUEST_GLOW))
-
-        account_id = parse_get_or(int, DEFAULT_ID, mapping.get(FRIEND_REQUEST_ACCOUNT_ID))
-
-        id = parse_get_or(int, DEFAULT_ID, mapping.get(FRIEND_REQUEST_ID))
-
-        content = decode_base64_string_url_safe(mapping.get(FRIEND_REQUEST_CONTENT, EMPTY))
-
-        created_at = parse_get_or_else(
-            date_time_from_human,
-            utc_now,
-            mapping.get(FRIEND_REQUEST_CREATED_AT),
-            ignore_errors=True,
+        icon_type = (
+            view.get_option(FRIEND_REQUEST_ICON_TYPE)
+            .map(int)
+            .map(IconType)
+            .unwrap_or(IconType.DEFAULT)
         )
 
-        unread = parse_get_or(int_bool, DEFAULT_UNREAD, mapping.get(FRIEND_REQUEST_UNREAD))
+        glow = view.get_option(FRIEND_REQUEST_GLOW).map(int_bool).unwrap_or(DEFAULT_GLOW)
+
+        account_id = view.get_option(FRIEND_REQUEST_ACCOUNT_ID).map(int).unwrap_or(DEFAULT_ID)
+
+        id = view.get_option(FRIEND_REQUEST_ID).map(int).unwrap_or(DEFAULT_ID)
+
+        content = (
+            view.get_option(FRIEND_REQUEST_CONTENT)
+            .map(decode_base64_string_url_safe)
+            .unwrap_or(EMPTY)
+        )
+
+        created_at = (
+            view.get_option(FRIEND_REQUEST_CREATED_AT)
+            .map(option_date_time_from_human)
+            .flatten()
+            .unwrap_or_else(utc_now)
+        )
+
+        unread = view.get_option(FRIEND_REQUEST_UNREAD).map(int_bool).unwrap_or(DEFAULT_UNREAD)
 
         return cls(
             name=name,
@@ -1440,114 +1481,125 @@ class LevelModel(Model):
     editor_time: Duration = field(factory=duration)
     copies_time: Duration = field(factory=duration)
     time_steps: int = field(default=DEFAULT_TIME_STEPS)
+    platformer: bool = field(default=DEFAULT_PLATFORMER)
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
         mapping = split_level(string)
 
-        id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_ID))
+        view = RobTopView(mapping)
 
-        name = mapping.get(LEVEL_NAME, EMPTY)
+        id = view.get_option(LEVEL_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        description = decode_base64_string_url_safe(mapping.get(LEVEL_DESCRIPTION, EMPTY))
+        name = view.get_option(LEVEL_NAME).unwrap_or(EMPTY)
+
+        description = (
+            view.get_option(LEVEL_DESCRIPTION).map(decode_base64_string_url_safe).unwrap_or(EMPTY)
+        )
 
         unprocessed_data = mapping.get(LEVEL_UNPROCESSED_DATA, EMPTY)
 
-        if OBJECTS_SEPARATOR in unprocessed_data:
+        unprocessed_data = mapping.get(LEVEL_UNPROCESSED_DATA, EMPTY)
+
+        if Editor.can_be_in(unprocessed_data):
             unprocessed_data = zip_level_string(unprocessed_data)
 
-        version = parse_get_or(int, DEFAULT_VERSION, mapping.get(LEVEL_VERSION))
+        version = view.get_option(LEVEL_VERSION).map(int).unwrap_or(DEFAULT_VERSION)
 
-        creator_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_CREATOR_ID))
+        creator_id = view.get_option(LEVEL_CREATOR_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        difficulty_numerator = parse_get_or(
-            int, DEFAULT_NUMERATOR, mapping.get(LEVEL_DIFFICULTY_NUMERATOR)
+        difficulty_numerator = (
+            view.get_option(LEVEL_DIFFICULTY_NUMERATOR).map(int).unwrap_or(DEFAULT_NUMERATOR)
+        )
+        difficulty_denominator = (
+            view.get_option(LEVEL_DIFFICULTY_DENOMINATOR).map(int).unwrap_or(DEFAULT_DENOMINATOR)
         )
 
-        difficulty_denominator = parse_get_or(
-            int, DEFAULT_DENOMINATOR, mapping.get(LEVEL_DIFFICULTY_DENOMINATOR)
+        demon_difficulty = (
+            view.get_option(LEVEL_DEMON_DIFFICULTY)
+            .map(int)
+            .map(DemonDifficulty)
+            .unwrap_or(DemonDifficulty.DEFAULT)
         )
 
-        demon_difficulty_value = parse_get_or(
-            int, DEFAULT_DEMON_DIFFICULTY_VALUE, mapping.get(LEVEL_DEMON_DIFFICULTY)
-        )
-
-        auto = parse_get_or(int_bool, DEFAULT_AUTO, mapping.get(LEVEL_AUTO))
-        demon = parse_get_or(int_bool, DEFAULT_DEMON, mapping.get(LEVEL_DEMON))
+        auto = view.get_option(LEVEL_AUTO).map(int_bool).unwrap_or(DEFAULT_AUTO)
+        demon = view.get_option(LEVEL_DEMON).map(int_bool).unwrap_or(DEFAULT_DEMON)
 
         difficulty = DifficultyParameters(
             difficulty_numerator=difficulty_numerator,
             difficulty_denominator=difficulty_denominator,
-            demon_difficulty_value=demon_difficulty_value,
+            demon_difficulty_value=demon_difficulty.value,
             auto=auto,
             demon=demon,
         ).into_difficulty()
 
-        downloads = parse_get_or(int, DEFAULT_DOWNLOADS, mapping.get(LEVEL_DOWNLOADS))
+        downloads = view.get_option(LEVEL_DOWNLOADS).map(int).unwrap_or(DEFAULT_DOWNLOADS)
 
-        official_song_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_OFFICIAL_SONG_ID))
+        official_song_id = view.get_option(LEVEL_OFFICIAL_SONG_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        game_version = parse_get_or(
-            GameVersion.from_robtop, CURRENT_GAME_VERSION, mapping.get(LEVEL_GAME_VERSION)
+        game_version = (
+            view.get_option(LEVEL_GAME_VERSION)
+            .map(GameVersion.from_robtop)
+            .unwrap_or(CURRENT_GAME_VERSION)
         )
 
-        rating = parse_get_or(int, DEFAULT_RATING, mapping.get(LEVEL_RATING))
+        rating = view.get_option(LEVEL_RATING).map(int).unwrap_or(DEFAULT_RATING)
 
-        length = parse_get_or(
-            partial_parse_enum(int, LevelLength),
-            LevelLength.DEFAULT,
-            mapping.get(LEVEL_LENGTH),
+        length = (
+            view.get_option(LEVEL_LENGTH).map(int).map(LevelLength).unwrap_or(LevelLength.DEFAULT)
         )
 
         platformer = length.is_platformer()
 
-        reward = EitherReward(
-            parse_get_or(int, DEFAULT_COUNT, mapping.get(LEVEL_REWARD)), platformer
+        reward_count = view.get_option(LEVEL_REWARD).map(int).unwrap_or(DEFAULT_COUNT)
+
+        reward = EitherReward(reward_count, platformer)
+
+        score = max(0, view.get_option(LEVEL_SCORE).map(int).unwrap_or(DEFAULT_SCORE))
+
+        password = (
+            view.get_option(LEVEL_PASSWORD).map(Password.from_robtop).unwrap_or_else(Password)
         )
 
-        score = parse_get_or(int, DEFAULT_SCORE, mapping.get(LEVEL_SCORE))
-
-        if score < 0:
-            score = 0
-
-        password = parse_get_or_else(Password.from_robtop, Password, mapping.get(LEVEL_PASSWORD))
-
-        created_at = parse_get_or_else(
-            date_time_from_human,
-            utc_now,
-            mapping.get(LEVEL_CREATED_AT),
-            ignore_errors=True,
+        created_at = (
+            view.get_option(LEVEL_CREATED_AT)
+            .map(option_date_time_from_human)
+            .flatten()
+            .unwrap_or_else(utc_now)
         )
 
-        updated_at = parse_get_or_else(
-            date_time_from_human,
-            utc_now,
-            mapping.get(LEVEL_UPDATED_AT),
-            ignore_errors=True,
+        updated_at = (
+            view.get_option(LEVEL_UPDATED_AT)
+            .map(option_date_time_from_human)
+            .flatten()
+            .unwrap_or_else(utc_now)
         )
 
-        original_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_ORIGINAL_ID))
+        original_id = view.get_option(LEVEL_ORIGINAL_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        two_player = parse_get_or(int_bool, DEFAULT_TWO_PLAYER, mapping.get(LEVEL_TWO_PLAYER))
+        two_player = view.get_option(LEVEL_TWO_PLAYER).map(int_bool).unwrap_or(DEFAULT_TWO_PLAYER)
 
-        custom_song_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_CUSTOM_SONG_ID))
+        custom_song_id = view.get_option(LEVEL_CUSTOM_SONG_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        capacity = parse_get_or_else(Capacity.from_robtop, Capacity, mapping.get(LEVEL_CAPACITY))
-
-        coins = parse_get_or(int, DEFAULT_COINS, mapping.get(LEVEL_COINS))
-
-        verified_coins = parse_get_or(
-            int_bool, DEFAULT_VERIFIED_COINS, mapping.get(LEVEL_VERIFIED_COINS)
+        capacity = (
+            view.get_option(LEVEL_CAPACITY).map(Capacity.from_robtop).unwrap_or_else(Capacity)
         )
 
-        requested_reward = EitherReward(
-            parse_get_or(int, DEFAULT_COUNT, mapping.get(LEVEL_REQUESTED_REWARD)),
-            platformer,
+        coins = view.get_option(LEVEL_COINS).map(int).unwrap_or(DEFAULT_COINS)
+
+        verified_coins = (
+            view.get_option(LEVEL_VERIFIED_COINS).map(int_bool).unwrap_or(DEFAULT_VERIFIED_COINS)
         )
 
-        low_detail = parse_get_or(int_bool, DEFAULT_LOW_DETAIL, mapping.get(LEVEL_LOW_DETAIL))
+        requested_reward_count = (
+            view.get_option(LEVEL_REQUESTED_REWARD).map(int).unwrap_or(DEFAULT_COUNT)
+        )
 
-        timely_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_TIMELY_ID))
+        requested_reward = EitherReward(requested_reward_count, platformer)
+
+        low_detail = view.get_option(LEVEL_LOW_DETAIL).map(int_bool).unwrap_or(DEFAULT_LOW_DETAIL)
+
+        timely_id = view.get_option(LEVEL_TIMELY_ID).map(int).unwrap_or(DEFAULT_ID)
 
         if timely_id:
             result, timely_id = divmod(timely_id, WEEKLY_ID_ADD)
@@ -1561,34 +1613,36 @@ class LevelModel(Model):
         else:
             timely_type = TimelyType.NOT_TIMELY
 
-        special_rate_type = parse_get_or(
-            partial_parse_enum(int, SpecialRateType),
-            SpecialRateType.DEFAULT,
-            mapping.get(LEVEL_SPECIAL_RATE_TYPE),
+        special_rate_type = (
+            view.get_option(LEVEL_SPECIAL_RATE_TYPE)
+            .map(int)
+            .map(SpecialRateType)
+            .unwrap_or(SpecialRateType.DEFAULT)
         )
 
-        object_count = parse_get_or(int, DEFAULT_OBJECT_COUNT, mapping.get(LEVEL_OBJECT_COUNT))
+        object_count = view.get_option(LEVEL_OBJECT_COUNT).map(int).unwrap_or(DEFAULT_OBJECT_COUNT)
 
-        editor_seconds_option = mapping.get(LEVEL_EDITOR_TIME)
+        editor_time = (
+            view.get_option(LEVEL_EDITOR_TIME)
+            .filter(bool)
+            .map(float)
+            .map(duration_from_seconds)
+            .unwrap_or_else(duration)
+        )
 
-        if editor_seconds_option:
-            editor_seconds = int(editor_seconds_option)
-            editor_time = duration(seconds=editor_seconds)
+        copies_time = (
+            view.get_option(LEVEL_COPIES_TIME)
+            .filter(bool)
+            .map(float)
+            .map(duration_from_seconds)
+            .unwrap_or_else(duration)
+        )
 
-        else:
-            editor_time = duration()
-
-        copies_seconds_option = mapping.get(LEVEL_COPIES_TIME)
-
-        if copies_seconds_option:
-            copies_seconds = int(copies_seconds_option)
-            copies_time = duration(seconds=copies_seconds)
-
-        else:
-            copies_time = duration()
-
-        time_steps = parse_get_or(
-            int, DEFAULT_TIME_STEPS, mapping.get(LEVEL_TIME_STEPS), ignore_errors=True
+        time_steps = (
+            view.get_option(LEVEL_TIME_STEPS)
+            .map(option_int)
+            .flatten()
+            .unwrap_or(DEFAULT_TIME_STEPS)
         )
 
         return cls(
@@ -1624,6 +1678,7 @@ class LevelModel(Model):
             editor_time=editor_time,
             copies_time=copies_time,
             time_steps=time_steps,
+            platformer=platformer,
         )
 
     def to_robtop(self) -> str:
@@ -1679,8 +1734,8 @@ class LevelModel(Model):
             LEVEL_SPECIAL_RATE_TYPE: str(self.special_rate_type.value),
             LEVEL_DEMON_DIFFICULTY: str(difficulty_parameters.demon_difficulty_value),
             LEVEL_OBJECT_COUNT: str(self.object_count),
-            LEVEL_EDITOR_TIME: str(int(self.editor_time.total_seconds())),
-            LEVEL_COPIES_TIME: str(int(self.copies_time.total_seconds())),
+            LEVEL_EDITOR_TIME: float_str(self.editor_time.total_seconds()),
+            LEVEL_COPIES_TIME: float_str(self.copies_time.total_seconds()),
             LEVEL_TIME_STEPS: str(self.time_steps),
         }
 
@@ -1704,6 +1759,9 @@ class LevelModel(Model):
 
     def is_mythic(self) -> bool:
         return self.special_rate_type.is_mythic()
+
+    def is_platformer(self) -> bool:
+        return self.platformer
 
     def has_verified_coins(self) -> bool:
         return self.verified_coins
@@ -1738,6 +1796,7 @@ LEVEL_COMMENT_INNER_RECORD = 10
 LEVEL_COMMENT_INNER_ROLE_ID = 11
 LEVEL_COMMENT_INNER_COLOR = 12
 
+
 @define()
 class LevelCommentInnerModel(Model):
     level_id: int = field(default=DEFAULT_ID)
@@ -1755,31 +1814,39 @@ class LevelCommentInnerModel(Model):
     def from_robtop(cls, string: str) -> Self:
         mapping = split_level_comment_inner(string)
 
-        level_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_COMMENT_INNER_LEVEL_ID))
+        view = RobTopView(mapping)
 
-        content = decode_base64_string_url_safe(mapping.get(LEVEL_COMMENT_INNER_CONTENT, EMPTY))
+        level_id = view.get_option(LEVEL_COMMENT_INNER_LEVEL_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        user_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_COMMENT_INNER_USER_ID))
-
-        rating = parse_get_or(int, DEFAULT_RATING, mapping.get(LEVEL_COMMENT_INNER_RATING))
-
-        id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_COMMENT_INNER_ID))
-
-        spam = parse_get_or(int_bool, DEFAULT_SPAM, mapping.get(LEVEL_COMMENT_INNER_SPAM))
-
-        created_at = parse_get_or_else(
-            date_time_from_human,
-            utc_now,
-            mapping.get(LEVEL_COMMENT_INNER_CREATED_AT),
-            ignore_errors=True,
+        content = (
+            view.get_option(LEVEL_COMMENT_INNER_CONTENT)
+            .map(decode_base64_string_url_safe)
+            .unwrap_or(EMPTY)
         )
 
-        record = parse_get_or(int, DEFAULT_RECORD, mapping.get(LEVEL_COMMENT_INNER_RECORD))
+        user_id = view.get_option(LEVEL_COMMENT_INNER_USER_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        role_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_COMMENT_INNER_ROLE_ID))
+        rating = view.get_option(LEVEL_COMMENT_INNER_RATING).map(int).unwrap_or(DEFAULT_RATING)
 
-        color = parse_get_or_else(
-            Color.from_robtop, Color.default, mapping.get(LEVEL_COMMENT_INNER_COLOR)
+        id = view.get_option(LEVEL_COMMENT_INNER_ID).map(int).unwrap_or(DEFAULT_ID)
+
+        spam = view.get_option(LEVEL_COMMENT_INNER_SPAM).map(int_bool).unwrap_or(DEFAULT_SPAM)
+
+        created_at = (
+            view.get_option(LEVEL_COMMENT_INNER_CREATED_AT)
+            .map(option_date_time_from_human)
+            .flatten()
+            .unwrap_or_else(utc_now)
+        )
+
+        record = view.get_option(LEVEL_COMMENT_INNER_RECORD).map(int).unwrap_or(DEFAULT_RECORD)
+
+        role_id = view.get_option(LEVEL_COMMENT_INNER_ROLE_ID).map(int).unwrap_or(DEFAULT_ID)
+
+        color = (
+            view.get_option(LEVEL_COMMENT_INNER_COLOR)
+            .map(Color.from_robtop)
+            .unwrap_or_else(Color.default)
         )
 
         return cls(
@@ -1842,26 +1909,29 @@ class LevelCommentUserModel(Model):
     def from_robtop(cls, string: str) -> Self:
         mapping = split_level_comment_user(string)
 
-        name = mapping.get(LEVEL_COMMENT_USER_NAME, EMPTY)
+        view = RobTopView(mapping)
 
-        icon_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(LEVEL_COMMENT_USER_ICON_ID))
+        name = view.get_option(LEVEL_COMMENT_USER_NAME).unwrap_or(EMPTY)
 
-        color_1_id = parse_get_or(
-            int, DEFAULT_COLOR_1_ID, mapping.get(LEVEL_COMMENT_USER_COLOR_1_ID)
+        icon_id = view.get_option(LEVEL_COMMENT_USER_ICON_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
+
+        color_1_id = (
+            view.get_option(LEVEL_COMMENT_USER_COLOR_1_ID).map(int).unwrap_or(DEFAULT_COLOR_1_ID)
         )
-        color_2_id = parse_get_or(
-            int, DEFAULT_COLOR_2_ID, mapping.get(LEVEL_COMMENT_USER_COLOR_2_ID)
-        )
-
-        icon_type = parse_get_or(
-            partial_parse_enum(int, IconType),
-            IconType.DEFAULT,
-            mapping.get(LEVEL_COMMENT_USER_ICON_TYPE),
+        color_2_id = (
+            view.get_option(LEVEL_COMMENT_USER_COLOR_2_ID).map(int).unwrap_or(DEFAULT_COLOR_2_ID)
         )
 
-        glow = parse_get_or(int_bool, DEFAULT_GLOW, mapping.get(LEVEL_COMMENT_USER_GLOW))
+        icon_type = (
+            view.get_option(LEVEL_COMMENT_USER_ICON_TYPE)
+            .map(int)
+            .map(IconType)
+            .unwrap_or(IconType.DEFAULT)
+        )
 
-        account_id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_COMMENT_USER_ACCOUNT_ID))
+        glow = view.get_option(LEVEL_COMMENT_USER_GLOW).map(int_bool).unwrap_or(DEFAULT_GLOW)
+
+        account_id = view.get_option(LEVEL_COMMENT_USER_ACCOUNT_ID).map(int).unwrap_or(DEFAULT_ID)
 
         return cls(
             name=name,
@@ -1937,17 +2007,23 @@ class UserCommentModel(Model):
     def from_robtop(cls, string: str) -> Self:
         mapping = split_user_comment(string)
 
-        content = decode_base64_string_url_safe(mapping.get(USER_COMMENT_CONTENT, EMPTY))
+        view = RobTopView(mapping)
 
-        rating = parse_get_or(int, DEFAULT_RATING, mapping.get(USER_COMMENT_RATING))
+        content = (
+            view.get_option(USER_COMMENT_CONTENT)
+            .map(decode_base64_string_url_safe)
+            .unwrap_or(EMPTY)
+        )
 
-        id = parse_get_or(int, DEFAULT_ID, mapping.get(USER_COMMENT_ID))
+        rating = view.get_option(USER_COMMENT_RATING).map(int).unwrap_or(DEFAULT_RATING)
 
-        created_at = parse_get_or_else(
-            date_time_from_human,
-            utc_now,
-            mapping.get(USER_COMMENT_CREATED_AT),
-            ignore_errors=True,
+        id = view.get_option(USER_COMMENT_ID).map(int).unwrap_or(DEFAULT_ID)
+
+        created_at = (
+            view.get_option(USER_COMMENT_CREATED_AT)
+            .map(option_date_time_from_human)
+            .flatten()
+            .unwrap_or_else(utc_now)
         )
 
         return cls(content=content, rating=rating, id=id, created_at=created_at)
@@ -2000,41 +2076,49 @@ class LevelLeaderboardUserModel(Model):
     def from_robtop(cls, string: str, platformer: bool = DEFAULT_PLATFORMER) -> Self:
         mapping = split_level_leaderboard_user(string)
 
-        name = mapping.get(LEVEL_LEADERBOARD_USER_NAME, EMPTY)
+        view = RobTopView(mapping)
 
-        id = parse_get_or(int, DEFAULT_ID, mapping.get(LEVEL_LEADERBOARD_USER_ID))
+        name = view.get_option(LEVEL_LEADERBOARD_USER_NAME).unwrap_or(EMPTY)
 
-        either_record = EitherRecord(
-            parse_get_or(int, DEFAULT_RECORD, mapping.get(LEVEL_LEADERBOARD_USER_RECORD)),
-            platformer,
+        id = view.get_option(LEVEL_LEADERBOARD_USER_ID).map(int).unwrap_or(DEFAULT_ID)
+
+        record = view.get_option(LEVEL_LEADERBOARD_USER_RECORD).map(int).unwrap_or(DEFAULT_RECORD)
+
+        either_record = EitherRecord(record, platformer)
+
+        place = view.get_option(LEVEL_LEADERBOARD_USER_PLACE).map(int).unwrap_or(DEFAULT_PLACE)
+
+        icon_id = (
+            view.get_option(LEVEL_LEADERBOARD_USER_ICON_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
         )
 
-        place = parse_get_or(int, DEFAULT_PLACE, mapping.get(LEVEL_LEADERBOARD_USER_PLACE))
-
-        icon_id = parse_get_or(int, DEFAULT_ICON_ID, mapping.get(LEVEL_LEADERBOARD_USER_ICON_ID))
-
-        color_1_id = parse_get_or(
-            int, DEFAULT_COLOR_1_ID, mapping.get(LEVEL_LEADERBOARD_USER_COLOR_1_ID)
+        color_1_id = (
+            view.get_option(LEVEL_LEADERBOARD_USER_COLOR_1_ID)
+            .map(int)
+            .unwrap_or(DEFAULT_COLOR_1_ID)
         )
-        color_2_id = parse_get_or(
-            int, DEFAULT_COLOR_2_ID, mapping.get(LEVEL_LEADERBOARD_USER_COLOR_2_ID)
-        )
-
-        coins = parse_get_or(int, DEFAULT_COINS, mapping.get(LEVEL_LEADERBOARD_USER_COINS))
-
-        icon_type = parse_get_or(
-            partial_parse_enum(int, IconType),
-            IconType.DEFAULT,
-            mapping.get(LEVEL_LEADERBOARD_USER_ICON_TYPE),
+        color_2_id = (
+            view.get_option(LEVEL_LEADERBOARD_USER_COLOR_2_ID)
+            .map(int)
+            .unwrap_or(DEFAULT_COLOR_2_ID)
         )
 
-        glow = parse_get_or(int_bool, DEFAULT_GLOW, mapping.get(LEVEL_LEADERBOARD_USER_GLOW))
+        coins = view.get_option(LEVEL_LEADERBOARD_USER_COINS).map(int).unwrap_or(DEFAULT_COINS)
 
-        recorded_at = parse_get_or_else(
-            date_time_from_human,
-            utc_now,
-            mapping.get(LEVEL_LEADERBOARD_USER_RECORDED_AT),
-            ignore_errors=True,
+        icon_type = (
+            view.get_option(LEVEL_LEADERBOARD_USER_ICON_TYPE)
+            .map(int)
+            .map(IconType)
+            .unwrap_or(IconType.DEFAULT)
+        )
+
+        glow = view.get_option(LEVEL_LEADERBOARD_USER_GLOW).map(int_bool).unwrap_or(DEFAULT_GLOW)
+
+        recorded_at = (
+            view.get_option(LEVEL_LEADERBOARD_USER_RECORDED_AT)
+            .map(option_date_time_from_human)
+            .flatten()
+            .unwrap_or_else(utc_now)
         )
 
         return cls(
@@ -2092,7 +2176,9 @@ class ArtistModel(Model):
     def from_robtop(cls, string: str) -> Self:
         mapping = split_artist(string)
 
-        name = mapping.get(ARTIST_NAME, EMPTY)
+        view = RobTopView(mapping)
+
+        name = view.get_option(ARTIST_NAME).unwrap_or(EMPTY)
 
         return cls(name=name)
 
@@ -2178,17 +2264,18 @@ class GauntletModel(Model):
     def from_robtop(cls, string: str) -> Self:
         mapping = split_gauntlet(string)
 
-        id = parse_get_or(int, DEFAULT_ID, mapping.get(GAUNTLET_ID))
+        view = RobTopView(mapping)
 
-        level_ids_option = mapping.get(GAUNTLET_LEVEL_IDS)
+        id = view.get_option(GAUNTLET_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        level_ids: DynamicTuple[int]
-
-        if level_ids_option is None:
-            level_ids = ()
-
-        else:
-            level_ids = iter(split_level_ids(level_ids_option)).map(int).tuple()
+        level_ids = (
+            view.get_option(GAUNTLET_LEVEL_IDS)
+            .map(split_level_ids)
+            .map(iter)
+            .unwrap_or_else(iter.empty)
+            .map(int)
+            .tuple()
+        )
 
         return cls(id=id, level_ids=level_ids)
 
@@ -2215,9 +2302,6 @@ MAP_PACK_COLOR = 7
 MAP_PACK_OTHER_COLOR = 8
 
 
-DEFAULT_DIFFICULTY_VALUE = Difficulty.DEFAULT.value
-
-
 @define()
 class MapPackModel(Model):
     id: int = field(default=DEFAULT_ID)
@@ -2232,31 +2316,34 @@ class MapPackModel(Model):
     def from_robtop(cls, string: str) -> Self:
         mapping = split_map_pack(string)
 
-        id = parse_get_or(int, DEFAULT_ID, mapping.get(MAP_PACK_ID))
+        view = RobTopView(mapping)
 
-        name = mapping.get(MAP_PACK_NAME, EMPTY)
+        id = view.get_option(MAP_PACK_ID).map(int).unwrap_or(DEFAULT_ID)
 
-        level_ids_option = mapping.get(MAP_PACK_LEVEL_IDS)
+        name = view.get_option(MAP_PACK_NAME).unwrap_or(EMPTY)
 
-        level_ids: DynamicTuple[int]
-
-        if level_ids_option is None:
-            level_ids = ()
-
-        else:
-            level_ids = iter(split_level_ids(level_ids_option)).map(int).tuple()
-
-        stars = parse_get_or(int, DEFAULT_STARS, mapping.get(MAP_PACK_STARS))
-
-        coins = parse_get_or(int, DEFAULT_COINS, mapping.get(MAP_PACK_COINS))
-
-        difficulty_value = parse_get_or(
-            int, DEFAULT_DIFFICULTY_VALUE, mapping.get(MAP_PACK_DIFFICULTY)
+        level_ids = (
+            view.get_option(MAP_PACK_LEVEL_IDS)
+            .map(split_level_ids)
+            .map(iter)
+            .unwrap_or_else(iter.empty)
+            .map(int)
+            .tuple()
         )
 
-        difficulty = Difficulty(difficulty_value + 1)  # slightly hacky way to convert
+        stars = view.get_option(MAP_PACK_STARS).map(int).unwrap_or(DEFAULT_STARS)
 
-        color = parse_get_or_else(Color.from_robtop, Color.default, mapping.get(MAP_PACK_COLOR))
+        coins = view.get_option(MAP_PACK_COINS).map(int).unwrap_or(DEFAULT_COINS)
+
+        difficulty = (
+            view.get_option(MAP_PACK_DIFFICULTY)
+            .map(int)
+            .map(increment)  # slightly hacky way of conversion
+            .map(Difficulty)
+            .unwrap_or(Difficulty.DEFAULT)
+        )
+
+        color = view.get_option(MAP_PACK_COLOR).map(Color.from_robtop).unwrap_or_else(Color.default)
 
         return cls(
             id=id,
@@ -2275,7 +2362,7 @@ class MapPackModel(Model):
             MAP_PACK_LEVEL_IDS: iter(self.level_ids).map(str).collect(concat_level_ids),
             MAP_PACK_STARS: str(self.stars),
             MAP_PACK_COINS: str(self.coins),
-            MAP_PACK_DIFFICULTY: str(self.difficulty.value - 1),  # and convert back
+            MAP_PACK_DIFFICULTY: str(decrement(self.difficulty.value)),
             MAP_PACK_COLOR: self.color.to_robtop(),
             MAP_PACK_OTHER_COLOR: self.color.to_robtop(),
         }
@@ -2323,17 +2410,13 @@ class ChestsInnerModel(Model):
 
         account_id = int(account_id_string)
 
-        chest_1_duration_seconds = int(chest_1_duration_string)
-
-        chest_1_duration = duration(seconds=chest_1_duration_seconds)
+        chest_1_duration = duration_from_seconds(float(chest_1_duration_string))
 
         chest_1 = ChestModel.from_robtop(chest_1_string)
 
         chest_1_count = int(chest_1_count_string)
 
-        chest_2_duration_seconds = int(chest_2_duration_string)
-
-        chest_2_duration = duration(seconds=chest_2_duration_seconds)
+        chest_2_duration = duration_from_seconds(float(chest_2_duration_string))
 
         chest_2 = ChestModel.from_robtop(chest_2_string)
 
@@ -2365,10 +2448,10 @@ class ChestsInnerModel(Model):
             self.check,
             self.udid,
             str(self.account_id),
-            str(int(self.chest_1_duration.total_seconds())),
+            float_str(self.chest_1_duration.total_seconds()),
             self.chest_1.to_robtop(),
             str(self.chest_1_count),
-            str(int(self.chest_2_duration.total_seconds())),
+            float_str(self.chest_2_duration.total_seconds()),
             self.chest_2.to_robtop(),
             str(self.chest_2_count),
             str(self.reward_type.value),
@@ -2409,9 +2492,7 @@ class QuestsInnerModel(Model):
 
         account_id = int(account_id_string)
 
-        quest_duration_seconds = int(duration_string)
-
-        quest_duration = duration(seconds=quest_duration_seconds)
+        quest_duration = duration_from_seconds(float(duration_string))
 
         quest_1 = QuestModel.from_robtop(quest_1_string)
         quest_2 = QuestModel.from_robtop(quest_2_string)
@@ -2436,7 +2517,7 @@ class QuestsInnerModel(Model):
             self.check,
             self.udid,
             str(self.account_id),
-            str(int(self.quest_duration.total_seconds())),
+            float_str(self.quest_duration.total_seconds()),
             self.quest_1.to_robtop(),
             self.quest_2.to_robtop(),
             self.quest_3.to_robtop(),
@@ -2445,6 +2526,10 @@ class QuestsInnerModel(Model):
     @classmethod
     def can_be_in(cls, string: str) -> bool:
         return QUESTS_INNER_SEPARATOR in string
+
+
+decode_chests_inner = decode_robtop_string_with(Key.CHESTS)
+encode_chests_inner = encode_robtop_string_with(Key.CHESTS)
 
 
 @define()
@@ -2460,13 +2545,11 @@ class ChestsResponseModel(Model):
         return sha1_string_with_salt(self.encode_inner(), Salt.CHESTS)
 
     def encode_inner(self) -> str:
-        return generate_random_string(CHESTS_SLICE) + encode_robtop_string(
-            self.inner.to_robtop(), Key.CHESTS
-        )
+        return generate_random_string(CHESTS_SLICE) + encode_chests_inner(self.inner.to_robtop())
 
     @classmethod
     def decode_inner(cls, string: str) -> str:
-        return decode_robtop_string(string[CHESTS_SLICE:], Key.CHESTS)
+        return decode_chests_inner(string[CHESTS_SLICE:])
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
@@ -2486,6 +2569,10 @@ class ChestsResponseModel(Model):
         return CHESTS_RESPONSE_SEPARATOR in string
 
 
+decode_quests_inner = decode_robtop_string_with(Key.QUESTS)
+encode_quests_inner = encode_robtop_string_with(Key.QUESTS)
+
+
 @define()
 class QuestsResponseModel(Model):
     inner: QuestsInnerModel = field(factory=QuestsInnerModel)
@@ -2499,13 +2586,11 @@ class QuestsResponseModel(Model):
         return sha1_string_with_salt(self.encode_inner(), Salt.QUESTS)
 
     def encode_inner(self) -> str:
-        return generate_random_string(QUESTS_SLICE) + encode_robtop_string(
-            self.inner.to_robtop(), Key.QUESTS
-        )
+        return generate_random_string(QUESTS_SLICE) + encode_quests_inner(self.inner.to_robtop())
 
     @classmethod
     def decode_inner(cls, string: str) -> str:
-        return decode_robtop_string(string[QUESTS_SLICE:], Key.QUESTS)
+        return decode_quests_inner(string[QUESTS_SLICE:])
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:

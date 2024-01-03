@@ -32,7 +32,11 @@ from gd.constants import (
     UNKNOWN,
 )
 from gd.converter import CONVERTER, register_unstructure_hook_omit_client
-from gd.date_time import duration_milliseconds, timestamp_milliseconds, utc_from_timestamp_milliseconds
+from gd.date_time import (
+    duration_milliseconds,
+    timestamp_milliseconds,
+    utc_from_timestamp_milliseconds,
+)
 from gd.either_reward import EitherReward
 from gd.encoding import compress, decompress, unzip_level_string, zip_level_string
 from gd.entity import Entity, EntityData

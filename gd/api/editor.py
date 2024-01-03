@@ -118,6 +118,7 @@ class Editor(Sequence[Object], RobTop):
 
     header: Header = field(factory=Header)
     """The header of the editor."""
+
     objects: List[Object] = field(factory=list)
     """The objects of the editor."""
 
@@ -161,9 +162,9 @@ class Editor(Sequence[Object], RobTop):
         return self
 
     @wrap_iter
-    def iter_groups(self) -> Iterator[int]:
+    def iter_group_ids(self) -> Iterator[int]:
         for object in self.objects:
-            yield from object.groups
+            yield from object.group_ids
 
             if has_target_group(object):
                 yield object.target_group_id
@@ -172,28 +173,28 @@ class Editor(Sequence[Object], RobTop):
                 yield object.additional_group_id
 
     @property
-    def groups(self) -> Set[int]:
-        return self.iter_groups().set()
+    def group_ids(self) -> Set[int]:
+        return self.iter_group_ids().set()
 
     @property
-    def free_group(self) -> int:
-        return find_next(self.groups)
+    def free_group_id(self) -> int:
+        return find_next(self.group_ids)
 
     @wrap_iter
-    def iter_color_ids(self) -> Iterator[int]:
+    def iter_color_channel_ids(self) -> Iterator[int]:
         for object in self.objects:
-            yield object.base_color_id
-            yield object.detail_color_id
+            yield object.base_color_channel_id
+            yield object.detail_color_channel_id
 
         yield from self.color_channels
 
     @property
-    def color_ids(self) -> Set[int]:
-        return self.iter_color_ids().set()
+    def color_channel_ids(self) -> Set[int]:
+        return self.iter_color_channel_ids().set()
 
     @property
-    def free_color_id(self) -> int:
-        return find_next(self.color_ids)
+    def free_color_channel_id(self) -> int:
+        return find_next(self.color_channel_ids)
 
     @wrap_iter
     def iter_start_positions(self) -> Iterator[StartPosition]:
@@ -243,13 +244,7 @@ class Editor(Sequence[Object], RobTop):
     def from_robtop(cls, string: str) -> Self:
         iterator = iter(split_objects(string)).filter(None)
 
-        header_option = iterator.next().extract()
-
-        if header_option is None:
-            header = Header()
-
-        else:
-            header = Header.from_robtop(header_option)
+        header = iterator.next().map(Header.from_robtop).unwrap_or_else(Header)
 
         objects = iterator.map(object_from_robtop).collect_iter(migrate_objects).list()
 

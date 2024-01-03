@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum, Flag
-from typing import Any, Optional
+from typing import Any
 
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, EMPTY
 from gd.string_utils import case_fold
@@ -67,9 +67,9 @@ __all__ = (
     "PulsatingObjectType",
     "PulseType",
     "SpecialBlockType",
-    "SpecialColorID",
-    "LegacyColorID",
-    "LockedType",
+    "SpecialColorChannelID",
+    "LegacyColorChannelID",
+    "LockedToPlayerType",
     "TargetType",
     "SimpleTargetType",
     "TouchToggleMode",
@@ -268,7 +268,7 @@ class LevelLength(Enum):
     DEFAULT = TINY
 
     @classmethod
-    def _missing_(cls, value: Any) -> Optional[LevelLength]:
+    def _missing_(cls, value: Any) -> LevelLength:
         if value < 0:
             return cls.TINY
 
@@ -909,6 +909,10 @@ class PlayerColor(Enum):
 
     DEFAULT = NOT_USED
 
+    @classmethod
+    def _missing_(cls, value: Any) -> PlayerColor:
+        return cls.NOT_USED
+
     def is_not_used(self) -> bool:
         return self is type(self).NOT_USED
 
@@ -1402,7 +1406,7 @@ class SpecialBlockType(Enum):
     H = 1859
 
 
-class SpecialColorID(Enum):
+class SpecialColorChannelID(Enum):
     """Represents special color IDs."""
 
     BACKGROUND = BG = 1000
@@ -1425,7 +1429,7 @@ class SpecialColorID(Enum):
         return self.value
 
 
-class LegacyColorID(Enum):
+class LegacyColorChannelID(Enum):
     DEFAULT = 0
     PLAYER_1 = 1
     PLAYER_2 = 2
@@ -1437,23 +1441,23 @@ class LegacyColorID(Enum):
     LINE_3D = 8
 
     def migrate(self) -> int:
-        return LEGACY_COLOR_ID_TO_COLOR_ID[self]
+        return LEGACY_COLOR_CHANNEL_ID_TO_COLOR_CHANNEL_ID[self]
 
 
-LEGACY_COLOR_ID_TO_COLOR_ID = {
-    LegacyColorID.DEFAULT: 0,
-    LegacyColorID.PLAYER_1: SpecialColorID.PLAYER_1.id,
-    LegacyColorID.PLAYER_2: SpecialColorID.PLAYER_2.id,
-    LegacyColorID.COLOR_1: 1,
-    LegacyColorID.COLOR_2: 2,
-    LegacyColorID.LIGHT_BACKGROUND: SpecialColorID.LIGHT_BACKGROUND.id,
-    LegacyColorID.COLOR_3: 3,
-    LegacyColorID.COLOR_4: 4,
-    LegacyColorID.LINE_3D: SpecialColorID.LINE_3D.id,
+LEGACY_COLOR_CHANNEL_ID_TO_COLOR_CHANNEL_ID = {
+    LegacyColorChannelID.DEFAULT: 0,
+    LegacyColorChannelID.PLAYER_1: SpecialColorChannelID.PLAYER_1.id,
+    LegacyColorChannelID.PLAYER_2: SpecialColorChannelID.PLAYER_2.id,
+    LegacyColorChannelID.COLOR_1: 1,
+    LegacyColorChannelID.COLOR_2: 2,
+    LegacyColorChannelID.LIGHT_BACKGROUND: SpecialColorChannelID.LIGHT_BACKGROUND.id,
+    LegacyColorChannelID.COLOR_3: 3,
+    LegacyColorChannelID.COLOR_4: 4,
+    LegacyColorChannelID.LINE_3D: SpecialColorChannelID.LINE_3D.id,
 }
 
 
-class LockedType(Flag):
+class LockedToPlayerType(Flag):
     NONE = 0
 
     X = 1

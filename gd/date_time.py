@@ -3,6 +3,7 @@ from typing import Iterator, Type
 
 from pendulum import UTC, DateTime, Duration, duration, from_timestamp, now, parse
 from typing_aliases import is_instance
+from wraps import wrap_option
 
 from gd.constants import EMPTY
 from gd.converter import CONVERTER
@@ -252,6 +253,10 @@ DEFAULT_SIMPLE = True
 DEFAULT_DISTANCE_ONLY = False
 
 
+def duration_from_seconds(seconds: float) -> Duration:
+    return duration(seconds=seconds)
+
+
 def duration_from_human(string: str, simple: bool = DEFAULT_SIMPLE) -> Duration:
     cleared = clear_whitespace(string)
 
@@ -303,7 +308,10 @@ def duration_from_human(string: str, simple: bool = DEFAULT_SIMPLE) -> Duration:
 
         seconds += name_to_seconds[name] * duration_seconds
 
-    return duration(seconds=seconds)
+    return duration_from_seconds(seconds)
+
+
+option_duration_from_human = wrap_option(duration_from_human)
 
 
 def duration_to_human(
@@ -370,6 +378,9 @@ def iter_duration(seconds: int) -> Iterator[str]:
 
 def date_time_from_human(string: str, simple: bool = DEFAULT_SIMPLE) -> DateTime:
     return utc_now() + duration_from_human(string, simple=simple)
+
+
+option_date_time_from_human = wrap_option(date_time_from_human)
 
 
 def date_time_to_human(
