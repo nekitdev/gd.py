@@ -1,11 +1,12 @@
 from attrs import define, field
 from iters.iters import iter
 from iters.ordered_set import OrderedSet, ordered_set
-from typing_aliases import StringDict, StringMapping
+from typing_aliases import StringDict
 from typing_extensions import Self
 
 from gd.api.database.common import ONE, prefix
 from gd.api.database.variables import Variables
+from gd.robtop_view import StringRobTopView
 from gd.string_utils import starts_with
 
 __all__ = ("Values",)
@@ -72,13 +73,15 @@ class Values:
         }
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[str]) -> Self:
-        self = cls(variables=Variables.from_robtop_data(data))
+    def from_robtop_view(cls, view: StringRobTopView[str]) -> Self:
+        self = cls()
+
+        self.variables = Variables.from_robtop_view(view)
 
         for prefix, ordered_set in self.prefix_to_ordered_set.items():
             length = len(prefix)
 
-            for name in data.keys():
+            for name in view.mapping:
                 if starts_with(name, prefix):
                     icon_id = int(name[length:])
 

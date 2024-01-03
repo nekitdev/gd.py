@@ -192,9 +192,7 @@ class LevelCommentReference(Entity):
     async def get_level(
         self, get_data: bool = DEFAULT_GET_DATA, use_client: bool = DEFAULT_USE_CLIENT
     ) -> Level:
-        return await self.client.get_level(
-            self.level.id, get_data=get_data, use_client=use_client
-        )
+        return await self.client.get_level(self.level.id, get_data=get_data, use_client=use_client)
 
     def attach_client_unchecked(self, client: Optional[Client]) -> Self:
         self.author.attach_client_unchecked(client)

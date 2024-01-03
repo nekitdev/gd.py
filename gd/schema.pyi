@@ -618,7 +618,6 @@ class LevelBuilder:
     def write(self, writer: BufferedWriter) -> None: ...
     def write_packed(self, writer: BufferedWriter) -> None: ...
 
-
 class SongReferenceSchema:
     @classmethod
     def from_bytes(
@@ -1048,7 +1047,6 @@ class UserBuilder:
     def write(self, writer: BufferedWriter) -> None: ...
     def write_packed(self, writer: BufferedWriter) -> None: ...
 
-
 class ArtistAPISchema:
     @classmethod
     def from_bytes(
@@ -1071,13 +1069,11 @@ class ArtistAPISchema:
     @classmethod
     def new_message(cls) -> ArtistAPIBuilder: ...
 
-
 class ArtistAPIReader:
     id: int
     name: str
 
     def as_builder(self) -> ArtistAPIBuilder: ...
-
 
 class ArtistAPIBuilder:
     id: int

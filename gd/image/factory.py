@@ -258,9 +258,7 @@ class Factory:
                 if sprite.is_rotated():
                     part = part.rotate(QUARTER, resample=BICUBIC, expand=True)
 
-                position = (
-                    center - self.image_rectangle(part).center + sprite.offset.y_flipped()
-                )
+                position = center - self.image_rectangle(part).center + sprite.offset.y_flipped()
 
                 if icon.type.is_ufo():
                     position.y += UFO_OFFSET

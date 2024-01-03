@@ -177,7 +177,9 @@ class UserReference(Entity, Binary):
     ) -> User:
         return await self.client.get_user(self.account_id, simple=simple, friend_state=friend_state)
 
-    async def update(self, simple: bool = DEFAULT_SIMPLE, friend_state: bool = DEFAULT_FRIEND_STATE) -> Self:
+    async def update(
+        self, simple: bool = DEFAULT_SIMPLE, friend_state: bool = DEFAULT_FRIEND_STATE
+    ) -> Self:
         user = await self.get(simple=simple, friend_state=friend_state)
 
         return self.update_from(user.as_reference())
@@ -1172,7 +1174,9 @@ class User(UserReference, Binary):
     def is_banned(self) -> bool:
         return self.banned
 
-    async def update(self, simple: bool = DEFAULT_SIMPLE, friend_state: bool = DEFAULT_FRIEND_STATE) -> Self:
+    async def update(
+        self, simple: bool = DEFAULT_SIMPLE, friend_state: bool = DEFAULT_FRIEND_STATE
+    ) -> Self:
         return self.update_from(await self.get(simple=simple, friend_state=friend_state))
 
     def as_reference(self) -> UserReference:

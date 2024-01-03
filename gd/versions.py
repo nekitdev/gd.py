@@ -37,8 +37,13 @@ class RobTopVersionData(Data):
 
 @frozen(order=True)
 class RobTopVersion(RobTop, Simple[int]):
+    """Represents RobTop versions."""
+
     major: int = field(default=DEFAULT_MAJOR)
+    """The major part of the version."""
+
     minor: int = field(default=DEFAULT_MINOR)
+    """The minor part of the version."""
 
     def __hash__(self) -> int:
         return self.to_value()

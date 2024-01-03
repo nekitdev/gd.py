@@ -21,7 +21,6 @@ Functions marked with `?` are not required for the library to work.
 """
 
 # fmt: off
-# isort: off
 
 from gd.memory.internal.utils import unimplemented
 from gd.platform import DARWIN, WINDOWS

@@ -3,7 +3,7 @@ from iters.iters import iter
 from typing_aliases import Unary
 
 from gd.models_constants import HSV_SEPARATOR
-from gd.models_utils import bool_str, concat_hsv, float_str, int_bool, round_float, split_hsv
+from gd.models_utils import bool_str, concat_hsv, float_str, int_bool, split_hsv
 from gd.robtop import RobTop
 from typing_extensions import Self
 
@@ -62,6 +62,10 @@ V_INITIAL = 1.0
 
 S_CHECKED = False
 V_CHECKED = False
+
+
+def round_float(string: str) -> int:
+    return round(float(string))
 
 
 @define()

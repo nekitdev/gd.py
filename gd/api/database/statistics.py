@@ -2,7 +2,7 @@ from typing import Dict
 
 from attrs import define, field
 from iters.iters import iter
-from typing_aliases import StringDict, StringMapping
+from typing_aliases import StringDict
 from typing_extensions import Self
 
 from gd.api.database.common import NONE, ONE, VALUE_TO_COLLECTED_COINS
@@ -23,7 +23,8 @@ from gd.constants import (
     DEFAULT_USER_COINS,
 )
 from gd.enums import CollectedCoins
-from gd.models_utils import concat_name, parse_get_or, split_name
+from gd.models_utils import concat_name, split_name
+from gd.robtop_view import StringRobTopView
 
 __all__ = ("Statistics",)
 
@@ -89,57 +90,52 @@ class Statistics:
     official_coins: Dict[int, CollectedCoins] = field(factory=dict)
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[str]) -> Self:
-        jumps = parse_get_or(int, DEFAULT_JUMPS, data.get(JUMPS))
-        attempts = parse_get_or(int, DEFAULT_ATTEMPTS, data.get(ATTEMPTS))
+    def from_robtop_view(cls, view: StringRobTopView[str]) -> Self:
+        jumps = view.get_option(JUMPS).map(int).unwrap_or(DEFAULT_JUMPS)
+        attempts = view.get_option(ATTEMPTS).map(int).unwrap_or(DEFAULT_ATTEMPTS)
 
-        official_levels = parse_get_or(int, DEFAULT_LEVELS, data.get(OFFICIAL_LEVELS))
-        normal_levels = parse_get_or(int, DEFAULT_LEVELS, data.get(NORMAL_LEVELS))
+        official_levels = view.get_option(OFFICIAL_LEVELS).map(int).unwrap_or(DEFAULT_LEVELS)
+        normal_levels = view.get_option(NORMAL_LEVELS).map(int).unwrap_or(DEFAULT_LEVELS)
 
-        demons = parse_get_or(int, DEFAULT_DEMONS, data.get(DEMONS))
+        demons = view.get_option(DEMONS).map(int).unwrap_or(DEFAULT_DEMONS)
 
-        stars = parse_get_or(int, DEFAULT_STARS, data.get(STARS))
+        stars = view.get_option(STARS).map(int).unwrap_or(DEFAULT_STARS)
 
-        map_packs = parse_get_or(int, DEFAULT_MAP_PACKS, data.get(MAP_PACKS))
+        map_packs = view.get_option(MAP_PACKS).map(int).unwrap_or(DEFAULT_MAP_PACKS)
 
-        secret_coins = parse_get_or(int, DEFAULT_SECRET_COINS, data.get(SECRET_COINS))
+        secret_coins = view.get_option(SECRET_COINS).map(int).unwrap_or(DEFAULT_SECRET_COINS)
 
-        destroyed = parse_get_or(int, DEFAULT_DESTROYED, data.get(DESTROYED))
+        destroyed = view.get_option(DESTROYED).map(int).unwrap_or(DEFAULT_DESTROYED)
 
-        liked = parse_get_or(int, DEFAULT_LIKED, data.get(LIKED))
+        liked = view.get_option(LIKED).map(int).unwrap_or(DEFAULT_LIKED)
 
-        rated = parse_get_or(int, DEFAULT_RATED, data.get(RATED))
+        rated = view.get_option(RATED).map(int).unwrap_or(DEFAULT_RATED)
 
-        user_coins = parse_get_or(int, DEFAULT_USER_COINS, data.get(USER_COINS))
+        user_coins = view.get_option(USER_COINS).map(int).unwrap_or(DEFAULT_USER_COINS)
 
-        diamonds = parse_get_or(int, DEFAULT_DIAMONDS, data.get(DIAMONDS))
+        diamonds = view.get_option(DIAMONDS).map(int).unwrap_or(DEFAULT_DIAMONDS)
 
-        orbs = parse_get_or(int, DEFAULT_ORBS, data.get(ORBS))
+        orbs = view.get_option(ORBS).map(int).unwrap_or(DEFAULT_ORBS)
 
-        timely_levels = parse_get_or(int, DEFAULT_LEVELS, data.get(TIMELY_LEVELS))
+        timely_levels = view.get_option(TIMELY_LEVELS).map(int).unwrap_or(DEFAULT_LEVELS)
 
-        fire_shards = parse_get_or(int, DEFAULT_SHARDS, data.get(FIRE_SHARDS))
+        fire_shards = view.get_option(FIRE_SHARDS).map(int).unwrap_or(DEFAULT_SHARDS)
+        ice_shards = view.get_option(ICE_SHARDS).map(int).unwrap_or(DEFAULT_SHARDS)
+        poison_shards = view.get_option(POISON_SHARDS).map(int).unwrap_or(DEFAULT_SHARDS)
+        shadow_shards = view.get_option(SHADOW_SHARDS).map(int).unwrap_or(DEFAULT_SHARDS)
+        lava_shards = view.get_option(LAVA_SHARDS).map(int).unwrap_or(DEFAULT_SHARDS)
+        bonus_shards = view.get_option(BONUS_SHARDS).map(int).unwrap_or(DEFAULT_SHARDS)
 
-        ice_shards = parse_get_or(int, DEFAULT_SHARDS, data.get(ICE_SHARDS))
-
-        poison_shards = parse_get_or(int, DEFAULT_SHARDS, data.get(POISON_SHARDS))
-
-        shadow_shards = parse_get_or(int, DEFAULT_SHARDS, data.get(SHADOW_SHARDS))
-
-        lava_shards = parse_get_or(int, DEFAULT_SHARDS, data.get(LAVA_SHARDS))
-
-        bonus_shards = parse_get_or(int, DEFAULT_SHARDS, data.get(BONUS_SHARDS))
-
-        total_orbs = parse_get_or(int, DEFAULT_ORBS, data.get(TOTAL_ORBS))
+        total_orbs = view.get_option(TOTAL_ORBS).map(int).unwrap_or(DEFAULT_ORBS)
 
         value_to_collected_coins = VALUE_TO_COLLECTED_COINS
         none = NONE
 
         official_coins: Dict[int, CollectedCoins] = {}
 
-        for name in data.keys():
+        for name in view.mapping:
             try:
-                level_id, value = iter(split_name(name)).skip(1).map(int).unwrap()  # skip `unique`
+                level_id, value = iter(split_name(name)).skip(1).map(int).tuple()  # skip `unique`
 
             except ValueError:
                 pass

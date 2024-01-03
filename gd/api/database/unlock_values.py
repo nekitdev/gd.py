@@ -1,8 +1,9 @@
 from attrs import define
-from typing_aliases import StringDict, StringMapping
+from typing_aliases import StringDict
 from typing_extensions import Self
 
-from gd.models_utils import bool_str, int_bool, parse_get_or
+from gd.models_utils import bool_str, int_bool
+from gd.robtop_view import StringRobTopView
 
 __all__ = ("UnlockValues",)
 
@@ -29,7 +30,7 @@ COMMUNITY_SHOP_UNLOCKED = "ugv_20"
 POTBOR_DIALOG = "ugv_21"
 YOUTUBE_CHEST_UNLOCKED = "ugv_22"
 FACEBOOK_CHEST_UNLOCKED = "ugv_23"
-TWITTER_CHEST_UNLOCKED = "ugv_24"
+X_CHEST_UNLOCKED = "ugv_24"
 # FIREBIRD_GATE_KEEPER = "ugv_25"
 # TWITCH_CHEST_UNLOCKED = "ugv_26"
 # DISCORD_CHEST_UNLOCKED = "ugv_27"
@@ -58,7 +59,7 @@ DEFAULT_COMMUNITY_SHOP_UNLOCKED = False
 DEFAULT_POTBOR_DIALOG = False
 DEFAULT_YOUTUBE_CHEST_UNLOCKED = False
 DEFAULT_FACEBOOK_CHEST_UNLOCKED = False
-DEFAULT_TWITTER_CHEST_UNLOCKED = False
+DEFAULT_X_CHEST_UNLOCKED = False
 # DEFAULT_FIREBIRD_GATE_KEEPER = False
 # DEFAULT_TWITCH_CHEST_UNLOCKED = False
 # DEFAULT_DISCORD_CHEST_UNLOCKED = False
@@ -89,77 +90,115 @@ class UnlockValues:
     potbor_dialog: bool = DEFAULT_POTBOR_DIALOG
     youtube_chest_unlocked: bool = DEFAULT_YOUTUBE_CHEST_UNLOCKED
     facebook_chest_unlocked: bool = DEFAULT_FACEBOOK_CHEST_UNLOCKED
-    twitter_chest_unlocked: bool = DEFAULT_TWITTER_CHEST_UNLOCKED
+    x_chest_unlocked: bool = DEFAULT_X_CHEST_UNLOCKED
     # firebird_gate_keeper: bool = DEFAULT_FIREBIRD_GATE_KEEPER
     # twitch_chest_unlocked: bool = DEFAULT_TWITCH_CHEST_UNLOCKED
     # discord_chest_unlocked: bool = DEFAULT_DISCORD_CHEST_UNLOCKED
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[str]) -> Self:
-        the_challenge_unlocked = parse_get_or(
-            int_bool, DEFAULT_THE_CHALLENGE_UNLOCKED, data.get(THE_CHALLENGE_UNLOCKED)
+    def from_robtop_data(cls, view: StringRobTopView[str]) -> Self:
+        the_challenge_unlocked = (
+            view.get_option(THE_CHALLENGE_UNLOCKED)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_THE_CHALLENGE_UNLOCKED)
         )
-        gubflub_hint_1 = parse_get_or(int_bool, DEFAULT_GUBFLUB_HINT_1, data.get(GUBFLUB_HINT_1))
-        gubflub_hint_2 = parse_get_or(int_bool, DEFAULT_GUBFLUB_HINT_2, data.get(GUBFLUB_HINT_2))
-        the_challenge_completed = parse_get_or(
-            int_bool, DEFAULT_THE_CHALLENGE_COMPLETED, data.get(THE_CHALLENGE_COMPLETED)
+        gubflub_hint_1 = (
+            view.get_option(GUBFLUB_HINT_1).map(int_bool).unwrap_or(DEFAULT_GUBFLUB_HINT_1)
         )
-        treasure_room_unlocked = parse_get_or(
-            int_bool, DEFAULT_TREASURE_ROOM_UNLOCKED, data.get(TREASURE_ROOM_UNLOCKED)
+        gubflub_hint_2 = (
+            view.get_option(GUBFLUB_HINT_2).map(int_bool).unwrap_or(DEFAULT_GUBFLUB_HINT_2)
         )
-        chamber_of_time_unlocked = parse_get_or(
-            int_bool, DEFAULT_CHAMBER_OF_TIME_UNLOCKED, data.get(CHAMBER_OF_TIME_UNLOCKED)
+        the_challenge_completed = (
+            view.get_option(THE_CHALLENGE_COMPLETED)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_THE_CHALLENGE_COMPLETED)
         )
-        chamber_of_time_discovered = parse_get_or(
-            int_bool, DEFAULT_CHAMBER_OF_TIME_DISCOVERED, data.get(CHAMBER_OF_TIME_DISCOVERED)
+        treasure_room_unlocked = (
+            view.get_option(TREASURE_ROOM_UNLOCKED)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_TREASURE_ROOM_UNLOCKED)
         )
-        master_emblem_shown = parse_get_or(
-            int_bool, DEFAULT_MASTER_EMBLEM_SHOWN, data.get(MASTER_EMBLEM_SHOWN)
+        chamber_of_time_unlocked = (
+            view.get_option(CHAMBER_OF_TIME_UNLOCKED)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_CHAMBER_OF_TIME_UNLOCKED)
         )
-        gate_keeper_dialog = parse_get_or(
-            int_bool, DEFAULT_GATE_KEEPER_DIALOG, data.get(GATE_KEEPER_DIALOG)
+        chamber_of_time_discovered = (
+            view.get_option(CHAMBER_OF_TIME_DISCOVERED)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_CHAMBER_OF_TIME_DISCOVERED)
         )
-        scratch_dialog = parse_get_or(int_bool, DEFAULT_SCRATCH_DIALOG, data.get(SCRATCH_DIALOG))
-        secret_shop_unlocked = parse_get_or(
-            int_bool, DEFAULT_SECRET_SHOP_UNLOCKED, data.get(SECRET_SHOP_UNLOCKED)
+        master_emblem_shown = (
+            view.get_option(MASTER_EMBLEM_SHOWN)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_MASTER_EMBLEM_SHOWN)
         )
-        demon_guardian_dialog = parse_get_or(
-            int_bool, DEFAULT_DEMON_GUARDIAN_DIALOG, data.get(DEMON_GUARDIAN_DIALOG)
+        gate_keeper_dialog = (
+            view.get_option(GATE_KEEPER_DIALOG).map(int_bool).unwrap_or(DEFAULT_GATE_KEEPER_DIALOG)
         )
-        demon_freed = parse_get_or(int_bool, DEFAULT_DEMON_FREED, data.get(DEMON_FREED))
-        demon_key_1 = parse_get_or(int_bool, DEFAULT_DEMON_KEY_1, data.get(DEMON_KEY_1))
-        demon_key_2 = parse_get_or(int_bool, DEFAULT_DEMON_KEY_2, data.get(DEMON_KEY_2))
-        demon_key_3 = parse_get_or(int_bool, DEFAULT_DEMON_KEY_3, data.get(DEMON_KEY_3))
-        shop_keeper_dialog = parse_get_or(
-            int_bool, DEFAULT_SHOP_KEEPER_DIALOG, data.get(SHOP_KEEPER_DIALOG)
+        scratch_dialog = (
+            view.get_option(SCRATCH_DIALOG).map(int_bool).unwrap_or(DEFAULT_SCRATCH_DIALOG)
         )
-        world_online_levels = parse_get_or(
-            int_bool, DEFAULT_WORLD_ONLINE_LEVELS, data.get(WORLD_ONLINE_LEVELS)
+        secret_shop_unlocked = (
+            view.get_option(SECRET_SHOP_UNLOCKED)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_SECRET_SHOP_UNLOCKED)
         )
-        demon_discovered = parse_get_or(
-            int_bool, DEFAULT_DEMON_DISCOVERED, data.get(DEMON_DISCOVERED)
+        demon_guardian_dialog = (
+            view.get_option(DEMON_GUARDIAN_DIALOG)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_DEMON_GUARDIAN_DIALOG)
         )
-        community_shop_unlocked = parse_get_or(
-            int_bool, DEFAULT_COMMUNITY_SHOP_UNLOCKED, data.get(COMMUNITY_SHOP_UNLOCKED)
+        demon_freed = view.get_option(DEMON_FREED).map(int_bool).unwrap_or(DEFAULT_DEMON_FREED)
+        demon_key_1 = view.get_option(DEMON_KEY_1).map(int_bool).unwrap_or(DEFAULT_DEMON_KEY_1)
+        demon_key_2 = view.get_option(DEMON_KEY_2).map(int_bool).unwrap_or(DEFAULT_DEMON_KEY_2)
+        demon_key_3 = view.get_option(DEMON_KEY_3).map(int_bool).unwrap_or(DEFAULT_DEMON_KEY_3)
+        shop_keeper_dialog = (
+            view.get_option(SHOP_KEEPER_DIALOG).map(int_bool).unwrap_or(DEFAULT_SHOP_KEEPER_DIALOG)
         )
-        potbor_dialog = parse_get_or(int_bool, DEFAULT_POTBOR_DIALOG, data.get(POTBOR_DIALOG))
-        youtube_chest_unlocked = parse_get_or(
-            int_bool, DEFAULT_YOUTUBE_CHEST_UNLOCKED, data.get(YOUTUBE_CHEST_UNLOCKED)
+        world_online_levels = (
+            view.get_option(WORLD_ONLINE_LEVELS)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_WORLD_ONLINE_LEVELS)
         )
-        facebook_chest_unlocked = parse_get_or(
-            int_bool, DEFAULT_FACEBOOK_CHEST_UNLOCKED, data.get(FACEBOOK_CHEST_UNLOCKED)
+        demon_discovered = (
+            view.get_option(DEMON_DISCOVERED).map(int_bool).unwrap_or(DEFAULT_DEMON_DISCOVERED)
         )
-        twitter_chest_unlocked = parse_get_or(
-            int_bool, DEFAULT_TWITTER_CHEST_UNLOCKED, data.get(TWITTER_CHEST_UNLOCKED)
+        community_shop_unlocked = (
+            view.get_option(COMMUNITY_SHOP_UNLOCKED)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_COMMUNITY_SHOP_UNLOCKED)
         )
-        # firebird_gate_keeper = parse_get_or(
-        #     int_bool, DEFAULT_FIREBIRD_GATE_KEEPER, data.get(FIREBIRD_GATE_KEEPER)
+        potbor_dialog = (
+            view.get_option(POTBOR_DIALOG).map(int_bool).unwrap_or(DEFAULT_POTBOR_DIALOG)
+        )
+        youtube_chest_unlocked = (
+            view.get_option(YOUTUBE_CHEST_UNLOCKED)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_YOUTUBE_CHEST_UNLOCKED)
+        )
+        facebook_chest_unlocked = (
+            view.get_option(FACEBOOK_CHEST_UNLOCKED)
+            .map(int_bool)
+            .unwrap_or(DEFAULT_FACEBOOK_CHEST_UNLOCKED)
+        )
+        x_chest_unlocked = (
+            view.get_option(X_CHEST_UNLOCKED).map(int_bool).unwrap_or(DEFAULT_X_CHEST_UNLOCKED)
+        )
+        # firebird_gate_keeper = (
+        #     view.get_option(FIREBIRD_GATE_KEEPER)
+        #     .map(int_bool)
+        #     .unwrap_or(DEFAULT_FIREBIRD_GATE_KEEPER)
         # )
-        # twitch_chest_unlocked = parse_get_or(
-        #     int_bool, DEFAULT_TWITCH_CHEST_UNLOCKED, data.get(TWITCH_CHEST_UNLOCKED)
+        # twitch_chest_unlocked = (
+        #     view.get_option(TWITCH_CHEST_UNLOCKED)
+        #     .map(int_bool)
+        #     .unwrap_or(DEFAULT_TWITCH_CHEST_UNLOCKED)
         # )
-        # discord_chest_unlocked = parse_get_or(
-        #     int_bool, DEFAULT_DISCORD_CHEST_UNLOCKED, data.get(DISCORD_CHEST_UNLOCKED)
+        # discord_chest_unlocked = (
+        #     view.get_option(DISCORD_CHEST_UNLOCKED)
+        #     .map(int_bool)
+        #     .unwrap_or(DEFAULT_DISCORD_CHEST_UNLOCKED)
         # )
 
         return cls(
@@ -186,7 +225,7 @@ class UnlockValues:
             potbor_dialog=potbor_dialog,
             youtube_chest_unlocked=youtube_chest_unlocked,
             facebook_chest_unlocked=facebook_chest_unlocked,
-            twitter_chest_unlocked=twitter_chest_unlocked,
+            x_chest_unlocked=x_chest_unlocked,
             # firebird_gate_keeper=firebird_gate_keeper,
             # twitch_chest_unlocked=twitch_chest_unlocked,
             # discord_chest_unlocked=discord_chest_unlocked,
@@ -310,10 +349,10 @@ class UnlockValues:
         if facebook_chest_unlocked:
             data[FACEBOOK_CHEST_UNLOCKED] = bool_str(facebook_chest_unlocked)
 
-        twitter_chest_unlocked = self.is_twitter_chest_unlocked()
+        x_chest_unlocked = self.is_x_chest_unlocked()
 
-        if twitter_chest_unlocked:
-            data[TWITTER_CHEST_UNLOCKED] = bool_str(twitter_chest_unlocked)
+        if x_chest_unlocked:
+            data[X_CHEST_UNLOCKED] = bool_str(x_chest_unlocked)
 
         # firebird_gate_keeper = self.is_firebird_gate_keeper()
 
@@ -401,8 +440,8 @@ class UnlockValues:
     def is_facebook_chest_unlocked(self) -> bool:
         return self.facebook_chest_unlocked
 
-    def is_twitter_chest_unlocked(self) -> bool:
-        return self.twitter_chest_unlocked
+    def is_x_chest_unlocked(self) -> bool:
+        return self.x_chest_unlocked
 
     # def is_firebird_gate_keeper(self) -> bool:
     #     return self.firebird_gate_keeper

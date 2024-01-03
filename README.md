@@ -56,6 +56,10 @@ git = "https://github.com/nekitdev/gd.py.git"
 
 ## Examples
 
+### Interactive
+
+![Song][Song]
+
 ### Fetching
 
 ```python
@@ -204,6 +208,8 @@ If you are interested in contributing to `gd.py`, make sure to take a look at th
 [Check Badge]: https://github.com/nekitdev/gd.py/workflows/check/badge.svg
 [Test Badge]: https://github.com/nekitdev/gd.py/workflows/test/badge.svg
 [Coverage Badge]: https://codecov.io/gh/nekitdev/gd.py/branch/main/graph/badge.svg
+
+[Song]: https://github.com/nekitdev/gd.py/blob/main/assets/song.svg?raw=true
 
 [gd.client.Client.login]: https://nekitdev.github.io/gd.py/reference/client#gd.client.Client.login
 [gd.encoding.hash_password]: https://nekitdev.github.io/gd.py/reference/encoding#gd.encoding.hash_password
