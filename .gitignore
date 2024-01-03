@@ -76,7 +76,3 @@ cython_debug/
 # various logs
 
 *.log
-
-# remove if lock file should be included
-
-poetry.lock
