@@ -97,8 +97,8 @@ from gd.events.listeners import (
 )
 from gd.filters import Filters
 from gd.friend_requests import FriendRequest, FriendRequestReference
-from gd.levels import Level, LevelReference
 from gd.level_packs import Gauntlet, MapPack
+from gd.levels import Level, LevelReference
 from gd.messages import Message, MessageReference
 from gd.queries import EMPTY_QUERY, query
 from gd.rewards import Chest, Quest
@@ -346,7 +346,9 @@ class Client:
             The [`Database`][gd.api.database.Database] loaded.
         """
         database = await self.session.load(
-            account_id=self.account_id, name=self.name, hashed_password=self.hashed_password
+            account_id=self.account_id,
+            name=self.name,
+            hashed_password=self.hashed_password,
         )
 
         self.database = database
@@ -852,7 +854,9 @@ class Client:
     @check_login
     async def delete_level(self, level: LevelReference) -> None:
         await self.session.delete_level(
-            level_id=level.id, account_id=self.account_id, hashed_password=self.hashed_password
+            level_id=level.id,
+            account_id=self.account_id,
+            hashed_password=self.hashed_password,
         )
 
     @check_login
@@ -935,7 +939,10 @@ class Client:
 
     @check_login
     async def send_message(
-        self, user: UserReference, subject: Optional[str] = None, content: Optional[str] = None
+        self,
+        user: UserReference,
+        subject: Optional[str] = None,
+        content: Optional[str] = None,
     ) -> Optional[Message]:
         await self.session.send_message(
             account_id=user.account_id,
@@ -1164,7 +1171,10 @@ class Client:
 
     @check_login
     async def post_level_comment(
-        self, level: LevelReference, content: Optional[str] = None, record: int = DEFAULT_RECORD
+        self,
+        level: LevelReference,
+        content: Optional[str] = None,
+        record: int = DEFAULT_RECORD,
     ) -> Optional[LevelComment]:
         comment_id = await self.session.post_level_comment(
             level_id=level.id,
@@ -1922,7 +1932,10 @@ class LoginContextManager(Generic[C]):
         return self.client
 
     async def __aexit__(
-        self, error_type: Optional[Type[E]], error: Optional[E], traceback: Optional[Traceback]
+        self,
+        error_type: Optional[Type[E]],
+        error: Optional[E],
+        traceback: Optional[Traceback],
     ) -> None:
         await self.logout()
 

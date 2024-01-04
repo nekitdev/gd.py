@@ -1,14 +1,18 @@
 from __future__ import annotations
-from io import BufferedReader, BufferedWriter
 
+from io import BufferedReader, BufferedWriter
 from typing import TYPE_CHECKING, ClassVar, Optional
 
 from attrs import define, field
 from pendulum import DateTime
-from gd.binary import Binary
 
+from gd.binary import Binary
 from gd.constants import DEFAULT_READ, EMPTY
-from gd.date_time import timestamp_milliseconds, utc_from_timestamp_milliseconds, utc_now
+from gd.date_time import (
+    timestamp_milliseconds,
+    utc_from_timestamp_milliseconds,
+    utc_now,
+)
 from gd.entity import Entity
 from gd.enums import MessageType
 from gd.errors import ClientError

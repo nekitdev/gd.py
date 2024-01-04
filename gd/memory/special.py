@@ -23,7 +23,11 @@ class Void(Data[None]):
         return None
 
     def write(
-        self, state: AbstractState, address: int, value: None, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: None,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         pass
 

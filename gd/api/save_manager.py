@@ -186,7 +186,10 @@ class SaveManager(Generic[D]):
             database, apply_xor=apply_xor, follow_system=follow_system
         )
 
-        return (main_data.decode(encoding, errors), levels_data.decode(encoding, errors))
+        return (
+            main_data.decode(encoding, errors),
+            levels_data.decode(encoding, errors),
+        )
 
     def compute_path(self, base_path: Optional[IntoPath], additional_path: IntoPath) -> Path:
         if base_path is None:

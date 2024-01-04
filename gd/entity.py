@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar
 from attrs import Attribute, define, field, fields
 from iters.iters import iter
 from typing_extensions import Self
-from gd.constants import DEFAULT_ID
 
+from gd.constants import DEFAULT_ID
 from gd.converter import CONVERTER, register_unstructure_hook_omit_client
 from gd.defaults import Default
 from gd.errors import ClientError

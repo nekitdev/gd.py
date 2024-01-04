@@ -25,13 +25,7 @@ from gd.color import Color
 from gd.constants import BYTE, DEFAULT_ID
 from gd.enums import GameMode, PlayerColor, Speed
 from gd.models_constants import HEADER_SEPARATOR
-from gd.models_utils import (
-    bool_str,
-    concat_header,
-    float_str,
-    int_bool,
-    split_header,
-)
+from gd.models_utils import bool_str, concat_header, float_str, int_bool, split_header
 from gd.robtop import RobTop
 from gd.robtop_view import RobTopView, StringRobTopView
 
@@ -292,7 +286,9 @@ class Header(RobTop):
             )
 
             line_color_channel_color = Color.from_rgb(
-                line_color_channel_red, line_color_channel_green, line_color_channel_blue
+                line_color_channel_red,
+                line_color_channel_green,
+                line_color_channel_blue,
             )
 
             line_color_channel = NormalCompatibilityColorChannel(line_color_channel_color)

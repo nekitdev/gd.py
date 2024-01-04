@@ -1,6 +1,6 @@
 from typing import Iterable, Mapping, Tuple
-from funcs import unpack_binary
 
+from funcs import unpack_binary
 from funcs.application import partial
 from iters.iters import iter
 from typing_aliases import Pair
@@ -78,7 +78,6 @@ from gd.models_constants import (
     USER_COMMENTS_RESPONSE_COMMENTS_SEPARATOR,
     USER_COMMENTS_RESPONSE_SEPARATOR,
 )
-
 
 option_int = wrap_option(int)
 option_float = wrap_option(float)

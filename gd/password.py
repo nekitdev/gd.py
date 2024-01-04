@@ -1,12 +1,12 @@
 from __future__ import annotations
-from io import BufferedReader, BufferedWriter
 
+from io import BufferedReader, BufferedWriter
 from typing import TYPE_CHECKING, ClassVar, Optional
 
 from attrs import Attribute, define, field
 from typing_extensions import Self
-from gd.binary import Binary
 
+from gd.binary import Binary
 from gd.constants import DEFAULT_COPYABLE
 from gd.converter import CONVERTER
 from gd.encoding import decode_robtop_string, encode_robtop_string

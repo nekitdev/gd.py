@@ -17,10 +17,11 @@ from gd.constants import (
     EMPTY,
 )
 from gd.enums import InternalType, RewardItemType
+from gd.robtop_view import RobTopView, StringRobTopView
 from gd.string_utils import snake_to_camel
 
 if TYPE_CHECKING:
-    from typing_aliases import StringDict, StringMapping
+    from typing_aliases import StringDict
     from typing_extensions import Self
 
 __all__ = ("Reward", "RewardItem", "Quest")
@@ -48,24 +49,29 @@ class Quest:
     count: int = DEFAULT_COUNT
     completed: bool = DEFAULT_COMPLETED
     name: str = EMPTY
-    quest_order: int = DEFAULT_QUEST_ORDER
+    order: int = DEFAULT_QUEST_ORDER
 
     def __hash__(self) -> int:
         return hash(type(self)) ^ self.id
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
-        quest_order = data.get(QUEST_ORDER, DEFAULT_QUEST_ORDER)
-        id = data.get(QUEST_ID, DEFAULT_ID)
-        amount = data.get(QUEST_AMOUNT, DEFAULT_AMOUNT)
-        target_amount = data.get(QUEST_TARGET_AMOUNT, DEFAULT_AMOUNT)
-        diamonds = data.get(QUEST_DIAMONDS, DEFAULT_DIAMONDS)
-        count = data.get(QUEST_COUNT, DEFAULT_COUNT)
-        completed = data.get(QUEST_COMPLETED, DEFAULT_COMPLETED)
-        name = data.get(QUEST_NAME, EMPTY)
+    def from_robtop_view(cls, view: StringRobTopView[Any]) -> Self:
+        id = view.get_option(QUEST_ID).unwrap_or(DEFAULT_ID)
+
+        amount = view.get_option(QUEST_AMOUNT).unwrap_or(DEFAULT_AMOUNT)
+        target_amount = view.get_option(QUEST_TARGET_AMOUNT).unwrap_or(DEFAULT_AMOUNT)
+
+        diamonds = view.get_option(QUEST_DIAMONDS).unwrap_or(DEFAULT_DIAMONDS)
+
+        count = view.get_option(QUEST_COUNT).unwrap_or(DEFAULT_COUNT)
+
+        completed = view.get_option(QUEST_COMPLETED).unwrap_or(DEFAULT_COMPLETED)
+
+        name = view.get_option(QUEST_NAME).unwrap_or(EMPTY)
+
+        order = view.get_option(QUEST_ORDER).unwrap_or(DEFAULT_QUEST_ORDER)
 
         return cls(
-            quest_order=quest_order,
             id=id,
             amount=amount,
             target_amount=target_amount,
@@ -73,6 +79,7 @@ class Quest:
             count=count,
             completed=completed,
             name=name,
+            order=order,
         )
 
     def to_robtop_data(self) -> StringDict[Any]:
@@ -83,10 +90,14 @@ class Quest:
             QUEST_TARGET_AMOUNT: self.target_amount,
             QUEST_DIAMONDS: self.diamonds,
             QUEST_COUNT: self.count,
-            QUEST_COMPLETED: self.is_completed(),
             QUEST_NAME: self.name,
-            QUEST_ORDER: self.quest_order,
+            QUEST_ORDER: self.order,
         }
+
+        completed = self.is_completed()
+
+        if completed:
+            data[QUEST_COMPLETED] = completed
 
         return data
 
@@ -108,18 +119,14 @@ class Reward:
     magic: int = DEFAULT_MAGIC
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
-        item_type_option = data.get(REWARD_ITEM_TYPE)
+    def from_robtop_view(cls, view: StringRobTopView[Any]) -> Self:
+        item_type = (
+            view.get_option(REWARD_ITEM_TYPE).map(RewardItemType).unwrap_or(RewardItemType.DEFAULT)
+        )
 
-        if item_type_option is None:
-            item_type = RewardItemType.DEFAULT
-
-        else:
-            item_type = RewardItemType(item_type_option)
-
-        custom_id = data.get(REWARD_CUSTOM_ID, DEFAULT_ID)
-        amount = data.get(REWARD_AMOUNT, DEFAULT_AMOUNT)
-        magic = data.get(REWARD_MAGIC, DEFAULT_MAGIC)
+        custom_id = view.get_option(REWARD_CUSTOM_ID).unwrap_or(DEFAULT_ID)
+        amount = view.get_option(REWARD_AMOUNT).unwrap_or(DEFAULT_AMOUNT)
+        magic = view.get_option(REWARD_MAGIC).unwrap_or(DEFAULT_MAGIC)
 
         return cls(item_type=item_type, custom_id=custom_id, amount=amount, magic=magic)
 
@@ -159,14 +166,18 @@ class RewardItem:
     rewards: List[Reward] = field(factory=list)
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
-        id = data.get(REWARD_ITEM_ID, DEFAULT_ID)
-        location = data.get(REWARD_ITEM_LOCATION, DEFAULT_LOCATION)
+    def from_robtop_view(cls, view: StringRobTopView[Any]) -> Self:
+        id = view.get_option(REWARD_ITEM_ID).unwrap_or(DEFAULT_ID)
+        location = view.get_option(REWARD_ITEM_LOCATION).unwrap_or(DEFAULT_LOCATION)
 
-        rewards_data = data.get(REWARD_ITEM_REWARDS, {})
+        rewards_data: StringDict[Any] = view.get_option(REWARD_ITEM_REWARDS).unwrap_or_else(dict)
 
         rewards = (
-            iter(rewards_data.values()).skip_while(is_true).map(Reward.from_robtop_data).list()
+            iter(rewards_data.values())
+            .skip_while(is_true)
+            .map(RobTopView)
+            .map(Reward.from_robtop_view)
+            .list()
         )
 
         return cls(id=id, location=location, rewards=rewards)

@@ -56,6 +56,8 @@ def main(count: int, rounding: int) -> None:
 
     click.echo(
         COMPRESSED.format(
-            compressed_data_length, compressed_robtop_data_length, compressed_compression
+            compressed_data_length,
+            compressed_robtop_data_length,
+            compressed_compression,
         )
     )

@@ -28,7 +28,12 @@ if TYPE_CHECKING:
     from typing_aliases import IntoPath
 
     from gd.models import SongModel
-    from gd.schema import SongBuilder, SongReader, SongReferenceBuilder, SongReferenceReader
+    from gd.schema import (
+        SongBuilder,
+        SongReader,
+        SongReferenceBuilder,
+        SongReferenceReader,
+    )
 
 __all__ = ("Song", "SongReference")
 

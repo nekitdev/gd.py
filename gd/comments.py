@@ -1,6 +1,6 @@
 from __future__ import annotations
-from io import BufferedReader, BufferedWriter
 
+from io import BufferedReader, BufferedWriter
 from typing import TYPE_CHECKING, Optional, Union
 
 from attrs import define, field
@@ -16,10 +16,13 @@ from gd.constants import (
     EMPTY,
 )
 from gd.converter import register_unstructure_hook_omit_client
-from gd.date_time import timestamp_milliseconds, utc_from_timestamp_milliseconds, utc_now
+from gd.date_time import (
+    timestamp_milliseconds,
+    utc_from_timestamp_milliseconds,
+    utc_now,
+)
 from gd.entity import Entity
 from gd.levels import Level, LevelReference
-
 from gd.schema import CommentLevelReferenceSchema, CommentSchema
 from gd.schema_constants import NONE, SOME
 from gd.users import UserReference
@@ -29,10 +32,14 @@ if TYPE_CHECKING:
 
     from gd.client import Client
     from gd.models import LevelCommentModel, UserCommentModel
-
     from gd.schema import CommentBuilder, CommentReader
 
-__all__ = ("LevelCommentReference", "UserCommentReference", "LevelComment", "UserComment")
+__all__ = (
+    "LevelCommentReference",
+    "UserCommentReference",
+    "LevelComment",
+    "UserComment",
+)
 
 COMMENT = "{}: {}"
 comment = COMMENT.format

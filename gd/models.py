@@ -1,6 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional, Protocol, Sequence, TypeVar, runtime_checkable
+from typing import (
+    TYPE_CHECKING,
+    List,
+    Optional,
+    Protocol,
+    Sequence,
+    TypeVar,
+    runtime_checkable,
+)
 from urllib.parse import quote, unquote
 
 from attrs import define, field
@@ -781,7 +789,7 @@ class ProfileModel(Model):
             .unwrap_or(CommentState.DEFAULT)
         )
 
-        color_3_id = view.get_option(PROFILE_COLOR_3_ID).map(int).unwrap_or(DEFAULT_COLOR_3_ID)
+        color_3_id = view.get_option(PROFILE_COLOR_3_ID).map(int).unwrap_or(color_2_id)
 
         moons = view.get_option(PROFILE_MOONS).map(int).unwrap_or(DEFAULT_MOONS)
 
@@ -2209,7 +2217,10 @@ class ChestModel(Model):
 
     def to_robtop(self) -> str:
         return iter.of(
-            str(self.orbs), str(self.diamonds), str(self.shard_type.value), str(self.keys)
+            str(self.orbs),
+            str(self.diamonds),
+            str(self.shard_type.value),
+            str(self.keys),
         ).collect(concat_chest)
 
     @classmethod
@@ -2243,7 +2254,11 @@ class QuestModel(Model):
 
     def to_robtop(self) -> str:
         return iter.of(
-            str(self.id), str(self.type.value), str(self.amount), str(self.reward), self.name
+            str(self.id),
+            str(self.type.value),
+            str(self.amount),
+            str(self.reward),
+            self.name,
         ).collect(concat_quest)
 
     @classmethod
@@ -2631,7 +2646,8 @@ class GauntletsResponseModel(Model):
 
     def compute_hash(self) -> str:
         return sha1_string_with_salt(
-            iter(self.gauntlets).map(gauntlet_hash_part).collect(concat_empty), Salt.LEVEL
+            iter(self.gauntlets).map(gauntlet_hash_part).collect(concat_empty),
+            Salt.LEVEL,
         )
 
     @classmethod
@@ -2683,7 +2699,8 @@ class MapPacksResponseModel(Model):
 
     def compute_hash(self) -> str:
         return sha1_string_with_salt(
-            iter(self.map_packs).map(map_packs_hash_part).collect(concat_empty), Salt.LEVEL
+            iter(self.map_packs).map(map_packs_hash_part).collect(concat_empty),
+            Salt.LEVEL,
         )
 
     @classmethod
@@ -2714,7 +2731,9 @@ class MapPacksResponseModel(Model):
         return MAP_PACKS_RESPONSE_SEPARATOR in string
 
 
-def level_leaderboard_user_to_robtop(level_leaderboard_user: LevelLeaderboardUserModel) -> str:
+def level_leaderboard_user_to_robtop(
+    level_leaderboard_user: LevelLeaderboardUserModel,
+) -> str:
     return level_leaderboard_user.to_robtop()
 
 
@@ -2898,7 +2917,8 @@ class SearchLevelsResponseModel(Model):
 
     def compute_hash(self) -> str:
         return sha1_string_with_salt(
-            iter(self.levels).map(search_levels_hash_part).collect(concat_empty), Salt.LEVEL
+            iter(self.levels).map(search_levels_hash_part).collect(concat_empty),
+            Salt.LEVEL,
         )
 
     @classmethod

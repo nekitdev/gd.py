@@ -30,6 +30,7 @@ from gd.api.song import SongAPI
 from gd.constants import (
     DEFAULT_COLOR_1_ID,
     DEFAULT_COLOR_2_ID,
+    DEFAULT_COLOR_3_ID,
     DEFAULT_GLOW,
     DEFAULT_ICON_ID,
     DEFAULT_ID,
@@ -38,11 +39,17 @@ from gd.constants import (
     EMPTY,
     WEEKLY_ID_ADD,
 )
+from gd.encoding import hash_password
 from gd.enums import IconType, Quality
 from gd.filters import Filters
 from gd.models_utils import concat_objects, split_objects
 from gd.plist import PARSER
-from gd.string_utils import password_repr, snake_to_camel, snake_to_camel_with_abbreviations
+from gd.robtop_view import RobTopView, StringRobTopView
+from gd.string_utils import (
+    password_repr,
+    snake_to_camel,
+    snake_to_camel_with_abbreviations,
+)
 from gd.versions import CURRENT_BINARY_VERSION, RobTopVersion
 
 if TYPE_CHECKING:
@@ -83,8 +90,11 @@ UFO_ID = snake_to_camel("player_bird")
 WAVE_ID = snake_to_camel("player_dart")
 ROBOT_ID = snake_to_camel("player_robot")
 SPIDER_ID = snake_to_camel("player_spider")
+SWING_ID = snake_to_camel("player_swing")
+JETPACK_ID = snake_to_camel("player_jetpack")
 COLOR_1_ID = snake_to_camel("player_color")
 COLOR_2_ID = snake_to_camel("player_color_2")
+COLOR_3_ID = snake_to_camel("player_color_3")
 
 TRAIL_ID = snake_to_camel("player_streak")
 
@@ -135,6 +145,7 @@ NAME = "GJA_001"
 PASSWORD = "GJA_002"
 ACCOUNT_ID = "GJA_003"
 SESSION_ID = "GJA_004"
+HASHED_PASSWORD = "GJA_005"
 
 OFFICIAL_LEVELS = "GLM_01"
 SAVED_LEVELS = "GLM_03"
@@ -159,8 +170,6 @@ PRIORITY = "MDLM_002"
 CREATED_LEVELS = "LLM_01"
 BINARY_VERSION_LEVELS = "LLM_02"
 
-UUID_SIZE = 16
-
 ONE = str(1)
 
 IS_ARRAY = snake_to_camel("_is_arr")
@@ -171,6 +180,14 @@ key = KEY.format
 
 
 EXPECTED_STRING_DICT = "expected string dict"
+
+
+def objects_from_robtop(iterable: Iterable[str]) -> List[Object]:
+    return iter(iterable).filter(None).map(object_from_robtop).collect_iter(migrate_objects).list()
+
+
+def create_folder(string: str, name: str) -> Folder:
+    return Folder(int(string), name)
 
 
 @define()
@@ -185,7 +202,7 @@ class Database:
     name: str = field(default=EMPTY)
     id: int = field(default=DEFAULT_ID)
     account_id: int = field(default=DEFAULT_ID)
-    password: str = field(default=EMPTY, repr=password_repr)
+    hashed_password: str = field(default=EMPTY, repr=password_repr)
     session_id: int = field(default=DEFAULT_ID)
 
     cube_id: int = field(default=DEFAULT_ICON_ID)
@@ -195,9 +212,11 @@ class Database:
     wave_id: int = field(default=DEFAULT_ICON_ID)
     robot_id: int = field(default=DEFAULT_ICON_ID)
     spider_id: int = field(default=DEFAULT_ICON_ID)
-    # swing_id: int = field(default=DEFAULT_ICON_ID)
+    swing_id: int = field(default=DEFAULT_ICON_ID)
+    jetpack_id: int = field(default=DEFAULT_ICON_ID)
     color_1_id: int = field(default=DEFAULT_COLOR_1_ID)
     color_2_id: int = field(default=DEFAULT_COLOR_2_ID)
+    color_3_id: int = field(default=DEFAULT_COLOR_3_ID)
     trail_id: int = field(default=DEFAULT_ICON_ID)
     explosion_id: int = field(default=DEFAULT_ICON_ID)
 
@@ -236,7 +255,7 @@ class Database:
 
     quality: Quality = field(default=Quality.DEFAULT)
 
-    achievements: Dict[str, int] = field(factory=dict)
+    achievements: StringDict[int] = field(factory=dict)
 
     official_levels: OrderedSet[OfficialLevelAPI] = field(factory=ordered_set)
     saved_levels: OrderedSet[SavedLevelAPI] = field(factory=ordered_set)
@@ -271,193 +290,245 @@ class Database:
         if is_instance(main_payload, Dict):
             main_data: StringMapping[Any] = main_payload
 
+            main_view: StringRobTopView[Any] = RobTopView(main_payload)
+
         else:
             raise ValueError(EXPECTED_STRING_DICT)
 
-        volume = main_data.get(VOLUME, DEFAULT_VOLUME)
-        sfx_volume = main_data.get(SFX_VOLUME, DEFAULT_VOLUME)
+        volume = main_view.get_option(VOLUME).unwrap_or(DEFAULT_VOLUME)
+        sfx_volume = main_view.get_option(SFX_VOLUME).unwrap_or(DEFAULT_VOLUME)
 
-        uuid_option = main_data.get(UUID_LITERAL)
+        uuid = main_view.get_option(UUID_LITERAL).map(UUID).unwrap_or_else(generate_uuid)
 
-        if uuid_option is None:
-            uuid = generate_uuid()
+        player_name = main_view.get_option(PLAYER_NAME).unwrap_or(EMPTY)
 
-        else:
-            uuid = UUID(uuid_option)
+        id = main_view.get_option(USER_ID).unwrap_or(DEFAULT_ID)
 
-        player_name = main_data.get(PLAYER_NAME, EMPTY)
+        cube_id = main_view.get_option(CUBE_ID).unwrap_or(DEFAULT_ICON_ID)
+        ship_id = main_view.get_option(SHIP_ID).unwrap_or(DEFAULT_ICON_ID)
+        ball_id = main_view.get_option(BALL_ID).unwrap_or(DEFAULT_ICON_ID)
+        ufo_id = main_view.get_option(UFO_ID).unwrap_or(DEFAULT_ICON_ID)
+        wave_id = main_view.get_option(WAVE_ID).unwrap_or(DEFAULT_ICON_ID)
+        robot_id = main_view.get_option(ROBOT_ID).unwrap_or(DEFAULT_ICON_ID)
+        spider_id = main_view.get_option(SPIDER_ID).unwrap_or(DEFAULT_ICON_ID)
+        swing_id = main_view.get_option(SWING_ID).unwrap_or(DEFAULT_ICON_ID)
+        jetpack_id = main_view.get_option(JETPACK_ID).unwrap_or(DEFAULT_ICON_ID)
 
-        id = main_data.get(USER_ID, DEFAULT_ID)
+        color_1_id = main_view.get_option(COLOR_1_ID).unwrap_or(DEFAULT_COLOR_1_ID)
+        color_2_id = main_view.get_option(COLOR_2_ID).unwrap_or(DEFAULT_COLOR_2_ID)
+        color_3_id = main_view.get_option(COLOR_3_ID).unwrap_or(color_2_id)
 
-        cube_id = main_data.get(CUBE_ID, DEFAULT_ICON_ID)
-        ship_id = main_data.get(SHIP_ID, DEFAULT_ICON_ID)
-        ball_id = main_data.get(BALL_ID, DEFAULT_ICON_ID)
-        ufo_id = main_data.get(UFO_ID, DEFAULT_ICON_ID)
-        wave_id = main_data.get(WAVE_ID, DEFAULT_ICON_ID)
-        robot_id = main_data.get(ROBOT_ID, DEFAULT_ICON_ID)
-        spider_id = main_data.get(SPIDER_ID, DEFAULT_ICON_ID)
-        # swing_id = main_data.get(SWING_ID, DEFAULT_ICON_ID)
+        trail_id = main_view.get_option(TRAIL_ID).unwrap_or(DEFAULT_ICON_ID)
 
-        color_1_id = main_data.get(COLOR_1_ID, DEFAULT_COLOR_1_ID)
-        color_2_id = main_data.get(COLOR_2_ID, DEFAULT_COLOR_2_ID)
+        explosion_id = main_view.get_option(EXPLOSION_ID).unwrap_or(DEFAULT_ICON_ID)
 
-        trail_id = main_data.get(TRAIL_ID, DEFAULT_ICON_ID)
+        icon_type = main_view.get_option(ICON_TYPE).map(IconType).unwrap_or(IconType.DEFAULT)
 
-        explosion_id = main_data.get(EXPLOSION_ID, DEFAULT_ICON_ID)
+        glow = main_view.get_option(GLOW).unwrap_or(DEFAULT_GLOW)
 
-        icon_type_option = main_data.get(ICON_TYPE)
+        moderator = main_view.get_option(MODERATOR).unwrap_or(DEFAULT_MODERATOR)
 
-        if icon_type_option is None:
-            icon_type = IconType.DEFAULT
+        name = main_view.get_option(NAME).unwrap_or(EMPTY)
 
-        else:
-            icon_type = IconType(icon_type_option)
+        hashed_password = main_view.get_option(PASSWORD).map(hash_password).unwrap_or(EMPTY)
 
-        glow = main_data.get(GLOW, DEFAULT_GLOW)
+        account_id = main_view.get_option(ACCOUNT_ID).unwrap_or(DEFAULT_ID)
 
-        moderator = main_data.get(MODERATOR, DEFAULT_MODERATOR)
+        session_id = main_view.get_option(SESSION_ID).unwrap_or(DEFAULT_ID)
 
-        name = main_data.get(NAME, EMPTY)
+        hashed_password = main_view.get_option(HASHED_PASSWORD).unwrap_or(hashed_password)
 
-        password = main_data.get(PASSWORD, EMPTY)
+        secret_value = main_view.get_option(SECRET_VALUE).unwrap_or(DEFAULT_SECRET_VALUE)
 
-        account_id = main_data.get(ACCOUNT_ID, DEFAULT_ID)
+        show_song_markers = main_view.get_option(SHOW_SONG_MARKERS).unwrap_or(
+            DEFAULT_SHOW_SONG_MARKERS
+        )
 
-        session_id = main_data.get(SESSION_ID, DEFAULT_ID)
+        show_progress_bar = main_view.get_option(SHOW_PROGRESS_BAR).unwrap_or(
+            DEFAULT_SHOW_PROGRESS_BAR
+        )
 
-        secret_value = main_data.get(SECRET_VALUE, DEFAULT_SECRET_VALUE)
+        clicked_icons = main_view.get_option(CLICKED_ICONS).unwrap_or(DEFAULT_CLICKED_ICONS)
+        clicked_editor = main_view.get_option(CLICKED_EDITOR).unwrap_or(DEFAULT_CLICKED_EDITOR)
+        clicked_practice = main_view.get_option(CLICKED_PRACTICE).unwrap_or(
+            DEFAULT_CLICKED_PRACTICE
+        )
 
-        show_song_markers = main_data.get(SHOW_SONG_MARKERS, DEFAULT_SHOW_SONG_MARKERS)
+        shown_editor_guide = main_view.get_option(SHOWN_EDITOR_GUIDE).unwrap_or(
+            DEFAULT_SHOWN_EDITOR_GUIDE
+        )
+        shown_low_detail = main_view.get_option(SHOWN_LOW_DETAIL).unwrap_or(
+            DEFAULT_SHOWN_LOW_DETAIL
+        )
 
-        show_progress_bar = main_data.get(SHOW_PROGRESS_BAR, DEFAULT_SHOW_PROGRESS_BAR)
+        rated_game = main_view.get_option(RATED_GAME).unwrap_or(DEFAULT_RATED_GAME)
 
-        clicked_icons = main_data.get(CLICKED_ICONS, DEFAULT_CLICKED_ICONS)
-        clicked_editor = main_data.get(CLICKED_EDITOR, DEFAULT_CLICKED_EDITOR)
-        clicked_practice = main_data.get(CLICKED_PRACTICE, DEFAULT_CLICKED_PRACTICE)
+        bootups = main_view.get_option(BOOTUPS).unwrap_or(DEFAULT_BOOTUPS)
 
-        shown_editor_guide = main_data.get(SHOWN_EDITOR_GUIDE, DEFAULT_SHOWN_EDITOR_GUIDE)
-        shown_low_detail = main_data.get(SHOWN_LOW_DETAIL, DEFAULT_SHOWN_LOW_DETAIL)
+        resolution = main_view.get_option(RESOLUTION).unwrap_or(DEFAULT_RESOLUTION)
 
-        rated_game = main_data.get(RATED_GAME, DEFAULT_RATED_GAME)
+        quality = main_view.get_option(QUALITY).map(Quality).unwrap_or(Quality.DEFAULT)
 
-        bootups = main_data.get(BOOTUPS, DEFAULT_BOOTUPS)
+        achievements_data: StringDict[str] = main_view.get_option(ACHIEVEMENTS).unwrap_or_else(dict)
+        achievements_view = RobTopView(achievements_data)
 
-        resolution = main_data.get(RESOLUTION, DEFAULT_RESOLUTION)
+        achievements = {name: int(progress) for name, progress in achievements_view.mapping.items()}
 
-        quality_value = main_data.get(QUALITY)
+        values_data: StringDict[str] = main_view.get_option(VALUES).unwrap_or_else(dict)
+        values_view = RobTopView(values_data)
 
-        if quality_value is None:
-            quality = Quality.DEFAULT
+        values = Values.from_robtop_view(values_view)
 
-        else:
-            quality = Quality(quality_value)
+        unlock_values_data: StringDict[str] = main_view.get_option(UNLOCK_VALUES).unwrap_or_else(
+            dict
+        )
+        unlock_values_view = RobTopView(unlock_values_data)
 
-        achievements_data = main_data.get(ACHIEVEMENTS, {})
+        unlock_values = UnlockValues.from_robtop_view(unlock_values_view)
 
-        achievements = {name: int(progress) for name, progress in achievements_data.items()}
-
-        values_data = main_data.get(VALUES, {})
-
-        values = Values.from_robtop_data(values_data)
-
-        unlock_values_data = main_data.get(UNLOCK_VALUES, {})
-
-        unlock_values = UnlockValues.from_robtop_data(unlock_values_data)
-
-        custom_objects_data = main_data.get(CUSTOM_OBJECTS, {})
-
-        def objects_from_robtop(iterable: Iterable[str]) -> List[Object]:
-            return (
-                iter(iterable)
-                .filter(None)
-                .map(object_from_robtop)
-                .collect_iter(migrate_objects)
-                .list()
-            )
+        custom_objects_data: StringDict[str] = main_view.get_option(CUSTOM_OBJECTS).unwrap_or_else(
+            dict
+        )
 
         custom_objects = (
             iter(custom_objects_data.values()).map(split_objects).map(objects_from_robtop).list()
         )
 
-        storage = Storage.from_robtop_data(main_data)
+        storage = Storage.from_robtop_view(main_view)
 
-        completed_data = main_data.get(COMPLETED, {})
+        completed_data: StringDict[str] = main_view.get_option(COMPLETED).unwrap_or_else(dict)
 
-        completed = Completed.from_robtop_data(completed_data)
+        completed_view = RobTopView(completed_data)
 
-        statistics_data = main_data.get(STATISTICS, {})
+        completed = Completed.from_robtop_view(completed_view)
 
-        statistics = Statistics.from_robtop_data(statistics_data)
+        statistics_data: StringDict[str] = main_view.get_option(STATISTICS).unwrap_or_else(dict)
 
-        official_levels_data = main_data.get(OFFICIAL_LEVELS, {})
+        statistics_view = RobTopView(statistics_data)
+
+        statistics = Statistics.from_robtop_view(statistics_view)
+
+        official_levels_data: StringDict[Any] = main_view.get_option(
+            OFFICIAL_LEVELS
+        ).unwrap_or_else(dict)
+
+        official_levels_view = RobTopView(official_levels_data)
 
         official_levels = (
-            iter(official_levels_data.values()).map(OfficialLevelAPI.from_robtop_data).ordered_set()
+            iter(official_levels_view.mapping.values())
+            .map(RobTopView)
+            .map(OfficialLevelAPI.from_robtop_view)
+            .ordered_set()
         )
 
-        saved_levels_data = main_data.get(SAVED_LEVELS, {})
+        saved_levels_data: StringDict[Any] = main_view.get_option(SAVED_LEVELS).unwrap_or_else(dict)
+
+        saved_levels_view = RobTopView(saved_levels_data)
 
         saved_levels = (
-            iter(saved_levels_data.values()).map(SavedLevelAPI.from_robtop_data).ordered_set()
+            iter(saved_levels_view.mapping.values())
+            .map(RobTopView)
+            .map(SavedLevelAPI.from_robtop_view)
+            .ordered_set()
         )
 
-        followed_data = main_data.get(FOLLOWED, {})
+        followed_data: StringDict[str] = main_view.get_option(FOLLOWED).unwrap_or_else(dict)
 
-        followed = iter(followed_data.keys()).map(int).ordered_set()
+        followed_view = RobTopView(followed_data)
 
-        last_played_data = main_data.get(LAST_PLAYED, {})
+        followed = iter(followed_view.mapping).map(int).ordered_set()
 
-        last_played = iter(last_played_data.keys()).map(int).ordered_set()
+        last_played_data: StringDict[str] = main_view.get_option(LAST_PLAYED).unwrap_or_else(dict)
 
-        timely_levels_data = main_data.get(TIMELY_LEVELS, {})
+        last_played_view = RobTopView(last_played_data)
+
+        last_played = iter(last_played_view.mapping).map(int).ordered_set()
+
+        timely_levels_data: StringDict[Any] = main_view.get_option(TIMELY_LEVELS).unwrap_or_else(
+            dict
+        )
+
+        timely_levels_view = RobTopView(timely_levels_data)
 
         timely_levels = (
-            iter(timely_levels_data.values()).map(TimelyLevelAPI.from_robtop_data).ordered_set()
+            iter(timely_levels_view.mapping.values())
+            .map(RobTopView)
+            .map(TimelyLevelAPI.from_robtop_view)
+            .ordered_set()
         )
 
-        daily_id = main_data.get(DAILY_ID, DEFAULT_ID)
-        weekly_id = main_data.get(WEEKLY_ID, DEFAULT_ID) % WEEKLY_ID_ADD
+        daily_id = main_view.get_option(DAILY_ID).unwrap_or(DEFAULT_ID)
+        weekly_id = main_view.get_option(WEEKLY_ID).unwrap_or(DEFAULT_ID) % WEEKLY_ID_ADD
 
-        liked_data = main_data.get(LIKED, {})
+        liked_data: StringDict[str] = main_view.get_option(LIKED).unwrap_or_else(dict)
 
-        liked = iter(liked_data.keys()).map(Like.from_robtop).ordered_set()
+        liked_view = RobTopView(liked_data)
 
-        rated_data = main_data.get(RATED, {})
+        liked = iter(liked_view.mapping).map(Like.from_robtop).ordered_set()
 
-        rated = iter(rated_data.keys()).map(int).ordered_set()
+        rated_data: StringDict[str] = main_view.get_option(RATED).unwrap_or_else(dict)
 
-        reported_data = main_data.get(REPORTED, {})
+        rated_view = RobTopView(rated_data)
 
-        reported = iter(reported_data.keys()).map(int).ordered_set()
+        rated = iter(rated_view.mapping).map(int).ordered_set()
 
-        demon_rated_data = main_data.get(DEMON_RATED, {})
+        reported_data: StringDict[str] = main_view.get_option(REPORTED).unwrap_or_else(dict)
 
-        demon_rated = iter(demon_rated_data.keys()).map(int).ordered_set()
+        reported_view = RobTopView(reported_data)
 
-        gauntlet_levels_data = main_data.get(GAUNTLET_LEVELS, {})
+        reported = iter(reported_view.mapping).map(int).ordered_set()
+
+        demon_rated_data: StringDict[str] = main_view.get_option(DEMON_RATED).unwrap_or_else(dict)
+
+        demon_rated_view = RobTopView(demon_rated_data)
+
+        demon_rated = iter(demon_rated_view.mapping).map(int).ordered_set()
+
+        gauntlet_levels_data: StringDict[Any] = main_view.get_option(
+            GAUNTLET_LEVELS
+        ).unwrap_or_else(dict)
+
+        gauntlet_levels_view = RobTopView(gauntlet_levels_data)
 
         gauntlet_levels = (
-            iter(gauntlet_levels_data.values()).map(GauntletLevelAPI.from_robtop_data).ordered_set()
+            iter(gauntlet_levels_view.mapping.values())
+            .map(RobTopView)
+            .map(GauntletLevelAPI.from_robtop_view)
+            .ordered_set()
         )
 
-        def create_folder(string: str, name: str) -> Folder:
-            return Folder(int(string), name)
+        saved_folders_data: StringDict[str] = main_view.get_option(SAVED_FOLDERS).unwrap_or_else(
+            dict
+        )
 
-        saved_folders_data = main_data.get(SAVED_FOLDERS, {})
+        saved_folders_view = RobTopView(saved_folders_data)
 
         saved_folders = (
-            iter(saved_folders_data.items()).map(unpack_binary(create_folder)).ordered_set()
+            iter(saved_folders_view.mapping.items()).map(unpack_binary(create_folder)).ordered_set()
         )
 
-        created_folders_data = main_data.get(CREATED_FOLDERS, {})
+        created_folders_data: StringDict[str] = main_view.get_option(
+            CREATED_FOLDERS
+        ).unwrap_or_else(dict)
+
+        created_folders_view = RobTopView(created_folders_data)
 
         created_folders = (
-            iter(created_folders_data.items()).map(unpack_binary(create_folder)).ordered_set()
+            iter(created_folders_view.mapping.items())
+            .map(unpack_binary(create_folder))
+            .ordered_set()
         )
 
-        songs_data = main_data.get(SONGS, {})
+        songs_data: StringDict[Any] = main_view.get_option(SONGS).unwrap_or_else(dict)
 
-        songs = iter(songs_data.values()).map(SongAPI.from_robtop_data).ordered_set()
+        songs_view = RobTopView(songs_data)
+
+        songs = (
+            iter(songs_view.mapping.values())
+            .map(RobTopView)
+            .map(SongAPI.from_robtop_view)
+            .ordered_set()
+        )
 
         priority = main_data.get(PRIORITY, DEFAULT_PRIORITY)
 
@@ -466,22 +537,28 @@ class Database:
         if is_instance(levels_payload, Dict):
             levels_data: StringMapping[Any] = levels_payload
 
+            levels_view = RobTopView(levels_data)
+
         else:
             raise ValueError(EXPECTED_STRING_DICT)
 
-        created_levels_data = levels_data.get(CREATED_LEVELS, {})
-        binary_version_data = levels_data.get(BINARY_VERSION_LEVELS)
+        created_levels_data: StringDict[Any] = levels_view.get_option(
+            CREATED_LEVELS
+        ).unwrap_or_else(dict)
 
-        if binary_version_data is None:
-            binary_version = CURRENT_BINARY_VERSION
+        created_levels_view = RobTopView(created_levels_data)
 
-        else:
-            binary_version = RobTopVersion.from_value(binary_version_data)
+        binary_version = (
+            levels_view.get_option(BINARY_VERSION_LEVELS)
+            .map(RobTopVersion.from_value)
+            .unwrap_or(CURRENT_BINARY_VERSION)
+        )
 
         created_levels = (
-            iter(created_levels_data.values())
+            iter(created_levels_view.mapping.values())
             .skip_while(is_true)
-            .map(CreatedLevelAPI.from_robtop_data)
+            .map(RobTopView)
+            .map(CreatedLevelAPI.from_robtop_view)
             .ordered_set()
         )
 
@@ -493,8 +570,8 @@ class Database:
             name=name,
             id=id,
             account_id=account_id,
-            password=password,
             session_id=session_id,
+            hashed_password=hashed_password,
             cube_id=cube_id,
             ship_id=ship_id,
             ball_id=ball_id,
@@ -502,9 +579,11 @@ class Database:
             wave_id=wave_id,
             robot_id=robot_id,
             spider_id=spider_id,
-            # swing_id=swing_id,
+            swing_id=swing_id,
+            jetpack_id=jetpack_id,
             color_1_id=color_1_id,
             color_2_id=color_2_id,
+            color_3_id=color_3_id,
             trail_id=trail_id,
             explosion_id=explosion_id,
             icon_type=icon_type,
@@ -569,9 +648,11 @@ class Database:
             WAVE_ID: self.wave_id,
             ROBOT_ID: self.robot_id,
             SPIDER_ID: self.spider_id,
-            # SWING_ID: self.swing_id,
+            SWING_ID: self.swing_id,
+            JETPACK_ID: self.jetpack_id,
             COLOR_1_ID: self.color_1_id,
             COLOR_2_ID: self.color_2_id,
+            COLOR_3_ID: self.color_3_id,
             TRAIL_ID: self.trail_id,
             EXPLOSION_ID: self.explosion_id,
             ICON_TYPE: self.icon_type.value,
@@ -592,9 +673,9 @@ class Database:
             DAILY_ID: self.daily_id,
             WEEKLY_ID: self.weekly_id,
             NAME: self.name,
-            PASSWORD: self.password,
             ACCOUNT_ID: self.account_id,
             SESSION_ID: self.session_id,
+            HASHED_PASSWORD: self.hashed_password,
         }
 
         achievements_data = {name: str(progress) for name, progress in self.achievements.items()}

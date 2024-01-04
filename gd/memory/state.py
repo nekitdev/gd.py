@@ -256,12 +256,22 @@ class AbstractState(StateProtocol):
         return self.loaded
 
     def read_isize(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
-        read_isize = {8: self.read_i8, 16: self.read_i16, 32: self.read_i32, 64: self.read_i64}
+        read_isize = {
+            8: self.read_i8,
+            16: self.read_i16,
+            32: self.read_i32,
+            64: self.read_i64,
+        }
 
         return read_isize[self.bits](address, order)
 
     def read_usize(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
-        read_usize = {8: self.read_u8, 16: self.read_u16, 32: self.read_u32, 64: self.read_u64}
+        read_usize = {
+            8: self.read_u8,
+            16: self.read_u16,
+            32: self.read_u32,
+            64: self.read_u64,
+        }
 
         return read_usize[self.bits](address, order)
 
@@ -317,12 +327,22 @@ class AbstractState(StateProtocol):
         return self.read_f64(address, order)
 
     def write_isize(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
-        write_isize = {8: self.write_i8, 16: self.write_i16, 32: self.write_i32, 64: self.write_i64}
+        write_isize = {
+            8: self.write_i8,
+            16: self.write_i16,
+            32: self.write_i32,
+            64: self.write_i64,
+        }
 
         write_isize[self.bits](address, value, order)
 
     def write_usize(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
-        write_usize = {8: self.write_u8, 16: self.write_u16, 32: self.write_u32, 64: self.write_u64}
+        write_usize = {
+            8: self.write_u8,
+            16: self.write_u16,
+            32: self.write_u32,
+            64: self.write_u64,
+        }
 
         write_usize[self.bits](address, value, order)
 

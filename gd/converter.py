@@ -46,7 +46,9 @@ class RegisterUnstructureHook:
         return type
 
 
-def register_unstructure_hook(**overrides: AttributeOverride) -> RegisterUnstructureHook:
+def register_unstructure_hook(
+    **overrides: AttributeOverride,
+) -> RegisterUnstructureHook:
     return RegisterUnstructureHook(overrides)
 
 

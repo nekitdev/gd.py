@@ -1,12 +1,12 @@
 from __future__ import annotations
-from io import BufferedReader, BufferedWriter
 
+from io import BufferedReader, BufferedWriter
 from typing import TYPE_CHECKING, AsyncIterator, Optional
 
 from attrs import define, field
 from iters.async_iters import wrap_async_iter
-from gd.binary import Binary
 
+from gd.binary import Binary
 from gd.color import Color
 from gd.constants import DEFAULT_COINS, DEFAULT_ID, DEFAULT_STARS, EMPTY, UNKNOWN
 from gd.entity import Entity

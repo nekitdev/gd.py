@@ -176,7 +176,11 @@ class StringData(Data[str]):
         return self.compute_type(state.config)(state, address, order).value
 
     def write(
-        self, state: AbstractState, address: int, value: str, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: str,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         self.compute_type(state.config)(state, address, order).value = value
 

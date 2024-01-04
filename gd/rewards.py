@@ -48,7 +48,11 @@ class Chest(Entity):
 
     def __str__(self) -> str:
         return CHEST.format(
-            self.orbs, self.diamonds, self.keys, case_fold(self.shard_type.name), self.duration
+            self.orbs,
+            self.diamonds,
+            self.keys,
+            case_fold(self.shard_type.name),
+            self.duration,
         )
 
     @classmethod

@@ -315,7 +315,10 @@ class _CloseHandleManager:
         return self._handle
 
     def __exit__(
-        self, error_type: Optional[Type[E]], error: Optional[E], traceback: Optional[Traceback]
+        self,
+        error_type: Optional[Type[E]],
+        error: Optional[E],
+        traceback: Optional[Traceback],
     ) -> None:
         _close_handle(self._handle)
 

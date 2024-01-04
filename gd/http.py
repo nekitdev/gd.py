@@ -38,10 +38,9 @@ from typing_aliases import (
     Namespace,
     NormalError,
     Parameters,
-    is_bytes,
-    is_string,
 )
 from typing_aliases import Payload as JSON
+from typing_aliases import is_bytes, is_string
 from yarl import URL
 
 from gd.api.recording import Recording
@@ -130,7 +129,12 @@ from gd.queries import EMPTY_QUERY
 from gd.string_utils import case_fold, password_str, snake_to_camel_with_abbreviations
 from gd.time import Timer
 from gd.version import python_version_info, version_info
-from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, RobTopVersion
+from gd.versions import (
+    CURRENT_BINARY_VERSION,
+    CURRENT_GAME_VERSION,
+    GameVersion,
+    RobTopVersion,
+)
 
 if TYPE_CHECKING:
     from types import TracebackType as Traceback
@@ -1481,7 +1485,12 @@ class HTTPClient:
         return int_or(response, 0)
 
     async def update_level_description(
-        self, level_id: int, description: Optional[str], *, account_id: int, hashed_password: str
+        self,
+        level_id: int,
+        description: Optional[str],
+        *,
+        account_id: int,
+        hashed_password: str,
     ) -> int:
         error_codes = {-1: MissingAccess(CAN_NOT_UPDATE_LEVEL_DESCRIPTION.format(level_id))}
 
@@ -2828,6 +2837,9 @@ class HTTPClientContextManager(Generic[C]):
         ...
 
     def __exit__(
-        self, error_type: Optional[Type[E]], error: Optional[E], traceback: Optional[Traceback]
+        self,
+        error_type: Optional[Type[E]],
+        error: Optional[E],
+        traceback: Optional[Traceback],
     ) -> None:
         self.discard()

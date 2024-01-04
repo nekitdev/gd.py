@@ -4,7 +4,7 @@ from attrs import define, field
 from iters.iters import iter
 from iters.ordered_set import OrderedSet, ordered_set
 from pendulum import DateTime
-from typing_aliases import StringDict, StringMapping
+from typing_aliases import StringDict
 from typing_extensions import Self
 
 from gd.api.database.common import (
@@ -22,6 +22,7 @@ from gd.constants import DEFAULT_KEYS, WEEKLY_ID_ADD
 from gd.date_time import utc_from_timestamp
 from gd.enums import ChestType, CollectedCoins
 from gd.models_utils import concat_name, float_str, split_name
+from gd.robtop_view import RobTopView, StringRobTopView
 from gd.string_utils import remove_prefix, zero_pad
 
 
@@ -33,9 +34,9 @@ class Coins:
     weekly: Dict[int, CollectedCoins] = field(factory=dict)
 
     @classmethod
-    def from_robtop_data(
+    def from_robtop_view(
         cls,
-        data: StringMapping[str],
+        view: StringRobTopView[str],
         daily_id_to_level_id: Dict[int, int],
         weekly_id_to_level_id: Dict[int, int],
     ) -> Self:
@@ -51,7 +52,7 @@ class Coins:
 
         gauntlet_info = GAUNTLET
 
-        for name in data.keys():
+        for name in view.mapping:
             splitted = split_name(name)
 
             try:
@@ -235,72 +236,96 @@ class Storage:
     weekly_rewards: Dict[int, RewardItem] = field(factory=dict)
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
+    def from_robtop_view(cls, view: StringRobTopView[Any]) -> Self:
         daily_id_to_level_id: Dict[int, int] = {}
         weekly_id_to_level_id: Dict[int, int] = {}
 
-        verified_coins_data = data.get(VERIFIED_COINS, {})
+        verified_coins_data: StringDict[str] = view.get_option(VERIFIED_COINS).unwrap_or_else(dict)
 
-        verified_coins = Coins.from_robtop_data(
-            verified_coins_data, daily_id_to_level_id, weekly_id_to_level_id
+        verified_coins_view = RobTopView(verified_coins_data)
+
+        verified_coins = Coins.from_robtop_view(
+            verified_coins_view, daily_id_to_level_id, weekly_id_to_level_id
         )
 
-        unverified_coins_data = data.get(UNVERIFIED_COINS, {})
+        unverified_coins_data: StringDict[str] = view.get_option(UNVERIFIED_COINS).unwrap_or_else(
+            dict
+        )
 
-        unverified_coins = Coins.from_robtop_data(
-            unverified_coins_data, daily_id_to_level_id, weekly_id_to_level_id
+        unverified_coins_view = RobTopView(unverified_coins_data)
+
+        unverified_coins = Coins.from_robtop_view(
+            unverified_coins_view, daily_id_to_level_id, weekly_id_to_level_id
         )
 
         map_pack_prefix = MAP_PACK_PREFIX
 
-        map_pack_stars_data = data.get(MAP_PACK_STARS, {})
+        map_pack_stars_data: StringDict[str] = view.get_option(MAP_PACK_STARS).unwrap_or_else(dict)
+
+        map_pack_stars_view = RobTopView(map_pack_stars_data)
 
         map_pack_stars = {
             int(remove_prefix(name, map_pack_prefix)): int(string)
-            for name, string in map_pack_stars_data.items()
+            for name, string in map_pack_stars_view.mapping.items()
         }
 
-        purchased_items_data = data.get(PURCHASED_ITEMS, {})
+        purchased_items_data: StringDict[str] = view.get_option(PURCHASED_ITEMS).unwrap_or_else(
+            dict
+        )
+
+        purchased_items_view = RobTopView(purchased_items_data)
 
         purchased_items = {
             int(item_id_string): int(price_string)
-            for item_id_string, price_string in purchased_items_data.items()
+            for item_id_string, price_string in purchased_items_view.mapping.items()
         }
 
-        normal_records_data = data.get(NORMAL_RECORDS, {})
+        normal_records_data: StringDict[str] = view.get_option(NORMAL_RECORDS).unwrap_or_else(dict)
+
+        normal_records_view = RobTopView(normal_records_data)
 
         normal_records = {
             int(level_id_string): int(record_string)
-            for level_id_string, record_string in normal_records_data.items()
+            for level_id_string, record_string in normal_records_view.mapping.items()
         }
 
-        normal_stars_data = data.get(NORMAL_STARS, {})
+        normal_stars_data: StringDict[str] = view.get_option(NORMAL_STARS).unwrap_or_else(dict)
+
+        normal_stars_view = RobTopView(normal_stars_data)
 
         normal_stars = {
             int(level_id_string): int(stars_string)
-            for level_id_string, stars_string in normal_stars_data.items()
+            for level_id_string, stars_string in normal_stars_view.mapping.items()
         }
 
-        official_records_data = data.get(OFFICIAL_RECORDS, {})
+        official_records_data: StringDict[str] = view.get_option(OFFICIAL_RECORDS).unwrap_or_else(
+            dict
+        )
+
+        official_records_view = RobTopView(official_records_data)
 
         official_records = {
             int(level_id_string): int(record_string)
-            for level_id_string, record_string in official_records_data.items()
+            for level_id_string, record_string in official_records_view.mapping.items()
         }
 
-        chest_rewards_data = data.get(CHEST_REWARDS, {})
+        chest_rewards_data: StringDict[Any] = view.get_option(CHEST_REWARDS).unwrap_or_else(
+            dict
+        )  # TODO: here
+
+        chest_rewards_view = RobTopView(chest_rewards_data)
 
         small_chest_rewards: Dict[int, RewardItem] = {}
         large_chest_rewards: Dict[int, RewardItem] = {}
 
-        reward_item_type = RewardItem
+        for name, reward_item_data in chest_rewards_view.mapping.items():
+            reward_item_view = RobTopView(reward_item_data)
 
-        for name, reward_item_data in chest_rewards_data.items():
             chest_type_value, chest_id = iter(split_name(name)).map(int).tuple()
 
             chest_type = ChestType(chest_type_value)
 
-            reward_item = reward_item_type.from_robtop_data(reward_item_data)
+            reward_item = RewardItem.from_robtop_view(reward_item_view)
 
             if chest_type.is_small():
                 small_chest_rewards[chest_id] = reward_item
@@ -308,12 +333,15 @@ class Storage:
             if chest_type.is_large():
                 large_chest_rewards[chest_id] = reward_item
 
-        quest_type = Quest
+        active_quests_data: StringDict[Any] = view.get_option(ACTIVE_QUESTS).unwrap_or_else(dict)
 
-        active_quests_data = data.get(ACTIVE_QUESTS, {})
+        active_quests_view = RobTopView(active_quests_data)
 
         active_quests = (
-            iter(active_quests_data.values()).map(quest_type.from_robtop_data).ordered_set()
+            iter(active_quests_view.mapping.values())
+            .map(RobTopView)
+            .map(Quest.from_robtop_view)
+            .ordered_set()
         )
 
         quest = QUEST
@@ -322,12 +350,14 @@ class Storage:
         first = FIRST
         second = SECOND
 
-        diamonds_data = data.get(DIAMONDS, {})
+        diamonds_data: StringDict[str] = view.get_option(DIAMONDS).unwrap_or_else(dict)
+
+        diamonds_view = RobTopView(diamonds_data)
 
         quest_diamonds: Dict[Tuple[int, int], int] = {}
         daily_diamonds: Dict[int, int] = {}
 
-        for name, diamonds_string in diamonds_data.items():
+        for name, diamonds_string in diamonds_view.mapping.items():
             diamonds = int(diamonds_string)
 
             string, value = name[first], name[second:]
@@ -342,20 +372,26 @@ class Storage:
 
                 quest_diamonds[quest_order, count] = diamonds
 
-        upcoming_quests_data = data.get(UPCOMING_QUESTS, {})
+        upcoming_quests_data: StringDict[Any] = view.get_option(UPCOMING_QUESTS).unwrap_or_else(
+            dict
+        )
+
+        upcoming_quests_view = RobTopView(upcoming_quests_data)
 
         upcoming_quests = (
-            iter(upcoming_quests_data.values()).map(quest_type.from_robtop_data).ordered_set()
+            iter(upcoming_quests_view.mapping.values()).map(Quest.from_robtop_view).ordered_set()
         )
 
         weekly_id_add = WEEKLY_ID_ADD
 
-        timely_records_data = data.get(TIMELY_RECORDS, {})
+        timely_records_data: StringDict[str] = view.get_option(TIMELY_RECORDS).unwrap_or_else(dict)
+
+        timely_records_view = RobTopView(timely_records_data)
 
         daily_records: Dict[int, int] = {}
         weekly_records: Dict[int, int] = {}
 
-        for timely_id_string, record_string in timely_records_data.items():
+        for timely_id_string, record_string in timely_records_view.mapping.items():
             timely_id = int(timely_id_string)
             record = int(record_string)
 
@@ -367,12 +403,14 @@ class Storage:
             else:
                 daily_records[timely_id] = record
 
-        timely_stars_data = data.get(TIMELY_STARS, {})
+        timely_stars_data: StringDict[str] = view.get_option(TIMELY_STARS).unwrap_or_else(dict)
+
+        timely_stars_view = RobTopView(timely_stars_data)
 
         daily_stars: Dict[int, int] = {}
         weekly_stars: Dict[int, int] = {}
 
-        for timely_id_string, stars_string in timely_stars_data.items():
+        for timely_id_string, stars_string in timely_stars_view.mapping.items():
             timely_id = int(timely_id_string)
 
             stars = int(stars_string)
@@ -385,62 +423,84 @@ class Storage:
             else:
                 daily_stars[timely_id] = stars
 
-        gauntlet_records_data = data.get(GAUNTLET_RECORDS, {})
+        gauntlet_records_data: StringDict[str] = view.get_option(GAUNTLET_RECORDS).unwrap_or_else(
+            dict
+        )
+
+        gauntlet_records_view = RobTopView(gauntlet_records_data)
 
         gauntlet_records = {
             int(level_id_string): int(record_string)
-            for level_id_string, record_string in gauntlet_records_data.items()
+            for level_id_string, record_string in gauntlet_records_view.mapping.items()
         }
 
-        treasure_chest_rewards_data = data.get(TREASURE_CHEST_REWARDS, {})
+        treasure_chest_rewards_data: StringDict[Any] = view.get_option(
+            TREASURE_CHEST_REWARDS
+        ).unwrap_or_else(dict)
+
+        treasure_chest_rewards_view = RobTopView(treasure_chest_rewards_data)
 
         treasure_chest_rewards = {
-            int(chest_id_string): reward_item_type.from_robtop_data(reward_item_data)
-            for chest_id_string, reward_item_data in treasure_chest_rewards_data.items()
+            int(chest_id_string): RewardItem.from_robtop_view(RobTopView(reward_item_data))
+            for chest_id_string, reward_item_data in treasure_chest_rewards_view.mapping.items()
         }
 
-        total_keys = data.get(TOTAL_KEYS, DEFAULT_KEYS)
+        total_keys = view.get_option(TOTAL_KEYS).unwrap_or(DEFAULT_KEYS)
 
         gauntlet_prefix = GAUNTLET_PREFIX
 
-        rewards_data = data.get(REWARDS, {})
+        rewards_data: StringDict[Any] = view.get_option(REWARDS).unwrap_or_else(dict)
+
+        rewards_view = RobTopView(rewards_data)
 
         official_rewards: Dict[int, RewardItem] = {}
         gauntlet_rewards: Dict[int, RewardItem] = {}
 
-        for name, reward_item_data in rewards_data.items():
+        for name, reward_item_data in rewards_view.mapping.items():
+            reward_item_view = RobTopView(reward_item_data)
+
             string = remove_prefix(name, gauntlet_prefix)
 
-            value = int(string)
+            id = int(string)
 
-            reward_item = reward_item_type.from_robtop_data(reward_item_data)
+            reward_item = RewardItem.from_robtop_view(reward_item_view)
 
             if name == string:
-                official_rewards[value] = reward_item
+                official_rewards[id] = reward_item
 
             else:
-                gauntlet_rewards[value] = reward_item
+                gauntlet_rewards[id] = reward_item
 
-        ad_rewards_data = data.get(AD_REWARDS, {})
+        ad_rewards_data: StringDict[str] = view.get_option(AD_REWARDS).unwrap_or_else(dict)
+
+        ad_rewards_view = RobTopView(ad_rewards_data)
 
         ad_rewards = {
             utc_from_timestamp(float(timestamp_string)): int(orbs_string)
-            for timestamp_string, orbs_string in ad_rewards_data.items()
+            for timestamp_string, orbs_string in ad_rewards_view.mapping.items()
         }
 
-        new_gauntlet_records_data = data.get(NEW_GAUNTLET_RECORDS, {})
+        new_gauntlet_records_data: StringDict[str] = view.get_option(
+            NEW_GAUNTLET_RECORDS
+        ).unwrap_or_else(dict)
+
+        new_gauntlet_records_view = RobTopView(new_gauntlet_records_data)
 
         new_gauntlet_records = {
             int(level_id_string): int(record_string)
-            for level_id_string, record_string in new_gauntlet_records_data.items()
+            for level_id_string, record_string in new_gauntlet_records_view.mapping.items()
         }
 
-        new_timely_records_data = data.get(NEW_TIMELY_RECORDS, {})
+        new_timely_records_data: StringDict[str] = view.get_option(
+            NEW_TIMELY_RECORDS
+        ).unwrap_or_else(dict)
+
+        new_timely_records_view = RobTopView(new_timely_records_data)
 
         new_daily_records: Dict[int, int] = {}
         new_weekly_records: Dict[int, int] = {}
 
-        for timely_id_string, record_string in new_timely_records_data.items():
+        for timely_id_string, record_string in new_timely_records_view.mapping.items():
             timely_id = int(timely_id_string)
 
             record = int(record_string)
@@ -455,13 +515,15 @@ class Storage:
 
         weekly = TIMELY
 
-        weekly_rewards_data = data.get(WEEKLY_REWARDS, {})
+        weekly_rewards_data: StringDict[Any] = view.get_option(WEEKLY_REWARDS).unwrap_or_else(dict)
+
+        weekly_rewards_view = RobTopView(weekly_rewards_data)
 
         weekly_rewards = {
-            int(remove_prefix(name, weekly)) % weekly_id_add: reward_item_type.from_robtop_data(
-                reward_item_data
+            int(remove_prefix(name, weekly)) % weekly_id_add: RewardItem.from_robtop_view(
+                RobTopView(reward_item_data)
             )
-            for name, reward_item_data in weekly_rewards_data.items()
+            for name, reward_item_data in weekly_rewards_view.mapping.items()
         }
 
         return cls(
@@ -553,7 +615,7 @@ class Storage:
         chest_rewards_data.update(large_chest_rewards_data)
 
         active_quests_data = {
-            str(quest.quest_order): quest.to_robtop_data() for quest in self.active_quests
+            str(quest.order): quest.to_robtop_data() for quest in self.active_quests
         }
 
         quest = QUEST
@@ -575,7 +637,7 @@ class Storage:
         diamonds_data.update(daily_diamonds_data)
 
         upcoming_quests_data = {
-            str(quest.quest_order): quest.to_robtop_data() for quest in self.upcoming_quests
+            str(quest.order): quest.to_robtop_data() for quest in self.upcoming_quests
         }
 
         weekly_id_add = WEEKLY_ID_ADD

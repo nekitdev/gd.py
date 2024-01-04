@@ -8,7 +8,12 @@ from named import get_module, get_name, set_module, set_name
 from typing_extensions import Self
 
 from gd.enums import ByteOrder
-from gd.memory.constants import DEFAULT_ALIGNMENT, DEFAULT_PACKED, DEFAULT_SIZE, DEFAULT_VIRTUAL
+from gd.memory.constants import (
+    DEFAULT_ALIGNMENT,
+    DEFAULT_PACKED,
+    DEFAULT_SIZE,
+    DEFAULT_VIRTUAL,
+)
 from gd.memory.data import Data
 from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
 

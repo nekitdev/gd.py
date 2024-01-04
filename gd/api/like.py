@@ -1,13 +1,12 @@
 from attrs import frozen
 from iters.iters import iter
+from typing_extensions import Self
 
 from gd.constants import DEFAULT_ID
 from gd.enums import LikeType
 from gd.models_constants import LIKE_SEPARATOR
 from gd.models_utils import concat_like, split_like
 from gd.robtop import RobTop
-from typing_extensions import Self
-
 
 __all__ = ("Like",)
 
@@ -31,7 +30,11 @@ class Like(RobTop):
 
     def to_robtop(self) -> str:
         return iter.of(
-            LIKE, str(self.type.value), str(self.id), str(int(self.liked)), str(self.other_id)
+            LIKE,
+            str(self.type.value),
+            str(self.id),
+            str(int(self.liked)),
+            str(self.other_id),
         ).collect(concat_like)
 
     @classmethod

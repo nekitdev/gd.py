@@ -149,7 +149,10 @@ class Icon(IconReference):
                 self.get_value(index),
             )
             yield ComplexIconLayer(
-                self.generate_name(part=layer.part), self.color_1, layer, self.get_value(index)
+                self.generate_name(part=layer.part),
+                self.color_1,
+                layer,
+                self.get_value(index),
             )
             yield ComplexIconLayer(
                 self.generate_name(part=layer.part, extra=True),
@@ -171,7 +174,13 @@ def generate_name(
 ) -> str:
     string = concat_under(
         generate_name_iterator(
-            name=name, id=id, part=part, sub_part=sub_part, extra=extra, glow=glow, frame=frame
+            name=name,
+            id=id,
+            part=part,
+            sub_part=sub_part,
+            extra=extra,
+            glow=glow,
+            frame=frame,
         )
     )
 
