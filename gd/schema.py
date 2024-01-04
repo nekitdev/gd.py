@@ -11,8 +11,10 @@ remove_import_hook()
 
 ROOT = Path(__file__).parent
 
+SUBMODULES_NAME = "submodules"
+GD_NAME = "gd"
 SCHEMA_NAME = "schema"
-SCHEMA = ROOT / SCHEMA_NAME
+SCHEMA = ROOT / SUBMODULES_NAME / SCHEMA_NAME / GD_NAME / SCHEMA_NAME
 SCHEMA_SUFFIX = ".capnp"
 
 
