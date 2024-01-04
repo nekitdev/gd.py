@@ -13,7 +13,14 @@ from gd.image.layer import Layer, LayerData, Layers
 if TYPE_CHECKING:
     from typing_extensions import Self
 
-__all__ = ("Animation", "Animations", "AnimationSheet", "AnimationSheetData", "Frame", "Frames")
+__all__ = (
+    "Animation",
+    "Animations",
+    "AnimationSheet",
+    "AnimationSheetData",
+    "Frame",
+    "Frames",
+)
 
 
 @define()

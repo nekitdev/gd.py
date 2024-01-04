@@ -126,8 +126,8 @@ from gd.errors import (
 from gd.filters import Filters
 from gd.friend_requests import FriendRequest
 from gd.http import HTTPClient
-from gd.levels import Level
 from gd.level_packs import Gauntlet, MapPack
+from gd.levels import Level
 from gd.messages import Message
 from gd.password import Password
 from gd.platform import SYSTEM_BITS, SYSTEM_PLATFORM, SYSTEM_PLATFORM_CONFIG
@@ -136,7 +136,14 @@ from gd.queries import Query, query
 from gd.rewards import Chest, Quest
 from gd.session import Session
 from gd.songs import Song
-from gd.users import User, UserCosmetics, UserLeaderboard, UserSocials, UserStates, UserStatistics
+from gd.users import (
+    User,
+    UserCosmetics,
+    UserLeaderboard,
+    UserSocials,
+    UserStates,
+    UserStatistics,
+)
 from gd.version import python_version_info, version_info
 from gd.versions import GameVersion, RobTopVersion
 

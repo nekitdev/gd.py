@@ -1,6 +1,7 @@
 from attrs import define, field
 from iters.ordered_set import OrderedSet, ordered_set
-from typing_aliases import StringDict, StringMapping
+from typing_aliases import StringDict
+from typing_extensions import Self
 
 from gd.api.database.common import (
     DEMON,
@@ -18,7 +19,8 @@ from gd.api.database.common import (
     prefix,
 )
 from gd.constants import WEEKLY_ID_ADD
-from typing_extensions import Self
+from gd.robtop_view import StringRobTopView
+from gd.string_utils import starts_with
 
 __all__ = ("Completed",)
 
@@ -62,7 +64,7 @@ class Completed:
     stars: Stars = field(factory=Stars)
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[str]) -> Self:
+    def from_robtop_view(cls, view: StringRobTopView[str]) -> Self:
         self = cls()
 
         normal = self.normal
@@ -85,8 +87,8 @@ class Completed:
         for prefix, ordered_set in prefix_to_ordered_set.items():
             length = len(prefix)
 
-            for name in data.keys():
-                if name.startswith(prefix):
+            for name in view.mapping:
+                if starts_with(name, prefix):
                     ordered_set.add(int(name[length:]))
 
         weekly_id_add = WEEKLY_ID_ADD
@@ -98,8 +100,8 @@ class Completed:
         prefix = TIMELY_DEMON_PREFIX
         length = len(prefix)
 
-        for name in data.keys():
-            if name.startswith(prefix):
+        for name in view.mapping:
+            if starts_with(name, prefix):
                 timely_id = int(name[length:])
 
                 result, timely_id = divmod(timely_id, weekly_id_add)
@@ -115,8 +117,8 @@ class Completed:
         prefix = TIMELY_STAR_PREFIX
         length = len(prefix)
 
-        for name in data.keys():
-            if name.startswith(prefix):
+        for name in view.mapping:
+            if starts_with(name, prefix):
                 timely_id = int(name[length:])
 
                 result, timely_id = divmod(timely_id, weekly_id_add)

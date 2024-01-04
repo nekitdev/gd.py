@@ -1,6 +1,6 @@
 from __future__ import annotations
-from io import BufferedReader, BufferedWriter
 
+from io import BufferedReader, BufferedWriter
 from typing import TYPE_CHECKING, AsyncIterator, Iterable, Optional, TypeVar
 
 from attrs import define, field
@@ -65,7 +65,12 @@ if TYPE_CHECKING:
     from gd.client import Client
     from gd.comments import LevelComment
     from gd.models import LevelModel, TimelyInfoModel
-    from gd.schema import LevelBuilder, LevelReader, LevelReferenceBuilder, LevelReferenceReader
+    from gd.schema import (
+        LevelBuilder,
+        LevelReader,
+        LevelReferenceBuilder,
+        LevelReferenceReader,
+    )
     from gd.songs import SongReferenceData
 
 __all__ = ("Level", "LevelReference")
@@ -504,7 +509,10 @@ class Level(LevelReference):
         self.update_from(uploaded)
 
     async def update(
-        self, *, get_data: bool = DEFAULT_GET_DATA, use_client: bool = DEFAULT_USE_CLIENT
+        self,
+        *,
+        get_data: bool = DEFAULT_GET_DATA,
+        use_client: bool = DEFAULT_USE_CLIENT,
     ) -> Optional[Level]:
         try:
             if self.is_timely():

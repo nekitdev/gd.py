@@ -1,8 +1,10 @@
 from typing import Any, ClassVar, Optional
 
 from attrs import define, field
+from funcs.primitives import decrement, increment
 from pendulum import Duration, duration
-from typing_aliases import StringDict, StringMapping
+from typing_aliases import StringDict
+from typing_extensions import Self
 
 from gd.api.editor import Editor
 from gd.api.recording import Recording
@@ -14,7 +16,6 @@ from gd.constants import (
     DEFAULT_CLICKS,
     DEFAULT_COINS,
     DEFAULT_COLLECTED,
-    DEFAULT_CUSTOM,
     DEFAULT_DEMON,
     DEFAULT_DENOMINATOR,
     DEFAULT_DOWNLOADS,
@@ -23,13 +24,12 @@ from gd.constants import (
     DEFAULT_HIGH_OBJECT_COUNT,
     DEFAULT_ID,
     DEFAULT_JUMPS,
-    DEFAULT_LEVEL_ORDER,
     DEFAULT_LOW_DETAIL,
     DEFAULT_LOW_DETAIL_TOGGLED,
     DEFAULT_NUMERATOR,
     DEFAULT_OBJECT_COUNT,
     DEFAULT_ORB_PERCENTAGE,
-    DEFAULT_PASSWORD,
+    DEFAULT_ORDER,
     DEFAULT_RATING,
     DEFAULT_RECORD,
     DEFAULT_REVISION,
@@ -44,8 +44,12 @@ from gd.constants import (
     EMPTY,
     WEEKLY_ID_ADD,
 )
+from gd.date_time import duration_from_seconds
 from gd.decorators import cache_by
-from gd.difficulty_parameters import DEFAULT_DEMON_DIFFICULTY_VALUE, DifficultyParameters
+from gd.difficulty_parameters import (
+    DEFAULT_DEMON_DIFFICULTY_VALUE,
+    DifficultyParameters,
+)
 from gd.encoding import (
     decode_base64_string_url_safe,
     encode_base64_string_url_safe,
@@ -60,16 +64,20 @@ from gd.enums import (
     LevelLength,
     LevelType,
     RateType,
+    SpecialRateType,
     TimelyType,
 )
-from gd.models_constants import OBJECTS_SEPARATOR
 from gd.password import Password
 from gd.progress import Progress
+from gd.robtop_view import StringRobTopView
 from gd.songs import SongReference
-from gd.users import User, UserReference
-from gd.versions import CURRENT_BINARY_VERSION, CURRENT_GAME_VERSION, GameVersion, RobTopVersion
-from typing_extensions import Self
-
+from gd.users import UserReference
+from gd.versions import (
+    CURRENT_BINARY_VERSION,
+    CURRENT_GAME_VERSION,
+    GameVersion,
+    RobTopVersion,
+)
 
 INTERNAL_TYPE = "kCEK"
 
@@ -91,7 +99,7 @@ DEMON_DIFFICULTY = "k76"
 DOWNLOADS = "k11"
 VERIFIED = "k14"
 UPLOADED = "k15"
-LEVEL_VERSION = "k16"
+VERSION = "k16"
 REVISION = "k46"
 GAME_VERSION = "k17"
 BINARY_VERSION = "k50"
@@ -104,7 +112,7 @@ RATING = "k22"
 LENGTH = "k23"
 STARS = "k26"
 SCORE = "k27"
-EPIC = "k75"
+SPECIAL_RATE_TYPE = "k75"
 RECORDING = "k34"
 HIDDEN = "k35"
 REQUIRED_COINS = "k37"
@@ -130,7 +138,7 @@ UNLISTED = "k79"
 EDITOR_SECONDS = "k80"
 COPIES_SECONDS = "k81"
 FAVORITE = "k82"
-LEVEL_ORDER = "k83"
+ORDER = "k83"
 FOLDER_ID = "k84"
 BEST_CLICKS = "k85"
 BEST_SECONDS = "k86"
@@ -150,8 +158,6 @@ class BaseLevelAPI:
 
     id: int = field()
     name: str = field()
-    song: SongReference = field()
-    creator: UserReference = field()
     version: int = field(default=DEFAULT_VERSION)
     attempts: int = field(default=DEFAULT_ATTEMPTS)
     normal_record: int = field(default=DEFAULT_RECORD)
@@ -173,27 +179,14 @@ class BaseLevelAPI:
         return hash(type(self)) ^ self.id
 
     @classmethod
-    def default(
-        cls,
-        id: int = DEFAULT_ID,
-        name: str = EMPTY,
-        song_id: int = DEFAULT_ID,
-        song_custom: bool = DEFAULT_CUSTOM,
-        creator_id: int = DEFAULT_ID,
-        creator_account_id: int = DEFAULT_ID,
-    ) -> Self:
-        return cls(
-            id=id,
-            name=name,
-            song=SongReference.default(song_id, song_custom),
-            creator=UserReference.default(creator_id, creator_account_id),
-        )
+    def default(cls, id: int = DEFAULT_ID, name: str = EMPTY) -> Self:
+        return cls(id=id, name=name)
 
     def compute_leaderboard_seed(self) -> int:
         return generate_leaderboard_seed(
             self.best_clicks,
             self.leaderboard_record,
-            int(self.best_time.total_seconds()),
+            round(self.best_time.total_seconds()),
         )
 
     @leaderboard_seed.default
@@ -209,86 +202,49 @@ class BaseLevelAPI:
         return self.check
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
-        id = data.get(ID, DEFAULT_ID)
+    def from_robtop_view(cls, view: StringRobTopView[Any]) -> Self:
+        id = view.get_option(ID).unwrap_or(DEFAULT_ID)
 
-        name = data.get(NAME, EMPTY)
+        name = view.get_option(NAME).unwrap_or(EMPTY)
 
-        official_song_id = data.get(OFFICIAL_SONG_ID, DEFAULT_ID)
+        version = view.get_option(VERSION).unwrap_or(DEFAULT_VERSION)
 
-        if official_song_id:
-            song = SongReference(official_song_id, custom=False)
+        attempts = view.get_option(ATTEMPTS).unwrap_or(DEFAULT_ATTEMPTS)
 
-        else:
-            song_id = data.get(SONG_ID, DEFAULT_ID)
+        normal_record = view.get_option(NORMAL_RECORD).unwrap_or(DEFAULT_RECORD)
+        practice_record = view.get_option(PRACTICE_RECORD).unwrap_or(DEFAULT_RECORD)
 
-            song = SongReference(song_id, custom=True)
+        stars = view.get_option(STARS).unwrap_or(DEFAULT_STARS)
 
-        creator_id = data.get(CREATOR_ID, DEFAULT_ID)
-        creator_name = data.get(CREATOR_NAME, EMPTY)
-        creator_account_id = data.get(CREATOR_ACCOUNT_ID, DEFAULT_ID)
+        jumps = view.get_option(JUMPS).unwrap_or(DEFAULT_JUMPS)
 
-        creator = User(creator_id, creator_name, creator_account_id)
+        binary_version = (
+            view.get_option(BINARY_VERSION)
+            .map(RobTopVersion.from_value)
+            .unwrap_or(CURRENT_BINARY_VERSION)
+        )
 
-        level_version = data.get(LEVEL_VERSION, DEFAULT_VERSION)
+        coins = view.get_option(COINS).unwrap_or(DEFAULT_COINS)
 
-        attempts = data.get(ATTEMPTS, DEFAULT_ATTEMPTS)
+        capacity = view.get_option(CAPACITY).map(Capacity.from_robtop).unwrap_or_else(Capacity)
 
-        normal_record = data.get(NORMAL_RECORD, DEFAULT_RECORD)
-        practice_record = data.get(PRACTICE_RECORD, DEFAULT_RECORD)
+        orb_percentage = view.get_option(ORB_PERCENTAGE).unwrap_or(DEFAULT_ORB_PERCENTAGE)
 
-        stars = data.get(STARS, DEFAULT_STARS)
+        best_clicks = view.get_option(BEST_CLICKS).unwrap_or(DEFAULT_CLICKS)
+        best_time = (
+            view.get_option(BEST_SECONDS).map(duration_from_seconds).unwrap_or_else(duration)
+        )
 
-        jumps = data.get(JUMPS, DEFAULT_JUMPS)
+        progress = view.get_option(PROGRESS).map(Progress.from_robtop).unwrap_or_else(Progress)
 
-        binary_version_option = data.get(BINARY_VERSION)
+        check = view.get_option(CHECK).unwrap_or(DEFAULT_CHECK)
 
-        if binary_version_option is None:
-            binary_version = CURRENT_BINARY_VERSION
-
-        else:
-            binary_version = RobTopVersion.from_value(binary_version_option)
-
-        coins = data.get(COINS, DEFAULT_COINS)
-
-        capacity_option = data.get(CAPACITY)
-
-        if capacity_option is None:
-            capacity = Capacity()
-
-        else:
-            capacity = Capacity.from_robtop(capacity_option)
-
-        orb_percentage = data.get(ORB_PERCENTAGE, DEFAULT_ORB_PERCENTAGE)
-
-        best_clicks = data.get(BEST_CLICKS, DEFAULT_CLICKS)
-
-        best_option = data.get(BEST_SECONDS)
-
-        if best_option is None:
-            best_time = duration()
-
-        else:
-            best_time = duration(seconds=best_option)
-
-        progress_option = data.get(PROGRESS)
-
-        if progress_option is None:
-            progress = Progress()
-
-        else:
-            progress = Progress.from_robtop(progress_option)
-
-        check = data.get(CHECK, DEFAULT_CHECK)
-
-        leaderboard_record = data.get(LEADERBOARD_RECORD, DEFAULT_RECORD)
+        leaderboard_record = view.get_option(LEADERBOARD_RECORD).unwrap_or(DEFAULT_RECORD)
 
         return cls(
             id=id,
             name=name,
-            song=song,
-            creator=creator,
-            version=level_version,
+            version=version,
             attempts=attempts,
             normal_record=normal_record,
             practice_record=practice_record,
@@ -306,17 +262,12 @@ class BaseLevelAPI:
         )
 
     def to_robtop_data(self) -> StringDict[Any]:
-        creator = self.creator
-
         data = {
             INTERNAL_TYPE: InternalType.LEVEL.value,
             TYPE: self.TYPE.value,
             ID: self.id,
             NAME: self.name,
-            CREATOR_ID: creator.id,
-            CREATOR_NAME: creator.name,
-            CREATOR_ACCOUNT_ID: creator.account_id,
-            LEVEL_VERSION: self.version,
+            VERSION: self.version,
             ATTEMPTS: self.attempts,
             NORMAL_RECORD: self.normal_record,
             PRACTICE_RECORD: self.practice_record,
@@ -329,19 +280,10 @@ class BaseLevelAPI:
             BEST_CLICKS: self.best_clicks,
             BEST_SECONDS: int(self.best_time.total_seconds()),
             PROGRESS: self.progress.to_robtop(),
-            CHECK: self.check,
+            CHECK: self.is_check(),
             LEADERBOARD_RECORD: self.leaderboard_record,
             LEADERBOARD_SEED: self.leaderboard_seed,
         }
-
-        song = self.song
-        song_id = song.id
-
-        if song.is_custom():
-            data[SONG_ID] = song_id
-
-        else:
-            data[OFFICIAL_SONG_ID] = song_id
 
         return data
 
@@ -360,32 +302,32 @@ class OfficialLevelAPI(BaseLevelAPI):
         return self.difficulty.is_demon()
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
-        level = super().from_robtop_data(data)
+    def from_robtop_view(cls, view: StringRobTopView[Any]) -> Self:
+        level = super().from_robtop_view(view)
 
-        direct_difficulty_option = data.get(DIRECT_DIFFICULTY)
+        direct_difficulty_value = view.get_option(DIRECT_DIFFICULTY).extract()
 
-        if direct_difficulty_option is None:
+        if direct_difficulty_value is None:
             difficulty = Difficulty.DEFAULT
 
         else:
-            demon = data.get(DEMON, DEFAULT_DEMON)
+            demon = view.get_option(DEMON).unwrap_or(DEFAULT_DEMON)
 
             if demon:
-                demon_difficulty_option = data.get(DEMON_DIFFICULTY)
+                demon_difficulty_value = view.get_option(DEMON_DIFFICULTY).extract()
 
-                if demon_difficulty_option is None:
+                if demon_difficulty_value is None:
                     difficulty = Difficulty.DEMON  # unspecified demon
 
                 else:
                     difficulty = DifficultyParameters(
-                        demon_difficulty_value=demon_difficulty_option, demon=demon
+                        demon_difficulty_value=demon_difficulty_value, demon=demon
                     ).into_difficulty()
 
             else:
-                difficulty = Difficulty(direct_difficulty_option + 1)  # funky way to convert
+                difficulty = Difficulty(increment(direct_difficulty_value))
 
-        required_coins = data.get(REQUIRED_COINS, DEFAULT_COINS)
+        required_coins = view.get_option(REQUIRED_COINS).unwrap_or(DEFAULT_COINS)
 
         level.difficulty = difficulty
 
@@ -400,9 +342,9 @@ class OfficialLevelAPI(BaseLevelAPI):
 
         difficulty_parameters = DifficultyParameters.from_difficulty(difficulty)
 
-        actual = {
+        here = {
             # difficulty parameters
-            DIRECT_DIFFICULTY: difficulty.clamp_demon().value - 1,  # convert back
+            DIRECT_DIFFICULTY: decrement(difficulty.clamp_demon().value),  # convert back
             AUTO: difficulty_parameters.is_auto(),
             DEMON: difficulty_parameters.is_demon(),
             DEMON_DIFFICULTY: difficulty_parameters.demon_difficulty_value,
@@ -410,16 +352,16 @@ class OfficialLevelAPI(BaseLevelAPI):
             REQUIRED_COINS: self.required_coins,
         }
 
-        data.update(actual)
+        data.update(here)
 
         return data
 
 
-DEFAULT_LENGTH_VALUE = LevelLength.DEFAULT.value
-
-
 @define()
 class CustomLevelAPI(BaseLevelAPI):
+    song: SongReference = field(factory=SongReference.default)
+    creator: UserReference = field(factory=UserReference.default)
+
     description: str = field(default=EMPTY)
     unprocessed_data: str = field(default=EMPTY, repr=False)
     length: LevelLength = field(default=LevelLength.DEFAULT)
@@ -433,7 +375,7 @@ class CustomLevelAPI(BaseLevelAPI):
     low_detail_toggled: bool = field(default=DEFAULT_LOW_DETAIL_TOGGLED)
     editor_time: Duration = field(factory=duration)
     copies_time: Duration = field(factory=duration)
-    level_order: int = field(default=DEFAULT_LEVEL_ORDER)
+    order: int = field(default=DEFAULT_ORDER)
     folder_id: int = field(default=DEFAULT_ID)
 
     def __hash__(self) -> int:
@@ -476,56 +418,69 @@ class CustomLevelAPI(BaseLevelAPI):
         return self.low_detail_toggled
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
-        level = super().from_robtop_data(data)
+    def from_robtop_view(cls, view: StringRobTopView[Any]) -> Self:
+        level = super().from_robtop_view(view)
 
-        description = decode_base64_string_url_safe(data.get(DESCRIPTION, EMPTY))
+        official_song_id = view.get_option(OFFICIAL_SONG_ID).extract()
 
-        unprocessed_data = data.get(DATA, EMPTY)
+        if official_song_id is None:
+            song_id = view.get_option(SONG_ID).unwrap_or(DEFAULT_ID)
 
-        if OBJECTS_SEPARATOR in unprocessed_data:
+            song = SongReference(id=song_id, custom=True)
+
+        else:
+            song = SongReference(id=official_song_id, custom=False)
+
+        creator_id = view.get_option(CREATOR_ID).unwrap_or(DEFAULT_ID)
+        creator_name = view.get_option(CREATOR_NAME).unwrap_or(EMPTY)
+        creator_account_id = view.get_option(CREATOR_ACCOUNT_ID).unwrap_or(DEFAULT_ID)
+
+        creator = UserReference(id=creator_id, name=creator_name, account_id=creator_account_id)
+
+        description = (
+            view.get_option(DESCRIPTION).map(decode_base64_string_url_safe).unwrap_or(EMPTY)
+        )
+
+        unprocessed_data = view.get_option(DATA).unwrap_or(EMPTY)
+
+        if Editor.can_be_in(unprocessed_data):
             unprocessed_data = zip_level_string(unprocessed_data)
 
-        length_value = data.get(LENGTH, DEFAULT_LENGTH_VALUE)
+        length = view.get_option(LENGTH).map(LevelLength).unwrap_or(LevelLength.DEFAULT)
 
-        length = LevelLength(length_value)
+        password = (
+            view.get_option(PASSWORD).map(Password.from_robtop_value).unwrap_or_else(Password)
+        )
 
-        password_value = data.get(PASSWORD, DEFAULT_PASSWORD)
+        original_id = view.get_option(ORIGINAL_ID).unwrap_or(DEFAULT_ID)
 
-        password = Password.from_robtop_value(password_value)
+        two_player = view.get_option(TWO_PLAYER).unwrap_or(DEFAULT_TWO_PLAYER)
 
-        original_id = data.get(ORIGINAL_ID, DEFAULT_ID)
+        object_count = view.get_option(OBJECT_COUNT).unwrap_or(DEFAULT_OBJECT_COUNT)
 
-        two_player = data.get(TWO_PLAYER, DEFAULT_TWO_PLAYER)
+        high_object_count = view.get_option(HIGH_OBJECT_COUNT).unwrap_or(DEFAULT_HIGH_OBJECT_COUNT)
 
-        object_count = data.get(OBJECT_COUNT, DEFAULT_OBJECT_COUNT)
+        requested_stars = view.get_option(REQUESTED_STARS).unwrap_or(DEFAULT_STARS)
 
-        high_object_count = data.get(HIGH_OBJECT_COUNT, DEFAULT_HIGH_OBJECT_COUNT)
+        low_detail = view.get_option(LOW_DETAIL).unwrap_or(DEFAULT_LOW_DETAIL)
+        low_detail_toggled = view.get_option(LOW_DETAIL_TOGGLED).unwrap_or(
+            DEFAULT_LOW_DETAIL_TOGGLED
+        )
 
-        requested_stars = data.get(REQUESTED_STARS, DEFAULT_STARS)
+        editor_time = (
+            view.get_option(EDITOR_SECONDS).map(duration_from_seconds).unwrap_or_else(duration)
+        )
+        copies_time = (
+            view.get_option(COPIES_SECONDS).map(duration_from_seconds).unwrap_or_else(duration)
+        )
 
-        low_detail = data.get(LOW_DETAIL, DEFAULT_LOW_DETAIL)
-        low_detail_toggled = data.get(LOW_DETAIL_TOGGLED, DEFAULT_LOW_DETAIL_TOGGLED)
+        order = view.get_option(ORDER).unwrap_or(DEFAULT_ORDER)
 
-        editor_seconds = data.get(EDITOR_SECONDS)
+        folder_id = view.get_option(FOLDER_ID).unwrap_or(DEFAULT_ID)
 
-        if editor_seconds is None:
-            editor_time = duration()
+        level.song = song
 
-        else:
-            editor_time = duration(seconds=editor_seconds)
-
-        copies_seconds = data.get(COPIES_SECONDS)
-
-        if copies_seconds is None:
-            copies_time = duration()
-
-        else:
-            copies_time = duration(seconds=copies_seconds)
-
-        level_order = data.get(LEVEL_ORDER, DEFAULT_LEVEL_ORDER)
-
-        folder_id = data.get(FOLDER_ID, DEFAULT_ID)
+        level.creator = creator
 
         level.description = description
 
@@ -551,7 +506,7 @@ class CustomLevelAPI(BaseLevelAPI):
         level.editor_time = editor_time
         level.copies_time = copies_time
 
-        level.level_order = level_order
+        level.order = order
 
         level.folder_id = folder_id
 
@@ -560,7 +515,12 @@ class CustomLevelAPI(BaseLevelAPI):
     def to_robtop_data(self) -> StringDict[Any]:
         data = super().to_robtop_data()
 
-        actual = {
+        creator = self.creator
+
+        here = {
+            CREATOR_ID: creator.id,
+            CREATOR_NAME: creator.name,
+            CREATOR_ACCOUNT_ID: creator.account_id,
             DESCRIPTION: encode_base64_string_url_safe(self.description),
             DATA: self.unprocessed_data,
             LENGTH: self.length.value,
@@ -572,13 +532,21 @@ class CustomLevelAPI(BaseLevelAPI):
             REQUESTED_STARS: self.requested_stars,
             LOW_DETAIL: self.has_low_detail(),
             LOW_DETAIL_TOGGLED: self.has_low_detail_toggled(),
-            EDITOR_SECONDS: int(self.editor_time.total_seconds()),
-            COPIES_SECONDS: int(self.copies_time.total_seconds()),
-            LEVEL_ORDER: self.level_order,
+            EDITOR_SECONDS: round(self.editor_time.total_seconds()),
+            COPIES_SECONDS: round(self.copies_time.total_seconds()),
+            ORDER: self.order,
             FOLDER_ID: self.folder_id,
         }
 
-        data.update(actual)
+        data.update(here)
+
+        song = self.song
+
+        if song.is_custom():
+            data[SONG_ID] = song.id
+
+        else:
+            data[OFFICIAL_SONG_ID] = song.id
 
         return data
 
@@ -607,22 +575,20 @@ class CreatedLevelAPI(CustomLevelAPI):
         return self.unlisted
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
-        level = super().from_robtop_data(data)
+    def from_robtop_view(cls, view: StringRobTopView[Any]) -> Self:
+        level = super().from_robtop_view(view)
 
-        revision = data.get(REVISION, DEFAULT_REVISION)
+        revision = view.get_option(REVISION).unwrap_or(DEFAULT_REVISION)
 
-        verified = data.get(VERIFIED, DEFAULT_VERIFIED)
+        verified = view.get_option(VERIFIED).unwrap_or(DEFAULT_VERIFIED)
 
-        uploaded = data.get(UPLOADED, DEFAULT_UPLOADED)
+        uploaded = view.get_option(UPLOADED).unwrap_or(DEFAULT_UPLOADED)
 
-        recording_string = data.get(RECORDING, EMPTY)
+        recording = view.get_option(RECORDING).map(Recording.from_robtop).unwrap_or_else(Recording)
 
-        recording = Recording.from_robtop(recording_string)
-
-        first_coin = data.get(FIRST_COIN, DEFAULT_COLLECTED)
-        second_coin = data.get(SECOND_COIN, DEFAULT_COLLECTED)
-        third_coin = data.get(THIRD_COIN, DEFAULT_COLLECTED)
+        first_coin = view.get_option(FIRST_COIN).unwrap_or(DEFAULT_COLLECTED)
+        second_coin = view.get_option(SECOND_COIN).unwrap_or(DEFAULT_COLLECTED)
+        third_coin = view.get_option(THIRD_COIN).unwrap_or(DEFAULT_COLLECTED)
 
         collected_coins = CollectedCoins.NONE
 
@@ -635,7 +601,7 @@ class CreatedLevelAPI(CustomLevelAPI):
         if third_coin:
             collected_coins |= CollectedCoins.THIRD
 
-        unlisted = data.get(UNLISTED, DEFAULT_UNLISTED)
+        unlisted = view.get_option(UNLISTED).unwrap_or(DEFAULT_UNLISTED)
 
         level.revision = revision
 
@@ -687,18 +653,20 @@ class SavedLevelAPI(CustomLevelAPI):
     favorite: bool = field(default=DEFAULT_FAVORITE)
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
-        level = super().from_robtop_data(data)
+    def from_robtop_view(cls, view: StringRobTopView[Any]) -> Self:
+        level = super().from_robtop_view(view)
 
-        difficulty_numerator = data.get(DIFFICULTY_NUMERATOR, DEFAULT_NUMERATOR)
+        difficulty_numerator = view.get_option(DIFFICULTY_NUMERATOR).unwrap_or(DEFAULT_NUMERATOR)
+        difficulty_denominator = view.get_option(DIFFICULTY_DENOMINATOR).unwrap_or(
+            DEFAULT_DENOMINATOR
+        )
 
-        difficulty_denominator = data.get(DIFFICULTY_DENOMINATOR, DEFAULT_DENOMINATOR)
+        demon_difficulty_value = view.get_option(DEMON_DIFFICULTY).unwrap_or(
+            DEFAULT_DEMON_DIFFICULTY_VALUE
+        )
 
-        demon_difficulty_value = data.get(DEMON_DIFFICULTY, DEFAULT_DEMON_DIFFICULTY_VALUE)
-
-        auto = data.get(AUTO, DEFAULT_AUTO)
-
-        demon = data.get(DEMON, DEFAULT_DEMON)
+        auto = view.get_option(AUTO).unwrap_or(DEFAULT_AUTO)
+        demon = view.get_option(DEMON).unwrap_or(DEFAULT_DEMON)
 
         difficulty_parameters = DifficultyParameters(
             difficulty_numerator=difficulty_numerator,
@@ -710,26 +678,24 @@ class SavedLevelAPI(CustomLevelAPI):
 
         difficulty = difficulty_parameters.into_difficulty()
 
-        downloads = data.get(DOWNLOADS, DEFAULT_DOWNLOADS)
+        downloads = view.get_option(DOWNLOADS).unwrap_or(DEFAULT_DOWNLOADS)
 
-        game_version_value = data.get(GAME_VERSION)
+        game_version = (
+            view.get_option(GAME_VERSION)
+            .map(GameVersion.from_robtop_value)
+            .unwrap_or(CURRENT_GAME_VERSION)
+        )
 
-        if game_version_value is None:
-            game_version = CURRENT_GAME_VERSION
+        rating = view.get_option(RATING).unwrap_or(DEFAULT_RATING)
 
-        else:
-            game_version = GameVersion.from_robtop_value(game_version_value)
-
-        rating = data.get(RATING, DEFAULT_RATING)
-
-        stars = data.get(STARS, DEFAULT_STARS)
+        stars = view.get_option(STARS).unwrap_or(DEFAULT_STARS)
 
         rate_type = RateType.NOT_RATED
 
         if stars > 0:
             rate_type = RateType.RATED
 
-        score = data.get(SCORE, DEFAULT_SCORE)
+        score = view.get_option(SCORE).unwrap_or(DEFAULT_SCORE)
 
         if score < 0:
             score = 0
@@ -737,16 +703,26 @@ class SavedLevelAPI(CustomLevelAPI):
         if score > 0:
             rate_type = RateType.FEATURED
 
-        epic = data.get(EPIC, DEFAULT_EPIC)
+        special_rate_type = (
+            view.get_option(SPECIAL_RATE_TYPE)
+            .map(SpecialRateType)
+            .unwrap_or(SpecialRateType.DEFAULT)
+        )
 
-        if epic:
+        if special_rate_type.is_epic():
             rate_type = RateType.EPIC
 
-        hidden = data.get(HIDDEN, DEFAULT_HIDDEN)
+        if special_rate_type.is_legendary():
+            rate_type = RateType.LEGENDARY
 
-        verified_coins = data.get(VERIFIED_COINS, DEFAULT_VERIFIED_COINS)
+        if special_rate_type.is_mythic():
+            rate_type = RateType.MYTHIC
 
-        favorite = data.get(FAVORITE, DEFAULT_FAVORITE)
+        hidden = view.get_option(HIDDEN).unwrap_or(DEFAULT_HIDDEN)
+
+        verified_coins = view.get_option(VERIFIED_COINS).unwrap_or(DEFAULT_VERIFIED_COINS)
+
+        favorite = view.get_option(FAVORITE).unwrap_or(DEFAULT_FAVORITE)
 
         level.difficulty = difficulty
 
@@ -775,7 +751,20 @@ class SavedLevelAPI(CustomLevelAPI):
 
         difficulty_parameters = DifficultyParameters.from_difficulty(self.difficulty)
 
-        actual = {
+        rate_type = self.rate_type
+
+        special_rate_type = SpecialRateType.NONE
+
+        if rate_type.is_epic():
+            special_rate_type = SpecialRateType.EPIC
+
+        if rate_type.is_legendary():
+            special_rate_type = SpecialRateType.LEGENDARY
+
+        if rate_type.is_mythic():
+            special_rate_type = SpecialRateType.MYTHIC
+
+        here = {
             # difficulty parameters
             DIFFICULTY_NUMERATOR: difficulty_parameters.difficulty_numerator,
             DIFFICULTY_DENOMINATOR: difficulty_parameters.difficulty_denominator,
@@ -788,13 +777,13 @@ class SavedLevelAPI(CustomLevelAPI):
             RATING: self.rating,
             STARS: self.stars,
             SCORE: self.score,
-            EPIC: self.is_epic(),
+            SPECIAL_RATE_TYPE: special_rate_type.value,
             HIDDEN: self.is_hidden(),
             VERIFIED_COINS: self.has_verified_coins(),
             FAVORITE: self.is_favorite(),
         }
 
-        data.update(actual)
+        data.update(here)
 
         return data
 
@@ -838,10 +827,10 @@ class TimelyLevelAPI(SavedLevelAPI):
         return hash(type(self)) ^ self.id
 
     @classmethod
-    def from_robtop_data(cls, data: StringMapping[Any]) -> Self:
-        level = super().from_robtop_data(data)
+    def from_robtop_view(cls, view: StringRobTopView[Any]) -> Self:
+        level = super().from_robtop_view(view)
 
-        timely_id = data.get(TIMELY_ID, DEFAULT_ID)
+        timely_id = view.get_option(TIMELY_ID).unwrap_or(DEFAULT_ID)
 
         result, timely_id = divmod(timely_id, WEEKLY_ID_ADD)
 

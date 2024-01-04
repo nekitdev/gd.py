@@ -262,7 +262,10 @@ class Session:
         hashed_password: Optional[str] = None,
     ) -> LeaderboardResponseModel:
         response = await self.http.get_leaderboard(
-            strategy=strategy, count=count, account_id=account_id, hashed_password=hashed_password
+            strategy=strategy,
+            count=count,
+            account_id=account_id,
+            hashed_password=hashed_password,
         )
 
         return LeaderboardResponseModel.from_robtop(response)
@@ -319,7 +322,12 @@ class Session:
         )
 
     async def update_level_description(
-        self, level_id: int, description: Optional[str], *, account_id: int, hashed_password: str
+        self,
+        level_id: int,
+        description: Optional[str],
+        *,
+        account_id: int,
+        hashed_password: str,
     ) -> None:
         await self.http.update_level_description(
             level_id=level_id,
@@ -424,7 +432,13 @@ class Session:
         )
 
     async def suggest_level(
-        self, level_id: int, stars: int, feature: bool, *, account_id: int, hashed_password: str
+        self,
+        level_id: int,
+        stars: int,
+        feature: bool,
+        *,
+        account_id: int,
+        hashed_password: str,
     ) -> None:
         await self.http.suggest_level(
             level_id=level_id,

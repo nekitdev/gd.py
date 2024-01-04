@@ -76,3 +76,8 @@ cython_debug/
 # various logs
 
 *.log
+
+# for testing
+
+main.json
+levels.json

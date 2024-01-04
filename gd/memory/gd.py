@@ -1021,7 +1021,12 @@ class EditorLayer(BaseGameLayer):
 
     _pad_6 = Field(
         DynamicFill(
-            darwin_x32=8, darwin_x64=8, windows_x32=8, windows_x64=8, android_x32=0, android_x64=0
+            darwin_x32=8,
+            darwin_x64=8,
+            windows_x32=8,
+            windows_x64=8,
+            android_x32=0,
+            android_x64=0,
         )
     )
 
@@ -1037,7 +1042,12 @@ class EditorLayer(BaseGameLayer):
 
     _pad_7 = Field(
         DynamicFill(
-            darwin_x32=4, darwin_x64=8, windows_x32=4, windows_x64=8, android_x32=0, android_x64=0
+            darwin_x32=4,
+            darwin_x64=8,
+            windows_x32=4,
+            windows_x64=8,
+            android_x32=0,
+            android_x64=0,
         )
     )
 

@@ -15,6 +15,7 @@ from gd.constants import (
     DEFAULT_LEVELS,
     DEFAULT_LIKED,
     DEFAULT_MAP_PACKS,
+    DEFAULT_MOONS,
     DEFAULT_ORBS,
     DEFAULT_RATED,
     DEFAULT_SECRET_COINS,
@@ -23,7 +24,7 @@ from gd.constants import (
     DEFAULT_USER_COINS,
 )
 from gd.enums import CollectedCoins
-from gd.models_utils import concat_name, split_name
+from gd.models_utils import concat_name, int_bool, split_name
 from gd.robtop_view import StringRobTopView
 
 __all__ = ("Statistics",)
@@ -50,6 +51,16 @@ SHADOW_SHARDS = "19"
 LAVA_SHARDS = "20"
 BONUS_SHARDS = "21"
 TOTAL_ORBS = "22"
+EARTH_SHARDS = "23"
+BLOOD_SHARDS = "24"
+METAL_SHARDS = "25"
+LIGHT_SHARDS = "26"
+SOUL_SHARDS = "27"
+MOONS = "28"
+
+SCROLL_COIN = "secret04"
+VAULT_COIN = "secret06"
+CHAMBER_COIN = "secretB03"
 
 DEFAULT_SCROLL_COIN = False
 DEFAULT_VAULT_COIN = False
@@ -82,12 +93,27 @@ class Statistics:
     lava_shards: int = field(default=DEFAULT_SHARDS)
     bonus_shards: int = field(default=DEFAULT_SHARDS)
     total_orbs: int = field(default=DEFAULT_ORBS)
+    earth_shards: int = field(default=DEFAULT_SHARDS)
+    blood_shards: int = field(default=DEFAULT_SHARDS)
+    metal_shards: int = field(default=DEFAULT_SHARDS)
+    light_shards: int = field(default=DEFAULT_SHARDS)
+    soul_shards: int = field(default=DEFAULT_SHARDS)
+    moons: int = field(default=DEFAULT_ORBS)
 
     scroll_coin: bool = field(default=DEFAULT_SCROLL_COIN)
     vault_coin: bool = field(default=DEFAULT_VAULT_COIN)
     chamber_coin: bool = field(default=DEFAULT_CHAMBER_COIN)
 
     official_coins: Dict[int, CollectedCoins] = field(factory=dict)
+
+    def has_scroll_coin(self) -> bool:
+        return self.scroll_coin
+
+    def has_vault_coin(self) -> bool:
+        return self.vault_coin
+
+    def has_chamber_coin(self) -> bool:
+        return self.chamber_coin
 
     @classmethod
     def from_robtop_view(cls, view: StringRobTopView[str]) -> Self:
@@ -127,6 +153,18 @@ class Statistics:
         bonus_shards = view.get_option(BONUS_SHARDS).map(int).unwrap_or(DEFAULT_SHARDS)
 
         total_orbs = view.get_option(TOTAL_ORBS).map(int).unwrap_or(DEFAULT_ORBS)
+
+        earth_shards = view.get_option(EARTH_SHARDS).map(int).unwrap_or(DEFAULT_SHARDS)
+        blood_shards = view.get_option(BLOOD_SHARDS).map(int).unwrap_or(DEFAULT_SHARDS)
+        metal_shards = view.get_option(METAL_SHARDS).map(int).unwrap_or(DEFAULT_SHARDS)
+        light_shards = view.get_option(LIGHT_SHARDS).map(int).unwrap_or(DEFAULT_SHARDS)
+        soul_shards = view.get_option(SOUL_SHARDS).map(int).unwrap_or(DEFAULT_SHARDS)
+
+        moons = view.get_option(MOONS).map(int).unwrap_or(DEFAULT_MOONS)
+
+        scroll_coin = view.get_option(SCROLL_COIN).map(int_bool).unwrap_or(DEFAULT_SCROLL_COIN)
+        vault_coin = view.get_option(VAULT_COIN).map(int_bool).unwrap_or(DEFAULT_VAULT_COIN)
+        chamber_coin = view.get_option(CHAMBER_COIN).map(int_bool).unwrap_or(DEFAULT_CHAMBER_COIN)
 
         value_to_collected_coins = VALUE_TO_COLLECTED_COINS
         none = NONE
@@ -169,6 +207,15 @@ class Statistics:
             lava_shards=lava_shards,
             bonus_shards=bonus_shards,
             total_orbs=total_orbs,
+            earth_shards=earth_shards,
+            blood_shards=blood_shards,
+            metal_shards=metal_shards,
+            light_shards=light_shards,
+            soul_shards=soul_shards,
+            moons=moons,
+            scroll_coin=scroll_coin,
+            vault_coin=vault_coin,
+            chamber_coin=chamber_coin,
             official_coins=official_coins,
         )
 
@@ -196,11 +243,32 @@ class Statistics:
             LAVA_SHARDS: str(self.lava_shards),
             BONUS_SHARDS: str(self.bonus_shards),
             TOTAL_ORBS: str(self.total_orbs),
+            EARTH_SHARDS: str(self.earth_shards),
+            BLOOD_SHARDS: str(self.blood_shards),
+            METAL_SHARDS: str(self.metal_shards),
+            LIGHT_SHARDS: str(self.light_shards),
+            SOUL_SHARDS: str(self.soul_shards),
+            MOONS: str(self.moons),
         }
 
         value_to_collected_coins = VALUE_TO_COLLECTED_COINS
         unique = UNIQUE
         one = ONE
+
+        if self.has_scroll_coin():
+            name = iter.of(unique, SCROLL_COIN).collect(concat_name)
+
+            data[name] = one
+
+        if self.has_vault_coin():
+            name = iter.of(unique, VAULT_COIN).collect(concat_name)
+
+            data[name] = one
+
+        if self.has_chamber_coin():
+            name = iter.of(unique, CHAMBER_COIN).collect(concat_name)
+
+            data[name] = one
 
         for level_id, collected_coins in self.official_coins.items():
             for value, collected_coin in value_to_collected_coins.items():

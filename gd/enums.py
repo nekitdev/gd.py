@@ -132,7 +132,10 @@ class Salt(Enum):
     EMPTY = EMPTY
 
     def __init__(
-        self, string: str, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
+        self,
+        string: str,
+        encoding: str = DEFAULT_ENCODING,
+        errors: str = DEFAULT_ERRORS,
     ) -> None:
         self.string = string
         self.bytes = string.encode(encoding, errors)

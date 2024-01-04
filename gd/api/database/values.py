@@ -18,7 +18,8 @@ UFOS = "bird"
 WAVES = "dart"
 ROBOTS = "robot"
 SPIDERS = "spider"
-# SWINGS = "swing"
+SWINGS = "swing"
+JETPACKS = "jetpack"
 EXPLOSIONS = "death"
 STREAKS = "special"
 COLORS_1 = "c0"
@@ -31,7 +32,8 @@ UFOS_PREFIX = prefix(UFOS)
 WAVES_PREFIX = prefix(WAVES)
 ROBOTS_PREFIX = prefix(ROBOTS)
 SPIDERS_PREFIX = prefix(SPIDERS)
-# SWINGS_PREFIX = prefix(SWINGS)
+SWINGS_PREFIX = prefix(SWINGS)
+JETPACKS_PREFIX = prefix(JETPACKS)
 EXPLOSIONS_PREFIX = prefix(EXPLOSIONS)
 STREAKS_PREFIX = prefix(STREAKS)
 COLORS_1_PREFIX = prefix(COLORS_1)
@@ -49,7 +51,8 @@ class Values:
     waves: OrderedSet[int] = field(factory=ordered_set)
     robots: OrderedSet[int] = field(factory=ordered_set)
     spiders: OrderedSet[int] = field(factory=ordered_set)
-    # swings: OrderedSet[int] = field(factory=ordered_set)
+    swings: OrderedSet[int] = field(factory=ordered_set)
+    jetpacks: OrderedSet[int] = field(factory=ordered_set)
     explosions: OrderedSet[int] = field(factory=ordered_set)
     streaks: OrderedSet[int] = field(factory=ordered_set)
     colors_1: OrderedSet[int] = field(factory=ordered_set)
@@ -65,7 +68,8 @@ class Values:
             WAVES_PREFIX: self.waves,
             ROBOTS_PREFIX: self.robots,
             SPIDERS_PREFIX: self.spiders,
-            # SWINGS_PREFIX: self.swings,
+            SWINGS_PREFIX: self.swings,
+            JETPACKS_PREFIX: self.jetpacks,
             EXPLOSIONS_PREFIX: self.explosions,
             STREAKS_PREFIX: self.streaks,
             COLORS_1_PREFIX: self.colors_1,

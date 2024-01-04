@@ -334,4 +334,9 @@ class Rectangle:
         return (self.min_x, self.min_y, self.max_x, self.max_y)
 
     def round_box(self) -> Tuple[int, int, int, int]:
-        return (round(self.min_x), round(self.min_y), round(self.max_x), round(self.max_y))
+        return (
+            round(self.min_x),
+            round(self.min_y),
+            round(self.max_x),
+            round(self.max_y),
+        )

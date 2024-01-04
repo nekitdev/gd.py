@@ -126,7 +126,11 @@ class BaseColorChannel(RobTop):
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
-        return cls.from_robtop_view(RobTopView(split_color_channel(string)))
+        data = split_color_channel(string)
+
+        view = RobTopView(data)
+
+        return cls.from_robtop_view(view)
 
     @classmethod
     def from_robtop_view(cls, view: RobTopView[int, str]) -> Self:
@@ -353,15 +357,21 @@ ColorChannel = Union[PlayerColorChannel, NormalColorChannel, CopiedColorChannel]
 """Represents color channels."""
 
 
-def is_player_color_channel(color_channel: ColorChannel) -> TypeGuard[PlayerColorChannel]:
+def is_player_color_channel(
+    color_channel: ColorChannel,
+) -> TypeGuard[PlayerColorChannel]:
     return color_channel.is_player()
 
 
-def is_normal_color_channel(color_channel: ColorChannel) -> TypeGuard[NormalColorChannel]:
+def is_normal_color_channel(
+    color_channel: ColorChannel,
+) -> TypeGuard[NormalColorChannel]:
     return color_channel.is_normal()
 
 
-def is_copied_color_channel(color_channel: ColorChannel) -> TypeGuard[CopiedColorChannel]:
+def is_copied_color_channel(
+    color_channel: ColorChannel,
+) -> TypeGuard[CopiedColorChannel]:
     return color_channel.is_copied()
 
 
@@ -429,7 +439,11 @@ class PlayerCompatibilityColorChannel(FromRobTop):
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
-        return cls.from_robtop_view(RobTopView(split_color_channel(string)))
+        data = split_color_channel(string)
+
+        view = RobTopView(data)
+
+        return cls.from_robtop_view(view)
 
     @classmethod
     def from_robtop_view(cls, view: RobTopView[int, str]) -> Self:
@@ -458,7 +472,11 @@ class NormalCompatibilityColorChannel(FromRobTop):
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
-        return cls.from_robtop_view(RobTopView(split_color_channel(string)))
+        data = split_color_channel(string)
+
+        view = RobTopView(data)
+
+        return cls.from_robtop_view(view)
 
     @classmethod
     def from_robtop_view(cls, view: RobTopView[int, str]) -> Self:

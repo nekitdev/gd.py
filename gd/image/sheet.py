@@ -192,7 +192,10 @@ class IconSheets:
         return cls(Path(path))
 
     def add(
-        self, name: str, image_suffix: str = IMAGE_SUFFIX, data_suffix: str = DATA_SUFFIX
+        self,
+        name: str,
+        image_suffix: str = IMAGE_SUFFIX,
+        data_suffix: str = DATA_SUFFIX,
     ) -> Sheet:
         simple_path = self.path / name
 

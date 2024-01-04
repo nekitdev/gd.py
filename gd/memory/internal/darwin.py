@@ -140,7 +140,10 @@ class proc_bsdshortinfo(Struct):
 
 @external(LIBC.proc_listpids)
 def _process_listpids(
-    type: ctypes.c_uint, type_info: ctypes.c_uint, buffer: ctypes.c_void_p, size: ctypes.c_uint
+    type: ctypes.c_uint,
+    type_info: ctypes.c_uint,
+    buffer: ctypes.c_void_p,
+    size: ctypes.c_uint,
 ) -> ctypes.c_int:
     ...
 
@@ -251,7 +254,10 @@ def _process_id_iterator() -> Iterator[int]:
     process_id_array = (pid_t * process_count)()
 
     _process_listpids(
-        PROCESS_ALL_PIDS, 0, ctypes.byref(process_id_array), ctypes.sizeof(process_id_array)
+        PROCESS_ALL_PIDS,
+        0,
+        ctypes.byref(process_id_array),
+        ctypes.sizeof(process_id_array),
     )
 
     for process_id in process_id_array:

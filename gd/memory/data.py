@@ -65,7 +65,11 @@ class Data(Protocol[T]):
 
     @abstractmethod
     def write(
-        self, state: AbstractState, address: int, value: T, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: T,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         ...
 
@@ -84,7 +88,11 @@ class I8(Data[int]):
         return state.read_i8(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_i8(address, value, order)
 
@@ -101,7 +109,11 @@ class U8(Data[int]):
         return state.read_u8(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_u8(address, value, order)
 
@@ -118,7 +130,11 @@ class I16(Data[int]):
         return state.read_i16(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_i16(address, value, order)
 
@@ -135,7 +151,11 @@ class U16(Data[int]):
         return state.read_u16(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_u16(address, value, order)
 
@@ -152,7 +172,11 @@ class I32(Data[int]):
         return state.read_i32(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_i32(address, value, order)
 
@@ -169,7 +193,11 @@ class U32(Data[int]):
         return state.read_u32(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_u32(address, value, order)
 
@@ -186,7 +214,11 @@ class I64(Data[int]):
         return state.read_i64(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_i64(address, value, order)
 
@@ -203,7 +235,11 @@ class U64(Data[int]):
         return state.read_u64(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_u64(address, value, order)
 
@@ -220,7 +256,11 @@ class ISize(Data[int]):
         return state.read_isize(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_isize(address, value, order)
 
@@ -241,7 +281,11 @@ class USize(Data[int]):
         return state.read_usize(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_usize(address, value, order)
 
@@ -264,7 +308,11 @@ class F32(Data[float]):
         return state.read_f32(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: float, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: float,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_f32(address, value, order)
 
@@ -283,7 +331,11 @@ class F64(Data[float]):
         return state.read_f64(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: float, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: float,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_f64(address, value, order)
 
@@ -300,7 +352,11 @@ class Bool(Data[bool]):
         return state.read_bool(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: bool, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: bool,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_bool(address, value, order)
 
@@ -317,7 +373,11 @@ class Byte(Data[int]):
         return state.read_byte(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_byte(address, value, order)
 
@@ -334,7 +394,11 @@ class UByte(Data[int]):
         return state.read_ubyte(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_ubyte(address, value, order)
 
@@ -351,7 +415,11 @@ class Short(Data[int]):
         return state.read_short(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_short(address, value, order)
 
@@ -368,7 +436,11 @@ class UShort(Data[int]):
         return state.read_ushort(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_ushort(address, value, order)
 
@@ -385,7 +457,11 @@ class Int(Data[int]):
         return state.read_int(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_int(address, value, order)
 
@@ -408,7 +484,11 @@ class UInt(Data[int]):
         return state.read_uint(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_uint(address, value, order)
 
@@ -431,7 +511,11 @@ class Long(Data[int]):
         return state.read_long(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_long(address, value, order)
 
@@ -454,7 +538,11 @@ class ULong(Data[int]):
         return state.read_ulong(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_ulong(address, value, order)
 
@@ -477,7 +565,11 @@ class LongLong(Data[int]):
         return state.read_longlong(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_longlong(address, value, order)
 
@@ -494,7 +586,11 @@ class ULongLong(Data[int]):
         return state.read_ulonglong(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_ulonglong(address, value, order)
 
@@ -511,7 +607,11 @@ class Size(Data[int]):
         return state.read_size(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: int,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_size(address, value, order)
 
@@ -534,7 +634,11 @@ class Float(Data[float]):
         return state.read_float(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: float, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: float,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_float(address, value, order)
 
@@ -553,7 +657,11 @@ class Double(Data[float]):
         return state.read_double(address, order)
 
     def write(
-        self, state: AbstractState, address: int, value: float, order: ByteOrder = ByteOrder.NATIVE
+        self,
+        state: AbstractState,
+        address: int,
+        value: float,
+        order: ByteOrder = ByteOrder.NATIVE,
     ) -> None:
         state.write_double(address, value, order)
 

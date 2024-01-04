@@ -4,8 +4,8 @@ from attrs import frozen
 from iters.iters import iter
 from typing_aliases import DynamicTuple
 from typing_extensions import Self
-from gd.models_constants import QUERY_SEPARATOR
 
+from gd.models_constants import QUERY_SEPARATOR
 from gd.models_utils import concat_query, split_query
 from gd.robtop import RobTop
 from gd.typing import IntString

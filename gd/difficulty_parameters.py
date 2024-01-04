@@ -4,7 +4,12 @@ from typing import TYPE_CHECKING
 
 from attrs import define
 
-from gd.constants import DEFAULT_AUTO, DEFAULT_DEMON, DEFAULT_DENOMINATOR, DEFAULT_NUMERATOR
+from gd.constants import (
+    DEFAULT_AUTO,
+    DEFAULT_DEMON,
+    DEFAULT_DENOMINATOR,
+    DEFAULT_NUMERATOR,
+)
 from gd.enums import DemonDifficulty, Difficulty, LevelDifficulty
 
 if TYPE_CHECKING:
@@ -64,7 +69,10 @@ class DifficultyParameters:
 
         level_difficulty = difficulty.into_level_difficulty()
 
-        return cls(difficulty_numerator=level_difficulty.value * base, difficulty_denominator=base)
+        return cls(
+            difficulty_numerator=level_difficulty.value * base,
+            difficulty_denominator=base,
+        )
 
     def is_auto(self) -> bool:
         return self.auto

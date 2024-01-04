@@ -96,7 +96,7 @@ class UnlockValues:
     # discord_chest_unlocked: bool = DEFAULT_DISCORD_CHEST_UNLOCKED
 
     @classmethod
-    def from_robtop_data(cls, view: StringRobTopView[str]) -> Self:
+    def from_robtop_view(cls, view: StringRobTopView[str]) -> Self:
         the_challenge_unlocked = (
             view.get_option(THE_CHALLENGE_UNLOCKED)
             .map(int_bool)

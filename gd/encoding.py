@@ -12,8 +12,8 @@ from zlib import MAX_WBITS
 from zlib import compressobj as create_compressor
 from zlib import decompressobj as create_decompressor
 from zlib import error as ZLibError
-from typing_aliases import Unary
 
+from typing_aliases import Unary
 from xor_cipher import cyclic_xor, cyclic_xor_string, xor, xor_string
 
 from gd.constants import (
@@ -263,7 +263,10 @@ def encode_robtop_with(key: Key) -> Unary[bytes, bytes]:
 
 
 def decode_robtop_string(
-    string: str, key: Key, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
+    string: str,
+    key: Key,
+    encoding: str = DEFAULT_ENCODING,
+    errors: str = DEFAULT_ERRORS,
 ) -> str:
     return decode_robtop(string.encode(encoding, errors), key).decode(encoding, errors)
 
@@ -278,7 +281,10 @@ def decode_robtop_string_with(
 
 
 def encode_robtop_string(
-    string: str, key: Key, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
+    string: str,
+    key: Key,
+    encoding: str = DEFAULT_ENCODING,
+    errors: str = DEFAULT_ERRORS,
 ) -> str:
     return encode_robtop(string.encode(encoding, errors), key).decode(encoding, errors)
 
@@ -347,7 +353,10 @@ def sha1_string(string: str, encoding: str = DEFAULT_ENCODING, errors: str = DEF
 
 
 def sha1_string_with_salt(
-    string: str, salt: Salt, encoding: str = DEFAULT_ENCODING, errors: str = DEFAULT_ERRORS
+    string: str,
+    salt: Salt,
+    encoding: str = DEFAULT_ENCODING,
+    errors: str = DEFAULT_ERRORS,
 ) -> str:
     return sha1_with_salt(string.encode(encoding, errors), salt)
 

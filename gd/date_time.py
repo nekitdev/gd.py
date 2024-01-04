@@ -315,7 +315,9 @@ option_duration_from_human = wrap_option(duration_from_human)
 
 
 def duration_to_human(
-    duration: Duration, distance_only: bool = DEFAULT_DISTANCE_ONLY, simple: bool = DEFAULT_SIMPLE
+    duration: Duration,
+    distance_only: bool = DEFAULT_DISTANCE_ONLY,
+    simple: bool = DEFAULT_SIMPLE,
 ) -> str:
     seconds = round(duration.total_seconds())
 
@@ -326,7 +328,9 @@ HUMAN_TIME_FORMAT = "{} {}"
 
 
 def string_duration(
-    seconds: int, distance_only: bool = DEFAULT_DISTANCE_ONLY, simple: bool = DEFAULT_SIMPLE
+    seconds: int,
+    distance_only: bool = DEFAULT_DISTANCE_ONLY,
+    simple: bool = DEFAULT_SIMPLE,
 ) -> str:
     iterator = iter_duration(seconds)
 
@@ -384,7 +388,9 @@ option_date_time_from_human = wrap_option(date_time_from_human)
 
 
 def date_time_to_human(
-    date_time: DateTime, distance_only: bool = DEFAULT_DISTANCE_ONLY, simple: bool = DEFAULT_SIMPLE
+    date_time: DateTime,
+    distance_only: bool = DEFAULT_DISTANCE_ONLY,
+    simple: bool = DEFAULT_SIMPLE,
 ) -> str:
     timezone = date_time.timezone
 

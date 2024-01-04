@@ -35,7 +35,11 @@ from gd.constants import (
     UNKNOWN,
 )
 from gd.converter import CONVERTER, register_unstructure_hook_omit_client
-from gd.date_time import timestamp_milliseconds, utc_from_timestamp_milliseconds, utc_now
+from gd.date_time import (
+    timestamp_milliseconds,
+    utc_from_timestamp_milliseconds,
+    utc_now,
+)
 from gd.either_record import EitherRecord, EitherRecordData
 from gd.entity import Entity, EntityData
 from gd.enums import (
@@ -479,11 +483,21 @@ class UserCosmetics(Binary):
     def get_icon(self, type: Optional[IconType] = None) -> Icon:
         if type is None:
             return Icon(
-                self.icon_type, self.icon_id, self.color_1, self.color_2, self.color_3, self.glow
+                self.icon_type,
+                self.icon_id,
+                self.color_1,
+                self.color_2,
+                self.color_3,
+                self.glow,
             )
 
         return Icon(
-            type, self.icon_id_by_type[type], self.color_1, self.color_2, self.color_3, self.glow
+            type,
+            self.icon_id_by_type[type],
+            self.color_1,
+            self.color_2,
+            self.color_3,
+            self.glow,
         )
 
     def generate(self, type: Optional[IconType] = None) -> Image:

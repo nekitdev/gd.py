@@ -1,13 +1,17 @@
 from __future__ import annotations
-from io import BufferedReader, BufferedWriter
 
+from io import BufferedReader, BufferedWriter
 from typing import TYPE_CHECKING, Optional
 
 from attrs import define, field
-from gd.binary import Binary
 
+from gd.binary import Binary
 from gd.constants import DEFAULT_ID, DEFAULT_READ, EMPTY
-from gd.date_time import timestamp_milliseconds, utc_from_timestamp_milliseconds, utc_now
+from gd.date_time import (
+    timestamp_milliseconds,
+    utc_from_timestamp_milliseconds,
+    utc_now,
+)
 from gd.entity import Entity
 from gd.enums import FriendRequestType
 from gd.schema import FriendRequestSchema
