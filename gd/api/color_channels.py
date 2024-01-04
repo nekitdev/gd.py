@@ -357,21 +357,15 @@ ColorChannel = Union[PlayerColorChannel, NormalColorChannel, CopiedColorChannel]
 """Represents color channels."""
 
 
-def is_player_color_channel(
-    color_channel: ColorChannel,
-) -> TypeGuard[PlayerColorChannel]:
+def is_player_color_channel(color_channel: ColorChannel) -> TypeGuard[PlayerColorChannel]:
     return color_channel.is_player()
 
 
-def is_normal_color_channel(
-    color_channel: ColorChannel,
-) -> TypeGuard[NormalColorChannel]:
+def is_normal_color_channel(color_channel: ColorChannel) -> TypeGuard[NormalColorChannel]:
     return color_channel.is_normal()
 
 
-def is_copied_color_channel(
-    color_channel: ColorChannel,
-) -> TypeGuard[CopiedColorChannel]:
+def is_copied_color_channel(color_channel: ColorChannel) -> TypeGuard[CopiedColorChannel]:
     return color_channel.is_copied()
 
 
