@@ -142,4 +142,4 @@ class GameVersion(RobTopVersion):
 
 
 CURRENT_GAME_VERSION = GameVersion(2, 2)
-CURRENT_BINARY_VERSION = RobTopVersion(3, 8)
+CURRENT_BINARY_VERSION = RobTopVersion(3, 9)

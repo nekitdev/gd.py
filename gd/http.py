@@ -296,7 +296,7 @@ class Payload(Namespace):
         return type(self)(self)
 
 
-ROUTE = "`{}` `{}`"
+ROUTE = "{} {}"
 
 
 @frozen()
@@ -369,7 +369,7 @@ def int_or(string: str, default: int) -> int:
         return default
 
 
-DEFAULT_USER_AGENT = "python/`{}` gd.py/`{}`"
+DEFAULT_USER_AGENT = "python/{} gd.py/{}"
 
 DEFAULT_TIMEOUT = 150.0
 
