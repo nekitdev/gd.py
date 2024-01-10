@@ -33,20 +33,20 @@ include = "gd"
 gd = "gd.main:gd"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">= 3.8"
 
 aiohttp = "^3.9.1"
 click = "^8.1.7"
 tqdm = "^4.66.1"
 yarl = "^1.9.4"
 
-attrs = "^23.1.0"
+attrs = "^23.2.0"
 cattrs = "^23.2.3"
 
 pendulum = "^3.0.0"
 
-entrypoint = "^1.4.0"
-versions = "^1.6.1"
+entrypoint = "^2.0.0"
+versions = "^2.0.0"
 
 named = "^1.3.0"
 
@@ -64,20 +64,20 @@ typing-aliases = "^1.4.1"
 pycapnp = "^1.3.0"
 
 [tool.poetry.dependencies.lxml]
-version = "^4.9.3"
+version = "^5.1.0"
 optional = true
 
 [tool.poetry.dependencies.pillow]
-version = "^10.1.0"
+version = "^10.2.0"
 optional = true
 
 [tool.poetry.dependencies.pycryptodome]
-version = "^3.19.0"
+version = "^3.20.0"
 optional = true
 
 [tool.poetry.dependencies.ipython]
 python = ">= 3.10"
-version = "^8.19.0"
+version = "^8.20.0"
 optional = true
 
 [tool.poetry.extras]
@@ -91,18 +91,21 @@ ruff = "0.1.11"
 
 [tool.poetry.group.check.dependencies]
 mypy = "1.8.0"
-pre-commit = "^3.5.0"
 
-types-pillow = "10.1.0.2"
-types-tqdm = "4.66.0.5"
-lxml-stubs = "0.4.0"
+types-pillow = "10.1.0.20240106"
+types-tqdm = "4.66.0.20240106"
+lxml-stubs = "0.5.1"
+
+[tool.poetry.group.check.dependencies.pre-commit]
+version = "3.6.0"
+python = ">= 3.9"
 
 [tool.poetry.group.test.dependencies]
-coverage = "7.3.4"
-pytest = "7.4.3"
+coverage = "7.4.0"
+pytest = "7.4.4"
 pytest-cov = "4.1.0"
 pytest-benchmark = "4.0.0"
-pytest-asyncio = "0.23.2"
+pytest-asyncio = "0.23.3"
 
 [tool.poetry.group.docs]
 optional = true

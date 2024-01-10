@@ -58,6 +58,7 @@ from gd.constants import (
     DEFAULT_LOW_DETAIL,
     DEFAULT_OBJECT_COUNT,
     DEFAULT_PAGE,
+    DEFAULT_PLATFORMER,
     DEFAULT_RECORD,
     DEFAULT_SECONDS,
     DEFAULT_SEND,
@@ -217,6 +218,8 @@ GET_QUESTS = "getGJChallenges.php"
 GET_CHESTS = "getGJRewards.php"
 GET_ARTISTS = "getGJTopArtists.php"
 GET_SONG = "getGJSongInfo.php"
+GET_LEVEL_LISTS = "getGJLevelLists.php"
+GET_PLATFORMER_LEADERBOARD = "getGJLevelScoresPlat.php"
 
 VALID_ERRORS = (OSError, ClientError)
 
@@ -1769,13 +1772,16 @@ class HTTPClient:
         check: bool = DEFAULT_CHECK,
         progress: Optional[Progress] = None,
         send: bool = DEFAULT_SEND,
+        platformer: bool = DEFAULT_PLATFORMER,
         *,
         account_id: int,
         hashed_password: str,
-    ) -> str:
+    ) -> str:  # TODO: handle platformer mode
         error_codes = {-1: MissingAccess(FAILED_TO_GET_LEADERBOARD.format(level_id))}
 
-        route = Route(POST, GET_LEVEL_LEADERBOARD)
+        endpoint = GET_PLATFORMER_LEADERBOARD if platformer else GET_LEVEL_LEADERBOARD
+
+        route = Route(POST, endpoint)
 
         payload = Payload(
             game_version=self.get_game_version(),
