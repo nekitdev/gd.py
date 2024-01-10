@@ -5,6 +5,8 @@ description = "An API wrapper for Geometry Dash written in Python."
 authors = ["nekitdev"]
 license = "MIT"
 
+include = ["gd/submodules"]
+
 readme = "README.md"
 
 homepage = "https://github.com/nekitdev/gd.py"
