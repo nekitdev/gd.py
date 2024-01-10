@@ -182,18 +182,20 @@ If you are interested in contributing to `gd.py`, make sure to take a look at th
 
 `gd.py` is licensed under the MIT License terms. See [License][License] for details.
 
+<!-- TODO: change `v2 -> main` when merging -->
+
 [Email]: mailto:support@nekit.dev
 
 [Discord]: https://nekit.dev/discord
 
 [Actions]: https://github.com/nekitdev/gd.py/actions
 
-[Changelog]: https://github.com/nekitdev/gd.py/blob/main/CHANGELOG.md
-[Code of Conduct]: https://github.com/nekitdev/gd.py/blob/main/CODE_OF_CONDUCT.md
-[Contributing Guide]: https://github.com/nekitdev/gd.py/blob/main/CONTRIBUTING.md
-[Security]: https://github.com/nekitdev/gd.py/blob/main/SECURITY.md
+[Changelog]: https://github.com/nekitdev/gd.py/blob/v2/CHANGELOG.md
+[Code of Conduct]: https://github.com/nekitdev/gd.py/blob/v2/CODE_OF_CONDUCT.md
+[Contributing Guide]: https://github.com/nekitdev/gd.py/blob/v2/CONTRIBUTING.md
+[Security]: https://github.com/nekitdev/gd.py/blob/v2/SECURITY.md
 
-[License]: https://github.com/nekitdev/gd.py/blob/main/LICENSE
+[License]: https://github.com/nekitdev/gd.py/blob/v2/LICENSE
 
 [Package]: https://pypi.org/project/gd.py
 [Coverage]: https://codecov.io/gh/nekitdev/gd.py
@@ -207,9 +209,9 @@ If you are interested in contributing to `gd.py`, make sure to take a look at th
 [Documentation Badge]: https://github.com/nekitdev/gd.py/workflows/docs/badge.svg
 [Check Badge]: https://github.com/nekitdev/gd.py/workflows/check/badge.svg
 [Test Badge]: https://github.com/nekitdev/gd.py/workflows/test/badge.svg
-[Coverage Badge]: https://codecov.io/gh/nekitdev/gd.py/branch/main/graph/badge.svg
+[Coverage Badge]: https://codecov.io/gh/nekitdev/gd.py/branch/v2/graph/badge.svg
 
-[Song]: https://github.com/nekitdev/gd.py/blob/main/assets/song.svg?raw=true
+[Song]: https://github.com/nekitdev/gd.py/blob/v2/assets/song.svg?raw=true
 
 [gd.client.Client.login]: https://nekitdev.github.io/gd.py/reference/client#gd.client.Client.login
 [gd.encoding.hash_password]: https://nekitdev.github.io/gd.py/reference/encoding#gd.encoding.hash_password
