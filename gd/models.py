@@ -1523,11 +1523,10 @@ class LevelModel(Model):
             view.get_option(LEVEL_DIFFICULTY_DENOMINATOR).map(int).unwrap_or(DEFAULT_DENOMINATOR)
         )
 
-        demon_difficulty = (
+        demon_difficulty_value = (
             view.get_option(LEVEL_DEMON_DIFFICULTY)
             .map(int)
-            .map(DemonDifficulty)
-            .unwrap_or(DemonDifficulty.DEFAULT)
+            .unwrap_or(DemonDifficulty.DEFAULT.value)
         )
 
         auto = view.get_option(LEVEL_AUTO).map(int_bool).unwrap_or(DEFAULT_AUTO)
@@ -1536,7 +1535,7 @@ class LevelModel(Model):
         difficulty = DifficultyParameters(
             difficulty_numerator=difficulty_numerator,
             difficulty_denominator=difficulty_denominator,
-            demon_difficulty_value=demon_difficulty.value,
+            demon_difficulty_value=demon_difficulty_value,
             auto=auto,
             demon=demon,
         ).into_difficulty()
