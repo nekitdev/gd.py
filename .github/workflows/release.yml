@@ -14,41 +14,31 @@ jobs:
         os: [ubuntu, macos, windows]
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
-    defaults:
-      run:
-        shell: bash
-
     runs-on: ${{ matrix.os }}-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Poetry
-        run: pipx install poetry
-
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: poetry
 
       - name: Update submodules
         run: git submodule update --init --remote
 
-      - name: Update PATH
-        if: ${{ matrix.os != 'windows' }}
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Update PATH for Windows
-        if: ${{ matrix.os == 'windows' }}
-        run: echo "$APPDATA/Python/Scripts" >> $GITHUB_PATH
+      - name: Install Poetry
+        run: pipx install poetry
 
       - name: Configure Poetry
         run: poetry config virtualenvs.in-project true
 
+      - name: Specify the version
+        run: poetry env use python
+
       - name: Install dependencies
-        run: poetry install --with build
+        run: poetry install
 
       - name: Build
         run: poetry build
