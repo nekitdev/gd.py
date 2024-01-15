@@ -13,23 +13,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Poetry
-        run: pipx install poetry
-
       - name: Setup Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: poetry
 
       - name: Update submodules
         run: git submodule update --init --remote
 
-      - name: Update PATH
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-
       - name: Configure Poetry
         run: poetry config virtualenvs.in-project true
+
+      - name: Specify the version
+        run: poetry env use python
 
       - name: Install dependencies
         run: poetry install --with docs --all-extras

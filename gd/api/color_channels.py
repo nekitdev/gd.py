@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from enum import Enum
 from typing import TYPE_CHECKING, Dict, Iterable, Optional, Union
 
 from attrs import define, field
@@ -91,21 +90,6 @@ COLOR_1_CHANNEL_ID = 1
 COLOR_2_CHANNEL_ID = 2
 COLOR_3_CHANNEL_ID = 3
 COLOR_4_CHANNEL_ID = 4
-
-
-class ColorChannelType(Enum):
-    PLAYER = 0
-    NORMAL = 1
-    COPIED = 2
-
-    def is_player(self) -> bool:
-        return self is type(self).PLAYER
-
-    def is_normal(self) -> bool:
-        return self is type(self).NORMAL
-
-    def is_copied(self) -> bool:
-        return self is type(self).COPIED
 
 
 COLOR_CHANNEL_ID_NOT_PRESENT = "color channel ID is not present"
