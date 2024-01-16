@@ -82,6 +82,7 @@ from gd.date_time import (
     utc_now,
 )
 from gd.decorators import cache_by
+from gd.demon_info import DemonInfo
 from gd.difficulty_parameters import DifficultyParameters
 from gd.either_record import EitherRecord
 from gd.either_reward import EitherReward
@@ -657,47 +658,49 @@ PROFILE_COLOR_3_ID = 51
 PROFILE_MOONS = 52
 PROFILE_SWING_ID = 53
 PROFILE_JETPACK_ID = 54
+PROFILE_DEMON_INFO = 55
 
 
 @define()
 class ProfileModel(Model):
-    name: str = EMPTY
-    id: int = DEFAULT_ID
-    stars: int = DEFAULT_STARS
-    demons: int = DEFAULT_DEMONS
-    creator_points: int = DEFAULT_CREATOR_POINTS
-    color_1_id: int = DEFAULT_COLOR_1_ID
-    color_2_id: int = DEFAULT_COLOR_2_ID
-    secret_coins: int = DEFAULT_SECRET_COINS
-    account_id: int = DEFAULT_ID
-    user_coins: int = DEFAULT_USER_COINS
-    message_state: MessageState = MessageState.DEFAULT
-    friend_request_state: FriendRequestState = FriendRequestState.DEFAULT
-    youtube: Optional[str] = None
-    cube_id: int = DEFAULT_ICON_ID
-    ship_id: int = DEFAULT_ICON_ID
-    ball_id: int = DEFAULT_ICON_ID
-    ufo_id: int = DEFAULT_ICON_ID
-    wave_id: int = DEFAULT_ICON_ID
-    robot_id: int = DEFAULT_ICON_ID
-    glow: bool = DEFAULT_GLOW
-    active: bool = DEFAULT_ACTIVE
-    rank: int = DEFAULT_RANK
-    friend_state: FriendState = FriendState.DEFAULT
-    new_messages: int = DEFAULT_NEW
-    new_friend_requests: int = DEFAULT_NEW
-    new_friends: int = DEFAULT_NEW
-    spider_id: int = DEFAULT_ICON_ID
-    x: Optional[str] = None
-    twitch: Optional[str] = None
-    diamonds: int = DEFAULT_DIAMONDS
-    explosion_id: int = DEFAULT_ICON_ID
-    role_id: int = DEFAULT_ID
-    comment_state: CommentState = CommentState.DEFAULT
-    color_3_id: int = DEFAULT_COLOR_3_ID
-    moons: int = DEFAULT_MOONS
-    swing_id: int = DEFAULT_ICON_ID
-    jetpack_id: int = DEFAULT_ICON_ID
+    name: str = field(default=EMPTY)
+    id: int = field(default=DEFAULT_ID)
+    stars: int = field(default=DEFAULT_STARS)
+    demons: int = field(default=DEFAULT_DEMONS)
+    creator_points: int = field(default=DEFAULT_CREATOR_POINTS)
+    color_1_id: int = field(default=DEFAULT_COLOR_1_ID)
+    color_2_id: int = field(default=DEFAULT_COLOR_2_ID)
+    secret_coins: int = field(default=DEFAULT_SECRET_COINS)
+    account_id: int = field(default=DEFAULT_ID)
+    user_coins: int = field(default=DEFAULT_USER_COINS)
+    message_state: MessageState = field(default=MessageState.DEFAULT)
+    friend_request_state: FriendRequestState = field(default=FriendRequestState.DEFAULT)
+    youtube: Optional[str] = field(default=None)
+    cube_id: int = field(default=DEFAULT_ICON_ID)
+    ship_id: int = field(default=DEFAULT_ICON_ID)
+    ball_id: int = field(default=DEFAULT_ICON_ID)
+    ufo_id: int = field(default=DEFAULT_ICON_ID)
+    wave_id: int = field(default=DEFAULT_ICON_ID)
+    robot_id: int = field(default=DEFAULT_ICON_ID)
+    glow: bool = field(default=DEFAULT_GLOW)
+    active: bool = field(default=DEFAULT_ACTIVE)
+    rank: int = field(default=DEFAULT_RANK)
+    friend_state: FriendState = field(default=FriendState.DEFAULT)
+    new_messages: int = field(default=DEFAULT_NEW)
+    new_friend_requests: int = field(default=DEFAULT_NEW)
+    new_friends: int = field(default=DEFAULT_NEW)
+    spider_id: int = field(default=DEFAULT_ICON_ID)
+    x: Optional[str] = field(default=None)
+    twitch: Optional[str] = field(default=None)
+    diamonds: int = field(default=DEFAULT_DIAMONDS)
+    explosion_id: int = field(default=DEFAULT_ICON_ID)
+    role_id: int = field(default=DEFAULT_ID)
+    comment_state: CommentState = field(default=CommentState.DEFAULT)
+    color_3_id: int = field(default=DEFAULT_COLOR_3_ID)
+    moons: int = field(default=DEFAULT_MOONS)
+    swing_id: int = field(default=DEFAULT_ICON_ID)
+    jetpack_id: int = field(default=DEFAULT_ICON_ID)
+    demon_info: DemonInfo = field(factory=DemonInfo)
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
@@ -797,6 +800,10 @@ class ProfileModel(Model):
 
         jetpack_id = view.get_option(PROFILE_JETPACK_ID).map(int).unwrap_or(DEFAULT_ICON_ID)
 
+        demon_info = (
+            view.get_option(PROFILE_DEMON_INFO).map(DemonInfo.from_robtop).unwrap_or_else(DemonInfo)
+        )
+
         return cls(
             name=name,
             id=id,
@@ -835,6 +842,7 @@ class ProfileModel(Model):
             moons=moons,
             swing_id=swing_id,
             jetpack_id=jetpack_id,
+            demon_info=demon_info,
         )
 
     def to_robtop(self) -> str:
@@ -876,6 +884,7 @@ class ProfileModel(Model):
             PROFILE_MOONS: str(self.moons),
             PROFILE_SWING_ID: str(self.swing_id),
             PROFILE_JETPACK_ID: str(self.jetpack_id),
+            PROFILE_DEMON_INFO: self.demon_info.to_robtop(),
         }
 
         return concat_profile(mapping)

@@ -40,6 +40,7 @@ from gd.date_time import (
     utc_from_timestamp_milliseconds,
     utc_now,
 )
+from gd.demon_info import DemonInfo, DemonInfoData
 from gd.either_record import EitherRecord, EitherRecordData
 from gd.entity import Entity, EntityData
 from gd.enums import (
@@ -253,18 +254,20 @@ class UserStatisticsData(Data):
     secret_coins: int
     creator_points: int
     rank: int
+    demon_info: DemonInfoData
 
 
 @define()
 class UserStatistics(Binary):
-    stars: int = DEFAULT_STARS
-    moons: int = DEFAULT_MOONS
-    demons: int = DEFAULT_DEMONS
-    diamonds: int = DEFAULT_DIAMONDS
-    user_coins: int = DEFAULT_USER_COINS
-    secret_coins: int = DEFAULT_SECRET_COINS
-    creator_points: int = DEFAULT_CREATOR_POINTS
-    rank: int = DEFAULT_RANK
+    stars: int = field(default=DEFAULT_STARS)
+    moons: int = field(default=DEFAULT_MOONS)
+    demons: int = field(default=DEFAULT_DEMONS)
+    diamonds: int = field(default=DEFAULT_DIAMONDS)
+    user_coins: int = field(default=DEFAULT_USER_COINS)
+    secret_coins: int = field(default=DEFAULT_SECRET_COINS)
+    creator_points: int = field(default=DEFAULT_CREATOR_POINTS)
+    rank: int = field(default=DEFAULT_RANK)
+    demon_info: DemonInfo = field(factory=DemonInfo)
 
     @classmethod
     def from_data(cls, data: UserStatisticsData) -> Self:
@@ -313,6 +316,7 @@ class UserStatistics(Binary):
             secret_coins=reader.secretCoins,
             creator_points=reader.creatorPoints,
             rank=reader.rank,
+            demon_info=DemonInfo.from_reader(reader.demonInfo),
         )
 
     def to_builder(self) -> UserStatisticsBuilder:
@@ -326,6 +330,7 @@ class UserStatistics(Binary):
         builder.secretCoins = self.secret_coins
         builder.creatorPoints = self.creator_points
         builder.rank = self.rank
+        builder.demonInfo = self.demon_info.to_builder()
 
         return builder
 
@@ -1016,6 +1021,7 @@ class User(UserReference, Binary):
                 secret_coins=model.secret_coins,
                 creator_points=model.creator_points,
                 rank=model.rank,
+                demon_info=model.demon_info,
             ),
             cosmetics=UserCosmetics(
                 color_1_id=model.color_1_id,
@@ -1067,6 +1073,7 @@ class User(UserReference, Binary):
                 secret_coins=profile_model.secret_coins,
                 creator_points=profile_model.creator_points,
                 rank=profile_model.rank,
+                demon_info=profile_model.demon_info,
             ),
             cosmetics=UserCosmetics(
                 color_1_id=profile_model.color_1_id,

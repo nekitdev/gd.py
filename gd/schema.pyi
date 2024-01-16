@@ -46,6 +46,131 @@ class OptionBuilder(Generic[T]):
     def write(self, writer: BufferedWriter) -> None: ...
     def write_packed(self, writer: BufferedWriter) -> None: ...
 
+class DemonInfoGroupSchema:
+    @classmethod
+    def from_bytes(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> ContextManager[DemonInfoGroupReader]: ...
+    @classmethod
+    def from_bytes_packed(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> DemonInfoGroupReader: ...
+    @classmethod
+    def read(cls, reader: BufferedReader) -> DemonInfoGroupReader: ...
+    @classmethod
+    def read_packed(cls, reader: BufferedReader) -> DemonInfoGroupReader: ...
+    @classmethod
+    def new_message(cls) -> DemonInfoGroupBuilder: ...
+
+class DemonInfoGroupReader:
+    easy: int
+    medium: int
+    hard: int
+    insane: int
+    extreme: int
+
+    def as_builder(self) -> DemonInfoGroupBuilder: ...
+
+class DemonInfoGroupBuilder:
+    easy: int
+    medium: int
+    hard: int
+    insane: int
+    extreme: int
+
+    def copy(self) -> DemonInfoGroupBuilder: ...
+    def to_bytes(self) -> bytes: ...
+    def to_bytes_packed(self) -> bytes: ...
+    def as_reader(self) -> DemonInfoGroupReader: ...
+    def write(self, writer: BufferedWriter) -> None: ...
+    def write_packed(self, writer: BufferedWriter) -> None: ...
+
+class DemonInfoSpecialSchema:
+    @classmethod
+    def from_bytes(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> ContextManager[DemonInfoSpecialReader]: ...
+    @classmethod
+    def from_bytes_packed(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> DemonInfoSpecialReader: ...
+    @classmethod
+    def read(cls, reader: BufferedReader) -> DemonInfoSpecialReader: ...
+    @classmethod
+    def read_packed(cls, reader: BufferedReader) -> DemonInfoSpecialReader: ...
+    @classmethod
+    def new_message(cls) -> DemonInfoSpecialBuilder: ...
+
+class DemonInfoSpecialReader:
+    weekly: int
+    gauntlet: int
+
+    def as_builder(self) -> DemonInfoSpecialBuilder: ...
+
+class DemonInfoSpecialBuilder:
+    weekly: int
+    gauntlet: int
+
+    def copy(self) -> DemonInfoSpecialBuilder: ...
+    def to_bytes(self) -> bytes: ...
+    def to_bytes_packed(self) -> bytes: ...
+    def as_reader(self) -> DemonInfoSpecialReader: ...
+    def write(self, writer: BufferedWriter) -> None: ...
+    def write_packed(self, writer: BufferedWriter) -> None: ...
+
+class DemonInfoSchema:
+    @classmethod
+    def from_bytes(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> ContextManager[DemonInfoReader]: ...
+    @classmethod
+    def from_bytes_packed(
+        cls,
+        data: bytes,
+        traversal_limit_in_words: Optional[int] = ...,
+        nesting_limit: Optional[int] = ...,
+    ) -> DemonInfoReader: ...
+    @classmethod
+    def read(cls, reader: BufferedReader) -> DemonInfoReader: ...
+    @classmethod
+    def read_packed(cls, reader: BufferedReader) -> DemonInfoReader: ...
+    @classmethod
+    def new_message(cls) -> DemonInfoBuilder: ...
+
+class DemonInfoReader:
+    regular: DemonInfoGroupReader
+    platformer: DemonInfoGroupReader
+    special: DemonInfoSpecialReader
+
+    def as_builder(self) -> DemonInfoBuilder: ...
+
+class DemonInfoBuilder:
+    regular: DemonInfoGroupBuilder
+    platformer: DemonInfoGroupBuilder
+    special: DemonInfoSpecialBuilder
+
+    def copy(self) -> DemonInfoBuilder: ...
+    def to_bytes(self) -> bytes: ...
+    def to_bytes_packed(self) -> bytes: ...
+    def as_reader(self) -> DemonInfoReader: ...
+    def write(self, writer: BufferedWriter) -> None: ...
+    def write_packed(self, writer: BufferedWriter) -> None: ...
+
 class EitherRecordSchema:
     @classmethod
     def from_bytes(
@@ -774,6 +899,7 @@ class UserStatisticsReader:
     secretCoins: int
     creatorPoints: int
     rank: int
+    demonInfo: DemonInfoReader
 
     def as_builder(self) -> UserStatisticsBuilder: ...
 
@@ -786,6 +912,7 @@ class UserStatisticsBuilder:
     secretCoins: int
     creatorPoints: int
     rank: int
+    demonInfo: DemonInfoBuilder
 
     def copy(self) -> UserStatisticsBuilder: ...
     def to_bytes(self) -> bytes: ...
