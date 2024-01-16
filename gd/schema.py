@@ -38,6 +38,7 @@ def load_module(name_path: str, separator: str = DOT, suffix: str = SCHEMA_SUFFI
 
 artist = load_module("artist")
 comment = load_module("comment")
+demonInfo = load_module("demonInfo")
 eitherRecord = load_module("eitherRecord")
 eitherReward = load_module("eitherReward")
 friendRequest = load_module("friendRequest")
@@ -53,6 +54,10 @@ ArtistSchema = artist.Artist
 
 CommentLevelReferenceSchema = comment.CommentLevelReference
 CommentSchema = comment.Comment
+
+DemonInfoGroupSchema = demonInfo.DemonInfoGroup
+DemonInfoSpecialSchema = demonInfo.DemonInfoSpecial
+DemonInfoSchema = demonInfo.DemonInfo
 
 EitherRecordSchema = eitherRecord.EitherRecord
 

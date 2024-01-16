@@ -19,6 +19,7 @@ from gd.models_constants import (
     COLOR_SEPARATOR,
     COMMENT_BANNED_SEPARATOR,
     CREATOR_SEPARATOR,
+    DEMON_INFO_SEPARATOR,
     FRIEND_REQUEST_SEPARATOR,
     FRIEND_REQUESTS_RESPONSE_FRIEND_REQUESTS_SEPARATOR,
     FRIEND_REQUESTS_RESPONSE_SEPARATOR,
@@ -408,3 +409,6 @@ concat_capacity = partial(concat_iterable, CAPACITY_SEPARATOR)
 
 split_query = partial(split_iterable, QUERY_SEPARATOR)
 concat_query = partial(concat_iterable, QUERY_SEPARATOR)
+
+split_demon_info = partial(split_iterable, DEMON_INFO_SEPARATOR)
+concat_demon_info = partial(concat_iterable, DEMON_INFO_SEPARATOR)
