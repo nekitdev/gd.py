@@ -32,6 +32,7 @@ from gd.models_constants import (
     HSV_SEPARATOR,
     LEADERBOARD_RESPONSE_USERS_SEPARATOR,
     LEADERBOARD_USER_SEPARATOR,
+    LEGACY_CAPACITY_SEPARATOR,
     LEVEL_COMMENT_INNER_SEPARATOR,
     LEVEL_COMMENT_SEPARATOR,
     LEVEL_COMMENT_USER_SEPARATOR,
@@ -167,6 +168,10 @@ def concat_float_mapping(separator: str, mapping: Mapping[float, float]) -> str:
 
 def concat_iterable(separator: str, iterable: Iterable[str]) -> str:
     return separator.join(iterable)
+
+
+def migrate_capactiy(string: str) -> str:
+    return string.replace(LEGACY_CAPACITY_SEPARATOR, CAPACITY_SEPARATOR)
 
 
 split_song = partial(split_mapping, SONG_SEPARATOR)

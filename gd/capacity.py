@@ -5,7 +5,7 @@ from iters.iters import iter
 from typing_extensions import Self
 
 from gd.models_constants import CAPACITY_SEPARATOR
-from gd.models_utils import concat_capacity, split_capacity
+from gd.models_utils import concat_capacity, migrate_capactiy, split_capacity
 from gd.robtop import RobTop
 from gd.simple import Simple
 
@@ -32,7 +32,7 @@ class Capacity(RobTop, Simple[CapacityItems]):
 
     @classmethod
     def from_robtop(cls, string: str) -> Self:
-        value = iter(split_capacity(string)).filter(None).map(int).list()
+        value = iter(split_capacity(migrate_capactiy(string))).filter(None).map(int).list()
 
         return cls.from_value(value)
 
