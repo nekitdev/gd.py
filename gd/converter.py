@@ -2,8 +2,11 @@ from typing import Type, TypeVar
 
 from attrs import field, frozen
 from cattrs import Converter
-from cattrs.gen import AttributeOverride  # type: ignore[attr-defined]
-from cattrs.gen import make_dict_unstructure_fn, override
+from cattrs.gen import (
+    AttributeOverride,  # type: ignore[attr-defined]
+    make_dict_unstructure_fn,
+    override,
+)
 from typing_aliases import AnyType, StringDict
 from yarl import URL
 

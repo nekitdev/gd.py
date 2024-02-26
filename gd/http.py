@@ -38,9 +38,10 @@ from typing_aliases import (
     Namespace,
     NormalError,
     Parameters,
+    is_bytes,
+    is_string,
 )
 from typing_aliases import Payload as JSON
-from typing_aliases import is_bytes, is_string
 from yarl import URL
 
 from gd.api.recording import Recording
