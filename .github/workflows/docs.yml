@@ -21,6 +21,9 @@ jobs:
       - name: Update submodules
         run: git submodule update --init --remote
 
+      - name: Install Poetry
+        run: pipx install poetry
+
       - name: Configure Poetry
         run: poetry config virtualenvs.in-project true
 
