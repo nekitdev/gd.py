@@ -69,6 +69,10 @@ site/
 .mypy_cache/
 .pytype/
 
+# formatters
+
+.ruff_cache/
+
 # cython debugging information
 
 cython_debug/
@@ -81,3 +85,7 @@ cython_debug/
 
 main.json
 levels.json
+
+# remove if lock file should be included
+
+poetry.lock

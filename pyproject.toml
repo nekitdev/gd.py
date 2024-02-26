@@ -23,7 +23,8 @@ classifiers = [
 ]
 
 [tool.poetry.urls]
-Discord = "https://nekit.dev/discord"
+Chat = "https://nekit.dev/chat"
+Funding = "https://nekit.dev/funding"
 Issues = "https://github.com/nekitdev/gd.py/issues"
 
 [[tool.poetry.packages]]
@@ -35,91 +36,94 @@ gd = "gd.main:gd"
 [tool.poetry.dependencies]
 python = ">= 3.8"
 
-aiohttp = "^3.9.1"
-click = "^8.1.7"
-tqdm = "^4.66.1"
-yarl = "^1.9.4"
+aiohttp = ">= 3.9.3"
+click = ">= 8.1.7"
+tqdm = ">= 4.66.2"
+yarl = ">= 1.9.4"
 
-attrs = "^23.2.0"
-cattrs = "^23.2.3"
+attrs = ">= 23.2.0"
+cattrs = ">= 23.2.3"
 
-pendulum = "^3.0.0"
+pendulum = ">= 3.0.0"
 
-entrypoint = "^2.0.0"
-versions = "^2.0.0"
+entrypoint = ">= 2.0.2"
+versions = ">= 2.1.2"
 
-named = "^1.3.0"
+named = ">= 1.4.1"
 
-xor-cipher = "^3.0.1"
-colors-core = "^1.0.1"
+xor-cipher = ">= 3.2.1"
+colors-core = ">= 1.1.1"
 
-async-extensions = "^1.4.1"
-iters = "^0.15.0"
+async-extensions = ">= 2.0.2"
+iters = ">= 0.16.1"
 
-funcs = "^0.8.0"
+funcs = ">= 0.9.1"
 
-typing-extensions = "^4.9.0"
-typing-aliases = "^1.4.1"
+typing-extensions = ">= 4.10.0"
+typing-aliases = ">= 1.7.1"
 
-pycapnp = "^1.3.0"
+pycapnp = ">= 1.3.0"
 
 [tool.poetry.dependencies.lxml]
-version = "^5.1.0"
+version = ">= 5.1.0"
 optional = true
 
 [tool.poetry.dependencies.pillow]
-version = "^10.2.0"
+version = ">= 10.2.0"
 optional = true
 
-[tool.poetry.dependencies.pycryptodome]
-version = "^3.20.0"
+[tool.poetry.dependencies.cryptography]
+version = ">= 42.0.5"
 optional = true
 
 [tool.poetry.dependencies.ipython]
+version = ">= 8.22.1"
 python = ">= 3.10"
-version = "^8.20.0"
 optional = true
 
 [tool.poetry.extras]
-crypto = ["pycryptodome"]
+crypto = ["cryptography"]
 image = ["pillow"]
 speed = ["lxml"]
 console = ["ipython"]
 
 [tool.poetry.group.format.dependencies]
-ruff = "0.1.13"
+ruff = "0.2.2"
 
 [tool.poetry.group.check.dependencies]
 mypy = "1.8.0"
 
-types-pillow = "10.1.0.20240106"
+types-pillow = "10.2.0.20240213"
 types-tqdm = "4.66.0.20240106"
 lxml-stubs = "0.5.1"
 
 [tool.poetry.group.check.dependencies.pre-commit]
-version = "3.6.0"
+version = "3.6.2"
 python = ">= 3.9"
 
 [tool.poetry.group.test.dependencies]
-coverage = "7.4.0"
-pytest = "7.4.4"
+coverage = "7.4.3"
+pytest = "8.0.2"
 pytest-cov = "4.1.0"
 pytest-benchmark = "4.0.0"
-pytest-asyncio = "0.23.3"
+pytest-asyncio = "0.23.5"
 
 [tool.poetry.group.docs]
 optional = true
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.5.3"
-mkdocs-material = "9.5.3"
+mkdocs-material = "9.5.11"
 
 [tool.poetry.group.docs.dependencies.mkdocstrings]
 version = "0.24.0"
 extras = ["python"]
 
+[tool.poetry.group.release]
+optional = true
+
 [tool.poetry.group.release.dependencies]
-changelogging = "1.3.0"
+changelogging = "1.4.1"
 
 [tool.ruff]
 line-length = 100
@@ -175,5 +179,5 @@ wrap_size = 100
 display = ["feature", "change", "fix", "security", "deprecation", "removal", "internal"]
 
 [build-system]
-requires = ["poetry-core >= 1.8.1"]
+requires = ["poetry-core >= 1.9.0"]
 build-backend = "poetry.core.masonry.api"

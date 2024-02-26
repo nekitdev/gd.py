@@ -1,3 +1,5 @@
+![Image]
+
 # `gd.py`
 
 [![License][License Badge]][License]
@@ -184,9 +186,11 @@ If you are interested in contributing to `gd.py`, make sure to take a look at th
 
 <!-- TODO: change `v2 -> main` when merging -->
 
+[Image]: https://github.com/nekitdev/gd.py/blob/v2/assets/gd.py.svg?raw=true
+
 [Email]: mailto:support@nekit.dev
 
-[Discord]: https://nekit.dev/discord
+[Discord]: https://nekit.dev/chat
 
 [Actions]: https://github.com/nekitdev/gd.py/actions
 
@@ -201,7 +205,7 @@ If you are interested in contributing to `gd.py`, make sure to take a look at th
 [Coverage]: https://codecov.io/gh/nekitdev/gd.py
 [Documentation]: https://nekitdev.github.io/gd.py
 
-[Discord Badge]: https://img.shields.io/badge/chat-discord-5865f2
+[Discord Badge]: https://img.shields.io/discord/728012506899021874
 [License Badge]: https://img.shields.io/pypi/l/gd.py
 [Version Badge]: https://img.shields.io/pypi/v/gd.py
 [Downloads Badge]: https://img.shields.io/pypi/dm/gd.py
