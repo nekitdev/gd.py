@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import AsyncIterator, TypeVar
 
-from async_extensions.collect import collect_iterable_results
+from async_extensions.collecting import collect_iterable_results
 from iters.async_utils import async_iter, async_list
 from typing_aliases import AnyErrorType, AnyIterable, is_instance
 from wraps.result import is_error
