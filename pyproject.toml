@@ -103,7 +103,7 @@ python = ">= 3.9"
 
 [tool.poetry.group.test.dependencies]
 coverage = "7.4.3"
-pytest = "8.0.2"
+pytest = "8.2.0"
 pytest-cov = "4.1.0"
 pytest-benchmark = "4.0.0"
 pytest-asyncio = "0.23.5"
