@@ -120,6 +120,7 @@ from gd.errors import (
     MissingAccess,
     NothingFound,
     SongRestricted,
+    CloudflareError
 )
 from gd.filters import Filters
 from gd.models import CommentBannedModel
@@ -887,6 +888,14 @@ class HTTPClient:
                                     raise error_codes.get(
                                         error_code, unexpected_error_code(error_code)
                                     )
+
+                        # There is a small probability we may also encounter a cloudflare error
+                        # This commonly can occur over proxies but on rare occasions this can also 
+                        # be encountered normally
+                        if type is ResponseType.BYTES and response_data.startswith(b"error code:"):
+                            raise CloudFlareError.from_str(response_data.decode("utf-8", "surrogateescape"))
+                        elif type is ResponseType.TEXT and response_data.startswith("error code:")
+                            raise CloudFlareError.from_str(response_data)
 
                         return response_data
 
