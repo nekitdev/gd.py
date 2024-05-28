@@ -13,25 +13,25 @@
       
       
       
-        <link rel="prev" href="../songs/">
+        <link rel="prev" href="../guidelines/">
       
       
-        <link rel="next" href="../tasks/">
+        <link rel="next" href="../database/">
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.12">
     
     
       
-        <title>Artist - gd.py</title>
+        <title>Save Manager - gd.py</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.7e359304.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.7e359304.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -50,9 +50,9 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#gd.artist" class="md-skip">
+        <a href="#gd.api.save_manager" class="md-skip">
           Skip to content
         </a>
       
@@ -94,7 +94,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="gd.py" class="md-header__button md-logo" aria-label="gd.py" data-md-component="logo">
+    <a href="../../.." title="gd.py" class="md-header__button md-logo" aria-label="gd.py" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Artist
+              Save Manager
             
           </span>
         </div>
@@ -227,7 +227,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="gd.py" class="md-nav__button md-logo" aria-label="gd.py" data-md-component="logo">
+    <a href="../../.." title="gd.py" class="md-nav__button md-logo" aria-label="gd.py" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -257,7 +257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -314,7 +314,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/" class="md-nav__link">
+      <a href="../../client/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -335,7 +335,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../encoding/" class="md-nav__link">
+      <a href="../../encoding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -356,7 +356,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../enums/" class="md-nav__link">
+      <a href="../../enums/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -377,7 +377,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../songs/" class="md-nav__link">
+      <a href="../../songs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -395,28 +395,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Artist
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../artist/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -425,33 +407,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#gd.artist" class="md-nav__link">
-    <span class="md-ellipsis">
-      artist
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -464,7 +419,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tasks/" class="md-nav__link">
+      <a href="../../tasks/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -482,17 +437,19 @@
                 
   
   
+    
   
   
+  
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_7" checked>
         
           
           <label class="md-nav__link" for="__nav_2_7" id="__nav_2_7_label" tabindex="0">
@@ -506,7 +463,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_7">
             <span class="md-nav__icon md-icon"></span>
             API
@@ -555,7 +512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/editor/" class="md-nav__link">
+      <a href="../editor/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -576,7 +533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/objects/" class="md-nav__link">
+      <a href="../objects/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -597,7 +554,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/header/" class="md-nav__link">
+      <a href="../header/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -618,7 +575,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/color_channels/" class="md-nav__link">
+      <a href="../color_channels/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -639,7 +596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/hsv/" class="md-nav__link">
+      <a href="../hsv/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -660,7 +617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/guidelines/" class="md-nav__link">
+      <a href="../guidelines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -686,17 +643,19 @@
                 
   
   
+    
   
   
+  
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_7_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_7_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2_7_2" id="__nav_2_7_2_label" tabindex="0">
@@ -710,7 +669,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_7_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_7_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_7_2">
             <span class="md-nav__icon md-icon"></span>
             Database
@@ -721,10 +680,28 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../api/save_manager/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Save Manager
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -733,6 +710,33 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#gd.api.save_manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      save_manager
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -745,7 +749,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/database/" class="md-nav__link">
+      <a href="../database/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -766,7 +770,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/levels/" class="md-nav__link">
+      <a href="../levels/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -787,7 +791,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/folder/" class="md-nav__link">
+      <a href="../folder/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -808,7 +812,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/artist/" class="md-nav__link">
+      <a href="../artist/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -829,7 +833,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/song/" class="md-nav__link">
+      <a href="../song/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -850,7 +854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/rewards/" class="md-nav__link">
+      <a href="../rewards/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -871,7 +875,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/like/" class="md-nav__link">
+      <a href="../like/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -943,7 +947,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../memory/internal/" class="md-nav__link">
+      <a href="../../memory/internal/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -979,7 +983,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../changelog/" class="md-nav__link">
+      <a href="../../../changelog/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -999,7 +1003,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/" class="md-nav__link">
+      <a href="../../../security/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1019,7 +1023,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../code_of_conduct/" class="md-nav__link">
+      <a href="../../../code_of_conduct/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1039,7 +1043,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../contributing/" class="md-nav__link">
+      <a href="../../../contributing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1077,9 +1081,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#gd.artist" class="md-nav__link">
+  <a href="#gd.api.save_manager" class="md-nav__link">
     <span class="md-ellipsis">
-      artist
+      save_manager
     </span>
   </a>
   
@@ -1103,13 +1107,13 @@
   
 
 
-  <h1>Artist</h1>
+  <h1>Save Manager</h1>
 
 <div class="doc doc-object doc-module">
 
 
 
-<a id="gd.artist"></a>
+<a id="gd.api.save_manager"></a>
   <div class="doc doc-contents first">
 
   
@@ -1177,10 +1181,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.c8d2eff1.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.c8d2eff1.min.js"></script>
       
     
   </body>
