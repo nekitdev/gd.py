@@ -182,7 +182,7 @@ class Message(Binary, MessageReference):
     async def read(self) -> str:
         content = self.content
 
-        if content is None:
+        if len(content) == 0:
             message = await self.client.get_message(self)
 
             content = message.content
