@@ -106,6 +106,15 @@ class LoginFailed(ClientError):
         self._name = name
         self._hashed_password = hashed_password
 
+@frozen()
+class CloudFlareError(ClientError):
+    error_code:int
+    
+    @classmethod
+    def from_str(cls, error:str):
+        return cls(int(error.split(":")[1])
+
+
 
 PERMANENT = "permanently banned from posting comments; reason: `{}`"
 permanent = PERMANENT.format
