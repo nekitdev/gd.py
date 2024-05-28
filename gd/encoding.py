@@ -14,7 +14,7 @@ from zlib import decompressobj as create_decompressor
 from zlib import error as ZLibError
 
 from typing_aliases import Unary
-from xor_cipher import cyclic_xor, cyclic_xor_string, xor, xor_string
+from xor_cipher import cyclic_xor, xor
 
 from gd.constants import (
     DEFAULT_APPLY_XOR,
@@ -46,8 +46,6 @@ __all__ = (
     "encode_base64_string_url_safe",
     "xor",
     "cyclic_xor",
-    "xor_string",
-    "cyclic_xor_string",
     "decode_save",
     "encode_save",
     "decode_save_string",
