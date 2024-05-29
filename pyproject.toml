@@ -88,7 +88,7 @@ speed = ["lxml"]
 console = ["ipython"]
 
 [tool.poetry.group.format.dependencies]
-ruff = "0.3.0"
+ruff = "0.4.6"
 
 [tool.poetry.group.check.dependencies]
 mypy = "1.8.0"
