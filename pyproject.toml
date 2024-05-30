@@ -123,7 +123,7 @@ extras = ["python"]
 optional = true
 
 [tool.poetry.group.release.dependencies]
-changelogging = "1.4.1"
+changelogging = "2.3.0"
 
 [tool.ruff]
 line-length = 100
