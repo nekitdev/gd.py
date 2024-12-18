@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING, Dict, TypeVar
 from attrs import define, field
 
 if TYPE_CHECKING:
-    from gd.artist import Artist
-    from gd.comments import LevelComment, UserComment
-    from gd.friend_requests import FriendRequest
-    from gd.level_packs import Gauntlet, MapPack
-    from gd.levels import Level
-    from gd.messages import Message
-    from gd.songs import Song
-    from gd.users import User
+    from gd.entities.artists import Artist
+    from gd.entities.comments import LevelComment, UserComment
+    from gd.entities.friend_requests import FriendRequest
+    from gd.entities.level_packs import Gauntlet, MapPack
+    from gd.entities.levels import Level
+    from gd.entities.messages import Message
+    from gd.entities.songs import Song
+    from gd.entities.users import User
 
 __all__ = ("CacheSettings", "Cache", "CachePart")
 

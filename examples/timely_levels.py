@@ -27,6 +27,8 @@ async def async_main() -> None:
 
         return
 
+    print(daily_string(daily=daily))
+
     try:
         weekly = await client.get_weekly()  # fetching weekly...
 
@@ -35,10 +37,13 @@ async def async_main() -> None:
 
         return
 
-    print(daily_string(daily=daily))
     print(weekly_string(weekly=weekly))
 
 
 @entrypoint(__name__)
 def main() -> None:
-    client.run(async_main())
+    try:
+        client.run(async_main())
+
+    except KeyboardInterrupt:
+        pass

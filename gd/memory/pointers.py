@@ -4,12 +4,12 @@ from typing import TYPE_CHECKING, Generic, Type, TypeVar
 
 from attrs import define, field, frozen
 
-from gd.enums import ByteOrder
+from gd.binary.enums import ByteOrder
 from gd.memory.data import Data, USize
 
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
-    from gd.platform import PlatformConfig
+    from gd.system import Config
 
 __all__ = ("Pointer", "MutPointer", "PointerData", "MutPointerData")
 
@@ -95,10 +95,10 @@ class PointerData(Data[Pointer[T]]):
     ) -> None:
         pass  # do nothing
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return self.pointer_type.compute_size(config)
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return self.pointer_type.compute_alignment(config)
 
 
@@ -123,8 +123,8 @@ class MutPointerData(Data[MutPointer[T]]):
     ) -> None:
         pass  # do nothing
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return self.pointer_type.compute_size(config)
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return self.pointer_type.compute_alignment(config)

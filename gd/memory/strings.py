@@ -5,8 +5,8 @@ from typing import Union as TypingUnion
 
 from attrs import frozen
 
+from gd.binary.enums import ByteOrder
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS, EMPTY
-from gd.enums import ByteOrder
 from gd.memory.arrays import MutArrayData
 from gd.memory.base import Struct, Union, UnionData, struct, union
 from gd.memory.constants import CONTENT_LENGTH
@@ -18,7 +18,7 @@ from gd.memory.utils import next_power_of_two
 
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
-    from gd.platform import PlatformConfig
+    from gd.system import Config
 
 __all__ = ("String", "OldString", "StringData")
 
@@ -184,13 +184,13 @@ class StringData(Data[str]):
     ) -> None:
         self.compute_type(state.config)(state, address, order).value = value
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return self.compute_type(config).SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return self.compute_type(config).ALIGNMENT
 
-    def compute_type(self, config: PlatformConfig) -> TypingUnion[Type[String], Type[OldString]]:
+    def compute_type(self, config: Config) -> TypingUnion[Type[String], Type[OldString]]:
         if config.platform.is_windows():
             return String.reconstruct(config)
 

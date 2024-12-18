@@ -1,0 +1,222 @@
+from typing import Iterator, Optional
+
+from attrs import define, field
+
+from gd.assets import IMAGE_SUFFIX
+from gd.constants import DEFAULT_GLOW, DEFAULT_ICON_ID
+from gd.enums import IconType
+from gd.images.animation import Animation
+from gd.images.layer import Layer
+from gd.primitives.colors.core import Color
+from gd.strings.operations import concat_under, zero_pad
+
+__all__ = ("Icon", "IconReference", "generate_name")
+
+EXTRA = "extra"
+GLOW = "glow"
+
+DEFAULT_FRAME = 1
+
+FULL_VALUE = 0xFF
+
+ROBOT_VALUE_COUNT = 3
+ROBOT_VALUE = 0xB2
+
+SPIDER_VALUE_COUNT = 2
+SPIDER_VALUE = 0x7F
+
+DEFAULT_EXTRA_COLOR = Color.white()
+
+
+@define()
+class IconLayer:
+    name: str
+    color: Color
+
+
+@define()
+class ComplexIconLayer(IconLayer):
+    layer: Layer
+    value: int = FULL_VALUE
+
+    @property
+    def white(self) -> Color:
+        value = self.value
+
+        return Color.from_rgb(value, value, value)
+
+
+@define()
+class IconReference:
+    type: IconType = field(default=IconType.DEFAULT)
+    id: int = field(default=DEFAULT_ICON_ID)
+
+    @property
+    def name(self) -> str:
+        return generate_name(self.type.case_fold_name, self.id)
+
+
+@define()
+class Icon(IconReference):
+    color_1: Color = field(factory=Color.default_color_1)
+    color_2: Color = field(factory=Color.default_color_2)
+    color_3: Color = field(factory=Color.default_color_3)
+    glow: bool = field(default=DEFAULT_GLOW)
+    idle: Optional[Animation] = field(default=None, repr=False)
+
+    @property
+    def extra_color(self) -> Color:
+        return DEFAULT_EXTRA_COLOR
+
+    def has_glow(self) -> bool:
+        return self.glow
+
+    def is_complex(self) -> bool:
+        return self.type.is_robot() or self.type.is_spider()
+
+    def is_simple(self) -> bool:
+        return not self.is_complex()
+
+    def generate_name(
+        self,
+        part: Optional[int] = None,
+        sub_part: Optional[int] = None,
+        extra: bool = False,
+        glow: bool = False,
+    ) -> str:
+        return generate_name(
+            name=self.type.case_fold_name,
+            id=self.id,
+            part=part,
+            sub_part=sub_part,
+            extra=extra,
+            glow=glow,
+            frame=DEFAULT_FRAME,
+            suffix=IMAGE_SUFFIX,
+        )
+
+    def get_value(self, index: int) -> int:
+        if self.type.is_robot() and index < ROBOT_VALUE_COUNT:
+            return ROBOT_VALUE
+
+        if self.type.is_spider() and index < SPIDER_VALUE_COUNT:
+            return SPIDER_VALUE
+
+        return FULL_VALUE
+
+    def iter_simple_layers(self) -> Iterator[IconLayer]:
+        if self.is_complex():
+            raise ValueError  # TODO: message?
+
+        if self.has_glow():
+            yield IconLayer(self.generate_name(glow=True), self.color_3)
+
+        if self.type.is_ufo():
+            yield IconLayer(self.generate_name(sub_part=3), self.extra_color)
+
+        yield IconLayer(self.generate_name(sub_part=2), self.color_2)
+        yield IconLayer(self.generate_name(), self.color_1)
+
+        yield IconLayer(self.generate_name(extra=True), self.extra_color)
+
+    def iter_complex_layers(self) -> Iterator[ComplexIconLayer]:
+        if self.is_simple():
+            raise ValueError  # TODO: message?
+
+        idle = self.idle
+
+        if idle is None:
+            raise ValueError  # TODO: message?
+
+        frame = idle.single
+
+        if frame is None:
+            raise ValueError  # TODO: message?
+
+        layers = frame.layers
+
+        if self.has_glow():
+            for layer in layers:
+                yield ComplexIconLayer(
+                    self.generate_name(part=layer.part, glow=True), self.color_3, layer
+                )
+
+        for index, layer in enumerate(layers):
+            yield ComplexIconLayer(
+                self.generate_name(part=layer.part, sub_part=2),
+                self.color_2,
+                layer,
+                self.get_value(index),
+            )
+            yield ComplexIconLayer(
+                self.generate_name(part=layer.part),
+                self.color_1,
+                layer,
+                self.get_value(index),
+            )
+            yield ComplexIconLayer(
+                self.generate_name(part=layer.part, extra=True),
+                self.extra_color,
+                layer,
+                self.get_value(index),
+            )
+
+
+def generate_name(
+    name: str,
+    id: Optional[int] = None,
+    part: Optional[int] = None,
+    sub_part: Optional[int] = None,
+    extra: bool = False,
+    glow: bool = False,
+    frame: Optional[int] = None,
+    suffix: Optional[str] = None,
+) -> str:
+    string = concat_under(
+        generate_name_iterator(
+            name=name,
+            id=id,
+            part=part,
+            sub_part=sub_part,
+            extra=extra,
+            glow=glow,
+            frame=frame,
+        )
+    )
+
+    return string if suffix is None else string + suffix
+
+
+ID_ALIGN = 2
+PART_ALIGN = 2
+FRAME_ALIGN = 3
+
+
+def generate_name_iterator(
+    name: str,
+    id: Optional[int] = None,
+    part: Optional[int] = None,
+    sub_part: Optional[int] = None,
+    extra: bool = False,
+    glow: bool = False,
+    frame: Optional[int] = None,
+) -> Iterator[str]:
+    yield name
+
+    if id is not None:
+        yield zero_pad(ID_ALIGN, id)
+
+    if part is not None:
+        yield zero_pad(PART_ALIGN, part)
+
+    if sub_part is not None:
+        yield str(sub_part)
+
+    if extra:
+        yield EXTRA
+
+    if glow:
+        yield GLOW
+
+    if frame is not None:
+        yield zero_pad(FRAME_ALIGN, frame)

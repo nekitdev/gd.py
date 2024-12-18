@@ -1,0 +1,1 @@
+DEFAULT_VALUE = 0

@@ -9,11 +9,11 @@ from iters.iters import iter, wrap_iter
 
 from gd.constants import EMPTY
 from gd.errors import InternalError
-from gd.models_constants import RECORDING_ITEM_SEPARATOR
-from gd.models_utils import concat_recording_item, float_str, int_bool
-from gd.robtop import RobTop
-from gd.string_constants import DOT
-from gd.string_utils import concat_empty
+from gd.models.constants import RECORDING_ITEM_SEPARATOR
+from gd.models.operations import concat_recording_item, float_str, int_bool
+from gd.internals.robtop.protocols import RobTop
+from gd.strings.constants import DOT
+from gd.strings.operations import concat_empty
 
 if TYPE_CHECKING:
     from typing_extensions import Self

@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING, Dict, Iterator, Optional, Sequence, Type, Type
 from attrs import define, field, frozen
 from iters.iters import wrap_iter
 
-from gd.enums import ByteOrder
+from gd.binary.enums import ByteOrder
 from gd.memory.constants import DEFAULT_BASE
 from gd.memory.data import U8 as Byte
 from gd.memory.data import Data
-from gd.platform import PlatformConfig
+from gd.system import Config
 
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
@@ -138,7 +138,7 @@ class ArrayData(Data[Array[T]]):
     ) -> None:
         pass  # do nothing
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         length = self.length
 
         if length is None:
@@ -146,7 +146,7 @@ class ArrayData(Data[Array[T]]):
 
         return self.type.compute_size(config) * length
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return self.type.compute_alignment(config)
 
 
@@ -156,7 +156,7 @@ class DynamicFill(Data[Array[int]]):
 
         self._byte = Byte()
 
-        self._fills = {PlatformConfig.from_string(string): fill for string, fill in fills.items()}
+        self._fills = {Config.from_string(string): fill for string, fill in fills.items()}
 
     @property
     def base(self) -> int:
@@ -167,7 +167,7 @@ class DynamicFill(Data[Array[int]]):
         return self._byte
 
     @property
-    def fills(self) -> Dict[PlatformConfig, int]:
+    def fills(self) -> Dict[Config, int]:
         return self._fills
 
     def read(
@@ -184,7 +184,7 @@ class DynamicFill(Data[Array[int]]):
     ) -> None:
         pass  # do nothing
 
-    def compute_length(self, config: PlatformConfig) -> int:
+    def compute_length(self, config: Config) -> int:
         fills = self.fills
 
         if config in fills:
@@ -192,10 +192,10 @@ class DynamicFill(Data[Array[int]]):
 
         return self.base
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return self.byte.compute_size(config) * self.compute_length(config)
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return self.byte.compute_alignment(config)
 
 
@@ -220,7 +220,7 @@ class MutArrayData(Data[MutArray[T]]):
     ) -> None:
         pass  # do nothing
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         length = self.length
 
         if length is None:
@@ -228,5 +228,5 @@ class MutArrayData(Data[MutArray[T]]):
 
         return self.type.compute_size(config) * length
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return self.type.compute_alignment(config)

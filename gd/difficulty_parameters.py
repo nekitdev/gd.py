@@ -4,13 +4,8 @@ from typing import TYPE_CHECKING
 
 from attrs import define
 
-from gd.constants import (
-    DEFAULT_AUTO,
-    DEFAULT_DEMON,
-    DEFAULT_DENOMINATOR,
-    DEFAULT_NUMERATOR,
-)
-from gd.enums import DemonDifficulty, Difficulty, LevelDifficulty
+from gd.constants import DEFAULT_AUTO, DEFAULT_DEMON, DEFAULT_DENOMINATOR, DEFAULT_NUMERATOR
+from gd.enums.difficulties import DemonDifficulty, Difficulty, LevelDifficulty
 
 if TYPE_CHECKING:
     from typing_extensions import Self

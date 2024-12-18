@@ -2,7 +2,7 @@ import click
 from entrypoint import entrypoint
 
 from gd.api.save_manager import save
-from gd.encoding import compress
+from gd.crypto.zip import compress
 
 ROUNDING = 2
 
@@ -28,7 +28,7 @@ def main(rounding: int) -> None:
 
     click.echo(CONVERTING)
 
-    data = database.to_bytes()
+    data = database.to_bytes_packed()
 
     robtop_data_length = len(robtop_data)
     data_length = len(data)

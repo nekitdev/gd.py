@@ -31,7 +31,7 @@ from gd.constants import (
 )
 from gd.enums import SearchStrategy, TimelyID
 from gd.filters import Filters
-from gd.queries import query
+from gd.primitives.queries.queries import query
 from gd.tasks import Loop
 
 __all__ = (
@@ -51,12 +51,12 @@ __all__ = (
 )
 
 if TYPE_CHECKING:
-    from gd.client import Client
-    from gd.comments import LevelComment, UserComment
-    from gd.friend_requests import FriendRequest
-    from gd.levels import Level
-    from gd.messages import Message
-    from gd.users import User
+    from gd.clients import Client
+    from gd.entities.comments import LevelComment, UserComment
+    from gd.entities.friend_requests import FriendRequest
+    from gd.entities.levels import Level
+    from gd.entities.messages import Message
+    from gd.entities.users import User
 
 
 Q = TypeVar("Q", bound=Hashable)

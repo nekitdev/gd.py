@@ -10,31 +10,70 @@ remote_branch: github-pages
 nav:
   - Index: "index.md"
   - Reference:
-    - Client: "reference/client.md"
-    - Encoding: "reference/encoding.md"
-    - Enums: "reference/enums.md"
-    - Songs: "reference/songs.md"
-    - Artist: "reference/artist.md"
-    - Tasks: "reference/tasks.md"
-    - API:
-      - Levels:
-        - Editor: "reference/api/editor.md"
-        - Objects: "reference/api/objects.md"
-        - Header: "reference/api/header.md"
-        - Color Channels: "reference/api/color_channels.md"
-        - HSV: "reference/api/hsv.md"
-        - Guidelines: "reference/api/guidelines.md"
-      - Database:
-        - Save Manager: "reference/api/save_manager.md"
-        - Database: "reference/api/database.md"
-        - Levels: "reference/api/levels.md"
-        - Folder: "reference/api/folder.md"
-        - Artist: "reference/api/artist.md"
-        - Song: "reference/api/song.md"
-        - Rewards: "reference/api/rewards.md"
-        - Like: "reference/api/like.md"
+    - Entities:
+      - Core: "reference/entities/core.md"
+      - Artists: "reference/entities/artists.md"
+      - Songs: "reference/entities/songs.md"
+    - Primitives:
+      - Colors: "reference/primitives/colors.md"
+      - Passwords: "reference/primitives/passwords.md"
+    - Enums:
+      - Comments: "reference/enums/comments.md"
+      - Difficulties: "reference/enums/difficulties.md"
+      - Friend Requests: "reference/enums/friend_requests.md"
+      - Icons: "reference/enums/icons.md"
+      - Levels: "reference/enums/levels.md"
+      - Messages: "reference/enums/messages.md"
+      - Rates: "reference/enums/rates.md"
+      - Relationships: "reference/enums/relationships.md"
+      - Rewards: "reference/enums/rewards.md"
+      - Roles: "reference/enums/roles.md"
+      - Strategies: "reference/enums/strategies.md"
+      - Timely: "reference/enums/timely.md"
+    - Crypto:
+      - AES: "reference/crypto/aes.md"
+      - Base64: "reference/crypto/base64.md"
+      - Checks: "reference/crypto/checks.md"
+      - Enums: "reference/crypto/enums.md"
+      - Hash: "reference/crypto/hash.md"
+      - Levels: "reference/crypto/levels.md"
+      - Passwords: "reference/crypto/passwords.md"
+      - Random: "reference/crypto/random.md"
+      - RobTop: "reference/crypto/robtop.md"
+      - Saves: "reference/crypto/saves.md"
+      - ZIP: "reference/crypto/zip.md"
+    - Binary:
+      - Constants: "reference/binary/constants.md"
+      - Converters: "reference/binary/converters.md"
+      - Enums: "reference/binary/enums.md"
+      - Protocols: "reference/binary/protocols.md"
+    - System: "reference/system.md"
     - Memory:
-      - Internal: "reference/memory/internal.md"
+      - Enums: "reference/memory/enums.md"
+    - Time:
+      - Converters: "reference/time/converters.md"
+      - Human: "reference/time/human.md"
+      - Now: "reference/time/now.md"
+      - Timers: "reference/time/timers.md"
+      - Timestamps: "reference/time/timestamps.md"
+    - Version: "reference/version.md"
+    - Internals:
+      - Entities:
+        - Artists: "reference/internals/entities/artists.md"
+        - Songs: "reference/internals/entities/songs.md"
+      - Primitives:
+        - Colors: "reference/internals/primitives/colors.md"
+        - Queries: "reference/internals/primitives/queries.md"
+      - RobTop:
+        - Protocols: "reference/internals/robtop/protocols.md"
+        - Views: "reference/internals/robtop/views.md"
+    - Defaults:
+      - Encoding: "reference/defaults/encoding.md"
+      - Pages: "reference/defaults/pages.md"
+      - Entities:
+        - Core: "reference/defaults/entities/core.md"
+        - Artists: "reference/defaults/entities/artists.md"
+        - Songs: "reference/defaults/entities/songs.md"
   - Changelog: "changelog.md"
   - Security: "security.md"
   - Code of Conduct: "code_of_conduct.md"
@@ -75,13 +114,16 @@ plugins:
         python:
           options:
             members_order: source
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
             show_signature_annotations: true
-
-          paths: [gd]
 
           import:
             - https://docs.python.org/3/objects.inv
+            - https://typing-extensions.readthedocs.io/en/latest/objects.inv
+            - https://nekitdev.github.io/typing-aliases/objects.inv
             - https://nekitdev.github.io/versions/objects.inv
+            - https://nekitdev.github.io/wraps/objects.inv
 
 markdown_extensions:
   - pymdownx.highlight

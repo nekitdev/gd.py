@@ -23,7 +23,7 @@ Functions marked with `?` are not required for the library to work.
 # fmt: off
 
 from gd.memory.internal.utils import unimplemented
-from gd.platform import DARWIN, WINDOWS
+from gd.system import DARWIN, WINDOWS
 
 try:
     from gd.memory.internal.darwin import allocate as darwin_allocate  # type: ignore

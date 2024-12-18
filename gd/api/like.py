@@ -4,9 +4,9 @@ from typing_extensions import Self
 
 from gd.constants import DEFAULT_ID
 from gd.enums import LikeType
-from gd.models_constants import LIKE_SEPARATOR
-from gd.models_utils import concat_like, split_like
-from gd.robtop import RobTop
+from gd.models.constants import LIKE_SEPARATOR
+from gd.models.operations import concat_like, split_like
+from gd.internals.robtop.protocols import RobTop
 
 __all__ = ("Like",)
 

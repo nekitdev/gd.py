@@ -38,15 +38,13 @@ from typing_aliases import (
     Namespace,
     NormalError,
     Parameters,
-    is_bytes,
-    is_string,
 )
 from typing_aliases import Payload as JSON
+from typing_aliases import is_bytes, is_string
 from yarl import URL
 
 from gd.api.recording import Recording
 from gd.asyncio import run_blocking, shutdown_loop
-from gd.capacity import Capacity
 from gd.constants import (
     DEFAULT_ATTEMPTS,
     DEFAULT_CHECK,
@@ -73,20 +71,17 @@ from gd.constants import (
     WEEKLY_ID_ADD,
     WRITE_BINARY,
 )
-from gd.encoding import (
+from gd.crypto.base64 import encode_base64_string_url_safe
+from gd.crypto.checks import generate_check
+from gd.crypto.levels import (
     ATTEMPTS_ADD,
     CLICKS_ADD,
     COINS_ADD,
     SECONDS_ADD,
-    encode_base64_string_url_safe,
-    encode_robtop_string,
-    generate_check,
-    generate_leaderboard_seed,
     generate_level_seed,
-    generate_random_string,
-    generate_random_string_and_encode_value,
     zip_level_string,
 )
+from gd.crypto.random import generate_random_string
 from gd.enums import (
     AccountURLType,
     CommentState,
@@ -122,28 +117,29 @@ from gd.errors import (
     SongRestricted,
 )
 from gd.filters import Filters
-from gd.models import CommentBannedModel
-from gd.models_constants import OBJECT_SEPARATOR
-from gd.models_utils import bool_str
-from gd.password import Password
-from gd.progress import Progress
-from gd.queries import EMPTY_QUERY
-from gd.string_utils import case_fold, password_str, snake_to_camel_with_abbreviations
-from gd.time import Timer
-from gd.version import python_version_info, version_info
-from gd.versions import (
+from gd.models.constants import OBJECT_SEPARATOR
+from gd.models.core import CommentBannedModel
+from gd.models.operations import bool_str
+from gd.primitives.capacity.core import Capacity
+from gd.primitives.passwords import Password
+from gd.primitives.progress.core import Progress
+from gd.primitives.queries.queries import EMPTY_QUERY
+from gd.primitives.versions import (
     CURRENT_BINARY_VERSION,
     CURRENT_GAME_VERSION,
     GameVersion,
     RobTopVersion,
 )
+from gd.strings.operations import case_fold, password_str, snake_to_camel_with_abbreviations
+from gd.time.timers import Timer
+from gd.version import python_version_info, version_info
 
 if TYPE_CHECKING:
     from types import TracebackType as Traceback
 
     from typing_extensions import Self
 
-    from gd.queries import Query
+    from gd.primitives.queries.queries import Query
     from gd.typing import AnyString, URLString
 
 __all__ = ("Route", "HTTPClient")
@@ -153,9 +149,14 @@ DATABASE = "database"
 BASE = "https://www.boomlings.com/database"
 GD_BASE = "https://geometrydash.com/database"
 
-NEWGROUNDS_SONG = "https://newgrounds.com/audio/listen/`{}`"
-NEWGROUNDS_SONG_PAGE = "https://`{}`.newgrounds.com/audio/page/`{}`"
-NEWGROUNDS_SEARCH = "https://newgrounds.com/search/conduct/`{}`"
+NEWGROUNDS_SONG = "https://newgrounds.com/audio/listen/{}"
+newgrounds_song = NEWGROUNDS_SONG.format
+
+NEWGROUNDS_SONG_PAGE = "https://{}.newgrounds.com/audio/page/{}"
+newgrounds_song_page = NEWGROUNDS_SONG_PAGE.format
+
+NEWGROUNDS_SEARCH = "https://newgrounds.com/search/conduct/{}"
+newgrounds_search = NEWGROUNDS_SEARCH.format
 
 ACCEPT_ENCODING = "Accept-Encoding"
 USER_AGENT = "User-Agent"
@@ -541,9 +542,6 @@ class HTTPClient:
 
     def __attrs_post_init__(self) -> None:
         add_client(self)
-
-    def __hash__(self) -> int:
-        return id(self)
 
     @property
     def session(self) -> ClientSession:

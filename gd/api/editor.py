@@ -1,23 +1,14 @@
 from __future__ import annotations
 
 from operator import attrgetter as get_attribute_factory
-from typing import (
-    TYPE_CHECKING,
-    Iterable,
-    Iterator,
-    List,
-    Sequence,
-    Set,
-    Union,
-    overload,
-)
+from typing import TYPE_CHECKING, Iterable, Iterator, List, Sequence, Set, Union, overload
 
 from attrs import define, field
 from iters.iters import iter, wrap_iter
 from typing_aliases import is_slice
 
 from gd.api.header import Header
-from gd.api.objects import (
+from gd.api.objects.objects import (
     Object,
     StartPosition,
     Trigger,
@@ -30,14 +21,14 @@ from gd.api.objects import (
     object_to_robtop,
 )
 from gd.enums import Speed, SpeedChangeType, SpeedMagic
-from gd.models_constants import OBJECTS_SEPARATOR
-from gd.models_utils import concat_objects, split_objects
-from gd.robtop import RobTop
+from gd.models.constants import OBJECTS_SEPARATOR
+from gd.models.operations import concat_objects, split_objects
+from gd.internals.robtop.protocols import RobTop
 
 if TYPE_CHECKING:
     from typing_extensions import Self
 
-    from gd.api.color_channels import ColorChannels
+    from gd.api.color_channels.core import ColorChannels
 
 
 __all__ = ("Editor", "time_length")

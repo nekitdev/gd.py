@@ -1,0 +1,1 @@
+::: gd.defaults.entities.artists

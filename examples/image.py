@@ -1,12 +1,13 @@
 """Generating icons."""
 
+from async_extensions.blocking import run_blocking_in_thread
 from entrypoint import entrypoint
 
-import gd
-from gd.asyncio import run_blocking
-from gd.queries import query
+from gd.clients import Client
+from gd.errors import MissingAccess
+from gd.primitives.queries.queries import query
 
-client = gd.Client()  # initialize the client
+client = Client()  # initialize the client
 
 PROMPT = "name: "
 
@@ -26,7 +27,7 @@ async def async_main() -> None:
     try:
         user = await client.search_user(query(name))
 
-    except gd.MissingAccess:
+    except MissingAccess:
         print(not_found(name=name))
 
     else:
@@ -38,7 +39,7 @@ async def async_main() -> None:
         else:
             image = await cosmetics.generate_full_async()
 
-            await run_blocking(image.save, image_name(user=user))
+            await run_blocking_in_thread(image.save, image_name(user=user))
 
 
 @entrypoint(__name__)

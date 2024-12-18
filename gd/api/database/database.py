@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Tuple
-from uuid import UUID
-from uuid import uuid4 as generate_uuid
 
 from attrs import define, field
 from funcs.unpacking import unpack_binary
@@ -16,7 +14,7 @@ from gd.api.database.statistics import Statistics
 from gd.api.database.storage import Storage
 from gd.api.database.unlock_values import UnlockValues
 from gd.api.database.values import Values
-from gd.api.folder import Folder
+from gd.api.folders import Folder
 from gd.api.levels import (
     CreatedLevelAPI,
     GauntletLevelAPI,
@@ -25,8 +23,8 @@ from gd.api.levels import (
     TimelyLevelAPI,
 )
 from gd.api.like import Like
-from gd.api.objects import Object, migrate_objects, object_from_robtop, object_to_robtop
-from gd.api.song import SongAPI
+from gd.api.objects.objects import Object, migrate_objects, object_from_robtop, object_to_robtop
+from gd.api.songs import SongAPI
 from gd.constants import (
     DEFAULT_COLOR_1_ID,
     DEFAULT_COLOR_2_ID,
@@ -39,18 +37,14 @@ from gd.constants import (
     EMPTY,
     WEEKLY_ID_ADD,
 )
-from gd.encoding import hash_password
+from gd.crypto.passwords import hash_password
 from gd.enums import IconType, Quality
 from gd.filters import Filters
-from gd.models_utils import concat_objects, split_objects
+from gd.models.operations import concat_objects, split_objects
 from gd.plist import PARSER
-from gd.robtop_view import RobTopView, StringRobTopView
-from gd.string_utils import (
-    password_repr,
-    snake_to_camel,
-    snake_to_camel_with_abbreviations,
-)
-from gd.versions import CURRENT_BINARY_VERSION, RobTopVersion
+from gd.primitives.versions import CURRENT_BINARY_VERSION, RobTopVersion
+from gd.internals.robtop.views import RobTopView, StringRobTopView
+from gd.strings.operations import password_repr, snake_to_camel, snake_to_camel_with_abbreviations
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -78,7 +72,7 @@ DEFAULT_BOOTUPS = 0
 VOLUME = snake_to_camel("bg_volume")
 SFX_VOLUME = snake_to_camel("sfx_volume")
 
-UUID_LITERAL = snake_to_camel_with_abbreviations("player_udid", unary_tuple("UDID"))  # funny, huh?
+UDID = snake_to_camel_with_abbreviations("player_udid", unary_tuple("UDID"))  # funny, huh?
 
 PLAYER_NAME = snake_to_camel("player_name")
 USER_ID = snake_to_camel_with_abbreviations("player_user_id")
@@ -195,7 +189,7 @@ class Database:
     volume: float = field(default=DEFAULT_VOLUME)
     sfx_volume: float = field(default=DEFAULT_VOLUME)
 
-    uuid: UUID = field(factory=generate_uuid)
+    udid: str = field(default=EMPTY)
 
     player_name: str = field(default=EMPTY)
 
@@ -298,7 +292,7 @@ class Database:
         volume = main_view.get_option(VOLUME).unwrap_or(DEFAULT_VOLUME)
         sfx_volume = main_view.get_option(SFX_VOLUME).unwrap_or(DEFAULT_VOLUME)
 
-        uuid = main_view.get_option(UUID_LITERAL).map(UUID).unwrap_or_else(generate_uuid)
+        udid = main_view.get_option(UDID).unwrap_or(EMPTY)
 
         player_name = main_view.get_option(PLAYER_NAME).unwrap_or(EMPTY)
 
@@ -565,7 +559,7 @@ class Database:
         return cls(
             volume=volume,
             sfx_volume=sfx_volume,
-            uuid=uuid,
+            udid=udid,
             player_name=player_name,
             name=name,
             id=id,
@@ -638,7 +632,7 @@ class Database:
         main_data: StringDict[Any] = {
             VOLUME: self.volume,
             SFX_VOLUME: self.sfx_volume,
-            UUID_LITERAL: str(self.uuid),
+            UDID: str(self.udid),
             PLAYER_NAME: self.player_name,
             USER_ID: self.id,
             CUBE_ID: self.cube_id,

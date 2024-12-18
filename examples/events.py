@@ -2,16 +2,17 @@
 
 from entrypoint import entrypoint
 
-import gd
+from gd.clients import Client
+from gd.entities.levels import Level
 
-client = gd.Client()  # initialize the client
+client = Client()  # initialize the client
 
 RATED = "new level rated: {level.name} (ID: {level.id})"
 rated = RATED.format
 
 
 @client.event  # decorate the handler
-async def on_rate(level: gd.Level) -> None:
+async def on_rate(level: Level) -> None:
     print(rated(level=level))
 
 

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, TypeVar
 from attrs import frozen
 from typing_extensions import Protocol, runtime_checkable
 
-from gd.binary_constants import (
+from gd.binary.constants import (
     BOOL_SIZE,
     F32_SIZE,
     F64_SIZE,
@@ -19,11 +19,11 @@ from gd.binary_constants import (
     U32_SIZE,
     U64_SIZE,
 )
-from gd.enums import ByteOrder
+from gd.binary.enums import ByteOrder
 
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
-    from gd.platform import PlatformConfig
+    from gd.system import Config
 
 __all__ = (
     "I8",
@@ -74,11 +74,11 @@ class Data(Protocol[T]):
         ...
 
     @abstractmethod
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         ...
 
     @abstractmethod
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         ...
 
 
@@ -96,10 +96,10 @@ class I8(Data[int]):
     ) -> None:
         state.write_i8(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return I8_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return I8_SIZE
 
 
@@ -117,10 +117,10 @@ class U8(Data[int]):
     ) -> None:
         state.write_u8(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return U8_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return U8_SIZE
 
 
@@ -138,10 +138,10 @@ class I16(Data[int]):
     ) -> None:
         state.write_i16(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return I16_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return I16_SIZE
 
 
@@ -159,10 +159,10 @@ class U16(Data[int]):
     ) -> None:
         state.write_u16(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return U16_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return U16_SIZE
 
 
@@ -180,10 +180,10 @@ class I32(Data[int]):
     ) -> None:
         state.write_i32(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return I32_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return I32_SIZE
 
 
@@ -201,10 +201,10 @@ class U32(Data[int]):
     ) -> None:
         state.write_u32(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return U32_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return U32_SIZE
 
 
@@ -222,10 +222,10 @@ class I64(Data[int]):
     ) -> None:
         state.write_i64(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return I64_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return I64_SIZE
 
 
@@ -243,10 +243,10 @@ class U64(Data[int]):
     ) -> None:
         state.write_u64(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return U64_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return U64_SIZE
 
 
@@ -264,12 +264,12 @@ class ISize(Data[int]):
     ) -> None:
         state.write_isize(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         size = {8: I8_SIZE, 16: I16_SIZE, 32: I32_SIZE, 64: I64_SIZE}
 
         return size[config.bits]
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         alignment = {8: I8_SIZE, 16: I16_SIZE, 32: I32_SIZE, 64: I64_SIZE}
 
         return alignment[config.bits]
@@ -289,12 +289,12 @@ class USize(Data[int]):
     ) -> None:
         state.write_usize(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         size = {8: U8_SIZE, 16: U16_SIZE, 32: U32_SIZE, 64: U64_SIZE}
 
         return size[config.bits]
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         alignment = {8: U8_SIZE, 16: U16_SIZE, 32: U32_SIZE, 64: U64_SIZE}
 
         return alignment[config.bits]
@@ -316,10 +316,10 @@ class F32(Data[float]):
     ) -> None:
         state.write_f32(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return F32_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return F32_SIZE
 
 
@@ -339,10 +339,10 @@ class F64(Data[float]):
     ) -> None:
         state.write_f64(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return F64_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return F64_SIZE
 
 
@@ -360,10 +360,10 @@ class Bool(Data[bool]):
     ) -> None:
         state.write_bool(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return BOOL_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return BOOL_SIZE
 
 
@@ -381,10 +381,10 @@ class Byte(Data[int]):
     ) -> None:
         state.write_byte(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return I8_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return I8_SIZE
 
 
@@ -402,10 +402,10 @@ class UByte(Data[int]):
     ) -> None:
         state.write_ubyte(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return U8_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return U8_SIZE
 
 
@@ -423,10 +423,10 @@ class Short(Data[int]):
     ) -> None:
         state.write_short(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return I16_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return I16_SIZE
 
 
@@ -444,10 +444,10 @@ class UShort(Data[int]):
     ) -> None:
         state.write_ushort(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return U16_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return U16_SIZE
 
 
@@ -465,13 +465,13 @@ class Int(Data[int]):
     ) -> None:
         state.write_int(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         if config.bits < 32:
             return I16_SIZE
 
         return I32_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         if config.bits < 32:
             return I16_SIZE
 
@@ -492,13 +492,13 @@ class UInt(Data[int]):
     ) -> None:
         state.write_uint(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         if config.bits < 32:
             return U16_SIZE
 
         return U32_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         if config.bits < 32:
             return U16_SIZE
 
@@ -519,13 +519,13 @@ class Long(Data[int]):
     ) -> None:
         state.write_long(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         if config.bits > 32 and not config.platform.is_windows():
             return I64_SIZE
 
         return I32_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         if config.bits > 32 and not config.platform.is_windows():
             return I64_SIZE
 
@@ -546,13 +546,13 @@ class ULong(Data[int]):
     ) -> None:
         state.write_ulong(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         if config.bits > 32 and not config.platform.is_windows():
             return U64_SIZE
 
         return U32_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         if config.bits > 32 and not config.platform.is_windows():
             return U64_SIZE
 
@@ -573,10 +573,10 @@ class LongLong(Data[int]):
     ) -> None:
         state.write_longlong(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return I64_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return I64_SIZE
 
 
@@ -594,10 +594,10 @@ class ULongLong(Data[int]):
     ) -> None:
         state.write_ulonglong(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return U64_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return U64_SIZE
 
 
@@ -615,12 +615,12 @@ class Size(Data[int]):
     ) -> None:
         state.write_size(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         size = {8: I8_SIZE, 16: I16_SIZE, 32: I32_SIZE, 64: I64_SIZE}
 
         return size[config.bits]
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         size = {8: I8_SIZE, 16: I16_SIZE, 32: I32_SIZE, 64: I64_SIZE}
 
         return size[config.bits]
@@ -642,10 +642,10 @@ class Float(Data[float]):
     ) -> None:
         state.write_float(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return F32_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return F32_SIZE
 
 
@@ -665,8 +665,8 @@ class Double(Data[float]):
     ) -> None:
         state.write_double(address, value, order)
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return F64_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return F64_SIZE

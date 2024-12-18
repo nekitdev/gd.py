@@ -36,9 +36,9 @@ gd = "gd.main:gd"
 [tool.poetry.dependencies]
 python = ">= 3.8"
 
-aiohttp = ">= 3.9.3"
+aiohttp = ">= 3.9.5"
 click = ">= 8.1.7"
-tqdm = ">= 4.66.2"
+tqdm = ">= 4.66.4"
 yarl = ">= 1.9.4"
 
 attrs = ">= 23.2.0"
@@ -46,38 +46,39 @@ cattrs = ">= 23.2.3"
 
 pendulum = ">= 3.0.0"
 
-entrypoint = ">= 2.0.2"
+entrypoint = ">= 2.1.0"
 versions = ">= 2.1.2"
 
-named = ">= 1.4.1"
+named = ">= 1.4.2"
 
-xor-cipher = ">= 3.2.1"
+xor-cipher = ">= 5.0.0"
 colors-core = ">= 1.1.1"
 
-async-extensions = ">= 2.0.2"
-iters = ">= 0.16.1"
+async-extensions = ">= 4.0.0"
+iters = ">= 0.18.0"
 
-funcs = ">= 0.9.1"
+funcs = ">= 0.10.1"
+wraps = ">= 0.13.0"
 
-typing-extensions = ">= 4.10.0"
-typing-aliases = ">= 1.7.1"
+typing-extensions = ">= 4.12.2"
+typing-aliases = ">= 1.10.1"
 
-pycapnp = ">= 1.3.0"
+pycapnp = ">= 2.0.0"
 
 [tool.poetry.dependencies.lxml]
-version = ">= 5.1.0"
+version = ">= 5.2.2"
 optional = true
 
 [tool.poetry.dependencies.pillow]
-version = ">= 10.2.0"
+version = ">= 10.3.0"
 optional = true
 
 [tool.poetry.dependencies.cryptography]
-version = ">= 42.0.5"
+version = ">= 42.0.8"
 optional = true
 
 [tool.poetry.dependencies.ipython]
-version = ">= 8.22.1"
+version = ">= 8.25.0"
 python = ">= 3.10"
 optional = true
 
@@ -88,42 +89,42 @@ speed = ["lxml"]
 console = ["ipython"]
 
 [tool.poetry.group.format.dependencies]
-ruff = "0.3.0"
+ruff = "0.4.10"
 
 [tool.poetry.group.check.dependencies]
-mypy = "1.8.0"
+mypy = "1.10.1"
 
-types-pillow = "10.2.0.20240213"
-types-tqdm = "4.66.0.20240106"
+types-pillow = "10.2.0.20240520"
+types-tqdm = "4.66.0.20240417"
 lxml-stubs = "0.5.1"
 
 [tool.poetry.group.check.dependencies.pre-commit]
-version = "3.6.2"
+version = "3.7.1"
 python = ">= 3.9"
 
 [tool.poetry.group.test.dependencies]
-coverage = "7.4.3"
-pytest = "8.0.2"
-pytest-cov = "4.1.0"
-pytest-benchmark = "4.0.0"
-pytest-asyncio = "0.23.5"
+coverage = "7.5.4"
+pytest = "8.2.2"
+pytest-cov = "5.0.0"
+pytest-asyncio = "0.23.7"
+hypothesis = "6.104.1"
 
 [tool.poetry.group.docs]
 optional = true
 
 [tool.poetry.group.docs.dependencies]
-mkdocs = "1.5.3"
-mkdocs-material = "9.5.12"
+mkdocs = "1.6.0"
+mkdocs-material = "9.5.27"
 
 [tool.poetry.group.docs.dependencies.mkdocstrings]
-version = "0.24.0"
+version = "0.25.1"
 extras = ["python"]
 
 [tool.poetry.group.release]
 optional = true
 
 [tool.poetry.group.release.dependencies]
-changelogging = "1.4.1"
+changelogging = "2.3.0"
 
 [tool.ruff]
 line-length = 100
@@ -146,6 +147,7 @@ source = ["gd"]
 ignore_errors = true
 exclude_also = [
     "pragma: never",
+    "pragma: no cover",
     "if TYPE_CHECKING",
     "@overload",
     "@required",
@@ -160,23 +162,14 @@ directory = "coverage"
 [tool.mypy]
 strict = true
 
-[tool.changelogging]
+[tool.changelogging.context]
 name = "gd.py"
 version = "2.0.0-dev.0"
 url = "https://github.com/nekitdev/gd.py"
-directory = "changes"
-output = "CHANGELOG.md"
 
-start_string = "<!-- changelogging: start -->"
-
-title_format = "{version} ({date})"
-issue_format = "[#{issue}]({url}/pull/{issue})"
-
-bullet = "-"
-wrap = true
-wrap_size = 100
-
-display = ["feature", "change", "fix", "security", "deprecation", "removal", "internal"]
+[tool.changelogging.formats]
+title = "[{{version}}]({{url}}/tree/v{{version}}) ({{date}})"
+fragment = "{{content}} ([#{{id}}]({{url}}/pull/{{id}}))"
 
 [build-system]
 requires = ["poetry-core >= 1.9.0"]

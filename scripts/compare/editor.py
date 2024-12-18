@@ -1,9 +1,9 @@
 import click
 from entrypoint import entrypoint
 
-from gd.client import Client
-from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
-from gd.encoding import compress
+from gd.clients import Client
+from gd.crypto.zip import compress
+from gd.defaults.encoding import DEFAULT_ENCODING, DEFAULT_ERRORS
 
 LEVEL_ID = 37361518
 ROUNDING = 2
@@ -40,7 +40,7 @@ def main(level_id: int, rounding: int) -> None:
 
     click.echo(CONVERTING)
 
-    data = editor.to_bytes()
+    data = editor.to_bytes_packed()
 
     robtop_data_length = len(robtop_data)
     data_length = len(data)

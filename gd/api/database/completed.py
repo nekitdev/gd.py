@@ -19,8 +19,8 @@ from gd.api.database.common import (
     prefix,
 )
 from gd.constants import WEEKLY_ID_ADD
-from gd.robtop_view import StringRobTopView
-from gd.string_utils import starts_with
+from gd.internals.robtop.views import StringRobTopView
+from gd.strings.operations import starts_with
 
 __all__ = ("Completed",)
 

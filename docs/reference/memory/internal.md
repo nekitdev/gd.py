@@ -1,1 +1,0 @@
-::: gd.memory.internal

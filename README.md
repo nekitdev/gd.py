@@ -18,7 +18,7 @@
 
 **Python 3.8 or above is required.**
 
-### pip
+### `pip`
 
 Installing the library with `pip` is quite simple:
 
@@ -29,12 +29,18 @@ $ pip install gd.py
 Alternatively, the library can be installed from source:
 
 ```console
-$ git clone https://github.com/nekitdev/gd.py.git
-$ cd gd.py
-$ python -m pip install .
+$ pip install git+https://github.com/nekitdev/gd.py.git
 ```
 
-### poetry
+Or via cloning the repository:
+
+```console
+$ git clone https://github.com/nekitdev/gd.py.git
+$ cd gd.py
+$ pip install .
+```
+
+### `poetry`
 
 You can add `gd.py` as a dependency with the following command:
 
@@ -75,6 +81,9 @@ SONG_ID = 1081309
 
 SONG_INFO = "`{song.name}` by `{song.artist.name}` (ID: `{song.id}`, size: `{song.size} MB`)"
 song_info = SONG_INFO.format
+
+
+client = gd.Client()
 
 
 async def async_main() -> None:
@@ -139,15 +148,16 @@ from entrypoint import entrypoint
 
 import gd
 
-client = gd.Client()
+NEW_DAILY = "new daily! `{daily.name}` by `{daily.creator.name}` (ID: `{daily.id}`)"
+new_daily = NEW_DAILY.format
 
-DAILY_INFO = "new daily! `{daily.name}` by `{daily.creator.name}` (ID: `{daily.id}`)"
-daily_info = DAILY_INFO.format
+
+client = gd.Client()
 
 
 @client.event
 async def on_daily(daily: gd.Level) -> None:
-    print(daily_info(daily=daily))
+    print(new_daily(daily=daily))
 
 
 client.listen_for_daily()

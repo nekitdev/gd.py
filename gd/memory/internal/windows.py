@@ -9,11 +9,10 @@ from attrs import frozen
 from typing_aliases import AnyError
 from typing_extensions import TypeAlias
 
-from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
-from gd.enums import Permissions
-from gd.memory.internal import unimplemented
-from gd.memory.internal.utils import Struct, external
-from gd.platform import SYSTEM_BITS
+from gd.defaults.encoding import DEFAULT_ENCODING, DEFAULT_ERRORS
+from gd.memory.enums import Permissions
+from gd.memory.internal.utils import Struct, external, unimplemented
+from gd.system import BITS
 
 __all__ = (
     "open",
@@ -367,7 +366,7 @@ def get_process_bits(process_id: int) -> int:
 
 
 def get_process_bits_from_handle(handle: int) -> int:
-    if SYSTEM_BITS == 64:
+    if BITS == 64:
         if _is_wow_64_process(handle):
             return 32
 

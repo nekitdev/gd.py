@@ -8,7 +8,6 @@ from typing_extensions import Self
 
 from gd.api.editor import Editor
 from gd.api.recording import Recording
-from gd.capacity import Capacity
 from gd.constants import (
     DEFAULT_ATTEMPTS,
     DEFAULT_AUTO,
@@ -44,19 +43,12 @@ from gd.constants import (
     EMPTY,
     WEEKLY_ID_ADD,
 )
-from gd.date_time import duration_from_seconds
+from gd.crypto.base64 import decode_base64_string_url_safe, encode_base64_string_url_safe
+from gd.crypto.levels import generate_level_leaderboard_seed, unzip_level_string, zip_level_string
 from gd.decorators import cache_by
-from gd.difficulty_parameters import (
-    DEFAULT_DEMON_DIFFICULTY_VALUE,
-    DifficultyParameters,
-)
-from gd.encoding import (
-    decode_base64_string_url_safe,
-    encode_base64_string_url_safe,
-    generate_leaderboard_seed,
-    unzip_level_string,
-    zip_level_string,
-)
+from gd.difficulty_parameters import DEFAULT_DEMON_DIFFICULTY_VALUE, DifficultyParameters
+from gd.entities.songs import SongReference
+from gd.entities.users import UserReference
 from gd.enums import (
     CollectedCoins,
     Difficulty,
@@ -67,17 +59,17 @@ from gd.enums import (
     SpecialRateType,
     TimelyType,
 )
-from gd.password import Password
-from gd.progress import Progress
-from gd.robtop_view import StringRobTopView
-from gd.songs import SongReference
-from gd.users import UserReference
-from gd.versions import (
+from gd.primitives.capacity.core import Capacity
+from gd.primitives.passwords import Password
+from gd.primitives.progress.core import Progress
+from gd.primitives.versions import (
     CURRENT_BINARY_VERSION,
     CURRENT_GAME_VERSION,
     GameVersion,
     RobTopVersion,
 )
+from gd.internals.robtop.views import StringRobTopView
+from gd.time import duration_from_seconds
 
 INTERNAL_TYPE = "kCEK"
 
@@ -175,15 +167,12 @@ class BaseLevelAPI:
     leaderboard_record: int = field(default=DEFAULT_RECORD)
     leaderboard_seed: int = field()  # computed automatically
 
-    def __hash__(self) -> int:
-        return hash(type(self)) ^ self.id
-
     @classmethod
     def default(cls, id: int = DEFAULT_ID, name: str = EMPTY) -> Self:
         return cls(id=id, name=name)
 
     def compute_leaderboard_seed(self) -> int:
-        return generate_leaderboard_seed(
+        return generate_level_leaderboard_seed(
             self.best_clicks,
             self.leaderboard_record,
             round(self.best_time.total_seconds()),
@@ -295,9 +284,6 @@ class OfficialLevelAPI(BaseLevelAPI):
     difficulty: Difficulty = field(default=Difficulty.DEFAULT)
     required_coins: int = field(default=DEFAULT_COINS)
 
-    def __hash__(self) -> int:
-        return hash(type(self)) ^ self.id
-
     def is_demon(self) -> bool:
         return self.difficulty.is_demon()
 
@@ -377,9 +363,6 @@ class CustomLevelAPI(BaseLevelAPI):
     copies_time: Duration = field(factory=duration)
     order: int = field(default=DEFAULT_ORDER)
     folder_id: int = field(default=DEFAULT_ID)
-
-    def __hash__(self) -> int:
-        return hash(type(self)) ^ self.id
 
     @property
     @cache_by(UNPROCESSED_DATA)
@@ -561,9 +544,6 @@ class CreatedLevelAPI(CustomLevelAPI):
     recording: Recording = field(factory=Recording, repr=False)
     collected_coins: CollectedCoins = field(default=CollectedCoins.DEFAULT)
     unlisted: bool = field(default=DEFAULT_UNLISTED)
-
-    def __hash__(self) -> int:
-        return hash(type(self)) ^ self.id
 
     def is_verified(self) -> bool:
         return self.verified
@@ -787,9 +767,6 @@ class SavedLevelAPI(CustomLevelAPI):
 
         return data
 
-    def __hash__(self) -> int:
-        return hash(type(self)) ^ self.id
-
     def is_rated(self) -> bool:
         return self.rate_type.is_rated()
 
@@ -822,9 +799,6 @@ class SavedLevelAPI(CustomLevelAPI):
 class TimelyLevelAPI(SavedLevelAPI):
     timely_id: int = field(default=DEFAULT_ID)
     timely_type: TimelyType = field(default=TimelyType.DEFAULT)
-
-    def __hash__(self) -> int:
-        return hash(type(self)) ^ self.id
 
     @classmethod
     def from_robtop_view(cls, view: StringRobTopView[Any]) -> Self:
@@ -875,9 +849,6 @@ class TimelyLevelAPI(SavedLevelAPI):
 
 @define()
 class GauntletLevelAPI(SavedLevelAPI):
-    def __hash__(self) -> int:
-        return hash(type(self)) ^ self.id
-
     def to_robtop_data(self) -> StringDict[Any]:
         data = super().to_robtop_data()
 

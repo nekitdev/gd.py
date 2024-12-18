@@ -3,11 +3,11 @@ from typing import Iterable
 import click
 from entrypoint import entrypoint
 
-from gd.api.color_channels import ColorChannels, NormalColorChannel
+from gd.api.color_channels.core import ColorChannels, NormalColorChannel
 from gd.api.header import Header
-from gd.color import Color
-from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
-from gd.encoding import compress
+from gd.crypto.zip import compress
+from gd.defaults.encoding import DEFAULT_ENCODING, DEFAULT_ERRORS
+from gd.primitives.colors.core import Color
 
 
 def color_id_range(count: int) -> Iterable[int]:
@@ -37,7 +37,7 @@ def main(count: int, rounding: int) -> None:
     )
 
     robtop_data = header.to_robtop().encode(DEFAULT_ENCODING, DEFAULT_ERRORS)
-    data = header.to_bytes()
+    data = header.to_bytes_packed()
 
     robtop_data_length = len(robtop_data)
     data_length = len(data)

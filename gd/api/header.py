@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from attrs import define, field
 
-from gd.api.color_channels import (
+from gd.api.color_channels.core import (
     BACKGROUND_COLOR_CHANNEL_ID,
     COLOR_1_CHANNEL_ID,
     COLOR_2_CHANNEL_ID,
@@ -21,13 +21,13 @@ from gd.api.color_channels import (
     compatibility_color_channel_from_robtop,
 )
 from gd.api.guidelines import Guidelines
-from gd.color import Color
 from gd.constants import BYTE, DEFAULT_ID
 from gd.enums import GameMode, PlayerColor, Speed
-from gd.models_constants import HEADER_SEPARATOR
-from gd.models_utils import bool_str, concat_header, float_str, int_bool, split_header
-from gd.robtop import RobTop
-from gd.robtop_view import RobTopView, StringRobTopView
+from gd.models.constants import HEADER_SEPARATOR
+from gd.models.operations import bool_str, concat_header, float_str, int_bool, split_header
+from gd.primitives.colors.core import Color
+from gd.internals.robtop.protocols import RobTop
+from gd.internals.robtop.views import RobTopView, StringRobTopView
 
 if TYPE_CHECKING:
     from typing_extensions import Self

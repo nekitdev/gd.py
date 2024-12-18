@@ -4,7 +4,7 @@ from attrs import define, field
 from typing_aliases import required
 from typing_extensions import Self
 
-from gd.binary_constants import (
+from gd.binary.constants import (
     BOOL_SIZE,
     F32_SIZE,
     F64_SIZE,
@@ -17,7 +17,7 @@ from gd.binary_constants import (
     U32_SIZE,
     U64_SIZE,
 )
-from gd.binary_utils import (
+from gd.binary.converters import (
     from_bool,
     from_f32,
     from_f64,
@@ -29,19 +29,19 @@ from gd.binary_utils import (
     from_u16,
     from_u32,
     from_u64,
-    to_bool,
-    to_f32,
-    to_f64,
-    to_i8,
-    to_i16,
-    to_i32,
-    to_i64,
-    to_u8,
-    to_u16,
-    to_u32,
-    to_u64,
+    into_bool,
+    into_f32,
+    into_f64,
+    into_i8,
+    into_i16,
+    into_i32,
+    into_i64,
+    into_u8,
+    into_u16,
+    into_u32,
+    into_u64,
 )
-from gd.enums import ByteOrder, Permissions, Platform
+from gd.binary.enums import ByteOrder
 from gd.memory.base import StructData
 from gd.memory.constants import (
     DARWIN_ACCOUNT_MANAGER_OFFSET,
@@ -49,6 +49,7 @@ from gd.memory.constants import (
     WINDOWS_ACCOUNT_MANAGER_OFFSET,
     WINDOWS_GAME_MANAGER_OFFSET,
 )
+from gd.memory.enums import Permissions
 from gd.memory.gd import AccountManager, GameManager
 from gd.memory.internal import (
     darwin_allocate,
@@ -86,7 +87,7 @@ from gd.memory.internal import (
     windows_write,
 )
 from gd.memory.pointers import Pointer
-from gd.platform import DARWIN, WINDOWS, PlatformConfig
+from gd.system import DARWIN, PLATFORM, WINDOWS, Config, Platform
 
 __all__ = (
     "AbstractState",
@@ -148,75 +149,75 @@ class StateProtocol(Protocol):
         return self.allocate_at(0, size, permissions)
 
     def read_i8(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
-        return from_i8(self.read_at(address, I8_SIZE), order)
+        return into_i8(self.read_at(address, I8_SIZE), order)
 
     def read_u8(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
-        return from_u8(self.read_at(address, U8_SIZE), order)
+        return into_u8(self.read_at(address, U8_SIZE), order)
 
     def read_i16(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
-        return from_i16(self.read_at(address, I16_SIZE), order)
+        return into_i16(self.read_at(address, I16_SIZE), order)
 
     def read_u16(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
-        return from_u16(self.read_at(address, U16_SIZE), order)
+        return into_u16(self.read_at(address, U16_SIZE), order)
 
     def read_i32(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
-        return from_i32(self.read_at(address, I32_SIZE), order)
+        return into_i32(self.read_at(address, I32_SIZE), order)
 
     def read_u32(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
-        return from_u32(self.read_at(address, U32_SIZE), order)
+        return into_u32(self.read_at(address, U32_SIZE), order)
 
     def read_i64(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
-        return from_i64(self.read_at(address, I64_SIZE), order)
+        return into_i64(self.read_at(address, I64_SIZE), order)
 
     def read_u64(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> int:
-        return from_u64(self.read_at(address, U64_SIZE), order)
+        return into_u64(self.read_at(address, U64_SIZE), order)
 
     def read_f32(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> float:
-        return from_f32(self.read_at(address, F32_SIZE), order)
+        return into_f32(self.read_at(address, F32_SIZE), order)
 
     def read_f64(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> float:
-        return from_f64(self.read_at(address, F64_SIZE), order)
+        return into_f64(self.read_at(address, F64_SIZE), order)
 
     def read_bool(self, address: int, order: ByteOrder = ByteOrder.NATIVE) -> bool:
-        return from_bool(self.read_at(address, BOOL_SIZE), order)
+        return into_bool(self.read_at(address, BOOL_SIZE), order)
 
     def write_i8(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
-        self.write_at(address, to_i8(value, order))
+        self.write_at(address, from_i8(value, order))
 
     def write_u8(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
-        self.write_at(address, to_u8(value, order))
+        self.write_at(address, from_u8(value, order))
 
     def write_i16(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
-        self.write_at(address, to_i16(value, order))
+        self.write_at(address, from_i16(value, order))
 
     def write_u16(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
-        self.write_at(address, to_u16(value, order))
+        self.write_at(address, from_u16(value, order))
 
     def write_i32(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
-        self.write_at(address, to_i32(value, order))
+        self.write_at(address, from_i32(value, order))
 
     def write_u32(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
-        self.write_at(address, to_u32(value, order))
+        self.write_at(address, from_u32(value, order))
 
     def write_i64(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
-        self.write_at(address, to_i64(value, order))
+        self.write_at(address, from_i64(value, order))
 
     def write_u64(self, address: int, value: int, order: ByteOrder = ByteOrder.NATIVE) -> None:
-        self.write_at(address, to_u64(value, order))
+        self.write_at(address, from_u64(value, order))
 
     def write_f32(self, address: int, value: float, order: ByteOrder = ByteOrder.NATIVE) -> None:
-        self.write_at(address, to_f32(value, order))
+        self.write_at(address, from_f32(value, order))
 
     def write_f64(self, address: int, value: float, order: ByteOrder = ByteOrder.NATIVE) -> None:
-        self.write_at(address, to_f64(value, order))
+        self.write_at(address, from_f64(value, order))
 
     def write_bool(self, address: int, value: bool, order: ByteOrder = ByteOrder.NATIVE) -> None:
-        self.write_at(address, to_bool(value, order))
+        self.write_at(address, from_bool(value, order))
 
 
 @define()
 class AbstractState(StateProtocol):
-    config: PlatformConfig = field()
+    config: Config = field()
     process_name: str = field()
     title: str = field(default=DEFAULT_TITLE)
     process_id: int = field(default=DEFAULT_PROCESS_ID)
@@ -406,7 +407,7 @@ class AbstractState(StateProtocol):
 
 @define()
 class SystemState(AbstractState):
-    config: PlatformConfig = field(factory=PlatformConfig.system)
+    config: Config = field(factory=Config.factory(PLATFORM))
 
     def load(self) -> None:
         process_name = self.process_name
@@ -464,9 +465,7 @@ class SystemState(AbstractState):
 
 @define()
 class DarwinState(AbstractState):
-    config: PlatformConfig = field(
-        factory=PlatformConfig.default_with_platform_factory(Platform.DARWIN)
-    )
+    config: Config = field(factory=Config.factory(Platform.DARWIN))
 
     def load(self) -> None:
         self.process_id = process_id = darwin_get_process_id_from_name(self.process_name)
@@ -523,9 +522,7 @@ class DarwinState(AbstractState):
 
 @define()
 class WindowsState(AbstractState):
-    config: PlatformConfig = field(
-        factory=PlatformConfig.default_with_platform_factory(Platform.WINDOWS)
-    )
+    config: Config = field(factory=Config.factory(Platform.WINDOWS))
 
     def load(self) -> None:
         process_name = self.process_name

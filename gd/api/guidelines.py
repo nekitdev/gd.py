@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Dict
 
 from gd.enums import GuidelineColor
-from gd.models_constants import GUIDELINES_SEPARATOR
-from gd.models_utils import concat_guidelines, split_guidelines
-from gd.robtop import RobTop
+from gd.models.constants import GUIDELINES_SEPARATOR
+from gd.models.operations import concat_guidelines, split_guidelines
+from gd.internals.robtop.protocols import RobTop
 
 if TYPE_CHECKING:
     from typing_extensions import Self

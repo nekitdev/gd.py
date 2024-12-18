@@ -7,8 +7,8 @@ from iters.iters import iter
 from iters.ordered_set import OrderedSet, ordered_set
 
 from gd.enums import Difficulty, LevelLength, RateFilter, SearchStrategy
-from gd.string_constants import DASH
-from gd.string_utils import concat_comma, wrap
+from gd.strings.constants import DASH
+from gd.strings.operations import concat_comma, wrap
 from gd.typing import Data
 
 __all__ = ("Filters",)
@@ -16,7 +16,7 @@ __all__ = ("Filters",)
 if TYPE_CHECKING:
     from typing_extensions import Self
 
-    from gd.client import Client
+    from gd.clients import Client
 
 DEFAULT_ITERABLE = ()
 DEFAULT_COMPLETED = None

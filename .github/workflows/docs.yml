@@ -5,21 +5,26 @@ on:
     branches:
       - main
 
+env:
+  bot-name: nekit[bot]
+  bot-email: bot@nekit.dev
+  python-version: "3.12"
+
 jobs:
   docs:
-    name: Docs
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python 3.12
+      - name: Setup Python ${{ env.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-
-      - name: Update submodules
-        run: git submodule update --init --remote
+          python-version: ${{ env.python-version }}
 
       - name: Install Poetry
         run: pipx install poetry
@@ -31,10 +36,12 @@ jobs:
         run: poetry env use python
 
       - name: Install dependencies
-        run: poetry install --with docs --all-extras
+        run: poetry install --with docs
 
-      - name: Pull
-        run: git pull
+      - name: Setup bot user
+        run: |
+          git config --local user.name ${{ env.bot-name }}
+          git config --local user.email ${{ env.bot-email }}
 
       - name: Deploy the documentation
-        run: poetry run mkdocs gh-deploy
+        run: poetry run mkdocs gh-deploy --force

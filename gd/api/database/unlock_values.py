@@ -2,8 +2,8 @@ from attrs import define
 from typing_aliases import StringDict
 from typing_extensions import Self
 
-from gd.models_utils import bool_str, int_bool
-from gd.robtop_view import StringRobTopView
+from gd.models.operations import bool_str, int_bool
+from gd.internals.robtop.views import StringRobTopView
 
 __all__ = ("UnlockValues",)
 

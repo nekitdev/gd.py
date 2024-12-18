@@ -6,7 +6,9 @@ from random import choice
 from entrypoint import entrypoint
 from typing_aliases import AnySet
 
-import gd
+from gd.clients import Client
+from gd.crypto.passwords import hash_password
+from gd.errors import LoginFailed
 
 FALSE = frozenset(("false", "f", "0", "no", "n"))
 TRUE = frozenset(("true", "t", "1", "yes", "y"))
@@ -28,7 +30,7 @@ def parse_bool(string: str, false: AnySet[str] = FALSE, true: AnySet[str] = TRUE
     raise ValueError(can_not_parse(string))
 
 
-client = gd.Client()
+client = Client()
 
 NAME = "name: "
 PASSWORD = "password: "
@@ -52,12 +54,12 @@ send_failed = SEND_FAILED.format
 
 async def async_main() -> None:
     name = input(NAME)
-    password = input_password(PASSWORD)
+    hashed_password = hash_password(input_password(PASSWORD))
 
     try:
-        await client.login(name, password)  # login
+        await client.login(name, hashed_password)  # login
 
-    except gd.LoginFailed:  # login failed
+    except LoginFailed:  # login failed
         print(LOGIN_FAILED)
 
         return  # exit
@@ -79,7 +81,7 @@ async def async_main() -> None:
         try:
             await target.send(subject, content)
 
-        except gd.ClientError:  # if the user has their messages closed or another error occured
+        except ClientError:  # if the user has their messages closed or another error occured
             print(send_failed(target=target))
 
             return
@@ -89,4 +91,8 @@ async def async_main() -> None:
 
 @entrypoint(__name__)
 def main() -> None:
-    client.run(async_main())
+    try:
+        client.run(async_main())
+
+    except KeyboardInterrupt:
+        pass

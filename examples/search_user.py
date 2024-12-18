@@ -2,10 +2,11 @@
 
 from entrypoint import entrypoint
 
-import gd
-from gd.queries import query
+from gd.clients import Client
+from gd.errors import MissingAccess
+from gd.primitives.queries.queries import query
 
-client = gd.Client()  # initialize the client
+client = Client()  # initialize the client
 
 PROMPT = "name: "
 
@@ -25,7 +26,7 @@ async def async_main() -> None:
     try:
         user = await client.search_user(query(name), simple=True)
 
-    except gd.MissingAccess:
+    except MissingAccess:
         print(not_found(name=name))
 
     else:
@@ -34,4 +35,8 @@ async def async_main() -> None:
 
 @entrypoint(__name__)
 def main() -> None:
-    client.run(async_main())
+    try:
+        client.run(async_main())
+
+    except KeyboardInterrupt:
+        pass

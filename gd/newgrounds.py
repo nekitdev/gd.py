@@ -21,8 +21,8 @@ from yarl import URL
 
 from gd.constants import EMPTY
 from gd.errors import InternalError
-from gd.models import ArtistModel, SongModel
-from gd.string_utils import concat_empty, remove_escapes
+from gd.models.core import ArtistModel, SongModel
+from gd.strings.operations import concat_empty, remove_escapes
 
 __all__ = (
     "find_song_model",

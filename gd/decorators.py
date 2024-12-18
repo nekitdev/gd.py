@@ -11,7 +11,7 @@ from typing_extensions import Concatenate, ParamSpec
 from gd.errors import LoginRequired
 
 if TYPE_CHECKING:
-    from gd.client import Client
+    from gd.clients import Client
 
 __all__ = ("cache_by", "check_client_login", "check_login")
 
@@ -72,12 +72,12 @@ def check_login(function: Callable[Concatenate[C, P], T]) -> Callable[Concatenat
     """Checks whether the `client` passed as the first argument is logged in."""
 
     @wraps(function)
-    def wrap(client: C, *args: P.args, **kwargs: P.kwargs) -> T:
+    def wrap(client: C, /, *args: P.args, **kwargs: P.kwargs) -> T:
         check_client_login(client)
 
         return function(client, *args, **kwargs)
 
-    return wrap  # type: ignore[return-value]
+    return wrap
 
 
 NOT_LOGGED_IN = "the client is not logged in"

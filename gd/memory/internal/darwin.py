@@ -6,10 +6,9 @@ from typing import Iterator
 
 from typing_extensions import TypeAlias
 
-from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
-from gd.enums import Permissions
-from gd.memory.internal import unimplemented
-from gd.memory.internal.utils import Struct, external
+from gd.defaults.encoding import DEFAULT_ENCODING, DEFAULT_ERRORS
+from gd.memory.enums import Permissions
+from gd.memory.internal.utils import Struct, external, unimplemented
 
 __all__ = (
     "open",

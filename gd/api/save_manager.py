@@ -8,9 +8,9 @@ from attrs import define
 
 # from gd.asyncio import run_blocking
 from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
-from gd.encoding import decode_save, decode_system_save, encode_save, encode_system_save
+from gd.defaults.encoding import decode_save, decode_system_save, encode_save, encode_system_save
 from gd.enums import Platform
-from gd.platform import SYSTEM_PLATFORM
+from gd.system import SYSTEM_PLATFORM
 
 if TYPE_CHECKING:
     from typing_aliases import IntoPath

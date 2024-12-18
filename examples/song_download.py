@@ -22,8 +22,6 @@ WITH_BAR = True
 DOWNLOADED = "downloaded `{song.name}` by `{song.artist.name}` -> `{name}`"
 downloaded = DOWNLOADED.format
 
-EXITING = "exiting..."
-
 
 async def async_main() -> None:
     while True:
@@ -57,4 +55,4 @@ def main() -> None:
         client.run(async_main())
 
     except KeyboardInterrupt:
-        print(EXITING)
+        pass

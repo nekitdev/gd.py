@@ -1,10 +1,11 @@
 from attrs import field, frozen
-from iters.iters import iter
 
-from gd.constants import DEFAULT_ID, EMPTY
-from gd.string_utils import password_repr
+from gd.strings.constants import EMPTY
+from gd.strings.operations import password_repr
 
 __all__ = ("Credentials",)
+
+DEFAULT_ID = 0
 
 
 @frozen()
@@ -13,6 +14,3 @@ class Credentials:
     id: int = field(default=DEFAULT_ID)
     name: str = field(default=EMPTY)
     hashed_password: str = field(default=EMPTY, repr=password_repr)
-
-    def is_loaded(self) -> bool:
-        return iter.of(self.account_id, self.id, self.name, self.hashed_password).all()

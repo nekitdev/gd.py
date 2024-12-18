@@ -11,14 +11,12 @@ on:
 
 jobs:
   check:
-    name: Check
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        os: [ubuntu, windows, macos]
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
-    runs-on: ${{ matrix.os }}-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,9 +25,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Update submodules
-        run: git submodule update --init --remote
 
       - name: Install Poetry
         run: pipx install poetry
@@ -41,7 +36,7 @@ jobs:
         run: poetry env use python
 
       - name: Install dependencies
-        run: poetry install --all-extras
+        run: poetry install
 
       - name: Run type checks
         run: poetry run mypy .

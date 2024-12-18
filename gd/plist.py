@@ -1,14 +1,10 @@
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 try:
     from lxml import etree as xml
 
-    Element = xml._Element
-
 except ImportError:
     from xml.etree import ElementTree as xml  # type: ignore
-
-    Element = xml.Element  # type: ignore
 
 from attrs import define, field
 from funcs.unpacking import unpack_binary
@@ -16,11 +12,13 @@ from iters.iters import iter
 from named import get_type_name
 from typing_aliases import Attributes, StrictPayload, StringDict, Unary, is_instance
 
-from gd.constants import DEFAULT_ENCODING, DEFAULT_ERRORS
-from gd.models_utils import float_str
+from gd.defaults.encoding import DEFAULT_ENCODING, DEFAULT_ERRORS
+from gd.models.operations import float_str
 from gd.typing import AnyString
 
 __all__ = ("PARSER", "PropertyList")
+
+Element = Any
 
 XML_CHAR_REF_REPLACE = "xmlcharrefreplace"
 
@@ -303,7 +301,7 @@ def load_int(element: Element) -> int:
 def load_string(element: Element) -> str:
     string = element.text
 
-    return DEFAULT_STRING if string is None else string
+    return DEFAULT_STRING if string is None else string  # type: ignore[no-any-return]
 
 
 Load = Unary[Element, StrictPayload]

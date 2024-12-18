@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING
 
 from attrs import frozen
 
-from gd.enums import ByteOrder
+from gd.binary.enums import ByteOrder
 from gd.memory.constants import ZERO_SIZE
 from gd.memory.data import Data
 
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
-    from gd.platform import PlatformConfig
+    from gd.system import Config
 
 # TODO: add `this`?
 
@@ -31,8 +31,8 @@ class Void(Data[None]):
     ) -> None:
         pass
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return ZERO_SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return ZERO_SIZE

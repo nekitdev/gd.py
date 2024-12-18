@@ -3,9 +3,9 @@ from iters.iters import iter
 from typing_aliases import Unary
 from typing_extensions import Self
 
-from gd.models_constants import HSV_SEPARATOR
-from gd.models_utils import bool_str, concat_hsv, float_str, int_bool, split_hsv
-from gd.robtop import RobTop
+from gd.models.constants import HSV_SEPARATOR
+from gd.models.operations import bool_str, concat_hsv, float_str, int_bool, split_hsv
+from gd.internals.robtop.protocols import RobTop
 
 __all__ = ("HSV",)
 

@@ -7,15 +7,10 @@ from attrs import define, field, frozen
 from named import get_module, get_name, set_module, set_name
 from typing_extensions import Self
 
-from gd.enums import ByteOrder
-from gd.memory.constants import (
-    DEFAULT_ALIGNMENT,
-    DEFAULT_PACKED,
-    DEFAULT_SIZE,
-    DEFAULT_VIRTUAL,
-)
+from gd.binary.enums import ByteOrder
+from gd.memory.constants import DEFAULT_ALIGNMENT, DEFAULT_PACKED, DEFAULT_SIZE, DEFAULT_VIRTUAL
 from gd.memory.data import Data
-from gd.platform import SYSTEM_PLATFORM_CONFIG, PlatformConfig
+from gd.system import SYSTEM_PLATFORM_CONFIG, Config
 
 if TYPE_CHECKING:
     from gd.memory.state import AbstractState
@@ -41,7 +36,7 @@ class Struct(Base):
     VIRTUAL: ClassVar[bool] = DEFAULT_VIRTUAL
 
     @classmethod
-    def reconstruct(cls, config: PlatformConfig) -> Type[Self]:
+    def reconstruct(cls, config: Config) -> Type[Self]:
         return struct(cls.PACKED, cls.VIRTUAL, config)(cls)
 
     @classmethod
@@ -54,7 +49,7 @@ class Union(Base):
     """Represents `union` types."""
 
     @classmethod
-    def reconstruct(cls, config: PlatformConfig) -> Type[Self]:
+    def reconstruct(cls, config: Config) -> Type[Self]:
         return union(config)(cls)
 
     @classmethod
@@ -81,13 +76,13 @@ class StructData(Data[S]):
     ) -> None:
         pass  # do nothing
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return self.compute_type(config).SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return self.compute_type(config).ALIGNMENT
 
-    def compute_type(self, config: PlatformConfig) -> Type[S]:
+    def compute_type(self, config: Config) -> Type[S]:
         return self.struct_type.reconstruct(config)
 
 
@@ -110,13 +105,13 @@ class UnionData(Data[U]):
     ) -> None:
         pass  # do nothing
 
-    def compute_size(self, config: PlatformConfig) -> int:
+    def compute_size(self, config: Config) -> int:
         return self.compute_type(config).SIZE
 
-    def compute_alignment(self, config: PlatformConfig) -> int:
+    def compute_alignment(self, config: Config) -> int:
         return self.compute_type(config).ALIGNMENT
 
-    def compute_type(self, config: PlatformConfig) -> Type[U]:
+    def compute_type(self, config: Config) -> Type[U]:
         return self.union_type.reconstruct(config)
 
 
@@ -125,7 +120,7 @@ class UnionData(Data[U]):
 class CreateStruct:
     packed: bool = DEFAULT_PACKED
     virtual: bool = DEFAULT_VIRTUAL
-    config: PlatformConfig = SYSTEM_PLATFORM_CONFIG
+    config: Config = SYSTEM_PLATFORM_CONFIG
 
     def __call__(self, struct_type: Type[S]) -> Type[S]:
         packed = self.packed
@@ -209,7 +204,7 @@ class CreateStruct:
 def struct(
     packed: bool = DEFAULT_PACKED,
     virtual: bool = DEFAULT_VIRTUAL,
-    config: PlatformConfig = SYSTEM_PLATFORM_CONFIG,
+    config: Config = SYSTEM_PLATFORM_CONFIG,
 ) -> CreateStruct:
     return CreateStruct(packed, virtual, config)
 
@@ -217,7 +212,7 @@ def struct(
 @final
 @frozen()
 class CreateUnion:
-    config: PlatformConfig = SYSTEM_PLATFORM_CONFIG
+    config: Config = SYSTEM_PLATFORM_CONFIG
 
     def __call__(self, union_type: Type[U]) -> Type[U]:
         config = self.config
@@ -245,7 +240,7 @@ class CreateUnion:
         return new_union_type
 
 
-def union(config: PlatformConfig = SYSTEM_PLATFORM_CONFIG) -> CreateUnion:
+def union(config: Config = SYSTEM_PLATFORM_CONFIG) -> CreateUnion:
     return CreateUnion(config)
 
 

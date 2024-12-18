@@ -1,32 +1,34 @@
 name: release
 
 on:
-  push:
-    tags:
-      - v*
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version to release, without the leading `v`.
+        type: string
+        required: true
+
+env:
+  bot-name: nekit[bot]
+  bot-email: bot@nekit.dev
+  changelog: CHANGELOG-${{ inputs.version }}.md
+  python-version: "3.12"
 
 jobs:
-  release:
-    name: Release
+  changelog:
+    runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        os: [ubuntu, macos, windows]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-
-    runs-on: ${{ matrix.os }}-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python ${{ matrix.python-version }}
+      - name: Setup Python ${{ env.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Update submodules
-        run: git submodule update --init --remote
+          python-version: ${{ env.python-version }}
 
       - name: Install Poetry
         run: pipx install poetry
@@ -38,12 +40,112 @@ jobs:
         run: poetry env use python
 
       - name: Install dependencies
-        run: poetry install
+        run: poetry install --with release
+
+      - name: Build changelog ${{ inputs.version }}
+        run: poetry run changelogging preview > ${{ env.changelog }}
+
+      - name: Upload changelog ${{ inputs.version }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog
+          path: ${{ env.changelog }}
+
+      - name: Build changelog
+        run: poetry run changelogging build --stage --remove
+
+      - name: Setup bot user
+        run: |
+          git config --local user.name ${{ env.bot-name }}
+          git config --local user.email ${{ env.bot-email }}
+
+      - name: Commit and push
+        run: |
+          git commit -m "Add ${{ inputs.version }} to the changelog."
+          git push
+
+  tag:
+    runs-on: ubuntu-latest
+    needs: changelog
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup bot user
+        run: |
+          git config --local user.name ${{ env.bot-name }}
+          git config --local user.email ${{ env.bot-email }}
+
+      - name: Tag and push
+        run: |
+          git tag v${{ inputs.version }}
+          git push --tags
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: tag
+
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python ${{ env.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.python-version }}
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Configure Poetry
+        run: poetry config virtualenvs.in-project true
+
+      - name: Specify the version
+        run: poetry env use python
 
       - name: Build
         run: poetry build
 
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: dist
+
       - name: Publish to PyPI
-        run: poetry publish --skip-existing
-        env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+
+  release:
+    runs-on: ubuntu-latest
+    needs: publish
+
+    steps:
+      - name: Download changelog
+        uses: actions/download-artifact@v4
+        with:
+          pattern: changelog
+          merge-multiple: true
+
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: packages
+          path: dist
+          merge-multiple: true
+
+      - name: Publish to GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: ${{ env.changelog }}
+          files: dist/*
+          tag_name: v${{ inputs.version }}
+          token: ${{ secrets.BOT_TOKEN }}

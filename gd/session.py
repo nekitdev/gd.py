@@ -39,7 +39,7 @@ from gd.enums import (
     TimelyType,
 )
 from gd.http import HTTPClient
-from gd.models import (
+from gd.models.core import (
     ArtistModel,
     ArtistsResponseModel,
     ChestsResponseModel,
@@ -63,14 +63,14 @@ from gd.models import (
     TimelyInfoModel,
     UserCommentsResponseModel,
 )
-from gd.models_utils import concat_save, split_save
+from gd.models.operations import concat_save, split_save
 from gd.newgrounds import (
     find_song_model,
     search_artist_models,
     search_artist_song_models,
     search_song_models,
 )
-from gd.queries import EMPTY_QUERY
+from gd.primitives.queries.queries import EMPTY_QUERY
 
 if TYPE_CHECKING:
     from pendulum import Duration
@@ -78,10 +78,10 @@ if TYPE_CHECKING:
 
     from gd.api.database.database import Database
     from gd.api.recording import Recording
-    from gd.capacity import Capacity
     from gd.filters import Filters
-    from gd.password import Password
-    from gd.queries import Query
+    from gd.primitives.capacity.core import Capacity
+    from gd.primitives.passwords import Password
+    from gd.primitives.queries.queries import Query
     from gd.typing import URLString
 
 __all__ = ("Session",)

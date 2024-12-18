@@ -4,8 +4,8 @@ from typing_extensions import Self
 
 from gd.constants import DEFAULT_ID
 from gd.enums import CommentStrategy, Filter, LevelLeaderboardStrategy
-from gd.models_utils import bool_str, int_bool
-from gd.robtop_view import StringRobTopView
+from gd.models.operations import bool_str, int_bool
+from gd.internals.robtop.views import StringRobTopView
 
 __all__ = ("Variables",)
 

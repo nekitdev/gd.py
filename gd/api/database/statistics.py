@@ -24,8 +24,8 @@ from gd.constants import (
     DEFAULT_USER_COINS,
 )
 from gd.enums import CollectedCoins
-from gd.models_utils import concat_name, int_bool, split_name
-from gd.robtop_view import StringRobTopView
+from gd.models.operations import concat_name, int_bool, split_name
+from gd.internals.robtop.views import StringRobTopView
 
 __all__ = ("Statistics",)
 

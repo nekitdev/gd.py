@@ -17,8 +17,8 @@ from gd.constants import (
     EMPTY,
 )
 from gd.enums import InternalType, RewardItemType
-from gd.robtop_view import RobTopView, StringRobTopView
-from gd.string_utils import snake_to_camel
+from gd.internals.robtop.views import RobTopView, StringRobTopView
+from gd.strings.operations import snake_to_camel
 
 if TYPE_CHECKING:
     from typing_aliases import StringDict
@@ -50,9 +50,6 @@ class Quest:
     completed: bool = DEFAULT_COMPLETED
     name: str = EMPTY
     order: int = DEFAULT_QUEST_ORDER
-
-    def __hash__(self) -> int:
-        return hash(type(self)) ^ self.id
 
     @classmethod
     def from_robtop_view(cls, view: StringRobTopView[Any]) -> Self:
